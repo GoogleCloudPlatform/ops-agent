@@ -134,16 +134,16 @@ func generateSampleSelfLogsComponents(ctx context.Context) []fluentbit.Component
 				"Rule": fmt.Sprintf(`message "format check failed" %s true`, healthLogsTag),
 			},
 		},
-		{
-			Kind: "FILTER",
-			OrderedConfig: [][2]string{
-				{"Name", "modify"},
-				{"Match", healthLogsTag},
-				{"Condition", `Key_value_matches message "format check failed"`},
-				{"Set", `message "Code : LogBufferCorruptErr Message : Monitoring API quota reached..."`},
-				{"Set", `code "LogBufferCorruptErqr"`},
-			},
-		},
+		// {
+		// 	Kind: "FILTER",
+		// 	OrderedConfig: [][2]string{
+		// 		{"Name", "modify"},
+		// 		{"Match", healthLogsTag},
+		// 		{"Condition", `Key_value_matches message "format check failed"`},
+		// 		{"Set", `message "Code : LogBufferCorruptErr Message : Monitoring API quota reached..."`},
+		// 		{"Set", `code "LogBufferCorruptErqr"`},
+		// 	},
+		// },
 	}
 }
 
