@@ -564,6 +564,9 @@ func (r LoggingReceiverMysqlError) Components(ctx context.Context, tag string) [
 			// Default log path for Oracle MySQL on Debian / Ubuntu
 			"/var/log/mysql/error.log",
 			// Default log path for MariaDB on Debian
+			"/run/mysqld/mysqld.err",
+			// Default log path for MariaDB upstream
+			// https://mariadb.com/kb/en/error-log/#writing-the-error-log-to-a-file
 			"/var/lib/mysql/${HOSTNAME}.err",
 		}
 	}
