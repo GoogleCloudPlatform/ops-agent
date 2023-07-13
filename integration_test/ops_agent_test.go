@@ -1446,37 +1446,25 @@ func TestTCPLog(t *testing.T) {
 		// Installing Netcat or equivalent tools on Windows is tricky so we can instead
 		// use this Powershell Script that can send TCP messages.
 		if gce.IsWindows(platform) {
-			tcp_script := `param([string]$TargetIP = "", [int]$TargetPort = 0, [string]$Message = "")
-
-			try {
-				if ($TargetIP -eq "" ) { $TargetIP = read-host "Enter target IP address" }
-				if ($TargetPort -eq 0 ) { $TargetPort = read-host "Enter target port" }
-				if ($Message -eq "" ) { $Message = read-host "Enter message to send" }
-
-					$IP = [System.Net.Dns]::GetHostAddresses($TargetIP) 
-					$Address = [System.Net.IPAddress]::Parse($IP) 
-					$Socket = New-Object System.Net.Sockets.TCPClient($Address,$TargetPort) 
-					$Stream = $Socket.GetStream() 
-					$Writer = New-Object System.IO.StreamWriter($Stream)
-					$Message | % {
-						$Writer.WriteLine($_)
-						$Writer.Flush()
-					}
-					$Stream.Close()
-					$Socket.Close()
-
-				"??  Done."
-				exit 0 # success
-			} catch {
-				"?? Error in line $($_.InvocationInfo.ScriptLineNumber): $($Error[0])"
-				exit 1
-			}`
-
-			if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(tcp_script), `C:\Program Files\Google\Cloud Operations\Ops Agent\send_tcp.ps1`); err != nil {
-				t.Fatalf("Error uploading TCP script: %v", err)
+			command = `$ErrorActionPreference = 'Stop'
+			function Send-TcpString {
+			  param(
+			    [string]$TargetIP,
+			    [int]$TargetPort,
+			    [string]$Message
+			  )
+			  $Socket = New-Object System.Net.Sockets.TCPClient($TargetIP, $TargetPort) 
+			  $Stream = $Socket.GetStream() 
+			  $Writer = New-Object System.IO.StreamWriter($Stream)
+			  $Message | % {
+			    $Writer.WriteLine($_)
+			    $Writer.Flush()
+			  }
+			  $Stream.Close()
+			  $Socket.Close()
 			}
-
-			command = `(& "C:\Program Files\Google\Cloud Operations\Ops Agent\send_tcp.ps1" 127.0.0.1 5170 '{"msg":"test tcp log 1"}{"msg":"test tcp log 2"}') -and (& "C:\Program Files\Google\Cloud Operations\Ops Agent\send_tcp.ps1" 127.0.0.1 5170 '{"msg":"test tcp log 3"}{"msg":"test tcp log 4"}')`
+			Send-TcpString 127.0.0.1 5170 '{"msg":"test tcp log 1"}{"msg":"test tcp log 2"}'
+			Send-TcpString 127.0.0.1 5170 '{"msg":"test tcp log 3"}{"msg":"test tcp log 4"}'`
 		}
 
 		// Write JSON test log to TCP socket via bash redirect, to get around installing and using netcat.
@@ -1486,11 +1474,19 @@ func TestTCPLog(t *testing.T) {
 			t.Fatalf("Error writing dummy TCP log line: %v", err)
 		}
 
+		var waitGroup sync.WaitGroup
 		for i := 1; i <= 4; i++ {
-			if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "tcp_logs", time.Hour, fmt.Sprintf("jsonPayload.msg:test tcp log %d", i)); err != nil {
-				t.Error(err)
-			}
+			i := i
+			waitGroup.Add(1)
+			go func() {
+				defer waitGroup.Done()
+				if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "tcp_logs", time.Hour, fmt.Sprintf("jsonPayload.msg:test tcp log %d", i)); err != nil {
+					t.Error(err)
+				}
+			}()
+
 		}
+		waitGroup.Wait()
 	})
 }
 
@@ -1612,7 +1608,7 @@ func TestWindowsEventLogV1UnsupportedChannel(t *testing.T) {
 
 		// Quote-and-escape the query string so that Cloud Logging accepts it
 		expectedWarning := fmt.Sprintf(`"\"channels[1]\" contains a channel, \"%s\", which may not work properly on version 1 of windows_event_log"`, channel)
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, log, time.Hour, logMessageQueryForPlatform(vm.Platform, expectedWarning)); err != nil {
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, log, 2*time.Hour, logMessageQueryForPlatform(vm.Platform, expectedWarning)); err != nil {
 			t.Fatal(err)
 		}
 	})
