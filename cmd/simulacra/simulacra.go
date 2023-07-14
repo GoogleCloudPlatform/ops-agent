@@ -57,6 +57,8 @@ type Config struct {
 	Name string `yaml:"name"`
 	// Path to Third Party Apps folder
 	ThirdPartyAppsPath string `yaml:"third_party_apps_path"`
+	// Path to script files that will be run on the VM.
+	Scripts []string `yaml:"scripts"`
 }
 
 func distroFolder(platform string) (string, error) {
@@ -123,7 +125,9 @@ func installApps(ctx context.Context, vm *gce.VM, logger *logging.DirectoryLogge
 	receivers := getAllReceivers(config)
 
 	for _, app := range receivers {
-		if scriptContent, err := os.ReadFile(path.Join(installPath, "applications", app, folder, "install")); err == nil {
+		if scriptContent, err := os.ReadFile(path.Join(installPath, "applications", app, folder, "install")); err != nil {
+			return err
+		} else {
 			logger.ToMainLog().Printf("Installing %s to VM", app)
 			log.Default().Printf("Installing %s to VM", app)
 			if _, err := gce.RunScriptRemotely(ctx, logger, vm, string(scriptContent), nil, make(map[string]string)); err != nil {
@@ -186,7 +190,7 @@ func getConfigFromYaml(configPath string) (Config, error) {
 func getSimulacraConfig() (Config, error) {
 	configPath := flag.String("config", "", "Optional. The path to a YAML file specifying all the configurations for Simulacra. If unspecified, Simulacra will either use values from other command line arguments or use default values. If specifed along with other command line arguments, all others will be ignored.")
 	platform := flag.String("platform", defaultPlatform, "Optional. The OS for the VM. If missing, debian-11 is used.")
-	opsAgentConfigFile := flag.String("ops_agent_config", "", "Optional. Path to the Ops Agent Config File.")
+	opsAgentConfigFile := flag.String("ops_agent_config", "", "Optional. Path to the Ops Agent Config File. If unspecified, Ops Agent will not install any third party applications and configure Ops Agent with default settings. ")
 	project := flag.String("project", "", "Optional. If missing, Simulacra will try to infer from GCloud config.")
 	zone := flag.String("zone", "", "Optional. If missing, Simulacra will try to infer from GCloud config. ")
 	name := flag.String("name", getInstanceName(), "Optional. A name for the instance to be created. If missing, a random name with prefix 'simulacra-vm-instance' will be assigned. ")
@@ -202,6 +206,23 @@ func getSimulacraConfig() (Config, error) {
 
 	return config, nil
 
+}
+
+func runCustomScripts(ctx context.Context, vm *gce.VM, logger *logging.DirectoryLogger, scripts []string) error {
+	for _, scriptPath := range scripts {
+		if scriptContent, err := os.ReadFile(scriptPath); err != nil {
+			return err
+		} else {
+			logger.ToMainLog().Printf("Running script from %s", scriptPath)
+			log.Default().Printf("Running script from %s", scriptPath)
+			if _, err := gce.RunScriptRemotely(ctx, logger, vm, string(scriptContent), nil, make(map[string]string)); err != nil {
+				return err
+			} else {
+				logger.ToMainLog().Printf("Done Running Script from  %s", scriptPath)
+			}
+		}
+	}
+	return nil
 }
 
 func main() {
@@ -241,9 +262,19 @@ func main() {
 	}
 
 	// Install Third Party Appliations based on Ops Agent Config.
-	log.Default().Print("Installing Third Party Applications, check main_log.txt for details")
-	if err := installApps(ctx, vm, logger, config.ConfigFilePath, config.ThirdPartyAppsPath); err != nil {
-		log.Default().Fatalf("Failed to install apps %v", err)
+	if len(config.ConfigFilePath) > 0 {
+		log.Default().Print("Installing Third Party Applications, check main_log.txt for details")
+		if err := installApps(ctx, vm, logger, config.ConfigFilePath, config.ThirdPartyAppsPath); err != nil {
+			log.Default().Printf("Failed to install apps %v", err)
+		}
+	}
+
+	// Run custom Scripts on the VM
+	if len(config.Scripts) > 0 {
+		log.Default().Print("Running Custom Scripts on the VM, check main_log.txt for details")
+		if err := runCustomScripts(ctx, vm, logger, config.Scripts); err != nil {
+			log.Default().Fatalf("Error executing custom script on the VM %v", err)
+		}
 	}
 
 	log.Default().Printf("VM '%s' is ready.", vm.Name)
