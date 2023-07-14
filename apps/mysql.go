@@ -379,8 +379,13 @@ func (LoggingProcessorMysqlSlow) Type() string {
 }
 
 func (p LoggingProcessorMysqlSlow) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
+	modifyFields := map[string]*confgenerator.ModifyField{
+		InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+	}
+
+	// This format is for MySQL 8.0.14+
 	// Fields are split into this array to improve readability of the regex
-	fields := strings.Join([]string{
+	mySQLFields := strings.Join([]string{
 		// Always present slow query log fields
 		`\s+Query_time:\s+(?<queryTime>[\d\.]+)`,
 		`\s+Lock_time:\s+(?<lockTime>[\d\.]+)`,
@@ -409,68 +414,168 @@ func (p LoggingProcessorMysqlSlow) Components(ctx context.Context, tag string, u
 		`(?:\s+Start:\s(?<startTime>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z))?`,
 		`(?:\s+End:\s(?<endTime>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z))?`,
 	}, "")
+	parsers := []confgenerator.RegexParser{{
+		// Fields documented: https://dev.mysql.com/doc/refman/8.0/en/slow-query-log.html
+		// Sample line: # Time: 2021-10-12T01:13:38.132884Z
+		//              # User@Host: root[root] @ localhost []  Id:    15
+		//              # Query_time: 0.001855  Lock_time: 0.000000 Rows_sent: 0  Rows_examined: 0
+		//              SET timestamp=1634001218;
+		//              SET GLOBAL slow_query_log = 1;
+		// Extra fields w/ low_slow_extra = 'ON'
+		// Sample line: # Time: 2021-10-12T01:34:15.231930Z
+		//              # User@Host: root[root] @ localhost []  Id:    21
+		//              # Query_time: 0.012740  Lock_time: 0.000810 Rows_sent: 327  Rows_examined: 586 Thread_id: 21 Errno: 0 Killed: 0 Bytes_received: 0 Bytes_sent: 41603 Read_first: 2 Read_last: 0 Read_key: 361 Read_next: 361 Read_prev: 0 Read_rnd: 0 Read_rnd_next: 5 Sort_merge_passes: 0 Sort_range_count: 0 Sort_rows: 0 Sort_scan_count: 0 Created_tmp_disk_tables: 0 Created_tmp_tables: 0 Start: 2021-10-12T01:34:15.219190Z End: 2021-10-12T01:34:15.231930Z
+		//              SET timestamp=1634002455;
+		//              select * from information_schema.tables;
+		Regex: fmt.Sprintf(
+			`^(?:# Time: (?<time>%s)\s)?# User@Host:\s+(?<user>[^\[]*)\[(?<database>[^\]]*)\]\s+@\s+((?<host>[^\s]+)\s)?\[(?:(?<ipAddress>[\w\d\.:]+)?)\]\s+Id:\s+(?<tid>\d+)\s+#%s\s+(?<message>[\s\S]+)`,
+			timeRegexMySQLNew,
+			mySQLFields,
+		),
+		Parser: confgenerator.ParserShared{
+			TimeKey:    "time",
+			TimeFormat: timeFormatMySQLNew,
+			Types: map[string]string{
+				"tid":                  "integer",
+				"queryTime":            "float",
+				"lockTime":             "float",
+				"rowsSent":             "integer",
+				"rowsExamined":         "integer",
+				"errorNumber":          "integer",
+				"killed":               "integer",
+				"bytesReceived":        "integer",
+				"bytesSent":            "integer",
+				"readFirst":            "integer",
+				"readLast":             "integer",
+				"readKey":              "integer",
+				"readNext":             "integer",
+				"readPrev":             "integer",
+				"readRnd":              "integer",
+				"readRndNext":          "integer",
+				"sortMergePasses":      "integer",
+				"sortRangeCount":       "integer",
+				"sortRows":             "integer",
+				"sortScanCount":        "integer",
+				"createdTmpDiskTables": "integer",
+				"createdTmpTables":     "integer",
+			},
+		},
+	}}
 
-	var parsers []confgenerator.RegexParser
+	// This format is for old MySQL and all MariaDB.
 
-	for _, t := range []struct {
-		Regex, TimeFormat string
+	// Sample MariaDB line:
+	// # User@Host: root[root] @ localhost []
+	// # Thread_id: 32  Schema:   QC_hit: No
+	// # Query_time: 0.000130  Lock_time: 0.000068  Rows_sent: 0  Rows_examined: 0
+	// # Rows_affected: 0  Bytes_sent: 1351
+	// SET timestamp=1689286831;
+	// SELECT OBJECT_SCHEMA, OBJECT_NAME, COUNT_DELETE, COUNT_FETCH, COUNT_INSERT, COUNT_UPDATE,SUM_TIMER_DELETE, SUM_TIMER_FETCH, SUM_TIMER_INSERT, SUM_TIMER_UPDATE FROM performance_schema.table_io_waits_summary_by_table WHERE OBJECT_SCHEMA NOT IN ('mysql', 'performance_schema');
+
+	const (
+		float   = `[\d\.]+`
+		integer = `\d+`
+		boolean = `Yes|No`
+	)
+
+	oldFields := [][]struct {
+		identifier, jsonField, regex string
 	}{
 		{
-			timeRegexMySQLNew,
-			timeFormatMySQLNew,
+			// "# Thread_id: %lu  Schema: %s  QC_hit: %s\n"
+			{"Thread_id", "tid", integer},
+			{"Schema", "schema", `\S*`},  // N.B. MariaDB will still show the field with an empty string. FIXME: add to metadata
+			{"QC_hit", "qcHit", boolean}, // FIXME: add to metadata
 		},
 		{
-			timeRegexOld,
-			timeFormatOld,
+			// "# Query_time: %s  Lock_time: %s  Rows_sent: %lu  Rows_examined: %lu\n"
+			{"Query_time", "queryTime", float},
+			{"Lock_time", "lockTime", float},
+			{"Rows_sent", "rowsSent", integer},
+			{"Rows_examined", "rowsExamined", integer},
 		},
-	} {
-		parsers = append(
-			parsers,
-			confgenerator.RegexParser{
-				// Fields documented: https://dev.mysql.com/doc/refman/8.0/en/slow-query-log.html
-				// Sample line: # Time: 2021-10-12T01:13:38.132884Z
-				//              # User@Host: root[root] @ localhost []  Id:    15
-				//              # Query_time: 0.001855  Lock_time: 0.000000 Rows_sent: 0  Rows_examined: 0
-				//              SET timestamp=1634001218;
-				//              SET GLOBAL slow_query_log = 1;
-				// Extra fields w/ low_slow_extra = 'ON'
-				// Sample line: # Time: 2021-10-12T01:34:15.231930Z
-				//              # User@Host: root[root] @ localhost []  Id:    21
-				//              # Query_time: 0.012740  Lock_time: 0.000810 Rows_sent: 327  Rows_examined: 586 Thread_id: 21 Errno: 0 Killed: 0 Bytes_received: 0 Bytes_sent: 41603 Read_first: 2 Read_last: 0 Read_key: 361 Read_next: 361 Read_prev: 0 Read_rnd: 0 Read_rnd_next: 5 Sort_merge_passes: 0 Sort_range_count: 0 Sort_rows: 0 Sort_scan_count: 0 Created_tmp_disk_tables: 0 Created_tmp_tables: 0 Start: 2021-10-12T01:34:15.219190Z End: 2021-10-12T01:34:15.231930Z
-				//              SET timestamp=1634002455;
-				//              select * from information_schema.tables;
-				Regex: fmt.Sprintf(`^(?:# Time: (?<time>%s)\s)?# User@Host:\s+(?<user>[^\[]*)\[(?<database>[^\]]*)\]\s+@\s+((?<host>[^\s]+)\s)?\[(?:(?<ipAddress>[\w\d\.:]+)?)\]\s+Id:\s+(?<tid>\d+)\s+#%s\s+(?<message>[\s\S]+)`, t.Regex, fields),
-				Parser: confgenerator.ParserShared{
-					TimeKey:    "time",
-					TimeFormat: t.TimeFormat,
-					Types: map[string]string{
-						"tid":                  "integer",
-						"queryTime":            "float",
-						"lockTime":             "float",
-						"rowsSent":             "integer",
-						"rowsExamined":         "integer",
-						"errorNumber":          "integer",
-						"killed":               "integer",
-						"bytesReceived":        "integer",
-						"bytesSent":            "integer",
-						"readFirst":            "integer",
-						"readLast":             "integer",
-						"readKey":              "integer",
-						"readNext":             "integer",
-						"readPrev":             "integer",
-						"readRnd":              "integer",
-						"readRndNext":          "integer",
-						"sortMergePasses":      "integer",
-						"sortRangeCount":       "integer",
-						"sortRows":             "integer",
-						"sortScanCount":        "integer",
-						"createdTmpDiskTables": "integer",
-						"createdTmpTables":     "integer",
-					},
-				},
-			},
-		)
+		{
+			// MariaDB 10.3.1+
+			// "# Rows_affected: %lu  Bytes_sent: %lu\n",
+			{"Rows_affected", "rowsAffected", integer}, // FIXME: add to metadata
+			{"Bytes_sent", "bytesSent", integer},
+		},
+		{
+			// MariaDB 5.5.37+ with LOG_SLOW_VERBOSITY_QUERY_PLAN
+			// "# Tmp_tables: %lu  Tmp_disk_tables: %lu  Tmp_table_sizes: %s\n"
+			{"Tmp_tables", "createdTmpTables", integer},
+			{"Tmp_disk_tables", "createdTmpDiskTables", integer},
+			{"Tmp_table_sizes", "createdTmpTableSizes", integer}, // FIXME: add to metadata
+		},
+		{
+			// MariaDB 10.3.4+ if thd->spcont != NULL
+			// "# Stored_routine: %s\n"
+			{"Stored_routine", "storedRoutine", `\S+`}, // FIXME: add to metadata
+		},
+		{
+			// MariaDB 5.5.37+ with LOG_SLOW_VERBOSITY_QUERY_PLAN
+			// "# Full_scan: %s  Full_join: %s  Tmp_table: %s  Tmp_table_on_disk: %s\n"
+			{"Full_scan", "fullScan", boolean}, // FIXME: add to metadata
+			{"Full_join", "fullJoin", boolean}, // FIXME: add to metadata
+			{"Tmp_table", "", boolean},         // redundant with Tmp_tables
+			{"Tmp_table_on_disk", "", boolean}, // redundant with Tmp_disk_tables
+		},
+		{
+			// MariaDB 5.5.37+ with LOG_SLOW_VERBOSITY_QUERY_PLAN
+			// "# Filesort: %s  Filesort_on_disk: %s  Merge_passes: %lu  Priority_queue: %s\n",
+			{"Filesort", "fileSort", boolean},               // FIXME: add to metadata
+			{"Filesort_on_disk", "fileSortOnDisk", boolean}, // FIXME: add to metadata
+			{"Merge_passes", "mergePasses", integer},        // FIXME: add to metadata
+			{"Priority_queue", "priorityQueue", boolean},    // FIXME: add to metadata
+		},
 	}
+	// LOG_SLOW_VERBOSITY_EXPLAIN causes additional comment lines
+	// to be added containing the output of EXPLAIN; it's probably
+	// not worth parsing them since they're somewhat freeform.
+	oldLines := []string{
+		fmt.Sprintf(`^(?:# Time: (?<time>%s)\s)?`, timeRegexOld),
+		`# User@Host:\s+(?<user>[^\[]*)\[(?<database>[^\]]*)\]\s+@\s+((?<host>[^\s]+)\s)?\[(?:(?<ipAddress>[\w\d\.:]+)?)\]`,
+	}
+	oldTypes := make(map[string]string)
+	for _, lineFields := range oldFields {
+		var out []string
+		for _, field := range lineFields {
+			valueRegex := field.regex
+			if field.jsonField != "" {
+				valueRegex = fmt.Sprintf(`(?<%s>%s)`, field.jsonField, field.regex)
+				switch field.regex {
+				case float:
+					oldTypes[field.jsonField] = "float"
+				case integer:
+					oldTypes[field.jsonField] = "integer"
+				case boolean:
+					modifyFields[fmt.Sprintf(`jsonPayload.%s`, field.jsonField)] = &confgenerator.ModifyField{
+						Type: "YesNoBoolean",
+					}
+				}
+			}
+			out = append(out, fmt.Sprintf(
+				`(?:\s+%s:\s%s)?`,
+				field.identifier,
+				valueRegex,
+			))
+		}
+		oldLines = append(oldLines, fmt.Sprintf(
+			`(?:\s+#%s)?`,
+			strings.Join(out, ""),
+		))
+	}
+	oldLines = append(oldLines, `\s+(?<message>[\s\S]+)`)
+
+	parsers = append(parsers, confgenerator.RegexParser{
+		Regex: strings.Join(oldLines, ""),
+		Parser: confgenerator.ParserShared{
+			TimeKey:    "time",
+			TimeFormat: timeFormatOld,
+			Types:      oldTypes,
+		},
+	})
+
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: parsers,
@@ -507,9 +612,7 @@ func (p LoggingProcessorMysqlSlow) Components(ctx context.Context, tag string, u
 
 	c = append(c,
 		confgenerator.LoggingProcessorModifyFields{
-			Fields: map[string]*confgenerator.ModifyField{
-				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
-			},
+			Fields: modifyFields,
 		}.Components(ctx, tag, uid)...,
 	)
 	return c
