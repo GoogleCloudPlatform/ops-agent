@@ -26,8 +26,8 @@ import (
 
 const (
 	MessageZapKey        string = "message"
-	SeverityZapKey       string = "severity"
-	SourceLocationZapKey string = "sourceLocation"
+	SeverityZapKey       string = "logging.googleapis.com/severity"
+	SourceLocationZapKey string = "logging.googleapis.com/sourceLocation"
 	TimeZapKey           string = "time"
 )
 
