@@ -113,7 +113,6 @@ func InstrumentEnabledReceiversMetric(uc *confgenerator.UnifiedConfig, meter met
 	)
 
 	if err != nil {
-		fmt.Println("failed to register feature tracking")
 		return err
 	}
 	return nil
@@ -142,7 +141,6 @@ func InstrumentFeatureTrackingMetric(uc *confgenerator.UnifiedConfig, meter metr
 	)
 
 	if err != nil {
-		fmt.Println("failed to register feature tracking")
 		return err
 	}
 	return nil
