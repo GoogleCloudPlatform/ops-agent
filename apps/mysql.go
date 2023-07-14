@@ -463,10 +463,12 @@ func (p LoggingProcessorMysqlSlow) Components(ctx context.Context, tag string, u
 	}}
 
 	// This format is for old MySQL and all MariaDB.
-
+	// Docs:
+	//   https://mariadb.com/kb/en/slow-query-log-extended-statistics/
+	//   https://mariadb.com/kb/en/explain-in-the-slow-query-log/
 	// Sample MariaDB line:
 	// # User@Host: root[root] @ localhost []
-	// # Thread_id: 32  Schema:   QC_hit: No
+	// # Thread_id: 32  Schema: dbt3sf1  QC_hit: No
 	// # Query_time: 0.000130  Lock_time: 0.000068  Rows_sent: 0  Rows_examined: 0
 	// # Rows_affected: 0  Bytes_sent: 1351
 	// SET timestamp=1689286831;
@@ -484,8 +486,8 @@ func (p LoggingProcessorMysqlSlow) Components(ctx context.Context, tag string, u
 		{
 			// "# Thread_id: %lu  Schema: %s  QC_hit: %s\n"
 			{"Thread_id", "tid", integer},
-			{"Schema", "schema", `\S*`},  // N.B. MariaDB will still show the field with an empty string. FIXME: add to metadata
-			{"QC_hit", "qcHit", boolean}, // FIXME: add to metadata
+			{"Schema", "database", `\S*`}, // N.B. MariaDB will still show the field with an empty string if the connection doesn't have an active database.
+			{"QC_hit", "qcHit", boolean},  // FIXME: add to metadata
 		},
 		{
 			// "# Query_time: %s  Lock_time: %s  Rows_sent: %lu  Rows_examined: %lu\n"
@@ -534,7 +536,11 @@ func (p LoggingProcessorMysqlSlow) Components(ctx context.Context, tag string, u
 	// not worth parsing them since they're somewhat freeform.
 	oldLines := []string{
 		fmt.Sprintf(`^(?:# Time: (?<time>%s)\s)?`, timeRegexOld),
-		`# User@Host:\s+(?<user>[^\[]*)\[(?<database>[^\]]*)\]\s+@\s+((?<host>[^\s]+)\s)?\[(?:(?<ipAddress>[\w\d\.:]+)?)\]`,
+		// N.B. MySQL logs two usernames (i.e. "root[root]"). The first username is the "priv_user", i.e. the username used for privilege checking.
+		// The second username is the "user", which is the string the user provided when connecting.
+		// We only report the priv_user here.
+		// See https://dev.mysql.com/doc/refman/8.0/en/audit-log-file-formats.html
+		`# User@Host:\s+(?<user>[^\[]*)\[[^\]]*\]\s+@\s+((?<host>[^\s]+)\s)?\[(?:(?<ipAddress>[\w\d\.:]+)?)\]`,
 	}
 	oldTypes := make(map[string]string)
 	for _, lineFields := range oldFields {
