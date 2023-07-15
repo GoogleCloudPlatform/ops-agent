@@ -16,7 +16,7 @@ local __field_4 = (function()
 return record["priorityQueue"]
 end)();
 local __field_5 = (function()
-return record["qcHit"]
+return record["queryCacheHit"]
 end)();
 local v = __field_0;
 
@@ -64,7 +64,7 @@ local v2 = (v and v == "Yes")
 if v2 ~= fail then v = v2
 end
 (function(value)
-record["qcHit"] = value
+record["queryCacheHit"] = value
 end)(v)
 local v = "agent.googleapis.com/mysql_slow";
 (function(value)
