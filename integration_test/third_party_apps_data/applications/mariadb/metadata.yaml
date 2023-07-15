@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/mysql"
-app_url: "http://www.mysql.com/"
-short_name: MySQL
-long_name: MySQL
-logo_path: /images/launcher/logos/mysql.png # supplied by google technical writer
+public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/mariadb"
+app_url: "http://www.mariadb.com/"
+short_name: MariaDB
+long_name: MariaDB
+logo_path: /images/launcher/logos/mariadb.png # supplied by google technical writer
 description: |-
-  The MySQL/MariaDB integration collects performance metrics related to
+  The MariaDB integration collects performance metrics related to
   InnoDB, the buffer pool, and various other operations. It also collects general,
   error, and slow-query logs and parses them into a JSON payload. Error logs are
   parsed for their error code and subsystem. Slow-query logs are parsed into
@@ -194,9 +194,6 @@ expected_logs:
       - name: jsonPayload.tid
         type: number
         description: 'Thread ID where the log originated'
-      - name: severity
-        type: string
-        description: ''
   - log_name: mysql_slow
     fields:
       - name: jsonPayload.message
@@ -206,7 +203,7 @@ expected_logs:
       - name: jsonPayload.user
         value_regex: root
         type: string
-        description: 'User that executed the query'
+        description: 'Authenticated user that executed the query'
       - name: jsonPayload.database
         value_regex: root
         type: string
@@ -214,10 +211,10 @@ expected_logs:
       - name: jsonPayload.host
         value_regex: localhost
         type: string
-        description: 'Host of the database instance'
+        description: 'Host name the client connected from'
       - name: jsonPayload.ipAddress
         type: string
-        description: 'Address of the database instance'
+        description: 'IP address the client connected from'
         optional: true
       - name: jsonPayload.tid
         type: number
@@ -228,76 +225,54 @@ expected_logs:
       - name: jsonPayload.lockTime
         type: number
         description: 'The time to acquire locks in seconds'
+      - name: jsonPayload.qcHit
+        type: boolean
+        description: 'The statement was served from the query cache'
       - name: jsonPayload.rowsSent
         type: number
         description: 'The number of rows sent to the client'
       - name: jsonPayload.rowsExamined
         type: number
         description: 'The number of rows examined by the server layer'
-      - name: jsonPayload.errorNumber
-        type: number
-        description: 'The statement error number, or 0 if no error occurred'
-      - name: jsonPayload.killed
-        type: number
-        description: 'If the statement was terminated, the error number indicating why, or 0 if the statement terminated normally'
-      - name: jsonPayload.bytesReceived
-        type: number
-        description: 'The number of bytes received from all clients'
+      - name: jsonPayload.rowsAffected
+        type: integer
+        description: 'The number of rows affected by the statement'
       - name: jsonPayload.bytesSent
         type: number
         description: 'The number of bytes sent to all clients'
-      - name: jsonPayload.readFirst
-        type: number
-        description: 'The number of times the first entry in an index was read'
-      - name: jsonPayload.readLast
-        type: number
-        description: 'The number of requests to read the last key in an index'
-      - name: jsonPayload.readKey
-        type: number
-        description: 'The number of requests to read a row based on a key'
-      - name: jsonPayload.readNext
-        type: number
-        description: 'The number of requests to read the next row in key order'
-      - name: jsonPayload.readPrev
-        type: number
-        description: 'The number of requests to read the previous row in key order'
-      - name: jsonPayload.readRnd
-        type: number
-        description: 'The number of requests to read a row based on a fixed position'
-      - name: jsonPayload.readRndNext
-        type: number
-        description: 'The number of requests to read the next row in the data file'
+      - name: jsonPayload.storedRoutine
+        type: string
+        description: 'The name of the stored routine currently being executed'
+        optional: true
+
+      # With log-slow-verbosity = query_plan
       - name: jsonPayload.sortMergePasses
         type: number
         description: 'The number of merge passes that the sort algorithm has had to do'
-      - name: jsonPayload.sortRangeCount
-        type: number
-        description: 'The number of sorts that were done using ranges'
-      - name: jsonPayload.sortRows
-        type: number
-        description: 'The number of sorted rows'
-      - name: jsonPayload.sortScanCount
-        type: number
-        description: 'The number of sorts that were done by scanning the table'
-      - name: jsonPayload.createdTmpDiskTables
-        type: number
-        description: 'The number of internal on-disk temporary tables created by the server'
       - name: jsonPayload.createdTmpTables
         type: number
         description: 'The number of internal temporary tables created by the server'
-      - name: jsonPayload.startTime
-        type: string
-        description: 'The statement execution start time'
-      - name: jsonPayload.endTime
-        type: string
-        description: 'The statement execution end time'
-      - name: severity
-        type: string
-        description: ''
-      - name: jsonPayload.level
-        type: string
-        description: Log entry level
-        optional: true
+      - name: jsonPayload.createdTmpDiskTables
+        type: number
+        description: 'The number of internal on-disk temporary tables created by the server'
+      - name: jsonPayload.createdTmpTableSizes
+        type: number
+        description: 'The number of bytes used by internal temporary tables created by the server'
+      - name: jsonPayload.fullScan
+        type: boolean
+        description: 'The statement used a full table scan'
+      - name: jsonPayload.fullJoin
+        type: boolean
+        description: "The statement didn't use an index to join tables"
+      - name: jsonPayload.filesort
+        type: boolean
+        description: 'The statement used filesort'
+      - name: jsonPayload.filesortOnDisk
+        type: boolean
+        description: 'The statement used filesort that needed temporary tables on disk'
+      - name: jsonPayload.priorityQueue
+        type: boolean
+        description: 'The statement used a priority queue filesort'
 configuration_options:
   logs:
     - type: mysql_error
@@ -306,7 +281,7 @@ configuration_options:
           default: null
           description: This value must be mysql_error.
         - name: include_paths
-          default: '[/var/log/mysqld.log, /var/log/mysql/mysqld.log, /var/log/mysql/error.log, /var/lib/mysql/${HOSTNAME}.err]'
+          default: '[/var/log/mysqld.log, /var/log/mysql/mysqld.log, /var/log/mysql/error.log, /run/mysqld/mysqld.err, /var/lib/mysql/${HOSTNAME}.err]'
           description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/mysql/*.log.
         - name: exclude_paths
           default: null

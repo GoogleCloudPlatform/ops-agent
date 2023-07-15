@@ -487,7 +487,7 @@ func (p LoggingProcessorMysqlSlow) Components(ctx context.Context, tag string, u
 			// "# Thread_id: %lu  Schema: %s  QC_hit: %s\n"
 			{"Thread_id", "tid", integer},
 			{"Schema", "database", `\S*`}, // N.B. MariaDB will still show the field with an empty string if the connection doesn't have an active database.
-			{"QC_hit", "qcHit", boolean},  // FIXME: add to metadata
+			{"QC_hit", "qcHit", boolean},
 		},
 		{
 			// "# Query_time: %s  Lock_time: %s  Rows_sent: %lu  Rows_examined: %lu\n"
@@ -499,36 +499,36 @@ func (p LoggingProcessorMysqlSlow) Components(ctx context.Context, tag string, u
 		{
 			// MariaDB 10.3.1+
 			// "# Rows_affected: %lu  Bytes_sent: %lu\n",
-			{"Rows_affected", "rowsAffected", integer}, // FIXME: add to metadata
+			{"Rows_affected", "rowsAffected", integer},
 			{"Bytes_sent", "bytesSent", integer},
 		},
 		{
-			// MariaDB 5.5.37+ with LOG_SLOW_VERBOSITY_QUERY_PLAN
+			// MariaDB 5.5.37+ if thd->tmp_tables_used with LOG_SLOW_VERBOSITY_QUERY_PLAN
 			// "# Tmp_tables: %lu  Tmp_disk_tables: %lu  Tmp_table_sizes: %s\n"
 			{"Tmp_tables", "createdTmpTables", integer},
 			{"Tmp_disk_tables", "createdTmpDiskTables", integer},
-			{"Tmp_table_sizes", "createdTmpTableSizes", integer}, // FIXME: add to metadata
+			{"Tmp_table_sizes", "createdTmpTableSizes", integer},
 		},
 		{
 			// MariaDB 10.3.4+ if thd->spcont != NULL
 			// "# Stored_routine: %s\n"
-			{"Stored_routine", "storedRoutine", `\S+`}, // FIXME: add to metadata
+			{"Stored_routine", "storedRoutine", `\S+`},
 		},
 		{
 			// MariaDB 5.5.37+ with LOG_SLOW_VERBOSITY_QUERY_PLAN
 			// "# Full_scan: %s  Full_join: %s  Tmp_table: %s  Tmp_table_on_disk: %s\n"
-			{"Full_scan", "fullScan", boolean}, // FIXME: add to metadata
-			{"Full_join", "fullJoin", boolean}, // FIXME: add to metadata
-			{"Tmp_table", "", boolean},         // redundant with Tmp_tables
-			{"Tmp_table_on_disk", "", boolean}, // redundant with Tmp_disk_tables
+			{"Full_scan", "fullScan", boolean},
+			{"Full_join", "fullJoin", boolean},
+			{"Tmp_table", "", boolean},
+			{"Tmp_table_on_disk", "", boolean},
 		},
 		{
 			// MariaDB 5.5.37+ with LOG_SLOW_VERBOSITY_QUERY_PLAN
 			// "# Filesort: %s  Filesort_on_disk: %s  Merge_passes: %lu  Priority_queue: %s\n",
-			{"Filesort", "fileSort", boolean},               // FIXME: add to metadata
-			{"Filesort_on_disk", "fileSortOnDisk", boolean}, // FIXME: add to metadata
-			{"Merge_passes", "mergePasses", integer},        // FIXME: add to metadata
-			{"Priority_queue", "priorityQueue", boolean},    // FIXME: add to metadata
+			{"Filesort", "filesort", boolean},
+			{"Filesort_on_disk", "filesortOnDisk", boolean},
+			{"Merge_passes", "sortMergePasses", integer},
+			{"Priority_queue", "priorityQueue", boolean},
 		},
 	}
 	// LOG_SLOW_VERBOSITY_EXPLAIN causes additional comment lines

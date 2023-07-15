@@ -1,10 +1,10 @@
 
 function process(tag, timestamp, record)
 local __field_0 = (function()
-return record["fileSort"]
+return record["filesort"]
 end)();
 local __field_1 = (function()
-return record["fileSortOnDisk"]
+return record["filesortOnDisk"]
 end)();
 local __field_2 = (function()
 return record["fullJoin"]
@@ -24,7 +24,7 @@ local v2 = (v and v == "Yes")
 if v2 ~= fail then v = v2
 end
 (function(value)
-record["fileSort"] = value
+record["filesort"] = value
 end)(v)
 local v = __field_1;
 
@@ -32,7 +32,7 @@ local v2 = (v and v == "Yes")
 if v2 ~= fail then v = v2
 end
 (function(value)
-record["fileSortOnDisk"] = value
+record["filesortOnDisk"] = value
 end)(v)
 local v = __field_2;
 
