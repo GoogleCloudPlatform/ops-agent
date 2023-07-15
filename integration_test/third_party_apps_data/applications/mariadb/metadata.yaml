@@ -225,7 +225,7 @@ expected_logs:
       - name: jsonPayload.lockTime
         type: number
         description: 'The time to acquire locks in seconds'
-      - name: jsonPayload.qcHit
+      - name: jsonPayload.queryCacheHit
         type: boolean
         description: 'The statement was served from the query cache'
       - name: jsonPayload.rowsSent

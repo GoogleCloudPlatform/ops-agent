@@ -487,7 +487,7 @@ func (p LoggingProcessorMysqlSlow) Components(ctx context.Context, tag string, u
 			// "# Thread_id: %lu  Schema: %s  QC_hit: %s\n"
 			{"Thread_id", "tid", integer},
 			{"Schema", "database", `\S*`}, // N.B. MariaDB will still show the field with an empty string if the connection doesn't have an active database.
-			{"QC_hit", "qcHit", boolean},
+			{"QC_hit", "queryCacheHit", boolean},
 		},
 		{
 			// "# Query_time: %s  Lock_time: %s  Rows_sent: %lu  Rows_examined: %lu\n"

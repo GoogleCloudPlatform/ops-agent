@@ -19,7 +19,7 @@ sudo tee /etc/mysql/mariadb.conf.d/99-replicas.cnf >/dev/null <<EOF
 [mysqld]
 general-log
 slow-query-log
-log-slow-verbosity = query_plan, innodb
+log-slow-verbosity = query_plan,innodb
 long-query-time = 0
 log_error
 
