@@ -205,7 +205,7 @@ expected_logs:
         type: string
         description: 'Authenticated user that executed the query'
       - name: jsonPayload.database
-        value_regex: root
+        value_regex: information_schema
         type: string
         description: 'Database where the query was executed'
       - name: jsonPayload.host

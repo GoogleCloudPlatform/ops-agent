@@ -22,4 +22,4 @@ sudo mysqldump --all-databases --apply-slave-statements --master-data | \
   mysql2
 
 # Run a simple query that we can see in the logs.
-mysql1 -e "select table_catalog, table_schema, table_name from information_schema.tables"
+mysql1 -D information_schema -e "select table_catalog, table_schema, table_name from information_schema.tables"
