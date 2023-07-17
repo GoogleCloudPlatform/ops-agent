@@ -100,7 +100,7 @@ func generateFluentBitSelfLogsComponents(ctx context.Context) []fluentbit.Compon
 	out = append(out, LoggingProcessorModifyFields{
 		Fields: map[string]*ModifyField{
 			"severity": {
-				CopyFrom: "jsonPayload.severity",
+				MoveFrom: "jsonPayload.severity",
 				MapValues: map[string]string{
 					"error": "ERROR",
 					"warn":  "WARNING",
@@ -121,7 +121,7 @@ func generateSampleSelfLogsComponents(ctx context.Context) []fluentbit.Component
 			Config: map[string]string{
 				"Name":  "rewrite_tag",
 				"Match": fluentBitSelfLogsTag,
-				"Rule":  fmt.Sprintf(`message "format check failed" %s true`, healthLogsTag),
+				"Rule":  fmt.Sprintf(`message "format\scheck\sfailed" %s true`, healthLogsTag),
 			},
 		},
 		{
@@ -129,9 +129,9 @@ func generateSampleSelfLogsComponents(ctx context.Context) []fluentbit.Component
 			OrderedConfig: [][2]string{
 				{"Name", "modify"},
 				{"Match", healthLogsTag},
-				{"Condition", `Key_value_matches message "format check failed"`},
-				{"Set", `message "Code : LogBufferCorruptErr Message : Monitoring API quota reached..."`},
-				{"Set", `code "LogBufferCorruptErqr"`},
+				{"Condition", `Key_value_matches message format\scheck\sfailed`},
+				{"Set", `message "CorruptedLogBufferError-AddressIssue"`},
+				{"Set", `code LogBufferCorruptErr`},
 			},
 		},
 	}
