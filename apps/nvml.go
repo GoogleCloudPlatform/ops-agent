@@ -37,6 +37,9 @@ func (r MetricsReceiverNvml) Pipelines() []otel.ReceiverPipeline {
 				"collection_interval": r.CollectionIntervalString(),
 			},
 		},
+		ExporterTypes: map[string]otel.ExporterType{
+			"metrics": otel.System,
+		},
 		Processors: map[string][]otel.Component{"metrics": {
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
