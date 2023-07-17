@@ -60,6 +60,7 @@ func (r MetricsReceiverDcgm) Pipelines() []otel.ReceiverPipeline {
 				otel.ChangePrefix("dcgm\\.gpu\\.profiling\\.", "dcgm.gpu."),
 				otel.AddPrefix("workload.googleapis.com"),
 			),
+			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
 	}}
 }
