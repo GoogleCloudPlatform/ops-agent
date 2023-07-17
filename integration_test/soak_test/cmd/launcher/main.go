@@ -70,7 +70,7 @@ var (
 	logPath          = "/tmp/tail_file"
 	logGeneratorPath = "/log_generator.py"
 
-	ttl    = os.Getenv("TTL")
+	ttl    = 6 * time.Hour
 	distro = os.Getenv("DISTRO")
 	vmName = os.Getenv("VM_NAME")
 )
