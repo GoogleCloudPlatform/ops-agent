@@ -30,7 +30,7 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resource: gce_instance
     labels:
-     response_code: \d+
+      response_code: \d+
     optional: true
   - type: agent.googleapis.com/agent/memory_usage
     value_type: DOUBLE

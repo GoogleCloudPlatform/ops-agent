@@ -1,3 +1,5 @@
+doublestar: true
+
 include:
 - integration_test/**/*.yaml
 

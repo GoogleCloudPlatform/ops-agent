@@ -194,7 +194,7 @@ expected_logs:
       - name: jsonPayload.id
         type: number
         description: Log ID
-        optional: true  # This is not optional in more recent versions of MongoDB.
+        optional: true # This is not optional in more recent versions of MongoDB.
       - name: jsonPayload.message
         type: string
         description: Log message
