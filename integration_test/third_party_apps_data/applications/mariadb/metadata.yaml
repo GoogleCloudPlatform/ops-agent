@@ -196,6 +196,9 @@ expected_logs:
         description: 'Thread ID where the log originated'
   - log_name: mysql_slow
     fields:
+      - name: severity
+        type: string
+        description: ''
       - name: jsonPayload.message
         value_regex: (?s).*select table_catalog, table_schema, table_name from information_schema.tables.* # The (?s) part will make the . match with newline as well. See https://github.com/google/re2/blob/main/doc/syntax.txt#L65,L68
         type: string

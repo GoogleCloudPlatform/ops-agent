@@ -560,10 +560,17 @@ func (p LoggingProcessorMysqlSlow) Components(ctx context.Context, tag string, u
 					}
 				}
 			}
+			optional := "?"
+			if len(out) == 0 {
+				// First field on each line is not optional.
+				// Otherwise we'll consume the "# " of the following line and prevent it from matching the next line's regex.
+				optional = ""
+			}
 			out = append(out, fmt.Sprintf(
-				`(?:\s+%s:\s%s)?`,
+				`(?:\s+%s:\s%s)%s`,
 				field.identifier,
 				valueRegex,
+				optional,
 			))
 		}
 		oldLines = append(oldLines, fmt.Sprintf(
