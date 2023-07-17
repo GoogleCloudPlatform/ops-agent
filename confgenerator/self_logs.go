@@ -124,9 +124,21 @@ type healthLogsMatch struct {
 var healthLogsMatchList = []healthLogsMatch{
 	{
 		key:     "message",
+		match:   `\[error\]\s\[lib\]\sbackend\sfailed`,
+		message: "LogggingPipelineStoppedWorking-PleaseVerifyYourOpsAgentConfig",
+		code:    "LogPipelineFailureErr",
+	},
+	{
+		key:     "message",
 		match:   `\[error\]\s\[parser\]\scannot\sparse`,
 		message: "IncorrectParsingConfiguration-PleaseVerifyYourOpsAgentConfig",
 		code:    "LogIncorrectParseErr",
+	},
+	{
+		key:     "message",
+		match:   `\[error\]\s\[storage\]\sformat\scheck\sfailed`,
+		message: "LoggingPipelineCreatedCorruptedBuffer-VerifyEverythingIsOk",
+		code:    "LogCorruptedBufferErr",
 	},
 }
 
