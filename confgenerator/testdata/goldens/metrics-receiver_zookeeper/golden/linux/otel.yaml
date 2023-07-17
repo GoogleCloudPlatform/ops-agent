@@ -524,7 +524,7 @@ service:
       - hostmetrics/hostmetrics
     metrics/default__pipeline_nvml:
       exporters:
-      - googlecloud/otel
+      - googlecloud
       processors:
       - normalizesums/nvml_0
       - metricstransform/nvml_1

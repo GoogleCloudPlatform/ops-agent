@@ -469,6 +469,9 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  modifyscope/dcgm_2:
+    override_scope_name: agent.googleapis.com/dcgm
+    override_scope_version: "1.0"
   normalizesums/dcgm_0: {}
   normalizesums/nvml_0: {}
   resourcedetection/_global_0:
@@ -523,6 +526,7 @@ service:
       processors:
       - normalizesums/dcgm_0
       - metricstransform/dcgm_1
+      - modifyscope/dcgm_2
       - resourcedetection/_global_0
       receivers:
       - dcgm/dcgm
@@ -539,7 +543,7 @@ service:
       - hostmetrics/hostmetrics
     metrics/default__pipeline_nvml:
       exporters:
-      - googlecloud/otel
+      - googlecloud
       processors:
       - normalizesums/nvml_0
       - metricstransform/nvml_1
