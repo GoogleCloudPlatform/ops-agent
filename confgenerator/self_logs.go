@@ -114,27 +114,47 @@ func generateFluentBitSelfLogsComponents(ctx context.Context) []fluentbit.Compon
 	return out
 }
 
+type healthLogsMatch struct {
+	key     string
+	match   string
+	message string
+	code    string
+}
+
+var healthLogsMatchList = []healthLogsMatch{
+	{
+		key:     "message",
+		match:   `[error]\s[parser]\scannot\sparse`,
+		message: "IncorrectParsingConfiguration-PleaseVerifyYourOpsAgentConfig",
+		code:    "LogIncorrectParseErr",
+	},
+}
+
 func generateSampleSelfLogsComponents(ctx context.Context) []fluentbit.Component {
-	return []fluentbit.Component{
-		{
+	out := make([]fluentbit.Component, 0)
+
+	for _, m := range healthLogsMatchList {
+		out = append(out, fluentbit.Component {
 			Kind: "FILTER",
 			Config: map[string]string{
 				"Name":  "rewrite_tag",
 				"Match": fluentBitSelfLogsTag,
-				"Rule":  fmt.Sprintf(`message "format\scheck\sfailed" %s true`, healthLogsTag),
+				"Rule":  fmt.Sprintf(`%s %s %s true`, m.key, m.match, healthLogsTag),
 			},
-		},
-		{
+		})
+		out = append(out, fluentbit.Component {
 			Kind: "FILTER",
 			OrderedConfig: [][2]string{
 				{"Name", "modify"},
 				{"Match", healthLogsTag},
-				{"Condition", `Key_value_matches message format\scheck\sfailed`},
-				{"Set", `message "CorruptedLogBufferError-AddressIssue"`},
-				{"Set", `code LogBufferCorruptErr`},
+				{"Condition", fmt.Sprintf(`Key_value_matches %s %s`, m.key, m.match)},
+				{"Set", fmt.Sprintf(`message %s`, m.message)},
+				{"Set", fmt.Sprintf(`code %s`, m.code)},
 			},
-		},
+		})
 	}
+
+	return out
 }
 
 // This method creates a component adds metadata labels to all ops agent health logs.
