@@ -145,8 +145,23 @@ var healthLogsMatchList = []healthLogsMatch{
 func generateSampleSelfLogsComponents(ctx context.Context) []fluentbit.Component {
 	out := make([]fluentbit.Component, 0)
 
+	// This filter will throttle all `ops-agent-health` logs by limiting the processing
+	// and ingestiong to 10 logs every 30 minutes. 
+	out = append(out, fluentbit.Component{
+		Kind: "FILTER",
+		Config: map[string]string{
+			"Name":     "throttle",
+			"Match":    healthLogsTag,
+			"Rate":     "10",
+			"Window":   "1800", // 30 minutes
+			"Interval": "1s",
+		},
+	})
+
+	// This filters sample specific fluent-bit logs by matching with regex, reemits
+	// as an `ops-agent-health` log and modifies them to follow the required structure.
 	for _, m := range healthLogsMatchList {
-		out = append(out, fluentbit.Component {
+		out = append(out, fluentbit.Component{
 			Kind: "FILTER",
 			Config: map[string]string{
 				"Name":  "rewrite_tag",
@@ -154,7 +169,7 @@ func generateSampleSelfLogsComponents(ctx context.Context) []fluentbit.Component
 				"Rule":  fmt.Sprintf(`%s %s %s true`, m.key, m.match, healthLogsTag),
 			},
 		})
-		out = append(out, fluentbit.Component {
+		out = append(out, fluentbit.Component{
 			Kind: "FILTER",
 			OrderedConfig: [][2]string{
 				{"Name", "modify"},
