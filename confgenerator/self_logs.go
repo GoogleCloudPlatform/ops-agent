@@ -124,7 +124,7 @@ type healthLogsMatch struct {
 var healthLogsMatchList = []healthLogsMatch{
 	{
 		key:     "message",
-		match:   `[error]\s[parser]\scannot\sparse`,
+		match:   `\[error\]\s\[parser\]\scannot\sparse`,
 		message: "IncorrectParsingConfiguration-PleaseVerifyYourOpsAgentConfig",
 		code:    "LogIncorrectParseErr",
 	},
