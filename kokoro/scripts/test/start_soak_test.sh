@@ -18,4 +18,5 @@ LOG_SIZE_IN_BYTES=${LOG_SIZE_IN_BYTES-1000} \
 VM_NAME="${VM_NAME:-github-soak-test-${KOKORO_BUILD_NUMBER}}" \
 DISTRO="${DISTRO:-ubuntu-2004-lts}" \
 TTL="${TTL:-30m}" \
+REPO_SUFFIX="20230606-1" \
   go run -tags=integration_test .
