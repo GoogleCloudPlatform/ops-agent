@@ -132,9 +132,9 @@ func installApps(ctx context.Context, vm *gce.VM, logger *logging.DirectoryLogge
 			log.Default().Printf("Installing %s to VM", app)
 			if _, err := gce.RunScriptRemotely(ctx, logger, vm, string(scriptContent), nil, make(map[string]string)); err != nil {
 				return err
-			} else {
-				logger.ToMainLog().Printf("Done Installing %s", app)
 			}
+			logger.ToMainLog().Printf("Done Installing %s", app)
+
 		}
 	}
 	return nil
@@ -217,9 +217,9 @@ func runCustomScripts(ctx context.Context, vm *gce.VM, logger *logging.Directory
 			log.Default().Printf("Running script from %s", scriptPath)
 			if _, err := gce.RunScriptRemotely(ctx, logger, vm, string(scriptContent), nil, make(map[string]string)); err != nil {
 				return err
-			} else {
-				logger.ToMainLog().Printf("Done Running Script from  %s", scriptPath)
 			}
+			logger.ToMainLog().Printf("Done Running Script from  %s", scriptPath)
+
 		}
 	}
 	return nil
