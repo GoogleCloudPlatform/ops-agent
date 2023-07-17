@@ -798,7 +798,7 @@ var defaultApps = map[string]bool{
 }
 
 const (
-	SAPHANAPlatform = "sles-15-sp3-sap-saphana"
+	SAPHANAPlatform = "sles-15-sp4-sap-saphana"
 	SAPHANAApp      = "saphana"
 
 	OracleDBApp  = "oracledb"
