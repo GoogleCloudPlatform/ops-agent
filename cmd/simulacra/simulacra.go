@@ -39,7 +39,7 @@ import (
 const (
 	defaultPlatform           = "debian-11"
 	defaultThirdPartyAppsPath = "./integration_test/third_party_apps_data"
-	vmInitLogFileName             = "vm_initialization.txt"
+	vmInitLogFileName         = "vm_initialization.txt"
 )
 
 // Config represents the configuration for Simulacra. Most of the fields specify requirements about the VM that
@@ -212,10 +212,10 @@ func getSimulacraConfig() (Config, error) {
 
 }
 
-func runCustomScripts(ctx context.Context, vm *gce.VM, logger *logging.DirectoryLogger, scripts []string) error {\
+func runCustomScripts(ctx context.Context, vm *gce.VM, logger *logging.DirectoryLogger, scripts []string) error {
 	if len(scripts) == 0 {
 		log.Default().Print("No Custom Scripts To Run ")
-		return nil 	
+		return nil
 	}
 
 	for _, scriptPath := range scripts {
@@ -235,7 +235,7 @@ func runCustomScripts(ctx context.Context, vm *gce.VM, logger *logging.Directory
 }
 
 func main() {
-	loggingDir := path.Join("/tmp", fmt.Sprintf(t"simulacra-%s", uuid.NewString()))
+	loggingDir := path.Join("/tmp", fmt.Sprintf("simulacra-%s", uuid.NewString()))
 	mainLogFile := path.Join(loggingDir, "main_log.txt")
 	vmInitLogFile := path.Join(loggingDir, vmInitLogFileName)
 	logger, err := logging.NewDirectoryLogger(loggingDir)
