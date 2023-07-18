@@ -39,7 +39,7 @@ import (
 const (
 	defaultPlatform           = "debian-11"
 	defaultThirdPartyAppsPath = "./integration_test/third_party_apps_data"
-	vmInitLogFile             = "vm_initialization.txt"
+	vmInitLogFileName             = "vm_initialization.txt"
 )
 
 // Config represents the configuration for Simulacra. Most of the fields specify requirements about the VM that
@@ -111,6 +111,10 @@ func getAllReceivers(config *confgenerator.UnifiedConfig) (receivers []string) {
 // corresponding install script in the third_party_apps_data directory.
 // If there is a corresponding install script, then that install script is run on the vm.
 func installApps(ctx context.Context, vm *gce.VM, logger *logging.DirectoryLogger, configFilePath string, installPath string) error {
+	if configFilePath == "" {
+		return nil
+	}
+
 	config, err := confgenerator.MergeConfFiles(ctx, configFilePath, apps.BuiltInConfStructs)
 	if err != nil {
 		return err
@@ -208,7 +212,12 @@ func getSimulacraConfig() (Config, error) {
 
 }
 
-func runCustomScripts(ctx context.Context, vm *gce.VM, logger *logging.DirectoryLogger, scripts []string) error {
+func runCustomScripts(ctx context.Context, vm *gce.VM, logger *logging.DirectoryLogger, scripts []string) error {\
+	if len(scripts) == 0 {
+		log.Default().Print("No Custom Scripts To Run ")
+		return nil 	
+	}
+
 	for _, scriptPath := range scripts {
 		if scriptContent, err := os.ReadFile(scriptPath); err != nil {
 			return err
@@ -226,7 +235,9 @@ func runCustomScripts(ctx context.Context, vm *gce.VM, logger *logging.Directory
 }
 
 func main() {
-	loggingDir := fmt.Sprintf("/tmp/simulacra-%s", uuid.NewString())
+	loggingDir := path.Join("/tmp", fmt.Sprintf(t"simulacra-%s", uuid.NewString()))
+	mainLogFile := path.Join(loggingDir, "main_log.txt")
+	vmInitLogFile := path.Join(loggingDir, vmInitLogFileName)
 	logger, err := logging.NewDirectoryLogger(loggingDir)
 	if err != nil {
 		log.Default().Fatalf("Error initializing directory logger %v", err)
@@ -251,30 +262,27 @@ func main() {
 	}
 	// Create VM Instance.
 	log.Default().Printf("Creating VM Instance, check %s for details", vmInitLogFile)
-	vm, err := gce.CreateInstance(ctx, logger.ToFile(vmInitLogFile), options)
+	vm, err := gce.CreateInstance(ctx, logger.ToFile(vmInitLogFileName), options)
 	if err != nil {
 		log.Default().Fatalf("Failed to create GCE instance %v", err)
 	}
 	// Install Ops Agent on VM.
-	log.Default().Print("Installing Ops Agent, check main_log.txt for details")
+	log.Default().Printf("Installing Ops Agent, check %s for details", mainLogFile)
 	if err := setupOpsAgent(ctx, vm, logger.ToMainLog(), config.ConfigFilePath); err != nil {
 		log.Default().Fatalf("Failed to install Ops Agent %v", err)
 	}
 
 	// Install Third Party Appliations based on Ops Agent Config.
-	if len(config.ConfigFilePath) > 0 {
-		log.Default().Print("Installing Third Party Applications, check main_log.txt for details")
-		if err := installApps(ctx, vm, logger, config.ConfigFilePath, config.ThirdPartyAppsPath); err != nil {
-			log.Default().Printf("Failed to install apps %v", err)
-		}
+	log.Default().Printf("Installing Third Party Applications, check %s for details", mainLogFile)
+	if err := installApps(ctx, vm, logger, config.ConfigFilePath, config.ThirdPartyAppsPath); err != nil {
+		log.Default().Printf("Failed to install apps %v", err)
 	}
 
 	// Run custom Scripts on the VM
-	if len(config.Scripts) > 0 {
-		log.Default().Print("Running Custom Scripts on the VM, check main_log.txt for details")
-		if err := runCustomScripts(ctx, vm, logger, config.Scripts); err != nil {
-			log.Default().Fatalf("Error executing custom script on the VM %v", err)
-		}
+
+	log.Default().Printf("Running Custom Scripts on the VM, check %s for details", mainLogFile)
+	if err := runCustomScripts(ctx, vm, logger, config.Scripts); err != nil {
+		log.Default().Fatalf("Error executing custom script on the VM %v", err)
 	}
 
 	log.Default().Printf("VM '%s' is ready.", vm.Name)
