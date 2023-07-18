@@ -126,20 +126,20 @@ var healthLogsMatchList = []healthLogsMatch{
 		key:     "message",
 		match:   `\[error\]\s\[lib\]\sbackend\sfailed`,
 		message: "LogggingPipelineStoppedWorking-PleaseVerifyYourOpsAgentConfig",
-		code:    "LogPipelineFailureErr",
+		code:    "LogPipelineErr",
 	},
 	{
 		key:     "message",
 		match:   `\[error\]\s\[parser\]\scannot\sparse`,
 		message: "IncorrectParsingConfiguration-PleaseVerifyYourOpsAgentConfig",
-		code:    "LogIncorrectParseErr",
+		code:    "LogParseErr",
 	},
-	{
-		key:     "message",
-		match:   `\[error\]\s\[storage\]\sformat\scheck\sfailed`,
-		message: "LoggingPipelineCreatedCorruptedBuffer-VerifyEverythingIsOk",
-		code:    "LogCorruptedBufferErr",
-	},
+	// {
+	// 	key:     "message",
+	// 	match:   `\[error\]\s\[storage\]\sformat\scheck\sfailed`,
+	// 	message: "LoggingPipelineCreatedCorruptedBuffer-VerifyEverythingIsOk",
+	// 	code:    "LogCorruptedBufferErr",
+	// },
 }
 
 func generateSampleSelfLogsComponents(ctx context.Context) []fluentbit.Component {
