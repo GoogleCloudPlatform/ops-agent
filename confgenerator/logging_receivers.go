@@ -104,6 +104,8 @@ func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) [
 		// When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
 		// as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
 		"Mem_Buf_Limit": "10M",
+
+		"Inotify_Watcher": "false",
 	}
 	if len(r.ExcludePaths) > 0 {
 		// TODO: Escaping?
