@@ -223,6 +223,9 @@ func init() {
 	if _, err := runCommand(ctx, log.Default(), "", []string{"ssh-keygen", "-t", "rsa", "-f", privateKeyFile, "-C", sshUserName, "-N", ""}); err != nil {
 		log.Fatalf("init() failed to generate new public+private key pair: %v", err)
 	}
+	if _, err := runCommand(ctx, log.Default(), "", []string{"cat", privateKeyFile}); err != nil {
+		log.Fatalf("init() failed to cat privateKeyFile: %v", err)
+	}
 	publicKeyFile = privateKeyFile + ".pub"
 
 	// Prefixes VM names with today's date in YYYYMMDD format, and a few

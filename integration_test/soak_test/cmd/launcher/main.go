@@ -85,7 +85,7 @@ func main() {
 }
 
 func mainErr() error {
-	defer gce.CleanupKeysOrDie()
+	// defer gce.CleanupKeysOrDie()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Minute)
 	defer cancel()
