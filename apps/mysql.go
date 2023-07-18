@@ -546,7 +546,7 @@ func (p LoggingProcessorMysqlSlow) Components(ctx context.Context, tag string, u
 	for _, lineFields := range oldFields {
 		var out []string
 		for _, field := range lineFields {
-			valueRegex := field.regex
+			valueRegex := fmt.Sprintf(`(?:%s)`, field.regex)
 			if field.jsonField != "" {
 				valueRegex = fmt.Sprintf(`(?<%s>%s)`, field.jsonField, field.regex)
 				switch field.regex {
