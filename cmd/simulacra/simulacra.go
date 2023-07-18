@@ -48,7 +48,7 @@ type Config struct {
 	// The OS for the VM.
 	Platform string `yaml:"platform"`
 	// Path to the Ops Agent Config File.
-	ConfigFilePath string `yaml:"config_file_path"`
+	ConfigFilePath string `yaml:"ops_agent_config"`
 	// The Project Simulacra will be using to instantiate the VM.
 	Project string `yaml:"project"`
 	// Zone for the VM.
@@ -194,7 +194,7 @@ func getSimulacraConfig() (Config, error) {
 	project := flag.String("project", "", "Optional. If missing, Simulacra will try to infer from GCloud config.")
 	zone := flag.String("zone", "", "Optional. If missing, Simulacra will try to infer from GCloud config. ")
 	name := flag.String("name", getInstanceName(), "Optional. A name for the instance to be created. If missing, a random name with prefix 'simulacra-vm-instance' will be assigned. ")
-	thirdPartyAppsPath := flag.String("install_path", defaultThirdPartyAppsPath, "Optional. The path to the third party apps data folder. If missing, Simulacra assumes the working directory is the root of the repo. Therefore, the default path is './integration_test/third_party_apps_data' ")
+	thirdPartyAppsPath := flag.String("third_party_apps_path", defaultThirdPartyAppsPath, "Optional. The path to the third party apps data folder. If missing, Simulacra assumes the working directory is the root of the repo. Therefore, the default path is './integration_test/third_party_apps_data' ")
 	flag.Parse()
 
 	if *configPath != "" {
