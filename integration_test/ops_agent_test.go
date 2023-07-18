@@ -4014,9 +4014,9 @@ func TestParsingFailureCheck(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
-		if !isHealthCheckTestPlatform(platform) {
-			t.SkipNow()
-		}
+		// if !isHealthCheckTestPlatform(platform) {
+		// 	t.SkipNow()
+		// }
 
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
