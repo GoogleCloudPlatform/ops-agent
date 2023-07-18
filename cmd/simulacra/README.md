@@ -3,10 +3,10 @@
 Simulacra is a command line tool that the oncall team can use to automatically spin up VMs with a customers environment. 
 
 Simulacra can read Ops Agent config files and infer all the third party apps that it needs to install. It then instantiates the VM according to user specifications, installs Ops Agent and then installs all the required third party applications. 
-gi
+
 We can specify various configurations for our desired VM. For example, we can specify the Operating System we want our VM to have. 
 
-Ultimately, we want to integrate Simulacra with our diagnostic tool and be able to generate Simulacra config files from the output of the diagnostic tool.  
+Ultimately, we want to integrate Sigmulacra with our diagnostic tool and be able to generate Simulacra config files from the output of the diagnostic tool.  
 
 ## Example Usage
 
