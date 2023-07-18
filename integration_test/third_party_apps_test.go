@@ -776,10 +776,16 @@ func determineImpactedApps(modifiedFiles []string, allApps map[string]metadata.I
 	return impactedApps
 }
 
+type accelerator struct {
+	model         string
+	machineType   string
+	availableZone string
+}
+
 type test struct {
 	platform   string
 	app        string
-	gpu        string
+	gpu        *accelerator
 	metadata   metadata.IntegrationMetadata
 	skipReason string
 }
@@ -798,15 +804,53 @@ var defaultApps = map[string]bool{
 	"active_directory_ds": true,
 }
 
+var GPU_A100 = accelerator{
+	model:         "a100",
+	machineType:   "a2-highgpu-1g",
+	availableZone: "us-central1-a",
+}
+
+var GPU_V100 = accelerator{
+	model:         "v100",
+	machineType:   "n1-standard-2",
+	availableZone: "us-central1-a",
+}
+
+var GPU_T4 = accelerator{
+	model:         "t4",
+	machineType:   "n1-standard-2",
+	availableZone: "us-central1-a",
+}
+
+var GPU_P4 = accelerator{
+	model:         "p4",
+	machineType:   "n1-standard-2",
+	availableZone: "us-central1-a",
+}
+
+var GPU_P100 = accelerator{
+	model:         "P100",
+	machineType:   "n1-standard-2",
+	availableZone: "us-central1-c",
+}
+
+// TODO: b/291585915: increase quota and then test on P100
+// TODO: b/274129769: increase quota and then test on L4
+var gpuApps = map[string][]accelerator{
+	"nvml": {
+		GPU_A100, GPU_V100, GPU_P4, GPU_T4,
+	},
+	"dcgm": {
+		GPU_A100, GPU_V100, GPU_T4, // p4 doesn't support DCGM metrics
+	},
+}
+
 const (
 	SAPHANAPlatform = "sles-15-sp4-sap-saphana"
 	SAPHANAApp      = "saphana"
 
 	OracleDBApp  = "oracledb"
 	AerospikeApp = "aerospike"
-
-	NvmlApp = "nvml"
-	DcgmApp = "dcgm"
 )
 
 // incompatibleOperatingSystem looks at the supported_operating_systems field
@@ -867,19 +911,15 @@ func TestThirdPartyApps(t *testing.T) {
 	tests := []test{}
 	allApps := fetchAppsAndMetadata(t)
 	platforms := strings.Split(os.Getenv("PLATFORMS"), ",")
-	gpus := []string{"a100", "v100" /* "p100" todo: increase quota */, "t4", "p4"}
 
 	for _, platform := range platforms {
 		for app, metadata := range allApps {
-			if app == NvmlApp || app == DcgmApp {
-				for _, gpu := range gpus {
-					if app == DcgmApp && gpu == "p4" {
-						continue // p4 doesn't support DCGM metrics
-					}
-					tests = append(tests, test{platform: platform, gpu: gpu, app: app, metadata: metadata, skipReason: ""})
+			if gpus, ok := gpuApps[app]; ok {
+				for idx := range gpus {
+					tests = append(tests, test{platform: platform, gpu: &gpus[idx], app: app, metadata: metadata, skipReason: ""})
 				}
 			} else {
-				tests = append(tests, test{platform: platform, gpu: "", app: app, metadata: metadata, skipReason: ""})
+				tests = append(tests, test{platform: platform, app: app, metadata: metadata, skipReason: ""})
 			}
 		}
 	}
@@ -891,12 +931,12 @@ func TestThirdPartyApps(t *testing.T) {
 	for _, tc := range tests {
 		tc := tc // https://golang.org/doc/faq#closures_and_goroutines
 
-		testname := tc.platform + "/" + tc.app
-		if tc.gpu != "" {
-			testname = tc.platform + "/" + tc.app + "/" + tc.gpu
+		testName := tc.platform + "/" + tc.app
+		if tc.gpu != nil {
+			testName = testName + "/" + tc.gpu.model
 		}
 
-		t.Run(testname, func(t *testing.T) {
+		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
 
 			if tc.skipReason != "" {
@@ -915,21 +955,11 @@ func TestThirdPartyApps(t *testing.T) {
 					MachineType:          agents.RecommendedMachineType(tc.platform),
 					ExtraCreateArguments: nil,
 				}
-				if tc.gpu != "" {
-					options.Accelerator = fmt.Sprintf("--accelerator=count=1,type=nvidia-tesla-%s", tc.gpu)
+				if tc.gpu != nil {
+					options.Accelerator = fmt.Sprintf("--accelerator=count=1,type=nvidia-tesla-%s", tc.gpu.model)
 					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-size=100GB")
-					switch tc.gpu {
-					case "a100":
-						options.MachineType = "a2-highgpu-1g"
-					case "v100", "t4":
-						options.MachineType = "n1-standard-2"
-					case "p100":
-						options.MachineType = "n1-standard-2"
-						options.Zone = "us-central1-f"
-					case "p4":
-						options.MachineType = "n1-standard-2"
-						options.Zone = "us-central1-a"
-					}
+					options.MachineType = tc.gpu.machineType
+					options.Zone = tc.gpu.availableZone
 				}
 				if tc.platform == SAPHANAPlatform {
 					// This image needs an SSD in order to be performant enough.
