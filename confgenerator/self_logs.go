@@ -134,12 +134,6 @@ var healthLogsMatchList = []healthLogsMatch{
 		message: "IncorrectParsingConfiguration-PleaseVerifyYourOpsAgentConfig",
 		code:    "LogParseErr",
 	},
-	// {
-	// 	key:     "message",
-	// 	match:   `\[error\]\s\[storage\]\sformat\scheck\sfailed`,
-	// 	message: "LoggingPipelineCreatedCorruptedBuffer-VerifyEverythingIsOk",
-	// 	code:    "LogCorruptedBufferErr",
-	// },
 }
 
 func generateSampleSelfLogsComponents(ctx context.Context) []fluentbit.Component {
