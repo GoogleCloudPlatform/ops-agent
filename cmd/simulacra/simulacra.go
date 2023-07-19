@@ -129,15 +129,14 @@ func installApps(ctx context.Context, vm *gce.VM, logger *logging.DirectoryLogge
 	receivers := getAllReceivers(config)
 
 	for _, app := range receivers {
-		if scriptContent, err := os.ReadFile(path.Join(installPath, "applications", app, folder, "install")); err != nil {
-			return err
-		} else {
+		if scriptContent, err := os.ReadFile(path.Join(installPath, "applications", app, folder, "install")); err == nil {
 			logger.ToMainLog().Printf("Installing %s to VM", app)
 			log.Default().Printf("Installing %s to VM", app)
 			if _, err := gce.RunScriptRemotely(ctx, logger, vm, string(scriptContent), nil, make(map[string]string)); err != nil {
 				return fmt.Errorf("Failed to install app %s %v", app, err)
 			}
 			logger.ToMainLog().Printf("Done Installing %s", app)
+			log.Default().Printf("Done Installing %s", app)
 
 		}
 	}
