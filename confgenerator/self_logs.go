@@ -140,15 +140,15 @@ func generateSampleSelfLogsComponents(ctx context.Context) []fluentbit.Component
 	out := make([]fluentbit.Component, 0)
 
 	// This filter will throttle all `ops-agent-health` logs by limiting the processing
-	// and ingestiong to 10 logs every 30 minutes. 
+	// and ingesting to 30 logs every hour. 
 	out = append(out, fluentbit.Component{
 		Kind: "FILTER",
 		Config: map[string]string{
 			"Name":     "throttle",
 			"Match":    healthLogsTag,
-			"Rate":     "10",
-			"Window":   "1800", // 30 minutes
-			"Interval": "1s",
+			"Rate":     "5",
+			"Window":   "5",
+			"Interval": "10m",
 		},
 	})
 
