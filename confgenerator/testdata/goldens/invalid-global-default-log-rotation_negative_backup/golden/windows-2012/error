@@ -1,0 +1,5 @@
+[3:19] Key: 'LogFileRotation.backup_count' Error:Field validation for 'backup_count' failed on the 'gte' tag
+   1 | global:
+   2 |   default_self_log_file_rotation:
+>  3 |     backup_count: -1
+                         ^

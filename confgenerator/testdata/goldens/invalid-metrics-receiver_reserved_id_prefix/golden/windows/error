@@ -1,0 +1,8 @@
+[17:19] "receivers[lib:receiver_1]" must not start with "lib:"
+  15 | metrics:
+  16 |   receivers:
+> 17 |     lib:receiver_1:
+                         ^
+  18 |       type: hostmetrics
+  19 |       collection_interval: 60s
+  20 |   service:
