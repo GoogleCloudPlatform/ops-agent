@@ -183,6 +183,9 @@ expected_logs:
         description: ''
   - log_name: mysql_general
     fields:
+      - name: severity
+        type: string
+        description: ''
       - name: jsonPayload.message
         value_regex: .*select table_catalog, table_schema, table_name from information_schema.tables.*
         type: string
