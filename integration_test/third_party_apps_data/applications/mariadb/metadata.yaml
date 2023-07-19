@@ -46,7 +46,7 @@ platforms_to_skip:
   - rocky-linux-9
   - sles-12
   - sles-15
-supported_app_version: ["8.0", "5.7"]
+supported_app_version: ["10.1.X through 10.7.X"]
 expected_metrics:
   - type: workload.googleapis.com/mysql.buffer_pool_data_pages
     value_type: INT64
