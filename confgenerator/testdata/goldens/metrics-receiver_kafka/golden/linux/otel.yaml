@@ -28,7 +28,7 @@ processors:
       exclude:
         match_type: regexp
         metric_names: []
-  filter/default__pipeline_nvml_0:
+  filter/default__pipeline_nvidia__gpu_0:
     metrics:
       exclude:
         match_type: regexp
@@ -410,7 +410,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: workload.googleapis.com/$${1}
-  metricstransform/nvml_1:
+  metricstransform/nvidia__gpu_1:
     transforms:
     - action: update
       include: nvml.gpu.utilization
@@ -484,7 +484,7 @@ processors:
     override_scope_name: agent.googleapis.com/kafka
     override_scope_version: "1.0"
   normalizesums/kafka_1: {}
-  normalizesums/nvml_0: {}
+  normalizesums/nvidia__gpu_0: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
@@ -509,7 +509,7 @@ receivers:
     password: otelp
     target_system: kafka,jvm
     username: otelu
-  nvml/nvml:
+  nvml/nvidia__gpu:
     collection_interval: 60s
   prometheus/fluentbit:
     config:
@@ -541,16 +541,16 @@ service:
       - resourcedetection/_global_0
       receivers:
       - hostmetrics/hostmetrics
-    metrics/default__pipeline_nvml:
+    metrics/default__pipeline_nvidia__gpu:
       exporters:
       - googlecloud
       processors:
-      - normalizesums/nvml_0
-      - metricstransform/nvml_1
-      - filter/default__pipeline_nvml_0
+      - normalizesums/nvidia__gpu_0
+      - metricstransform/nvidia__gpu_1
+      - filter/default__pipeline_nvidia__gpu_0
       - resourcedetection/_global_0
       receivers:
-      - nvml/nvml
+      - nvml/nvidia__gpu
     metrics/fluentbit:
       exporters:
       - googlecloud
