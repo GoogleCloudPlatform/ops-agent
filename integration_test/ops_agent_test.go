@@ -3849,6 +3849,42 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
 	})
 }
 
+// TestDCGMReceiverWithoutDCGMInstalled verifies that when the DCGM is not
+// installed, and when the receiver is spedicied, the receiver can soft disable
+// itself instead of causing the whole agent to crash
+func TestDCGMReceiverWithoutDCGMInstalled(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if gce.IsWindows(platform) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		config := `metrics:
+  receivers:
+    dcgm:
+      type: dcgm
+  service:
+    pipelines:
+      dcgm:
+        receivers:
+        - dcgm
+`
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		tag := systemLogTagForPlatform(vm.Platform)
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, tag, time.Hour, `jsonPayload.message=~"Unable to connect to DCGM daemon at localhost:5555 on libdcgm.so not Found; Is the DCGM daemon running?"`); err != nil {
+			t.Error(err)
+		}
+
+		if err := opsAgentLivenessChecker(ctx, logger.ToMainLog(), vm); err != nil {
+			t.Fatal(err)
+		}
+	})
+}
+
 func TestMain(m *testing.M) {
 	code := m.Run()
 	gce.CleanupKeysOrDie()
