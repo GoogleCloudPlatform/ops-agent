@@ -34,14 +34,7 @@ configure_integration: |-
 supported_operating_systems: linux
 platforms_to_skip:
   # TODO: Enable MariaDB testing on all supported platforms.
-  # Skip everything except Debian 11 ARM64 for now.
   - centos-7
-  - debian-10
-  - debian-11
-  - debian-12
-  - ubuntu-2004-lts
-  - ubuntu-2204-lts
-  - ubuntu-2304-amd64
   - rocky-linux-8
   - rocky-linux-9
   - sles-12
