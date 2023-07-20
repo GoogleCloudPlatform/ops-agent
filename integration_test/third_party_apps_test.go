@@ -233,7 +233,7 @@ func verifyLogField(fieldName, actualField string, expectedFields map[string]*me
 		// Not expecting this field. It could however be populated with some default zero-values when we
 		// query it back. Check for zero values based on expectedField.type? Not ideal for sure.
 		if actualField != "" && actualField != "0" && actualField != "false" && actualField != "0s" {
-			return fmt.Errorf("expeced no value for field %s but got %v\n", fieldName, actualField)
+			return fmt.Errorf("got %q for unexpected field %s\n", actualField, fieldName)
 		}
 		return nil
 	}
