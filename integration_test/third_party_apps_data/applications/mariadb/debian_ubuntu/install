@@ -26,7 +26,7 @@ log_error
 server-id = 1
 log-bin
 
-[mysqld.replica]
+[mysqld.primary]
 pid-file = /run/mysqld/mysqld2.pid
 socket = /run/mysqld/mysql2.sock
 port = 3307
@@ -40,5 +40,5 @@ EOF
 sudo mkdir /var/lib/mysql2
 sudo chown mysql:mysql /var/lib/mysql2/
 
-# start primary instance; replica will be started by the exercise script.
+# start replica instance; primary will be started by the exercise script.
 sudo systemctl restart mariadb
