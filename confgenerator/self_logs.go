@@ -68,27 +68,11 @@ func generateHealthChecksLogsComponents(ctx context.Context) []fluentbit.Compone
 			TimeFormat: "%Y-%m-%dT%H:%M:%S%z",
 		},
 	}.Components(ctx, healthLogsTag, "health-checks-json")...)
-	out = append(out, []fluentbit.Component{
+	out = append(out, LoggingProcessorExcludeLogs{
 		// This is used to exclude any previous content of the health-checks file that
 		// does not contain the `severity` field.
-		{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":  "grep",
-				"Match": healthLogsTag,
-				"Regex": fmt.Sprintf("%s INFO|ERROR|WARNING|DEBUG|DEFAULT", logs.SeverityZapKey),
-			},
-		},
-		{
-			Kind: "FILTER",
-			OrderedConfig: [][2]string{
-				{"Name", "modify"},
-				{"Match", healthLogsTag},
-				{"Rename", fmt.Sprintf("%s %s", logs.SeverityZapKey, severityKey)},
-				{"Rename", fmt.Sprintf("%s %s", logs.SourceLocationZapKey, sourceLocationKey)},
-			},
-		},
-	}...)
+		MatchAny: []string{`severity!~INFO|ERROR|WARNING|DEBUG`},
+	}.Components(ctx, healthLogsTag, "health-checs-exclude")...)
 	return out
 }
 
@@ -113,14 +97,20 @@ func generateFluentBitSelfLogsComponents(ctx context.Context) []fluentbit.Compon
 			},
 		},
 	}.Components(ctx, fluentBitSelfLogsTag, "self-logs-severity")...)
-	out = append(out, fluentbit.TranslationComponents(fluentBitSelfLogsTag, "severity", severityKey, true,
-		[]struct{ SrcVal, DestVal string }{
-			{"debug", "DEBUG"},
-			{"error", "ERROR"},
-			{"info", "INFO"},
-			{"warn", "WARNING"},
-		})...,
-	)
+	out = append(out, LoggingProcessorModifyFields{
+		Fields: map[string]*ModifyField{
+			"severity": {
+				MoveFrom: "jsonPayload.severity",
+				MapValues: map[string]string{
+					"error": "ERROR",
+					"warn":  "WARNING",
+					"info":  "INFO",
+					"debug": "DEBUG",
+				},
+				MapValuesExclusive: true,
+			},
+		},
+	}.Components(ctx, fluentBitSelfLogsTag, "mapseverityvalues")...)
 	return out
 }
 
