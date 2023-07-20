@@ -610,10 +610,15 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	if metadata.ExpectedMetrics != nil {
 		logger.ToMainLog().Println("found expectedMetrics, running metrics test cases...")
 
-		// All integrations are expected to set the instrumentation_source label.
+		// All integrations are expected to set the instrumentation_* labels.
+		instrumentedApp := app
+		// mariadb is a separate test but it uses the same integration as mysql.
+		if app == "mariadb" {
+			instrumentedApp = "mysql"
+		}
 		for _, m := range metadata.ExpectedMetrics {
 			// The windows metrics that do not target workload.googleapis.com cannot set
-			// the instrumentation_ labels
+			// the instrumentation_* labels
 			if strings.HasPrefix(m.Type, "agent.googleapis.com") {
 				continue
 			}
@@ -621,7 +626,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 				m.Labels = map[string]string{}
 			}
 			if _, ok := m.Labels["instrumentation_source"]; !ok {
-				m.Labels["instrumentation_source"] = regexp.QuoteMeta(fmt.Sprintf("agent.googleapis.com/%s", app))
+				m.Labels["instrumentation_source"] = regexp.QuoteMeta(fmt.Sprintf("agent.googleapis.com/%s", instrumentedApp))
 			}
 			if _, ok := m.Labels["instrumentation_version"]; !ok {
 				m.Labels["instrumentation_version"] = `.*`
