@@ -27,8 +27,8 @@ import (
 )
 
 var (
-	agentKind            string = "ops-agent"
-	schemaVersion        string = "v1"
+	agentKind     string = "ops-agent"
+	schemaVersion string = "v1"
 )
 
 const (
@@ -124,6 +124,21 @@ func generateFluentBitSelfLogsComponents(ctx context.Context) []fluentbit.Compon
 	return out
 }
 
+func generateHealthLoggingPingComponent(ctx context.Context) fluentbit.Component {
+	return fluentbit.Component{
+		Kind: "INPUT",
+		Config: map[string]string{
+			"Name":          "exec",
+			"Tag":           healthLogsTag,
+			"Command":       `echo "Ops Agent Logging Pipeline Ping."`,
+			"Interval_Sec":  "60",
+			"Interval_NSec": "0",
+			"Buf_Size":      "8mb",
+			"Oneshot":       "false",
+		},
+	}
+}
+
 // This method creates a component adds metadata labels to all ops agent health logs.
 func generateStructuredHealthLogsComponents(ctx context.Context) []fluentbit.Component {
 	return LoggingProcessorModifyFields{
@@ -145,6 +160,7 @@ func generateSelfLogsComponents(ctx context.Context, userAgent string) []fluentb
 	out := make([]fluentbit.Component, 0)
 	out = append(out, generateFluentBitSelfLogsComponents(ctx)...)
 	out = append(out, generateHealthChecksLogsComponents(ctx)...)
+	out = append(out, generateHealthLoggingPingComponent(ctx))
 	out = append(out, generateStructuredHealthLogsComponents(ctx)...)
 	out = append(out, stackdriverOutputComponent(strings.Join([]string{fluentBitSelfLogsTag, healthLogsTag}, "|"), userAgent, ""))
 	return out
