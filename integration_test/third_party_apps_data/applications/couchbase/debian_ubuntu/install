@@ -9,7 +9,7 @@ curl -O https://packages.couchbase.com/releases/couchbase-release/couchbase-rele
 sudo dpkg -i couchbase-release-1.0-amd64.deb
 sudo apt-get update
 
-sudo apt-get install -y couchbase-server-community=7.0.2-6703-1
+sudo apt-get install -y couchbase-server-community
 
 
 timeout 60s bash <<EOF
