@@ -8,11 +8,11 @@ sudo apt-get install -y \
     debian-keyring \
     debian-archive-keyring 
     
-curl -1sLf "https://github.com/rabbitmq/signing-keys/releases/download/2.0/rabbitmq-release-signing-key.asc" | sudo gpg --dearmor | \
-    sudo apt-key add -
+curl -1sLf "https://github.com/rabbitmq/signing-keys/releases/download/2.0/rabbitmq-release-signing-key.asc" | \
+    sudo gpg --dearmor --output /etc/apt/trusted.gpg.d/rabbitmq.asc
 
-curl -1sLf "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xf77f1eda57ebb1cc" | sudo gpg --dearmor | \
-    sudo apt-key add -
+curl -1sLf "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xf77f1eda57ebb1cc" | \
+    sudo gpg --dearmor --output /etc/apt/trusted.gpg.d/rabbitmq-hostname.asc
 
 source /etc/os-release
 case $VERSION_ID in

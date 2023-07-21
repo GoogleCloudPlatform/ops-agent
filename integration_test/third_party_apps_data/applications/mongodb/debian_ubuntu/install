@@ -2,7 +2,7 @@ set -e
 
 sudo apt-get update
 sudo apt-get install -y gnupg wget
-wget --no-verbose --output-document=- https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
+wget --no-verbose --output-document=/etc/apt/trusted.gpg.d/mongodb.asc https://www.mongodb.org/static/pgp/server-6.0.asc
 
 oscode="$(lsb_release -sc)"
 osname="$(lsb_release -si)"
