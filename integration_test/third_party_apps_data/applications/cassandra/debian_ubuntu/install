@@ -9,18 +9,14 @@ if [[ "${VERSION_ID}" == 23* || "$(uname -m)" == aarch64 ]]; then
     echo "deb https://debian.cassandra.apache.org 41x main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
 
     sudo apt update
-
-    # cassandra doesn't run on Java 17, but on some platforms (debian-11-arm64) it has a transitive dependency on Java 17 (???).
-    # Installing openjdk-11-jdk first ensures that it takes precedence over Java 17 on PATH.
-    sudo apt install -y openjdk-11-jdk
-    sudo apt install -y cassandra
+    sudo apt install -y openjdk-11-jre cassandra
 else
     echo "deb https://www.apache.org/dist/cassandra/debian 22x main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
     # Required to install java8 (JVM properties of cassandra 2.2 are incompatible with >9)
     echo "deb https://archive.debian.org/debian-security stretch/updates main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
 
     sudo apt update
-    sudo apt install -y openjdk-8-jdk cassandra
+    sudo apt install -y openjdk-8-jre cassandra
 fi
 
 sudo service cassandra start
