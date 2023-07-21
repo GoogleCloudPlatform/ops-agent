@@ -27,7 +27,7 @@ else
   sudo zypper modifyrepo -d mysql80-community
   sudo zypper modifyrepo -e mysql57-community
 
-  sudo zypper -n install mysql-community-server
+  sudo zypper -n --no-gpg-checks install mysql-community-server
 fi
 
 if [[ "${SUSE_VERSION}" == 12 ]]; then
