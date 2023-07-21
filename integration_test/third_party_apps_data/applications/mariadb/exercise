@@ -4,6 +4,9 @@ set -e
 sudo mysql_install_db --defaults-group-suffix=.primary
 sudo systemctl start mariadb@primary
 
+# give it time to start
+sleep 10
+
 mysql1() {
   sudo mysql -Bs "$@"
 }
