@@ -30,9 +30,36 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 	"github.com/binxio/gcloudconfig"
 	"github.com/google/uuid"
+	"gopkg.in/yaml.v2"
 )
+
+const (
+	defaultPlatform           = "debian-11"
+	defaultThirdPartyAppsPath = "./integration_test/third_party_apps_data"
+	vmInitLogFileName         = "vm_initialization.txt"
+)
+
+// Config represents the configuration for Simulacra. Most of the fields specify requirements about the VM that
+// Simulacra will instantiate.
+type Config struct {
+	// The OS for the VM.
+	Platform string `yaml:"platform"`
+	// Path to the Ops Agent Config File.
+	ConfigFilePath string `yaml:"ops_agent_config"`
+	// The Project Simulacra will be using to instantiate the VM.
+	Project string `yaml:"project"`
+	// Zone for the VM.
+	Zone string `yaml:"zone"`
+	// Name for the VM.
+	Name string `yaml:"name"`
+	// Path to Third Party Apps folder
+	ThirdPartyAppsPath string `yaml:"third_party_apps_path"`
+	// Path to script files that will be run on the VM.
+	Scripts []string `yaml:"scripts"`
+}
 
 func distroFolder(platform string) (string, error) {
 	if gce.IsWindows(platform) {
@@ -79,61 +106,15 @@ func getAllReceivers(config *confgenerator.UnifiedConfig) (receivers []string) {
 	return receivers
 }
 
-// Note: The following functions are mostly a duplicate of helper functions
-// that already exist in gce_testing.go. The reason why we have them here is so that we
-// can use gce.RunRemotely to execute our script. gce.RunScriptRemotely does this for us
-// but it expects a Directory Logger. A directory logger does not make much sense for our
-// purposes.
-
-// envVarMapToBashPrefix converts a map of env variable name to value into a string
-// suitable for passing to bash as a way to set those variables. The environment values
-// are wrapped in quotes. Example output: `VAR1='foo' VAR2='bar' `
-func envVarMapToBashPrefix(env map[string]string) string {
-	var builder strings.Builder
-	for key, value := range env {
-		fmt.Fprintf(&builder, "%s='%s' ", key, value)
-	}
-	return builder.String()
-}
-
-// envVarMapToPowershellPrefix converts a map of env variable name to value into a string
-// suitable for prepending onto a powershell command as a way to set those variables.
-// Example output: "$env:VAR1='foo'\n$env:VAR2='bar'\n"
-func envVarMapToPowershellPrefix(env map[string]string) string {
-	var builder strings.Builder
-	for key, value := range env {
-		fmt.Fprintf(&builder, "$env:%s='%s'\n", key, value)
-	}
-	return builder.String()
-}
-
-func runScriptRemotely(ctx context.Context, logger *log.Logger, vm *gce.VM, scriptContents string, env map[string]string) (_ gce.CommandOutput, err error) {
-	if gce.IsWindows(vm.Platform) {
-		// Use a UUID for the script name in case RunScriptRemotely is being
-		// called concurrently on the same VM.
-		scriptPath := "C:\\" + uuid.NewString() + ".ps1"
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(scriptContents), scriptPath); err != nil {
-			return gce.CommandOutput{}, err
-		}
-		// powershell -File seems to drop certain kinds of errors:
-		// https://stackoverflow.com/a/15779295
-		// In testing, adding $ErrorActionPreference = 'Stop' to the start of each
-		// script seems to work around this completely.
-		return gce.RunRemotely(ctx, logger, vm, "", envVarMapToPowershellPrefix(env)+"powershell -File "+scriptPath)
-	}
-	scriptPath := uuid.NewString() + ".sh"
-	// Write the script contents to <UUID>.sh, then tell bash to execute it with -x
-	// to print each line as it runs.
-	// Use a UUID for the script name in case RunScriptRemotely is being called
-	// concurrently on the same VM.
-	return gce.RunRemotely(ctx, logger, vm, scriptContents, "cat - > "+scriptPath+" && sudo "+envVarMapToBashPrefix(env)+"bash -x "+scriptPath)
-}
-
 // installApps reads an Ops Agent config file and then identifies all the third party apps that need to be installed.
 // The function identifies third party apps to install by checking if any of the receiver types have a
 // corresponding install script in the third_party_apps_data directory.
 // If there is a corresponding install script, then that install script is run on the vm.
-func installApps(ctx context.Context, vm *gce.VM, logger *log.Logger, configFilePath string, installPath string) error {
+func installApps(ctx context.Context, vm *gce.VM, logger *logging.DirectoryLogger, configFilePath string, installPath string) error {
+	if configFilePath == "" {
+		return nil
+	}
+
 	config, err := confgenerator.MergeConfFiles(ctx, configFilePath, apps.BuiltInConfStructs)
 	if err != nil {
 		return err
@@ -149,12 +130,14 @@ func installApps(ctx context.Context, vm *gce.VM, logger *log.Logger, configFile
 
 	for _, app := range receivers {
 		if scriptContent, err := os.ReadFile(path.Join(installPath, "applications", app, folder, "install")); err == nil {
-			logger.Printf("Installing %s to VM", app)
-			if _, err := runScriptRemotely(ctx, logger, vm, string(scriptContent), make(map[string]string)); err != nil {
-				return err
-			} else {
-				logger.Printf("Done Installing %s", app)
+			logger.ToMainLog().Printf("Installing %s to VM", app)
+			log.Default().Printf("Installing %s to VM", app)
+			if _, err := gce.RunScriptRemotely(ctx, logger, vm, string(scriptContent), nil, make(map[string]string)); err != nil {
+				return fmt.Errorf("Failed to install app %s %v", app, err)
 			}
+			logger.ToMainLog().Printf("Done Installing %s", app)
+			log.Default().Printf("Done Installing %s", app)
+
 		}
 	}
 	return nil
@@ -178,43 +161,131 @@ func configureFromGCloud(project *string, zone *string) error {
 
 }
 
-func main() {
-	logger := log.Default()
-	ctx := context.Background()
-	platform := flag.String("platform", "debian-11", "Optional. The OS for the VM. If missing, debian-11 is used.")
-	configFile := flag.String("config_file", "", "Optional. Path to the Ops Agent Config File.")
+func getInstanceName() string {
+	return fmt.Sprintf("simulacra-vm-instance-%s", uuid.NewString())
+}
+
+func getConfigFromYaml(configPath string) (Config, error) {
+	var config Config
+	file, err := ioutil.ReadFile(configPath)
+	if err != nil {
+		return config, err
+	}
+	if err := yaml.Unmarshal(file, &config); err != nil {
+		return config, err
+	}
+
+	if config.Platform == "" {
+		config.Platform = defaultPlatform
+	}
+
+	if config.ThirdPartyAppsPath == "" {
+		config.ThirdPartyAppsPath = defaultThirdPartyAppsPath
+	}
+
+	if config.Name == "" {
+		config.Name = getInstanceName()
+	}
+
+	return config, nil
+}
+
+func getSimulacraConfig() (Config, error) {
+	configPath := flag.String("config", "", "Optional. The path to a YAML file specifying all the configurations for Simulacra. If unspecified, Simulacra will either use values from other command line arguments or use default values. If specifed along with other command line arguments, all others will be ignored.")
+	platform := flag.String("platform", defaultPlatform, "Optional. The OS for the VM. If missing, debian-11 is used.")
+	opsAgentConfigFile := flag.String("ops_agent_config", "", "Optional. Path to the Ops Agent Config File. If unspecified, Ops Agent will not install any third party applications and configure Ops Agent with default settings. ")
 	project := flag.String("project", "", "Optional. If missing, Simulacra will try to infer from GCloud config.")
 	zone := flag.String("zone", "", "Optional. If missing, Simulacra will try to infer from GCloud config. ")
-	name := flag.String("name", fmt.Sprintf("simulacra-vm-instance-%s", uuid.NewString()), "Optional. A name for the instance to be created. If missing, a random name with prefix 'simulacra-vm-instance' will be assigned. ")
-	thirdPartyAppsPath := flag.String("install_path", "./integration_test/third_party_apps_data", "Optional. The path to the third party apps data folder. If missing, Simulacra assumes the working directory is the root of the repo. Therefore, the default path is './integration_test/third_party_apps_data' ")
+	name := flag.String("name", getInstanceName(), "Optional. A name for the instance to be created. If missing, a random name with prefix 'simulacra-vm-instance' will be assigned. ")
+	thirdPartyAppsPath := flag.String("third_party_apps_path", defaultThirdPartyAppsPath, "Optional. The path to the third party apps data folder. If missing, Simulacra assumes the working directory is the root of the repo. Therefore, the default path is './integration_test/third_party_apps_data' ")
 	flag.Parse()
 
-	if err := configureFromGCloud(project, zone); err != nil {
-		logger.Fatalf("project and zone must either be non empty or set in GCloud %v", err)
+	if *configPath != "" {
+		return getConfigFromYaml(*configPath)
+	}
+
+	config := Config{Platform: *platform, ConfigFilePath: *opsAgentConfigFile, Project: *project, Zone: *zone, Name: *name,
+		ThirdPartyAppsPath: *thirdPartyAppsPath}
+
+	return config, nil
+
+}
+
+func runCustomScripts(ctx context.Context, vm *gce.VM, logger *logging.DirectoryLogger, scripts []string) error {
+	if len(scripts) == 0 {
+		log.Default().Print("No Custom Scripts To Run ")
+		return nil
+	}
+
+	for _, scriptPath := range scripts {
+		if scriptContent, err := os.ReadFile(scriptPath); err != nil {
+			return err
+		} else {
+			logger.ToMainLog().Printf("Running script from %s", scriptPath)
+			log.Default().Printf("Running script from %s", scriptPath)
+			if _, err := gce.RunScriptRemotely(ctx, logger, vm, string(scriptContent), nil, make(map[string]string)); err != nil {
+				return fmt.Errorf("Script with path %s failed to run %v", scriptPath, err)
+			}
+			logger.ToMainLog().Printf("Done Running Script from  %s", scriptPath)
+
+		}
+	}
+	return nil
+}
+
+func main() {
+	loggingDir := path.Join("/tmp", fmt.Sprintf("simulacra-%s", uuid.NewString()))
+	mainLogFile := path.Join(loggingDir, "main_log.txt")
+	vmInitLogFile := path.Join(loggingDir, vmInitLogFileName)
+	logger, err := logging.NewDirectoryLogger(loggingDir)
+	if err != nil {
+		log.Default().Fatalf("Error initializing directory logger %v", err)
+	}
+	log.Default().Printf("Starting Simulacra, Detailed logging can be found in %s directory", loggingDir)
+	ctx := context.Background()
+	config, err := getSimulacraConfig()
+	if err != nil {
+		log.Default().Fatalf("error parsing simulacra config %v", err)
+	}
+
+	if err := configureFromGCloud(&config.Project, &config.Zone); err != nil {
+		log.Default().Fatalf("project and zone must either be non empty or set in GCloud %v", err)
 	}
 
 	options := gce.VMOptions{
-		Platform:    *platform,
-		MachineType: agents.RecommendedMachineType(*platform),
-		Name:        *name,
-		Project:     *project,
-		Zone:        *zone,
+		Platform:    config.Platform,
+		MachineType: agents.RecommendedMachineType(config.Platform),
+		Name:        config.Name,
+		Project:     config.Project,
+		Zone:        config.Zone,
 	}
 	// Create VM Instance.
-	vm, err := gce.CreateInstance(ctx, logger, options)
+	log.Default().Printf("Creating VM Instance, check %s for details", vmInitLogFile)
+	vm, err := gce.CreateInstance(ctx, logger.ToFile(vmInitLogFileName), options)
 	if err != nil {
-		logger.Fatalf("Failed to create GCE instance %v", err)
+		log.Default().Fatalf("Failed to create GCE instance %v", err)
 	}
 	// Install Ops Agent on VM.
-	if err := setupOpsAgent(ctx, vm, logger, *configFile); err != nil {
-		logger.Fatalf("Failed to install Ops Agent %v", err)
+	log.Default().Printf("Installing Ops Agent, check %s for details", mainLogFile)
+	if err := setupOpsAgent(ctx, vm, logger.ToMainLog(), config.ConfigFilePath); err != nil {
+		log.Default().Fatalf("Failed to install Ops Agent %v", err)
 	}
 
 	// Install Third Party Appliations based on Ops Agent Config.
-	if err := installApps(ctx, vm, logger, *configFile, *thirdPartyAppsPath); err != nil {
-		logger.Fatalf("Failed to install apps %v", err)
+	log.Default().Printf("Installing Third Party Applications, check %s for details", mainLogFile)
+	if err := installApps(ctx, vm, logger, config.ConfigFilePath, config.ThirdPartyAppsPath); err != nil {
+		log.Default().Printf("Failed to install apps %v", err)
 	}
 
-	logger.Printf("VM '%s' is ready.", vm.Name)
+	// Run custom Scripts on the VM
+
+	log.Default().Printf("Running Custom Scripts on the VM, check %s for details", mainLogFile)
+	if err := runCustomScripts(ctx, vm, logger, config.Scripts); err != nil {
+		log.Default().Fatalf("Error executing custom script on the VM %v", err)
+	}
+
+	log.Default().Printf("VM '%s' is ready.", vm.Name)
+	logger.ToMainLog().Printf("VM '%s' is ready", vm.Name)
+	logger.Close()
 
 }
