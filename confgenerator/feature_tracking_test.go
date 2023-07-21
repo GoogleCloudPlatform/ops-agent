@@ -821,7 +821,7 @@ func TestGolden(t *testing.T) {
 
 	tmp := make([]string, 0)
 	for _, s := range s {
-		tmp = append(tmp, strings.TrimSuffix(s, ","))
+		tmp = append(tmp, s+",")
 	}
 	s = tmp
 	s = append(title, s...)
