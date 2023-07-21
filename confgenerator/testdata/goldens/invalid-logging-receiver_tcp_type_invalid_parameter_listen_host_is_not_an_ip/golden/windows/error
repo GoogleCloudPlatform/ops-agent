@@ -1,0 +1,9 @@
+[20:20] "listen_host" must be an IP address
+  17 |     tcp_logs:
+  18 |       type: tcp
+  19 |       format: json
+> 20 |       listen_host: abc
+                          ^
+  21 |       listen_port: 1111
+  22 |   service:
+  23 |     pipelines:

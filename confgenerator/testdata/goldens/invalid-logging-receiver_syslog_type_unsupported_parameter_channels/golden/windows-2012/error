@@ -1,0 +1,9 @@
+[22:7] unknown field "channels"
+  19 |       listen_host: 1.1.1.1
+  20 |       listen_port: 1111
+  21 |       transport_protocol: tcp
+> 22 |       channels: [Application]
+             ^
+  23 |   service:
+  24 |     pipelines:
+  25 |       default_pipeline:

@@ -1,0 +1,9 @@
+[19:18] "match_any[0]": 1:27: error: expected one of "$", ws, andOp, orOp, or dot; got: "("
+  16 |   processors:
+  17 |     processor_1:
+  18 |       type: exclude_logs
+> 19 |       match_any: ['jsonPayload.message = func("arg")']
+                        ^
+  20 |   service:
+  21 |     pipelines:
+  22 |       default_pipeline:

@@ -25,7 +25,7 @@ jobs:
     - run: |
         git config --global core.symlinks true
         git config --global core.autocrlf false
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         submodules: true
     - uses: actions/setup-go@v3
@@ -41,5 +41,31 @@ jobs:
     - env:
         COVERALLS_TOKEN: ${{ secrets.github_token }}
       run: goveralls -coverprofile=covprofile -service=github -ignore="confgenerator/filter/internal/generated/*/*"
+    - id: 'set-coverage-vars'
+      if: ${{ runner.os == 'Linux' && github.event_name == 'push' && github.repository == 'GoogleCloudPlatform/ops-agent' && github.ref == 'refs/heads/master' }}
+      name: 'Set Coverage Env Vars'
+      run: echo "ABS_DIR=ng3-customer-telemetry-coverage/absolute/cloud-ops-agent/${{ github.run_id }}" >> "$GITHUB_ENV"
+    - id: 'prepare-coverage-data'
+      if: ${{ runner.os == 'Linux' && github.event_name == 'push' && github.repository == 'GoogleCloudPlatform/ops-agent' && github.ref == 'refs/heads/master' }}
+      name: 'Prepare Coverage Data'
+      run: |
+        mkdir -p "${{ env.ABS_DIR }}"
+        echo '{"host":"github","project":"cloud-ops-agent","trace_type":"GO_COV","commit_id":"${{ github.sha }}","ref":"HEAD","source":"${{ github.server_url }}/${{ github.repository }}","owner":"stackdriver-instrumentation-dev","bug_component":"931151"}' > ${{ env.ABS_DIR }}/metadata.json
+        cp covprofile ${{ env.ABS_DIR }}/coverage.out
+    - id: 'auth'
+      if: ${{ runner.os == 'Linux' && github.event_name == 'push' && github.repository == 'GoogleCloudPlatform/ops-agent' && github.ref == 'refs/heads/master' }}
+      name: 'Authenticate to Google Cloud'
+      uses: 'google-github-actions/auth@v1'
+      with:
+        credentials_json: '${{ secrets.build_and_test_external_credentials }}'
+    - id: 'upload-coverage-data'
+      if: ${{ runner.os == 'Linux' && github.event_name == 'push' && github.repository == 'GoogleCloudPlatform/ops-agent' && github.ref == 'refs/heads/master' }}
+      name: 'Upload Coverage Data'
+      uses: 'google-github-actions/upload-cloud-storage@v1'
+      with:
+        path: 'ng3-customer-telemetry-coverage'
+        glob: '**'
+        destination: 'ng3-metrics'
+        process_gcloudignore: false
     - run: go test integration_test/validate_metadata_test.go
     - run: go test integration_test/metadata/integration_metadata_test.go

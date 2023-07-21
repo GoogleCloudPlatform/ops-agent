@@ -522,6 +522,14 @@ Traceback (most recent call last):
   File "/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py", line 5, in get
     raise Exception('spam', 'eggs')
 Exception: ('spam', 'eggs')
+2023-07-09 00:00:00,000 ERROR    some_app custom string prefix to the exception: Traceback (most recent call last):
+  File "/base/data/home/runtimes/python27/python27_lib/versions/third_party/webapp2-2.5.2/webapp2.py", line 1535, in __call__
+    rv = self.handle_exception(request, response, e)
+  File "/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py", line 17, in start
+    return get()
+  File "/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py", line 5, in get
+    raise Exception('spam', 'eggs')
+Exception: ('spam', 'eggs')
 java.lang.RuntimeException: javax.mail.SendFailedException: Invalid Addresses;
   nested exception is:
 com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
@@ -560,6 +568,11 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 
 		// 2nd Python
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "files_1", time.Hour, `jsonPayload.message="Traceback (most recent call last):\n  File \"/base/data/home/runtimes/python27/python27_lib/versions/third_party/webapp2-2.5.2/webapp2.py\", line 1535, in __call__\n    rv = self.handle_exception(request, response, e)\n  File \"/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py\", line 17, in start\n    return get()\n  File \"/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py\", line 5, in get\n    raise Exception('spam', 'eggs')\nException: ('spam', 'eggs')\n"`); err != nil {
+			t.Error(err)
+		}
+
+		// 3nd Python - With custom string prefix, common when using https://docs.python.org/3/library/logging.html#logging.Logger.exception
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "files_1", time.Hour, `jsonPayload.message="2023-07-09 00:00:00,000 ERROR    some_app custom string prefix to the exception: Traceback (most recent call last):\n  File \"/base/data/home/runtimes/python27/python27_lib/versions/third_party/webapp2-2.5.2/webapp2.py\", line 1535, in __call__\n    rv = self.handle_exception(request, response, e)\n  File \"/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py\", line 17, in start\n    return get()\n  File \"/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py\", line 5, in get\n    raise Exception('spam', 'eggs')\nException: ('spam', 'eggs')\n"`); err != nil {
 			t.Error(err)
 		}
 
@@ -1102,6 +1115,65 @@ func TestSyslogUDP(t *testing.T) {
 
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "mylog_source", time.Hour, "jsonPayload.message:abcdefg"); err != nil {
 			t.Error(err)
+		}
+	})
+}
+
+func TestExcludeLogsHasOperator(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
+
+		config := fmt.Sprintf(`logging:
+  receivers:
+    f1:
+      type: files
+      include_paths:
+      - %s
+  processors:
+    exclude:
+      type: exclude_logs
+      match_any:
+      - "jsonPayload.field:pattern"
+    json:
+      type: parse_json
+  exporters:
+    google:
+      type: google_cloud_logging
+  service:
+    pipelines:
+      p1:
+        receivers: [f1]
+        processors: [json, exclude]
+        exporters: [google]
+`, file1)
+
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		line := `{"field":"string containing pattern"}` + "\n"
+		excludedLine := `{"field":"other"}` + "\n"
+		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(line), file1); err != nil {
+			t.Fatalf("error uploading log: %v", err)
+		}
+		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(excludedLine), file1); err != nil {
+			t.Fatalf("error uploading log: %v", err)
+		}
+
+		// Expect to see the log that doesn't have pattern in it.
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour, `jsonPayload.field:"other"`); err != nil {
+			t.Error(err)
+		}
+		// Give the excluded log some time to show up.
+		time.Sleep(60 * time.Second)
+		_, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour, `jsonPayload.field:"pattern"`, 5)
+		if err == nil {
+			t.Error("expected log to be excluded but was included")
+		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
+			t.Fatalf("unexpected error: %v", err)
 		}
 	})
 }
@@ -3040,7 +3112,8 @@ func TestLoggingSelfLogs(t *testing.T) {
 			t.Error(err)
 		}
 
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health-checks", time.Hour, `severity="INFO"`); err != nil {
+		query := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, query); err != nil {
 			t.Error(err)
 		}
 	})
@@ -3588,8 +3661,17 @@ func isHealthCheckTestPlatform(platform string) bool {
 	return platform == "windows-2019" || platform == "debian-11"
 }
 
-func healthCheckResultMessage(name string, result string) string {
+func healthCheckResultMessage(name string, result string, code string) string {
+	if result == "FAIL" || result == "WARNING" {
+		return fmt.Sprintf("[%s Check] Result: %s, Error code: %s", name, result, code)
+	}
 	return fmt.Sprintf("[%s Check] Result: %s", name, result)
+}
+
+func checkExpectedHealthCheckResult(t *testing.T, output string, name string, expected string, code string) {
+	if !strings.Contains(output, healthCheckResultMessage(name, expected, code)) {
+		t.Errorf("expected %s check to %s", name, expected)
+	}
 }
 
 func getRecentServiceOutputForPlatform(platform string) string {
@@ -3606,15 +3688,15 @@ func getRecentServiceOutputForPlatform(platform string) string {
 func listenToPortForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
 		cmd := strings.Join([]string{
-			`Invoke-WmiMethod -Path 'Win32_Process' -Name Create -ArgumentList 'powershell.exe -Command "$Listener = [System.Net.Sockets.TcpListener]20202; $Listener.Start(); Start-Sleep -Seconds 600"'`,
+			`Invoke-WmiMethod -Path 'Win32_Process' -Name Create -ArgumentList 'powershell.exe -Command "$Listener = [System.Net.Sockets.TcpListener]20201; $Listener.Start(); Start-Sleep -Seconds 600"'`,
 		}, ";")
 
 		return cmd
 	}
 	if gce.IsCentOS(platform) || gce.IsSUSE(platform) {
-		return "nohup nc -l 20202 1>/dev/null 2>/dev/null &"
+		return "nohup nc -l 20201 1>/dev/null 2>/dev/null &"
 	}
-	return "nohup nc -l -p 20202 1>/dev/null 2>/dev/null &"
+	return "nohup nc -l -p 20201 1>/dev/null 2>/dev/null &"
 }
 
 func TestPortsAndAPIHealthChecks(t *testing.T) {
@@ -3626,8 +3708,8 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 		}
 
 		customScopes := strings.Join([]string{
-			"https://www.googleapis.com/auth/monitoring.write",
-			"https://www.googleapis.com/auth/logging.read",
+			"https://www.googleapis.com/auth/monitoring.read",
+			"https://www.googleapis.com/auth/logging.write",
 			"https://www.googleapis.com/auth/devstorage.read_write",
 		}, ",")
 		ctx, logger, vm := agents.CommonSetupWithExtraCreateArguments(t, platform, []string{"--scopes", customScopes})
@@ -3660,14 +3742,14 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		checkFunc := func(class string, expected string) {
-			if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage(class, expected)) {
-				t.Errorf("expected %s check to %s", class, expected)
-			}
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "FAIL", "OtelMetricsPortErr")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "FAIL", "MonApiScopeErr")
+
+		query := fmt.Sprintf(`severity="ERROR" AND jsonPayload.code="MonApiScopeErr" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, query); err != nil {
+			t.Error(err)
 		}
-		checkFunc("Network", "PASS")
-		checkFunc("Ports", "FAIL")
-		checkFunc("API", "FAIL")
 	})
 }
 
@@ -3690,14 +3772,9 @@ func TestNetworkHealthCheck(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		checkFunc := func(class string, expected string) {
-			if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage(class, expected)) {
-				t.Errorf("expected %s check to %s", class, expected)
-			}
-		}
-		checkFunc("Network", "PASS")
-		checkFunc("Ports", "PASS")
-		checkFunc("API", "PASS")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
 
 		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", stopCommandForPlatform(vm.Platform)); err != nil {
 			t.Fatal(err)
@@ -3718,14 +3795,13 @@ func TestNetworkHealthCheck(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		checkFunc = func(class string, expected string) {
-			if !strings.Contains(cmdOut.Stdout, healthCheckResultMessage(class, expected)) {
-				t.Errorf("expected %s check to %s", class, expected)
-			}
-		}
-		checkFunc("Network", "FAIL")
-		checkFunc("Ports", "PASS")
-		checkFunc("API", "FAIL")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "FAIL", "LogApiConnErr")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "FAIL", "MonApiConnErr")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "WARNING", "PacApiConnErr")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "WARNING", "DLApiConnErr")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "FAIL", "MonApiConnErr")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "FAIL", "LogApiConnErr")
 	})
 }
 

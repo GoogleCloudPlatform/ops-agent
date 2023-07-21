@@ -25,6 +25,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
@@ -145,32 +146,9 @@ func getHealthCheckResults() []healthchecks.HealthCheckResult {
 	return gceHealthChecks.RunAllHealthChecks(logger)
 }
 
-type WindowsServiceLogger struct {
-	srv *service
-}
-
-func (wsl WindowsServiceLogger) Infof(format string, v ...any) {
-	if len(v) > 0 {
-		wsl.srv.log.Info(EngineEventID, fmt.Sprintf(format, v...))
-	} else {
-		wsl.srv.log.Info(EngineEventID, format)
-	}
-}
-
-func (wsl WindowsServiceLogger) Errorf(format string, v ...any) {
-	if len(v) > 0 {
-		wsl.srv.log.Error(EngineEventID, fmt.Sprintf(format, v...))
-	} else {
-		wsl.srv.log.Error(EngineEventID, format)
-	}
-
-}
-
-func (wsl WindowsServiceLogger) Println(v ...any) {}
-
 func (srv *service) runHealthChecks() {
 	healthCheckResults := getHealthCheckResults()
-	logger := WindowsServiceLogger{srv}
+	logger := logs.WindowsServiceLogger{EventID: EngineEventID, Logger: srv.log}
 	healthchecks.LogHealthCheckResults(healthCheckResults, logger)
 	srv.log.Info(EngineEventID, "Startup checks finished")
 }

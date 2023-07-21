@@ -1,0 +1,8 @@
+[17:15] "include_paths" is a required field
+  15 | logging:
+  16 |   receivers:
+> 17 |     receiver_1:
+                     ^
+  18 |       type: files
+  19 |   service:
+  20 |     pipelines:

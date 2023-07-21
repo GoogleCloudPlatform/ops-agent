@@ -1,0 +1,9 @@
+[21:17] "type" must be one of [integer float]
+  18 |       type: modify_fields
+  19 |       fields:
+  20 |         jsonPayload.foo:
+> 21 |           type: struct
+                       ^
+  22 |   service:
+  23 |     pipelines:
+  24 |       default_pipeline:

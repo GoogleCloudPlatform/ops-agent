@@ -13,6 +13,14 @@ local template _distro {
 }
 
 // DEB Linux distros. (Do not modify this comment.)
+bookworm = _distro {
+  release = [
+      'debian-12',
+  ]
+  presubmit = [
+      'debian-12',
+  ]
+}
 lunar = _distro {
   release = [
       'ubuntu-2304-amd64',
@@ -33,13 +41,6 @@ bullseye = _distro {
 bullseye_arm64 = _distro {
   release = ['debian-11-arm64']
   presubmit = ['debian-11-arm64']
-}
-bionic = _distro {
-  release = [
-    'ubuntu-1804-lts',
-    'ubuntu-minimal-1804-lts',
-  ]
-  presubmit = ['ubuntu-1804-lts']
 }
 focal = _distro {
   release = [

@@ -1,0 +1,9 @@
+[20:7] unknown field "unsupported_parameter"
+  17 |     receiver_1:
+  18 |       type: windows_event_log
+  19 |       channels: [System,Application,Security]
+> 20 |       unsupported_parameter: some_value
+             ^
+  21 |   service:
+  22 |     pipelines:
+  23 |       default_pipeline:

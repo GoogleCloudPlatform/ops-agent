@@ -100,21 +100,29 @@ func mainErr() error {
 
 	// Create the VM.
 	options := gce.VMOptions{
-		Platform: distro,
-		Name:     vmName,
+		Platform:    distro,
+		Name:        vmName,
+		MachineType: "e2-standard-16",
 		Labels: map[string]string{
 			"ttl": strconv.Itoa(int(parsedTTL / time.Minute)),
 		},
+		ExtraCreateArguments: []string{"--boot-disk-size=4000GB"},
 	}
 	vm, err := gce.CreateInstance(ctx, logger, options)
 	if err != nil {
 		return err
 	}
+	debugLogPath := "/tmp/log_generator.log"
 
-	// Install the Ops Agent with a config telling it to watch logPath.
+	// Install the Ops Agent with a config telling it to watch logPath,
+	// and debugLogPath for debugging.
 	config := fmt.Sprintf(`logging:
   receivers:
     mylog_source:
+      type: files
+      include_paths:
+      - %s
+    generator_debug_logs:
       type: files
       include_paths:
       - %s
@@ -124,9 +132,11 @@ func mainErr() error {
   service:
     pipelines:
       my_pipeline:
-        receivers: [mylog_source]
+        receivers:
+        - mylog_source
+        - generator_debug_logs
         exporters: [google]
-`, logPath)
+`, logPath, debugLogPath)
 	if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 		return err
 	}
@@ -173,8 +183,8 @@ Start-Process "$tempDir\$pythonInstallerName" -Wait -ArgumentList "/quiet Target
   --log-rate="%v" \
   --log-write-type=file \
   --file-path="%v" \
-  &> log_generator.log &
-`, logGeneratorPath, logSizeInBytes, logRate, logPath)
+  &> %v &
+`, logGeneratorPath, logSizeInBytes, logRate, logPath, debugLogPath)
 	}
 	if _, err := gce.RunRemotely(ctx, logger, vm, "", startLogGenerator); err != nil {
 		return err
@@ -185,7 +195,7 @@ Start-Process "$tempDir\$pythonInstallerName" -Wait -ArgumentList "/quiet Target
 	if !gce.IsWindows(vm.Platform) {
 		time.Sleep(5 * time.Second)
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, "", "cat log_generator.log"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "", "cat "+debugLogPath); err != nil {
 			return err
 		}
 	}

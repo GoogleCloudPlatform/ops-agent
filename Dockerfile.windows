@@ -10,10 +10,7 @@ FROM mcr.microsoft.com/windows/servercore:$WINDOWS_VERSION as base
 #
 # Basic setup
 #
-RUN setx /M PATH "%PATH%;C:\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin"
-RUN setx /M PATH "%PATH%;C:\WinFlexBison"
-RUN setx /M PATH "%PATH%;C:\Go\bin"
-RUN setx /M PATH "%PATH%;C:\Java\bin"
+RUN setx /M PATH "%PATH%;C:\WinFlexBison;C:\Go\bin;C:\Java\bin;C:\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin"
 
 RUN setx /M JAVA_HOME "C:\Java"
 
@@ -107,7 +104,9 @@ RUN cmake -G "'Visual Studio 16 2019'" -DCMAKE_BUILD_TYPE=RELWITHDEBINFO -DFLB_O
 
 RUN cmake --build . --config Release; `
     Copy-Item -Path bin/Release/fluent-bit.exe -Destination /work/out/bin/; `
-    Copy-Item -Path bin/Release/fluent-bit.dll -Destination /work/out/bin/;
+    Copy-Item -Path bin/Release/fluent-bit.dll -Destination /work/out/bin/; `
+    Copy-Item -Path bin/Release/fluent-bit.pdb -Destination /work/out/bin/; `
+    Copy-Item -Path bin/Release/fluent-bit.dll.pdb -Destination /work/out/bin/;
 
 # TODO: Do something with /work/out/bin/fluent-bit.{exe,dll}
 
@@ -124,7 +123,7 @@ COPY submodules/opentelemetry-java-contrib /work/submodules/opentelemetry-java-c
 WORKDIR /work/submodules/opentelemetry-java-contrib
 
 RUN ./gradlew --no-daemon :jmx-metrics:build; `
-    Copy-Item -Path jmx-metrics/build/libs/opentelemetry-jmx-metrics-*-SNAPSHOT.jar -Destination /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar;
+    Copy-Item -Path jmx-metrics/build/libs/opentelemetry-jmx-metrics-*-alpha.jar -Destination /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar;
 
 ###############################################################################
 # Build OT collector

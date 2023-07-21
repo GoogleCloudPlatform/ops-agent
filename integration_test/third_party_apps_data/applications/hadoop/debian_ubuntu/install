@@ -1,7 +1,13 @@
 set -e
 
 sudo apt-get update
-sudo apt-get install -y default-jdk default-jdk-headless wget
+# Debian 12 very specifically wants openjdk-17-jdk for installing Java via apt
+source /etc/os-release
+if [[ $ID == debian && "${VERSION_ID}" == 12 ]]; then
+    sudo apt-get install -y openjdk-17-jdk openjdk-17-jdk-headless wget
+else
+    sudo apt-get install -y default-jdk default-jdk-headless wget
+fi
 
 sudo mkdir -p \
     /opt/hadoop/logs \

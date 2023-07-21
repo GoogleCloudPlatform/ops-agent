@@ -1,0 +1,12 @@
+- module: logging
+  feature: service:pipelines
+  key: default_pipeline_overridden
+  value: "false"
+- module: metrics
+  feature: service:pipelines
+  key: default_pipeline_overridden
+  value: "false"
+- module: metrics
+  feature: receivers:flink
+  key: "[0].enabled"
+  value: "true"
