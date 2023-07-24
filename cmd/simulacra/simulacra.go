@@ -42,8 +42,13 @@ const (
 	vmInitLogFileName         = "vm_initialization.txt"
 )
 
+// Script represents each individual item of the 'scripts' field in a Simulacra config. Each script in the scripts field
+// will be executed on the VM once the VM instantiates.
 type Script struct {
-	Path string   `yaml:"path"`
+	// The path to the script file.
+	Path string `yaml:"path"`
+	// Command line arguments that the script will be executed with. For example, setting 'args' to ["-Apps","all"] will result in
+	// Simulacra executing the script as follows : "./script -Apps all".
 	Args []string `yaml:"args"`
 }
 
