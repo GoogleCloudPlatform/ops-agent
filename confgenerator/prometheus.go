@@ -43,6 +43,20 @@ var (
 
 type PrometheusMetrics struct {
 	ConfigComponent `yaml:",inline"`
+	PromConfig      PrometheusConfig `yaml:"config"`
+}
+
+type PrometheusConfig struct {
+	// PreserveUntypedMetrics controls whether untyped metrics are preserved
+	// as untyped in GMP instead of converting it to a gauge.
+	// If set, the receiver will double write prometheus untyped metrics - once
+	// as a gauge with the name suffix `/unknown` and once as a cumulative with the
+	// name suffix `/unknown:counter`.
+	//
+	// Similar to the GMP binary, if in the cumulative timeseries, a lower point is
+	// recorded - it is treated as a reset point. The reset timestamp is set to 1ms
+	// prior, and all future points are recorded relative to this reset point.
+	PreserveUntypedMetrics bool `yaml:"preserve_untyped_metrics"`
 
 	// The Prometheus receiver is configured via a Prometheus config file.
 	// See: https://prometheus.io/docs/prometheus/latest/configuration/configuration/
@@ -52,7 +66,7 @@ type PrometheusMetrics struct {
 	// `$` characters in your prometheus configuration are interpreted as environment
 	// variables.  If you want to use $ characters in your prometheus configuration,
 	// you must escape them using `$$`.
-	PromConfig promconfig.Config `yaml:"config"`
+	Config promconfig.Config `yaml:",inline"`
 }
 
 func (r PrometheusMetrics) Type() string {
@@ -66,10 +80,10 @@ func (r PrometheusMetrics) Pipelines() []otel.ReceiverPipeline {
 		gceMetadataMap := createPrometheusStyleGCEMetadata(gceMetadata)
 
 		// Add the GCE metadata to the prometheus config.
-		for i := range r.PromConfig.ScrapeConfigs {
+		for i := range r.PromConfig.Config.ScrapeConfigs {
 			// Iterate over the static configs.
-			for j := range r.PromConfig.ScrapeConfigs[i].ServiceDiscoveryConfigs {
-				staticConfigs := r.PromConfig.ScrapeConfigs[i].ServiceDiscoveryConfigs[j].(discovery.StaticConfig)
+			for j := range r.PromConfig.Config.ScrapeConfigs[i].ServiceDiscoveryConfigs {
+				staticConfigs := r.PromConfig.Config.ScrapeConfigs[i].ServiceDiscoveryConfigs[j].(discovery.StaticConfig)
 				for k := range staticConfigs {
 					labels := staticConfigs[k].Labels
 					if labels == nil {
@@ -87,7 +101,7 @@ func (r PrometheusMetrics) Pipelines() []otel.ReceiverPipeline {
 	}
 
 	return []otel.ReceiverPipeline{{
-		Receiver: prometheusToOtelComponent(r.PromConfig),
+		Receiver: prometheusToOtelComponent(r.PromConfig.Config),
 		Processors: map[string][]otel.Component{
 			// Expect metrics, without any additional processing.
 			"metrics": {
@@ -320,8 +334,8 @@ func (r PrometheusMetrics) ExtractFeatures() ([]CustomFeature, error) {
 		Value: "true",
 	})
 
-	for i := range r.PromConfig.ScrapeConfigs {
-		sc := r.PromConfig.ScrapeConfigs[i]
+	for i := range r.PromConfig.Config.ScrapeConfigs {
+		sc := r.PromConfig.Config.ScrapeConfigs[i]
 
 		// Since we only support static_configs, there is only over one service discovery config.
 		scTargetGroups := 0
@@ -361,6 +375,10 @@ func (r PrometheusMetrics) ExtractFeatures() ([]CustomFeature, error) {
 			})
 		}
 	}
+	customFeatures = append(customFeatures, CustomFeature{
+		Key:   []string{"config", "preserve_untyped_metrics"},
+		Value: strconv.FormatBool(r.PromConfig.PreserveUntypedMetrics),
+	})
 	return customFeatures, nil
 }
 

@@ -651,53 +651,55 @@ func TestPrometheusFeatureMetrics(t *testing.T) {
 		confgenerator.ConfigComponent{
 			Type: "prometheus",
 		},
-		promconfig.Config{
-			GlobalConfig: promconfig.GlobalConfig{
-				ScrapeInterval:     model.Duration(10 * time.Second),
-				ScrapeTimeout:      model.Duration(10 * time.Second),
-				EvaluationInterval: model.Duration(10 * time.Second),
-			},
-			ScrapeConfigs: []*promconfig.ScrapeConfig{
-				{
-					JobName: "prometheus",
-					ServiceDiscoveryConfigs: discovery.Configs{
-						discovery.StaticConfig{
-							{
-								Targets: []model.LabelSet{
-									{model.AddressLabel: "localhost:8888"},
-									{model.AddressLabel: "localhost:8889"},
+		confgenerator.PrometheusConfig{
+			Config: promconfig.Config{
+				GlobalConfig: promconfig.GlobalConfig{
+					ScrapeInterval:     model.Duration(10 * time.Second),
+					ScrapeTimeout:      model.Duration(10 * time.Second),
+					EvaluationInterval: model.Duration(10 * time.Second),
+				},
+				ScrapeConfigs: []*promconfig.ScrapeConfig{
+					{
+						JobName: "prometheus",
+						ServiceDiscoveryConfigs: discovery.Configs{
+							discovery.StaticConfig{
+								{
+									Targets: []model.LabelSet{
+										{model.AddressLabel: "localhost:8888"},
+										{model.AddressLabel: "localhost:8889"},
+									},
 								},
-							},
-							{
-								Targets: []model.LabelSet{
-									{model.AddressLabel: "localhost:8890"},
+								{
+									Targets: []model.LabelSet{
+										{model.AddressLabel: "localhost:8890"},
+									},
 								},
 							},
 						},
-					},
-					MetricsPath:           "/metrics",
-					Scheme:                "http",
-					HonorLabels:           false,
-					HonorTimestamps:       true,
-					ScrapeInterval:        model.Duration(10 * time.Second),
-					ScrapeTimeout:         model.Duration(10 * time.Second),
-					SampleLimit:           10,
-					TargetLimit:           10,
-					LabelLimit:            10,
-					LabelNameLengthLimit:  10,
-					LabelValueLengthLimit: 10,
-					BodySizeLimit:         10,
-					RelabelConfigs: []*relabel.Config{
-						{
-							SourceLabels: model.LabelNames{"__meta_kubernetes_pod_label_app"},
-							Action:       "keep",
-							Regex:        relabel.MustNewRegexp(".*"),
+						MetricsPath:           "/metrics",
+						Scheme:                "http",
+						HonorLabels:           false,
+						HonorTimestamps:       true,
+						ScrapeInterval:        model.Duration(10 * time.Second),
+						ScrapeTimeout:         model.Duration(10 * time.Second),
+						SampleLimit:           10,
+						TargetLimit:           10,
+						LabelLimit:            10,
+						LabelNameLengthLimit:  10,
+						LabelValueLengthLimit: 10,
+						BodySizeLimit:         10,
+						RelabelConfigs: []*relabel.Config{
+							{
+								SourceLabels: model.LabelNames{"__meta_kubernetes_pod_label_app"},
+								Action:       "keep",
+								Regex:        relabel.MustNewRegexp(".*"),
+							},
 						},
-					},
-					MetricRelabelConfigs: []*relabel.Config{
-						{SourceLabels: model.LabelNames{"__name__"},
-							Action: "keep",
-							Regex:  relabel.MustNewRegexp(".*"),
+						MetricRelabelConfigs: []*relabel.Config{
+							{SourceLabels: model.LabelNames{"__name__"},
+								Action: "keep",
+								Regex:  relabel.MustNewRegexp(".*"),
+							},
 						},
 					},
 				},
@@ -785,6 +787,13 @@ func TestPrometheusFeatureMetrics(t *testing.T) {
 			Value:  test.val,
 		})
 	}
+	expected = append(expected, confgenerator.Feature{
+		Module: "metrics",
+		Kind:   "receivers",
+		Type:   "prometheus",
+		Key:    []string{"[0]", "config", "preserve_untyped_metrics"},
+		Value:  "false",
+	})
 
 	if !cmp.Equal(features, expected) {
 		t.Errorf("Expected %d features but got %d\n\n", len(expected), len(features))

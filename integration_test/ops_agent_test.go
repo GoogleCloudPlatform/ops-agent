@@ -2166,6 +2166,7 @@ func TestPrometheusMetrics(t *testing.T) {
     prometheus:
       type: prometheus
       config:
+		preserve_untyped_metrics: true
         scrape_configs:
           - job_name: 'prometheus'
             scrape_interval: 10s
@@ -2323,6 +2324,12 @@ func TestPrometheusMetrics(t *testing.T) {
 				Feature: "receivers:prometheus",
 				Key:     "[0].config.[0].scrape_configs.static_config_target_groups",
 				Value:   "1",
+			},
+			{
+				Module:  "metrics",
+				Feature: "receivers:prometheus",
+				Key:     "[0].config.preserve_untyped_metrics",
+				Value:   "true",
 			},
 		}
 

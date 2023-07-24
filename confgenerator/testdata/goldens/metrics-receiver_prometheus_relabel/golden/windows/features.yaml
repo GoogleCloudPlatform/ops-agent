@@ -34,3 +34,7 @@
   feature: receivers:prometheus
   key: "[0].config.[0].scrape_configs.static_config_target_groups"
   value: "1"
+- module: metrics
+  feature: receivers:prometheus
+  key: "[0].config.preserve_untyped_metrics"
+  value: "false"
