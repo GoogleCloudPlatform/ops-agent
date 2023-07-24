@@ -33,7 +33,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 	"github.com/binxio/gcloudconfig"
 	"github.com/google/uuid"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -41,6 +41,11 @@ const (
 	defaultThirdPartyAppsPath = "./integration_test/third_party_apps_data"
 	vmInitLogFileName         = "vm_initialization.txt"
 )
+
+type Script struct {
+	Path string   `yaml:"path"`
+	Args []string `yaml:"args"`
+}
 
 // Config represents the configuration for Simulacra. Most of the fields specify requirements about the VM that
 // Simulacra will instantiate.
@@ -58,7 +63,7 @@ type Config struct {
 	// Path to Third Party Apps folder
 	ThirdPartyAppsPath string `yaml:"third_party_apps_path"`
 	// Path to script files that will be run on the VM.
-	Scripts []string `yaml:"scripts"`
+	Scripts []*Script `yaml:"scripts"`
 }
 
 func distroFolder(platform string) (string, error) {
@@ -106,27 +111,15 @@ func getAllReceivers(config *confgenerator.UnifiedConfig) (receivers []string) {
 	return receivers
 }
 
-// installApps reads an Ops Agent config file and then identifies all the third party apps that need to be installed.
-// The function identifies third party apps to install by checking if any of the receiver types have a
-// corresponding install script in the third_party_apps_data directory.
-// If there is a corresponding install script, then that install script is run on the vm.
-func installApps(ctx context.Context, vm *gce.VM, logger *logging.DirectoryLogger, configFilePath string, installPath string) error {
-	if configFilePath == "" {
-		return nil
-	}
-
-	config, err := confgenerator.MergeConfFiles(ctx, configFilePath, apps.BuiltInConfStructs)
-	if err != nil {
-		return err
-	}
-
+// installApps takes in a list of receivers that the Ops Agent is configured with and installs all third party apps.
+// The function determines if a receiver requires a third party app installation if there is a corresponding install
+// script in the third party apps data folder whose path is specified using the installPath argument.
+func installApps(ctx context.Context, vm *gce.VM, logger *logging.DirectoryLogger, installPath string, receivers []string) error {
 	folder, err := distroFolder(vm.Platform)
 
 	if err != nil {
 		return err
 	}
-
-	receivers := getAllReceivers(config)
 
 	for _, app := range receivers {
 		if scriptContent, err := os.ReadFile(path.Join(installPath, "applications", app, folder, "install")); err == nil {
@@ -141,6 +134,20 @@ func installApps(ctx context.Context, vm *gce.VM, logger *logging.DirectoryLogge
 		}
 	}
 	return nil
+}
+
+func getReceiversFromConfig(ctx context.Context, vm *gce.VM, logger *logging.DirectoryLogger, configFilePath string) ([]string, error) {
+	if configFilePath == "" {
+		return []string{}, nil
+	}
+
+	config, err := confgenerator.MergeConfFiles(ctx, configFilePath, apps.BuiltInConfStructs)
+	if err != nil {
+		return nil, err
+	}
+
+	receivers := getAllReceivers(config)
+	return receivers, nil
 }
 
 func configureFromGCloud(project *string, zone *string) error {
@@ -204,32 +211,36 @@ func getSimulacraConfig() (Config, error) {
 		return getConfigFromYaml(*configPath)
 	}
 
-	config := Config{Platform: *platform, ConfigFilePath: *opsAgentConfigFile, Project: *project, Zone: *zone, Name: *name,
-		ThirdPartyAppsPath: *thirdPartyAppsPath}
+	config := Config{
+		Platform:           *platform,
+		ConfigFilePath:     *opsAgentConfigFile,
+		Project:            *project,
+		Zone:               *zone,
+		Name:               *name,
+		ThirdPartyAppsPath: *thirdPartyAppsPath,
+	}
 
 	return config, nil
 
 }
 
-func runCustomScripts(ctx context.Context, vm *gce.VM, logger *logging.DirectoryLogger, scripts []string) error {
-	if len(scripts) == 0 {
-		log.Default().Print("No Custom Scripts To Run ")
-		return nil
-	}
+func runCustomScripts(ctx context.Context, vm *gce.VM, logger *logging.DirectoryLogger, scripts []*Script) error {
+	for _, script := range scripts {
+		scriptContent, err := os.ReadFile(script.Path)
 
-	for _, scriptPath := range scripts {
-		if scriptContent, err := os.ReadFile(scriptPath); err != nil {
+		if err != nil {
 			return err
-		} else {
-			logger.ToMainLog().Printf("Running script from %s", scriptPath)
-			log.Default().Printf("Running script from %s", scriptPath)
-			if _, err := gce.RunScriptRemotely(ctx, logger, vm, string(scriptContent), nil, make(map[string]string)); err != nil {
-				return fmt.Errorf("Script with path %s failed to run %v", scriptPath, err)
-			}
-			logger.ToMainLog().Printf("Done Running Script from  %s", scriptPath)
-
 		}
+
+		logger.ToMainLog().Printf("Running script from %s", script.Path)
+		log.Default().Printf("Running script from %s", script.Path)
+		if _, err := gce.RunScriptRemotely(ctx, logger, vm, string(scriptContent), script.Args, make(map[string]string)); err != nil {
+			return fmt.Errorf("Script with path %s failed to run %v", script.Path, err)
+		}
+		logger.ToMainLog().Printf("Done Running Script from  %s", script.Path)
+
 	}
+
 	return nil
 }
 
@@ -273,7 +284,13 @@ func main() {
 
 	// Install Third Party Appliations based on Ops Agent Config.
 	log.Default().Printf("Installing Third Party Applications, check %s for details", mainLogFile)
-	if err := installApps(ctx, vm, logger, config.ConfigFilePath, config.ThirdPartyAppsPath); err != nil {
+	receivers, err := getReceiversFromConfig(ctx, vm, logger, config.ConfigFilePath)
+
+	if err != nil {
+		log.Default().Fatalf("Error reading config file %v", err)
+	}
+
+	if err := installApps(ctx, vm, logger, config.ThirdPartyAppsPath, receivers); err != nil {
 		log.Default().Printf("Failed to install apps %v", err)
 	}
 
