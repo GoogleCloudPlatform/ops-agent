@@ -71,8 +71,8 @@ func generateHealthChecksLogsComponents(ctx context.Context) []fluentbit.Compone
 	out = append(out, LoggingProcessorExcludeLogs{
 		// This is used to exclude any previous content of the health-checks file that
 		// does not contain the `severity` field.
-		MatchAny: []string{`severity!~INFO|ERROR|WARNING|DEBUG`},
-	}.Components(ctx, healthLogsTag, "health-checs-exclude")...)
+		MatchAny: []string{`severity !~ INFO|ERROR|WARNING|DEBUG`},
+	}.Components(ctx, healthLogsTag, "health-checks-exclude")...)
 	return out
 }
 
@@ -114,53 +114,40 @@ func generateFluentBitSelfLogsComponents(ctx context.Context) []fluentbit.Compon
 	return out
 }
 
-type healthLogsMatch struct {
-	key     string
-	match   string
-	message string
-	code    string
+type selfLogTranslationEntry struct {
+	fieldMatch string
+	regexMatch string
+	message    string
+	code       string
 }
 
-var healthLogsMatchList = []healthLogsMatch{
+var selfLogTranslationList = []selfLogTranslationEntry{
 	{
-		key:     "message",
-		match:   `\[error\]\s\[lib\]\sbackend\sfailed`,
-		message: "LogggingPipelineStoppedWorking-PleaseVerifyYourOpsAgentConfig",
-		code:    "LogPipelineErr",
+		fieldMatch: "message",
+		regexMatch: `\[error\]\s\[lib\]\sbackend\sfailed`,
+		message:    "Loggging_Pipeline_Stopped_Working-Please_Verify_Your_Ops_Agent_Config.",
+		code:       "LogPipelineErr",
 	},
 	{
-		key:     "message",
-		match:   `\[error\]\s\[parser\]\scannot\sparse`,
-		message: "IncorrectParsingConfiguration-PleaseVerifyYourOpsAgentConfig",
-		code:    "LogParseErr",
+		fieldMatch: "message",
+		regexMatch: `\[error\]\s\[parser\]\scannot\sparse`,
+		message:    "Incorrect_Parsing_Configuration-Please_Verify_Your_Ops_Agent_Config.",
+		code:       "LogParseErr",
 	},
 }
 
-func generateSampleSelfLogsComponents(ctx context.Context) []fluentbit.Component {
+func generateSelfLogsSamplingComponents(ctx context.Context) []fluentbit.Component {
 	out := make([]fluentbit.Component, 0)
-
-	// This filter will throttle all `ops-agent-health` logs by limiting the processing
-	// and ingesting to 30 logs every hour. 
-	out = append(out, fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":     "throttle",
-			"Match":    healthLogsTag,
-			"Rate":     "5",
-			"Window":   "5",
-			"Interval": "10m",
-		},
-	})
 
 	// This filters sample specific fluent-bit logs by matching with regex, reemits
 	// as an `ops-agent-health` log and modifies them to follow the required structure.
-	for _, m := range healthLogsMatchList {
+	for _, m := range selfLogTranslationList {
 		out = append(out, fluentbit.Component{
 			Kind: "FILTER",
 			Config: map[string]string{
 				"Name":  "rewrite_tag",
 				"Match": fluentBitSelfLogsTag,
-				"Rule":  fmt.Sprintf(`%s %s %s true`, m.key, m.match, healthLogsTag),
+				"Rule":  fmt.Sprintf(`%s %s %s true`, m.fieldMatch, m.regexMatch, healthLogsTag),
 			},
 		})
 		out = append(out, fluentbit.Component{
@@ -168,7 +155,7 @@ func generateSampleSelfLogsComponents(ctx context.Context) []fluentbit.Component
 			OrderedConfig: [][2]string{
 				{"Name", "modify"},
 				{"Match", healthLogsTag},
-				{"Condition", fmt.Sprintf(`Key_value_matches %s %s`, m.key, m.match)},
+				{"Condition", fmt.Sprintf(`Key_value_matches %s %s`, m.fieldMatch, m.regexMatch)},
 				{"Set", fmt.Sprintf(`message %s`, m.message)},
 				{"Set", fmt.Sprintf(`code %s`, m.code)},
 			},
@@ -199,7 +186,7 @@ func generateSelfLogsComponents(ctx context.Context, userAgent string) []fluentb
 	out := make([]fluentbit.Component, 0)
 	out = append(out, generateFluentBitSelfLogsComponents(ctx)...)
 	out = append(out, generateHealthChecksLogsComponents(ctx)...)
-	out = append(out, generateSampleSelfLogsComponents(ctx)...)
+	out = append(out, generateSelfLogsSamplingComponents(ctx)...)
 	out = append(out, generateStructuredHealthLogsComponents(ctx)...)
 	out = append(out, stackdriverOutputComponent(strings.Join([]string{fluentBitSelfLogsTag, healthLogsTag}, "|"), userAgent, ""))
 	return out
