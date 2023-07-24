@@ -71,7 +71,7 @@ func generateHealthChecksLogsComponents(ctx context.Context) []fluentbit.Compone
 	out = append(out, LoggingProcessorExcludeLogs{
 		// This is used to exclude any previous content of the health-checks file that
 		// does not contain the `severity` field.
-		MatchAny: []string{`severity !~ INFO|ERROR|WARNING|DEBUG`},
+		MatchAny: []string{`severity !~ "INFO|ERROR|WARNING|DEBUG"`},
 	}.Components(ctx, healthLogsTag, "health-checks-exclude")...)
 	return out
 }
