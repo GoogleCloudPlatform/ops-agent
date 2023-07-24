@@ -2166,7 +2166,7 @@ func TestPrometheusMetrics(t *testing.T) {
     prometheus:
       type: prometheus
       config:
-		preserve_untyped_metrics: true
+        preserve_untyped_metrics: true
         scrape_configs:
           - job_name: 'prometheus'
             scrape_interval: 10s

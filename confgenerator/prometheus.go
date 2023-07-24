@@ -101,7 +101,7 @@ func (r PrometheusMetrics) Pipelines() []otel.ReceiverPipeline {
 	}
 
 	return []otel.ReceiverPipeline{{
-		Receiver: prometheusToOtelComponent(r.PromConfig.Config),
+		Receiver: prometheusToOtelComponent(r.PromConfig),
 		Processors: map[string][]otel.Component{
 			// Expect metrics, without any additional processing.
 			"metrics": {
@@ -122,8 +122,8 @@ func (r PrometheusMetrics) Pipelines() []otel.ReceiverPipeline {
 //
 // Note: We copy over the prometheus scrape configs and create new ones so calls to `Pipelines()`
 // will return the same result everytime and not change the original prometheus config.
-func prometheusToOtelComponent(promConfig promconfig.Config) otel.Component {
-	copyPromConfig, err := deepCopy(promConfig)
+func prometheusToOtelComponent(cfg PrometheusConfig) otel.Component {
+	copyPromConfig, err := deepCopy(cfg.Config)
 	if err != nil {
 		// This should never happen since we already validated the prometheus config.
 		panic(fmt.Errorf("failed to deep copy prometheus config: %w", err))
@@ -143,18 +143,18 @@ func prometheusToOtelComponent(promConfig promconfig.Config) otel.Component {
 
 	return otel.Component{
 		Type:   "prometheus",
-		Config: map[string]interface{}{"config": copyPromConfig},
+		Config: map[string]interface{}{"config": copyPromConfig, "preserve_untyped": cfg.PreserveUntypedMetrics},
 	}
 }
 
 func deepCopy(config promconfig.Config) (promconfig.Config, error) {
 	marshalledBytes, err := yaml.Marshal(config)
 	if err != nil {
-		return promconfig.Config{}, fmt.Errorf("failed to convert Prometheus Config to yaml: %w.", err)
+		return promconfig.Config{}, fmt.Errorf("failed to convert Prometheus Config to yaml: %w", err)
 	}
 	copyConfig := promconfig.Config{}
 	if err := yaml.Unmarshal(marshalledBytes, &copyConfig); err != nil {
-		return promconfig.Config{}, fmt.Errorf("failed to convert yaml to Prometheus Config: %w.", err)
+		return promconfig.Config{}, fmt.Errorf("failed to convert yaml to Prometheus Config: %w", err)
 	}
 
 	return copyConfig, nil
