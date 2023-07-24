@@ -59,8 +59,6 @@ type Config struct {
 	ThirdPartyAppsPath string `yaml:"third_party_apps_path"`
 	// Path to script files that will be run on the VM.
 	Scripts []string `yaml:"scripts"`
-	// A Service Account for the VM.
-	ServiceAccount string `yaml:"service_account"`
 }
 
 func distroFolder(platform string) (string, error) {
@@ -200,8 +198,6 @@ func getSimulacraConfig() (Config, error) {
 	zone := flag.String("zone", "", "Optional. If missing, Simulacra will try to infer from GCloud config. ")
 	name := flag.String("name", getInstanceName(), "Optional. A name for the instance to be created. If missing, a random name with prefix 'simulacra-vm-instance' will be assigned. ")
 	thirdPartyAppsPath := flag.String("third_party_apps_path", defaultThirdPartyAppsPath, "Optional. The path to the third party apps data folder. If missing, Simulacra assumes the working directory is the root of the repo. Therefore, the default path is './integration_test/third_party_apps_data' ")
-	serviceAccount := flag.String("service_account", "", "Optional. A service account for the VM. If missing, the VM will be instantiated with a default service account.")
-
 	flag.Parse()
 
 	if *configPath != "" {
@@ -209,7 +205,7 @@ func getSimulacraConfig() (Config, error) {
 	}
 
 	config := Config{Platform: *platform, ConfigFilePath: *opsAgentConfigFile, Project: *project, Zone: *zone, Name: *name,
-		ThirdPartyAppsPath: *thirdPartyAppsPath, ServiceAccount: *serviceAccount}
+		ThirdPartyAppsPath: *thirdPartyAppsPath}
 
 	return config, nil
 
@@ -237,24 +233,6 @@ func runCustomScripts(ctx context.Context, vm *gce.VM, logger *logging.Directory
 	return nil
 }
 
-func createInstance(ctx context.Context, config *Config, logger *log.Logger) (*gce.VM, error) {
-	args := []string{}
-	if config.ServiceAccount != "" {
-		args = append(args, "--service-account="+config.ServiceAccount)
-	}
-
-	options := gce.VMOptions{
-		Platform:             config.Platform,
-		MachineType:          agents.RecommendedMachineType(config.Platform),
-		Name:                 config.Name,
-		Project:              config.Project,
-		Zone:                 config.Zone,
-		ExtraCreateArguments: args,
-	}
-
-	return gce.CreateInstance(ctx, logger, options)
-}
-
 func main() {
 	loggingDir := path.Join("/tmp", fmt.Sprintf("simulacra-%s", uuid.NewString()))
 	mainLogFile := path.Join(loggingDir, "main_log.txt")
@@ -274,9 +252,16 @@ func main() {
 		log.Default().Fatalf("project and zone must either be non empty or set in GCloud %v", err)
 	}
 
+	options := gce.VMOptions{
+		Platform:    config.Platform,
+		MachineType: agents.RecommendedMachineType(config.Platform),
+		Name:        config.Name,
+		Project:     config.Project,
+		Zone:        config.Zone,
+	}
 	// Create VM Instance.
 	log.Default().Printf("Creating VM Instance, check %s for details", vmInitLogFile)
-	vm, err := createInstance(ctx, &config, logger.ToFile(vmInitLogFileName))
+	vm, err := gce.CreateInstance(ctx, logger.ToFile(vmInitLogFileName), options)
 	if err != nil {
 		log.Default().Fatalf("Failed to create GCE instance %v", err)
 	}
