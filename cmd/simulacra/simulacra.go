@@ -307,7 +307,7 @@ func main() {
 	receivers, err := getReceiversFromConfig(ctx, vm, logger, config.ConfigFilePath)
 
 	if err != nil {
-		log.Default().Fatalf("Error reading config file %v", err)
+		log.Default().Fatalf("Error reading config file: %v", err)
 	}
 
 	if err := installApps(ctx, vm, logger, config.ThirdPartyAppsPath, receivers); err != nil {
