@@ -100,7 +100,9 @@ func (r MetricsReceiverIis) Pipelines() []otel.ReceiverPipeline {
 				},
 			},
 		},
-		Type: otel.System,
+		ExporterTypes: map[string]otel.ExporterType{
+			"metrics": otel.System,
+		},
 		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsTransform(
 				otel.RenameMetric(
@@ -203,7 +205,7 @@ func (p *LoggingProcessorIisAccess) Components(ctx context.Context, tag, uid str
 	c = append(c, fluentbit.LuaFilterComponents(tag, iisMergeRecordFieldsLuaFunction, iisMergeRecordFieldsLuaScriptContents)...)
 
 	c = append(c, []fluentbit.Component{
-		// This is used to exlude the header lines above the logs
+		// This is used to exclude the header lines above the logs
 
 		// EXAMPLE LINES:
 		// #Software: Microsoft Internet Information Services 10.0

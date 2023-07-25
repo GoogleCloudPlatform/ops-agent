@@ -21,6 +21,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
 
 type MetricsReceiverRedis struct {
@@ -29,8 +30,8 @@ type MetricsReceiverRedis struct {
 	confgenerator.MetricsReceiverShared    `yaml:",inline"`
 
 	// TODO: Add support for ACL Authentication
-	Address  string `yaml:"address" validate:"omitempty,hostname_port|startswith=/"`
-	Password string `yaml:"password" validate:"omitempty"`
+	Address  string        `yaml:"address" validate:"omitempty,hostname_port|startswith=/"`
+	Password secret.String `yaml:"password" validate:"omitempty"`
 }
 
 const defaultRedisEndpoint = "localhost:6379"
@@ -57,7 +58,7 @@ func (r MetricsReceiverRedis) Pipelines() []otel.ReceiverPipeline {
 			Config: map[string]interface{}{
 				"collection_interval": r.CollectionIntervalString(),
 				"endpoint":            r.Address,
-				"password":            r.Password,
+				"password":            r.Password.SecretValue(),
 				"tls":                 r.TLSConfig(true),
 				"transport":           transport,
 			},

@@ -1,0 +1,16 @@
+import 'common.gcl' as common
+
+config build = common.third_party_apps_test {
+  params {
+    platforms = ['debian-11-arm64']
+
+    // T2A machines are only available on us-central1-{a,b,f}
+    environment {
+      ZONES = join([
+        'us-central1-a',
+        'us-central1-b',
+        'us-central1-f',
+      ], ',')
+    }
+  }
+}

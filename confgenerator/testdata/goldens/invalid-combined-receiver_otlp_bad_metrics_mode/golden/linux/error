@@ -1,0 +1,9 @@
+[19:21] "metrics_mode" must be one of [googlecloudmonitoring googlemanagedprometheus]
+  16 |   receivers:
+  17 |     otlp:
+  18 |       type: otlp
+> 19 |       metrics_mode: google
+                           ^
+  20 | metrics:
+  21 |   service:
+  22 |     pipelines:

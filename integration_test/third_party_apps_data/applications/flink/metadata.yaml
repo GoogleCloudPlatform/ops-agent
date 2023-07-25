@@ -18,7 +18,10 @@ long_name: Apache Flink
 description: |-
   The Apache Flink integration collects client, jobmanager and taskmanager logs and parses them into a JSON payload.
   The result includes fields for source, level, and message.
-supported_app_version: ["1.13.6", "1.14.4"]
+platforms_to_skip:
+  # Flink only supports Java 11, which has no installation candidate for Debian 12
+  - debian-12
+supported_app_version: ["1.12.5", "1.13.6", "1.14.4"]
 configure_integration: ""
 expected_metrics:
   - type: workload.googleapis.com/flink.jvm.cpu.load

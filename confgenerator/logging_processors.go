@@ -54,7 +54,7 @@ var multilineRulesLanguageMap = map[string][]string{
 		`"java_after_exception" "/^--- End of stack trace from previous (?x:)location where exception was thrown ---$/" "java_after_exception"`,
 		`"java_after_exception" "/^[\t ]*(?:Caused by|Suppressed):/" "java_after_exception"`,
 		`"java_after_exception" "/^[\t ]*... \d+ (?:more|common frames omitted)/" "java_after_exception"`},
-	"python": {`"start_state, python_start_exception" "/^Traceback \(most recent call last\):$/" "python"`,
+	"python": {`"start_state, python_start_exception" "/Traceback \(most recent call last\):$/" "python"`,
 		`"python" "/^[\t ]+File /" "python_code"`,
 		`"python_code" "/[^\t ]/" "python"`,
 		`"python" "/^(?:[^\s.():]+\.)*[^\s.():]+:/" "python_start_exception"`},

@@ -1,7 +1,13 @@
 set -e
 
 sudo apt update
-sudo apt install -y default-jdk
+# Debian 12 very specifically wants openjdk-17-jdk for installing Java via apt
+source /etc/os-release
+if [[ $ID == debian && "${VERSION_ID}" == 12 ]]; then
+    sudo apt-get install -y openjdk-17-jdk
+else
+    sudo apt-get install -y default-jdk
+fi
 
 # TODO(sophieyfang): Below file is the same across all distros.
 # Have a single source file to be copied across all distros.

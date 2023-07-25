@@ -14,7 +14,9 @@ template config build = {
     artifacts = ['result/**']
   }
 
-  before_action = [functions.fetch_keystore(params.keystore_keys)]
+  before_action = [
+    { fetch_keystore = { keystore_resource = params.keystore_keys } },
+  ]
 
   action = [
     {

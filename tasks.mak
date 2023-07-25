@@ -80,15 +80,15 @@ test_metadata_update:
 # these targets. The Makefile will not ascribe defaults for these, since they 
 # are specific to different user environments.
 #
-# Defaults are provided for ZONE and PLATFORMS.
+# Defaults are provided for ZONES and PLATFORMS.
 #
 # If you would like to use a custom build you can provide a REPO_SUFFIX or
 # AGENT_PACKAGES_IN_GCS. These targets function fine without either specified.
-ZONE ?= us-central1-b
+ZONES ?= us-central1-b
 PLATFORMS ?= debian-11
 
 integration_tests:
-	ZONE="${ZONE}" \
+	ZONES="${ZONES}" \
 	PLATFORMS="${PLATFORMS}" \
 	go test -v ./integration_test/ops_agent_test.go \
 	-test.parallel=1000 \
@@ -96,7 +96,7 @@ integration_tests:
 	-timeout=4h
 
 third_party_apps_test:
-	ZONE="${ZONE}" \
+	ZONES="${ZONES}" \
 	PLATFORMS="${PLATFORMS}" \
 	go test -v ./integration_test/third_party_apps_test.go \
 	-test.parallel=1000 \

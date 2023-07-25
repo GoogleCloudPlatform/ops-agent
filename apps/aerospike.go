@@ -19,6 +19,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
 
 // MetricsReceiverAerospike is configuration for the Aerospike metrics receiver
@@ -29,7 +30,7 @@ type MetricsReceiverAerospike struct {
 
 	Endpoint string        `yaml:"endpoint" validate:"omitempty,hostname_port"`
 	Username string        `yaml:"username" validate:"required_with=Password"`
-	Password string        `yaml:"password" validate:"required_with=Username"`
+	Password secret.String `yaml:"password" validate:"required_with=Username"`
 	Timeout  time.Duration `yaml:"timeout"`
 }
 
@@ -82,7 +83,7 @@ func (r MetricsReceiverAerospike) Pipelines() []otel.ReceiverPipeline {
 				"endpoint":                endpoint,
 				"collect_cluster_metrics": collectClusterMetrics,
 				"username":                r.Username,
-				"password":                r.Password,
+				"password":                r.Password.SecretValue(),
 				"timeout":                 timeout,
 			},
 		},

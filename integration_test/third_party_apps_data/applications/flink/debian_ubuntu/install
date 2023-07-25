@@ -1,9 +1,13 @@
 set -e
 
 sudo apt-get update
-sudo apt-get install -y curl default-jre
 
-curl -L -o flink.tgz https://archive.apache.org/dist/flink/flink-1.14.4/flink-1.14.4-bin-scala_2.11.tgz
+# All other tested distributions have default-jre point to openjdk-11-jre, but default-jre pulls in openjdk-17-jre
+# for Ubuntu 23.04, and Java 17 support is in progress for Flink (see https://issues.apache.org/jira/browse/FLINK-15736)
+sudo apt-get install -y openjdk-11-jre
+
+# https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/README.md#vendored-dependencies
+curl -L -o flink.tgz https://storage.googleapis.com/ops-agents-public-buckets-vendored-deps/mirrored-content/archive.apache.org/dist/flink/flink-1.14.4/flink-1.14.4-bin-scala_2.11.tgz
 
 sudo mkdir /opt/flink
 sudo tar -xzf flink.tgz -C /opt/flink --strip-components 1

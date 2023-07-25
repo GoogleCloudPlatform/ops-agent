@@ -35,8 +35,6 @@ import (
 )
 
 const (
-	validTestdataDirName   = "valid"
-	invalidTestdataDirName = "invalid"
 	builtinTestdataDirName = "builtin"
 	goldenDir              = "golden"
 	errorGolden            = goldenDir + "/error"
@@ -62,7 +60,7 @@ var (
 	testPlatforms = []platformConfig{
 		{
 			name:            "linux",
-			defaultLogsDir:  "/var/log/google-cloud-ops-agent/subagents",
+			defaultLogsDir:  "/var/log/google-cloud-ops-agent",
 			defaultStateDir: "/var/lib/google-cloud-ops-agent/fluent-bit",
 			platform: platform.Platform{
 				Type: platform.Linux,
@@ -109,71 +107,29 @@ var (
 func TestGoldens(t *testing.T) {
 	t.Parallel()
 
-	// Iterate platforms inside test directories so the test name hierarchy matches the testdata hierarchy.
-	for _, test := range []struct {
-		dirName      string
-		errAssertion func(t *testing.T, err error, got map[string]string)
-	}{
-		{
-			validTestdataDirName,
-			func(t *testing.T, err error, got map[string]string) {
-				assert.NilError(t, err)
-				delete(got, builtinConfigFileName)
-			},
-		},
-		{
-			invalidTestdataDirName,
-			func(t *testing.T, err error, got map[string]string) {
-				assert.Assert(t, err != nil, "expected test config to be invalid, but was successful")
-				// Error is checked by runTestsInDir
-				delete(got, builtinConfigFileName)
-			},
-		},
-		{
-			builtinTestdataDirName,
-			nil,
-		},
-	} {
-		test := test
-		t.Run(test.dirName, func(t *testing.T) {
-			t.Parallel()
-			for _, pc := range testPlatforms {
-				pc := pc
-				t.Run(pc.name, func(t *testing.T) {
-					t.Parallel()
-					runTestsInDir(
-						t,
-						pc,
-						test.dirName,
-						test.errAssertion,
-					)
-				})
-			}
-		})
-	}
-}
-
-func runTestsInDir(
-	t *testing.T,
-	pc platformConfig,
-	testTypeDir string,
-	errAssertion func(*testing.T, error, map[string]string),
-) {
-	platformTestDir := filepath.Join(testTypeDir, pc.name)
-	testNames := getTestsInDir(t, platformTestDir)
+	goldensDir := "goldens"
+	testNames := getTestsInDir(t, goldensDir)
 
 	for _, testName := range testNames {
 		// https://github.com/golang/go/wiki/CommonMistakes#using-goroutines-on-loop-iterator-variables
 		testName := testName
 		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
-			testDir := filepath.Join(platformTestDir, testName)
-			got, err := generateConfigs(pc, testDir)
-			if errAssertion != nil {
-				errAssertion(t, err, got)
-			}
-			if err := testGeneratedFiles(t, got, testDir); err != nil {
-				t.Errorf("Failed to check generated configs: %v", err)
+			for _, pc := range testPlatforms {
+				pc := pc
+				t.Run(pc.name, func(t *testing.T) {
+					testDir := filepath.Join(goldensDir, testName)
+					got, err := generateConfigs(pc, testDir)
+					if strings.HasPrefix(testName, "invalid-") {
+						assert.Assert(t, err != nil, "expected test config to be invalid, but was successful")
+					}
+					if testName != "builtin" {
+						delete(got, builtinConfigFileName)
+					}
+					if err := testGeneratedFiles(t, got, filepath.Join(testDir, goldenDir, pc.name)); err != nil {
+						t.Errorf("Failed to check generated configs: %v", err)
+					}
+				})
 			}
 		})
 	}
@@ -284,7 +240,7 @@ func generateConfigs(pc platformConfig, testDir string) (got map[string]string, 
 func testGeneratedFiles(t *testing.T, generatedFiles map[string]string, testDir string) error {
 	// Find all files currently in this test directory
 	existingFiles := map[string]struct{}{}
-	goldenPath := filepath.Join("testdata", testDir, goldenDir)
+	goldenPath := filepath.Join("testdata", testDir)
 	err := filepath.Walk(
 		goldenPath,
 		func(path string, info fs.FileInfo, err error) error {
@@ -310,7 +266,7 @@ func testGeneratedFiles(t *testing.T, generatedFiles map[string]string, testDir 
 	// If the file is new, the test will fail if not currently doing a golden
 	// update (`-update` flag).
 	for file, content := range generatedFiles {
-		golden.Assert(t, content, filepath.Join(testDir, goldenDir, file))
+		golden.Assert(t, content, filepath.Join(testDir, file))
 		delete(existingFiles, file)
 	}
 
@@ -319,7 +275,7 @@ func testGeneratedFiles(t *testing.T, generatedFiles map[string]string, testDir 
 	// to clean up the existing lua files left aren't being generated anymore.
 	for file := range existingFiles {
 		if golden.FlagUpdate() {
-			err := os.Remove(filepath.Join("testdata", testDir, goldenDir, file))
+			err := os.Remove(filepath.Join("testdata", testDir, file))
 			if err != nil {
 				return err
 			}
@@ -351,7 +307,7 @@ func init() {
 		InstanceName:  "test-instance-name",
 		Tags:          "test-tag",
 		MachineType:   "test-machine-type",
-		Metadata:      map[string]string{"test-key": "test-value"},
+		Metadata:      map[string]string{"test-key": "test-value", "test-escape": "${foo:bar}"},
 		Label:         map[string]string{"test-label-key": "test-label-value"},
 		InterfaceIPv4: map[string]string{"test-interface": "test-interface-ipv4"},
 	}

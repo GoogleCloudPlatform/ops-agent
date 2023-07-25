@@ -15,14 +15,70 @@
 package healthchecks
 
 import (
-	"log"
+	"errors"
 	"net/http"
+
+	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 )
 
+type networkRequest struct {
+	name             string
+	url              string
+	successMessage   string
+	healthCheckError HealthCheckError
+}
+
+func (r networkRequest) SendRequest(logger logs.StructuredLogger) error {
+	response, err := http.Get(r.url)
+	if err != nil {
+		if isTimeoutError(err) || isConnectionRefusedError(err) {
+			return r.healthCheckError
+		}
+		return err
+	}
+	logger.Infof("%s response status: %s", r.name, response.Status)
+	switch response.StatusCode {
+	case http.StatusOK:
+		logger.Infof(r.successMessage)
+	default:
+		return r.healthCheckError
+	}
+	return nil
+}
+
 var (
-	// API urls
-	loggingAPIUrl    = "https://logging.googleapis.com/$discovery/rest"
-	monitoringAPIUrl = "https://monitoring.googleapis.com/$discovery/rest"
+	requests = []networkRequest{
+		{
+			name:             "Logging API",
+			url:              "https://logging.googleapis.com/$discovery/rest",
+			successMessage:   "Request to the Logging API was successful.",
+			healthCheckError: LogApiConnErr,
+		},
+		{
+			name:             "Monitoring API",
+			url:              "https://monitoring.googleapis.com/$discovery/rest",
+			successMessage:   "Request to the Monitoring API was successful.",
+			healthCheckError: MonApiConnErr,
+		},
+		{
+			name:             "Packages API",
+			url:              "https://packages.cloud.google.com",
+			successMessage:   "Request to packages.cloud.google.com was successful.",
+			healthCheckError: PacApiConnErr,
+		},
+		{
+			name:             "dl.google.com",
+			url:              "https://dl.google.com",
+			successMessage:   "Request to dl.google.com was successful.",
+			healthCheckError: DLApiConnErr,
+		},
+		{
+			name:             "GCE Metadata Server",
+			url:              "http://metadata.google.internal",
+			successMessage:   "Request to the GCE Metadata server was successful.",
+			healthCheckError: MetaApiConnErr,
+		},
+	}
 )
 
 type NetworkCheck struct{}
@@ -31,38 +87,10 @@ func (c NetworkCheck) Name() string {
 	return "Network Check"
 }
 
-func (c NetworkCheck) RunCheck(logger *log.Logger) error {
-	// Request to logging API
-	response, err := http.Get(loggingAPIUrl)
-	if err != nil {
-		if isTimeoutError(err) || isConnectionRefusedError(err) {
-			return LogApiConnErr
-		}
-		return err
+func (c NetworkCheck) RunCheck(logger logs.StructuredLogger) error {
+	var networkErrors []error
+	for _, r := range requests {
+		networkErrors = append(networkErrors, r.SendRequest(logger))
 	}
-	logger.Printf("Logging API response status: %s", response.Status)
-	switch response.StatusCode {
-	case http.StatusOK:
-		logger.Printf("Request to the Logging API was successful.")
-	default:
-		return LogApiConnErr
-	}
-
-	// Request to monitoring API
-	response, err = http.Get(monitoringAPIUrl)
-	if err != nil {
-		if isTimeoutError(err) || isConnectionRefusedError(err) {
-			return MonApiConnErr
-		}
-		return err
-	}
-	logger.Printf("Monitoring API response status: %s", response.Status)
-	switch response.StatusCode {
-	case http.StatusOK:
-		logger.Printf("Request to the Monitoring API was successful.")
-	default:
-		return MonApiConnErr
-	}
-
-	return nil
+	return errors.Join(networkErrors...)
 }

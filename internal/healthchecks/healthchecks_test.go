@@ -16,16 +16,38 @@ package healthchecks_test
 
 import (
 	"errors"
-	"io/ioutil"
-	"log"
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"gotest.tools/v3/assert"
 )
 
-var testLogger *log.Logger = log.New(ioutil.Discard, "", 0)
+var (
+	TestFailure = healthchecks.HealthCheckError{
+		Code:         "TestFailure",
+		Class:        healthchecks.Generic,
+		Message:      "",
+		Action:       "",
+		ResourceLink: "",
+		IsFatal:      true,
+	}
+
+	TestWarning = healthchecks.HealthCheckError{
+		Code:         "TestWarning",
+		Class:        healthchecks.Generic,
+		Message:      "",
+		Action:       "",
+		ResourceLink: "",
+		IsFatal:      false,
+	}
+)
+
+func generateExpectedResultMessage(name string, result string) string {
+	return fmt.Sprintf("[%s] Result: %s", name, result)
+}
 
 type FailureCheck struct{}
 
@@ -33,18 +55,41 @@ func (c FailureCheck) Name() string {
 	return "Failure Check"
 }
 
-func (c FailureCheck) RunCheck(logger *log.Logger) error {
-	return healthchecks.HcFailureErr
+func (c FailureCheck) RunCheck(logger logs.StructuredLogger) error {
+	return TestFailure
 }
 
 func TestCheckFailure(t *testing.T) {
-	wantMessage := "The Health Check encountered an internal error."
-	wantAction := "Submit a support case from Google Cloud console."
+	wantMessage := ""
+	wantAction := ""
 	testCheck := FailureCheck{}
-
+	testLogger, _ := logs.DiscardLogger()
 	err := testCheck.RunCheck(testLogger)
 
-	assert.ErrorIs(t, err, healthchecks.HcFailureErr)
+	assert.ErrorIs(t, err, TestFailure)
+	healthError, _ := err.(healthchecks.HealthCheckError)
+	assert.Equal(t, wantMessage, healthError.Message)
+	assert.Equal(t, wantAction, healthError.Action)
+}
+
+type WarningCheck struct{}
+
+func (c WarningCheck) Name() string {
+	return "Warning Check"
+}
+
+func (c WarningCheck) RunCheck(logger logs.StructuredLogger) error {
+	return TestWarning
+}
+
+func TestCheckWarning(t *testing.T) {
+	wantMessage := ""
+	wantAction := ""
+	testCheck := WarningCheck{}
+	testLogger, _ := logs.DiscardLogger()
+	err := testCheck.RunCheck(testLogger)
+
+	assert.ErrorIs(t, err, TestWarning)
 	healthError, _ := err.(healthchecks.HealthCheckError)
 	assert.Equal(t, wantMessage, healthError.Message)
 	assert.Equal(t, wantAction, healthError.Action)
@@ -56,12 +101,13 @@ func (c SuccessCheck) Name() string {
 	return "Success Check"
 }
 
-func (c SuccessCheck) RunCheck(logger *log.Logger) error {
+func (c SuccessCheck) RunCheck(logger logs.StructuredLogger) error {
 	return nil
 }
 
 func TestCheckSuccess(t *testing.T) {
 	testCheck := SuccessCheck{}
+	testLogger, _ := logs.DiscardLogger()
 
 	err := testCheck.RunCheck(testLogger)
 
@@ -74,14 +120,14 @@ func (c ErrorCheck) Name() string {
 	return "Error Check"
 }
 
-func (c ErrorCheck) RunCheck(logger *log.Logger) error {
-	err := errors.New("Test error.")
-	return err
+func (c ErrorCheck) RunCheck(logger logs.StructuredLogger) error {
+	return errors.New("Test error.")
 }
 
 func TestCheckError(t *testing.T) {
 	wantMessage := "Test error."
 	testCheck := ErrorCheck{}
+	testLogger, _ := logs.DiscardLogger()
 
 	err := testCheck.RunCheck(testLogger)
 
@@ -90,13 +136,94 @@ func TestCheckError(t *testing.T) {
 
 func TestRunAllHealthChecks(t *testing.T) {
 	fCheck := FailureCheck{}
+	wCheck := WarningCheck{}
 	sCheck := SuccessCheck{}
 	eCheck := ErrorCheck{}
-	allHealthChecks := healthchecks.HealthCheckRegistry{fCheck, sCheck, eCheck}
+	allHealthChecks := healthchecks.HealthCheckRegistry{fCheck, wCheck, sCheck, eCheck}
+	testLogger, observedLogs := logs.DiscardLogger()
 
-	result := allHealthChecks.RunAllHealthChecks(testLogger)
+	allCheckResults := allHealthChecks.RunAllHealthChecks(testLogger)
 
-	assert.Check(t, strings.Contains(result[fCheck.Name()].Message, "Result: FAIL"))
-	assert.Check(t, strings.Contains(result[sCheck.Name()].Message, "Result: PASS"))
-	assert.Check(t, strings.Contains(result[eCheck.Name()].Message, "Result: ERROR"))
+	var expected string
+	var result string
+	var level string
+	for idx, r := range allCheckResults {
+		switch r.Name {
+		case "Error Check":
+			result = "ERROR"
+			level = "error"
+		case "Success Check":
+			result = "PASS"
+			level = "info"
+		case "Warning Check":
+			result = "WARNING"
+			level = "warn"
+		case "Failure Check":
+			result = "FAIL"
+			level = "error"
+		}
+		expected = generateExpectedResultMessage(r.Name, result)
+
+		assert.Check(t, strings.Contains(observedLogs.All()[idx].Entry.Message, expected))
+		assert.Equal(t, observedLogs.All()[idx].Entry.Level.String(), level)
+	}
+}
+
+type MultipleFailureResultCheck struct{}
+
+func (c MultipleFailureResultCheck) Name() string {
+	return "MultipleResult Check"
+}
+
+func (c MultipleFailureResultCheck) RunCheck(logger logs.StructuredLogger) error {
+	return errors.Join(nil, errors.New("Test error."), TestWarning, TestFailure)
+}
+
+func TestMultipleFailureResultCheck(t *testing.T) {
+	mCheck := MultipleFailureResultCheck{}
+	wantErrorMessage := "Test error."
+	expectedError := generateExpectedResultMessage(mCheck.Name(), "ERROR")
+	expectedWarning := generateExpectedResultMessage(mCheck.Name(), "WARNING")
+	expectedFailure := generateExpectedResultMessage(mCheck.Name(), "FAIL")
+	testLogger, observedLogs := logs.DiscardLogger()
+
+	err := mCheck.RunCheck(testLogger)
+	result := healthchecks.HealthCheckResult{Name: mCheck.Name(), Err: err}
+	result.LogResult(testLogger)
+
+	assert.ErrorContains(t, err, wantErrorMessage)
+	assert.ErrorIs(t, err, TestWarning)
+	assert.ErrorIs(t, err, TestFailure)
+
+	assert.Check(t, strings.Contains(observedLogs.All()[0].Entry.Message, expectedError))
+	assert.Equal(t, observedLogs.All()[0].Entry.Level.String(), "error")
+	assert.Check(t, strings.Contains(observedLogs.All()[1].Entry.Message, expectedWarning))
+	assert.Equal(t, observedLogs.All()[1].Entry.Level.String(), "warn")
+	assert.Check(t, strings.Contains(observedLogs.All()[2].Entry.Message, expectedFailure))
+	assert.Equal(t, observedLogs.All()[2].Entry.Level.String(), "error")
+}
+
+type MultipleSuccessResultCheck struct{}
+
+func (c MultipleSuccessResultCheck) Name() string {
+	return "MultipleResult Check"
+}
+
+func (c MultipleSuccessResultCheck) RunCheck(logger logs.StructuredLogger) error {
+	return errors.Join(nil, nil, nil)
+}
+
+func TestMultipleSuccessResultCheck(t *testing.T) {
+	sCheck := MultipleSuccessResultCheck{}
+	expectedSuccess := generateExpectedResultMessage(sCheck.Name(), "PASS")
+	testLogger, observedLogs := logs.DiscardLogger()
+
+	err := sCheck.RunCheck(testLogger)
+	result := healthchecks.HealthCheckResult{Name: sCheck.Name(), Err: err}
+	result.LogResult(testLogger)
+
+	assert.NilError(t, err)
+
+	assert.Check(t, strings.Contains(observedLogs.All()[0].Entry.Message, expectedSuccess))
+	assert.Equal(t, observedLogs.All()[0].Entry.Level.String(), "info")
 }

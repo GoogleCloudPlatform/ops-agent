@@ -1,4 +1,24 @@
 set -e
 
 sudo apt-get update
+
+# Debian 12 very specifically wants openjdk-17-jdk for installing Java via apt
+source /etc/os-release
+if [[ $ID == debian && "${VERSION_ID}" == 12 ]]; then
+    sudo apt-get install -y openjdk-17-jdk
+fi
+
 sudo apt install -y zookeeper-bin zookeeperd
+
+# TODO: Investigate why this happens and if this is the correct solution.
+# For some reason the zookeeper package doesn't set the CLASSPATH in the environment file
+# on Ubuntu 23.04 and Debian 12, which it does on previous versions of Ubuntu and Debian.
+source /etc/os-release
+if [[ "${VERSION_ID}" == 23* || "${VERSION_ID}" == 12 ]]; then
+    sudo tee -a /etc/zookeeper/conf/environment >/dev/null <<EOF
+CLASSPATH="/etc/zookeeper/conf:/usr/share/java/jline.jar:/usr/share/java/log4j-1.2.jar:/usr/share/java/xercesImpl.jar:/usr/share/java/xmlParserAPIs.jar:/usr/share/java/netty.jar:/usr/share/java/slf4j-api.jar:/usr/share/java/slf4j-log4j12.jar:/usr/share/java/zookeeper.jar"
+JAVA_OPTS="-Dzookeeper.4lw.commands.whitelist=*"
+EOF
+
+    sudo service zookeeper restart
+fi

@@ -51,7 +51,9 @@ supported_operating_systems: linux
 platforms_to_skip:
   - debian-10
   - debian-11
+  - debian-12
   - ubuntu-2004-lts
+  - ubuntu-2304-amd64
   - sles-12
   - sles-15
   - rocky-linux-9

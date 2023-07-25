@@ -69,6 +69,7 @@ expected_metrics:
       namespace_name: .*
     monitored_resource: gce_instance
     type: workload.googleapis.com/aerospike.namespace.scan.count
+    optional: true # This aerospike metric is broken for aerospike 6.X - see issue raised https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21834
     value_type: INT64
   - kind: CUMULATIVE
     labels:
@@ -129,7 +130,9 @@ minimum_supported_agent_version:
   logging: 2.23.0
 supported_operating_systems: linux
 platforms_to_skip:
-  # Unable to install Aerospike on SLES 12 SP5, or RHEL 9
+  # Unable to install Aerospike on Debian 12, SLES 12 SP5, RHEL 9, or Ubuntu 23.04
+  - debian-12
   - sles-12
   - rocky-linux-9
+  - ubuntu-2304-amd64
 public_url: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/aerospike

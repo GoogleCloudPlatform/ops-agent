@@ -31,8 +31,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
-const fluentBitSelfLogTag = "ops-agent-fluent-bit"
-
 func googleCloudExporter(userAgent string, instrumentationLabels bool) otel.Component {
 	return otel.Component{
 		Type: "googlecloud",
@@ -74,15 +72,6 @@ func googleManagedPrometheusExporter(userAgent string) otel.Component {
 				"enabled": false,
 			},
 			"user_agent": userAgent,
-		},
-	}
-}
-
-func gcpResourceDetector() otel.Component {
-	return otel.Component{
-		Type: "resourcedetection",
-		Config: map[string]interface{}{
-			"detectors": []string{"gcp"},
 		},
 	}
 }
@@ -130,7 +119,6 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context) (string, error)
 		LogLevel:          uc.Metrics.Service.LogLevel,
 		ReceiverPipelines: receiverPipelines,
 		Pipelines:         pipelines,
-		GlobalProcessors:  []otel.Component{gcpResourceDetector()},
 		Exporters: map[otel.ExporterType]otel.Component{
 			otel.System: googleCloudExporter(userAgent, false),
 			otel.OTel:   googleCloudExporter(userAgent, true),
@@ -169,7 +157,7 @@ func (uc *UnifiedConfig) generateOtelPipelines() (map[string]otel.ReceiverPipeli
 			}
 
 			// Check the Ops Agent receiver type.
-			if receiverPipeline.Type == otel.GMP {
+			if receiverPipeline.ExporterTypes[pipelineType] == otel.GMP {
 				// Prometheus receivers are incompatible with processors, so we need to assert that no processors are configured.
 				if len(processorIDs) > 0 {
 					return fmt.Errorf("prometheus receivers are incompatible with Ops Agent processors")
@@ -382,47 +370,10 @@ func (l *Logging) generateFluentbitComponents(ctx context.Context, userAgent str
 			out = append(out, stackdriverOutputComponent(strings.Join(tags, "|"), userAgent, "2G"))
 		}
 	}
-	out = append(out, LoggingReceiverFilesMixin{
-		IncludePaths: []string{"${logs_dir}/logging-module.log"},
-		//Following: b/226668416 temporarily set storage.type to "memory"
-		//to prevent chunk corruption errors
-		BufferInMemory: true,
-	}.Components(ctx, fluentBitSelfLogTag)...)
-
-	out = append(out, generateSeveritySelfLogsParser(ctx)...)
-
-	out = append(out, stackdriverOutputComponent(fluentBitSelfLogTag, userAgent, ""))
+	out = append(out, generateSelfLogsComponents(ctx, userAgent)...)
 	out = append(out, fluentbit.MetricsOutputComponent())
 
 	return out, nil
-}
-
-func generateSeveritySelfLogsParser(ctx context.Context) []fluentbit.Component {
-	out := make([]fluentbit.Component, 0)
-
-	parser := LoggingProcessorParseRegex{
-		Regex:       `(?<message>\[[ ]*(?<time>\d+\/\d+\/\d+ \d+:\d+:\d+)] \[[ ]*(?<severity>[a-z]+)\].*)`,
-		PreserveKey: true,
-		ParserShared: ParserShared{
-			TimeKey:    "time",
-			TimeFormat: "%Y/%m/%d %H:%M:%S",
-			Types: map[string]string{
-				"severity": "string",
-			},
-		},
-	}.Components(ctx, fluentBitSelfLogTag, "self-logs-severity")
-
-	out = append(out, parser...)
-
-	out = append(out, fluentbit.TranslationComponents(fluentBitSelfLogTag, "severity", "logging.googleapis.com/severity", true,
-		[]struct{ SrcVal, DestVal string }{
-			{"debug", "DEBUG"},
-			{"error", "ERROR"},
-			{"info", "INFO"},
-			{"warn", "WARNING"},
-		})...,
-	)
-	return out
 }
 
 func getMD5Hash(text string) string {
