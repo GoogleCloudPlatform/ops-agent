@@ -463,7 +463,7 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	return err
 }
 
-func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []*metadata.ExpectedMetric, fc *feature_tracking_metadata.FeatureTrackingContainer) error {
+func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, app string, metrics []*metadata.ExpectedMetric, fc *feature_tracking_metadata.FeatureTrackingContainer) error {
 	var err error
 	logger.ToMainLog().Printf("Parsed expectedMetrics: %s", util.DumpPointerArray(metrics, "%+v"))
 	// Wait for the representative metric first, which is intended to *always*
@@ -494,6 +494,12 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	for _, metric := range metrics {
 		if metric.Optional || metric.Representative {
 			logger.ToMainLog().Printf("Skipping optional or representative metric %s", metric.Type)
+			continue
+		}
+		// TODO(b/293170696): mysql.row_operations is absent on MariaDB 10.10+,
+		// which affects the Debian 12 test (where the tested MariaDB version is 10.11).
+		if strings.HasPrefix(vm.Platform, "debian-12") && app == "mariadb" && strings.HasSuffix(metric.Type, "mysql.row_operations") {
+			logger.ToMainLog().Printf("Skipping unavailable metric %s (b/293170696)", metric.Type)
 			continue
 		}
 		requiredMetrics = append(requiredMetrics, metric)
@@ -635,7 +641,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 
 		fc, err := getExpectedFeatures(app)
 
-		if err = runMetricsTestCases(ctx, logger, vm, metadata.ExpectedMetrics, fc); err != nil {
+		if err = runMetricsTestCases(ctx, logger, vm, app, metadata.ExpectedMetrics, fc); err != nil {
 			return nonRetryable, err
 		}
 	}
