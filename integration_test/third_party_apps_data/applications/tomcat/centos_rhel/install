@@ -1,6 +1,6 @@
 set -e
 
-sudo yum install -y curl java
+sudo yum install -y curl java tzdata-java
 sudo mkdir -p /opt/tomcat/stage
 # https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/README.md#vendored-dependencies
 sudo curl "https://storage.googleapis.com/ops-agents-public-buckets-vendored-deps/mirrored-content/archive.apache.org/dist/tomcat/tomcat-9/v9.0.58/bin/apache-tomcat-9.0.58.tar.gz" -o /opt/tomcat/stage/tomcat.tgz
