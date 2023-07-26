@@ -1,6 +1,6 @@
 set -e
 
-sudo yum install -y curl java
+sudo yum install -y curl java tzdata-java
 sudo mkdir -p /opt/kafka/stage
 # https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/README.md#vendored-dependencies
 sudo curl "https://storage.googleapis.com/ops-agents-public-buckets-vendored-deps/mirrored-content/archive.apache.org/dist/kafka/3.0.1/kafka_2.12-3.0.1.tgz" -o /opt/kafka/stage/kafka.tgz
