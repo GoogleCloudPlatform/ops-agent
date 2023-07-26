@@ -75,9 +75,9 @@ FROM centos:7 AS centos7-build-base
 RUN set -x; yum -y update && \
 		yum -y install git systemd \
 		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
-		gcc gcc-c++ make bison flex file systemd-devel zlib-devel gtest-devel rpm-build java-11-openjdk-devel \
+		gcc gcc-c++ make bison flex file systemd-devel zlib-devel gtest-devel rpm-build java-17-openjdk-devel \
 		expect rpm-sign zip
-		ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk/
+		ENV JAVA_HOME /usr/lib/jvm/java-17-openjdk/
 COPY --from=cmake-install-recent /cmake.sh /cmake.sh
 RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
 
@@ -178,7 +178,7 @@ RUN set -x; yum -y update && \
 		yum config-manager --set-enabled powertools && \
 		yum -y install git systemd \
 		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
-		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-11-openjdk-devel \
+		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-17-openjdk-devel \
 		expect rpm-sign zip tzdata-java
 
 SHELL ["/bin/bash", "-c"]
@@ -278,10 +278,10 @@ RUN set -x; dnf -y update && \
 		dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm && \
 		dnf -y install git systemd \
 		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
-		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-11-openjdk-devel \
+		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-17-openjdk-devel \
 		expect rpm-sign zip
 	
-		ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk/
+		ENV JAVA_HOME /usr/lib/jvm/java-17-openjdk/
 
 SHELL ["/bin/bash", "-c"]
 
@@ -684,10 +684,10 @@ RUN set -x; \
 		ln -fs /usr/lib/systemd /lib/systemd
 		COPY --from=openjdk-install /tmp/OpenJDK11U.tar.gz /tmp/OpenJDK11U.tar.gz
 		RUN set -xe; \
-			mkdir -p /usr/local/java-11-openjdk && \
-			tar -xf /tmp/OpenJDK11U.tar.gz -C /usr/local/java-11-openjdk --strip-components=1
+			mkdir -p /usr/local/java-17-openjdk && \
+			tar -xf /tmp/OpenJDK11U.tar.gz -C /usr/local/java-17-openjdk --strip-components=1
 		
-		ENV JAVA_HOME /usr/local/java-11-openjdk/
+		ENV JAVA_HOME /usr/local/java-17-openjdk/
 COPY --from=cmake-install-recent /cmake.sh /cmake.sh
 RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
 
@@ -783,7 +783,7 @@ COPY --from=sles12-build /google-cloud-ops-agent*.rpm /
 
 FROM opensuse/leap:15.1 AS sles15-build-base
 
-RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-11-openjdk-devel unzip zip
+RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-17-openjdk-devel unzip zip
 		# Add agent-vendor.repo to install >3.4 bison
 		RUN echo $'[google-cloud-monitoring-sles15-vendor] \n\
 		name=google-cloud-monitoring-sles15-vendor \n\
