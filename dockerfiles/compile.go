@@ -68,9 +68,9 @@ var dockerfileArguments = []templateArguments{
 		install_packages: `RUN set -x; yum -y update && \
 		yum -y install git systemd \
 		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
-		gcc gcc-c++ make bison flex file systemd-devel zlib-devel gtest-devel rpm-build java-11-openjdk-devel \
+		gcc gcc-c++ make bison flex file systemd-devel zlib-devel gtest-devel rpm-build java-17-openjdk-devel \
 		expect rpm-sign zip
-		ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk/` + installCMake,
+		ENV JAVA_HOME /usr/lib/jvm/java-17-openjdk/` + installCMake,
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "centos-7",
 		package_extension: "rpm",
@@ -83,7 +83,7 @@ var dockerfileArguments = []templateArguments{
 		yum config-manager --set-enabled powertools && \
 		yum -y install git systemd \
 		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
-		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-11-openjdk-devel \
+		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-17-openjdk-devel \
 		expect rpm-sign zip tzdata-java`,
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "centos-8",
@@ -98,10 +98,10 @@ var dockerfileArguments = []templateArguments{
 		dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm && \
 		dnf -y install git systemd \
 		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
-		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-11-openjdk-devel \
+		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-17-openjdk-devel \
 		expect rpm-sign zip
 	
-		ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk/`,
+		ENV JAVA_HOME /usr/lib/jvm/java-17-openjdk/`,
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "rockylinux-9",
 		package_extension: "rpm",
@@ -166,10 +166,10 @@ var dockerfileArguments = []templateArguments{
 		ln -fs /usr/lib/systemd /lib/systemd
 		COPY --from=openjdk-install /tmp/OpenJDK11U.tar.gz /tmp/OpenJDK11U.tar.gz
 		RUN set -xe; \
-			mkdir -p /usr/local/java-11-openjdk && \
-			tar -xf /tmp/OpenJDK11U.tar.gz -C /usr/local/java-11-openjdk --strip-components=1
+			mkdir -p /usr/local/java-17-openjdk && \
+			tar -xf /tmp/OpenJDK11U.tar.gz -C /usr/local/java-17-openjdk --strip-components=1
 		
-		ENV JAVA_HOME /usr/local/java-11-openjdk/` + installCMake,
+		ENV JAVA_HOME /usr/local/java-17-openjdk/` + installCMake,
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "sles-12",
 		package_extension: "rpm",
@@ -178,7 +178,7 @@ var dockerfileArguments = []templateArguments{
 		from_image:  "opensuse/leap:15.1",
 		target_name: "sles15",
 		// TODO: Add ARM support to agent-vendor.repo.
-		install_packages: `RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-11-openjdk-devel unzip zip
+		install_packages: `RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-17-openjdk-devel unzip zip
 		# Add agent-vendor.repo to install >3.4 bison
 		RUN echo $'[google-cloud-monitoring-sles15-vendor] \n\
 		name=google-cloud-monitoring-sles15-vendor \n\
