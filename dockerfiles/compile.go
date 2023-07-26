@@ -84,7 +84,7 @@ var dockerfileArguments = []templateArguments{
 		yum -y install git systemd \
 		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
 		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-11-openjdk-devel \
-		expect rpm-sign zip`,
+		expect rpm-sign zip tzdata-java`,
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "centos-8",
 		package_extension: "rpm",
