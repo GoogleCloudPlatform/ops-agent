@@ -62,7 +62,8 @@ RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
 `
 
 // installJaava is used on platforms where the default package manager
-// does not provided an implementation of java 17 as required by the JMX metrics gatherer build.
+// does not provide an implementation of java of a sufficient version as
+// required by the JMX metrics gatherer build.
 // The openjdk-install layer is defined in template-header.
 const installJava = `
 COPY --from=openjdk-install /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/ /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk
