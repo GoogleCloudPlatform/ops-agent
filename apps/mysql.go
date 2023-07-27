@@ -322,7 +322,7 @@ func (p LoggingProcessorMysqlGeneral) Components(ctx context.Context, tag string
 					// https://mariadb.com/kb/en/error-log/#format
 					// Sample line: 230707  1:41:38     40 Query    select table_catalog, table_schema, table_name from information_schema.tables
 					// Sample line:                      5 Connect  root@localhost on  using Socket
-					// (When a timestamp is present, it is followed by a single tab character.
+					// When a timestamp is present, it is followed by a single tab character.
 					// When it is not, it means the timestamp is the same as a previous line, and it is replaced by another tab character.
 					Regex: fmt.Sprintf(
 						`^((?<time>%s)|\t)\s+(?<tid>\d+)\s+(?<command>\w+)(\s+(?<message>[\s|\S]*))?`,
