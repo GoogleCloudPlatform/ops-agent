@@ -640,7 +640,7 @@ func (r LoggingReceiverMysqlGeneral) Components(ctx context.Context, tag string)
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log path for CentOS / RHEL / SLES / Debain / Ubuntu
-			"/var/lib/mysql/${HOSTNAME}.log",
+			"/var/lib/mysql/$(hostname -s).log",
 		}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
@@ -657,7 +657,7 @@ func (r LoggingReceiverMysqlSlow) Components(ctx context.Context, tag string) []
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log path for CentOS / RHEL / SLES / Debain / Ubuntu
-			"/var/lib/mysql/${HOSTNAME}-slow.log",
+			"/var/lib/mysql/$(hostname -s)-slow.log",
 		}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
@@ -683,7 +683,7 @@ func (r LoggingReceiverMysqlError) Components(ctx context.Context, tag string) [
 			"/run/mysqld/mysqld.err",
 			// Default log path for MariaDB upstream
 			// https://mariadb.com/kb/en/error-log/#writing-the-error-log-to-a-file
-			"/var/lib/mysql/${HOSTNAME}.err",
+			"/var/lib/mysql/$(hostname -s).err",
 		}
 	}
 	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
