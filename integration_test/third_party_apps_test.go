@@ -447,7 +447,10 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	var err error
 	c := make(chan error, len(logs))
 	for _, entry := range logs {
-		entry := entry // https://golang.org/doc/faq#closures_and_goroutines
+		// https://golang.org/doc/faq#closures_and_goroutines
+		// Plus we need to dereference the pointer to make a copy of the
+		// underlying struct.
+		entry := *entry
 		go func() {
 			// Strip out the fields that are not available on this platform.
 			// We do this here so that:
@@ -469,7 +472,7 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 			}
 
 			// Verify the log is what was expected.
-			err = verifyLog(actualLog, entry)
+			err = verifyLog(actualLog, &entry)
 			if err != nil {
 				c <- err
 				return
