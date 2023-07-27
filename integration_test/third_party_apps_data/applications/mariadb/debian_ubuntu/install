@@ -22,7 +22,6 @@ slow-query-log
 log-slow-verbosity = query_plan,innodb
 long-query-time = 0
 log_error
-
 server-id = 1
 log-bin
 
