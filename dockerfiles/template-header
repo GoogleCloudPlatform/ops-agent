@@ -53,7 +53,7 @@ ARG OPENJDK_FULL_VERSION
 ARG OPENJDK_VERSION_SUFFIX
 
 ENV hash=3b1c0c34be4c894e64135a454f2d5aaa4bd10aea04ec2fa0c0efe6bb26528e30
-ADD https://github.com/adoptium/temurin${OPENJDK_MAJOR_VERSION}-binaries/releases/download/jdk-${OPENJDK_VERSION}%2B${OPENJDK_VERSION_SUFFIX}/OpenJDK${OPENJDK_MAJOR_VERSION}U-jdk_x64_linux_hotspot_${OPENJDK_VERSION}_${OPENJDK_VERSION_SUFFIX}.tar.gz \
+ADD https://github.com/adoptium/temurin${OPENJDK_MAJOR_VERSION}-binaries/releases/download/jdk-${OPENJDK_FULL_VERSION}%2B${OPENJDK_VERSION_SUFFIX}/OpenJDK${OPENJDK_MAJOR_VERSION}U-jdk_x64_linux_hotspot_${OPENJDK_FULL_VERSION}_${OPENJDK_VERSION_SUFFIX}.tar.gz \
     /tmp/OpenJDK${OPENJDK_MAJOR_VERSION}U.tar.gz
 
 FROM alpine:latest AS openjdk-arm64
@@ -62,7 +62,7 @@ ARG OPENJDK_FULL_VERSION
 ARG OPENJDK_VERSION_SUFFIX
 
 ENV hash=a77013bff10a5e9c59159231dd5c4bd071fc4c24beed42bd49b82803ba9506ef
-ADD https://github.com/adoptium/temurin${OPENJDK_MAJOR_VERSION}-binaries/releases/download/jdk-${OPENJDK_VERSION}%2B${OPENJDK_VERSION_SUFFIX}/OpenJDK${OPENJDK_MAJOR_VERSION}U-jdk_aarch64_linux_hotspot_${OPENJDK_VERSION}_${OPENJDK_VERSION_SUFFIX}.tar.gz \
+ADD https://github.com/adoptium/temurin${OPENJDK_MAJOR_VERSION}-binaries/releases/download/jdk-${OPENJDK_FULL_VERSION}%2B${OPENJDK_VERSION_SUFFIX}/OpenJDK${OPENJDK_MAJOR_VERSION}U-jdk_aarch64_linux_hotspot_${OPENJDK_FULL_VERSION}_${OPENJDK_VERSION_SUFFIX}.tar.gz \
     /tmp/OpenJDK${OPENJDK_MAJOR_VERSION}U.tar.gz
 
 FROM openjdk-${BUILDARCH} as openjdk-install
