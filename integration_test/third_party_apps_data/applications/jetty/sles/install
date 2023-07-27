@@ -6,7 +6,7 @@ set -e
 
 JETTY_VERSION=11.0.15
 
-sudo zypper install -y wget java-11-openjdk
+sudo zypper install -y wget java-11-openjdk tzdata-java
 sudo wget https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-home/"$JETTY_VERSION"/jetty-home-"$JETTY_VERSION".tar.gz
 sudo mkdir -p /opt/jetty
 
