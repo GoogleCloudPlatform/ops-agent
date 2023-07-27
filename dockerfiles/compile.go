@@ -68,9 +68,14 @@ var dockerfileArguments = []templateArguments{
 		install_packages: `RUN set -x; yum -y update && \
 		yum -y install git systemd \
 		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
-		gcc gcc-c++ make bison flex file systemd-devel zlib-devel gtest-devel rpm-build java-17-openjdk-devel \
+		gcc gcc-c++ make bison flex file systemd-devel zlib-devel gtest-devel rpm-build \
 		expect rpm-sign zip
-		ENV JAVA_HOME /usr/lib/jvm/java-17-openjdk/` + installCMake,
+		COPY --from=openjdk-install /tmp/OpenJDK17U.tar.gz /tmp/OpenJDK17U.tar.gz
+		RUN set -xe; \
+			mkdir -p /usr/local/java-17-openjdk && \
+			tar -xf /tmp/OpenJDK17U.tar.gz -C /usr/local/java-17-openjdk --strip-components=1
+		
+		ENV JAVA_HOME /usr/local/java-17-openjdk/` + installCMake,
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "centos-7",
 		package_extension: "rpm",
@@ -137,7 +142,13 @@ var dockerfileArguments = []templateArguments{
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-17-jdk zip`,
+		devscripts cdbs pkg-config zip
+		COPY --from=openjdk-install /tmp/OpenJDK17U.tar.gz /tmp/OpenJDK17U.tar.gz
+		RUN set -xe; \
+			mkdir -p /usr/local/java-17-openjdk && \
+			tar -xf /tmp/OpenJDK17U.tar.gz -C /usr/local/java-17-openjdk --strip-components=1
+		
+		ENV JAVA_HOME /usr/local/java-17-openjdk/`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "debian-buster",
 		package_extension: "deb",

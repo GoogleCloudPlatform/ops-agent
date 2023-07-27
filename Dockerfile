@@ -78,9 +78,14 @@ FROM centos:7 AS centos7-build-base
 RUN set -x; yum -y update && \
 		yum -y install git systemd \
 		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
-		gcc gcc-c++ make bison flex file systemd-devel zlib-devel gtest-devel rpm-build java-17-openjdk-devel \
+		gcc gcc-c++ make bison flex file systemd-devel zlib-devel gtest-devel rpm-build \
 		expect rpm-sign zip
-		ENV JAVA_HOME /usr/lib/jvm/java-17-openjdk/
+		COPY --from=openjdk-install /tmp/OpenJDK17U.tar.gz /tmp/OpenJDK17U.tar.gz
+		RUN set -xe; \
+			mkdir -p /usr/local/java-17-openjdk && \
+			tar -xf /tmp/OpenJDK17U.tar.gz -C /usr/local/java-17-openjdk --strip-components=1
+		
+		ENV JAVA_HOME /usr/local/java-17-openjdk/
 COPY --from=cmake-install-recent /cmake.sh /cmake.sh
 RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
 
@@ -575,7 +580,13 @@ RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-17-jdk zip
+		devscripts cdbs pkg-config zip
+		COPY --from=openjdk-install /tmp/OpenJDK17U.tar.gz /tmp/OpenJDK17U.tar.gz
+		RUN set -xe; \
+			mkdir -p /usr/local/java-17-openjdk && \
+			tar -xf /tmp/OpenJDK17U.tar.gz -C /usr/local/java-17-openjdk --strip-components=1
+		
+		ENV JAVA_HOME /usr/local/java-17-openjdk/
 
 SHELL ["/bin/bash", "-c"]
 
