@@ -279,7 +279,7 @@ RUN set -x; dnf -y update && \
 		dnf -y install git systemd \
 		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
 		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-11-openjdk-devel \
-		expect rpm-sign zip
+		expect rpm-sign zip tzdata-java
 	
 		ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk/
 
