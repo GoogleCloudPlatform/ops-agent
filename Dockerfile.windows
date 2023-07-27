@@ -115,8 +115,8 @@ RUN cmake --build . --config Release; `
 # a required build flag to support jmx receiver in operations-collector
 ###############################################################################
 
-ADD https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.12%2B7/OpenJDK11U-jdk_x64_windows_hotspot_11.0.12_7.msi /local/jdk-11-windows-x64.msi
-RUN Start-Process -Wait 'msiexec' -ArgumentList '/i C:\local\jdk-11-windows-x64.msi ADDLOCAL=FeatureMain INSTALLDIR=C:\Java\ /log c:\java_install64.log'
+ADD https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.8%2B7/OpenJDK17U-jdk_x64_windows_hotspot_17.0.8_7.msi /local/jdk-17-windows-x64.msi
+RUN Start-Process -Wait 'msiexec' -ArgumentList '/i C:\local\jdk-17-windows-x64.msi ADDLOCAL=FeatureMain INSTALLDIR=C:\Java\ /log c:\java_install64.log'
 
 COPY submodules/opentelemetry-java-contrib /work/submodules/opentelemetry-java-contrib
 

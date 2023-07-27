@@ -125,7 +125,7 @@ var dockerfileArguments = []templateArguments{
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-11-jdk zip`,
+		devscripts cdbs pkg-config openjdk-17-jdk zip`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "debian-bullseye",
 		package_extension: "deb",
@@ -137,7 +137,7 @@ var dockerfileArguments = []templateArguments{
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-11-jdk zip`,
+		devscripts cdbs pkg-config openjdk-17-jdk zip`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "debian-buster",
 		package_extension: "deb",
@@ -164,10 +164,10 @@ var dockerfileArguments = []templateArguments{
 		zypper -n install bison>3.4 && \
 		# Allow fluent-bit to find systemd
 		ln -fs /usr/lib/systemd /lib/systemd
-		COPY --from=openjdk-install /tmp/OpenJDK11U.tar.gz /tmp/OpenJDK11U.tar.gz
+		COPY --from=openjdk-install /tmp/OpenJDK17U.tar.gz /tmp/OpenJDK17U.tar.gz
 		RUN set -xe; \
 			mkdir -p /usr/local/java-17-openjdk && \
-			tar -xf /tmp/OpenJDK11U.tar.gz -C /usr/local/java-17-openjdk --strip-components=1
+			tar -xf /tmp/OpenJDK17U.tar.gz -C /usr/local/java-17-openjdk --strip-components=1
 		
 		ENV JAVA_HOME /usr/local/java-17-openjdk/` + installCMake,
 		package_build:     "RUN ./pkg/rpm/build.sh",
@@ -192,7 +192,13 @@ var dockerfileArguments = []templateArguments{
 			zypper -n update && \
 			zypper -n install bison>3.4 && \
 			# Allow fluent-bit to find systemd
-			ln -fs /usr/lib/systemd /lib/systemd` + installCMake,
+			ln -fs /usr/lib/systemd /lib/systemd
+		COPY --from=openjdk-install /tmp/OpenJDK17U.tar.gz /tmp/OpenJDK17U.tar.gz
+		RUN set -xe; \
+			mkdir -p /usr/local/java-17-openjdk && \
+			tar -xf /tmp/OpenJDK17U.tar.gz -C /usr/local/java-17-openjdk --strip-components=1
+		
+		ENV JAVA_HOME /usr/local/java-17-openjdk/` + installCMake,
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "sles-15",
 		package_extension: "rpm",
@@ -204,7 +210,7 @@ var dockerfileArguments = []templateArguments{
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-11-jdk zip`,
+		devscripts cdbs pkg-config openjdk-17-jdk zip`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "ubuntu-focal",
 		package_extension: "deb",
@@ -216,7 +222,7 @@ var dockerfileArguments = []templateArguments{
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-11-jdk zip`,
+		devscripts cdbs pkg-config openjdk-17-jdk zip`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "ubuntu-jammy",
 		package_extension: "deb",
@@ -228,7 +234,7 @@ var dockerfileArguments = []templateArguments{
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-11-jdk zip debhelper`,
+		devscripts cdbs pkg-config openjdk-17-jdk zip debhelper`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "ubuntu-lunar",
 		package_extension: "deb",

@@ -21,8 +21,9 @@
 
 
 ARG CMAKE_VERSION=3.25.2
-ARG OPENJDK_VERSION=11.0.13
-ARG OPENJDK_VERSION_SUFFIX=8
+ARG OPENJDK_MAJOR_VERSION=17
+ARG OPENJDK_FULL_VERSION=17.0.8
+ARG OPENJDK_VERSION_SUFFIX=7
 
 # Manually prepare a recent enough version of CMake.
 # This should be used on platforms where the default package manager
@@ -47,23 +48,25 @@ RUN set -xe; (echo "$hash  /cmake.sh" | sha256sum -c)
 
 # Manually prepare OpenJDK for the current architecture.
 FROM alpine:latest AS openjdk-amd64
-ARG OPENJDK_VERSION
+ARG OPENJDK_MAJOR_VERSION
+ARG OPENJDK_FULL_VERSION
 ARG OPENJDK_VERSION_SUFFIX
 
 ENV hash=3b1c0c34be4c894e64135a454f2d5aaa4bd10aea04ec2fa0c0efe6bb26528e30
-ADD https://github.com/adoptium/temurin11-binaries/releases/download/jdk-${OPENJDK_VERSION}%2B${OPENJDK_VERSION_SUFFIX}/OpenJDK11U-jdk_x64_linux_hotspot_${OPENJDK_VERSION}_${OPENJDK_VERSION_SUFFIX}.tar.gz \
-    /tmp/OpenJDK11U.tar.gz
+ADD https://github.com/adoptium/temurin${OPENJDK_MAJOR_VERSION}-binaries/releases/download/jdk-${OPENJDK_VERSION}%2B${OPENJDK_VERSION_SUFFIX}/OpenJDK${OPENJDK_MAJOR_VERSION}U-jdk_x64_linux_hotspot_${OPENJDK_VERSION}_${OPENJDK_VERSION_SUFFIX}.tar.gz \
+    /tmp/OpenJDK${OPENJDK_MAJOR_VERSION}U.tar.gz
 
 FROM alpine:latest AS openjdk-arm64
-ARG OPENJDK_VERSION
+ARG OPENJDK_MAJOR_VERSION
+ARG OPENJDK_FULL_VERSION
 ARG OPENJDK_VERSION_SUFFIX
 
 ENV hash=a77013bff10a5e9c59159231dd5c4bd071fc4c24beed42bd49b82803ba9506ef
-ADD https://github.com/adoptium/temurin11-binaries/releases/download/jdk-${OPENJDK_VERSION}%2B${OPENJDK_VERSION_SUFFIX}/OpenJDK11U-jdk_aarch64_linux_hotspot_${OPENJDK_VERSION}_${OPENJDK_VERSION_SUFFIX}.tar.gz \
-    /tmp/OpenJDK11U.tar.gz
+ADD https://github.com/adoptium/temurin${OPENJDK_MAJOR_VERSION}-binaries/releases/download/jdk-${OPENJDK_VERSION}%2B${OPENJDK_VERSION_SUFFIX}/OpenJDK${OPENJDK_MAJOR_VERSION}U-jdk_aarch64_linux_hotspot_${OPENJDK_VERSION}_${OPENJDK_VERSION_SUFFIX}.tar.gz \
+    /tmp/OpenJDK${OPENJDK_MAJOR_VERSION}U.tar.gz
 
 FROM openjdk-${BUILDARCH} as openjdk-install
-RUN set -xe; (echo "$hash  /tmp/OpenJDK11U.tar.gz" | sha256sum -c)
+RUN set -xe; (echo "$hash  /tmp/OpenJDK${OPENJDK_MAJOR_VERSION}U.tar.gz" | sha256sum -c)
 
 
 # ======================================
@@ -475,7 +478,7 @@ RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-11-jdk zip
+		devscripts cdbs pkg-config openjdk-17-jdk zip
 
 SHELL ["/bin/bash", "-c"]
 
@@ -572,7 +575,7 @@ RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-11-jdk zip
+		devscripts cdbs pkg-config openjdk-17-jdk zip
 
 SHELL ["/bin/bash", "-c"]
 
@@ -682,10 +685,10 @@ RUN set -x; \
 		zypper -n install bison>3.4 && \
 		# Allow fluent-bit to find systemd
 		ln -fs /usr/lib/systemd /lib/systemd
-		COPY --from=openjdk-install /tmp/OpenJDK11U.tar.gz /tmp/OpenJDK11U.tar.gz
+		COPY --from=openjdk-install /tmp/OpenJDK17U.tar.gz /tmp/OpenJDK17U.tar.gz
 		RUN set -xe; \
 			mkdir -p /usr/local/java-17-openjdk && \
-			tar -xf /tmp/OpenJDK11U.tar.gz -C /usr/local/java-17-openjdk --strip-components=1
+			tar -xf /tmp/OpenJDK17U.tar.gz -C /usr/local/java-17-openjdk --strip-components=1
 		
 		ENV JAVA_HOME /usr/local/java-17-openjdk/
 COPY --from=cmake-install-recent /cmake.sh /cmake.sh
@@ -798,6 +801,12 @@ RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl
 			zypper -n install bison>3.4 && \
 			# Allow fluent-bit to find systemd
 			ln -fs /usr/lib/systemd /lib/systemd
+		COPY --from=openjdk-install /tmp/OpenJDK17U.tar.gz /tmp/OpenJDK17U.tar.gz
+		RUN set -xe; \
+			mkdir -p /usr/local/java-17-openjdk && \
+			tar -xf /tmp/OpenJDK17U.tar.gz -C /usr/local/java-17-openjdk --strip-components=1
+		
+		ENV JAVA_HOME /usr/local/java-17-openjdk/
 COPY --from=cmake-install-recent /cmake.sh /cmake.sh
 RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
 
@@ -897,7 +906,7 @@ RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-11-jdk zip
+		devscripts cdbs pkg-config openjdk-17-jdk zip
 
 SHELL ["/bin/bash", "-c"]
 
@@ -994,7 +1003,7 @@ RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-11-jdk zip
+		devscripts cdbs pkg-config openjdk-17-jdk zip
 
 SHELL ["/bin/bash", "-c"]
 
@@ -1091,7 +1100,7 @@ RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-11-jdk zip debhelper
+		devscripts cdbs pkg-config openjdk-17-jdk zip debhelper
 
 SHELL ["/bin/bash", "-c"]
 
