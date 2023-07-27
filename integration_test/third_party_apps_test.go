@@ -355,7 +355,7 @@ func verifyLog(actualLog *cloudlogging.Entry, expectedLog *metadata.ExpectedLog)
 		_, fileOk := expectedFields["sourceLocation.file"]
 		_, lineOk := expectedFields["sourceLocation.line"]
 		if fileOk || lineOk {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("excpected sourceLocation.file and sourceLocation.line but got nil\n"))
+			multiErr = multierr.Append(multiErr, fmt.Errorf("expected sourceLocation.file and sourceLocation.line but got nil\n"))
 		}
 	} else {
 		if err := verifyLogField("sourceLocation.file", actualLog.SourceLocation.File, expectedFields); err != nil {
