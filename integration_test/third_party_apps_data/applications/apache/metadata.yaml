@@ -167,6 +167,8 @@ expected_logs:
         type: string
         description: Thread ID
         unavailable_on:
+          # Unavailable for the same reasons as current_connections,
+          # described in:
           # https://github.com/GoogleCloudPlatform/ops-agent/issues/1173
           - centos-7
           - sles-12
