@@ -66,7 +66,11 @@ ADD https://github.com/adoptium/temurin${OPENJDK_MAJOR_VERSION}-binaries/release
     /tmp/OpenJDK${OPENJDK_MAJOR_VERSION}U.tar.gz
 
 FROM openjdk-${BUILDARCH} as openjdk-install
+ARG OPENJDK_MAJOR_VERSION
 RUN set -xe; (echo "$hash  /tmp/OpenJDK${OPENJDK_MAJOR_VERSION}U.tar.gz" | sha256sum -c)
+RUN set -xe; \
+    mkdir -p /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk && \
+    tar -xf /tmp/OpenJDK${OPENJDK_MAJOR_VERSION}U.tar.gz -C /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk --strip-components=1
 
 
 # ======================================
@@ -74,18 +78,15 @@ RUN set -xe; (echo "$hash  /tmp/OpenJDK${OPENJDK_MAJOR_VERSION}U.tar.gz" | sha25
 # ======================================
 
 FROM centos:7 AS centos7-build-base
+ARG OPENJDK_MAJOR_VERSION
 
 RUN set -x; yum -y update && \
 		yum -y install git systemd \
 		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
 		gcc gcc-c++ make bison flex file systemd-devel zlib-devel gtest-devel rpm-build \
 		expect rpm-sign zip
-		COPY --from=openjdk-install /tmp/OpenJDK17U.tar.gz /tmp/OpenJDK17U.tar.gz
-		RUN set -xe; \
-			mkdir -p /usr/local/java-17-openjdk && \
-			tar -xf /tmp/OpenJDK17U.tar.gz -C /usr/local/java-17-openjdk --strip-components=1
-		
-		ENV JAVA_HOME /usr/local/java-17-openjdk/
+COPY --from=openjdk-install /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/ /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk
+ENV JAVA_HOME /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/
 COPY --from=cmake-install-recent /cmake.sh /cmake.sh
 RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
 
@@ -180,13 +181,14 @@ COPY --from=centos7-build /google-cloud-ops-agent*.rpm /
 # ======================================
 
 FROM rockylinux:8 AS centos8-build-base
+ARG OPENJDK_MAJOR_VERSION
 
 RUN set -x; yum -y update && \
 		dnf -y install 'dnf-command(config-manager)' && \
 		yum config-manager --set-enabled powertools && \
 		yum -y install git systemd \
 		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
-		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-17-openjdk-devel \
+		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-${OPENJDK_MAJOR_VERSION}-openjdk-devel \
 		expect rpm-sign zip tzdata-java
 
 SHELL ["/bin/bash", "-c"]
@@ -279,6 +281,7 @@ COPY --from=centos8-build /google-cloud-ops-agent*.rpm /
 # ======================================
 
 FROM rockylinux:9 AS rockylinux9-build-base
+ARG OPENJDK_MAJOR_VERSION
 
 RUN set -x; dnf -y update && \
 		dnf -y install 'dnf-command(config-manager)' && \
@@ -286,10 +289,10 @@ RUN set -x; dnf -y update && \
 		dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm && \
 		dnf -y install git systemd \
 		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
-		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-17-openjdk-devel \
+		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-${OPENJDK_MAJOR_VERSION}-openjdk-devel \
 		expect rpm-sign zip
 	
-		ENV JAVA_HOME /usr/lib/jvm/java-17-openjdk/
+		ENV JAVA_HOME /usr/lib/jvm/java-${OPENJDK_MAJOR_VERSION}-openjdk/
 
 SHELL ["/bin/bash", "-c"]
 
@@ -381,12 +384,13 @@ COPY --from=rockylinux9-build /google-cloud-ops-agent*.rpm /
 # ======================================
 
 FROM debian:bookworm AS bookworm-build-base
+ARG OPENJDK_MAJOR_VERSION
 
 RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-17-jdk zip
+		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip
 
 SHELL ["/bin/bash", "-c"]
 
@@ -478,12 +482,13 @@ COPY --from=bookworm-build /google-cloud-ops-agent*.deb /
 # ======================================
 
 FROM debian:bullseye AS bullseye-build-base
+ARG OPENJDK_MAJOR_VERSION
 
 RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-17-jdk zip
+		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip
 
 SHELL ["/bin/bash", "-c"]
 
@@ -575,18 +580,15 @@ COPY --from=bullseye-build /google-cloud-ops-agent*.deb /
 # ======================================
 
 FROM debian:buster AS buster-build-base
+ARG OPENJDK_MAJOR_VERSION
 
 RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file libsystemd-dev \
 		devscripts cdbs pkg-config zip
-		COPY --from=openjdk-install /tmp/OpenJDK17U.tar.gz /tmp/OpenJDK17U.tar.gz
-		RUN set -xe; \
-			mkdir -p /usr/local/java-17-openjdk && \
-			tar -xf /tmp/OpenJDK17U.tar.gz -C /usr/local/java-17-openjdk --strip-components=1
-		
-		ENV JAVA_HOME /usr/local/java-17-openjdk/
+COPY --from=openjdk-install /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/ /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk
+ENV JAVA_HOME /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/
 
 SHELL ["/bin/bash", "-c"]
 
@@ -678,6 +680,7 @@ COPY --from=buster-build /google-cloud-ops-agent*.deb /
 # ======================================
 
 FROM opensuse/archive:42.3 AS sles12-build-base
+ARG OPENJDK_MAJOR_VERSION
 
 RUN set -x; \
 		# The 'OSS Update' repo signature is no longer valid, so verify the checksum instead.
@@ -696,12 +699,8 @@ RUN set -x; \
 		zypper -n install bison>3.4 && \
 		# Allow fluent-bit to find systemd
 		ln -fs /usr/lib/systemd /lib/systemd
-		COPY --from=openjdk-install /tmp/OpenJDK17U.tar.gz /tmp/OpenJDK17U.tar.gz
-		RUN set -xe; \
-			mkdir -p /usr/local/java-17-openjdk && \
-			tar -xf /tmp/OpenJDK17U.tar.gz -C /usr/local/java-17-openjdk --strip-components=1
-		
-		ENV JAVA_HOME /usr/local/java-17-openjdk/
+COPY --from=openjdk-install /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/ /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk
+ENV JAVA_HOME /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/
 COPY --from=cmake-install-recent /cmake.sh /cmake.sh
 RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
 
@@ -796,6 +795,7 @@ COPY --from=sles12-build /google-cloud-ops-agent*.rpm /
 # ======================================
 
 FROM opensuse/leap:15.1 AS sles15-build-base
+ARG OPENJDK_MAJOR_VERSION
 
 RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip
 		# Add agent-vendor.repo to install >3.4 bison
@@ -812,12 +812,8 @@ RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl
 			zypper -n install bison>3.4 && \
 			# Allow fluent-bit to find systemd
 			ln -fs /usr/lib/systemd /lib/systemd
-		COPY --from=openjdk-install /tmp/OpenJDK17U.tar.gz /tmp/OpenJDK17U.tar.gz
-		RUN set -xe; \
-			mkdir -p /usr/local/java-17-openjdk && \
-			tar -xf /tmp/OpenJDK17U.tar.gz -C /usr/local/java-17-openjdk --strip-components=1
-		
-		ENV JAVA_HOME /usr/local/java-17-openjdk/
+COPY --from=openjdk-install /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/ /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk
+ENV JAVA_HOME /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/
 COPY --from=cmake-install-recent /cmake.sh /cmake.sh
 RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
 
@@ -912,12 +908,13 @@ COPY --from=sles15-build /google-cloud-ops-agent*.rpm /
 # ======================================
 
 FROM ubuntu:focal AS focal-build-base
+ARG OPENJDK_MAJOR_VERSION
 
 RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-17-jdk zip
+		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip
 
 SHELL ["/bin/bash", "-c"]
 
@@ -1009,12 +1006,13 @@ COPY --from=focal-build /google-cloud-ops-agent*.deb /
 # ======================================
 
 FROM ubuntu:jammy AS jammy-build-base
+ARG OPENJDK_MAJOR_VERSION
 
 RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-17-jdk zip
+		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip
 
 SHELL ["/bin/bash", "-c"]
 
@@ -1106,12 +1104,13 @@ COPY --from=jammy-build /google-cloud-ops-agent*.deb /
 # ======================================
 
 FROM ubuntu:lunar AS lunar-build-base
+ARG OPENJDK_MAJOR_VERSION
 
 RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-17-jdk zip debhelper
+		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip debhelper
 
 SHELL ["/bin/bash", "-c"]
 

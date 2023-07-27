@@ -66,4 +66,8 @@ ADD https://github.com/adoptium/temurin${OPENJDK_MAJOR_VERSION}-binaries/release
     /tmp/OpenJDK${OPENJDK_MAJOR_VERSION}U.tar.gz
 
 FROM openjdk-${BUILDARCH} as openjdk-install
+ARG OPENJDK_MAJOR_VERSION
 RUN set -xe; (echo "$hash  /tmp/OpenJDK${OPENJDK_MAJOR_VERSION}U.tar.gz" | sha256sum -c)
+RUN set -xe; \
+    mkdir -p /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk && \
+    tar -xf /tmp/OpenJDK${OPENJDK_MAJOR_VERSION}U.tar.gz -C /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk --strip-components=1
