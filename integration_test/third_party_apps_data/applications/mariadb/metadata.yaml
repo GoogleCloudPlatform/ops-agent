@@ -35,7 +35,9 @@ supported_operating_systems: linux
 platforms_to_skip:
   # TODO: Enable MariaDB testing on all supported platforms.
   - debian-10 # Requires different config file location
+  - debian-12 # Requires an update to handle HOSTNAME changes
   - ubuntu-2004-lts # Requires different config file location
+  - ubuntu-2304-amd64 # LogEntry max size exceeded errors
   - centos-7
   - rocky-linux-8
   - rocky-linux-9
