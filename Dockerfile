@@ -786,7 +786,7 @@ COPY --from=sles12-build /google-cloud-ops-agent*.rpm /
 
 FROM opensuse/leap:15.1 AS sles15-build-base
 
-RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-17-openjdk-devel unzip zip
+RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip
 		# Add agent-vendor.repo to install >3.4 bison
 		RUN echo $'[google-cloud-monitoring-sles15-vendor] \n\
 		name=google-cloud-monitoring-sles15-vendor \n\
