@@ -105,7 +105,7 @@ var dockerfileArguments = []templateArguments{
 		dnf -y install git systemd \
 		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
 		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-${OPENJDK_MAJOR_VERSION}-openjdk-devel \
-		expect rpm-sign zip
+		expect rpm-sign zip tzdata-java
 	
 		ENV JAVA_HOME /usr/lib/jvm/java-${OPENJDK_MAJOR_VERSION}-openjdk/`,
 		package_build:     "RUN ./pkg/rpm/build.sh",
