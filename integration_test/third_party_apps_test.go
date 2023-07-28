@@ -233,7 +233,7 @@ func verifyLogField(fieldName, actualField string, expectedFields map[string]*me
 		// Not expecting this field. It could however be populated with some default zero-values when we
 		// query it back. Check for zero values based on expectedField.type? Not ideal for sure.
 		if actualField != "" && actualField != "0" && actualField != "false" && actualField != "0s" {
-			return fmt.Errorf("expeced no value for field %s but got %v\n", fieldName, actualField)
+			return fmt.Errorf("expected no value for field %s but got %v\n", fieldName, actualField)
 		}
 		return nil
 	}
@@ -355,7 +355,7 @@ func verifyLog(actualLog *cloudlogging.Entry, expectedLog *metadata.ExpectedLog)
 		_, fileOk := expectedFields["sourceLocation.file"]
 		_, lineOk := expectedFields["sourceLocation.line"]
 		if fileOk || lineOk {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("excpected sourceLocation.file and sourceLocation.line but got nil\n"))
+			multiErr = multierr.Append(multiErr, fmt.Errorf("expected sourceLocation.file and sourceLocation.line but got nil\n"))
 		}
 	} else {
 		if err := verifyLogField("sourceLocation.file", actualLog.SourceLocation.File, expectedFields); err != nil {

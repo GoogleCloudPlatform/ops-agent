@@ -328,7 +328,7 @@ speed up the build.
     dir -Recurse ./tmp/out
     ```
 
-    The last line of the `docker build` comamnd output should be:
+    The last line of the `docker build` command output should be:
 
     ```
     Successfully tagged full-build:latest

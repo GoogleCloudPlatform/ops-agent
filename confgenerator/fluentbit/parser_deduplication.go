@@ -17,7 +17,7 @@ package fluentbit
 const (
 	ParserNestLuaFunction = `parser_nest`
 
-	// ParserNestLuaScriptContents is an incomplete Lua funtion that is completed when populated
+	// ParserNestLuaScriptContents is an incomplete Lua function that is completed when populated
 	// with the parse_key (i.e. the key being parsed).
 	ParserNestLuaScriptContents = `
 function parser_nest(tag, timestamp, record)
