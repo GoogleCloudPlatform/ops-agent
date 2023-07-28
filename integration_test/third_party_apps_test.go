@@ -463,7 +463,7 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	return err
 }
 
-func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, app string, metrics []*metadata.ExpectedMetric, fc *feature_tracking_metadata.FeatureTrackingContainer) error {
+func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []*metadata.ExpectedMetric, fc *feature_tracking_metadata.FeatureTrackingContainer) error {
 	var err error
 	logger.ToMainLog().Printf("Parsed expectedMetrics: %s", util.DumpPointerArray(metrics, "%+v"))
 	// Wait for the representative metric first, which is intended to *always*
@@ -635,7 +635,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 
 		fc, err := getExpectedFeatures(app)
 
-		if err = runMetricsTestCases(ctx, logger, vm, app, metadata.ExpectedMetrics, fc); err != nil {
+		if err = runMetricsTestCases(ctx, logger, vm, metadata.ExpectedMetrics, fc); err != nil {
 			return nonRetryable, err
 		}
 	}
