@@ -29,8 +29,15 @@ configure_integration: |-
   relational database management system (RDBMS). To collect logs and metrics for
   MariaDB, use the `mysql` receivers.
 
-  The `mysql` receiver connects by default to a local MySQL/MariaDB
+  The `mysql` metrics receiver connects by default to a local MySQL/MariaDB
   server using a Unix socket and Unix authentication as the `root` user.
+
+  The `mysql_error` logging receiver collects logs from the default file paths
+  shown in the table below. On some platforms, MariaDB logs to `journald` by
+  default instead of a file. Configure MariaDB to log to a file instead by 
+  setting `log_error` in the MariaDB configuration.
+  [Learn more](https://mariadb.com/kb/en/error-log/#writing-the-error-log-to-a-file)
+  about configuring `log_error`.
 supported_operating_systems: linux
 platforms_to_skip:
   # TODO: Enable MariaDB testing on all supported platforms.
