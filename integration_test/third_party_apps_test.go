@@ -233,7 +233,7 @@ func verifyLogField(fieldName, actualField string, expectedFields map[string]*me
 		// Not expecting this field. It could however be populated with some default zero-values when we
 		// query it back. Check for zero values based on expectedField.type? Not ideal for sure.
 		if actualField != "" && actualField != "0" && actualField != "false" && actualField != "0s" {
-			return fmt.Errorf("expeced no value for field %s but got %v\n", fieldName, actualField)
+			return fmt.Errorf("got %q for unexpected field %s\n", actualField, fieldName)
 		}
 		return nil
 	}
@@ -610,10 +610,15 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	if metadata.ExpectedMetrics != nil {
 		logger.ToMainLog().Println("found expectedMetrics, running metrics test cases...")
 
-		// All integrations are expected to set the instrumentation_source label.
+		// All integrations are expected to set the instrumentation_* labels.
+		instrumentedApp := app
+		// mariadb is a separate test but it uses the same integration as mysql.
+		if app == "mariadb" {
+			instrumentedApp = "mysql"
+		}
 		for _, m := range metadata.ExpectedMetrics {
 			// The windows metrics that do not target workload.googleapis.com cannot set
-			// the instrumentation_ labels
+			// the instrumentation_* labels
 			if strings.HasPrefix(m.Type, "agent.googleapis.com") {
 				continue
 			}
@@ -621,7 +626,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 				m.Labels = map[string]string{}
 			}
 			if _, ok := m.Labels["instrumentation_source"]; !ok {
-				m.Labels["instrumentation_source"] = regexp.QuoteMeta(fmt.Sprintf("agent.googleapis.com/%s", app))
+				m.Labels["instrumentation_source"] = regexp.QuoteMeta(fmt.Sprintf("agent.googleapis.com/%s", instrumentedApp))
 			}
 			if _, ok := m.Labels["instrumentation_version"]; !ok {
 				m.Labels["instrumentation_version"] = `.*`
@@ -901,6 +906,11 @@ func TestThirdPartyApps(t *testing.T) {
 				}
 				if tc.app == OracleDBApp {
 					options.MachineType = "e2-highmem-8"
+					if gce.IsARM(tc.platform) {
+						// T2A doesn't have a highmem line, so pick the standard machine that's specced at least
+						// as well as e2-highmem-8.
+						options.MachineType = "t2a-standard-16"
+					}
 					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-size=150GB", "--boot-disk-type=pd-ssd")
 				}
 

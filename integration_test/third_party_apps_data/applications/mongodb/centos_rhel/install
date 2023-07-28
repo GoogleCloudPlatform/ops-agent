@@ -1,25 +1,26 @@
 set -e
 
-cat << EOF > mongodb-org-5.0.repo
-[mongodb-org-5.0]
+cat << EOF > mongodb-org-6.0.repo
+[mongodb-org-6.0]
 name=MongoDB Repository
-baseurl=https://repo.mongodb.org/yum/redhat/\$releasever/mongodb-org/5.0/x86_64/
+baseurl=https://repo.mongodb.org/yum/redhat/\$releasever/mongodb-org/6.0/x86_64/
 gpgcheck=1
 enabled=1
-gpgkey=https://www.mongodb.org/static/pgp/server-5.0.asc
+gpgkey=https://www.mongodb.org/static/pgp/server-6.0.asc
 EOF
 
-sudo mv mongodb-org-5.0.repo /etc/yum.repos.d/mongodb-org-5.0.repo
-sudo chown root:root /etc/yum.repos.d/mongodb-org-5.0.repo
-sudo chmod 0644 /etc/yum.repos.d/mongodb-org-5.0.repo
+sudo mv mongodb-org-6.0.repo /etc/yum.repos.d/mongodb-org-6.0.repo
+sudo chown root:root /etc/yum.repos.d/mongodb-org-6.0.repo
+sudo chmod 0644 /etc/yum.repos.d/mongodb-org-6.0.repo
 
+# N.B. mongodb-org-shell has been replaced by mongodb-mongosh, with a different version numbering scheme.
 sudo yum install -y \
-    mongodb-org-5.0.14 \
-    mongodb-org-database-5.0.14 \
-    mongodb-org-server-5.0.14 \
-    mongodb-org-shell-5.0.14 \
-    mongodb-org-mongos-5.0.14 \
-    mongodb-org-tools-5.0.14
+    mongodb-org-6.0.7 \
+    mongodb-org-database-6.0.7 \
+    mongodb-org-server-6.0.7 \
+    mongodb-mongosh \
+    mongodb-org-mongos-6.0.7 \
+    mongodb-org-tools-6.0.7
 
 sudo systemctl enable mongod 
 sudo systemctl restart mongod 

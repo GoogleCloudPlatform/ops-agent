@@ -193,6 +193,12 @@ function process(tag, timestamp, record)
 			conv = "math.floor(tonumber(v))"
 		case "float":
 			conv = "tonumber(v)"
+		case "YesNoBoolean":
+			// Used by the mysql logging receiver; not allowed in user config by validation.
+			// First we check if v is truthy according to Lua (i.e. not nil).
+			// The "and" operator returns the first argument's value if it is false (so nil),
+			// so this expression produces true, false, or nil depending on the input.
+			conv = `(v and v == "Yes")`
 		}
 		if conv != "" {
 			// Leave existing string value if not convertible
