@@ -61,8 +61,8 @@ COPY --from=cmake-install-recent /cmake.sh /cmake.sh
 RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
 `
 
-// installJaava is used on platforms where the default package manager
-// does not provide an implementation of java of a sufficient version as
+// installJava is used on platforms where the default package manager
+// does not provide an implementation of Java of a sufficient version as
 // required by the JMX metrics gatherer build.
 // The openjdk-install layer is defined in template-header.
 const installJava = `
