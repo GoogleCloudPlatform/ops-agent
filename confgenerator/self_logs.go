@@ -125,13 +125,13 @@ var selfLogTranslationList = []selfLogTranslationEntry{
 	{
 		fieldMatch: "message",
 		regexMatch: `\[error\]\s\[lib\]\sbackend\sfailed`,
-		message:    "Loggging_Pipeline_Stopped_Working-Please_Verify_Your_Ops_Agent_Config.",
+		message:    "Ops_Agent_Logging_Pipeline_Failed._Documentation_https://cloud.google.com/logging/docs/agent/ops-agent/troubleshoot-find-info#health-checks",
 		code:       "LogPipelineErr",
 	},
 	{
 		fieldMatch: "message",
 		regexMatch: `\[error\]\s\[parser\]\scannot\sparse`,
-		message:    "Incorrect_Parsing_Configuration-Please_Verify_Your_Ops_Agent_Config.",
+		message:    "Ops_Agent_Failed_to_Parse_Logs._Documentation_https://cloud.google.com/logging/docs/agent/ops-agent/troubleshoot-find-info#health-checks",
 		code:       "LogParseErr",
 	},
 }
