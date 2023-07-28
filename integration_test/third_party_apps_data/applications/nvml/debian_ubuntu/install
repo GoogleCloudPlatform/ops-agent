@@ -3,14 +3,28 @@ set -e
 
 sudo apt update
 kernel_version=`uname -r`
-sudo time apt install -y linux-headers-${kernel_version} software-properties-common pciutils gcc make dkms
+sudo apt install -y linux-headers-${kernel_version} software-properties-common pciutils gcc make dkms wget
 
-sudo apt-get -y install wget
-wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-keyring_1.0-1_all.deb
-sudo dpkg -i cuda-keyring_1.0-1_all.deb
-sudo apt-get update
-sudo time apt-get -y install cuda 
- 
+# Install CUDA and driver together, since the `exercise` script needs CUDA to compile the application to generating GPU process metrics
+DEVICE_CODE=$(lspci -n | grep -Po '10de:[\w\d]{4}')
+case $DEVICE_CODE in
+    10de:102d)
+        # Install a specific version for NVIDIA Tesla K80, R470 is the last supported version
+        echo "Installing NVIDIA CUDA 11.2.1 with driver 460.32.03"
+        curl https://raw.githubusercontent.com/GoogleCloudPlatform/compute-gpu-installation/main/linux/install_gpu_driver.py --output install_gpu_driver.py
+        sudo python3 install_gpu_driver.py
+        wget https://developer.download.nvidia.com/compute/cuda/11.2.1/local_installers/cuda_11.2.1_460.32.03_linux.run
+        sudo sh cuda_11.2.1_460.32.03_linux.run --toolkit --silent
+        sudo apt install -y libcublas10
+        ;;
+    *)
+        echo "Installing latest version of NVIDIA CUDA and driver"
+        wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-keyring_1.0-1_all.deb
+        sudo dpkg -i cuda-keyring_1.0-1_all.deb
+        sudo apt update
+        sudo apt -y install cuda 
+        ;;
+esac
+
+# check NVIDIA driver installation succeeded
 nvidia-smi
-
-
