@@ -43,10 +43,7 @@ var (
 
 type PrometheusMetrics struct {
 	ConfigComponent `yaml:",inline"`
-	PromConfig      PrometheusConfig `yaml:"config"`
-}
 
-type PrometheusConfig struct {
 	// PreserveUntypedMetrics controls whether untyped metrics are preserved
 	// as untyped in GMP instead of converting it to a gauge.
 	// If set, the receiver will double write prometheus untyped metrics - once
@@ -66,7 +63,7 @@ type PrometheusConfig struct {
 	// `$` characters in your prometheus configuration are interpreted as environment
 	// variables.  If you want to use $ characters in your prometheus configuration,
 	// you must escape them using `$$`.
-	Config promconfig.Config `yaml:",inline"`
+	PromConfig promconfig.Config `yaml:"config"`
 }
 
 func (r PrometheusMetrics) Type() string {
@@ -80,10 +77,10 @@ func (r PrometheusMetrics) Pipelines() []otel.ReceiverPipeline {
 		gceMetadataMap := createPrometheusStyleGCEMetadata(gceMetadata)
 
 		// Add the GCE metadata to the prometheus config.
-		for i := range r.PromConfig.Config.ScrapeConfigs {
+		for i := range r.PromConfig.ScrapeConfigs {
 			// Iterate over the static configs.
-			for j := range r.PromConfig.Config.ScrapeConfigs[i].ServiceDiscoveryConfigs {
-				staticConfigs := r.PromConfig.Config.ScrapeConfigs[i].ServiceDiscoveryConfigs[j].(discovery.StaticConfig)
+			for j := range r.PromConfig.ScrapeConfigs[i].ServiceDiscoveryConfigs {
+				staticConfigs := r.PromConfig.ScrapeConfigs[i].ServiceDiscoveryConfigs[j].(discovery.StaticConfig)
 				for k := range staticConfigs {
 					labels := staticConfigs[k].Labels
 					if labels == nil {
@@ -101,7 +98,7 @@ func (r PrometheusMetrics) Pipelines() []otel.ReceiverPipeline {
 	}
 
 	return []otel.ReceiverPipeline{{
-		Receiver: prometheusToOtelComponent(r.PromConfig),
+		Receiver: prometheusToOtelComponent(r),
 		Processors: map[string][]otel.Component{
 			// Expect metrics, without any additional processing.
 			"metrics": {
@@ -122,8 +119,8 @@ func (r PrometheusMetrics) Pipelines() []otel.ReceiverPipeline {
 //
 // Note: We copy over the prometheus scrape configs and create new ones so calls to `Pipelines()`
 // will return the same result everytime and not change the original prometheus config.
-func prometheusToOtelComponent(cfg PrometheusConfig) otel.Component {
-	copyPromConfig, err := deepCopy(cfg.Config)
+func prometheusToOtelComponent(m PrometheusMetrics) otel.Component {
+	copyPromConfig, err := deepCopy(m.PromConfig)
 	if err != nil {
 		// This should never happen since we already validated the prometheus config.
 		panic(fmt.Errorf("failed to deep copy prometheus config: %w", err))
@@ -143,7 +140,7 @@ func prometheusToOtelComponent(cfg PrometheusConfig) otel.Component {
 
 	return otel.Component{
 		Type:   "prometheus",
-		Config: map[string]interface{}{"config": copyPromConfig, "preserve_untyped": cfg.PreserveUntypedMetrics},
+		Config: map[string]interface{}{"config": copyPromConfig, "preserve_untyped": m.PreserveUntypedMetrics},
 	}
 }
 
@@ -334,8 +331,8 @@ func (r PrometheusMetrics) ExtractFeatures() ([]CustomFeature, error) {
 		Value: "true",
 	})
 
-	for i := range r.PromConfig.Config.ScrapeConfigs {
-		sc := r.PromConfig.Config.ScrapeConfigs[i]
+	for i := range r.PromConfig.ScrapeConfigs {
+		sc := r.PromConfig.ScrapeConfigs[i]
 
 		// Since we only support static_configs, there is only over one service discovery config.
 		scTargetGroups := 0
@@ -377,7 +374,7 @@ func (r PrometheusMetrics) ExtractFeatures() ([]CustomFeature, error) {
 	}
 	customFeatures = append(customFeatures, CustomFeature{
 		Key:   []string{"config", "preserve_untyped_metrics"},
-		Value: strconv.FormatBool(r.PromConfig.PreserveUntypedMetrics),
+		Value: strconv.FormatBool(r.PreserveUntypedMetrics),
 	})
 	return customFeatures, nil
 }

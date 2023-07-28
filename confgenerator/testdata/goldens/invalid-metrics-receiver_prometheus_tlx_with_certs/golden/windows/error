@@ -1,1 +1,1 @@
-Key: 'PrometheusConfig.Config.config' Error:Field validation for 'config' failed on the 'error checking client cert file "/path/to/cert": file "/path/to/cert" does not exist' tag
+Key: 'PrometheusMetrics.config.config' Error:Field validation for 'config' failed on the 'error checking client cert file "/path/to/cert": file "/path/to/cert" does not exist' tag

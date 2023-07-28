@@ -1,1 +1,1 @@
-Key: 'PrometheusConfig.Config.config' Error:Field validation for 'config' failed on the 'unsupported service discovery config *file.SDConfig' tag
+Key: 'PrometheusMetrics.config.config' Error:Field validation for 'config' failed on the 'unsupported service discovery config *file.SDConfig' tag

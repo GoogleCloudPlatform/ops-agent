@@ -2165,8 +2165,8 @@ func TestPrometheusMetrics(t *testing.T) {
   receivers:
     prometheus:
       type: prometheus
+      preserve_untyped_metrics: true
       config:
-        preserve_untyped_metrics: true
         scrape_configs:
           - job_name: 'prometheus'
             scrape_interval: 10s
@@ -2488,8 +2488,8 @@ func TestPrometheusUntypedMetrics(t *testing.T) {
   receivers:
     prom_app:
       type: prometheus
+      preserve_untyped_metrics: true
       config:
-        preserve_untyped_metrics: true
         scrape_configs:
         - job_name: test
           metrics_path: /data
