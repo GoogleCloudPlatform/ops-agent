@@ -817,44 +817,57 @@ var defaultApps = map[string]bool{
 	"active_directory_ds": true,
 }
 
+// This is the A100 40G model; A100 80G is similar so skipping
 var GPU_A100 = accelerator{
-	model:         "a100",
+	model:         "nvidia-tesla-a100",
 	machineType:   "a2-highgpu-1g",
 	availableZone: "us-central1-a",
 }
 
 var GPU_V100 = accelerator{
-	model:         "v100",
+	model:         "nvidia-tesla-v100",
 	machineType:   "n1-standard-2",
 	availableZone: "us-central1-a",
 }
 
 var GPU_T4 = accelerator{
-	model:         "t4",
+	model:         "nvidia-tesla-t4",
 	machineType:   "n1-standard-2",
 	availableZone: "us-central1-a",
 }
 
 var GPU_P4 = accelerator{
-	model:         "p4",
+	model:         "nvidia-tesla-p4",
 	machineType:   "n1-standard-2",
 	availableZone: "us-central1-a",
 }
 
 var GPU_P100 = accelerator{
-	model:         "P100",
+	model:         "nvidia-tesla-p100",
 	machineType:   "n1-standard-2",
 	availableZone: "us-central1-c",
 }
 
-// TODO: b/291585915: increase quota and then test on P100
-// TODO: b/274129769: increase quota and then test on L4
+var GPU_K80 = accelerator{
+	model:         "nvidia-tesla-k80",
+	machineType:   "n1-standard-2",
+	availableZone: "us-central1-a",
+}
+
+var GPU_L4 = accelerator{
+	model:         "nvidia-l4",
+	machineType:   "g2-standard-4",
+	availableZone: "us-central1-a",
+}
+
+// TODO: b/291585915 - increase quota and then test on P100
 var gpuApps = map[string][]accelerator{
 	"nvml": {
-		GPU_A100, GPU_V100, GPU_P4, GPU_T4,
+		GPU_A100, GPU_V100, GPU_P4, GPU_T4, GPU_K80, GPU_L4,
 	},
 	"dcgm": {
-		GPU_A100, GPU_V100, GPU_T4, // p4 doesn't support DCGM metrics
+		// p4, k80 don't support DCGM profiling metrics
+		GPU_A100, GPU_V100, GPU_T4, GPU_L4,
 	},
 }
 
@@ -969,7 +982,7 @@ func TestThirdPartyApps(t *testing.T) {
 					ExtraCreateArguments: nil,
 				}
 				if tc.gpu != nil {
-					options.Accelerator = fmt.Sprintf("--accelerator=count=1,type=nvidia-tesla-%s", tc.gpu.model)
+					options.Accelerator = fmt.Sprintf("--accelerator=count=1,type=%s", tc.gpu.model)
 					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-size=100GB")
 					options.MachineType = tc.gpu.machineType
 					options.Zone = tc.gpu.availableZone
