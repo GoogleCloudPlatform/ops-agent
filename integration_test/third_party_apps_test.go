@@ -855,10 +855,10 @@ var GPU_L4 = accelerator{
 // TODO: b/291585915 - increase quota and then test on P100
 var gpuApps = map[string][]accelerator{
 	"nvml": {
-		GPU_A100, GPU_V100, GPU_P4, GPU_T4, GPU_K80, GPU_L4,
+		GPU_A100, GPU_V100, GPU_P4, GPU_T4, GPU_P100, GPU_K80, GPU_L4,
 	},
 	"dcgm": {
-		// p4, k80 don't support DCGM profiling metrics
+		// p4, k80, P100 don't support DCGM profiling metrics
 		GPU_A100, GPU_V100, GPU_T4, GPU_L4,
 	},
 }
