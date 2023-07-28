@@ -496,12 +496,6 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 			logger.ToMainLog().Printf("Skipping optional or representative metric %s", metric.Type)
 			continue
 		}
-		// TODO(b/293170696): mysql.row_operations is absent on MariaDB 10.10+,
-		// which affects the Debian 12 test (where the tested MariaDB version is 10.11).
-		if strings.HasPrefix(vm.Platform, "debian-12") && app == "mariadb" && strings.HasSuffix(metric.Type, "mysql.row_operations") {
-			logger.ToMainLog().Printf("Skipping unavailable metric %s (b/293170696)", metric.Type)
-			continue
-		}
 		requiredMetrics = append(requiredMetrics, metric)
 	}
 	c := make(chan error, len(requiredMetrics))
