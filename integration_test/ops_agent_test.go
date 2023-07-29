@@ -2537,6 +2537,128 @@ func TestPrometheusUntypedMetrics(t *testing.T) {
 	testPrometheusMetrics(t, config, testChecks)
 }
 
+func TestPrometheusUntypedMetricsReset(t *testing.T) {
+	config := `metrics:
+  receivers:
+    prom_app:
+      type: prometheus
+      preserve_untyped_metrics: true
+      config:
+        scrape_configs:
+        - job_name: test
+          metrics_path: /data
+          scrape_interval: 10s
+          static_configs:
+            - targets:
+              - localhost:8000
+  service:
+    pipelines:
+      prom_pipeline:
+        receivers: [prom_app]
+`
+	prometheusTestdata := path.Join("testdata", "prometheus")
+	remoteWorkDir := path.Join("/opt", "go-http-server")
+	testChecks := make([]mockPrometheusCheck, 0)
+	testChecks = append(testChecks, mockPrometheusCheck{
+		fileToUpload: fileToUpload{
+			local:  path.Join(prometheusTestdata, "sample_untyped_step_1"),
+			remote: path.Join(remoteWorkDir, "data"),
+		},
+		check: func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error {
+			tests := []prometheusMetricTest{
+				{"prometheus.googleapis.com/untyped_metric/unknown", nil,
+					metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 10.0},
+				{"prometheus.googleapis.com/untyped_metric/unknown:counter", nil,
+					metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 0.0},
+			}
+
+			var multiErr error
+			for _, test := range tests {
+				multiErr = multierr.Append(multiErr, assertPrometheusMetric(ctx, logger, vm, window, test))
+			}
+			if multiErr != nil {
+				t.Error(multiErr)
+			}
+			return multiErr
+		},
+	})
+
+	// The cumulative point reports the delta against the first point that isn't sent to Cloud Monitoring.
+	testChecks = append(testChecks, mockPrometheusCheck{
+		fileToUpload: fileToUpload{
+			local:  path.Join(prometheusTestdata, "sample_untyped_step_2"),
+			remote: path.Join(remoteWorkDir, "data"),
+		},
+		check: func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error {
+			tests := []prometheusMetricTest{
+				{"prometheus.googleapis.com/untyped_metric/unknown", nil,
+					metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 100.0},
+				{"prometheus.googleapis.com/untyped_metric/unknown:counter", nil,
+					metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 90.0},
+			}
+
+			var multiErr error
+			for _, test := range tests {
+				multiErr = multierr.Append(multiErr, assertPrometheusMetric(ctx, logger, vm, window, test))
+			}
+			if multiErr != nil {
+				t.Error(multiErr)
+			}
+			return multiErr
+		},
+	})
+
+	// Once a lower value is reported for the timeseries, it is treated as a reset point for the
+	// counter, with a reset value of 0.
+	testChecks = append(testChecks, mockPrometheusCheck{
+		fileToUpload: fileToUpload{
+			local:  path.Join(prometheusTestdata, "sample_untyped_step_3"),
+			remote: path.Join(remoteWorkDir, "data"),
+		},
+		check: func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error {
+			tests := []prometheusMetricTest{
+				{"prometheus.googleapis.com/untyped_metric/unknown", nil,
+					metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 10.0},
+				{"prometheus.googleapis.com/untyped_metric/unknown:counter", nil,
+					metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 10.0},
+			}
+
+			var multiErr error
+			for _, test := range tests {
+				multiErr = multierr.Append(multiErr, assertPrometheusMetric(ctx, logger, vm, window, test))
+			}
+			if multiErr != nil {
+				t.Error(multiErr)
+			}
+			return multiErr
+		},
+	})
+	testChecks = append(testChecks, mockPrometheusCheck{
+		fileToUpload: fileToUpload{
+			local:  path.Join(prometheusTestdata, "sample_untyped_step_4"),
+			remote: path.Join(remoteWorkDir, "data"),
+		},
+		check: func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error {
+			tests := []prometheusMetricTest{
+				{"prometheus.googleapis.com/untyped_metric/unknown", nil,
+					metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 1000.0},
+				{"prometheus.googleapis.com/untyped_metric/unknown:counter", nil,
+					metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 1000.0},
+			}
+
+			var multiErr error
+			for _, test := range tests {
+				multiErr = multierr.Append(multiErr, assertPrometheusMetric(ctx, logger, vm, window, test))
+			}
+			if multiErr != nil {
+				t.Error(multiErr)
+			}
+			return multiErr
+		},
+	})
+	testPrometheusMetrics(t, config, testChecks)
+}
+
 // TestPrometheusHistogramMetrics tests the Histogram metric type using static
 // testing files.
 func TestPrometheusHistogramMetrics(t *testing.T) {
