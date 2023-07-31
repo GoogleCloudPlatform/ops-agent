@@ -2531,6 +2531,14 @@ func TestPrometheusUntypedMetrics(t *testing.T) {
 			if multiErr != nil {
 				t.Error(multiErr)
 			}
+
+			// Ensure that the gauge-casted metric isn't reported when the unknown typed one is.
+			if err := gce.AssertMetricMissing(ctx, logger.ToMainLog(), vm, "prometheus.googleapis.com/explicit_untyped_metric/gauge", window); err != nil {
+				t.Error(err)
+			}
+			if err := gce.AssertMetricMissing(ctx, logger.ToMainLog(), vm, "prometheus.googleapis.com/missing_type_hint_metric/gauge", window); err != nil {
+				t.Error(err)
+			}
 			return multiErr
 		},
 	})
