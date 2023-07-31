@@ -36,5 +36,5 @@
   value: "1"
 - module: metrics
   feature: receivers:prometheus
-  key: "[0].config.preserve_untyped_metrics"
-  value: "false"
+  key: "[0].config.scrape_untyped_metrics_as"
+  value: ""

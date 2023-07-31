@@ -2165,7 +2165,7 @@ func TestPrometheusMetrics(t *testing.T) {
   receivers:
     prometheus:
       type: prometheus
-      preserve_untyped_metrics: true
+      scrape_untyped_metrics_as: gauge
       config:
         scrape_configs:
           - job_name: 'prometheus'
@@ -2328,8 +2328,8 @@ func TestPrometheusMetrics(t *testing.T) {
 			{
 				Module:  "metrics",
 				Feature: "receivers:prometheus",
-				Key:     "[0].config.preserve_untyped_metrics",
-				Value:   "true",
+				Key:     "[0].config.scrape_untyped_metrics_as",
+				Value:   "gauge",
 			},
 		}
 
@@ -2488,7 +2488,7 @@ func TestPrometheusUntypedMetrics(t *testing.T) {
   receivers:
     prom_app:
       type: prometheus
-      preserve_untyped_metrics: true
+      scrape_untyped_metrics_as: untyped
       config:
         scrape_configs:
         - job_name: test
@@ -2533,10 +2533,10 @@ func TestPrometheusUntypedMetrics(t *testing.T) {
 			}
 
 			// Ensure that the gauge-casted metric isn't reported when the unknown typed one is.
-			if err := gce.AssertMetricMissing(ctx, logger.ToMainLog(), vm, "prometheus.googleapis.com/explicit_untyped_metric/gauge", window); err != nil {
+			if err := gce.AssertMetricMissing(ctx, logger.ToMainLog(), vm, "prometheus.googleapis.com/explicit_untyped_metric/gauge", true, window); err != nil {
 				t.Error(err)
 			}
-			if err := gce.AssertMetricMissing(ctx, logger.ToMainLog(), vm, "prometheus.googleapis.com/missing_type_hint_metric/gauge", window); err != nil {
+			if err := gce.AssertMetricMissing(ctx, logger.ToMainLog(), vm, "prometheus.googleapis.com/missing_type_hint_metric/gauge", true, window); err != nil {
 				t.Error(err)
 			}
 			return multiErr
@@ -2550,7 +2550,7 @@ func TestPrometheusUntypedMetricsReset(t *testing.T) {
   receivers:
     prom_app:
       type: prometheus
-      preserve_untyped_metrics: true
+      scrape_untyped_metrics_as: untyped
       config:
         scrape_configs:
         - job_name: test
@@ -3161,7 +3161,7 @@ metrics:
 		if _, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, existingMetric, window, nil, false); err != nil {
 			t.Error(err)
 		}
-		if err := gce.AssertMetricMissing(ctx, logger.ToMainLog(), vm, excludedMetric, window); err != nil {
+		if err := gce.AssertMetricMissing(ctx, logger.ToMainLog(), vm, excludedMetric, false, window); err != nil {
 			t.Error(err)
 		}
 	})

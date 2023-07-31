@@ -16,7 +16,7 @@ metrics:
   receivers:
     prometheus:
         type: prometheus
-        preserve_untyped_metrics: true
+        scrape_untyped_metrics_as: untyped
         config:
           scrape_configs:
             - job_name: 'node'
