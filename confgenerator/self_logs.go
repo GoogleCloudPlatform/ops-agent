@@ -154,6 +154,7 @@ func generateSelfLogsSamplingComponents(ctx context.Context) []fluentbit.Compone
 				{"Name", "modify"},
 				{"Match", healthLogsTag},
 				{"Condition", fmt.Sprintf(`Key_value_matches message %s`, m.regexMatch)},
+				{"Set", fmt.Sprintf(`message %s`, m.code)},
 				{"Set", fmt.Sprintf(`code %s`, m.code)},
 			},
 		})
@@ -162,7 +163,7 @@ func generateSelfLogsSamplingComponents(ctx context.Context) []fluentbit.Compone
 	out = append(out, LoggingProcessorModifyFields{
 		Fields: map[string]*ModifyField{
 			"jsonPayload.message": {
-				CopyFrom: "jsonPayload.code",
+				CopyFrom: "jsonPayload.message",
 				MapValues: mapMessageFromCode,
 				MapValuesExclusive: false,
 			},
