@@ -123,12 +123,12 @@ type selfLogTranslationEntry struct {
 var selfLogTranslationList = []selfLogTranslationEntry{
 	{
 		regexMatch: `\[error\]\s\[lib\]\sbackend\sfailed`,
-		message:    "Ops_Agent_Logging_Pipeline_Failed._Documentation_https://cloud.google.com/logging/docs/agent/ops-agent/troubleshoot-find-info#health-checks",
+		message:    "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshoot-find-info#health-checks",
 		code:       "LogPipelineErr",
 	},
 	{
 		regexMatch: `\[error\]\s\[parser\]\scannot\sparse`,
-		message:    "Ops_Agent_Failed_to_Parse_Logs._Documentation_https://cloud.google.com/logging/docs/agent/ops-agent/troubleshoot-find-info#health-checks",
+		message:    "https://cloud.google.com/logging/docs/agent/ops-agent/troubleshoot-find-info#health-checks",
 		code:       "LogParseErr",
 	},
 }
@@ -138,7 +138,7 @@ func generateSelfLogsSamplingComponents(ctx context.Context) []fluentbit.Compone
 
 	// This filters sample specific fluent-bit logs by matching with regex, reemits
 	// as an `ops-agent-health` log and modifies them to follow the required structure.
-	for idx, m := range selfLogTranslationList {
+	for _, m := range selfLogTranslationList {
 		out = append(out, fluentbit.Component{
 			Kind: "FILTER",
 			Config: map[string]string{
@@ -147,18 +147,16 @@ func generateSelfLogsSamplingComponents(ctx context.Context) []fluentbit.Compone
 				"Rule":  fmt.Sprintf(`message %s %s true`, m.regexMatch, healthLogsTag),
 			},
 		})
-		out = append(out, LoggingProcessorModifyFields{
-			Fields: map[string]*ModifyField{
-				`jsonPayload.message`: {
-					StaticValue: &m.message,
-					OmitIf: fmt.Sprintf(`jsonPayload.message !~ "%s"`, m.regexMatch),
-				},
-				`jsonPayload.code`: {
-					StaticValue: &m.code,
-					OmitIf: fmt.Sprintf(`jsonPayload.message !~ "%s"`, m.regexMatch),
-				},
+		out = append(out, fluentbit.Component{
+			Kind: "FILTER",
+			OrderedConfig: [][2]string{
+				{"Name", "modify"},
+				{"Match", healthLogsTag},
+				{"Condition", fmt.Sprintf(`Key_value_matches message %s`, m.regexMatch)},
+				{"Set", fmt.Sprintf(`message %s`, m.message)},
+				{"Set", fmt.Sprintf(`code %s`, m.code)},
 			},
-		}.Components(ctx, healthLogsTag, fmt.Sprintf("sethealthlogstructure_%d", idx))...)
+		})
 	}
 
 	return out
