@@ -123,12 +123,12 @@ type selfLogTranslationEntry struct {
 var selfLogTranslationList = []selfLogTranslationEntry{
 	{
 		regexMatch: `\[error\]\s\[lib\]\sbackend\sfailed`,
-		message:    "Ops Agent Logging Pipeline Failed, Code: LogPipelineErr, Documentation: https://cloud.google.com/logging/docs/agent/ops-agent/troubleshoot-find-info#health-checks",
+		message:    "Ops Agent logging pipeline failed, Code: LogPipelineErr, Documentation: https://cloud.google.com/logging/docs/agent/ops-agent/troubleshoot-find-info#health-checks",
 		code:       "LogPipelineErr",
 	},
 	{
 		regexMatch: `\[error\]\s\[parser\]\scannot\sparse`,
-		message:    "Ops Agent Failed to Parse Logs, Code: LogParseErr, Documentation: https://cloud.google.com/logging/docs/agent/ops-agent/troubleshoot-find-info#health-checks",
+		message:    "Ops Agent failed to parse logs, Code: LogParseErr, Documentation: https://cloud.google.com/logging/docs/agent/ops-agent/troubleshoot-find-info#health-checks",
 		code:       "LogParseErr",
 	},
 }
@@ -137,7 +137,7 @@ func generateSelfLogsSamplingComponents(ctx context.Context) []fluentbit.Compone
 	out := make([]fluentbit.Component, 0)
 	mapMessageFromCode := make(map[string]string)
 
-	// This filters sample specific fluent-bit logs by matching with regex, reemits
+	// These filters sample specific fluent-bit logs by matching with regex, re-emits
 	// as an `ops-agent-health` log and modifies them to follow the required structure.
 	for _, m := range selfLogTranslationList {
 		out = append(out, fluentbit.Component{
@@ -163,7 +163,6 @@ func generateSelfLogsSamplingComponents(ctx context.Context) []fluentbit.Compone
 	out = append(out, LoggingProcessorModifyFields{
 		Fields: map[string]*ModifyField{
 			"jsonPayload.message": {
-				CopyFrom: "jsonPayload.message",
 				MapValues: mapMessageFromCode,
 				MapValuesExclusive: false,
 			},
