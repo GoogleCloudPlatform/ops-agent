@@ -41,7 +41,7 @@ func MergeConfFiles(ctx context.Context, userConfPath string, builtInConfStructs
 		mergeConfigs(result, overrides)
 	}
 
-	if err := result.Validate(); err != nil {
+	if err := result.Validate(ctx); err != nil {
 		return nil, err
 	}
 

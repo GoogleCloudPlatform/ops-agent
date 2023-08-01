@@ -33,7 +33,7 @@ func (MetricsReceiverVarnish) Type() string {
 	return "varnish"
 }
 
-func (r MetricsReceiverVarnish) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverVarnish) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "varnish",

@@ -371,6 +371,9 @@ processors:
         new_label: process
         new_value: all
     - action: update
+      include: process.handles
+      new_name: processes/windows/handles
+    - action: update
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
@@ -486,6 +489,8 @@ receivers:
       paging: {}
       process:
         mute_process_name_error: true
+        process.handles:
+          enabled: true
       processes: {}
   prometheus/fluentbit:
     config:

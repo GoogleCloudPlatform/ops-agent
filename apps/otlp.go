@@ -15,6 +15,7 @@
 package apps
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strings"
@@ -119,7 +120,7 @@ func (r ReceiverOTLP) metricsProcessors() (otel.ExporterType, otel.ResourceDetec
 	}
 }
 
-func (r ReceiverOTLP) Pipelines() []otel.ReceiverPipeline {
+func (r ReceiverOTLP) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	endpoint := r.GRPCEndpoint
 	if endpoint == "" {
 		endpoint = defaultGRPCEndpoint

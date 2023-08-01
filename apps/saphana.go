@@ -154,7 +154,7 @@ func (s MetricsReceiverSapHana) Type() string {
 	return "saphana"
 }
 
-func (s MetricsReceiverSapHana) Pipelines() []otel.ReceiverPipeline {
+func (s MetricsReceiverSapHana) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	if s.Endpoint == "" {
 		s.Endpoint = defaultSapHanaEndpoint
 	}

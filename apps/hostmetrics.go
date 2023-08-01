@@ -15,8 +15,11 @@
 package apps
 
 import (
+	"context"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
 type MetricsReceiverHostmetrics struct {
@@ -29,7 +32,16 @@ func (r MetricsReceiverHostmetrics) Type() string {
 	return "hostmetrics"
 }
 
-func (r MetricsReceiverHostmetrics) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverHostmetrics) Pipelines(ctx context.Context) []otel.ReceiverPipeline {
+	p := platform.FromContext(ctx)
+	s := map[string]interface{}{
+		"mute_process_name_error": true,
+	}
+	if p.Type == platform.Windows {
+		s["process.handles"] = map[string]interface{}{
+			"enabled": true,
+		}
+	}
 	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "hostmetrics",
@@ -43,10 +55,8 @@ func (r MetricsReceiverHostmetrics) Pipelines() []otel.ReceiverPipeline {
 					"filesystem": struct{}{},
 					"network":    struct{}{},
 					"paging":     struct{}{},
-					"process": map[string]bool{
-						"mute_process_name_error": true,
-					},
-					"processes": struct{}{},
+					"process":    s,
+					"processes":  struct{}{},
 				},
 			},
 		},
@@ -297,6 +307,11 @@ func (r MetricsReceiverHostmetrics) Pipelines() []otel.ReceiverPipeline {
 					"processes/vm_usage",
 					// change data type from int64 -> double
 					otel.ToggleScalarDataType,
+					otel.AddLabel("process", "all"),
+				),
+				otel.RenameMetric(
+					"process.handles",
+					"processes/windows/handles",
 					otel.AddLabel("process", "all"),
 				),
 				otel.AddPrefix("agent.googleapis.com"),

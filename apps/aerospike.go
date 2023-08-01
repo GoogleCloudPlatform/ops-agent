@@ -15,6 +15,7 @@
 package apps
 
 import (
+	"context"
 	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
@@ -50,7 +51,7 @@ var (
 )
 
 // Pipelines is the OTEL pipelines created from MetricsReceiverAerospike
-func (r MetricsReceiverAerospike) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverAerospike) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultAerospikeEndpoint
 	}

@@ -15,6 +15,7 @@ package confgenerator_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/csv"
 	"errors"
 	"fmt"
@@ -572,7 +573,7 @@ func (m MetricsReceiverFoo) Type() string {
 	return "metricsReceiverFoo"
 }
 
-func (m MetricsReceiverFoo) Pipelines() []otel.ReceiverPipeline {
+func (m MetricsReceiverFoo) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	return nil
 }
 
@@ -906,7 +907,7 @@ func (m Example) Type() string {
 	return "example"
 }
 
-func (m Example) Pipelines() []otel.ReceiverPipeline {
+func (m Example) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	return nil
 }
 
