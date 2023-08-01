@@ -123,12 +123,12 @@ type selfLogTranslationEntry struct {
 var selfLogTranslationList = []selfLogTranslationEntry{
 	{
 		regexMatch: `\[error\]\s\[lib\]\sbackend\sfailed`,
-		message:    "Ops Agent Logging Pipeline Failed, Documentation: https://cloud.google.com/logging/docs/agent/ops-agent/troubleshoot-find-info#health-checks",
+		message:    "Ops Agent Logging Pipeline Failed, Code: LogPipelineErr, Documentation: https://cloud.google.com/logging/docs/agent/ops-agent/troubleshoot-find-info#health-checks",
 		code:       "LogPipelineErr",
 	},
 	{
 		regexMatch: `\[error\]\s\[parser\]\scannot\sparse`,
-		message:    "Ops Agent Failed to Parse Logs, Documentation: https://cloud.google.com/logging/docs/agent/ops-agent/troubleshoot-find-info#health-checks",
+		message:    "Ops Agent Failed to Parse Logs, Code: LogParseErr, Documentation: https://cloud.google.com/logging/docs/agent/ops-agent/troubleshoot-find-info#health-checks",
 		code:       "LogParseErr",
 	},
 }
