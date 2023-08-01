@@ -3678,7 +3678,7 @@ traces:
 			{
 				Module:  "combined",
 				Feature: "receivers:otlp",
-				Key:     "metrics_mode",
+				Key:     "[0].metrics_mode",
 				Value:   "googlecloudmonitoring",
 			},
 			{
