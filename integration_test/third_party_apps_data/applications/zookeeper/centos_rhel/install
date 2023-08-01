@@ -1,6 +1,6 @@
 set -e
 
-sudo yum install -y curl java
+sudo yum install -y curl java tzdata-java
 
 sudo mkdir -p /opt/zookeeper/stage
 # https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/README.md#vendored-dependencies

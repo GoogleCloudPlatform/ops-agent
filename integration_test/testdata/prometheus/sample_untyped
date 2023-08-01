@@ -1,0 +1,6 @@
+# HELP explicit_untyped_metric A metric that is defined to be untyped.
+# TYPE explicit_untyped_metric untyped
+explicit_untyped_metric{label_a="c",label_b="d"} 1
+
+# HELP missing_type_hint_metric A metric that has the type hint missing
+missing_type_hint_metric{label_a="c",label_b="d"} 10.0

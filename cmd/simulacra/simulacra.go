@@ -33,7 +33,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 	"github.com/binxio/gcloudconfig"
 	"github.com/google/uuid"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -41,6 +41,16 @@ const (
 	defaultThirdPartyAppsPath = "./integration_test/third_party_apps_data"
 	vmInitLogFileName         = "vm_initialization.txt"
 )
+
+// Script represents each individual item of the 'scripts' field in a Simulacra config. Each script in the scripts field
+// will be executed on the VM once the VM instantiates.
+type Script struct {
+	// The path to the script file.
+	Path string `yaml:"path"`
+	// Command line arguments that the script will be executed with. For example, setting 'args' to ["-Apps","all"] will result in
+	// Simulacra executing the script as follows : "./script -Apps all".
+	Args []string `yaml:"args"`
+}
 
 // Config represents the configuration for Simulacra. Most of the fields specify requirements about the VM that
 // Simulacra will instantiate.
@@ -58,7 +68,9 @@ type Config struct {
 	// Path to Third Party Apps folder
 	ThirdPartyAppsPath string `yaml:"third_party_apps_path"`
 	// Path to script files that will be run on the VM.
-	Scripts []string `yaml:"scripts"`
+	Scripts []*Script `yaml:"scripts"`
+	// A Service Account for the VM.
+	ServiceAccount string `yaml:"service_account"`
 }
 
 func distroFolder(platform string) (string, error) {
@@ -106,27 +118,15 @@ func getAllReceivers(config *confgenerator.UnifiedConfig) (receivers []string) {
 	return receivers
 }
 
-// installApps reads an Ops Agent config file and then identifies all the third party apps that need to be installed.
-// The function identifies third party apps to install by checking if any of the receiver types have a
-// corresponding install script in the third_party_apps_data directory.
-// If there is a corresponding install script, then that install script is run on the vm.
-func installApps(ctx context.Context, vm *gce.VM, logger *logging.DirectoryLogger, configFilePath string, installPath string) error {
-	if configFilePath == "" {
-		return nil
-	}
-
-	config, err := confgenerator.MergeConfFiles(ctx, configFilePath, apps.BuiltInConfStructs)
-	if err != nil {
-		return err
-	}
-
+// installApps takes in a list of receivers that the Ops Agent is configured with and installs all third party apps.
+// The function determines if a receiver requires a third party app installation if there is a corresponding install
+// script in the third party apps data folder whose path is specified using the installPath argument.
+func installApps(ctx context.Context, vm *gce.VM, logger *logging.DirectoryLogger, installPath string, receivers []string) error {
 	folder, err := distroFolder(vm.Platform)
 
 	if err != nil {
 		return err
 	}
-
-	receivers := getAllReceivers(config)
 
 	for _, app := range receivers {
 		if scriptContent, err := os.ReadFile(path.Join(installPath, "applications", app, folder, "install")); err == nil {
@@ -141,6 +141,20 @@ func installApps(ctx context.Context, vm *gce.VM, logger *logging.DirectoryLogge
 		}
 	}
 	return nil
+}
+
+func getReceiversFromConfig(ctx context.Context, vm *gce.VM, logger *logging.DirectoryLogger, configFilePath string) ([]string, error) {
+	if configFilePath == "" {
+		return []string{}, nil
+	}
+
+	config, err := confgenerator.MergeConfFiles(ctx, configFilePath, apps.BuiltInConfStructs)
+	if err != nil {
+		return nil, err
+	}
+
+	receivers := getAllReceivers(config)
+	return receivers, nil
 }
 
 func configureFromGCloud(project *string, zone *string) error {
@@ -165,14 +179,14 @@ func getInstanceName() string {
 	return fmt.Sprintf("simulacra-vm-instance-%s", uuid.NewString())
 }
 
-func getConfigFromYaml(configPath string) (Config, error) {
+func getConfigFromYaml(configPath string) (*Config, error) {
 	var config Config
 	file, err := ioutil.ReadFile(configPath)
 	if err != nil {
-		return config, err
+		return nil, err
 	}
 	if err := yaml.Unmarshal(file, &config); err != nil {
-		return config, err
+		return nil, err
 	}
 
 	if config.Platform == "" {
@@ -187,10 +201,10 @@ func getConfigFromYaml(configPath string) (Config, error) {
 		config.Name = getInstanceName()
 	}
 
-	return config, nil
+	return &config, nil
 }
 
-func getSimulacraConfig() (Config, error) {
+func getSimulacraConfig() (*Config, error) {
 	configPath := flag.String("config", "", "Optional. The path to a YAML file specifying all the configurations for Simulacra. If unspecified, Simulacra will either use values from other command line arguments or use default values. If specifed along with other command line arguments, all others will be ignored.")
 	platform := flag.String("platform", defaultPlatform, "Optional. The OS for the VM. If missing, debian-11 is used.")
 	opsAgentConfigFile := flag.String("ops_agent_config", "", "Optional. Path to the Ops Agent Config File. If unspecified, Ops Agent will not install any third party applications and configure Ops Agent with default settings. ")
@@ -198,39 +212,63 @@ func getSimulacraConfig() (Config, error) {
 	zone := flag.String("zone", "", "Optional. If missing, Simulacra will try to infer from GCloud config. ")
 	name := flag.String("name", getInstanceName(), "Optional. A name for the instance to be created. If missing, a random name with prefix 'simulacra-vm-instance' will be assigned. ")
 	thirdPartyAppsPath := flag.String("third_party_apps_path", defaultThirdPartyAppsPath, "Optional. The path to the third party apps data folder. If missing, Simulacra assumes the working directory is the root of the repo. Therefore, the default path is './integration_test/third_party_apps_data' ")
+	serviceAccount := flag.String("service_account", "", "Optional. A service account for the VM. If missing, the VM will be instantiated with a default service account.")
 	flag.Parse()
 
 	if *configPath != "" {
 		return getConfigFromYaml(*configPath)
 	}
 
-	config := Config{Platform: *platform, ConfigFilePath: *opsAgentConfigFile, Project: *project, Zone: *zone, Name: *name,
-		ThirdPartyAppsPath: *thirdPartyAppsPath}
+	config := Config{
+		Platform:           *platform,
+		ConfigFilePath:     *opsAgentConfigFile,
+		Project:            *project,
+		Zone:               *zone,
+		Name:               *name,
+		ThirdPartyAppsPath: *thirdPartyAppsPath,
+		ServiceAccount:     *serviceAccount,
+	}
 
-	return config, nil
+	return &config, nil
 
 }
 
-func runCustomScripts(ctx context.Context, vm *gce.VM, logger *logging.DirectoryLogger, scripts []string) error {
-	if len(scripts) == 0 {
-		log.Default().Print("No Custom Scripts To Run ")
-		return nil
-	}
+func runCustomScripts(ctx context.Context, vm *gce.VM, logger *logging.DirectoryLogger, scripts []*Script) error {
+	for _, script := range scripts {
+		scriptContent, err := os.ReadFile(script.Path)
 
-	for _, scriptPath := range scripts {
-		if scriptContent, err := os.ReadFile(scriptPath); err != nil {
+		if err != nil {
 			return err
-		} else {
-			logger.ToMainLog().Printf("Running script from %s", scriptPath)
-			log.Default().Printf("Running script from %s", scriptPath)
-			if _, err := gce.RunScriptRemotely(ctx, logger, vm, string(scriptContent), nil, make(map[string]string)); err != nil {
-				return fmt.Errorf("Script with path %s failed to run %v", scriptPath, err)
-			}
-			logger.ToMainLog().Printf("Done Running Script from  %s", scriptPath)
-
 		}
+
+		logger.ToMainLog().Printf("Running script from %s", script.Path)
+		log.Default().Printf("Running script from %s", script.Path)
+		if _, err := gce.RunScriptRemotely(ctx, logger, vm, string(scriptContent), script.Args, make(map[string]string)); err != nil {
+			return fmt.Errorf("Script with path %s failed to run %v", script.Path, err)
+		}
+		logger.ToMainLog().Printf("Done Running Script from  %s", script.Path)
+
 	}
+
 	return nil
+}
+
+func createInstance(ctx context.Context, config *Config, logger *log.Logger) (*gce.VM, error) {
+	args := []string{}
+	if config.ServiceAccount != "" {
+		args = append(args, "--service-account="+config.ServiceAccount)
+	}
+
+	options := gce.VMOptions{
+		Platform:             config.Platform,
+		MachineType:          agents.RecommendedMachineType(config.Platform),
+		Name:                 config.Name,
+		Project:              config.Project,
+		Zone:                 config.Zone,
+		ExtraCreateArguments: args,
+	}
+
+	return gce.CreateInstance(ctx, logger, options)
 }
 
 func main() {
@@ -252,16 +290,9 @@ func main() {
 		log.Default().Fatalf("project and zone must either be non empty or set in GCloud %v", err)
 	}
 
-	options := gce.VMOptions{
-		Platform:    config.Platform,
-		MachineType: agents.RecommendedMachineType(config.Platform),
-		Name:        config.Name,
-		Project:     config.Project,
-		Zone:        config.Zone,
-	}
 	// Create VM Instance.
 	log.Default().Printf("Creating VM Instance, check %s for details", vmInitLogFile)
-	vm, err := gce.CreateInstance(ctx, logger.ToFile(vmInitLogFileName), options)
+	vm, err := createInstance(ctx, config, logger.ToFile(vmInitLogFileName))
 	if err != nil {
 		log.Default().Fatalf("Failed to create GCE instance %v", err)
 	}
@@ -273,7 +304,13 @@ func main() {
 
 	// Install Third Party Appliations based on Ops Agent Config.
 	log.Default().Printf("Installing Third Party Applications, check %s for details", mainLogFile)
-	if err := installApps(ctx, vm, logger, config.ConfigFilePath, config.ThirdPartyAppsPath); err != nil {
+	receivers, err := getReceiversFromConfig(ctx, vm, logger, config.ConfigFilePath)
+
+	if err != nil {
+		log.Default().Fatalf("Error reading config file: %v", err)
+	}
+
+	if err := installApps(ctx, vm, logger, config.ThirdPartyAppsPath, receivers); err != nil {
 		log.Default().Printf("Failed to install apps %v", err)
 	}
 

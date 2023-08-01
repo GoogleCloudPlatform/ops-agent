@@ -72,6 +72,15 @@ func googleManagedPrometheusExporter(userAgent string) otel.Component {
 				"enabled": false,
 			},
 			"user_agent": userAgent,
+			// Prometheus untyped metrics, if a prometheus receiver is configured with the preserve_untyped_metrics option,
+			// will have a metric attribute added to the metric with the name
+			// `prometheus.googleapis.com/internal/untyped_metric`. This knob controls whether the exporter double writes to GMP
+			// the untyped metric (once as a gauge and once as a cumulative) similar to the GMP binary based on the presense
+			// of this reserved key.
+			//
+			// OTLP Gauge metrics ingested by the Ops Agent, that have this key will also be treated as untyped prometheus metrics
+			// if it is being exported to GMP. As such, this knob can be set to true.
+			"untyped_double_export": true,
 		},
 	}
 }

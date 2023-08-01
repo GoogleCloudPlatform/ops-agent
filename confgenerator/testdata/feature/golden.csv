@@ -264,3 +264,4 @@ App,Field,Override,
 *confgenerator.PrometheusMetrics,config.[].scrape_configs.scrape_interval
 *confgenerator.PrometheusMetrics,config.[].scrape_configs.scrape_timeout
 *confgenerator.PrometheusMetrics,config.[].scrape_configs.static_config_target_groups
+*confgenerator.PrometheusMetrics,config.scrape_untyped_metrics_as

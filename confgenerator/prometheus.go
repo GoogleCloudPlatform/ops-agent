@@ -45,6 +45,20 @@ var (
 type PrometheusMetrics struct {
 	ConfigComponent `yaml:",inline"`
 
+	// ScrapeUntypedMetricsAs controls whether untyped metrics are preserved
+	// as untyped in GMP instead of converting it to a gauge.
+	// If set to untyped, the receiver will double write prometheus untyped metrics - once
+	// as a gauge with the name suffix `/unknown` and once as a cumulative with the
+	// name suffix `/unknown:counter`.
+	//
+	// Similar to the GMP binary, if in the cumulative timeseries, a lower point is
+	// recorded - it is treated as a reset point. The reset timestamp is set to 1ms
+	// prior, and all future points are recorded relative to this reset point.
+	//
+	// If set to gauge, which is the default, it scrapes the untyped metrics as a gauge
+	// and reports it with the suffix `/gauge`, as is done for other gauges.
+	ScrapeUntypedMetricsAs string `yaml:"scrape_untyped_metrics_as,omitempty,default=gauge"  validate:"omitempty,oneof=gauge untyped"`
+
 	// The Prometheus receiver is configured via a Prometheus config file.
 	// See: https://prometheus.io/docs/prometheus/latest/configuration/configuration/
 
@@ -88,7 +102,7 @@ func (r PrometheusMetrics) Pipelines(_ context.Context) []otel.ReceiverPipeline 
 	}
 
 	return []otel.ReceiverPipeline{{
-		Receiver: prometheusToOtelComponent(r.PromConfig),
+		Receiver: prometheusToOtelComponent(r),
 		Processors: map[string][]otel.Component{
 			// Expect metrics, without any additional processing.
 			"metrics": {
@@ -109,8 +123,8 @@ func (r PrometheusMetrics) Pipelines(_ context.Context) []otel.ReceiverPipeline 
 //
 // Note: We copy over the prometheus scrape configs and create new ones so calls to `Pipelines()`
 // will return the same result everytime and not change the original prometheus config.
-func prometheusToOtelComponent(promConfig promconfig.Config) otel.Component {
-	copyPromConfig, err := deepCopy(promConfig)
+func prometheusToOtelComponent(m PrometheusMetrics) otel.Component {
+	copyPromConfig, err := deepCopy(m.PromConfig)
 	if err != nil {
 		// This should never happen since we already validated the prometheus config.
 		panic(fmt.Errorf("failed to deep copy prometheus config: %w", err))
@@ -130,18 +144,18 @@ func prometheusToOtelComponent(promConfig promconfig.Config) otel.Component {
 
 	return otel.Component{
 		Type:   "prometheus",
-		Config: map[string]interface{}{"config": copyPromConfig},
+		Config: map[string]interface{}{"config": copyPromConfig, "preserve_untyped": (m.ScrapeUntypedMetricsAs == "untyped")},
 	}
 }
 
 func deepCopy(config promconfig.Config) (promconfig.Config, error) {
 	marshalledBytes, err := yaml.Marshal(config)
 	if err != nil {
-		return promconfig.Config{}, fmt.Errorf("failed to convert Prometheus Config to yaml: %w.", err)
+		return promconfig.Config{}, fmt.Errorf("failed to convert Prometheus Config to yaml: %w", err)
 	}
 	copyConfig := promconfig.Config{}
 	if err := yaml.Unmarshal(marshalledBytes, &copyConfig); err != nil {
-		return promconfig.Config{}, fmt.Errorf("failed to convert yaml to Prometheus Config: %w.", err)
+		return promconfig.Config{}, fmt.Errorf("failed to convert yaml to Prometheus Config: %w", err)
 	}
 
 	return copyConfig, nil
@@ -362,6 +376,10 @@ func (r PrometheusMetrics) ExtractFeatures() ([]CustomFeature, error) {
 			})
 		}
 	}
+	customFeatures = append(customFeatures, CustomFeature{
+		Key:   []string{"config", "scrape_untyped_metrics_as"},
+		Value: r.ScrapeUntypedMetricsAs,
+	})
 	return customFeatures, nil
 }
 
@@ -383,5 +401,6 @@ func (r PrometheusMetrics) ListAllFeatures() []string {
 		"config.[].scrape_configs.relabel_configs",
 		"config.[].scrape_configs.metric_relabel_configs",
 		"config.[].scrape_configs.static_config_target_groups",
+		"config.scrape_untyped_metrics_as",
 	}
 }
