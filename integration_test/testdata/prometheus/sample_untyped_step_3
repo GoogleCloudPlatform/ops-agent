@@ -1,0 +1,3 @@
+# HELP untyped_metric A metric that is defined to be untyped.
+# TYPE untyped_metric untyped
+untyped_metric{label_a="b"} 10

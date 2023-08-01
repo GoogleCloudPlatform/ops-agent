@@ -648,10 +648,10 @@ func TestPrometheusFeatureMetrics(t *testing.T) {
 	uc := emptyUc
 	receivers := make(map[string]confgenerator.MetricsReceiver)
 	receivers["prometheus"] = confgenerator.PrometheusMetrics{
-		confgenerator.ConfigComponent{
+		ConfigComponent: confgenerator.ConfigComponent{
 			Type: "prometheus",
 		},
-		promconfig.Config{
+		PromConfig: promconfig.Config{
 			GlobalConfig: promconfig.GlobalConfig{
 				ScrapeInterval:     model.Duration(10 * time.Second),
 				ScrapeTimeout:      model.Duration(10 * time.Second),
@@ -703,6 +703,7 @@ func TestPrometheusFeatureMetrics(t *testing.T) {
 				},
 			},
 		},
+		ScrapeUntypedMetricsAs: "untyped",
 	}
 	uc.Metrics = &confgenerator.Metrics{
 		Receivers: receivers,
@@ -785,6 +786,13 @@ func TestPrometheusFeatureMetrics(t *testing.T) {
 			Value:  test.val,
 		})
 	}
+	expected = append(expected, confgenerator.Feature{
+		Module: "metrics",
+		Kind:   "receivers",
+		Type:   "prometheus",
+		Key:    []string{"[0]", "config", "scrape_untyped_metrics_as"},
+		Value:  "untyped",
+	})
 
 	if !cmp.Equal(features, expected) {
 		t.Errorf("Expected %d features but got %d\n\n", len(expected), len(features))
