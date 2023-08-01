@@ -32,13 +32,14 @@ var (
 )
 
 const (
-	fluentBitSelfLogsTag string = "ops-agent-fluent-bit"
-	healthLogsTag        string = "ops-agent-health"
-	severityKey          string = "logging.googleapis.com/severity"
-	sourceLocationKey    string = "logging.googleapis.com/sourceLocation"
-	agentVersionKey      string = "agent.googleapis.com/health/agentVersion"
-	agentKindKey         string = "agent.googleapis.com/health/agentKind"
-	schemaVersionKey     string = "agent.googleapis.com/health/schemaVersion"
+	fluentBitSelfLogsTag    string = "ops-agent-fluent-bit"
+	healthLogsTag           string = "ops-agent-health"
+	severityKey             string = "logging.googleapis.com/severity"
+	sourceLocationKey       string = "logging.googleapis.com/sourceLocation"
+	agentVersionKey         string = "agent.googleapis.com/health/agentVersion"
+	agentKindKey            string = "agent.googleapis.com/health/agentKind"
+	schemaVersionKey        string = "agent.googleapis.com/health/schemaVersion"
+	troubleshootFindInfoURL string = "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/troubleshoot-find-info"
 )
 
 func fluentbitSelfLogsPath(p platform.Platform) string {
@@ -120,15 +121,15 @@ type selfLogTranslationEntry struct {
 	code       string
 }
 
-var selfLogTranslationList = []selfLogTranslationEntry{
+var selfLogTranslationList = []selfLogTranslationEntry {
 	{
 		regexMatch: `\[error\]\s\[lib\]\sbackend\sfailed`,
-		message:    "Ops Agent logging pipeline failed, Code: LogPipelineErr, Documentation: https://cloud.google.com/logging/docs/agent/ops-agent/troubleshoot-find-info#health-checks",
+		message:    fmt.Sprintf("Ops Agent logging pipeline failed, Code: LogPipelineErr, Documentation: %s", troubleshootFindInfoURL),
 		code:       "LogPipelineErr",
 	},
 	{
 		regexMatch: `\[error\]\s\[parser\]\scannot\sparse`,
-		message:    "Ops Agent failed to parse logs, Code: LogParseErr, Documentation: https://cloud.google.com/logging/docs/agent/ops-agent/troubleshoot-find-info#health-checks",
+		message:    fmt.Sprintf("Ops Agent failed to parse logs, Code: LogParseErr, Documentation: %s", troubleshootFindInfoURL),
 		code:       "LogParseErr",
 	},
 }
@@ -163,7 +164,7 @@ func generateSelfLogsSamplingComponents(ctx context.Context) []fluentbit.Compone
 	out = append(out, LoggingProcessorModifyFields{
 		Fields: map[string]*ModifyField{
 			"jsonPayload.message": {
-				MapValues: mapMessageFromCode,
+				MapValues:          mapMessageFromCode,
 				MapValuesExclusive: false,
 			},
 		},
