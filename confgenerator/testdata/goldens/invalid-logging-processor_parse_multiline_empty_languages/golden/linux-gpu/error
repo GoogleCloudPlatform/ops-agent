@@ -1,0 +1,6 @@
+[29:18] "language" is a required field
+> 29 | null
+                        ^
+  30 |   service:
+  31 |     pipelines:
+  32 |       p1:

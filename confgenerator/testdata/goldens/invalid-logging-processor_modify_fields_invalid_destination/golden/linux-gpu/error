@@ -1,0 +1,9 @@
+[20:27] "fields[notJsonPayload.foo]": 1:19: error: field "notJsonPayload.foo" not found
+  17 |     processor_1:
+  18 |       type: modify_fields
+  19 |       fields:
+> 20 |         notJsonPayload.foo:
+                                 ^
+  21 |           static_value: bar
+  22 |   service:
+  23 |     pipelines:

@@ -69,6 +69,21 @@ var (
 					Platform:        "linux_platform",
 					PlatformVersion: "linux_platform_version",
 				},
+				HasNvidiaGpu: false,
+			},
+		},
+		{
+			name:            "linux-gpu",
+			defaultLogsDir:  "/var/log/google-cloud-ops-agent",
+			defaultStateDir: "/var/lib/google-cloud-ops-agent/fluent-bit",
+			platform: platform.Platform{
+				Type: platform.Linux,
+				HostInfo: &host.InfoStat{
+					OS:              "linux",
+					Platform:        "linux_platform",
+					PlatformVersion: "linux_platform_version",
+				},
+				HasNvidiaGpu: true,
 			},
 		},
 		{
@@ -84,6 +99,7 @@ var (
 					Platform:        "win_platform",
 					PlatformVersion: "win_platform_version",
 				},
+				HasNvidiaGpu: false,
 			},
 		},
 		{
@@ -99,6 +115,7 @@ var (
 					Platform:        "win_platform",
 					PlatformVersion: "win_platform_version",
 				},
+				HasNvidiaGpu: false,
 			},
 		},
 	}
