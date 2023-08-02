@@ -1,0 +1,9 @@
+[21:22] "copy_from": 1:19: error: field "notJsonPayload.bar" not found
+  18 |       type: modify_fields
+  19 |       fields:
+  20 |         jsonPayload.foo:
+> 21 |           copy_from: notJsonPayload.bar
+                            ^
+  22 |   service:
+  23 |     pipelines:
+  24 |       default_pipeline:
