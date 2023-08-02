@@ -34,7 +34,7 @@ type ReceiverOTLP struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 
 	GRPCEndpoint string `yaml:"grpc_endpoint" validate:"omitempty,hostname_port" tracking:"endpoint"`
-	MetricsMode  string `yaml:"metrics_mode" validate:"omitempty,oneof=googlecloudmonitoring googlemanagedprometheus"`
+	MetricsMode  string `yaml:"metrics_mode" validate:"omitempty,oneof=googlecloudmonitoring googlemanagedprometheus" tracking:""`
 }
 
 func (r ReceiverOTLP) Type() string {
