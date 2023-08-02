@@ -43,7 +43,7 @@ Before we can run Simulacra, we need to perform these following steps:
 > export ZONES=us-central1-b
 ```
 
-4. Create a [cloud storage bucket](https://cloud.google.com/storage/docs/buckets) on GCP, if you don't already have one. You can use Pantheon to do this. 
+4. Create a [cloud storage bucket](https://cloud.google.com/storage/docs/buckets) on GCP, if you don't already have one. A cloud storage bucket / transfers bucket helps Simulacra transfer an Ops Agent config file from your devserver to the VM that Simulacra is creating. You can use Pantheon to create a transfers bucket. 
 
 5. Set the TRANSFERS_BUCKET environment variable to the name of the bucket that you created in the previous step.
 
