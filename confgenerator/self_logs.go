@@ -70,8 +70,10 @@ func generateHealthChecksLogsComponents(ctx context.Context) []fluentbit.Compone
 		},
 	}.Components(ctx, healthLogsTag, "health-checks-json")...)
 	out = append(out, []fluentbit.Component{
-		// This is used to exclude any previous content of the health-checks file that
-		// does not contain the `severity` field.
+		// This is used to exclude any previous content of the `health-checks.log` file that does not contain
+		// the `jsonPayload.severity` field. Due to `https://github.com/fluent/fluent-bit/issues/7092` the
+		// filtering can't be done directly to the `logging.googleapis.com/severity` field.
+		// We cannot use `LoggingProcessorExcludeLogs` here since it doesn't exclude when the field is missing.
 		{
 			Kind: "FILTER",
 			Config: map[string]string{
@@ -141,8 +143,11 @@ func generateSelfLogsSamplingComponents(ctx context.Context) []fluentbit.Compone
 				"Rule":  fmt.Sprintf(`message %s %s true`, m.regexMatch, healthLogsTag),
 			},
 		})
-		// This filter sets the appropiate health code to the previously sampled logs.
-		// The code is also set to the `message` field for later translation in the pipeline.
+		// This filter sets the appropiate health code to the previously sampled logs. The `code` is also 
+		// set to the `message` field for later translation in the pipeline.
+		// The current fluent-bit submodule doesn't accept whitespaces in the `Set` values, so `code` is
+		// used as a placeholder. This can be updated when the fix arrives to the current fluent-bit submodule 
+		// `https://github.com/fluent/fluent-bit/issues/4286`.
 		out = append(out, fluentbit.Component{
 			Kind: "FILTER",
 			OrderedConfig: [][2]string{
@@ -200,15 +205,6 @@ func generateSelfLogsProcessingComponents(ctx context.Context) []fluentbit.Compo
 					"debug": "DEBUG",
 				},
 				MapValuesExclusive: false,
-			},
-			"sourceLocation.file": {
-				MoveFrom: "jsonPayload.sourceLocation.file",
-			},
-			"sourceLocation.line": {
-				MoveFrom: "jsonPayload.sourceLocation.line",
-			},
-			"sourceLocation.function": {
-				MoveFrom: "jsonPayload.sourceLocation.function",
 			},
 		},
 	}.Components(ctx, strings.Join([]string{fluentBitSelfLogsTag, healthLogsTag}, "|"), "self-logs-processing")
