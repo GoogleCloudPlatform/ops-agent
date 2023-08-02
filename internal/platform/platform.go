@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/GoogleCloudPlatform/ops-agent/internal/accelerators"
 	"github.com/shirou/gopsutil/host"
 )
 
@@ -27,6 +28,7 @@ type Platform struct {
 	WindowsBuildNumber string
 	WinlogV1Channels   []string
 	HostInfo           *host.InfoStat
+	HasNvidiaGpu       bool
 }
 
 type Type int
@@ -73,6 +75,12 @@ func detect() Platform {
 		HostInfo: info,
 	}
 	p.detectPlatform()
+	if hasGpu, err := accelerators.HasNvidiaGpu(); err != nil {
+		log.Printf("Failed to look up GPU devices: %s", err)
+		p.HasNvidiaGpu = false
+	} else {
+		p.HasNvidiaGpu = hasGpu
+	}
 	return p
 }
 

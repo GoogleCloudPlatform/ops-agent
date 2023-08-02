@@ -1,0 +1,1 @@
+two logging receivers s1 and fluent_receiver can not listen on the same port 24224.
