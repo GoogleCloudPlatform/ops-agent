@@ -1081,7 +1081,6 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		// https://cloud.google.com/compute/docs/naming-resources#resource-name-format
 		vm.Name = fmt.Sprintf("%s-%s", sandboxPrefix, uuid.New())
 	}
-
 	if vm.Project == "" {
 		vm.Project = os.Getenv("PROJECT")
 	}
@@ -1123,7 +1122,6 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	}
 
 	imageOrImageFamilyFlag := "--image-family=" + vm.Platform
-
 	if image, ok := overriddenImages[vm.Platform]; ok {
 		imageOrImageFamilyFlag = "--image=" + image
 	}
