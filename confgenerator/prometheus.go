@@ -15,6 +15,7 @@
 package confgenerator
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -73,7 +74,7 @@ func (r PrometheusMetrics) Type() string {
 	return "prometheus"
 }
 
-func (r PrometheusMetrics) Pipelines() []otel.ReceiverPipeline {
+func (r PrometheusMetrics) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	// Get the resource metadata for the instance we're running on.
 	if gceMetadata, ok := MetadataResource.(resourcedetector.GCEResource); ok {
 		// Create a prometheus style mapping for the GCE metadata.

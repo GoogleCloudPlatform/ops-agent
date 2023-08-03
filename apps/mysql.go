@@ -16,6 +16,8 @@ package apps
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
@@ -23,9 +25,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 
 	"github.com/go-sql-driver/mysql"
-
-	"fmt"
-	"strings"
 )
 
 type MetricsReceiverMySql struct {
@@ -45,7 +44,7 @@ func (r MetricsReceiverMySql) Type() string {
 	return "mysql"
 }
 
-func (r MetricsReceiverMySql) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverMySql) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	transport := "tcp"
 	if r.Endpoint == "" {
 		transport = "unix"

@@ -75,7 +75,7 @@ func (r MetricsReceiverVault) Type() string {
 	return "vault"
 }
 
-func (r MetricsReceiverVault) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverVault) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultVaultEndpoint
 	}

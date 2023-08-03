@@ -49,7 +49,7 @@ func (r MetricsReceiverOracleDB) Type() string {
 	return "oracledb"
 }
 
-func (r MetricsReceiverOracleDB) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverOracleDB) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	endpoint := r.Endpoint
 	if r.Endpoint == "" {
 		endpoint = defaultOracleDBEndpoint

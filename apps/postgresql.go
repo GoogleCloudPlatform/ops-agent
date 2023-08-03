@@ -16,13 +16,12 @@ package apps
 
 import (
 	"context"
+	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
-
-	"strings"
 )
 
 type MetricsReceiverPostgresql struct {
@@ -46,7 +45,7 @@ func (r MetricsReceiverPostgresql) Type() string {
 	return "postgresql"
 }
 
-func (r MetricsReceiverPostgresql) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverPostgresql) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	transport := "tcp"
 	if r.Endpoint == "" {
 		transport = "unix"
