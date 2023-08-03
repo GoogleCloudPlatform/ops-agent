@@ -94,6 +94,13 @@ func configPathForPlatform(platform string) string {
 	return "/etc/google-cloud-ops-agent/config.yaml"
 }
 
+func otelConfigPathForPlatform(platform string) string {
+	if gce.IsWindows(platform) {
+		return `C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\otel\otel.yaml`
+	}
+	return "/var/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml"
+}
+
 func workDirForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
 		return `C:\work`
@@ -158,6 +165,22 @@ func makeDirectory(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	}
 	_, err := gce.RunScriptRemotely(ctx, logger, vm, createFolderCmd, nil, nil)
 	return err
+}
+
+func getFileContent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, path string) (gce.CommandOutput, error) {
+	var getContentCmd string
+	if gce.IsWindows(vm.Platform) {
+		getContentCmd = fmt.Sprintf("Get-Content -Path '%s' -Raw", path)
+	} else {
+		getContentCmd = fmt.Sprintf("sudo cat  %s", path)
+	}
+	return gce.RunScriptRemotely(ctx, logger, vm, getContentCmd, nil, nil)
+}
+
+func getGeneratedOtelConfig(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) (string, error) {
+	path := otelConfigPathForPlatform(vm.Platform)
+	out, err := getFileContent(ctx, logger, vm, path)
+	return out.Stdout, err
 }
 
 // writeToWindowsEventLog writes an event payload to the given channel (logName).
@@ -4118,6 +4141,29 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
 			t.Fatal(err)
 		}
 
+	})
+}
+
+// TestNoNvmlOtelReceiverWithoutGpu check to make sure that Ops Agent's
+// hostmetrics receiver does not generate a nvml otel receiver on VMs without
+// GPU
+func TestNoNvmlOtelReceiverWithoutGpu(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		if otelConf, err := getGeneratedOtelConfig(ctx, logger, vm); err != nil {
+			t.Fatal(err)
+		} else {
+			if strings.Contains(otelConf, "nvml") {
+				t.Errorf("generated otel config contains NVIDIA gpu nvml receiver on VM without GPU: %s", otelConf)
+			}
+		}
 	})
 }
 
