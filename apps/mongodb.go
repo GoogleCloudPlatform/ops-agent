@@ -46,7 +46,7 @@ func (r MetricsReceiverMongoDB) Type() string {
 	return "mongodb"
 }
 
-func (r MetricsReceiverMongoDB) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverMongoDB) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	transport := "tcp"
 	if r.Endpoint == "" {
 		r.Endpoint = defaultMongodbEndpoint

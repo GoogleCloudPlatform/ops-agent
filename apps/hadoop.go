@@ -35,7 +35,7 @@ func (r MetricsReceiverHadoop) Type() string {
 	return "hadoop"
 }
 
-func (r MetricsReceiverHadoop) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverHadoop) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	targetSystem := "hadoop"
 	if r.MetricsReceiverSharedCollectJVM.ShouldCollectJVMMetrics() {
 		targetSystem = fmt.Sprintf("%s,%s", targetSystem, "jvm")

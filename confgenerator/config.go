@@ -571,7 +571,7 @@ type Metrics struct {
 
 type OTelReceiver interface {
 	Component
-	Pipelines() []otel.ReceiverPipeline
+	Pipelines(ctx context.Context) []otel.ReceiverPipeline
 }
 
 type MetricsReceiver interface {
@@ -781,14 +781,14 @@ type TracesService struct {
 	Pipelines map[string]*Pipeline
 }
 
-func (uc *UnifiedConfig) Validate() error {
+func (uc *UnifiedConfig) Validate(ctx context.Context) error {
 	if uc.Logging != nil {
 		if err := uc.Logging.Validate(); err != nil {
 			return err
 		}
 	}
 	if uc.Metrics != nil {
-		if err := uc.ValidateMetrics(); err != nil {
+		if err := uc.ValidateMetrics(ctx); err != nil {
 			return err
 		}
 	}
@@ -903,7 +903,7 @@ func (uc *UnifiedConfig) TracesReceivers() (map[string]TracesReceiver, error) {
 	return validReceivers, nil
 }
 
-func (uc *UnifiedConfig) ValidateMetrics() error {
+func (uc *UnifiedConfig) ValidateMetrics(ctx context.Context) error {
 	m := uc.Metrics
 	subagent := "metrics"
 	if len(m.Exporters) > 0 {
@@ -931,7 +931,7 @@ func (uc *UnifiedConfig) ValidateMetrics() error {
 				return err
 			}
 
-			if err := validateSSLConfig(receivers); err != nil {
+			if err := validateSSLConfig(receivers, ctx); err != nil {
 				return err
 			}
 		}
@@ -1104,9 +1104,9 @@ func validateIncompatibleJVMReceivers(typeCounts map[string]int) error {
 	return nil
 }
 
-func validateSSLConfig(receivers metricsReceiverMap) error {
+func validateSSLConfig(receivers metricsReceiverMap, ctx context.Context) error {
 	for receiverId, receiver := range receivers {
-		for _, pipeline := range receiver.Pipelines() {
+		for _, pipeline := range receiver.Pipelines(ctx) {
 			if tlsCfg, ok := pipeline.Receiver.Config.(map[string]interface{})["tls"]; ok {
 				cfg := tlsCfg.(map[string]interface{})
 				// If insecure, no other fields are allowed

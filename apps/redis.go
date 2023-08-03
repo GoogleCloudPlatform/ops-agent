@@ -40,7 +40,7 @@ func (r MetricsReceiverRedis) Type() string {
 	return "redis"
 }
 
-func (r MetricsReceiverRedis) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverRedis) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	if r.Address == "" {
 		r.Address = defaultRedisEndpoint
 	}

@@ -97,7 +97,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context) (string, error)
 
 	if uc.Metrics != nil {
 		var err error
-		receiverPipelines, pipelines, err = uc.generateOtelPipelines()
+		receiverPipelines, pipelines, err = uc.generateOtelPipelines(ctx)
 		if err != nil {
 			return "", err
 		}
@@ -141,12 +141,12 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context) (string, error)
 }
 
 // generateOtelPipelines generates a map of OTel pipeline names to OTel pipelines.
-func (uc *UnifiedConfig) generateOtelPipelines() (map[string]otel.ReceiverPipeline, map[string]otel.Pipeline, error) {
+func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]otel.ReceiverPipeline, map[string]otel.Pipeline, error) {
 	m := uc.Metrics
 	outR := make(map[string]otel.ReceiverPipeline)
 	outP := make(map[string]otel.Pipeline)
 	addReceiver := func(pipelineType, pID, rID string, receiver OTelReceiver, processorIDs []string) error {
-		for i, receiverPipeline := range receiver.Pipelines() {
+		for i, receiverPipeline := range receiver.Pipelines(ctx) {
 			receiverPipelineName := strings.ReplaceAll(rID, "_", "__")
 			if i > 0 {
 				receiverPipelineName = fmt.Sprintf("%s_%d", receiverPipelineName, i)

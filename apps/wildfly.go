@@ -35,7 +35,7 @@ func (r MetricsReceiverWildfly) Type() string {
 	return "wildfly"
 }
 
-func (r MetricsReceiverWildfly) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverWildfly) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	targetSystem := "wildfly"
 
 	if r.MetricsReceiverSharedJVM.Endpoint != "" && !strings.HasPrefix(r.MetricsReceiverSharedJVM.Endpoint, "service:jmx") {

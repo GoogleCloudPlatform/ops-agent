@@ -15,6 +15,8 @@
 package apps
 
 import (
+	"context"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
@@ -29,7 +31,7 @@ func (r MetricsReceiverHostmetrics) Type() string {
 	return "hostmetrics"
 }
 
-func (r MetricsReceiverHostmetrics) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverHostmetrics) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "hostmetrics",

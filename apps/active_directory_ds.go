@@ -32,7 +32,7 @@ func (r MetricsReceiverActiveDirectoryDS) Type() string {
 	return "active_directory_ds"
 }
 
-func (r MetricsReceiverActiveDirectoryDS) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverActiveDirectoryDS) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "active_directory_ds",

@@ -40,7 +40,7 @@ func (MetricsReceiverZookeeper) Type() string {
 	return "zookeeper"
 }
 
-func (r MetricsReceiverZookeeper) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverZookeeper) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultZookeeperEndpoint
 	}

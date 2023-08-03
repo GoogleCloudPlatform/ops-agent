@@ -34,7 +34,7 @@ func (MetricsReceiverFlink) Type() string {
 
 const defaultFlinkEndpoint = "http://localhost:8081"
 
-func (r MetricsReceiverFlink) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverFlink) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultFlinkEndpoint
 	}
