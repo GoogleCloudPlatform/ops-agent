@@ -40,7 +40,7 @@ func (MetricsReceiverCouchdb) Type() string {
 	return "couchdb"
 }
 
-func (r MetricsReceiverCouchdb) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverCouchdb) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultCouchdbEndpoint
 	}

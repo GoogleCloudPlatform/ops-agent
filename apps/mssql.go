@@ -15,6 +15,8 @@
 package apps
 
 import (
+	"context"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
@@ -32,7 +34,7 @@ func (MetricsReceiverMssql) Type() string {
 	return "mssql"
 }
 
-func (m MetricsReceiverMssql) Pipelines() []otel.ReceiverPipeline {
+func (m MetricsReceiverMssql) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	if m.ReceiverVersion == "2" {
 		return []otel.ReceiverPipeline{{
 			Receiver: otel.Component{

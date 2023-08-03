@@ -15,6 +15,8 @@
 package apps
 
 import (
+	"context"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
@@ -33,7 +35,7 @@ func (r MetricsReceiverMemcached) Type() string {
 	return "memcached"
 }
 
-func (r MetricsReceiverMemcached) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverMemcached) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultMemcachedTCPEndpoint
 	}

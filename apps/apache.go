@@ -36,7 +36,7 @@ func (r MetricsReceiverApache) Type() string {
 	return "apache"
 }
 
-func (r MetricsReceiverApache) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverApache) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	if r.ServerStatusURL == "" {
 		r.ServerStatusURL = defaultServerStatusURL
 	}
