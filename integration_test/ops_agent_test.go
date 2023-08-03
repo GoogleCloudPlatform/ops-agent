@@ -4010,6 +4010,54 @@ func TestNetworkHealthCheck(t *testing.T) {
 	})
 }
 
+func TestParsingFailureCheck(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if !isHealthCheckTestPlatform(platform) {
+			t.SkipNow()
+		}
+
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		logPath := logPathForPlatform(vm.Platform)
+		config := fmt.Sprintf(`logging:
+  receivers:
+    mylog_source:
+      type: files
+      include_paths:
+      - %s
+  processors:
+    json1:
+      type: parse_json
+      field: message
+      time_key: time
+      time_format: "%s"
+  service:
+    pipelines:
+      my_pipeline:
+        receivers: [mylog_source]
+        processors: [json1]
+`, logPath, "%Y-%m-%dT%H:%M:.%L%z")
+
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		line := fmt.Sprintf(`{"log":"{\"level\":\"info\",\"message\":\"start\"}\n","time":"%s"}`, time.Now().UTC().Format(time.RFC3339Nano)) + "\n"
+		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(line), logPath); err != nil {
+			t.Fatalf("error writing dummy log line: %v", err)
+		}
+
+		query := fmt.Sprintf(`severity="ERROR" AND jsonPayload.code="LogParseErr" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, query); err != nil {
+			t.Error(err)
+		}
+
+	})
+}
+
+
 func TestBufferLimitSizeOpsAgent(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
