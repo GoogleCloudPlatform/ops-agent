@@ -155,12 +155,13 @@ func (srv *service) runHealthChecks() {
 
 func (s *service) generateConfigs(ctx context.Context) error {
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
-	uc, err := confgenerator.MergeConfFiles(ctx, s.userConf, apps.BuiltInConfStructs)
+	builtInConf := apps.BuiltInConf(ctx)
+	uc, err := confgenerator.MergeConfFiles(ctx, s.userConf, builtInConf)
 	if err != nil {
 		return err
 	}
 
-	s.log.Info(EngineEventID, fmt.Sprintf("Built-in config:\n%s\n", apps.BuiltInConfStructs["windows"]))
+	s.log.Info(EngineEventID, fmt.Sprintf("Built-in config:\n%s\n", builtInConf))
 	s.log.Info(EngineEventID, fmt.Sprintf("Merged config:\n%s\n", uc))
 	if err := s.checkForStandaloneAgents(uc); err != nil {
 		return err

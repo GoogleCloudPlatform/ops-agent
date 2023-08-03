@@ -34,7 +34,9 @@ func getLogFileRotation(config *confgenerator.UnifiedConfig) confgenerator.LogFi
 }
 
 func run(logFilename, configurationPath string, cmd *exec.Cmd) error {
-	ucConfig, err := confgenerator.MergeConfFiles(context.Background(), configurationPath, apps.BuiltInConfStructs)
+	ctx := context.Background()
+	builtInConf := apps.BuiltInConf(ctx)
+	ucConfig, err := confgenerator.MergeConfFiles(ctx, configurationPath, builtInConf)
 	if err != nil {
 		return err
 	}

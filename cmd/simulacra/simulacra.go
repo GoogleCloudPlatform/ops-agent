@@ -148,7 +148,8 @@ func getReceiversFromConfig(ctx context.Context, vm *gce.VM, logger *logging.Dir
 		return []string{}, nil
 	}
 
-	config, err := confgenerator.MergeConfFiles(ctx, configFilePath, apps.BuiltInConfStructs)
+	builtInConf := apps.BuiltInConf(ctx)
+	config, err := confgenerator.MergeConfFiles(ctx, configFilePath, builtInConf)
 	if err != nil {
 		return nil, err
 	}

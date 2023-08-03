@@ -17,26 +17,12 @@ package confgenerator
 
 import (
 	"context"
-	"fmt"
-
-	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
-// getPlatformKey uses the platform to generate the key that can be used to
-// obtain the correct built-in configs
-func getPlatformKey(platform platform.Platform) string {
-	if platform.HasNvidiaGpu {
-		return fmt.Sprintf("%s_gpu", platform.Name())
-	}
-	return platform.Name()
-}
-
 // MergeConfFiles merges the user provided config with the built-in config struct for the platform.
-func MergeConfFiles(ctx context.Context, userConfPath string, builtInConfStructs map[string]*UnifiedConfig) (*UnifiedConfig, error) {
-	builtInStruct := builtInConfStructs[getPlatformKey(platform.FromContext(ctx))]
-
+func MergeConfFiles(ctx context.Context, userConfPath string, builtInConf *UnifiedConfig) (*UnifiedConfig, error) {
 	// Start with the built-in config.
-	result, err := builtInStruct.DeepCopy(ctx)
+	result, err := builtInConf.DeepCopy(ctx)
 	if err != nil {
 		return nil, err
 	}

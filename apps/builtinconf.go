@@ -14,10 +14,16 @@
 
 package apps
 
-import cg "github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+import (
+	"context"
+	"fmt"
+
+	cg "github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
+)
 
 var (
-	BuiltInConfStructs = map[string]*cg.UnifiedConfig{
+	builtInConfStructs = map[string]*cg.UnifiedConfig{
 		"linux": {
 			Logging: &cg.Logging{
 				Receivers: map[string]cg.LoggingReceiver{
@@ -149,3 +155,14 @@ var (
 		},
 	}
 )
+
+// BuiltInConf returns the correct built-in config struct for the given platform
+// from the ctx
+func BuiltInConf(ctx context.Context) *cg.UnifiedConfig {
+	p := platform.FromContext(ctx)
+	configKey := p.Name()
+	if p.HasNvidiaGpu {
+		configKey = fmt.Sprintf("%s_gpu", configKey)
+	}
+	return builtInConfStructs[configKey]
+}

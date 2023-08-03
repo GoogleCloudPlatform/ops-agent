@@ -53,8 +53,9 @@ func main() {
 
 func run() error {
 	ctx := context.Background()
+	builtInConf := apps.BuiltInConf(ctx)
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
-	uc, err := confgenerator.MergeConfFiles(ctx, *input, apps.BuiltInConfStructs)
+	uc, err := confgenerator.MergeConfFiles(ctx, *input, builtInConf)
 	if err != nil {
 		return err
 	}
@@ -62,7 +63,7 @@ func run() error {
 	// Log the built-in and merged config files to STDOUT. These are then written
 	// by journald to var/log/syslog and so to Cloud Logging once the ops-agent is
 	// running.
-	log.Printf("Built-in config:\n%s", apps.BuiltInConfStructs["linux"])
+	log.Printf("Built-in config:\n%s", builtInConf)
 	log.Printf("Merged config:\n%s", uc)
 
 	if *service == "" {

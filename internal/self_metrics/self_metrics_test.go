@@ -15,10 +15,12 @@
 package self_metrics_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"gotest.tools/v3/assert"
 )
@@ -30,24 +32,31 @@ var (
 		enabledReceivers self_metrics.EnabledReceivers
 	}{
 		{
-			name:   "builtin_linux",
-			config: apps.BuiltInConfStructs["linux"],
+			name: "builtin_linux",
+			config: apps.BuiltInConf(platform.Platform{
+				Type: platform.Linux,
+			}.TestContext(context.Background())),
 			enabledReceivers: self_metrics.EnabledReceivers{
 				MetricsReceiverCountsByType: map[string]int{"hostmetrics": 1},
 				LogsReceiverCountsByType:    map[string]int{"files": 1},
 			},
 		},
 		{
-			name:   "builtin_linux_gpu",
-			config: apps.BuiltInConfStructs["linux_gpu"],
+			name: "builtin_linux_gpu",
+			config: apps.BuiltInConf(platform.Platform{
+				Type:         platform.Linux,
+				HasNvidiaGpu: true,
+			}.TestContext(context.Background())),
 			enabledReceivers: self_metrics.EnabledReceivers{
 				MetricsReceiverCountsByType: map[string]int{"hostmetrics": 1, "nvml": 1},
 				LogsReceiverCountsByType:    map[string]int{"files": 1},
 			},
 		},
 		{
-			name:   "builtin_windows",
-			config: apps.BuiltInConfStructs["windows"],
+			name: "builtin_windows",
+			config: apps.BuiltInConf(platform.Platform{
+				Type: platform.Windows,
+			}.TestContext(context.Background())),
 			enabledReceivers: self_metrics.EnabledReceivers{
 				MetricsReceiverCountsByType: map[string]int{"hostmetrics": 1, "iis": 1, "mssql": 1},
 				LogsReceiverCountsByType:    map[string]int{"windows_event_log": 1},
