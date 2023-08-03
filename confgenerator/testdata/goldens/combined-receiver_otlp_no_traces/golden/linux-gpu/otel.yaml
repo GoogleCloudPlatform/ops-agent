@@ -23,7 +23,7 @@ processors:
       exclude:
         match_type: regexp
         metric_names: []
-  filter/default__pipeline_nvidia__gpu_0:
+  filter/default__pipeline_hostmetrics_1_0:
     metrics:
       exclude:
         match_type: regexp
@@ -111,6 +111,30 @@ processors:
         aggregation_type: sum
         label_set:
         - response_code
+    - action: update
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: agent.googleapis.com/$${1}
+  metricstransform/hostmetrics_1_1:
+    transforms:
+    - action: update
+      include: nvml.gpu.utilization
+      new_name: gpu/utilization
+      operations:
+      - action: experimental_scale_value
+        experimental_scale: 100.0
+    - action: update
+      include: nvml.gpu.memory.bytes_used
+      new_name: gpu/memory/bytes_used
+    - action: update
+      include: nvml.gpu.processes.utilization
+      new_name: gpu/processes/utilization
+      operations:
+      - action: experimental_scale_value
+        experimental_scale: 100.0
+    - action: update
+      include: nvml.gpu.processes.max_bytes_used
+      new_name: gpu/processes/max_bytes_used
     - action: update
       include: ^(.*)$$
       match_type: regexp
@@ -389,30 +413,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/nvidia__gpu_1:
-    transforms:
-    - action: update
-      include: nvml.gpu.utilization
-      new_name: gpu/utilization
-      operations:
-      - action: experimental_scale_value
-        experimental_scale: 100.0
-    - action: update
-      include: nvml.gpu.memory.bytes_used
-      new_name: gpu/memory/bytes_used
-    - action: update
-      include: nvml.gpu.processes.utilization
-      new_name: gpu/processes/utilization
-      operations:
-      - action: experimental_scale_value
-        experimental_scale: 100.0
-    - action: update
-      include: nvml.gpu.processes.max_bytes_used
-      new_name: gpu/processes/max_bytes_used
-    - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: agent.googleapis.com/$${1}
   metricstransform/otel_1:
     transforms:
     - action: update
@@ -459,7 +459,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  normalizesums/nvidia__gpu_0: {}
+  normalizesums/hostmetrics_1_0: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
@@ -491,7 +491,7 @@ receivers:
       process:
         mute_process_name_error: true
       processes: {}
-  nvml/nvidia__gpu:
+  nvml/hostmetrics_1:
     collection_interval: 60s
   otlp/otlp:
     protocols:
@@ -527,16 +527,16 @@ service:
       - resourcedetection/_global_0
       receivers:
       - hostmetrics/hostmetrics
-    metrics/default__pipeline_nvidia__gpu:
+    metrics/default__pipeline_hostmetrics_1:
       exporters:
       - googlecloud
       processors:
-      - normalizesums/nvidia__gpu_0
-      - metricstransform/nvidia__gpu_1
-      - filter/default__pipeline_nvidia__gpu_0
+      - normalizesums/hostmetrics_1_0
+      - metricstransform/hostmetrics_1_1
+      - filter/default__pipeline_hostmetrics_1_0
       - resourcedetection/_global_0
       receivers:
-      - nvml/nvidia__gpu
+      - nvml/hostmetrics_1
     metrics/fluentbit:
       exporters:
       - googlecloud

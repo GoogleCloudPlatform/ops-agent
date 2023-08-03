@@ -82,11 +82,11 @@ expected_metrics:
       owner: .* 
 configuration_options:
   metrics:
-    - type: nvml
+    - type: hostmetrics 
       fields:
         - name: type
           default: null
-          description: This value must be nvml.
+          description: This value must be hostmetrics.
         - name: collection_interval
           default: 60s
           description: A time.Duration value, such as 30s or 5m.

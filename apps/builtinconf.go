@@ -57,49 +57,6 @@ var (
 				},
 			},
 		},
-		"linux_gpu": {
-			Logging: &cg.Logging{
-				Receivers: map[string]cg.LoggingReceiver{
-					"syslog": &cg.LoggingReceiverFiles{
-						ConfigComponent: cg.ConfigComponent{Type: "files"},
-						IncludePaths:    []string{"/var/log/messages", "/var/log/syslog"},
-					},
-				},
-				Processors: map[string]cg.LoggingProcessor{},
-				Service: &cg.LoggingService{
-					Pipelines: map[string]*cg.Pipeline{
-						"default_pipeline": {
-							ReceiverIDs: []string{"syslog"},
-						},
-					},
-				},
-			},
-			Metrics: &cg.Metrics{
-				Receivers: map[string]cg.MetricsReceiver{
-					"hostmetrics": &MetricsReceiverHostmetrics{
-						ConfigComponent:       cg.ConfigComponent{Type: "hostmetrics"},
-						MetricsReceiverShared: cg.MetricsReceiverShared{CollectionInterval: "60s"},
-					},
-					"nvidia_gpu": &MetricsReceiverNvml{
-						ConfigComponent:       cg.ConfigComponent{Type: "nvml"},
-						MetricsReceiverShared: cg.MetricsReceiverShared{CollectionInterval: "60s"},
-					},
-				},
-				Processors: map[string]cg.MetricsProcessor{
-					"metrics_filter": &MetricsProcessorExcludeMetrics{
-						ConfigComponent: cg.ConfigComponent{Type: "exclude_metrics"},
-					},
-				},
-				Service: &cg.MetricsService{
-					Pipelines: map[string]*cg.Pipeline{
-						"default_pipeline": {
-							ReceiverIDs:  []string{"hostmetrics", "nvidia_gpu"},
-							ProcessorIDs: []string{"metrics_filter"},
-						},
-					},
-				},
-			},
-		},
 		"windows": {
 			Logging: &cg.Logging{
 				Receivers: map[string]cg.LoggingReceiver{

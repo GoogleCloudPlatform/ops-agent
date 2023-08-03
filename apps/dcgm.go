@@ -15,6 +15,8 @@
 package apps
 
 import (
+	"context"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
@@ -33,7 +35,7 @@ func (r MetricsReceiverDcgm) Type() string {
 	return "dcgm"
 }
 
-func (r MetricsReceiverDcgm) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverDcgm) Pipelines(ctx context.Context) []otel.ReceiverPipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultDcgmEndpoint
 	}

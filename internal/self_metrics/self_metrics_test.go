@@ -38,14 +38,6 @@ var (
 			},
 		},
 		{
-			name:   "builtin_linux_gpu",
-			config: apps.BuiltInConfStructs["linux_gpu"],
-			enabledReceivers: self_metrics.EnabledReceivers{
-				MetricsReceiverCountsByType: map[string]int{"hostmetrics": 1, "nvml": 1},
-				LogsReceiverCountsByType:    map[string]int{"files": 1},
-			},
-		},
-		{
 			name:   "builtin_windows",
 			config: apps.BuiltInConfStructs["windows"],
 			enabledReceivers: self_metrics.EnabledReceivers{
