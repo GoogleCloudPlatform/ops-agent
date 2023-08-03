@@ -18,6 +18,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -71,6 +72,8 @@ type Config struct {
 	Scripts []*Script `yaml:"scripts"`
 	// A Service Account for the VM.
 	ServiceAccount string `yaml:"service_account"`
+	// Path to a directory containing the output from the diagnostic tool.
+	DiagnosticOutputPath string `yaml:"diagnostic_output_path"`
 }
 
 func distroFolder(platform string) (string, error) {
@@ -90,17 +93,22 @@ func distroFolder(platform string) (string, error) {
 }
 
 func setupOpsAgent(ctx context.Context, vm *gce.VM, logger *log.Logger, configFilePath string) error {
-	data, err := ioutil.ReadFile(configFilePath)
-	if err != nil {
-		return err
+	var configString string
+	if configFilePath != "" {
+		data, err := ioutil.ReadFile(configFilePath)
+		if err != nil {
+			return err
+		}
+
+		config, err := confgenerator.UnmarshalYamlToUnifiedConfig(ctx, data)
+		if err != nil {
+			return err
+		}
+
+		configString = config.String()
 	}
 
-	config, err := confgenerator.UnmarshalYamlToUnifiedConfig(ctx, data)
-	if err != nil {
-		return err
-	}
-
-	if err := agents.SetupOpsAgent(ctx, logger, vm, config.String()); err != nil {
+	if err := agents.SetupOpsAgent(ctx, logger, vm, configString); err != nil {
 		return err
 	}
 
@@ -204,8 +212,43 @@ func getConfigFromYaml(configPath string) (*Config, error) {
 	return &config, nil
 }
 
+func getConfigFromDiagnosticOutput(outputDir string) (*Config, error) {
+	type Metadata struct {
+		Image       string `json:"image"`
+		ProjectName string `json:"project_name"`
+		Zone        string `json:"zone"`
+	}
+
+	metadataFile, err := ioutil.ReadFile(path.Join(outputDir, "vm_config.json"))
+	if err != nil {
+		return nil, err
+	}
+
+	var metadata Metadata
+	if err := json.Unmarshal([]byte(metadataFile), &metadata); err != nil {
+		return nil, err
+	}
+
+	config := &Config{
+		Platform:           metadata.Image,
+		Project:            metadata.ProjectName,
+		Zone:               metadata.Zone,
+		Name:               getInstanceName(),
+		ThirdPartyAppsPath: defaultThirdPartyAppsPath,
+	}
+
+	configFilePath := path.Join(outputDir, "google-cloud-ops-agent", "config.yaml")
+	if _, err := os.Stat(configFilePath); err == nil {
+		config.ConfigFilePath = configFilePath
+	}
+
+	return config, nil
+
+}
+
 func getSimulacraConfig() (*Config, error) {
 	configPath := flag.String("config", "", "Optional. The path to a YAML file specifying all the configurations for Simulacra. If unspecified, Simulacra will either use values from other command line arguments or use default values. If specifed along with other command line arguments, all others will be ignored.")
+	diagnosticOutputPath := flag.String("diagnostic_output_path", "", "Optional. The path to a directory contaning the output from the ops agent diagnostic tool. If specified, all other arguments will be ignored and Simulacra will be configured from the diagnostic tool output.")
 	platform := flag.String("platform", defaultPlatform, "Optional. The OS for the VM. If missing, debian-11 is used.")
 	opsAgentConfigFile := flag.String("ops_agent_config", "", "Optional. Path to the Ops Agent Config File. If unspecified, Ops Agent will not install any third party applications and configure Ops Agent with default settings. ")
 	project := flag.String("project", "", "Optional. If missing, Simulacra will try to infer from GCloud config.")
@@ -217,6 +260,10 @@ func getSimulacraConfig() (*Config, error) {
 
 	if *configPath != "" {
 		return getConfigFromYaml(*configPath)
+	}
+
+	if *diagnosticOutputPath != "" {
+		return getConfigFromDiagnosticOutput(*diagnosticOutputPath)
 	}
 
 	config := Config{

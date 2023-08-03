@@ -1053,13 +1053,25 @@ func addFrameworkLabels(inputLabels map[string]string) (map[string]string, error
 	return labelsCopy, nil
 }
 
+func isFullImageName(name string) bool {
+	return strings.HasPrefix(name, "projects/")
+}
+
+func getImageFamilyName(image string) string {
+	if isFullImageName(image) {
+		components := strings.Split(image, "/")
+		return components[len(components)-1]
+	}
+	return image
+}
+
 // attemptCreateInstance creates a VM instance and waits for it to be ready.
 // Returns a VM object or an error (never both). The caller is responsible for
 // deleting the VM if (and only if) the returned error is nil.
 func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOptions) (vmToReturn *VM, errToReturn error) {
 	vm := &VM{
 		Project:  options.Project,
-		Platform: options.Platform,
+		Platform: getImageFamilyName(options.Platform),
 		Name:     options.Name,
 		Network:  os.Getenv("NETWORK_NAME"),
 		Zone:     options.Zone,
@@ -1069,6 +1081,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		// https://cloud.google.com/compute/docs/naming-resources#resource-name-format
 		vm.Name = fmt.Sprintf("%s-%s", sandboxPrefix, uuid.New())
 	}
+
 	if vm.Project == "" {
 		vm.Project = os.Getenv("PROJECT")
 	}
@@ -1110,9 +1123,15 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	}
 
 	imageOrImageFamilyFlag := "--image-family=" + vm.Platform
+
 	if image, ok := overriddenImages[vm.Platform]; ok {
 		imageOrImageFamilyFlag = "--image=" + image
 	}
+
+	if isFullImageName(options.Platform) {
+		imageOrImageFamilyFlag = "--image=" + vm.Platform
+	}
+
 	args := []string{
 		"compute", "instances", "create", vm.Name,
 		"--project=" + vm.Project,
