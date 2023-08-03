@@ -32,6 +32,7 @@ var (
 )
 
 const (
+	opsAgentLogsMatch       string = "ops-agent-*"
 	fluentBitSelfLogsTag    string = "ops-agent-fluent-bit"
 	healthLogsTag           string = "ops-agent-health"
 	severityKey             string = "logging.googleapis.com/severity"
@@ -116,7 +117,7 @@ type selfLogTranslationEntry struct {
 	code       string
 }
 
-var selfLogTranslationList = []selfLogTranslationEntry {
+var selfLogTranslationList = []selfLogTranslationEntry{
 	{
 		regexMatch: `\[error\]\s\[lib\]\sbackend\sfailed`,
 		message:    fmt.Sprintf("Ops Agent logging pipeline failed, Code: LogPipelineErr, Documentation: %s", troubleshootFindInfoURL),
@@ -143,10 +144,10 @@ func generateSelfLogsSamplingComponents(ctx context.Context) []fluentbit.Compone
 				"Rule":  fmt.Sprintf(`message %s %s true`, m.regexMatch, healthLogsTag),
 			},
 		})
-		// This filter sets the appropiate health code to the previously sampled logs. The `code` is also 
+		// This filter sets the appropiate health code to the previously sampled logs. The `code` is also
 		// set to the `message` field for later translation in the pipeline.
 		// The current fluent-bit submodule doesn't accept whitespaces in the `Set` values, so `code` is
-		// used as a placeholder. This can be updated when the fix arrives to the current fluent-bit submodule 
+		// used as a placeholder. This can be updated when the fix arrives to the current fluent-bit submodule
 		// `https://github.com/fluent/fluent-bit/issues/4286`.
 		out = append(out, fluentbit.Component{
 			Kind: "FILTER",
@@ -207,7 +208,7 @@ func generateSelfLogsProcessingComponents(ctx context.Context) []fluentbit.Compo
 				MapValuesExclusive: false,
 			},
 		},
-	}.Components(ctx, strings.Join([]string{fluentBitSelfLogsTag, healthLogsTag}, "|"), "self-logs-processing")
+	}.Components(ctx, opsAgentLogsMatch, "self-logs-processing")
 }
 
 func generateSelfLogsComponents(ctx context.Context, userAgent string) []fluentbit.Component {
