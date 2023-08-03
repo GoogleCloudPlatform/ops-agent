@@ -69,7 +69,6 @@ var (
 					Platform:        "linux_platform",
 					PlatformVersion: "linux_platform_version",
 				},
-				HasNvidiaGpu: false,
 			},
 		},
 		{
@@ -99,7 +98,6 @@ var (
 					Platform:        "win_platform",
 					PlatformVersion: "win_platform_version",
 				},
-				HasNvidiaGpu: false,
 			},
 		},
 		{
@@ -115,7 +113,6 @@ var (
 					Platform:        "win_platform",
 					PlatformVersion: "win_platform_version",
 				},
-				HasNvidiaGpu: false,
 			},
 		},
 	}
