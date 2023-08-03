@@ -557,9 +557,10 @@ receivers:
       network: {}
       paging: {}
       process:
+        metrics:
+          process.handles:
+            enabled: true
         mute_process_name_error: true
-        process.handles:
-          enabled: true
       processes: {}
   mysql/mysqlmetrics_1:
     collection_interval: 30s

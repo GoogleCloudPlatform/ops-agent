@@ -527,9 +527,10 @@ receivers:
       network: {}
       paging: {}
       process:
+        metrics:
+          process.handles:
+            enabled: true
         mute_process_name_error: true
-        process.handles:
-          enabled: true
       processes: {}
   jmx/tomcat:
     collection_interval: 30s
