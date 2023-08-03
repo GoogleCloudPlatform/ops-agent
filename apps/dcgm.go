@@ -35,7 +35,7 @@ func (r MetricsReceiverDcgm) Type() string {
 	return "dcgm"
 }
 
-func (r MetricsReceiverDcgm) Pipelines(ctx context.Context) []otel.ReceiverPipeline {
+func (r MetricsReceiverDcgm) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultDcgmEndpoint
 	}
