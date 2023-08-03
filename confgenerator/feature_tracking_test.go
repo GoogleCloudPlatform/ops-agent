@@ -807,6 +807,7 @@ func TestGolden(t *testing.T) {
 	components = append(components, confgenerator.LoggingProcessorTypes.GetComponentsFromRegistry()...)
 	components = append(components, confgenerator.MetricsReceiverTypes.GetComponentsFromRegistry()...)
 	components = append(components, confgenerator.MetricsProcessorTypes.GetComponentsFromRegistry()...)
+	components = append(components, confgenerator.CombinedReceiverTypes.GetComponentsFromRegistry()...)
 
 	features := getFeatures(components)
 

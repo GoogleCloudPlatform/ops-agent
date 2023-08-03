@@ -3678,6 +3678,12 @@ traces:
 			{
 				Module:  "combined",
 				Feature: "receivers:otlp",
+				Key:     "[0].metrics_mode",
+				Value:   "googlecloudmonitoring",
+			},
+			{
+				Module:  "combined",
+				Feature: "receivers:otlp",
 				Key:     "[0].enabled",
 				Value:   "true",
 			},
