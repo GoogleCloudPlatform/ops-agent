@@ -34,11 +34,11 @@ func (r MetricsReceiverHostmetrics) Type() string {
 
 func (r MetricsReceiverHostmetrics) Pipelines(ctx context.Context) []otel.ReceiverPipeline {
 	p := platform.FromContext(ctx)
-	s := map[string]interface{}{
+	processConfig := map[string]interface{}{
 		"mute_process_name_error": true,
 	}
 	if p.Type == platform.Windows {
-		s["metrics"] = map[string]interface{}{
+		processConfig["metrics"] = map[string]interface{}{
 			"process.handles": map[string]interface{}{
 				"enabled": true,
 			},
@@ -57,7 +57,7 @@ func (r MetricsReceiverHostmetrics) Pipelines(ctx context.Context) []otel.Receiv
 					"filesystem": struct{}{},
 					"network":    struct{}{},
 					"paging":     struct{}{},
-					"process":    s,
+					"process":    processConfig,
 					"processes":  struct{}{},
 				},
 			},
