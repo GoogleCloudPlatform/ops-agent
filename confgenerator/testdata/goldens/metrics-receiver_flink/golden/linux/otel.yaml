@@ -411,13 +411,6 @@ processors:
         new_label: process
         new_value: all
     - action: update
-      include: process.handles
-      new_name: processes/windows/handles
-      operations:
-      - action: add_label
-        new_label: process
-        new_value: all
-    - action: update
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
