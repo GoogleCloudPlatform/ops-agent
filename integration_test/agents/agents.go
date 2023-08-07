@@ -684,6 +684,10 @@ type PackageLocation struct {
 	// Package repository suffix to install from. Setting this and packagesInGCS
 	// to "" means to install the latest stable release.
 	repoSuffix string
+	// Override the codename for the agent repository.
+	// This setting is only used for ARM builds at the moment, and ignored when
+	// installing from Artifact Registry.
+	repoCodename string
 	// Region the packages live in in Artifact Registry. Requires repoSuffix
 	// to be nonempty.
 	artifactRegistryRegion string
@@ -694,6 +698,7 @@ func LocationFromEnvVars() PackageLocation {
 	return PackageLocation{
 		packagesInGCS:          os.Getenv("AGENT_PACKAGES_IN_GCS"),
 		repoSuffix:             os.Getenv("REPO_SUFFIX"),
+		repoCodename:           os.Getenv("REPO_CODENAME"),
 		artifactRegistryRegion: os.Getenv("ARTIFACT_REGISTRY_REGION"),
 	}
 }
@@ -733,6 +738,7 @@ func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, locati
 
 	preservedEnvironment := map[string]string{
 		"REPO_SUFFIX":              location.repoSuffix,
+		"REPO_CODENAME":            location.repoCodename,
 		"ARTIFACT_REGISTRY_REGION": location.artifactRegistryRegion,
 	}
 
