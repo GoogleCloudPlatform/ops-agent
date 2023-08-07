@@ -698,6 +698,24 @@ func LocationFromEnvVars() PackageLocation {
 	}
 }
 
+func toEnvironment(environment map[string]string, format string, separator string) string {
+	var assignments []string
+	for k, v := range environment {
+		if v != "" {
+			assignments = append(assignments, fmt.Sprintf(format, k, v))
+		}
+	}
+	return strings.Join(assignments, separator)
+}
+
+func linuxEnvironment(environment map[string]string) string {
+	return toEnvironment(environment, "%s='%s'", " ")
+}
+
+func windowsEnvironment(environment map[string]string) string {
+	return toEnvironment(environment, `$env:%s='%s'`, "\n")
+}
+
 // InstallOpsAgent installs the Ops Agent on the given VM. Consults the given
 // PackageLocation to determine where to install the agent from. For details
 // about PackageLocation, see the documentation for the PackageLocation struct.
@@ -712,14 +730,19 @@ func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, locati
 	if location.packagesInGCS != "" {
 		return InstallPackageFromGCS(ctx, logger, vm, location.packagesInGCS)
 	}
+
+	preservedEnvironment := map[string]string{
+		"REPO_SUFFIX":              location.repoSuffix,
+		"ARTIFACT_REGISTRY_REGION": location.artifactRegistryRegion,
+	}
+
 	if gce.IsWindows(vm.Platform) {
 		if _, err := gce.RunRemotely(ctx, logger, vm, "", `(New-Object Net.WebClient).DownloadFile("https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.ps1", "${env:UserProfile}\add-google-cloud-ops-agent-repo.ps1")`); err != nil {
 			return fmt.Errorf("InstallOpsAgent() failed to download repo script: %w", err)
 		}
 		runScript := func() error {
-			scriptCmd := fmt.Sprintf(`$env:REPO_SUFFIX='%s'
-$env:ARTIFACT_REGISTRY_REGION='%s'
-Invoke-Expression "${env:UserProfile}\add-google-cloud-ops-agent-repo.ps1 -AlsoInstall"`, location.repoSuffix, location.artifactRegistryRegion)
+			scriptCmd := fmt.Sprintf(`%s
+Invoke-Expression "${env:UserProfile}\add-google-cloud-ops-agent-repo.ps1 -AlsoInstall"`, windowsEnvironment(preservedEnvironment))
 			_, err := gce.RunRemotely(ctx, logger, vm, "", scriptCmd)
 			return err
 		}
@@ -735,7 +758,7 @@ Invoke-Expression "${env:UserProfile}\add-google-cloud-ops-agent-repo.ps1 -AlsoI
 	}
 
 	runInstallScript := func() error {
-		envVars := "REPO_SUFFIX=" + location.repoSuffix + " ARTIFACT_REGISTRY_REGION=" + location.artifactRegistryRegion
+		envVars := linuxEnvironment(preservedEnvironment)
 		_, err := gce.RunRemotely(ctx, logger, vm, "", "sudo "+envVars+" bash -x add-google-cloud-ops-agent-repo.sh --also-install")
 		return err
 	}
