@@ -334,7 +334,7 @@ func verifyLog(actualLog *cloudlogging.Entry, expectedLog *metadata.ExpectedLog)
 		_, fileOk := expectedFields["sourceLocation.file"]
 		_, lineOk := expectedFields["sourceLocation.line"]
 		if fileOk || lineOk {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("excpected sourceLocation.file and sourceLocation.line but got nil\n"))
+			multiErr = multierr.Append(multiErr, fmt.Errorf("expected sourceLocation.file and sourceLocation.line but got nil\n"))
 		}
 	} else {
 		if err := verifyLogField("sourceLocation.file", actualLog.SourceLocation.File, expectedFields); err != nil {
@@ -407,6 +407,18 @@ func verifyLog(actualLog *cloudlogging.Entry, expectedLog *metadata.ExpectedLog)
 	return nil
 }
 
+// stripUnavailableFields removes the fields that are listed as unavailable_on
+// the current platform.
+func stripUnavailableFields(fields []*metadata.LogFields, platform string) []*metadata.LogFields {
+	var result []*metadata.LogFields
+	for _, field := range fields {
+		if !metadata.SliceContains(field.UnavailableOn, platform) {
+			result = append(result, field)
+		}
+	}
+	return result
+}
+
 func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, logs []*metadata.ExpectedLog) error {
 	// Wait for each entry in LogEntries concurrently. This is especially helpful
 	// when	the assertions fail: we don't want to wait for each one to time out
@@ -414,9 +426,21 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	var err error
 	c := make(chan error, len(logs))
 	for _, entry := range logs {
-		entry := entry // https://golang.org/doc/faq#closures_and_goroutines
+		// https://golang.org/doc/faq#closures_and_goroutines
+		// Plus we need to dereference the pointer to make a copy of the
+		// underlying struct.
+		entry := *entry
 		go func() {
-			// Construct query using non-optional fields.
+			// Strip out the fields that are not available on this platform.
+			// We do this here so that:
+			// 1. the field is never mentioned in the query we send, and
+			// 2. verifyLogField treats it as any other unexpected field, which
+			//    means it will fail the test ("expected no value for field").
+			//    This could result in annoying test failures if the app suddenly
+			//    begins reporting a log field on a certain platform.
+			entry.Fields = stripUnavailableFields(entry.Fields, vm.Platform)
+
+			// Construct query using remaining fields with a nonempty regex.
 			query := constructQuery(entry.LogName, entry.Fields)
 
 			// Query logging backend for log matching the query.
@@ -427,7 +451,7 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 			}
 
 			// Verify the log is what was expected.
-			err = verifyLog(actualLog, entry)
+			err = verifyLog(actualLog, &entry)
 			if err != nil {
 				c <- err
 				return
@@ -473,6 +497,10 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	for _, metric := range metrics {
 		if metric.Optional || metric.Representative {
 			logger.ToMainLog().Printf("Skipping optional or representative metric %s", metric.Type)
+			continue
+		}
+		if metadata.SliceContains(metric.UnavailableOn, vm.Platform) {
+			logger.ToMainLog().Printf("Skipping metric %s due to unavailable_on", metric.Type)
 			continue
 		}
 		requiredMetrics = append(requiredMetrics, metric)
@@ -579,9 +607,9 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 
 	if metadata.ExpectedLogs != nil {
 		logger.ToMainLog().Println("found expectedLogs, running logging test cases...")
-		// TODO(b/239240173): bad bad bad, remove this horrible hack once we fix Aerospike on SLES
+		// TODO(b/254325217): bad bad bad, remove this horrible hack once we fix Aerospike on SLES
 		if app == AerospikeApp && folder == "sles" {
-			logger.ToMainLog().Printf("skipping aerospike logging tests (b/239240173)")
+			logger.ToMainLog().Printf("skipping aerospike logging tests (b/254325217)")
 		} else if err = runLoggingTestCases(ctx, logger, vm, metadata.ExpectedLogs); err != nil {
 			return nonRetryable, err
 		}
