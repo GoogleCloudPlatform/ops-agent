@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -95,7 +94,7 @@ func distroFolder(platform string) (string, error) {
 func setupOpsAgent(ctx context.Context, vm *gce.VM, logger *log.Logger, configFilePath string) error {
 	var configString string
 	if configFilePath != "" {
-		data, err := ioutil.ReadFile(configFilePath)
+		data, err := os.ReadFile(configFilePath)
 		if err != nil {
 			return err
 		}
@@ -189,7 +188,7 @@ func getInstanceName() string {
 
 func getConfigFromYaml(configPath string) (*Config, error) {
 	var config Config
-	file, err := ioutil.ReadFile(configPath)
+	file, err := os.ReadFile(configPath)
 	if err != nil {
 		return nil, err
 	}
@@ -214,25 +213,21 @@ func getConfigFromYaml(configPath string) (*Config, error) {
 
 func getConfigFromDiagnosticOutput(outputDir string) (*Config, error) {
 	type Metadata struct {
-		Image       string `json:"image"`
-		ProjectName string `json:"project_name"`
-		Zone        string `json:"zone"`
+		Image string `json:"image"`
 	}
 
-	metadataFile, err := ioutil.ReadFile(path.Join(outputDir, "vm_config.json"))
+	metadataFile, err := os.ReadFile(path.Join(outputDir, "vm_config.json"))
 	if err != nil {
 		return nil, err
 	}
 
 	var metadata Metadata
-	if err := json.Unmarshal([]byte(metadataFile), &metadata); err != nil {
+	if err := json.Unmarshal(metadataFile, &metadata); err != nil {
 		return nil, err
 	}
 
 	config := &Config{
 		Platform:           metadata.Image,
-		Project:            metadata.ProjectName,
-		Zone:               metadata.Zone,
 		Name:               getInstanceName(),
 		ThirdPartyAppsPath: defaultThirdPartyAppsPath,
 	}
