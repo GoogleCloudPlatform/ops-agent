@@ -607,9 +607,9 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 
 	if metadata.ExpectedLogs != nil {
 		logger.ToMainLog().Println("found expectedLogs, running logging test cases...")
-		// TODO(b/239240173): bad bad bad, remove this horrible hack once we fix Aerospike on SLES
+		// TODO(b/254325217): bad bad bad, remove this horrible hack once we fix Aerospike on SLES
 		if app == AerospikeApp && folder == "sles" {
-			logger.ToMainLog().Printf("skipping aerospike logging tests (b/239240173)")
+			logger.ToMainLog().Printf("skipping aerospike logging tests (b/254325217)")
 		} else if err = runLoggingTestCases(ctx, logger, vm, metadata.ExpectedLogs); err != nil {
 			return nonRetryable, err
 		}
