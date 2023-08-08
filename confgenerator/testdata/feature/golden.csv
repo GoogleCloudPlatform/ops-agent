@@ -224,6 +224,9 @@ App,Field,Override,
 *apps.MetricsReceiverVault,confgenerator.MetricsReceiverSharedTLS.InsecureSkipVerify,
 *apps.MetricsReceiverWildfly,confgenerator.ConfigComponent.Type,
 *apps.MetricsReceiverZookeeper,confgenerator.ConfigComponent.Type,
+*apps.ReceiverOTLP,GRPCEndpoint,endpoint
+*apps.ReceiverOTLP,MetricsMode,
+*apps.ReceiverOTLP,confgenerator.ConfigComponent.Type,
 *apps.SystemLoggingReceiverHbase,apps.LoggingProcessorHbaseSystem.confgenerator.ConfigComponent.Type,
 *apps.SystemLoggingReceiverHbase,confgenerator.LoggingReceiverFilesMixin.BufferInMemory,
 *apps.SystemLoggingReceiverHbase,confgenerator.LoggingReceiverFilesMixin.RecordLogFilePath,
@@ -264,3 +267,4 @@ App,Field,Override,
 *confgenerator.PrometheusMetrics,config.[].scrape_configs.scrape_interval
 *confgenerator.PrometheusMetrics,config.[].scrape_configs.scrape_timeout
 *confgenerator.PrometheusMetrics,config.[].scrape_configs.static_config_target_groups
+*confgenerator.PrometheusMetrics,config.scrape_untyped_metrics_as

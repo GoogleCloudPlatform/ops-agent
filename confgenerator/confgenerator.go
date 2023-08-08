@@ -72,6 +72,15 @@ func googleManagedPrometheusExporter(userAgent string) otel.Component {
 				"enabled": false,
 			},
 			"user_agent": userAgent,
+			// Prometheus untyped metrics, if a prometheus receiver is configured with the preserve_untyped_metrics option,
+			// will have a metric attribute added to the metric with the name
+			// `prometheus.googleapis.com/internal/untyped_metric`. This knob controls whether the exporter double writes to GMP
+			// the untyped metric (once as a gauge and once as a cumulative) similar to the GMP binary based on the presense
+			// of this reserved key.
+			//
+			// OTLP Gauge metrics ingested by the Ops Agent, that have this key will also be treated as untyped prometheus metrics
+			// if it is being exported to GMP. As such, this knob can be set to true.
+			"untyped_double_export": true,
 		},
 	}
 }
@@ -88,7 +97,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context) (string, error)
 
 	if uc.Metrics != nil {
 		var err error
-		receiverPipelines, pipelines, err = uc.generateOtelPipelines()
+		receiverPipelines, pipelines, err = uc.generateOtelPipelines(ctx)
 		if err != nil {
 			return "", err
 		}
@@ -132,12 +141,12 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context) (string, error)
 }
 
 // generateOtelPipelines generates a map of OTel pipeline names to OTel pipelines.
-func (uc *UnifiedConfig) generateOtelPipelines() (map[string]otel.ReceiverPipeline, map[string]otel.Pipeline, error) {
+func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]otel.ReceiverPipeline, map[string]otel.Pipeline, error) {
 	m := uc.Metrics
 	outR := make(map[string]otel.ReceiverPipeline)
 	outP := make(map[string]otel.Pipeline)
 	addReceiver := func(pipelineType, pID, rID string, receiver OTelReceiver, processorIDs []string) error {
-		for i, receiverPipeline := range receiver.Pipelines() {
+		for i, receiverPipeline := range receiver.Pipelines(ctx) {
 			receiverPipelineName := strings.ReplaceAll(rID, "_", "__")
 			if i > 0 {
 				receiverPipelineName = fmt.Sprintf("%s_%d", receiverPipelineName, i)

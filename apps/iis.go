@@ -36,7 +36,7 @@ func (r MetricsReceiverIis) Type() string {
 	return "iis"
 }
 
-func (r MetricsReceiverIis) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverIis) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	if r.ReceiverVersion == "2" {
 		return []otel.ReceiverPipeline{{
 			Receiver: otel.Component{

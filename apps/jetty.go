@@ -35,7 +35,7 @@ func (r MetricsReceiverJetty) Type() string {
 	return "jetty"
 }
 
-func (r MetricsReceiverJetty) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverJetty) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	targetSystem := "jetty"
 	if r.MetricsReceiverSharedCollectJVM.ShouldCollectJVMMetrics() {
 		targetSystem = fmt.Sprintf("%s,%s", targetSystem, "jvm")

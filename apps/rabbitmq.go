@@ -134,7 +134,7 @@ func (r MetricsReceiverRabbitmq) Type() string {
 	return "rabbitmq"
 }
 
-func (r MetricsReceiverRabbitmq) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverRabbitmq) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultRabbitmqTCPEndpoint
 	}

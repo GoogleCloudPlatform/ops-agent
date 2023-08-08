@@ -568,9 +568,10 @@ func IsExhaustedRetriesMetricError(err error) bool {
 // AssertMetricMissing looks for data of a metric and returns success if
 // no data is found. To consider possible transient errors while querying
 // the backend we make queryMaxAttemptsMetricMissing query attempts.
-func AssertMetricMissing(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration) error {
+func AssertMetricMissing(ctx context.Context, logger *log.Logger, vm *VM, metric string, isPrometheus bool, window time.Duration) error {
+	descriptorNotFoundErrCount := 0
 	for attempt := 1; attempt <= queryMaxAttemptsMetricMissing; attempt++ {
-		it := lookupMetric(ctx, logger, vm, metric, window, nil, false)
+		it := lookupMetric(ctx, logger, vm, metric, window, nil, isPrometheus)
 		series, err := nonEmptySeriesList(logger, it, 1)
 		found := len(series) > 0
 		logger.Printf("nonEmptySeriesList check(metric=%q): err=%v, found=%v, attempt (%d/%d)",
@@ -586,9 +587,25 @@ func AssertMetricMissing(ctx context.Context, logger *log.Logger, vm *VM, metric
 		if !isRetriableLookupError(err) {
 			return fmt.Errorf("AssertMetricMissing(metric=%q): %v", metric, err)
 		}
+
+		// prometheus.googleapis.com/* domain metrics are created on first write, and may not be immediately queryable.
+		// The error doesn't always look the same, hopefully looking for Code() == NotFound will catch all variations.
+		myStatus, ok := status.FromError(err)
+		if ok && isPrometheus && myStatus.Code() == codes.NotFound {
+			descriptorNotFoundErrCount += 1
+		}
 		time.Sleep(queryBackoffDuration)
 	}
-	return fmt.Errorf("AssertMetricMissing(metric=%q): failed: no successful queries to the backend", metric)
+	if !isPrometheus {
+		return fmt.Errorf("AssertMetricMissing(metric=%q): failed: no successful queries to the backend", metric)
+	}
+
+	if descriptorNotFoundErrCount != queryMaxAttemptsMetricMissing {
+		return fmt.Errorf("AssertMetricMissing(metric=%q): failed: atleast one query failed with something other than a NOT_FOUND error", metric)
+	}
+
+	// Success
+	return nil
 }
 
 // hasMatchingLog looks in the logging backend for a log matching the given query,

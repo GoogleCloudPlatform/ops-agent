@@ -148,27 +148,6 @@ func runScriptFromScriptsDir(ctx context.Context, logger *logging.DirectoryLogge
 	return gce.RunScriptRemotely(ctx, logger, vm, string(scriptContents), nil, env)
 }
 
-// Installs the agent according to the instructions in a script
-// stored in the scripts directory.
-func installUsingScript(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) (bool, error) {
-	environmentVariables := map[string]string{
-		"REPO_SUFFIX":              os.Getenv("REPO_SUFFIX"),
-		"ARTIFACT_REGISTRY_REGION": os.Getenv("ARTIFACT_REGISTRY_REGION"),
-	}
-	if _, err := runScriptFromScriptsDir(ctx, logger, vm, path.Join("agent", gce.PlatformKind(vm.Platform), "install"), environmentVariables); err != nil {
-		return retryable, fmt.Errorf("error installing agent: %v", err)
-	}
-	return nonRetryable, nil
-}
-
-func installAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) (bool, error) {
-	defer time.Sleep(10 * time.Second)
-	if packagesInGCS == "" {
-		return installUsingScript(ctx, logger, vm)
-	}
-	return nonRetryable, agents.InstallPackageFromGCS(ctx, logger.ToMainLog(), vm, packagesInGCS)
-}
-
 // updateSSHKeysForActiveDirectory alters the ssh-keys metadata value for the
 // given VM by prepending the given domain and a backslash onto the username.
 func updateSSHKeysForActiveDirectory(ctx context.Context, logger *log.Logger, vm *gce.VM, domain string) error {
@@ -603,8 +582,9 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		logger.ToMainLog().Printf("vm instance restarted")
 	}
 
-	if shouldRetry, err := installAgent(ctx, logger, vm); err != nil {
-		return shouldRetry, fmt.Errorf("error installing agent: %v", err)
+	if err := agents.InstallOpsAgent(ctx, logger.ToMainLog(), vm, agents.LocationFromEnvVars()); err != nil {
+		// InstallOpsAgent does its own retries.
+		return nonRetryable, fmt.Errorf("error installing agent: %v", err)
 	}
 
 	if _, err = runScriptFromScriptsDir(ctx, logger, vm, path.Join("applications", app, "enable"), nil); err != nil {

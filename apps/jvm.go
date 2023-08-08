@@ -15,6 +15,8 @@
 package apps
 
 import (
+	"context"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
@@ -31,7 +33,7 @@ func (r MetricsReceiverJVM) Type() string {
 	return "jvm"
 }
 
-func (r MetricsReceiverJVM) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverJVM) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	return r.MetricsReceiverSharedJVM.
 		WithDefaultEndpoint(defaultJVMEndpoint).
 		ConfigurePipelines(

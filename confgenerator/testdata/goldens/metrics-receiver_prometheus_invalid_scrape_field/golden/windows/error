@@ -1,0 +1,9 @@
+[19:36] "scrape_untyped_metrics_as" must be one of [gauge untyped]
+  16 |   receivers:
+  17 |     prometheus:
+  18 |         type: prometheus
+> 19 |         scrape_untyped_metrics_as: faketype
+                                          ^
+  20 |         config:
+  21 |           scrape_configs:
+  22 |             - job_name: 'node'
