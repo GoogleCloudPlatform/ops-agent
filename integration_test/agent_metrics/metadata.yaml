@@ -266,6 +266,17 @@ expected_metrics:
       owner: .*
       pid: \d+
       process: all
+  - type: agent.googleapis.com/processes/windows/handles
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+    platform: windows
+    labels:
+      command: .*
+      command_line: .*
+      owner: .*
+      pid: \d+
+      process: all
   - type: agent.googleapis.com/swap/bytes_used
     value_type: DOUBLE
     kind: GAUGE
