@@ -313,7 +313,6 @@ func (r MetricsReceiverHostmetrics) Pipelines(ctx context.Context) []otel.Receiv
 					},
 				},
 			},
-			//transforms...,
 			otel.MetricsFilter(
 				"exclude",
 				"strict",
