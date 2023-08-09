@@ -39,7 +39,8 @@ func HasNvidiaGpu() (bool, error) {
 			vendorFile := filepath.Join(sysDevicesPath, device.Name(), deviceVendorPath)
 			vendor, err := os.ReadFile(vendorFile)
 			if err != nil {
-				return false, err
+				// Skip the unreadable file and move on to the next device
+				continue
 			}
 			if strings.EqualFold(strings.TrimSpace(string(vendor)), nvidiaVendorId) {
 				return true, nil

@@ -35,6 +35,14 @@ platforms_to_skip:
   - sles-12
   - sles-15
   - ubuntu-2304-amd64
+gpu_models: # TODO: b/291585915 - increase quota and then test on p100
+  - a100
+  - v100 
+  - p4
+  - t4
+  - p100
+  - k80
+  - l4
 expected_metrics:
   - type: agent.googleapis.com/gpu/utilization
     value_type: DOUBLE

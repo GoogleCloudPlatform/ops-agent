@@ -1127,7 +1127,6 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	if options.Accelerator != "" {
 		args = append(args, options.Accelerator)
 		args = append(args, "--maintenance-policy=TERMINATE")
-		args = append(args, "--restart-on-failure")
 	}
 	if len(newMetadata) > 0 {
 		// The --metadata flag can't be empty, so we have to have a special case

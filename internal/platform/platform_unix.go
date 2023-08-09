@@ -16,10 +16,21 @@
 
 package platform
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+
+	"github.com/GoogleCloudPlatform/ops-agent/internal/accelerators"
+)
 
 func (p *Platform) detectPlatform() {
 	p.Type = Linux
+	if hasGpu, err := accelerators.HasNvidiaGpu(); err != nil {
+		log.Printf("Failed to look up GPU devices: %s", err)
+		p.HasNvidiaGpu = false
+	} else {
+		p.HasNvidiaGpu = hasGpu
+	}
 }
 
 func GetOldWinlogChannels() ([]string, error) {

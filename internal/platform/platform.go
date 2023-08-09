@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/GoogleCloudPlatform/ops-agent/internal/accelerators"
 	"github.com/shirou/gopsutil/host"
 )
 
@@ -75,12 +74,6 @@ func detect() Platform {
 		HostInfo: info,
 	}
 	p.detectPlatform()
-	if hasGpu, err := accelerators.HasNvidiaGpu(); err != nil {
-		log.Printf("Failed to look up GPU devices: %s", err)
-		p.HasNvidiaGpu = false
-	} else {
-		p.HasNvidiaGpu = hasGpu
-	}
 	return p
 }
 
