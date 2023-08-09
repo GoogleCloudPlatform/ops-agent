@@ -971,7 +971,10 @@ func TestThirdPartyApps(t *testing.T) {
 					ExtraCreateArguments: nil,
 				}
 				if tc.gpu != nil {
-					options.Accelerator = fmt.Sprintf("--accelerator=count=1,type=%s", tc.gpu.model)
+					options.ExtraCreateArguments = append(
+						options.ExtraCreateArguments,
+						fmt.Sprintf("--accelerator=count=1,type=%s", tc.gpu.model),
+						"--maintenance-policy=TERMINATE")
 					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-size=100GB")
 					options.MachineType = tc.gpu.machineType
 					options.Zone = tc.gpu.availableZone

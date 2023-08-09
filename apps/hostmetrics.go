@@ -339,7 +339,6 @@ func (r MetricsReceiverHostmetrics) Pipelines(ctx context.Context) []otel.Receiv
 				"metrics": otel.System,
 			},
 			Processors: map[string][]otel.Component{"metrics": {
-				otel.NormalizeSums(),
 				otel.MetricsTransform(
 					otel.RenameMetric(
 						"nvml.gpu.utilization",
