@@ -315,6 +315,6 @@ func init() {
 	// Set up the test environment with mocked data.
 	confgenerator.MetadataResource = testResource
 
-	// Enable experimental features.
-	os.Setenv("EXPERIMENTAL_FEATURES", "otlp_receiver")
+	// Enable experimental features here by calling:
+	//	 os.Setenv("EXPERIMENTAL_FEATURES", "...(comma-separated feature list)...")
 }
