@@ -1057,21 +1057,34 @@ func isFullImageName(name string) bool {
 	return strings.HasPrefix(name, "projects/")
 }
 
-func getImageFamilyName(image string) string {
-	if isFullImageName(image) {
-		components := strings.Split(image, "/")
-		return components[len(components)-1]
+func getVMPlatform(image string, platform string) (string, error) {
+	if image != "" && platform != "" {
+		return "", fmt.Errorf("Both platform and image cannot be specified in VMOptions.")
 	}
-	return image
+
+	if image != "" {
+		return image, nil
+	}
+
+	if platform != "" {
+		return platform, nil
+	}
+
+	return "", fmt.Errorf("Atleast one of image or platform must be specified.")
 }
 
 // attemptCreateInstance creates a VM instance and waits for it to be ready.
 // Returns a VM object or an error (never both). The caller is responsible for
 // deleting the VM if (and only if) the returned error is nil.
 func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOptions) (vmToReturn *VM, errToReturn error) {
+
+	platform, err := getVMPlatform(options.Image, options.Platform)
+	if err != nil {
+		return nil, err
+	}
 	vm := &VM{
 		Project:  options.Project,
-		Platform: getImageFamilyName(options.Platform),
+		Platform: platform,
 		Name:     options.Name,
 		Network:  os.Getenv("NETWORK_NAME"),
 		Zone:     options.Zone,
@@ -1121,13 +1134,20 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		return nil, fmt.Errorf("attemptCreateInstance() could not construct valid labels: %v", err)
 	}
 
-	imageOrImageFamilyFlag := "--image-family=" + vm.Platform
+	imageOrImageFamilyFlag := "--image=" + vm.Platform
+
+	if options.Platform != "" {
+		imageOrImageFamilyFlag = "--image-family=" + vm.Platform
+
+	}
 	if image, ok := overriddenImages[vm.Platform]; ok {
 		imageOrImageFamilyFlag = "--image=" + image
 	}
 
-	if isFullImageName(options.Platform) {
-		imageOrImageFamilyFlag = "--image=" + vm.Platform
+	imageFamilyScope := options.ImageFamilyScope
+
+	if imageFamilyScope == "" {
+		imageFamilyScope = "global"
 	}
 
 	args := []string{
@@ -1137,7 +1157,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		"--machine-type=" + vm.MachineType,
 		"--image-project=" + imgProject,
 		imageOrImageFamilyFlag,
-		"--image-family-scope=global",
+		"--image-family-scope=" + imageFamilyScope,
 		"--network=" + vm.Network,
 		"--format=json",
 	}
@@ -1783,6 +1803,9 @@ type VMOptions struct {
 	// Required. Normally passed as --image-family to
 	// "gcloud compute images create".
 	Platform string
+	// Optional. If unspecified, 'Platform' must be specified.
+	// Normally passed as --image to gcloud compute images create.
+	Image string
 	// Optional. If missing, a random name will be generated.
 	Name string
 	// Optional. Passed as --image-project to "gcloud compute images create".
@@ -1800,6 +1823,8 @@ type VMOptions struct {
 	// Optional. If missing, the default is e2-standard-4.
 	// Overridden by INSTANCE_SIZE if that environment variable is set.
 	MachineType string
+	// Optional. If missing, the default is 'global'.
+	ImageFamilyScope string
 	// Optional. If provided, these arguments are appended on to the end
 	// of the "gcloud compute instances create" command.
 	ExtraCreateArguments []string

@@ -37,7 +37,7 @@ import (
 )
 
 const (
-	defaultPlatform           = "debian-11"
+	defaultImageFamily        = "debian-11"
 	defaultThirdPartyAppsPath = "./integration_test/third_party_apps_data"
 	vmInitLogFileName         = "vm_initialization.txt"
 )
@@ -55,8 +55,10 @@ type Script struct {
 // Config represents the configuration for Simulacra. Most of the fields specify requirements about the VM that
 // Simulacra will instantiate.
 type Config struct {
-	// The OS for the VM.
-	Platform string `yaml:"platform"`
+	// The image family of the OS that the VM is using.
+	ImageFamily string `yaml:"image_family"`
+	// The exact image that the OS is using.
+	Image string `yaml:"image"`
 	// Path to the Ops Agent Config File.
 	ConfigFilePath string `yaml:"ops_agent_config"`
 	// The Project Simulacra will be using to instantiate the VM.
@@ -196,8 +198,8 @@ func getConfigFromYaml(configPath string) (*Config, error) {
 		return nil, err
 	}
 
-	if config.Platform == "" {
-		config.Platform = defaultPlatform
+	if config.ImageFamily == "" && config.Image == "" {
+		config.ImageFamily = defaultImageFamily
 	}
 
 	if config.ThirdPartyAppsPath == "" {
@@ -209,6 +211,14 @@ func getConfigFromYaml(configPath string) (*Config, error) {
 	}
 
 	return &config, nil
+}
+
+func getImageName(image string) string {
+	if strings.HasPrefix(image, "projects/") {
+		components := strings.Split(image, "/")
+		return components[len(components)-1]
+	}
+	return image
 }
 
 func getConfigFromDiagnosticOutput(outputDir string) (*Config, error) {
@@ -227,7 +237,7 @@ func getConfigFromDiagnosticOutput(outputDir string) (*Config, error) {
 	}
 
 	config := &Config{
-		Platform:           metadata.Image,
+		Image:              getImageName(metadata.Image),
 		Name:               getInstanceName(),
 		ThirdPartyAppsPath: defaultThirdPartyAppsPath,
 	}
@@ -244,7 +254,7 @@ func getConfigFromDiagnosticOutput(outputDir string) (*Config, error) {
 func getSimulacraConfig() (*Config, error) {
 	configPath := flag.String("config", "", "Optional. The path to a YAML file specifying all the configurations for Simulacra. If unspecified, Simulacra will either use values from other command line arguments or use default values. If specifed along with other command line arguments, all others will be ignored.")
 	diagnosticOutputPath := flag.String("diagnostic_output_path", "", "Optional. The path to a directory contaning the output from the ops agent diagnostic tool. If specified, all other arguments will be ignored and Simulacra will be configured from the diagnostic tool output.")
-	platform := flag.String("platform", defaultPlatform, "Optional. The OS for the VM. If missing, debian-11 is used.")
+	imageFamily := flag.String("image_family", defaultImageFamily, "Optional. The OS for the VM. If missing, debian-11 is used.")
 	opsAgentConfigFile := flag.String("ops_agent_config", "", "Optional. Path to the Ops Agent Config File. If unspecified, Ops Agent will not install any third party applications and configure Ops Agent with default settings. ")
 	project := flag.String("project", "", "Optional. If missing, Simulacra will try to infer from GCloud config.")
 	zone := flag.String("zone", "", "Optional. If missing, Simulacra will try to infer from GCloud config. ")
@@ -262,7 +272,7 @@ func getSimulacraConfig() (*Config, error) {
 	}
 
 	config := Config{
-		Platform:           *platform,
+		ImageFamily:        *imageFamily,
 		ConfigFilePath:     *opsAgentConfigFile,
 		Project:            *project,
 		Zone:               *zone,
@@ -295,6 +305,14 @@ func runCustomScripts(ctx context.Context, vm *gce.VM, logger *logging.Directory
 	return nil
 }
 
+func getRecommendedMachineType(imageFamily string, image string) string {
+	if imageFamily != "" {
+		return agents.RecommendedMachineType(imageFamily)
+	}
+
+	return agents.RecommendedMachineType(image)
+}
+
 func createInstance(ctx context.Context, config *Config, logger *log.Logger) (*gce.VM, error) {
 	args := []string{}
 	if config.ServiceAccount != "" {
@@ -302,8 +320,9 @@ func createInstance(ctx context.Context, config *Config, logger *log.Logger) (*g
 	}
 
 	options := gce.VMOptions{
-		Platform:             config.Platform,
-		MachineType:          agents.RecommendedMachineType(config.Platform),
+		Platform:             config.ImageFamily,
+		Image:                config.Image,
+		MachineType:          getRecommendedMachineType(config.ImageFamily, config.Image),
 		Name:                 config.Name,
 		Project:              config.Project,
 		Zone:                 config.Zone,
