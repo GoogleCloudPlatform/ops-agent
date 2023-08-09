@@ -1053,10 +1053,6 @@ func addFrameworkLabels(inputLabels map[string]string) (map[string]string, error
 	return labelsCopy, nil
 }
 
-func isFullImageName(name string) bool {
-	return strings.HasPrefix(name, "projects/")
-}
-
 func getVMPlatform(image string, platform string) (string, error) {
 	if image != "" && platform != "" {
 		return "", fmt.Errorf("Both platform and image cannot be specified in VMOptions.")
