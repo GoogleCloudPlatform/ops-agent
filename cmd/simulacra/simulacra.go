@@ -75,6 +75,8 @@ type Config struct {
 	ServiceAccount string `yaml:"service_account"`
 	// Path to a directory containing the output from the diagnostic tool.
 	DiagnosticOutputPath string `yaml:"diagnostic_output_path"`
+	// Passed with the --image/--image-family arguments. If unspecified, default value is 'global'
+	ImageFamilyScope string `yaml:"image_family_scope"`
 }
 
 func distroFolder(platform string) (string, error) {
@@ -221,6 +223,15 @@ func getImageName(image string) string {
 	return image
 }
 
+// Parse the metadata image name with format 'projects/debian-cloud/global/images/debian-11-bullseye-v20230711'
+// and return the scope and image name.
+func parseMetadataImage(name string) (string, string) {
+	components := strings.Split(name, "/")
+	scope := components[2]
+	image := components[4]
+	return scope, image
+}
+
 func getConfigFromDiagnosticOutput(outputDir string) (*Config, error) {
 	type Metadata struct {
 		Image string `json:"image"`
@@ -236,9 +247,12 @@ func getConfigFromDiagnosticOutput(outputDir string) (*Config, error) {
 		return nil, err
 	}
 
+	scope, image := parseMetadataImage(metadata.Image)
+
 	config := &Config{
-		Image:              getImageName(metadata.Image),
+		Image:              image,
 		Name:               getInstanceName(),
+		ImageFamilyScope:   scope,
 		ThirdPartyAppsPath: defaultThirdPartyAppsPath,
 	}
 
@@ -322,6 +336,7 @@ func createInstance(ctx context.Context, config *Config, logger *log.Logger) (*g
 	options := gce.VMOptions{
 		Platform:             config.ImageFamily,
 		Image:                config.Image,
+		ImageFamilyScope:     config.ImageFamilyScope,
 		MachineType:          getRecommendedMachineType(config.ImageFamily, config.Image),
 		Name:                 config.Name,
 		Project:              config.Project,
