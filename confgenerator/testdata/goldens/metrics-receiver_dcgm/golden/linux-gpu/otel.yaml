@@ -61,12 +61,8 @@ processors:
         - otelcol_process_memory_rss
         - otelcol_grpc_io_client_completed_rpcs
         - otelcol_googlecloudmonitoring_point_count
-  metricstransform/dcgm_1:
+  metricstransform/dcgm_0:
     transforms:
-    - action: update
-      include: "^dcgm\\.gpu\\.profiling\\.(.*)$$"
-      match_type: regexp
-      new_name: dcgm.gpu.$${1}
     - action: update
       include: ^(.*)$$
       match_type: regexp
@@ -125,7 +121,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/hostmetrics_1_1:
+  metricstransform/hostmetrics_1_0:
     transforms:
     - action: update
       include: nvml.gpu.utilization
@@ -469,11 +465,9 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  modifyscope/dcgm_2:
+  modifyscope/dcgm_1:
     override_scope_name: agent.googleapis.com/dcgm
     override_scope_version: "1.0"
-  normalizesums/dcgm_0: {}
-  normalizesums/hostmetrics_1_0: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
@@ -524,9 +518,8 @@ service:
       exporters:
       - googlecloud/otel
       processors:
-      - normalizesums/dcgm_0
-      - metricstransform/dcgm_1
-      - modifyscope/dcgm_2
+      - metricstransform/dcgm_0
+      - modifyscope/dcgm_1
       - resourcedetection/_global_0
       receivers:
       - dcgm/dcgm
@@ -545,8 +538,7 @@ service:
       exporters:
       - googlecloud
       processors:
-      - normalizesums/hostmetrics_1_0
-      - metricstransform/hostmetrics_1_1
+      - metricstransform/hostmetrics_1_0
       - filter/default__pipeline_hostmetrics_1_0
       - resourcedetection/_global_0
       receivers:

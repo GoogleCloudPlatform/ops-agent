@@ -57,9 +57,7 @@ func (r MetricsReceiverDcgm) Pipelines(_ context.Context) []otel.ReceiverPipelin
 			},
 		},
 		Processors: map[string][]otel.Component{"metrics": {
-			otel.NormalizeSums(),
 			otel.MetricsTransform(
-				otel.ChangePrefix("dcgm\\.gpu\\.profiling\\.", "dcgm.gpu."),
 				otel.AddPrefix("workload.googleapis.com"),
 			),
 			otel.ModifyInstrumentationScope(r.Type(), "1.0"),

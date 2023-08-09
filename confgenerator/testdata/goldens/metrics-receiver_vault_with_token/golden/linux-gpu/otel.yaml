@@ -137,7 +137,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/hostmetrics_1_1:
+  metricstransform/hostmetrics_1_0:
     transforms:
     - action: update
       include: nvml.gpu.utilization
@@ -512,7 +512,6 @@ processors:
   modifyscope/vault_5:
     override_scope_name: agent.googleapis.com/vault
     override_scope_version: "1.0"
-  normalizesums/hostmetrics_1_0: {}
   normalizesums/vault_3: {}
   resourcedetection/_global_0:
     detectors:
@@ -1216,8 +1215,7 @@ service:
       exporters:
       - googlecloud
       processors:
-      - normalizesums/hostmetrics_1_0
-      - metricstransform/hostmetrics_1_1
+      - metricstransform/hostmetrics_1_0
       - filter/default__pipeline_hostmetrics_1_0
       - resourcedetection/_global_0
       receivers:
