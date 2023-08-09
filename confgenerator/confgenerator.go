@@ -128,7 +128,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, res resourcedet
 	if uc.Metrics.Service.LogLevel == "" {
 		uc.Metrics.Service.LogLevel = "info"
 	}
-	if res.GetType() == "bms" {
+	if res.GetType() == resourcedetector.BMS {
 		skipResourceDetection = true
 		for k, v := range receiverPipelines {
 			if k == "hostmetrics" {

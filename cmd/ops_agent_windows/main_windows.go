@@ -21,6 +21,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/kardianos/osext"
@@ -62,7 +63,11 @@ func main() {
 			}
 			infoLog.Printf("uninstalled services")
 		} else if *healthChecks {
-			healthCheckResults := getHealthCheckResults()
+			res, err := resourcedetector.GetResource()
+			if err != nil {
+				log.Fatalf("failed to detect a resource: %v", err)
+			}
+			healthCheckResults := getHealthCheckResults(res)
 			healthchecks.LogHealthCheckResults(healthCheckResults, infoLog)
 			infoLog.Println("Health checks finished")
 		} else {

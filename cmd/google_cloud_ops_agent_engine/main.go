@@ -17,11 +17,13 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 )
@@ -35,12 +37,12 @@ var (
 	healthChecks = flag.Bool("healthchecks", false, "run health checks and exit")
 )
 
-func runHealthChecks() {
+func runHealthChecks(resource resourcedetector.Resource) {
 	logger := healthchecks.CreateHealthChecksLogger(*logsDir)
 
 	defaultLogger := logs.NewSimpleLogger()
 
-	healthCheckResults := healthchecks.HealthCheckRegistryFactory().RunAllHealthChecks(logger)
+	healthCheckResults := healthchecks.HealthCheckRegistryFactory().RunAllHealthChecks(logger, resource)
 	healthchecks.LogHealthCheckResults(healthCheckResults, defaultLogger)
 }
 
@@ -65,13 +67,18 @@ func run() error {
 	log.Printf("Built-in config:\n%s", apps.BuiltInConfStructs["linux"])
 	log.Printf("Merged config:\n%s", uc)
 
+	metadataResource, err := resourcedetector.GetResource()
+	if err != nil {
+		return fmt.Errorf("can't get resource metadata: %w", err)
+	}
+
 	if *service == "" {
-		runHealthChecks()
+		runHealthChecks(metadataResource)
 		log.Println("Startup checks finished")
 		if *healthChecks {
 			// If healthchecks is set, stop here
 			return nil
 		}
 	}
-	return uc.GenerateFilesFromConfig(ctx, *service, *logsDir, *stateDir, *outDir)
+	return uc.GenerateFilesFromConfig(ctx, *service, *logsDir, *stateDir, *outDir, metadataResource)
 }

@@ -22,6 +22,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 )
 
@@ -50,7 +51,7 @@ func checkIfPortAvailable(host string, port string, network string) (bool, error
 	return true, nil
 }
 
-func (c PortsCheck) RunCheck(logger logs.StructuredLogger) error {
+func (c PortsCheck) RunCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
 	fbErr := runFluentBitCheck(logger)
 	otelErr := runOtelCollectorCheck(logger)
 	return errors.Join(fbErr, otelErr)

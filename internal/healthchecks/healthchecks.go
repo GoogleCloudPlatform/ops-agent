@@ -20,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 )
 
@@ -27,7 +28,7 @@ var healthChecksLogFile = "health-checks.log"
 
 type HealthCheck interface {
 	Name() string
-	RunCheck(logger logs.StructuredLogger) error
+	RunCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error
 }
 
 type HealthCheckResult struct {
@@ -109,11 +110,11 @@ func HealthCheckRegistryFactory() HealthCheckRegistry {
 	}
 }
 
-func (r HealthCheckRegistry) RunAllHealthChecks(logger logs.StructuredLogger) []HealthCheckResult {
+func (r HealthCheckRegistry) RunAllHealthChecks(logger logs.StructuredLogger, resource resourcedetector.Resource) []HealthCheckResult {
 	var result []HealthCheckResult
 
 	for _, c := range r {
-		r := HealthCheckResult{Name: c.Name(), Err: c.RunCheck(logger)}
+		r := HealthCheckResult{Name: c.Name(), Err: c.RunCheck(logger, resource)}
 		r.LogResult(logger)
 		result = append(result, r)
 	}

@@ -38,23 +38,14 @@ const (
 	IamPermissionDenied          = "IAM_PERMISSION_DENIED"
 )
 
-func getGCEMetadata() (resourcedetector.GCEResource, error) {
-	MetadataResource, err := resourcedetector.GetResource()
-	if err != nil {
-		return resourcedetector.GCEResource{}, fmt.Errorf("can't get resource metadata: %w", err)
-	}
-	if gceMetadata, ok := MetadataResource.(resourcedetector.GCEResource); ok {
-		return gceMetadata, nil
-	}
-	return resourcedetector.GCEResource{}, fmt.Errorf("not in GCE")
-}
+const metricType = "agent.googleapis.com/agent/ops_agent/enabled_receivers"
 
 // monitoringPing reports whether the client's connection to the monitoring service and the
 // authentication configuration are valid. To accomplish this, monitoringPing writes a
 // time series point with empty values to an Ops Agent specific metric.
 // This method mirrors the "(c *Client) Ping" method in "cloud.google.com/go/logging".
-func monitoringPing(ctx context.Context, client monitoring.MetricClient, gceMetadata resourcedetector.GCEResource) error {
-	metricType := "agent.googleapis.com/agent/ops_agent/enabled_receivers"
+func monitoringPing(ctx context.Context, client monitoring.MetricClient, resource resourcedetector.Resource) error {
+	var req *monitoringpb.CreateTimeSeriesRequest
 	now := &timestamppb.Timestamp{
 		Seconds: time.Now().Unix(),
 	}
@@ -63,7 +54,50 @@ func monitoringPing(ctx context.Context, client monitoring.MetricClient, gceMeta
 			Int64Value: int64(0),
 		},
 	}
-	req := &monitoringpb.CreateTimeSeriesRequest{
+	switch resource.GetType() {
+	case resourcedetector.BMS:
+		if bmsResource, ok := resource.(resourcedetector.BMSResource); ok {
+			req = createTimeSeriesRequestForBMS(now, value, bmsResource)
+		}
+	case resourcedetector.GCE:
+		if gceResource, ok := resource.(resourcedetector.GCEResource); ok {
+			req = createTimeSeriesRequestForGCE(now, value, gceResource)
+		}
+	default:
+		return fmt.Errorf("unrecognized platform")
+	}
+	return client.CreateTimeSeries(ctx, req)
+}
+
+func createTimeSeriesRequestForBMS(now *timestamppb.Timestamp, value *monitoringpb.TypedValue, bmsMetadata resourcedetector.BMSResource) *monitoringpb.CreateTimeSeriesRequest {
+	return &monitoringpb.CreateTimeSeriesRequest{
+		Name: "projects/" + bmsMetadata.Project,
+		TimeSeries: []*monitoringpb.TimeSeries{{
+			MetricKind: metricpb.MetricDescriptor_GAUGE,
+			ValueType:  metricpb.MetricDescriptor_INT64,
+			Metric: &metricpb.Metric{
+				Type: metricType,
+			},
+			Resource: &monitoredres.MonitoredResource{
+				Type: "baremetalsolution.googleapis.com/Instance",
+				Labels: map[string]string{
+					"instance_id": bmsMetadata.InstanceID,
+					"location":    bmsMetadata.Location,
+				},
+			},
+			Points: []*monitoringpb.Point{{
+				Interval: &monitoringpb.TimeInterval{
+					StartTime: now,
+					EndTime:   now,
+				},
+				Value: value,
+			}},
+		}},
+	}
+}
+
+func createTimeSeriesRequestForGCE(now *timestamppb.Timestamp, value *monitoringpb.TypedValue, gceMetadata resourcedetector.GCEResource) *monitoringpb.CreateTimeSeriesRequest {
+	return &monitoringpb.CreateTimeSeriesRequest{
 		Name: "projects/" + gceMetadata.Project,
 		TimeSeries: []*monitoringpb.TimeSeries{{
 			MetricKind: metricpb.MetricDescriptor_GAUGE,
@@ -87,20 +121,26 @@ func monitoringPing(ctx context.Context, client monitoring.MetricClient, gceMeta
 			}},
 		}},
 	}
-
-	return client.CreateTimeSeries(ctx, req)
 }
 
-func runLoggingCheck(logger logs.StructuredLogger) error {
+func runLoggingCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
 	ctx := context.Background()
-	gceMetadata, err := getGCEMetadata()
-	if err != nil {
-		return fmt.Errorf("can't get GCE metadata")
+	var project string
+	switch resource.GetType() {
+	case resourcedetector.BMS:
+		if bmsResource, ok := resource.(resourcedetector.BMSResource); ok {
+			project = bmsResource.Project
+		}
+	case resourcedetector.GCE:
+		if gceResource, ok := resource.(resourcedetector.GCEResource); ok {
+			project = gceResource.Project
+		}
+	default:
+		return fmt.Errorf("unrecognized platform")
 	}
-	logger.Infof("GCE Metadata queried successfully")
 
 	// New Logging Client
-	logClient, err := logging.NewClient(ctx, gceMetadata.Project)
+	logClient, err := logging.NewClient(ctx, project)
 	if err != nil {
 		return err
 	}
@@ -138,13 +178,8 @@ func runLoggingCheck(logger logs.StructuredLogger) error {
 	return nil
 }
 
-func runMonitoringCheck(logger logs.StructuredLogger) error {
+func runMonitoringCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
 	ctx := context.Background()
-	gceMetadata, err := getGCEMetadata()
-	if err != nil {
-		return fmt.Errorf("can't get GCE metadata")
-	}
-	logger.Infof("GCE Metadata queried successfully")
 
 	// New Monitoring Client
 	monClient, err := monitoring.NewMetricClient(ctx)
@@ -154,7 +189,7 @@ func runMonitoringCheck(logger logs.StructuredLogger) error {
 	defer monClient.Close()
 	logger.Infof("monitoring client was created successfully")
 
-	if err := monitoringPing(ctx, *monClient, gceMetadata); err != nil {
+	if err := monitoringPing(ctx, *monClient, resource); err != nil {
 		logger.Infof(err.Error())
 		var apiErr *apierror.APIError
 		if errors.As(err, &apiErr) {
@@ -191,8 +226,8 @@ func (c APICheck) Name() string {
 	return "API Check"
 }
 
-func (c APICheck) RunCheck(logger logs.StructuredLogger) error {
-	monErr := runMonitoringCheck(logger)
-	logErr := runLoggingCheck(logger)
+func (c APICheck) RunCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
+	monErr := runMonitoringCheck(logger, resource)
+	logErr := runLoggingCheck(logger, resource)
 	return errors.Join(monErr, logErr)
 }

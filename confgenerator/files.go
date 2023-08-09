@@ -47,7 +47,7 @@ func ReadUnifiedConfigFromFile(ctx context.Context, path string) (*UnifiedConfig
 	return uc, nil
 }
 
-func (uc *UnifiedConfig) GenerateFilesFromConfig(ctx context.Context, service, logsDir, stateDir, outDir string) error {
+func (uc *UnifiedConfig) GenerateFilesFromConfig(ctx context.Context, service, logsDir, stateDir, outDir string, resource resourcedetector.Resource) error {
 	switch service {
 	case "": // Validate-only.
 		return nil
@@ -64,11 +64,7 @@ func (uc *UnifiedConfig) GenerateFilesFromConfig(ctx context.Context, service, l
 	case "otel":
 		// Fetch resource information from the metadata server.
 		var err error
-		MetadataResource, err = resourcedetector.GetResource()
-		if err != nil {
-			return fmt.Errorf("can't get resource metadata: %w", err)
-		}
-		otelConfig, err := uc.GenerateOtelConfig(ctx, MetadataResource)
+		otelConfig, err := uc.GenerateOtelConfig(ctx, resource)
 		if err != nil {
 			return fmt.Errorf("can't parse configuration: %w", err)
 		}

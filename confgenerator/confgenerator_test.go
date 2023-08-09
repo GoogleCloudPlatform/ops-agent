@@ -42,6 +42,20 @@ const (
 	builtinConfigFileName  = "builtin_conf.yaml"
 )
 
+type platformConfig struct {
+	name            string
+	defaultLogsDir  string
+	defaultStateDir string
+	platform        platform.Platform
+}
+
+var winlogv1channels = []string{
+	"Application",
+	"Security",
+	"Setup",
+	"System",
+}
+
 var (
 	GCEResource = resourcedetector.GCEResource{
 		Project:       "test-project",
@@ -64,20 +78,6 @@ var (
 		InstanceID: "test-bms-instance-id",
 	}
 )
-
-type platformConfig struct {
-	name            string
-	defaultLogsDir  string
-	defaultStateDir string
-	platform        platform.Platform
-}
-
-var winlogv1channels = []string{
-	"Application",
-	"Security",
-	"Setup",
-	"System",
-}
 
 var (
 	testPlatforms = []platformConfig{
@@ -143,62 +143,13 @@ var (
 
 func TestGoldens(t *testing.T) {
 	t.Parallel()
-
-	// Iterate platforms inside test directories so the test name hierarchy matches the testdata hierarchy.
-	for _, test := range []struct {
-		dirName      string
-		errAssertion func(t *testing.T, err error, got map[string]string)
-	}{
-		{
-			validTestdataDirName,
-			func(t *testing.T, err error, got map[string]string) {
-				assert.NilError(t, err)
-				delete(got, builtinConfigFileName)
-			},
-		},
-		{
-			invalidTestdataDirName,
-			func(t *testing.T, err error, got map[string]string) {
-				assert.Assert(t, err != nil, "expected test config to be invalid, but was successful")
-				// Error is checked by runTestsInDir
-				delete(got, builtinConfigFileName)
-			},
-		},
-		{
-			builtinTestdataDirName,
-			nil,
-		},
-	} {
-		test := test
-		t.Run(test.dirName, func(t *testing.T) {
-			if confgenerator.MetadataResource.GetType() == "bms" {
-				test.dirName = filepath.Join("bms", test.dirName)
-			}
-			t.Parallel()
-			for _, pc := range testPlatforms {
-				pc := pc
-				t.Run(pc.name, func(t *testing.T) {
-					t.Parallel()
-					runTestsInDir(
-						t,
-						pc,
-						test.dirName,
-						test.errAssertion,
-					)
-				})
-			}
-		})
+	var goldensDir string
+	if confgenerator.MetadataResource.GetType() == resourcedetector.BMS {
+		goldensDir = "goldensBMS"
+	} else {
+		goldensDir = "goldens"
 	}
-}
-
-func runTestsInDir(
-	t *testing.T,
-	pc platformConfig,
-	testTypeDir string,
-	errAssertion func(*testing.T, error, map[string]string),
-) {
-	platformTestDir := filepath.Join(testTypeDir, pc.name)
-	testNames := getTestsInDir(t, platformTestDir)
+	testNames := getTestsInDir(t, goldensDir)
 
 	for _, testName := range testNames {
 		// https://github.com/golang/go/wiki/CommonMistakes#using-goroutines-on-loop-iterator-variables
@@ -380,8 +331,8 @@ func testGeneratedFiles(t *testing.T, generatedFiles map[string]string, testDir 
 func TestMain(m *testing.M) {
 	var r int
 
-	// Enable experimental features.
-	os.Setenv("EXPERIMENTAL_FEATURES", "otlp_receiver")
+	// Enable experimental features here by calling:
+	//	 os.Setenv("EXPERIMENTAL_FEATURES", "...(comma-separated feature list)...")
 
 	testResources := []struct {
 		name         string

@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/cenkalti/backoff/v4"
 )
@@ -101,9 +102,15 @@ func (c NetworkCheck) Name() string {
 	return "Network Check"
 }
 
-func (c NetworkCheck) RunCheck(logger logs.StructuredLogger) error {
+func (c NetworkCheck) RunCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
 	var networkErrors []error
+
 	for _, r := range requests {
+		// Skip request to the GCE Metadata server if running on a BMS machine.
+		// BMS environment doesn't have Metadata servers.
+		if r.name == "GCE Metadata Server" && resource.GetType() == resourcedetector.BMS {
+			continue
+		}
 		networkErrors = append(networkErrors, r.SendRequest(logger))
 	}
 	return errors.Join(networkErrors...)

@@ -18,10 +18,18 @@ import (
 	gcp_metadata "cloud.google.com/go/compute/metadata"
 )
 
+type ResourceType int
+
+const (
+	Unrecognized ResourceType = iota
+	GCE
+	BMS
+)
+
 // An implementation of the Resource interface will have fields represent
 // available attributes about the current monitoring resource.
 type Resource interface {
-	GetType() string
+	GetType() ResourceType
 }
 
 // Get a resource instance for the current environment;
@@ -30,10 +38,10 @@ type Resource interface {
 // actual, ok := resource.(GCEResource)
 func GetResource() (Resource, error) {
 	switch {
-	case gcp_metadata.OnGCE():
-		return GetGCEResource()
 	case testOnBMS():
 		return GetBMSResource()
+	case gcp_metadata.OnGCE():
+		return GetGCEResource()
 	default:
 		return GetUnrecognizedPlatformResource()
 	}
@@ -44,8 +52,8 @@ func GetResource() (Resource, error) {
 type UnrecognizedPlatformResource struct {
 }
 
-func (UnrecognizedPlatformResource) GetType() string {
-	return "unrecognized platform"
+func (UnrecognizedPlatformResource) GetType() ResourceType {
+	return Unrecognized
 }
 
 func GetUnrecognizedPlatformResource() (Resource, error) {

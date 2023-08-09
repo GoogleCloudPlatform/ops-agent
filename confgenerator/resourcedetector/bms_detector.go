@@ -27,8 +27,8 @@ type BMSResource struct {
 	Location   string
 }
 
-func (BMSResource) GetType() string {
-	return "bms"
+func (BMSResource) GetType() ResourceType {
+	return BMS
 }
 
 // The data provider interface for BMS environment
@@ -47,7 +47,7 @@ type BMSResourceBuilder struct {
 }
 
 // List of single-valued attributes (non-nested)
-var singleBMSAttributeSpec = map[gceAttribute]func(bmsDataProvider) string{
+var singleBMSAttributeSpec = map[resourceAttribute]func(bmsDataProvider) string{
 	project:    bmsDataProvider.getProject,
 	location:   bmsDataProvider.getLocation,
 	instanceID: bmsDataProvider.getInstanceID,
@@ -56,7 +56,7 @@ var singleBMSAttributeSpec = map[gceAttribute]func(bmsDataProvider) string{
 // Return a resource instance with all the attributes
 // based on the single and nested attributes spec
 func (gd *BMSResourceBuilder) GetResource() (Resource, error) {
-	singleAttributes := map[gceAttribute]string{}
+	singleAttributes := map[resourceAttribute]string{}
 	for attrName, attrGetter := range singleBMSAttributeSpec {
 		singleAttributes[attrName] = attrGetter(gd.provider)
 	}

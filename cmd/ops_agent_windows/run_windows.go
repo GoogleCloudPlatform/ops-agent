@@ -24,6 +24,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"golang.org/x/sys/windows/svc"
@@ -50,6 +51,7 @@ type service struct {
 	log          debug.Log
 	userConf     string
 	outDirectory string
+	resource     resourcedetector.Resource
 }
 
 func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
@@ -63,7 +65,13 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		return false, 0x00000057
 	}
 
-	if err := s.generateConfigs(ctx); err != nil {
+	res, err := resourcedetector.GetResource()
+	if err != nil {
+		s.log.Error(EngineEventID, fmt.Sprintf("failed to detect a resource: %v", err))
+	}
+	s.resource = res
+
+	if err := s.generateConfigs(ctx, s.resource); err != nil {
 		s.log.Error(EngineEventID, fmt.Sprintf("failed to generate config files: %v", err))
 		// 2 is "file not found"
 		return false, 2
@@ -138,22 +146,22 @@ func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfig)
 	return nil
 }
 
-func getHealthCheckResults() []healthchecks.HealthCheckResult {
+func getHealthCheckResults(resource resourcedetector.Resource) []healthchecks.HealthCheckResult {
 	logsDir := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log")
 	gceHealthChecks := healthchecks.HealthCheckRegistryFactory()
 	logger := healthchecks.CreateHealthChecksLogger(logsDir)
 
-	return gceHealthChecks.RunAllHealthChecks(logger)
+	return gceHealthChecks.RunAllHealthChecks(logger, resource)
 }
 
 func (srv *service) runHealthChecks() {
-	healthCheckResults := getHealthCheckResults()
+	healthCheckResults := getHealthCheckResults(srv.resource)
 	logger := logs.WindowsServiceLogger{EventID: EngineEventID, Logger: srv.log}
 	healthchecks.LogHealthCheckResults(healthCheckResults, logger)
 	srv.log.Info(EngineEventID, "Startup checks finished")
 }
 
-func (s *service) generateConfigs(ctx context.Context) error {
+func (s *service) generateConfigs(ctx context.Context, resource resourcedetector.Resource) error {
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
 	uc, err := confgenerator.MergeConfFiles(ctx, s.userConf, apps.BuiltInConfStructs)
 	if err != nil {
@@ -175,7 +183,7 @@ func (s *service) generateConfigs(ctx context.Context) error {
 			subagent,
 			filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log"),
 			filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "run"),
-			filepath.Join(s.outDirectory, subagent)); err != nil {
+			filepath.Join(s.outDirectory, subagent), resource); err != nil {
 			return err
 		}
 	}
