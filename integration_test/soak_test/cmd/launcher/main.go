@@ -106,6 +106,12 @@ func mainErr() error {
 		Labels: map[string]string{
 			"ttl": strconv.Itoa(int(parsedTTL / time.Minute)),
 		},
+		Metadata: map[string]string{
+			// This is to avoid b/295165549 on Windows and also
+			// to avoid throughput blips when the OS Config agent
+			// runs periodically.
+			"enable-osconfig": "FALSE",
+		}
 		ExtraCreateArguments: []string{"--boot-disk-size=4000GB"},
 	}
 	vm, err := gce.CreateInstance(ctx, logger, options)
