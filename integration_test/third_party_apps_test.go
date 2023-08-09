@@ -817,57 +817,42 @@ var defaultApps = map[string]bool{
 	"active_directory_ds": true,
 }
 
-// This is the A100 40G model; A100 80G is similar so skipping
-var GPU_A100 = accelerator{
-	model:         "nvidia-tesla-a100",
-	machineType:   "a2-highgpu-1g",
-	availableZone: "us-central1-a",
-}
-
-var GPU_V100 = accelerator{
-	model:         "nvidia-tesla-v100",
-	machineType:   "n1-standard-2",
-	availableZone: "us-central1-a",
-}
-
-var GPU_T4 = accelerator{
-	model:         "nvidia-tesla-t4",
-	machineType:   "n1-standard-2",
-	availableZone: "us-central1-a",
-}
-
-var GPU_P4 = accelerator{
-	model:         "nvidia-tesla-p4",
-	machineType:   "n1-standard-2",
-	availableZone: "us-central1-a",
-}
-
-var GPU_P100 = accelerator{
-	model:         "nvidia-tesla-p100",
-	machineType:   "n1-standard-2",
-	availableZone: "us-central1-c",
-}
-
-var GPU_K80 = accelerator{
-	model:         "nvidia-tesla-k80",
-	machineType:   "n1-standard-2",
-	availableZone: "us-central1-a",
-}
-
-var GPU_L4 = accelerator{
-	model:         "nvidia-l4",
-	machineType:   "g2-standard-4",
-	availableZone: "us-central1-a",
-}
-
-// TODO: b/291585915 - increase quota and then test on P100
-var gpuApps = map[string][]accelerator{
-	"nvml": {
-		GPU_A100, GPU_V100, GPU_P4, GPU_T4, GPU_P100, GPU_K80, GPU_L4,
+var gpuModels = map[string]accelerator{
+	// This is the A100 40G model; A100 80G is similar so skipping
+	"a100": {
+		model:         "nvidia-tesla-a100",
+		machineType:   "a2-highgpu-1g",
+		availableZone: "us-central1-a",
 	},
-	"dcgm": {
-		// p4, k80, P100 don't support DCGM profiling metrics
-		GPU_A100, GPU_V100, GPU_T4, GPU_L4,
+	"v100": {
+		model:         "nvidia-tesla-v100",
+		machineType:   "n1-standard-2",
+		availableZone: "us-central1-a",
+	},
+	"t4": {
+		model:         "nvidia-tesla-t4",
+		machineType:   "n1-standard-2",
+		availableZone: "us-central1-a",
+	},
+	"p4": {
+		model:         "nvidia-tesla-p4",
+		machineType:   "n1-standard-2",
+		availableZone: "us-central1-a",
+	},
+	"p100": {
+		model:         "nvidia-tesla-p100",
+		machineType:   "n1-standard-2",
+		availableZone: "us-central1-c",
+	},
+	"k80": {
+		model:         "nvidia-tesla-k80",
+		machineType:   "n1-standard-2",
+		availableZone: "us-central1-a",
+	},
+	"l4": {
+		model:         "nvidia-l4",
+		machineType:   "g2-standard-4",
+		availableZone: "us-central1-a",
 	},
 }
 
@@ -940,9 +925,13 @@ func TestThirdPartyApps(t *testing.T) {
 
 	for _, platform := range platforms {
 		for app, metadata := range allApps {
-			if gpus, ok := gpuApps[app]; ok {
-				for idx := range gpus {
-					tests = append(tests, test{platform: platform, gpu: &gpus[idx], app: app, metadata: metadata, skipReason: ""})
+			if len(metadata.GpuModels) > 0 {
+				for _, gpuModel := range metadata.GpuModels {
+					if gpu, ok := gpuModels[gpuModel]; !ok {
+						t.Fatalf("invalid gpu model name %s", gpuModel)
+					} else {
+						tests = append(tests, test{platform: platform, gpu: &gpu, app: app, metadata: metadata, skipReason: ""})
+					}
 				}
 			} else {
 				tests = append(tests, test{platform: platform, app: app, metadata: metadata, skipReason: ""})

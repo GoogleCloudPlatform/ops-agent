@@ -327,45 +327,45 @@ func (r MetricsReceiverHostmetrics) Pipelines(ctx context.Context) []otel.Receiv
 		}},
 	}}
 
-	if !p.HasNvidiaGpu {
-		return pipelines
+	if p.HasNvidiaGpu {
+		pipelines = append(pipelines, otel.ReceiverPipeline{
+			Receiver: otel.Component{
+				Type: "nvml",
+				Config: map[string]interface{}{
+					"collection_interval": r.CollectionIntervalString(),
+				},
+			},
+			ExporterTypes: map[string]otel.ExporterType{
+				"metrics": otel.System,
+			},
+			Processors: map[string][]otel.Component{"metrics": {
+				otel.NormalizeSums(),
+				otel.MetricsTransform(
+					otel.RenameMetric(
+						"nvml.gpu.utilization",
+						"gpu/utilization",
+						otel.ScaleValue(100),
+					),
+					otel.RenameMetric(
+						"nvml.gpu.memory.bytes_used",
+						"gpu/memory/bytes_used",
+					),
+					otel.RenameMetric(
+						"nvml.gpu.processes.utilization",
+						"gpu/processes/utilization",
+						otel.ScaleValue(100),
+					),
+					otel.RenameMetric(
+						"nvml.gpu.processes.max_bytes_used",
+						"gpu/processes/max_bytes_used",
+					),
+					otel.AddPrefix("agent.googleapis.com"),
+				),
+			}},
+		})
 	}
 
-	return append(pipelines, otel.ReceiverPipeline{
-		Receiver: otel.Component{
-			Type: "nvml",
-			Config: map[string]interface{}{
-				"collection_interval": r.CollectionIntervalString(),
-			},
-		},
-		ExporterTypes: map[string]otel.ExporterType{
-			"metrics": otel.System,
-		},
-		Processors: map[string][]otel.Component{"metrics": {
-			otel.NormalizeSums(),
-			otel.MetricsTransform(
-				otel.RenameMetric(
-					"nvml.gpu.utilization",
-					"gpu/utilization",
-					otel.ScaleValue(100),
-				),
-				otel.RenameMetric(
-					"nvml.gpu.memory.bytes_used",
-					"gpu/memory/bytes_used",
-				),
-				otel.RenameMetric(
-					"nvml.gpu.processes.utilization",
-					"gpu/processes/utilization",
-					otel.ScaleValue(100),
-				),
-				otel.RenameMetric(
-					"nvml.gpu.processes.max_bytes_used",
-					"gpu/processes/max_bytes_used",
-				),
-				otel.AddPrefix("agent.googleapis.com"),
-			),
-		}},
-	})
+	return pipelines
 }
 
 func init() {

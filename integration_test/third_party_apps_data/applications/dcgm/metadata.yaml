@@ -35,6 +35,11 @@ platforms_to_skip:
   - sles-12
   - sles-15
   - ubuntu-2304-amd64
+gpu_models: # p4, k80, p100 don't support DCGM profiling metrics
+  - a100
+  - v100
+  - t4
+  - l4
 expected_metrics:
   - type: workload.googleapis.com/dcgm.gpu.sm_utilization
     value_type: DOUBLE
