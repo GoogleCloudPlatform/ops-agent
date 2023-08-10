@@ -169,6 +169,10 @@ func runMonitoringCheck(logger logs.StructuredLogger) error {
 			}
 
 			switch apiErr.GRPCStatus().Code() {
+			// The monitoringPing will send an invalid data point
+			// to avoid writing data in customers environments.
+			case codes.InvalidArgument:
+				return nil
 			case codes.PermissionDenied:
 				return MonApiPermissionErr
 			case codes.Unauthenticated:
