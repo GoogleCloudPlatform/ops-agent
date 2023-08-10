@@ -25,11 +25,11 @@ import (
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/googleapis/gax-go/v2/apierror"
 	metricpb "google.golang.org/genproto/googleapis/api/metric"
 	"google.golang.org/genproto/googleapis/api/monitoredres"
 	"google.golang.org/grpc/codes"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -55,8 +55,9 @@ func getGCEMetadata() (resourcedetector.GCEResource, error) {
 // This method mirrors the "(c *Client) Ping" method in "cloud.google.com/go/logging".
 func monitoringPing(ctx context.Context, client monitoring.MetricClient, gceMetadata resourcedetector.GCEResource) error {
 	metricType := "agent.googleapis.com/agent/ops_agent/enabled_receivers"
-	now := &timestamppb.Timestamp{
-		Seconds: time.Now().Unix(),
+	unixZeroTimestamp, err := ptypes.TimestampProto(time.Unix(0, 0))
+	if err != nil {
+		return err
 	}
 	value := &monitoringpb.TypedValue{
 		Value: &monitoringpb.TypedValue_Int64Value{
@@ -80,8 +81,8 @@ func monitoringPing(ctx context.Context, client monitoring.MetricClient, gceMeta
 			},
 			Points: []*monitoringpb.Point{{
 				Interval: &monitoringpb.TimeInterval{
-					StartTime: now,
-					EndTime:   now,
+					StartTime: unixZeroTimestamp,
+					EndTime:   unixZeroTimestamp,
 				},
 				Value: value,
 			}},
