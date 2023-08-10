@@ -77,6 +77,8 @@ type Config struct {
 	DiagnosticOutputPath string `yaml:"diagnostic_output_path"`
 	// Passed with the --image/--image-family arguments. If unspecified, default value is 'global'
 	ImageFamilyScope string `yaml:"image_family_scope"`
+	// The project that the image belongs to.
+	ImageProject string
 }
 
 func distroFolder(platform string) (string, error) {
@@ -215,21 +217,17 @@ func getConfigFromYaml(configPath string) (*Config, error) {
 	return &config, nil
 }
 
-func getImageName(image string) string {
-	if strings.HasPrefix(image, "projects/") {
-		components := strings.Split(image, "/")
-		return components[len(components)-1]
-	}
-	return image
-}
-
 // Parse the metadata image name with format 'projects/debian-cloud/global/images/debian-11-bullseye-v20230711'
 // and return the scope and image name.
-func parseMetadataImage(name string) (string, string) {
+func parseMetadataImage(name string) (string, string, string, error) {
 	components := strings.Split(name, "/")
+	if len(components) < 5 {
+		return "", "", "", fmt.Errorf("image name from metadata must be of format 'projects/debian-cloud/global/images/debian-11-bullseye-v20230711' ")
+	}
 	scope := components[2]
 	image := components[4]
-	return scope, image
+	imgProject := components[1]
+	return imgProject, scope, image, nil
 }
 
 func getConfigFromDiagnosticOutput(outputDir string) (*Config, error) {
@@ -247,13 +245,18 @@ func getConfigFromDiagnosticOutput(outputDir string) (*Config, error) {
 		return nil, err
 	}
 
-	scope, image := parseMetadataImage(metadata.Image)
+	imgProject, scope, image, err := parseMetadataImage(metadata.Image)
+
+	if err != nil {
+		return nil, err
+	}
 
 	config := &Config{
 		Image:              image,
 		Name:               getInstanceName(),
 		ImageFamilyScope:   scope,
 		ThirdPartyAppsPath: defaultThirdPartyAppsPath,
+		ImageProject:       imgProject,
 	}
 
 	configFilePath := path.Join(outputDir, "google-cloud-ops-agent", "config.yaml")
@@ -337,6 +340,7 @@ func createInstance(ctx context.Context, config *Config, logger *log.Logger) (*g
 		Platform:             config.ImageFamily,
 		Image:                config.Image,
 		ImageFamilyScope:     config.ImageFamilyScope,
+		ImageProject:         config.ImageProject,
 		MachineType:          getRecommendedMachineType(config.ImageFamily, config.Image),
 		Name:                 config.Name,
 		Project:              config.Project,
