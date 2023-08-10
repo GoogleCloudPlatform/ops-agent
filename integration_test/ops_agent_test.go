@@ -4170,7 +4170,7 @@ func TestDCGMReceiverWithoutDCGMInstalled(t *testing.T) {
 		}
 
 		tag := systemLogTagForPlatform(vm.Platform)
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, tag, time.Hour, `jsonPayload.message=~"can not initialize a DCGM client; DCGM is not installed."`); err != nil {
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, tag, time.Hour, `jsonPayload.message=~"cannot initialize a DCGM client; DCGM is not installed"`); err != nil {
 			t.Error(err)
 		}
 
