@@ -224,9 +224,9 @@ func parseMetadataImage(name string) (string, string, string, error) {
 	if len(components) < 5 {
 		return "", "", "", fmt.Errorf("image name from metadata must be of format 'projects/debian-cloud/global/images/debian-11-bullseye-v20230711' ")
 	}
+	imgProject := components[1]
 	scope := components[2]
 	image := components[4]
-	imgProject := components[1]
 	return imgProject, scope, image, nil
 }
 
