@@ -1073,8 +1073,7 @@ func getVMPlatform(image string, platform string) (string, error) {
 // Returns a VM object or an error (never both). The caller is responsible for
 // deleting the VM if (and only if) the returned error is nil.
 func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOptions) (vmToReturn *VM, errToReturn error) {
-
-	platform, err := getVMPlatform(options.Image, options.Platform)
+	platform, err := getVMPlatform(options.Image, options.ImageFamily)
 	if err != nil {
 		return nil, err
 	}
@@ -1130,15 +1129,14 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		return nil, fmt.Errorf("attemptCreateInstance() could not construct valid labels: %v", err)
 	}
 
-	imageOrImageFamilyFlag := "--image=" + options.Platform
+	imageOrImageFamilyFlag := "--image=" + options.ImageFamily
 
-	if options.Platform != "" {
-		imageOrImageFamilyFlag = "--image-family=" + options.Platform
+	if options.ImageFamily != "" {
+		imageOrImageFamilyFlag = "--image-family=" + options.ImageFamily
 
-		if image, ok := overriddenImageFamilies[options.Platform]; ok {
+		if image, ok := overriddenImageFamilies[options.ImageFamily]; ok {
 			imageOrImageFamilyFlag = "--image=" + image
 		}
-
 	}
 
 	imageFamilyScope := options.ImageFamilyScope
@@ -1292,6 +1290,8 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 	// immediately.
 	// If retriable errors happen quickly, there will be more than 3 attempts.
 	// If retriable errors happen slowly, there will still be at least 3 attempts.
+	options.ImageFamily = options.Platform // Temporary until 'Platform' is fully replaced.
+
 	ctx, cancel := context.WithTimeout(origCtx, 3*vmInitTimeout)
 	defer cancel()
 
@@ -1304,7 +1304,7 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 			// Instance creation can also fail due to service unavailability.
 			strings.Contains(err.Error(), "currently unavailable") ||
 			// SLES instances sometimes fail to be ssh-able: b/186426190
-			(IsSUSE(options.Platform) && strings.Contains(err.Error(), startupFailedMessage)) ||
+			(IsSUSE(options.ImageFamily) && strings.Contains(err.Error(), startupFailedMessage)) ||
 			strings.Contains(err.Error(), prepareSLESMessage)
 	}
 
@@ -1800,6 +1800,9 @@ type VMOptions struct {
 	// Required. Normally passed as --image-family to
 	// "gcloud compute images create".
 	Platform string
+	// Required. Normally passed as --image-family to
+	// "gcloud compute images create".
+	ImageFamily string
 	// Optional. If unspecified, 'Platform' must be specified.
 	// Normally passed as --image to gcloud compute images create.
 	Image string
@@ -1831,8 +1834,8 @@ type VMOptions struct {
 // If VM creation fails, it will abort the test.
 // At the end of the test, the VM will be cleaned up.
 func SetupVM(ctx context.Context, t *testing.T, logger *log.Logger, options VMOptions) *VM {
+	options.ImageFamily = options.Platform // Temporary until 'Platform' is fully replaced.
 	t.Helper()
-
 	vm, err := CreateInstance(ctx, logger, options)
 	if err != nil {
 		t.Fatalf("SetupVM() error creating instance: %v", err)
