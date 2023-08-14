@@ -1797,7 +1797,7 @@ func SetupLogger(t *testing.T) *logging.DirectoryLogger {
 
 // VMOptions specifies settings when creating a VM via CreateInstance() or SetupVM().
 type VMOptions struct {
-	// Required. Normally passed as --image-family to
+	// Deprecated. Normally passed as --image-family to
 	// "gcloud compute images create".
 	Platform string
 	// Required. Normally passed as --image-family to
@@ -1834,7 +1834,6 @@ type VMOptions struct {
 // If VM creation fails, it will abort the test.
 // At the end of the test, the VM will be cleaned up.
 func SetupVM(ctx context.Context, t *testing.T, logger *log.Logger, options VMOptions) *VM {
-	options.ImageFamily = options.Platform // Temporary until 'Platform' is fully replaced.
 	t.Helper()
 	vm, err := CreateInstance(ctx, logger, options)
 	if err != nil {
