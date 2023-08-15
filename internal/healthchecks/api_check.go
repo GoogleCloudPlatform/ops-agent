@@ -89,7 +89,19 @@ func monitoringPing(ctx context.Context, client monitoring.MetricClient, gceMeta
 		}},
 	}
 
-	return client.CreateTimeSeries(ctx, req)
+	err = client.CreateTimeSeries(ctx, req)
+	if apiErr, ok := err.(*apierror.APIError); ok {
+		// The monitoringPing will send an invalid data point
+		// to avoid writing data in customers environments. We are
+		// considering `InvalidArgument` as a success.
+		// This also fixes b/291631906 when the API Check is retried
+		// in a short window of time.
+		if apiErr.GRPCStatus().Code() == codes.InvalidArgument {
+			return nil
+		}
+	}
+
+	return err
 }
 
 func runLoggingCheck(logger logs.StructuredLogger) error {
@@ -169,10 +181,6 @@ func runMonitoringCheck(logger logs.StructuredLogger) error {
 			}
 
 			switch apiErr.GRPCStatus().Code() {
-			// The monitoringPing will send an invalid data point
-			// to avoid writing data in customers environments.
-			case codes.InvalidArgument:
-				return nil
 			case codes.PermissionDenied:
 				return MonApiPermissionErr
 			case codes.Unauthenticated:
