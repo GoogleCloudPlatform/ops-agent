@@ -23,4 +23,6 @@ metrics:
         - mssql_v2
 "
 
-Restart-Service google-cloud-ops-agent -Force
+Stop-Service google-cloud-ops-agent -Force
+Start-Service google-cloud-ops-agent*  
+
