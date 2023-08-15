@@ -1,0 +1,16 @@
+- module: logging
+  feature: service:pipelines
+  key: default_pipeline_overridden
+  value: "false"
+- module: metrics
+  feature: service:pipelines
+  key: default_pipeline_overridden
+  value: "false"
+- module: combined
+  feature: receivers:otlp
+  key: "[0].enabled"
+  value: "true"
+- module: combined
+  feature: receivers:otlp
+  key: "[0].metrics_mode"
+  value: googlecloudmonitoring

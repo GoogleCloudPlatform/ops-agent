@@ -1,0 +1,9 @@
+[21:29] cannot unmarshal string into Go struct field UnifiedConfig.Logging of type bool
+  18 |       type: files
+  19 |       include_paths:
+  20 |       - /path/to/log/1/*
+> 21 |       record_log_file_path: None
+                                   ^
+  22 |   service:
+  23 |     pipelines:
+  24 |       pipeline1:

@@ -1,0 +1,6 @@
+set -e
+
+# Run the bandwidthTest demo with a large range to create a process that uses 
+# GPU for a period that is longer than default collection interval of 60s
+/usr/local/cuda/extras/demo_suite/bandwidthTest --memory=pinned --mode=range \
+  --start=1024 --end=20480 --increment=1

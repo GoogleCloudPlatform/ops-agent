@@ -789,9 +789,16 @@ func determineImpactedApps(modifiedFiles []string, allApps map[string]metadata.I
 	return impactedApps
 }
 
+type accelerator struct {
+	model         string
+	machineType   string
+	availableZone string
+}
+
 type test struct {
 	platform   string
 	app        string
+	gpu        *accelerator
 	metadata   metadata.IntegrationMetadata
 	skipReason string
 }
@@ -808,6 +815,45 @@ var defaultApps = map[string]bool{
 	// Chosen because it is the most nontrivial Windows app currently
 	// implemented.
 	"active_directory_ds": true,
+}
+
+var gpuModels = map[string]accelerator{
+	// This is the A100 40G model; A100 80G is similar so skipping
+	"a100": {
+		model:         "nvidia-tesla-a100",
+		machineType:   "a2-highgpu-1g",
+		availableZone: "us-central1-a",
+	},
+	"v100": {
+		model:         "nvidia-tesla-v100",
+		machineType:   "n1-standard-2",
+		availableZone: "us-central1-a",
+	},
+	"t4": {
+		model:         "nvidia-tesla-t4",
+		machineType:   "n1-standard-2",
+		availableZone: "us-central1-a",
+	},
+	"p4": {
+		model:         "nvidia-tesla-p4",
+		machineType:   "n1-standard-2",
+		availableZone: "us-central1-a",
+	},
+	"p100": {
+		model:         "nvidia-tesla-p100",
+		machineType:   "n1-standard-2",
+		availableZone: "us-central1-c",
+	},
+	"k80": {
+		model:         "nvidia-tesla-k80",
+		machineType:   "n1-standard-2",
+		availableZone: "us-central1-a",
+	},
+	"l4": {
+		model:         "nvidia-l4",
+		machineType:   "g2-standard-4",
+		availableZone: "us-central1-a",
+	},
 }
 
 const (
@@ -876,9 +922,20 @@ func TestThirdPartyApps(t *testing.T) {
 	tests := []test{}
 	allApps := fetchAppsAndMetadata(t)
 	platforms := strings.Split(os.Getenv("PLATFORMS"), ",")
+
 	for _, platform := range platforms {
 		for app, metadata := range allApps {
-			tests = append(tests, test{platform: platform, app: app, metadata: metadata, skipReason: ""})
+			if len(metadata.GpuModels) > 0 {
+				for _, gpuModel := range metadata.GpuModels {
+					if gpu, ok := gpuModels[gpuModel]; !ok {
+						t.Fatalf("invalid gpu model name %s", gpuModel)
+					} else {
+						tests = append(tests, test{platform: platform, gpu: &gpu, app: app, metadata: metadata, skipReason: ""})
+					}
+				}
+			} else {
+				tests = append(tests, test{platform: platform, app: app, metadata: metadata, skipReason: ""})
+			}
 		}
 	}
 
@@ -888,7 +945,13 @@ func TestThirdPartyApps(t *testing.T) {
 	// Execute tests
 	for _, tc := range tests {
 		tc := tc // https://golang.org/doc/faq#closures_and_goroutines
-		t.Run(tc.platform+"/"+tc.app, func(t *testing.T) {
+
+		testName := tc.platform + "/" + tc.app
+		if tc.gpu != nil {
+			testName = testName + "/" + tc.gpu.model
+		}
+
+		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
 
 			if tc.skipReason != "" {
@@ -906,6 +969,15 @@ func TestThirdPartyApps(t *testing.T) {
 					Platform:             tc.platform,
 					MachineType:          agents.RecommendedMachineType(tc.platform),
 					ExtraCreateArguments: nil,
+				}
+				if tc.gpu != nil {
+					options.ExtraCreateArguments = append(
+						options.ExtraCreateArguments,
+						fmt.Sprintf("--accelerator=count=1,type=%s", tc.gpu.model),
+						"--maintenance-policy=TERMINATE")
+					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-size=100GB")
+					options.MachineType = tc.gpu.machineType
+					options.Zone = tc.gpu.availableZone
 				}
 				if tc.platform == SAPHANAPlatform {
 					// This image needs an SSD in order to be performant enough.

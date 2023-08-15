@@ -109,6 +109,7 @@ type IntegrationMetadata struct {
 	SupportedAppVersion          []string                      `yaml:"supported_app_version" validate:"required,unique,min=1"`
 	SupportedOperatingSystems    string                        `yaml:"supported_operating_systems" validate:"required,oneof=linux windows linux_and_windows"`
 	PlatformsToSkip              []string                      `yaml:"platforms_to_skip"`
+	GpuModels                    []string                      `yaml:"gpu_models"`
 	RestartAfterInstall          bool                          `yaml:"restart_after_install"`
 	Troubleshoot                 string                        `yaml:"troubleshoot" validate:"excludesall=‘’“”"`
 
