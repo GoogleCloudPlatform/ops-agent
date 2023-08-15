@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"cloud.google.com/go/logging"
 	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
@@ -56,7 +55,7 @@ func getGCEMetadata() (resourcedetector.GCEResource, error) {
 func monitoringPing(ctx context.Context, client monitoring.MetricClient, gceMetadata resourcedetector.GCEResource) error {
 	metricType := "agent.googleapis.com/agent/ops_agent/enabled_receivers"
 	unixZeroTimestamp := &timestamppb.Timestamp{
-		Seconds: time.Unix(0, 0).Unix(),
+		Seconds: int64(0),
 	}
 	value := &monitoringpb.TypedValue{
 		Value: &monitoringpb.TypedValue_Int64Value{
