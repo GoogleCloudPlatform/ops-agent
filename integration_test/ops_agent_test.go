@@ -4144,6 +4144,31 @@ func TestNoNvmlOtelReceiverWithoutGpu(t *testing.T) {
 	})
 }
 
+func TestRestartVM(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := gce.RestartInstance(ctx, logger, vm); err != nil {
+			t.Fatal(err)
+		}
+
+		cmdOut, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", getRecentServiceOutputForPlatform(vm.Platform))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
+	})
+}
+
 func TestMain(m *testing.M) {
 	code := m.Run()
 	gce.CleanupKeysOrDie()
