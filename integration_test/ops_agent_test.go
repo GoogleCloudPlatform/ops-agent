@@ -4144,6 +4144,36 @@ func TestNoNvmlOtelReceiverWithoutGpu(t *testing.T) {
 	})
 }
 
+// TestNoHealthCheckNetworkErrorAfterRestartVM
+func TestNoHealthCheckNetworkErrorAfterRestartVM(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		time.Sleep(60 * time.Second)
+		_, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, `jsonPayload.message=~"[Network Check] Result: ERROR"`, 5)
+		if err == nil {
+			t.Error("expected no logs to contain health check errors")
+		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		gce.RestartInstance(ctx, logger, vm)
+		time.Sleep(60 * time.Second)
+		_, err = gce.QueryLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, `jsonPayload.message=~"[Network Check] Result: ERROR"`, 5)
+		if err == nil {
+			t.Error("expected no logs to contain health check errors after reboot")
+		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+}
+
 func TestMain(m *testing.M) {
 	code := m.Run()
 	gce.CleanupKeysOrDie()
