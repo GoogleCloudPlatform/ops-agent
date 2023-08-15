@@ -51,11 +51,6 @@ minimum_supported_agent_version:
   metrics: 2.7.0
   logging: 2.4.0
 supported_operating_systems: linux
-# TODO: Fix errors and enable tests on all platforms.
-platforms_to_skip:
-  - centos-7 # apache_error: expected values for field jsonPayload.tid but got nil
-  - sles-12 # touch: cannot touch '/var/www/html/forbidden.html': No such file or directory
-  - sles-15 # touch: cannot touch '/var/www/html/forbidden.html': No such file or directory
 supported_app_version: ["2.4"]
 expected_metrics:
   - type: workload.googleapis.com/apache.current_connections
@@ -64,13 +59,18 @@ expected_metrics:
     monitored_resource: gce_instance
     labels:
       server_name: .*
-    representative: true
+    unavailable_on:
+      # https://github.com/GoogleCloudPlatform/ops-agent/issues/1173
+      - centos-7
+      - sles-12
+      - sles-15
   - type: workload.googleapis.com/apache.requests
     value_type: INT64
     kind: CUMULATIVE
     monitored_resource: gce_instance
     labels:
       server_name: .*
+    representative: true
   - type: workload.googleapis.com/apache.scoreboard
     value_type: INT64
     kind: GAUGE
@@ -166,6 +166,13 @@ expected_logs:
       - name: jsonPayload.tid
         type: string
         description: Thread ID
+        unavailable_on:
+          # Unavailable for the same reasons as current_connections,
+          # described in:
+          # https://github.com/GoogleCloudPlatform/ops-agent/issues/1173
+          - centos-7
+          - sles-12
+          - sles-15
       - name: severity
         type: string
         description: ''

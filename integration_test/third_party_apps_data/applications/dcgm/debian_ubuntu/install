@@ -1,0 +1,37 @@
+set -e
+
+sudo apt update
+kernel_version=`uname -r`
+sudo apt install -y linux-headers-${kernel_version} software-properties-common pciutils gcc make dkms
+
+BASE_URL=https://us.download.nvidia.com/tesla
+DEVICE_CODE=$(lspci -n | grep -Po '10de:[\w\d]{4}')
+case $DEVICE_CODE in
+    10de:102d)
+        # Install a specific version for NVIDIA Tesla K80
+        DRIVER_VERSION=460.106.00
+        ;;
+    *)
+        DRIVER_VERSION=525.60.13
+        ;;
+esac
+echo "Installing NVIDIA driver version $DRIVER_VERSION"
+curl -fSsl -O $BASE_URL/$DRIVER_VERSION/NVIDIA-Linux-x86_64-$DRIVER_VERSION.run
+
+sudo bash ./NVIDIA-Linux-x86_64-$DRIVER_VERSION.run --silent 
+
+# check NVIDIA driver installation succeeded
+nvidia-smi
+
+sudo apt-get -y install wget
+
+wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-keyring_1.0-1_all.deb
+sudo dpkg -i cuda-keyring_1.0-1_all.deb
+
+sudo apt-get update
+sudo apt-get install -y datacenter-gpu-manager
+sudo service nvidia-dcgm start
+
+# check DCGM service running and load profiling module
+dcgmi discovery --list
+dcgmi profile --resume
