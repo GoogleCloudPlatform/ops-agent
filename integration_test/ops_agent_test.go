@@ -4156,7 +4156,7 @@ func TestNoHealthCheckNetworkErrorAfterRestartVM(t *testing.T) {
 		}
 
 		time.Sleep(60 * time.Second)
-		_, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, `jsonPayload.message=~"[Network Check] Result: ERROR"`, 5)
+		_, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, `jsonPayload.message=~"\[Network Check\] Result: ERROR"`, 5)
 		if err == nil {
 			t.Error("expected no logs to contain health check errors")
 		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
