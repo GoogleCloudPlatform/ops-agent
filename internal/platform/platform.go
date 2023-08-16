@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/shirou/gopsutil/host"
 )
 
@@ -28,6 +29,7 @@ type Platform struct {
 	WinlogV1Channels   []string
 	HostInfo           *host.InfoStat
 	HasNvidiaGpu       bool
+	ResourceOverride   resourcedetector.Resource
 }
 
 type Type int
@@ -72,6 +74,12 @@ func detect() Platform {
 	}
 	p := Platform{
 		HostInfo: info,
+	}
+	if resourcedetector.OnBMS() {
+		p.ResourceOverride, err = resourcedetector.GetResource()
+		if err != nil {
+			log.Fatalf("failed to detect the resource: %v", err)
+		}
 	}
 	p.detectPlatform()
 	return p

@@ -25,6 +25,7 @@ import (
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/googleapis/gax-go/v2/apierror"
 	metricpb "google.golang.org/genproto/googleapis/api/metric"
 	"google.golang.org/genproto/googleapis/api/monitoredres"
@@ -38,14 +39,63 @@ const (
 	IamPermissionDenied          = "IAM_PERMISSION_DENIED"
 )
 
-const metricType = "agent.googleapis.com/agent/ops_agent/enabled_receivers"
+func getGCEMetadata() (resourcedetector.GCEResource, error) {
+	MetadataResource, err := resourcedetector.GetResource()
+	if err != nil {
+		return resourcedetector.GCEResource{}, fmt.Errorf("can't get resource metadata: %w", err)
+	}
+	if gceMetadata, ok := MetadataResource.(resourcedetector.GCEResource); ok {
+		return gceMetadata, nil
+	}
+	return resourcedetector.GCEResource{}, fmt.Errorf("not in GCE")
+}
+
+type resourceLabels struct {
+	project      string
+	resourceType string
+	labels       map[string]string
+}
+
+func getResourceLabels(ctx context.Context) (resourceLabels, error) {
+	p := platform.FromContext(ctx)
+	if p.ResourceOverride != nil {
+		r, ok := p.ResourceOverride.(resourcedetector.BMSResource)
+		if !ok {
+			return resourceLabels{}, errors.New("not in BMS")
+		}
+		return resourceLabels{
+			project:      r.Project,
+			resourceType: "baremetalsolution.googleapis.com/Instance",
+			labels: map[string]string{
+				"instance_id": r.InstanceID,
+				"location":    r.Location,
+			},
+		}, nil
+	}
+	r, err := getGCEMetadata()
+	if err != nil {
+		return resourceLabels{}, err
+	}
+	return resourceLabels{
+		project:      r.Project,
+		resourceType: "gce_instance",
+		labels: map[string]string{
+			"instance_id": r.InstanceID,
+			"zone":        r.Zone,
+		},
+	}, nil
+}
 
 // monitoringPing reports whether the client's connection to the monitoring service and the
 // authentication configuration are valid. To accomplish this, monitoringPing writes a
 // time series point with empty values to an Ops Agent specific metric.
 // This method mirrors the "(c *Client) Ping" method in "cloud.google.com/go/logging".
-func monitoringPing(ctx context.Context, client monitoring.MetricClient, resource resourcedetector.Resource) error {
-	var req *monitoringpb.CreateTimeSeriesRequest
+func monitoringPing(ctx context.Context, client monitoring.MetricClient) error {
+	rl, err := getResourceLabels(ctx)
+	if err != nil {
+		return err
+	}
+	metricType := "agent.googleapis.com/agent/ops_agent/enabled_receivers"
 	now := &timestamppb.Timestamp{
 		Seconds: time.Now().Unix(),
 	}
@@ -54,93 +104,39 @@ func monitoringPing(ctx context.Context, client monitoring.MetricClient, resourc
 			Int64Value: int64(0),
 		},
 	}
-	switch resource.GetType() {
-	case resourcedetector.BMS:
-		if bmsResource, ok := resource.(resourcedetector.BMSResource); ok {
-			req = createTimeSeriesRequestForBMS(now, value, bmsResource)
-		}
-	case resourcedetector.GCE:
-		if gceResource, ok := resource.(resourcedetector.GCEResource); ok {
-			req = createTimeSeriesRequestForGCE(now, value, gceResource)
-		}
-	default:
-		return fmt.Errorf("unrecognized platform")
+	req := &monitoringpb.CreateTimeSeriesRequest{
+		Name: "projects/" + rl.project,
+		TimeSeries: []*monitoringpb.TimeSeries{{
+			MetricKind: metricpb.MetricDescriptor_GAUGE,
+			ValueType:  metricpb.MetricDescriptor_INT64,
+			Metric: &metricpb.Metric{
+				Type: metricType,
+			},
+			Resource: &monitoredres.MonitoredResource{
+				Type:   rl.resourceType,
+				Labels: rl.labels,
+			},
+			Points: []*monitoringpb.Point{{
+				Interval: &monitoringpb.TimeInterval{
+					StartTime: now,
+					EndTime:   now,
+				},
+				Value: value,
+			}},
+		}},
 	}
+
 	return client.CreateTimeSeries(ctx, req)
 }
 
-func createTimeSeriesRequestForBMS(now *timestamppb.Timestamp, value *monitoringpb.TypedValue, bmsMetadata resourcedetector.BMSResource) *monitoringpb.CreateTimeSeriesRequest {
-	return &monitoringpb.CreateTimeSeriesRequest{
-		Name: "projects/" + bmsMetadata.Project,
-		TimeSeries: []*monitoringpb.TimeSeries{{
-			MetricKind: metricpb.MetricDescriptor_GAUGE,
-			ValueType:  metricpb.MetricDescriptor_INT64,
-			Metric: &metricpb.Metric{
-				Type: metricType,
-			},
-			Resource: &monitoredres.MonitoredResource{
-				Type: "baremetalsolution.googleapis.com/Instance",
-				Labels: map[string]string{
-					"instance_id": bmsMetadata.InstanceID,
-					"location":    bmsMetadata.Location,
-				},
-			},
-			Points: []*monitoringpb.Point{{
-				Interval: &monitoringpb.TimeInterval{
-					StartTime: now,
-					EndTime:   now,
-				},
-				Value: value,
-			}},
-		}},
-	}
-}
-
-func createTimeSeriesRequestForGCE(now *timestamppb.Timestamp, value *monitoringpb.TypedValue, gceMetadata resourcedetector.GCEResource) *monitoringpb.CreateTimeSeriesRequest {
-	return &monitoringpb.CreateTimeSeriesRequest{
-		Name: "projects/" + gceMetadata.Project,
-		TimeSeries: []*monitoringpb.TimeSeries{{
-			MetricKind: metricpb.MetricDescriptor_GAUGE,
-			ValueType:  metricpb.MetricDescriptor_INT64,
-			Metric: &metricpb.Metric{
-				Type: metricType,
-			},
-			Resource: &monitoredres.MonitoredResource{
-				Type: "gce_instance",
-				Labels: map[string]string{
-					"instance_id": gceMetadata.InstanceID,
-					"zone":        gceMetadata.Zone,
-				},
-			},
-			Points: []*monitoringpb.Point{{
-				Interval: &monitoringpb.TimeInterval{
-					StartTime: now,
-					EndTime:   now,
-				},
-				Value: value,
-			}},
-		}},
-	}
-}
-
-func runLoggingCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
+func runLoggingCheck(logger logs.StructuredLogger) error {
 	ctx := context.Background()
-	var project string
-	switch resource.GetType() {
-	case resourcedetector.BMS:
-		if bmsResource, ok := resource.(resourcedetector.BMSResource); ok {
-			project = bmsResource.Project
-		}
-	case resourcedetector.GCE:
-		if gceResource, ok := resource.(resourcedetector.GCEResource); ok {
-			project = gceResource.Project
-		}
-	default:
-		return fmt.Errorf("unrecognized platform")
+	rl, err := getResourceLabels(ctx)
+	if err != nil {
+		return err
 	}
-
 	// New Logging Client
-	logClient, err := logging.NewClient(ctx, project)
+	logClient, err := logging.NewClient(ctx, rl.project)
 	if err != nil {
 		return err
 	}
@@ -148,7 +144,7 @@ func runLoggingCheck(logger logs.StructuredLogger, resource resourcedetector.Res
 	logger.Infof("logging client was created successfully")
 
 	if err := logClient.Ping(ctx); err != nil {
-		logger.Infof(err.Error())
+		logger.Println(err)
 		var apiErr *apierror.APIError
 		if errors.As(err, &apiErr) {
 			switch apiErr.Reason() {
@@ -178,7 +174,7 @@ func runLoggingCheck(logger logs.StructuredLogger, resource resourcedetector.Res
 	return nil
 }
 
-func runMonitoringCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
+func runMonitoringCheck(logger logs.StructuredLogger) error {
 	ctx := context.Background()
 
 	// New Monitoring Client
@@ -189,7 +185,7 @@ func runMonitoringCheck(logger logs.StructuredLogger, resource resourcedetector.
 	defer monClient.Close()
 	logger.Infof("monitoring client was created successfully")
 
-	if err := monitoringPing(ctx, *monClient, resource); err != nil {
+	if err := monitoringPing(ctx, *monClient); err != nil {
 		logger.Infof(err.Error())
 		var apiErr *apierror.APIError
 		if errors.As(err, &apiErr) {
@@ -226,8 +222,8 @@ func (c APICheck) Name() string {
 	return "API Check"
 }
 
-func (c APICheck) RunCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
-	monErr := runMonitoringCheck(logger, resource)
-	logErr := runLoggingCheck(logger, resource)
+func (c APICheck) RunCheck(logger logs.StructuredLogger) error {
+	monErr := runMonitoringCheck(logger)
+	logErr := runLoggingCheck(logger)
 	return errors.Join(monErr, logErr)
 }

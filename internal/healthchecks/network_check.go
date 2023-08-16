@@ -15,12 +15,13 @@
 package healthchecks
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"time"
 
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/cenkalti/backoff/v4"
 )
 
@@ -62,7 +63,7 @@ func (r networkRequest) SendRequest(logger logs.StructuredLogger) error {
 }
 
 var (
-	requests = []networkRequest{
+	commonRequests = []networkRequest{
 		{
 			name:             "Logging API",
 			url:              "https://logging.googleapis.com/$discovery/rest",
@@ -87,6 +88,8 @@ var (
 			successMessage:   "Request to dl.google.com was successful.",
 			healthCheckError: DLApiConnErr,
 		},
+	}
+	gceRequests = []networkRequest{
 		{
 			name:             "GCE Metadata Server",
 			url:              "http://metadata.google.internal",
@@ -102,16 +105,18 @@ func (c NetworkCheck) Name() string {
 	return "Network Check"
 }
 
-func (c NetworkCheck) RunCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
+func (c NetworkCheck) RunCheck(logger logs.StructuredLogger) error {
 	var networkErrors []error
-
-	for _, r := range requests {
-		// Skip request to the GCE Metadata server if running on a BMS machine.
-		// BMS environment doesn't have Metadata servers.
-		if r.name == "GCE Metadata Server" && resource.GetType() == resourcedetector.BMS {
-			continue
-		}
+	ctx := context.Background()
+	p := platform.FromContext(ctx)
+	for _, r := range commonRequests {
 		networkErrors = append(networkErrors, r.SendRequest(logger))
 	}
+	if p.ResourceOverride == nil {
+		for _, r := range gceRequests {
+			networkErrors = append(networkErrors, r.SendRequest(logger))
+		}
+	}
+
 	return errors.Join(networkErrors...)
 }

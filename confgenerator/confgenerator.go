@@ -28,11 +28,8 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
-
-const BMSCloudPlatformAttribute = "gcp_bare_metal_solution"
 
 func googleCloudExporter(userAgent string, instrumentationLabels bool) otel.Component {
 	return otel.Component{
@@ -88,8 +85,7 @@ func googleManagedPrometheusExporter(userAgent string) otel.Component {
 	}
 }
 
-func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, res resourcedetector.Resource) (string, error) {
-	var skipResourceDetection bool
+func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context) (string, error) {
 	p := platform.FromContext(ctx)
 	userAgent, _ := p.UserAgent("Google-Cloud-Ops-Agent-Metrics")
 	metricVersionLabel, _ := p.VersionLabel("google-cloud-ops-agent-metrics")
@@ -128,22 +124,6 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, res resourcedet
 	if uc.Metrics.Service.LogLevel == "" {
 		uc.Metrics.Service.LogLevel = "info"
 	}
-	if res.GetType() == resourcedetector.BMS {
-		skipResourceDetection = true
-		for k, v := range receiverPipelines {
-			if k == "hostmetrics" {
-				if bmsMetadata, ok := res.(resourcedetector.BMSResource); ok {
-					v.Processors["metrics"] = append(v.Processors["metrics"], otel.ResourceAttribute(
-						otel.UpsertValue("cloud.platform", BMSCloudPlatformAttribute),
-						otel.UpsertValue("cloud.project", bmsMetadata.Project),
-						otel.UpsertValue("cloud.region", bmsMetadata.Location),
-						otel.UpsertValue("host.id", bmsMetadata.InstanceID),
-					))
-				}
-			}
-		}
-	}
-
 	otelConfig, err := otel.ModularConfig{
 		LogLevel:          uc.Metrics.Service.LogLevel,
 		ReceiverPipelines: receiverPipelines,
@@ -153,7 +133,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, res resourcedet
 			otel.OTel:   googleCloudExporter(userAgent, true),
 			otel.GMP:    googleManagedPrometheusExporter(userAgent),
 		},
-	}.Generate(skipResourceDetection)
+	}.Generate(ctx)
 	if err != nil {
 		return "", err
 	}

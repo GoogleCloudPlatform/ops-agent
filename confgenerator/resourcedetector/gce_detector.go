@@ -14,26 +14,6 @@
 
 package resourcedetector
 
-type resourceAttribute int
-
-const (
-	project resourceAttribute = iota
-	zone
-	network
-	subnetwork
-	publicIP
-	privateIP
-	instanceID
-	instanceName
-	tags
-	machineType
-	metadata
-	label
-	interfaceIPv4
-	defaultScopes
-	location
-)
-
 func GetGCEResource() (Resource, error) {
 	provider := NewGCEMetadataProvider()
 	dt := GCEResourceBuilder{provider: provider}
@@ -104,8 +84,8 @@ type GCEResource struct {
 	InterfaceIPv4 map[string]string
 }
 
-func (GCEResource) GetType() ResourceType {
-	return GCE
+func (GCEResource) GetType() string {
+	return "gce"
 }
 
 type GCEResourceBuilderInterface interface {

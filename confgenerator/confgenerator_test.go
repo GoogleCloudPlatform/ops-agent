@@ -57,29 +57,6 @@ var winlogv1channels = []string{
 }
 
 var (
-	GCEResource = resourcedetector.GCEResource{
-		Project:       "test-project",
-		Zone:          "test-zone",
-		Network:       "test-network",
-		Subnetwork:    "test-subnetwork",
-		PublicIP:      "test-public-ip",
-		PrivateIP:     "test-private-ip",
-		InstanceID:    "test-instance-id",
-		InstanceName:  "test-instance-name",
-		Tags:          "test-tag",
-		MachineType:   "test-machine-type",
-		Metadata:      map[string]string{"test-key": "test-value", "test-escape": "${foo:bar}"},
-		Label:         map[string]string{"test-label-key": "test-label-value"},
-		InterfaceIPv4: map[string]string{"test-interface": "test-interface-ipv4"},
-	}
-	BMSResource = resourcedetector.BMSResource{
-		Project:    "test-bms-project",
-		Location:   "test-bms-location",
-		InstanceID: "test-bms-instance-id",
-	}
-)
-
-var (
 	testPlatforms = []platformConfig{
 		{
 			name:            "linux",
@@ -106,6 +83,24 @@ var (
 					PlatformVersion: "linux_platform_version",
 				},
 				HasNvidiaGpu: true,
+			},
+		},
+		{
+			name:            "linux-bms",
+			defaultLogsDir:  "/var/log/google-cloud-ops-agent",
+			defaultStateDir: "/var/lib/google-cloud-ops-agent/fluent-bit",
+			platform: platform.Platform{
+				Type: platform.Linux,
+				HostInfo: &host.InfoStat{
+					OS:              "linux",
+					Platform:        "linux_platform",
+					PlatformVersion: "linux_platform_version",
+				},
+				ResourceOverride: resourcedetector.BMSResource{
+					Project:    "test-bms-project",
+					InstanceID: "test-bms-instance",
+					Location:   "test-bms-location",
+				},
 			},
 		},
 		{
@@ -143,12 +138,8 @@ var (
 
 func TestGoldens(t *testing.T) {
 	t.Parallel()
-	var goldensDir string
-	if confgenerator.MetadataResource.GetType() == resourcedetector.BMS {
-		goldensDir = "goldensBMS"
-	} else {
-		goldensDir = "goldens"
-	}
+
+	goldensDir := "goldens"
 	testNames := getTestsInDir(t, goldensDir)
 
 	for _, testName := range testNames {
@@ -236,7 +227,7 @@ func generateConfigs(pc platformConfig, testDir string) (got map[string]string, 
 	}
 
 	// Otel configs
-	otelGeneratedConfig, err := uc.GenerateOtelConfig(ctx, confgenerator.MetadataResource)
+	otelGeneratedConfig, err := uc.GenerateOtelConfig(ctx)
 	if err != nil {
 		return
 	}
@@ -329,36 +320,33 @@ func testGeneratedFiles(t *testing.T, generatedFiles map[string]string, testDir 
 }
 
 func TestMain(m *testing.M) {
-	var r int
-
-	// Enable experimental features here by calling:
-	//	 os.Setenv("EXPERIMENTAL_FEATURES", "...(comma-separated feature list)...")
-
-	testResources := []struct {
-		name         string
-		testResource resourcedetector.Resource
-	}{
-		{
-			name:         "GCE Resource",
-			testResource: GCEResource,
-		},
-		{
-			name:         "BMS Resource",
-			testResource: BMSResource,
-		},
-	}
 	// Hardcode the path to the JMX JAR to make tests repeatable.
 	confgenerator.FindJarPath = func() (string, error) {
 		return "/path/to/executables/opentelemetry-java-contrib-jmx-metrics.jar", nil
 	}
-	for _, t := range testResources {
-		fmt.Printf("============= Running all tests for %v =============\n", t.name)
-		// Set up the test environment with mocked data.
-		confgenerator.MetadataResource = t.testResource
-		// Run test suite.
-		if thisr := m.Run(); r == 0 {
-			r = thisr // We'll always remember the first time r is non-zero
-		}
+	os.Exit(m.Run())
+}
+
+func init() {
+	testResource := resourcedetector.GCEResource{
+		Project:       "test-project",
+		Zone:          "test-zone",
+		Network:       "test-network",
+		Subnetwork:    "test-subnetwork",
+		PublicIP:      "test-public-ip",
+		PrivateIP:     "test-private-ip",
+		InstanceID:    "test-instance-id",
+		InstanceName:  "test-instance-name",
+		Tags:          "test-tag",
+		MachineType:   "test-machine-type",
+		Metadata:      map[string]string{"test-key": "test-value", "test-escape": "${foo:bar}"},
+		Label:         map[string]string{"test-label-key": "test-label-value"},
+		InterfaceIPv4: map[string]string{"test-interface": "test-interface-ipv4"},
 	}
-	os.Exit(r)
+
+	// Set up the test environment with mocked data.
+	confgenerator.MetadataResource = testResource
+
+	// Enable experimental features here by calling:
+	//	 os.Setenv("EXPERIMENTAL_FEATURES", "...(comma-separated feature list)...")
 }

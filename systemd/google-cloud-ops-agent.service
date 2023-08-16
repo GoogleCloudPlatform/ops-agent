@@ -19,7 +19,6 @@ After=network-online.target
 
 [Service]
 Type=oneshot
-EnvironmentFile=-/etc/default/google-cloud-ops-agent
 # Validate the config.
 ExecStartPre=@PREFIX@/libexec/google_cloud_ops_agent_engine -in @SYSCONFDIR@/google-cloud-ops-agent/config.yaml
 ExecStart=/bin/true

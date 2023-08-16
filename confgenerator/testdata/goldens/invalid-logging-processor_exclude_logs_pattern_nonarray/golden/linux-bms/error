@@ -1,0 +1,9 @@
+[19:18] string was used where sequence is expected
+  16 |   processors:
+  17 |     processor_1:
+  18 |       type: exclude_logs
+> 19 |       match_any: jsonPayload.message = "message"
+                        ^
+  20 |   service:
+  21 |     pipelines:
+  22 |       default_pipeline:

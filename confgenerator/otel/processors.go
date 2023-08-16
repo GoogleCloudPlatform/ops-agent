@@ -388,21 +388,21 @@ func GCPResourceDetector(override bool) Component {
 }
 
 // ResourceAttribute returns a Component that applies changes on resource attributes.
-func ResourceAttribute(metrics ...map[string]interface{}) Component {
-	return Component{
-		Type: "resource",
-		Config: map[string]interface{}{
-			"attributes": metrics,
-		},
+func AddResourceAttributes(attributes map[string]string) map[string]interface{} {
+	a := []map[string]interface{}{}
+	keys := make([]string, 0, len(attributes))
+	for k := range attributes {
+		keys = append(keys, k)
 	}
-}
-
-// UpsertValue returns a config snippet that performs upsert action.
-func UpsertValue(key, value string) map[string]interface{} {
-	out := map[string]interface{}{
-		"key":    key,
-		"value":  value,
-		"action": "upsert",
+	sort.Strings(keys)
+	for _, v := range keys {
+		a = append(a, map[string]interface{}{
+			"key":    v,
+			"value":  attributes[v],
+			"action": "upsert",
+		})
 	}
-	return out
+	return map[string]interface{}{
+		"attributes": a,
+	}
 }
