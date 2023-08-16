@@ -3603,12 +3603,6 @@ func TestOTLPMetricsGCM(t *testing.T) {
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
 		ctx, logger, vm := agents.CommonSetup(t, platform)
-
-		// Turn on the otlp feature gate.
-		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "otlp_receiver"}); err != nil {
-			t.Fatal(err)
-		}
-
 		otlpConfig := `
 combined:
   receivers:
@@ -3714,12 +3708,6 @@ func TestOTLPMetricsGMP(t *testing.T) {
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
 		ctx, logger, vm := agents.CommonSetup(t, platform)
-
-		// Turn on the otlp feature gate.
-		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "otlp_receiver"}); err != nil {
-			t.Fatal(err)
-		}
-
 		otlpConfig := `
 combined:
   receivers:
@@ -3818,12 +3806,6 @@ func TestOTLPTraces(t *testing.T) {
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
 		ctx, logger, vm := agents.CommonSetup(t, platform)
-
-		// Turn on the otlp feature gate.
-		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "otlp_receiver"}); err != nil {
-			t.Fatal(err)
-		}
-
 		otlpConfig := `
 combined:
   receivers:
@@ -4057,7 +4039,6 @@ func TestParsingFailureCheck(t *testing.T) {
 	})
 }
 
-
 func TestBufferLimitSizeOpsAgent(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
@@ -4137,6 +4118,29 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
 			t.Fatal(err)
 		}
 
+	})
+}
+
+// TestNoNvmlOtelReceiverWithoutGpu check to make sure that Ops Agent's
+// hostmetrics receiver does not generate a nvml otel receiver on VMs without
+// GPU, by checking the absence of nvml logs from otel
+func TestNoNvmlOtelReceiverWithoutGpu(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		time.Sleep(60 * time.Second)
+		_, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, "syslog", time.Hour, `jsonPayload.message=~"Nvidia|nvml"`, 5)
+		if err == nil {
+			t.Error("expected no logs to contain Nvidia or nvml when the instance has no gpu")
+		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
+			t.Fatalf("unexpected error: %v", err)
+		}
 	})
 }
 

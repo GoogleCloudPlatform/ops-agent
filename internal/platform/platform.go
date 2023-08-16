@@ -27,6 +27,7 @@ type Platform struct {
 	WindowsBuildNumber string
 	WinlogV1Channels   []string
 	HostInfo           *host.InfoStat
+	HasNvidiaGpu       bool
 }
 
 type Type int

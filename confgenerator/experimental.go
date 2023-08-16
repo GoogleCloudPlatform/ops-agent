@@ -22,9 +22,18 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-var requiredFeatureForType = map[string]string{
-	"otlp": "otlp_receiver",
-}
+// requiredFeatureForType maps a component type to a feature that must
+// be enabled (via EXPERIMENTAL_FEATURES) in order to use that component
+// in an Ops Agent configuration.
+// For example, the following would require the user to define the
+// "otlp_receiver" feature flag inside EXPERIMENTAL_FEATURES in order to
+// be able to use the "otlp" combined receiver:
+//
+//	"otlp": "otlp_receiver"
+//
+// N.B. There are no enforced feature flags today, so this map is
+// intentionally left empty.
+var requiredFeatureForType = map[string]string{}
 
 func IsExperimentalFeatureEnabled(feature string) bool {
 	enabledList := strings.Split(os.Getenv("EXPERIMENTAL_FEATURES"), ",")
