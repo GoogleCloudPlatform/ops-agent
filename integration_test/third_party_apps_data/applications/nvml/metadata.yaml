@@ -35,9 +35,9 @@ platforms_to_skip:
   - sles-12
   - sles-15
   - ubuntu-2304-amd64
-gpu_models: 
+gpu_models:
   - a100
-  - v100 
+  - v100
   - p4
   - t4
   - p100
@@ -74,7 +74,7 @@ expected_metrics:
       process: .*
       command: .*
       command_line: .*
-      owner: .* 
+      owner: .*
   - type: agent.googleapis.com/gpu/processes/max_bytes_used
     value_type: INT64
     kind: GAUGE
@@ -87,10 +87,10 @@ expected_metrics:
       process: .*
       command: .*
       command_line: .*
-      owner: .* 
+      owner: .*
 configuration_options:
   metrics:
-    - type: hostmetrics 
+    - type: hostmetrics
       fields:
         - name: type
           default: null
@@ -98,3 +98,5 @@ configuration_options:
         - name: collection_interval
           default: 60s
           description: A time.Duration value, such as 30s or 5m.
+minimum_supported_agent_version:
+  metrics: 2.38.0
