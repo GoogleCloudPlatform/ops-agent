@@ -1037,8 +1037,8 @@ func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map
 func addFrameworkLabels(inputLabels map[string]string) (map[string]string, error) {
 	labelsCopy := map[string]string{
 		// Attach labels to automate cleanup
-		"env": "test",
-		"ttl": "180", // minutes
+		// "env": "test",
+		// "ttl": "180", // minutes
 	}
 
 	for k, v := range inputLabels {

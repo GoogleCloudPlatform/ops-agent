@@ -253,18 +253,68 @@ func runCustomScripts(ctx context.Context, vm *gce.VM, logger *logging.Directory
 	return nil
 }
 
+type accelerator struct {
+	model         string
+	machineType   string
+	availableZone string
+}
+
+var gpuModels = map[string]accelerator{
+	// This is the A100 40G model; A100 80G is similar so skipping
+	"a100": {
+		model:         "nvidia-tesla-a100",
+		machineType:   "a2-highgpu-1g",
+		availableZone: "us-east4-b",
+	},
+	"v100": {
+		model:         "nvidia-tesla-v100",
+		machineType:   "n1-standard-2",
+		availableZone: "us-east4-b",
+	},
+	"t4": {
+		model:         "nvidia-tesla-t4",
+		machineType:   "n1-standard-2",
+		availableZone: "us-east4-b",
+	},
+	"p4": {
+		model:         "nvidia-tesla-p4",
+		machineType:   "n1-standard-2",
+		availableZone: "us-east4-b",
+	},
+	"p100": {
+		model:         "nvidia-tesla-p100",
+		machineType:   "n1-standard-2",
+		availableZone: "us-east4-b",
+	},
+	"k80": {
+		model:         "nvidia-tesla-k80",
+		machineType:   "n1-standard-2",
+		availableZone: "us-east4-b",
+	},
+	"l4": {
+		model:         "nvidia-l4",
+		machineType:   "g2-standard-4",
+		availableZone: "us-east4-b",
+	},
+}
+
 func createInstance(ctx context.Context, config *Config, logger *log.Logger) (*gce.VM, error) {
-	args := []string{}
+	gpu := gpuModels["t4"] // I change this manually to create vms with different gpus
+	args := []string{
+		fmt.Sprintf("--accelerator=count=1,type=%s", gpu.model),
+		"--maintenance-policy=TERMINATE",
+		"--boot-disk-size=100GB",
+	}
 	if config.ServiceAccount != "" {
 		args = append(args, "--service-account="+config.ServiceAccount)
 	}
 
 	options := gce.VMOptions{
 		Platform:             config.Platform,
-		MachineType:          agents.RecommendedMachineType(config.Platform),
+		MachineType:          gpu.machineType,
 		Name:                 config.Name,
 		Project:              config.Project,
-		Zone:                 config.Zone,
+		Zone:                 gpu.availableZone,
 		ExtraCreateArguments: args,
 	}
 
@@ -296,16 +346,11 @@ func main() {
 	if err != nil {
 		log.Default().Fatalf("Failed to create GCE instance %v", err)
 	}
-	// Install Ops Agent on VM.
-	log.Default().Printf("Installing Ops Agent, check %s for details", mainLogFile)
-	if err := setupOpsAgent(ctx, vm, logger.ToMainLog(), config.ConfigFilePath); err != nil {
-		log.Default().Fatalf("Failed to install Ops Agent %v", err)
-	}
 
 	// Install Third Party Appliations based on Ops Agent Config.
 	log.Default().Printf("Installing Third Party Applications, check %s for details", mainLogFile)
 	receivers, err := getReceiversFromConfig(ctx, vm, logger, config.ConfigFilePath)
-
+	log.Default().Print(receivers)
 	if err != nil {
 		log.Default().Fatalf("Error reading config file: %v", err)
 	}
