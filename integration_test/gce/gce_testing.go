@@ -1066,7 +1066,7 @@ func getVMPlatform(image string, platform string) (string, error) {
 		return platform, nil
 	}
 
-	return "", fmt.Errorf("Atleast one of image or platform must be specified.")
+	return "", errors.New("at least one of image or platform must be specified")
 }
 
 // attemptCreateInstance creates a VM instance and waits for it to be ready.
