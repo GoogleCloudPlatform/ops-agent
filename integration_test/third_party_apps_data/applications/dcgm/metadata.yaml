@@ -106,3 +106,5 @@ configuration_options:
         - name: endpoint
           default: localhost:5555
           description: The DCGM service endpoint specified as 'hostname:port'
+minimum_supported_agent_version:
+  metrics: 2.38.0
