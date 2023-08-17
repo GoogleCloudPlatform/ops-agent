@@ -14,8 +14,8 @@
 
 [Unit]
 Description=Google Cloud Ops Agent
-Wants=google-cloud-ops-agent-fluent-bit.service google-cloud-ops-agent-opentelemetry-collector.service google-cloud-ops-agent-diagnostics.service NetworkManager.service wicked.service
-After=NetworkManager.service wicked.service
+Wants=google-cloud-ops-agent-fluent-bit.service google-cloud-ops-agent-opentelemetry-collector.service google-cloud-ops-agent-diagnostics.service network-online.target
+After=network-online.target
 
 [Service]
 Type=oneshot
