@@ -222,7 +222,7 @@ func getConfigFromYaml(configPath string) (*Config, error) {
 func parseMetadataImage(name string) (string, string, string, error) {
 	components := strings.Split(name, "/")
 	if len(components) < 5 {
-		return "", "", "", fmt.Errorf("image name from metadata must be of format 'projects/debian-cloud/global/images/debian-11-bullseye-v20230711' ")
+		return "", "", "", errors.New("image name from metadata must be of format 'projects/debian-cloud/global/images/debian-11-bullseye-v20230711'")
 	}
 	imgProject := components[1]
 	scope := components[2]
