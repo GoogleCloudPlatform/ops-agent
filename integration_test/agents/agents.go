@@ -31,6 +31,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
@@ -174,10 +175,12 @@ var (
 // All the commands run and their output are dumped to various files in the
 // directory managed by the given DirectoryLogger.
 func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) {
+	logger.ToMainLog().Print("Collecting diagnostic files (logs etc) for the Ops Agent...")
 	if gce.IsWindows(vm.Platform) {
 		runOpsAgentDiagnosticsWindows(ctx, logger, vm)
 		return
 	}
+
 	gce.RunRemotely(ctx, logger.ToFile("systemctl_status_for_ops_agent.txt"), vm, "", "sudo systemctl status google-cloud-ops-agent*")
 
 	gce.RunRemotely(ctx, logger.ToFile("journalctl_output.txt"), vm, "", "sudo journalctl -xe")
@@ -188,12 +191,25 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 		"/etc/google-cloud-ops-agent/config.yaml",
 		"/var/log/google-cloud-ops-agent/subagents/logging-module.log",
 		"/var/log/google-cloud-ops-agent/subagents/metrics-module.log",
-		"/run/google-cloud-ops-agent-fluent-bit/fluent_bit_main.conf",
-		"/run/google-cloud-ops-agent-fluent-bit/fluent_bit_parser.conf",
 		"/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml",
 	} {
 		_, basename := path.Split(log)
 		gce.RunRemotely(ctx, logger.ToFile(basename+txtSuffix), vm, "", "sudo cat "+log)
+	}
+
+	// Capture all files beneath /run/google-cloud-ops-agent-fluent-bit
+	fluentBitDir := "/run/google-cloud-ops-agent-fluent-bit"
+	output, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", fmt.Sprintf("find '%s' -type f", fluentBitDir))
+	if err != nil {
+		return
+	}
+	// Example remotePath: "/run/google-cloud-ops-agent-fluent-bit/fluent_bit_main.conf"
+	for _, remotePath := range strings.Split(strings.TrimSpace(output.Stdout), "\n") {
+		// Example relativePath: "fluent_bit_main.conf"
+		relativePath := strings.TrimPrefix(remotePath, fluentBitDir+"/")
+		// Example localPath: "fluent-bit/fluent_bit_main.conf.txt"
+		localPath := path.Join("fluent-bit", relativePath+txtSuffix)
+		gce.RunRemotely(ctx, logger.ToFile(localPath), vm, "", fmt.Sprintf("sudo cat '%s'", remotePath))
 	}
 }
 
@@ -205,20 +221,32 @@ func runOpsAgentDiagnosticsWindows(ctx context.Context, logger *logging.Director
 	gce.RunRemotely(ctx, logger.ToFile("ops_agent_logs.txt"), vm, "", "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent' } | Format-Table -AutoSize -Wrap")
 	gce.RunRemotely(ctx, logger.ToFile("ops_agent_diagnostics_logs.txt"), vm, "", "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent-diagnostics' } | Format-Table -AutoSize -Wrap")
 	gce.RunRemotely(ctx, logger.ToFile("open_telemetry_agent_logs.txt"), vm, "", "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent-opentelemetry-collector' } | Format-Table -AutoSize -Wrap")
-	// Fluent-Bit has not implemented exporting logs to the Windows event log yet.
-	gce.RunRemotely(ctx, logger.ToFile("fluent_bit_agent_logs.txt"), vm, "", fmt.Sprintf("Get-Content -Path '%s' -Raw", `C:\ProgramData\Google\Cloud Operations\Ops Agent\log\logging-module.log`))
-	gce.RunRemotely(ctx, logger.ToFile("health-checks.txt"), vm, "", fmt.Sprintf("Get-Content -Path '%s' -Raw", `C:\ProgramData\Google\Cloud Operations\Ops Agent\log\health-checks.log`))
+	gce.RunRemotely(ctx, logger.ToFile("health-checks.log.txt"), vm, "", fmt.Sprintf("Get-Content -Path '%s' -Raw", `C:\ProgramData\Google\Cloud Operations\Ops Agent\log\health-checks.log`))
 
 	for _, conf := range []string{
 		`C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml`,
-		`C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\fluentbit\fluent_bit_main.conf`,
-		`C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\fluentbit\fluent_bit_parser.conf`,
 		`C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\otel\otel.yaml`,
 	} {
 		pathParts := strings.Split(conf, `\`)
 		basename := pathParts[len(pathParts)-1]
 		gce.RunRemotely(ctx, logger.ToFile(basename+txtSuffix), vm, "", fmt.Sprintf("Get-Content -Path '%s' -Raw", conf))
 	}
+
+	// Directory to hold Fluent-Bit logs and generated files.
+	localFluentBitDir := "fluent-bit"
+
+	// Capture Fluent-Bit generated files.
+	fluentBitDir := `C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\fluentbit`
+	output, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", fmt.Sprintf(`Get-ChildItem -Path '%s' -Name -File -Recurse`, fluentBitDir))
+	if err != nil {
+		return
+	}
+	for _, remotePath := range strings.Split(strings.TrimSpace(output.Stdout), "\r\n") {
+		localPath := filepath.ToSlash(remotePath)
+		gce.RunRemotely(ctx, logger.ToFile(path.Join(localFluentBitDir, localPath+txtSuffix)), vm, "", fmt.Sprintf(`Get-Content -Path '%s\%s' -Raw`, fluentBitDir, remotePath))
+	}
+	// Fluent-Bit has not implemented exporting logs to the Windows event log yet.
+	gce.RunRemotely(ctx, logger.ToFile("logging-module.log.txt"), vm, "", fmt.Sprintf("Get-Content -Path '%s' -Raw", `C:\ProgramData\Google\Cloud Operations\Ops Agent\log\logging-module.log`))
 }
 
 // WaitForUptimeMetrics waits for the given uptime metrics to be visible in
