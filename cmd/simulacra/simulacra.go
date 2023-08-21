@@ -20,11 +20,12 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
@@ -143,7 +144,7 @@ func installApps(ctx context.Context, vm *gce.VM, logger *logging.DirectoryLogge
 	}
 
 	for _, app := range receivers {
-		if scriptContent, err := os.ReadFile(path.Join(installPath, "applications", app, folder, "install")); err == nil {
+		if scriptContent, err := os.ReadFile(filepath.Join(installPath, "applications", app, folder, "install")); err == nil {
 			logger.ToMainLog().Printf("Installing %s to VM", app)
 			log.Default().Printf("Installing %s to VM", app)
 			if _, err := gce.RunScriptRemotely(ctx, logger, vm, string(scriptContent), nil, make(map[string]string)); err != nil {
@@ -223,7 +224,7 @@ func getConfigFromYaml(configPath string) (*Config, error) {
 func parseImageFromMetadata(name string) (string, string, string, error) {
 	components := strings.Split(name, "/")
 	if len(components) < 5 {
-		return "", "", "", errors.New("image name from metadata must be of format 'projects/debian-cloud/global/images/debian-11-bullseye-v20230711'")
+		return "", "", "", errors.New("image name from metadata must be of format 'projects/debian-cloud/global/images/debian-11-bullseye-v20230711' ")
 	}
 	imgProject := components[1]
 	scope := components[2]
@@ -253,7 +254,7 @@ func getConfigFromDiagnosticOutput(outputDir string) (*Config, error) {
 		Image string `json:"image"`
 	}
 
-	metadataFile, err := os.ReadFile(path.Join(outputDir, "vm_config.json"))
+	metadataFile, err := os.ReadFile(filepath.Join(outputDir, "vm_config.json"))
 	if err != nil {
 		return nil, err
 	}
@@ -278,7 +279,7 @@ func getConfigFromDiagnosticOutput(outputDir string) (*Config, error) {
 		ImageFamily:        imgFamily,
 	}
 
-	configFilePath := path.Join(outputDir, "google-cloud-ops-agent", "config.yaml")
+	configFilePath := filepath.Join(outputDir, "google-cloud-ops-agent", "config.yaml")
 	if _, err := os.Stat(configFilePath); err == nil {
 		config.ConfigFilePath = configFilePath
 	}
@@ -371,9 +372,9 @@ func createInstance(ctx context.Context, config *Config, logger *log.Logger) (*g
 }
 
 func main() {
-	loggingDir := path.Join("/tmp", fmt.Sprintf("simulacra-%s", uuid.NewString()))
-	mainLogFile := path.Join(loggingDir, "main_log.txt")
-	vmInitLogFile := path.Join(loggingDir, vmInitLogFileName)
+	loggingDir := filepath.Join("/tmp", fmt.Sprintf("simulacra-%s", uuid.NewString()))
+	mainLogFile := filepath.Join(loggingDir, "main_log.txt")
+	vmInitLogFile := filepath.Join(loggingDir, vmInitLogFileName)
 	logger, err := logging.NewDirectoryLogger(loggingDir)
 	if err != nil {
 		log.Default().Fatalf("Error initializing directory logger %v", err)
