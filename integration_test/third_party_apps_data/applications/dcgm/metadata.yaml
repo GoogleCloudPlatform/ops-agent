@@ -13,11 +13,11 @@
 # limitations under the License.
 
 app_url: "https://docs.nvidia.com/datacenter/dcgm/latest/user-guide/index.html"
-short_name: dcgm
-long_name: dcgm
+short_name: NVIDIA DCGM
+long_name: NVIDIA DataCenter GPU Manager (DCGM)
 logo_path: /images/partners/todo.png # supplied by google technical writer
 description: |-
-  The NVIDIA DataCenter GPU Manager (or DCGM) integration collects advanced GPU metrics,
+  The NVIDIA DataCenter GPU Manager (DCGM) integration collects advanced GPU metrics,
   including SM block utilization, Pipe utilization, PCIe and NVLink traffic.
 configure_integration: |-
   You must install DCGM and run the DCGM daemon service. 
