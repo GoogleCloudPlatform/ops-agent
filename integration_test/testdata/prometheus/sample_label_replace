@@ -1,0 +1,3 @@
+# HELP test_metric A metric that is used to test relabel configs using capture groups.
+# TYPE test_metric gauge
+test_metric{test_label="capture@group"} 1
