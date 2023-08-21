@@ -1474,7 +1474,8 @@ sudo zypper --non-interactive refresh test-vendor`
 
 		// Overwrite repoSetupCmd with the same command except GPG checks are disabled.
 		// TODO(b/260849189): Remove this workaround once the Cloud Rapture keys are fixed.
-		repoSetupCmd = `sudo zypper --non-interactive addrepo --no-gpgcheck -t YUM https://packages.cloud.google.com/yum/repos/` + repo + ` test-vendor
+		// TODO(b/296860728): Remove this once the bug is fixed
+		repoSetupCmd = `sudo zypper --non-interactive addrepo --no-gpgcheck -t YUM https://us-yum.pkg.dev/projects/cloud-ops-agents-artifacts-dev/` + repo + ` test-vendor
 sudo zypper --non-interactive refresh test-vendor`
 	}
 
