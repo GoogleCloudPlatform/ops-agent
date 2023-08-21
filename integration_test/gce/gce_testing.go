@@ -1468,8 +1468,8 @@ func InstallGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) erro
 		if strings.HasPrefix(vm.Platform, "sles-15") {
 			repo = "google-cloud-monitoring-sles15-" + repoArch + "-test-vendor"
 		}
-		// TODO: Replace us-yum.pkg.dev packages.cloud.google.com once b/296860728
-		// is fixed.
+		// TODO: Replace us-yum.pkg.dev with packages.cloud.google.com once
+		// b/296860728 is fixed.
 		repoSetupCmd = `sudo zypper --non-interactive addrepo -g -t YUM https://us-yum.pkg.dev/projects/cloud-ops-agents-artifacts-dev/` + repo + ` test-vendor
 sudo rpm --import https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
 sudo zypper --non-interactive refresh test-vendor`
