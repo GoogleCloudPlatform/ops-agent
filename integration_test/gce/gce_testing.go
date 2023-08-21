@@ -1460,7 +1460,7 @@ func InstallGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) erro
 	if strings.HasPrefix(vm.Platform, "sles-") {
 		// Use a vendored repo to reduce flakiness of the external repos.
 		// See http://go/sdi/releases/build-test-release/vendored for details.
-		repoArch := "x86_64"
+		repoArch := "x86-64"
 		if IsARM(vm.Platform) {
 			repoArch = "aarch64"
 		}
