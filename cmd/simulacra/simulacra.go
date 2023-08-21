@@ -17,6 +17,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"flag"
@@ -219,7 +220,7 @@ func getConfigFromYaml(configPath string) (*Config, error) {
 
 // Parse the metadata image name with format 'projects/debian-cloud/global/images/debian-11-bullseye-v20230711'
 // and return the scope and image name.
-func parseMetadataImage(name string) (string, string, string, error) {
+func parseImageFromMetadata(name string) (string, string, string, error) {
 	components := strings.Split(name, "/")
 	if len(components) < 5 {
 		return "", "", "", errors.New("image name from metadata must be of format 'projects/debian-cloud/global/images/debian-11-bullseye-v20230711'")
@@ -228,6 +229,23 @@ func parseMetadataImage(name string) (string, string, string, error) {
 	scope := components[2]
 	image := components[4]
 	return imgProject, scope, image, nil
+}
+
+// Returns the image project, scope, image and image family.
+// If the image name in the metadata file starts with the
+// prefix, "/projects", the value is parsed for the project, scope, image.
+// Otherwise, we ask for the image family from the user using command line input.
+func getImageInfo(name string) (string, string, string, string, error) {
+	if strings.HasPrefix(name, "/projects") {
+		imgProject, scope, image, err := parseImageFromMetadata(name)
+		return imgProject, scope, image, "", err
+	}
+
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print("Unable to identify image family, Enter Image Family: ")
+	text, err := reader.ReadString('\n')
+	return "", "", "", text, err
+
 }
 
 func getConfigFromDiagnosticOutput(outputDir string) (*Config, error) {
@@ -245,7 +263,7 @@ func getConfigFromDiagnosticOutput(outputDir string) (*Config, error) {
 		return nil, err
 	}
 
-	imgProject, scope, image, err := parseMetadataImage(metadata.Image)
+	imgProject, scope, image, imgFamily, err := getImageInfo(metadata.Image)
 
 	if err != nil {
 		return nil, err
@@ -257,6 +275,7 @@ func getConfigFromDiagnosticOutput(outputDir string) (*Config, error) {
 		ImageFamilyScope:   scope,
 		ThirdPartyAppsPath: defaultThirdPartyAppsPath,
 		ImageProject:       imgProject,
+		ImageFamily:        imgFamily,
 	}
 
 	configFilePath := path.Join(outputDir, "google-cloud-ops-agent", "config.yaml")
