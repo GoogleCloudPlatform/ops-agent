@@ -46,6 +46,7 @@ import (
 	"embed"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -2481,6 +2482,56 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 			t.Error(multiErr)
 		}
 	})
+}
+
+func TestPrometheusRelabelConfigs(t *testing.T) {
+	config := `metrics:
+  receivers:
+    prom_app:
+      type: prometheus
+      scrape_untyped_metrics_as: untyped
+      config:
+        scrape_configs:
+        - job_name: test
+          metrics_path: /data
+          scrape_interval: 10s
+          static_configs:
+            - targets:
+              - localhost:8000
+          metric_relabel_configs:
+          - source_labels: [test_label]
+            regex: "(.*)@(.*)"
+            target_label: destination
+            replacement: "${2}/${1}"
+  service:
+    pipelines:
+      prom_pipeline:
+        receivers: [prom_app]
+`
+	prometheusTestdata := path.Join("testdata", "prometheus")
+	remoteWorkDir := path.Join("/opt", "go-http-server")
+	testChecks := make([]mockPrometheusCheck, 0)
+	testChecks = append(testChecks, mockPrometheusCheck{
+		fileToUpload: fileToUpload{
+			local:  path.Join(prometheusTestdata, "sample_label_replace"),
+			remote: path.Join(remoteWorkDir, "data"),
+		},
+		check: func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error {
+			if pts, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, "prometheus.googleapis.com/test_metric/gauge", window, nil, true); err != nil {
+				return err
+			} else {
+				labelValue, ok := pts.Metric.Labels["test_label"]
+				if !ok {
+					return errors.New("test_label label not found in metric")
+				}
+				if labelValue != "group/capture" {
+					return fmt.Errorf("Expected test_label to be 'group/capture' but got %s", labelValue)
+				}
+			}
+			return nil
+		},
+	})
+	testPrometheusMetrics(t, config, testChecks)
 }
 
 func TestPrometheusUntypedMetrics(t *testing.T) {
