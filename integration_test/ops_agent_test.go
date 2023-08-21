@@ -2166,7 +2166,6 @@ func TestPrometheusMetrics(t *testing.T) {
   receivers:
     prometheus:
       type: prometheus
-      scrape_untyped_metrics_as: gauge
       config:
         scrape_configs:
           - job_name: 'prometheus'
@@ -2326,12 +2325,6 @@ func TestPrometheusMetrics(t *testing.T) {
 				Key:     "[0].config.[0].scrape_configs.static_config_target_groups",
 				Value:   "1",
 			},
-			{
-				Module:  "metrics",
-				Feature: "receivers:prometheus",
-				Key:     "[0].config.scrape_untyped_metrics_as",
-				Value:   "gauge",
-			},
 		}
 
 		series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", time.Hour, nil, false, len(expectedFeatures))
@@ -2469,9 +2462,11 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 			// the cumulative counter metric will return 0 as no change in values
 			{"prometheus.googleapis.com/test_counter_value/counter", nil,
 				metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 0.0},
-			// Untyped type - GCM will have untyped metrics as gauge type
-			{"prometheus.googleapis.com/test_untyped_value/gauge", nil,
+			// Untyped type - GCM will have untyped metrics double written as a gauge AND a cumulative
+			{"prometheus.googleapis.com/test_untyped_value/unknown", nil,
 				metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 56.0},
+			{"prometheus.googleapis.com/test_untyped_value/unknown:counter", nil,
+				metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 0.0},
 		}
 
 		var multiErr error
@@ -2489,7 +2484,6 @@ func TestPrometheusRelabelConfigs(t *testing.T) {
   receivers:
     prom_app:
       type: prometheus
-      scrape_untyped_metrics_as: untyped
       config:
         scrape_configs:
         - job_name: test
@@ -2539,7 +2533,6 @@ func TestPrometheusUntypedMetrics(t *testing.T) {
   receivers:
     prom_app:
       type: prometheus
-      scrape_untyped_metrics_as: untyped
       config:
         scrape_configs:
         - job_name: test
@@ -2601,7 +2594,6 @@ func TestPrometheusUntypedMetricsReset(t *testing.T) {
   receivers:
     prom_app:
       type: prometheus
-      scrape_untyped_metrics_as: untyped
       config:
         scrape_configs:
         - job_name: test
