@@ -84,7 +84,6 @@ func logPathForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
 		return `C:\mylog`
 	}
-
 	return "/tmp/mylog"
 }
 
