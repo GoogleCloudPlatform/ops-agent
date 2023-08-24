@@ -23,7 +23,7 @@ else
   # Installation followed in: https://dev.mysql.com/doc/mysql-sles-repo-quick-guide/en/
   sudo zypper -n --no-gpg-checks install https://dev.mysql.com/get/${mysql_repo_pkg_name}
   sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2022
-  sudo zypper -n install mysql-community-server
+  sudo zypper -n --no-gpg-checks install mysql-community-server
 fi
 
 if [[ "${SUSE_VERSION}" == 12 ]]; then

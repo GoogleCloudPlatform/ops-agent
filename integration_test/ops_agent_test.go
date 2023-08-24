@@ -46,6 +46,7 @@ import (
 	"embed"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -2203,6 +2204,7 @@ func TestPrometheusMetrics(t *testing.T) {
   receivers:
     prometheus:
       type: prometheus
+      scrape_untyped_metrics_as: gauge
       config:
         scrape_configs:
           - job_name: 'prometheus'
@@ -2362,6 +2364,12 @@ func TestPrometheusMetrics(t *testing.T) {
 				Key:     "[0].config.[0].scrape_configs.static_config_target_groups",
 				Value:   "1",
 			},
+			{
+				Module:  "metrics",
+				Feature: "receivers:prometheus",
+				Key:     "[0].config.scrape_untyped_metrics_as",
+				Value:   "gauge",
+			},
 		}
 
 		series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", time.Hour, nil, false, len(expectedFeatures))
@@ -2514,18 +2522,260 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 	})
 }
 
+func TestPrometheusRelabelConfigs(t *testing.T) {
+	config := `metrics:
+  receivers:
+    prom_app:
+      type: prometheus
+      scrape_untyped_metrics_as: untyped
+      config:
+        scrape_configs:
+        - job_name: test
+          metrics_path: /data
+          scrape_interval: 10s
+          static_configs:
+            - targets:
+              - localhost:8000
+          metric_relabel_configs:
+          - source_labels: [test_label]
+            regex: "(.*)@(.*)"
+            target_label: destination
+            replacement: "${2}/${1}"
+  service:
+    pipelines:
+      prom_pipeline:
+        receivers: [prom_app]
+`
+	prometheusTestdata := path.Join("testdata", "prometheus")
+	remoteWorkDir := path.Join("/opt", "go-http-server")
+	testChecks := make([]mockPrometheusCheck, 0)
+	testChecks = append(testChecks, mockPrometheusCheck{
+		fileToUpload: fileToUpload{
+			local:  path.Join(prometheusTestdata, "sample_label_replace"),
+			remote: path.Join(remoteWorkDir, "data"),
+		},
+		check: func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error {
+			if pts, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, "prometheus.googleapis.com/test_metric/gauge", window, nil, true); err != nil {
+				return err
+			} else {
+				labelValue, ok := pts.Metric.Labels["test_label"]
+				if !ok {
+					return errors.New("test_label label not found in metric")
+				}
+				if labelValue != "group/capture" {
+					return fmt.Errorf("Expected test_label to be 'group/capture' but got %s", labelValue)
+				}
+			}
+			return nil
+		},
+	})
+	testPrometheusMetrics(t, config, testChecks)
+}
+
+func TestPrometheusUntypedMetrics(t *testing.T) {
+	config := `metrics:
+  receivers:
+    prom_app:
+      type: prometheus
+      scrape_untyped_metrics_as: untyped
+      config:
+        scrape_configs:
+        - job_name: test
+          metrics_path: /data
+          scrape_interval: 10s
+          static_configs:
+            - targets:
+              - localhost:8000
+  service:
+    pipelines:
+      prom_pipeline:
+        receivers: [prom_app]
+`
+	prometheusTestdata := path.Join("testdata", "prometheus")
+	remoteWorkDir := path.Join("/opt", "go-http-server")
+	testChecks := make([]mockPrometheusCheck, 0)
+	testChecks = append(testChecks, mockPrometheusCheck{
+		fileToUpload: fileToUpload{
+			local:  path.Join(prometheusTestdata, "sample_untyped"),
+			remote: path.Join(remoteWorkDir, "data"),
+		},
+		check: func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error {
+			tests := []prometheusMetricTest{
+				{"prometheus.googleapis.com/explicit_untyped_metric/unknown", nil,
+					metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 1.0},
+				{"prometheus.googleapis.com/missing_type_hint_metric/unknown", nil,
+					metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 10.0},
+				// Since we are sending the same number at every time point,
+				// the cumulative counter metric will return 0 as no change in values
+				{"prometheus.googleapis.com/explicit_untyped_metric/unknown:counter", nil,
+					metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 0.0},
+				{"prometheus.googleapis.com/missing_type_hint_metric/unknown:counter", nil,
+					metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 0.0},
+			}
+
+			var multiErr error
+			for _, test := range tests {
+				multiErr = multierr.Append(multiErr, assertPrometheusMetric(ctx, logger, vm, window, test))
+			}
+			if multiErr != nil {
+				t.Error(multiErr)
+			}
+
+			// Ensure that the gauge-casted metric isn't reported when the unknown typed one is.
+			if err := gce.AssertMetricMissing(ctx, logger.ToMainLog(), vm, "prometheus.googleapis.com/explicit_untyped_metric/gauge", true, window); err != nil {
+				t.Error(err)
+			}
+			if err := gce.AssertMetricMissing(ctx, logger.ToMainLog(), vm, "prometheus.googleapis.com/missing_type_hint_metric/gauge", true, window); err != nil {
+				t.Error(err)
+			}
+			return multiErr
+		},
+	})
+	testPrometheusMetrics(t, config, testChecks)
+}
+
+func TestPrometheusUntypedMetricsReset(t *testing.T) {
+	config := `metrics:
+  receivers:
+    prom_app:
+      type: prometheus
+      scrape_untyped_metrics_as: untyped
+      config:
+        scrape_configs:
+        - job_name: test
+          metrics_path: /data
+          scrape_interval: 10s
+          static_configs:
+            - targets:
+              - localhost:8000
+  service:
+    pipelines:
+      prom_pipeline:
+        receivers: [prom_app]
+`
+	prometheusTestdata := path.Join("testdata", "prometheus")
+	remoteWorkDir := path.Join("/opt", "go-http-server")
+	testChecks := make([]mockPrometheusCheck, 0)
+	testChecks = append(testChecks, mockPrometheusCheck{
+		fileToUpload: fileToUpload{
+			local:  path.Join(prometheusTestdata, "sample_untyped_step_1"),
+			remote: path.Join(remoteWorkDir, "data"),
+		},
+		check: func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error {
+			tests := []prometheusMetricTest{
+				{"prometheus.googleapis.com/untyped_metric/unknown", nil,
+					metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 10.0},
+				{"prometheus.googleapis.com/untyped_metric/unknown:counter", nil,
+					metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 0.0},
+			}
+
+			var multiErr error
+			for _, test := range tests {
+				multiErr = multierr.Append(multiErr, assertPrometheusMetric(ctx, logger, vm, window, test))
+			}
+			if multiErr != nil {
+				t.Error(multiErr)
+			}
+			return multiErr
+		},
+	})
+
+	// The cumulative point reports the delta against the first point that isn't sent to Cloud Monitoring.
+	testChecks = append(testChecks, mockPrometheusCheck{
+		fileToUpload: fileToUpload{
+			local:  path.Join(prometheusTestdata, "sample_untyped_step_2"),
+			remote: path.Join(remoteWorkDir, "data"),
+		},
+		check: func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error {
+			tests := []prometheusMetricTest{
+				{"prometheus.googleapis.com/untyped_metric/unknown", nil,
+					metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 100.0},
+				{"prometheus.googleapis.com/untyped_metric/unknown:counter", nil,
+					metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 90.0},
+			}
+
+			var multiErr error
+			for _, test := range tests {
+				multiErr = multierr.Append(multiErr, assertPrometheusMetric(ctx, logger, vm, window, test))
+			}
+			if multiErr != nil {
+				t.Error(multiErr)
+			}
+			return multiErr
+		},
+	})
+
+	// Once a lower value is reported for the timeseries, it is treated as a reset point for the
+	// counter, with a reset value of 0.
+	testChecks = append(testChecks, mockPrometheusCheck{
+		fileToUpload: fileToUpload{
+			local:  path.Join(prometheusTestdata, "sample_untyped_step_3"),
+			remote: path.Join(remoteWorkDir, "data"),
+		},
+		check: func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error {
+			tests := []prometheusMetricTest{
+				{"prometheus.googleapis.com/untyped_metric/unknown", nil,
+					metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 10.0},
+				{"prometheus.googleapis.com/untyped_metric/unknown:counter", nil,
+					metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 10.0},
+			}
+
+			var multiErr error
+			for _, test := range tests {
+				multiErr = multierr.Append(multiErr, assertPrometheusMetric(ctx, logger, vm, window, test))
+			}
+			if multiErr != nil {
+				t.Error(multiErr)
+			}
+			return multiErr
+		},
+	})
+	testChecks = append(testChecks, mockPrometheusCheck{
+		fileToUpload: fileToUpload{
+			local:  path.Join(prometheusTestdata, "sample_untyped_step_4"),
+			remote: path.Join(remoteWorkDir, "data"),
+		},
+		check: func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error {
+			tests := []prometheusMetricTest{
+				{"prometheus.googleapis.com/untyped_metric/unknown", nil,
+					metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 1000.0},
+				{"prometheus.googleapis.com/untyped_metric/unknown:counter", nil,
+					metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 1000.0},
+			}
+
+			var multiErr error
+			for _, test := range tests {
+				multiErr = multierr.Append(multiErr, assertPrometheusMetric(ctx, logger, vm, window, test))
+			}
+			if multiErr != nil {
+				t.Error(multiErr)
+			}
+			return multiErr
+		},
+	})
+	testPrometheusMetrics(t, config, testChecks)
+}
+
 // TestPrometheusHistogramMetrics tests the Histogram metric type using static
 // testing files.
 func TestPrometheusHistogramMetrics(t *testing.T) {
-	prometheusTestdata := path.Join("testdata", "prometheus")
-	remoteWorkDir := path.Join("/opt", "go-http-server")
-	filesToUpload := map[string]fileToUpload{
-		"step_one": {local: path.Join(prometheusTestdata, "sample_histogram_step_1"),
-			remote: path.Join(remoteWorkDir, "data")},
-		"step_two": {local: path.Join(prometheusTestdata, "sample_histogram_step_2"),
-			remote: path.Join(remoteWorkDir, "data")},
-	}
-
+	config := `metrics:
+  receivers:
+    prom_app:
+      type: prometheus
+      config:
+        scrape_configs:
+        - job_name: test
+          metrics_path: /data
+          scrape_interval: 10s
+          static_configs:
+            - targets:
+              - localhost:8000
+  service:
+    pipelines:
+      prom_pipeline:
+        receivers: [prom_app]
+`
 	// For Histogram: We use prometheus.LinearBuckets(0, 20, 5), to have
 	// buckets w/ le=[0, 20, 40, 60, 80] plus the +inf final bucket
 	// For step 1, we observe points [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]
@@ -2584,28 +2834,51 @@ func TestPrometheusHistogramMetrics(t *testing.T) {
 		BucketCounts: []int64{1, 2, 2, 2, 2, 1},
 	}
 
-	checks := map[string]func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error{
-		"step_one": func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error {
+	prometheusTestdata := path.Join("testdata", "prometheus")
+	remoteWorkDir := path.Join("/opt", "go-http-server")
+	testChecks := make([]mockPrometheusCheck, 0)
+	testChecks = append(testChecks, mockPrometheusCheck{
+		fileToUpload: fileToUpload{
+			local:  path.Join(prometheusTestdata, "sample_histogram_step_1"),
+			remote: path.Join(remoteWorkDir, "data"),
+		},
+		check: func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error {
 			return assertPrometheusHistogramMetric(ctx, logger, vm, "test_histogram", window, stepOneExpected)
 		},
-		"step_two": func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error {
+	})
+	testChecks = append(testChecks, mockPrometheusCheck{
+		fileToUpload: fileToUpload{
+			local:  path.Join(prometheusTestdata, "sample_histogram_step_2"),
+			remote: path.Join(remoteWorkDir, "data"),
+		},
+		check: func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error {
 			return assertPrometheusHistogramMetric(ctx, logger, vm, "test_histogram", window, stepTwoExpected)
 		},
-	}
-	testPrometheusMetrics(t, filesToUpload, checks)
+	})
+
+	testPrometheusMetrics(t, config, testChecks)
 }
 
 // TestPrometheusSummaryMetrics tests the Summary metric type using static
 // testing files.
 func TestPrometheusSummaryMetrics(t *testing.T) {
-	prometheusTestdata := path.Join("testdata", "prometheus")
-	remoteWorkDir := path.Join("/opt", "go-http-server")
-	filesToUpload := map[string]fileToUpload{
-		"step_one": {local: path.Join(prometheusTestdata, "sample_summary_step_1"),
-			remote: path.Join(remoteWorkDir, "data")},
-		"step_two": {local: path.Join(prometheusTestdata, "sample_summary_step_2"),
-			remote: path.Join(remoteWorkDir, "data")},
-	}
+	config := `metrics:
+  receivers:
+    prom_app:
+      type: prometheus
+      config:
+        scrape_configs:
+        - job_name: test
+          metrics_path: /data
+          scrape_interval: 10s
+          static_configs:
+            - targets:
+              - localhost:8000
+  service:
+    pipelines:
+      prom_pipeline:
+        receivers: [prom_app]
+`
 
 	// For Summary: We use Objectives [0.5, 0.9, 0.99]
 	// For step 1, we observe points [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]
@@ -2649,15 +2922,29 @@ func TestPrometheusSummaryMetrics(t *testing.T) {
 		Sum:   450,
 	}
 
-	checks := map[string]func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error{
-		"step_one": func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error {
+	prometheusTestdata := path.Join("testdata", "prometheus")
+	remoteWorkDir := path.Join("/opt", "go-http-server")
+	testChecks := make([]mockPrometheusCheck, 0)
+	testChecks = append(testChecks, mockPrometheusCheck{
+		fileToUpload: fileToUpload{
+			local:  path.Join(prometheusTestdata, "sample_summary_step_1"),
+			remote: path.Join(remoteWorkDir, "data"),
+		},
+		check: func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error {
 			return assertPrometheusSummaryMetric(ctx, logger, vm, "test_summary", window, stepOneExpected)
 		},
-		"step_two": func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error {
+	})
+	testChecks = append(testChecks, mockPrometheusCheck{
+		fileToUpload: fileToUpload{
+			local:  path.Join(prometheusTestdata, "sample_summary_step_2"),
+			remote: path.Join(remoteWorkDir, "data"),
+		},
+		check: func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error {
 			return assertPrometheusSummaryMetric(ctx, logger, vm, "test_summary", window, stepTwoExpected)
 		},
-	}
-	testPrometheusMetrics(t, filesToUpload, checks)
+	})
+
+	testPrometheusMetrics(t, config, testChecks)
 }
 
 // testPrometheusMetrics tests different Prometheus metric types using static
@@ -2665,7 +2952,7 @@ func TestPrometheusSummaryMetrics(t *testing.T) {
 // by a simple HTTP server so that the agent can scrape the metrics
 // The test will send two sets of metric points, to verify the metrics are
 // correctly received and processed
-func testPrometheusMetrics(t *testing.T, testFiles map[string]fileToUpload, checks map[string]func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error) {
+func testPrometheusMetrics(t *testing.T, opsAgentConfig string, testChecks []mockPrometheusCheck) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
@@ -2683,8 +2970,14 @@ func testPrometheusMetrics(t *testing.T, testFiles map[string]fileToUpload, chec
 				remote: path.Join("/etc", "systemd", "system", "http-server-for-prometheus-test.service")},
 		}
 
+		if len(testChecks) == 0 {
+			return
+		}
+
+		firstTest := testChecks[0]
+		restTests := testChecks[1:]
 		// 1. Upload the step one files and files used to setup the http service
-		err := uploadFiles(ctx, logger, vm, testdataDir, append(serviceFiles, testFiles["step_one"]))
+		err := uploadFiles(ctx, logger, vm, testdataDir, append(serviceFiles, firstTest.fileToUpload))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -2707,49 +3000,36 @@ func testPrometheusMetrics(t *testing.T, testFiles map[string]fileToUpload, chec
 			t.Fatalf("Http server failed to start with stdout %s and stderr %s", liveCheckOut.Stdout, liveCheckOut.Stderr)
 		}
 		// 3. Config and start the agent
-		// Set the scrape interval to 10 second, so that metrics points can be
-		// received faster to shorten the duration of this test
-		config := `metrics:
-  receivers:
-    prom_app:
-      type: prometheus
-      config:
-        scrape_configs:
-        - job_name: test
-          metrics_path: /data
-          scrape_interval: 10s
-          static_configs:
-            - targets:
-              - localhost:8000
-  service:
-    pipelines:
-      prom_pipeline:
-        receivers: [prom_app]
-`
-		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, opsAgentConfig); err != nil {
 			t.Fatal(err)
 		}
 
 		// Wait long enough for the data to percolate through the backends
 		// under normal circumstances. Based on some experiments, 2 minutes
 		// is normal; wait a bit longer to be on the safe side.
+		//
+		// We perform the first test seperately since it requires an agent configuration
+		//  and setup. All subsequest tests, can just replace the served file and have its
+		// own checks.
 		time.Sleep(3 * time.Minute)
 		window := time.Minute
 		var multiErr error
-		multiErr = multierr.Append(multiErr, checks["step_one"](ctx, logger, vm, window))
+		multiErr = multierr.Append(multiErr, firstTest.check(ctx, logger, vm, window))
 
-		// 5. Replace the text file with the step two metrics
-		err = uploadFiles(ctx, logger, vm, testdataDir, []fileToUpload{testFiles["step_two"]})
-		if err != nil {
-			t.Fatal(err)
-		}
+		for _, test := range restTests {
+			// Replace the text file with the next step metrics
+			err = uploadFiles(ctx, logger, vm, testdataDir, []fileToUpload{test.fileToUpload})
+			if err != nil {
+				t.Fatal(err)
+			}
 
-		// 6. Wait until the new points have arrived
-		time.Sleep(3 * time.Minute)
-		multiErr = multierr.Append(multiErr, checks["step_two"](ctx, logger, vm, window))
+			// Wait until the new points have arrived and complete the check for this test input.
+			time.Sleep(3 * time.Minute)
+			multiErr = multierr.Append(multiErr, test.check(ctx, logger, vm, window))
 
-		if multiErr != nil {
-			t.Error(multiErr)
+			if multiErr != nil {
+				t.Error(multiErr)
+			}
 		}
 	})
 }
@@ -2831,7 +3111,7 @@ type prometheusMetricTest struct {
 	ExpectedValue      any
 }
 
-// assertPrometheusMetric with a given test, wait for the metric, and thenuse
+// assertPrometheusMetric with a given test, wait for the metric, and then use
 // the latest point as the actual value and compare with the expected value
 func assertPrometheusMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration, test prometheusMetricTest) error {
 	var multiErr error
@@ -2890,6 +3170,14 @@ func assertPrometheusMetric(ctx context.Context, logger *logging.DirectoryLogger
 
 type fileToUpload struct {
 	local, remote string
+}
+
+// mockPrometheusCheck contains input files in the prometheus format that will be served
+// by an http server at endpoint localhost:8000/metrics. It also contains a check that
+// be used to validate that the ingested metrics are collected correctly.
+type mockPrometheusCheck struct {
+	fileToUpload fileToUpload
+	check        func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error
 }
 
 // uploadFiles upload files from fs embedded file system to vm
@@ -2962,7 +3250,7 @@ metrics:
 		if _, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, existingMetric, window, nil, false); err != nil {
 			t.Error(err)
 		}
-		if err := gce.AssertMetricMissing(ctx, logger.ToMainLog(), vm, excludedMetric, window); err != nil {
+		if err := gce.AssertMetricMissing(ctx, logger.ToMainLog(), vm, excludedMetric, false, window); err != nil {
 			t.Error(err)
 		}
 	})
@@ -3404,12 +3692,6 @@ func TestOTLPMetricsGCM(t *testing.T) {
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
 		ctx, logger, vm := agents.CommonSetup(t, platform)
-
-		// Turn on the otlp feature gate.
-		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "otlp_receiver"}); err != nil {
-			t.Fatal(err)
-		}
-
 		otlpConfig := `
 combined:
   receivers:
@@ -3479,6 +3761,12 @@ traces:
 			{
 				Module:  "combined",
 				Feature: "receivers:otlp",
+				Key:     "[0].metrics_mode",
+				Value:   "googlecloudmonitoring",
+			},
+			{
+				Module:  "combined",
+				Feature: "receivers:otlp",
 				Key:     "[0].enabled",
 				Value:   "true",
 			},
@@ -3509,12 +3797,6 @@ func TestOTLPMetricsGMP(t *testing.T) {
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
 		ctx, logger, vm := agents.CommonSetup(t, platform)
-
-		// Turn on the otlp feature gate.
-		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "otlp_receiver"}); err != nil {
-			t.Fatal(err)
-		}
-
 		otlpConfig := `
 combined:
   receivers:
@@ -3613,12 +3895,6 @@ func TestOTLPTraces(t *testing.T) {
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
 		ctx, logger, vm := agents.CommonSetup(t, platform)
-
-		// Turn on the otlp feature gate.
-		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "otlp_receiver"}); err != nil {
-			t.Fatal(err)
-		}
-
 		otlpConfig := `
 combined:
   receivers:
@@ -3805,6 +4081,53 @@ func TestNetworkHealthCheck(t *testing.T) {
 	})
 }
 
+func TestParsingFailureCheck(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if !isHealthCheckTestPlatform(platform) {
+			t.SkipNow()
+		}
+
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		logPath := logPathForPlatform(vm.Platform)
+		config := fmt.Sprintf(`logging:
+  receivers:
+    mylog_source:
+      type: files
+      include_paths:
+      - %s
+  processors:
+    json1:
+      type: parse_json
+      field: message
+      time_key: time
+      time_format: "%s"
+  service:
+    pipelines:
+      my_pipeline:
+        receivers: [mylog_source]
+        processors: [json1]
+`, logPath, "%Y-%m-%dT%H:%M:.%L%z")
+
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		line := fmt.Sprintf(`{"log":"{\"level\":\"info\",\"message\":\"start\"}\n","time":"%s"}`, time.Now().UTC().Format(time.RFC3339Nano)) + "\n"
+		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(line), logPath); err != nil {
+			t.Fatalf("error writing dummy log line: %v", err)
+		}
+
+		query := fmt.Sprintf(`severity="ERROR" AND jsonPayload.code="LogParseErr" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, query); err != nil {
+			t.Error(err)
+		}
+
+	})
+}
+
 func TestBufferLimitSizeOpsAgent(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
@@ -3884,6 +4207,29 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
 			t.Fatal(err)
 		}
 
+	})
+}
+
+// TestNoNvmlOtelReceiverWithoutGpu check to make sure that Ops Agent's
+// hostmetrics receiver does not generate a nvml otel receiver on VMs without
+// GPU, by checking the absence of nvml logs from otel
+func TestNoNvmlOtelReceiverWithoutGpu(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		time.Sleep(60 * time.Second)
+		_, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, "syslog", time.Hour, `jsonPayload.message=~"Nvidia|nvml"`, 5)
+		if err == nil {
+			t.Error("expected no logs to contain Nvidia or nvml when the instance has no gpu")
+		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
+			t.Fatalf("unexpected error: %v", err)
+		}
 	})
 }
 

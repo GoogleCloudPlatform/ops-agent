@@ -3,6 +3,7 @@
 # ======================================
 
 FROM {from_image} AS {target_name}-build-base
+ARG OPENJDK_MAJOR_VERSION
 
 {install_packages}
 

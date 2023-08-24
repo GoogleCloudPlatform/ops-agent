@@ -45,7 +45,7 @@ func (r MetricsReceiverElasticsearch) Type() string {
 	return "elasticsearch"
 }
 
-func (r MetricsReceiverElasticsearch) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverElasticsearch) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultElasticsearchEndpoint
 	}

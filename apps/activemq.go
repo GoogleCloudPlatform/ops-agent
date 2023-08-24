@@ -15,6 +15,8 @@
 package apps
 
 import (
+	"context"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
@@ -32,7 +34,7 @@ func (r MetricsReceiverActivemq) Type() string {
 	return "activemq"
 }
 
-func (r MetricsReceiverActivemq) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverActivemq) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 
 	targetSystem := "activemq"
 

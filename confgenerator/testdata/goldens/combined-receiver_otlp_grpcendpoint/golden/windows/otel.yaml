@@ -22,6 +22,7 @@ exporters:
   googlemanagedprometheus:
     retry_on_failure:
       enabled: false
+    untyped_double_export: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
 processors:
   agentmetrics/hostmetrics_0:
@@ -405,6 +406,13 @@ processors:
         new_label: process
         new_value: all
     - action: update
+      include: process.handles
+      new_name: processes/windows/handles
+      operations:
+      - action: add_label
+        new_label: process
+        new_value: all
+    - action: update
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
@@ -537,6 +545,9 @@ receivers:
       network: {}
       paging: {}
       process:
+        metrics:
+          process.handles:
+            enabled: true
         mute_process_name_error: true
       processes: {}
   otlp/otlp:

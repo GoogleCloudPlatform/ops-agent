@@ -15,6 +15,7 @@ package confgenerator_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/csv"
 	"errors"
 	"fmt"
@@ -572,7 +573,7 @@ func (m MetricsReceiverFoo) Type() string {
 	return "metricsReceiverFoo"
 }
 
-func (m MetricsReceiverFoo) Pipelines() []otel.ReceiverPipeline {
+func (m MetricsReceiverFoo) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	return nil
 }
 
@@ -648,10 +649,10 @@ func TestPrometheusFeatureMetrics(t *testing.T) {
 	uc := emptyUc
 	receivers := make(map[string]confgenerator.MetricsReceiver)
 	receivers["prometheus"] = confgenerator.PrometheusMetrics{
-		confgenerator.ConfigComponent{
+		ConfigComponent: confgenerator.ConfigComponent{
 			Type: "prometheus",
 		},
-		promconfig.Config{
+		PromConfig: promconfig.Config{
 			GlobalConfig: promconfig.GlobalConfig{
 				ScrapeInterval:     model.Duration(10 * time.Second),
 				ScrapeTimeout:      model.Duration(10 * time.Second),
@@ -703,6 +704,7 @@ func TestPrometheusFeatureMetrics(t *testing.T) {
 				},
 			},
 		},
+		ScrapeUntypedMetricsAs: "untyped",
 	}
 	uc.Metrics = &confgenerator.Metrics{
 		Receivers: receivers,
@@ -785,6 +787,13 @@ func TestPrometheusFeatureMetrics(t *testing.T) {
 			Value:  test.val,
 		})
 	}
+	expected = append(expected, confgenerator.Feature{
+		Module: "metrics",
+		Kind:   "receivers",
+		Type:   "prometheus",
+		Key:    []string{"[0]", "config", "scrape_untyped_metrics_as"},
+		Value:  "untyped",
+	})
 
 	if !cmp.Equal(features, expected) {
 		t.Errorf("Expected %d features but got %d\n\n", len(expected), len(features))
@@ -798,6 +807,7 @@ func TestGolden(t *testing.T) {
 	components = append(components, confgenerator.LoggingProcessorTypes.GetComponentsFromRegistry()...)
 	components = append(components, confgenerator.MetricsReceiverTypes.GetComponentsFromRegistry()...)
 	components = append(components, confgenerator.MetricsProcessorTypes.GetComponentsFromRegistry()...)
+	components = append(components, confgenerator.CombinedReceiverTypes.GetComponentsFromRegistry()...)
 
 	features := getFeatures(components)
 
@@ -906,7 +916,7 @@ func (m Example) Type() string {
 	return "example"
 }
 
-func (m Example) Pipelines() []otel.ReceiverPipeline {
+func (m Example) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	return nil
 }
 

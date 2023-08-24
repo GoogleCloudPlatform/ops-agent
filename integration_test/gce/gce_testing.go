@@ -568,9 +568,10 @@ func IsExhaustedRetriesMetricError(err error) bool {
 // AssertMetricMissing looks for data of a metric and returns success if
 // no data is found. To consider possible transient errors while querying
 // the backend we make queryMaxAttemptsMetricMissing query attempts.
-func AssertMetricMissing(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration) error {
+func AssertMetricMissing(ctx context.Context, logger *log.Logger, vm *VM, metric string, isPrometheus bool, window time.Duration) error {
+	descriptorNotFoundErrCount := 0
 	for attempt := 1; attempt <= queryMaxAttemptsMetricMissing; attempt++ {
-		it := lookupMetric(ctx, logger, vm, metric, window, nil, false)
+		it := lookupMetric(ctx, logger, vm, metric, window, nil, isPrometheus)
 		series, err := nonEmptySeriesList(logger, it, 1)
 		found := len(series) > 0
 		logger.Printf("nonEmptySeriesList check(metric=%q): err=%v, found=%v, attempt (%d/%d)",
@@ -586,9 +587,25 @@ func AssertMetricMissing(ctx context.Context, logger *log.Logger, vm *VM, metric
 		if !isRetriableLookupError(err) {
 			return fmt.Errorf("AssertMetricMissing(metric=%q): %v", metric, err)
 		}
+
+		// prometheus.googleapis.com/* domain metrics are created on first write, and may not be immediately queryable.
+		// The error doesn't always look the same, hopefully looking for Code() == NotFound will catch all variations.
+		myStatus, ok := status.FromError(err)
+		if ok && isPrometheus && myStatus.Code() == codes.NotFound {
+			descriptorNotFoundErrCount += 1
+		}
 		time.Sleep(queryBackoffDuration)
 	}
-	return fmt.Errorf("AssertMetricMissing(metric=%q): failed: no successful queries to the backend", metric)
+	if !isPrometheus {
+		return fmt.Errorf("AssertMetricMissing(metric=%q): failed: no successful queries to the backend", metric)
+	}
+
+	if descriptorNotFoundErrCount != queryMaxAttemptsMetricMissing {
+		return fmt.Errorf("AssertMetricMissing(metric=%q): failed: atleast one query failed with something other than a NOT_FOUND error", metric)
+	}
+
+	// Success
+	return nil
 }
 
 // hasMatchingLog looks in the logging backend for a log matching the given query,
@@ -1443,7 +1460,7 @@ func InstallGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) erro
 	if strings.HasPrefix(vm.Platform, "sles-") {
 		// Use a vendored repo to reduce flakiness of the external repos.
 		// See http://go/sdi/releases/build-test-release/vendored for details.
-		repoArch := "x86_64"
+		repoArch := "x86-64"
 		if IsARM(vm.Platform) {
 			repoArch = "aarch64"
 		}
@@ -1451,13 +1468,9 @@ func InstallGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) erro
 		if strings.HasPrefix(vm.Platform, "sles-15") {
 			repo = "google-cloud-monitoring-sles15-" + repoArch + "-test-vendor"
 		}
-		repoSetupCmd = `sudo zypper --non-interactive addrepo -g -t YUM https://packages.cloud.google.com/yum/repos/` + repo + ` test-vendor
+		// TODO: Revert to packages.cloud.google.com URL once b/296860728 is fixed.
+		repoSetupCmd = `sudo zypper --non-interactive addrepo -g -t YUM https://us-yum.pkg.dev/projects/cloud-ops-agents-artifacts-dev/` + repo + ` test-vendor
 sudo rpm --import https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
-sudo zypper --non-interactive refresh test-vendor`
-
-		// Overwrite repoSetupCmd with the same command except GPG checks are disabled.
-		// TODO(b/260849189): Remove this workaround once the Cloud Rapture keys are fixed.
-		repoSetupCmd = `sudo zypper --non-interactive addrepo --no-gpgcheck -t YUM https://packages.cloud.google.com/yum/repos/` + repo + ` test-vendor
 sudo zypper --non-interactive refresh test-vendor`
 	}
 

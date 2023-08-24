@@ -1,9 +1,17 @@
 set -e
 
+DOCUMENT_ROOT=/var/www/html
+
+source /etc/os-release
+if [[ "${ID}" == sles || "${ID}" == opensuse-leap ]]; then
+  DOCUMENT_ROOT=/srv/www/htdocs
+fi
+
 # Create a file that apache can't read.
-touch /var/www/html/forbidden.html
-chmod o-r /var/www/html/forbidden.html
+touch "${DOCUMENT_ROOT}"/forbidden.html
+chmod o-r "${DOCUMENT_ROOT}"/forbidden.html
 
 # Then request that file through apache. This is meant to generate an entry in
 # the access log and the error log.
 curl http://localhost:80/forbidden.html
+
