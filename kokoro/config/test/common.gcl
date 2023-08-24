@@ -38,7 +38,7 @@ template config common = {
 
     environment = {
       PROJECT = 'stackdriver-test-143416'
-      ZONES = _zones_for_arch.get(arch)
+      ZONES = _zones_for_arch.arch
 
       PLATFORMS = join(platforms, ',')
     }
