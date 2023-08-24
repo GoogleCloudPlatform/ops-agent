@@ -5,6 +5,6 @@ config build = common.third_party_apps_test {
     platforms = [{{range .ThirdPartyTestPlatforms}}
       '{{.}}',{{end}}
     ]
-    arch = '{{.Arch}}'
-  }
+{{with .Arch}}    arch = '{{.}}'
+{{end}}  }
 }
