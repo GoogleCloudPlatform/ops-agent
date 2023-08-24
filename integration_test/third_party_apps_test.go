@@ -578,7 +578,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		restartLogger := logger.ToFile("VM_restart.txt")
 		err := gce.RestartInstance(ctx, restartLogger, vm)
 
-		logger.ToMainLog().Printf("Restarting VM instance returned err=%v, see VM_restart.txt for details.")
+		logger.ToMainLog().Printf("Restarting VM instance returned err=%v, see VM_restart.txt for details.", err)
 		if err != nil {
 			return nonRetryable, err
 		}
