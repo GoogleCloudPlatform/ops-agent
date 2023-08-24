@@ -224,7 +224,7 @@ func (p LoggingProcessorParseMultilineRegex) Components(ctx context.Context, tag
 	filter := fluentbit.Component{
 		Kind: "FILTER",
 		Config: map[string]string{
-			"Name":                  "multiline",
+			"Name":                  fmt.Sprintf("multiline_%s", tag),
 			"Match":                 tag,
 			"Multiline.Key_Content": "message",
 			"Multiline.Parser":      multilineParserName,
