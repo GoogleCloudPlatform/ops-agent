@@ -4154,11 +4154,22 @@ func TestRestartVM(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if err := gce.RestartInstance(ctx, logger, vm); err != nil {
+		cmdOut, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", getRecentServiceOutputForPlatform(vm.Platform))
+		if err != nil {
 			t.Fatal(err)
 		}
 
-		cmdOut, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", getRecentServiceOutputForPlatform(vm.Platform))
+		// Ensure sure all healthchecks pass before the restart
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
+
+		if err := gce.RestartInstance(ctx, logger, vm); err != nil {
+			t.Fatal(err)
+		}
+		time.Sleep(60 * time.Second)
+
+		cmdOut, err = gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", getRecentServiceOutputForPlatform(vm.Platform))
 		if err != nil {
 			t.Fatal(err)
 		}
