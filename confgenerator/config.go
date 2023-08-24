@@ -14,6 +14,8 @@
 
 package confgenerator
 
+DO NOT SUBMIT
+
 import (
 	"context"
 	"fmt"
