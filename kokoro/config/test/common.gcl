@@ -35,7 +35,7 @@ template config common = {
 
     environment = {
       PROJECT = 'stackdriver-test-143416'
-      ZONES = cond(arch == 'arm64', _arm64_zones, default_zones)
+      ZONES = cond(arch == 'arm64', _arm64_zones, _default_zones)
 
       PLATFORMS = join(platforms, ',')
     }
