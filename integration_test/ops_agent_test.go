@@ -3915,8 +3915,8 @@ func checkExpectedHealthCheckResult(t *testing.T, output string, name string, ex
 func getRecentServiceOutputForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
 		cmd := strings.Join([]string{
-			"$Past = (Get-Date) - (New-TimeSpan -Minute 1)",
-			"Get-WinEvent -MaxEvents 10 -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent'; StartTime>$Past } | select -ExpandProperty Message",
+			"$ServiceStart = (Get-EventLog -LogName 'System' -Source 'Service Control Manager' -EntryType 'Information' -Message '*Google Cloud Ops Agent*running*' -Newest 1).TimeGenerated",
+			"Get-WinEvent -MaxEvents 10 -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent'; StartTime=$ServiceStart } | select -ExpandProperty Message",
 		}, ";")
 		return cmd
 	}
@@ -4218,7 +4218,7 @@ func TestRestartVM(t *testing.T) {
 		if err := gce.RestartInstance(ctx, logger, vm); err != nil {
 			t.Fatal(err)
 		}
-		time.Sleep(60 * time.Second)
+		// time.Sleep(60 * time.Second)
 
 		cmdOut, err = gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", getRecentServiceOutputForPlatform(vm.Platform))
 		if err != nil {
