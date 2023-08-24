@@ -122,7 +122,7 @@ func mainErr() error {
 	if gce.IsWindows(vm.Platform) {
 		// Disable reboots after updates (b/297357060) using a hack suggested by
 		// https://lazyadmin.nl/it/how-to-stop-automatic-restart-win-10-after-installing-updates/
-		_, err = gce.RunRemotely(ctx, logger, vm, "", `Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\MusNotification.exe" -Name "Debugger" -Value "cmd.exe"`)
+		_, err = gce.RunRemotely(ctx, logger, vm, "", `New-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\MusNotification.exe" -Name "Debugger" -Value "cmd.exe" -PropertyType DWORD -Force`)
 		if err != nil {
 			return err
 		}
