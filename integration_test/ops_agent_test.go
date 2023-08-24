@@ -3916,7 +3916,7 @@ func getRecentServiceOutputForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
 		cmd := strings.Join([]string{
 			"$Past = (Get-Date) - (New-TimeSpan -Minute 1)",
-			"Get-WinEvent -MaxEvents 10 -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent'; StartTime=$Past } | select -ExpandProperty Message",
+			"Get-WinEvent -MaxEvents 10 -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent'; StartTime>$Past } | select -ExpandProperty Message",
 		}, ";")
 		return cmd
 	}
