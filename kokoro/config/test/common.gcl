@@ -6,7 +6,7 @@ import '../utils/functions.gcl' as functions
 // The new Cloud NAT gateway must have "Minimum ports per VM instance"
 // set to 512 as per this article:
 // https://cloud.google.com/knowledge/kb/sles-unable-to-fetch-updates-when-behind-cloud-nat-000004450
-local _x86_64_zones = join([
+local _default_zones = join([
   'us-central1-a=3',
   'us-central1-b=3',
   'us-central1-c=3',
@@ -28,13 +28,14 @@ template config common = {
     platforms = external
     build_file = external
 
-    arch = 'x86_64'
+    // This is only used for determining the value of ZONES.
+    arch = 'unknown'
 
     artifacts = []
 
     environment = {
       PROJECT = 'stackdriver-test-143416'
-      ZONES = cond(arch == 'x86_64', _x86_64_zones, _arm64_zones)
+      ZONES = cond(arch == 'arm64', _arm64_zones, default_zones)
 
       PLATFORMS = join(platforms, ',')
     }
