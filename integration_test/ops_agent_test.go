@@ -3915,7 +3915,7 @@ func checkExpectedHealthCheckResult(t *testing.T, output string, name string, ex
 func getRecentServiceOutputForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
 		cmd := strings.Join([]string{
-			"$ServiceStart = (Get-EventLog -LogName 'System' -Source 'Service Control Manager' -EntryType 'Information' -Message '*Google Cloud Ops Agent*running*' -Newest 1).TimeGenerated",
+			"$ServiceStart = (Get-EventLog -LogName 'System' -Source 'Service Control Manager' -EntryType 'Information' -Message '*Google Cloud Ops Agent service entered the running state*' -Newest 1).TimeGenerated",
 			"Get-WinEvent -MaxEvents 10 -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent'; StartTime=$ServiceStart } | select -ExpandProperty Message",
 		}, ";")
 		return cmd
