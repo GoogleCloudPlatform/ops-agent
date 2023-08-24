@@ -17,6 +17,7 @@ package healthchecks
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 )
@@ -29,7 +30,15 @@ type networkRequest struct {
 }
 
 func (r networkRequest) SendRequest(logger logs.StructuredLogger) error {
-	response, err := http.Get(r.url)
+	var response *http.Response
+	var err error
+	for i := 0; i < 5; i++ {
+		response, err = http.Get(r.url)
+		if err == nil && response.StatusCode == http.StatusOK {
+			break
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
 	if err != nil {
 		if isTimeoutError(err) || isConnectionRefusedError(err) {
 			return r.healthCheckError
