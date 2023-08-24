@@ -53,6 +53,7 @@ package main
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -96,6 +97,9 @@ func mainErr() error {
 	parsedTTL, err := time.ParseDuration(ttl)
 	if err != nil {
 		return fmt.Errorf("Could not parse TTL duration %q: %w", ttl, err)
+	}
+	if distro == "" {
+		return errors.New("Env variable DISTRO cannot be empty")
 	}
 
 	// Create the VM.

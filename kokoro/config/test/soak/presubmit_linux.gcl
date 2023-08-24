@@ -1,11 +1,9 @@
-// TODO: Delete this file once presubmit_linux.gcl is hooked up.
-
 import 'common.gcl' as common
 
 config build = common.soak_test {
   params {
     environment {
-      DISTRO = 'windows-2022'
+      DISTRO = 'ubuntu-2004-lts'
     }
   }
 }

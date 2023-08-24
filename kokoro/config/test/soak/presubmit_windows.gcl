@@ -1,5 +1,3 @@
-// TODO: Delete this file once presubmit_linux.gcl is hooked up.
-
 import 'common.gcl' as common
 
 config build = common.soak_test {
