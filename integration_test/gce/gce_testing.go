@@ -1460,7 +1460,7 @@ func InstallGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) erro
 	if strings.HasPrefix(vm.Platform, "sles-") {
 		// Use a vendored repo to reduce flakiness of the external repos.
 		// See http://go/sdi/releases/build-test-release/vendored for details.
-		repoArch := "x86_64"
+		repoArch := "x86-64"
 		if IsARM(vm.Platform) {
 			repoArch = "aarch64"
 		}
@@ -1468,13 +1468,9 @@ func InstallGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) erro
 		if strings.HasPrefix(vm.Platform, "sles-15") {
 			repo = "google-cloud-monitoring-sles15-" + repoArch + "-test-vendor"
 		}
-		repoSetupCmd = `sudo zypper --non-interactive addrepo -g -t YUM https://packages.cloud.google.com/yum/repos/` + repo + ` test-vendor
+		// TODO: Revert to packages.cloud.google.com URL once b/296860728 is fixed.
+		repoSetupCmd = `sudo zypper --non-interactive addrepo -g -t YUM https://us-yum.pkg.dev/projects/cloud-ops-agents-artifacts-dev/` + repo + ` test-vendor
 sudo rpm --import https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
-sudo zypper --non-interactive refresh test-vendor`
-
-		// Overwrite repoSetupCmd with the same command except GPG checks are disabled.
-		// TODO(b/260849189): Remove this workaround once the Cloud Rapture keys are fixed.
-		repoSetupCmd = `sudo zypper --non-interactive addrepo --no-gpgcheck -t YUM https://packages.cloud.google.com/yum/repos/` + repo + ` test-vendor
 sudo zypper --non-interactive refresh test-vendor`
 	}
 
