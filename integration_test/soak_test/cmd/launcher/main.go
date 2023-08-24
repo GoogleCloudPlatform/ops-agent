@@ -119,11 +119,13 @@ func mainErr() error {
 		return err
 	}
 
-	// Disable reboots after updates (b/297357060) using a hack suggested by
-	// https://lazyadmin.nl/it/how-to-stop-automatic-restart-win-10-after-installing-updates/
-	_, err = gce.RunRemotely(ctx, logger, vm, "", `Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\MusNotification.exe" -Name "Debugger" -Value "cmd.exe"`)
-	if err != nil {
-		return err
+	if gce.IsWindows(vm.Platform) {
+		// Disable reboots after updates (b/297357060) using a hack suggested by
+		// https://lazyadmin.nl/it/how-to-stop-automatic-restart-win-10-after-installing-updates/
+		_, err = gce.RunRemotely(ctx, logger, vm, "", `Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\MusNotification.exe" -Name "Debugger" -Value "cmd.exe"`)
+		if err != nil {
+			return err
+		}
 	}
 
 	debugLogPath := "/tmp/log_generator.log"
