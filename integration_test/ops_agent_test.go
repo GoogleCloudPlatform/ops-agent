@@ -4219,7 +4219,6 @@ func TestRestartVM(t *testing.T) {
 		if err := gce.RestartInstance(ctx, logger, vm); err != nil {
 			t.Fatal(err)
 		}
-		// time.Sleep(60 * time.Second)
 
 		cmdOut, err = gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", getRecentServiceOutputForPlatform(vm.Platform))
 		if err != nil {

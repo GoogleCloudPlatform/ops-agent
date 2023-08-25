@@ -37,7 +37,7 @@ func (r networkRequest) SendRequest(logger logs.StructuredLogger) error {
 		if err == nil && response.StatusCode == http.StatusOK {
 			break
 		}
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(1 * time.Second)
 	}
 	if err != nil {
 		if isTimeoutError(err) || isConnectionRefusedError(err) {
