@@ -89,7 +89,7 @@ We offer a subset of the possible configuration parameters as command line argum
 
     --service_account: Optional. A service account for the VM. If missing, the VM will be instantiated with a default service account.
 
-    --diagnostic_output_path: Optional. A path to a directory containing the output from the Simulacra diagnostic tool. It is used to configure Simulacra from the diagnostic tool output. If specifed along with other command line arguments, all others will be ignored. 
+    --diagnostic_output_path: Optional. A path to a directory containing the output from the diagnostic tool. It is used to configure Simulacra from the diagnostic tool output. If specified along with other command line arguments, all others will be ignored. 
 
 
 
