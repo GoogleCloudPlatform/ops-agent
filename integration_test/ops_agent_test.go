@@ -1493,8 +1493,10 @@ func TestTCPLog(t *testing.T) {
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
 		if gce.IsWindows(platform) {
+			// TODO: Delete when b/285865631 is fixed.
 			t.SkipNow()
 		}
+
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
 		config := `logging:
@@ -1513,20 +1515,51 @@ func TestTCPLog(t *testing.T) {
 		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
 			t.Fatal(err)
 		}
+		command := `echo '{"msg":"test tcp log 1"}{"msg":"test tcp log 2"}' | /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit -i stdin -o tcp://127.0.0.1:5170 -p format=json_lines && echo '{"msg":"test tcp log 3"}{"msg":"test tcp log 4"}' | /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit -i stdin -o tcp://127.0.0.1:5170 -p format=json_lines`
+		// Installing Netcat or equivalent tools on Windows is tricky so we can instead
+		// use this Powershell Script that can send TCP messages.
+		if gce.IsWindows(platform) {
+			command = `$ErrorActionPreference = 'Stop'
+			function Send-TcpString {
+			  param(
+			    [string]$TargetIP,
+			    [int]$TargetPort,
+			    [string]$Message
+			  )
+			  $Socket = New-Object System.Net.Sockets.TCPClient($TargetIP, $TargetPort) 
+			  $Stream = $Socket.GetStream() 
+			  $Writer = New-Object System.IO.StreamWriter($Stream)
+			  $Message | % {
+			    $Writer.WriteLine($_)
+			    $Writer.Flush()
+			  }
+			  $Stream.Close()
+			  $Socket.Close()
+			}
+			Send-TcpString 127.0.0.1 5170 '{"msg":"test tcp log 1"}{"msg":"test tcp log 2"}'
+			Send-TcpString 127.0.0.1 5170 '{"msg":"test tcp log 3"}{"msg":"test tcp log 4"}'`
+		}
 
 		// Write JSON test log to TCP socket via bash redirect, to get around installing and using netcat.
 		// https://www.gnu.org/savannah-checkouts/gnu/bash/manual/bash.html#Redirections
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "echo '{\"msg\":\"test tcp log 1\"}{\"msg\":\"test tcp log 2\"}' > /dev/tcp/localhost/5170"); err != nil {
+
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", command); err != nil {
 			t.Fatalf("Error writing dummy TCP log line: %v", err)
 		}
 
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "tcp_logs", time.Hour, "jsonPayload.msg:test tcp log 1"); err != nil {
-			t.Error(err)
-		}
+		var waitGroup sync.WaitGroup
+		for i := 1; i <= 4; i++ {
+			i := i
+			waitGroup.Add(1)
+			go func() {
+				defer waitGroup.Done()
+				if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "tcp_logs", time.Hour, fmt.Sprintf("jsonPayload.msg:test tcp log %d", i)); err != nil {
+					t.Error(err)
+				}
+			}()
 
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "tcp_logs", time.Hour, "jsonPayload.msg:test tcp log 2"); err != nil {
-			t.Error(err)
 		}
+		waitGroup.Wait()
 	})
 }
 
@@ -1534,9 +1567,7 @@ func TestFluentForwardLog(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
-		if gce.IsWindows(platform) {
-			t.SkipNow()
-		}
+
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
 		config := `logging:
@@ -1559,11 +1590,18 @@ func TestFluentForwardLog(t *testing.T) {
 		//
 		// The forwarding Fluent Bit uses the tag "forwarder_tag" when sending the
 		// log record. This will be preserved in the LogName.
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "echo '{\"msg\":\"test fluent forward log\"}' | /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit -i stdin -o forward://127.0.0.1:24224 -t forwarder_tag"); err != nil {
-			t.Fatalf("Error writing dummy forward protocol log line: %v", err)
+
+		command := "echo '{\"rand_value\":\"test fluent forward log\"}' | /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit -i stdin -o forward://127.0.0.1:24224 -t forwarder_tag"
+
+		if gce.IsWindows(platform) {
+			command = `Invoke-WmiMethod -Class Win32_Process -Name Create -ArgumentList "C:\Program Files\Google\Cloud Operations\Ops Agent\bin\fluent-bit.exe -i random -o forward://127.0.0.1:24224 -t forwarder_tag"`
 		}
 
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "fluent_logs.forwarder_tag", time.Hour, "jsonPayload.msg:test fluent forward log"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", command); err != nil {
+			t.Fatalf("Error writing dummy forward protocol log line %v", err)
+		}
+
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "fluent_logs.forwarder_tag", time.Hour, "jsonPayload.rand_value:*"); err != nil {
 			t.Error(err)
 		}
 	})
