@@ -237,7 +237,7 @@ func parseImageFromMetadata(name string) (string, string, string, error) {
 // prefix, "/projects", the value is parsed for the project, scope, image.
 // Otherwise, we ask for the image family from the user using command line input.
 func getImageInfo(name string) (string, string, string, string, error) {
-	if strings.HasPrefix(name, "/projects") {
+	if strings.HasPrefix(name, "projects/") {
 		imgProject, scope, image, err := parseImageFromMetadata(name)
 		return imgProject, scope, image, "", err
 	}

@@ -1130,7 +1130,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		return nil, fmt.Errorf("attemptCreateInstance() could not construct valid labels: %v", err)
 	}
 
-	imageOrImageFamilyFlag := "--image=" + options.Platform
+	imageOrImageFamilyFlag := "--image=" + options.Image
 
 	if options.Platform != "" {
 		imageOrImageFamilyFlag = "--image-family=" + options.Platform
