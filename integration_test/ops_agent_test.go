@@ -46,6 +46,7 @@ import (
 	"embed"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -1492,8 +1493,10 @@ func TestTCPLog(t *testing.T) {
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
 		if gce.IsWindows(platform) {
+			// TODO: Delete when b/285865631 is fixed.
 			t.SkipNow()
 		}
+
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
 		config := `logging:
@@ -1512,20 +1515,51 @@ func TestTCPLog(t *testing.T) {
 		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
 			t.Fatal(err)
 		}
+		command := `echo '{"msg":"test tcp log 1"}{"msg":"test tcp log 2"}' | /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit -i stdin -o tcp://127.0.0.1:5170 -p format=json_lines && echo '{"msg":"test tcp log 3"}{"msg":"test tcp log 4"}' | /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit -i stdin -o tcp://127.0.0.1:5170 -p format=json_lines`
+		// Installing Netcat or equivalent tools on Windows is tricky so we can instead
+		// use this Powershell Script that can send TCP messages.
+		if gce.IsWindows(platform) {
+			command = `$ErrorActionPreference = 'Stop'
+			function Send-TcpString {
+			  param(
+			    [string]$TargetIP,
+			    [int]$TargetPort,
+			    [string]$Message
+			  )
+			  $Socket = New-Object System.Net.Sockets.TCPClient($TargetIP, $TargetPort) 
+			  $Stream = $Socket.GetStream() 
+			  $Writer = New-Object System.IO.StreamWriter($Stream)
+			  $Message | % {
+			    $Writer.WriteLine($_)
+			    $Writer.Flush()
+			  }
+			  $Stream.Close()
+			  $Socket.Close()
+			}
+			Send-TcpString 127.0.0.1 5170 '{"msg":"test tcp log 1"}{"msg":"test tcp log 2"}'
+			Send-TcpString 127.0.0.1 5170 '{"msg":"test tcp log 3"}{"msg":"test tcp log 4"}'`
+		}
 
 		// Write JSON test log to TCP socket via bash redirect, to get around installing and using netcat.
 		// https://www.gnu.org/savannah-checkouts/gnu/bash/manual/bash.html#Redirections
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "echo '{\"msg\":\"test tcp log 1\"}{\"msg\":\"test tcp log 2\"}' > /dev/tcp/localhost/5170"); err != nil {
+
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", command); err != nil {
 			t.Fatalf("Error writing dummy TCP log line: %v", err)
 		}
 
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "tcp_logs", time.Hour, "jsonPayload.msg:test tcp log 1"); err != nil {
-			t.Error(err)
-		}
+		var waitGroup sync.WaitGroup
+		for i := 1; i <= 4; i++ {
+			i := i
+			waitGroup.Add(1)
+			go func() {
+				defer waitGroup.Done()
+				if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "tcp_logs", time.Hour, fmt.Sprintf("jsonPayload.msg:test tcp log %d", i)); err != nil {
+					t.Error(err)
+				}
+			}()
 
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "tcp_logs", time.Hour, "jsonPayload.msg:test tcp log 2"); err != nil {
-			t.Error(err)
 		}
+		waitGroup.Wait()
 	})
 }
 
@@ -1533,9 +1567,7 @@ func TestFluentForwardLog(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
-		if gce.IsWindows(platform) {
-			t.SkipNow()
-		}
+
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
 		config := `logging:
@@ -1558,11 +1590,18 @@ func TestFluentForwardLog(t *testing.T) {
 		//
 		// The forwarding Fluent Bit uses the tag "forwarder_tag" when sending the
 		// log record. This will be preserved in the LogName.
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "echo '{\"msg\":\"test fluent forward log\"}' | /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit -i stdin -o forward://127.0.0.1:24224 -t forwarder_tag"); err != nil {
-			t.Fatalf("Error writing dummy forward protocol log line: %v", err)
+
+		command := "echo '{\"rand_value\":\"test fluent forward log\"}' | /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit -i stdin -o forward://127.0.0.1:24224 -t forwarder_tag"
+
+		if gce.IsWindows(platform) {
+			command = `Invoke-WmiMethod -Class Win32_Process -Name Create -ArgumentList "C:\Program Files\Google\Cloud Operations\Ops Agent\bin\fluent-bit.exe -i random -o forward://127.0.0.1:24224 -t forwarder_tag"`
 		}
 
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "fluent_logs.forwarder_tag", time.Hour, "jsonPayload.msg:test fluent forward log"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", command); err != nil {
+			t.Fatalf("Error writing dummy forward protocol log line %v", err)
+		}
+
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "fluent_logs.forwarder_tag", time.Hour, "jsonPayload.rand_value:*"); err != nil {
 			t.Error(err)
 		}
 	})
@@ -2481,6 +2520,56 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 			t.Error(multiErr)
 		}
 	})
+}
+
+func TestPrometheusRelabelConfigs(t *testing.T) {
+	config := `metrics:
+  receivers:
+    prom_app:
+      type: prometheus
+      scrape_untyped_metrics_as: untyped
+      config:
+        scrape_configs:
+        - job_name: test
+          metrics_path: /data
+          scrape_interval: 10s
+          static_configs:
+            - targets:
+              - localhost:8000
+          metric_relabel_configs:
+          - source_labels: [test_label]
+            regex: "(.*)@(.*)"
+            target_label: destination
+            replacement: "${2}/${1}"
+  service:
+    pipelines:
+      prom_pipeline:
+        receivers: [prom_app]
+`
+	prometheusTestdata := path.Join("testdata", "prometheus")
+	remoteWorkDir := path.Join("/opt", "go-http-server")
+	testChecks := make([]mockPrometheusCheck, 0)
+	testChecks = append(testChecks, mockPrometheusCheck{
+		fileToUpload: fileToUpload{
+			local:  path.Join(prometheusTestdata, "sample_label_replace"),
+			remote: path.Join(remoteWorkDir, "data"),
+		},
+		check: func(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, window time.Duration) error {
+			if pts, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, "prometheus.googleapis.com/test_metric/gauge", window, nil, true); err != nil {
+				return err
+			} else {
+				labelValue, ok := pts.Metric.Labels["test_label"]
+				if !ok {
+					return errors.New("test_label label not found in metric")
+				}
+				if labelValue != "group/capture" {
+					return fmt.Errorf("Expected test_label to be 'group/capture' but got %s", labelValue)
+				}
+			}
+			return nil
+		},
+	})
+	testPrometheusMetrics(t, config, testChecks)
 }
 
 func TestPrometheusUntypedMetrics(t *testing.T) {
@@ -3603,12 +3692,6 @@ func TestOTLPMetricsGCM(t *testing.T) {
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
 		ctx, logger, vm := agents.CommonSetup(t, platform)
-
-		// Turn on the otlp feature gate.
-		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "otlp_receiver"}); err != nil {
-			t.Fatal(err)
-		}
-
 		otlpConfig := `
 combined:
   receivers:
@@ -3714,12 +3797,6 @@ func TestOTLPMetricsGMP(t *testing.T) {
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
 		ctx, logger, vm := agents.CommonSetup(t, platform)
-
-		// Turn on the otlp feature gate.
-		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "otlp_receiver"}); err != nil {
-			t.Fatal(err)
-		}
-
 		otlpConfig := `
 combined:
   receivers:
@@ -3818,12 +3895,6 @@ func TestOTLPTraces(t *testing.T) {
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
 		ctx, logger, vm := agents.CommonSetup(t, platform)
-
-		// Turn on the otlp feature gate.
-		if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "otlp_receiver"}); err != nil {
-			t.Fatal(err)
-		}
-
 		otlpConfig := `
 combined:
   receivers:
@@ -4057,7 +4128,6 @@ func TestParsingFailureCheck(t *testing.T) {
 	})
 }
 
-
 func TestBufferLimitSizeOpsAgent(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
@@ -4137,6 +4207,29 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
 			t.Fatal(err)
 		}
 
+	})
+}
+
+// TestNoNvmlOtelReceiverWithoutGpu check to make sure that Ops Agent's
+// hostmetrics receiver does not generate a nvml otel receiver on VMs without
+// GPU, by checking the absence of nvml logs from otel
+func TestNoNvmlOtelReceiverWithoutGpu(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		time.Sleep(60 * time.Second)
+		_, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, "syslog", time.Hour, `jsonPayload.message=~"Nvidia|nvml"`, 5)
+		if err == nil {
+			t.Error("expected no logs to contain Nvidia or nvml when the instance has no gpu")
+		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
+			t.Fatalf("unexpected error: %v", err)
+		}
 	})
 }
 

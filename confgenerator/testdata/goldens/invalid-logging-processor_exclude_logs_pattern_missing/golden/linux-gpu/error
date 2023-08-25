@@ -1,0 +1,8 @@
+[17:16] "match_any" is a required field
+  15 | logging:
+  16 |   processors:
+> 17 |     processor_1:
+                      ^
+  18 |       type: exclude_logs
+  19 |   service:
+  20 |     pipelines:

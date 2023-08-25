@@ -684,6 +684,10 @@ type PackageLocation struct {
 	// Package repository suffix to install from. Setting this and packagesInGCS
 	// to "" means to install the latest stable release.
 	repoSuffix string
+	// Override the codename for the agent repository.
+	// This setting is only used for ARM builds at the moment, and ignored when
+	// installing from Artifact Registry.
+	repoCodename string
 	// Region the packages live in in Artifact Registry. Requires repoSuffix
 	// to be nonempty.
 	artifactRegistryRegion string
@@ -694,8 +698,27 @@ func LocationFromEnvVars() PackageLocation {
 	return PackageLocation{
 		packagesInGCS:          os.Getenv("AGENT_PACKAGES_IN_GCS"),
 		repoSuffix:             os.Getenv("REPO_SUFFIX"),
+		repoCodename:           os.Getenv("REPO_CODENAME"),
 		artifactRegistryRegion: os.Getenv("ARTIFACT_REGISTRY_REGION"),
 	}
+}
+
+func toEnvironment(environment map[string]string, format string, separator string) string {
+	var assignments []string
+	for k, v := range environment {
+		if v != "" {
+			assignments = append(assignments, fmt.Sprintf(format, k, v))
+		}
+	}
+	return strings.Join(assignments, separator)
+}
+
+func linuxEnvironment(environment map[string]string) string {
+	return toEnvironment(environment, "%s='%s'", " ")
+}
+
+func windowsEnvironment(environment map[string]string) string {
+	return toEnvironment(environment, `$env:%s='%s'`, "\n")
 }
 
 // InstallOpsAgent installs the Ops Agent on the given VM. Consults the given
@@ -712,14 +735,20 @@ func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, locati
 	if location.packagesInGCS != "" {
 		return InstallPackageFromGCS(ctx, logger, vm, location.packagesInGCS)
 	}
+
+	preservedEnvironment := map[string]string{
+		"REPO_SUFFIX":              location.repoSuffix,
+		"REPO_CODENAME":            location.repoCodename,
+		"ARTIFACT_REGISTRY_REGION": location.artifactRegistryRegion,
+	}
+
 	if gce.IsWindows(vm.Platform) {
 		if _, err := gce.RunRemotely(ctx, logger, vm, "", `(New-Object Net.WebClient).DownloadFile("https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.ps1", "${env:UserProfile}\add-google-cloud-ops-agent-repo.ps1")`); err != nil {
 			return fmt.Errorf("InstallOpsAgent() failed to download repo script: %w", err)
 		}
 		runScript := func() error {
-			scriptCmd := fmt.Sprintf(`$env:REPO_SUFFIX='%s'
-$env:ARTIFACT_REGISTRY_REGION='%s'
-Invoke-Expression "${env:UserProfile}\add-google-cloud-ops-agent-repo.ps1 -AlsoInstall"`, location.repoSuffix, location.artifactRegistryRegion)
+			scriptCmd := fmt.Sprintf(`%s
+Invoke-Expression "${env:UserProfile}\add-google-cloud-ops-agent-repo.ps1 -AlsoInstall"`, windowsEnvironment(preservedEnvironment))
 			_, err := gce.RunRemotely(ctx, logger, vm, "", scriptCmd)
 			return err
 		}
@@ -735,7 +764,7 @@ Invoke-Expression "${env:UserProfile}\add-google-cloud-ops-agent-repo.ps1 -AlsoI
 	}
 
 	runInstallScript := func() error {
-		envVars := "REPO_SUFFIX=" + location.repoSuffix + " ARTIFACT_REGISTRY_REGION=" + location.artifactRegistryRegion
+		envVars := linuxEnvironment(preservedEnvironment)
 		_, err := gce.RunRemotely(ctx, logger, vm, "", "sudo "+envVars+" bash -x add-google-cloud-ops-agent-repo.sh --also-install")
 		return err
 	}

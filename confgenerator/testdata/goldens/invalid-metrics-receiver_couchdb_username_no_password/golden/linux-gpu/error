@@ -1,0 +1,9 @@
+[17:12] "password" is required when "Username" is set
+  15 | metrics:
+  16 |   receivers:
+> 17 |     couchdb:
+                  ^
+  18 |       type: couchdb
+  19 |       endpoint: http://localhost:5984
+  20 |       username: usr
+  21 |   
