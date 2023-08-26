@@ -415,7 +415,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  resource/bms:
+  resource/_global_0:
     attributes:
     - action: upsert
       key: cloud.platform
@@ -469,7 +469,7 @@ service:
       - agentmetrics/hostmetrics_0
       - filter/hostmetrics_1
       - metricstransform/hostmetrics_2
-      - resource/bms
+      - resource/_global_0
       receivers:
       - hostmetrics/hostmetrics
     metrics/fluentbit:
@@ -478,7 +478,7 @@ service:
       processors:
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
-      - resource/bms
+      - resource/_global_0
       receivers:
       - prometheus/fluentbit
     metrics/otel:
@@ -487,7 +487,7 @@ service:
       processors:
       - filter/otel_0
       - metricstransform/otel_1
-      - resource/bms
+      - resource/_global_0
       receivers:
       - prometheus/otel
   telemetry:

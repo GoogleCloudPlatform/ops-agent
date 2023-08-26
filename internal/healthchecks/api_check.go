@@ -144,7 +144,7 @@ func runLoggingCheck(logger logs.StructuredLogger) error {
 	logger.Infof("logging client was created successfully")
 
 	if err := logClient.Ping(ctx); err != nil {
-		logger.Println(err)
+		logger.Infof(err.Error())
 		var apiErr *apierror.APIError
 		if errors.As(err, &apiErr) {
 			switch apiErr.Reason() {

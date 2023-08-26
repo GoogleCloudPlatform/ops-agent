@@ -530,7 +530,7 @@ processors:
     override_scope_name: agent.googleapis.com/couchbase
     override_scope_version: "1.0"
   normalizesums/couchbase_0: {}
-  resource/bms:
+  resource/_global_0:
     attributes:
     - action: upsert
       key: cloud.platform
@@ -625,7 +625,7 @@ service:
       - metricstransform/couchbase_2
       - transform/couchbase_3
       - modifyscope/couchbase_4
-      - resource/bms
+      - resource/_global_0
       receivers:
       - prometheus/couchbase
     metrics/default__pipeline_hostmetrics:
@@ -635,8 +635,8 @@ service:
       - agentmetrics/hostmetrics_0
       - filter/hostmetrics_1
       - metricstransform/hostmetrics_2
-      - resource/bms
       - filter/default__pipeline_hostmetrics_0
+      - resource/_global_0
       receivers:
       - hostmetrics/hostmetrics
     metrics/fluentbit:
@@ -645,7 +645,7 @@ service:
       processors:
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
-      - resource/bms
+      - resource/_global_0
       receivers:
       - prometheus/fluentbit
     metrics/otel:
@@ -654,7 +654,7 @@ service:
       processors:
       - filter/otel_0
       - metricstransform/otel_1
-      - resource/bms
+      - resource/_global_0
       receivers:
       - prometheus/otel
   telemetry:

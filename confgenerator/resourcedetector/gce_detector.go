@@ -88,6 +88,15 @@ func (GCEResource) GetType() string {
 	return "gce"
 }
 
+func (r GCEResource) OTelResourceAttributes() map[string]string {
+	return map[string]string{
+		"cloud.platform": "gce_instance", // replace with semconv cloud.platform
+		"cloud.project":  r.Project,
+		"cloud.region":   r.Zone,
+		"host.id":        r.InstanceID,
+	}
+}
+
 type GCEResourceBuilderInterface interface {
 	GetResource() (Resource, error)
 }

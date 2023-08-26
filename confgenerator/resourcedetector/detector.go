@@ -22,6 +22,7 @@ import (
 // available attributes about the current monitoring resource.
 type Resource interface {
 	GetType() string
+	OTelResourceAttributes() map[string]string
 }
 
 // Get a resource instance for the current environment;
@@ -46,6 +47,12 @@ type UnrecognizedPlatformResource struct {
 
 func (UnrecognizedPlatformResource) GetType() string {
 	return "unrecognized platform"
+}
+
+func (UnrecognizedPlatformResource) OTelResourceAttributes() map[string]string {
+	return map[string]string{
+		"cloud.platform": "unrecognized platform",
+	}
 }
 
 func GetUnrecognizedPlatformResource() (Resource, error) {

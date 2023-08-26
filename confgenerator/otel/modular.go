@@ -19,16 +19,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	yaml "github.com/goccy/go-yaml"
 	"github.com/mitchellh/mapstructure"
 )
 
 const MetricsPort = 20201
-
-// Keep this in-sync with https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/blob/54a8992128b1936db270ecf1e8360c62ba17936c/internal/resourcemapping/resourcemapping.go#L182C33-L182C33
-const BMSCloudPlatformAttribute = "gcp_bare_metal_solution"
 
 type ExporterType int
 type ResourceDetectionMode int
@@ -150,28 +146,20 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 		"service":    service,
 	}
 
-	resourceDetectionProcessors := map[ResourceDetectionMode]Component{
+	resourceProcessors := map[ResourceDetectionMode]Component{
 		Override: GCPResourceDetector(true),
 		Upsert:   GCPResourceDetector(false),
 	}
-	resourceDetectionProcessorNames := map[ResourceDetectionMode]string{
-		Override: resourceDetectionProcessors[Override].name("_global_0"),
-		Upsert:   resourceDetectionProcessors[Upsert].name("_global_1"),
-	}
 
 	if pl.ResourceOverride != nil {
-		b, ok := pl.ResourceOverride.(resourcedetector.BMSResource)
-		if !ok {
-			return "", fmt.Errorf("%T is not a resourcedetector.BMSResource type", b)
+		resourceProcessors = map[ResourceDetectionMode]Component{
+			Override: ResourceTransform(pl.ResourceOverride.OTelResourceAttributes()),
+			Upsert:   ResourceTransform(pl.ResourceOverride.OTelResourceAttributes()),
 		}
-		processors["resource/bms"] = AddResourceAttributes(map[string]string{
-			"cloud.platform": BMSCloudPlatformAttribute,
-			"cloud.project":  b.Project,
-			"cloud.region":   b.Location,
-			"host.id":        b.InstanceID,
-		})
-		resourceDetectionProcessors = nil
-		resourceDetectionProcessorNames = nil
+	}
+	resourceProcessorNames := map[ResourceDetectionMode]string{
+		Override: resourceProcessors[Override].name("_global_0"),
+		Upsert:   resourceProcessors[Upsert].name("_global_1"),
 	}
 
 	for prefix, pipeline := range c.Pipelines {
@@ -186,6 +174,9 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 			continue
 		}
 		for i, processor := range p {
+			if pl.ResourceOverride != nil && processor.Type == "resourcedetection" {
+				continue
+			}
 			name := processor.name(fmt.Sprintf("%s_%d", pipeline.ReceiverPipelineName, i))
 			receiverProcessorNames = append(receiverProcessorNames, name)
 			processors[name] = processor.Config
@@ -195,20 +186,16 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 		// Everything else in the pipeline is specific to this Type.
 		var processorNames []string
 		processorNames = append(processorNames, receiverProcessorNames...)
-		if pl.ResourceOverride != nil {
-			processorNames = append(processorNames, "resource/bms")
-		}
 		for i, processor := range pipeline.Processors {
 			name := processor.name(fmt.Sprintf("%s_%d", prefix, i))
 			processorNames = append(processorNames, name)
 			processors[name] = processor.Config
 		}
 		rdm := receiverPipeline.ResourceDetectionModes[pipeline.Type]
-		if name, ok := resourceDetectionProcessorNames[rdm]; ok {
+		if name, ok := resourceProcessorNames[rdm]; ok {
 			processorNames = append(processorNames, name)
-			processors[name] = resourceDetectionProcessors[rdm].Config
+			processors[name] = resourceProcessors[rdm].Config
 		}
-
 		exporterType := receiverPipeline.ExporterTypes[pipeline.Type]
 		if _, ok := exporterNames[exporterType]; !ok {
 			exporter := c.Exporters[exporterType]

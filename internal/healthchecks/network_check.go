@@ -107,7 +107,7 @@ func (c NetworkCheck) Name() string {
 
 func (c NetworkCheck) RunCheck(logger logs.StructuredLogger) error {
 	var networkErrors []error
-	ctx := context.Background()
+	ctx := context.TODO()
 	p := platform.FromContext(ctx)
 	for _, r := range commonRequests {
 		networkErrors = append(networkErrors, r.SendRequest(logger))

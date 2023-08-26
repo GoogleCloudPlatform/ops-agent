@@ -22,6 +22,9 @@ const (
 	bmsInstanceIDEnv = "BMS_INSTANCE_ID"
 )
 
+// Keep this in-sync with https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/blob/54a8992128b1936db270ecf1e8360c62ba17936c/internal/resourcemapping/resourcemapping.go#L182C33-L182C33
+const BMSCloudPlatformAttribute = "gcp_bare_metal_solution"
+
 // BMSResource implements the Resource interface and provides attributes of a BMS instance
 type BMSResource struct {
 	Project    string
@@ -31,6 +34,15 @@ type BMSResource struct {
 
 func (BMSResource) GetType() string {
 	return "bms"
+}
+
+func (r BMSResource) OTelResourceAttributes() map[string]string {
+	return map[string]string{
+		"cloud.platform": BMSCloudPlatformAttribute,
+		"cloud.project":  r.Project,
+		"cloud.region":   r.Location,
+		"host.id":        r.InstanceID,
+	}
 }
 
 func OnBMS() bool {

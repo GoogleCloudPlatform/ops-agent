@@ -387,8 +387,8 @@ func GCPResourceDetector(override bool) Component {
 	}
 }
 
-// ResourceAttribute returns a Component that applies changes on resource attributes.
-func AddResourceAttributes(attributes map[string]string) map[string]interface{} {
+// ResourceTransform returns a Component that applies changes on resource attributes.
+func ResourceTransform(attributes map[string]string) Component {
 	a := []map[string]interface{}{}
 	keys := make([]string, 0, len(attributes))
 	for k := range attributes {
@@ -402,7 +402,11 @@ func AddResourceAttributes(attributes map[string]string) map[string]interface{} 
 			"action": "upsert",
 		})
 	}
-	return map[string]interface{}{
+	config := map[string]interface{}{
 		"attributes": a,
+	}
+	return Component{
+		Type:   "resource",
+		Config: config,
 	}
 }

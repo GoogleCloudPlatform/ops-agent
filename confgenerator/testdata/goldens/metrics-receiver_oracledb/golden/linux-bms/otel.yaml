@@ -465,7 +465,7 @@ processors:
     override_scope_name: agent.googleapis.com/oracledb
     override_scope_version: "1.0"
   normalizesums/oracledb_0: {}
-  resource/bms:
+  resource/_global_0:
     attributes:
     - action: upsert
       key: cloud.platform
@@ -1114,8 +1114,8 @@ service:
       - agentmetrics/hostmetrics_0
       - filter/hostmetrics_1
       - metricstransform/hostmetrics_2
-      - resource/bms
       - filter/default__pipeline_hostmetrics_0
+      - resource/_global_0
       receivers:
       - hostmetrics/hostmetrics
     metrics/fluentbit:
@@ -1124,7 +1124,7 @@ service:
       processors:
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
-      - resource/bms
+      - resource/_global_0
       receivers:
       - prometheus/fluentbit
     metrics/oracledb_oracledb:
@@ -1134,7 +1134,7 @@ service:
       - normalizesums/oracledb_0
       - metricstransform/oracledb_1
       - modifyscope/oracledb_2
-      - resource/bms
+      - resource/_global_0
       receivers:
       - sqlquery/oracledb
     metrics/otel:
@@ -1143,7 +1143,7 @@ service:
       processors:
       - filter/otel_0
       - metricstransform/otel_1
-      - resource/bms
+      - resource/_global_0
       receivers:
       - prometheus/otel
   telemetry:
