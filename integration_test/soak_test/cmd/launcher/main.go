@@ -89,6 +89,8 @@ func main() {
 // https://stackoverflow.com/a/64862952/1188632
 func pauseWindowsUpdates(ctx context.Context, logger *log.Logger, vm *gce.VM) (gce.CommandOutput, error) {
 	return gce.RunRemotely(ctx, logger, vm, "", `
+$ErrorActionPreference = 'Stop'
+
 $now = Get-Date
 $pause_start = $now.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
 $pause_end = $now.AddDays(35).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
