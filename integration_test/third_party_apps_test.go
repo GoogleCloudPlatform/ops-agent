@@ -675,11 +675,24 @@ func fetchAppsAndMetadata(t *testing.T) map[string]metadata.IntegrationMetadata 
 	allApps := make(map[string]metadata.IntegrationMetadata)
 
 	files, err := scriptsDir.ReadDir(path.Join("third_party_apps_data", "applications"))
+	applications := strings.Split(os.Getenv("THIRD_PARTY_APPLICATIONS"), ",")
+
 	if err != nil {
 		t.Fatalf("got error listing files under third_party_apps_data/applications: %v", err)
 	}
 	for _, file := range files {
 		app := file.Name()
+		if len(applications) > 0 {
+			foundApp := false
+			for _, i := range applications {
+				if i == app {
+					foundApp = true
+				}
+			}
+			if !foundApp {
+				continue
+			}
+		}
 		var integrationMetadata metadata.IntegrationMetadata
 		testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "metadata.yaml"))
 		if err != nil {
