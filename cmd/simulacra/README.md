@@ -75,7 +75,7 @@ We offer a subset of the possible configuration parameters as command line argum
 
     --config : Optional. The path to a YAML file specifying all the configurations for Simulacra. If unspecified, Simulacra will either use values from other command line arguments or use default values. If specifed along with other command line arguments, all others will be ignored. 
 
-    --platform: Optional. The platform for the VM. If missing, debian-11 is used.
+    --image_family: Optional. The image-family for the VM. If missing, debian-11 is used.
 
     --ops_agent_config: Optional. Path to the Ops Agent Config File. If unspecified, Ops Agent will not install any third party applications and configure Ops Agent with default settings.
 
@@ -89,6 +89,7 @@ We offer a subset of the possible configuration parameters as command line argum
 
     --service_account: Optional. A service account for the VM. If missing, the VM will be instantiated with a default service account.
 
+    --diagnostic_output_path: Optional. A path to a directory containing the output from the diagnostic tool. It is used to configure Simulacra from the diagnostic tool output. If specified along with other command line arguments, all others will be ignored. 
 
 
 
@@ -96,7 +97,9 @@ We offer a subset of the possible configuration parameters as command line argum
 
 | Key                      | Type           | Default | Description |
 |:-------------------------|:---------------|:--------|:------------|
-| `platform`            | string | debian-11 | The platform for the VM. |
+| `image_family`            | string | debian-11 | The image family for the VM. |
+| `image`             | string       | ""     | The exact image for the VM. If both image and image_family are unspecified, the VM is configured with image family 'debian-11'  |
+| `image_project`             | string       | ""     | The project the image belongs to. |
 | `ops_agent_config`             | string           | ""   | Path to the Ops Agent Config File. If unspecified, Ops Agent will not install any third party applications and configure Ops Agent with default settings. |
 | `project`      | string           | ""   |  The project ID for the project where the VMs will be created. If missing, Simulacra will try to infer from GCloud config.|
 | `zone`                | string       | ""     | The zone where the VM will be created. If missing, Simulacra will try to infer from GCloud config. |

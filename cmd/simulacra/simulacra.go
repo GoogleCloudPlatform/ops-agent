@@ -17,13 +17,15 @@
 package main
 
 import (
+	"bufio"
 	"context"
+	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
@@ -37,7 +39,7 @@ import (
 )
 
 const (
-	defaultPlatform           = "debian-11"
+	defaultImageFamily        = "debian-11"
 	defaultThirdPartyAppsPath = "./integration_test/third_party_apps_data"
 	vmInitLogFileName         = "vm_initialization.txt"
 )
@@ -55,8 +57,10 @@ type Script struct {
 // Config represents the configuration for Simulacra. Most of the fields specify requirements about the VM that
 // Simulacra will instantiate.
 type Config struct {
-	// The OS for the VM.
-	Platform string `yaml:"platform"`
+	// The image family of the OS that the VM is using.
+	ImageFamily string `yaml:"image_family"`
+	// The exact image that the OS is using.
+	Image string `yaml:"image"`
 	// Path to the Ops Agent Config File.
 	ConfigFilePath string `yaml:"ops_agent_config"`
 	// The Project Simulacra will be using to instantiate the VM.
@@ -71,6 +75,12 @@ type Config struct {
 	Scripts []*Script `yaml:"scripts"`
 	// A Service Account for the VM.
 	ServiceAccount string `yaml:"service_account"`
+	// Path to a directory containing the output from the diagnostic tool.
+	DiagnosticOutputPath string `yaml:"diagnostic_output_path"`
+	// Passed with the --image/--image-family arguments. If unspecified, default value is 'global'
+	ImageFamilyScope string `yaml:"image_family_scope"`
+	// The project that the image belongs to.
+	ImageProject string
 }
 
 func distroFolder(platform string) (string, error) {
@@ -90,17 +100,22 @@ func distroFolder(platform string) (string, error) {
 }
 
 func setupOpsAgent(ctx context.Context, vm *gce.VM, logger *log.Logger, configFilePath string) error {
-	data, err := ioutil.ReadFile(configFilePath)
-	if err != nil {
-		return err
+	var configString string
+	if configFilePath != "" {
+		data, err := os.ReadFile(configFilePath)
+		if err != nil {
+			return err
+		}
+
+		config, err := confgenerator.UnmarshalYamlToUnifiedConfig(ctx, data)
+		if err != nil {
+			return err
+		}
+
+		configString = config.String()
 	}
 
-	config, err := confgenerator.UnmarshalYamlToUnifiedConfig(ctx, data)
-	if err != nil {
-		return err
-	}
-
-	if err := agents.SetupOpsAgent(ctx, logger, vm, config.String()); err != nil {
+	if err := agents.SetupOpsAgent(ctx, logger, vm, configString); err != nil {
 		return err
 	}
 
@@ -129,7 +144,7 @@ func installApps(ctx context.Context, vm *gce.VM, logger *logging.DirectoryLogge
 	}
 
 	for _, app := range receivers {
-		if scriptContent, err := os.ReadFile(path.Join(installPath, "applications", app, folder, "install")); err == nil {
+		if scriptContent, err := os.ReadFile(filepath.Join(installPath, "applications", app, folder, "install")); err == nil {
 			logger.ToMainLog().Printf("Installing %s to VM", app)
 			log.Default().Printf("Installing %s to VM", app)
 			if _, err := gce.RunScriptRemotely(ctx, logger, vm, string(scriptContent), nil, make(map[string]string)); err != nil {
@@ -181,7 +196,7 @@ func getInstanceName() string {
 
 func getConfigFromYaml(configPath string) (*Config, error) {
 	var config Config
-	file, err := ioutil.ReadFile(configPath)
+	file, err := os.ReadFile(configPath)
 	if err != nil {
 		return nil, err
 	}
@@ -189,8 +204,8 @@ func getConfigFromYaml(configPath string) (*Config, error) {
 		return nil, err
 	}
 
-	if config.Platform == "" {
-		config.Platform = defaultPlatform
+	if config.ImageFamily == "" && config.Image == "" {
+		config.ImageFamily = defaultImageFamily
 	}
 
 	if config.ThirdPartyAppsPath == "" {
@@ -204,9 +219,79 @@ func getConfigFromYaml(configPath string) (*Config, error) {
 	return &config, nil
 }
 
+// Parse the metadata image name with format 'projects/debian-cloud/global/images/debian-11-bullseye-v20230711'
+// and return the scope and image name.
+func parseImageFromMetadata(name string) (string, string, string, error) {
+	components := strings.Split(name, "/")
+	if len(components) < 5 {
+		return "", "", "", errors.New("image name from metadata must be of format 'projects/debian-cloud/global/images/debian-11-bullseye-v20230711' ")
+	}
+	imgProject := components[1]
+	scope := components[2]
+	image := components[4]
+	return imgProject, scope, image, nil
+}
+
+// Returns the image project, scope, image and image family.
+// If the image name in the metadata file starts with the
+// prefix, "/projects", the value is parsed for the project, scope, image.
+// Otherwise, we ask for the image family from the user using command line input.
+func getImageInfo(name string) (string, string, string, string, error) {
+	if strings.HasPrefix(name, "projects/") {
+		imgProject, scope, image, err := parseImageFromMetadata(name)
+		return imgProject, scope, image, "", err
+	}
+
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print("Unable to identify image family, Enter Image Family: ")
+	text, err := reader.ReadString('\n')
+	return "", "", "", text, err
+
+}
+
+func getConfigFromDiagnosticOutput(outputDir string) (*Config, error) {
+	type Metadata struct {
+		Image string `json:"image"`
+	}
+
+	metadataFile, err := os.ReadFile(filepath.Join(outputDir, "vm_config.json"))
+	if err != nil {
+		return nil, err
+	}
+
+	var metadata Metadata
+	if err := json.Unmarshal(metadataFile, &metadata); err != nil {
+		return nil, err
+	}
+
+	imgProject, scope, image, imgFamily, err := getImageInfo(metadata.Image)
+
+	if err != nil {
+		return nil, err
+	}
+
+	config := &Config{
+		Image:              image,
+		Name:               getInstanceName(),
+		ImageFamilyScope:   scope,
+		ThirdPartyAppsPath: defaultThirdPartyAppsPath,
+		ImageProject:       imgProject,
+		ImageFamily:        imgFamily,
+	}
+
+	configFilePath := filepath.Join(outputDir, "google-cloud-ops-agent", "config.yaml")
+	if _, err := os.Stat(configFilePath); err == nil {
+		config.ConfigFilePath = configFilePath
+	}
+
+	return config, nil
+
+}
+
 func getSimulacraConfig() (*Config, error) {
 	configPath := flag.String("config", "", "Optional. The path to a YAML file specifying all the configurations for Simulacra. If unspecified, Simulacra will either use values from other command line arguments or use default values. If specifed along with other command line arguments, all others will be ignored.")
-	platform := flag.String("platform", defaultPlatform, "Optional. The OS for the VM. If missing, debian-11 is used.")
+	diagnosticOutputPath := flag.String("diagnostic_output_path", "", "Optional. The path to a directory contaning the output from the ops agent diagnostic tool. If specified, all other arguments will be ignored and Simulacra will be configured from the diagnostic tool output.")
+	imageFamily := flag.String("image_family", defaultImageFamily, "Optional. The OS for the VM. If missing, debian-11 is used.")
 	opsAgentConfigFile := flag.String("ops_agent_config", "", "Optional. Path to the Ops Agent Config File. If unspecified, Ops Agent will not install any third party applications and configure Ops Agent with default settings. ")
 	project := flag.String("project", "", "Optional. If missing, Simulacra will try to infer from GCloud config.")
 	zone := flag.String("zone", "", "Optional. If missing, Simulacra will try to infer from GCloud config. ")
@@ -219,8 +304,12 @@ func getSimulacraConfig() (*Config, error) {
 		return getConfigFromYaml(*configPath)
 	}
 
+	if *diagnosticOutputPath != "" {
+		return getConfigFromDiagnosticOutput(*diagnosticOutputPath)
+	}
+
 	config := Config{
-		Platform:           *platform,
+		ImageFamily:        *imageFamily,
 		ConfigFilePath:     *opsAgentConfigFile,
 		Project:            *project,
 		Zone:               *zone,
@@ -253,6 +342,14 @@ func runCustomScripts(ctx context.Context, vm *gce.VM, logger *logging.Directory
 	return nil
 }
 
+func getRecommendedMachineType(imageFamily string, image string) string {
+	if imageFamily != "" {
+		return agents.RecommendedMachineType(imageFamily)
+	}
+
+	return agents.RecommendedMachineType(image)
+}
+
 func createInstance(ctx context.Context, config *Config, logger *log.Logger) (*gce.VM, error) {
 	args := []string{}
 	if config.ServiceAccount != "" {
@@ -260,8 +357,11 @@ func createInstance(ctx context.Context, config *Config, logger *log.Logger) (*g
 	}
 
 	options := gce.VMOptions{
-		Platform:             config.Platform,
-		MachineType:          agents.RecommendedMachineType(config.Platform),
+		Platform:             config.ImageFamily,
+		Image:                config.Image,
+		ImageFamilyScope:     config.ImageFamilyScope,
+		ImageProject:         config.ImageProject,
+		MachineType:          getRecommendedMachineType(config.ImageFamily, config.Image),
 		Name:                 config.Name,
 		Project:              config.Project,
 		Zone:                 config.Zone,
@@ -272,9 +372,9 @@ func createInstance(ctx context.Context, config *Config, logger *log.Logger) (*g
 }
 
 func main() {
-	loggingDir := path.Join("/tmp", fmt.Sprintf("simulacra-%s", uuid.NewString()))
-	mainLogFile := path.Join(loggingDir, "main_log.txt")
-	vmInitLogFile := path.Join(loggingDir, vmInitLogFileName)
+	loggingDir := filepath.Join("/tmp", fmt.Sprintf("simulacra-%s", uuid.NewString()))
+	mainLogFile := filepath.Join(loggingDir, "main_log.txt")
+	vmInitLogFile := filepath.Join(loggingDir, vmInitLogFileName)
 	logger, err := logging.NewDirectoryLogger(loggingDir)
 	if err != nil {
 		log.Default().Fatalf("Error initializing directory logger %v", err)
