@@ -85,6 +85,24 @@ func main() {
 	}
 }
 
+// Pause updates for 35 days to avoid reboots (b/297357060) using:
+// https://stackoverflow.com/a/64862952/1188632
+func pauseWindowsUpdates(ctx context.Context, logger *log.Logger, vm *gce.VM) (gce.CommandOutput, error) {
+	return gce.RunRemotely(ctx, logger, vm, "", `
+$now = Get-Date
+$pause_start = $now.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+$pause_end = $now.AddDays(35).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings' -Name 'PauseUpdatesExpiryTime' -Value $pause_end                                                                                        
+Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings' -Name 'PauseFeatureUpdatesStartTime' -Value $pause_start
+Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings' -Name 'PauseFeatureUpdatesEndTime' -Value $pause_end
+Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings' -Name 'PauseQualityUpdatesStartTime' -Value $pause_start
+Set-itemproperty -Path 'HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings' -Name 'PauseQualityUpdatesEndTime' -Value $pause_end
+
+New-Item -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU' -Force
+New-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU' -Name 'NoAutoUpdate' -PropertyType DWORD -Value 1
+`)
+}
+
 func mainErr() error {
 	defer gce.CleanupKeysOrDie()
 
@@ -124,15 +142,7 @@ func mainErr() error {
 	}
 
 	if gce.IsWindows(vm.Platform) {
-		// Disable reboots after updates (b/297357060) using a hack suggested in
-		// https://answers.microsoft.com/en-us/windows/forum/all/disable-windows-10-automatic-restart-after-updates/16f1826d-a796-4de8-ac99-1d625420d265
-		if _, err = gce.RunRemotely(ctx, logger, vm, "", `
-Rename-Item -Path "$env:WINDIR\System32\Tasks\Microsoft\Windows\UpdateOrchestrator\Reboot" -NewName "Reboot.old"
-New-Item    -Path "$env:WINDIR\System32\Tasks\Microsoft\Windows\UpdateOrchestrator" -Name "Reboot" -ItemType "directory"
-`); err != nil {
-			return err
-		}
-		if err = gce.RestartInstance(ctx, logger, vm); err != nil {
+		if _, err := pauseWindowsUpdates(ctx, logger, vm); err != nil {
 			return err
 		}
 	}
