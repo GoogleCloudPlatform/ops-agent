@@ -41,6 +41,9 @@ EOF
 # mariadb 10.3 in focal/buster uses a different config file for secondary instances
 # mariadb >10.3 will refuse to start up if this config file is present, so only install on old distros.
 if [ "$mariadb_version" = "mariadb-10.3" ]; then
+  # Change the default config file to not read myprimary.cnf. Otherwise the
+  # default instance will also use the alternate paths.
+  sudo sed -i '/\/conf\.d\//d' /etc/mysql/mariadb.cnf
   sudo tee /etc/mysql/conf.d/myprimary.cnf >/dev/null <<EOF
 [client-server]
 !includedir /etc/mysql/conf.d/
