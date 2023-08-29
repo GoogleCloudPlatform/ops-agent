@@ -85,14 +85,22 @@ representative metric is successfully uploaded to Google Cloud Monitoring.
 The make target `third_party_apps_test` similarly requires `PROJECT` and
 `TRANSFERS_BUCKET` to be specified in the environment or the command.
 
-Additionally, specify `THIRD_PARTY_APPLICATIONS=app1,app2` to run specific third
-party applications.
-
 ```
 make third_party_apps_test PROJECT=${PROJECT} TRANSFERS_BUCKET=${TRANSFERS_BUCKET}
 ```
 
 As above, you can supply `AGENT_PACKAGES_IN_GCS` or `REPO_SUFFIX` to test a pre-built agent.
+
+Additionally, to run specific third party applications you use the command:
+
+```
+go test -v ./integration_test/third_party_apps_test.go \
+    -tags=integration_test \
+    -test.run="TestThirdPartyApps/ubuntu-2304-amd64/(nvml|dcgm)"
+```
+
+Make sure the platform you specify is included in the PLATFORMS environment
+variable.
 
 ### Testing Flow
 
