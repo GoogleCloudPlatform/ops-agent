@@ -682,7 +682,7 @@ func fetchAppsAndMetadata(t *testing.T) map[string]metadata.IntegrationMetadata 
 	}
 	for _, file := range files {
 		app := file.Name()
-		if len(applications) > 0 {
+		if applications[0] != "" {
 			foundApp := false
 			for _, i := range applications {
 				if i == app {
