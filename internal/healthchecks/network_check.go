@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
+	"github.com/cenkalti/backoff/v4"
 )
 
 type networkRequest struct {
@@ -32,12 +33,16 @@ type networkRequest struct {
 func (r networkRequest) SendRequest(logger logs.StructuredLogger) error {
 	var response *http.Response
 	var err error
-	for i := 0; i < 5; i++ {
+	bf := backoff.NewExponentialBackOff()
+	bf.MaxElapsedTime = 60 * time.Second
+	expTicker := backoff.NewTicker(bf)
+
+	for range expTicker.C {
 		response, err = http.Get(r.url)
 		if err == nil && response.StatusCode == http.StatusOK {
+			expTicker.Stop()
 			break
 		}
-		time.Sleep(1 * time.Second)
 	}
 	if err != nil {
 		if isTimeoutError(err) || isConnectionRefusedError(err) {
