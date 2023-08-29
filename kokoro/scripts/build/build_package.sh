@@ -46,6 +46,11 @@ ARTIFACT_REGISTRY="us-docker.pkg.dev"
 sudo docker-credential-gcr configure-docker --registries="${ARTIFACT_REGISTRY}"
 CACHE_LOCATION="${ARTIFACT_REGISTRY}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:${DISTRO}_${ARCH}"
 
+# debug
+docker inspect \
+    us-docker.pkg.dev/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:bullseye_x86_64
+exit 6
+
 #  --cache-from="${CACHE_LOCATION}" \
 DOCKER_BUILDKIT=1 docker build . \
   --build-arg BUILDKIT_INLINE_CACHE=1 \
