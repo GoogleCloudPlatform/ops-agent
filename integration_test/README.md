@@ -91,7 +91,7 @@ make third_party_apps_test PROJECT=${PROJECT} TRANSFERS_BUCKET=${TRANSFERS_BUCKE
 
 As above, you can supply `AGENT_PACKAGES_IN_GCS` or `REPO_SUFFIX` to test a pre-built agent.
 
-Additionally, to run specific third party applications you use the command:
+Additionally, to run specific third party applications you can use the command:
 
 ```
 go test -v ./integration_test/third_party_apps_test.go \
