@@ -675,7 +675,6 @@ func fetchAppsAndMetadata(t *testing.T) map[string]metadata.IntegrationMetadata 
 	allApps := make(map[string]metadata.IntegrationMetadata)
 
 	files, err := scriptsDir.ReadDir(path.Join("third_party_apps_data", "applications"))
-
 	if err != nil {
 		t.Fatalf("got error listing files under third_party_apps_data/applications: %v", err)
 	}
