@@ -23,7 +23,12 @@ mysql2 -e "CREATE USER 'repl'@'localhost' IDENTIFIED BY 'password';"
 mysql2 -e "GRANT REPLICATION SLAVE ON *.* TO 'repl'@'localhost';"
 
 # Dump data from replica source
-sudo mysqldump -S /run/mysqld/mysql2.sock --all-databases --apply-slave-statements --master-data | \
+
+# Note: net-buffer-length sets the max size of an INSERT statement,
+# which then trickles down to the max line length in the secondary's
+# slow query log.
+
+sudo mysqldump -S /run/mysqld/mysql2.sock --all-databases --apply-slave-statements --master-data --net-buffer-length=65535 | \
   sed "s/^\(CHANGE MASTER TO\)/\1 MASTER_HOST='localhost', MASTER_PORT=3307, MASTER_USER='repl', MASTER_PASSWORD='password', /" | \
   mysql1
 
