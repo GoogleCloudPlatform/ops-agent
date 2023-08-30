@@ -94,9 +94,9 @@ As above, you can supply `AGENT_PACKAGES_IN_GCS` or `REPO_SUFFIX` to test a pre-
 Additionally, to run specific third party applications you can use the command:
 
 ```
-go test -v ./integration_test/third_party_apps_test.go \
+go test -v ./integration_test \
     -tags=integration_test \
-    -test.run="TestThirdPartyApps/ubuntu-2304-amd64/(nvml|dcgm)"
+    -test.run="TestThirdPartyApps/.*/(nvml|dcgm)"
 ```
 
 Make sure the platform you specify is included in the PLATFORMS environment
