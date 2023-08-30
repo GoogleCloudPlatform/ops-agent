@@ -470,9 +470,6 @@ func nonEmptySeriesList(logger *log.Logger, it *monitoring.TimeSeriesIterator, m
 			// Look at the next element(s) of the iterator.
 			continue
 		}
-		if len(tsList) >= minimumRequiredSeries {
-			return tsList, nil
-		}
 		tsList = append(tsList, series)
 	}
 }
