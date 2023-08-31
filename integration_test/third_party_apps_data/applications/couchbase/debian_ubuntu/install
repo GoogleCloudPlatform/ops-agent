@@ -2,13 +2,12 @@
 
 set -e
 
-ARCH=$(dpkg --print-architecture)
-
 sudo apt-get update
 sudo apt-get install -y gnupg bzip2 wget curl libncurses5
 
-curl -O "https://packages.couchbase.com/releases/couchbase-release/couchbase-release-1.0-${ARCH}.deb"
-sudo dpkg -i "couchbase-release-1.0-${ARCH}.deb"
+# N.B. Despite having "amd64" in the name, this is an "Architecture: all" package.
+curl -O "https://packages.couchbase.com/releases/couchbase-release/couchbase-release-1.0-amd64.deb"
+sudo dpkg -i "couchbase-release-1.0-amd64.deb"
 sudo apt-get update
 
 sudo apt-get install -y couchbase-server-community

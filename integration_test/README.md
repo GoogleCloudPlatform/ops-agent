@@ -91,6 +91,17 @@ make third_party_apps_test PROJECT=${PROJECT} TRANSFERS_BUCKET=${TRANSFERS_BUCKE
 
 As above, you can supply `AGENT_PACKAGES_IN_GCS` or `REPO_SUFFIX` to test a pre-built agent.
 
+Additionally, to run specific third party applications you can use the command:
+
+```
+go test -v ./integration_test \
+    -tags=integration_test \
+    -test.run="TestThirdPartyApps/.*/(nvml|dcgm)"
+```
+
+Make sure the platform you specify is included in the PLATFORMS environment
+variable.
+
 ### Testing Flow
 
 The test is designed to be highly parameterizable. It reads various files from
