@@ -19,6 +19,8 @@ import (
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
 const InstrumentationSourceLabel = `labels."logging.googleapis.com/instrumentation_source"`
@@ -45,7 +47,7 @@ func setLogNameComponents(ctx context.Context, tag, logName, receiverType string
 }
 
 // stackdriverOutputComponent generates a component that outputs logs matching the regex `match` using `userAgent`.
-func stackdriverOutputComponent(match, userAgent string, storageLimitSize string) fluentbit.Component {
+func stackdriverOutputComponent(ctx context.Context, match, userAgent string, storageLimitSize string) fluentbit.Component {
 	config := map[string]string{
 		// https://docs.fluentbit.io/manual/pipeline/outputs/stackdriver
 		"Name":              "stackdriver",
@@ -69,6 +71,13 @@ func stackdriverOutputComponent(match, userAgent string, storageLimitSize string
 
 		// Mute these errors until https://github.com/fluent/fluent-bit/issues/4473 is fixed.
 		"net.connect_timeout_log_error": "False",
+	}
+	r := platform.FromContext(ctx).ResourceOverride
+	if r != nil {
+		if r, ok := r.(resourcedetector.BMSResource); ok {
+			config["resource"] = "baremetalsolution.googleapis.com/Instance"
+			config["resource_labels"] = fmt.Sprintf("resource_container=%s,location=%s,instance_id=%s", r.Project, r.Location, r.InstanceID)
+		}
 	}
 
 	if storageLimitSize != "" {

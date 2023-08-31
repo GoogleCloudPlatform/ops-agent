@@ -30,7 +30,6 @@ type Platform struct {
 	HostInfo           *host.InfoStat
 	HasNvidiaGpu       bool
 	ResourceOverride   resourcedetector.Resource
-	SkipLogging        bool
 }
 
 type Type int
@@ -77,11 +76,10 @@ func detect() Platform {
 		HostInfo: info,
 	}
 	if resourcedetector.OnBMS() {
-		p.ResourceOverride, err = resourcedetector.GetResource()
+		p.ResourceOverride, err = resourcedetector.GetBMSResource()
 		if err != nil {
 			log.Fatalf("failed to detect the resource: %v", err)
 		}
-		p.SkipLogging = true
 	}
 	p.detectPlatform()
 	return p

@@ -108,6 +108,7 @@ func (c SuccessCheck) RunCheck(logger logs.StructuredLogger) error {
 func TestCheckSuccess(t *testing.T) {
 	testCheck := SuccessCheck{}
 	testLogger, _ := logs.DiscardLogger()
+
 	err := testCheck.RunCheck(testLogger)
 
 	assert.NilError(t, err)
@@ -140,6 +141,7 @@ func TestRunAllHealthChecks(t *testing.T) {
 	eCheck := ErrorCheck{}
 	allHealthChecks := healthchecks.HealthCheckRegistry{fCheck, wCheck, sCheck, eCheck}
 	testLogger, observedLogs := logs.DiscardLogger()
+
 	allCheckResults := allHealthChecks.RunAllHealthChecks(testLogger)
 
 	var expected string

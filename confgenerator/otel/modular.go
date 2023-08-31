@@ -174,9 +174,6 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 			continue
 		}
 		for i, processor := range p {
-			if pl.ResourceOverride != nil && processor.Type == "resourcedetection" {
-				continue
-			}
 			name := processor.name(fmt.Sprintf("%s_%d", pipeline.ReceiverPipelineName, i))
 			receiverProcessorNames = append(receiverProcessorNames, name)
 			processors[name] = processor.Config

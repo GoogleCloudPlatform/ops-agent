@@ -14,6 +14,25 @@
 
 package resourcedetector
 
+type gceAttribute int
+
+const (
+	project gceAttribute = iota
+	zone
+	network
+	subnetwork
+	publicIP
+	privateIP
+	instanceID
+	instanceName
+	tags
+	machineType
+	metadata
+	label
+	interfaceIPv4
+	defaultScopes
+)
+
 func GetGCEResource() (Resource, error) {
 	provider := NewGCEMetadataProvider()
 	dt := GCEResourceBuilder{provider: provider}
@@ -41,7 +60,7 @@ type gceDataProvider interface {
 }
 
 // List of single-valued attributes (non-nested)
-var singleAttributeSpec = map[resourceAttribute]func(gceDataProvider) (string, error){
+var singleAttributeSpec = map[gceAttribute]func(gceDataProvider) (string, error){
 	project:      gceDataProvider.getProject,
 	zone:         gceDataProvider.getZone,
 	network:      gceDataProvider.getNetwork,
@@ -55,12 +74,12 @@ var singleAttributeSpec = map[resourceAttribute]func(gceDataProvider) (string, e
 }
 
 // List of multi-valued attributes (non-nested)
-var multiAttributeSpec = map[resourceAttribute]func(gceDataProvider) ([]string, error){
+var multiAttributeSpec = map[gceAttribute]func(gceDataProvider) ([]string, error){
 	defaultScopes: gceDataProvider.getDefaultScopes,
 }
 
 // List of nested attributes
-var nestedAttributeSpec = map[resourceAttribute]func(gceDataProvider) (map[string]string, error){
+var nestedAttributeSpec = map[gceAttribute]func(gceDataProvider) (map[string]string, error){
 	metadata:      gceDataProvider.getMetadata,
 	interfaceIPv4: gceDataProvider.getInterfaceIPv4s,
 	label:         gceDataProvider.getLabels,
@@ -90,7 +109,7 @@ func (GCEResource) GetType() string {
 
 func (r GCEResource) OTelResourceAttributes() map[string]string {
 	return map[string]string{
-		"cloud.platform": "gce_instance", // replace with semconv cloud.platform
+		"cloud.platform": "gce_instance",
 		"cloud.project":  r.Project,
 		"cloud.region":   r.Zone,
 		"host.id":        r.InstanceID,
@@ -108,7 +127,7 @@ type GCEResourceBuilder struct {
 // Return a resource instance with all the attributes
 // based on the single and nested attributes spec
 func (gd *GCEResourceBuilder) GetResource() (Resource, error) {
-	singleAttributes := map[resourceAttribute]string{}
+	singleAttributes := map[gceAttribute]string{}
 	for attrName, attrGetter := range singleAttributeSpec {
 		attr, err := attrGetter(gd.provider)
 		if err != nil {
@@ -116,7 +135,7 @@ func (gd *GCEResourceBuilder) GetResource() (Resource, error) {
 		}
 		singleAttributes[attrName] = attr
 	}
-	multiAttributes := map[resourceAttribute][]string{}
+	multiAttributes := map[gceAttribute][]string{}
 	for attrName, attrGetter := range multiAttributeSpec {
 		attr, err := attrGetter(gd.provider)
 		if err != nil {
@@ -124,7 +143,7 @@ func (gd *GCEResourceBuilder) GetResource() (Resource, error) {
 		}
 		multiAttributes[attrName] = attr
 	}
-	nestedAttributes := map[resourceAttribute]map[string]string{}
+	nestedAttributes := map[gceAttribute]map[string]string{}
 	for attrName, attrGetter := range nestedAttributeSpec {
 		attr, err := attrGetter(gd.provider)
 		if err != nil {

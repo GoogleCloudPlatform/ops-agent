@@ -22,7 +22,6 @@ import (
 	"path/filepath"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
 // ReadUnifiedConfigFromFile reads the user config file and returns a UnifiedConfig.
@@ -53,10 +52,6 @@ func (uc *UnifiedConfig) GenerateFilesFromConfig(ctx context.Context, service, l
 	case "": // Validate-only.
 		return nil
 	case "fluentbit":
-		// TODO(alex-basinov) add support for logging on BMS
-		if platform.FromContext(ctx).SkipLogging != true {
-			return nil
-		}
 		files, err := uc.GenerateFluentBitConfigs(ctx, logsDir, stateDir)
 		if err != nil {
 			return fmt.Errorf("can't parse configuration: %w", err)
@@ -73,6 +68,7 @@ func (uc *UnifiedConfig) GenerateFilesFromConfig(ctx context.Context, service, l
 		if err != nil {
 			return fmt.Errorf("can't get resource metadata: %w", err)
 		}
+
 		otelConfig, err := uc.GenerateOtelConfig(ctx)
 		if err != nil {
 			return fmt.Errorf("can't parse configuration: %w", err)
