@@ -4254,7 +4254,7 @@ func TestRestartVM(t *testing.T) {
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
 
-		if err := gce.RestartInstance(ctx, logger, vm); err != nil {
+		if err := gce.RestartInstance(ctx, logger.ToFile("VM_restart.txt"), vm); err != nil {
 			t.Fatal(err)
 		}
 
