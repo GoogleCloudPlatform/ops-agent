@@ -178,6 +178,10 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 		runOpsAgentDiagnosticsWindows(ctx, logger, vm)
 		return
 	}
+	gce.RunRemotely(ctx, logger.ToFile("fluent_bit_metrics.txt"), vm, "", "sudo curl -s localhost:20202/metrics")
+
+	gce.RunRemotely(ctx, logger.ToFile("otel_metrics.txt"), vm, "", "sudo curl -s localhost:20201/metrics")
+
 	gce.RunRemotely(ctx, logger.ToFile("systemctl_status_for_ops_agent.txt"), vm, "", "sudo systemctl status google-cloud-ops-agent*")
 
 	gce.RunRemotely(ctx, logger.ToFile("journalctl_output.txt"), vm, "", "sudo journalctl -xe")
