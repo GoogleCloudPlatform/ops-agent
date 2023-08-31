@@ -8,6 +8,8 @@ sudo apt install -y \
 # information on how to configure multiple mysql instances on the same
 # machine.
 
+mariadb_version=$(dpkg-query --showformat='${Source}' --show mariadb-server)
+
 # set up replication source to validate replica metrics
 # set main target (replica) to use binary logging for replication to work
 
@@ -15,6 +17,7 @@ sudo apt install -y \
 # log_error forces the log to be written to a file instead, but this means the
 # mysql_error receiver doesn't work with the default MariaDB configuration on
 # Debian 11.
+
 sudo tee /etc/mysql/mariadb.conf.d/99-replicas.cnf >/dev/null <<EOF
 [mysqld]
 general-log
@@ -34,6 +37,27 @@ datadir = /var/lib/mysql2/
 server-id = 2
 log-bin
 EOF
+
+# mariadb 10.3 in focal/buster uses a different config file for secondary instances
+# mariadb >10.3 will refuse to start up if this config file is present, so only install on old distros.
+if [ "$mariadb_version" = "mariadb-10.3" ]; then
+  # Change the default config file to not read myprimary.cnf. Otherwise the
+  # default instance will also use the alternate paths.
+  sudo sed -i '/\/conf\.d\//d' /etc/mysql/mariadb.cnf
+  sudo tee /etc/mysql/conf.d/myprimary.cnf >/dev/null <<EOF
+[client-server]
+!includedir /etc/mysql/conf.d/
+!includedir /etc/mysql/mariadb.conf.d/
+[mysqld]
+pid-file = /run/mysqld/mysqld2.pid
+socket = /run/mysqld/mysql2.sock
+port = 3307
+user = mysql
+datadir = /var/lib/mysql2/
+server-id = 2
+log-bin
+EOF
+fi
 
 # prepare config and data permissions
 sudo mkdir /var/lib/mysql2
