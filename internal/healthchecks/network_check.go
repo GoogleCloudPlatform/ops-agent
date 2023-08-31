@@ -17,8 +17,10 @@ package healthchecks
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
+	"github.com/cenkalti/backoff/v4"
 )
 
 type networkRequest struct {
@@ -29,7 +31,19 @@ type networkRequest struct {
 }
 
 func (r networkRequest) SendRequest(logger logs.StructuredLogger) error {
-	response, err := http.Get(r.url)
+	var response *http.Response
+	var err error
+	bf := backoff.NewExponentialBackOff()
+	bf.MaxElapsedTime = 60 * time.Second
+	expTicker := backoff.NewTicker(bf)
+
+	for range expTicker.C {
+		response, err = http.Get(r.url)
+		if err == nil && response.StatusCode == http.StatusOK {
+			expTicker.Stop()
+			break
+		}
+	}
 	if err != nil {
 		if isTimeoutError(err) || isConnectionRefusedError(err) {
 			return r.healthCheckError
