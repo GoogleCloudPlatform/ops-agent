@@ -470,9 +470,6 @@ func nonEmptySeriesList(logger *log.Logger, it *monitoring.TimeSeriesIterator, m
 			// Look at the next element(s) of the iterator.
 			continue
 		}
-		if len(tsList) >= minimumRequiredSeries {
-			return tsList, nil
-		}
 		tsList = append(tsList, series)
 	}
 }
@@ -980,7 +977,7 @@ func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM) error {
 }
 
 var (
-	overriddenImages = map[string]string{
+	overriddenImageFamilies = map[string]string{
 		"opensuse-leap-15-4": "opensuse-leap-15-4-v20221201-x86-64",
 		// TODO(b/288286057): remove this override once the 3P app tests are working with newer images.
 		"sles-15": "sles-15-sp4-v20230322-x86-64",
@@ -1053,13 +1050,34 @@ func addFrameworkLabels(inputLabels map[string]string) (map[string]string, error
 	return labelsCopy, nil
 }
 
+func getVMPlatform(image string, platform string) (string, error) {
+	if image != "" && platform != "" {
+		return "", fmt.Errorf("Both platform and image cannot be specified in VMOptions.")
+	}
+
+	if image != "" {
+		return image, nil
+	}
+
+	if platform != "" {
+		return platform, nil
+	}
+
+	return "", errors.New("at least one of image or platform must be specified")
+}
+
 // attemptCreateInstance creates a VM instance and waits for it to be ready.
 // Returns a VM object or an error (never both). The caller is responsible for
 // deleting the VM if (and only if) the returned error is nil.
 func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOptions) (vmToReturn *VM, errToReturn error) {
+
+	platform, err := getVMPlatform(options.Image, options.Platform)
+	if err != nil {
+		return nil, err
+	}
 	vm := &VM{
 		Project:  options.Project,
-		Platform: options.Platform,
+		Platform: platform,
 		Name:     options.Name,
 		Network:  os.Getenv("NETWORK_NAME"),
 		Zone:     options.Zone,
@@ -1109,10 +1127,23 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		return nil, fmt.Errorf("attemptCreateInstance() could not construct valid labels: %v", err)
 	}
 
-	imageOrImageFamilyFlag := "--image-family=" + vm.Platform
-	if image, ok := overriddenImages[vm.Platform]; ok {
-		imageOrImageFamilyFlag = "--image=" + image
+	imageOrImageFamilyFlag := "--image=" + options.Image
+
+	if options.Platform != "" {
+		imageOrImageFamilyFlag = "--image-family=" + options.Platform
+
+		if image, ok := overriddenImageFamilies[options.Platform]; ok {
+			imageOrImageFamilyFlag = "--image=" + image
+		}
+
 	}
+
+	imageFamilyScope := options.ImageFamilyScope
+
+	if imageFamilyScope == "" {
+		imageFamilyScope = "global"
+	}
+
 	args := []string{
 		"compute", "instances", "create", vm.Name,
 		"--project=" + vm.Project,
@@ -1120,7 +1151,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		"--machine-type=" + vm.MachineType,
 		"--image-project=" + imgProject,
 		imageOrImageFamilyFlag,
-		"--image-family-scope=global",
+		"--image-family-scope=" + imageFamilyScope,
 		"--network=" + vm.Network,
 		"--format=json",
 	}
@@ -1386,7 +1417,7 @@ func StopInstance(ctx context.Context, logger *log.Logger, vm *VM) error {
 }
 
 // StartInstance boots a previously-stopped VM instance.
-// Also waits for the instance to be reachable over ssh.
+// Also waits for the instance to be started up.
 func StartInstance(ctx context.Context, logger *log.Logger, vm *VM) error {
 	ctx, cancel := context.WithTimeout(ctx, time.Minute*20)
 	defer cancel()
@@ -1425,15 +1456,13 @@ func StartInstance(ctx context.Context, logger *log.Logger, vm *VM) error {
 }
 
 // RestartInstance stops and starts the instance.
-// It also waits for the instance to be reachable over ssh post-restart.
-func RestartInstance(ctx context.Context, logger *logging.DirectoryLogger, vm *VM) error {
-	fileLogger := logger.ToFile("VM_restart.txt")
-
-	if err := StopInstance(ctx, fileLogger, vm); err != nil {
+// It also waits for the instance to be started up post-restart.
+func RestartInstance(ctx context.Context, logger *log.Logger, vm *VM) error {
+	if err := StopInstance(ctx, logger, vm); err != nil {
 		return fmt.Errorf("failed to stop instance: %w", err)
 	}
 
-	return StartInstance(ctx, fileLogger, vm)
+	return StartInstance(ctx, logger, vm)
 }
 
 // InstallGsutilIfNeeded installs gsutil on instances that don't already have
@@ -1762,6 +1791,9 @@ type VMOptions struct {
 	// Required. Normally passed as --image-family to
 	// "gcloud compute images create".
 	Platform string
+	// Optional. If unspecified, 'Platform' must be specified.
+	// Normally passed as --image to gcloud compute images create.
+	Image string
 	// Optional. If missing, a random name will be generated.
 	Name string
 	// Optional. Passed as --image-project to "gcloud compute images create".
@@ -1779,6 +1811,8 @@ type VMOptions struct {
 	// Optional. If missing, the default is e2-standard-4.
 	// Overridden by INSTANCE_SIZE if that environment variable is set.
 	MachineType string
+	// Optional. If missing, the default is 'global'.
+	ImageFamilyScope string
 	// Optional. If provided, these arguments are appended on to the end
 	// of the "gcloud compute instances create" command.
 	ExtraCreateArguments []string

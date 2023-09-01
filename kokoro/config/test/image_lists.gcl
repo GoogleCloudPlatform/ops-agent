@@ -49,6 +49,15 @@ focal = _distro {
   ]
   presubmit = ['ubuntu-minimal-2004-lts']
 }
+focal_arm64 = _distro {
+  release = [
+      'ubuntu-2004-lts-arm64',
+      'ubuntu-minimal-2004-lts-arm64',
+  ]
+  presubmit = [
+      'ubuntu-2004-lts-arm64',
+  ]
+}
 jammy = _distro {
   release = [
     'ubuntu-2204-lts',
@@ -89,6 +98,15 @@ rockylinux9 = _distro {
     'rocky-linux-9',
   ]
   presubmit = ['rocky-linux-9']
+}
+rockylinux9_arm64 = _distro {
+  release = [
+    // RHEL.
+    'rhel-9-arm64',
+    // Rocky.
+    'rocky-linux-9-arm64',
+  ]
+  presubmit = ['rocky-linux-9-arm64']
 }
 sles12 = _distro {
   release = [

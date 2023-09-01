@@ -24,6 +24,11 @@ logging:
       type: mysql_general
     mysql_slow:
       type: mysql_slow
+    # Collect the primary's error log just for debugging the test
+    mysql_error_2:
+      type: mysql_error
+      include_paths:
+      - /run/mysqld/mysqld2.err
   service:
     pipelines:
       mysql:
@@ -31,6 +36,9 @@ logging:
           - mysql_error
           - mysql_general
           - mysql_slow
+      mysql2:
+        receivers:
+          - mysql_error_2
 EOF
 
 sudo service google-cloud-ops-agent restart
