@@ -42,14 +42,37 @@ export_to_sponge_config "PACKAGE_VERSION" "${PKG_VERSION}"
 
 ARTIFACT_REGISTRY="us-docker.pkg.dev"
 sudo docker-credential-gcr configure-docker --registries="${ARTIFACT_REGISTRY}"
-CACHE_LOCATION="${ARTIFACT_REGISTRY}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:${DISTRO}"
+function get_cache_location() {
+  echo "${ARTIFACT_REGISTRY}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache$1:${DISTRO}"
+}
+function get_target() {
+  echo "${DISTRO}-build$1"
+}
 
-DOCKER_BUILDKIT=1 docker build . \
-  --cache-from="${CACHE_LOCATION}" \
-  --build-arg BUILDKIT_INLINE_CACHE=1 \
-  --progress=plain \
-  --target "${DISTRO}-build" \
-  -t build_image
+DOCKER_TARGET_SUFFIXES=("" "-diagnostics" "-fluent-bit" "-otel")
+DOCKER_CACHE_FROM=""
+for suffix in "${DOCKER_TARGET_SUFFIXES[@]}"
+do
+  DOCKER_CACHE_FROM+="$(get_cache_location $suffix), "
+done
+
+
+function docker_build(){
+  # ,$get_cache_location(-diagnostics),$get_cache_location(-fluent-bit),$get_cache_location(-otel)
+  DOCKER_BUILDKIT=1 docker build . \
+    --cache-from="$(get_cache_location $1),$(get_cache_location -diagnostics),$(get_cache_location -fluent-bit),$(get_cache_location -otel)" \
+    --build-arg BUILDKIT_INLINE_CACHE=1 \
+    --progress=plain \
+    --target "$(get_target $1)" \
+    -t $2
+}
+
+for suffix in "${DOCKER_TARGET_SUFFIXES[@]}"
+do
+  docker pull "$(get_cache_location $suffix)"
+done
+(docker_build "" "build_image")
+
 
 docker history --no-trunc build_image
 
@@ -57,9 +80,20 @@ docker history --no-trunc build_image
 # write to any kind of cache, for example a per-PR cache, because the
 # push takes a few minutes and adds little value over just using the continuous
 # build's cache.
+function update_cache() {
+  docker_build "$1" "$(get_cache_location $1)"
+  docker push "$(get_cache_location $1)"
+}
+
+time (update_cache "-diagnostics")
+time (update_cache "-fluent-bit")
+time (update_cache  "-otel")
+
 if [[ "${KOKORO_ROOT_JOB_TYPE}" == "CONTINUOUS_INTEGRATION" ]]; then
-  docker image tag build_image "${CACHE_LOCATION}"
-  docker push "${CACHE_LOCATION}"
+  for suffix in "${DOCKER_TARGET_SUFFIXES[@]}"
+  do
+    (update_cache "$suffix")
+  done
 fi
 
 SIGNING_DIR="$(pwd)/kokoro/scripts/build/signing"
