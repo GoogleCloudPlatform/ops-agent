@@ -40,6 +40,9 @@ stat submodules/opentelemetry-operations-collector/go.* || echo stat failed
 . VERSION
 export_to_sponge_config "PACKAGE_VERSION" "${PKG_VERSION}"
 
+# debug
+curl --header "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/email"
+
 ARCH="$(docker info --format '{{.Architecture}}')"
 
 ARTIFACT_REGISTRY="us-docker.pkg.dev"
