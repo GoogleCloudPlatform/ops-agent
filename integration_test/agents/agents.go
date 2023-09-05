@@ -181,7 +181,8 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 	}
 	// Tests like TestPortsAndAPIHealthChecks will make these curl operations
 	// hang, so give them a shorter timeout to avoid hanging the whole test.
-	metricsCtx := context.WithTimeout(ctx, 30*time.Second)
+	metricsCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
 	gce.RunRemotely(metricsCtx, logger.ToFile("fluent_bit_metrics.txt"), vm, "", "sudo curl -s localhost:20202/metrics")
 	gce.RunRemotely(metricsCtx, logger.ToFile("otel_metrics.txt"), vm, "", "sudo curl -s localhost:20201/metrics")
 
