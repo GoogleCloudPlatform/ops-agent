@@ -1664,23 +1664,21 @@ func TestFluentForwardLog(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		// Use another instance of Fluent Bit to read from stdin and  forward to the
-		// Ops Agent.
-		//
-		// The forwarding Fluent Bit uses the tag "forwarder_tag" when sending the
-		// log record. This will be preserved in the LogName.
-
-		command := "echo '{\"rand_value\":\"test fluent forward log\"}' | /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit -i stdin -o forward://127.0.0.1:24224 -t forwarder_tag"
-
-		if gce.IsWindows(platform) {
-			command = `Invoke-WmiMethod -Class Win32_Process -Name Create -ArgumentList "C:\Program Files\Google\Cloud Operations\Ops Agent\bin\fluent-bit.exe -i random -o forward://127.0.0.1:24224 -t forwarder_tag"`
+		// Start a background fluent-forward pipe. We want to verify that
+		// the log structure is preserved, so enable JSON parsing.
+		var pipePath string
+		var err error
+		if pipePath, err = startFluentBitBackgroundPipe(ctx, logger, vm, platform, true, "-o forward://127.0.0.1:24224 -t forwarder_tag"); err != nil {
+			t.Fatalf("Error starting fluent-bit background pipe: %v", err)
 		}
 
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", command); err != nil {
-			t.Fatalf("Error writing dummy forward protocol log line %v", err)
+		// Verify a large structured log that's reasonably close to the limit of 256 KB.
+		largeLog := fmt.Sprintf(`{"large":"start%send"}`, strings.Repeat("a", 250_000))
+		if err = writeLinesToRemoteFile(ctx, logger, vm, platform, pipePath, largeLog); err != nil {
+			t.Fatalf("Error writing dummy TCP log line: %v", err)
 		}
 
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "fluent_logs.forwarder_tag", time.Hour, "jsonPayload.rand_value:*"); err != nil {
+		if err = gce.WaitForLog(ctx, logger.ToMainLog(), vm, "fluent_logs.forwarder_tag", time.Hour, `jsonPayload.large:"start" AND jsonPayload.large:"end"`); err != nil {
 			t.Error(err)
 		}
 	})
