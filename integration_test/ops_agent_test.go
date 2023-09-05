@@ -1598,50 +1598,46 @@ func TestTCPLog(t *testing.T) {
 		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
 			t.Fatal(err)
 		}
-		command := `echo '{"msg":"test tcp log 1"}{"msg":"test tcp log 2"}' | /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit -i stdin -o tcp://127.0.0.1:5170 -p format=json_lines && echo '{"msg":"test tcp log 3"}{"msg":"test tcp log 4"}' | /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit -i stdin -o tcp://127.0.0.1:5170 -p format=json_lines`
-		// Installing Netcat or equivalent tools on Windows is tricky so we can instead
-		// use this Powershell Script that can send TCP messages.
-		if gce.IsWindows(platform) {
-			command = `$ErrorActionPreference = 'Stop'
-			function Send-TcpString {
-			  param(
-			    [string]$TargetIP,
-			    [int]$TargetPort,
-			    [string]$Message
-			  )
-			  $Socket = New-Object System.Net.Sockets.TCPClient($TargetIP, $TargetPort) 
-			  $Stream = $Socket.GetStream() 
-			  $Writer = New-Object System.IO.StreamWriter($Stream)
-			  $Message | % {
-			    $Writer.WriteLine($_)
-			    $Writer.Flush()
-			  }
-			  $Stream.Close()
-			  $Socket.Close()
-			}
-			Send-TcpString 127.0.0.1 5170 '{"msg":"test tcp log 1"}{"msg":"test tcp log 2"}'
-			Send-TcpString 127.0.0.1 5170 '{"msg":"test tcp log 3"}{"msg":"test tcp log 4"}'`
+
+		// Start a background fluent-bit that outputs to TCP.
+		// The TCP receiver in the Ops Agent already parses to JSON,
+		// so don't double-parse it in the background fluent-bit.
+		var pipePath string
+		var err error
+		if pipePath, err = startFluentBitBackgroundPipe(ctx, logger, vm, platform, false, "-o tcp://127.0.0.1:5170 -p raw_message_key=$log"); err != nil {
+			t.Fatalf("Error starting fluent-bit background pipe: %v", err)
 		}
 
-		// Write JSON test log to TCP socket via bash redirect, to get around installing and using netcat.
-		// https://www.gnu.org/savannah-checkouts/gnu/bash/manual/bash.html#Redirections
+		linesToWrite := []string{
+			// Verify that separate JSON messages are partitioned appropriately,
+			// regardless of where the newlines appear between messages.
+			`{"msg":"test tcp log 1"}{"msg":"test tcp log 2"}`,
+			`{"msg":"test tcp log 3"}{"msg":"test tcp log 4"}`,
 
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", command); err != nil {
-			t.Fatalf("Error writing dummy TCP log line: %v", err)
+			// Verify a large log that's reasonably close to the limit of 256 KB.
+			// Use "start" and "end" for querying later because the max query size
+			// is only 20 KB.
+			fmt.Sprintf(`{"large":"start%send"}`, strings.Repeat("a", 250_000)),
+		}
+		if err = writeLinesToRemoteFile(ctx, logger, vm, platform, pipePath, linesToWrite...); err != nil {
+			t.Fatalf("Error writing dummy TCP log lines: %v", err)
 		}
 
 		var waitGroup sync.WaitGroup
-		for i := 1; i <= 4; i++ {
-			i := i
+		addQueryToWaitGroup := func(query string) {
 			waitGroup.Add(1)
 			go func() {
 				defer waitGroup.Done()
-				if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "tcp_logs", time.Hour, fmt.Sprintf("jsonPayload.msg:test tcp log %d", i)); err != nil {
+				if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "tcp_logs", time.Hour, query); err != nil {
 					t.Error(err)
 				}
 			}()
-
 		}
+		addQueryToWaitGroup(`jsonPayload.msg="test tcp log 1"`)
+		addQueryToWaitGroup(`jsonPayload.msg="test tcp log 2"`)
+		addQueryToWaitGroup(`jsonPayload.msg="test tcp log 3"`)
+		addQueryToWaitGroup(`jsonPayload.msg="test tcp log 4"`)
+		addQueryToWaitGroup(`jsonPayload.large:"start" AND jsonPayload.large:"end"`)
 		waitGroup.Wait()
 	})
 }
