@@ -52,6 +52,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -1486,6 +1487,88 @@ func TestLogFilePathLabel(t *testing.T) {
 			t.Error(err)
 		}
 	})
+}
+
+// startFluentBitBackgroundPipe starts a background fluent-bit process that tails a file (whose
+// path is returned by this function) and pipes its contents to an output configured via outputConfig.
+// An example outputConfig would be "-o tcp://127.0.0.1:5170".
+// Use parseInputAsJSON for structured input.
+func startFluentBitBackgroundPipe(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, platform string, parseInputAsJSON bool, outputConfig string) (string, error) {
+	dir := workDirForPlatform(platform)
+	if err := makeDirectory(ctx, logger, vm, dir); err != nil {
+		return "", err
+	}
+	remoteFile := filepath.Join(dir, "pipe.log")
+	parserFile := filepath.Join(dir, "parser.conf")
+	parserConfig := `[PARSER]
+	Name json
+	Format json`
+
+	fluentBitArgs := "-i tail" +
+		" -p buffer_chunk_size=512k" +
+		" -p buffer_max_size=512k" +
+		" -p path=" + remoteFile
+	if parseInputAsJSON {
+		fluentBitArgs += " -p parser=json" +
+			" -R " + parserFile
+	}
+	fluentBitArgs += " " + outputConfig
+
+	// Create the pipe file, create the parser file, and start fluent-bit in the background.
+	// The parser needs to be stored to a file because fluent-bit doesn't support configuring
+	// parsers on the command line.
+	command := fmt.Sprintf(`
+		sudo touch %s
+		sudo tee %s > /dev/null <<EOF
+%s
+EOF
+		sudo nohup /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit %s 1>/dev/null 2>/dev/null &`,
+		remoteFile,
+		parserFile,
+		parserConfig,
+		// Escape record accessor dollar-signs
+		strings.ReplaceAll(fluentBitArgs, "$", `\$`))
+	if gce.IsWindows(platform) {
+		command = fmt.Sprintf(`
+			New-Item %s
+			"%s" | Out-File -Encoding Ascii %s
+			Invoke-WmiMethod -Class Win32_Process -Name Create -ArgumentList 'C:\Program Files\Google\Cloud Operations\Ops Agent\bin\fluent-bit.exe %s'`,
+			remoteFile,
+			parserConfig,
+			parserFile,
+			fluentBitArgs)
+	}
+
+	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", command); err != nil {
+		return "", err
+	}
+	return remoteFile, nil
+}
+
+// writeLinesToRemoteFile writes lines of text to a remote file.
+// Lines each have an implicit terminating newline character.
+// Lines are allowed to be huge.
+func writeLinesToRemoteFile(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, platform string, remoteFile string, lines ...string) error {
+	for _, line := range lines {
+		line += "\n"
+
+		// Use a temp-file as a buffer to allow for long lines.
+		tempPath := filepath.Join(workDirForPlatform(platform), "pipe_temp.log")
+		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(line), tempPath); err != nil {
+			return err
+		}
+
+		// Append the temp-file to the remote file.
+		appendCommand := fmt.Sprintf(`sudo cat %s | sudo tee -a %s > /dev/null`, tempPath, remoteFile)
+		if gce.IsWindows(platform) {
+			appendCommand = fmt.Sprintf(`Get-Content %s | Out-File -Encoding Ascii -Append %s`, tempPath, remoteFile)
+		}
+
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", appendCommand); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func TestTCPLog(t *testing.T) {
