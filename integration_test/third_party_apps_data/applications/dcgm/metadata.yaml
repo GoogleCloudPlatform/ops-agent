@@ -32,6 +32,7 @@ platforms_to_skip:
   - debian-12
   - rocky-linux-8
   - rocky-linux-9
+  - rocky-linux-9-arm64
   - sles-12
   - sles-15
   - ubuntu-2004-lts-arm64
