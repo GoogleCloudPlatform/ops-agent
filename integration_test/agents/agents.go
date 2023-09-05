@@ -174,13 +174,16 @@ var (
 // All the commands run and their output are dumped to various files in the
 // directory managed by the given DirectoryLogger.
 func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) {
+	logger.ToMainLog().Printf("Starting RunOpsAgentDiagnostics()...")
 	if gce.IsWindows(vm.Platform) {
 		runOpsAgentDiagnosticsWindows(ctx, logger, vm)
 		return
 	}
-	gce.RunRemotely(ctx, logger.ToFile("fluent_bit_metrics.txt"), vm, "", "sudo curl -s localhost:20202/metrics")
-
-	gce.RunRemotely(ctx, logger.ToFile("otel_metrics.txt"), vm, "", "sudo curl -s localhost:20201/metrics")
+	// Tests like TestPortsAndAPIHealthChecks will make these curl operations
+	// hang, so give them a shorter timeout to avoid hanging the whole test.
+	metricsCtx := context.WithTimeout(ctx, 30*time.Second)
+	gce.RunRemotely(metricsCtx, logger.ToFile("fluent_bit_metrics.txt"), vm, "", "sudo curl -s localhost:20202/metrics")
+	gce.RunRemotely(metricsCtx, logger.ToFile("otel_metrics.txt"), vm, "", "sudo curl -s localhost:20201/metrics")
 
 	gce.RunRemotely(ctx, logger.ToFile("systemctl_status_for_ops_agent.txt"), vm, "", "sudo systemctl status google-cloud-ops-agent*")
 
