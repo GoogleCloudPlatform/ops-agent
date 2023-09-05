@@ -1598,9 +1598,8 @@ func TestTCPLog(t *testing.T) {
 		// Start a background fluent-bit that outputs to TCP.
 		// The TCP receiver in the Ops Agent already parses to JSON,
 		// so don't double-parse it in the background fluent-bit.
-		var pipePath string
-		var err error
-		if pipePath, err = startFluentBitBackgroundPipe(ctx, logger, vm, platform, false, "-o tcp://127.0.0.1:5170 -p raw_message_key=$log"); err != nil {
+		pipePath, err := startFluentBitBackgroundPipe(ctx, logger, vm, platform, false, "-o tcp://127.0.0.1:5170 -p raw_message_key=$log")
+		if err != nil {
 			t.Fatalf("Error starting fluent-bit background pipe: %v", err)
 		}
 
