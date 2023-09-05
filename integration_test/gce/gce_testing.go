@@ -978,7 +978,7 @@ func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM) error {
 
 var (
 	overriddenImageFamilies = map[string]string{
-		"opensuse-leap-15-4": "opensuse-leap-15-4-v20221201-x86-64",
+		"opensuse-leap-15-4": "opensuse-leap-15-4-v20230603-x86-64",
 		// TODO(b/288286057): remove this override once the 3P app tests are working with newer images.
 		"sles-15": "sles-15-sp4-v20230322-x86-64",
 	}
