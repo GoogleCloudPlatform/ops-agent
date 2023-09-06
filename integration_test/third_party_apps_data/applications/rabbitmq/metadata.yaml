@@ -23,21 +23,33 @@ description: |-
   RabbitMQ logs and parses them into a JSON payload. The result includes process
   ID, level, and message.
 minimum_supported_agent_version:
-  metrics: 2.11.0
+  metrics: 2.29.0
   logging: 2.12.0
 supported_operating_systems: linux
+platforms_to_skip:
+  # RabbitMQ is not supported on Debian 12, sles-12 or Ubuntu 23.04
+  - debian-12
+  - sles-12
+  - ubuntu-2304-amd64
 supported_app_version: ["3.8", "3.9"]
 expected_metrics:
   - type: workload.googleapis.com/rabbitmq.consumer.count
     value_type: INT64
     kind: GAUGE
     monitored_resource: gce_instance
+    labels:
+      node_name: .*
+      queue_name: .*
+      vhost_name: .*
   - type: workload.googleapis.com/rabbitmq.message.current
     value_type: INT64
     kind: GAUGE
     monitored_resource: gce_instance
     labels:
       state: .*
+      node_name: .*
+      queue_name: .*
+      vhost_name: .*
     representative: true
 expected_logs:
   - log_name: rabbitmq

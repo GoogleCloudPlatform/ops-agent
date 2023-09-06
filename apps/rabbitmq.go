@@ -15,9 +15,12 @@
 package apps
 
 import (
+	"context"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
 
 type LoggingProcessorRabbitmq struct {
@@ -28,18 +31,29 @@ func (*LoggingProcessorRabbitmq) Type() string {
 	return "rabbitmq"
 }
 
-func (p *LoggingProcessorRabbitmq) Components(tag, uid string) []fluentbit.Component {
-	c := []fluentbit.Component{}
-	regexParser := confgenerator.LoggingProcessorParseRegex{
-		// Sample log line:
-		// 2022-01-31 18:01:20.441571+00:00 [erro] <0.692.0> ** Connection attempt from node 'rabbit_ctl_17@keith-testing-rabbitmq' rejected. Invalid challenge reply. **
-		Regex: `^(?<timestamp>\d+-\d+-\d+ \d+:\d+:\d+\.\d+\+\d+:\d+) \[(?<severity>\w+)\] \<(?<process_id>\d+\.\d+\.\d+)\> (?<message>.*)$`,
-		ParserShared: confgenerator.ParserShared{
-			TimeKey:    "timestamp",
-			TimeFormat: "%Y-%m-%d %H:%M:%S.%L%z",
+func (p *LoggingProcessorRabbitmq) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
+	c := confgenerator.LoggingProcessorParseRegexComplex{
+		Parsers: []confgenerator.RegexParser{
+			{
+				// Sample log line:
+				// 2022-01-31 18:01:20.441571+00:00 [erro] <0.692.0> ** Connection attempt from node 'rabbit_ctl_17@keith-testing-rabbitmq' rejected. Invalid challenge reply. **
+				Regex: `^(?<timestamp>\d+-\d+-\d+\s+\d+:\d+:\d+[.,]\d+\+\d+:\d+) \[(?<severity>\w+)\] \<(?<process_id>\d+\.\d+\.\d+)\> (?<message>.*)$`,
+				Parser: confgenerator.ParserShared{
+					TimeKey:    "timestamp",
+					TimeFormat: "%Y-%m-%d %H:%M:%S.%L%z",
+				},
+			},
+			{
+				// Sample log line:
+				// 2023-02-01 12:45:14.705 [info] <0.801.0> Successfully set user tags for user 'admin' to [administrator]
+				Regex: `^(?<timestamp>\d+-\d+-\d+\s+\d+:\d+:\d+[.,]\d+\d+\d+) \[(?<severity>\w+)\] \<(?<process_id>\d+\.\d+\.\d+)\> (?<message>.*)$`,
+				Parser: confgenerator.ParserShared{
+					TimeKey:    "timestamp",
+					TimeFormat: "%Y-%m-%d %H:%M:%S.%L",
+				},
+			},
 		},
-	}
-	c = append(c, regexParser.Components(tag, uid)...)
+	}.Components(ctx, tag, uid)
 
 	// severities documented here: https://www.rabbitmq.com/logging.html#log-levels
 	c = append(c,
@@ -58,7 +72,7 @@ func (p *LoggingProcessorRabbitmq) Components(tag, uid string) []fluentbit.Compo
 				},
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(tag, uid)...,
+		}.Components(ctx, tag, uid)...,
 	)
 
 	return c
@@ -69,7 +83,7 @@ type LoggingReceiverRabbitmq struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverRabbitmq) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverRabbitmq) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			"/var/log/rabbitmq/rabbit*.log",
@@ -94,8 +108,8 @@ func (r LoggingReceiverRabbitmq) Components(tag string) []fluentbit.Component {
 			Regex:     `^(?!\d+-\d+-\d+ \d+:\d+:\d+\.\d+\+\d+:\d+)`,
 		},
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorRabbitmq.Components(tag, "rabbitmq")...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c = append(c, r.LoggingProcessorRabbitmq.Components(ctx, tag, "rabbitmq")...)
 	return c
 }
 
@@ -109,9 +123,9 @@ type MetricsReceiverRabbitmq struct {
 	confgenerator.MetricsReceiverShared    `yaml:",inline"`
 	confgenerator.MetricsReceiverSharedTLS `yaml:",inline"`
 
-	Password string `yaml:"password" validate:"required"`
-	Username string `yaml:"username" validate:"required"`
-	Endpoint string `yaml:"endpoint" validate:"omitempty,url"`
+	Password secret.String `yaml:"password" validate:"required"`
+	Username string        `yaml:"username" validate:"required"`
+	Endpoint string        `yaml:"endpoint" validate:"omitempty,url"`
 }
 
 const defaultRabbitmqTCPEndpoint = "http://localhost:15672"
@@ -120,7 +134,7 @@ func (r MetricsReceiverRabbitmq) Type() string {
 	return "rabbitmq"
 }
 
-func (r MetricsReceiverRabbitmq) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverRabbitmq) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultRabbitmqTCPEndpoint
 	}
@@ -129,7 +143,7 @@ func (r MetricsReceiverRabbitmq) Pipelines() []otel.ReceiverPipeline {
 		"collection_interval": r.CollectionIntervalString(),
 		"endpoint":            r.Endpoint,
 		"username":            r.Username,
-		"password":            r.Password,
+		"password":            r.Password.SecretValue(),
 		"tls":                 r.TLSConfig(true),
 	}
 
@@ -142,6 +156,11 @@ func (r MetricsReceiverRabbitmq) Pipelines() []otel.ReceiverPipeline {
 			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
+			),
+			otel.TransformationMetrics(
+				otel.FlattenResourceAttribute("rabbitmq.queue.name", "queue_name"),
+				otel.FlattenResourceAttribute("rabbitmq.node.name", "node_name"),
+				otel.FlattenResourceAttribute("rabbitmq.vhost.name", "vhost_name"),
 			),
 			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},

@@ -2,20 +2,16 @@ set -e
 
 sudo apt-get update
 sudo apt-get install -y gnupg wget
-wget --no-verbose --output-document=- https://www.mongodb.org/static/pgp/server-3.6.asc | sudo apt-key add -
+wget --no-verbose --output-document=/etc/apt/trusted.gpg.d/mongodb.asc https://www.mongodb.org/static/pgp/server-3.6.asc
 
 oscode="$(lsb_release -sc)"
 osname="$(lsb_release -si)"
 
 case $osname in
   Ubuntu)
-    # The MongoDB repos only have 3.6 for bionic, nothing more recent like focal.
-    oscode="bionic"
     echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $oscode/mongodb-org/3.6 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-3.6.list
     ;;
   Debian)
-    # The mongoDB repos only have 3.6 for stretch, not buster/bullseye.
-    oscode="stretch"
     echo "deb http://repo.mongodb.org/apt/debian $oscode/mongodb-org/3.6 main" | sudo tee /etc/apt/sources.list.d/mongodb-org-3.6.list
     ;;
   *)

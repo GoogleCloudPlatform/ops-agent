@@ -59,13 +59,18 @@ expected_metrics:
     monitored_resource: gce_instance
     labels:
       server_name: .*
-    representative: true
+    unavailable_on:
+      # https://github.com/GoogleCloudPlatform/ops-agent/issues/1173
+      - centos-7
+      - sles-12
+      - sles-15
   - type: workload.googleapis.com/apache.requests
     value_type: INT64
     kind: CUMULATIVE
     monitored_resource: gce_instance
     labels:
       server_name: .*
+    representative: true
   - type: workload.googleapis.com/apache.scoreboard
     value_type: INT64
     kind: GAUGE
@@ -161,6 +166,13 @@ expected_logs:
       - name: jsonPayload.tid
         type: string
         description: Thread ID
+        unavailable_on:
+          # Unavailable for the same reasons as current_connections,
+          # described in:
+          # https://github.com/GoogleCloudPlatform/ops-agent/issues/1173
+          - centos-7
+          - sles-12
+          - sles-15
       - name: severity
         type: string
         description: ''

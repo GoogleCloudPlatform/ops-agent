@@ -15,13 +15,19 @@
 package healthchecks
 
 import (
+	"errors"
 	"fmt"
-	"log"
 	"net"
 	"strconv"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
+)
+
+const (
+	tcpHost  = "0.0.0.0"
+	tcp6Host = "::"
 )
 
 type PortsCheck struct{}
@@ -44,39 +50,60 @@ func checkIfPortAvailable(host string, port string, network string) (bool, error
 	return true, nil
 }
 
-func (c PortsCheck) RunCheck(logger *log.Logger) error {
-	// fluent-bit listens on tcp4. opentelemetry-collector listens in both tcp4 and tcp6.
-	tcpHost := "0.0.0.0"
-	tcp6Host := "::"
+func (c PortsCheck) RunCheck(logger logs.StructuredLogger) error {
+	fbErr := runFluentBitCheck(logger)
+	otelErr := runOtelCollectorCheck(logger)
+	return errors.Join(fbErr, otelErr)
+}
 
-	// Check for fluent-bit self metrics port
-	available, err := checkIfPortAvailable(tcpHost, strconv.Itoa(fluentbit.MetricsPort), "tcp4")
+func runFluentBitCheck(logger logs.StructuredLogger) error {
+	fbActive, err := isSubagentActive("google-cloud-ops-agent-fluent-bit")
+	if err != nil {
+		return err
+	}
+	if fbActive {
+		return nil
+	}
+
+	// Fluent-bit listens on tcp4. Check for fluent-bit self metrics port.
+	err = runPortCheck(logger, fluentbit.MetricsPort, tcpHost, "tcp4", FbMetricsPortErr)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func runOtelCollectorCheck(logger logs.StructuredLogger) error {
+	ocActive, err := isSubagentActive("google-cloud-ops-agent-opentelemetry-collector")
+	if err != nil {
+		return err
+	}
+	if ocActive {
+		return nil
+	}
+
+	// Opentelemetry-collector listens in both tcp4 and tcp6. Check for opentelemetry-collector self metrics port.
+	err = runPortCheck(logger, otel.MetricsPort, tcpHost, "tcp4", OtelMetricsPortErr)
+	if err != nil {
+		return err
+	}
+
+	err = runPortCheck(logger, otel.MetricsPort, tcp6Host, "tcp6", OtelMetricsPortErr)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func runPortCheck(logger logs.StructuredLogger, port int, host, network string, healthCheckError error) error {
+	available, err := checkIfPortAvailable(host, strconv.Itoa(port), network)
 	if err != nil {
 		return err
 	}
 	if !available {
-		return FbMetricsPortErr
+		return healthCheckError
 	}
-	logger.Printf("listening to %s:", net.JoinHostPort(tcpHost, strconv.Itoa(fluentbit.MetricsPort)))
-
-	// Check for opentelemetry-collector self metrics port
-	available, err = checkIfPortAvailable(tcpHost, strconv.Itoa(otel.MetricsPort), "tcp4")
-	if err != nil {
-		return err
-	}
-	if !available {
-		return OtelMetricsPortErr
-	}
-	logger.Printf("listening to %s:", net.JoinHostPort(tcpHost, strconv.Itoa(otel.MetricsPort)))
-
-	available, err = checkIfPortAvailable(tcp6Host, strconv.Itoa(otel.MetricsPort), "tcp6")
-	if err != nil {
-		return err
-	}
-	if !available {
-		return OtelMetricsPortErr
-	}
-	logger.Printf("listening to %s:", net.JoinHostPort(tcp6Host, strconv.Itoa(otel.MetricsPort)))
+	logger.Infof("listening to %s:", net.JoinHostPort(host, strconv.Itoa(port)))
 
 	return nil
 }

@@ -1,14 +1,21 @@
 set -e
 
 sudo apt-get update
-sudo apt-get install -y default-jdk default-jdk-headless wget
+# Debian 12 very specifically wants openjdk-17-jdk for installing Java via apt
+source /etc/os-release
+if [[ $ID == debian && "${VERSION_ID}" == 12 ]]; then
+    sudo apt-get install -y openjdk-17-jdk openjdk-17-jdk-headless wget
+else
+    sudo apt-get install -y default-jdk default-jdk-headless wget
+fi
 
 sudo mkdir -p \
     /opt/hadoop/logs \
     /opt/volume/datanode \
     /opt/volume/namenode
 
-wget --no-verbose https://archive.apache.org/dist/hadoop/common/hadoop-3.3.1/hadoop-3.3.1.tar.gz
+# https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/README.md#vendored-dependencies
+wget --no-verbose https://storage.googleapis.com/ops-agents-public-buckets-vendored-deps/mirrored-content/archive.apache.org/dist/hadoop/common/hadoop-3.3.1/hadoop-3.3.1.tar.gz
 sudo tar -xf hadoop-3.3.1.tar.gz -C /opt/hadoop --strip 1
 
 JAVA_HOME="$(dirname "$(dirname "$(readlink "$(readlink "$(which javac)")")")")"

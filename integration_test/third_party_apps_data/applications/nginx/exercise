@@ -1,15 +1,12 @@
 set -e
 
 # Create a file that nginx can't read.
-if [ -d "/usr/share/nginx/html/" ] 
-then
-    # This directory is used on some distros.
-    sudo touch /usr/share/nginx/html/forbidden.html
-    sudo chmod o-r /usr/share/nginx/html/forbidden.html
-else
-    sudo touch /var/www/html/forbidden.html
-    sudo chmod o-r /var/www/html/forbidden.html
-fi
+sudo touch /var/www/html/forbidden.html || echo "base touch failed"
+sudo chmod o-r /var/www/html/forbidden.html || echo "base chmod failed"
+
+# This directory is used on some distros.
+sudo touch /usr/share/nginx/html/forbidden.html || echo "share touch failed"
+sudo chmod o-r /usr/share/nginx/html/forbidden.html || echo "share chmod failed"
 
 # Then request that file through nginx. This is meant to generate an entry in
 # the access log and the error log.

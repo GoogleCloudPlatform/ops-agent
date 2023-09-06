@@ -15,6 +15,7 @@
 package confgenerator
 
 import (
+	"context"
 	"fmt"
 	"path"
 	"strconv"
@@ -22,7 +23,8 @@ import (
 	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/windows"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit/modify"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
 // DBPath returns the database path for the given log tag
@@ -46,13 +48,13 @@ func (r LoggingReceiverFiles) Type() string {
 	return "files"
 }
 
-func (r LoggingReceiverFiles) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverFiles) Components(ctx context.Context, tag string) []fluentbit.Component {
 	return LoggingReceiverFilesMixin{
 		IncludePaths:            r.IncludePaths,
 		ExcludePaths:            r.ExcludePaths,
 		WildcardRefreshInterval: r.WildcardRefreshInterval,
 		RecordLogFilePath:       r.RecordLogFilePath,
-	}.Components(tag)
+	}.Components(ctx, tag)
 }
 
 type LoggingReceiverFilesMixin struct {
@@ -64,7 +66,7 @@ type LoggingReceiverFilesMixin struct {
 	RecordLogFilePath       *bool           `yaml:"record_log_file_path,omitempty"`
 }
 
-func (r LoggingReceiverFilesMixin) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		// No files -> no input.
 		return nil
@@ -146,14 +148,7 @@ func (r LoggingReceiverFilesMixin) Components(tag string) []fluentbit.Component 
 		config["multiline.parser"] = parserName
 
 		// multiline parser outputs to a "log" key, but we expect "message" as the output of this pipeline
-		c = append(c, fluentbit.Component{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Match":  tag,
-				"Name":   "modify",
-				"Rename": "log message",
-			},
-		})
+		c = append(c, modify.NewRenameOptions("log", "message").Component(tag))
 	}
 
 	c = append(c, fluentbit.Component{
@@ -185,7 +180,7 @@ func (r LoggingReceiverSyslog) GetListenPort() uint16 {
 	return r.ListenPort
 }
 
-func (r LoggingReceiverSyslog) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverSyslog) Components(ctx context.Context, tag string) []fluentbit.Component {
 	return []fluentbit.Component{{
 		Kind: "INPUT",
 		Config: map[string]string{
@@ -242,7 +237,7 @@ func (r LoggingReceiverTCP) GetListenPort() uint16 {
 	return r.ListenPort
 }
 
-func (r LoggingReceiverTCP) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverTCP) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if r.ListenHost == "" {
 		r.ListenHost = "127.0.0.1"
 	}
@@ -266,6 +261,10 @@ func (r LoggingReceiverTCP) Components(tag string) []fluentbit.Component {
 			// When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
 			// as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
 			"Mem_Buf_Limit": "10M",
+
+			// Allow incoming logs to occupy the maximum possible size per the Logging API (256k).
+			// Use a safety factor of 2 to account for things like encoding overhead.
+			"Chunk_Size": "512k",
 		},
 	}}
 }
@@ -293,7 +292,7 @@ func (r LoggingReceiverFluentForward) GetListenPort() uint16 {
 	return r.ListenPort
 }
 
-func (r LoggingReceiverFluentForward) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverFluentForward) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if r.ListenHost == "" {
 		r.ListenHost = "127.0.0.1"
 	}
@@ -330,6 +329,7 @@ type LoggingReceiverWindowsEventLog struct {
 
 	Channels        []string `yaml:"channels,omitempty,flow" validate:"required,winlogchannels"`
 	ReceiverVersion string   `yaml:"receiver_version,omitempty" validate:"omitempty,oneof=1 2" tracking:""`
+	RenderAsXML     bool     `yaml:"render_as_xml,omitempty" tracking:""`
 }
 
 const eventLogV2SeverityParserLua = `
@@ -358,35 +358,49 @@ func (r LoggingReceiverWindowsEventLog) IsDefaultVersion() bool {
 	return r.ReceiverVersion == "" || r.ReceiverVersion == "1"
 }
 
-func commonEventLogComponents(useNewerApi bool, channels []string, tag string) []fluentbit.Component {
+func (r LoggingReceiverWindowsEventLog) Components(ctx context.Context, tag string) []fluentbit.Component {
+	if len(r.ReceiverVersion) == 0 {
+		r.ReceiverVersion = "1"
+	}
+
 	inputName := "winlog"
 	timeKey := "TimeGenerated"
 
-	if useNewerApi {
+	if !r.IsDefaultVersion() {
 		inputName = "winevtlog"
 		timeKey = "TimeCreated"
 	}
 
+	// https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
 	input := []fluentbit.Component{{
 		Kind: "INPUT",
 		Config: map[string]string{
 			"Name":         inputName,
 			"Tag":          tag,
-			"Channels":     strings.Join(channels, ","),
+			"Channels":     strings.Join(r.Channels, ","),
 			"Interval_Sec": "1",
 			"DB":           DBPath(tag),
 		},
 	}}
 
-	// On Windows Server 2012, there is a known problem where most log fields end
+	// On Windows Server 2012/2016, there is a known problem where most log fields end
 	// up blank. The Use_ANSI configuration is provided to work around this; however,
 	// this also strips Unicode characters away, so we only use it on affected
 	// platforms. This only affects the newer API.
-	if useNewerApi && windows.Is2012() {
+	p := platform.FromContext(ctx)
+	if !r.IsDefaultVersion() && (p.Is2012() || p.Is2016()) {
 		input[0].Config["Use_ANSI"] = "True"
 	}
 
-	// Parser for parsing TimeCreated/TimeGenerated field as log record timestamp
+	if r.RenderAsXML {
+		input[0].Config["Render_Event_As_XML"] = "True"
+		// By default, fluent-bit puts the rendered XML into a field named "System"
+		// (this is a constant field name and has no relation to the "System" channel).
+		// Rename it to "raw_xml" because it's a more descriptive name than "System".
+		input = append(input, modify.NewRenameOptions("System", "raw_xml").Component(tag))
+	}
+
+	// Parser for parsing TimeCreated/TimeGenerated field as log record timestamp.
 	timestampParserName := fmt.Sprintf("%s.timestamp_parser", tag)
 	timestampParser := fluentbit.Component{
 		Kind: "PARSER",
@@ -403,46 +417,28 @@ func commonEventLogComponents(useNewerApi bool, channels []string, tag string) [
 	input = append(input, timestampParser)
 	input = append(input, timestampParserFilters...)
 
-	return input
-}
-
-func (r LoggingReceiverWindowsEventLog) componentsForV2(tag string) []fluentbit.Component {
-	// https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log-winevtlog
-	input := commonEventLogComponents(true, r.Channels, tag)
-
-	// Ordinarily we use fluentbit.TranslationComponents to populate severity,
-	// which uses 'modify' filters, except 'modify' filters only work on string
-	// values and Level is an int. So we need to use Lua.
-	filters := fluentbit.LuaFilterComponents(tag, "process", eventLogV2SeverityParserLua)
-
-	return append(input, filters...)
-}
-
-func (r LoggingReceiverWindowsEventLog) Components(tag string) []fluentbit.Component {
-	if len(r.ReceiverVersion) == 0 {
-		r.ReceiverVersion = "1"
+	var filters []fluentbit.Component
+	if r.IsDefaultVersion() {
+		filters = fluentbit.TranslationComponents(tag, "EventType", "logging.googleapis.com/severity", false,
+			[]struct{ SrcVal, DestVal string }{
+				{"Error", "ERROR"},
+				{"Information", "INFO"},
+				{"Warning", "WARNING"},
+				{"SuccessAudit", "NOTICE"},
+				{"FailureAudit", "NOTICE"},
+			})
+	} else {
+		// Ordinarily we use fluentbit.TranslationComponents to populate severity,
+		// which uses 'modify' filters, except 'modify' filters only work on string
+		// values and Level is an int. So we need to use Lua.
+		filters = fluentbit.LuaFilterComponents(tag, "process", eventLogV2SeverityParserLua)
 	}
-	if !r.IsDefaultVersion() {
-		return r.componentsForV2(tag)
-	}
-
-	// https://docs.fluentbit.io/manual/pipeline/inputs/windows-event-log
-	input := commonEventLogComponents(false, r.Channels, tag)
-
-	filters := fluentbit.TranslationComponents(tag, "EventType", "logging.googleapis.com/severity", false,
-		[]struct{ SrcVal, DestVal string }{
-			{"Error", "ERROR"},
-			{"Information", "INFO"},
-			{"Warning", "WARNING"},
-			{"SuccessAudit", "NOTICE"},
-			{"FailureAudit", "NOTICE"},
-		})
 
 	return append(input, filters...)
 }
 
 func init() {
-	LoggingReceiverTypes.RegisterType(func() LoggingReceiver { return &LoggingReceiverWindowsEventLog{} }, "windows")
+	LoggingReceiverTypes.RegisterType(func() LoggingReceiver { return &LoggingReceiverWindowsEventLog{} }, platform.Windows)
 }
 
 // A LoggingReceiverSystemd represents the user configuration for a Systemd/journald receiver.
@@ -454,7 +450,7 @@ func (r LoggingReceiverSystemd) Type() string {
 	return "systemd_journald"
 }
 
-func (r LoggingReceiverSystemd) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverSystemd) Components(ctx context.Context, tag string) []fluentbit.Component {
 	input := []fluentbit.Component{{
 		Kind: "INPUT",
 		Config: map[string]string{
@@ -518,5 +514,5 @@ func (r LoggingReceiverSystemd) Components(tag string) []fluentbit.Component {
 }
 
 func init() {
-	LoggingReceiverTypes.RegisterType(func() LoggingReceiver { return &LoggingReceiverSystemd{} }, "linux")
+	LoggingReceiverTypes.RegisterType(func() LoggingReceiver { return &LoggingReceiverSystemd{} }, platform.Linux)
 }

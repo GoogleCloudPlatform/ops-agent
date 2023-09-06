@@ -15,8 +15,11 @@
 package apps
 
 import (
+	"context"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
 type MetricsReceiverMssql struct {
@@ -31,7 +34,7 @@ func (MetricsReceiverMssql) Type() string {
 	return "mssql"
 }
 
-func (m MetricsReceiverMssql) Pipelines() []otel.ReceiverPipeline {
+func (m MetricsReceiverMssql) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	if m.ReceiverVersion == "2" {
 		return []otel.ReceiverPipeline{{
 			Receiver: otel.Component{
@@ -79,7 +82,9 @@ func (m MetricsReceiverMssql) Pipelines() []otel.ReceiverPipeline {
 				},
 			},
 		},
-		Type: otel.System,
+		ExporterTypes: map[string]otel.ExporterType{
+			"metrics": otel.System,
+		},
 		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsTransform(
 				otel.RenameMetric(
@@ -102,5 +107,5 @@ func (m MetricsReceiverMssql) Pipelines() []otel.ReceiverPipeline {
 }
 
 func init() {
-	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverMssql{} }, "windows")
+	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverMssql{} }, platform.Windows)
 }

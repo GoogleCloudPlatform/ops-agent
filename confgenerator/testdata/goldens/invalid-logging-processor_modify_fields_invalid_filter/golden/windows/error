@@ -1,0 +1,9 @@
+[21:20] "omit_if": 1:25: error: field "notJsonPayload.foo" not found
+  18 |       type: modify_fields
+  19 |       fields:
+  20 |         jsonPayload.missing:
+> 21 |           omit_if: notJsonPayload.foo = bar
+                          ^
+  22 |   service:
+  23 |     pipelines:
+  24 |       default_pipeline:

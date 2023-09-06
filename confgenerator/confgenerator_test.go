@@ -15,6 +15,7 @@
 package confgenerator_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -26,6 +27,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/goccy/go-yaml"
 	"github.com/shirou/gopsutil/host"
 	"gotest.tools/v3/assert"
@@ -33,8 +35,6 @@ import (
 )
 
 const (
-	validTestdataDirName   = "valid"
-	invalidTestdataDirName = "invalid"
 	builtinTestdataDirName = "builtin"
 	goldenDir              = "golden"
 	errorGolden            = goldenDir + "/error"
@@ -43,29 +43,76 @@ const (
 )
 
 type platformConfig struct {
+	name            string
 	defaultLogsDir  string
 	defaultStateDir string
-	*host.InfoStat
+	platform        platform.Platform
+}
+
+var winlogv1channels = []string{
+	"Application",
+	"Security",
+	"Setup",
+	"System",
 }
 
 var (
-	platforms = []platformConfig{
+	testPlatforms = []platformConfig{
 		{
-			defaultLogsDir:  "/var/log/google-cloud-ops-agent/subagents",
+			name:            "linux",
+			defaultLogsDir:  "/var/log/google-cloud-ops-agent",
 			defaultStateDir: "/var/lib/google-cloud-ops-agent/fluent-bit",
-			InfoStat: &host.InfoStat{
-				OS:              "linux",
-				Platform:        "linux_platform",
-				PlatformVersion: "linux_platform_version",
+			platform: platform.Platform{
+				Type: platform.Linux,
+				HostInfo: &host.InfoStat{
+					OS:              "linux",
+					Platform:        "linux_platform",
+					PlatformVersion: "linux_platform_version",
+				},
 			},
 		},
 		{
+			name:            "linux-gpu",
+			defaultLogsDir:  "/var/log/google-cloud-ops-agent",
+			defaultStateDir: "/var/lib/google-cloud-ops-agent/fluent-bit",
+			platform: platform.Platform{
+				Type: platform.Linux,
+				HostInfo: &host.InfoStat{
+					OS:              "linux",
+					Platform:        "linux_platform",
+					PlatformVersion: "linux_platform_version",
+				},
+				HasNvidiaGpu: true,
+			},
+		},
+		{
+			name:            "windows",
 			defaultLogsDir:  `C:\ProgramData\Google\Cloud Operations\Ops Agent\log`,
 			defaultStateDir: `C:\ProgramData\Google\Cloud Operations\Ops Agent\run`,
-			InfoStat: &host.InfoStat{
-				OS:              "windows",
-				Platform:        "win_platform",
-				PlatformVersion: "win_platform_version",
+			platform: platform.Platform{
+				Type:               platform.Windows,
+				WindowsBuildNumber: "1", // Is2012 == false, Is2016 == false
+				WinlogV1Channels:   winlogv1channels,
+				HostInfo: &host.InfoStat{
+					OS:              "windows",
+					Platform:        "win_platform",
+					PlatformVersion: "win_platform_version",
+				},
+			},
+		},
+		{
+			name:            "windows-2012",
+			defaultLogsDir:  `C:\ProgramData\Google\Cloud Operations\Ops Agent\log`,
+			defaultStateDir: `C:\ProgramData\Google\Cloud Operations\Ops Agent\run`,
+			platform: platform.Platform{
+				Type:               platform.Windows,
+				WindowsBuildNumber: "9200", // Windows Server 2012
+				WinlogV1Channels:   winlogv1channels,
+				HostInfo: &host.InfoStat{
+					OS:              "windows",
+					Platform:        "win_platform",
+					PlatformVersion: "win_platform_version",
+				},
 			},
 		},
 	}
@@ -74,71 +121,29 @@ var (
 func TestGoldens(t *testing.T) {
 	t.Parallel()
 
-	// Iterate platforms inside test directories so the test name hierarchy matches the testdata hierarchy.
-	for _, test := range []struct {
-		dirName      string
-		errAssertion func(t *testing.T, err error, got map[string]string)
-	}{
-		{
-			validTestdataDirName,
-			func(t *testing.T, err error, got map[string]string) {
-				assert.NilError(t, err)
-				delete(got, builtinConfigFileName)
-			},
-		},
-		{
-			invalidTestdataDirName,
-			func(t *testing.T, err error, got map[string]string) {
-				assert.Assert(t, err != nil, "expected test config to be invalid, but was successful")
-				// Error is checked by runTestsInDir
-				delete(got, builtinConfigFileName)
-			},
-		},
-		{
-			builtinTestdataDirName,
-			nil,
-		},
-	} {
-		test := test
-		t.Run(test.dirName, func(t *testing.T) {
-			t.Parallel()
-			for _, platform := range platforms {
-				platform := platform
-				t.Run(platform.OS, func(t *testing.T) {
-					t.Parallel()
-					runTestsInDir(
-						t,
-						platform,
-						test.dirName,
-						test.errAssertion,
-					)
-				})
-			}
-		})
-	}
-}
-
-func runTestsInDir(
-	t *testing.T,
-	platform platformConfig,
-	testTypeDir string,
-	errAssertion func(*testing.T, error, map[string]string),
-) {
-	platformTestDir := filepath.Join(testTypeDir, platform.OS)
-	testNames := getTestsInDir(t, platformTestDir)
+	goldensDir := "goldens"
+	testNames := getTestsInDir(t, goldensDir)
 
 	for _, testName := range testNames {
 		// https://github.com/golang/go/wiki/CommonMistakes#using-goroutines-on-loop-iterator-variables
 		testName := testName
 		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
-			testDir := filepath.Join(platformTestDir, testName)
-			got, err := generateConfigs(platform, testDir)
-			if errAssertion != nil {
-				errAssertion(t, err, got)
-			}
-			if err := testGeneratedFiles(t, got, testDir); err != nil {
-				t.Errorf("Failed to check generated configs: %v", err)
+			for _, pc := range testPlatforms {
+				pc := pc
+				t.Run(pc.name, func(t *testing.T) {
+					testDir := filepath.Join(goldensDir, testName)
+					got, err := generateConfigs(pc, testDir)
+					if strings.HasPrefix(testName, "invalid-") {
+						assert.Assert(t, err != nil, "expected test config to be invalid, but was successful")
+					}
+					if testName != "builtin" {
+						delete(got, builtinConfigFileName)
+					}
+					if err := testGeneratedFiles(t, got, filepath.Join(testDir, goldenDir, pc.name)); err != nil {
+						t.Errorf("Failed to check generated configs: %v", err)
+					}
+				})
 			}
 		})
 	}
@@ -149,6 +154,10 @@ func getTestsInDir(t *testing.T, testDir string) []string {
 
 	testdataDir := filepath.Join("testdata", testDir)
 	testDirEntries, err := os.ReadDir(testdataDir)
+	if os.IsNotExist(err) {
+		// No tests for this combination.
+		return nil
+	}
 	assert.NilError(t, err, "couldn't read directory %s: %v", testdataDir, err)
 	testNames := []string{}
 	for _, testDirEntry := range testDirEntries {
@@ -167,7 +176,9 @@ func getTestsInDir(t *testing.T, testDir string) []string {
 	return testNames
 }
 
-func generateConfigs(platform platformConfig, testDir string) (got map[string]string, err error) {
+func generateConfigs(pc platformConfig, testDir string) (got map[string]string, err error) {
+	ctx := pc.platform.TestContext(context.Background())
+
 	got = make(map[string]string)
 	defer func() {
 		if err != nil {
@@ -176,20 +187,19 @@ func generateConfigs(platform platformConfig, testDir string) (got map[string]st
 	}()
 
 	uc, err := confgenerator.MergeConfFiles(
+		ctx,
 		filepath.Join("testdata", testDir, inputFileName),
-		platform.OS,
 		apps.BuiltInConfStructs,
 	)
 	if err != nil {
 		return
 	}
-	got[builtinConfigFileName] = apps.BuiltInConfStructs[platform.OS].String()
+	got[builtinConfigFileName] = apps.BuiltInConfStructs[pc.platform.Name()].String()
 
 	// Fluent Bit configs
-	flbGeneratedConfigs, err := uc.GenerateFluentBitConfigs(
-		platform.defaultLogsDir,
-		platform.defaultStateDir,
-		platform.InfoStat,
+	flbGeneratedConfigs, err := uc.GenerateFluentBitConfigs(ctx,
+		pc.defaultLogsDir,
+		pc.defaultStateDir,
 	)
 	for k, v := range flbGeneratedConfigs {
 		got[k] = v
@@ -199,7 +209,7 @@ func generateConfigs(platform platformConfig, testDir string) (got map[string]st
 	}
 
 	// Otel configs
-	otelGeneratedConfig, err := uc.GenerateOtelConfig(platform.InfoStat)
+	otelGeneratedConfig, err := uc.GenerateOtelConfig(ctx)
 	if err != nil {
 		return
 	}
@@ -207,7 +217,7 @@ func generateConfigs(platform platformConfig, testDir string) (got map[string]st
 
 	inputBytes, err := os.ReadFile(filepath.Join("testdata", testDir, inputFileName))
 
-	userConf, err := confgenerator.UnmarshalYamlToUnifiedConfig(inputBytes, platform.OS)
+	userConf, err := confgenerator.UnmarshalYamlToUnifiedConfig(ctx, inputBytes)
 	if err != nil {
 		return
 	}
@@ -244,7 +254,7 @@ func generateConfigs(platform platformConfig, testDir string) (got map[string]st
 func testGeneratedFiles(t *testing.T, generatedFiles map[string]string, testDir string) error {
 	// Find all files currently in this test directory
 	existingFiles := map[string]struct{}{}
-	goldenPath := filepath.Join("testdata", testDir, goldenDir)
+	goldenPath := filepath.Join("testdata", testDir)
 	err := filepath.Walk(
 		goldenPath,
 		func(path string, info fs.FileInfo, err error) error {
@@ -270,7 +280,7 @@ func testGeneratedFiles(t *testing.T, generatedFiles map[string]string, testDir 
 	// If the file is new, the test will fail if not currently doing a golden
 	// update (`-update` flag).
 	for file, content := range generatedFiles {
-		golden.Assert(t, content, filepath.Join(testDir, goldenDir, file))
+		golden.Assert(t, content, filepath.Join(testDir, file))
 		delete(existingFiles, file)
 	}
 
@@ -311,7 +321,7 @@ func init() {
 		InstanceName:  "test-instance-name",
 		Tags:          "test-tag",
 		MachineType:   "test-machine-type",
-		Metadata:      map[string]string{"test-key": "test-value"},
+		Metadata:      map[string]string{"test-key": "test-value", "test-escape": "${foo:bar}"},
 		Label:         map[string]string{"test-label-key": "test-label-value"},
 		InterfaceIPv4: map[string]string{"test-interface": "test-interface-ipv4"},
 	}
@@ -319,6 +329,6 @@ func init() {
 	// Set up the test environment with mocked data.
 	confgenerator.MetadataResource = testResource
 
-	// Enable experimental features.
-	os.Setenv("EXPERIMENTAL_FEATURES", "otlp_receiver")
+	// Enable experimental features here by calling:
+	//	 os.Setenv("EXPERIMENTAL_FEATURES", "...(comma-separated feature list)...")
 }

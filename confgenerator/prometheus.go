@@ -15,6 +15,7 @@
 package confgenerator
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -59,7 +60,7 @@ func (r PrometheusMetrics) Type() string {
 	return "prometheus"
 }
 
-func (r PrometheusMetrics) Pipelines() []otel.ReceiverPipeline {
+func (r PrometheusMetrics) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	// Get the resource metadata for the instance we're running on.
 	if gceMetadata, ok := MetadataResource.(resourcedetector.GCEResource); ok {
 		// Create a prometheus style mapping for the GCE metadata.
@@ -87,12 +88,19 @@ func (r PrometheusMetrics) Pipelines() []otel.ReceiverPipeline {
 	}
 
 	return []otel.ReceiverPipeline{{
-		Receiver: prometheusToOtelComponent(r.PromConfig),
+		Receiver: prometheusToOtelComponent(r),
 		Processors: map[string][]otel.Component{
 			// Expect metrics, without any additional processing.
-			"metrics": nil,
+			"metrics": {
+				otel.GroupByGMPAttrs(),
+			},
 		},
-		Type: otel.GMP,
+		ExporterTypes: map[string]otel.ExporterType{
+			"metrics": otel.GMP,
+		},
+		ResourceDetectionModes: map[string]otel.ResourceDetectionMode{
+			"metrics": otel.None,
+		},
 	}}
 }
 
@@ -101,8 +109,8 @@ func (r PrometheusMetrics) Pipelines() []otel.ReceiverPipeline {
 //
 // Note: We copy over the prometheus scrape configs and create new ones so calls to `Pipelines()`
 // will return the same result everytime and not change the original prometheus config.
-func prometheusToOtelComponent(promConfig promconfig.Config) otel.Component {
-	copyPromConfig, err := deepCopy(promConfig)
+func prometheusToOtelComponent(m PrometheusMetrics) otel.Component {
+	copyPromConfig, err := deepCopy(m.PromConfig)
 	if err != nil {
 		// This should never happen since we already validated the prometheus config.
 		panic(fmt.Errorf("failed to deep copy prometheus config: %w", err))
@@ -122,18 +130,18 @@ func prometheusToOtelComponent(promConfig promconfig.Config) otel.Component {
 
 	return otel.Component{
 		Type:   "prometheus",
-		Config: map[string]interface{}{"config": copyPromConfig},
+		Config: map[string]interface{}{"config": copyPromConfig, "preserve_untyped": true},
 	}
 }
 
 func deepCopy(config promconfig.Config) (promconfig.Config, error) {
 	marshalledBytes, err := yaml.Marshal(config)
 	if err != nil {
-		return promconfig.Config{}, fmt.Errorf("failed to convert Prometheus Config to yaml: %w.", err)
+		return promconfig.Config{}, fmt.Errorf("failed to convert Prometheus Config to yaml: %w", err)
 	}
 	copyConfig := promconfig.Config{}
 	if err := yaml.Unmarshal(marshalledBytes, &copyConfig); err != nil {
-		return promconfig.Config{}, fmt.Errorf("failed to convert yaml to Prometheus Config: %w.", err)
+		return promconfig.Config{}, fmt.Errorf("failed to convert yaml to Prometheus Config: %w", err)
 	}
 
 	return copyConfig, nil
@@ -156,7 +164,7 @@ func createPrometheusStyleGCEMetadata(gceMetadata resourcedetector.GCEResource) 
 	prefix := "__meta_gce_"
 	for k, v := range gceMetadata.Metadata {
 		sanitizedKey := "metadata_" + strutil.SanitizeLabelName(k)
-		metaLabels[prefix+sanitizedKey] = v
+		metaLabels[prefix+sanitizedKey] = strings.ReplaceAll(v, "$", "$$")
 	}
 
 	// Labels are not available using the GCE metadata API.

@@ -29,6 +29,9 @@ AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
     .deb/.rpm/.goo files to install on the testing VMs.
 REPO_SUFFIX: If provided, a package repository suffix to install the agent from.
     AGENT_PACKAGES_IN_GCS takes precedence over REPO_SUFFIX.
+ARTIFACT_REGISTRY_REGION: If provided, signals to the install scripts that the
+    above REPO_SUFFIX is an artifact registry repo and specifies what region it
+	is in.
 */
 
 package integration_test
@@ -145,28 +148,6 @@ func runScriptFromScriptsDir(ctx context.Context, logger *logging.DirectoryLogge
 	return gce.RunScriptRemotely(ctx, logger, vm, string(scriptContents), nil, env)
 }
 
-// Installs the agent according to the instructions in a script
-// stored in the scripts directory.
-func installUsingScript(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) (bool, error) {
-	environmentVariables := make(map[string]string)
-	suffix := os.Getenv("REPO_SUFFIX")
-	if suffix != "" {
-		environmentVariables["REPO_SUFFIX"] = suffix
-	}
-	if _, err := runScriptFromScriptsDir(ctx, logger, vm, path.Join("agent", gce.PlatformKind(vm.Platform), "install"), environmentVariables); err != nil {
-		return retryable, fmt.Errorf("error installing agent: %v", err)
-	}
-	return nonRetryable, nil
-}
-
-func installAgent(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) (bool, error) {
-	defer time.Sleep(10 * time.Second)
-	if packagesInGCS == "" {
-		return installUsingScript(ctx, logger, vm)
-	}
-	return nonRetryable, agents.InstallPackageFromGCS(ctx, logger, vm, packagesInGCS)
-}
-
 // updateSSHKeysForActiveDirectory alters the ssh-keys metadata value for the
 // given VM by prepending the given domain and a backslash onto the username.
 func updateSSHKeysForActiveDirectory(ctx context.Context, logger *log.Logger, vm *gce.VM, domain string) error {
@@ -231,7 +212,7 @@ func verifyLogField(fieldName, actualField string, expectedFields map[string]*me
 		// Not expecting this field. It could however be populated with some default zero-values when we
 		// query it back. Check for zero values based on expectedField.type? Not ideal for sure.
 		if actualField != "" && actualField != "0" && actualField != "false" && actualField != "0s" {
-			return fmt.Errorf("expeced no value for field %s but got %v\n", fieldName, actualField)
+			return fmt.Errorf("got %q for unexpected field %s\n", actualField, fieldName)
 		}
 		return nil
 	}
@@ -353,7 +334,7 @@ func verifyLog(actualLog *cloudlogging.Entry, expectedLog *metadata.ExpectedLog)
 		_, fileOk := expectedFields["sourceLocation.file"]
 		_, lineOk := expectedFields["sourceLocation.line"]
 		if fileOk || lineOk {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("excpected sourceLocation.file and sourceLocation.line but got nil\n"))
+			multiErr = multierr.Append(multiErr, fmt.Errorf("expected sourceLocation.file and sourceLocation.line but got nil\n"))
 		}
 	} else {
 		if err := verifyLogField("sourceLocation.file", actualLog.SourceLocation.File, expectedFields); err != nil {
@@ -426,6 +407,18 @@ func verifyLog(actualLog *cloudlogging.Entry, expectedLog *metadata.ExpectedLog)
 	return nil
 }
 
+// stripUnavailableFields removes the fields that are listed as unavailable_on
+// the current platform.
+func stripUnavailableFields(fields []*metadata.LogFields, platform string) []*metadata.LogFields {
+	var result []*metadata.LogFields
+	for _, field := range fields {
+		if !metadata.SliceContains(field.UnavailableOn, platform) {
+			result = append(result, field)
+		}
+	}
+	return result
+}
+
 func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, logs []*metadata.ExpectedLog) error {
 	// Wait for each entry in LogEntries concurrently. This is especially helpful
 	// when	the assertions fail: we don't want to wait for each one to time out
@@ -433,9 +426,21 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	var err error
 	c := make(chan error, len(logs))
 	for _, entry := range logs {
-		entry := entry // https://golang.org/doc/faq#closures_and_goroutines
+		// https://golang.org/doc/faq#closures_and_goroutines
+		// Plus we need to dereference the pointer to make a copy of the
+		// underlying struct.
+		entry := *entry
 		go func() {
-			// Construct query using non-optional fields.
+			// Strip out the fields that are not available on this platform.
+			// We do this here so that:
+			// 1. the field is never mentioned in the query we send, and
+			// 2. verifyLogField treats it as any other unexpected field, which
+			//    means it will fail the test ("expected no value for field").
+			//    This could result in annoying test failures if the app suddenly
+			//    begins reporting a log field on a certain platform.
+			entry.Fields = stripUnavailableFields(entry.Fields, vm.Platform)
+
+			// Construct query using remaining fields with a nonempty regex.
 			query := constructQuery(entry.LogName, entry.Fields)
 
 			// Query logging backend for log matching the query.
@@ -446,7 +451,7 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 			}
 
 			// Verify the log is what was expected.
-			err = verifyLog(actualLog, entry)
+			err = verifyLog(actualLog, &entry)
 			if err != nil {
 				c <- err
 				return
@@ -494,6 +499,10 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 			logger.ToMainLog().Printf("Skipping optional or representative metric %s", metric.Type)
 			continue
 		}
+		if metadata.SliceContains(metric.UnavailableOn, vm.Platform) {
+			logger.ToMainLog().Printf("Skipping metric %s due to unavailable_on", metric.Type)
+			continue
+		}
 		requiredMetrics = append(requiredMetrics, metric)
 	}
 	c := make(chan error, len(requiredMetrics))
@@ -512,13 +521,12 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 		return err
 	}
 
-	series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", 1*time.Hour, nil, false, len(fc.Features))
-	if err != nil {
-		return err
+	series, ft_err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", 1*time.Hour, nil, false, len(fc.Features))
+	if ft_err != nil {
+		return multierr.Append(err, ft_err)
 	}
 
-	err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, fc.Features)
-	return err
+	return multierr.Append(err, feature_tracking_metadata.AssertFeatureTrackingMetrics(series, fc.Features))
 }
 
 func assertMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metric *metadata.ExpectedMetric) error {
@@ -531,38 +539,6 @@ func assertMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.
 		return err
 	}
 	return metadata.AssertMetric(metric, series)
-}
-
-type testConfig struct {
-	// Note on tags: the "yaml" tag specifies the name of this field in the
-	// .yaml file.
-
-	// per_application_overrides is a map from application to specific settings
-	// for that application.
-	PerApplicationOverrides map[string]struct {
-		// platforms_to_skip is a list of platforms that need to be skipped for
-		// this application. Ideally this will be empty or nearly empty most of
-		// the time.
-		PlatformsToSkip []string `yaml:"platforms_to_skip"`
-	} `yaml:"per_application_overrides"`
-}
-
-// parseTestConfigFile looks for test_config.yaml, and if it exists, merges
-// any options in it into the default test config and returns the result.
-func parseTestConfigFile() (testConfig, error) {
-	config := testConfig{}
-
-	bytes, err := readFileFromScriptsDir("test_config.yaml")
-	if err != nil {
-		log.Printf("Reading test_config.yaml failed with err=%v, proceeding...", err)
-		// Probably the file is just missing, return the defaults.
-		return config, nil
-	}
-
-	if err = yaml.UnmarshalStrict(bytes, &config); err != nil {
-		return testConfig{}, err
-	}
-	return config, nil
 }
 
 // runSingleTest starts with a fresh VM, installs the app and agent on it,
@@ -598,16 +574,19 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	}
 
 	if metadata.RestartAfterInstall {
-		logger.ToMainLog().Printf("Restarting vm instance...")
-		err := gce.RestartInstance(ctx, logger, vm)
+		logger.ToMainLog().Printf("Restarting VM instance...")
+		restartLogger := logger.ToFile("VM_restart.txt")
+		err := gce.RestartInstance(ctx, restartLogger, vm)
+
+		logger.ToMainLog().Printf("Restarting VM instance returned err=%v, see VM_restart.txt for details.", err)
 		if err != nil {
 			return nonRetryable, err
 		}
-		logger.ToMainLog().Printf("vm instance restarted")
 	}
 
-	if shouldRetry, err := installAgent(ctx, logger, vm); err != nil {
-		return shouldRetry, fmt.Errorf("error installing agent: %v", err)
+	if err := agents.InstallOpsAgent(ctx, logger.ToMainLog(), vm, agents.LocationFromEnvVars()); err != nil {
+		// InstallOpsAgent does its own retries.
+		return nonRetryable, fmt.Errorf("error installing agent: %v", err)
 	}
 
 	if _, err = runScriptFromScriptsDir(ctx, logger, vm, path.Join("applications", app, "enable"), nil); err != nil {
@@ -630,9 +609,9 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 
 	if metadata.ExpectedLogs != nil {
 		logger.ToMainLog().Println("found expectedLogs, running logging test cases...")
-		// TODO(b/239240173): bad bad bad, remove this horrible hack once we fix Aerospike on SLES
+		// TODO(b/254325217): bad bad bad, remove this horrible hack once we fix Aerospike on SLES
 		if app == AerospikeApp && folder == "sles" {
-			logger.ToMainLog().Printf("skipping aerospike logging tests (b/239240173)")
+			logger.ToMainLog().Printf("skipping aerospike logging tests (b/254325217)")
 		} else if err = runLoggingTestCases(ctx, logger, vm, metadata.ExpectedLogs); err != nil {
 			return nonRetryable, err
 		}
@@ -641,13 +620,23 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	if metadata.ExpectedMetrics != nil {
 		logger.ToMainLog().Println("found expectedMetrics, running metrics test cases...")
 
-		// All integrations are expected to set the instrumentation_source label.
+		// All integrations are expected to set the instrumentation_* labels.
+		instrumentedApp := app
+		// mariadb is a separate test but it uses the same integration as mysql.
+		if app == "mariadb" {
+			instrumentedApp = "mysql"
+		}
 		for _, m := range metadata.ExpectedMetrics {
+			// The windows metrics that do not target workload.googleapis.com cannot set
+			// the instrumentation_* labels
+			if strings.HasPrefix(m.Type, "agent.googleapis.com") {
+				continue
+			}
 			if m.Labels == nil {
 				m.Labels = map[string]string{}
 			}
 			if _, ok := m.Labels["instrumentation_source"]; !ok {
-				m.Labels["instrumentation_source"] = regexp.QuoteMeta(fmt.Sprintf("agent.googleapis.com/%s", app))
+				m.Labels["instrumentation_source"] = regexp.QuoteMeta(fmt.Sprintf("agent.googleapis.com/%s", instrumentedApp))
 			}
 			if _, ok := m.Labels["instrumentation_version"]; !ok {
 				m.Labels["instrumentation_version"] = `.*`
@@ -741,7 +730,6 @@ func isCriticalFile(f string) bool {
 		"integration_test/agents/agents.go",
 		"integration_test/gce/gce_testing.go",
 		"integration_test/third_party_apps_test.go",
-		"integration_test/third_party_apps_data/test_config.yaml",
 	} {
 		if f == criticalFile {
 			return true
@@ -767,7 +755,7 @@ func determineImpactedApps(modifiedFiles []string, allApps map[string]metadata.I
 	for _, f := range modifiedFiles {
 		if isCriticalFile(f) {
 			// Consider all apps as impacted.
-			for app, _ := range allApps {
+			for app := range allApps {
 				impactedApps[app] = true
 			}
 			return impactedApps
@@ -785,7 +773,7 @@ func determineImpactedApps(modifiedFiles []string, allApps map[string]metadata.I
 			// in allApps to be a match if they have <f> as a prefix.
 			// For example, consider f = "mongodb". Then all of
 			// {mongodb3.6, mongodb} are considered impacted.
-			for app, _ := range allApps {
+			for app := range allApps {
 				if strings.HasPrefix(app, f) {
 					impactedApps[app] = true
 				}
@@ -803,9 +791,16 @@ func determineImpactedApps(modifiedFiles []string, allApps map[string]metadata.I
 	return impactedApps
 }
 
+type accelerator struct {
+	model         string
+	machineType   string
+	availableZone string
+}
+
 type test struct {
 	platform   string
 	app        string
+	gpu        *accelerator
 	metadata   metadata.IntegrationMetadata
 	skipReason string
 }
@@ -824,8 +819,47 @@ var defaultApps = map[string]bool{
 	"active_directory_ds": true,
 }
 
+var gpuModels = map[string]accelerator{
+	// This is the A100 40G model; A100 80G is similar so skipping
+	"a100": {
+		model:         "nvidia-tesla-a100",
+		machineType:   "a2-highgpu-1g",
+		availableZone: "us-central1-a",
+	},
+	"v100": {
+		model:         "nvidia-tesla-v100",
+		machineType:   "n1-standard-2",
+		availableZone: "us-central1-a",
+	},
+	"t4": {
+		model:         "nvidia-tesla-t4",
+		machineType:   "n1-standard-2",
+		availableZone: "us-central1-a",
+	},
+	"p4": {
+		model:         "nvidia-tesla-p4",
+		machineType:   "n1-standard-2",
+		availableZone: "us-central1-a",
+	},
+	"p100": {
+		model:         "nvidia-tesla-p100",
+		machineType:   "n1-standard-2",
+		availableZone: "us-central1-c",
+	},
+	"k80": {
+		model:         "nvidia-tesla-k80",
+		machineType:   "n1-standard-2",
+		availableZone: "us-central1-a",
+	},
+	"l4": {
+		model:         "nvidia-l4",
+		machineType:   "g2-standard-4",
+		availableZone: "us-central1-a",
+	},
+}
+
 const (
-	SAPHANAPlatform = "sles-15-sp3-sap-saphana"
+	SAPHANAPlatform = "sles-15-sp4-sap-saphana"
 	SAPHANAApp      = "saphana"
 
 	OracleDBApp  = "oracledb"
@@ -855,7 +889,7 @@ func incompatibleOperatingSystem(testCase test) string {
 // `platforms_to_skip` overrides the above.
 // Also, restrict `SAPHANAPlatform` to only test `SAPHANAApp` and skip that
 // app on all other platforms too.
-func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig testConfig) {
+func determineTestsToSkip(tests []test, impactedApps map[string]bool) {
 	for i, test := range tests {
 		if testing.Short() {
 			_, testApp := impactedApps[test.app]
@@ -865,8 +899,8 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 				tests[i].skipReason = fmt.Sprintf("skipping %v because it's not impacted by pending change", test.app)
 			}
 		}
-		if metadata.SliceContains(testConfig.PerApplicationOverrides[test.app].PlatformsToSkip, test.platform) {
-			tests[i].skipReason = "Skipping test due to 'platforms_to_skip' entry in test_config.yaml"
+		if metadata.SliceContains(test.metadata.PlatformsToSkip, test.platform) {
+			tests[i].skipReason = "Skipping test due to 'platforms_to_skip' entry in metadata.yaml"
 		}
 		if reason := incompatibleOperatingSystem(test); reason != "" {
 			tests[i].skipReason = reason
@@ -887,26 +921,39 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool, testConfig
 func TestThirdPartyApps(t *testing.T) {
 	t.Cleanup(gce.CleanupKeysOrDie)
 
-	testConfig, err := parseTestConfigFile()
-	if err != nil {
-		t.Fatal(err)
-	}
 	tests := []test{}
 	allApps := fetchAppsAndMetadata(t)
 	platforms := strings.Split(os.Getenv("PLATFORMS"), ",")
+
 	for _, platform := range platforms {
 		for app, metadata := range allApps {
-			tests = append(tests, test{platform: platform, app: app, metadata: metadata, skipReason: ""})
+			if len(metadata.GpuModels) > 0 {
+				for _, gpuModel := range metadata.GpuModels {
+					if gpu, ok := gpuModels[gpuModel]; !ok {
+						t.Fatalf("invalid gpu model name %s", gpuModel)
+					} else {
+						tests = append(tests, test{platform: platform, gpu: &gpu, app: app, metadata: metadata, skipReason: ""})
+					}
+				}
+			} else {
+				tests = append(tests, test{platform: platform, app: app, metadata: metadata, skipReason: ""})
+			}
 		}
 	}
 
 	// Filter tests
-	determineTestsToSkip(tests, determineImpactedApps(modifiedFiles(t), allApps), testConfig)
+	determineTestsToSkip(tests, determineImpactedApps(modifiedFiles(t), allApps))
 
 	// Execute tests
 	for _, tc := range tests {
 		tc := tc // https://golang.org/doc/faq#closures_and_goroutines
-		t.Run(tc.platform+"/"+tc.app, func(t *testing.T) {
+
+		testName := tc.platform + "/" + tc.app
+		if tc.gpu != nil {
+			testName = testName + "/" + tc.gpu.model
+		}
+
+		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
 
 			if tc.skipReason != "" {
@@ -925,6 +972,15 @@ func TestThirdPartyApps(t *testing.T) {
 					MachineType:          agents.RecommendedMachineType(tc.platform),
 					ExtraCreateArguments: nil,
 				}
+				if tc.gpu != nil {
+					options.ExtraCreateArguments = append(
+						options.ExtraCreateArguments,
+						fmt.Sprintf("--accelerator=count=1,type=%s", tc.gpu.model),
+						"--maintenance-policy=TERMINATE")
+					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-size=100GB")
+					options.MachineType = tc.gpu.machineType
+					options.Zone = tc.gpu.availableZone
+				}
 				if tc.platform == SAPHANAPlatform {
 					// This image needs an SSD in order to be performant enough.
 					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-type=pd-ssd")
@@ -932,6 +988,11 @@ func TestThirdPartyApps(t *testing.T) {
 				}
 				if tc.app == OracleDBApp {
 					options.MachineType = "e2-highmem-8"
+					if gce.IsARM(tc.platform) {
+						// T2A doesn't have a highmem line, so pick the standard machine that's specced at least
+						// as well as e2-highmem-8.
+						options.MachineType = "t2a-standard-16"
+					}
 					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-size=150GB", "--boot-disk-type=pd-ssd")
 				}
 
@@ -940,7 +1001,7 @@ func TestThirdPartyApps(t *testing.T) {
 
 				var retryable bool
 				retryable, err = runSingleTest(ctx, logger, vm, tc.app, tc.metadata)
-				log.Printf("Attempt %v of %s test of %s finished with err=%v, retryable=%v", attempt, tc.platform, tc.app, err, retryable)
+				t.Logf("Attempt %v of %s test of %s finished with err=%v, retryable=%v", attempt, tc.platform, tc.app, err, retryable)
 				if err == nil {
 					return
 				}

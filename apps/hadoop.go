@@ -15,6 +15,7 @@
 package apps
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
@@ -34,7 +35,7 @@ func (r MetricsReceiverHadoop) Type() string {
 	return "hadoop"
 }
 
-func (r MetricsReceiverHadoop) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverHadoop) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	targetSystem := "hadoop"
 	if r.MetricsReceiverSharedCollectJVM.ShouldCollectJVMMetrics() {
 		targetSystem = fmt.Sprintf("%s,%s", targetSystem, "jvm")
@@ -66,7 +67,7 @@ func (LoggingProcessorHadoop) Type() string {
 	return "hadoop"
 }
 
-func (p LoggingProcessorHadoop) Components(tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorHadoop) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	// Sample log line:
 	// 2022-02-01 18:09:47,136 INFO org.apache.hadoop.hdfs.server.namenode.FSEditLog: Edit logging is async:true
 
@@ -96,9 +97,9 @@ func (p LoggingProcessorHadoop) Components(tag, uid string) []fluentbit.Componen
 			},
 			InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 		},
-	}.Components(tag, uid)
+	}.Components(ctx, tag, uid)
 
-	c := regexParser.Components(tag, uid)
+	c := regexParser.Components(ctx, tag, uid)
 	c = append(c, severityMappingComponents...)
 
 	return c
@@ -109,7 +110,7 @@ type LoggingReceiverHadoop struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
 }
 
-func (r LoggingReceiverHadoop) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverHadoop) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		// Default logs for hadoop
 		r.IncludePaths = []string{
@@ -131,9 +132,9 @@ func (r LoggingReceiverHadoop) Components(tag string) []fluentbit.Component {
 		},
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(tag)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
 
-	return append(c, r.LoggingProcessorHadoop.Components(tag, "hadoop")...)
+	return append(c, r.LoggingProcessorHadoop.Components(ctx, tag, "hadoop")...)
 }
 
 func init() {

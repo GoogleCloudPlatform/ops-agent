@@ -1,0 +1,9 @@
+[19:20] "include_paths" cannot be set if one of [OracleHome] is set,"oracle_home" cannot be set if one of [IncludePaths] is set
+  16 |   receivers:
+  17 |     oracledb_alert:
+  18 |       type: oracledb_alert
+> 19 |       oracle_home: /cant/do/both
+                          ^
+  20 |       include_paths: [/oracle/home/*.alert]
+  21 |   service:
+  22 |     pipelines:

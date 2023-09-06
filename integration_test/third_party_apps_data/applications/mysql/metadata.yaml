@@ -32,9 +32,13 @@ configure_integration: |-
   The `mysql` receiver connects by default to a local MySQL/MariaDB
   server using a Unix socket and Unix authentication as the `root` user.
 minimum_supported_agent_version:
-  metrics: 2.8.0
+  metrics: 2.32.0
   logging: 2.5.0
 supported_operating_systems: linux
+platforms_to_skip:
+  # MySQL is not currently supported on Debian 11 ARM64 or Debian 12
+  - debian-11-arm64
+  - debian-12
 supported_app_version: ["8.0", "5.7"]
 expected_metrics:
   - type: workload.googleapis.com/mysql.buffer_pool_data_pages
@@ -74,7 +78,7 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resource: gce_instance
     labels:
-      command: .*
+      command: delete|insert|select|update
   - type: workload.googleapis.com/mysql.double_writes
     value_type: INT64
     kind: CUMULATIVE
@@ -111,6 +115,14 @@ expected_metrics:
     monitored_resource: gce_instance
     labels:
       operation: created|read|written
+  - type: workload.googleapis.com/mysql.replica.time_behind_source
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
+  - type: workload.googleapis.com/mysql.replica.sql_delay
+    value_type: INT64
+    kind: GAUGE
+    monitored_resource: gce_instance
   - type: workload.googleapis.com/mysql.row_locks
     value_type: INT64
     kind: CUMULATIVE
@@ -346,6 +358,9 @@ configuration_options:
         - name: password
           default: null
           description: The password used to connect to the server.
+        - name: application_version
+          default: null
+          description: The version of mysql (major.minor) being monitored. Replication metrics are supported for version 5.7 by setting this to the value 5.7.
         - name: collection_interval
           default: 60s
           description: A time.Duration value, such as 30s or 5m.

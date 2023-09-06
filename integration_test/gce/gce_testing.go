@@ -35,7 +35,7 @@ command below; for example: REPO_SUFFIX=20210805-2. You can also use
 AGENT_PACKAGES_IN_GCS, for details see README.md.
 
 	PROJECT=dev_project \
-	ZONE=us-central1-b \
+	ZONES=us-central1-b \
 	PLATFORMS=debian-10,centos-8,rhel-8-1-sap-ha,sles-15,ubuntu-2004-lts,windows-2012-r2,windows-2019 \
 	go test -v ops_agent_test.go \
 	  -test.parallel=1000 \
@@ -44,7 +44,10 @@ AGENT_PACKAGES_IN_GCS, for details see README.md.
 
 This library needs the following environment variables to be defined:
 PROJECT: What GCP project to use.
-ZONE: What GCP zone to run in.
+ZONES: What GCP zones to run in as a comma-separated list, with optional
+integer weights attached to each zone, in the format:
+zone1=weight1,zone2=weight2. Any zone with no weight is given a default weight
+of 1.
 
 The following variables are optional:
 
@@ -72,6 +75,10 @@ The default is "stackdriver-test-143416-file-transfers".
 INSTANCE_SIZE: What size of VMs to make. Passed in to gcloud as --machine-type.
 If provided, this value overrides the selection made by the callers to
 this library.
+
+DISABLE_PREPARE_SLES: Hopefully temporary option to disable workarounds for
+flaky startup of SLES VMs. Workarounds are disabled by setting this to the
+string "true".
 */
 package gce
 
@@ -120,6 +127,8 @@ var (
 	logClients  *logClientFactory
 	traceClient *trace.Client
 
+	zonePicker *weightedRoundRobin
+
 	// These are paths to files on the local disk that hold the keys needed to
 	// ssh to Linux VMs. init() will generate fresh keys for each run. Tests
 	// that use this library are advised to call CleanupKeys() at the end of
@@ -154,8 +163,13 @@ const (
 	queryMaxAttemptsMetricMissing = 5  // 25 seconds total.
 	queryBackoffDuration          = 5 * time.Second
 
+	// traceQueryDerate is the number of backoff durations to wait before retrying a trace query.
+	// Cloud Trace quota is incredibly low, and each call to ListTraces uses 25 quota tokens.
+	traceQueryDerate = 6 // = 30 seconds with above settings
+
 	vmInitTimeout                     = 20 * time.Minute
 	vmInitBackoffDuration             = 10 * time.Second
+	vmInitPokeSSHTimeout              = 30 * time.Second
 	vmWinPasswordResetBackoffDuration = 30 * time.Second
 
 	slesStartupDelay           = 60 * time.Second
@@ -190,6 +204,11 @@ func init() {
 	traceClient, err = trace.NewClient(ctx)
 	if err != nil {
 		log.Fatalf("trace.NewClient() failed: %v", err)
+	}
+
+	zonePicker, err = newZonePicker(os.Getenv("ZONES"))
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	// Some useful options to pass to gcloud.
@@ -373,7 +392,9 @@ func isRetriableLookupError(err error) bool {
 	// workload.googleapis.com/* domain metrics are created on first write, and may not be immediately queryable.
 	// The error doesn't always look the same, hopefully looking for Code() == NotFound will catch all variations.
 	// The Internal case catches some transient errors returned by the monitoring API sometimes.
-	return ok && (myStatus.Code() == codes.NotFound || myStatus.Code() == codes.Internal)
+	// The ResourceExhausted case catches API quota errors like:
+	// https://source.cloud.google.com/results/invocations/863be0a0-fa7c-4dab-a8df-7689d91513a7.
+	return ok && (myStatus.Code() == codes.NotFound || myStatus.Code() == codes.Internal || myStatus.Code() == codes.ResourceExhausted)
 }
 
 // lookupMetric does a single lookup of the given metric in the backend.
@@ -449,9 +470,6 @@ func nonEmptySeriesList(logger *log.Logger, it *monitoring.TimeSeriesIterator, m
 			// Look at the next element(s) of the iterator.
 			continue
 		}
-		if len(tsList) >= minimumRequiredSeries {
-			return tsList, nil
-		}
 		tsList = append(tsList, series)
 	}
 }
@@ -522,7 +540,7 @@ func WaitForMetricSeries(ctx context.Context, logger *log.Logger, vm *VM, metric
 // including spans, call traceClient.GetTrace with the TraceID returned from
 // this function.
 func WaitForTrace(ctx context.Context, logger *log.Logger, vm *VM, window time.Duration) (*cloudtrace.Trace, error) {
-	for attempt := 1; attempt <= QueryMaxAttempts; attempt++ {
+	for attempt := 1; attempt <= QueryMaxAttempts/traceQueryDerate; attempt++ {
 		it := lookupTrace(ctx, logger, vm, window)
 		trace, err := firstTrace(it)
 		if trace != nil && err == nil {
@@ -533,7 +551,7 @@ func WaitForTrace(ctx context.Context, logger *log.Logger, vm *VM, window time.D
 		}
 		logger.Printf("firstTrace check(): empty, retrying (%d/%d)...",
 			attempt, QueryMaxAttempts)
-		time.Sleep(queryBackoffDuration)
+		time.Sleep(time.Duration(traceQueryDerate) * queryBackoffDuration)
 	}
 	return nil, fmt.Errorf("WaitForTrace() failed: %s", exhaustedRetriesSuffix)
 }
@@ -547,9 +565,10 @@ func IsExhaustedRetriesMetricError(err error) bool {
 // AssertMetricMissing looks for data of a metric and returns success if
 // no data is found. To consider possible transient errors while querying
 // the backend we make queryMaxAttemptsMetricMissing query attempts.
-func AssertMetricMissing(ctx context.Context, logger *log.Logger, vm *VM, metric string, window time.Duration) error {
+func AssertMetricMissing(ctx context.Context, logger *log.Logger, vm *VM, metric string, isPrometheus bool, window time.Duration) error {
+	descriptorNotFoundErrCount := 0
 	for attempt := 1; attempt <= queryMaxAttemptsMetricMissing; attempt++ {
-		it := lookupMetric(ctx, logger, vm, metric, window, nil, false)
+		it := lookupMetric(ctx, logger, vm, metric, window, nil, isPrometheus)
 		series, err := nonEmptySeriesList(logger, it, 1)
 		found := len(series) > 0
 		logger.Printf("nonEmptySeriesList check(metric=%q): err=%v, found=%v, attempt (%d/%d)",
@@ -565,9 +584,25 @@ func AssertMetricMissing(ctx context.Context, logger *log.Logger, vm *VM, metric
 		if !isRetriableLookupError(err) {
 			return fmt.Errorf("AssertMetricMissing(metric=%q): %v", metric, err)
 		}
+
+		// prometheus.googleapis.com/* domain metrics are created on first write, and may not be immediately queryable.
+		// The error doesn't always look the same, hopefully looking for Code() == NotFound will catch all variations.
+		myStatus, ok := status.FromError(err)
+		if ok && isPrometheus && myStatus.Code() == codes.NotFound {
+			descriptorNotFoundErrCount += 1
+		}
 		time.Sleep(queryBackoffDuration)
 	}
-	return fmt.Errorf("AssertMetricMissing(metric=%q): failed: no successful queries to the backend", metric)
+	if !isPrometheus {
+		return fmt.Errorf("AssertMetricMissing(metric=%q): failed: no successful queries to the backend", metric)
+	}
+
+	if descriptorNotFoundErrCount != queryMaxAttemptsMetricMissing {
+		return fmt.Errorf("AssertMetricMissing(metric=%q): failed: atleast one query failed with something other than a NOT_FOUND error", metric)
+	}
+
+	// Success
+	return nil
 }
 
 // hasMatchingLog looks in the logging backend for a log matching the given query,
@@ -755,6 +790,7 @@ func wrapPowershellCommand(command string) (string, error) {
 // a problem.
 //
 // 'command' is what to run on the machine. Example: "cat /tmp/foo; echo hello"
+// For extremely long commands, use RunScriptRemotely instead.
 // 'stdin' is what to supply to the command on stdin. It is usually "".
 // TODO: Remove the stdin parameter, because it is hardly used.
 func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, command string) (_ CommandOutput, err error) {
@@ -793,18 +829,16 @@ func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, 
 // given permission to read from that bucket. This was accomplished by adding
 // the "Compute Engine default service account" for PROJECT as
 // a "Storage Object Viewer" and "Storage Object Creator" on the bucket.
-func UploadContent(ctx context.Context, dirLog *logging.DirectoryLogger, vm *VM, content io.Reader, remotePath string) (err error) {
+func UploadContent(ctx context.Context, logger *log.Logger, vm *VM, content io.Reader, remotePath string) (err error) {
 	defer func() {
-		dirLog.ToMainLog().Printf("Uploading file finished. For details see file_uploads.txt. err=%v", err)
+		logger.Printf("Uploading file finished with err=%v", err)
 	}()
-	logger := dirLog.ToFile("file_uploads.txt")
 	object := storageClient.Bucket(transfersBucket).Object(path.Join(vm.Name, remotePath))
 	writer := object.NewWriter(ctx)
 	_, copyErr := io.Copy(writer, content)
 	// We have to make sure to call Close() here in order to tell it to finish
 	// the upload operation.
 	closeErr := writer.Close()
-	logger.Printf("Upload to %v finished with copyErr=%v, closeErr=%v", object, copyErr, closeErr)
 	err = multierr.Combine(copyErr, closeErr)
 	if err != nil {
 		return fmt.Errorf("UploadContent() could not write data into storage object: %v", err)
@@ -816,7 +850,6 @@ func UploadContent(ctx context.Context, dirLog *logging.DirectoryLogger, vm *VM,
 	// (note that the go client libraries use resumable uploads).
 	defer func() {
 		deleteErr := object.Delete(ctx)
-		logger.Printf("Deleting %v finished with deleteErr=%v", object, deleteErr)
 		if deleteErr != nil {
 			err = fmt.Errorf("UploadContent() finished with err=%v, then cleanup of %v finished with err=%v", err, object.ObjectName(), deleteErr)
 		}
@@ -860,6 +893,13 @@ func envVarMapToPowershellPrefix(env map[string]string) string {
 // The script should be a shell script for a Linux VM and powershell for a Windows VM.
 // env is a map containing environment variables to provide to the script as it runs.
 // The environment variables and the flags will be wrapped in quotes.
+// This function is necessary to handle long commands, particularly on Windows,
+// since there is a length limit on the commands you can pass to RunRemotely:
+// powershell will complain if its -EncodedCommand parameter is too long.
+// It is highly recommended that any powershell script passed in here start with:
+// $ErrorActionPreference = 'Stop'
+// This will cause a broader class of errors to be reported as an error (nonzero exit code)
+// by powershell.
 func RunScriptRemotely(ctx context.Context, logger *logging.DirectoryLogger, vm *VM, scriptContents string, flags []string, env map[string]string) (CommandOutput, error) {
 	var quotedFlags []string
 	for _, flag := range flags {
@@ -871,9 +911,13 @@ func RunScriptRemotely(ctx context.Context, logger *logging.DirectoryLogger, vm 
 		// Use a UUID for the script name in case RunScriptRemotely is being
 		// called concurrently on the same VM.
 		scriptPath := "C:\\" + uuid.NewString() + ".ps1"
-		if err := UploadContent(ctx, logger, vm, strings.NewReader(scriptContents), scriptPath); err != nil {
+		if err := UploadContent(ctx, logger.ToFile("file_uploads.txt"), vm, strings.NewReader(scriptContents), scriptPath); err != nil {
 			return CommandOutput{}, err
 		}
+		// powershell -File seems to drop certain kinds of errors:
+		// https://stackoverflow.com/a/15779295
+		// In testing, adding $ErrorActionPreference = 'Stop' to the start of each
+		// script seems to work around this completely.
 		return RunRemotely(ctx, logger.ToMainLog(), vm, "", envVarMapToPowershellPrefix(env)+"powershell -File "+scriptPath+" "+flagsStr)
 	}
 	scriptPath := uuid.NewString() + ".sh"
@@ -933,8 +977,10 @@ func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM) error {
 }
 
 var (
-	overriddenImages = map[string]string{
-		"opensuse-leap-15-4": "opensuse-leap-15-4-v20221201-x86-64",
+	overriddenImageFamilies = map[string]string{
+		"opensuse-leap-15-4": "opensuse-leap-15-4-v20230603-x86-64",
+		// TODO(b/288286057): remove this override once the 3P app tests are working with newer images.
+		"sles-15": "sles-15-sp4-v20230322-x86-64",
 	}
 )
 
@@ -967,11 +1013,11 @@ func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map
 	metadataCopy["ssh-keys"] = fmt.Sprintf("%s:%s", sshUserName, string(publicKey))
 
 	if IsWindows(platform) {
-		if _, ok := metadataCopy["sysprep-specialize-script-cmd"]; ok {
-			return nil, errors.New("you cannot pass a sysprep script for Windows instances because the sysprep script is needed to enable ssh-ing. Instead, wait for the instance to be ready and then run things with RunRemotely() or RunScriptRemotely()")
-		}
 		// From https://cloud.google.com/compute/docs/connect/windows-ssh#create_vm
-		metadataCopy["sysprep-specialize-script-cmd"] = "googet -noconfirm=true update && googet -noconfirm=true install google-compute-engine-ssh"
+		if _, ok := metadataCopy["sysprep-specialize-script-cmd"]; ok {
+			return nil, errors.New("you cannot pass a sysprep script for Windows instances because they are needed to enable ssh-ing. Instead, wait for the instance to be ready and then run things with RunRemotely() or RunScriptRemotely()")
+		}
+		metadataCopy["sysprep-specialize-script-cmd"] = "googet -noconfirm=true install google-compute-engine-ssh"
 
 		if _, ok := metadataCopy["enable-windows-ssh"]; ok {
 			return nil, errors.New("the 'enable-windows-ssh' metadata key is reserved for framework use")
@@ -986,7 +1032,11 @@ func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map
 }
 
 func addFrameworkLabels(inputLabels map[string]string) (map[string]string, error) {
-	labelsCopy := make(map[string]string)
+	labelsCopy := map[string]string{
+		// Attach labels to automate cleanup
+		"env": "test",
+		"ttl": "180", // minutes
+	}
 
 	for k, v := range inputLabels {
 		labelsCopy[k] = v
@@ -997,22 +1047,45 @@ func addFrameworkLabels(inputLabels map[string]string) (map[string]string, error
 		labelsCopy["kokoro_build_id"] = buildID
 	}
 
-	// Attach labels to automate cleanup
-	labelsCopy["env"] = "test"
-	labelsCopy["ttl"] = "180" // minutes
-
 	return labelsCopy, nil
+}
+
+func getVMPlatform(image string, platform string) (string, error) {
+	if image != "" && platform != "" {
+		return "", fmt.Errorf("Both platform and image cannot be specified in VMOptions.")
+	}
+
+	if image != "" {
+		return image, nil
+	}
+
+	if platform != "" {
+		return platform, nil
+	}
+
+	return "", errors.New("at least one of image or platform must be specified")
 }
 
 // attemptCreateInstance creates a VM instance and waits for it to be ready.
 // Returns a VM object or an error (never both). The caller is responsible for
 // deleting the VM if (and only if) the returned error is nil.
 func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOptions) (vmToReturn *VM, errToReturn error) {
+
+	platform, err := getVMPlatform(options.Image, options.Platform)
+	if err != nil {
+		return nil, err
+	}
 	vm := &VM{
 		Project:  options.Project,
-		Platform: options.Platform,
+		Platform: platform,
+		Name:     options.Name,
 		Network:  os.Getenv("NETWORK_NAME"),
 		Zone:     options.Zone,
+	}
+	if vm.Name == "" {
+		// The VM name needs to adhere to these restrictions:
+		// https://cloud.google.com/compute/docs/naming-resources#resource-name-format
+		vm.Name = fmt.Sprintf("%s-%s", sandboxPrefix, uuid.New())
 	}
 	if vm.Project == "" {
 		vm.Project = os.Getenv("PROJECT")
@@ -1021,8 +1094,10 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		vm.Network = "default"
 	}
 	if vm.Zone == "" {
-		vm.Zone = os.Getenv("ZONE")
+		// Chooses the next zone from ZONES.
+		vm.Zone = zonePicker.Next()
 	}
+
 	// Note: INSTANCE_SIZE takes precedence over options.MachineType.
 	vm.MachineType = os.Getenv("INSTANCE_SIZE")
 	if vm.MachineType == "" {
@@ -1030,10 +1105,10 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	}
 	if vm.MachineType == "" {
 		vm.MachineType = "e2-standard-4"
+		if IsARM(vm.Platform) {
+			vm.MachineType = "t2a-standard-4"
+		}
 	}
-	// The VM name needs to adhere to these restrictions:
-	// https://cloud.google.com/compute/docs/naming-resources#resource-name-format
-	vm.Name = fmt.Sprintf("%s-%s", sandboxPrefix, uuid.New())
 
 	imgProject := options.ImageProject
 	if imgProject == "" {
@@ -1052,10 +1127,23 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		return nil, fmt.Errorf("attemptCreateInstance() could not construct valid labels: %v", err)
 	}
 
-	imageOrImageFamilyFlag := "--image-family=" + vm.Platform
-	if image, ok := overriddenImages[vm.Platform]; ok {
-		imageOrImageFamilyFlag = "--image=" + image
+	imageOrImageFamilyFlag := "--image=" + options.Image
+
+	if options.Platform != "" {
+		imageOrImageFamilyFlag = "--image-family=" + options.Platform
+
+		if image, ok := overriddenImageFamilies[options.Platform]; ok {
+			imageOrImageFamilyFlag = "--image=" + image
+		}
+
 	}
+
+	imageFamilyScope := options.ImageFamilyScope
+
+	if imageFamilyScope == "" {
+		imageFamilyScope = "global"
+	}
+
 	args := []string{
 		"compute", "instances", "create", vm.Name,
 		"--project=" + vm.Project,
@@ -1063,7 +1151,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		"--machine-type=" + vm.MachineType,
 		"--image-project=" + imgProject,
 		imageOrImageFamilyFlag,
-		"--image-family-scope=global",
+		"--image-family-scope=" + imageFamilyScope,
 		"--network=" + vm.Network,
 		"--format=json",
 	}
@@ -1144,7 +1232,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		}
 	}
 
-	if strings.HasPrefix(vm.Platform, "sles-") {
+	if strings.HasPrefix(vm.Platform, "sles-") && os.Getenv("DISABLE_PREPARE_SLES") != "true" {
 		if err := prepareSLES(ctx, logger, vm); err != nil {
 			return nil, fmt.Errorf("%s: %v", prepareSLESMessage, err)
 		}
@@ -1183,6 +1271,12 @@ func IsRHEL(platform string) bool {
 
 func isRHEL7SAPHA(platform string) bool {
 	return strings.HasPrefix(platform, "rhel-7") && strings.HasSuffix(platform, "-sap-ha")
+}
+
+func IsARM(platform string) bool {
+	// At the time of writing, all ARM images and image families on GCE
+	// contain "arm64" (and none contain "aarch" nor "arm" without the "64").
+	return strings.Contains(platform, "arm64")
 }
 
 // CreateInstance launches a new VM instance based on the given options.
@@ -1323,7 +1417,7 @@ func StopInstance(ctx context.Context, logger *log.Logger, vm *VM) error {
 }
 
 // StartInstance boots a previously-stopped VM instance.
-// Also waits for the instance to be reachable over ssh.
+// Also waits for the instance to be started up.
 func StartInstance(ctx context.Context, logger *log.Logger, vm *VM) error {
 	ctx, cancel := context.WithTimeout(ctx, time.Minute*20)
 	defer cancel()
@@ -1362,15 +1456,13 @@ func StartInstance(ctx context.Context, logger *log.Logger, vm *VM) error {
 }
 
 // RestartInstance stops and starts the instance.
-// It also waits for the instance to be reachable over ssh post-restart.
-func RestartInstance(ctx context.Context, logger *logging.DirectoryLogger, vm *VM) error {
-	fileLogger := logger.ToFile("VM_restart.txt")
-
-	if err := StopInstance(ctx, fileLogger, vm); err != nil {
+// It also waits for the instance to be started up post-restart.
+func RestartInstance(ctx context.Context, logger *log.Logger, vm *VM) error {
+	if err := StopInstance(ctx, logger, vm); err != nil {
 		return fmt.Errorf("failed to stop instance: %w", err)
 	}
 
-	return StartInstance(ctx, fileLogger, vm)
+	return StartInstance(ctx, logger, vm)
 }
 
 // InstallGsutilIfNeeded installs gsutil on instances that don't already have
@@ -1397,17 +1489,17 @@ func InstallGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) erro
 	if strings.HasPrefix(vm.Platform, "sles-") {
 		// Use a vendored repo to reduce flakiness of the external repos.
 		// See http://go/sdi/releases/build-test-release/vendored for details.
-		repo := "google-cloud-monitoring-sles12-x86_64-test-vendor"
-		if strings.HasPrefix(vm.Platform, "sles-15") {
-			repo = "google-cloud-monitoring-sles15-x86_64-test-vendor"
+		repoArch := "x86-64"
+		if IsARM(vm.Platform) {
+			repoArch = "aarch64"
 		}
-		repoSetupCmd = `sudo zypper --non-interactive addrepo -g -t YUM https://packages.cloud.google.com/yum/repos/` + repo + ` test-vendor
+		repo := "google-cloud-monitoring-sles12-" + repoArch + "-test-vendor"
+		if strings.HasPrefix(vm.Platform, "sles-15") {
+			repo = "google-cloud-monitoring-sles15-" + repoArch + "-test-vendor"
+		}
+		// TODO: Revert to packages.cloud.google.com URL once b/296860728 is fixed.
+		repoSetupCmd = `sudo zypper --non-interactive addrepo -g -t YUM https://us-yum.pkg.dev/projects/cloud-ops-agents-artifacts-dev/` + repo + ` test-vendor
 sudo rpm --import https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
-sudo zypper --non-interactive refresh test-vendor`
-
-		// Overwrite repoSetupCmd with the same command except GPG checks are disabled.
-		// TODO(b/260849189): Remove this workaround once the Cloud Rapture keys are fixed.
-		repoSetupCmd = `sudo zypper --non-interactive addrepo --no-gpgcheck -t YUM https://packages.cloud.google.com/yum/repos/` + repo + ` test-vendor
 sudo zypper --non-interactive refresh test-vendor`
 	}
 
@@ -1562,6 +1654,8 @@ func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error 
 	attempt := 0
 	printFoo := func() error {
 		attempt++
+		ctx, cancel := context.WithTimeout(ctx, vmInitPokeSSHTimeout)
+		defer cancel()
 		output, err := RunRemotely(ctx, logger, vm, "", "'foo'")
 		logger.Printf("Printing 'foo' finished with err=%v, attempt #%d\noutput: %v",
 			err, attempt, output)
@@ -1596,6 +1690,8 @@ func waitForStartLinux(ctx context.Context, logger *log.Logger, vm *VM) error {
 	// * b/180518814 (ubuntu, sles)
 	// * b/148612123 (sles)
 	isStartupDone := func() error {
+		ctx, cancel := context.WithTimeout(ctx, vmInitPokeSSHTimeout)
+		defer cancel()
 		output, err := RunRemotely(ctx, logger, vm, "", "systemctl is-system-running")
 
 		// There are a few cases for what is-system-running returns:
@@ -1695,6 +1791,11 @@ type VMOptions struct {
 	// Required. Normally passed as --image-family to
 	// "gcloud compute images create".
 	Platform string
+	// Optional. If unspecified, 'Platform' must be specified.
+	// Normally passed as --image to gcloud compute images create.
+	Image string
+	// Optional. If missing, a random name will be generated.
+	Name string
 	// Optional. Passed as --image-project to "gcloud compute images create".
 	// If not supplied, the framework will attempt to guess the right project
 	// to use based on Platform.
@@ -1710,6 +1811,8 @@ type VMOptions struct {
 	// Optional. If missing, the default is e2-standard-4.
 	// Overridden by INSTANCE_SIZE if that environment variable is set.
 	MachineType string
+	// Optional. If missing, the default is 'global'.
+	ImageFamilyScope string
 	// Optional. If provided, these arguments are appended on to the end
 	// of the "gcloud compute instances create" command.
 	ExtraCreateArguments []string

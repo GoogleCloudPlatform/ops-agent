@@ -4,11 +4,13 @@ set -e
 # wget https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-distribution/9.4.46.v20220331/jetty-distribution-9.4.46.v20220331.tar.gz
 # wget https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-home/10.0.9/jetty-home-10.0.9.tar.gz
 
-sudo zypper install -y wget java
-sudo wget https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-home/11.0.9/jetty-home-11.0.9.tar.gz
+JETTY_VERSION=11.0.15
+
+sudo zypper install -y wget java-11-openjdk tzdata-java
+sudo wget https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-home/"$JETTY_VERSION"/jetty-home-"$JETTY_VERSION".tar.gz
 sudo mkdir -p /opt/jetty
 
-sudo tar -xvf jetty-home-11.0.9.tar.gz -C /opt/jetty --strip 1
+sudo tar -xvf jetty-home-"$JETTY_VERSION".tar.gz -C /opt/jetty --strip 1
 
 # to create the remote jmx configuration file
 # set jetty.home and jetty.base

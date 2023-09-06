@@ -15,6 +15,8 @@
 package apps
 
 import (
+	"context"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
@@ -22,11 +24,7 @@ import (
 type MetricsReceiverActivemq struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 
-	Endpoint                               string `yaml:"endpoint" validate:"omitempty,hostname_port|startswith=service:jmx:"`
-	Username                               string `yaml:"username" validate:"required_with=Password"`
-	Password                               string `yaml:"password" validate:"required_with=Username"`
-	confgenerator.MetricsReceiverSharedJVM `yaml:",inline"`
-
+	confgenerator.MetricsReceiverSharedJVM        `yaml:",inline"`
 	confgenerator.MetricsReceiverSharedCollectJVM `yaml:",inline"`
 }
 
@@ -36,7 +34,7 @@ func (r MetricsReceiverActivemq) Type() string {
 	return "activemq"
 }
 
-func (r MetricsReceiverActivemq) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverActivemq) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 
 	targetSystem := "activemq"
 

@@ -49,6 +49,9 @@ type ExpectedMetric struct {
 	Representative bool `yaml:"representative,omitempty" validate:"excluded_with=Optional,excluded_with=Platform"`
 	// Exclusive metric to a particular kind of platform.
 	Platform string `yaml:"platform,omitempty" validate:"excluded_with=Representative,omitempty,oneof=linux windows"`
+	// A list of platforms that this metric is not available on.
+	// Examples: centos-7,debian-10. Not valid are linux,windows.
+	UnavailableOn []string `yaml:"unavailable_on,omitempty" validate:"excluded_with=Representative"`
 }
 
 type LogFields struct {
@@ -57,6 +60,9 @@ type LogFields struct {
 	Type        string `yaml:"type" validate:"required"`
 	Description string `yaml:"description" validate:"excludesall=‘’“”"`
 	Optional    bool   `yaml:"optional,omitempty"`
+	// A list of platforms that this field is not available on.
+	// Examples: centos-7,debian-10.
+	UnavailableOn []string `yaml:"unavailable_on,omitempty"`
 }
 
 type ExpectedLog struct {
@@ -102,6 +108,8 @@ type IntegrationMetadata struct {
 	MinimumSupportedAgentVersion *MinimumSupportedAgentVersion `yaml:"minimum_supported_agent_version"`
 	SupportedAppVersion          []string                      `yaml:"supported_app_version" validate:"required,unique,min=1"`
 	SupportedOperatingSystems    string                        `yaml:"supported_operating_systems" validate:"required,oneof=linux windows linux_and_windows"`
+	PlatformsToSkip              []string                      `yaml:"platforms_to_skip"`
+	GpuModels                    []string                      `yaml:"gpu_models"`
 	RestartAfterInstall          bool                          `yaml:"restart_after_install"`
 	Troubleshoot                 string                        `yaml:"troubleshoot" validate:"excludesall=‘’“”"`
 

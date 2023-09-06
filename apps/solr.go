@@ -15,6 +15,8 @@
 package apps
 
 import (
+	"context"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -32,7 +34,7 @@ func (r MetricsReceiverSolr) Type() string {
 	return "solr"
 }
 
-func (r MetricsReceiverSolr) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverSolr) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	targetSystem := "solr"
 
 	return r.MetricsReceiverSharedJVM.
@@ -61,7 +63,7 @@ func (LoggingProcessorSolrSystem) Type() string {
 	return "solr_system"
 }
 
-func (p LoggingProcessorSolrSystem) Components(tag string, uid string) []fluentbit.Component {
+func (p LoggingProcessorSolrSystem) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
@@ -87,7 +89,7 @@ func (p LoggingProcessorSolrSystem) Components(tag string, uid string) []fluentb
 				Regex:     `^(?!\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3}\s[A-z]+\s{1,5})`,
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(ctx, tag, uid)
 
 	// https://solr.apache.org/guide/6_6/configuring-logging.html
 	c = append(c,
@@ -107,7 +109,7 @@ func (p LoggingProcessorSolrSystem) Components(tag string, uid string) []fluentb
 				},
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(tag, uid)...,
+		}.Components(ctx, tag, uid)...,
 	)
 	return c
 }
@@ -117,14 +119,14 @@ type LoggingReceiverSolrSystem struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverSolrSystem) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverSolrSystem) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			"/var/solr/logs/solr.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorSolrSystem.Components(tag, "solr_system")...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c = append(c, r.LoggingProcessorSolrSystem.Components(ctx, tag, "solr_system")...)
 	return c
 }
 

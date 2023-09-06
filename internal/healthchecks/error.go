@@ -36,6 +36,13 @@ func (e HealthCheckError) Error() string {
 	return e.Message
 }
 
+// Interface used to verify if an error implements `Unwrap() []error`.
+// The resulting error from `errors.Join(errs ...error)` implements this interface.
+// This error features were added in Go 1.20 release (https://tip.golang.org/doc/go1.20).
+type MultiWrappedError interface {
+	Unwrap() []error
+}
+
 var (
 	FbMetricsPortErr = HealthCheckError{
 		Code:         "FbMetricsPortErr",
@@ -67,6 +74,30 @@ var (
 		Message:      "Request to Monitoring API failed.",
 		Action:       "Check your internet connection and firewall rules.",
 		ResourceLink: "https://cloud.google.com/monitoring/agent/ops-agent/troubleshooting",
+		IsFatal:      true,
+	}
+	PacApiConnErr = HealthCheckError{
+		Code:         "PacApiConnErr",
+		Class:        Connection,
+		Message:      "Request to packages.cloud.google.com failed.",
+		Action:       "Check your internet connection and firewall rules.",
+		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/troubleshoot-run-ingest#network-issues",
+		IsFatal:      false,
+	}
+	DLApiConnErr = HealthCheckError{
+		Code:         "DLApiConnErr",
+		Class:        Connection,
+		Message:      "Request to dl.google.com failed",
+		Action:       "Check your internet connection and firewall rules.",
+		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/troubleshoot-run-ingest#network-issues",
+		IsFatal:      false,
+	}
+	MetaApiConnErr = HealthCheckError{
+		Code:         "MetaApiConnErr",
+		Class:        Connection,
+		Message:      "Request to GCE Metadata server failed",
+		Action:       "Check your internet connection and firewall rules.",
+		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/troubleshoot-run-ingest#network-issues",
 		IsFatal:      true,
 	}
 	LogApiScopeErr = HealthCheckError{
@@ -115,6 +146,22 @@ var (
 		Message:      "The Monitoring API is disabled in the current Google Cloud project.",
 		Action:       "Enable Monitoring API in the current Google Cloud project.",
 		ResourceLink: "https://cloud.google.com/monitoring/api/enable-api",
+		IsFatal:      true,
+	}
+	LogApiUnauthenticatedErr = HealthCheckError{
+		Code:         "LogApiUnauthenticatedErr",
+		Class:        Api,
+		Message:      "The current VM couldn't authenticate to the Logging API.",
+		Action:       "Verify that your credential files, VM access scopes and permissions are set up correctly.",
+		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/authorization",
+		IsFatal:      true,
+	}
+	MonApiUnauthenticatedErr = HealthCheckError{
+		Code:         "MonApiUnauthenticatedErr",
+		Class:        Api,
+		Message:      "The current VM couldn't authenticate to the Monitoring API.",
+		Action:       "Verify that your credential files, VM access scopes and permissions are set up correctly.",
+		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/authorization",
 		IsFatal:      true,
 	}
 	HcFailureErr = HealthCheckError{

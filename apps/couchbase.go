@@ -15,12 +15,14 @@
 package apps
 
 import (
+	"context"
 	"fmt"
 	"sort"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
 
 // MetricsReceiverCouchbase is the struct for ops agent monitoring metrics for couchbase
@@ -28,9 +30,9 @@ type MetricsReceiverCouchbase struct {
 	confgenerator.ConfigComponent       `yaml:",inline"`
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
 
-	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port"`
-	Username string `yaml:"username" validate:"required"`
-	Password string `yaml:"password" validate:"required"`
+	Endpoint string        `yaml:"endpoint" validate:"omitempty,hostname_port"`
+	Username string        `yaml:"username" validate:"required"`
+	Password secret.String `yaml:"password" validate:"required"`
 }
 
 const defaultCouchbaseEndpoint = "localhost:8091"
@@ -41,7 +43,7 @@ func (r MetricsReceiverCouchbase) Type() string {
 }
 
 // Pipelines will construct the prometheus receiver configuration
-func (r MetricsReceiverCouchbase) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverCouchbase) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	targets := []string{r.Endpoint}
 	if r.Endpoint == "" {
 		targets = []string{defaultCouchbaseEndpoint}
@@ -55,7 +57,7 @@ func (r MetricsReceiverCouchbase) Pipelines() []otel.ReceiverPipeline {
 					"scrape_interval": r.CollectionIntervalString(),
 					"basic_auth": map[string]interface{}{
 						"username": r.Username,
-						"password": r.Password,
+						"password": r.Password.SecretValue(),
 					},
 					"metric_relabel_configs": []map[string]interface{}{
 						{
@@ -244,7 +246,7 @@ func (lr LoggingReceiverCouchbase) Type() string {
 }
 
 // Components returns the logging components of the couchbase access logs
-func (lr LoggingReceiverCouchbase) Components(tag string) []fluentbit.Component {
+func (lr LoggingReceiverCouchbase) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(lr.IncludePaths) == 0 {
 		lr.IncludePaths = []string{
 			"/opt/couchbase/var/lib/couchbase/logs/couchdb.log",
@@ -254,7 +256,7 @@ func (lr LoggingReceiverCouchbase) Components(tag string) []fluentbit.Component 
 			"/opt/couchbase/var/lib/couchbase/logs/babysitter.log",
 		}
 	}
-	components := lr.LoggingReceiverFilesMixin.Components(tag)
+	components := lr.LoggingReceiverFilesMixin.Components(ctx, tag)
 	components = append(components, confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
@@ -279,7 +281,7 @@ func (lr LoggingReceiverCouchbase) Components(tag string) []fluentbit.Component 
 				Regex:     `^(?!\[([^\s+:]*):).*$`,
 			},
 		},
-	}.Components(tag, lr.Type())...)
+	}.Components(ctx, tag, lr.Type())...)
 
 	components = append(components,
 		confgenerator.LoggingProcessorModifyFields{
@@ -296,7 +298,7 @@ func (lr LoggingReceiverCouchbase) Components(tag string) []fluentbit.Component 
 				},
 				InstrumentationSourceLabel: instrumentationSourceValue(lr.Type()),
 			},
-		}.Components(tag, lr.Type())...)
+		}.Components(ctx, tag, lr.Type())...)
 	return components
 }
 
@@ -312,14 +314,14 @@ func (lp LoggingProcessorCouchbaseHTTPAccess) Type() string {
 }
 
 // Components returns the fluentbit components for the http access logs of couchbase
-func (lp LoggingProcessorCouchbaseHTTPAccess) Components(tag string) []fluentbit.Component {
+func (lp LoggingProcessorCouchbaseHTTPAccess) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(lp.IncludePaths) == 0 {
 		lp.IncludePaths = []string{
 			"/opt/couchbase/var/lib/couchbase/logs/http_access.log",
 			"/opt/couchbase/var/lib/couchbase/logs/http_access_internal.log",
 		}
 	}
-	c := lp.LoggingReceiverFilesMixin.Components(tag)
+	c := lp.LoggingReceiverFilesMixin.Components(ctx, tag)
 	// TODO: Harden the genericAccessLogParser so it can be used. It didn't work here since there are some minor differences with the
 	// referer fields and there are additional fields after the user agent here but not in the other apps.
 	c = append(c,
@@ -333,7 +335,7 @@ func (lp LoggingProcessorCouchbaseHTTPAccess) Components(tag string) []fluentbit
 					"code": "integer",
 				},
 			},
-		}.Components(tag, lp.Type())...,
+		}.Components(ctx, tag, lp.Type())...,
 	)
 	mf := confgenerator.LoggingProcessorModifyFields{
 		Fields: map[string]*confgenerator.ModifyField{
@@ -360,7 +362,7 @@ func (lp LoggingProcessorCouchbaseHTTPAccess) Components(tag string) []fluentbit
 			mf.Fields[dest].OmitIf = fmt.Sprintf(`%s = "-"`, src)
 		}
 	}
-	c = append(c, mf.Components(tag, lp.Type())...)
+	c = append(c, mf.Components(ctx, tag, lp.Type())...)
 	return c
 }
 
@@ -376,14 +378,14 @@ func (lg LoggingProcessorCouchbaseGOXDCR) Type() string {
 }
 
 // Components returns the fluentbit components for the couchbase goxdcr logs
-func (lg LoggingProcessorCouchbaseGOXDCR) Components(tag string) []fluentbit.Component {
+func (lg LoggingProcessorCouchbaseGOXDCR) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(lg.IncludePaths) == 0 {
 		lg.IncludePaths = []string{
 			"/opt/couchbase/var/lib/couchbase/logs/goxdcr.log",
 		}
 	}
 
-	c := lg.LoggingReceiverFilesMixin.Components(tag)
+	c := lg.LoggingReceiverFilesMixin.Components(ctx, tag)
 	c = append(c, confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
@@ -408,7 +410,7 @@ func (lg LoggingProcessorCouchbaseGOXDCR) Components(tag string) []fluentbit.Com
 				Regex:     `^(?!\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})`,
 			},
 		},
-	}.Components(tag, lg.Type())...)
+	}.Components(ctx, tag, lg.Type())...)
 	c = append(c,
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
@@ -424,7 +426,7 @@ func (lg LoggingProcessorCouchbaseGOXDCR) Components(tag string) []fluentbit.Com
 				},
 				InstrumentationSourceLabel: instrumentationSourceValue(lg.Type()),
 			},
-		}.Components(tag, lg.Type())...,
+		}.Components(ctx, tag, lg.Type())...,
 	)
 	return c
 }

@@ -1,3 +1,5 @@
+$ErrorActionPreference = 'Stop'
+
 # This config gets merged with the built-in Ops Agent config, which already
 # includes the v1 receiver in the default pipeline.
 # Because the v2 receiver here uses a unique ID, it does not overwrite
@@ -21,4 +23,5 @@ metrics:
         - mssql_v2
 "
 
-Restart-Service google-cloud-ops-agent -Force
+Stop-Service google-cloud-ops-agent -Force
+Start-Service google-cloud-ops-agent*  

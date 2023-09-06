@@ -1,0 +1,21 @@
+features:
+- feature: receivers:mysql
+  module: metrics
+  key: "[0].enabled"
+  value: true
+- feature: receivers:mysql_error
+  module: logging
+  key: "[0].enabled"
+  value: true
+- feature: receivers:mysql_error
+  module: logging
+  key: "[1].enabled"
+  value: true
+- feature: receivers:mysql_general
+  module: logging
+  key: "[2].enabled"
+  value: true
+- feature: receivers:mysql_slow
+  module: logging
+  key: "[3].enabled"
+  value: true

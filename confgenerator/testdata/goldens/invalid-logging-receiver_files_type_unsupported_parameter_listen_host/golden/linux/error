@@ -1,0 +1,9 @@
+[22:7] unknown field "listen_host"
+  19 |       include_paths:
+  20 |       - /var/log/messages
+  21 |       - /var/log/syslog
+> 22 |       listen_host: value_1
+             ^
+  23 |   service:
+  24 |     pipelines:
+  25 |       default_pipeline:

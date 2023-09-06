@@ -22,8 +22,8 @@ else
 
   # Installation followed in: https://dev.mysql.com/doc/mysql-sles-repo-quick-guide/en/
   sudo zypper -n --no-gpg-checks install https://dev.mysql.com/get/${mysql_repo_pkg_name}
-  sudo rpm --import /etc/RPM-GPG-KEY-mysql
-  sudo zypper -n install mysql-community-server
+  sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2022
+  sudo zypper -n --no-gpg-checks install mysql-community-server
 fi
 
 if [[ "${SUSE_VERSION}" == 12 ]]; then
@@ -36,7 +36,7 @@ sudo service mysql start
 
 if [[ "${ID}" == opensuse-leap && "${VERSION_ID}" == 15.[01] ]]; then
   # mariadb default root password is empty.
-  mysql -u root --skip-password -Bse "ALTER USER 'root'@'localhost' IDENTIFIED BY 'Ss123%321'; FLUSH PRIVILEGES;"
+  mysql -u root --skip-password -Bse "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Ss123%321'; FLUSH PRIVILEGES;"
 else
   password="$(sudo grep -oP '(?<=temporary password is generated for root@localhost: ).*$' /var/log/mysql/mysqld.log)"
 
@@ -49,4 +49,27 @@ EOF
   mysql --defaults-extra-file=config-user -Bse "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Ss123%321'; FLUSH PRIVILEGES;" --connect-expired-password
 fi
 
-sudo service mysql start
+# default socket path is different from originally set default (from debian/ubuntu), so we need to create a symlink
+sudo mkdir /var/run/mysqld/
+sudo chown mysql:mysql /var/run/mysqld/
+sudo ln -s /var/lib/mysql/mysql.sock /var/run/mysqld/mysqld.sock
+sudo chown mysql:mysql /var/run/mysqld/mysqld.sock
+
+# set up replication source to validate replica metrics
+# set main target (replica) to use binary logging for replication to work
+sudo tee -a /etc/my.cnf >/dev/null <<EOF
+server-id = 1
+log-bin = /var/log/mysql/mysql-bin.log
+
+[mysqld2]
+pid-file = /var/run/mysqld/mysql2.pid
+socket = /var/run/mysqld/mysql2.sock
+port = 3307
+user = mysql
+datadir = /var/lib/mysql2/
+log-error = /var/log/mysql/error2.log
+server-id = 2
+log-bin = /var/log/mysql/mysql2-bin.log
+EOF
+
+sudo service mysql restart

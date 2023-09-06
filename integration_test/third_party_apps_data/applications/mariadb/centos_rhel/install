@@ -1,0 +1,2 @@
+# Centos/RHEL is not tested
+exit 1

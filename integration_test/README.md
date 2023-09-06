@@ -48,9 +48,9 @@ make integration_tests PROJECT=${PROJECT} TRANSFERS_BUCKET=${TRANSFERS_BUCKET}
 ```
 Alternatively, you can export `PROJECT` and `TRANSFERS_BUCKET` in your 
 environment and simply call the target.  
-You can also specify the `ZONE` and `PLATFORMS` variables if you would like
-to run the tests on something other than the defaults (`us-central1-b` for 
-ZONE and `debian-11` for `PLATFORMS`).
+You can also specify the `ZONES` and `PLATFORMS` variables if you would like
+to run the tests on something other than the defaults (`us-central1-b` for
+ZONES and `debian-11` for `PLATFORMS`).
 
 The above command will run the tests against the stable Ops Agent. To test
 against a pre-built but unreleased agent, you can use add the
@@ -71,6 +71,8 @@ You can obtain such a URI by:
     `AGENT_PACKAGES_IN_GCS`.
 
 Googlers can also provide a `REPO_SUFFIX` to test an agent built by our release scripts.
+When doing so, you may need to supply `ARTIFACT_REGISTRY_REGION=us` as well, once
+b/266410466 is completed.
 
 ## Third Party Apps Test
 
@@ -89,15 +91,24 @@ make third_party_apps_test PROJECT=${PROJECT} TRANSFERS_BUCKET=${TRANSFERS_BUCKE
 
 As above, you can supply `AGENT_PACKAGES_IN_GCS` or `REPO_SUFFIX` to test a pre-built agent.
 
+Additionally, to run specific third party applications you can use the command:
+
+```
+go test -v ./integration_test \
+    -tags=integration_test \
+    -test.run="TestThirdPartyApps/.*/(nvml|dcgm)"
+```
+
+Make sure the platform you specify is included in the PLATFORMS environment
+variable.
+
 ### Testing Flow
 
 The test is designed to be highly parameterizable. It reads various files from
 `third_party_apps_data` and decides what to do based on their contents. First
-it reads `test_config.yaml` and uses that to set some testing options. See the
-"test_config.yaml" section below. Then it reads
-`agent/<platform>/supported_applications.txt` to determine
-which applications to test. Each application is tested in parallel. For each,
-the test will:
+it reads `metadata.yaml` and uses that to set some testing options, such as
+which platforms to skip, and whether the application supports windows or linux.
+Each application is tested in parallel. For each, the test will:
 
 1.  Bring up a GCE VM
 1.  Install the application on the VM by running
@@ -274,3 +285,25 @@ TODO: Document log files for a Windows VM.
 
 The `agent_packages` directory contains the package files built from the PR
 and installed on the VM for testing.
+
+# Vendored Dependencies
+
+Due to being throttled by some sites, notably archive.apache.org, we are keeping
+a local copy of various large installers instead of downloading them fresh each
+time. These are stored in
+https://console.cloud.google.com/storage/browser/ops-agents-public-buckets-vendored-deps/mirrored-content
+and the script `mirror_content.sh` is intended to help upload the installer
+there. Run it like (using cassandra as an example):
+
+```
+./mirror_content.sh https://archive.apache.org/dist/cassandra/4.0.1/apache-cassandra-4.0.1-bin.tar.gz
+```
+
+And then change the `install` script(s) for cassandra to download from:
+
+```
+https://storage.googleapis.com/ops-agents-public-buckets-vendored-deps/mirrored-content/archive.apache.org/dist/cassandra/4.0.1/apache-cassandra-4.0.1-bin.tar.gz
+```
+
+instead of the original URL.
+

@@ -15,11 +15,13 @@
 package apps
 
 import (
+	"context"
+	"strings"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
-
-	"strings"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
 
 type MetricsReceiverPostgresql struct {
@@ -30,9 +32,9 @@ type MetricsReceiverPostgresql struct {
 
 	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port|startswith=/"`
 
-	Password  string   `yaml:"password" validate:"omitempty"`
-	Username  string   `yaml:"username" validate:"omitempty"`
-	Databases []string `yaml:"databases" validate:"omitempty"`
+	Password  secret.String `yaml:"password" validate:"omitempty"`
+	Username  string        `yaml:"username" validate:"omitempty"`
+	Databases []string      `yaml:"databases" validate:"omitempty"`
 }
 
 // Actual socket is /var/run/postgresql/.s.PGSQL.5432 but the lib/pq go module used by
@@ -43,7 +45,7 @@ func (r MetricsReceiverPostgresql) Type() string {
 	return "postgresql"
 }
 
-func (r MetricsReceiverPostgresql) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverPostgresql) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	transport := "tcp"
 	if r.Endpoint == "" {
 		transport = "unix"
@@ -58,7 +60,7 @@ func (r MetricsReceiverPostgresql) Pipelines() []otel.ReceiverPipeline {
 		"collection_interval": r.CollectionIntervalString(),
 		"endpoint":            r.Endpoint,
 		"username":            r.Username,
-		"password":            r.Password,
+		"password":            r.Password.SecretValue(),
 		"transport":           transport,
 	}
 
@@ -101,7 +103,7 @@ func (LoggingProcessorPostgresql) Type() string {
 	return "postgresql_general"
 }
 
-func (p LoggingProcessorPostgresql) Components(tag string, uid string) []fluentbit.Component {
+func (p LoggingProcessorPostgresql) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
@@ -135,7 +137,7 @@ func (p LoggingProcessorPostgresql) Components(tag string, uid string) []fluentb
 				Regex:     `^(?!\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3,} \w+)`,
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(ctx, tag, uid)
 
 	// https://www.postgresql.org/docs/10/runtime-config-logging.html#RUNTIME-CONFIG-SEVERITY-LEVELS
 	c = append(c,
@@ -163,7 +165,7 @@ func (p LoggingProcessorPostgresql) Components(tag string, uid string) []fluentb
 				},
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(tag, uid)...,
+		}.Components(ctx, tag, uid)...,
 	)
 
 	return c
@@ -174,7 +176,7 @@ type LoggingReceiverPostgresql struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverPostgresql) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverPostgresql) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log paths for Debain / Ubuntu
@@ -185,8 +187,8 @@ func (r LoggingReceiverPostgresql) Components(tag string) []fluentbit.Component 
 			"/var/lib/pgsql/*/data/log/postgresql*.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorPostgresql.Components(tag, "postgresql")...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c = append(c, r.LoggingProcessorPostgresql.Components(ctx, tag, "postgresql")...)
 	return c
 }
 

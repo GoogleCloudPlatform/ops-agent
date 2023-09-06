@@ -1,6 +1,6 @@
 set -e
 
-sudo yum install -y curl java
+sudo yum install -y curl java tzdata-java
 
 curl -L \
     -o wildfly.tar.gz \

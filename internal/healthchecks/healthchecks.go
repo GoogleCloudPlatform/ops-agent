@@ -19,18 +19,84 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 )
 
 var healthChecksLogFile = "health-checks.log"
 
 type HealthCheck interface {
 	Name() string
-	RunCheck(logger *log.Logger) error
+	RunCheck(logger logs.StructuredLogger) error
 }
 
 type HealthCheckResult struct {
-	Message string
-	Err     error
+	Name string
+	Err  error
+}
+
+func singleErrorResultMessage(e error, Name string) string {
+	if e != nil {
+		if healthError, ok := e.(HealthCheckError); ok {
+			if healthError.IsFatal {
+				return fmt.Sprintf("[%s] Result: FAIL, Error code: %s, Failure: %s, Solution: %s, Resource: %s",
+					Name, healthError.Code, healthError.Message, healthError.Action, healthError.ResourceLink)
+			} else {
+				return fmt.Sprintf("[%s] Result: WARNING, Error code: %s, Failure: %s, Solution: %s, Resource: %s",
+					Name, healthError.Code, healthError.Message, healthError.Action, healthError.ResourceLink)
+			}
+		}
+		return fmt.Sprintf("[%s] Result: ERROR, Detail: %s", Name, e.Error())
+	}
+	return fmt.Sprintf("[%s] Result: PASS", Name)
+}
+
+func (r HealthCheckResult) LogResult(logger logs.StructuredLogger) {
+	for _, e := range r.ErrorSlice() {
+		if e == nil {
+			logger.Infof(singleErrorResultMessage(e, r.Name))
+		} else {
+			if healthError, ok := e.(HealthCheckError); ok {
+				if healthError.IsFatal {
+					logger.Errorw(singleErrorResultMessage(e, r.Name), "code", healthError.Code)
+				} else {
+					logger.Warnw(singleErrorResultMessage(e, r.Name), "code", healthError.Code)
+				}
+			} else {
+				logger.Errorf(singleErrorResultMessage(e, r.Name))
+			}
+		}
+	}
+}
+
+func (r HealthCheckResult) ErrorSlice() []error {
+	if mwErr, ok := r.Err.(MultiWrappedError); ok {
+		return mwErr.Unwrap()
+	}
+	return []error{r.Err}
+}
+
+func LogHealthCheckResults(healthCheckResults []HealthCheckResult, logger logs.StructuredLogger) {
+	for _, result := range healthCheckResults {
+		result.LogResult(logger)
+	}
+}
+
+func CreateHealthChecksLogger(logDir string) logs.StructuredLogger {
+	path := filepath.Join(logDir, healthChecksLogFile)
+	// Make sure the directory exists before writing the file.
+	if err := os.MkdirAll(logDir, 0755); err != nil {
+		log.Printf("failed to create directory for %q: %v", path, err)
+		return logs.Default()
+	}
+	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Printf("failed to open health checks log file %q: %v", path, err)
+		return logs.Default()
+	}
+	file.Close()
+
+	return logs.New(path)
 }
 
 type HealthCheckRegistry []HealthCheck
@@ -43,41 +109,13 @@ func HealthCheckRegistryFactory() HealthCheckRegistry {
 	}
 }
 
-func CreateHealthChecksLogger(logDir string) (logger *log.Logger, closer func()) {
-	path := filepath.Join(logDir, healthChecksLogFile)
-	// Make sure the directory exists before writing the file.
-	if err := os.MkdirAll(logDir, 0755); err != nil {
-		log.Printf("failed to create directory for %q: %v", path, err)
-		return log.Default(), func() {}
-	}
-	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		log.Printf("failed to open health checks log file %q: %v", path, err)
-		return log.Default(), func() {}
-	}
-
-	return log.New(file, "", log.Ldate|log.Ltime|log.Lshortfile), func() { file.Close() }
-}
-
-func (r HealthCheckRegistry) RunAllHealthChecks(logger *log.Logger) map[string]HealthCheckResult {
-	var message string
-	result := map[string]HealthCheckResult{}
+func (r HealthCheckRegistry) RunAllHealthChecks(logger logs.StructuredLogger) []HealthCheckResult {
+	var result []HealthCheckResult
 
 	for _, c := range r {
-		err := c.RunCheck(logger)
-		if err != nil {
-			if healthError, ok := err.(HealthCheckError); ok {
-				message = fmt.Sprintf("%s - Result: FAIL, Error code: %s, Failure: %s, Solution: %s, Resource: %s",
-					c.Name(), healthError.Code, healthError.Message, healthError.Action, healthError.ResourceLink)
-			} else {
-				message = fmt.Sprintf("%s - Result: ERROR, Detail: %s", c.Name(), err.Error())
-			}
-		} else {
-			message = fmt.Sprintf("%s - Result: PASS", c.Name())
-		}
-		logger.Print(message)
-		result[c.Name()] = HealthCheckResult{Message: message, Err: err}
+		r := HealthCheckResult{Name: c.Name(), Err: c.RunCheck(logger)}
+		r.LogResult(logger)
+		result = append(result, r)
 	}
-
 	return result
 }

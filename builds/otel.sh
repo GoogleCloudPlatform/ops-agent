@@ -6,7 +6,7 @@ DESTDIR="${DESTDIR}${otel_dir}"
 cd submodules/opentelemetry-java-contrib
 mkdir -p "$DESTDIR"
 ./gradlew --no-daemon :jmx-metrics:build
-cp jmx-metrics/build/libs/opentelemetry-jmx-metrics-*-SNAPSHOT.jar "$DESTDIR/opentelemetry-java-contrib-jmx-metrics.jar"
+cp jmx-metrics/build/libs/opentelemetry-jmx-metrics-*-alpha-SNAPSHOT.jar "$DESTDIR/opentelemetry-java-contrib-jmx-metrics.jar"
 
 # Rename LICENSE file because it causes issues with file hash consistency due to an unknown
 # issue with the debuild/rpmbuild processes. Something is unzipping the jar in a case-insensitive
@@ -20,6 +20,6 @@ zip -u "$DESTDIR/opentelemetry-java-contrib-jmx-metrics.jar" "META-INF/LICENSE.r
 cd ../opentelemetry-operations-collector
 # Using array assignment to drop the filename from the sha256sum output
 JAR_SHA_256=($(sha256sum "$DESTDIR/opentelemetry-java-contrib-jmx-metrics.jar"))
-go build -buildvcs=false -o "$DESTDIR/otelopscol" \
+go build -tags=gpu -buildvcs=false -o "$DESTDIR/otelopscol" \
 -ldflags "-X github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver.MetricsGathererHash=$JAR_SHA_256" \
 ./cmd/otelopscol

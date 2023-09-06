@@ -15,11 +15,13 @@
 package apps
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
 
 type MetricsReceiverCouchdb struct {
@@ -27,9 +29,9 @@ type MetricsReceiverCouchdb struct {
 
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
 
-	Endpoint string `yaml:"endpoint" validate:"omitempty,url,startswith=http:"`
-	Username string `yaml:"username" validate:"required_with=Password"`
-	Password string `yaml:"password" validate:"required_with=Username"`
+	Endpoint string        `yaml:"endpoint" validate:"omitempty,url,startswith=http:"`
+	Username string        `yaml:"username" validate:"required_with=Password"`
+	Password secret.String `yaml:"password" validate:"required_with=Username"`
 }
 
 const defaultCouchdbEndpoint = "http://localhost:5984"
@@ -38,7 +40,7 @@ func (MetricsReceiverCouchdb) Type() string {
 	return "couchdb"
 }
 
-func (r MetricsReceiverCouchdb) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverCouchdb) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultCouchdbEndpoint
 	}
@@ -49,7 +51,7 @@ func (r MetricsReceiverCouchdb) Pipelines() []otel.ReceiverPipeline {
 				"collection_interval": r.CollectionIntervalString(),
 				"endpoint":            r.Endpoint,
 				"username":            r.Username,
-				"password":            r.Password,
+				"password":            r.Password.SecretValue(),
 			},
 		},
 		Processors: map[string][]otel.Component{"metrics": {
@@ -74,7 +76,7 @@ func (LoggingProcessorCouchdb) Type() string {
 	return "couchdb"
 }
 
-func (p LoggingProcessorCouchdb) Components(tag string, uid string) []fluentbit.Component {
+func (p LoggingProcessorCouchdb) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
@@ -105,7 +107,7 @@ func (p LoggingProcessorCouchdb) Components(tag string, uid string) []fluentbit.
 				},
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(ctx, tag, uid)
 
 	fields := map[string]*confgenerator.ModifyField{
 		"severity": {
@@ -146,7 +148,7 @@ func (p LoggingProcessorCouchdb) Components(tag string, uid string) []fluentbit.
 	c = append(c,
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: fields,
-		}.Components(tag, uid)...,
+		}.Components(ctx, tag, uid)...,
 	)
 	return c
 }
@@ -156,7 +158,7 @@ type LoggingReceiverCouchdb struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverCouchdb) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverCouchdb) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log file
@@ -176,8 +178,8 @@ func (r LoggingReceiverCouchdb) Components(tag string) []fluentbit.Component {
 		},
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorCouchdb.Components(tag, "couchdb")...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c = append(c, r.LoggingProcessorCouchdb.Components(ctx, tag, "couchdb")...)
 	return c
 }
 

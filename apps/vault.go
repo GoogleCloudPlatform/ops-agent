@@ -15,6 +15,7 @@
 package apps
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
@@ -74,7 +75,7 @@ func (r MetricsReceiverVault) Type() string {
 	return "vault"
 }
 
-func (r MetricsReceiverVault) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverVault) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultVaultEndpoint
 	}
@@ -314,7 +315,7 @@ func (LoggingProcessorVaultJson) Type() string {
 	return "vault_audit"
 }
 
-func (p LoggingProcessorVaultJson) Components(tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorVaultJson) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	c := []fluentbit.Component{}
 
 	// sample log line:
@@ -331,9 +332,9 @@ func (p LoggingProcessorVaultJson) Components(tag, uid string) []fluentbit.Compo
 			Fields: map[string]*confgenerator.ModifyField{
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(tag, uid)...,
+		}.Components(ctx, tag, uid)...,
 	)
-	c = append(c, jsonParser.Components(tag, uid)...)
+	c = append(c, jsonParser.Components(ctx, tag, uid)...)
 	return c
 }
 
@@ -343,7 +344,7 @@ type LoggingReceiverVaultAuditJson struct {
 	IncludePaths                            []string `yaml:"include_paths,omitempty" validate:"required"`
 }
 
-func (r LoggingReceiverVaultAuditJson) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverVaultAuditJson) Components(ctx context.Context, tag string) []fluentbit.Component {
 	r.LoggingReceiverFilesMixin.IncludePaths = r.IncludePaths
 
 	r.MultilineRules = []confgenerator.MultilineRule{
@@ -359,8 +360,8 @@ func (r LoggingReceiverVaultAuditJson) Components(tag string) []fluentbit.Compon
 		},
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	return append(c, r.LoggingProcessorVaultJson.Components(tag, r.LoggingProcessorVaultJson.Type())...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	return append(c, r.LoggingProcessorVaultJson.Components(ctx, tag, r.LoggingProcessorVaultJson.Type())...)
 }
 
 func init() {

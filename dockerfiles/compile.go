@@ -15,12 +15,19 @@
 package main
 
 import (
+	_ "embed"
 	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 )
+
+//go:embed template
+var template string
+
+//go:embed template-header
+var templateHeader string
 
 type templateArguments struct {
 	from_image        string
@@ -46,6 +53,22 @@ func applyTemplate(template string, arguments templateArguments) string {
 	return template
 }
 
+// installCMake is used on platforms where the default package manager
+// does not provided a recent enough version of CMake (we require >= 3.12).
+// The cmake-install-recent layer is defined in template-header.
+const installCMake = `
+COPY --from=cmake-install-recent /cmake.sh /cmake.sh
+RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
+`
+
+// installJava is used on platforms where the default package manager
+// does not provide an implementation of Java of a sufficient version as
+// required by the JMX metrics gatherer build.
+// The openjdk-install layer is defined in template-header.
+const installJava = `
+COPY --from=openjdk-install /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/ /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk
+ENV JAVA_HOME /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/`
+
 var dockerfileArguments = []templateArguments{
 	{
 		from_image:  "centos:7",
@@ -53,12 +76,8 @@ var dockerfileArguments = []templateArguments{
 		install_packages: `RUN set -x; yum -y update && \
 		yum -y install git systemd \
 		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
-		gcc gcc-c++ make bison flex file systemd-devel zlib-devel gtest-devel rpm-build java-11-openjdk-devel \
-		expect rpm-sign zip && \
-		yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
-		yum install -y cmake3 && \
-		ln -fs cmake3 /usr/bin/cmake
-		ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk/`,
+		gcc gcc-c++ make bison flex file systemd-devel zlib-devel gtest-devel rpm-build \
+		expect rpm-sign zip` + installJava + installCMake,
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "centos-7",
 		package_extension: "rpm",
@@ -71,8 +90,8 @@ var dockerfileArguments = []templateArguments{
 		yum config-manager --set-enabled powertools && \
 		yum -y install git systemd \
 		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
-		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-11-openjdk-devel \
-		expect rpm-sign zip`,
+		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-${OPENJDK_MAJOR_VERSION}-openjdk-devel \
+		expect rpm-sign zip tzdata-java`,
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "centos-8",
 		package_extension: "rpm",
@@ -86,13 +105,25 @@ var dockerfileArguments = []templateArguments{
 		dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm && \
 		dnf -y install git systemd \
 		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
-		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-11-openjdk-devel \
-		expect rpm-sign zip
+		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-${OPENJDK_MAJOR_VERSION}-openjdk-devel \
+		expect rpm-sign zip tzdata-java
 	
-		ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk/`,
+		ENV JAVA_HOME /usr/lib/jvm/java-${OPENJDK_MAJOR_VERSION}-openjdk/`,
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "rockylinux-9",
 		package_extension: "rpm",
+	},
+	{
+		from_image:  "debian:bookworm",
+		target_name: "bookworm",
+		install_packages: `RUN set -x; apt-get update && \
+		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
+		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
+		build-essential cmake bison flex file libsystemd-dev \
+		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip`,
+		package_build:     "RUN ./pkg/deb/build.sh",
+		tar_distro_name:   "debian-bookworm",
+		package_extension: "deb",
 	},
 	{
 		from_image:  "debian:bullseye",
@@ -101,7 +132,7 @@ var dockerfileArguments = []templateArguments{
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-11-jdk zip`,
+		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "debian-bullseye",
 		package_extension: "deb",
@@ -113,26 +144,9 @@ var dockerfileArguments = []templateArguments{
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-11-jdk zip`,
+		devscripts cdbs pkg-config zip` + installJava,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "debian-buster",
-		package_extension: "deb",
-	},
-	{
-		from_image:  "debian:stretch",
-		target_name: "stretch",
-		install_packages: `RUN set -x; apt-get update && \
-		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl1.0-dev libyajl-dev \
-		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config zip
-		ADD https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.13%2B8/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz
-		RUN set -xe; \
-    		mkdir -p /usr/local/java-11-openjdk && \
-    		tar -xf /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz -C /usr/local/java-11-openjdk --strip-components=1
-		ENV JAVA_HOME /usr/local/java-11-openjdk/`,
-		package_build:     "RUN ./pkg/deb/build.sh",
-		tar_distro_name:   "debian-stretch",
 		package_extension: "deb",
 	},
 	{
@@ -156,14 +170,7 @@ var dockerfileArguments = []templateArguments{
 		# If this bug happens to trigger in the future, adding a "zypper -n download" of a subset of the packages can avoid the segfault.
 		zypper -n install bison>3.4 && \
 		# Allow fluent-bit to find systemd
-		ln -fs /usr/lib/systemd /lib/systemd
-	
-		ADD https://github.com/adoptium/temurin11-binaries/releases/download/jdk-11.0.13%2B8/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz
-		RUN set -xe; \
-			mkdir -p /usr/local/java-11-openjdk && \
-			tar -xf /tmp/OpenJDK11U-jdk_x64_linux_hotspot_11.0.13_8.tar.gz -C /usr/local/java-11-openjdk --strip-components=1
-		
-		ENV JAVA_HOME /usr/local/java-11-openjdk/`,
+		ln -fs /usr/lib/systemd /lib/systemd` + installJava + installCMake,
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "sles-12",
 		package_extension: "rpm",
@@ -171,11 +178,12 @@ var dockerfileArguments = []templateArguments{
 	{
 		from_image:  "opensuse/leap:15.1",
 		target_name: "sles15",
-		install_packages: `RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros java-11-openjdk-devel unzip zip
+		// TODO: Add ARM support to agent-vendor.repo.
+		install_packages: `RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip
 		# Add agent-vendor.repo to install >3.4 bison
-		RUN echo $'[google-cloud-monitoring-sles15-x86_64-test] \n\
-		name=google-cloud-monitoring-sles15-x86_64-test \n\
-		baseurl=https://packages.cloud.google.com/yum/repos/google-cloud-monitoring-sles15-x86_64-test-20221109-1 \n\
+		RUN echo $'[google-cloud-monitoring-sles15-vendor] \n\
+		name=google-cloud-monitoring-sles15-vendor \n\
+		baseurl=https://packages.cloud.google.com/yum/repos/google-cloud-monitoring-sles15-$basearch-test-20221109-1 \n\
 		enabled         = 1 \n\
 		autorefresh     = 0 \n\
 		repo_gpgcheck   = 0 \n\
@@ -185,22 +193,10 @@ var dockerfileArguments = []templateArguments{
 			zypper -n update && \
 			zypper -n install bison>3.4 && \
 			# Allow fluent-bit to find systemd
-			ln -fs /usr/lib/systemd /lib/systemd`,
+			ln -fs /usr/lib/systemd /lib/systemd` + installJava + installCMake,
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "sles-15",
 		package_extension: "rpm",
-	},
-	{
-		from_image:  "ubuntu:bionic-20220801",
-		target_name: "bionic",
-		install_packages: `RUN set -x; apt-get update && \
-		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-11-jdk zip`,
-		package_build:     "RUN ./pkg/deb/build.sh",
-		tar_distro_name:   "ubuntu-bionic",
-		package_extension: "deb",
 	},
 	{
 		from_image:  "ubuntu:focal",
@@ -209,7 +205,7 @@ var dockerfileArguments = []templateArguments{
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-11-jdk zip`,
+		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "ubuntu-focal",
 		package_extension: "deb",
@@ -221,32 +217,24 @@ var dockerfileArguments = []templateArguments{
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
 		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-11-jdk zip`,
+		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "ubuntu-jammy",
 		package_extension: "deb",
 	},
+	{
+		from_image:  "ubuntu:lunar",
+		target_name: "lunar",
+		install_packages: `RUN set -x; apt-get update && \
+		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
+		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
+		build-essential cmake bison flex file libsystemd-dev \
+		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip debhelper`,
+		package_build:     "RUN ./pkg/deb/build.sh",
+		tar_distro_name:   "ubuntu-lunar",
+		package_extension: "deb",
+	},
 }
-
-var dockerfileHeader = `# Copyright 2020 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     https://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-# This file was generated by dockerfiles/compile.go
-
-# Build as DOCKER_BUILDKIT=1 docker build -o /tmp/out .
-# or DOCKER_BUILDKIT=1 docker build -o /tmp/out . --target=buster
-# Generated tarball(s) will end up in /tmp/out`
 
 func getDockerfileFooter() string {
 	components := []string{"FROM scratch"}
@@ -261,18 +249,8 @@ func getDockerfilePath() string {
 	return filepath.Join(filepath.Dir(filepath.Dir(filename)), "Dockerfile")
 }
 
-func getTemplatePath() string {
-	_, filename, _, _ := runtime.Caller(0)
-	return filepath.Join(filepath.Dir(filename), "template")
-}
-
 func getDockerfile() (string, error) {
-	dat, err := os.ReadFile(getTemplatePath())
-	if err != nil {
-		return "", err
-	}
-	template := string(dat)
-	components := []string{dockerfileHeader}
+	components := []string{templateHeader}
 	for _, arg := range dockerfileArguments {
 		components = append(components, applyTemplate(template, arg))
 	}

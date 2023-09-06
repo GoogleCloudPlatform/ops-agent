@@ -15,6 +15,7 @@
 package apps
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"path"
@@ -23,6 +24,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
 
 type MetricsReceiverOracleDB struct {
@@ -32,9 +34,9 @@ type MetricsReceiverOracleDB struct {
 	Insecure           *bool `yaml:"insecure" validate:"omitempty"`
 	InsecureSkipVerify *bool `yaml:"insecure_skip_verify" validate:"omitempty"`
 
-	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port|startswith=/"`
-	Username string `yaml:"username"`
-	Password string `yaml:"password"`
+	Endpoint string        `yaml:"endpoint" validate:"omitempty,hostname_port|startswith=/"`
+	Username string        `yaml:"username"`
+	Password secret.String `yaml:"password"`
 
 	SID         string `yaml:"sid" validate:"omitempty"`
 	ServiceName string `yaml:"service_name" validate:"omitempty"`
@@ -47,7 +49,7 @@ func (r MetricsReceiverOracleDB) Type() string {
 	return "oracledb"
 }
 
-func (r MetricsReceiverOracleDB) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverOracleDB) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	endpoint := r.Endpoint
 	if r.Endpoint == "" {
 		endpoint = defaultOracleDBEndpoint
@@ -74,8 +76,9 @@ func (r MetricsReceiverOracleDB) Pipelines() []otel.ReceiverPipeline {
 	}
 
 	auth := url.QueryEscape(r.Username)
-	if len(r.Password) > 0 {
-		auth = fmt.Sprintf("%s:%s", auth, url.QueryEscape(r.Password))
+	secretPassword := r.Password.SecretValue()
+	if len(secretPassword) > 0 {
+		auth = fmt.Sprintf("%s:%s", auth, url.QueryEscape(secretPassword))
 	}
 
 	// create a datasource in the form oracle://username:password@host:port/ServiceName?SID=sid&ssl=enable&...
@@ -90,7 +93,7 @@ func (r MetricsReceiverOracleDB) Pipelines() []otel.ReceiverPipeline {
 		"collection_interval": r.CollectionIntervalString(),
 		"driver":              "oracle",
 		"datasource":          datasource,
-		"queries":             r.queryConfig(),
+		"queries":             sqlReceiverQueriesConfig(oracleQueries),
 	}
 	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
@@ -117,57 +120,7 @@ func (r MetricsReceiverOracleDB) Pipelines() []otel.ReceiverPipeline {
 	}}
 }
 
-type oracleMetric struct {
-	metric_name       string
-	value_column      string
-	unit              string
-	description       string
-	data_type         string
-	monotonic         string
-	value_type        string
-	attribute_columns []string
-	static_attributes map[string]string
-}
-
-type oracleQuery struct {
-	query   string
-	metrics []oracleMetric
-}
-
-func (r MetricsReceiverOracleDB) queryConfig() []map[string]interface{} {
-	cfg := []map[string]interface{}{}
-	for _, q := range oracleQueries {
-		metrics := []map[string]interface{}{}
-		for _, m := range q.metrics {
-			metric := map[string]interface{}{
-				"metric_name":       m.metric_name,
-				"value_column":      m.value_column,
-				"unit":              m.unit,
-				"description":       m.description,
-				"data_type":         m.data_type,
-				"value_type":        m.value_type,
-				"attribute_columns": m.attribute_columns,
-				"static_attributes": m.static_attributes,
-			}
-			if m.data_type == "sum" {
-				metric["monotonic"] = m.monotonic
-			}
-
-			metrics = append(metrics, metric)
-		}
-
-		query := map[string]interface{}{
-			"sql":     q.query,
-			"metrics": metrics,
-		}
-
-		cfg = append(cfg, query)
-	}
-
-	return cfg
-}
-
-var oracleQueries = []oracleQuery{
+var oracleQueries = []sqlReceiverQuery{
 	{
 		query: `SELECT (SELECT DBID FROM SYS.GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, ts.TABLESPACE_NAME, ts.CONTENTS,
 				(select sum(df.bytes) from sys.dba_data_files df where df.tablespace_name=ts.tablespace_name)-(select sum(fs.bytes) from sys.dba_free_space fs where fs.tablespace_name=ts.tablespace_name) AS USED_SPACE,
@@ -184,7 +137,7 @@ var oracleQueries = []oracleQuery{
 			JOIN sys.v_$$tempfile t
 			ON t.TS# = ss.TS#
 			GROUP BY ts.NAME`,
-		metrics: []oracleMetric{
+		metrics: []sqlReceiverMetric{
 			{
 				metric_name:       "oracle.tablespace.size",
 				value_column:      "FREE_SPACE",
@@ -217,7 +170,7 @@ var oracleQueries = []oracleQuery{
 	},
 	{
 		query: "SELECT (SELECT DBID FROM SYS.GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, CONTENTS, STATUS, COUNT(*) COUNT FROM sys.dba_tablespaces GROUP BY STATUS, CONTENTS",
-		metrics: []oracleMetric{
+		metrics: []sqlReceiverMetric{
 			{
 				metric_name:       "oracle.tablespace.count",
 				value_column:      "COUNT",
@@ -236,7 +189,7 @@ var oracleQueries = []oracleQuery{
 	// remove uptime until there is a consistent plan for support
 	// {
 	// 	query: "SELECT (SELECT DBID FROM SYS.GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, INST_ID INSTANCE_ID, INSTANCE_ROLE, (sysdate - startup_time) * 86400 UPTIME FROM SYS.GV_$$instance",
-	// 	metrics: []oracleMetric{
+	// 	metrics: []sqlReceiverMetric{
 	// 		{
 	// 			metric_name:       "oracle.uptime",
 	// 			value_column:      "UPTIME",
@@ -254,7 +207,7 @@ var oracleQueries = []oracleQuery{
 	// },
 	{
 		query: "SELECT (SELECT DBID FROM SYS.GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, (SELECT round(case when max(start_time) is null then -1 when sysdate - max(start_time) > 0 then (sysdate - max(start_time)) * 86400 else 0 end) FROM SYS.V_$$rman_backup_job_details ) LATEST_BACKUP FROM DUAL",
-		metrics: []oracleMetric{
+		metrics: []sqlReceiverMetric{
 			{
 				metric_name:       "oracle.backup.latest",
 				value_column:      "LATEST_BACKUP",
@@ -286,7 +239,7 @@ var oracleQueries = []oracleQuery{
 				)
 			)
 			GROUP BY DATABASE_ID, GLOBAL_NAME, INST_ID`,
-		metrics: []oracleMetric{
+		metrics: []sqlReceiverMetric{
 			{
 				metric_name:       "oracle.process.count",
 				value_column:      "PROCESSES_UTIL",
@@ -343,7 +296,7 @@ var oracleQueries = []oracleQuery{
 	},
 	{
 		query: "SELECT (SELECT DBID FROM SYS.GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, INST_ID INSTANCE_ID, PROGRAM, SUM(PGA_USED_MEM) USED_MEM, SUM(PGA_ALLOC_MEM) - SUM(PGA_USED_MEM) FREE_MEM FROM SYS.GV_$$PROCESS WHERE PROGRAM <> 'PSEUDO' GROUP BY PROGRAM, INST_ID",
-		metrics: []oracleMetric{
+		metrics: []sqlReceiverMetric{
 			{
 				metric_name:       "oracle.process.pga_memory.size",
 				value_column:      "USED_MEM",
@@ -376,7 +329,7 @@ var oracleQueries = []oracleQuery{
 	},
 	{
 		query: "SELECT (SELECT DBID FROM SYS.GV_$$DATABASE) DATABASE_ID, (SELECT GLOBAL_NAME FROM sys.GLOBAL_NAME) GLOBAL_NAME, INST_ID INSTANCE_ID, WAIT_CLASS, SUM(total_waits_fg) AS TOTAL_WAITS_FG, SUM(total_waits)-SUM(total_waits_fg) AS TOTAL_WAITS_BG, SUM(total_timeouts_fg) AS TOTAL_TIMEOUTS_FG, SUM(total_timeouts)-SUM(TOTAL_TIMEOUTS_FG) AS TOTAL_TIMEOUTS_BG, SUM(time_waited_fg) AS TIME_WAITED_FG, SUM(time_waited)-SUM(TIME_WAITED_FG) AS TIME_WAITED_BG FROM SYS.GV_$$system_event WHERE wait_class <> 'Idle' GROUP BY INST_ID, WAIT_CLASS",
-		metrics: []oracleMetric{
+		metrics: []sqlReceiverMetric{
 			{
 				metric_name:       "oracle.wait.count",
 				value_column:      "TOTAL_WAITS_FG",
@@ -480,7 +433,7 @@ var oracleQueries = []oracleQuery{
 				)
 			)
 			GROUP BY DATABASE_ID, GLOBAL_NAME, INST_ID`,
-		metrics: []oracleMetric{
+		metrics: []sqlReceiverMetric{
 			{
 				metric_name:       "oracle.service.response_time",
 				value_column:      "RESPONSE_TIME",
@@ -551,7 +504,7 @@ var oracleQueries = []oracleQuery{
 				)
 			)
 			GROUP BY DATABASE_ID, GLOBAL_NAME, INST_ID`,
-		metrics: []oracleMetric{
+		metrics: []sqlReceiverMetric{
 			{
 				metric_name:       "oracle.cursor.count",
 				value_column:      "CURSORS_CUMULATIVE",
@@ -816,7 +769,7 @@ func (lr LoggingProcessorOracleDBAlert) Type() string {
 	return "oracledb_alert"
 }
 
-func (lr LoggingProcessorOracleDBAlert) Components(tag string, uid string) []fluentbit.Component {
+func (lr LoggingProcessorOracleDBAlert) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	components := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
@@ -845,7 +798,7 @@ func (lr LoggingProcessorOracleDBAlert) Components(tag string, uid string) []flu
 				Regex:     `^(?!\d+-\d+-\d+T\d+:\d+:\d+.\d+(?:[-+]\d+:\d+|Z)).*$`,
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(ctx, tag, uid)
 
 	severityVal := "ALERT"
 	components = append(components,
@@ -854,7 +807,7 @@ func (lr LoggingProcessorOracleDBAlert) Components(tag string, uid string) []flu
 				"severity":                 {StaticValue: &severityVal},
 				InstrumentationSourceLabel: instrumentationSourceValue(lr.Type()),
 			},
-		}.Components(tag, uid)...)
+		}.Components(ctx, tag, uid)...)
 	return components
 }
 
@@ -865,7 +818,7 @@ type LoggingReceiverOracleDBAlert struct {
 	IncludePaths                            []string `yaml:"include_paths,omitempty" validate:"required_without=OracleHome,excluded_with=OracleHome"`
 }
 
-func (lr LoggingReceiverOracleDBAlert) Components(tag string) []fluentbit.Component {
+func (lr LoggingReceiverOracleDBAlert) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(lr.OracleHome) > 0 {
 		lr.IncludePaths = []string{
 			path.Join(lr.OracleHome, "/diag/rdbms/*/*/trace/alert_*.log"),
@@ -874,8 +827,8 @@ func (lr LoggingReceiverOracleDBAlert) Components(tag string) []fluentbit.Compon
 
 	lr.LoggingReceiverFilesMixin.IncludePaths = lr.IncludePaths
 
-	c := lr.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, lr.LoggingProcessorOracleDBAlert.Components(tag, lr.Type())...)
+	c := lr.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c = append(c, lr.LoggingProcessorOracleDBAlert.Components(ctx, tag, lr.Type())...)
 	return c
 }
 
@@ -887,7 +840,7 @@ func (lr LoggingProcessorOracleDBAudit) Type() string {
 	return "oracledb_audit"
 }
 
-func (lr LoggingProcessorOracleDBAudit) Components(tag string, uid string) []fluentbit.Component {
+func (lr LoggingProcessorOracleDBAudit) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	components := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
@@ -952,7 +905,7 @@ func (lr LoggingProcessorOracleDBAudit) Components(tag string, uid string) []flu
 				Regex:     `^(?!\w+ \w+ {1,2}\d+ {1,2}\d+:\d+:\d+ \d+ (?:[-+]\d+:\d+|Z)).*$`,
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(ctx, tag, uid)
 
 	severityVal := "INFO"
 
@@ -962,7 +915,7 @@ func (lr LoggingProcessorOracleDBAudit) Components(tag string, uid string) []flu
 				"severity":                 {StaticValue: &severityVal},
 				InstrumentationSourceLabel: instrumentationSourceValue(lr.Type()),
 			},
-		}.Components(tag, uid)...)
+		}.Components(ctx, tag, uid)...)
 	return components
 }
 
@@ -973,7 +926,7 @@ type LoggingReceiverOracleDBAudit struct {
 	IncludePaths                            []string `yaml:"include_paths,omitempty" validate:"required_without=OracleHome,excluded_with=OracleHome"`
 }
 
-func (lr LoggingReceiverOracleDBAudit) Components(tag string) []fluentbit.Component {
+func (lr LoggingReceiverOracleDBAudit) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(lr.OracleHome) > 0 {
 		lr.IncludePaths = []string{
 			path.Join(lr.OracleHome, "/admin/*/adump/*.aud"),
@@ -982,8 +935,8 @@ func (lr LoggingReceiverOracleDBAudit) Components(tag string) []fluentbit.Compon
 
 	lr.LoggingReceiverFilesMixin.IncludePaths = lr.IncludePaths
 
-	c := lr.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, lr.LoggingProcessorOracleDBAudit.Components(tag, lr.Type())...)
+	c := lr.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c = append(c, lr.LoggingProcessorOracleDBAudit.Components(ctx, tag, lr.Type())...)
 	return c
 }
 

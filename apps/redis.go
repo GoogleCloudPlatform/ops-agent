@@ -15,11 +15,13 @@
 package apps
 
 import (
+	"context"
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
 
 type MetricsReceiverRedis struct {
@@ -28,8 +30,8 @@ type MetricsReceiverRedis struct {
 	confgenerator.MetricsReceiverShared    `yaml:",inline"`
 
 	// TODO: Add support for ACL Authentication
-	Address  string `yaml:"address" validate:"omitempty,hostname_port|startswith=/"`
-	Password string `yaml:"password" validate:"omitempty"`
+	Address  string        `yaml:"address" validate:"omitempty,hostname_port|startswith=/"`
+	Password secret.String `yaml:"password" validate:"omitempty"`
 }
 
 const defaultRedisEndpoint = "localhost:6379"
@@ -38,7 +40,7 @@ func (r MetricsReceiverRedis) Type() string {
 	return "redis"
 }
 
-func (r MetricsReceiverRedis) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverRedis) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	if r.Address == "" {
 		r.Address = defaultRedisEndpoint
 	}
@@ -56,7 +58,7 @@ func (r MetricsReceiverRedis) Pipelines() []otel.ReceiverPipeline {
 			Config: map[string]interface{}{
 				"collection_interval": r.CollectionIntervalString(),
 				"endpoint":            r.Address,
-				"password":            r.Password,
+				"password":            r.Password.SecretValue(),
 				"tls":                 r.TLSConfig(true),
 				"transport":           transport,
 			},
@@ -89,7 +91,7 @@ func (LoggingProcessorRedis) Type() string {
 	return "redis"
 }
 
-func (p LoggingProcessorRedis) Components(tag string, uid string) []fluentbit.Component {
+func (p LoggingProcessorRedis) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegex{
 		// Documentation: https://github.com/redis/redis/blob/6.2/src/server.c#L1122
 		// Sample line (Redis 3+): 534:M 28 Apr 2020 11:30:29.988 * DB loaded from disk: 0.002 seconds
@@ -102,7 +104,7 @@ func (p LoggingProcessorRedis) Components(tag string, uid string) []fluentbit.Co
 				"pid": "integer",
 			},
 		},
-	}.Components(tag, uid)
+	}.Components(ctx, tag, uid)
 
 	// Log levels documented: https://github.com/redis/redis/blob/6.2/src/server.c#L1124
 	c = append(c,
@@ -131,7 +133,7 @@ func (p LoggingProcessorRedis) Components(tag string, uid string) []fluentbit.Co
 				},
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(tag, uid)...,
+		}.Components(ctx, tag, uid)...,
 	)
 
 	return c
@@ -142,7 +144,7 @@ type LoggingReceiverRedis struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverRedis) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverRedis) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log path on Ubuntu / Debian
@@ -157,8 +159,8 @@ func (r LoggingReceiverRedis) Components(tag string) []fluentbit.Component {
 			"/var/log/redis/redis_6379.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorRedis.Components(tag, "redis")...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c = append(c, r.LoggingProcessorRedis.Components(ctx, tag, "redis")...)
 	return c
 }
 

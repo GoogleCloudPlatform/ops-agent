@@ -184,7 +184,7 @@ configuration_options:
           default: null
           description: The value must be tomcat_access.
         - name: include_paths
-          default: '[/opt/tomcat/logs/localhost_access_log.*.txt]'
+          default: '[/opt/tomcat/logs/localhost_access_log*.txt]'
           description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
         - name: exclude_paths
           default: null

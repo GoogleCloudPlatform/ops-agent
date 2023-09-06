@@ -15,6 +15,7 @@
 package apps
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
@@ -34,7 +35,7 @@ func (r MetricsReceiverJetty) Type() string {
 	return "jetty"
 }
 
-func (r MetricsReceiverJetty) Pipelines() []otel.ReceiverPipeline {
+func (r MetricsReceiverJetty) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	targetSystem := "jetty"
 	if r.MetricsReceiverSharedCollectJVM.ShouldCollectJVMMetrics() {
 		targetSystem = fmt.Sprintf("%s,%s", targetSystem, "jvm")
@@ -62,8 +63,8 @@ type LoggingProcessorJettyAccess struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 }
 
-func (p LoggingProcessorJettyAccess) Components(tag string, uid string) []fluentbit.Component {
-	return genericAccessLogParser(p.Type(), tag, uid)
+func (p LoggingProcessorJettyAccess) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
+	return genericAccessLogParser(ctx, p.Type(), tag, uid)
 }
 
 func (LoggingProcessorJettyAccess) Type() string {
@@ -75,14 +76,14 @@ type LoggingReceiverJettyAccess struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverJettyAccess) Components(tag string) []fluentbit.Component {
+func (r LoggingReceiverJettyAccess) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			"/opt/logs/*.request.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(tag)
-	c = append(c, r.LoggingProcessorJettyAccess.Components(tag, "jetty_access")...)
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c = append(c, r.LoggingProcessorJettyAccess.Components(ctx, tag, "jetty_access")...)
 	return c
 }
 
