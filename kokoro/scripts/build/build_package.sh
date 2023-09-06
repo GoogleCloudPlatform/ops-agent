@@ -40,20 +40,12 @@ stat submodules/opentelemetry-operations-collector/go.* || echo stat failed
 . VERSION
 export_to_sponge_config "PACKAGE_VERSION" "${PKG_VERSION}"
 
-# debug
-curl --header "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/email"
-
 ARCH="$(docker info --format '{{.Architecture}}')"
 
 ARTIFACT_REGISTRY="us-docker.pkg.dev"
 docker-credential-gcr configure-docker --registries="${ARTIFACT_REGISTRY}"
 # gcloud auth configure-docker "${ARTIFACT_REGISTRY}"
 CACHE_LOCATION="${ARTIFACT_REGISTRY}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:${DISTRO}_${ARCH}"
-
-# debug
-docker version
-docker pull "us-docker.pkg.dev/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:bullseye_x86_64"
-exit 6
 
 #  --cache-from="${CACHE_LOCATION}" \
 DOCKER_BUILDKIT=1 docker build . \
