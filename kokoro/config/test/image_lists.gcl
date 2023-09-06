@@ -99,6 +99,15 @@ rockylinux9 = _distro {
   ]
   presubmit = ['rocky-linux-9']
 }
+rockylinux9_arm64 = _distro {
+  release = [
+    // RHEL.
+    'rhel-9-arm64',
+    // Rocky.
+    'rocky-linux-9-arm64',
+  ]
+  presubmit = ['rocky-linux-9-arm64']
+}
 sles12 = _distro {
   release = [
     'sles-12',

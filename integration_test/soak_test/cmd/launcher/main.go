@@ -85,6 +85,26 @@ func main() {
 	}
 }
 
+// Pause updates for 35 days to avoid reboots (b/297357060) using:
+// https://stackoverflow.com/a/64862952/1188632
+func pauseWindowsUpdates(ctx context.Context, logger *log.Logger, vm *gce.VM) (gce.CommandOutput, error) {
+	return gce.RunRemotely(ctx, logger, vm, "", `
+$ErrorActionPreference = 'Stop'
+
+$now = Get-Date
+$pause_start = $now.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+$pause_end = $now.AddDays(35).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings' -Name 'PauseUpdatesExpiryTime' -Value $pause_end
+Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings' -Name 'PauseFeatureUpdatesStartTime' -Value $pause_start
+Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings' -Name 'PauseFeatureUpdatesEndTime' -Value $pause_end
+Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings' -Name 'PauseQualityUpdatesStartTime' -Value $pause_start
+Set-itemproperty -Path 'HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings' -Name 'PauseQualityUpdatesEndTime' -Value $pause_end
+
+New-Item -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU' -Force
+New-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU' -Name 'NoAutoUpdate' -PropertyType DWORD -Value 1
+`)
+}
+
 func mainErr() error {
 	defer gce.CleanupKeysOrDie()
 
@@ -122,6 +142,13 @@ func mainErr() error {
 	if err != nil {
 		return err
 	}
+
+	if gce.IsWindows(vm.Platform) {
+		if _, err := pauseWindowsUpdates(ctx, logger, vm); err != nil {
+			return err
+		}
+	}
+
 	debugLogPath := "/tmp/log_generator.log"
 
 	// Install the Ops Agent with a config telling it to watch logPath,

@@ -52,6 +52,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -1488,14 +1489,92 @@ func TestLogFilePathLabel(t *testing.T) {
 	})
 }
 
+// startFluentBitBackgroundPipe starts a background fluent-bit process that tails a file (whose
+// path is returned by this function) and pipes its contents to an output configured via outputConfig.
+// An example outputConfig would be "-o tcp://127.0.0.1:5170".
+// Use parseInputAsJSON for structured input.
+func startFluentBitBackgroundPipe(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, platform string, parseInputAsJSON bool, outputConfig string) (string, error) {
+	dir := workDirForPlatform(platform)
+	if err := makeDirectory(ctx, logger, vm, dir); err != nil {
+		return "", err
+	}
+	remoteFile := filepath.Join(dir, "pipe.log")
+	parserFile := filepath.Join(dir, "parser.conf")
+	parserConfig := `[PARSER]
+	Name json
+	Format json`
+
+	fluentBitArgs := "-i tail" +
+		" -p buffer_chunk_size=512k" +
+		" -p buffer_max_size=512k" +
+		" -p path=" + remoteFile
+	if parseInputAsJSON {
+		fluentBitArgs += " -p parser=json" +
+			" -R " + parserFile
+	}
+	fluentBitArgs += " " + outputConfig
+
+	// Create the pipe file, create the parser file, and start fluent-bit in the background.
+	// The parser needs to be stored to a file because fluent-bit doesn't support configuring
+	// parsers on the command line.
+	command := fmt.Sprintf(`
+		sudo touch %s
+		sudo tee %s > /dev/null <<EOF
+%s
+EOF
+		sudo nohup /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit %s 1>/dev/null 2>/dev/null &`,
+		remoteFile,
+		parserFile,
+		parserConfig,
+		// Escape record accessor dollar-signs
+		strings.ReplaceAll(fluentBitArgs, "$", `\$`))
+	if gce.IsWindows(platform) {
+		command = fmt.Sprintf(`
+			New-Item %s
+			"%s" | Out-File -Encoding Ascii %s
+			Invoke-WmiMethod -Class Win32_Process -Name Create -ArgumentList 'C:\Program Files\Google\Cloud Operations\Ops Agent\bin\fluent-bit.exe %s'`,
+			remoteFile,
+			parserConfig,
+			parserFile,
+			fluentBitArgs)
+	}
+
+	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", command); err != nil {
+		return "", err
+	}
+	return remoteFile, nil
+}
+
+// writeLinesToRemoteFile writes lines of text to a remote file.
+// Lines each have an implicit terminating newline character.
+// Lines are allowed to be huge.
+func writeLinesToRemoteFile(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, platform string, remoteFile string, lines ...string) error {
+	for _, line := range lines {
+		line += "\n"
+
+		// Use a temp-file as a buffer to allow for long lines.
+		tempPath := filepath.Join(workDirForPlatform(platform), "pipe_temp.log")
+		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(line), tempPath); err != nil {
+			return err
+		}
+
+		// Append the temp-file to the remote file.
+		appendCommand := fmt.Sprintf(`sudo cat %s | sudo tee -a %s > /dev/null`, tempPath, remoteFile)
+		if gce.IsWindows(platform) {
+			appendCommand = fmt.Sprintf(`Get-Content %s | Out-File -Encoding Ascii -Append %s`, tempPath, remoteFile)
+		}
+
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", appendCommand); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func TestTCPLog(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
-		if gce.IsWindows(platform) {
-			// TODO: Delete when b/285865631 is fixed.
-			t.SkipNow()
-		}
 
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
@@ -1515,50 +1594,45 @@ func TestTCPLog(t *testing.T) {
 		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
 			t.Fatal(err)
 		}
-		command := `echo '{"msg":"test tcp log 1"}{"msg":"test tcp log 2"}' | /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit -i stdin -o tcp://127.0.0.1:5170 -p format=json_lines && echo '{"msg":"test tcp log 3"}{"msg":"test tcp log 4"}' | /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit -i stdin -o tcp://127.0.0.1:5170 -p format=json_lines`
-		// Installing Netcat or equivalent tools on Windows is tricky so we can instead
-		// use this Powershell Script that can send TCP messages.
-		if gce.IsWindows(platform) {
-			command = `$ErrorActionPreference = 'Stop'
-			function Send-TcpString {
-			  param(
-			    [string]$TargetIP,
-			    [int]$TargetPort,
-			    [string]$Message
-			  )
-			  $Socket = New-Object System.Net.Sockets.TCPClient($TargetIP, $TargetPort) 
-			  $Stream = $Socket.GetStream() 
-			  $Writer = New-Object System.IO.StreamWriter($Stream)
-			  $Message | % {
-			    $Writer.WriteLine($_)
-			    $Writer.Flush()
-			  }
-			  $Stream.Close()
-			  $Socket.Close()
-			}
-			Send-TcpString 127.0.0.1 5170 '{"msg":"test tcp log 1"}{"msg":"test tcp log 2"}'
-			Send-TcpString 127.0.0.1 5170 '{"msg":"test tcp log 3"}{"msg":"test tcp log 4"}'`
+
+		// Start a background fluent-bit that outputs to TCP.
+		// The TCP receiver in the Ops Agent already parses to JSON,
+		// so don't double-parse it in the background fluent-bit.
+		pipePath, err := startFluentBitBackgroundPipe(ctx, logger, vm, platform, false, "-o tcp://127.0.0.1:5170 -p raw_message_key=$log")
+		if err != nil {
+			t.Fatalf("Error starting fluent-bit background pipe: %v", err)
 		}
 
-		// Write JSON test log to TCP socket via bash redirect, to get around installing and using netcat.
-		// https://www.gnu.org/savannah-checkouts/gnu/bash/manual/bash.html#Redirections
+		linesToWrite := []string{
+			// Verify that separate JSON messages are partitioned appropriately,
+			// regardless of where the newlines appear between messages.
+			`{"msg":"test tcp log 1"}{"msg":"test tcp log 2"}`,
+			`{"msg":"test tcp log 3"}{"msg":"test tcp log 4"}`,
 
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", command); err != nil {
-			t.Fatalf("Error writing dummy TCP log line: %v", err)
+			// Verify a large log that's reasonably close to the limit of 256 KB.
+			// Use "start" and "end" for querying later because the max query size
+			// is only 20 KB.
+			fmt.Sprintf(`{"large":"start%send"}`, strings.Repeat("a", 250_000)),
+		}
+		if err = writeLinesToRemoteFile(ctx, logger, vm, platform, pipePath, linesToWrite...); err != nil {
+			t.Fatalf("Error writing dummy TCP log lines: %v", err)
 		}
 
 		var waitGroup sync.WaitGroup
-		for i := 1; i <= 4; i++ {
-			i := i
+		addQueryToWaitGroup := func(query string) {
 			waitGroup.Add(1)
 			go func() {
 				defer waitGroup.Done()
-				if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "tcp_logs", time.Hour, fmt.Sprintf("jsonPayload.msg:test tcp log %d", i)); err != nil {
+				if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "tcp_logs", time.Hour, query); err != nil {
 					t.Error(err)
 				}
 			}()
-
 		}
+		addQueryToWaitGroup(`jsonPayload.msg="test tcp log 1"`)
+		addQueryToWaitGroup(`jsonPayload.msg="test tcp log 2"`)
+		addQueryToWaitGroup(`jsonPayload.msg="test tcp log 3"`)
+		addQueryToWaitGroup(`jsonPayload.msg="test tcp log 4"`)
+		addQueryToWaitGroup(`jsonPayload.large:"start" AND jsonPayload.large:"end"`)
 		waitGroup.Wait()
 	})
 }
@@ -1585,23 +1659,21 @@ func TestFluentForwardLog(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		// Use another instance of Fluent Bit to read from stdin and  forward to the
-		// Ops Agent.
-		//
-		// The forwarding Fluent Bit uses the tag "forwarder_tag" when sending the
-		// log record. This will be preserved in the LogName.
-
-		command := "echo '{\"rand_value\":\"test fluent forward log\"}' | /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit -i stdin -o forward://127.0.0.1:24224 -t forwarder_tag"
-
-		if gce.IsWindows(platform) {
-			command = `Invoke-WmiMethod -Class Win32_Process -Name Create -ArgumentList "C:\Program Files\Google\Cloud Operations\Ops Agent\bin\fluent-bit.exe -i random -o forward://127.0.0.1:24224 -t forwarder_tag"`
+		// Start a background fluent-forward pipe. We want to verify that
+		// the log structure is preserved, so enable JSON parsing.
+		var pipePath string
+		var err error
+		if pipePath, err = startFluentBitBackgroundPipe(ctx, logger, vm, platform, true, "-o forward://127.0.0.1:24224 -t forwarder_tag"); err != nil {
+			t.Fatalf("Error starting fluent-bit background pipe: %v", err)
 		}
 
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", command); err != nil {
-			t.Fatalf("Error writing dummy forward protocol log line %v", err)
+		// Verify a large structured log that's reasonably close to the limit of 256 KB.
+		largeLog := fmt.Sprintf(`{"large":"start%send"}`, strings.Repeat("a", 250_000))
+		if err = writeLinesToRemoteFile(ctx, logger, vm, platform, pipePath, largeLog); err != nil {
+			t.Fatalf("Error writing dummy TCP log line: %v", err)
 		}
 
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "fluent_logs.forwarder_tag", time.Hour, "jsonPayload.rand_value:*"); err != nil {
+		if err = gce.WaitForLog(ctx, logger.ToMainLog(), vm, "fluent_logs.forwarder_tag", time.Hour, `jsonPayload.large:"start" AND jsonPayload.large:"end"`); err != nil {
 			t.Error(err)
 		}
 	})
@@ -2204,7 +2276,6 @@ func TestPrometheusMetrics(t *testing.T) {
   receivers:
     prometheus:
       type: prometheus
-      scrape_untyped_metrics_as: gauge
       config:
         scrape_configs:
           - job_name: 'prometheus'
@@ -2364,12 +2435,6 @@ func TestPrometheusMetrics(t *testing.T) {
 				Key:     "[0].config.[0].scrape_configs.static_config_target_groups",
 				Value:   "1",
 			},
-			{
-				Module:  "metrics",
-				Feature: "receivers:prometheus",
-				Key:     "[0].config.scrape_untyped_metrics_as",
-				Value:   "gauge",
-			},
 		}
 
 		series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", time.Hour, nil, false, len(expectedFeatures))
@@ -2507,9 +2572,11 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 			// the cumulative counter metric will return 0 as no change in values
 			{"prometheus.googleapis.com/test_counter_value/counter", nil,
 				metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 0.0},
-			// Untyped type - GCM will have untyped metrics as gauge type
-			{"prometheus.googleapis.com/test_untyped_value/gauge", nil,
+			// Untyped type - GCM will have untyped metrics double written as a gauge AND a cumulative
+			{"prometheus.googleapis.com/test_untyped_value/unknown", nil,
 				metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 56.0},
+			{"prometheus.googleapis.com/test_untyped_value/unknown:counter", nil,
+				metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 0.0},
 		}
 
 		var multiErr error
@@ -2527,7 +2594,6 @@ func TestPrometheusRelabelConfigs(t *testing.T) {
   receivers:
     prom_app:
       type: prometheus
-      scrape_untyped_metrics_as: untyped
       config:
         scrape_configs:
         - job_name: test
@@ -2577,7 +2643,6 @@ func TestPrometheusUntypedMetrics(t *testing.T) {
   receivers:
     prom_app:
       type: prometheus
-      scrape_untyped_metrics_as: untyped
       config:
         scrape_configs:
         - job_name: test
@@ -2639,7 +2704,6 @@ func TestPrometheusUntypedMetricsReset(t *testing.T) {
   receivers:
     prom_app:
       type: prometheus
-      scrape_untyped_metrics_as: untyped
       config:
         scrape_configs:
         - job_name: test
@@ -3953,8 +4017,9 @@ func checkExpectedHealthCheckResult(t *testing.T, output string, name string, ex
 func getRecentServiceOutputForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
 		cmd := strings.Join([]string{
-			"$Past = (Get-Date) - (New-TimeSpan -Minute 1)",
-			"Get-WinEvent -MaxEvents 10 -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent'; StartTime=$Past } | select -ExpandProperty Message",
+			"$ServiceStart = (Get-EventLog -LogName 'System' -Source 'Service Control Manager' -EntryType 'Information' -Message '*Google Cloud Ops Agent service entered the running state*' -Newest 1).TimeGenerated",
+			"$QueryStart = $ServiceStart - (New-TimeSpan -Seconds 30)",
+			"Get-WinEvent -MaxEvents 10 -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent'; StartTime=$QueryStart } | select -ExpandProperty Message",
 		}, ";")
 		return cmd
 	}
@@ -4230,6 +4295,41 @@ func TestNoNvmlOtelReceiverWithoutGpu(t *testing.T) {
 		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
 			t.Fatalf("unexpected error: %v", err)
 		}
+	})
+}
+
+func TestRestartVM(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		cmdOut, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", getRecentServiceOutputForPlatform(vm.Platform))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Ensure sure all healthchecks pass before the restart
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
+
+		if err := gce.RestartInstance(ctx, logger.ToFile("VM_restart.txt"), vm); err != nil {
+			t.Fatal(err)
+		}
+
+		cmdOut, err = gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", getRecentServiceOutputForPlatform(vm.Platform))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
+		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
 	})
 }
 
