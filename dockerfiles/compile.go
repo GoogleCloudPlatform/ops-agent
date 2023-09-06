@@ -21,6 +21,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
 )
 
 //go:embed template
@@ -36,6 +38,7 @@ type templateArguments struct {
 	package_build     string
 	tar_distro_name   string
 	package_extension string
+	go_version        string
 }
 
 func applyTemplate(template string, arguments templateArguments) string {
@@ -46,6 +49,7 @@ func applyTemplate(template string, arguments templateArguments) string {
 		"{package_build}":     arguments.package_build,
 		"{tar_distro_name}":   arguments.tar_distro_name,
 		"{package_extension}": arguments.package_extension,
+		"{go_version}":        arguments.go_version,
 	}
 	for param, arg := range param_to_args {
 		template = strings.ReplaceAll(template, param, arg)
@@ -81,6 +85,7 @@ var dockerfileArguments = []templateArguments{
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "centos-7",
 		package_extension: "rpm",
+		go_version:        version.GoVersion,
 	},
 	{
 		from_image:  "rockylinux:8",
@@ -95,6 +100,7 @@ var dockerfileArguments = []templateArguments{
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "centos-8",
 		package_extension: "rpm",
+		go_version:        version.GoVersion,
 	},
 	{
 		from_image:  "rockylinux:9",
@@ -112,6 +118,7 @@ var dockerfileArguments = []templateArguments{
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "rockylinux-9",
 		package_extension: "rpm",
+		go_version:        version.GoVersion,
 	},
 	{
 		from_image:  "debian:bookworm",
@@ -124,6 +131,7 @@ var dockerfileArguments = []templateArguments{
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "debian-bookworm",
 		package_extension: "deb",
+		go_version:        version.GoVersion,
 	},
 	{
 		from_image:  "debian:bullseye",
@@ -136,6 +144,7 @@ var dockerfileArguments = []templateArguments{
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "debian-bullseye",
 		package_extension: "deb",
+		go_version:        version.GoVersion,
 	},
 	{
 		from_image:  "debian:buster",
@@ -148,6 +157,7 @@ var dockerfileArguments = []templateArguments{
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "debian-buster",
 		package_extension: "deb",
+		go_version:        version.GoVersion,
 	},
 	{
 		// Use OpenSUSE Leap 42.3 to emulate SLES 12:
@@ -174,6 +184,7 @@ var dockerfileArguments = []templateArguments{
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "sles-12",
 		package_extension: "rpm",
+		go_version:        version.GoVersion,
 	},
 	{
 		from_image:  "opensuse/leap:15.1",
@@ -197,6 +208,7 @@ var dockerfileArguments = []templateArguments{
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "sles-15",
 		package_extension: "rpm",
+		go_version:        version.GoVersion,
 	},
 	{
 		from_image:  "ubuntu:focal",
@@ -209,6 +221,7 @@ var dockerfileArguments = []templateArguments{
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "ubuntu-focal",
 		package_extension: "deb",
+		go_version:        version.GoVersion,
 	},
 	{
 		from_image:  "ubuntu:jammy",
@@ -221,6 +234,7 @@ var dockerfileArguments = []templateArguments{
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "ubuntu-jammy",
 		package_extension: "deb",
+		go_version:        version.GoVersion,
 	},
 	{
 		from_image:  "ubuntu:lunar",
@@ -233,6 +247,7 @@ var dockerfileArguments = []templateArguments{
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "ubuntu-lunar",
 		package_extension: "deb",
+		go_version:        version.GoVersion,
 	},
 }
 

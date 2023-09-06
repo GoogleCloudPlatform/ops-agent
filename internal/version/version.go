@@ -19,3 +19,5 @@ var Version = "latest"
 
 // BuildDistro variable will be replaced at link time after `make` has been run.
 var BuildDistro = "build_distro"
+
+var GoVersion = "1.21.0"
