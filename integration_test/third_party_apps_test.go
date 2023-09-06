@@ -806,9 +806,8 @@ type test struct {
 }
 
 var defaultPlatforms = map[string]bool{
-	"debian-10":     true,
-	"windows-2019":  true,
-	"rocky-linux-9": true,
+	"debian-10":    true,
+	"windows-2019": true,
 }
 
 var defaultApps = map[string]bool{

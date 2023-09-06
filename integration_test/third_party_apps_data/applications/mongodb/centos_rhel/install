@@ -1,24 +1,13 @@
 set -e
 
-if [[ "$(uname -m)" == aarch64 ]]; then
-    cat << EOF > mongodb-org-6.0.repo
+cat << EOF > mongodb-org-6.0.repo
 [mongodb-org-6.0]
 name=MongoDB Repository
-baseurl=https://repo.mongodb.org/yum/redhat/\$releasever/mongodb-org/6.0/aarch64/
+baseurl=https://repo.mongodb.org/yum/redhat/\$releasever/mongodb-org/6.0/\$basearch/
 gpgcheck=1
 enabled=1
 gpgkey=https://www.mongodb.org/static/pgp/server-6.0.asc
 EOF
-else
-    cat << EOF > mongodb-org-6.0.repo
-[mongodb-org-6.0]
-name=MongoDB Repository
-baseurl=https://repo.mongodb.org/yum/redhat/\$releasever/mongodb-org/6.0/x86_64/
-gpgcheck=1
-enabled=1
-gpgkey=https://www.mongodb.org/static/pgp/server-6.0.asc
-EOF
-fi
 
 sudo mv mongodb-org-6.0.repo /etc/yum.repos.d/mongodb-org-6.0.repo
 sudo chown root:root /etc/yum.repos.d/mongodb-org-6.0.repo
