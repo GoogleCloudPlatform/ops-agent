@@ -574,12 +574,14 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	}
 
 	if metadata.RestartAfterInstall {
-		logger.ToMainLog().Printf("Restarting vm instance...")
-		err := gce.RestartInstance(ctx, logger, vm)
+		logger.ToMainLog().Printf("Restarting VM instance...")
+		restartLogger := logger.ToFile("VM_restart.txt")
+		err := gce.RestartInstance(ctx, restartLogger, vm)
+
+		logger.ToMainLog().Printf("Restarting VM instance returned err=%v, see VM_restart.txt for details.", err)
 		if err != nil {
 			return nonRetryable, err
 		}
-		logger.ToMainLog().Printf("vm instance restarted")
 	}
 
 	if err := agents.InstallOpsAgent(ctx, logger.ToMainLog(), vm, agents.LocationFromEnvVars()); err != nil {

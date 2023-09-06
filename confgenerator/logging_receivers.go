@@ -261,6 +261,10 @@ func (r LoggingReceiverTCP) Components(ctx context.Context, tag string) []fluent
 			// When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
 			// as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
 			"Mem_Buf_Limit": "10M",
+
+			// Allow incoming logs to occupy the maximum possible size per the Logging API (256k).
+			// Use a safety factor of 2 to account for things like encoding overhead.
+			"Chunk_Size": "512k",
 		},
 	}}
 }
