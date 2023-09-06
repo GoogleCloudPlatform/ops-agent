@@ -23,5 +23,7 @@ metrics:
         - mssql_v2
 "
 
+# Stop-Service may fail if the service isn't in a Running state yet.
+(Get-Service google-cloud-ops-agent*).WaitForStatus('Running', '00:03:00')
 Stop-Service google-cloud-ops-agent -Force
-Start-Service google-cloud-ops-agent*  
+Start-Service google-cloud-ops-agent*
