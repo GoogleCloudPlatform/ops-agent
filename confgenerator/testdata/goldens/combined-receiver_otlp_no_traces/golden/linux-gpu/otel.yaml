@@ -471,11 +471,11 @@ processors:
     metric_statements:
     - context: datapoint
       statements:
-      - set(attributes["location"], resource.attributes["cloud.availability_zone"]) where resource.attributes["cloud.availability_zone"] != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
-      - set(attributes["namespace"], resource.attributes["host.id"]) where resource.attributes["host.id"] != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
       - set(attributes["cluster"], "__gce__") where "__gce__" != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
       - set(attributes["instance_name"], resource.attributes["host.name"]) where resource.attributes["host.name"] != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
+      - set(attributes["location"], resource.attributes["cloud.availability_zone"]) where resource.attributes["cloud.availability_zone"] != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
       - set(attributes["machine_type"], resource.attributes["host.type"]) where resource.attributes["host.type"] != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
+      - set(attributes["namespace"], resource.attributes["host.id"]) where resource.attributes["host.id"] != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s

@@ -518,7 +518,7 @@ receivers:
             location: test-zone
             machine_type: test-machine-type
             namespace: test-instance-id
-    preserve_untyped: false
+    preserve_untyped: true
 service:
   pipelines:
     metrics/default__pipeline_hostmetrics:

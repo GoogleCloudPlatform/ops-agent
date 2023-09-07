@@ -18,10 +18,12 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
 // TODO: The collector defaults to this, but should we default to 127.0.0.1 or ::1 instead?
@@ -30,6 +32,21 @@ const defaultGRPCEndpoint = "0.0.0.0:4317"
 // Keep these in sync:
 // https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/blob/main/exporter/collector/config.go#L158
 var knownDomains = []string{"googleapis.com", "kubernetes.io", "istio.io", "knative.dev"}
+
+var gceAttributes = map[string]string{
+	`attributes["location"]`:      `resource.attributes["cloud.availability_zone"]`,
+	`attributes["namespace"]`:     `resource.attributes["host.id"]`,
+	`attributes["cluster"]`:       `"__gce__"`,
+	`attributes["instance_name"]`: `resource.attributes["host.name"]`,
+	`attributes["machine_type"]`:  `resource.attributes["host.type"]`,
+}
+
+var bmsAttributes = map[string]string{
+	`attributes["location"]`:      `resource.attributes["cloud.region"]`,
+	`attributes["namespace"]`:     `resource.attributes["host.id"]`,
+	`attributes["cluster"]`:       `"__bms__"`,
+	`attributes["instance_name"]`: `resource.attributes["host.id"]`,
+}
 
 type ReceiverOTLP struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
@@ -42,45 +59,54 @@ func (r ReceiverOTLP) Type() string {
 	return "otlp"
 }
 
-func (ReceiverOTLP) gmpResourceProcessors() []otel.Component {
+func (ReceiverOTLP) gmpResourceProcessors(ctx context.Context) []otel.Component {
 	// Keep in sync with logic in confgenerator/prometheus.go
-	stmt := func(target, source string) string {
-		// if cloud.provider == "gcp" && cloud.platform == "gcp_compute_engine"
-		return fmt.Sprintf(`set(%s, %s) where %s != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"`,
-			target, source, source)
-	}
-	return []otel.Component{
-		otel.GCPResourceDetector(false),
-		{
-			Type: "transform",
-			Config: map[string]interface{}{
-				"error_mode": "ignore",
-				"metric_statements": []map[string]interface{}{{
-					"context": "datapoint",
-					"statements": []string{
-						// location = cloud.availability_zone
-						stmt(`attributes["location"]`, `resource.attributes["cloud.availability_zone"]`),
-						// namespace = host.id
-						stmt(`attributes["namespace"]`, `resource.attributes["host.id"]`),
-						// cluster = "__gce__"
-						stmt(`attributes["cluster"]`, `"__gce__"`),
-						// instance_name = host.name
-						stmt(`attributes["instance_name"]`, `resource.attributes["host.name"]`),
-						// machine_type = host.type
-						stmt(`attributes["machine_type"]`, `resource.attributes["host.type"]`),
-						// job and instance should be automatically set from service labels
-					},
-				}},
+	bmsResource := platform.FromContext(ctx).ResourceOverride
+	components := func(attributes map[string]string, processor otel.Component) []otel.Component {
+		stmt := func(target, source string) string {
+			platformAttr := "gcp_compute_engine"
+			if bmsResource != nil {
+				platformAttr = "gcp_bare_metal_solution"
+			}
+			return fmt.Sprintf(`set(%s, %s) where %s != nil and resource.attributes["cloud.platform"] == "%s"`,
+				target, source, source, platformAttr)
+		}
+		statements := []string{}
+		keys := make([]string, 0, len(statements))
+		for k := range attributes {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			statements = append(statements, stmt(k, attributes[k]))
+		}
+		return []otel.Component{
+			processor,
+			{
+				Type: "transform",
+				Config: map[string]interface{}{
+					"error_mode": "ignore",
+					"metric_statements": []map[string]interface{}{{
+						"context":    "datapoint",
+						"statements": statements,
+					}},
+				},
 			},
-		},
-		// TODO: Can we just set resource.attributes instead of setting metric attributes and then grouping?
-		otel.GroupByGMPAttrs(),
+			// TODO: Can we just set resource.attributes instead of setting metric attributes and then grouping?
+			otel.GroupByGMPAttrs(),
+		}
 	}
+
+	if bmsResource != nil {
+		return components(bmsAttributes, otel.ResourceTransform(bmsResource.OTelResourceAttributes()))
+	}
+	return components(gceAttributes, otel.GCPResourceDetector(false))
 }
 
-func (r ReceiverOTLP) metricsProcessors() (otel.ExporterType, otel.ResourceDetectionMode, []otel.Component) {
+func (r ReceiverOTLP) metricsProcessors(ctx context.Context) (otel.ExporterType, otel.ResourceDetectionMode, []otel.Component) {
 	if r.MetricsMode != "googlecloudmonitoring" {
-		return otel.GMP, otel.None, r.gmpResourceProcessors()
+		p := r.gmpResourceProcessors(ctx)
+		return otel.GMP, otel.None, p
 	}
 	var knownDomainsRegexEscaped []string
 	for _, knownDomain := range knownDomains {
@@ -120,13 +146,13 @@ func (r ReceiverOTLP) metricsProcessors() (otel.ExporterType, otel.ResourceDetec
 	}
 }
 
-func (r ReceiverOTLP) Pipelines(_ context.Context) []otel.ReceiverPipeline {
+func (r ReceiverOTLP) Pipelines(ctx context.Context) []otel.ReceiverPipeline {
 	endpoint := r.GRPCEndpoint
 	if endpoint == "" {
 		endpoint = defaultGRPCEndpoint
 	}
 
-	receiverPipelineType, metricsRDM, metricsProcessors := r.metricsProcessors()
+	receiverPipelineType, metricsRDM, metricsProcessors := r.metricsProcessors(ctx)
 
 	return []otel.ReceiverPipeline{{
 		ExporterTypes: map[string]otel.ExporterType{

@@ -468,16 +468,29 @@ processors:
     - action: upsert
       key: host.id
       value: test-bms-instance
+  resource/otlp_0:
+    attributes:
+    - action: upsert
+      key: cloud.platform
+      value: gcp_bare_metal_solution
+    - action: upsert
+      key: cloud.project
+      value: test-bms-project
+    - action: upsert
+      key: cloud.region
+      value: test-bms-location
+    - action: upsert
+      key: host.id
+      value: test-bms-instance
   transform/otlp_1:
     error_mode: ignore
     metric_statements:
     - context: datapoint
       statements:
-      - set(attributes["location"], resource.attributes["cloud.availability_zone"]) where resource.attributes["cloud.availability_zone"] != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
-      - set(attributes["namespace"], resource.attributes["host.id"]) where resource.attributes["host.id"] != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
-      - set(attributes["cluster"], "__gce__") where "__gce__" != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
-      - set(attributes["instance_name"], resource.attributes["host.name"]) where resource.attributes["host.name"] != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
-      - set(attributes["machine_type"], resource.attributes["host.type"]) where resource.attributes["host.type"] != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
+      - set(attributes["cluster"], "__bms__") where "__bms__" != nil and resource.attributes["cloud.platform"] == "gcp_bare_metal_solution"
+      - set(attributes["instance_name"], resource.attributes["host.id"]) where resource.attributes["host.id"] != nil and resource.attributes["cloud.platform"] == "gcp_bare_metal_solution"
+      - set(attributes["location"], resource.attributes["cloud.region"]) where resource.attributes["cloud.region"] != nil and resource.attributes["cloud.platform"] == "gcp_bare_metal_solution"
+      - set(attributes["namespace"], resource.attributes["host.id"]) where resource.attributes["host.id"] != nil and resource.attributes["cloud.platform"] == "gcp_bare_metal_solution"
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
@@ -548,6 +561,7 @@ service:
       exporters:
       - googlemanagedprometheus
       processors:
+      - resource/otlp_0
       - transform/otlp_1
       - groupbyattrs/otlp_2
       receivers:
@@ -556,6 +570,7 @@ service:
       exporters:
       - googlemanagedprometheus
       processors:
+      - resource/otlp_0
       - transform/otlp_1
       - groupbyattrs/otlp_2
       receivers:
