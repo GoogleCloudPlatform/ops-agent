@@ -24,6 +24,7 @@ ARG CMAKE_VERSION=3.25.2
 ARG OPENJDK_MAJOR_VERSION=17
 ARG OPENJDK_FULL_VERSION=17.0.8
 ARG OPENJDK_VERSION_SUFFIX=7
+ARG GO_VERSION=1.21.1
 
 # Manually prepare a recent enough version of CMake.
 # This should be used on platforms where the default package manager

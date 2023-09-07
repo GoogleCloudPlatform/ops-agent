@@ -11,9 +11,10 @@ SHELL ["/bin/bash", "-c"]
 
 # Install golang
 ARG BUILDARCH
-ADD https://go.dev/dl/go{go_version}.linux-${BUILDARCH}.tar.gz /tmp/go{go_version}.tar.gz
+ARG GO_VERSION
+ADD https://go.dev/dl/go${GO_VERSION}.linux-${BUILDARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go{go_version}.tar.gz -C /usr/local
+    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 

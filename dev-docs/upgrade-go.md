@@ -3,7 +3,7 @@
 To upgrade the version of Go that the Ops Agent uses, update the version in the following places:
 
 * `go.mod` version restriction
-* The `GoVersion` variable in `internal/version` (this gets compiled into the Linux Dockerfile and used by integration tests)
+* The `GO_VERSION` arg in `dockerfiles/template-header`
 * `Dockerfile.windows` in the spot where it downloads and runs the Go MSI
 
 Once you have updated the Go version in the following places, verify the new version works:

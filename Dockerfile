@@ -24,6 +24,7 @@ ARG CMAKE_VERSION=3.25.2
 ARG OPENJDK_MAJOR_VERSION=17
 ARG OPENJDK_FULL_VERSION=17.0.8
 ARG OPENJDK_VERSION_SUFFIX=7
+ARG GO_VERSION=1.21.1
 
 # Manually prepare a recent enough version of CMake.
 # This should be used on platforms where the default package manager
@@ -95,9 +96,10 @@ SHELL ["/bin/bash", "-c"]
 
 # Install golang
 ARG BUILDARCH
-ADD https://go.dev/dl/go1.21.1.linux-${BUILDARCH}.tar.gz /tmp/go1.21.1.tar.gz
+ARG GO_VERSION
+ADD https://go.dev/dl/go${GO_VERSION}.linux-${BUILDARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.21.1.tar.gz -C /usr/local
+    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -195,9 +197,10 @@ SHELL ["/bin/bash", "-c"]
 
 # Install golang
 ARG BUILDARCH
-ADD https://go.dev/dl/go1.21.1.linux-${BUILDARCH}.tar.gz /tmp/go1.21.1.tar.gz
+ARG GO_VERSION
+ADD https://go.dev/dl/go${GO_VERSION}.linux-${BUILDARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.21.1.tar.gz -C /usr/local
+    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -298,9 +301,10 @@ SHELL ["/bin/bash", "-c"]
 
 # Install golang
 ARG BUILDARCH
-ADD https://go.dev/dl/go1.21.1.linux-${BUILDARCH}.tar.gz /tmp/go1.21.1.tar.gz
+ARG GO_VERSION
+ADD https://go.dev/dl/go${GO_VERSION}.linux-${BUILDARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.21.1.tar.gz -C /usr/local
+    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -396,9 +400,10 @@ SHELL ["/bin/bash", "-c"]
 
 # Install golang
 ARG BUILDARCH
-ADD https://go.dev/dl/go1.21.1.linux-${BUILDARCH}.tar.gz /tmp/go1.21.1.tar.gz
+ARG GO_VERSION
+ADD https://go.dev/dl/go${GO_VERSION}.linux-${BUILDARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.21.1.tar.gz -C /usr/local
+    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -494,9 +499,10 @@ SHELL ["/bin/bash", "-c"]
 
 # Install golang
 ARG BUILDARCH
-ADD https://go.dev/dl/go1.21.1.linux-${BUILDARCH}.tar.gz /tmp/go1.21.1.tar.gz
+ARG GO_VERSION
+ADD https://go.dev/dl/go${GO_VERSION}.linux-${BUILDARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.21.1.tar.gz -C /usr/local
+    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -594,9 +600,10 @@ SHELL ["/bin/bash", "-c"]
 
 # Install golang
 ARG BUILDARCH
-ADD https://go.dev/dl/go1.21.1.linux-${BUILDARCH}.tar.gz /tmp/go1.21.1.tar.gz
+ARG GO_VERSION
+ADD https://go.dev/dl/go${GO_VERSION}.linux-${BUILDARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.21.1.tar.gz -C /usr/local
+    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -709,9 +716,10 @@ SHELL ["/bin/bash", "-c"]
 
 # Install golang
 ARG BUILDARCH
-ADD https://go.dev/dl/go1.21.1.linux-${BUILDARCH}.tar.gz /tmp/go1.21.1.tar.gz
+ARG GO_VERSION
+ADD https://go.dev/dl/go${GO_VERSION}.linux-${BUILDARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.21.1.tar.gz -C /usr/local
+    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -822,9 +830,10 @@ SHELL ["/bin/bash", "-c"]
 
 # Install golang
 ARG BUILDARCH
-ADD https://go.dev/dl/go1.21.1.linux-${BUILDARCH}.tar.gz /tmp/go1.21.1.tar.gz
+ARG GO_VERSION
+ADD https://go.dev/dl/go${GO_VERSION}.linux-${BUILDARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.21.1.tar.gz -C /usr/local
+    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -920,9 +929,10 @@ SHELL ["/bin/bash", "-c"]
 
 # Install golang
 ARG BUILDARCH
-ADD https://go.dev/dl/go1.21.1.linux-${BUILDARCH}.tar.gz /tmp/go1.21.1.tar.gz
+ARG GO_VERSION
+ADD https://go.dev/dl/go${GO_VERSION}.linux-${BUILDARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.21.1.tar.gz -C /usr/local
+    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -1018,9 +1028,10 @@ SHELL ["/bin/bash", "-c"]
 
 # Install golang
 ARG BUILDARCH
-ADD https://go.dev/dl/go1.21.1.linux-${BUILDARCH}.tar.gz /tmp/go1.21.1.tar.gz
+ARG GO_VERSION
+ADD https://go.dev/dl/go${GO_VERSION}.linux-${BUILDARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.21.1.tar.gz -C /usr/local
+    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
@@ -1116,9 +1127,10 @@ SHELL ["/bin/bash", "-c"]
 
 # Install golang
 ARG BUILDARCH
-ADD https://go.dev/dl/go1.21.1.linux-${BUILDARCH}.tar.gz /tmp/go1.21.1.tar.gz
+ARG GO_VERSION
+ADD https://go.dev/dl/go${GO_VERSION}.linux-${BUILDARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
 RUN set -xe; \
-    tar -xf /tmp/go1.21.1.tar.gz -C /usr/local
+    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
