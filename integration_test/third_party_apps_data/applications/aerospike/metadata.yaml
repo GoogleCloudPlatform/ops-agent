@@ -134,5 +134,6 @@ platforms_to_skip:
   - debian-12
   - sles-12
   - rocky-linux-9
+  - rocky-linux-9-arm64
   - ubuntu-2304-amd64
 public_url: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/aerospike
