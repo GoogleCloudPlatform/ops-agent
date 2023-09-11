@@ -77,10 +77,10 @@ RUN Expand-Archive /local/win_flex_bison.zip -Destination /WinFlexBison; `
 #
 # Install Golang
 #
-ADD https://go.dev/dl/go1.20.2.windows-amd64.msi /local/go1.20.2.windows-amd64.msi
+ADD https://go.dev/dl/go1.21.1.windows-amd64.msi /local/go1.21.1.windows-amd64.msi
 
 RUN Start-Process msiexec.exe `
-    -ArgumentList '/i C:\local\go1.20.2.windows-amd64.msi ', '/quiet ', `
+    -ArgumentList '/i C:\local\go1.21.1.windows-amd64.msi ', '/quiet ', `
     '/norestart ', 'ALLUSERS=1,INSTALLDIR=C:\Go' -NoNewWindow -Wait;
 
 #
