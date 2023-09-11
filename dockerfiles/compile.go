@@ -256,7 +256,6 @@ func getDockerfile() (string, error) {
 	}
 	components = append(components, getDockerfileFooter())
 	return strings.Join(components, "\n\n"), nil
-
 }
 
 func main() {
@@ -268,5 +267,4 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
 }
