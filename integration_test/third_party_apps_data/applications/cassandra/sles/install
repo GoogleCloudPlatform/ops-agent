@@ -16,10 +16,10 @@ sudo zypper -n install java-1_8_0-openjdk java-1_8_0-openjdk-devel
 
 # There is no official or even semi-official zypper package for cassandra
 # https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/README.md#vendored-dependencies
-curl -OL https://storage.googleapis.com/ops-agents-public-buckets-vendored-deps/mirrored-content/archive.apache.org/dist/cassandra/4.0.1/apache-cassandra-4.0.1-bin.tar.gz
+curl -OL https://storage.googleapis.com/ops-agents-public-buckets-vendored-deps/mirrored-content/archive.apache.org/dist/cassandra/4.1.3/apache-cassandra-4.1.3-bin.tar.gz
 
-tar xzvf apache-cassandra-4.0.1-bin.tar.gz
-mv apache-cassandra-4.0.1 apache-cassandra
+tar xzvf apache-cassandra-4.1.3-bin.tar.gz
+mv apache-cassandra-4.1.3 apache-cassandra
 
 apache-cassandra/bin/cassandra -f &
 ps -f -p $!

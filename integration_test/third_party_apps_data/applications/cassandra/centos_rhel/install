@@ -10,7 +10,7 @@ esac
 sudo cat <<EOF > cassandra.repo
 [cassandra]
 name=Apache Cassandra
-baseurl=https://redhat.cassandra.apache.org/40x/
+baseurl=https://redhat.cassandra.apache.org/41x/
 gpgcheck=1
 repo_gpgcheck=1
 gpgkey=https://www.apache.org/dist/cassandra/KEYS
