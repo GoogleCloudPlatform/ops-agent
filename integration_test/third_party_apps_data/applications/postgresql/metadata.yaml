@@ -32,6 +32,7 @@ supported_operating_systems: linux
 platforms_to_skip:
   # postgres is not supported on rhel9
   - rocky-linux-9
+  - rocky-linux-9-arm64
 supported_app_version: ["10.18+"]
 expected_metrics:
   - kind: GAUGE

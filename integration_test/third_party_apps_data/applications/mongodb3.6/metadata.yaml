@@ -29,6 +29,7 @@ supported_operating_systems: linux
 platforms_to_skip:
   # MongoDB3.6 hit end of life in 2021 and is not supported on Rocky Linux 9, Ubuntu 20.04, Ubuntu 22.04, Ubuntu 23.04, Debian 10, Debian 11, or Debian 12
   - rocky-linux-9
+  - rocky-linux-9-arm64
   - ubuntu-2004-lts
   - ubuntu-2004-lts-arm64
   - ubuntu-2204-lts
