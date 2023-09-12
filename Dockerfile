@@ -810,7 +810,7 @@ RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl
 		# See http://go/sdi/releases/build-test-release/vendored
 		RUN echo $'[ops-agent-build-vendor] \n\
 		name=ops-agent-build-vendor \n\
-		baseurl=https://us-yum.pkg.dev/projects/cloud-ops-agents-artifacts-dev/ops-agent-build-vendor-sles15-$basearch \n\
+		baseurl=https://us-yum.pkg.dev/projects/cloud-ops-agents-artifacts-dev/ops-agent-build-vendor-sles15-x86-64 \n\
 		enabled         = 1 \n\
 		autorefresh     = 0 \n\
 		repo_gpgcheck   = 0 \n\
