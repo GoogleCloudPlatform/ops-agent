@@ -36,7 +36,7 @@ const (
 	ServiceDisabled              = "SERVICE_DISABLED"
 	AccessTokenScopeInsufficient = "ACCESS_TOKEN_SCOPE_INSUFFICIENT"
 	IamPermissionDenied          = "IAM_PERMISSION_DENIED"
-	MaxMonitoringPingRetries     = 3
+	MaxMonitoringPingRetries     = 2
 )
 
 func getGCEMetadata() (resourcedetector.GCEResource, error) {
@@ -106,7 +106,7 @@ func monitoringPing(ctx context.Context, client monitoring.MetricClient, gceMeta
 		// This fixes b/291631906 when the monitoringPing is retried very quickly resulting
 		// in an `InvalidArgument` error due a maximum write rate of one point every 5 seconds.
 		// https://cloud.google.com/monitoring/quotas 
-		time.Sleep(5 * time.Second)
+		time.Sleep(6 * time.Second)
 	}
 	return err
 }
