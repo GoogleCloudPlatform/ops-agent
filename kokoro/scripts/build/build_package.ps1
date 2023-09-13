@@ -25,6 +25,14 @@ else {
   Set-Location "$env:KOKORO_ARTIFACTS_DIR/github/unified_agents"
 }
 
+@'
+ARG WINDOWS_VERSION=ltsc2019
+FROM mcr.microsoft.com/windows/servercore:ltsc2019 as base
+RUN iwr -UseBasicParsing https://raw.githubusercontent.com/slproweb/opensslhashes/master/win32_openssl_hashes.json
+'@ | Out-File '/Dockerfile.test'
+Invoke-Program docker build -t temp_windows -f './Dockerfile.test' .
+Exit 1
+
 # Record OPS_AGENT_REPO_HASH so that we can later run tests from the
 # same commit that the agent was built from. This only applies to the
 # build+test flow for release builds, not the GitHub presubmits.
