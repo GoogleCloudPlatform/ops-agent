@@ -36,6 +36,7 @@ const (
 	ServiceDisabled              = "SERVICE_DISABLED"
 	AccessTokenScopeInsufficient = "ACCESS_TOKEN_SCOPE_INSUFFICIENT"
 	IamPermissionDenied          = "IAM_PERMISSION_DENIED"
+	MaxMonitoringPingRetries     = 3
 )
 
 func getGCEMetadata() (resourcedetector.GCEResource, error) {
@@ -49,11 +50,12 @@ func getGCEMetadata() (resourcedetector.GCEResource, error) {
 	return resourcedetector.GCEResource{}, fmt.Errorf("not in GCE")
 }
 
-// monitoringPing reports whether the client's connection to the monitoring service and the
-// authentication configuration are valid. To accomplish this, monitoringPing writes a
-// time series point with empty values to an Ops Agent specific metric.
-// This method mirrors the "(c *Client) Ping" method in "cloud.google.com/go/logging".
-func monitoringPing(ctx context.Context, client monitoring.MetricClient, gceMetadata resourcedetector.GCEResource) error {
+func isInvalidArgumentErr(err error) bool {
+	apiErr, ok := err.(*apierror.APIError)
+	return ok && apiErr.GRPCStatus().Code() == codes.InvalidArgument
+}
+
+func createMonitoringPingRequest(gceMetadata resourcedetector.GCEResource) *monitoringpb.CreateTimeSeriesRequest {
 	metricType := "agent.googleapis.com/agent/ops_agent/enabled_receivers"
 	now := &timestamppb.Timestamp{
 		Seconds: time.Now().Unix(),
@@ -87,8 +89,26 @@ func monitoringPing(ctx context.Context, client monitoring.MetricClient, gceMeta
 			}},
 		}},
 	}
+	return req
+}
 
-	return client.CreateTimeSeries(ctx, req)
+// monitoringPing reports whether the client's connection to the monitoring service and the
+// authentication configuration are valid. To accomplish this, monitoringPing writes a
+// time series point with empty values to an Ops Agent specific metric.
+// This method mirrors the "(c *Client) Ping" method in "cloud.google.com/go/logging".
+func monitoringPing(ctx context.Context, client monitoring.MetricClient, gceMetadata resourcedetector.GCEResource) error {
+	var err error
+	for i := 0; i < MaxMonitoringPingRetries; i++ {
+		err = client.CreateTimeSeries(ctx, createMonitoringPingRequest(gceMetadata))
+		if err == nil || !isInvalidArgumentErr(err) { 
+			break
+		}
+		// This fixes b/291631906 when the monitoringPing is retried very quickly resulting
+		// in an `InvalidArgument` error due a maximum write rate of one point every 5 seconds.
+		// https://cloud.google.com/monitoring/quotas 
+		time.Sleep(5 * time.Second)
+	}
+	return err
 }
 
 func runLoggingCheck(logger logs.StructuredLogger) error {
