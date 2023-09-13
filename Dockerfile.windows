@@ -16,12 +16,12 @@ RUN setx /M JAVA_HOME "C:\Java"
 
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
 
-Get-NetAdapter | % { Set-DnsClientServerAddress -InterfaceIndex $_.InterfaceIndex -ServerAddresses ("8.8.8.8") }
-
 RUN Write-Host ('Creating folders'); `
     New-Item -Type Directory -Path /local; `
     New-Item -Type Directory -Path /work/out/bin; `
     New-Item -Type Directory -Path /work/out/config;
+
+RUN Get-NetAdapter | % { Set-DnsClientServerAddress -InterfaceIndex $_.InterfaceIndex -ServerAddresses ("8.8.8.8") }
 
 ###############################################################################
 # Install build prerequisites
