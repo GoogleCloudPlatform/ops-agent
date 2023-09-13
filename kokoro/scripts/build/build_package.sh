@@ -40,9 +40,10 @@ stat submodules/opentelemetry-operations-collector/go.* || echo stat failed
 . VERSION
 export_to_sponge_config "PACKAGE_VERSION" "${PKG_VERSION}"
 
+ARCH="$(docker info --format '{{.Architecture}}')"
 ARTIFACT_REGISTRY="us-docker.pkg.dev"
-sudo docker-credential-gcr configure-docker --registries="${ARTIFACT_REGISTRY}"
-CACHE_LOCATION="${ARTIFACT_REGISTRY}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:${DISTRO}"
+docker-credential-gcr configure-docker --registries="${ARTIFACT_REGISTRY}"
+CACHE_LOCATION="${ARTIFACT_REGISTRY}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:${DISTRO}_${ARCH}"
 
 DOCKER_BUILDKIT=1 docker build . \
   --cache-from="${CACHE_LOCATION}" \

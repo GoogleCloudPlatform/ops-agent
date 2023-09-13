@@ -4,14 +4,6 @@ import '../image_lists.gcl' as image_lists
 config build = common.ops_agent_test {
   params {
     platforms = image_lists.focal_arm64.presubmit
-
-    // T2A machines are only available on us-central1-{a,b,f}
-    environment {
-      ZONES = join([
-        'us-central1-a',
-        'us-central1-b',
-        'us-central1-f',
-      ], ',')
-    }
+    arch = 'arm64'
   }
 }

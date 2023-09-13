@@ -51,7 +51,8 @@ Invoke-Program git submodule update --init
 $artifact_registry='us-docker.pkg.dev'
 Invoke-Program docker-credential-gcr configure-docker --registries="$artifact_registry"
 
-$cache_location="${artifact_registry}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:windows"
+$arch = Invoke-Program docker info --format '{{.Architecture}}'
+$cache_location="${artifact_registry}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:windows-${arch}"
 Invoke-Program docker pull $cache_location
 Invoke-Program docker build --network "Default Switch" --cache-from="${cache_location}" -t $tag -f './Dockerfile.windows' .
 Invoke-Program docker create --name $name $tag

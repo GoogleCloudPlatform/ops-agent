@@ -12,9 +12,15 @@ sudo yum install -y curl epel-release
 # until there is a rabbitmq-server package for rhel 9, use the el8 package
 case "$VERSION_ID" in
     9*) 
-        curl -s https://packagecloud.io/install/repositories/rabbitmq/erlang/script.rpm.sh --output erlang.rpm.sh
-        chmod +x  erlang.rpm.sh
-        sudo os=el dist=8 ./erlang.rpm.sh
+        if [[ "$(uname -m)" == aarch64 ]]; then
+          # until the packagecloud.io erlang package has an option for aarch64
+          curl -sfL -O https://github.com/rabbitmq/erlang-rpm/releases/download/v26.0.2/erlang-26.0.2-1.el8.aarch64.rpm
+          sudo dnf install -y ./erlang-26.0.2-1.el8.aarch64.rpm
+        else
+          curl -s https://packagecloud.io/install/repositories/rabbitmq/erlang/script.rpm.sh --output erlang.rpm.sh
+          chmod +x  erlang.rpm.sh
+          sudo os=el dist=8 ./erlang.rpm.sh
+        fi
 
         curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.rpm.sh --output rabbitmq-server.rpm.sh
         chmod +x  rabbitmq-server.rpm.sh

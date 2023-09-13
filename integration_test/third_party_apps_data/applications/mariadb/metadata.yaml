@@ -46,6 +46,7 @@ platforms_to_skip:
   - centos-7
   - rocky-linux-8
   - rocky-linux-9
+  - rocky-linux-9-arm64
   - sles-12
   - sles-15
 supported_app_version: ["10.1.X through 10.7.X"]
