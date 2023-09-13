@@ -23,7 +23,8 @@ $name = 'build-result'
 Set-MpPreference -Force -DisableRealtimeMonitoring $true -ErrorAction Continue
 # Try to disable Windows Defender firewall for improved build speed.
 # Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False -ErrorAction Continue
-
+ Get-NetIPInterface -AddressFamily IPv4 | Sort-Object -Property InterfaceMetric -Descending
+ Set-NetIPInterface -InterfaceAlias 'vEthernet (nat)' -InterfaceMetric 3
 $gitOnBorgLocation = "$env:KOKORO_ARTIFACTS_DIR/git/unified_agents"
 if (Test-Path -Path $gitOnBorgLocation) {
   Set-Location $gitOnBorgLocation
