@@ -17,16 +17,6 @@ function Invoke-Program() {
 $tag = 'build'
 $name = 'build-result'
 
-# Try to disable Windows Defender antivirus for improved build speed.
-# Sometimes it seems that Defender is already disabled and it fails with
-# an error like "Set-MpPreference : Operation failed with the following error: 0x800106ba"
-Set-MpPreference -Force -DisableRealtimeMonitoring $true -ErrorAction Continue
-# Try to disable Windows Defender firewall for improved build speed.
-Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False -ErrorAction Continue
-
-Invoke-Program docker network ls
-Exit 1
-
 $gitOnBorgLocation = "$env:KOKORO_ARTIFACTS_DIR/git/unified_agents"
 if (Test-Path -Path $gitOnBorgLocation) {
   Set-Location $gitOnBorgLocation
