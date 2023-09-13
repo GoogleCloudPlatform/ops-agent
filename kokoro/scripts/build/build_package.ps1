@@ -31,7 +31,7 @@ FROM mcr.microsoft.com/windows/servercore:ltsc2019 as base
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
 RUN iwr -UseBasicParsing https://raw.githubusercontent.com/slproweb/opensslhashes/master/win32_openssl_hashes.json
 '@ | Out-File -Encoding Ascii './Dockerfile.test'
-Invoke-Program docker build -t temp_windows -f './Dockerfile.test' .
+Invoke-Program docker build -t temp_windows --network nat -f './Dockerfile.test' .
 Exit 1
 
 # Record OPS_AGENT_REPO_HASH so that we can later run tests from the
