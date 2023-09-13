@@ -22,9 +22,8 @@ $name = 'build-result'
 # an error like "Set-MpPreference : Operation failed with the following error: 0x800106ba"
 Set-MpPreference -Force -DisableRealtimeMonitoring $true -ErrorAction Continue
 # Try to disable Windows Defender firewall for improved build speed.
-# Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False -ErrorAction Continue
-Get-VMSwitch
-Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V
+Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False -ErrorAction Continue
+
 $gitOnBorgLocation = "$env:KOKORO_ARTIFACTS_DIR/git/unified_agents"
 if (Test-Path -Path $gitOnBorgLocation) {
   Set-Location $gitOnBorgLocation
@@ -55,8 +54,7 @@ Invoke-Program docker-credential-gcr configure-docker --registries="$artifact_re
 $arch = Invoke-Program docker info --format '{{.Architecture}}'
 $cache_location="${artifact_registry}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:windows-${arch}"
 Invoke-Program docker pull $cache_location
-Invoke-Program docker network ls
-Invoke-Program docker build --network nat --cache-from="${cache_location}" -t $tag -f './Dockerfile.windows' .
+Invoke-Program docker build --cache-from="${cache_location}" -t $tag -f './Dockerfile.windows' .
 Invoke-Program docker create --name $name $tag
 Invoke-Program docker cp "${name}:/work/out" $env:KOKORO_ARTIFACTS_DIR
 
@@ -75,7 +73,7 @@ if ($env:KOKORO_ROOT_JOB_TYPE -eq 'CONTINUOUS_INTEGRATION') {
 New-Item -Path $env:KOKORO_ARTIFACTS_DIR -Name 'result' -ItemType 'directory'
 Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/*.goo" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
 # Copy the .pdb and .dll files from $env:KOKORO_ARTIFACTS_DIR/out/bin to $env:KOKORO_ARTIFACTS_DIR/result.
-# The .pdb and .dll files are saved so the team can use them in the event that we have to debug this Ops Agent build. 
+# The .pdb and .dll files are saved so the team can use them in the event that we have to debug this Ops Agent build.
 # They are not distributed to customers.
 Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/*.pdb" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
 Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/*.dll" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
