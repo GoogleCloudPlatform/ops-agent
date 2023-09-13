@@ -28,6 +28,7 @@ else {
 @'
 ARG WINDOWS_VERSION=ltsc2019
 FROM mcr.microsoft.com/windows/servercore:ltsc2019 as base
+SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
 RUN iwr -UseBasicParsing https://raw.githubusercontent.com/slproweb/opensslhashes/master/win32_openssl_hashes.json
 '@ | Out-File -Encoding Ascii './Dockerfile.test'
 Invoke-Program docker build -t temp_windows -f './Dockerfile.test' .
