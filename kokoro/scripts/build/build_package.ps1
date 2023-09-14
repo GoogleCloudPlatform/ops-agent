@@ -51,7 +51,7 @@ Invoke-Program git submodule update --init
 $artifact_registry='us-docker.pkg.dev'
 Invoke-Program docker-credential-gcr configure-docker --registries="$artifact_registry"
 
-# TODO(b/300266148): fix DNS properly
+# TODO(b/300141768): fix DNS properly
 Invoke-Program docker network create --driver nat -o com.docker.network.windowsshim.dnsservers="8.8.8.8" natdnsworkaround
 
 $arch = Invoke-Program docker info --format '{{.Architecture}}'
