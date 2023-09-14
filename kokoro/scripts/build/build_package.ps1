@@ -51,10 +51,13 @@ Invoke-Program git submodule update --init
 $artifact_registry='us-docker.pkg.dev'
 Invoke-Program docker-credential-gcr configure-docker --registries="$artifact_registry"
 
+# TODO(b/300141768): fix DNS properly
+Invoke-Program docker network create --driver nat -o com.docker.network.windowsshim.dnsservers="8.8.8.8" natdnsworkaround
+
 $arch = Invoke-Program docker info --format '{{.Architecture}}'
 $cache_location="${artifact_registry}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:windows-${arch}"
 Invoke-Program docker pull $cache_location
-Invoke-Program docker build --cache-from="${cache_location}" -t $tag -f './Dockerfile.windows' .
+Invoke-Program docker build --network natdnsworkaround --cache-from="${cache_location}" -t $tag -f './Dockerfile.windows' .
 Invoke-Program docker create --name $name $tag
 Invoke-Program docker cp "${name}:/work/out" $env:KOKORO_ARTIFACTS_DIR
 
