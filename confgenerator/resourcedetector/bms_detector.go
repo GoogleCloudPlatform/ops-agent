@@ -15,8 +15,9 @@
 package resourcedetector
 
 import (
-	"fmt"
 	"os"
+
+	"google.golang.org/genproto/googleapis/api/monitoredres"
 )
 
 const (
@@ -33,13 +34,11 @@ type BMSResource struct {
 	Project    string
 	InstanceID string
 	Location   string
+	Labels     map[string]string
+	Type       string
 }
 
-func (BMSResource) GetType() string {
-	return "baremetalsolution.googleapis.com/Instance"
-}
-
-func (r BMSResource) GetProject() string {
+func (r BMSResource) ProjectName() string {
 	return r.Project
 }
 
@@ -52,14 +51,14 @@ func (r BMSResource) OTelResourceAttributes() map[string]string {
 	}
 }
 
-func (r BMSResource) FluentBitLabels() string {
-	return fmt.Sprintf("resource_container=%s,location=%s,instance_id=%s", r.Project, r.Location, r.InstanceID)
-}
-
-func (r BMSResource) GetLabels() map[string]string {
-	return map[string]string{
-		"location":    r.Location,
-		"instance_id": r.InstanceID,
+func (r BMSResource) MonitoredResource() *monitoredres.MonitoredResource {
+	return &monitoredres.MonitoredResource{
+		Type: "baremetalsolution.googleapis.com/Instance",
+		Labels: map[string]string{
+			"instance_id":        r.InstanceID,
+			"location":           r.Location,
+			"resource_container": r.Project,
+		},
 	}
 }
 

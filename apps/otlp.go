@@ -22,6 +22,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
 // TODO: The collector defaults to this, but should we default to 127.0.0.1 or ::1 instead?
@@ -42,15 +43,19 @@ func (r ReceiverOTLP) Type() string {
 	return "otlp"
 }
 
-func (ReceiverOTLP) gmpResourceProcessors() []otel.Component {
+func (ReceiverOTLP) gmpResourceProcessors(ctx context.Context) []otel.Component {
 	// Keep in sync with logic in confgenerator/prometheus.go
 	stmt := func(target, source, platform string) string {
 		// if cloud.provider == "gcp" && cloud.platform == "gcp_compute_engine"
 		return fmt.Sprintf(`set(%s, %s) where %s != nil and resource.attributes["cloud.platform"] == "%s"`,
 			target, source, source, platform)
 	}
+	processor := otel.GCPResourceDetector(false)
+	if r := platform.FromContext(ctx).ResourceOverride; r != nil {
+		processor = otel.ResourceTransform(r.OTelResourceAttributes(), false)
+	}
 	return []otel.Component{
-		otel.GCPResourceDetector(false),
+		processor,
 		{
 			Type: "transform",
 			Config: map[string]interface{}{
@@ -89,9 +94,9 @@ func (ReceiverOTLP) gmpResourceProcessors() []otel.Component {
 	}
 }
 
-func (r ReceiverOTLP) metricsProcessors() (otel.ExporterType, otel.ResourceDetectionMode, []otel.Component) {
+func (r ReceiverOTLP) metricsProcessors(ctx context.Context) (otel.ExporterType, otel.ResourceDetectionMode, []otel.Component) {
 	if r.MetricsMode != "googlecloudmonitoring" {
-		return otel.GMP, otel.None, r.gmpResourceProcessors()
+		return otel.GMP, otel.None, r.gmpResourceProcessors(ctx)
 	}
 	var knownDomainsRegexEscaped []string
 	for _, knownDomain := range knownDomains {
@@ -131,13 +136,13 @@ func (r ReceiverOTLP) metricsProcessors() (otel.ExporterType, otel.ResourceDetec
 	}
 }
 
-func (r ReceiverOTLP) Pipelines(_ context.Context) []otel.ReceiverPipeline {
+func (r ReceiverOTLP) Pipelines(ctx context.Context) []otel.ReceiverPipeline {
 	endpoint := r.GRPCEndpoint
 	if endpoint == "" {
 		endpoint = defaultGRPCEndpoint
 	}
 
-	receiverPipelineType, metricsRDM, metricsProcessors := r.metricsProcessors()
+	receiverPipelineType, metricsRDM, metricsProcessors := r.metricsProcessors(ctx)
 
 	return []otel.ReceiverPipeline{{
 		ExporterTypes: map[string]otel.ExporterType{

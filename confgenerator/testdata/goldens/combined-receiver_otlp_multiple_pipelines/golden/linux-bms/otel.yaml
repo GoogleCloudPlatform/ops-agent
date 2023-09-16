@@ -468,10 +468,20 @@ processors:
     - action: insert
       key: host.id
       value: test-bms-instance
-  resourcedetection/otlp_0:
-    detectors:
-    - gcp
-    override: false
+  resource/otlp_0:
+    attributes:
+    - action: insert
+      key: cloud.platform
+      value: gcp_bare_metal_solution
+    - action: insert
+      key: cloud.project
+      value: test-bms-project
+    - action: insert
+      key: cloud.region
+      value: test-bms-location
+    - action: insert
+      key: host.id
+      value: test-bms-instance
   transform/otlp_1:
     error_mode: ignore
     metric_statements:
@@ -556,7 +566,7 @@ service:
       exporters:
       - googlemanagedprometheus
       processors:
-      - resourcedetection/otlp_0
+      - resource/otlp_0
       - transform/otlp_1
       - groupbyattrs/otlp_2
       receivers:
@@ -565,7 +575,7 @@ service:
       exporters:
       - googlemanagedprometheus
       processors:
-      - resourcedetection/otlp_0
+      - resource/otlp_0
       - transform/otlp_1
       - groupbyattrs/otlp_2
       receivers:

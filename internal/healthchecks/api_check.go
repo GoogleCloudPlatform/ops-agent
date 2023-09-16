@@ -27,7 +27,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/googleapis/gax-go/v2/apierror"
 	metricpb "google.golang.org/genproto/googleapis/api/metric"
-	"google.golang.org/genproto/googleapis/api/monitoredres"
 	"google.golang.org/grpc/codes"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -55,17 +54,14 @@ func createMonitoringPingRequest(resource resourcedetector.Resource) *monitoring
 		},
 	}
 	req := &monitoringpb.CreateTimeSeriesRequest{
-		Name: "projects/" + resource.GetProject(),
+		Name: "projects/" + resource.ProjectName(),
 		TimeSeries: []*monitoringpb.TimeSeries{{
 			MetricKind: metricpb.MetricDescriptor_GAUGE,
 			ValueType:  metricpb.MetricDescriptor_INT64,
 			Metric: &metricpb.Metric{
 				Type: metricType,
 			},
-			Resource: &monitoredres.MonitoredResource{
-				Type:   resource.GetType(),
-				Labels: resource.GetLabels(),
-			},
+			Resource: resource.MonitoredResource(),
 			Points: []*monitoringpb.Point{{
 				Interval: &monitoringpb.TimeInterval{
 					StartTime: now,
@@ -101,7 +97,7 @@ func runLoggingCheck(logger logs.StructuredLogger, resource resourcedetector.Res
 	ctx := context.Background()
 
 	// New Logging Client
-	logClient, err := logging.NewClient(ctx, resource.GetProject())
+	logClient, err := logging.NewClient(ctx, resource.ProjectName())
 	if err != nil {
 		return err
 	}

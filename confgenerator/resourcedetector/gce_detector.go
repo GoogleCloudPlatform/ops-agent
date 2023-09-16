@@ -14,7 +14,7 @@
 
 package resourcedetector
 
-import "fmt"
+import "google.golang.org/genproto/googleapis/api/monitoredres"
 
 type gceAttribute int
 
@@ -105,11 +105,7 @@ type GCEResource struct {
 	InterfaceIPv4 map[string]string
 }
 
-func (GCEResource) GetType() string {
-	return "gce_instance"
-}
-
-func (r GCEResource) GetProject() string {
+func (r GCEResource) ProjectName() string {
 	return r.Project
 }
 
@@ -122,14 +118,13 @@ func (r GCEResource) OTelResourceAttributes() map[string]string {
 	}
 }
 
-func (r GCEResource) FluentBitLabels() string {
-	return fmt.Sprintf("project_id=%s,zone=%s,instance_id=%s", r.Project, r.Zone, r.InstanceID)
-}
-
-func (r GCEResource) GetLabels() map[string]string {
-	return map[string]string{
-		"zone":        r.Zone,
-		"instance_id": r.InstanceID,
+func (r GCEResource) MonitoredResource() *monitoredres.MonitoredResource {
+	return &monitoredres.MonitoredResource{
+		Type: "gce_instance",
+		Labels: map[string]string{
+			"instance_id": r.InstanceID,
+			"zone":        r.Zone,
+		},
 	}
 }
 

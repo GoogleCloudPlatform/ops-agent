@@ -17,6 +17,8 @@ package confgenerator
 import (
 	"context"
 	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
@@ -71,10 +73,15 @@ func stackdriverOutputComponent(ctx context.Context, match, userAgent string, st
 		// Mute these errors until https://github.com/fluent/fluent-bit/issues/4473 is fixed.
 		"net.connect_timeout_log_error": "False",
 	}
-	r := platform.FromContext(ctx).ResourceOverride
-	if r != nil {
-		config["resource"] = r.GetType()
-		config["resource_labels"] = r.FluentBitLabels()
+	if r := platform.FromContext(ctx).ResourceOverride; r != nil {
+		mr := r.MonitoredResource()
+		var labels []string
+		for k, v := range mr.Labels {
+			labels = append(labels, fmt.Sprintf("%s=%s", k, v))
+		}
+		sort.Strings(labels)
+		config["resource"] = mr.Type
+		config["resource_labels"] = strings.Join(labels, ",")
 	}
 
 	if storageLimitSize != "" {

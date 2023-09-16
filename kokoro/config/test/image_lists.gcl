@@ -72,7 +72,6 @@ centos7 = _distro {
     'centos-7',
     // RHEL.
     'rhel-7',
-    'rhel-7-7-sap-ha',
     'rhel-7-9-sap-ha',
   ]
   presubmit = ['centos-7']
