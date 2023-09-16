@@ -25,7 +25,6 @@ import (
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/googleapis/gax-go/v2/apierror"
 	metricpb "google.golang.org/genproto/googleapis/api/metric"
 	"google.golang.org/genproto/googleapis/api/monitoredres"
@@ -37,64 +36,15 @@ const (
 	ServiceDisabled              = "SERVICE_DISABLED"
 	AccessTokenScopeInsufficient = "ACCESS_TOKEN_SCOPE_INSUFFICIENT"
 	IamPermissionDenied          = "IAM_PERMISSION_DENIED"
+	MaxMonitoringPingRetries     = 2
 )
 
-func getGCEMetadata() (resourcedetector.GCEResource, error) {
-	MetadataResource, err := resourcedetector.GetResource()
-	if err != nil {
-		return resourcedetector.GCEResource{}, fmt.Errorf("can't get resource metadata: %w", err)
-	}
-	if gceMetadata, ok := MetadataResource.(resourcedetector.GCEResource); ok {
-		return gceMetadata, nil
-	}
-	return resourcedetector.GCEResource{}, fmt.Errorf("not in GCE")
+func isInvalidArgumentErr(err error) bool {
+	apiErr, ok := err.(*apierror.APIError)
+	return ok && apiErr.GRPCStatus().Code() == codes.InvalidArgument
 }
 
-type resourceLabels struct {
-	project      string
-	resourceType string
-	labels       map[string]string
-}
-
-func getResourceLabels(ctx context.Context) (resourceLabels, error) {
-	p := platform.FromContext(ctx)
-	if p.ResourceOverride != nil {
-		r, ok := p.ResourceOverride.(resourcedetector.BMSResource)
-		if !ok {
-			return resourceLabels{}, errors.New("not in BMS")
-		}
-		return resourceLabels{
-			project:      r.Project,
-			resourceType: "baremetalsolution.googleapis.com/Instance",
-			labels: map[string]string{
-				"instance_id": r.InstanceID,
-				"location":    r.Location,
-			},
-		}, nil
-	}
-	r, err := getGCEMetadata()
-	if err != nil {
-		return resourceLabels{}, err
-	}
-	return resourceLabels{
-		project:      r.Project,
-		resourceType: "gce_instance",
-		labels: map[string]string{
-			"instance_id": r.InstanceID,
-			"zone":        r.Zone,
-		},
-	}, nil
-}
-
-// monitoringPing reports whether the client's connection to the monitoring service and the
-// authentication configuration are valid. To accomplish this, monitoringPing writes a
-// time series point with empty values to an Ops Agent specific metric.
-// This method mirrors the "(c *Client) Ping" method in "cloud.google.com/go/logging".
-func monitoringPing(ctx context.Context, client monitoring.MetricClient) error {
-	rl, err := getResourceLabels(ctx)
-	if err != nil {
-		return err
-	}
+func createMonitoringPingRequest(resource resourcedetector.Resource) *monitoringpb.CreateTimeSeriesRequest {
 	metricType := "agent.googleapis.com/agent/ops_agent/enabled_receivers"
 	now := &timestamppb.Timestamp{
 		Seconds: time.Now().Unix(),
@@ -105,7 +55,7 @@ func monitoringPing(ctx context.Context, client monitoring.MetricClient) error {
 		},
 	}
 	req := &monitoringpb.CreateTimeSeriesRequest{
-		Name: "projects/" + rl.project,
+		Name: "projects/" + resource.GetProject(),
 		TimeSeries: []*monitoringpb.TimeSeries{{
 			MetricKind: metricpb.MetricDescriptor_GAUGE,
 			ValueType:  metricpb.MetricDescriptor_INT64,
@@ -113,8 +63,8 @@ func monitoringPing(ctx context.Context, client monitoring.MetricClient) error {
 				Type: metricType,
 			},
 			Resource: &monitoredres.MonitoredResource{
-				Type:   rl.resourceType,
-				Labels: rl.labels,
+				Type:   resource.GetType(),
+				Labels: resource.GetLabels(),
 			},
 			Points: []*monitoringpb.Point{{
 				Interval: &monitoringpb.TimeInterval{
@@ -125,18 +75,33 @@ func monitoringPing(ctx context.Context, client monitoring.MetricClient) error {
 			}},
 		}},
 	}
-
-	return client.CreateTimeSeries(ctx, req)
+	return req
 }
 
-func runLoggingCheck(logger logs.StructuredLogger) error {
-	ctx := context.Background()
-	rl, err := getResourceLabels(ctx)
-	if err != nil {
-		return err
+// monitoringPing reports whether the client's connection to the monitoring service and the
+// authentication configuration are valid. To accomplish this, monitoringPing writes a
+// time series point with empty values to an Ops Agent specific metric.
+// This method mirrors the "(c *Client) Ping" method in "cloud.google.com/go/logging".
+func monitoringPing(ctx context.Context, client monitoring.MetricClient, resource resourcedetector.Resource) error {
+	var err error
+	for i := 0; i < MaxMonitoringPingRetries; i++ {
+		err = client.CreateTimeSeries(ctx, createMonitoringPingRequest(resource))
+		if err == nil || !isInvalidArgumentErr(err) {
+			break
+		}
+		// This fixes b/291631906 when the monitoringPing is retried very quickly resulting
+		// in an `InvalidArgument` error due a maximum write rate of one point every 5 seconds.
+		// https://cloud.google.com/monitoring/quotas
+		time.Sleep(6 * time.Second)
 	}
+	return err
+}
+
+func runLoggingCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
+	ctx := context.Background()
+
 	// New Logging Client
-	logClient, err := logging.NewClient(ctx, rl.project)
+	logClient, err := logging.NewClient(ctx, resource.GetProject())
 	if err != nil {
 		return err
 	}
@@ -174,7 +139,7 @@ func runLoggingCheck(logger logs.StructuredLogger) error {
 	return nil
 }
 
-func runMonitoringCheck(logger logs.StructuredLogger) error {
+func runMonitoringCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
 	ctx := context.Background()
 
 	// New Monitoring Client
@@ -185,7 +150,7 @@ func runMonitoringCheck(logger logs.StructuredLogger) error {
 	defer monClient.Close()
 	logger.Infof("monitoring client was created successfully")
 
-	if err := monitoringPing(ctx, *monClient); err != nil {
+	if err := monitoringPing(ctx, *monClient, resource); err != nil {
 		logger.Infof(err.Error())
 		var apiErr *apierror.APIError
 		if errors.As(err, &apiErr) {
@@ -223,7 +188,11 @@ func (c APICheck) Name() string {
 }
 
 func (c APICheck) RunCheck(logger logs.StructuredLogger) error {
-	monErr := runMonitoringCheck(logger)
-	logErr := runLoggingCheck(logger)
+	resource, err := resourcedetector.GetResource()
+	if err != nil {
+		return fmt.Errorf("failed to detect the resource: %v", err)
+	}
+	monErr := runMonitoringCheck(logger, resource)
+	logErr := runLoggingCheck(logger, resource)
 	return errors.Join(monErr, logErr)
 }

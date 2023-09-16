@@ -464,16 +464,16 @@ processors:
       value: test-bms-instance
   resource/_global_1:
     attributes:
-    - action: upsert
+    - action: insert
       key: cloud.platform
       value: gcp_bare_metal_solution
-    - action: upsert
+    - action: insert
       key: cloud.project
       value: test-bms-project
-    - action: upsert
+    - action: insert
       key: cloud.region
       value: test-bms-location
-    - action: upsert
+    - action: insert
       key: host.id
       value: test-bms-instance
 receivers:

@@ -14,6 +14,8 @@
 
 package resourcedetector
 
+import "fmt"
+
 type gceAttribute int
 
 const (
@@ -104,7 +106,11 @@ type GCEResource struct {
 }
 
 func (GCEResource) GetType() string {
-	return "gce"
+	return "gce_instance"
+}
+
+func (r GCEResource) GetProject() string {
+	return r.Project
 }
 
 func (r GCEResource) OTelResourceAttributes() map[string]string {
@@ -113,6 +119,17 @@ func (r GCEResource) OTelResourceAttributes() map[string]string {
 		"cloud.project":  r.Project,
 		"cloud.region":   r.Zone,
 		"host.id":        r.InstanceID,
+	}
+}
+
+func (r GCEResource) FluentBitLabels() string {
+	return fmt.Sprintf("project_id=%s,zone=%s,instance_id=%s", r.Project, r.Zone, r.InstanceID)
+}
+
+func (r GCEResource) GetLabels() map[string]string {
+	return map[string]string{
+		"zone":        r.Zone,
+		"instance_id": r.InstanceID,
 	}
 }
 

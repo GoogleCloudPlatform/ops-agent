@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
@@ -74,10 +73,8 @@ func stackdriverOutputComponent(ctx context.Context, match, userAgent string, st
 	}
 	r := platform.FromContext(ctx).ResourceOverride
 	if r != nil {
-		if r, ok := r.(resourcedetector.BMSResource); ok {
-			config["resource"] = "baremetalsolution.googleapis.com/Instance"
-			config["resource_labels"] = fmt.Sprintf("resource_container=%s,location=%s,instance_id=%s", r.Project, r.Location, r.InstanceID)
-		}
+		config["resource"] = r.GetType()
+		config["resource_labels"] = r.FluentBitLabels()
 	}
 
 	if storageLimitSize != "" {

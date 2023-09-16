@@ -14,7 +14,10 @@
 
 package resourcedetector
 
-import "os"
+import (
+	"fmt"
+	"os"
+)
 
 const (
 	bmsProjectIDEnv  = "BMS_PROJECT_ID"
@@ -33,7 +36,11 @@ type BMSResource struct {
 }
 
 func (BMSResource) GetType() string {
-	return "bms"
+	return "baremetalsolution.googleapis.com/Instance"
+}
+
+func (r BMSResource) GetProject() string {
+	return r.Project
 }
 
 func (r BMSResource) OTelResourceAttributes() map[string]string {
@@ -42,6 +49,17 @@ func (r BMSResource) OTelResourceAttributes() map[string]string {
 		"cloud.project":  r.Project,
 		"cloud.region":   r.Location,
 		"host.id":        r.InstanceID,
+	}
+}
+
+func (r BMSResource) FluentBitLabels() string {
+	return fmt.Sprintf("resource_container=%s,location=%s,instance_id=%s", r.Project, r.Location, r.InstanceID)
+}
+
+func (r BMSResource) GetLabels() map[string]string {
+	return map[string]string{
+		"location":    r.Location,
+		"instance_id": r.InstanceID,
 	}
 }
 

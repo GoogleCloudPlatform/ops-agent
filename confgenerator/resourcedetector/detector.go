@@ -23,6 +23,9 @@ import (
 type Resource interface {
 	GetType() string
 	OTelResourceAttributes() map[string]string
+	FluentBitLabels() string
+	GetProject() string
+	GetLabels() map[string]string
 }
 
 // Get a resource instance for the current environment;
@@ -50,9 +53,19 @@ func (UnrecognizedPlatformResource) GetType() string {
 }
 
 func (UnrecognizedPlatformResource) OTelResourceAttributes() map[string]string {
-	return map[string]string{
-		"cloud.platform": "unrecognized platform",
-	}
+	return nil
+}
+
+func (UnrecognizedPlatformResource) FluentBitLabels() string {
+	return ""
+}
+
+func (UnrecognizedPlatformResource) GetProject() string {
+	return ""
+}
+
+func (UnrecognizedPlatformResource) GetLabels() map[string]string {
+	return nil
 }
 
 func GetUnrecognizedPlatformResource() (Resource, error) {

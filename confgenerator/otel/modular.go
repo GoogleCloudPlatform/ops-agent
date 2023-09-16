@@ -39,7 +39,7 @@ const (
 )
 const (
 	Override ResourceDetectionMode = iota
-	Upsert
+	SetIfMissing
 	None
 )
 
@@ -146,20 +146,20 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 		"service":    service,
 	}
 
-	resourceProcessors := map[ResourceDetectionMode]Component{
-		Override: GCPResourceDetector(true),
-		Upsert:   GCPResourceDetector(false),
+	resourceDetectionProcessors := map[ResourceDetectionMode]Component{
+		Override:     GCPResourceDetector(true),
+		SetIfMissing: GCPResourceDetector(false),
 	}
 
 	if pl.ResourceOverride != nil {
-		resourceProcessors = map[ResourceDetectionMode]Component{
-			Override: ResourceTransform(pl.ResourceOverride.OTelResourceAttributes()),
-			Upsert:   ResourceTransform(pl.ResourceOverride.OTelResourceAttributes()),
+		resourceDetectionProcessors = map[ResourceDetectionMode]Component{
+			Override:     ResourceTransform(pl.ResourceOverride.OTelResourceAttributes(), true),
+			SetIfMissing: ResourceTransform(pl.ResourceOverride.OTelResourceAttributes(), false),
 		}
 	}
-	resourceProcessorNames := map[ResourceDetectionMode]string{
-		Override: resourceProcessors[Override].name("_global_0"),
-		Upsert:   resourceProcessors[Upsert].name("_global_1"),
+	resourceDetectionProcessorNames := map[ResourceDetectionMode]string{
+		Override:     resourceDetectionProcessors[Override].name("_global_0"),
+		SetIfMissing: resourceDetectionProcessors[SetIfMissing].name("_global_1"),
 	}
 
 	for prefix, pipeline := range c.Pipelines {
@@ -189,9 +189,9 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 			processors[name] = processor.Config
 		}
 		rdm := receiverPipeline.ResourceDetectionModes[pipeline.Type]
-		if name, ok := resourceProcessorNames[rdm]; ok {
+		if name, ok := resourceDetectionProcessorNames[rdm]; ok {
 			processorNames = append(processorNames, name)
-			processors[name] = resourceProcessors[rdm].Config
+			processors[name] = resourceDetectionProcessors[rdm].Config
 		}
 		exporterType := receiverPipeline.ExporterTypes[pipeline.Type]
 		if _, ok := exporterNames[exporterType]; !ok {
