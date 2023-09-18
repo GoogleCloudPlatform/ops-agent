@@ -181,6 +181,8 @@ const (
 	exhaustedRetriesSuffix = "exhausted retries"
 
 	DenyEgressTrafficTag = "test-ops-agent-deny-egress-traffic-tag"
+
+	TraceQueryMaxAttempts = QueryMaxAttempts / traceQueryDerate
 )
 
 func init() {
@@ -425,7 +427,7 @@ func lookupMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string
 }
 
 // lookupTrace does a single lookup of any trace from the given VM in the backend.
-func lookupTrace(ctx context.Context, logger *log.Logger, vm *VM, window time.Duration) *trace.TraceIterator {
+func lookupTrace(ctx context.Context, vm *VM, window time.Duration) *trace.TraceIterator {
 	now := time.Now()
 	start := timestamppb.New(now.Add(-window))
 	end := timestamppb.New(now)
@@ -540,8 +542,8 @@ func WaitForMetricSeries(ctx context.Context, logger *log.Logger, vm *VM, metric
 // including spans, call traceClient.GetTrace with the TraceID returned from
 // this function.
 func WaitForTrace(ctx context.Context, logger *log.Logger, vm *VM, window time.Duration) (*cloudtrace.Trace, error) {
-	for attempt := 1; attempt <= QueryMaxAttempts/traceQueryDerate; attempt++ {
-		it := lookupTrace(ctx, logger, vm, window)
+	for attempt := 1; attempt <= TraceQueryMaxAttempts; attempt++ {
+		it := lookupTrace(ctx, vm, window)
 		trace, err := firstTrace(it)
 		if trace != nil && err == nil {
 			return trace, nil
@@ -550,7 +552,7 @@ func WaitForTrace(ctx context.Context, logger *log.Logger, vm *VM, window time.D
 			return nil, fmt.Errorf("WaitForTrace() failed: %v", err)
 		}
 		logger.Printf("firstTrace check(): empty, retrying (%d/%d)...",
-			attempt, QueryMaxAttempts)
+			attempt, TraceQueryMaxAttempts)
 		time.Sleep(time.Duration(traceQueryDerate) * queryBackoffDuration)
 	}
 	return nil, fmt.Errorf("WaitForTrace() failed: %s", exhaustedRetriesSuffix)
