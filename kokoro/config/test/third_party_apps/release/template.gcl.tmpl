@@ -5,6 +5,6 @@ config build = common.third_party_apps_test {
     platforms = [{{range .ThirdPartyTestPlatforms}}
       '{{.}}',{{end}}
     ]
-{{with .Arch}}    arch = '{{.}}'
+{{if eq .Arch "aarch64"}}    arch = 'arm64'
 {{end}}  }
 }
