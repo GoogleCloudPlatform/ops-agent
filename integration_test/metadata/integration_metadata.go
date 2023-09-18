@@ -23,7 +23,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	yaml "github.com/goccy/go-yaml"
 	"go.uber.org/multierr"
-	"google.golang.org/genproto/googleapis/monitoring/v3"
+	"google.golang.org/api/monitoring/v3"
 )
 
 // ExpectedMetric encodes a series of assertions about what data we expect
