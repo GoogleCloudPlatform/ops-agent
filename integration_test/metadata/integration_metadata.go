@@ -20,10 +20,10 @@ import (
 	"reflect"
 	"regexp"
 
+	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/go-playground/validator/v10"
 	yaml "github.com/goccy/go-yaml"
 	"go.uber.org/multierr"
-	"google.golang.org/genproto/googleapis/monitoring/v3"
 )
 
 // ExpectedMetric encodes a series of assertions about what data we expect
@@ -182,7 +182,7 @@ func NewIntegrationMetadataValidator() *validator.Validate {
 	return v
 }
 
-func AssertMetric(metric *ExpectedMetric, series *monitoring.TimeSeries) error {
+func AssertMetric(metric *ExpectedMetric, series *monitoringpb.TimeSeries) error {
 	var err error
 	if series.ValueType.String() != metric.ValueType {
 		err = multierr.Append(err, fmt.Errorf("valueType: expected %s but got %s", metric.ValueType, series.ValueType.String()))
@@ -200,7 +200,7 @@ func AssertMetric(metric *ExpectedMetric, series *monitoring.TimeSeries) error {
 	return nil
 }
 
-func assertMetricLabels(metric *ExpectedMetric, series *monitoring.TimeSeries) error {
+func assertMetricLabels(metric *ExpectedMetric, series *monitoringpb.TimeSeries) error {
 	// Only expected labels must be present
 	var err error
 	for actualLabel, actualValue := range series.Metric.Labels {

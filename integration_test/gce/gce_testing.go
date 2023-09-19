@@ -105,15 +105,15 @@ import (
 	cloudlogging "cloud.google.com/go/logging"
 	"cloud.google.com/go/logging/logadmin"
 	monitoring "cloud.google.com/go/monitoring/apiv3"
+	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"cloud.google.com/go/storage"
 	trace "cloud.google.com/go/trace/apiv1"
+	cloudtrace "cloud.google.com/go/trace/apiv1/tracepb"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/google/uuid"
 	"go.uber.org/multierr"
 	"golang.org/x/text/encoding/unicode"
 	"google.golang.org/api/iterator"
-	cloudtrace "google.golang.org/genproto/googleapis/devtools/cloudtrace/v1"
-	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -181,6 +181,8 @@ const (
 	exhaustedRetriesSuffix = "exhausted retries"
 
 	DenyEgressTrafficTag = "test-ops-agent-deny-egress-traffic-tag"
+
+	TraceQueryMaxAttempts = QueryMaxAttempts / traceQueryDerate
 )
 
 func init() {
@@ -425,7 +427,7 @@ func lookupMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string
 }
 
 // lookupTrace does a single lookup of any trace from the given VM in the backend.
-func lookupTrace(ctx context.Context, logger *log.Logger, vm *VM, window time.Duration) *trace.TraceIterator {
+func lookupTrace(ctx context.Context, vm *VM, window time.Duration) *trace.TraceIterator {
 	now := time.Now()
 	start := timestamppb.New(now.Add(-window))
 	end := timestamppb.New(now)
@@ -540,8 +542,8 @@ func WaitForMetricSeries(ctx context.Context, logger *log.Logger, vm *VM, metric
 // including spans, call traceClient.GetTrace with the TraceID returned from
 // this function.
 func WaitForTrace(ctx context.Context, logger *log.Logger, vm *VM, window time.Duration) (*cloudtrace.Trace, error) {
-	for attempt := 1; attempt <= QueryMaxAttempts/traceQueryDerate; attempt++ {
-		it := lookupTrace(ctx, logger, vm, window)
+	for attempt := 1; attempt <= TraceQueryMaxAttempts; attempt++ {
+		it := lookupTrace(ctx, vm, window)
 		trace, err := firstTrace(it)
 		if trace != nil && err == nil {
 			return trace, nil
@@ -550,7 +552,7 @@ func WaitForTrace(ctx context.Context, logger *log.Logger, vm *VM, window time.D
 			return nil, fmt.Errorf("WaitForTrace() failed: %v", err)
 		}
 		logger.Printf("firstTrace check(): empty, retrying (%d/%d)...",
-			attempt, QueryMaxAttempts)
+			attempt, TraceQueryMaxAttempts)
 		time.Sleep(time.Duration(traceQueryDerate) * queryBackoffDuration)
 	}
 	return nil, fmt.Errorf("WaitForTrace() failed: %s", exhaustedRetriesSuffix)

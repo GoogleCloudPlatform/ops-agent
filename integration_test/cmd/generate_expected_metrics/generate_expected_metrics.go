@@ -41,10 +41,10 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
 
 	monitoring "cloud.google.com/go/monitoring/apiv3"
+	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"go.uber.org/multierr"
 	"google.golang.org/api/iterator"
 	"google.golang.org/genproto/googleapis/api/metric"
-	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	"gopkg.in/yaml.v2"
 )
 
