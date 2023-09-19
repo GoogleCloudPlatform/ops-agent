@@ -55,6 +55,7 @@ platforms_to_skip:
   - debian-12
   - ubuntu-2004-lts
   - ubuntu-2004-lts-arm64
+  - ubuntu-2204-lts-arm64
   - ubuntu-2304-amd64
   - sles-12
   - sles-15

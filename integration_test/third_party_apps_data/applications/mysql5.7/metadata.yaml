@@ -43,6 +43,7 @@ platforms_to_skip:
   - debian-12
   - ubuntu-2004-lts
   - ubuntu-2004-lts-arm64
+  - ubuntu-2204-lts-arm64
   - ubuntu-2304-amd64
 supported_app_version: ["8.0", "5.7"]
 expected_metrics:
