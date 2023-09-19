@@ -26,7 +26,6 @@ supported_app_version: ["515.65.01"]
 platforms_to_skip:
   - centos-7
   - centos-8
-  - debian-10
   - debian-11
   - debian-11-arm64
   - debian-12
