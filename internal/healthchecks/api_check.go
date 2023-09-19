@@ -97,18 +97,15 @@ func createMonitoringPingRequest(gceMetadata resourcedetector.GCEResource) *moni
 // time series point with empty values to an Ops Agent specific metric.
 // This method mirrors the "(c *Client) Ping" method in "cloud.google.com/go/logging".
 func monitoringPing(ctx context.Context, client monitoring.MetricClient, gceMetadata resourcedetector.GCEResource) error {
-	var err error
-	for i := 0; i < MaxMonitoringPingRetries; i++ {
-		err = client.CreateTimeSeries(ctx, createMonitoringPingRequest(gceMetadata))
-		if err == nil || !isInvalidArgumentErr(err) { 
-			break
-		}
-		// This fixes b/291631906 when the monitoringPing is retried very quickly resulting
-		// in an `InvalidArgument` error due a maximum write rate of one point every 5 seconds.
-		// https://cloud.google.com/monitoring/quotas 
-		time.Sleep(6 * time.Second)
+	err := client.CreateTimeSeries(ctx, createMonitoringPingRequest(gceMetadata))
+	if err == nil || !isInvalidArgumentErr(err) { 
+		return err
 	}
-	return err
+	// This fixes b/291631906 when the monitoringPing is retried very quickly resulting
+	// in an `InvalidArgument` error due a maximum write rate of one point every 5 seconds.
+	// https://cloud.google.com/monitoring/quotas 
+	time.Sleep(6 * time.Second)
+	return client.CreateTimeSeries(ctx, createMonitoringPingRequest(gceMetadata))
 }
 
 func runLoggingCheck(logger logs.StructuredLogger) error {
