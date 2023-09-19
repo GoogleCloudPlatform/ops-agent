@@ -2,7 +2,10 @@ import 'common.gcl' as common
 
 config build = common.third_party_apps_test {
   params {
-    platforms = ['debian-11-arm64']
+    platforms = ['ubuntu-2204-lts-arm64'] # !!Temporary Remove This!!
+    environment { # !!Temporary Remove This!!
+      SHORT = 'false' # !!Temporary Remove This!!
+    } # !!Temporary Remove This!!
     arch = 'arm64'
   }
 }
