@@ -7,7 +7,7 @@ local _zones_for_arch = {
   // The new Cloud NAT gateway must have "Minimum ports per VM instance"
   // set to 512 as per this article:
   // https://cloud.google.com/knowledge/kb/sles-unable-to-fetch-updates-when-behind-cloud-nat-000004450
-  x86_64 = join([
+  amd64 = join([
     'us-central1-a=3',
     'us-central1-b=3',
     'us-central1-c=3',
@@ -32,7 +32,7 @@ template config common = {
     build_file = external
 
     // This is only used for determining the value of ZONES.
-    arch = 'x86_64'
+    arch = 'amd64'
 
     artifacts = []
 
