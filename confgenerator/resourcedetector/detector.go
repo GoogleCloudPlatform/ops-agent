@@ -16,12 +16,15 @@ package resourcedetector
 
 import (
 	gcp_metadata "cloud.google.com/go/compute/metadata"
+	"google.golang.org/genproto/googleapis/api/monitoredres"
 )
 
 // An implementation of the Resource interface will have fields represent
 // available attributes about the current monitoring resource.
 type Resource interface {
-	GetType() string
+	MonitoredResource() *monitoredres.MonitoredResource
+	OTelResourceAttributes() map[string]string
+	ProjectName() string
 }
 
 // Get a resource instance for the current environment;
@@ -42,8 +45,16 @@ func GetResource() (Resource, error) {
 type UnrecognizedPlatformResource struct {
 }
 
-func (UnrecognizedPlatformResource) GetType() string {
-	return "unrecognized platform"
+func (UnrecognizedPlatformResource) OTelResourceAttributes() map[string]string {
+	return nil
+}
+
+func (UnrecognizedPlatformResource) ProjectName() string {
+	return ""
+}
+
+func (UnrecognizedPlatformResource) MonitoredResource() *monitoredres.MonitoredResource {
+	return nil
 }
 
 func GetUnrecognizedPlatformResource() (Resource, error) {
