@@ -111,11 +111,7 @@ func monitoringPing(ctx context.Context, client monitoring.MetricClient, gceMeta
 		return err
 	}
 
-	err := backoff.Retry(pingOperation, pingBackoff)
-	if errors.Is(err, *backoff.PermanentError) {
-		return err.Unwrap()
-	}
-	return err
+	return backoff.Retry(pingOperation, pingBackoff)
 }
 
 func runLoggingCheck(logger logs.StructuredLogger) error {
