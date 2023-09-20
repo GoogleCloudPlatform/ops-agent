@@ -25,6 +25,7 @@ import (
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/googleapis/gax-go/v2/apierror"
 	metricpb "google.golang.org/genproto/googleapis/api/metric"
 	"google.golang.org/genproto/googleapis/api/monitoredres"
@@ -36,7 +37,7 @@ const (
 	ServiceDisabled              = "SERVICE_DISABLED"
 	AccessTokenScopeInsufficient = "ACCESS_TOKEN_SCOPE_INSUFFICIENT"
 	IamPermissionDenied          = "IAM_PERMISSION_DENIED"
-	MaxMonitoringPingRetries     = 2
+	MaxMonitoringPingRetries     = 1
 )
 
 func getGCEMetadata() (resourcedetector.GCEResource, error) {
@@ -97,15 +98,22 @@ func createMonitoringPingRequest(gceMetadata resourcedetector.GCEResource) *moni
 // time series point with empty values to an Ops Agent specific metric.
 // This method mirrors the "(c *Client) Ping" method in "cloud.google.com/go/logging".
 func monitoringPing(ctx context.Context, client monitoring.MetricClient, gceMetadata resourcedetector.GCEResource) error {
-	err := client.CreateTimeSeries(ctx, createMonitoringPingRequest(gceMetadata))
-	if err == nil || !isInvalidArgumentErr(err) { 
-		return err
-	}
-	// This fixes b/291631906 when the monitoringPing is retried very quickly resulting
-	// in an `InvalidArgument` error due a maximum write rate of one point every 5 seconds.
+	// The retry logic fixes b/291631906 when the `CreateTimeSeries` request is retried very quickly
+	// resulting in an `InvalidArgument` error due a maximum write rate of one point every 5 seconds.
 	// https://cloud.google.com/monitoring/quotas 
-	time.Sleep(6 * time.Second)
-	return client.CreateTimeSeries(ctx, createMonitoringPingRequest(gceMetadata))
+	pingBackoff := backoff.WithMaxRetries(backoff.NewConstantBackOff(6 * time.Second), MaxMonitoringPingRetries)
+	ticker := backoff.NewTicker(pingBackoff)
+
+	var err error
+	for range ticker.C {
+		err := client.CreateTimeSeries(ctx, createMonitoringPingRequest(gceMetadata))
+		if err == nil || !isInvalidArgumentErr(err) {
+			ticker.Stop()
+			break
+		}
+	}
+
+	return err
 }
 
 func runLoggingCheck(logger logs.StructuredLogger) error {
