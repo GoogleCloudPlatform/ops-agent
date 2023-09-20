@@ -110,7 +110,6 @@ func monitoringPing(ctx context.Context, client monitoring.MetricClient, gceMeta
 		}
 		return err
 	}
-
 	return backoff.Retry(pingOperation, pingBackoff)
 }
 
