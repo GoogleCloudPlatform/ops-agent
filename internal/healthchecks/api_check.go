@@ -100,19 +100,21 @@ func createMonitoringPingRequest(gceMetadata resourcedetector.GCEResource) *moni
 func monitoringPing(ctx context.Context, client monitoring.MetricClient, gceMetadata resourcedetector.GCEResource) error {
 	// The retry logic fixes b/291631906 when the `CreateTimeSeries` request is retried very quickly
 	// resulting in an `InvalidArgument` error due a maximum write rate of one point every 5 seconds.
-	// https://cloud.google.com/monitoring/quotas 
+	// https://cloud.google.com/monitoring/quotas
 	pingBackoff := backoff.WithMaxRetries(backoff.NewConstantBackOff(6 * time.Second), MaxMonitoringPingRetries)
-	ticker := backoff.NewTicker(pingBackoff)
-
-	var err error
-	for range ticker.C {
+	pingOperation := func() error {
 		err := client.CreateTimeSeries(ctx, createMonitoringPingRequest(gceMetadata))
-		if err == nil || !isInvalidArgumentErr(err) {
-			ticker.Stop()
-			break
+		if !isInvalidArgumentErr(err) {
+			// This is a permanent API misconfiguration error.
+			return backoff.Permanent(err)
 		}
+		return err
 	}
 
+	err := backoff.Retry(pingOperation, pingBackoff)
+	if errors.Is(err, *backoff.PermanentError) {
+		return err.Unwrap()
+	}
 	return err
 }
 
