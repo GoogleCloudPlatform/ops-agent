@@ -218,6 +218,6 @@ func generateSelfLogsComponents(ctx context.Context, userAgent string) []fluentb
 	out = append(out, generateSelfLogsSamplingComponents(ctx)...)
 	out = append(out, generateStructuredHealthLogsComponents(ctx)...)
 	out = append(out, generateSelfLogsProcessingComponents(ctx)...)
-	out = append(out, stackdriverOutputComponent(strings.Join([]string{fluentBitSelfLogsTag, healthLogsTag}, "|"), userAgent, ""))
+	out = append(out, stackdriverOutputComponent(ctx, strings.Join([]string{fluentBitSelfLogsTag, healthLogsTag}, "|"), userAgent, ""))
 	return out
 }

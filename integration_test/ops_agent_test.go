@@ -3638,6 +3638,8 @@ func runResourceDetectorCli(ctx context.Context, logger *logging.DirectoryLogger
 			remote: "run_resource_detector.go"},
 		{local: "../confgenerator/resourcedetector/detector.go",
 			remote: "confgenerator/resourcedetector/detector.go"},
+		{local: "../confgenerator/resourcedetector/bms_detector.go",
+			remote: "confgenerator/resourcedetector/bms_detector.go"},
 		{local: "../confgenerator/resourcedetector/gce_detector.go",
 			remote: "confgenerator/resourcedetector/gce_detector.go"},
 		{local: "../confgenerator/resourcedetector/gce_metadata_provider.go",

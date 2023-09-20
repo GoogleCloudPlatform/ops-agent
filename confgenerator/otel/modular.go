@@ -16,8 +16,10 @@
 package otel
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	yaml "github.com/goccy/go-yaml"
 	"github.com/mitchellh/mapstructure"
 )
@@ -37,7 +39,7 @@ const (
 )
 const (
 	Override ResourceDetectionMode = iota
-	Upsert
+	SetIfMissing
 	None
 )
 
@@ -116,7 +118,8 @@ type ModularConfig struct {
 //	receivers: [hostmetrics/mypipe]
 //	processors: [filter/mypipe_1, metrics_filter/mypipe_2, resourcedetection/_global_0]
 //	exporters: [googlecloud]
-func (c ModularConfig) Generate() (string, error) {
+func (c ModularConfig) Generate(ctx context.Context) (string, error) {
+	pl := platform.FromContext(ctx)
 	receivers := map[string]interface{}{}
 	processors := map[string]interface{}{}
 	exporters := map[string]interface{}{}
@@ -144,12 +147,19 @@ func (c ModularConfig) Generate() (string, error) {
 	}
 
 	resourceDetectionProcessors := map[ResourceDetectionMode]Component{
-		Override: GCPResourceDetector(true),
-		Upsert:   GCPResourceDetector(false),
+		Override:     GCPResourceDetector(true),
+		SetIfMissing: GCPResourceDetector(false),
+	}
+
+	if pl.ResourceOverride != nil {
+		resourceDetectionProcessors = map[ResourceDetectionMode]Component{
+			Override:     ResourceTransform(pl.ResourceOverride.OTelResourceAttributes(), true),
+			SetIfMissing: ResourceTransform(pl.ResourceOverride.OTelResourceAttributes(), false),
+		}
 	}
 	resourceDetectionProcessorNames := map[ResourceDetectionMode]string{
-		Override: resourceDetectionProcessors[Override].name("_global_0"),
-		Upsert:   resourceDetectionProcessors[Upsert].name("_global_1"),
+		Override:     resourceDetectionProcessors[Override].name("_global_0"),
+		SetIfMissing: resourceDetectionProcessors[SetIfMissing].name("_global_1"),
 	}
 
 	for prefix, pipeline := range c.Pipelines {
@@ -178,13 +188,11 @@ func (c ModularConfig) Generate() (string, error) {
 			processorNames = append(processorNames, name)
 			processors[name] = processor.Config
 		}
-
 		rdm := receiverPipeline.ResourceDetectionModes[pipeline.Type]
 		if name, ok := resourceDetectionProcessorNames[rdm]; ok {
 			processorNames = append(processorNames, name)
 			processors[name] = resourceDetectionProcessors[rdm].Config
 		}
-
 		exporterType := receiverPipeline.ExporterTypes[pipeline.Type]
 		if _, ok := exporterNames[exporterType]; !ok {
 			exporter := c.Exporters[exporterType]

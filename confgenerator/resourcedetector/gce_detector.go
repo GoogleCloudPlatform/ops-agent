@@ -14,6 +14,8 @@
 
 package resourcedetector
 
+import "google.golang.org/genproto/googleapis/api/monitoredres"
+
 type gceAttribute int
 
 const (
@@ -103,8 +105,27 @@ type GCEResource struct {
 	InterfaceIPv4 map[string]string
 }
 
-func (GCEResource) GetType() string {
-	return "gce"
+func (r GCEResource) ProjectName() string {
+	return r.Project
+}
+
+func (r GCEResource) OTelResourceAttributes() map[string]string {
+	return map[string]string{
+		"cloud.platform": "gce_instance",
+		"cloud.project":  r.Project,
+		"cloud.region":   r.Zone,
+		"host.id":        r.InstanceID,
+	}
+}
+
+func (r GCEResource) MonitoredResource() *monitoredres.MonitoredResource {
+	return &monitoredres.MonitoredResource{
+		Type: "gce_instance",
+		Labels: map[string]string{
+			"instance_id": r.InstanceID,
+			"zone":        r.Zone,
+		},
+	}
 }
 
 type GCEResourceBuilderInterface interface {

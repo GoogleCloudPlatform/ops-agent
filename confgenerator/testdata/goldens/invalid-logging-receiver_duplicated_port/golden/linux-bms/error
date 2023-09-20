@@ -1,0 +1,1 @@
+two logging receivers s1 and s2 can not listen on the same port 5140.

@@ -1,0 +1,7 @@
+[22:21] "pipelines[lib:pipeline_1]" must not start with "lib:"
+  19 |       collection_interval: 60s
+  20 |   service:
+  21 |     pipelines:
+> 22 |       lib:pipeline_1:
+                           ^
+  23 |         receivers: [hostmetrics]
