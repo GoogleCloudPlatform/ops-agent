@@ -42,7 +42,7 @@ template config common = {
     build_file = external
 
     // This is only used for determining the value of ZONES.
-    arch = 'x86_64'
+    arch = 'amd64'
 
     artifacts = []
 

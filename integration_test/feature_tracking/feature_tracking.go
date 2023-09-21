@@ -17,8 +17,8 @@ package feature_tracking_metadata
 import (
 	"fmt"
 
+	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/set"
-	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 )
 
 type MissingExpectedFeatureTrackingMetricsError struct {

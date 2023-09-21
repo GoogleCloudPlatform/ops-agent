@@ -183,6 +183,18 @@ jammy = _distro {
     'ubuntu-2204-lts',
     'ubuntu-minimal-2204-lts',
   ]
+  presubmit = [
+      'ubuntu-minimal-2204-lts',
+  ]
+}
+jammy_arm64 = _distro {
+  release = [
+    'ubuntu-2204-lts-arm64',
+    'ubuntu-minimal-2204-lts-arm64',
+  ]
+  presubmit = [
+      'ubuntu-minimal-2204-lts-arm64',
+  ]
 }
 
 // RPM Linux distros. (Do not modify this comment.)
