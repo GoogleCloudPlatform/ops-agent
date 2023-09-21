@@ -16,16 +16,6 @@ local _zones_for_arch = {
     'us-east1-c=2',
     'us-east1-d=2',
   ], ',')
-  // TODO: b/288442211 - Replace this with amd64 everywhere.
-  x86_64 = join([
-    'us-central1-a=3',
-    'us-central1-b=3',
-    'us-central1-c=3',
-    'us-central1-f=3',
-    'us-east1-b=2',
-    'us-east1-c=2',
-    'us-east1-d=2',
-  ], ',')
 
   // T2A machines are only available on us-central1-{a,b,f}.
   // See warning above about changing regions.
