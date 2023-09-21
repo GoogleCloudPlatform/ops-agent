@@ -60,7 +60,7 @@ template config go_test = common {
   params {
     test_suite = external
 
-    build_file = 'unified_agents/kokoro/scripts/test/go_test_for_containers.sh'
+    build_file = 'unified_agents/kokoro/scripts/test/go_test.sh'
 
     environment {
       TEST_SUITE_NAME = test_suite
