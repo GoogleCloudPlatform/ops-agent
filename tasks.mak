@@ -72,6 +72,14 @@ test_confgenerator_update:
 test_metadata_update:
 	go test ./integration_test/metadata -update
 
+new_confgenerator_test:
+ifndef TEST_NAME
+	$(error "Please provide a TEST_NAME argument")
+endif
+	mkdir -p ./confgenerator/testdata/goldens/$(TEST_NAME) 
+	mkdir -p ./confgenerator/testdata/goldens/$(TEST_NAME)/golden
+	touch ./confgenerator/testdata/goldens/$(TEST_NAME)/input.yaml
+
 ############
 # Integration Tests
 ############
