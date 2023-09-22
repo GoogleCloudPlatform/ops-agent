@@ -138,6 +138,8 @@ func runLoggingCheck(logger logs.StructuredLogger) error {
 				return LogApiUnauthenticatedErr
 			case codes.DeadlineExceeded:
 				return LogApiConnErr
+			case codes.Unavailable:
+				return LogApiConnErr
 			}
 		}
 		if errors.Is(err, context.DeadlineExceeded) {
@@ -184,6 +186,8 @@ func runMonitoringCheck(logger logs.StructuredLogger) error {
 			case codes.Unauthenticated:
 				return MonApiUnauthenticatedErr
 			case codes.DeadlineExceeded:
+				return MonApiConnErr
+			case codes.Unavailable:
 				return MonApiConnErr
 			}
 		}
