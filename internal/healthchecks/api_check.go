@@ -51,11 +51,6 @@ func getGCEMetadata() (resourcedetector.GCEResource, error) {
 	return resourcedetector.GCEResource{}, fmt.Errorf("not in GCE")
 }
 
-func isInvalidArgumentErr(err error) bool {
-	apiErr, ok := err.(*apierror.APIError)
-	return ok && apiErr.GRPCStatus().Code() == codes.InvalidArgument
-}
-
 func createMonitoringPingRequest(gceMetadata resourcedetector.GCEResource) *monitoringpb.CreateTimeSeriesRequest {
 	metricType := "agent.googleapis.com/agent/ops_agent/enabled_receivers"
 	now := &timestamppb.Timestamp{
@@ -102,15 +97,8 @@ func monitoringPing(ctx context.Context, client monitoring.MetricClient, gceMeta
 	// be called multiple times in quick succession, the first attempted request to `CreateTimeSeries`
 	// may fail. We can retry the request >5 seconds later in such cases.
 	// https://cloud.google.com/monitoring/quotas
-	pingBackoff := backoff.WithMaxRetries(backoff.NewConstantBackOff(6 * time.Second), MaxMonitoringPingRetries)
-	pingOperation := func() error {
-		err := client.CreateTimeSeries(ctx, createMonitoringPingRequest(gceMetadata))
-		if !isInvalidArgumentErr(err) {
-			// This is a permanent API misconfiguration error.
-			return backoff.Permanent(err)
-		}
-		return err
-	}
+	pingBackoff := backoff.WithMaxRetries(backoff.NewConstantBackOff(6*time.Second), MaxMonitoringPingRetries)
+	pingOperation := func() error { return client.CreateTimeSeries(ctx, createMonitoringPingRequest(gceMetadata)) }
 	return backoff.Retry(pingOperation, pingBackoff)
 }
 
