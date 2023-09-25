@@ -1,6 +1,6 @@
 module github.com/GoogleCloudPlatform/ops-agent
 
-go 1.21
+go 1.20
 
 require (
 	cloud.google.com/go/compute/metadata v0.2.3
