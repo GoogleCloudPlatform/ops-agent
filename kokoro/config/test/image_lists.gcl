@@ -38,7 +38,7 @@ bullseye = _distro {
   release = ['debian-11']
   presubmit = ['debian-11']
 }
-bullseye_arm64 = _distro {
+bullseye_aarch64 = _distro {
   release = ['debian-11-arm64']
   presubmit = ['debian-11-arm64']
 }
@@ -49,7 +49,7 @@ focal = _distro {
   ]
   presubmit = ['ubuntu-minimal-2004-lts']
 }
-focal_arm64 = _distro {
+focal_aarch64 = _distro {
   release = [
       'ubuntu-2004-lts-arm64',
       'ubuntu-minimal-2004-lts-arm64',
@@ -98,7 +98,7 @@ rockylinux9 = _distro {
   ]
   presubmit = ['rocky-linux-9']
 }
-rockylinux9_arm64 = _distro {
+rockylinux9_aarch64 = _distro {
   release = [
     // RHEL.
     'rhel-9-arm64',
@@ -143,3 +143,10 @@ windows = _distro {
     'windows-2019',
   ]
 }
+
+// TODO: b/288442211: Remove these old aliases once everything is switched over
+// to <distro>_aarch64.
+bullseye_arm64 = bullseye_aarch64
+focal_arm64 = focal_aarch64
+rockylinux9_arm64 = rockylinux9_aarch64
+
