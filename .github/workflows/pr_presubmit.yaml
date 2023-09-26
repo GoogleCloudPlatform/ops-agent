@@ -29,6 +29,7 @@ jobs:
         cache: true
     - id: files
       uses: jitterbit/get-changed-files@v1
+      continue-on-error: true
     - uses: actions/checkout@v2
       with:
         ref: ${{ github.base_ref }}
