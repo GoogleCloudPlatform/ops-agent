@@ -19,11 +19,15 @@ local _zones_for_arch = {
 
   // T2A machines are only available on us-central1-{a,b,f}.
   // See warning above about changing regions.
-  arm64 = join([
+  aarch64 = join([
     'us-central1-a',
     'us-central1-b',
     'us-central1-f',
   ], ',')
+
+  // TODO: b/288442211 - Remove this alias once everything is switched over
+  // to using "aarch64".
+  arm64 = aarch64
 }
 
 template config common = {

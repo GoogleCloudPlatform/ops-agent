@@ -1392,17 +1392,29 @@ func DeleteInstance(logger *log.Logger, vm *VM) error {
 		logger.Printf("VM %v was already deleted, skipping delete.", vm.Name)
 		return nil
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*10)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
-	_, err := RunGcloud(ctx, logger, "",
-		[]string{
-			"compute",
-			"instances",
-			"delete",
-			"--project=" + vm.Project,
-			"--zone=" + vm.Zone,
-			vm.Name,
+	backoffPolicy := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(30*time.Second), 10), ctx)
+	tryDelete := func() error {
+		_, err := RunGcloud(ctx, logger, "",
+			[]string{
+				"compute", "instances", "delete",
+				"--project=" + vm.Project,
+				"--zone=" + vm.Zone,
+				vm.Name,
 		})
+		// GCE sometimes responds with "The service is currently unavailable".
+		// Retry these errors, by returning them directly.
+		if err != nil && strings.Contains(err.Error(), "unavailable") {
+			return err
+		}
+		// Wrap other errors in backoff.Permanent() to avoid retrying those.
+		if err != nil {
+			return backoff.Permanent(err)
+		}	
+		return nil
+	}
+	err := backoff.Retry(tryDelete, backoffPolicy)
 	if err == nil {
 		vm.AlreadyDeleted = true
 	}
@@ -1424,7 +1436,7 @@ func StopInstance(ctx context.Context, logger *log.Logger, vm *VM) error {
 // StartInstance boots a previously-stopped VM instance.
 // Also waits for the instance to be started up.
 func StartInstance(ctx context.Context, logger *log.Logger, vm *VM) error {
-	ctx, cancel := context.WithTimeout(ctx, time.Minute*20)
+	ctx, cancel := context.WithTimeout(ctx, 20*time.Minute)
 	defer cancel()
 
 	var output CommandOutput
