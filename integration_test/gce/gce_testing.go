@@ -966,10 +966,13 @@ func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM) error {
 
 	backoffPolicy = backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(5*time.Second), 120), ctx) // 10 minutes max.
 	err = backoff.Retry(func() error {
+		// --gpg-auto-import-keys is included to fix a rare flake where (due to
+		// a policy being installed already) there is a new key that needs to
+		// be imported.
 		// timezone-java was selected arbitrarily as a package that:
 		// a) can be installed from the default repos, and
 		// b) isn't installed already.
-		_, zypperErr := RunRemotely(ctx, logger, vm, "", "sudo zypper refresh && sudo zypper -n install timezone-java")
+		_, zypperErr := RunRemotely(ctx, logger, vm, "", "sudo zypper --non-interactive --gpg-auto-import-keys refresh && sudo zypper --non-interactive install timezone-java")
 		return zypperErr
 	}, backoffPolicy)
 	if err != nil {
