@@ -68,33 +68,6 @@ fi
 LOGS_DIR="${KOKORO_ARTIFACTS_DIR}/logs"
 mkdir -p "${LOGS_DIR}"
 
-# Uninstall Kokoro's old version of go.
-sudo rm -rf /usr/local/go
-# Kokoro's value of GOPATH does not work with modern versions of go.
-# GOPATH is semi-deprecated nowadays too.
-unset GOPATH
-
-GO_VERSION="1.19"
-
-# Download and install a newer version of go.
-# Install from a GCS bucket to avoid being throttled by go.dev.
-unset ARCH
-case "$(uname -m)" in
-  "x86_64")
-    ARCH="amd64"
-    ;;
-  "aarch64")
-    ARCH="arm64"
-    ;;
-esac
-gsutil cp "gs://stackdriver-test-143416-go-install/go${GO_VERSION}.linux-${ARCH}.tar.gz" - | \
-  sudo tar --directory /usr/local -xzf /dev/stdin
-
-PATH=$PATH:/usr/local/go/bin
-
-# Install a utility for producing XML test results.
-go install github.com/jstemmer/go-junit-report/v2@latest
-
 if [[ -n "${TEST_SOURCE_PIPER_LOCATION-}" ]]; then
   if [[ -n "${SCRIPTS_DIR-}" ]]; then
     SCRIPTS_DIR="${KOKORO_PIPER_DIR}/${SCRIPTS_DIR}"
@@ -118,7 +91,7 @@ fi
 
 STDERR_STDOUT_FILE="${KOKORO_ARTIFACTS_DIR}/test_stderr_stdout.txt"
 function produce_xml() {
-  cat "${STDERR_STDOUT_FILE}" | "$(go env GOPATH)/bin/go-junit-report" -parser gojson > "${LOGS_DIR}/sponge_log.xml"
+  cat "${STDERR_STDOUT_FILE}" | "$(go env GOPATH)/bin/go-junit-report" > "${LOGS_DIR}/sponge_log.xml"
 }
 # Always run produce_xml on exit, whether the test passes or fails.
 trap produce_xml EXIT
@@ -128,7 +101,6 @@ ulimit -n 1000000
 
 # Set up some command line flags for "go test".
 args=(
-  -json
   -test.parallel=1000
   -tags=integration_test
   -timeout=3h
