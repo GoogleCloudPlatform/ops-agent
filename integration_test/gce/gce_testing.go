@@ -105,15 +105,15 @@ import (
 	cloudlogging "cloud.google.com/go/logging"
 	"cloud.google.com/go/logging/logadmin"
 	monitoring "cloud.google.com/go/monitoring/apiv3"
+	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"cloud.google.com/go/storage"
 	trace "cloud.google.com/go/trace/apiv1"
+	cloudtrace "cloud.google.com/go/trace/apiv1/tracepb"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/google/uuid"
 	"go.uber.org/multierr"
 	"golang.org/x/text/encoding/unicode"
 	"google.golang.org/api/iterator"
-	cloudtrace "google.golang.org/genproto/googleapis/devtools/cloudtrace/v1"
-	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -181,6 +181,8 @@ const (
 	exhaustedRetriesSuffix = "exhausted retries"
 
 	DenyEgressTrafficTag = "test-ops-agent-deny-egress-traffic-tag"
+
+	TraceQueryMaxAttempts = QueryMaxAttempts / traceQueryDerate
 )
 
 func init() {
@@ -425,7 +427,7 @@ func lookupMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string
 }
 
 // lookupTrace does a single lookup of any trace from the given VM in the backend.
-func lookupTrace(ctx context.Context, logger *log.Logger, vm *VM, window time.Duration) *trace.TraceIterator {
+func lookupTrace(ctx context.Context, vm *VM, window time.Duration) *trace.TraceIterator {
 	now := time.Now()
 	start := timestamppb.New(now.Add(-window))
 	end := timestamppb.New(now)
@@ -540,8 +542,8 @@ func WaitForMetricSeries(ctx context.Context, logger *log.Logger, vm *VM, metric
 // including spans, call traceClient.GetTrace with the TraceID returned from
 // this function.
 func WaitForTrace(ctx context.Context, logger *log.Logger, vm *VM, window time.Duration) (*cloudtrace.Trace, error) {
-	for attempt := 1; attempt <= QueryMaxAttempts/traceQueryDerate; attempt++ {
-		it := lookupTrace(ctx, logger, vm, window)
+	for attempt := 1; attempt <= TraceQueryMaxAttempts; attempt++ {
+		it := lookupTrace(ctx, vm, window)
 		trace, err := firstTrace(it)
 		if trace != nil && err == nil {
 			return trace, nil
@@ -550,7 +552,7 @@ func WaitForTrace(ctx context.Context, logger *log.Logger, vm *VM, window time.D
 			return nil, fmt.Errorf("WaitForTrace() failed: %v", err)
 		}
 		logger.Printf("firstTrace check(): empty, retrying (%d/%d)...",
-			attempt, QueryMaxAttempts)
+			attempt, TraceQueryMaxAttempts)
 		time.Sleep(time.Duration(traceQueryDerate) * queryBackoffDuration)
 	}
 	return nil, fmt.Errorf("WaitForTrace() failed: %s", exhaustedRetriesSuffix)
@@ -964,10 +966,13 @@ func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM) error {
 
 	backoffPolicy = backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(5*time.Second), 120), ctx) // 10 minutes max.
 	err = backoff.Retry(func() error {
+		// --gpg-auto-import-keys is included to fix a rare flake where (due to
+		// a policy being installed already) there is a new key that needs to
+		// be imported.
 		// timezone-java was selected arbitrarily as a package that:
 		// a) can be installed from the default repos, and
 		// b) isn't installed already.
-		_, zypperErr := RunRemotely(ctx, logger, vm, "", "sudo zypper refresh && sudo zypper -n install timezone-java")
+		_, zypperErr := RunRemotely(ctx, logger, vm, "", "sudo zypper --non-interactive --gpg-auto-import-keys refresh && sudo zypper --non-interactive install timezone-java")
 		return zypperErr
 	}, backoffPolicy)
 	if err != nil {
@@ -1387,17 +1392,29 @@ func DeleteInstance(logger *log.Logger, vm *VM) error {
 		logger.Printf("VM %v was already deleted, skipping delete.", vm.Name)
 		return nil
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*10)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
-	_, err := RunGcloud(ctx, logger, "",
-		[]string{
-			"compute",
-			"instances",
-			"delete",
-			"--project=" + vm.Project,
-			"--zone=" + vm.Zone,
-			vm.Name,
+	backoffPolicy := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(30*time.Second), 10), ctx)
+	tryDelete := func() error {
+		_, err := RunGcloud(ctx, logger, "",
+			[]string{
+				"compute", "instances", "delete",
+				"--project=" + vm.Project,
+				"--zone=" + vm.Zone,
+				vm.Name,
 		})
+		// GCE sometimes responds with "The service is currently unavailable".
+		// Retry these errors, by returning them directly.
+		if err != nil && strings.Contains(err.Error(), "unavailable") {
+			return err
+		}
+		// Wrap other errors in backoff.Permanent() to avoid retrying those.
+		if err != nil {
+			return backoff.Permanent(err)
+		}	
+		return nil
+	}
+	err := backoff.Retry(tryDelete, backoffPolicy)
 	if err == nil {
 		vm.AlreadyDeleted = true
 	}
@@ -1419,7 +1436,7 @@ func StopInstance(ctx context.Context, logger *log.Logger, vm *VM) error {
 // StartInstance boots a previously-stopped VM instance.
 // Also waits for the instance to be started up.
 func StartInstance(ctx context.Context, logger *log.Logger, vm *VM) error {
-	ctx, cancel := context.WithTimeout(ctx, time.Minute*20)
+	ctx, cancel := context.WithTimeout(ctx, 20*time.Minute)
 	defer cancel()
 
 	var output CommandOutput

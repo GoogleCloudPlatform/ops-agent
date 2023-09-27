@@ -7,7 +7,7 @@ local _zones_for_arch = {
   // The new Cloud NAT gateway must have "Minimum ports per VM instance"
   // set to 512 as per this article:
   // https://cloud.google.com/knowledge/kb/sles-unable-to-fetch-updates-when-behind-cloud-nat-000004450
-  x86_64 = join([
+  amd64 = join([
     'us-central1-a=3',
     'us-central1-b=3',
     'us-central1-c=3',
@@ -19,11 +19,15 @@ local _zones_for_arch = {
 
   // T2A machines are only available on us-central1-{a,b,f}.
   // See warning above about changing regions.
-  arm64 = join([
+  aarch64 = join([
     'us-central1-a',
     'us-central1-b',
     'us-central1-f',
   ], ',')
+
+  // TODO: b/288442211 - Remove this alias once everything is switched over
+  // to using "aarch64".
+  arm64 = aarch64
 }
 
 template config common = {
@@ -32,7 +36,7 @@ template config common = {
     build_file = external
 
     // This is only used for determining the value of ZONES.
-    arch = 'x86_64'
+    arch = 'amd64'
 
     artifacts = []
 
@@ -60,7 +64,7 @@ template config go_test = common {
   params {
     test_suite = external
 
-    build_file = 'unified_agents/kokoro/scripts/test/go_test_for_containers.sh'
+    build_file = 'unified_agents/kokoro/scripts/test/go_test.sh'
 
     environment {
       TEST_SUITE_NAME = test_suite

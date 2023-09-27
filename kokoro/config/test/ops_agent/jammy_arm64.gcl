@@ -3,7 +3,7 @@ import '../image_lists.gcl' as image_lists
 
 config build = common.ops_agent_test {
   params {
-    platforms = image_lists.{{.KokoroCodename}}.presubmit
-{{with .Arch}}    arch = '{{.}}'
-{{end}}  }
+    platforms = image_lists.jammy_arm64.presubmit
+    arch = 'arm64'
+  }
 }
