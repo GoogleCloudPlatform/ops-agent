@@ -33,6 +33,7 @@ platforms_to_skip:
   - ubuntu-2004-lts
   - ubuntu-2004-lts-arm64
   - ubuntu-2204-lts
+  - ubuntu-2204-lts-arm64
   - ubuntu-2304-amd64
   - debian-10
   - debian-11

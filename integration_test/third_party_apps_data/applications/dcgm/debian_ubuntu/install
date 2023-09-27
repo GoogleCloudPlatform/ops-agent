@@ -18,7 +18,7 @@ esac
 echo "Installing NVIDIA driver version $DRIVER_VERSION"
 curl -fSsl -O $BASE_URL/$DRIVER_VERSION/NVIDIA-Linux-x86_64-$DRIVER_VERSION.run
 
-sudo bash ./NVIDIA-Linux-x86_64-$DRIVER_VERSION.run --silent 
+sudo bash ./NVIDIA-Linux-x86_64-$DRIVER_VERSION.run --silent
 
 # check NVIDIA driver installation succeeded
 nvidia-smi
