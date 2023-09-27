@@ -13,7 +13,7 @@ local template _distro {
 }
 
 // DEB Linux distros. (Do not modify this comment.)
-bookworm_amd64 = _distro {
+bookworm_x86_64 = _distro {
   release = [
       'debian-12',
   ]
@@ -21,7 +21,7 @@ bookworm_amd64 = _distro {
       'debian-12',
   ]
 }
-lunar_amd64 = _distro {
+lunar_x86_64 = _distro {
   release = [
       'ubuntu-2304-amd64',
       'ubuntu-minimal-2304-amd64',
@@ -30,11 +30,11 @@ lunar_amd64 = _distro {
       'ubuntu-2304-amd64',
   ]
 }
-buster_amd64 = _distro {
+buster_x86_64 = _distro {
   release = ['debian-10']
   presubmit = ['debian-10']
 }
-bullseye_amd64 = _distro {
+bullseye_x86_64 = _distro {
   release = ['debian-11']
   presubmit = ['debian-11']
 }
@@ -42,7 +42,7 @@ bullseye_arm64 = _distro {
   release = ['debian-11-arm64']
   presubmit = ['debian-11-arm64']
 }
-focal_amd64 = _distro {
+focal_x86_64 = _distro {
   release = [
     'ubuntu-2004-lts',
     'ubuntu-minimal-2004-lts',
@@ -58,7 +58,7 @@ focal_arm64 = _distro {
       'ubuntu-2004-lts-arm64',
   ]
 }
-jammy_amd64 = _distro {
+jammy_x86_64 = _distro {
   release = [
     'ubuntu-2204-lts',
     'ubuntu-minimal-2204-lts',
@@ -66,7 +66,7 @@ jammy_amd64 = _distro {
 }
 
 // RPM Linux distros. (Do not modify this comment.)
-centos7_amd64 = _distro {
+centos7_x86_64 = _distro {
   release = [
     // CentOS.
     'centos-7',
@@ -76,7 +76,7 @@ centos7_amd64 = _distro {
   ]
   presubmit = ['centos-7']
 }
-centos8_amd64 = _distro {
+centos8_x86_64 = _distro {
   release = [
     // RHEL.
     'rhel-8',
@@ -89,7 +89,7 @@ centos8_amd64 = _distro {
   ]
   presubmit = ['rocky-linux-8']
 }
-rockylinux9_amd64 = _distro {
+rockylinux9_x86_64 = _distro {
   release = [
     // RHEL.
     'rhel-9',
@@ -107,14 +107,14 @@ rockylinux9_arm64 = _distro {
   ]
   presubmit = ['rocky-linux-9-arm64']
 }
-sles12_amd64 = _distro {
+sles12_x86_64 = _distro {
   release = [
     'sles-12',
     'sles-12-sp5-sap',
   ]
   presubmit = ['sles-12']
 }
-sles15_amd64 = _distro {
+sles15_x86_64 = _distro {
   release = [
     'sles-15',
     'sles-15-sp1-sap',
@@ -126,7 +126,7 @@ sles15_amd64 = _distro {
 }
 
 // Windows distros.
-windows_amd64 = _distro {
+windows_x86_64 = _distro {
   release = [
     'windows-2012-r2',
     'windows-2012-r2-core',

@@ -3,6 +3,6 @@ import '../image_lists.gcl' as image_lists
 
 config build = common.ops_agent_test {
   params {
-    platforms = image_lists.focal_amd64.presubmit
+    platforms = image_lists.centos7_x86_64.presubmit
   }
 }
