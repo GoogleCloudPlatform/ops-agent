@@ -164,6 +164,30 @@ func generateSelfLogsSamplingComponents(ctx context.Context) []fluentbit.Compone
 	return out
 }
 
+func generateHealthLoggingPingComponent(ctx context.Context) []fluentbit.Component {
+	return []fluentbit.Component{
+		{
+			Kind: "INPUT",
+			Config: map[string]string{
+				"Name":          "exec",
+				"Tag":           healthLogsTag,
+				"Command":       `echo "Ops Agent Logging Pipeline Ping."`,
+				"Interval_Sec":  "60",
+				"Interval_NSec": "0",
+				"Buf_Size":      "8mb",
+			},
+		},
+		{
+			Kind: "FILTER",
+			OrderedConfig: [][2]string{
+				{"Name", "modify"},
+				{"Match", healthLogsTag},
+				{"Rename", "exec message"},
+			},
+		},
+	}
+}
+
 // This method creates a component that enforces the `Structured Health Logs` format to
 // all `ops-agent-health` logs. It sets `agentKind`, `agentVersion` and `schemaVersion`.
 // It also translates `code` to the rich text message from the `selfLogTranslationList`.
@@ -216,6 +240,7 @@ func generateSelfLogsComponents(ctx context.Context, userAgent string) []fluentb
 	out = append(out, generateFluentBitSelfLogsComponents(ctx)...)
 	out = append(out, generateHealthChecksLogsComponents(ctx)...)
 	out = append(out, generateSelfLogsSamplingComponents(ctx)...)
+	out = append(out, generateHealthLoggingPingComponent(ctx)...)
 	out = append(out, generateStructuredHealthLogsComponents(ctx)...)
 	out = append(out, generateSelfLogsProcessingComponents(ctx)...)
 	out = append(out, stackdriverOutputComponent(strings.Join([]string{fluentBitSelfLogsTag, healthLogsTag}, "|"), userAgent, ""))
