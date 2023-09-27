@@ -12,20 +12,20 @@ case $DEVICE_CODE in
         DRIVER_VERSION=460.106.00
         ;;
     *)
-        DRIVER_VERSION=525.105.17
+        DRIVER_VERSION=525.60.13
         ;;
 esac
 echo "Installing NVIDIA driver version $DRIVER_VERSION"
 curl -fSsl -O $BASE_URL/$DRIVER_VERSION/NVIDIA-Linux-x86_64-$DRIVER_VERSION.run
 
-sudo CC=/usr/bin/gcc-12 bash ./NVIDIA-Linux-x86_64-$DRIVER_VERSION.run --silent
+sudo bash ./NVIDIA-Linux-x86_64-$DRIVER_VERSION.run --silent
 
 # check NVIDIA driver installation succeeded
 nvidia-smi
 
 sudo apt-get -y install wget
 
-wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.0-1_all.deb
+wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-keyring_1.0-1_all.deb
 sudo dpkg -i cuda-keyring_1.0-1_all.deb
 
 sudo apt-get update
