@@ -25,6 +25,7 @@ import (
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/googleapis/gax-go/v2/apierror"
 	metricpb "google.golang.org/genproto/googleapis/api/metric"
 	"google.golang.org/genproto/googleapis/api/monitoredres"
@@ -36,7 +37,7 @@ const (
 	ServiceDisabled              = "SERVICE_DISABLED"
 	AccessTokenScopeInsufficient = "ACCESS_TOKEN_SCOPE_INSUFFICIENT"
 	IamPermissionDenied          = "IAM_PERMISSION_DENIED"
-	MaxMonitoringPingRetries     = 2
+	MaxMonitoringPingRetries     = 1
 )
 
 func getGCEMetadata() (resourcedetector.GCEResource, error) {
@@ -48,11 +49,6 @@ func getGCEMetadata() (resourcedetector.GCEResource, error) {
 		return gceMetadata, nil
 	}
 	return resourcedetector.GCEResource{}, fmt.Errorf("not in GCE")
-}
-
-func isInvalidArgumentErr(err error) bool {
-	apiErr, ok := err.(*apierror.APIError)
-	return ok && apiErr.GRPCStatus().Code() == codes.InvalidArgument
 }
 
 func createMonitoringPingRequest(gceMetadata resourcedetector.GCEResource) *monitoringpb.CreateTimeSeriesRequest {
@@ -97,18 +93,13 @@ func createMonitoringPingRequest(gceMetadata resourcedetector.GCEResource) *moni
 // time series point with empty values to an Ops Agent specific metric.
 // This method mirrors the "(c *Client) Ping" method in "cloud.google.com/go/logging".
 func monitoringPing(ctx context.Context, client monitoring.MetricClient, gceMetadata resourcedetector.GCEResource) error {
-	var err error
-	for i := 0; i < MaxMonitoringPingRetries; i++ {
-		err = client.CreateTimeSeries(ctx, createMonitoringPingRequest(gceMetadata))
-		if err == nil || !isInvalidArgumentErr(err) { 
-			break
-		}
-		// This fixes b/291631906 when the monitoringPing is retried very quickly resulting
-		// in an `InvalidArgument` error due a maximum write rate of one point every 5 seconds.
-		// https://cloud.google.com/monitoring/quotas 
-		time.Sleep(6 * time.Second)
-	}
-	return err
+	// Points written to a time series must be at least 5 seconds apart. Because `monitoringPing` might
+	// be called multiple times in quick succession, the first attempted request to `CreateTimeSeries`
+	// may fail. We can retry the request >5 seconds later in such cases.
+	// https://cloud.google.com/monitoring/quotas
+	pingBackoff := backoff.WithMaxRetries(backoff.NewConstantBackOff(6*time.Second), MaxMonitoringPingRetries)
+	pingOperation := func() error { return client.CreateTimeSeries(ctx, createMonitoringPingRequest(gceMetadata)) }
+	return backoff.Retry(pingOperation, pingBackoff)
 }
 
 func runLoggingCheck(logger logs.StructuredLogger) error {
@@ -146,6 +137,8 @@ func runLoggingCheck(logger logs.StructuredLogger) error {
 			case codes.Unauthenticated:
 				return LogApiUnauthenticatedErr
 			case codes.DeadlineExceeded:
+				return LogApiConnErr
+			case codes.Unavailable:
 				return LogApiConnErr
 			}
 		}
@@ -193,6 +186,8 @@ func runMonitoringCheck(logger logs.StructuredLogger) error {
 			case codes.Unauthenticated:
 				return MonApiUnauthenticatedErr
 			case codes.DeadlineExceeded:
+				return MonApiConnErr
+			case codes.Unavailable:
 				return MonApiConnErr
 			}
 		}
