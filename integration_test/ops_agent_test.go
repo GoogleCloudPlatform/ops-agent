@@ -1156,12 +1156,9 @@ func TestExcludeLogsHasOperator(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		line := `{"field":"string containing pattern"}` + "\n"
-		excludedLine := `{"field":"other"}` + "\n"
-		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(line), file1); err != nil {
-			t.Fatalf("error uploading log: %v", err)
-		}
-		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(excludedLine), file1); err != nil {
+		logContents := `{"field":"string containing pattern"}` + "\n"
+		logContents += `{"field":"other"}` + "\n"
+		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(logContents), file1); err != nil {
 			t.Fatalf("error uploading log: %v", err)
 		}
 
