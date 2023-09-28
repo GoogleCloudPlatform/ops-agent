@@ -174,7 +174,7 @@ windows = windows_x86_64
 // TODO: b/288442211: Remove these old aliases once everything is switched over
 // to <distro>_aarch64.
 bullseye_arm64 = bullseye_aarch64
-jammy_arm64 = jammy_aarch64
 focal_arm64 = focal_aarch64
+jammy_arm64 = jammy_aarch64
 rockylinux9_arm64 = rockylinux9_aarch64
 
