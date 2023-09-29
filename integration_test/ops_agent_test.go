@@ -3490,7 +3490,7 @@ func TestLoggingSelfLogs(t *testing.T) {
 			t.Error(err)
 		}
 
-		query := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		query := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, query); err != nil {
 			t.Error(err)
 		}
@@ -4113,7 +4113,7 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "FAIL", "OtelMetricsPortErr")
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "FAIL", "MonApiScopeErr")
 
-		query := fmt.Sprintf(`severity="ERROR" AND jsonPayload.code="MonApiScopeErr" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		query := fmt.Sprintf(`severity="ERROR" AND jsonPayload.code="MonApiScopeErr" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, query); err != nil {
 			t.Error(err)
 		}
@@ -4211,7 +4211,7 @@ func TestParsingFailureCheck(t *testing.T) {
 			t.Fatalf("error writing dummy log line: %v", err)
 		}
 
-		query := fmt.Sprintf(`severity="ERROR" AND jsonPayload.code="LogParseErr" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		query := fmt.Sprintf(`severity="ERROR" AND jsonPayload.code="LogParseErr" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, query); err != nil {
 			t.Error(err)
 		}
