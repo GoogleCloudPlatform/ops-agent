@@ -1,7 +1,5 @@
 #!/usr/bin/make -f
 
-include /usr/share/dpkg/pkg-info.mk
-code_version=$(shell echo $(DEB_VERSION) | sed -n -e 's/~.*//p')
 #include /usr/share/cdbs/1/rules/debhelper.mk
 %:
 	dh $@
@@ -14,7 +12,7 @@ override_dh_auto_test:
 override_dh_strip_nondeterminism:
 	dh_strip_nondeterminism -X.jar
 override_dh_auto_install:
-	CODE_VERSION=$(code_version) BUILD_DISTRO=$(DEB_DISTRIBUTION) DESTDIR=$$PWD/debian/google-cloud-ops-agent ./build.sh
+	BUILD_DISTRO=$(DEB_DISTRIBUTION) DESTDIR=$$PWD/debian/google-cloud-ops-agent ./build.sh
 
 override_dh_installsystemd:
 	dh_installsystemd google-cloud-ops-agent.service

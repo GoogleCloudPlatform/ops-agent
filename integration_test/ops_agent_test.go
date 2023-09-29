@@ -61,6 +61,7 @@ import (
 	"time"
 
 	cloudlogging "cloud.google.com/go/logging"
+	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
@@ -73,7 +74,6 @@ import (
 	"golang.org/x/exp/slices"
 	"google.golang.org/genproto/googleapis/api/distribution"
 	"google.golang.org/genproto/googleapis/api/metric"
-	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	"google.golang.org/protobuf/proto"
 	structpb "google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v2"
@@ -1121,61 +1121,87 @@ func TestSyslogUDP(t *testing.T) {
 	})
 }
 
-func TestExcludeLogsHasOperator(t *testing.T) {
+func TestExcludeLogs(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 		file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
+		file2 := fmt.Sprintf("%s_2", logPathForPlatform(vm.Platform))
 
+		// p1: validate the contains operator
+		// p2: validate that a rule which doesn't exclude a log but still matches
+		//     an individual regex pattern cleans up the temporary __match fields
 		config := fmt.Sprintf(`logging:
   receivers:
     f1:
       type: files
       include_paths:
       - %s
+    f2:
+      type: files
+      include_paths:
+      - %s
   processors:
-    exclude:
+    exclude1:
       type: exclude_logs
       match_any:
-      - "jsonPayload.field:pattern"
+      - 'jsonPayload.field: "pattern"'
+    exclude2:
+      type: exclude_logs
+      match_any:
+      - 'jsonPayload.field1 = "first" AND jsonPayload.field2 =~ "second"'
     json:
       type: parse_json
-  exporters:
-    google:
-      type: google_cloud_logging
   service:
     pipelines:
       p1:
         receivers: [f1]
-        processors: [json, exclude]
-        exporters: [google]
-`, file1)
+        processors: [json, exclude1]
+      p2:
+        receivers: [f2]
+        processors: [json, exclude2]
+`, file1, file2)
 
 		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
 			t.Fatal(err)
 		}
 
-		line := `{"field":"string containing pattern"}` + "\n"
-		excludedLine := `{"field":"other"}` + "\n"
-		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(line), file1); err != nil {
-			t.Fatalf("error uploading log: %v", err)
-		}
-		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(excludedLine), file1); err != nil {
+		logContents1 := `{"field":"string containing pattern"}` + "\n"
+		logContents1 += `{"field":"other"}` + "\n"
+		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(logContents1), file1); err != nil {
 			t.Fatalf("error uploading log: %v", err)
 		}
 
-		// Expect to see the log that doesn't have pattern in it.
+		logContents2 := `{"field1":"nope, include me!", "field2":"second"}` + "\n"
+		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(logContents2), file2); err != nil {
+			t.Fatalf("error uploading log: %v", err)
+		}
+
+		// p1: Expect to see the log that doesn't have pattern in it.
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour, `jsonPayload.field:"other"`); err != nil {
 			t.Error(err)
 		}
-		// Give the excluded log some time to show up.
+		// p1: Give the excluded log some time to show up.
 		time.Sleep(60 * time.Second)
 		_, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour, `jsonPayload.field:"pattern"`, 5)
 		if err == nil {
 			t.Error("expected log to be excluded but was included")
 		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
 			t.Fatalf("unexpected error: %v", err)
+		}
+
+		// p2: Expect to see the log.
+		resultingLog2, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, "f2", time.Hour, `jsonPayload.field1:*`, gce.QueryMaxAttempts)
+		if err != nil {
+			t.Error(err)
+		}
+		// p2: Verify that there are no vestigial __match_ fields.
+		payload := resultingLog2.Payload.(*structpb.Struct)
+		for k := range payload.GetFields() {
+			if strings.HasPrefix(k, "__match_") {
+				t.Errorf("unexpected vestigial field: %s", k)
+			}
 		}
 	})
 }
@@ -3464,7 +3490,7 @@ func TestLoggingSelfLogs(t *testing.T) {
 			t.Error(err)
 		}
 
-		query := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		query := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, query); err != nil {
 			t.Error(err)
 		}
@@ -4089,7 +4115,7 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "FAIL", "OtelMetricsPortErr")
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "FAIL", "MonApiScopeErr")
 
-		query := fmt.Sprintf(`severity="ERROR" AND jsonPayload.code="MonApiScopeErr" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		query := fmt.Sprintf(`severity="ERROR" AND jsonPayload.code="MonApiScopeErr" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, query); err != nil {
 			t.Error(err)
 		}
@@ -4187,7 +4213,7 @@ func TestParsingFailureCheck(t *testing.T) {
 			t.Fatalf("error writing dummy log line: %v", err)
 		}
 
-		query := fmt.Sprintf(`severity="ERROR" AND jsonPayload.code="LogParseErr" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		query := fmt.Sprintf(`severity="ERROR" AND jsonPayload.code="LogParseErr" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, query); err != nil {
 			t.Error(err)
 		}

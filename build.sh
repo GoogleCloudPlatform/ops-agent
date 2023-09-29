@@ -24,12 +24,9 @@ if [ -z "$BUILD_DISTRO" ]; then
   release_version="$(lsb_release -rs)" #e.g. 9.13 for debian, 8.3.2011 for centos
   BUILD_DISTRO=$(lsb_release -is | tr '[:upper:]' '[:lower:]')${release_version%%.}
 fi
-if [ -z "$CODE_VERSION" ]; then
-  CODE_VERSION=${PKG_VERSION}
-fi
 BUILD_INFO_IMPORT_PATH="github.com/GoogleCloudPlatform/ops-agent/internal/version"
 BUILD_X1="-X ${BUILD_INFO_IMPORT_PATH}.BuildDistro=${BUILD_DISTRO}"
-BUILD_X2="-X ${BUILD_INFO_IMPORT_PATH}.Version=${CODE_VERSION}"
+BUILD_X2="-X ${BUILD_INFO_IMPORT_PATH}.Version=${PKG_VERSION}"
 LD_FLAGS="${BUILD_X1} ${BUILD_X2}"
 set -x -e
 
