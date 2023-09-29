@@ -356,7 +356,7 @@ function process(tag, timestamp, record)
   if match then
     return -1, 0, 0
   end
-  return 0, 0, 0
+  return 2, 0, record
 end`, lua))...)
 	return components
 }

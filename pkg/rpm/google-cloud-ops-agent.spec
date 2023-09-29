@@ -38,7 +38,7 @@ The Google Cloud Ops Agent collects metrics and logs from the system.
 %install
 cd %{_sourcedir}
 build_distro=%{dist}
-CODE_VERSION=%{version} BUILD_DISTRO=${build_distro#.} DESTDIR="%{buildroot}" ./build.sh
+BUILD_DISTRO=${build_distro#.} DESTDIR="%{buildroot}" ./build.sh
 
 %files
 %config %{_confdir}/config.yaml
