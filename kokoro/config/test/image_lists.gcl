@@ -13,7 +13,7 @@ local template _distro {
 }
 
 // DEB Linux distros. (Do not modify this comment.)
-bookworm = _distro {
+bookworm_x86_64 = _distro {
   release = [
       'debian-12',
   ]
@@ -21,7 +21,7 @@ bookworm = _distro {
       'debian-12',
   ]
 }
-lunar = _distro {
+lunar_x86_64 = _distro {
   release = [
       'ubuntu-2304-amd64',
       'ubuntu-minimal-2304-amd64',
@@ -30,26 +30,26 @@ lunar = _distro {
       'ubuntu-2304-amd64',
   ]
 }
-buster = _distro {
+buster_x86_64 = _distro {
   release = ['debian-10']
   presubmit = ['debian-10']
 }
-bullseye = _distro {
+bullseye_x86_64 = _distro {
   release = ['debian-11']
   presubmit = ['debian-11']
 }
-bullseye_arm64 = _distro {
+bullseye_aarch64 = _distro {
   release = ['debian-11-arm64']
   presubmit = ['debian-11-arm64']
 }
-focal = _distro {
+focal_x86_64 = _distro {
   release = [
     'ubuntu-2004-lts',
     'ubuntu-minimal-2004-lts',
   ]
   presubmit = ['ubuntu-minimal-2004-lts']
 }
-focal_arm64 = _distro {
+focal_aarch64 = _distro {
   release = [
       'ubuntu-2004-lts-arm64',
       'ubuntu-minimal-2004-lts-arm64',
@@ -58,26 +58,37 @@ focal_arm64 = _distro {
       'ubuntu-2004-lts-arm64',
   ]
 }
-jammy = _distro {
+jammy_x86_64 = _distro {
   release = [
     'ubuntu-2204-lts',
     'ubuntu-minimal-2204-lts',
   ]
+  presubmit = [
+      'ubuntu-minimal-2204-lts',
+  ]
+}
+jammy_aarch64 = _distro {
+  release = [
+    'ubuntu-2204-lts-arm64',
+    'ubuntu-minimal-2204-lts-arm64',
+  ]
+  presubmit = [
+      'ubuntu-minimal-2204-lts-arm64',
+  ]
 }
 
 // RPM Linux distros. (Do not modify this comment.)
-centos7 = _distro {
+centos7_x86_64 = _distro {
   release = [
     // CentOS.
     'centos-7',
     // RHEL.
     'rhel-7',
-    'rhel-7-7-sap-ha',
     'rhel-7-9-sap-ha',
   ]
   presubmit = ['centos-7']
 }
-centos8 = _distro {
+centos8_x86_64 = _distro {
   release = [
     // RHEL.
     'rhel-8',
@@ -90,7 +101,7 @@ centos8 = _distro {
   ]
   presubmit = ['rocky-linux-8']
 }
-rockylinux9 = _distro {
+rockylinux9_x86_64 = _distro {
   release = [
     // RHEL.
     'rhel-9',
@@ -99,7 +110,7 @@ rockylinux9 = _distro {
   ]
   presubmit = ['rocky-linux-9']
 }
-rockylinux9_arm64 = _distro {
+rockylinux9_aarch64 = _distro {
   release = [
     // RHEL.
     'rhel-9-arm64',
@@ -108,14 +119,14 @@ rockylinux9_arm64 = _distro {
   ]
   presubmit = ['rocky-linux-9-arm64']
 }
-sles12 = _distro {
+sles12_x86_64 = _distro {
   release = [
     'sles-12',
     'sles-12-sp5-sap',
   ]
   presubmit = ['sles-12']
 }
-sles15 = _distro {
+sles15_x86_64 = _distro {
   release = [
     'sles-15',
     'sles-15-sp1-sap',
@@ -127,7 +138,7 @@ sles15 = _distro {
 }
 
 // Windows distros.
-windows = _distro {
+windows_x86_64 = _distro {
   release = [
     'windows-2012-r2',
     'windows-2012-r2-core',
@@ -144,3 +155,26 @@ windows = _distro {
     'windows-2019',
   ]
 }
+
+// TODO: b/288442211 - Remove the following aliases that lack an $arch suffix.
+bookworm = bookworm_x86_64
+lunar = lunar_x86_64
+buster = buster_x86_64
+bullseye = bullseye_x86_64
+focal = focal_x86_64
+jammy = jammy_x86_64
+
+centos7 = centos7_x86_64
+centos8 = centos8_x86_64
+rockylinux9 = rockylinux9_x86_64
+sles12 = sles12_x86_64
+sles15 = sles15_x86_64
+windows = windows_x86_64
+
+// TODO: b/288442211: Remove these old aliases once everything is switched over
+// to <distro>_aarch64.
+bullseye_arm64 = bullseye_aarch64
+focal_arm64 = focal_aarch64
+jammy_arm64 = jammy_aarch64
+rockylinux9_arm64 = rockylinux9_aarch64
+

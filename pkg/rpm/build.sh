@@ -20,7 +20,7 @@ set -ex
 
 # Build .rpms
 rpmbuild --define "_source_filedigest_algorithm md5" \
-  --define "package_version $PKG_VERSION" \
+  --define "package_version ${PKG_VERSION//[^a-zA-Z0-9.]/.}" \
   --define "_sourcedir $(pwd)" \
   --define "_rpmdir $(pwd)" \
   -ba pkg/rpm/google-cloud-ops-agent.spec

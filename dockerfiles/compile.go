@@ -181,9 +181,10 @@ var dockerfileArguments = []templateArguments{
 		// TODO: Add ARM support to agent-vendor.repo.
 		install_packages: `RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip
 		# Add agent-vendor.repo to install >3.4 bison
-		RUN echo $'[google-cloud-monitoring-sles15-vendor] \n\
-		name=google-cloud-monitoring-sles15-vendor \n\
-		baseurl=https://packages.cloud.google.com/yum/repos/google-cloud-monitoring-sles15-$basearch-test-20221109-1 \n\
+		# See http://go/sdi/releases/build-test-release/vendored
+		RUN echo $'[ops-agent-build-vendor] \n\
+		name=ops-agent-build-vendor \n\
+		baseurl=https://us-yum.pkg.dev/projects/cloud-ops-agents-artifacts-dev/ops-agent-build-vendor-sles15-x86-64 \n\
 		enabled         = 1 \n\
 		autorefresh     = 0 \n\
 		repo_gpgcheck   = 0 \n\
@@ -256,7 +257,6 @@ func getDockerfile() (string, error) {
 	}
 	components = append(components, getDockerfileFooter())
 	return strings.Join(components, "\n\n"), nil
-
 }
 
 func main() {
@@ -268,5 +268,4 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
 }

@@ -1,29 +1,48 @@
 import '../utils/functions.gcl' as functions
 
+local _zones_for_arch = {
+  // Note: if we ever need to change regions, we will need to set up a new
+  // Cloud Router and Cloud NAT gateway for that region. This is because
+  // we use --no-address on Kokoro, because of b/169084857.
+  // The new Cloud NAT gateway must have "Minimum ports per VM instance"
+  // set to 512 as per this article:
+  // https://cloud.google.com/knowledge/kb/sles-unable-to-fetch-updates-when-behind-cloud-nat-000004450
+  amd64 = join([
+    'us-central1-a=3',
+    'us-central1-b=3',
+    'us-central1-c=3',
+    'us-central1-f=3',
+    'us-east1-b=2',
+    'us-east1-c=2',
+    'us-east1-d=2',
+  ], ',')
+
+  // T2A machines are only available on us-central1-{a,b,f}.
+  // See warning above about changing regions.
+  aarch64 = join([
+    'us-central1-a',
+    'us-central1-b',
+    'us-central1-f',
+  ], ',')
+
+  // TODO: b/288442211 - Remove this alias once everything is switched over
+  // to using "aarch64".
+  arm64 = aarch64
+}
+
 template config common = {
   params = {
     platforms = external
     build_file = external
 
+    // This is only used for determining the value of ZONES.
+    arch = 'amd64'
+
     artifacts = []
 
     environment = {
       PROJECT = 'stackdriver-test-143416'
-      // Note: if we ever need to change regions, we will need to set up a new
-      // Cloud Router and Cloud NAT gateway for that region. This is because
-      // we use --no-address on Kokoro, because of b/169084857.
-      // The new Cloud NAT gateway must have "Minimum ports per VM instance"
-      // set to 512 as per this article:
-      // https://cloud.google.com/knowledge/kb/sles-unable-to-fetch-updates-when-behind-cloud-nat-000004450
-      ZONES = join([
-        'us-central1-a=3',
-        'us-central1-b=3',
-        'us-central1-c=3',
-        'us-central1-f=3',
-        'us-east1-b=2',
-        'us-east1-c=2',
-        'us-east1-d=2',
-      ], ',')
+      ZONES = _zones_for_arch.get(arch, 'invalid_zone')
 
       PLATFORMS = join(platforms, ',')
     }
@@ -45,7 +64,7 @@ template config go_test = common {
   params {
     test_suite = external
 
-    build_file = 'unified_agents/kokoro/scripts/test/go_test_for_containers.sh'
+    build_file = 'unified_agents/kokoro/scripts/test/go_test.sh'
 
     environment {
       TEST_SUITE_NAME = test_suite

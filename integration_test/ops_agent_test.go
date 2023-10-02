@@ -52,6 +52,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -60,6 +61,7 @@ import (
 	"time"
 
 	cloudlogging "cloud.google.com/go/logging"
+	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
@@ -72,7 +74,6 @@ import (
 	"golang.org/x/exp/slices"
 	"google.golang.org/genproto/googleapis/api/distribution"
 	"google.golang.org/genproto/googleapis/api/metric"
-	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	"google.golang.org/protobuf/proto"
 	structpb "google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v2"
@@ -1120,61 +1121,87 @@ func TestSyslogUDP(t *testing.T) {
 	})
 }
 
-func TestExcludeLogsHasOperator(t *testing.T) {
+func TestExcludeLogs(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 		file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
+		file2 := fmt.Sprintf("%s_2", logPathForPlatform(vm.Platform))
 
+		// p1: validate the contains operator
+		// p2: validate that a rule which doesn't exclude a log but still matches
+		//     an individual regex pattern cleans up the temporary __match fields
 		config := fmt.Sprintf(`logging:
   receivers:
     f1:
       type: files
       include_paths:
       - %s
+    f2:
+      type: files
+      include_paths:
+      - %s
   processors:
-    exclude:
+    exclude1:
       type: exclude_logs
       match_any:
-      - "jsonPayload.field:pattern"
+      - 'jsonPayload.field: "pattern"'
+    exclude2:
+      type: exclude_logs
+      match_any:
+      - 'jsonPayload.field1 = "first" AND jsonPayload.field2 =~ "second"'
     json:
       type: parse_json
-  exporters:
-    google:
-      type: google_cloud_logging
   service:
     pipelines:
       p1:
         receivers: [f1]
-        processors: [json, exclude]
-        exporters: [google]
-`, file1)
+        processors: [json, exclude1]
+      p2:
+        receivers: [f2]
+        processors: [json, exclude2]
+`, file1, file2)
 
 		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
 			t.Fatal(err)
 		}
 
-		line := `{"field":"string containing pattern"}` + "\n"
-		excludedLine := `{"field":"other"}` + "\n"
-		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(line), file1); err != nil {
-			t.Fatalf("error uploading log: %v", err)
-		}
-		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(excludedLine), file1); err != nil {
+		logContents1 := `{"field":"string containing pattern"}` + "\n"
+		logContents1 += `{"field":"other"}` + "\n"
+		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(logContents1), file1); err != nil {
 			t.Fatalf("error uploading log: %v", err)
 		}
 
-		// Expect to see the log that doesn't have pattern in it.
+		logContents2 := `{"field1":"nope, include me!", "field2":"second"}` + "\n"
+		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(logContents2), file2); err != nil {
+			t.Fatalf("error uploading log: %v", err)
+		}
+
+		// p1: Expect to see the log that doesn't have pattern in it.
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour, `jsonPayload.field:"other"`); err != nil {
 			t.Error(err)
 		}
-		// Give the excluded log some time to show up.
+		// p1: Give the excluded log some time to show up.
 		time.Sleep(60 * time.Second)
 		_, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour, `jsonPayload.field:"pattern"`, 5)
 		if err == nil {
 			t.Error("expected log to be excluded but was included")
 		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
 			t.Fatalf("unexpected error: %v", err)
+		}
+
+		// p2: Expect to see the log.
+		resultingLog2, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, "f2", time.Hour, `jsonPayload.field1:*`, gce.QueryMaxAttempts)
+		if err != nil {
+			t.Error(err)
+		}
+		// p2: Verify that there are no vestigial __match_ fields.
+		payload := resultingLog2.Payload.(*structpb.Struct)
+		for k := range payload.GetFields() {
+			if strings.HasPrefix(k, "__match_") {
+				t.Errorf("unexpected vestigial field: %s", k)
+			}
 		}
 	})
 }
@@ -1488,14 +1515,92 @@ func TestLogFilePathLabel(t *testing.T) {
 	})
 }
 
+// startFluentBitBackgroundPipe starts a background fluent-bit process that tails a file (whose
+// path is returned by this function) and pipes its contents to an output configured via outputConfig.
+// An example outputConfig would be "-o tcp://127.0.0.1:5170".
+// Use parseInputAsJSON for structured input.
+func startFluentBitBackgroundPipe(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, platform string, parseInputAsJSON bool, outputConfig string) (string, error) {
+	dir := workDirForPlatform(platform)
+	if err := makeDirectory(ctx, logger, vm, dir); err != nil {
+		return "", err
+	}
+	remoteFile := filepath.Join(dir, "pipe.log")
+	parserFile := filepath.Join(dir, "parser.conf")
+	parserConfig := `[PARSER]
+	Name json
+	Format json`
+
+	fluentBitArgs := "-i tail" +
+		" -p buffer_chunk_size=512k" +
+		" -p buffer_max_size=512k" +
+		" -p path=" + remoteFile
+	if parseInputAsJSON {
+		fluentBitArgs += " -p parser=json" +
+			" -R " + parserFile
+	}
+	fluentBitArgs += " " + outputConfig
+
+	// Create the pipe file, create the parser file, and start fluent-bit in the background.
+	// The parser needs to be stored to a file because fluent-bit doesn't support configuring
+	// parsers on the command line.
+	command := fmt.Sprintf(`
+		sudo touch %s
+		sudo tee %s > /dev/null <<EOF
+%s
+EOF
+		sudo nohup /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit %s 1>/dev/null 2>/dev/null &`,
+		remoteFile,
+		parserFile,
+		parserConfig,
+		// Escape record accessor dollar-signs
+		strings.ReplaceAll(fluentBitArgs, "$", `\$`))
+	if gce.IsWindows(platform) {
+		command = fmt.Sprintf(`
+			New-Item %s
+			"%s" | Out-File -Encoding Ascii %s
+			Invoke-WmiMethod -Class Win32_Process -Name Create -ArgumentList 'C:\Program Files\Google\Cloud Operations\Ops Agent\bin\fluent-bit.exe %s'`,
+			remoteFile,
+			parserConfig,
+			parserFile,
+			fluentBitArgs)
+	}
+
+	if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", command); err != nil {
+		return "", err
+	}
+	return remoteFile, nil
+}
+
+// writeLinesToRemoteFile writes lines of text to a remote file.
+// Lines each have an implicit terminating newline character.
+// Lines are allowed to be huge.
+func writeLinesToRemoteFile(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, platform string, remoteFile string, lines ...string) error {
+	for _, line := range lines {
+		line += "\n"
+
+		// Use a temp-file as a buffer to allow for long lines.
+		tempPath := filepath.Join(workDirForPlatform(platform), "pipe_temp.log")
+		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(line), tempPath); err != nil {
+			return err
+		}
+
+		// Append the temp-file to the remote file.
+		appendCommand := fmt.Sprintf(`sudo cat %s | sudo tee -a %s > /dev/null`, tempPath, remoteFile)
+		if gce.IsWindows(platform) {
+			appendCommand = fmt.Sprintf(`Get-Content %s | Out-File -Encoding Ascii -Append %s`, tempPath, remoteFile)
+		}
+
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", appendCommand); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func TestTCPLog(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
-		if gce.IsWindows(platform) {
-			// TODO: Delete when b/285865631 is fixed.
-			t.SkipNow()
-		}
 
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
@@ -1515,50 +1620,45 @@ func TestTCPLog(t *testing.T) {
 		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
 			t.Fatal(err)
 		}
-		command := `echo '{"msg":"test tcp log 1"}{"msg":"test tcp log 2"}' | /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit -i stdin -o tcp://127.0.0.1:5170 -p format=json_lines && echo '{"msg":"test tcp log 3"}{"msg":"test tcp log 4"}' | /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit -i stdin -o tcp://127.0.0.1:5170 -p format=json_lines`
-		// Installing Netcat or equivalent tools on Windows is tricky so we can instead
-		// use this Powershell Script that can send TCP messages.
-		if gce.IsWindows(platform) {
-			command = `$ErrorActionPreference = 'Stop'
-			function Send-TcpString {
-			  param(
-			    [string]$TargetIP,
-			    [int]$TargetPort,
-			    [string]$Message
-			  )
-			  $Socket = New-Object System.Net.Sockets.TCPClient($TargetIP, $TargetPort) 
-			  $Stream = $Socket.GetStream() 
-			  $Writer = New-Object System.IO.StreamWriter($Stream)
-			  $Message | % {
-			    $Writer.WriteLine($_)
-			    $Writer.Flush()
-			  }
-			  $Stream.Close()
-			  $Socket.Close()
-			}
-			Send-TcpString 127.0.0.1 5170 '{"msg":"test tcp log 1"}{"msg":"test tcp log 2"}'
-			Send-TcpString 127.0.0.1 5170 '{"msg":"test tcp log 3"}{"msg":"test tcp log 4"}'`
+
+		// Start a background fluent-bit that outputs to TCP.
+		// The TCP receiver in the Ops Agent already parses to JSON,
+		// so don't double-parse it in the background fluent-bit.
+		pipePath, err := startFluentBitBackgroundPipe(ctx, logger, vm, platform, false, "-o tcp://127.0.0.1:5170 -p raw_message_key=$log")
+		if err != nil {
+			t.Fatalf("Error starting fluent-bit background pipe: %v", err)
 		}
 
-		// Write JSON test log to TCP socket via bash redirect, to get around installing and using netcat.
-		// https://www.gnu.org/savannah-checkouts/gnu/bash/manual/bash.html#Redirections
+		linesToWrite := []string{
+			// Verify that separate JSON messages are partitioned appropriately,
+			// regardless of where the newlines appear between messages.
+			`{"msg":"test tcp log 1"}{"msg":"test tcp log 2"}`,
+			`{"msg":"test tcp log 3"}{"msg":"test tcp log 4"}`,
 
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", command); err != nil {
-			t.Fatalf("Error writing dummy TCP log line: %v", err)
+			// Verify a large log that's reasonably close to the limit of 256 KB.
+			// Use "start" and "end" for querying later because the max query size
+			// is only 20 KB.
+			fmt.Sprintf(`{"large":"start%send"}`, strings.Repeat("a", 250_000)),
+		}
+		if err = writeLinesToRemoteFile(ctx, logger, vm, platform, pipePath, linesToWrite...); err != nil {
+			t.Fatalf("Error writing dummy TCP log lines: %v", err)
 		}
 
 		var waitGroup sync.WaitGroup
-		for i := 1; i <= 4; i++ {
-			i := i
+		addQueryToWaitGroup := func(query string) {
 			waitGroup.Add(1)
 			go func() {
 				defer waitGroup.Done()
-				if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "tcp_logs", time.Hour, fmt.Sprintf("jsonPayload.msg:test tcp log %d", i)); err != nil {
+				if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "tcp_logs", time.Hour, query); err != nil {
 					t.Error(err)
 				}
 			}()
-
 		}
+		addQueryToWaitGroup(`jsonPayload.msg="test tcp log 1"`)
+		addQueryToWaitGroup(`jsonPayload.msg="test tcp log 2"`)
+		addQueryToWaitGroup(`jsonPayload.msg="test tcp log 3"`)
+		addQueryToWaitGroup(`jsonPayload.msg="test tcp log 4"`)
+		addQueryToWaitGroup(`jsonPayload.large:"start" AND jsonPayload.large:"end"`)
 		waitGroup.Wait()
 	})
 }
@@ -1585,23 +1685,21 @@ func TestFluentForwardLog(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		// Use another instance of Fluent Bit to read from stdin and  forward to the
-		// Ops Agent.
-		//
-		// The forwarding Fluent Bit uses the tag "forwarder_tag" when sending the
-		// log record. This will be preserved in the LogName.
-
-		command := "echo '{\"rand_value\":\"test fluent forward log\"}' | /opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit -i stdin -o forward://127.0.0.1:24224 -t forwarder_tag"
-
-		if gce.IsWindows(platform) {
-			command = `Invoke-WmiMethod -Class Win32_Process -Name Create -ArgumentList "C:\Program Files\Google\Cloud Operations\Ops Agent\bin\fluent-bit.exe -i random -o forward://127.0.0.1:24224 -t forwarder_tag"`
+		// Start a background fluent-forward pipe. We want to verify that
+		// the log structure is preserved, so enable JSON parsing.
+		var pipePath string
+		var err error
+		if pipePath, err = startFluentBitBackgroundPipe(ctx, logger, vm, platform, true, "-o forward://127.0.0.1:24224 -t forwarder_tag"); err != nil {
+			t.Fatalf("Error starting fluent-bit background pipe: %v", err)
 		}
 
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", command); err != nil {
-			t.Fatalf("Error writing dummy forward protocol log line %v", err)
+		// Verify a large structured log that's reasonably close to the limit of 256 KB.
+		largeLog := fmt.Sprintf(`{"large":"start%send"}`, strings.Repeat("a", 250_000))
+		if err = writeLinesToRemoteFile(ctx, logger, vm, platform, pipePath, largeLog); err != nil {
+			t.Fatalf("Error writing dummy TCP log line: %v", err)
 		}
 
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "fluent_logs.forwarder_tag", time.Hour, "jsonPayload.rand_value:*"); err != nil {
+		if err = gce.WaitForLog(ctx, logger.ToMainLog(), vm, "fluent_logs.forwarder_tag", time.Hour, `jsonPayload.large:"start" AND jsonPayload.large:"end"`); err != nil {
 			t.Error(err)
 		}
 	})
@@ -2204,7 +2302,6 @@ func TestPrometheusMetrics(t *testing.T) {
   receivers:
     prometheus:
       type: prometheus
-      scrape_untyped_metrics_as: gauge
       config:
         scrape_configs:
           - job_name: 'prometheus'
@@ -2364,12 +2461,6 @@ func TestPrometheusMetrics(t *testing.T) {
 				Key:     "[0].config.[0].scrape_configs.static_config_target_groups",
 				Value:   "1",
 			},
-			{
-				Module:  "metrics",
-				Feature: "receivers:prometheus",
-				Key:     "[0].config.scrape_untyped_metrics_as",
-				Value:   "gauge",
-			},
 		}
 
 		series, err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", time.Hour, nil, false, len(expectedFeatures))
@@ -2507,9 +2598,11 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 			// the cumulative counter metric will return 0 as no change in values
 			{"prometheus.googleapis.com/test_counter_value/counter", nil,
 				metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 0.0},
-			// Untyped type - GCM will have untyped metrics as gauge type
-			{"prometheus.googleapis.com/test_untyped_value/gauge", nil,
+			// Untyped type - GCM will have untyped metrics double written as a gauge AND a cumulative
+			{"prometheus.googleapis.com/test_untyped_value/unknown", nil,
 				metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 56.0},
+			{"prometheus.googleapis.com/test_untyped_value/unknown:counter", nil,
+				metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 0.0},
 		}
 
 		var multiErr error
@@ -2527,7 +2620,6 @@ func TestPrometheusRelabelConfigs(t *testing.T) {
   receivers:
     prom_app:
       type: prometheus
-      scrape_untyped_metrics_as: untyped
       config:
         scrape_configs:
         - job_name: test
@@ -2577,7 +2669,6 @@ func TestPrometheusUntypedMetrics(t *testing.T) {
   receivers:
     prom_app:
       type: prometheus
-      scrape_untyped_metrics_as: untyped
       config:
         scrape_configs:
         - job_name: test
@@ -2639,7 +2730,6 @@ func TestPrometheusUntypedMetricsReset(t *testing.T) {
   receivers:
     prom_app:
       type: prometheus
-      scrape_untyped_metrics_as: untyped
       config:
         scrape_configs:
         - job_name: test
@@ -3400,7 +3490,7 @@ func TestLoggingSelfLogs(t *testing.T) {
 			t.Error(err)
 		}
 
-		query := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		query := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, query); err != nil {
 			t.Error(err)
 		}
@@ -4023,7 +4113,7 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "FAIL", "OtelMetricsPortErr")
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "FAIL", "MonApiScopeErr")
 
-		query := fmt.Sprintf(`severity="ERROR" AND jsonPayload.code="MonApiScopeErr" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		query := fmt.Sprintf(`severity="ERROR" AND jsonPayload.code="MonApiScopeErr" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, query); err != nil {
 			t.Error(err)
 		}
@@ -4121,7 +4211,7 @@ func TestParsingFailureCheck(t *testing.T) {
 			t.Fatalf("error writing dummy log line: %v", err)
 		}
 
-		query := fmt.Sprintf(`severity="ERROR" AND jsonPayload.code="LogParseErr" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		query := fmt.Sprintf(`severity="ERROR" AND jsonPayload.code="LogParseErr" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, query); err != nil {
 			t.Error(err)
 		}
@@ -4254,7 +4344,7 @@ func TestRestartVM(t *testing.T) {
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
 
-		if err := gce.RestartInstance(ctx, logger, vm); err != nil {
+		if err := gce.RestartInstance(ctx, logger.ToFile("VM_restart.txt"), vm); err != nil {
 			t.Fatal(err)
 		}
 

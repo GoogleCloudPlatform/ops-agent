@@ -704,7 +704,6 @@ func TestPrometheusFeatureMetrics(t *testing.T) {
 				},
 			},
 		},
-		ScrapeUntypedMetricsAs: "untyped",
 	}
 	uc.Metrics = &confgenerator.Metrics{
 		Receivers: receivers,
@@ -787,13 +786,6 @@ func TestPrometheusFeatureMetrics(t *testing.T) {
 			Value:  test.val,
 		})
 	}
-	expected = append(expected, confgenerator.Feature{
-		Module: "metrics",
-		Kind:   "receivers",
-		Type:   "prometheus",
-		Key:    []string{"[0]", "config", "scrape_untyped_metrics_as"},
-		Value:  "untyped",
-	})
 
 	if !cmp.Equal(features, expected) {
 		t.Errorf("Expected %d features but got %d\n\n", len(expected), len(features))

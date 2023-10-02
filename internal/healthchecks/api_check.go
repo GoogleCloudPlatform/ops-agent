@@ -25,6 +25,7 @@ import (
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/googleapis/gax-go/v2/apierror"
 	metricpb "google.golang.org/genproto/googleapis/api/metric"
 	"google.golang.org/genproto/googleapis/api/monitoredres"
@@ -36,6 +37,7 @@ const (
 	ServiceDisabled              = "SERVICE_DISABLED"
 	AccessTokenScopeInsufficient = "ACCESS_TOKEN_SCOPE_INSUFFICIENT"
 	IamPermissionDenied          = "IAM_PERMISSION_DENIED"
+	MaxMonitoringPingRetries     = 1
 )
 
 func getGCEMetadata() (resourcedetector.GCEResource, error) {
@@ -49,11 +51,7 @@ func getGCEMetadata() (resourcedetector.GCEResource, error) {
 	return resourcedetector.GCEResource{}, fmt.Errorf("not in GCE")
 }
 
-// monitoringPing reports whether the client's connection to the monitoring service and the
-// authentication configuration are valid. To accomplish this, monitoringPing writes a
-// time series point with empty values to an Ops Agent specific metric.
-// This method mirrors the "(c *Client) Ping" method in "cloud.google.com/go/logging".
-func monitoringPing(ctx context.Context, client monitoring.MetricClient, gceMetadata resourcedetector.GCEResource) error {
+func createMonitoringPingRequest(gceMetadata resourcedetector.GCEResource) *monitoringpb.CreateTimeSeriesRequest {
 	metricType := "agent.googleapis.com/agent/ops_agent/enabled_receivers"
 	now := &timestamppb.Timestamp{
 		Seconds: time.Now().Unix(),
@@ -87,8 +85,21 @@ func monitoringPing(ctx context.Context, client monitoring.MetricClient, gceMeta
 			}},
 		}},
 	}
+	return req
+}
 
-	return client.CreateTimeSeries(ctx, req)
+// monitoringPing reports whether the client's connection to the monitoring service and the
+// authentication configuration are valid. To accomplish this, monitoringPing writes a
+// time series point with empty values to an Ops Agent specific metric.
+// This method mirrors the "(c *Client) Ping" method in "cloud.google.com/go/logging".
+func monitoringPing(ctx context.Context, client monitoring.MetricClient, gceMetadata resourcedetector.GCEResource) error {
+	// Points written to a time series must be at least 5 seconds apart. Because `monitoringPing` might
+	// be called multiple times in quick succession, the first attempted request to `CreateTimeSeries`
+	// may fail. We can retry the request >5 seconds later in such cases.
+	// https://cloud.google.com/monitoring/quotas
+	pingBackoff := backoff.WithMaxRetries(backoff.NewConstantBackOff(6*time.Second), MaxMonitoringPingRetries)
+	pingOperation := func() error { return client.CreateTimeSeries(ctx, createMonitoringPingRequest(gceMetadata)) }
+	return backoff.Retry(pingOperation, pingBackoff)
 }
 
 func runLoggingCheck(logger logs.StructuredLogger) error {
@@ -126,6 +137,8 @@ func runLoggingCheck(logger logs.StructuredLogger) error {
 			case codes.Unauthenticated:
 				return LogApiUnauthenticatedErr
 			case codes.DeadlineExceeded:
+				return LogApiConnErr
+			case codes.Unavailable:
 				return LogApiConnErr
 			}
 		}
@@ -173,6 +186,8 @@ func runMonitoringCheck(logger logs.StructuredLogger) error {
 			case codes.Unauthenticated:
 				return MonApiUnauthenticatedErr
 			case codes.DeadlineExceeded:
+				return MonApiConnErr
+			case codes.Unavailable:
 				return MonApiConnErr
 			}
 		}
