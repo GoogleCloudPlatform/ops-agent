@@ -808,6 +808,7 @@ type test struct {
 var defaultPlatforms = map[string]bool{
 	"debian-10":    true,
 	"windows-2019": true,
+	"sles-15":      true, // !!!TEMPORARY - REVERT!!!
 }
 
 var defaultApps = map[string]bool{
