@@ -136,6 +136,13 @@ sles15_x86_64 = _distro {
   ]
   presubmit = ['sles-15']
 }
+sles15_aarch64 = _distro {
+  release = [
+    'sles-15-arm64',
+    'opensuse-leap-arm64',
+  ]
+  presubmit = ['sles-15-arm64']
+}
 
 // Windows distros.
 windows_x86_64 = _distro {
