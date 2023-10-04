@@ -805,12 +805,11 @@ COPY --from=sles12-build /google-cloud-ops-agent*.rpm /
 FROM opensuse/leap:15.1 AS sles15-build-base
 ARG OPENJDK_MAJOR_VERSION
 
-RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip
-		RUN set -x; zypper -n --gpg-auto-import-keys refresh && \
+RUN set -x; zypper -n refresh && \
 			zypper -n update && \
-			zypper -n install bison>3.4 && \
-			# Allow fluent-bit to find systemd
-			ln -fs /usr/lib/systemd /lib/systemd
+			zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip bison>3.4
+# Allow fluent-bit to find systemd
+RUN ln -fs /usr/lib/systemd /lib/systemd
 COPY --from=openjdk-install /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/ /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk
 ENV JAVA_HOME /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/
 COPY --from=cmake-install-recent /cmake.sh /cmake.sh
