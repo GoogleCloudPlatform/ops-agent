@@ -806,17 +806,7 @@ FROM opensuse/leap:15.1 AS sles15-build-base
 ARG OPENJDK_MAJOR_VERSION
 
 RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip
-		# Add agent-vendor.repo to install >3.4 bison
-		# See http://go/sdi/releases/build-test-release/vendored
-		RUN echo $'[ops-agent-build-vendor] \n\
-		name=ops-agent-build-vendor \n\
-		baseurl=https://us-yum.pkg.dev/projects/cloud-ops-agents-artifacts-dev/ops-agent-build-vendor-sles15-x86-64 \n\
-		enabled         = 1 \n\
-		autorefresh     = 0 \n\
-		repo_gpgcheck   = 0 \n\
-		gpgcheck        = 0' > agent-vendor.repo
-		RUN set -x; zypper addrepo agent-vendor.repo && \
-			zypper -n --gpg-auto-import-keys refresh && \
+		RUN set -x; zypper -n --gpg-auto-import-keys refresh && \
 			zypper -n update && \
 			zypper -n install bison>3.4 && \
 			# Allow fluent-bit to find systemd
