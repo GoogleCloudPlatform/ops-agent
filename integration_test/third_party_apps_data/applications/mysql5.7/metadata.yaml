@@ -35,6 +35,7 @@ supported_operating_systems: linux
 platforms_to_skip:
   # MySQL5.7 is not supported on SLES 15, Rocky Linux 8, Rocky Linux 9, Ubuntu 20.04, Ubuntu 23.04, Debian 11, or Debian 12
   - sles-15
+  - sles-15-arm64
   - rocky-linux-8
   - rocky-linux-9
   - rocky-linux-9-arm64

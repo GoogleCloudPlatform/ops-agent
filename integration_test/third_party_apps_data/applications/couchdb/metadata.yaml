@@ -31,6 +31,7 @@ platforms_to_skip:
   # couchdb is not supported on sles, rhel9, Ubuntu 23.04, and Debian 12
   - sles-12
   - sles-15
+  - sles-15-arm64
   - rocky-linux-9
   - rocky-linux-9-arm64
   - ubuntu-2304-amd64

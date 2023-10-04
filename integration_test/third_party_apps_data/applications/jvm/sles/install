@@ -12,7 +12,11 @@ if [[ "${ID}" == opensuse-leap && "${VERSION_ID}" == 15.[01] ]]; then
 fi
 sudo zypper -n refresh
 
-sudo zypper -n install java-1_8_0-openjdk java-1_8_0-openjdk-devel
+if [[ "$(uname -m)" == aarch64 ]]; then
+  sudo zypper -n install java-11-openjdk java-11-openjdk-devel
+else
+  sudo zypper -n install java-1_8_0-openjdk java-1_8_0-openjdk-devel
+fi
 
 # TODO(sophieyfang): Below file is the same across all distros.
 # Have a single source file to be copied across all distros.
