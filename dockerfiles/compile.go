@@ -178,23 +178,11 @@ var dockerfileArguments = []templateArguments{
 	{
 		from_image:  "opensuse/leap:15.1",
 		target_name: "sles15",
-		// TODO: Add ARM support to agent-vendor.repo.
-		install_packages: `RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip
-		# Add agent-vendor.repo to install >3.4 bison
-		# See http://go/sdi/releases/build-test-release/vendored
-		RUN echo $'[ops-agent-build-vendor] \n\
-		name=ops-agent-build-vendor \n\
-		baseurl=https://us-yum.pkg.dev/projects/cloud-ops-agents-artifacts-dev/ops-agent-build-vendor-sles15-x86-64 \n\
-		enabled         = 1 \n\
-		autorefresh     = 0 \n\
-		repo_gpgcheck   = 0 \n\
-		gpgcheck        = 0' > agent-vendor.repo
-		RUN set -x; zypper addrepo agent-vendor.repo && \
-			zypper -n --gpg-auto-import-keys refresh && \
-			zypper -n update && \
-			zypper -n install bison>3.4 && \
-			# Allow fluent-bit to find systemd
-			ln -fs /usr/lib/systemd /lib/systemd` + installJava + installCMake,
+		install_packages: `RUN set -x; zypper -n refresh && \
+		zypper -n update && \
+		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip bison>3.4
+# Allow fluent-bit to find systemd
+RUN ln -fs /usr/lib/systemd /lib/systemd` + installJava + installCMake,
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "sles-15",
 		package_extension: "rpm",
