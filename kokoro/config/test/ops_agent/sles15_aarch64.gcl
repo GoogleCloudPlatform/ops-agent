@@ -3,7 +3,7 @@ import '../image_lists.gcl' as image_lists
 
 config build = common.ops_agent_test {
   params {
-    platforms = image_lists.focal_arm64.presubmit
-    arch = 'arm64'
+    platforms = image_lists.sles15_aarch64.presubmit
+    arch = 'aarch64'
   }
 }

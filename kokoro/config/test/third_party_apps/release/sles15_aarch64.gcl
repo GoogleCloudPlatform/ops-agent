@@ -2,9 +2,7 @@ import 'common.gcl' as common
 
 config build = common.third_party_apps_test {
   params {
-    platforms = [
-      'ubuntu-2004-lts-arm64',
-    ]
-    arch = 'arm64'
+    platforms = ['sles-15-arm64']
+    arch = 'aarch64'
   }
 }
