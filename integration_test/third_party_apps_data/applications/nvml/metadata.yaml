@@ -35,6 +35,7 @@ platforms_to_skip:
   - rocky-linux-9-arm64
   - sles-12
   - sles-15
+  - sles-15-arm64
   - ubuntu-2004-lts-arm64
   - ubuntu-2204-lts
   - ubuntu-2204-lts-arm64

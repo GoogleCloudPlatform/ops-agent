@@ -30,9 +30,10 @@ minimum_supported_agent_version:
   logging: 2.9.0
 supported_operating_systems: linux
 platforms_to_skip:
-  # postgres is not supported on rhel9
+  # postgres is not supported on various distros.
   - rocky-linux-9
   - rocky-linux-9-arm64
+  - sles-15-arm64
 supported_app_version: ["10.18+"]
 expected_metrics:
   - kind: GAUGE
