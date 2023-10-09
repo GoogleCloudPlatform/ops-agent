@@ -2,11 +2,7 @@ import 'common.gcl' as common
 
 config build = common.third_party_apps_test {
   params {
-    # platforms = ['debian-11-arm64']
-    platforms = ['sles-15-arm64'] # !!!TEMPORARY - REVERT!!!
-    environment {                 # !!!TEMPORARY - REVERT!!!
-      SHORT = 'false'             # !!!TEMPORARY - REVERT!!!
-    }                             # !!!TEMPORARY - REVERT!!!
+    platforms = ['debian-11-arm64']
     arch = 'aarch64'
   }
 }

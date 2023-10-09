@@ -5,10 +5,12 @@ sudo ln -s /usr/bin/python3 /usr/bin/python
 
 if [[ "$(uname -m)" == aarch64 ]]; then
     # 6.2 is the first version with ARM64 support
-    curl -L -o aerospike.tar.gz https://github.com/aerospike/aerospike-server/releases/download/6.2.0.8/aerospike-server-community-6.2.0.8.tar.gz
+    AEROSPIKE_VERSION=6.2.0.8
 else
-    curl -L -o aerospike.tar.gz https://github.com/aerospike/aerospike-server/releases/download/5.7.0.23/aerospike-server-community-5.7.0.23.tar.gz
+    AEROSPIKE_VERSION=5.7.0.23
 fi
+
+curl -L -o aerospike.tar.gz https://github.com/aerospike/aerospike-server/releases/download/${AEROSPIKE_VERSION}/aerospike-server-community-${AEROSPIKE_VERSION}.tar.gz
 tar -xzf aerospike.tar.gz
 cd aerospike-server
 ./bin/aerospike init

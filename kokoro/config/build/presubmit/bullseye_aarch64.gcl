@@ -3,10 +3,8 @@ import '../common.gcl' as common
 config build = common.build {
   params {
     environment {
-      DISTRO = 'sles15' # !!!TEMPORARY - REVERT!!!
-      PKGFORMAT = 'rpm' # !!!TEMPORARY - REVERT!!!
-      # DISTRO = 'bullseye'
-      # PKGFORMAT = 'deb'
+      DISTRO = 'bullseye'
+      PKGFORMAT = 'deb'
     }
   }
 }
