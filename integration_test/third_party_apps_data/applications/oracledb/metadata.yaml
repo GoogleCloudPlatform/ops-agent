@@ -60,6 +60,7 @@ platforms_to_skip:
   - ubuntu-2304-amd64
   - sles-12
   - sles-15
+  - sles-15-arm64
   - rocky-linux-9
   - rocky-linux-9-arm64
 supported_app_version: ["12.2", "18c", "19c", "21c"]
