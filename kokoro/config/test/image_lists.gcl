@@ -162,19 +162,3 @@ windows_x86_64 = _distro {
     'windows-2019',
   ]
 }
-
-// TODO: b/288442211 - Remove the following aliases that lack an $arch suffix.
-bookworm = bookworm_x86_64
-lunar = lunar_x86_64
-buster = buster_x86_64
-bullseye = bullseye_x86_64
-focal = focal_x86_64
-jammy = jammy_x86_64
-
-centos7 = centos7_x86_64
-centos8 = centos8_x86_64
-rockylinux9 = rockylinux9_x86_64
-sles12 = sles12_x86_64
-sles15 = sles15_x86_64
-windows = windows_x86_64
-

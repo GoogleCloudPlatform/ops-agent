@@ -1,9 +1,0 @@
-import 'common.gcl' as common
-import '../image_lists.gcl' as image_lists
-
-config build = common.ops_agent_test {
-  params {
-    // "centos8.presubmit" resolves to "rocky-linux-8".
-    platforms = image_lists.centos8.presubmit
-  }
-}
