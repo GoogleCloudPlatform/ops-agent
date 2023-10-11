@@ -147,8 +147,6 @@ sles15_aarch64 = _distro {
 // Windows distros.
 windows_x86_64 = _distro {
   release = [
-    'windows-2012-r2',
-    'windows-2012-r2-core',
     'windows-2016',
     'windows-2016-core',
     'windows-2019',
@@ -157,7 +155,7 @@ windows_x86_64 = _distro {
     'windows-2022-core',
   ]
   presubmit = [
-    'windows-2012-r2',
+    'windows-2016-core',
     // TODO(martijnvs): Switch this to windows-20h2-core.
     'windows-2019',
   ]
