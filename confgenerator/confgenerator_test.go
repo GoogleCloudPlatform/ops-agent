@@ -91,22 +91,7 @@ var (
 			defaultStateDir: `C:\ProgramData\Google\Cloud Operations\Ops Agent\run`,
 			platform: platform.Platform{
 				Type:               platform.Windows,
-				WindowsBuildNumber: "1", // Is2012 == false, Is2016 == false
-				WinlogV1Channels:   winlogv1channels,
-				HostInfo: &host.InfoStat{
-					OS:              "windows",
-					Platform:        "win_platform",
-					PlatformVersion: "win_platform_version",
-				},
-			},
-		},
-		{
-			name:            "windows-2012",
-			defaultLogsDir:  `C:\ProgramData\Google\Cloud Operations\Ops Agent\log`,
-			defaultStateDir: `C:\ProgramData\Google\Cloud Operations\Ops Agent\run`,
-			platform: platform.Platform{
-				Type:               platform.Windows,
-				WindowsBuildNumber: "9200", // Windows Server 2012
+				WindowsBuildNumber: "1", // Is2016 == false
 				WinlogV1Channels:   winlogv1channels,
 				HostInfo: &host.InfoStat{
 					OS:              "windows",

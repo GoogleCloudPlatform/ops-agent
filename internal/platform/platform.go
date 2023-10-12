@@ -38,12 +38,8 @@ const (
 	All = Linux | Windows
 )
 
-func (p Platform) Is2012() bool {
-	// https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions#Server_versions
-	return p.WindowsBuildNumber == "9200" || p.WindowsBuildNumber == "9600"
-}
-
 func (p Platform) Is2016() bool {
+	// https://en.wikipedia.org/wiki/List_of_Microsoft_Windows_versions#Server_versions
 	return p.WindowsBuildNumber == "14393"
 }
 
