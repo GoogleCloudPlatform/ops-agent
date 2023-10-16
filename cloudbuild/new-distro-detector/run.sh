@@ -29,7 +29,7 @@ function strip_irrelevant_families() {
 # project.  Don't worry, it will still include images from debian-cloud,
 # suse-cloud, etc.
 # sort --unique removes duplicates that appear in the list for some reason.
-gcloud compute images list --sort-by=FAMILY --format='value(FAMILY)' --standard-images --project=windows-cloud \
+gcloud compute images list --sort-by=FAMILY --format='value(FAMILY)' --standard-images --preview-images --project=windows-cloud \
   | sort --unique \
   | strip_irrelevant_families \
   | tee current_families.txt
