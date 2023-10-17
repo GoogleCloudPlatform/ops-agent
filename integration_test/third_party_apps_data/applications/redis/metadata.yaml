@@ -32,6 +32,7 @@ platforms_to_skip:
   - centos-7 # QueryLog() failed: redis not found, exhausted retries
   - sles-12 # File '/repositories/server:/monitoring/SLE_12/server:monitoring.repo' not found
   - sles-15 # File '/repositories/server:database/SLE_15/server:database.repo' not found
+  - sles-15-arm64
 supported_app_version: ["6.2"]
 expected_metrics:
   - type: workload.googleapis.com/redis.clients.blocked

@@ -9,7 +9,7 @@ DEVICE_CODE=$(lspci -n | grep -Po '10de:[\w\d]{4}')
 case $DEVICE_CODE in
     10de:102d)
         # Install a specific version for NVIDIA Tesla K80
-        DRIVER_VERSION=460.106.00
+        DRIVER_VERSION=470.82.01
         ;;
     *)
         DRIVER_VERSION=525.60.13

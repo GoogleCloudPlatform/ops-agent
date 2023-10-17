@@ -3,6 +3,6 @@ import '../image_lists.gcl' as image_lists
 
 config build = common.ops_agent_test {
   params {
-    platforms = image_lists.buster.presubmit
+    platforms = image_lists.jammy_x86_64.presubmit
   }
 }

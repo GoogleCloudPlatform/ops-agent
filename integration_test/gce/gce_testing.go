@@ -36,7 +36,7 @@ AGENT_PACKAGES_IN_GCS, for details see README.md.
 
 	PROJECT=dev_project \
 	ZONES=us-central1-b \
-	PLATFORMS=debian-10,centos-8,rhel-8-1-sap-ha,sles-15,ubuntu-2004-lts,windows-2012-r2,windows-2019 \
+	PLATFORMS=debian-10,centos-8,rhel-8-1-sap-ha,sles-15,ubuntu-2004-lts,windows-2016,windows-2019 \
 	go test -v ops_agent_test.go \
 	  -test.parallel=1000 \
 	  -tags=integration_test \

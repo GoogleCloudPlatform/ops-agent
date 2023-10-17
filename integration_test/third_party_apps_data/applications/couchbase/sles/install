@@ -1,11 +1,17 @@
 set -e 
 
-sudo zypper install -y curl bzip2 net-tools libncurses5
 
-curl -L "https://packages.couchbase.com/releases/7.0.0/couchbase-server-community-7.0.0-suse12.x86_64.rpm"  -o couchbase.rpm
-
+if [[ "$(uname -m)" == aarch64 ]]; then
+  sudo zypper install -y curl bzip2 net-tools
+  curl -L "https://packages.couchbase.com/releases/7.2.2/couchbase-server-community-7.2.2-linux.aarch64.rpm"  -o couchbase.rpm
+else
+  sudo zypper install -y curl bzip2 net-tools libncurses5
+  curl -L "https://packages.couchbase.com/releases/7.0.0/couchbase-server-community-7.0.0-suse12.x86_64.rpm"  -o couchbase.rpm
+fi
+echo "installing"
 sudo rpm -i ./couchbase.rpm
 
+echo "installing done"
 timeout 60s bash <<EOF
 wait_for_couchbase() {
     until curl localhost:8091 > /dev/null 2>&1

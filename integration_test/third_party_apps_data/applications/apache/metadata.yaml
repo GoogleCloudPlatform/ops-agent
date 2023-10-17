@@ -64,6 +64,7 @@ expected_metrics:
       - centos-7
       - sles-12
       - sles-15
+      - sles-15-arm64
   - type: workload.googleapis.com/apache.requests
     value_type: INT64
     kind: CUMULATIVE
@@ -173,6 +174,7 @@ expected_logs:
           - centos-7
           - sles-12
           - sles-15
+          - sles-15-arm64
       - name: severity
         type: string
         description: ''
