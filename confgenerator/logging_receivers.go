@@ -24,6 +24,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit/modify"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
@@ -157,6 +158,48 @@ func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) [
 	})
 
 	return c
+}
+
+func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) []otel.ReceiverPipeline {
+	operators := []map[string]any{}
+	receiver_config := map[string]any{
+		"include":           r.IncludePaths,
+		"exclude":           r.ExcludePaths,
+		"start_at":          "beginning",
+		"include_file_name": false,
+	}
+	if i := r.WildcardRefreshInterval; i != nil {
+		receiver_config["poll_interval"] = i.String()
+	}
+	// TODO: Configure `storage` to store file checkpoints
+	// TODO: Configure multiline rules
+	// TODO: Support BufferInMemory
+	// OTel parses the log to `body` by default; put it in a `message` field to match fluent-bit's behavior.
+	operators = append(operators, map[string]any{
+		"id":   "body",
+		"type": "move",
+		"from": "body",
+		"to":   "body.message",
+	})
+	if r.RecordLogFilePath != nil && *r.RecordLogFilePath {
+		receiver_config["include_file_name"] = true
+		operators = append(operators, map[string]any{
+			"id":   "record_log_file_path",
+			"type": "move",
+			"from": "body.log.file.name",
+			"to":   `body["agent.googleapis.com/log_file_path"]`,
+		})
+	}
+	receiver_config["operators"] = operators
+	return []otel.ReceiverPipeline{{
+		Receiver: otel.Component{
+			Type:   "filelog",
+			Config: receiver_config,
+		},
+		ExporterTypes: map[string]otel.ExporterType{
+			"logs": otel.OTel,
+		},
+	}}
 }
 
 func init() {
