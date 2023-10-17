@@ -756,9 +756,13 @@ func (m *combinedReceiverMap) UnmarshalYAML(ctx context.Context, unmarshal func(
 	return CombinedReceiverTypes.unmarshalToMap(ctx, m, unmarshal)
 }
 
-type MetricsProcessor interface {
+type OTelProcessor interface {
 	Component
 	Processors() []otel.Component
+}
+
+type MetricsProcessor interface {
+	OTelProcessor
 }
 
 var MetricsProcessorTypes = &componentTypeRegistry[MetricsProcessor, metricsProcessorMap]{
@@ -876,8 +880,10 @@ func (uc *UnifiedConfig) ValidateCombined() error {
 
 func (uc *UnifiedConfig) MetricsReceivers() (map[string]MetricsReceiver, error) {
 	validReceivers := map[string]MetricsReceiver{}
-	for k, v := range uc.Metrics.Receivers {
-		validReceivers[k] = v
+	if uc.Metrics != nil {
+		for k, v := range uc.Metrics.Receivers {
+			validReceivers[k] = v
+		}
 	}
 	if uc.Combined != nil {
 		for k, v := range uc.Combined.Receivers {
@@ -897,6 +903,28 @@ func (uc *UnifiedConfig) TracesReceivers() (map[string]TracesReceiver, error) {
 	if uc.Combined != nil {
 		for k, v := range uc.Combined.Receivers {
 			if _, ok := v.(TracesReceiver); ok {
+				validReceivers[k] = v
+			}
+		}
+	}
+	return validReceivers, nil
+}
+
+func (uc *UnifiedConfig) OTelLoggingReceivers() (map[string]OTelReceiver, error) {
+	validReceivers := map[string]OTelReceiver{}
+	if uc.Logging != nil {
+		for k, v := range uc.Logging.Receivers {
+			if v, ok := v.(OTelReceiver); ok {
+				validReceivers[k] = v
+			}
+		}
+	}
+	if uc.Combined != nil {
+		for k, v := range uc.Combined.Receivers {
+			if _, ok := uc.Logging.Receivers[k]; ok {
+				return nil, fmt.Errorf("logging receiver %q has the same name as combined receiver %q", k, k)
+			}
+			if v, ok := v.(OTelReceiver); ok {
 				validReceivers[k] = v
 			}
 		}

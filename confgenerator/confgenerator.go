@@ -91,16 +91,9 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context) (string, error)
 	metricVersionLabel, _ := p.VersionLabel("google-cloud-ops-agent-metrics")
 	loggingVersionLabel, _ := p.VersionLabel("google-cloud-ops-agent-logging")
 
-	receiverPipelines := make(map[string]otel.ReceiverPipeline)
-	pipelines := make(map[string]otel.Pipeline)
-	var err error
-
-	if uc.Metrics != nil {
-		var err error
-		receiverPipelines, pipelines, err = uc.generateOtelPipelines(ctx)
-		if err != nil {
-			return "", err
-		}
+	receiverPipelines, pipelines, err := uc.generateOtelPipelines(ctx)
+	if err != nil {
+		return "", err
 	}
 
 	receiverPipelines["otel"] = AgentSelfMetrics{
@@ -143,6 +136,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context) (string, error)
 // generateOtelPipelines generates a map of OTel pipeline names to OTel pipelines.
 func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]otel.ReceiverPipeline, map[string]otel.Pipeline, error) {
 	m := uc.Metrics
+	l := uc.Logging
 	outR := make(map[string]otel.ReceiverPipeline)
 	outP := make(map[string]otel.Pipeline)
 	addReceiver := func(pipelineType, pID, rID string, receiver OTelReceiver, processorIDs []string) error {
@@ -173,8 +167,18 @@ func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]
 				}
 			}
 			for _, pID := range processorIDs {
-				// TODO: Change when we support trace processors.
-				processor, ok := m.Processors[pID]
+				var processor OTelProcessor
+				var ok bool
+				if pipelineType == "metrics" {
+					processor, ok = m.Processors[pID]
+				} else if pipelineType == "logs" {
+					var p LoggingProcessor
+					p, ok = l.Processors[pID]
+					if ok {
+						processor, ok = p.(OTelProcessor)
+					}
+				}
+				// TODO: Add trace processors?
 				if !ok {
 					return fmt.Errorf("processor %q not found", pID)
 				}
@@ -214,6 +218,23 @@ func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]
 					return nil, nil, fmt.Errorf("traces receiver %q not found", rID)
 				}
 				if err := addReceiver("traces", pID, rID, receiver, p.ProcessorIDs); err != nil {
+					return nil, nil, err
+				}
+			}
+		}
+	}
+	if l != nil && l.Service != nil && l.Service.OTelLogging {
+		receivers, err := uc.OTelLoggingReceivers()
+		if err != nil {
+			return nil, nil, err
+		}
+		for pID, p := range l.Service.Pipelines {
+			for _, rID := range p.ReceiverIDs {
+				receiver, ok := receivers[rID]
+				if !ok {
+					return nil, nil, fmt.Errorf("logging receiver %q not found", rID)
+				}
+				if err := addReceiver("logs", pID, rID, receiver, p.ProcessorIDs); err != nil {
 					return nil, nil, err
 				}
 			}
