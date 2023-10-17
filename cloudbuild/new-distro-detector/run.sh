@@ -42,7 +42,15 @@ gsutil -q cp "${LAST_KNOWN_LIST}" - \
 # If there is a difference, print the diff, and...
 if ! diff known_families.txt current_families.txt; then
   # Print instructions for handling the error.
-  echo 'See go/sdi-new-distro-detector#handling-errors for instructions on handling this error.'
+  # Set +x temporarily so that the banner is only printed once.
+  set +x
+  echo '
+    ####################################################
+    #  See go/sdi-new-distro-detector#handling-errors  #
+    #  for instructions on handling this error.        #
+    ####################################################
+  '
+  set -x
   # Upload the current list to the GCS bucket so that the next run passes.
   gsutil -q cp current_families.txt "${LAST_KNOWN_LIST}"
   # Report an error, which will result in a bug being filed.
