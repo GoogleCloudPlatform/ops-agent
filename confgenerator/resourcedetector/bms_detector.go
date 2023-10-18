@@ -62,6 +62,21 @@ func (r BMSResource) MonitoredResource() *monitoredres.MonitoredResource {
 	}
 }
 
+func (r BMSResource) PrometheusStyleMetadata() map[string]string {
+	metaLabels := map[string]string{
+		"__meta_bms_instance_id": r.InstanceID,
+		"__meta_bms_project":     r.Project,
+		"__meta_bms_location":    r.Location,
+	}
+	// Set the location, namespace and cluster labels.
+	metaLabels["location"] = r.Location
+	metaLabels["namespace"] = r.InstanceID
+	metaLabels["cluster"] = "__bms__"
+	// Set some curated labels.
+	metaLabels["instance_name"] = r.InstanceID
+	return metaLabels
+}
+
 func OnBMS() bool {
 	return os.Getenv(bmsProjectIDEnv) != "" && os.Getenv(bmsLocationEnv) != "" && os.Getenv(bmsInstanceIDEnv) != ""
 }
