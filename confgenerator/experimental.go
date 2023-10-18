@@ -85,5 +85,5 @@ func componentValidator(ctx context.Context, sl validator.StructLevel) {
 }
 
 func experimentalValidationErrorString(ve validationError) string {
-	return fmt.Sprintf("Component of type %q cannot be used with the current version of the Ops Agent", ve.Param())
+	return fmt.Sprintf("Experimental feature %q cannot be used with the current version of the Ops Agent", ve.Param())
 }

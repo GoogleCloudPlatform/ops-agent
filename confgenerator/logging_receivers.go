@@ -49,13 +49,21 @@ func (r LoggingReceiverFiles) Type() string {
 	return "files"
 }
 
-func (r LoggingReceiverFiles) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (r LoggingReceiverFiles) mixin() LoggingReceiverFilesMixin {
 	return LoggingReceiverFilesMixin{
 		IncludePaths:            r.IncludePaths,
 		ExcludePaths:            r.ExcludePaths,
 		WildcardRefreshInterval: r.WildcardRefreshInterval,
 		RecordLogFilePath:       r.RecordLogFilePath,
-	}.Components(ctx, tag)
+	}
+}
+
+func (r LoggingReceiverFiles) Components(ctx context.Context, tag string) []fluentbit.Component {
+	return r.mixin().Components(ctx, tag)
+}
+
+func (r LoggingReceiverFiles) Pipelines(ctx context.Context) []otel.ReceiverPipeline {
+	return r.mixin().Pipelines(ctx)
 }
 
 type LoggingReceiverFilesMixin struct {
@@ -195,6 +203,9 @@ func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) []otel.Receive
 		Receiver: otel.Component{
 			Type:   "filelog",
 			Config: receiver_config,
+		},
+		Processors: map[string][]otel.Component{
+			"logs": nil,
 		},
 		ExporterTypes: map[string]otel.ExporterType{
 			"logs": otel.OTel,

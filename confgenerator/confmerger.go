@@ -17,6 +17,7 @@ package confgenerator
 
 import (
 	"context"
+	"log"
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
@@ -47,8 +48,8 @@ func MergeConfFiles(ctx context.Context, userConfPath string, builtInConfStructs
 
 	// Ensure the merged config struct fields are valid.
 	v := newValidator()
-	if err := v.Struct(result); err != nil {
-		panic(err)
+	if err := v.StructCtx(ctx, result); err != nil {
+		log.Fatalf("merged config failed to validate: %v", err)
 	}
 	return result, nil
 }
@@ -86,6 +87,7 @@ func mergeConfigs(original, overrides *UnifiedConfig) {
 			if overrides.Logging.Service.LogLevel != "info" {
 				original.Logging.Service.LogLevel = overrides.Logging.Service.LogLevel
 			}
+			original.Logging.Service.OTelLogging = overrides.Logging.Service.OTelLogging
 			for name, pipeline := range overrides.Logging.Service.Pipelines {
 				// skips logging.service.pipelines.*.exporters
 				pipeline.ExporterIDs = nil
