@@ -179,6 +179,12 @@ func getTestsInDir(t *testing.T, testDir string) []string {
 func generateConfigs(pc platformConfig, testDir string) (got map[string]string, err error) {
 	ctx := pc.platform.TestContext(context.Background())
 
+	if features, err := os.ReadFile(filepath.Join("testdata", testDir, "EXPERIMENTAL_FEATURES")); err == nil {
+		ctx = confgenerator.ContextWithExperiments(ctx, confgenerator.ParseExperimentalFeatures(string(features)))
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return nil, err
+	}
+
 	got = make(map[string]string)
 	defer func() {
 		if err != nil {
@@ -328,7 +334,4 @@ func init() {
 
 	// Set up the test environment with mocked data.
 	confgenerator.MetadataResource = testResource
-
-	// Enable experimental features here by calling:
-	//	 os.Setenv("EXPERIMENTAL_FEATURES", "...(comma-separated feature list)...")
 }
