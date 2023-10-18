@@ -15,6 +15,7 @@
 package confgenerator
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -35,30 +36,49 @@ import (
 // intentionally left empty.
 var requiredFeatureForType = map[string]string{}
 
-func IsExperimentalFeatureEnabled(feature string) bool {
-	enabledList := strings.Split(os.Getenv("EXPERIMENTAL_FEATURES"), ",")
-	for _, e := range enabledList {
-		if e == feature {
-			return true
-		}
+var enabledExperimentalFeatures map[string]bool
+
+func ParseExperimentalFeatures(features string) map[string]bool {
+	out := map[string]bool{}
+	for _, f := range strings.Split(features, ",") {
+		out[f] = true
 	}
-	return false
+	return out
+}
+
+func init() {
+	enabledExperimentalFeatures = ParseExperimentalFeatures(os.Getenv("EXPERIMENTAL_FEATURES"))
+}
+
+type experimentsKeyType struct{}
+
+var experimentsKey = experimentsKeyType{}
+
+func ContextWithExperiments(ctx context.Context, experiments map[string]bool) context.Context {
+	return context.WithValue(ctx, experimentsKey, experiments)
+}
+
+func experimentsFromContext(ctx context.Context) map[string]bool {
+	if features := ctx.Value(experimentsKey); features != nil {
+		return features.(map[string]bool)
+	}
+	return enabledExperimentalFeatures
 }
 
 func registerExperimentalValidations(v *validator.Validate) {
-	v.RegisterValidation("experimental", func(fl validator.FieldLevel) bool {
-		return fl.Field().IsZero() || IsExperimentalFeatureEnabled(fl.Param())
+	v.RegisterValidationCtx("experimental", func(ctx context.Context, fl validator.FieldLevel) bool {
+		return fl.Field().IsZero() || experimentsFromContext(ctx)[fl.Param()]
 	})
-	v.RegisterStructValidation(componentValidator, ConfigComponent{})
+	v.RegisterStructValidationCtx(componentValidator, ConfigComponent{})
 }
 
-func componentValidator(sl validator.StructLevel) {
+func componentValidator(ctx context.Context, sl validator.StructLevel) {
 	comp, ok := sl.Current().Interface().(ConfigComponent)
 	if !ok {
 		return
 	}
 	feature, ok := requiredFeatureForType[comp.Type]
-	if !ok || IsExperimentalFeatureEnabled(feature) {
+	if !ok || experimentsFromContext(ctx)[feature] {
 		return
 	}
 	sl.ReportError(comp, "type", "Type", "experimental", comp.Type)
