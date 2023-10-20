@@ -2,8 +2,8 @@ set -e
 source /etc/os-release
 
 sudo apt update
-kernel_version=`uname -r`
-sudo apt install -y linux-headers-${kernel_version} software-properties-common pciutils gcc make dkms wget
+KERNEL_VERSION=`uname -r`
+sudo apt install -y linux-headers-${KERNEL_VERSION} software-properties-common pciutils gcc make dkms wget
 
 # Install CUDA and driver the same way as the nvml app 
 # Prefer to install from the package manager since it is normally faster and has

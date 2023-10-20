@@ -1,6 +1,6 @@
 set -e
-
-sudo yum install -y kernel-devel pciutils gcc make wget yum-utils 
+KERNEL_VERSION=`uname -r`
+sudo yum install -y kernel-devel-${KERNEL_VERSION} pciutils gcc make wget yum-utils 
 
 # Install CUDA and driver together, since the `exercise` script needs to run a 
 # CUDA sample app to generating GPU process metrics
