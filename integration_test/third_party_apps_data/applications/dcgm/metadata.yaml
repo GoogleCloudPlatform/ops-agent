@@ -33,7 +33,7 @@ platforms_to_skip: #skipping arm64 platforms, and those without supported driver
   - ubuntu-2004-lts-arm64
   - ubuntu-2204-lts-arm64
   - ubuntu-2304-amd64 # No driver
-gpu_models: # p4, k80, p100 don't emit DCGM profiling metrics
+gpu_platforms: # p4, k80, p100 don't emit DCGM profiling metrics
   - model: a100
     platforms: 
       - ubuntu-2004-lts

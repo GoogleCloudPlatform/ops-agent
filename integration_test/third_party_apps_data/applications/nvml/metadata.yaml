@@ -32,7 +32,7 @@ platforms_to_skip: #skipping arm64 platforms, and those without supported driver
   - ubuntu-2004-lts-arm64
   - ubuntu-2204-lts-arm64
   - ubuntu-2304-amd64 # No driver
-gpu_models:
+gpu_platforms:
   - model: a100
     platforms: 
       - ubuntu-2004-lts

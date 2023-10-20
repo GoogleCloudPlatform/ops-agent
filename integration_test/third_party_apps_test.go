@@ -910,9 +910,9 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool) {
 		if metadata.SliceContains(test.metadata.PlatformsToSkip, test.platform) {
 			tests[i].skipReason = "Skipping test due to 'platforms_to_skip' entry in metadata.yaml"
 		}
-		for _, gpuModel := range test.metadata.GpuModels {
-			if test.gpu != nil && test.gpu.model == gpuModel.Model && !metadata.SliceContains(gpuModel.Platforms, test.platform) {
-				tests[i].skipReason = "Skipping test due to 'gpu_models.platform' entry in metadata.yaml"
+		for _, gpuPlatform := range test.metadata.GpuPlatforms {
+			if test.gpu != nil && test.gpu.model == gpuPlatform.Model && !metadata.SliceContains(gpuPlatform.Platforms, test.platform) {
+				tests[i].skipReason = "Skipping test due to 'gpu_platforms.platforms' entry in metadata.yaml"
 			}
 		}
 		if reason := incompatibleOperatingSystem(test); reason != "" {
@@ -940,10 +940,10 @@ func TestThirdPartyApps(t *testing.T) {
 
 	for _, platform := range platforms {
 		for app, metadata := range allApps {
-			if len(metadata.GpuModels) > 0 {
-				for _, gpuModel := range metadata.GpuModels {
-					if gpu, ok := gpuModels[gpuModel.Model]; !ok {
-						t.Fatalf("invalid gpu model name %s", gpuModel)
+			if len(metadata.GpuPlatforms) > 0 {
+				for _, gpuPlatform := range metadata.GpuPlatforms {
+					if gpu, ok := gpuModels[gpuPlatform.Model]; !ok {
+						t.Fatalf("invalid gpu model name %s", gpuPlatform)
 					} else {
 						tests = append(tests, test{platform: platform, gpu: &gpu, app: app, metadata: metadata, skipReason: ""})
 					}
