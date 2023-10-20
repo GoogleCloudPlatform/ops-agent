@@ -274,7 +274,7 @@ func testGeneratedFiles(t *testing.T, generatedFiles map[string]string, testDir 
 		},
 	)
 	if golden.FlagUpdate() && os.IsNotExist(err) {
-		if err := os.Mkdir(goldenPath, 0777); err != nil {
+		if err := os.MkdirAll(goldenPath, 0777); err != nil {
 			return err
 		}
 	} else if err != nil {
