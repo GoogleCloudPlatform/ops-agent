@@ -1,0 +1,38 @@
+set -e
+source /etc/os-release
+
+sudo yum install -y kernel-devel pciutils gcc make wget yum-utils python3
+
+# Install the driver the same way as the nvml app 
+# Prefer to install from the package manager since it is normally faster and has
+# less errors on installation; fallback to the runfile method if the package 
+# manager's package is not working or not compitible with the GPU model
+DEVICE_CODE=$(lspci -n | grep -Po '10de:[\w\d]{4}')
+case $DEVICE_CODE in
+    10de:102d)
+        # Install a specific version for NVIDIA Tesla K80, R470 is the last supported version
+        DRIVER_VERSION=470.82.01
+        ;;
+    *)
+        # Installing latest version of NVIDIA CUDA and driver
+        DRIVER_VERSION=535.104.05
+        ;;
+esac
+
+echo "Installing NVIDIA CUDA $CUDA_VERSION with driver $DRIVER_VERSION"
+curl -fSsl -O https://us.download.nvidia.com/tesla/$DRIVER_VERSION/NVIDIA-Linux-x86_64-$DRIVER_VERSION.run
+sudo bash ./NVIDIA-Linux-x86_64-$DRIVER_VERSION.run --silent
+
+# check NVIDIA driver installation succeeded
+nvidia-smi
+
+# Install DCGM
+VERSION_ID=${VERSION_ID%%.*}
+sudo yum-config-manager \
+    --add-repo http://developer.download.nvidia.com/compute/cuda/repos/rhel$VERSION_ID/x86_64/cuda-rhel$VERSION_ID.repo
+sudo yum clean expire-cache
+sudo yum install -y datacenter-gpu-manager
+sudo systemctl --now enable nvidia-dcgm
+
+# check DCGM service running and load profiling module
+dcgmi discovery --list

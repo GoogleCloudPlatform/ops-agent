@@ -95,6 +95,11 @@ type ExpectedMetricsContainer struct {
 	ExpectedMetrics []*ExpectedMetric `yaml:"expected_metrics" validate:"onetrue=Representative,unique=Type,dive"`
 }
 
+type GpuModel struct {
+	Model     string   `yaml:"model" validate:"required"`
+	Platforms []string `yaml:"platforms" validate:"required"`
+}
+
 type IntegrationMetadata struct {
 	PublicUrl                    string                        `yaml:"public_url"`
 	AppUrl                       string                        `yaml:"app_url" validate:"required,url"`
@@ -109,7 +114,7 @@ type IntegrationMetadata struct {
 	SupportedAppVersion          []string                      `yaml:"supported_app_version" validate:"required,unique,min=1"`
 	SupportedOperatingSystems    string                        `yaml:"supported_operating_systems" validate:"required,oneof=linux windows linux_and_windows"`
 	PlatformsToSkip              []string                      `yaml:"platforms_to_skip"`
-	GpuModels                    []string                      `yaml:"gpu_models"`
+	GpuModels                    []GpuModel                    `yaml:"gpu_models" validate:"dive"`
 	RestartAfterInstall          bool                          `yaml:"restart_after_install"`
 	Troubleshoot                 string                        `yaml:"troubleshoot" validate:"excludesall=‘’“”"`
 
