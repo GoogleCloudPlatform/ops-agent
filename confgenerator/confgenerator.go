@@ -308,7 +308,7 @@ func (l *Logging) generateFluentbitComponents(ctx context.Context, userAgent str
 	out = append(out, service.Component())
 	out = append(out, fluentbit.MetricsInputComponent())
 
-	if l != nil && l.Service != nil {
+	if l != nil && l.Service != nil && !l.Service.OTelLogging {
 		// Type for sorting.
 		type fbSource struct {
 			tag        string
