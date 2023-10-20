@@ -23,16 +23,6 @@ configure_integration: |-
   You must install DCGM and run the DCGM daemon service. 
 supported_operating_systems: linux
 supported_app_version: ["3.1"]
-platforms_to_skip: #skipping arm64 platforms, and those without supported driver
-  - debian-10         # DCGM no longer supported
-  - debian-11-arm64
-  - debian-12         # No driver
-  - rocky-linux-9-arm64
-  - sles-12           # No driver
-  - sles-15-arm64
-  - ubuntu-2004-lts-arm64
-  - ubuntu-2204-lts-arm64
-  - ubuntu-2304-amd64 # No driver
 gpu_platforms: # p4, k80, p100 don't emit DCGM profiling metrics
   - model: a100
     platforms: 
