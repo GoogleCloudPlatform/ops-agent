@@ -23,6 +23,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit/modify"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
 
 // TODO: Add a validation check that will allow only one unique language exceptions that focus in one specific language.
@@ -105,6 +106,19 @@ func (p ParserShared) Component(tag, uid string) (fluentbit.Component, string) {
 	return fluentbit.ParserComponentBase(p.TimeFormat, p.TimeKey, p.Types, tag, uid)
 }
 
+func (p ParserShared) TimestampConfig() map[string]any {
+	if p.TimeKey == "" {
+		return nil
+	}
+	// TODO: Support arbitrary fields using filter.Member
+	from := fmt.Sprintf("body.%s", p.TimeKey)
+	return map[string]any{
+		"parse_from":  from,
+		"layout_type": "strptime",
+		"layout":      p.TimeFormat,
+	}
+}
+
 // A LoggingProcessorParseJson parses the specified field as JSON.
 type LoggingProcessorParseJson struct {
 	ConfigComponent `yaml:",inline"`
@@ -124,6 +138,33 @@ func (p LoggingProcessorParseJson) Components(ctx context.Context, tag, uid stri
 	parserFilters = append(parserFilters, fluentbit.ParserFilterComponents(tag, p.Field, []string{parserName}, false)...)
 	parserFilters = append(parserFilters, parser)
 	return parserFilters
+}
+
+func (p LoggingProcessorParseJson) Processors() []otel.Component {
+	from := p.Field
+	// TODO: Parse field using filter.Member (but somehow also continue to support bare fields as currently allowed)
+	if from == "" {
+		from = "message"
+	}
+	from = fmt.Sprintf("body.%s", from)
+
+	parserConfig := map[string]any{
+		"type":       "json_parser",
+		"parse_from": from,
+		"parse_to":   "body", // TODO: Handle special fields documented at https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/configuration#special-fields
+	}
+	if t := p.TimestampConfig(); t != nil {
+		parserConfig["timestamp"] = t
+	}
+	// TODO: Support p.Types
+	return []otel.Component{{
+		Type: "logstransform",
+		Config: map[string]any{
+			"operators": []map[string]any{
+				parserConfig,
+			},
+		},
+	}}
 }
 
 func init() {
