@@ -1,19 +1,14 @@
 set -e
-source /etc/os-release
 
-sudo apt update
-KERNEL_VERSION=`uname -r`
-sudo apt install -y linux-headers-${KERNEL_VERSION} software-properties-common pciutils gcc make dkms wget
+sudo zypper --non-interactive install -y kernel-source pciutils gcc make wget
 
-# Install CUDA and driver the same way as the nvml app 
+# Install CUDA and driver together, since the `exercise` script needs to run a 
+# CUDA sample app to generating GPU process metrics
 # Prefer to install from the package manager since it is normally faster and has
 # less errors on installation; fallback to the runfile method if the package 
 # manager's package is not working or not compitible with the GPU model
-DEVICE_CODE=$(lspci -n | grep -Po '10de:[\w\d]{4}')
-DISTRIBUTION=$(echo $ID$VERSION_ID | sed -e 's/\.//g')
-# Need to add the keyring for installing CUDA and DCGM
-wget --no-verbose https://developer.download.nvidia.com/compute/cuda/repos/${DISTRIBUTION}/x86_64/cuda-keyring_1.0-1_all.deb
-sudo dpkg -i cuda-keyring_1.0-1_all.deb
+DEVICE_CODE=$(/sbin/lspci -n | grep -Po '10de:[\w\d]{4}')
+DISTRIBUTION=$(. /etc/os-release;echo $ID$VERSION_ID | sed -e 's/\.[0-9]//')
 case $DEVICE_CODE in
     10de:102d)
         # Install a specific version for NVIDIA Tesla K80, R470 is the last supported version
@@ -27,21 +22,11 @@ case $DEVICE_CODE in
         ;;
     *)
         echo "Installing latest version of NVIDIA CUDA and driver"
-        if [[ $ID == debian ]]; then
-            sudo add-apt-repository contrib
-        fi
-        sudo apt update
-        sudo apt -y install cuda 
+        sudo zypper --non-interactive ar http://developer.download.nvidia.com/compute/cuda/repos/${DISTRIBUTION}/x86_64/cuda-${DISTRIBUTION}.repo
+        sudo zypper --gpg-auto-import-keys --non-interactive refresh
+        sudo zypper --non-interactive install -y cuda
         ;;
 esac
 
 # check NVIDIA driver installation succeeded
 nvidia-smi
-
-# Install DCGM
-sudo apt-get update
-sudo apt-get install -y datacenter-gpu-manager
-sudo systemctl --now enable nvidia-dcgm
-
-# check DCGM service running and load profiling module
-dcgmi discovery --list
