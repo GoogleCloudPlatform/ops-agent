@@ -380,7 +380,7 @@ func (l *Logging) generateFluentbitComponents(ctx context.Context, userAgent str
 			out = append(out, stackdriverOutputComponent(strings.Join(tags, "|"), userAgent, "2G"))
 		}
 	}
-	out = append(out, generateSelfLogsComponents(ctx, userAgent)...)
+	out = append(out, l.generateSelfLogsComponents(ctx, userAgent)...)
 	out = append(out, fluentbit.MetricsOutputComponent())
 
 	return out, nil
