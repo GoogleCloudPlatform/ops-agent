@@ -689,6 +689,8 @@ COPY --from=buster-build /google-cloud-ops-agent*.deb /
 FROM opensuse/archive:42.3 AS sles12-build-base
 ARG OPENJDK_MAJOR_VERSION
 
+# Add home:odassau repo to install 3.4 bison
+ADD https://download.opensuse.org/repositories/home:/odassau/SLE_12_SP4/home:odassau.repo /tmp/home:odassau.repo
 RUN set -x; \
 		# The 'OSS Update' repo signature is no longer valid, so verify the checksum instead.
 		zypper --no-gpg-check refresh 'OSS Update' && \
@@ -697,13 +699,13 @@ RUN set -x; \
 		# Remove expired root certificate.
 		mv /var/lib/ca-certificates/pem/DST_Root_CA_X3.pem /etc/pki/trust/blacklist/ && \
 		update-ca-certificates && \
-		# Add home:odassau repo to install >3.4 bison
-		zypper addrepo https://download.opensuse.org/repositories/home:/odassau/SLE_12_SP4/home:odassau.repo && \
+		# Add home:odassau repo to install 3.4 bison
+		zypper addrepo /tmp/home:odassau.repo && \
 		zypper -n --gpg-auto-import-keys refresh && \
 		zypper -n update && \
 		# zypper/libcurl has a use-after-free bug that causes segfaults for particular download sequences.
 		# If this bug happens to trigger in the future, adding a "zypper -n download" of a subset of the packages can avoid the segfault.
-		zypper -n install 'bison>3.4' && \
+		zypper -n install 'bison>3' && \
 		# Allow fluent-bit to find systemd
 		ln -fs /usr/lib/systemd /lib/systemd
 COPY --from=openjdk-install /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/ /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk
@@ -807,7 +809,7 @@ ARG OPENJDK_MAJOR_VERSION
 
 RUN set -x; zypper -n refresh && \
 		zypper -n update && \
-		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip 'bison>3.4'
+		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip 'bison>3'
 # Allow fluent-bit to find systemd
 RUN ln -fs /usr/lib/systemd /lib/systemd
 COPY --from=openjdk-install /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/ /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk
