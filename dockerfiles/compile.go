@@ -154,7 +154,9 @@ var dockerfileArguments = []templateArguments{
 		//https://en.opensuse.org/openSUSE:Build_Service_cross_distribution_howto#Detect_a_distribution_flavor_for_special_code
 		from_image:  "opensuse/archive:42.3",
 		target_name: "sles12",
-		install_packages: `RUN set -x; \
+		install_packages: `# Add home:odassau repo to install >3.4 bison
+ADD https://download.opensuse.org/repositories/home:/odassau/SLE_12_SP4/home:odassau.repo /tmp/home:odassau.repo
+RUN set -x; \
 		# The 'OSS Update' repo signature is no longer valid, so verify the checksum instead.
 		zypper --no-gpg-check refresh 'OSS Update' && \
 		(echo 'b889b4bba03074cd66ef9c0184768f4816d4ccb1fa9ec2721c5583304c5f23d0  /var/cache/zypp/raw/OSS Update/repodata/repomd.xml' | sha256sum --check) && \
@@ -163,7 +165,7 @@ var dockerfileArguments = []templateArguments{
 		mv /var/lib/ca-certificates/pem/DST_Root_CA_X3.pem /etc/pki/trust/blacklist/ && \
 		update-ca-certificates && \
 		# Add home:odassau repo to install >3.4 bison
-		zypper addrepo https://download.opensuse.org/repositories/home:/odassau/SLE_12_SP4/home:odassau.repo && \
+		zypper addrepo /tmp/home:odassau.repo && \
 		zypper -n --gpg-auto-import-keys refresh && \
 		zypper -n update && \
 		# zypper/libcurl has a use-after-free bug that causes segfaults for particular download sequences.
