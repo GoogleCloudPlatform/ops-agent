@@ -58,7 +58,7 @@ manifest as runtime errors that won't show up until tests are run.
 
 1.  Once builds and "Ops Agent integration test" (AKA `ops_agent_test`) are
     passing, Revert the temporary changes to the Kokoro configs (the two
-    `bullseye.gcl` files in the earlier step). Get your PR reviewed and
+    `bullseye_$arch.gcl` files in the earlier step). Get your PR reviewed and
     merge it to `master`.
 
 ### Running `third_party_apps_test` against the new distro
