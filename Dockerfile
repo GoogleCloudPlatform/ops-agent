@@ -689,6 +689,8 @@ COPY --from=buster-build /google-cloud-ops-agent*.deb /
 FROM opensuse/archive:42.3 AS sles12-build-base
 ARG OPENJDK_MAJOR_VERSION
 
+# Add home:odassau repo to install >3.4 bison
+ADD https://download.opensuse.org/repositories/home:/odassau/SLE_12_SP4/home:odassau.repo /tmp/home:odassau.repo
 RUN set -x; \
 		# The 'OSS Update' repo signature is no longer valid, so verify the checksum instead.
 		zypper --no-gpg-check refresh 'OSS Update' && \
@@ -698,7 +700,7 @@ RUN set -x; \
 		mv /var/lib/ca-certificates/pem/DST_Root_CA_X3.pem /etc/pki/trust/blacklist/ && \
 		update-ca-certificates && \
 		# Add home:odassau repo to install >3.4 bison
-		zypper addrepo https://download.opensuse.org/repositories/home:/odassau/SLE_12_SP4/home:odassau.repo && \
+		zypper addrepo /tmp/home:odassau.repo && \
 		zypper -n --gpg-auto-import-keys refresh && \
 		zypper -n update && \
 		# zypper/libcurl has a use-after-free bug that causes segfaults for particular download sequences.
