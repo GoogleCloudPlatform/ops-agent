@@ -154,7 +154,7 @@ var dockerfileArguments = []templateArguments{
 		//https://en.opensuse.org/openSUSE:Build_Service_cross_distribution_howto#Detect_a_distribution_flavor_for_special_code
 		from_image:  "opensuse/archive:42.3",
 		target_name: "sles12",
-		install_packages: `# Add home:odassau repo to install >3.4 bison
+		install_packages: `# Add home:odassau repo to install 3.4 bison
 ADD https://download.opensuse.org/repositories/home:/odassau/SLE_12_SP4/home:odassau.repo /tmp/home:odassau.repo
 RUN set -x; \
 		# The 'OSS Update' repo signature is no longer valid, so verify the checksum instead.
@@ -164,13 +164,13 @@ RUN set -x; \
 		# Remove expired root certificate.
 		mv /var/lib/ca-certificates/pem/DST_Root_CA_X3.pem /etc/pki/trust/blacklist/ && \
 		update-ca-certificates && \
-		# Add home:odassau repo to install >3.4 bison
+		# Add home:odassau repo to install 3.4 bison
 		zypper addrepo /tmp/home:odassau.repo && \
 		zypper -n --gpg-auto-import-keys refresh && \
 		zypper -n update && \
 		# zypper/libcurl has a use-after-free bug that causes segfaults for particular download sequences.
 		# If this bug happens to trigger in the future, adding a "zypper -n download" of a subset of the packages can avoid the segfault.
-		zypper -n install 'bison>3.4' && \
+		zypper -n install 'bison>3' && \
 		# Allow fluent-bit to find systemd
 		ln -fs /usr/lib/systemd /lib/systemd` + installJava + installCMake,
 		package_build:     "RUN ./pkg/rpm/build.sh",
@@ -182,7 +182,7 @@ RUN set -x; \
 		target_name: "sles15",
 		install_packages: `RUN set -x; zypper -n refresh && \
 		zypper -n update && \
-		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip 'bison>3.4'
+		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip 'bison>3'
 # Allow fluent-bit to find systemd
 RUN ln -fs /usr/lib/systemd /lib/systemd` + installJava + installCMake,
 		package_build:     "RUN ./pkg/rpm/build.sh",
