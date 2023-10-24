@@ -25,25 +25,25 @@ supported_operating_systems: linux
 supported_app_version: ["515.65.01"]
 gpu_platforms:
   - model: a100
-    platforms: 
+    platforms:
       - ubuntu-2004-lts
   - model: v100
-    platforms: 
+    platforms:
       - ubuntu-2004-lts
   - model: p4
-    platforms: 
+    platforms:
       - ubuntu-2004-lts
   - model: t4
-    platforms: 
+    platforms:
       - ubuntu-2004-lts
   - model: p100
-    platforms: 
+    platforms:
       - ubuntu-2004-lts
   - model: k80
-    platforms: 
+    platforms:
       - ubuntu-2004-lts
   - model: l4
-    platforms: 
+    platforms:
       - centos-7
       - debian-10
       - debian-11

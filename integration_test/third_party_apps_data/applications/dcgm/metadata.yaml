@@ -25,16 +25,16 @@ supported_operating_systems: linux
 supported_app_version: ["3.1"]
 gpu_platforms: # p4, k80, p100 don't emit DCGM profiling metrics
   - model: a100
-    platforms: 
+    platforms:
       - ubuntu-2004-lts
   - model: v100
-    platforms: 
+    platforms:
       - ubuntu-2004-lts
   - model: t4
-    platforms: 
+    platforms:
       - ubuntu-2004-lts
   - model: l4
-    platforms: 
+    platforms:
       - centos-7
       - debian-11
       - rocky-linux-8
