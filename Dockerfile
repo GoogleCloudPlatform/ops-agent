@@ -703,7 +703,7 @@ RUN set -x; \
 		zypper -n update && \
 		# zypper/libcurl has a use-after-free bug that causes segfaults for particular download sequences.
 		# If this bug happens to trigger in the future, adding a "zypper -n download" of a subset of the packages can avoid the segfault.
-		zypper -n install bison>3.4 && \
+		zypper -n install 'bison>3.4' && \
 		# Allow fluent-bit to find systemd
 		ln -fs /usr/lib/systemd /lib/systemd
 COPY --from=openjdk-install /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/ /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk
@@ -807,7 +807,7 @@ ARG OPENJDK_MAJOR_VERSION
 
 RUN set -x; zypper -n refresh && \
 		zypper -n update && \
-		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip bison>3.4
+		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip 'bison>3.4'
 # Allow fluent-bit to find systemd
 RUN ln -fs /usr/lib/systemd /lib/systemd
 COPY --from=openjdk-install /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/ /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk
