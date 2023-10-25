@@ -3,7 +3,7 @@ import '../image_lists.gcl' as image_lists
 
 config build = common.ops_agent_test {
   params {
-    platforms = image_lists.bullseye_aarch64.presubmit
+    platforms = 'ubuntu-2310-arm64'
     arch = 'aarch64'
   }
 }
