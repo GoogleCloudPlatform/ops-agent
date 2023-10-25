@@ -101,5 +101,21 @@ PATH=$PATH:/usr/local/go/bin
 
 go install -v github.com/jstemmer/go-junit-report/v2@latest
 
+args=(
+  -test.parallel=1000
+  -timeout=3h
+  -flb="${TMPDIR}/transformation_test"
+)
+
+STDERR_STDOUT_FILE="${TMPDIR}/test_stderr_stdout.txt"
+function produce_xml() {
+  cat "${STDERR_STDOUT_FILE}" | "$(go env GOPATH)/bin/go-junit-report" > "${TMPDIR}/sponge_log.xml"
+}
+# Always run produce_xml on exit, whether the test passes or fails.
+trap produce_xml EXIT
+
 # run transformation tests
-go test ./transformation_test -flb="${TMPDIR}/transformation_test" | "$(go env GOPATH)/bin/go-junit-report" > "${TMPDIR}/sponge_log.xml"
+go test -v ./transformation_test \
+"${args[@]}" \
+  2>&1 \
+  | tee "${STDERR_STDOUT_FILE}"
