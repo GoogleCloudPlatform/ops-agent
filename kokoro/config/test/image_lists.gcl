@@ -130,18 +130,23 @@ sles15_x86_64 = _distro {
   release = [
     'sles-15',
     'sles-15-sp1-sap',
-    'sles-15-sp2-sap',
+    'sles-15-sp5-sap',
     'opensuse-leap',
     'opensuse-leap-15-4',
   ]
   presubmit = ['sles-15']
 }
+sles15_aarch64 = _distro {
+  release = [
+    'sles-15-arm64',
+    'opensuse-leap-arm64',
+  ]
+  presubmit = ['sles-15-arm64']
+}
 
 // Windows distros.
 windows_x86_64 = _distro {
   release = [
-    'windows-2012-r2',
-    'windows-2012-r2-core',
     'windows-2016',
     'windows-2016-core',
     'windows-2019',
@@ -150,31 +155,7 @@ windows_x86_64 = _distro {
     'windows-2022-core',
   ]
   presubmit = [
-    'windows-2012-r2',
-    // TODO(martijnvs): Switch this to windows-20h2-core.
-    'windows-2019',
+    'windows-2016-core',
+    'windows-2022',
   ]
 }
-
-// TODO: b/288442211 - Remove the following aliases that lack an $arch suffix.
-bookworm = bookworm_x86_64
-lunar = lunar_x86_64
-buster = buster_x86_64
-bullseye = bullseye_x86_64
-focal = focal_x86_64
-jammy = jammy_x86_64
-
-centos7 = centos7_x86_64
-centos8 = centos8_x86_64
-rockylinux9 = rockylinux9_x86_64
-sles12 = sles12_x86_64
-sles15 = sles15_x86_64
-windows = windows_x86_64
-
-// TODO: b/288442211: Remove these old aliases once everything is switched over
-// to <distro>_aarch64.
-bullseye_arm64 = bullseye_aarch64
-focal_arm64 = focal_aarch64
-jammy_arm64 = jammy_aarch64
-rockylinux9_arm64 = rockylinux9_aarch64
-

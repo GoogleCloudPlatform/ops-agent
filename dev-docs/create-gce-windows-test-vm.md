@@ -15,7 +15,6 @@ Tip: Avoid VMs with `-core` in the NAME family if you need to use a GUI.
 >
 > Some versions are 4-digit year:
 >
-> *   Windows Server 2012
 > *   Windows Server 2016
 > *   Windows Server 2019
 >
@@ -26,8 +25,8 @@ Tip: Avoid VMs with `-core` in the NAME family if you need to use a GUI.
 > *   Windows Server, version 1909 # 2019 September
 > *   Windows Server, version 2004 # 2020 April
 >
-> Don't get confused - "2012" is a year (and fairly old); "2004" is a build
-> number and NEWER than 2012.
+> Don't get confused - "2016" is a year (and fairly old); "2004" is a build
+> number and NEWER than 2016.
 
 ```shell
 # Your dev GCP project ID.

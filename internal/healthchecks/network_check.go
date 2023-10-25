@@ -23,41 +23,13 @@ import (
 	"github.com/cenkalti/backoff/v4"
 )
 
+const MaxRequestElapsedTime = 30 * time.Second
+
 type networkRequest struct {
 	name             string
 	url              string
 	successMessage   string
 	healthCheckError HealthCheckError
-}
-
-func (r networkRequest) SendRequest(logger logs.StructuredLogger) error {
-	var response *http.Response
-	var err error
-	bf := backoff.NewExponentialBackOff()
-	bf.MaxElapsedTime = 60 * time.Second
-	expTicker := backoff.NewTicker(bf)
-
-	for range expTicker.C {
-		response, err = http.Get(r.url)
-		if err == nil && response.StatusCode == http.StatusOK {
-			expTicker.Stop()
-			break
-		}
-	}
-	if err != nil {
-		if isTimeoutError(err) || isConnectionRefusedError(err) {
-			return r.healthCheckError
-		}
-		return err
-	}
-	logger.Infof("%s response status: %s", r.name, response.Status)
-	switch response.StatusCode {
-	case http.StatusOK:
-		logger.Infof(r.successMessage)
-	default:
-		return r.healthCheckError
-	}
-	return nil
 }
 
 var (
@@ -94,6 +66,36 @@ var (
 		},
 	}
 )
+
+func (r networkRequest) SendRequest(logger logs.StructuredLogger) error {
+	var response *http.Response
+	var err error
+	bf := backoff.NewExponentialBackOff()
+	bf.MaxElapsedTime = MaxRequestElapsedTime
+	expTicker := backoff.NewTicker(bf)
+
+	for range expTicker.C {
+		response, err = http.Get(r.url)
+		if err == nil && response.StatusCode == http.StatusOK {
+			expTicker.Stop()
+			break
+		}
+	}
+	if err != nil {
+		if isTimeoutError(err) || isConnectionRefusedError(err) {
+			return r.healthCheckError
+		}
+		return err
+	}
+	logger.Infof("%s response status: %s", r.name, response.Status)
+	switch response.StatusCode {
+	case http.StatusOK:
+		logger.Infof(r.successMessage)
+	default:
+		return r.healthCheckError
+	}
+	return nil
+}
 
 type NetworkCheck struct{}
 

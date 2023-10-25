@@ -1,37 +1,47 @@
 set -e
+source /etc/os-release
 
 sudo apt update
-kernel_version=`uname -r`
-sudo apt install -y linux-headers-${kernel_version} software-properties-common pciutils gcc make dkms
+KERNEL_VERSION=`uname -r`
+sudo apt install -y linux-headers-${KERNEL_VERSION} software-properties-common pciutils gcc make dkms wget
 
-BASE_URL=https://us.download.nvidia.com/tesla
+# Install CUDA and driver the same way as the nvml app 
+# Prefer to install from the package manager since it is normally faster and has
+# less errors on installation; fallback to the runfile method if the package 
+# manager's package is not working or not compitible with the GPU model
 DEVICE_CODE=$(lspci -n | grep -Po '10de:[\w\d]{4}')
+DISTRIBUTION=$(echo $ID$VERSION_ID | sed -e 's/\.//g')
+# Need to add the keyring for installing CUDA and DCGM
+wget --no-verbose https://developer.download.nvidia.com/compute/cuda/repos/${DISTRIBUTION}/x86_64/cuda-keyring_1.0-1_all.deb
+sudo dpkg -i cuda-keyring_1.0-1_all.deb
 case $DEVICE_CODE in
     10de:102d)
-        # Install a specific version for NVIDIA Tesla K80
-        DRIVER_VERSION=460.106.00
+        # Install a specific version for NVIDIA Tesla K80, R470 is the last supported version
+        DRIVER_VERSION=470.82.01
+        CUDA_VERSION=11.4.4
+        echo "Installing NVIDIA CUDA $CUDA_VERSION with driver $DRIVER_VERSION"
+        curl -fSsl -O https://us.download.nvidia.com/tesla/$DRIVER_VERSION/NVIDIA-Linux-x86_64-$DRIVER_VERSION.run
+        sudo bash ./NVIDIA-Linux-x86_64-$DRIVER_VERSION.run --silent
+        wget --no-verbose https://developer.download.nvidia.com/compute/cuda/$CUDA_VERSION/local_installers/cuda_${CUDA_VERSION}_${DRIVER_VERSION}_linux.run
+        sudo sh cuda_${CUDA_VERSION}_${DRIVER_VERSION}_linux.run --toolkit --silent
         ;;
     *)
-        DRIVER_VERSION=525.60.13
+        echo "Installing latest version of NVIDIA CUDA and driver"
+        if [[ $ID == debian ]]; then
+            sudo add-apt-repository contrib
+        fi
+        sudo apt update
+        sudo apt -y install cuda 
         ;;
 esac
-echo "Installing NVIDIA driver version $DRIVER_VERSION"
-curl -fSsl -O $BASE_URL/$DRIVER_VERSION/NVIDIA-Linux-x86_64-$DRIVER_VERSION.run
-
-sudo bash ./NVIDIA-Linux-x86_64-$DRIVER_VERSION.run --silent
 
 # check NVIDIA driver installation succeeded
 nvidia-smi
 
-sudo apt-get -y install wget
-
-wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-keyring_1.0-1_all.deb
-sudo dpkg -i cuda-keyring_1.0-1_all.deb
-
+# Install DCGM
 sudo apt-get update
 sudo apt-get install -y datacenter-gpu-manager
-sudo service nvidia-dcgm start
+sudo systemctl --now enable nvidia-dcgm
 
 # check DCGM service running and load profiling module
 dcgmi discovery --list
-dcgmi profile --resume
