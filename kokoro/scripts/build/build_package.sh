@@ -83,6 +83,7 @@ docker run \
     fi
 EOF
 
+TMPDIR="$(mktemp --directory)"
 docker run \
   -i \
   -v "${TMPDIR}":/transformation_test \
@@ -91,4 +92,12 @@ docker run \
     cp /work/cache/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit /transformation_test
 EOF
 
+# install go
+GO_VERSION="1.19"
+gsutil cp "gs://stackdriver-test-143416-go-install/go${GO_VERSION}.linux-amd64.tar.gz" - | \
+  sudo tar --directory /usr/local -xzf /dev/stdin
+
+PATH=$PATH:/usr/local/go/bin
+
+# run transformation tests
 go test ./transformation_test -flb="${TMPDIR}/transformation_test" | "$(go env GOPATH)/bin/go-junit-report" > "${TMPDIR}/sponge_log.xml"
