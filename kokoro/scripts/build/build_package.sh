@@ -99,5 +99,7 @@ gsutil cp "gs://stackdriver-test-143416-go-install/go${GO_VERSION}.linux-amd64.t
 
 PATH=$PATH:/usr/local/go/bin
 
+go install -v github.com/jstemmer/go-junit-report/v2@latest
+
 # run transformation tests
 go test ./transformation_test -flb="${TMPDIR}/transformation_test" | "$(go env GOPATH)/bin/go-junit-report" > "${TMPDIR}/sponge_log.xml"
