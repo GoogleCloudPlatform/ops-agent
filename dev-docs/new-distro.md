@@ -26,7 +26,7 @@ for the new distro. You can duplicate the most recent distro as a starting
 point. Then iterate on your change to `compile.go` by running:
 
 ```shell
-DOCKER_BUILDKIT=1 go run dockerfiles/compile.go && docker build --target $DISTRO_SHORT -t scratch .
+go run dockerfiles/compile.go && DOCKER_BUILDKIT=1 docker build --target $DISTRO_SHORT -t scratch .
 ```
 
 See [Troubleshooting](#troubleshooting) if you have problems. Once that
