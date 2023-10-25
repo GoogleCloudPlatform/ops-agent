@@ -91,6 +91,6 @@ docker run \
     cp /work/cache/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit /transformation_test
 EOF
 
-TRANSFORMATION_LOGS_DIR="${tmpdir}/logs"
+TRANSFORMATION_LOGS_DIR="${TMPDIR}/logs"
 mkdir -p "${TRANSFORMATION_LOGS_DIR}"
 go test ./transformation_test -flb="${TMPDIR}/transformation_test" | "$(go env GOPATH)/bin/go-junit-report" > "${TRANSFORMATION_LOGS_DIR}/sponge_log.xml"
