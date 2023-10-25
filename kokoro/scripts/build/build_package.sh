@@ -73,6 +73,7 @@ docker run \
   -i \
   -v "${RESULT_DIR}":/artifacts \
   -v "${SIGNING_DIR}":/signing \
+  -v "${TMPDIR}":/transformation_test \
   build_image \
   bash <<EOF
     cp /google-cloud-ops-agent*.${PKGFORMAT} /artifacts
@@ -81,3 +82,15 @@ docker run \
       bash /signing/sign.sh /artifacts/*.rpm
     fi
 EOF
+
+docker run \
+  -i \
+  -v "${TMPDIR}":/transformation_test \
+  build_image \
+  bash <<EOF
+    cp /work/cache/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit /transformation_test
+EOF
+
+TRANSFORMATION_LOGS_DIR="${tmpdir}/logs"
+mkdir -p "${TRANSFORMATION_LOGS_DIR}"
+go test ./transformation_test -flb="${TMPDIR}/transformation_test" | "$(go env GOPATH)/bin/go-junit-report" > "${TRANSFORMATION_LOGS_DIR}/sponge_log.xml"
