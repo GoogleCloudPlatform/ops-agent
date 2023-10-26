@@ -88,7 +88,7 @@ func TestTransformationTests(t *testing.T) {
 			}
 
 			// Start Fluent-bit
-			arg := fmt.Sprintf("--config=%s --parser=%s", filepath.Join(tempPath, flbMainConf), filepath.Join(filepath.Join(tempPath, flbParserConf)))
+			arg := fmt.Sprintf("--config=%s --parser=%s -v", filepath.Join(tempPath, flbMainConf), filepath.Join(filepath.Join(tempPath, flbParserConf)))
 			cmd := exec.Command(fmt.Sprintf("%s/fluent-bit", *flbPath), strings.Split(arg, " ")...)
 
 			var stdout, stderr io.ReadCloser
