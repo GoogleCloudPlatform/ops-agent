@@ -114,6 +114,8 @@ function produce_xml() {
 # Always run produce_xml on exit, whether the test passes or fails.
 trap produce_xml EXIT
 
+du -h "${TMPDIR}/transformation_test/fluent-bit"
+
 # run transformation tests
 go test -v ./transformation_test \
 "${args[@]}" \
