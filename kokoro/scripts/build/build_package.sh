@@ -84,6 +84,7 @@ docker run \
 EOF
 
 TMPDIR="$(mktemp --directory)"
+
 docker run \
   -i \
   -v "${TMPDIR}":/transformation_test \
@@ -92,6 +93,8 @@ docker run \
     cp /work/cache/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit /transformation_test
 EOF
 
+echo ${TMPDIR}
+ls -la ${TMPDIR}
 # install go
 GO_VERSION="1.19"
 gsutil cp "gs://stackdriver-test-143416-go-install/go${GO_VERSION}.linux-amd64.tar.gz" - | \
