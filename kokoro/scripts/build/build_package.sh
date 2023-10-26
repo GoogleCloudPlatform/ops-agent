@@ -93,8 +93,6 @@ docker run \
     cp /work/cache/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit /transformation_test
 EOF
 
-echo ${TMPDIR}
-ls -la ${TMPDIR}
 # install go
 GO_VERSION="1.19"
 gsutil cp "gs://stackdriver-test-143416-go-install/go${GO_VERSION}.linux-amd64.tar.gz" - | \
@@ -107,7 +105,7 @@ go install -v github.com/jstemmer/go-junit-report/v2@latest
 args=(
   -test.parallel=1000
   -timeout=3h
-  -flb="${TMPDIR}/transformation_test"
+  -flb="${TMPDIR}"
 )
 
 STDERR_STDOUT_FILE="${TMPDIR}/test_stderr_stdout.txt"
@@ -116,8 +114,6 @@ function produce_xml() {
 }
 # Always run produce_xml on exit, whether the test passes or fails.
 trap produce_xml EXIT
-
-du -h "${TMPDIR}/transformation_test/fluent-bit"
 
 # run transformation tests
 go test -v ./transformation_test \
