@@ -8,7 +8,9 @@ override_dh_auto_configure:
 override_dh_auto_build:
 	true
 override_dh_auto_test:
-	true
+  pwd
+  ls -la /work/cache/opt/google-cloud-ops-agent/subagents/fluent-bit/bin
+	go test ./...
 override_dh_strip_nondeterminism:
 	dh_strip_nondeterminism -X.jar
 override_dh_auto_install:

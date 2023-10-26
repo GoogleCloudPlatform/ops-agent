@@ -48,7 +48,7 @@ func (l *loggingProcessor) UnmarshalYAML(ctx context.Context, unmarshal func(int
 func TestTransformationTests(t *testing.T) {
 	ctx := context.Background()
 	if len(*flbPath) == 0 {
-		t.Fatal("flb cannot be empty")
+		t.Skip("--flb not supplied")
 	}
 
 	allTests, err := testdataDir.ReadDir("testdata")

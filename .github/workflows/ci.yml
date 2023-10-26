@@ -37,7 +37,7 @@ jobs:
         go install github.com/mattn/goveralls@latest
     - if: ${{ runner.os == 'Linux' }}
       run: if [ $(goimports -l .) ]; then goimports -d .; echo 'Failed the goimports format check. Please format the code using "goimports -w ."'; exit 1; fi
-    - run: go test $(go list ./... | grep -v /transformation_test) -mod=mod -coverpkg="./..." -coverprofile=covprofile ./...
+    - run: go test -mod=mod -coverpkg="./..." -coverprofile=covprofile ./...
     - env:
         COVERALLS_TOKEN: ${{ secrets.github_token }}
       run: goveralls -coverprofile=covprofile -service=github -ignore="confgenerator/filter/internal/generated/*/*"

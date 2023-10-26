@@ -73,7 +73,6 @@ docker run \
   -i \
   -v "${RESULT_DIR}":/artifacts \
   -v "${SIGNING_DIR}":/signing \
-  -v "${TMPDIR}":/transformation_test \
   build_image \
   bash <<EOF
     cp /google-cloud-ops-agent*.${PKGFORMAT} /artifacts
@@ -83,40 +82,43 @@ docker run \
     fi
 EOF
 
-TMPDIR="$(mktemp --directory)"
+# transformation tests
+if [[ "${DISTRO}" == "focal" && "${ARCH}" == "x86_64" ]]; then
+  TMPDIR="$(mktemp --directory)"
 
-docker run \
-  -i \
-  -v "${TMPDIR}":/transformation_test \
-  build_image \
-  bash <<EOF
-    cp /work/cache/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit /transformation_test
-EOF
+  docker run \
+    -i \
+    -v "${TMPDIR}":/transformation_test \
+    build_image \
+    bash <<EOF
+      cp /work/cache/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit /transformation_test
+  EOF
 
-# install go
-GO_VERSION="1.19"
-gsutil cp "gs://stackdriver-test-143416-go-install/go${GO_VERSION}.linux-amd64.tar.gz" - | \
-  sudo tar --directory /usr/local -xzf /dev/stdin
+  # install go
+  GO_VERSION="1.19"
+  gsutil cp "gs://stackdriver-test-143416-go-install/go${GO_VERSION}.linux-amd64.tar.gz" - | \
+    sudo tar --directory /usr/local -xzf /dev/stdin
 
-PATH=$PATH:/usr/local/go/bin
+  PATH=$PATH:/usr/local/go/bin
 
-go install -v github.com/jstemmer/go-junit-report/v2@latest
+  go install -v github.com/jstemmer/go-junit-report/v2@latest
 
-args=(
-  -test.parallel=1000
-  -timeout=3h
-  -flb="${TMPDIR}"
-)
+  args=(
+    -test.parallel=1000
+    -timeout=3h
+    -flb="${TMPDIR}"
+  )
 
-STDERR_STDOUT_FILE="${TMPDIR}/test_stderr_stdout.txt"
-function produce_xml() {
-  cat "${STDERR_STDOUT_FILE}" | "$(go env GOPATH)/bin/go-junit-report" > "${TMPDIR}/sponge_log.xml"
-}
-# Always run produce_xml on exit, whether the test passes or fails.
-trap produce_xml EXIT
+  STDERR_STDOUT_FILE="${TMPDIR}/test_stderr_stdout.txt"
+  function produce_xml() {
+    cat "${STDERR_STDOUT_FILE}" | "$(go env GOPATH)/bin/go-junit-report" >> "${TMPDIR}/sponge_log.xml"
+  }
+  # Always run produce_xml on exit, whether the test passes or fails.
+  trap produce_xml EXIT
 
-# run transformation tests
-go test -v ./transformation_test \
-"${args[@]}" \
-  2>&1 \
-  | tee "${STDERR_STDOUT_FILE}"
+  # run transformation tests
+  go test ./transformation_test \
+  "${args[@]}" \
+    2>&1 \
+    | tee "${STDERR_STDOUT_FILE}"
+fi
