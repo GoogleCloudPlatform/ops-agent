@@ -3,7 +3,12 @@ set -e
 # the vault package does not install correctly on sles12/15
 # install manually, create basic vault config
 # and create a systemd service file
-vault_download_url="https://releases.hashicorp.com/vault/1.10.3/vault_1.10.3_linux_amd64.zip"
+if [[ "$(uname -m)" == aarch64 ]]; then
+  vault_download_url="https://releases.hashicorp.com/vault/1.10.3/vault_1.10.3_linux_arm64.zip"
+else
+  vault_download_url="https://releases.hashicorp.com/vault/1.10.3/vault_1.10.3_linux_amd64.zip"
+fi
+
 wget $vault_download_url
 unzip vault*.zip
 sudo mv vault /usr/bin

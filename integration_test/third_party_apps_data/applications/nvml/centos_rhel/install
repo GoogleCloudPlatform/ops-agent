@@ -1,0 +1,31 @@
+set -e
+KERNEL_VERSION=`uname -r`
+sudo yum install -y kernel-devel-${KERNEL_VERSION} pciutils gcc make wget yum-utils 
+
+# Install CUDA and driver together, since the `exercise` script needs to run a 
+# CUDA sample app to generating GPU process metrics
+# Prefer to install from the package manager since it is normally faster and has
+# less errors on installation; fallback to the runfile method if the package 
+# manager's package is not working or not compitible with the GPU model
+DEVICE_CODE=$(lspci -n | grep -Po '10de:[\w\d]{4}')
+case $DEVICE_CODE in
+    10de:102d)
+        # Install a specific version for NVIDIA Tesla K80, R470 is the last supported version
+        DRIVER_VERSION=470.82.01
+        CUDA_VERSION=11.4.4
+        ;;
+    *)
+        # Installing latest version of NVIDIA CUDA and driver
+        DRIVER_VERSION=535.104.05
+        CUDA_VERSION=12.2.2
+        ;;
+esac
+
+echo "Installing NVIDIA CUDA $CUDA_VERSION with driver $DRIVER_VERSION"
+curl -fSsl -O https://us.download.nvidia.com/tesla/$DRIVER_VERSION/NVIDIA-Linux-x86_64-$DRIVER_VERSION.run
+sudo bash ./NVIDIA-Linux-x86_64-$DRIVER_VERSION.run --silent
+wget --no-verbose https://developer.download.nvidia.com/compute/cuda/$CUDA_VERSION/local_installers/cuda_${CUDA_VERSION}_${DRIVER_VERSION}_linux.run
+sudo sh cuda_${CUDA_VERSION}_${DRIVER_VERSION}_linux.run --toolkit --silent
+
+# check NVIDIA driver installation succeeded
+nvidia-smi

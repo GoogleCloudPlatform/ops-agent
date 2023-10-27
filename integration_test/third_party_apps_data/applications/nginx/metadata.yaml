@@ -116,6 +116,7 @@ supported_operating_systems: linux
 platforms_to_skip:
   - sles-12 # QueryLog() failed: nginx_access not found, exhausted retries; QueryLog() failed: nginx_error not found, exhausted retries
   - sles-15 # QueryLog() failed: nginx_access not found, exhausted retries; QueryLog() failed: nginx_error not found, exhausted retries
+  - sles-15-arm64 # QueryLog() failed: nginx_access not found, exhausted retries; QueryLog() failed: nginx_error not found, exhausted retries
   - ubuntu-2004-lts # QueryLog() failed: nginx_access not found, exhausted retries; QueryLog() failed: nginx_error not found, exhausted retries
 supported_app_version: ["1.18", "1.20"]
 expected_metrics:

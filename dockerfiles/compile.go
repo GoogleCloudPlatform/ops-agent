@@ -154,7 +154,9 @@ var dockerfileArguments = []templateArguments{
 		//https://en.opensuse.org/openSUSE:Build_Service_cross_distribution_howto#Detect_a_distribution_flavor_for_special_code
 		from_image:  "opensuse/archive:42.3",
 		target_name: "sles12",
-		install_packages: `RUN set -x; \
+		install_packages: `# Add home:odassau repo to install 3.4 bison
+ADD https://download.opensuse.org/repositories/home:/odassau/SLE_12_SP4/home:odassau.repo /tmp/home:odassau.repo
+RUN set -x; \
 		# The 'OSS Update' repo signature is no longer valid, so verify the checksum instead.
 		zypper --no-gpg-check refresh 'OSS Update' && \
 		(echo 'b889b4bba03074cd66ef9c0184768f4816d4ccb1fa9ec2721c5583304c5f23d0  /var/cache/zypp/raw/OSS Update/repodata/repomd.xml' | sha256sum --check) && \
@@ -162,13 +164,13 @@ var dockerfileArguments = []templateArguments{
 		# Remove expired root certificate.
 		mv /var/lib/ca-certificates/pem/DST_Root_CA_X3.pem /etc/pki/trust/blacklist/ && \
 		update-ca-certificates && \
-		# Add home:odassau repo to install >3.4 bison
-		zypper addrepo https://download.opensuse.org/repositories/home:/odassau/SLE_12_SP4/home:odassau.repo && \
+		# Add home:odassau repo to install 3.4 bison
+		zypper addrepo /tmp/home:odassau.repo && \
 		zypper -n --gpg-auto-import-keys refresh && \
 		zypper -n update && \
 		# zypper/libcurl has a use-after-free bug that causes segfaults for particular download sequences.
 		# If this bug happens to trigger in the future, adding a "zypper -n download" of a subset of the packages can avoid the segfault.
-		zypper -n install bison>3.4 && \
+		zypper -n install 'bison>3' && \
 		# Allow fluent-bit to find systemd
 		ln -fs /usr/lib/systemd /lib/systemd` + installJava + installCMake,
 		package_build:     "RUN ./pkg/rpm/build.sh",
@@ -178,23 +180,11 @@ var dockerfileArguments = []templateArguments{
 	{
 		from_image:  "opensuse/leap:15.1",
 		target_name: "sles15",
-		// TODO: Add ARM support to agent-vendor.repo.
-		install_packages: `RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip
-		# Add agent-vendor.repo to install >3.4 bison
-		# See http://go/sdi/releases/build-test-release/vendored
-		RUN echo $'[ops-agent-build-vendor] \n\
-		name=ops-agent-build-vendor \n\
-		baseurl=https://us-yum.pkg.dev/projects/cloud-ops-agents-artifacts-dev/ops-agent-build-vendor-sles15-x86-64 \n\
-		enabled         = 1 \n\
-		autorefresh     = 0 \n\
-		repo_gpgcheck   = 0 \n\
-		gpgcheck        = 0' > agent-vendor.repo
-		RUN set -x; zypper addrepo agent-vendor.repo && \
-			zypper -n --gpg-auto-import-keys refresh && \
-			zypper -n update && \
-			zypper -n install bison>3.4 && \
-			# Allow fluent-bit to find systemd
-			ln -fs /usr/lib/systemd /lib/systemd` + installJava + installCMake,
+		install_packages: `RUN set -x; zypper -n refresh && \
+		zypper -n update && \
+		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip 'bison>3'
+# Allow fluent-bit to find systemd
+RUN ln -fs /usr/lib/systemd /lib/systemd` + installJava + installCMake,
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "sles-15",
 		package_extension: "rpm",
@@ -233,6 +223,18 @@ var dockerfileArguments = []templateArguments{
 		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip debhelper`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "ubuntu-lunar",
+		package_extension: "deb",
+	},
+	{
+		from_image:  "ubuntu:mantic",
+		target_name: "mantic",
+		install_packages: `RUN set -x; apt-get update && \
+		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
+		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
+		build-essential cmake bison flex file libsystemd-dev \
+		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip debhelper`,
+		package_build:     "RUN ./pkg/deb/build.sh",
+		tar_distro_name:   "ubuntu-mantic",
 		package_extension: "deb",
 	},
 }
