@@ -442,8 +442,8 @@ func getSelfLogCollection(uc *UnifiedConfig) Feature {
 		Key:    []string{"self_log_collection"},
 		Value:  "true",
 	}
-	if uc.Logging != nil && uc.Logging.Service != nil {
-		feature.Value = strconv.FormatBool(uc.Logging.Service.GetSelfLogCollection())
+	if uc.Global != nil {
+		feature.Value = strconv.FormatBool(uc.Global.GetSelfLogCollection())
 	}
 
 	return feature

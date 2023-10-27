@@ -548,16 +548,7 @@ func (m *loggingProcessorMap) UnmarshalYAML(ctx context.Context, unmarshal func(
 
 type LoggingService struct {
 	LogLevel                 string               `yaml:"log_level,omitempty" validate:"omitempty,oneof=error warn info debug trace"`
-	SelfLogCollection        *bool                `yaml:"self_log_collection,omitempty"`
 	Pipelines                map[string]*Pipeline `validate:"dive,keys,startsnotwith=lib:"`
-}
-
-// Get whether self log collection should be enabled. Defaults to true if unset.
-func (s *LoggingService) GetSelfLogCollection() bool {
-	if s.SelfLogCollection != nil {
-		return *s.SelfLogCollection
-	}
-	return true
 }
 
 type Pipeline struct {

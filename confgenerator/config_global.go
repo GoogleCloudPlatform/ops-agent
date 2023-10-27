@@ -15,7 +15,16 @@
 package confgenerator
 
 type Global struct {
+	SelfLogCollection      *bool            `yaml:"self_log_collection,omitempty"`
 	DefaultLogFileRotation *LogFileRotation `yaml:"default_self_log_file_rotation,omitempty"`
+}
+
+// Get whether self log collection should be enabled. Defaults to true if unset.
+func (g *Global) GetSelfLogCollection() bool {
+	if g != nil && g.SelfLogCollection != nil {
+		return *g.SelfLogCollection
+	}
+	return true
 }
 
 type LogFileRotation struct {

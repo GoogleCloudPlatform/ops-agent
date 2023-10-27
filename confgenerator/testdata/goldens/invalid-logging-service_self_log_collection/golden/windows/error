@@ -1,0 +1,5 @@
+[17:26] cannot unmarshal string into Go struct field UnifiedConfig.Logging of type bool
+  15 | logging:
+  16 |   service:
+> 17 |     self_log_collection: None
+                                ^

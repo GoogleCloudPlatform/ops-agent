@@ -227,7 +227,7 @@ func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]
 // It returns a map of filenames to file contents.
 func (uc *UnifiedConfig) GenerateFluentBitConfigs(ctx context.Context, logsDir string, stateDir string) (map[string]string, error) {
 	userAgent, _ := platform.FromContext(ctx).UserAgent("Google-Cloud-Ops-Agent-Logging")
-	components, err := uc.Logging.generateFluentbitComponents(ctx, userAgent)
+	components, err := uc.generateFluentbitComponents(ctx, userAgent)
 	if err != nil {
 		return nil, err
 	}
@@ -279,7 +279,8 @@ func processUserDefinedMultilineParser(i int, pID string, receiver LoggingReceiv
 }
 
 // generateFluentbitComponents generates a slice of fluentbit config sections to represent l.
-func (l *Logging) generateFluentbitComponents(ctx context.Context, userAgent string) ([]fluentbit.Component, error) {
+func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAgent string) ([]fluentbit.Component, error) {
+	l := uc.Logging
 	var out []fluentbit.Component
 	if l.Service.LogLevel == "" {
 		l.Service.LogLevel = "info"
@@ -379,8 +380,8 @@ func (l *Logging) generateFluentbitComponents(ctx context.Context, userAgent str
 		if len(tags) > 0 {
 			out = append(out, stackdriverOutputComponent(strings.Join(tags, "|"), userAgent, "2G"))
 		}
+		out = append(out, uc.generateSelfLogsComponents(ctx, userAgent)...)
 	}
-	out = append(out, l.generateSelfLogsComponents(ctx, userAgent)...)
 	out = append(out, fluentbit.MetricsOutputComponent())
 
 	return out, nil
