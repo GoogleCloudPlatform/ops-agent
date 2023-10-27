@@ -157,10 +157,11 @@ const (
 	// take before it is forcibly killed.
 	SuggestedTimeout = 2 * time.Hour
 
-	// QueryMaxAttempts is the default number of retries when calling WaitForLog.
+	// QueryMaxAttempts is the default number of retries when calling WaitForLog and WaitForMetricSeries.
 	// Retries are spaced by 5 seconds, so 80 retries denotes 6 minutes 40 seconds total.
 	QueryMaxAttempts              = 80 // 6 minutes 40 seconds total.
 	queryMaxAttemptsMetricMissing = 5  // 25 seconds total.
+	queryMaxAttemptsLogMissing    = 5  // 25 seconds total.
 	queryBackoffDuration          = 5 * time.Second
 
 	// traceQueryDerate is the number of backoff durations to wait before retrying a trace query.
@@ -612,10 +613,9 @@ func AssertMetricMissing(ctx context.Context, logger *log.Logger, vm *VM, metric
 	return nil
 }
 
-// hasMatchingLog looks in the logging backend for a log matching the given query,
-// over the trailing time interval specified by the given window.
-// Returns a boolean indicating whether the log was present in the backend,
-// plus the first log entry found, or an error if the lookup failed.
+// hasMatchingLog looks in the logging backend for a log matching the given query
+// and returns success if no data is found. To consider possible transient errors
+// while querying the backend we make queryMaxAttemptsMetricMissing query attempts.
 func hasMatchingLog(ctx context.Context, logger *log.Logger, vm *VM, logNameRegex string, window time.Duration, query string) (bool, *cloudlogging.Entry, error) {
 	start := time.Now().Add(-window)
 
@@ -681,6 +681,32 @@ func QueryLog(ctx context.Context, logger *log.Logger, vm *VM, logNameRegex stri
 		time.Sleep(queryBackoffDuration)
 	}
 	return nil, fmt.Errorf("QueryLog() failed: %s not found, exhausted retries", logNameRegex)
+}
+
+// AssertLogMissing looks in the logging backend for a log matching the given query
+// and returns success if no data is found. To consider possible transient errors
+// while querying the backend we make queryMaxAttemptsMetricMissing query attempts.
+func AssertLogMissing(ctx context.Context, logger *log.Logger, vm *VM, logNameRegex string, window time.Duration, query string) error {
+	for attempt := 1; attempt <= queryMaxAttemptsLogMissing; attempt++ {
+		found, _, err := hasMatchingLog(ctx, logger, vm, logNameRegex, window, query)
+		if err == nil {
+			if found {
+				return fmt.Errorf("AssertLogMissing(log=%q): %v failed: unexpectedly found data for log", query, err)
+			}
+			// Success
+			return nil
+		}
+		logger.Printf("Query returned found=%v, err=%v, attempt=%d", found, err, attempt)
+		if err != nil && !strings.Contains(err.Error(), "Internal error encountered") {
+			// A non-retryable error.
+			return fmt.Errorf("AssertLogMissing() failed: %v", err)
+		}
+		// found was false, or we hit a retryable error.
+		time.Sleep(queryBackoffDuration)
+	}
+
+	// Success
+	return nil
 }
 
 // CommandOutput holds the textual output from running a subprocess.

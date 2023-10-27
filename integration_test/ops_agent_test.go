@@ -3664,16 +3664,35 @@ func TestLoggingSelfLogs(t *testing.T) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, platform)
 
-		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
+		disableSelfLogCollection := `logging:
+  service:
+    self_log_collection: false
+`
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, disableSelfLogCollection); err != nil {
 			t.Fatal(err)
 		}
 
-		if err := gce.WaitForLog(ctx, logger, vm, "ops-agent-fluent-bit", time.Hour, `severity="INFO"`); err != nil {
+        if err := gce.AssertLogMissing(ctx, logger.ToMainLog(), vm, "ops-agent-fluent-bit", time.Minute, `severity="INFO"`); err != nil {
+			t.Error(err)
+		}
+        
+        query := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Minute, query); err != nil {
 			t.Error(err)
 		}
 
-		query := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
-		if err := gce.WaitForLog(ctx, logger, vm, "ops-agent-health", time.Hour, query); err != nil {
+        time.Sleep(time.Minute)
+
+        if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+        if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-fluent-bit", time.Minute, `severity="INFO"`); err != nil {
+			t.Error(err)
+		}
+
+		query = fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, query); err != nil {
 			t.Error(err)
 		}
 	})
