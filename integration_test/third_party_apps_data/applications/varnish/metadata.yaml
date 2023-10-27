@@ -125,6 +125,7 @@ platforms_to_skip:
   # varnish is not supported on sles
   - sles-12
   - sles-15
+  - sles-15-arm64
 expected_logs:
   - log_name: varnish
     fields:

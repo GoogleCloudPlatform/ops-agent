@@ -689,6 +689,8 @@ COPY --from=buster-build /google-cloud-ops-agent*.deb /
 FROM opensuse/archive:42.3 AS sles12-build-base
 ARG OPENJDK_MAJOR_VERSION
 
+# Add home:odassau repo to install 3.4 bison
+ADD https://download.opensuse.org/repositories/home:/odassau/SLE_12_SP4/home:odassau.repo /tmp/home:odassau.repo
 RUN set -x; \
 		# The 'OSS Update' repo signature is no longer valid, so verify the checksum instead.
 		zypper --no-gpg-check refresh 'OSS Update' && \
@@ -697,13 +699,13 @@ RUN set -x; \
 		# Remove expired root certificate.
 		mv /var/lib/ca-certificates/pem/DST_Root_CA_X3.pem /etc/pki/trust/blacklist/ && \
 		update-ca-certificates && \
-		# Add home:odassau repo to install >3.4 bison
-		zypper addrepo https://download.opensuse.org/repositories/home:/odassau/SLE_12_SP4/home:odassau.repo && \
+		# Add home:odassau repo to install 3.4 bison
+		zypper addrepo /tmp/home:odassau.repo && \
 		zypper -n --gpg-auto-import-keys refresh && \
 		zypper -n update && \
 		# zypper/libcurl has a use-after-free bug that causes segfaults for particular download sequences.
 		# If this bug happens to trigger in the future, adding a "zypper -n download" of a subset of the packages can avoid the segfault.
-		zypper -n install bison>3.4 && \
+		zypper -n install 'bison>3' && \
 		# Allow fluent-bit to find systemd
 		ln -fs /usr/lib/systemd /lib/systemd
 COPY --from=openjdk-install /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/ /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk
@@ -805,22 +807,11 @@ COPY --from=sles12-build /google-cloud-ops-agent*.rpm /
 FROM opensuse/leap:15.1 AS sles15-build-base
 ARG OPENJDK_MAJOR_VERSION
 
-RUN set -x; zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip
-		# Add agent-vendor.repo to install >3.4 bison
-		# See http://go/sdi/releases/build-test-release/vendored
-		RUN echo $'[ops-agent-build-vendor] \n\
-		name=ops-agent-build-vendor \n\
-		baseurl=https://us-yum.pkg.dev/projects/cloud-ops-agents-artifacts-dev/ops-agent-build-vendor-sles15-x86-64 \n\
-		enabled         = 1 \n\
-		autorefresh     = 0 \n\
-		repo_gpgcheck   = 0 \n\
-		gpgcheck        = 0' > agent-vendor.repo
-		RUN set -x; zypper addrepo agent-vendor.repo && \
-			zypper -n --gpg-auto-import-keys refresh && \
-			zypper -n update && \
-			zypper -n install bison>3.4 && \
-			# Allow fluent-bit to find systemd
-			ln -fs /usr/lib/systemd /lib/systemd
+RUN set -x; zypper -n refresh && \
+		zypper -n update && \
+		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip 'bison>3'
+# Allow fluent-bit to find systemd
+RUN ln -fs /usr/lib/systemd /lib/systemd
 COPY --from=openjdk-install /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/ /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk
 ENV JAVA_HOME /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/
 COPY --from=cmake-install-recent /cmake.sh /cmake.sh
@@ -1210,6 +1201,105 @@ FROM scratch AS lunar
 COPY --from=lunar-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-lunar.tgz
 COPY --from=lunar-build /google-cloud-ops-agent*.deb /
 
+# ======================================
+# Build Ops Agent for ubuntu-mantic 
+# ======================================
+
+FROM ubuntu:mantic AS mantic-build-base
+ARG OPENJDK_MAJOR_VERSION
+
+RUN set -x; apt-get update && \
+		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
+		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
+		build-essential cmake bison flex file libsystemd-dev \
+		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip debhelper
+
+SHELL ["/bin/bash", "-c"]
+
+# Install golang
+ARG BUILDARCH
+ARG GO_VERSION
+ADD https://go.dev/dl/go${GO_VERSION}.linux-${BUILDARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
+ENV PATH="${PATH}:/usr/local/go/bin"
+
+
+FROM mantic-build-base AS mantic-build-otel
+WORKDIR /work
+# Download golang deps
+COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
+RUN cd submodules/opentelemetry-operations-collector && go mod download
+
+COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
+# Install gradle. The first invocation of gradlew does this
+RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon tasks
+COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
+COPY ./builds/otel.sh .
+RUN ./otel.sh /work/cache/
+
+FROM mantic-build-base AS mantic-build-fluent-bit
+WORKDIR /work
+COPY ./submodules/fluent-bit submodules/fluent-bit
+COPY ./builds/fluent_bit.sh .
+RUN ./fluent_bit.sh /work/cache/
+
+
+FROM mantic-build-base AS mantic-build-systemd
+WORKDIR /work
+COPY ./systemd systemd
+COPY ./builds/systemd.sh .
+RUN ./systemd.sh /work/cache/
+
+
+FROM mantic-build-base AS mantic-build-golang-base
+WORKDIR /work
+COPY go.mod go.sum ./
+# Fetch dependencies
+RUN go mod download
+COPY confgenerator confgenerator
+COPY apps apps
+COPY internal internal
+
+
+FROM mantic-build-golang-base AS mantic-build-diagnostics
+WORKDIR /work
+COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
+COPY ./builds/ops_agent_diagnostics.sh .
+RUN ./ops_agent_diagnostics.sh /work/cache/
+
+
+FROM mantic-build-golang-base AS mantic-build-wrapper
+WORKDIR /work
+COPY cmd/agent_wrapper cmd/agent_wrapper
+COPY ./builds/agent_wrapper.sh .
+RUN ./agent_wrapper.sh /work/cache/
+
+
+FROM mantic-build-golang-base AS mantic-build
+WORKDIR /work
+COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
+COPY VERSION build.sh ./
+COPY debian debian
+COPY pkg pkg
+# Run the build script once to build the ops agent engine to a cache
+RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
+WORKDIR /tmp/cache_run/golang
+RUN ./pkg/deb/build.sh || true
+WORKDIR /work
+
+COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
+COPY --from=mantic-build-otel /work/cache /work/cache
+COPY --from=mantic-build-fluent-bit /work/cache /work/cache
+COPY --from=mantic-build-systemd /work/cache /work/cache
+COPY --from=mantic-build-diagnostics /work/cache /work/cache
+COPY --from=mantic-build-wrapper /work/cache /work/cache
+RUN ./pkg/deb/build.sh
+
+FROM scratch AS mantic
+COPY --from=mantic-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-mantic.tgz
+COPY --from=mantic-build /google-cloud-ops-agent*.deb /
+
 FROM scratch
 COPY --from=centos7 /* /
 COPY --from=centos8 /* /
@@ -1222,3 +1312,4 @@ COPY --from=sles15 /* /
 COPY --from=focal /* /
 COPY --from=jammy /* /
 COPY --from=lunar /* /
+COPY --from=mantic /* /

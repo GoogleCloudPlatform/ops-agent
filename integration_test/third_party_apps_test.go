@@ -793,6 +793,7 @@ func determineImpactedApps(modifiedFiles []string, allApps map[string]metadata.I
 
 type accelerator struct {
 	model         string
+	fullName      string
 	machineType   string
 	availableZone string
 }
@@ -822,37 +823,44 @@ var defaultApps = map[string]bool{
 var gpuModels = map[string]accelerator{
 	// This is the A100 40G model; A100 80G is similar so skipping
 	"a100": {
-		model:         "nvidia-tesla-a100",
+		model:         "a100",
+		fullName:      "nvidia-tesla-a100",
 		machineType:   "a2-highgpu-1g",
 		availableZone: "us-central1-a",
 	},
 	"v100": {
-		model:         "nvidia-tesla-v100",
+		model:         "v100",
+		fullName:      "nvidia-tesla-v100",
 		machineType:   "n1-standard-2",
 		availableZone: "us-central1-a",
 	},
 	"t4": {
-		model:         "nvidia-tesla-t4",
+		model:         "t4",
+		fullName:      "nvidia-tesla-t4",
 		machineType:   "n1-standard-2",
 		availableZone: "us-central1-a",
 	},
 	"p4": {
-		model:         "nvidia-tesla-p4",
+		model:         "p4",
+		fullName:      "nvidia-tesla-p4",
 		machineType:   "n1-standard-2",
 		availableZone: "us-central1-a",
 	},
 	"p100": {
-		model:         "nvidia-tesla-p100",
+		model:         "p100",
+		fullName:      "nvidia-tesla-p100",
 		machineType:   "n1-standard-2",
 		availableZone: "us-central1-c",
 	},
 	"k80": {
-		model:         "nvidia-tesla-k80",
+		model:         "k80",
+		fullName:      "nvidia-tesla-k80",
 		machineType:   "n1-standard-2",
 		availableZone: "us-central1-a",
 	},
 	"l4": {
-		model:         "nvidia-l4",
+		model:         "l4",
+		fullName:      "nvidia-l4",
 		machineType:   "g2-standard-4",
 		availableZone: "us-central1-a",
 	},
@@ -902,6 +910,11 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool) {
 		if metadata.SliceContains(test.metadata.PlatformsToSkip, test.platform) {
 			tests[i].skipReason = "Skipping test due to 'platforms_to_skip' entry in metadata.yaml"
 		}
+		for _, gpuPlatform := range test.metadata.GpuPlatforms {
+			if test.gpu != nil && test.gpu.model == gpuPlatform.Model && !metadata.SliceContains(gpuPlatform.Platforms, test.platform) {
+				tests[i].skipReason = "Skipping test due to 'gpu_platforms.platforms' entry in metadata.yaml"
+			}
+		}
 		if reason := incompatibleOperatingSystem(test); reason != "" {
 			tests[i].skipReason = reason
 		}
@@ -927,10 +940,10 @@ func TestThirdPartyApps(t *testing.T) {
 
 	for _, platform := range platforms {
 		for app, metadata := range allApps {
-			if len(metadata.GpuModels) > 0 {
-				for _, gpuModel := range metadata.GpuModels {
-					if gpu, ok := gpuModels[gpuModel]; !ok {
-						t.Fatalf("invalid gpu model name %s", gpuModel)
+			if len(metadata.GpuPlatforms) > 0 {
+				for _, gpuPlatform := range metadata.GpuPlatforms {
+					if gpu, ok := gpuModels[gpuPlatform.Model]; !ok {
+						t.Fatalf("invalid gpu model name %s", gpuPlatform)
 					} else {
 						tests = append(tests, test{platform: platform, gpu: &gpu, app: app, metadata: metadata, skipReason: ""})
 					}
@@ -950,7 +963,7 @@ func TestThirdPartyApps(t *testing.T) {
 
 		testName := tc.platform + "/" + tc.app
 		if tc.gpu != nil {
-			testName = testName + "/" + tc.gpu.model
+			testName = testName + "/" + tc.gpu.fullName
 		}
 
 		t.Run(testName, func(t *testing.T) {
@@ -975,7 +988,7 @@ func TestThirdPartyApps(t *testing.T) {
 				if tc.gpu != nil {
 					options.ExtraCreateArguments = append(
 						options.ExtraCreateArguments,
-						fmt.Sprintf("--accelerator=count=1,type=%s", tc.gpu.model),
+						fmt.Sprintf("--accelerator=count=1,type=%s", tc.gpu.fullName),
 						"--maintenance-policy=TERMINATE")
 					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-size=100GB")
 					options.MachineType = tc.gpu.machineType

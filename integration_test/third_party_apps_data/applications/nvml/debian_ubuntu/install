@@ -1,26 +1,35 @@
-# Installs the application
 set -e
+source /etc/os-release
 
 sudo apt update
-kernel_version=`uname -r`
-sudo apt install -y linux-headers-${kernel_version} software-properties-common pciutils gcc make dkms wget
+KERNEL_VERSION=`uname -r`
+sudo apt install -y linux-headers-${KERNEL_VERSION} software-properties-common pciutils gcc make dkms wget
 
-# Install CUDA and driver together, since the `exercise` script needs CUDA to compile the application to generating GPU process metrics
+# Install CUDA and driver together, since the `exercise` script needs to run a 
+# CUDA sample app to generating GPU process metrics
+# Prefer to install from the package manager since it is normally faster and has
+# less errors on installation; fallback to the runfile method if the package 
+# manager's package is not working or not compitible with the GPU model
 DEVICE_CODE=$(lspci -n | grep -Po '10de:[\w\d]{4}')
+DISTRIBUTION=$(echo $ID$VERSION_ID | sed -e 's/\.//g')
 case $DEVICE_CODE in
     10de:102d)
         # Install a specific version for NVIDIA Tesla K80, R470 is the last supported version
-        echo "Installing NVIDIA CUDA 11.2.1 with driver 460.32.03"
-        curl https://raw.githubusercontent.com/GoogleCloudPlatform/compute-gpu-installation/main/linux/install_gpu_driver.py --output install_gpu_driver.py
-        sudo python3 install_gpu_driver.py
-        wget --no-verbose https://developer.download.nvidia.com/compute/cuda/11.2.1/local_installers/cuda_11.2.1_460.32.03_linux.run
-        sudo sh cuda_11.2.1_460.32.03_linux.run --toolkit --silent
-        sudo apt install -y libcublas10
+        DRIVER_VERSION=470.82.01
+        CUDA_VERSION=11.4.4
+        echo "Installing NVIDIA CUDA $CUDA_VERSION with driver $DRIVER_VERSION"
+        curl -fSsl -O https://us.download.nvidia.com/tesla/$DRIVER_VERSION/NVIDIA-Linux-x86_64-$DRIVER_VERSION.run
+        sudo bash ./NVIDIA-Linux-x86_64-$DRIVER_VERSION.run --silent
+        wget --no-verbose https://developer.download.nvidia.com/compute/cuda/$CUDA_VERSION/local_installers/cuda_${CUDA_VERSION}_${DRIVER_VERSION}_linux.run
+        sudo sh cuda_${CUDA_VERSION}_${DRIVER_VERSION}_linux.run --toolkit --silent
         ;;
     *)
         echo "Installing latest version of NVIDIA CUDA and driver"
-        wget --no-verbose https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-keyring_1.0-1_all.deb
+        wget --no-verbose https://developer.download.nvidia.com/compute/cuda/repos/${DISTRIBUTION}/x86_64/cuda-keyring_1.0-1_all.deb
         sudo dpkg -i cuda-keyring_1.0-1_all.deb
+        if [[ $ID == debian ]]; then
+            sudo add-apt-repository contrib
+        fi
         sudo apt update
         sudo apt -y install cuda 
         ;;

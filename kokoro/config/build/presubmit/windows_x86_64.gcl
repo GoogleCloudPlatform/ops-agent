@@ -1,0 +1,3 @@
+import '../common.gcl' as common
+
+config build = common.windows_build {}

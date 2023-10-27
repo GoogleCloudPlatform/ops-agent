@@ -27,9 +27,10 @@ minimum_supported_agent_version:
   logging: 2.10.0
 supported_operating_systems: linux
 platforms_to_skip:
-  # mongodb is not currently supported on Ubuntu 23.04 and Debian 12
+  # mongodb is not currently supported on various distros.
   - ubuntu-2304-amd64
   - debian-12
+  - sles-15-arm64
 supported_app_version: ["2.6", "3.0+", "4.0+", "5.0", "6.0"]
 expected_metrics:
   - type: workload.googleapis.com/mongodb.cache.operations
