@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -72,6 +73,7 @@ type CustomFeatures interface {
 // tag will be used instead of value from UnifiedConfig.
 func ExtractFeatures(uc *UnifiedConfig) ([]Feature, error) {
 	allFeatures := getOverriddenDefaultPipelines(uc)
+	allFeatures = append(allFeatures, getSelfLogCollection(uc))
 
 	var err error
 	var tempTrackedFeatures []Feature
@@ -430,6 +432,21 @@ func getMetadata(field reflect.StructField) metadata {
 		// See this for more details: https://pkg.go.dev/gopkg.in/yaml.v2#Unmarshal
 		yamlTag: yamlTags[0],
 	}
+}
+
+func getSelfLogCollection(uc *UnifiedConfig) Feature {
+	feature := Feature{
+		Module: "logging",
+		Kind:   "service",
+		Type:   "self_log",
+		Key:    []string{"self_log_collection"},
+		Value:  "true",
+	}
+	if uc.Logging != nil && uc.Logging.Service != nil {
+		feature.Value = strconv.FormatBool(uc.Logging.Service.GetSelfLogCollection())
+	}
+
+	return feature
 }
 
 func getOverriddenDefaultPipelines(uc *UnifiedConfig) []Feature {

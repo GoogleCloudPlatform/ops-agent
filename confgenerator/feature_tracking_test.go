@@ -54,6 +54,13 @@ var expectedFeatureBase = []confgenerator.Feature{
 		Key:    []string{"default_pipeline_overridden"},
 		Value:  "false",
 	},
+	{
+		Module: "logging",
+		Kind:   "service",
+		Type:   "self_log",
+		Key:    []string{"self_log_collection"},
+		Value:  "true",
+	},
 }
 
 var expectedTestFeatureBase = []confgenerator.Feature{
