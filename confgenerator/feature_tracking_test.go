@@ -63,6 +63,30 @@ var expectedFeatureBase = []confgenerator.Feature{
 	},
 }
 
+var expectedMetricsPipelineOverriden = []confgenerator.Feature{
+	{
+		Module: "logging",
+		Kind:   "service",
+		Type:   "pipelines",
+		Key:    []string{"default_pipeline_overridden"},
+		Value:  "false",
+	},
+	{
+		Module: "metrics",
+		Kind:   "service",
+		Type:   "pipelines",
+		Key:    []string{"default_pipeline_overridden"},
+		Value:  "true",
+	},
+	{
+		Module: "logging",
+		Kind:   "service",
+		Type:   "self_log",
+		Key:    []string{"self_log_collection"},
+		Value:  "true",
+	},
+}
+
 var expectedTestFeatureBase = []confgenerator.Feature{
 	{
 		Module: "logging",
@@ -77,6 +101,13 @@ var expectedTestFeatureBase = []confgenerator.Feature{
 		Type:   "pipelines",
 		Key:    []string{"default_pipeline_overridden"},
 		Value:  "false",
+	},
+	{
+		Module: "logging",
+		Kind:   "service",
+		Type:   "self_log",
+		Key:    []string{"self_log_collection"},
+		Value:  "true",
 	},
 	{
 		Module: confgenerator.MetricsReceiverTypes.Subagent,
@@ -630,25 +661,8 @@ func TestOverrideDefaultPipeline(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expected := []confgenerator.Feature{
-		{
-			Module: "logging",
-			Kind:   "service",
-			Type:   "pipelines",
-			Key:    []string{"default_pipeline_overridden"},
-			Value:  "false",
-		},
-		{
-			Module: "metrics",
-			Kind:   "service",
-			Type:   "pipelines",
-			Key:    []string{"default_pipeline_overridden"},
-			Value:  "true",
-		},
-	}
-
-	if !cmp.Equal(features, expected) {
-		t.Fatalf("expected: %v, actual: %v", expected, features)
+	if !cmp.Equal(features, expectedMetricsPipelineOverriden) {
+		t.Fatalf("expected: %v, actual: %v", expectedMetricsPipelineOverriden, features)
 	}
 }
 
