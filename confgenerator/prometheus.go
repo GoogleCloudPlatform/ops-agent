@@ -62,27 +62,29 @@ func (r PrometheusMetrics) Type() string {
 
 func (r PrometheusMetrics) Pipelines(ctx context.Context) []otel.ReceiverPipeline {
 	// Get the resource metadata for the instance we're running on.
-	resourceMetadataMap := MetadataResource.PrometheusStyleMetadata()
-	if p := platform.FromContext(ctx).ResourceOverride; p != nil {
-		resourceMetadataMap = p.PrometheusStyleMetadata()
-	}
+	if MetadataResource != nil {
+		resourceMetadataMap := MetadataResource.PrometheusStyleMetadata()
+		if p := platform.FromContext(ctx).ResourceOverride; p != nil {
+			resourceMetadataMap = p.PrometheusStyleMetadata()
+		}
 
-	// Add the GCE metadata to the prometheus config.
-	for i := range r.PromConfig.ScrapeConfigs {
-		// Iterate over the static configs.
-		for j := range r.PromConfig.ScrapeConfigs[i].ServiceDiscoveryConfigs {
-			staticConfigs := r.PromConfig.ScrapeConfigs[i].ServiceDiscoveryConfigs[j].(discovery.StaticConfig)
-			for k := range staticConfigs {
-				labels := staticConfigs[k].Labels
-				if labels == nil {
-					labels = model.LabelSet{}
-				}
-				for k, v := range resourceMetadataMap {
-					// If there are conflicts, the resource metadata should take precedence.
-					labels[model.LabelName(k)] = model.LabelValue(v)
-				}
+		// Add the GCE metadata to the prometheus config.
+		for i := range r.PromConfig.ScrapeConfigs {
+			// Iterate over the static configs.
+			for j := range r.PromConfig.ScrapeConfigs[i].ServiceDiscoveryConfigs {
+				staticConfigs := r.PromConfig.ScrapeConfigs[i].ServiceDiscoveryConfigs[j].(discovery.StaticConfig)
+				for k := range staticConfigs {
+					labels := staticConfigs[k].Labels
+					if labels == nil {
+						labels = model.LabelSet{}
+					}
+					for k, v := range resourceMetadataMap {
+						// If there are conflicts, the resource metadata should take precedence.
+						labels[model.LabelName(k)] = model.LabelValue(v)
+					}
 
-				staticConfigs[k].Labels = labels
+					staticConfigs[k].Labels = labels
+				}
 			}
 		}
 	}
