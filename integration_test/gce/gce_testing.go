@@ -613,9 +613,10 @@ func AssertMetricMissing(ctx context.Context, logger *log.Logger, vm *VM, metric
 	return nil
 }
 
-// hasMatchingLog looks in the logging backend for a log matching the given query
-// and returns success if no data is found. To consider possible transient errors
-// while querying the backend we make queryMaxAttemptsMetricMissing query attempts.
+// hasMatchingLog looks in the logging backend for a log matching the given query,
+// over the trailing time interval specified by the given window.
+// Returns a boolean indicating whether the log was present in the backend,
+// plus the first log entry found, or an error if the lookup failed.
 func hasMatchingLog(ctx context.Context, logger *log.Logger, vm *VM, logNameRegex string, window time.Duration, query string) (bool, *cloudlogging.Entry, error) {
 	start := time.Now().Add(-window)
 

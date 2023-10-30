@@ -118,6 +118,14 @@ func stopCommandForPlatform(platform string) string {
 	return "sudo service google-cloud-ops-agent stop || sudo systemctl stop google-cloud-ops-agent"
 }
 
+func restartCommandForPlatform(platform string) string {
+	if gce.IsWindows(platform) {
+		return "Restart-Service google-cloud-ops-agent -Force"
+	}
+	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
+	return "sudo service google-cloud-ops-agent restart || sudo systemctl restart google-cloud-ops-agent"
+}
+
 func systemLogTagForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
 		return "windows_event_log"
@@ -3658,11 +3666,11 @@ func TestLoggingAgentCrashRestart(t *testing.T) {
 	})
 }
 
-func TestLoggingSelfLogs(t *testing.T) {
+func TestDisableSelfLogCollection(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := agents.CommonSetup(t, platform)	
 
 		disableSelfLogCollection := `logging:
   service:
@@ -3672,26 +3680,38 @@ func TestLoggingSelfLogs(t *testing.T) {
 			t.Fatal(err)
 		}
 
-        if err := gce.AssertLogMissing(ctx, logger.ToMainLog(), vm, "ops-agent-fluent-bit", time.Minute, `severity="INFO"`); err != nil {
+		time.Sleep(2 * time.Minute)
+
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", restartCommandForPlatform(vm.Platform)); err != nil {
+			t.Fatal(err)
+		}
+
+        if err := gce.AssertLogMissing(ctx, logger.ToMainLog(), vm, "ops-agent-fluent-bit", 2 * time.Minute, `severity="INFO"`); err != nil {
 			t.Error(err)
 		}
         
         query := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Minute, query); err != nil {
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", 3 * time.Minute, query); err != nil {
 			t.Error(err)
 		}
+	})
+}
 
-        time.Sleep(time.Minute)
+func TestLoggingSelfLogs(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
 
-        if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, ""); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, ""); err != nil {
 			t.Fatal(err)
 		}
 
-        if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-fluent-bit", time.Minute, `severity="INFO"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-fluent-bit", time.Hour, `severity="INFO"`); err != nil {
 			t.Error(err)
 		}
 
-		query = fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		query := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, query); err != nil {
 			t.Error(err)
 		}
