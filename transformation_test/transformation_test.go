@@ -3,7 +3,6 @@ package transformation_test
 import (
 	"bytes"
 	"context"
-	"embed"
 	"flag"
 	"fmt"
 	"io"
@@ -19,6 +18,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/goccy/go-yaml"
 	"github.com/google/go-cmp/cmp"
+	"golang.org/x/sync/errgroup"
 	"gotest.tools/v3/golden"
 )
 
@@ -33,9 +33,6 @@ const (
 var (
 	flbPath = flag.String("flb", os.Getenv("FLB"), "Fluent-bit path")
 )
-
-//go:embed testdata
-var testdataDir embed.FS
 
 type transformationTest []loggingProcessor
 type loggingProcessor struct {
@@ -52,19 +49,18 @@ func TestTransformationTests(t *testing.T) {
 		t.Skip("--flb not supplied")
 	}
 
-	allTests, err := testdataDir.ReadDir("testdata")
+	allTests, err := os.ReadDir("testdata")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	for _, dir := range allTests {
 		dir := dir
+		if !dir.IsDir() {
+			continue
+		}
 		t.Run(dir.Name(), func(t *testing.T) {
 			t.Parallel()
-			if !dir.IsDir() {
-				t.Fatal("testdata folder must only contain folders")
-			}
-
 			testStartTime := time.Now()
 			// Unmarshal transformation_config.yaml
 			var transformationConfig transformationTest
@@ -106,13 +102,19 @@ func TestTransformationTests(t *testing.T) {
 				t.Fatal("Failed to start command:", err)
 			}
 
-			// read stderr
-			slurp, _ := io.ReadAll(stderr)
-			t.Logf("stderr: %s\n", slurp)
+			// stderr and stdout need to be read in parallel to prevent deadlock
+			var eg errgroup.Group
+			eg.Go(func() error {
+				// read stderr
+				slurp, _ := io.ReadAll(stderr)
+				t.Logf("stderr: %s\n", slurp)
+				return nil
+			})
 
 			// read and unmarshal output
 			var data []map[string]any
 			out, _ := io.ReadAll(stdout)
+			_ = eg.Wait()
 
 			err := yaml.Unmarshal(out, &data)
 			if err != nil {
@@ -155,16 +157,11 @@ func checkOutput(t *testing.T, name string, got []map[string]any) {
 		t.Fatalf("got(-)/want(+):\n%s", diff)
 	}
 }
-
-func readFileFromTestDir(filePath string) ([]byte, error) {
-	return testdataDir.ReadFile(filepath.Join("testdata", filePath))
-}
-
 func readTransformationConfig(dir string) (transformationTest, error) {
 	var transformationTestData []byte
 	var config transformationTest
 
-	transformationTestData, err := readFileFromTestDir(filepath.Join(dir, "config.yaml"))
+	transformationTestData, err := os.ReadFile(filepath.Join("testdata", dir, "config.yaml"))
 	if err != nil {
 		return config, err
 	}
