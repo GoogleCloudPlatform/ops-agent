@@ -10,7 +10,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"testing"
 	"time"
 
@@ -85,8 +84,11 @@ func TestTransformationTests(t *testing.T) {
 			}
 
 			// Start Fluent-bit
-			arg := fmt.Sprintf("--config=%s --parser=%s -v", filepath.Join(tempPath, flbMainConf), filepath.Join(filepath.Join(tempPath, flbParserConf)))
-			cmd := exec.Command(fmt.Sprintf("%s/fluent-bit", *flbPath), strings.Split(arg, " ")...)
+			cmd := exec.Command(
+				fmt.Sprintf("%s/fluent-bit", *flbPath),
+				"-v",
+				fmt.Sprintf("--config=%s", filepath.Join(tempPath, flbMainConf)),
+				fmt.Sprintf("--parser=%s", filepath.Join(filepath.Join(tempPath, flbParserConf))))
 
 			var stdout, stderr io.ReadCloser
 			stdout, err = cmd.StdoutPipe()
