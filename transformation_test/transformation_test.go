@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
@@ -24,13 +25,13 @@ import (
 const (
 	flbMainConf          = "fluent_bit_main.conf"
 	flbParserConf        = "fluent_bit_parser.conf"
-	transformationInput  = "transformation_input.txt"
-	transformationOutput = "transformation_output.yaml"
+	transformationInput  = "input.log"
+	transformationOutput = "output_fluentbit.yaml"
 	flbTag               = "transformation_test"
 )
 
 var (
-	flbPath = flag.String("flb", "", "Fluent-bit path")
+	flbPath = flag.String("flb", os.Getenv("FLB"), "Fluent-bit path")
 )
 
 //go:embed testdata
@@ -163,7 +164,7 @@ func readTransformationConfig(dir string) (transformationTest, error) {
 	var transformationTestData []byte
 	var config transformationTest
 
-	transformationTestData, err := readFileFromTestDir(filepath.Join(dir, "transformation_config.yaml"))
+	transformationTestData, err := readFileFromTestDir(filepath.Join(dir, "config.yaml"))
 	if err != nil {
 		return config, err
 	}
