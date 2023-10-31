@@ -26,7 +26,7 @@ for the new distro. You can duplicate the most recent distro as a starting
 point. Then iterate on your change to `compile.go` by running:
 
 ```shell
-go run dockerfiles/compile.go && docker build --target $DISTRO_SHORT -t scratch .
+go run dockerfiles/compile.go && DOCKER_BUILDKIT=1 docker build --target $DISTRO_SHORT -t scratch .
 ```
 
 See [Troubleshooting](#troubleshooting) if you have problems. Once that
@@ -39,10 +39,12 @@ manifest as runtime errors that won't show up until tests are run.
 
 1.  Temporarily repurpose one of the existing Kokoro builds for testing
     your new distro. For example, in
-    [build/presubmit/bullseye.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/build/presubmit/bullseye.gcl),
+    [kokoro/config/build/presubmit/bullseye_x86_64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/build/presubmit/bullseye_x86_64.gcl)
+    or [kokoro/config/build/presubmit/bullseye_aarch64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/build/presubmit/bullseye_aarch64.gcl),
     replace `bullseye` with `$DISTRO_SHORT` and change `deb` to `rpm` if
     needed. Then in
-    [test/ops_agent/bullseye.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/ops_agent/bullseye.gcl),
+    [kokoro/config/test/ops_agent/bullseye_x86_64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/ops_agent/bullseye_x86_64.gcl)
+    or [kokoro/config/test/ops_agent/bullseye_aarch64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/ops_agent/bullseye_aarch64.gcl),
     replace `image_lists.debian.distros.bullseye.presubmit` with
     `$DISTRO_FAMILY`. This will cause the `bullseye` Kokoro build to build
     and test your distro instead.
@@ -56,7 +58,7 @@ manifest as runtime errors that won't show up until tests are run.
 
 1.  Once builds and "Ops Agent integration test" (AKA `ops_agent_test`) are
     passing, Revert the temporary changes to the Kokoro configs (the two
-    `bullseye.gcl` files in the earlier step). Get your PR reviewed and
+    `bullseye_$arch.gcl` files in the earlier step). Get your PR reviewed and
     merge it to `master`.
 
 ### Running `third_party_apps_test` against the new distro
