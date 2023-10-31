@@ -568,8 +568,6 @@ receivers:
         enabled: false
       mysql.index.io.wait.time:
         enabled: false
-      mysql.locked_connects:
-        enabled: false
       mysql.mysqlx_connections:
         enabled: false
       mysql.opened_resources:
