@@ -8,7 +8,7 @@ override_dh_auto_configure:
 override_dh_auto_build:
 	true
 override_dh_auto_test:
-	PATH="/usr/local/go/bin:$$PATH" FLB="../cache/opt/google-cloud-ops-agent/subagents/fluent-bit/bin" go test ./...
+	PATH="/usr/local/go/bin:$$PATH" FLB="../cache/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit" go test ./...
 override_dh_strip_nondeterminism:
 	dh_strip_nondeterminism -X.jar
 override_dh_auto_install:
