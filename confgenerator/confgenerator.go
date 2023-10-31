@@ -75,6 +75,9 @@ func googleManagedPrometheusExporter(userAgent string) otel.Component {
 			// OTLP Gauge metrics ingested by the Ops Agent, that have this key will also be treated as untyped prometheus metrics
 			// if it is being exported to GMP. As such, this knob can be set to true.
 			"untyped_double_export": true,
+			"metric": map[string]interface{}{
+				"add_metric_suffixes": false,
+			},
 		},
 	}
 }

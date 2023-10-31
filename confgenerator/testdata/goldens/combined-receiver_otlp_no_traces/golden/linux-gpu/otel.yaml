@@ -8,6 +8,8 @@ exporters:
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
   googlemanagedprometheus:
+    metric:
+      add_metric_suffixes: false
     retry_on_failure:
       enabled: false
     untyped_double_export: true
