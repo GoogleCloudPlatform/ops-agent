@@ -30,7 +30,7 @@ const (
 )
 
 var (
-	flbPath = flag.String("flb", os.Getenv("FLB"), "Fluent-bit path")
+	flbPath = flag.String("flb", os.Getenv("FLB"), "Path to Fluent-bit binary")
 )
 
 type transformationTest []loggingProcessor
@@ -85,7 +85,7 @@ func TestTransformationTests(t *testing.T) {
 
 			// Start Fluent-bit
 			cmd := exec.Command(
-				fmt.Sprintf("%s/fluent-bit", *flbPath),
+				fmt.Sprintf("%s", *flbPath),
 				"-v",
 				fmt.Sprintf("--config=%s", filepath.Join(tempPath, flbMainConf)),
 				fmt.Sprintf("--parser=%s", filepath.Join(filepath.Join(tempPath, flbParserConf))))
