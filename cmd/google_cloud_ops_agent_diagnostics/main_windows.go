@@ -112,8 +112,6 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 			}
 		}
 	}
-
-	return false, ERROR_SUCCESS
 }
 
 func (s *service) parseFlags(args []string) error {
