@@ -62,6 +62,8 @@ func googleManagedPrometheusExporter(userAgent string) otel.Component {
 			// (b/233372619) Due to a constraint in the Monarch API for retrying successful data points,
 			// leaving this enabled is causing adverse effects for some customers. Google OpenTelemetry team
 			// recommends disabling this.
+			// (b/308675258) Need to update the `googlemanagedprometheus` exporter in otelopscol to deprecate this
+			// option
 			"retry_on_failure": map[string]interface{}{
 				"enabled": false,
 			},
@@ -75,6 +77,8 @@ func googleManagedPrometheusExporter(userAgent string) otel.Component {
 			// OTLP Gauge metrics ingested by the Ops Agent, that have this key will also be treated as untyped prometheus metrics
 			// if it is being exported to GMP. As such, this knob can be set to true.
 			"untyped_double_export": true,
+			// The exporter has the config option addMetricSuffixes with default value true. It will add Prometheus
+			// style suffixes to metric names, e.g., `_total` for a counter; set to false to collect metrics as is
 			"metric": map[string]interface{}{
 				"add_metric_suffixes": false,
 			},
