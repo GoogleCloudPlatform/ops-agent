@@ -783,7 +783,7 @@ func wrapPowershellCommand(command string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("powershell -NonInteractive -EncodedCommand %q", base64.StdEncoding.EncodeToString([]byte(encoded))), nil
+	return fmt.Sprintf("pwsh -NonInteractive -OutputFormat Text -EncodedCommand %q", base64.StdEncoding.EncodeToString([]byte(encoded))), nil
 }
 
 // RunRemotely runs a command on the provided VM.
