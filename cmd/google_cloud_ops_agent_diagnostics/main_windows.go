@@ -22,8 +22,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
-	"go.opentelemetry.io/otel"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
@@ -85,35 +83,34 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 	s.log.Info(DiagnosticsEventID, "obtained unified configuration")
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 
-	defer func() {
-		changes <- svc.Status{State: svc.StopPending}
-	}()
-
 	go func() {
-		// Manage windows service signals
-		for {
-			select {
-			case c := <-r:
-				switch c.Cmd {
-				case svc.Interrogate:
-					changes <- c.CurrentStatus
-				case svc.Stop, svc.Shutdown:
-					cancel()
-					return
-				default:
-					s.log.Error(DiagnosticsEventID, fmt.Sprintf("unexpected control request #%d", c))
-				}
-			}
+		// Set otel error handler
+		otel.SetErrorHandler(s)
+
+		err = self_metrics.CollectOpsAgentSelfMetrics(ctx, userUc, mergedUc)
+		if err != nil {
+			s.log.Error(DiagnosticsEventID, fmt.Sprintf("failed to collect ops agent self metrics: %v", err))
+			return false, ERROR_INVALID_DATA
 		}
 	}()
 
-	// Set otel error handler
-	otel.SetErrorHandler(s)
-
-	err = self_metrics.CollectOpsAgentSelfMetrics(ctx, userUc, mergedUc)
-	if err != nil {
-		s.log.Error(DiagnosticsEventID, fmt.Sprintf("failed to collect ops agent self metrics: %v", err))
-		return false, ERROR_INVALID_DATA
+	defer func() {
+		changes <- svc.Status{State: svc.StopPending}
+	}()
+	// Manage windows service signals
+	for {
+		select {
+		case c := <-r:
+			switch c.Cmd {
+			case svc.Interrogate:
+				changes <- c.CurrentStatus
+			case svc.Stop, svc.Shutdown:
+				cancel()
+				return
+			default:
+				s.log.Error(DiagnosticsEventID, fmt.Sprintf("unexpected control request #%d", c))
+			}
+		}
 	}
 
 	return false, ERROR_SUCCESS
