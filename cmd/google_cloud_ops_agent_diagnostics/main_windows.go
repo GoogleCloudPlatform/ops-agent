@@ -90,7 +90,7 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		err = self_metrics.CollectOpsAgentSelfMetrics(ctx, userUc, mergedUc)
 		if err != nil {
 			s.log.Error(DiagnosticsEventID, fmt.Sprintf("failed to collect ops agent self metrics: %v", err))
-			return false, ERROR_INVALID_DATA
+			return
 		}
 	}()
 
