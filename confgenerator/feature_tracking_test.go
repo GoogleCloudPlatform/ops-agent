@@ -26,7 +26,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GoogleCloudPlatform/ops-agent/apps"
+	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/google/go-cmp/cmp"
@@ -794,7 +794,6 @@ func TestPrometheusFeatureMetrics(t *testing.T) {
 }
 
 func TestGolden(t *testing.T) {
-	_ = apps.BuiltInConfStructs
 	components := confgenerator.LoggingReceiverTypes.GetComponentsFromRegistry()
 	components = append(components, confgenerator.LoggingProcessorTypes.GetComponentsFromRegistry()...)
 	components = append(components, confgenerator.MetricsReceiverTypes.GetComponentsFromRegistry()...)
