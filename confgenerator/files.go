@@ -35,7 +35,7 @@ func ReadUnifiedConfigFromFile(ctx context.Context, path string) (*UnifiedConfig
 		return nil, fmt.Errorf("failed to retrieve the user config file %q: %w \n", path, err)
 	}
 
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
