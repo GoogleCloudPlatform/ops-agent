@@ -57,7 +57,7 @@ func (uc *UnifiedConfig) GenerateFilesFromConfig(ctx context.Context, service, l
 			return fmt.Errorf("can't parse configuration: %w", err)
 		}
 		for name, contents := range files {
-			if err = writeConfigFile([]byte(contents), filepath.Join(outDir, name)); err != nil {
+			if err = WriteConfigFile([]byte(contents), filepath.Join(outDir, name)); err != nil {
 				return err
 			}
 		}
@@ -73,7 +73,7 @@ func (uc *UnifiedConfig) GenerateFilesFromConfig(ctx context.Context, service, l
 		if err != nil {
 			return fmt.Errorf("can't parse configuration: %w", err)
 		}
-		if err = writeConfigFile([]byte(otelConfig), filepath.Join(outDir, "otel.yaml")); err != nil {
+		if err = WriteConfigFile([]byte(otelConfig), filepath.Join(outDir, "otel.yaml")); err != nil {
 			return err
 		}
 	default:
@@ -82,7 +82,7 @@ func (uc *UnifiedConfig) GenerateFilesFromConfig(ctx context.Context, service, l
 	return nil
 }
 
-func writeConfigFile(content []byte, path string) error {
+func WriteConfigFile(content []byte, path string) error {
 	// Make sure the directory exists before writing the file.
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return fmt.Errorf("failed to create directory for %q: %w", path, err)

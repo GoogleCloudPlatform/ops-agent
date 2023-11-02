@@ -156,10 +156,8 @@ RUN ./agent_wrapper.sh /work/cache/
 
 FROM centos7-build-golang-base AS centos7-build
 WORKDIR /work
-COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
-COPY VERSION build.sh ./
-COPY debian debian
-COPY pkg pkg
+COPY . /work
+
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
@@ -257,10 +255,8 @@ RUN ./agent_wrapper.sh /work/cache/
 
 FROM centos8-build-golang-base AS centos8-build
 WORKDIR /work
-COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
-COPY VERSION build.sh ./
-COPY debian debian
-COPY pkg pkg
+COPY . /work
+
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
@@ -361,10 +357,8 @@ RUN ./agent_wrapper.sh /work/cache/
 
 FROM rockylinux9-build-golang-base AS rockylinux9-build
 WORKDIR /work
-COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
-COPY VERSION build.sh ./
-COPY debian debian
-COPY pkg pkg
+COPY . /work
+
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
@@ -460,10 +454,8 @@ RUN ./agent_wrapper.sh /work/cache/
 
 FROM bookworm-build-golang-base AS bookworm-build
 WORKDIR /work
-COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
-COPY VERSION build.sh ./
-COPY debian debian
-COPY pkg pkg
+COPY . /work
+
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
@@ -559,10 +551,8 @@ RUN ./agent_wrapper.sh /work/cache/
 
 FROM bullseye-build-golang-base AS bullseye-build
 WORKDIR /work
-COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
-COPY VERSION build.sh ./
-COPY debian debian
-COPY pkg pkg
+COPY . /work
+
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
@@ -660,10 +650,8 @@ RUN ./agent_wrapper.sh /work/cache/
 
 FROM buster-build-golang-base AS buster-build
 WORKDIR /work
-COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
-COPY VERSION build.sh ./
-COPY debian debian
-COPY pkg pkg
+COPY . /work
+
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
@@ -778,10 +766,8 @@ RUN ./agent_wrapper.sh /work/cache/
 
 FROM sles12-build-golang-base AS sles12-build
 WORKDIR /work
-COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
-COPY VERSION build.sh ./
-COPY debian debian
-COPY pkg pkg
+COPY . /work
+
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
@@ -882,10 +868,8 @@ RUN ./agent_wrapper.sh /work/cache/
 
 FROM sles15-build-golang-base AS sles15-build
 WORKDIR /work
-COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
-COPY VERSION build.sh ./
-COPY debian debian
-COPY pkg pkg
+COPY . /work
+
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
@@ -981,10 +965,8 @@ RUN ./agent_wrapper.sh /work/cache/
 
 FROM focal-build-golang-base AS focal-build
 WORKDIR /work
-COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
-COPY VERSION build.sh ./
-COPY debian debian
-COPY pkg pkg
+COPY . /work
+
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
@@ -1080,10 +1062,8 @@ RUN ./agent_wrapper.sh /work/cache/
 
 FROM jammy-build-golang-base AS jammy-build
 WORKDIR /work
-COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
-COPY VERSION build.sh ./
-COPY debian debian
-COPY pkg pkg
+COPY . /work
+
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
@@ -1179,10 +1159,8 @@ RUN ./agent_wrapper.sh /work/cache/
 
 FROM lunar-build-golang-base AS lunar-build
 WORKDIR /work
-COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
-COPY VERSION build.sh ./
-COPY debian debian
-COPY pkg pkg
+COPY . /work
+
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
@@ -1278,10 +1256,8 @@ RUN ./agent_wrapper.sh /work/cache/
 
 FROM mantic-build-golang-base AS mantic-build
 WORKDIR /work
-COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
-COPY VERSION build.sh ./
-COPY debian debian
-COPY pkg pkg
+COPY . /work
+
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
