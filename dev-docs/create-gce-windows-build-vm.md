@@ -12,7 +12,7 @@ Note: Using `ssd` speeds up the build.
 1. Create the VM: 
     ```shell
     # VM image family.
-    export WIN_BUILD_VM_OS_IMAGE_FAMILY=windows-2019-for-containers
+    export WIN_BUILD_VM_OS_IMAGE_FAMILY=windows-2019
 
     # Your dev GCP project ID.
     export VM_PROJECT_ID=${USER}-sandbox
