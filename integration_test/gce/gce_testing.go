@@ -1402,7 +1402,7 @@ func DeleteInstance(logger *log.Logger, vm *VM) error {
 				"--project=" + vm.Project,
 				"--zone=" + vm.Zone,
 				vm.Name,
-		})
+			})
 		// GCE sometimes responds with "The service is currently unavailable".
 		// Retry these errors, by returning them directly.
 		if err != nil && strings.Contains(err.Error(), "unavailable") {
@@ -1411,7 +1411,7 @@ func DeleteInstance(logger *log.Logger, vm *VM) error {
 		// Wrap other errors in backoff.Permanent() to avoid retrying those.
 		if err != nil {
 			return backoff.Permanent(err)
-		}	
+		}
 		return nil
 	}
 	err := backoff.Retry(tryDelete, backoffPolicy)
@@ -1500,57 +1500,66 @@ func InstallGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) erro
 		return fmt.Errorf("this test does not know how to install gsutil on platform %q", vm.Platform)
 	}
 
-	// This is what's used on openSUSE.
-	repoSetupCmd := "sudo zypper --non-interactive refresh"
-
-	if strings.HasPrefix(vm.Platform, "sles-") {
-		// Use a vendored repo to reduce flakiness of the external repos.
-		// See http://go/sdi/releases/build-test-release/vendored for details.
-		repoArch := "x86-64"
-		if IsARM(vm.Platform) {
-			repoArch = "aarch64"
-		}
-		repo := "google-cloud-monitoring-sles12-" + repoArch + "-test-vendor"
-		if strings.HasPrefix(vm.Platform, "sles-15") {
-			repo = "google-cloud-monitoring-sles15-" + repoArch + "-test-vendor"
-		}
-		repoSetupCmd = `sudo zypper --non-interactive addrepo -g -t YUM https://us-yum.pkg.dev/projects/cloud-ops-agents-artifacts-dev/` + repo + ` test-vendor
-sudo rpm --import https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
-sudo zypper --non-interactive refresh test-vendor`
+	gcloudArch := "x86_64"
+	if IsARM(vm.Platform) {
+		gcloudArch = "arm"
 	}
-
-	installCmd := `set -ex
-
-` + repoSetupCmd + `
-sudo zypper --non-interactive install --force-resolution --capability 'python>=3.6'
-sudo zypper --non-interactive install python3-certifi
-
-# On SLES 12, python3 is Python 3.4. Tell gsutil/gcloud to use python3.6.
-export CLOUDSDK_PYTHON=/usr/bin/python3.6
-
-# Install gcloud (https://cloud.google.com/sdk/docs/downloads-interactive).
-curl -o install.sh https://sdk.cloud.google.com
+	gcloudPkg := "google-cloud-cli-453.0.0-linux-" + gcloudArch + ".tar.gz"
+	installFromTarball := `
+curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/` + gcloudPkg + `
 INSTALL_DIR="$(readlink --canonicalize .)"
 (
-		INSTALL_LOG="$(mktemp)"
-    # This command produces a lot of console spam, so we only display that
-    # output if there is a problem.
-    sudo --preserve-env bash install.sh --disable-prompts --install-dir="${INSTALL_DIR}" &>"${INSTALL_LOG}" || \
-      EXIT_CODE=$?
-    if [[ "${EXIT_CODE-}" ]]; then
-      cat "${INSTALL_LOG}"
-      exit "${EXIT_CODE}"
-    fi
-)
+	INSTALL_LOG="$(mktemp)"
+	# This command produces a lot of console spam, so we only display that
+	# output if there is a problem.
+	sudo tar -xf ` + gcloudPkg + ` -C ${INSTALL_DIR} 
+	sudo --preserve-env ${INSTALL_DIR}/google-cloud-sdk/install.sh -q &>"${INSTALL_LOG}" || \
+		EXIT_CODE=$?
+	if [[ "${EXIT_CODE-}" ]]; then
+		cat "${INSTALL_LOG}"
+		exit "${EXIT_CODE}"
+	fi
+)`
+	installCmd := `set -ex
+` + installFromTarball + `
+sudo ln -s ${INSTALL_DIR}/google-cloud-sdk/bin/gsutil /usr/bin/gsutil 
+`
+	// b/308962066: The GCloud CLI ARM Linux tarballs do not have bundled Python
+	// and the GCloud CLI requires Python >= 3.8. Install Python311 for ARM VMs
+	if IsARM(vm.Platform) {
+		// This is what's used on openSUSE.
+		repoSetupCmd := "sudo zypper --non-interactive refresh"
+		if strings.HasPrefix(vm.Platform, "sles-12") {
+			return fmt.Errorf("this test does not know how to install gsutil on platform %q", vm.Platform)
+		}
+		// For SLES 15 ARM: use a vendored repo to reduce flakiness of the
+		// external repos. See http://go/sdi/releases/build-test-release/vendored
+		// for details.
+		if strings.HasPrefix(vm.Platform, "sles-15") {
+			repoSetupCmd = `sudo zypper --non-interactive addrepo -g -t YUM https://us-yum.pkg.dev/projects/cloud-ops-agents-artifacts-dev/google-cloud-monitoring-sles15-aarch64-test-vendor test-vendor
+sudo rpm --import https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+sudo zypper --non-interactive refresh test-vendor`
+		}
+
+		installCmd = `set -ex
+` + repoSetupCmd + `
+sudo zypper --non-interactive install python311 python3-certifi
+
+# On SLES 15 and OpenSUSE Leap arm, python3 is Python 3.6. Tell gsutil/gcloud to use python3.11.
+export CLOUDSDK_PYTHON=/usr/bin/python3.11
+
+` + installFromTarball + `
 
 # Make a "gsutil" bash script in /usr/bin that runs the copy of gsutil that
 # was installed into $INSTALL_DIR with CLOUDSDK_PYTHON set.
 sudo tee /usr/bin/gsutil > /dev/null << EOF
 #!/usr/bin/env bash
-CLOUDSDK_PYTHON=/usr/bin/python3.6 ${INSTALL_DIR}/google-cloud-sdk/bin/gsutil "\$@"
+CLOUDSDK_PYTHON=/usr/bin/python3.11 ${INSTALL_DIR}/google-cloud-sdk/bin/gsutil "\$@"
 EOF
 sudo chmod a+x /usr/bin/gsutil
 `
+	}
+
 	_, err := RunRemotely(ctx, logger, vm, "", installCmd)
 	return err
 }
