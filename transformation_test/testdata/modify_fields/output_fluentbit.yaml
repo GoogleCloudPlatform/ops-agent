@@ -1,0 +1,9 @@
+- date: now
+  hello: world
+  message: foo
+- date: now
+  hello: world
+  message: goo
+- date: now
+  hello: world
+  message: yes maybe no
