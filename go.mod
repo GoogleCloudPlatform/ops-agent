@@ -14,7 +14,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/go-playground/validator/v10 v10.11.1
 	github.com/go-sql-driver/mysql v1.7.0
-	github.com/goccy/go-yaml v1.11.1
+	github.com/goccy/go-yaml v1.11.2
 	github.com/google/go-cmp v0.5.9
 	github.com/google/uuid v1.3.0
 	github.com/googleapis/gax-go/v2 v2.12.0
