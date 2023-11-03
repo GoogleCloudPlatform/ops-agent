@@ -1522,6 +1522,10 @@ INSTALL_DIR="$(readlink --canonicalize .)"
 )`
 	installCmd := `set -ex
 ` + installFromTarball + `
+
+# Upgrade to the latest version
+${INSTALL_DIR}/google-cloud-sdk/bin/gcloud components update --quiet
+
 sudo ln -s ${INSTALL_DIR}/google-cloud-sdk/bin/gsutil /usr/bin/gsutil 
 `
 	// b/308962066: The GCloud CLI ARM Linux tarballs do not have bundled Python
@@ -1549,6 +1553,9 @@ sudo zypper --non-interactive install python311 python3-certifi
 export CLOUDSDK_PYTHON=/usr/bin/python3.11
 
 ` + installFromTarball + `
+
+# Upgrade to the latest version
+CLOUDSDK_PYTHON=/usr/bin/python3.11 ${INSTALL_DIR}/google-cloud-sdk/bin/gcloud components update --quiet
 
 # Make a "gsutil" bash script in /usr/bin that runs the copy of gsutil that
 # was installed into $INSTALL_DIR with CLOUDSDK_PYTHON set.
