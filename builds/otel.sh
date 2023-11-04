@@ -1,3 +1,4 @@
+#!/bin/sh
 set -x -e
 DESTDIR=$1
 otel_dir=/opt/google-cloud-ops-agent/subagents/opentelemetry-collector

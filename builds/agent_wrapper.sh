@@ -1,3 +1,4 @@
+#!/bin/sh
 set -x -e
 DESTDIR=$1
 mkdir -p "$DESTDIR/opt/google-cloud-ops-agent/libexec"
