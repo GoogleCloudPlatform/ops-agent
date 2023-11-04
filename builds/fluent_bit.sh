@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -x -e
 DESTDIR=$1
 mkdir -p $DESTDIR
