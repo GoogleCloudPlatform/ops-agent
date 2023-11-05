@@ -23,9 +23,23 @@
 makefile_symlink:
 	ln -s tasks.mak Makefile
 
+############
+# Tools
+############
+
+TOOLS_DIR := internal/tools
+
 install_tools:
-	go install github.com/google/yamlfmt/cmd/yamlfmt@latest
-	go install github.com/google/addlicense@master
+	cd $(TOOLS_DIR) && \
+		go install \
+			github.com/google/yamlfmt \
+			github.com/google/addlicense
+	
+
+update_tools:
+	cd $(TOOLS_DIR) && go get -u github.com/google/yamlfmt/cmd/yamlfmt@latest
+	cd $(TOOLS_DIR) && go get -u github.com/google/addlicense@master
+	cd $(TOOLS_DIR) && go mod tidy
 
 ############
 # Build
@@ -107,9 +121,9 @@ third_party_apps_test:
 # Precommit
 ############
 
-precommit: addlicense_check test go_vet
+precommit: addlicense_check yaml_lint test go_vet
 
-precommit_update: addlicense test_confgenerator_update test_metadata_update test go_vet
+precommit_update: addlicense yaml_format test_confgenerator_update test_metadata_update test go_vet
 
 ############
 # Convenience
