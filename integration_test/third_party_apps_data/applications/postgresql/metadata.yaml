@@ -34,6 +34,9 @@ platforms_to_skip:
   - rocky-linux-9
   - rocky-linux-9-arm64
   - sles-15-arm64
+  # mantic not yet supported, but should revisit this in the future
+  - ubuntu-2310-amd64
+  - ubuntu-2310-arm64
 supported_app_version: ["10.18+"]
 expected_metrics:
   - kind: GAUGE
