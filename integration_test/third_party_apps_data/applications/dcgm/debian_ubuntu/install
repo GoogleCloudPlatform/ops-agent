@@ -44,5 +44,5 @@ sudo apt-get install -y datacenter-gpu-manager
 sudo systemctl --now enable nvidia-dcgm
 
 # check if DCGM service is running
-# This is for debugging the test only - ignore return code
+# This command is only used for informational/debugging output.
 dcgmi discovery --list || true
