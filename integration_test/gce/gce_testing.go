@@ -922,12 +922,10 @@ func RunScriptRemotely(ctx context.Context, logger *logging.DirectoryLogger, vm 
 		// script seems to work around this completely.
 		return RunRemotely(ctx, logger.ToMainLog(), vm, "", envVarMapToPowershellPrefix(env)+"powershell -File "+scriptPath+" "+flagsStr)
 	}
-	scriptPath := uuid.NewString() + ".sh"
-	// Write the script contents to <UUID>.sh, then tell bash to execute it with -x
-	// to print each line as it runs.
-	// Use a UUID for the script name in case RunScriptRemotely is being called
-	// concurrently on the same VM.
-	return RunRemotely(ctx, logger.ToMainLog(), vm, scriptContents, "cat - > "+scriptPath+" && sudo "+envVarMapToBashPrefix(env)+"bash -x "+scriptPath+" "+flagsStr)
+	// Tell bash to run the contents of stdin (-s), executing it with -x
+	// to print each line as it runs. Everything after "--" is passed as arguments
+	// to the script.
+	return RunRemotely(ctx, logger.ToMainLog(), vm, scriptContents, "sudo "+envVarMapToBashPrefix(env)+"bash -x -s -- "+flagsStr)
 }
 
 // MapToCommaSeparatedList converts a map of key-value pairs into a form that
