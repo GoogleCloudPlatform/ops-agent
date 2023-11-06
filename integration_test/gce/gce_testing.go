@@ -788,13 +788,12 @@ func wrapPowershellCommand(command string) (string, error) {
 
 // RunRemotely runs a command on the provided VM.
 // The command should be a shell command if the VM is Linux, or powershell if the VM is Windows.
-// Returns the combined stdout+stderr as a string, plus an error if there was
+// Returns the stdout and stderr as strings, plus an error if there was
 // a problem.
 //
 // 'command' is what to run on the machine. Example: "cat /tmp/foo; echo hello"
 // For extremely long commands, use RunScriptRemotely instead.
 // 'stdin' is what to supply to the command on stdin. It is usually "".
-// TODO: Remove the stdin parameter, because it is hardly used.
 func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, command string) (_ CommandOutput, err error) {
 	logger.Printf("Running command remotely: %v", command)
 	defer func() {
