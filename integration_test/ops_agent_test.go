@@ -155,7 +155,7 @@ func makeDirectory(ctx context.Context, logger *log.Logger, vm *gce.VM, director
 	if gce.IsWindows(vm.Platform) {
 		createFolderCmd = fmt.Sprintf("New-Item -ItemType Directory -Path %s", directory)
 	} else {
-		createFolderCmd = fmt.Sprintf("mkdir -p %s", directory)
+		createFolderCmd = fmt.Sprintf("sudo mkdir -p %s", directory)
 	}
 	_, err := gce.RunRemotely(ctx, logger, vm, "", createFolderCmd)
 	return err
@@ -3754,7 +3754,7 @@ func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 		installCmd = fmt.Sprintf(`
 			gsutil cp \
 				"gs://stackdriver-test-143416-go-install/go%s.linux-%s.tar.gz" - | \
-				tar --directory /usr/local -xzf /dev/stdin`, goVersion, goArch)
+				sudo tar --directory /usr/local -xzf /dev/stdin`, goVersion, goArch)
 	}
 	_, err := gce.RunRemotely(ctx, logger, vm, "", installCmd)
 	return err
