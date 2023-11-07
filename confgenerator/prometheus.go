@@ -135,7 +135,12 @@ func prometheusToOtelComponent(m PrometheusMetrics) otel.Component {
 }
 
 func deepCopy(config promconfig.Config) (promconfig.Config, error) {
-	marshalledBytes, err := yaml.Marshal(config)
+	marshalledBytes, err := yaml.MarshalWithOptions(
+		config,
+		yaml.CustomMarshaler[commonconfig.Secret](func(s commonconfig.Secret) ([]byte, error) {
+			return []byte(s), nil
+		}),
+	)
 	if err != nil {
 		return promconfig.Config{}, fmt.Errorf("failed to convert Prometheus Config to yaml: %w", err)
 	}
