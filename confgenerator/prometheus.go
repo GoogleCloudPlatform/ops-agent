@@ -61,14 +61,14 @@ func (r PrometheusMetrics) Type() string {
 }
 
 func (r PrometheusMetrics) Pipelines(ctx context.Context) []otel.ReceiverPipeline {
-	// Get the resource metadata for the instance we're running on.
-	if MetadataResource != nil {
-		resourceMetadataMap := MetadataResource.PrometheusStyleMetadata()
-		if p := platform.FromContext(ctx).ResourceOverride; p != nil {
-			resourceMetadataMap = p.PrometheusStyleMetadata()
-		}
-
-		// Add the GCE metadata to the prometheus config.
+	resource := MetadataResource
+	if p := platform.FromContext(ctx).ResourceOverride; p != nil {
+		resource = p
+	}
+	if resource != nil {
+		// Get the resource metadata for the instance we're running on.
+		resourceMetadataMap := resource.PrometheusStyleMetadata()
+		// Add the resource metadata to the prometheus config.
 		for i := range r.PromConfig.ScrapeConfigs {
 			// Iterate over the static configs.
 			for j := range r.PromConfig.ScrapeConfigs[i].ServiceDiscoveryConfigs {
