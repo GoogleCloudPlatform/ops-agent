@@ -881,7 +881,7 @@ receivers:
         - GLOBAL_NAME
         - INSTANCE_ID
         data_type: sum
-        description: The total number of sorts. 
+        description: The total number of sorts.
         metric_name: oracle.sort.count
         monotonic: "true"
         static_attributes:
