@@ -72,8 +72,6 @@ func (r BMSResource) PrometheusStyleMetadata() map[string]string {
 	metaLabels["location"] = r.Location
 	metaLabels["namespace"] = r.InstanceID
 	metaLabels["cluster"] = "__bms__"
-	// Set some curated labels.
-	metaLabels["instance_name"] = r.InstanceID
 	return metaLabels
 }
 
