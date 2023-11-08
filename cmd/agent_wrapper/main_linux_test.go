@@ -17,11 +17,12 @@
 package main
 
 import (
+	"fmt"
 	"os/exec"
 	"strings"
 )
 
 // Get a command that will write the given number of bytes
 func getCommand(writeBytes int) *exec.Cmd {
-	return exec.Command("echo", strings.Repeat("a", int(writeBytes-1)))
+	return exec.Command("/bin/sh", "-c", fmt.Sprintf("echo %s", strings.Repeat("a", writeBytes-1)))
 }

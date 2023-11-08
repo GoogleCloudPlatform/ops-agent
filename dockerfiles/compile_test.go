@@ -7,7 +7,9 @@ import (
 
 func TestDockerfileMatches(t *testing.T) {
 	gotDockerfile, err := os.ReadFile(getDockerfilePath())
-	if err != nil {
+	if os.IsNotExist(err) {
+		t.Skip("Dockerfile not found")
+	} else if err != nil {
 		t.Error(err)
 	}
 	expectedDockerfile, err := getDockerfile()

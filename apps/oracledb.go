@@ -575,7 +575,7 @@ var oracleQueries = []sqlReceiverQuery{
 				metric_name:       "oracle.sort.count",
 				value_column:      "SORTS_DISK",
 				unit:              "{sorts}",
-				description:       "The total number of sorts. ",
+				description:       "The total number of sorts.",
 				data_type:         "sum",
 				monotonic:         "true",
 				value_type:        "int",
