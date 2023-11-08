@@ -1,0 +1,6 @@
+# When a timezone is not within a log Fluent-bit assumes UTC instead of system timezone
+# https://github.com/fluent/fluent-bit/issues/593#issuecomment-811183471
+- type: parse_json
+  field: message
+  time_key: time
+  time_format: "%Y-%m-%dT%H:%M"
