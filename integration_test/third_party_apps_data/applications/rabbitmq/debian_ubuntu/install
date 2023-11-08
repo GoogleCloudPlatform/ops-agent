@@ -30,6 +30,9 @@ case $VERSION_ID in
   11)
     echo "deb http://ppa.launchpad.net/rabbitmq/rabbitmq-erlang/ubuntu focal main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
     ;;
+  12)
+    echo "deb http://ppa.launchpad.net/rabbitmq/rabbitmq-erlang/ubuntu jammy main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
+    ;;
   *)
     echo -n "unknown version"
     exit 1
