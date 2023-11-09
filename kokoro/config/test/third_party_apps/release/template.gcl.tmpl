@@ -4,7 +4,7 @@ config build = common.third_party_apps_test {
   params {
     platforms = [{{range .ThirdPartyTestPlatforms}}
       '{{.}}',{{end}}
-    ]
-{{with .Arch}}    arch = '{{.}}'
-{{end}}  }
+    ]{{with .Arch}}{{if ne . "x86_64"}}
+    arch = '{{.}}'{{end}}{{end}}
+  }
 }
