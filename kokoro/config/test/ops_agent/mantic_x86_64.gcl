@@ -4,5 +4,6 @@ import '../image_lists.gcl' as image_lists
 config build = common.ops_agent_test {
   params {
     platforms = image_lists.mantic_x86_64.presubmit
+    arch = 'x86_64'
   }
 }
