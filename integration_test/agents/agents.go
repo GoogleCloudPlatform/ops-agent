@@ -676,7 +676,7 @@ func InstallStandaloneWindowsMonitoringAgent(ctx context.Context, logger *log.Lo
 
 func restartOpsAgentForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
-		return "Restart-Service google-cloud-ops-agent -Force"
+		return "net stop google-cloud-ops-agent /yes && net start google-cloud-ops-agent"
 	}
 	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
 	return "sudo service google-cloud-ops-agent restart || sudo systemctl restart google-cloud-ops-agent"

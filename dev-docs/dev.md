@@ -898,15 +898,15 @@ $ sudo systemctl stop google-cloud-ops-agent.target
 Open `Windows PowerShell` as administrator and run:
 
 ```
-Restart-Service google-cloud-ops-agent -Force
+net stop google-cloud-ops-agent /yes && net start google-cloud-ops-agent
 ```
 
 ```
-Start-Service google-cloud-ops-agent* -Force
+net start google-cloud-ops-agent
 ```
 
 ```
-Stop-Service google-cloud-ops-agent* -Force
+net stop google-cloud-ops-agent /yes
 ```
 
 You can also start / stop services in the `Services` app.
