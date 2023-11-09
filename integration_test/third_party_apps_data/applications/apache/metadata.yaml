@@ -22,7 +22,6 @@ description: |-
   number of open connections or incoming requests. The integration also collects
   access and error logs. Access logs are parsed into a JSON payload focused on
   request details, and error logs are parsed for their error code and message.
-  test
 configure_integration: |-
   To collect telemetry from your Apache Web Server, you must configure the
   server's `httpd.conf` file to enable the
