@@ -38,11 +38,17 @@ end)();
 local __field_10 = (function()
 return record["level"]
 end)();
+local __field_12 = (function()
+return record["trace"]
+end)();
 local omit7 = (function(v) if v == nil then return false end return (string.lower(tostring(v)) == string.lower("-")) end)((function()
 return record["omitted"]
 end)());
 (function(value)
 record["move_source"] = value
+end)(nil);
+(function(value)
+record["trace"] = value
 end)(nil);
 local v = __field_0;
 (function(value)
@@ -118,6 +124,14 @@ elseif v == "W" then v = "WARNING"
 end
 (function(value)
 record["logging.googleapis.com/severity"] = value
+end)(v)
+local v = "spanValue";
+(function(value)
+record["logging.googleapis.com/spanId"] = value
+end)(v)
+local v = __field_12;
+(function(value)
+record["logging.googleapis.com/trace"] = value
 end)(v)
 return 2, timestamp, record
 end
