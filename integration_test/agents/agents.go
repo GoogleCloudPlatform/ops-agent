@@ -787,8 +787,8 @@ func SetupOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, config s
 	return SetupOpsAgentFrom(ctx, logger, vm, config, LocationFromEnvVars())
 }
 
-// restartOpsAgent restarts the Ops Agent and waits for it to become available.
-func restartOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+// RestartOpsAgent restarts the Ops Agent and waits for it to become available.
+func RestartOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	if _, err := gce.RunRemotely(ctx, logger, vm, "", restartOpsAgentForPlatform(vm.Platform)); err != nil {
 		return fmt.Errorf("restartOpsAgent() failed to restart ops agent: %v", err)
 	}
@@ -814,7 +814,7 @@ func SetupOpsAgentFrom(ctx context.Context, logger *log.Logger, vm *gce.VM, conf
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(config), util.ConfigPathForPlatform(vm.Platform)); err != nil {
 			return fmt.Errorf("SetupOpsAgentFrom() failed to upload config file: %v", err)
 		}
-		if err := restartOpsAgent(ctx, logger, vm); err != nil {
+		if err := RestartOpsAgent(ctx, logger, vm); err != nil {
 			return err
 		}
 	}

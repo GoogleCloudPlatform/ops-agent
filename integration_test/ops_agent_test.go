@@ -4359,6 +4359,46 @@ func TestRestartVM(t *testing.T) {
 	})
 }
 
+//func TestDiagnosticServiceWindows(t *testing.T) {
+//	t.Parallel()
+//	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+//		t.Parallel()
+//		if !gce.IsWindows(platform) {
+//			t.SkipNow()
+//		}
+//
+//		ctx, logger, vm := agents.CommonSetup(t, platform)
+//
+//		// provide an incorrect credential location so the metric exporter fails to instantiate
+//		badEnvCmd := "[Environment]::SetEnvironmentVariable(\"GOOGLE_APPLICATION_CREDENTIALS\", \"/not/exist\", \"Machine\")"
+//		_, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", badEnvCmd)
+//		if err != nil {
+//			t.Fatal(err)
+//		}
+//
+//		if err = agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, ""); err != nil {
+//			t.Fatal(err)
+//		}
+//
+//		// confirm the diagnostic service has failed to start
+//
+//		// reset the credential location
+//		resetEnvCmd := "[Environment]::SetEnvironmentVariable(\"GOOGLE_APPLICATION_CREDENTIALS\", \"\", \"Machine\")"
+//		_, err = gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", resetEnvCmd)
+//		if err != nil {
+//			t.Fatal(err)
+//		}
+//
+//		err = agents.RestartOpsAgent(ctx, logger.ToMainLog(), vm)
+//		if err != nil {
+//			t.Fatal(err)
+//		}
+//
+//		// confirm the ops agent has restarted correctly
+//
+//	})
+//}
+
 func TestMain(m *testing.M) {
 	code := m.Run()
 	gce.CleanupKeysOrDie()
