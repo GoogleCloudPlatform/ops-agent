@@ -182,3 +182,19 @@
   feature: processors:exclude_logs
   key: "[20].match_any.__length"
   value: "1"
+- module: logging
+  feature: processors:exclude_logs
+  key: "[21].enabled"
+  value: "true"
+- module: logging
+  feature: processors:exclude_logs
+  key: "[21].match_any.__length"
+  value: "1"
+- module: logging
+  feature: processors:exclude_logs
+  key: "[22].enabled"
+  value: "true"
+- module: logging
+  feature: processors:exclude_logs
+  key: "[22].match_any.__length"
+  value: "1"
