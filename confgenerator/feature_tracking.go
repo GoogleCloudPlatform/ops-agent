@@ -436,9 +436,9 @@ func getMetadata(field reflect.StructField) metadata {
 
 func getSelfLogCollection(uc *UnifiedConfig) Feature {
 	feature := Feature{
-		Module: "logging",
-		Kind:   "service",
-		Type:   "self_log",
+		Module: "global",
+		Kind:   "",
+		Type:   "",
 		Key:    []string{"self_log_collection"},
 		Value:  "true",
 	}
