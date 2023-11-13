@@ -2676,6 +2676,10 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		if err := buildGoBinary(ctx, logger, vm, serviceFiles[0].remote, "/opt/go-http-server/"); err != nil {
+			t.Fatal(err)
+		}
+
 		// Run the setup script to run the http server and the JSON exporter
 		setupScript, err := testdataDir.ReadFile(path.Join(prometheusTestdata, "setup_json_exporter.sh"))
 		if err != nil {
