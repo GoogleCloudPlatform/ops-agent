@@ -6,7 +6,7 @@
   feature: service:pipelines
   key: default_pipeline_overridden
   value: "false"
-- module: logging
-  feature: service:self_log
+- module: global
+  feature: ":"
   key: self_log_collection
   value: "false"
