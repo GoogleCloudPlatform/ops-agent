@@ -2687,7 +2687,7 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 		}
 		// Wait until both are ready
 		time.Sleep(30 * time.Second)
-		liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl --fail-with-body "http://localhost:7979/probe?module=default&target=http://localhost:8000/data.json"`)
+		liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl --fail "http://localhost:7979/probe?module=default&target=http://localhost:8000/data.json"`)
 		if liveCheckErr != nil {
 			t.Fatalf("Json Exporter failed to start: %v", liveCheckErr)
 		}
@@ -3239,7 +3239,7 @@ func testPrometheusMetrics(t *testing.T, opsAgentConfig string, testChecks []moc
 		}
 		// Wait until the http server is ready
 		time.Sleep(5 * time.Second)
-		_, liveCheckErr := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl --fail-with-body "http://localhost:8000/data.json"`)
+		_, liveCheckErr := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl --fail "http://localhost:8000/data"`)
 		if liveCheckErr != nil {
 			t.Fatalf("Http server failed to start: %v", liveCheckErr)
 		}
