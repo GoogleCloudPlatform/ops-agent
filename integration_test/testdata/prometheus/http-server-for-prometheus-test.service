@@ -20,7 +20,7 @@ After=network.target
 [Service]
 Type=exec
 User=root
-ExecStart=/usr/local/go/bin/go run /opt/go-http-server/http_server.go -port=8000 -dir=/opt/go-http-server/
+ExecStart=/opt/go-http-server/http_server -port=8000 -dir=/opt/go-http-server/
 Restart=on-abnormal
 
 [Install]
