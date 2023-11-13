@@ -220,7 +220,7 @@ func (uc *UnifiedConfig) generateSelfLogsComponents(ctx context.Context, userAge
 	out = append(out, generateSelfLogsProcessingComponents(ctx)...)
 
 	outputLogNames := []string{healthLogsTag}
-	if uc.Global.GetSelfLogCollection() {
+	if uc.Global.GetDefaultSelfLogFileCollection() {
 		// Ingest fluent-bit logs to Cloud Logging if enabled.
 		outputLogNames = append(outputLogNames, fluentBitSelfLogsTag)
 	}

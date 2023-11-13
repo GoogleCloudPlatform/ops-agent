@@ -56,9 +56,9 @@ var expectedFeatureBase = []confgenerator.Feature{
 	},
 	{
 		Module: "global",
-		Kind:   "",
-		Type:   "",
-		Key:    []string{"self_log_collection"},
+		Kind:   "default",
+		Type:   "self_log",
+		Key:    []string{"default_self_log_file_collection"},
 		Value:  "true",
 	},
 }
@@ -80,9 +80,9 @@ var expectedMetricsPipelineOverriden = []confgenerator.Feature{
 	},
 	{
 		Module: "global",
-		Kind:   "",
-		Type:   "",
-		Key:    []string{"self_log_collection"},
+		Kind:   "default",
+		Type:   "self_log",
+		Key:    []string{"default_self_log_file_collection"},
 		Value:  "true",
 	},
 }
@@ -104,9 +104,9 @@ var expectedTestFeatureBase = []confgenerator.Feature{
 	},
 	{
 		Module: "global",
-		Kind:   "",
-		Type:   "",
-		Key:    []string{"self_log_collection"},
+		Kind:   "default",
+		Type:   "self_log",
+		Key:    []string{"default_self_log_file_collection"},
 		Value:  "true",
 	},
 	{

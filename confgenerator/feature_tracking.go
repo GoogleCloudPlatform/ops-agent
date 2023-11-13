@@ -437,13 +437,13 @@ func getMetadata(field reflect.StructField) metadata {
 func getSelfLogCollection(uc *UnifiedConfig) Feature {
 	feature := Feature{
 		Module: "global",
-		Kind:   "",
-		Type:   "",
-		Key:    []string{"self_log_collection"},
+		Kind:   "default",
+		Type:   "self_log",
+		Key:    []string{"default_self_log_file_collection"},
 		Value:  "true",
 	}
 	if uc.Global != nil {
-		feature.Value = strconv.FormatBool(uc.Global.GetSelfLogCollection())
+		feature.Value = strconv.FormatBool(uc.Global.GetDefaultSelfLogFileCollection())
 	}
 
 	return feature
