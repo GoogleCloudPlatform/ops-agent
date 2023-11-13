@@ -114,7 +114,6 @@ COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contr
 RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
-
 RUN \
 unset OTEL_TRACES_EXPORTER && \
 unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
@@ -218,7 +217,6 @@ COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contr
 RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
-
 RUN \
 unset OTEL_TRACES_EXPORTER && \
 unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
@@ -325,7 +323,6 @@ COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contr
 RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
-
 RUN \
 unset OTEL_TRACES_EXPORTER && \
 unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
@@ -427,7 +424,6 @@ COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contr
 RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
-
 RUN \
 unset OTEL_TRACES_EXPORTER && \
 unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
@@ -529,7 +525,6 @@ COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contr
 RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
-
 RUN \
 unset OTEL_TRACES_EXPORTER && \
 unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
@@ -633,7 +628,6 @@ COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contr
 RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
-
 RUN \
 unset OTEL_TRACES_EXPORTER && \
 unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
@@ -754,7 +748,6 @@ COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contr
 RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
-
 RUN \
 unset OTEL_TRACES_EXPORTER && \
 unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
@@ -861,7 +854,6 @@ COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contr
 RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
-
 RUN \
 unset OTEL_TRACES_EXPORTER && \
 unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
@@ -963,7 +955,6 @@ COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contr
 RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
-
 RUN \
 unset OTEL_TRACES_EXPORTER && \
 unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
@@ -1065,7 +1056,6 @@ COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contr
 RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
-
 RUN \
 unset OTEL_TRACES_EXPORTER && \
 unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
@@ -1167,7 +1157,6 @@ COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contr
 RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
-
 RUN \
 unset OTEL_TRACES_EXPORTER && \
 unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
@@ -1269,7 +1258,6 @@ COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contr
 RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
-
 RUN \
 unset OTEL_TRACES_EXPORTER && \
 unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
