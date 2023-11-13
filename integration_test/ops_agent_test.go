@@ -3884,7 +3884,7 @@ func unmarshalResource(in string) (*resourcedetector.GCEResource, error) {
 // the PATH before calling `go` as goPath
 func installGolang(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) error {
 	// TODO: use runtime.Version() to extract the go version
-	goVersion := "1.19"
+	goVersion := "1.20"
 	goArch := "amd64"
 	if gce.IsARM(vm.Platform) {
 		goArch = "arm64"
