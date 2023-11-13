@@ -6,8 +6,6 @@ exporters:
       resource_filters: []
       service_resource_labels: false
       skip_create_descriptor: true
-    retry_on_failure:
-      enabled: false
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
   googlecloud/otel:
     metric:
@@ -16,8 +14,6 @@ exporters:
       resource_filters: []
       service_resource_labels: false
       skip_create_descriptor: true
-    retry_on_failure:
-      enabled: false
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
 processors:
   agentmetrics/hostmetrics_0:

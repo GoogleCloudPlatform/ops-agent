@@ -39,6 +39,12 @@ logging:
     special_httpRequest:
       type: exclude_logs
       match_any: ['httpRequest.method =~ "GET"']
+    special_trace:
+      type: exclude_logs
+      match_any: ['trace = "foo"']
+    special_spanId:
+      type: exclude_logs
+      match_any: ['spanId =~ "foo"']
     nested_tabs:
       type: exclude_logs
       match_any: ['jsonPayload."aa	bb" = foo']
@@ -99,6 +105,8 @@ logging:
         - special_severity
         - special_jsonPayload
         - special_httpRequest
+        - special_trace
+        - special_spanId
         - nested_tabs
         - nested_symbols
         - nested_escaped

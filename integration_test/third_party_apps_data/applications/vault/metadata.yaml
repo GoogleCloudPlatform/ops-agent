@@ -61,8 +61,10 @@ configure_integration: |-
   ```
 supported_operating_systems: linux
 platforms_to_skip:
-  # Vault is not supported on Ubuntu 23.04
+  # Vault is not supported on various distros.
   - ubuntu-2304-amd64
+  - ubuntu-2310-amd64
+  - ubuntu-2310-arm64
 supported_app_version: ["1.6+"]
 expected_metrics:
   - type: workload.googleapis.com/vault.core.request.count

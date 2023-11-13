@@ -35,6 +35,8 @@ platforms_to_skip:
   - rocky-linux-9
   - rocky-linux-9-arm64
   - ubuntu-2304-amd64
+  - ubuntu-2310-amd64
+  - ubuntu-2310-arm64
   - debian-12
 supported_app_version: ["2.3+", "3.1+"]
 expected_metrics:
