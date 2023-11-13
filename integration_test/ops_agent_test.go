@@ -3240,9 +3240,9 @@ func testPrometheusMetrics(t *testing.T, opsAgentConfig string, testChecks []moc
 		}
 		// Wait until the http server is ready
 		time.Sleep(5 * time.Second)
-		liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl "http://localhost:8000/data"`)
-		if liveCheckErr != nil || strings.Contains(liveCheckOut.Stderr, "Connection refused") {
-			t.Fatalf("Http server failed to start with stdout %s and stderr %s", liveCheckOut.Stdout, liveCheckOut.Stderr)
+		_, liveCheckErr := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl --fail-with-body "http://localhost:8000/data.json"`)
+		if liveCheckErr != nil {
+			t.Fatalf("Http server failed to start: %v", liveCheckErr)
 		}
 		// 3. Config and start the agent
 		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, opsAgentConfig); err != nil {
@@ -3884,7 +3884,7 @@ func unmarshalResource(in string) (*resourcedetector.GCEResource, error) {
 // the PATH before calling `go` as goPath
 func installGolang(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) error {
 	// TODO: use runtime.Version() to extract the go version
-	goVersion := "1.19"
+	goVersion := "1.20"
 	goArch := "amd64"
 	if gce.IsARM(vm.Platform) {
 		goArch = "arm64"
