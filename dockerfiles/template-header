@@ -43,7 +43,7 @@ ENV hash=73a35cab2174a3eb8f35083d55c80871185dc3808f3dae3558cd5fbdb29a4614
 ADD https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-aarch64.sh \
     /cmake.sh
 
-FROM cmake-${BUILDARCH}-recent AS cmake-install-recent
+FROM cmake-${TARGETARCH}-recent AS cmake-install-recent
 RUN set -xe; (echo "$hash  /cmake.sh" | sha256sum -c)
 
 
@@ -66,7 +66,7 @@ ENV hash=c43688163cfdcb1a6e6fe202cc06a51891df746b954c55dbd01430e7d7326d00
 ADD https://github.com/adoptium/temurin${OPENJDK_MAJOR_VERSION}-binaries/releases/download/jdk-${OPENJDK_FULL_VERSION}%2B${OPENJDK_VERSION_SUFFIX}/OpenJDK${OPENJDK_MAJOR_VERSION}U-jdk_aarch64_linux_hotspot_${OPENJDK_FULL_VERSION}_${OPENJDK_VERSION_SUFFIX}.tar.gz \
     /tmp/OpenJDK${OPENJDK_MAJOR_VERSION}U.tar.gz
 
-FROM openjdk-${BUILDARCH} as openjdk-install
+FROM openjdk-${TARGETARCH} as openjdk-install
 ARG OPENJDK_MAJOR_VERSION
 RUN set -xe; (echo "$hash  /tmp/OpenJDK${OPENJDK_MAJOR_VERSION}U.tar.gz" | sha256sum -c)
 RUN set -xe; \
