@@ -72,10 +72,10 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 	s.runHealthChecks()
 
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
-	//if err := s.startSubagents(); err != nil {
-	//	s.log.Error(EngineEventID, fmt.Sprintf("failed to start subagents: %v", err))
-	//	// TODO: Ignore failures for partial startup?
-	//}
+	if err := s.startSubagents(); err != nil {
+		s.log.Error(EngineEventID, fmt.Sprintf("failed to start subagents: %v", err))
+		// TODO: Ignore failures for partial startup?
+	}
 	s.log.Info(EngineEventID, "started subagents")
 	defer func() {
 		changes <- svc.Status{State: svc.StopPending}
