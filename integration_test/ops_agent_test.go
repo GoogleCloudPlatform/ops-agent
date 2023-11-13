@@ -2676,7 +2676,7 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if err := buildGoBinary(ctx, logger, vm, serviceFiles[0].remote, "/opt/go-http-server/"); err != nil {
+		if err := buildGoBinary(ctx, logger, vm, filesToUpload[0].remote, "/opt/go-http-server/"); err != nil {
 			t.Fatal(err)
 		}
 
