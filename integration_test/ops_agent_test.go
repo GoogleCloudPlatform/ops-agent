@@ -932,6 +932,63 @@ func TestHTTPRequestLog(t *testing.T) {
 	})
 }
 
+func TestLogEntrySpecialFields(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
+		configStr := `
+logging:
+  receivers:
+    f1:
+      type: files
+      include_paths:
+        - %s
+  processors:
+    json:
+      type: parse_json
+  service:
+    pipelines:
+      p1:
+        receivers:
+          - f1
+        processors:
+          - json
+`
+		config := fmt.Sprintf(configStr, file1)
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		// httpRequest field is tested by TestHTTPRequestLog(); covers the rest
+		// of the specfial fields here
+		line := `{"logging.googleapis.com/severity": "WARNING", ` +
+			`"logging.googleapis.com/labels": {"label1":"value1", "label2":"value2"}, ` +
+			`"logging.googleapis.com/operation": {"id": "id", "producer": "producer", "first": true, "last": true}, ` +
+			`"logging.googleapis.com/sourceLocation": {"file": "file", "line": "1", "function": "function"}, ` +
+			`"logging.googleapis.com/trace":"trace", ` +
+			`"logging.googleapis.com/spanId":"spanId", ` +
+			`"normal_field": "value"}` + "\n"
+		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(line), file1); err != nil {
+			t.Fatalf("error uploading log: %v", err)
+		}
+
+		// Expect to see the log with the special fields to be placed to the top
+		// level of the LogEntry and the rest to jsonPayload
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour,
+			`severity="WARNING" AND `+
+				`labels.label1="value1" AND labels.label2="value2" AND `+
+				`operation.id="id" AND operation.producer="producer" AND operation.first=true AND operation.last=true AND `+
+				`sourceLocation.file="file" AND sourceLocation.line="1" AND sourceLocation.function="function" AND `+
+				`trace="trace" AND `+
+				`spanId="spanId" AND `+
+				`jsonPayload.normal_field="value"`); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
 func TestInvalidConfig(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
@@ -1296,6 +1353,100 @@ func TestExcludeLogsParseJsonOrder(t *testing.T) {
 	})
 }
 
+func TestExcludeLogsModifyFieldsOrder(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+		file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
+		file2 := fmt.Sprintf("%s_2", logPathForPlatform(vm.Platform))
+		file3 := fmt.Sprintf("%s_3", logPathForPlatform(vm.Platform))
+
+		// This exclude_logs processor operates on a non-default field which is
+		// present if and only if the log is structured accordingly.
+		// The intended mechanism for inputting structured logs from a file is
+		// to use a parse_json processor, and the processor will automatically
+		// recongnize special fields for the LogEntry and place them at the top
+		// level and can be used by the exclude_logs processor to filter logs.
+		// (pipeline p1)
+		// For top level fields that set by modify_fields, since processors
+		// operate in the order in which they're written, the expectation is
+		// that if a modify_fields processor comes before the exclude_logs
+		// processor then the log is excluded. (pipeline p2)
+		// Conversely, if a modify_fields processor comes after the exclude_logs
+		// processor then the log is not excluded. (pipeline p3)
+		config := fmt.Sprintf(`logging:
+  receivers:
+    f1:
+      type: files
+      include_paths:
+      - %s
+    f2:
+      type: files
+      include_paths:
+      - %s
+    f3:
+      type: files
+      include_paths:
+      - %s
+  processors:
+    exclude_trace:
+      type: exclude_logs
+      match_any:
+      - trace =~ "value1"
+    exclude_span_id:
+      type: exclude_logs
+      match_any:
+      - spanId =~ "value2"
+    modify:
+      type: modify_fields
+      fields:
+        trace:
+          move_from: jsonPayload.none
+          default_value: value1
+    json:
+      type: parse_json
+  service:
+    pipelines:
+      p1:
+        receivers: [f1]
+        processors: [json, exclude_span_id]
+      p2:
+        receivers: [f2]
+        processors: [json, modify, exclude_trace]
+      p3:
+        receivers: [f3]
+        processors: [json, exclude_trace, modify]
+`, file1, file2, file3)
+
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		line := `{"logging.googleapis.com/spanId":"value2", "query_field": "value"}` + "\n"
+		for _, file := range []string{file1, file2, file3} {
+			if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(line), file); err != nil {
+				t.Fatalf("error uploading log: %v", err)
+			}
+		}
+
+		// Expect to see the log included in p3 but not p1 and p2.
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f3", time.Hour, `jsonPayload.query_field="value"`); err != nil {
+			t.Error(err)
+		}
+		// Give the excluded log some time to show up.
+		time.Sleep(60 * time.Second)
+		for _, name := range []string{"f1", "f2"} {
+			_, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, name, time.Hour, `jsonPayload.query_field="value"`, 5)
+			if err == nil {
+				t.Error("expected log to be excluded but was included")
+			} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
+				t.Fatalf("unexpected error: %v", err)
+			}
+		}
+	})
+}
+
 func TestModifyFields(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
@@ -1342,6 +1493,10 @@ func TestModifyFields(t *testing.T) {
         jsonPayload.omitted:
           static_value: broken
           omit_if: jsonPayload.field = "value"
+        trace:
+          move_from: jsonPayload.trace
+        spanId:
+          copy_from: jsonPayload.spanId
     json:
       type: parse_json
   exporters:
@@ -1359,13 +1514,13 @@ func TestModifyFields(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		line := `{"field":"value", "default_present":"original", "logging.googleapis.com/labels": {"label1":"value"}}` + "\n"
+		line := `{"field":"value", "default_present":"original", "logging.googleapis.com/labels": {"label1":"value"}, "trace":"trace_value", "spanId": "span_id_value"}` + "\n"
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
 			t.Fatalf("error uploading log: %v", err)
 		}
 
 		// Expect to see the log with the modifications applied
-		if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, `jsonPayload.field2="value" AND labels.static="hello world" AND labels.label2="value" AND NOT labels.label1:* AND labels."my.cool.service/foo"="value" AND severity="WARNING" AND NOT jsonPayload.field:* AND jsonPayload.default_present="original" AND jsonPayload.default_absent="default" AND jsonPayload.integer > 5 AND jsonPayload.float > 5 AND jsonPayload.mapped_field="new_value" AND (NOT jsonPayload.omitted = "broken")`); err != nil {
+		if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, `jsonPayload.field2="value" AND labels.static="hello world" AND labels.label2="value" AND NOT labels.label1:* AND labels."my.cool.service/foo"="value" AND severity="WARNING" AND NOT jsonPayload.field:* AND jsonPayload.default_present="original" AND jsonPayload.default_absent="default" AND jsonPayload.integer > 5 AND jsonPayload.float > 5 AND jsonPayload.mapped_field="new_value" AND (NOT jsonPayload.omitted = "broken") AND trace = "trace_value" AND NOT jsonPayload.trace:* AND spanId = "span_id_value" AND jsonPayload.spanId = "span_id_value"`); err != nil {
 			t.Error(err)
 		}
 	})
