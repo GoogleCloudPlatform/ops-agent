@@ -2658,10 +2658,6 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 				remote: path.Join("/opt", "json_exporter", "json_exporter_config.yaml"),
 			},
 			{
-				local:  path.Join(prometheusTestdata, "http-server-for-prometheus-test.service"),
-				remote: path.Join("/etc", "systemd", "system", "http-server-for-prometheus-test.service"),
-			},
-			{
 				local:  path.Join(prometheusTestdata, "json-exporter-for-prometheus-test.service"),
 				remote: path.Join("/etc", "systemd", "system", "json-exporter-for-prometheus-test.service"),
 			},
@@ -2879,7 +2875,7 @@ func TestPrometheusUntypedMetrics(t *testing.T) {
 	testPrometheusMetrics(t, config, testChecks)
 }
 
-func TestPrometheusUntypedMetricsReset(t *testing.T) {
+func TestPrometheusUntypedFooBarReset(t *testing.T) {
 	config := `metrics:
   receivers:
     prom_app:
@@ -3210,8 +3206,6 @@ func testPrometheusMetrics(t *testing.T, opsAgentConfig string, testChecks []moc
 		serviceFiles := []fileToUpload{
 			{local: path.Join(prometheusTestdata, "http_server.go"),
 				remote: path.Join(remoteWorkDir, "http_server.go")},
-			{local: path.Join(prometheusTestdata, "http-server-for-prometheus-test.service"),
-				remote: path.Join("/etc", "systemd", "system", "http-server-for-prometheus-test.service")},
 		}
 
 		if len(testChecks) == 0 {
@@ -3230,15 +3224,19 @@ func testPrometheusMetrics(t *testing.T, opsAgentConfig string, testChecks []moc
 		if err := installGolang(ctx, logger, vm); err != nil {
 			t.Fatal(err)
 		}
-		setupScript := `sudo systemctl daemon-reload
-			sudo systemctl enable http-server-for-prometheus-test
-			sudo systemctl restart http-server-for-prometheus-test`
-		setupOut, err := gce.RunScriptRemotely(ctx, logger, vm, string(setupScript), nil, nil)
+		// Build http_server.go first to separate that out from the server setup time.
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "/usr/local/go/bin/go build /opt/go-http-server/http_server.go"); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "nohup /usr/local/go/bin/go run /opt/go-http-server/http_server.go -port=8000 -dir=/opt/go-http-server/ &> /tmp/http_server_logs.txt &"); err != nil {
+			t.Fatal(err)
+		}
 		if err != nil {
-			t.Fatalf("failed to start the http server in VM via systemctl with err: %v, stderr: %s", err, setupOut.Stderr)
+			t.Fatalf("failed to start the http server in VM with err: %v", err)
 		}
 		// Wait until the http server is ready
-		time.Sleep(5 * time.Second)
+		time.Sleep(10 * time.Second)
+
 		_, liveCheckErr := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl --fail "http://localhost:8000/data"`)
 		if liveCheckErr != nil {
 			t.Fatalf("Http server failed to start: %v", liveCheckErr)
@@ -3903,7 +3901,7 @@ func installGolang(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 			set -o pipefail
 			gsutil cp \
 				"gs://ops-agents-public-buckets-vendored-deps/mirrored-content/go.dev/dl/go%s.linux-%s.tar.gz" - | \
-				tar --directory /usr/local -xzf /dev/stdin`, goVersion, goArch)
+				sudo tar --directory /usr/local -xzf /dev/stdin`, goVersion, goArch)
 	}
 	_, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", installCmd)
 	return err
