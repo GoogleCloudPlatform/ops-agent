@@ -2687,15 +2687,14 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 		}
 		// Wait until both are ready
 		time.Sleep(30 * time.Second)
-		liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl "http://localhost:7979/probe?module=default&target=http://localhost:8000/data.json"`)
-		// We will abort when:
-		// 1. JSON exporter is not started: in this case the stderr will have:
-		// "curl: (7) Failed to connect to localhost port 7979 after 1 ms: Connection refused"
-		// 2. The HTTP server is not started: in this case the stdout will not
-		// have the expected Prometheus style metrics
-		if liveCheckErr != nil || strings.Contains(liveCheckOut.Stderr, "Connection refused") || !strings.Contains(liveCheckOut.Stdout, `test_counter_value{test_label="counter_label"} 1234`) {
-			t.Fatal("Json Exporter failed to start")
+		liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl --fail-with-body "http://localhost:7979/probe?module=default&target=http://localhost:8000/data.json"`)
+		if liveCheckErr != nil {
+			t.Fatalf("Json Exporter failed to start: %v", liveCheckErr)
 		}
+		if !strings.Contains(liveCheckOut.Stdout, `test_counter_value{test_label="counter_label"} 1234`) {
+			t.Fatalf("Json Exporter didn't provide the expected output. Got: %v", liveCheckOut.Stdout)
+		}
+
 		// Initially, __address__ is the target[0] which is
 		// "http://localhost:8000/data.json";
 		// The first relabeling moves __address__ to __param_target, so we have
@@ -3240,9 +3239,9 @@ func testPrometheusMetrics(t *testing.T, opsAgentConfig string, testChecks []moc
 		}
 		// Wait until the http server is ready
 		time.Sleep(5 * time.Second)
-		liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl "http://localhost:8000/data"`)
-		if liveCheckErr != nil || strings.Contains(liveCheckOut.Stderr, "Connection refused") {
-			t.Fatalf("Http server failed to start with stdout %s and stderr %s", liveCheckOut.Stdout, liveCheckOut.Stderr)
+		_, liveCheckErr := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl --fail-with-body "http://localhost:8000/data.json"`)
+		if liveCheckErr != nil {
+			t.Fatalf("Http server failed to start: %v", liveCheckErr)
 		}
 		// 3. Config and start the agent
 		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, opsAgentConfig); err != nil {
@@ -3880,30 +3879,33 @@ func unmarshalResource(in string) (*resourcedetector.GCEResource, error) {
 	return &resource, err
 }
 
-// installGolang downloads and setup go, and return the required command to set
-// the PATH before calling `go` as goPath
+// installGolang downloads and sets up go on the given VM.  The caller is still
+// responsible for updating PATH to point to the installed binaries, see
+// `goPathCommandForPlatform`.
 func installGolang(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) error {
-	// TODO: use runtime.Version() to extract the go version
-	goVersion := "1.19"
+	// To update this, first run `mirror_content.sh` in this directory. Example:
+	//   ./mirror_content.sh https://go.dev/dl/go1.21.4.linux-{amd64,arm64}.tar.gz
+	// Then update this version.
+	goVersion := "1.21.4"
 	goArch := "amd64"
 	if gce.IsARM(vm.Platform) {
 		goArch = "arm64"
 	}
 	var installCmd string
 	if gce.IsWindows(vm.Platform) {
-		// TODO: host go windows installer in the GCS if `golang.org` throttle
+		// TODO: host go windows installer in GCS if `go.dev` throttles us.
 		installCmd = fmt.Sprintf(`
 			cd (New-TemporaryFile | %% { Remove-Item $_; New-Item -ItemType Directory -Path $_ })
 			Invoke-WebRequest "https://go.dev/dl/go%s.windows-%s.msi" -OutFile golang.msi
 			Start-Process msiexec.exe -ArgumentList "/i","golang.msi","/quiet" -Wait `, goVersion, goArch)
 	} else {
 		installCmd = fmt.Sprintf(`
-			set -e
+			set -o pipefail
 			gsutil cp \
-				"gs://stackdriver-test-143416-go-install/go%s.linux-%s.tar.gz" - | \
+				"gs://ops-agents-public-buckets-vendored-deps/mirrored-content/go.dev/dl/go%s.linux-%s.tar.gz" - | \
 				tar --directory /usr/local -xzf /dev/stdin`, goVersion, goArch)
 	}
-	_, err := gce.RunScriptRemotely(ctx, logger, vm, installCmd, nil, nil)
+	_, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", installCmd)
 	return err
 }
 
