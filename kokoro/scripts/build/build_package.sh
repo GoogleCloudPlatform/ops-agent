@@ -89,5 +89,3 @@ docker run \
       bash /signing/sign.sh /artifacts/*.rpm
     fi
 EOF
-
-exit 6 # I don't care about tests at this point

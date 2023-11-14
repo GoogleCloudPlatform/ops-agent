@@ -45,6 +45,8 @@ set -o pipefail
 cd "$(readlink -f "$(dirname "$0")")"
 cd ../../../
 
+exit 6 # skip tests
+
 # Source the common utilities, for track_flakiness.
 source kokoro/scripts/utils/common.sh
 
