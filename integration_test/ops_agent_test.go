@@ -3227,14 +3227,14 @@ func testPrometheusMetrics(t *testing.T, opsAgentConfig string, testChecks []moc
 			t.Fatal(err)
 		}
 
-		// 2. Setup the golang
+		// 2. Setup the golang and start the go http server
 		if err := installGolang(ctx, logger, vm); err != nil {
 			t.Fatal(err)
 		}
 
 		// 4. Start the go http server
 		setupScript := `sudo systemctl daemon-reload
-			sudo systemctl enable http-server-for-prometheus-tes
+			sudo systemctl enable http-server-for-prometheus-test
 			sudo systemctl restart http-server-for-prometheus-test`
 		setupOut, err := gce.RunScriptRemotely(ctx, logger, vm, string(setupScript), nil, nil)
 		if err != nil {
