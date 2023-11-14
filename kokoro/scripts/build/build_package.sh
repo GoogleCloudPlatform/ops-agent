@@ -34,8 +34,8 @@ OPS_AGENT_REPO_HASH="$(extract_git_hash .)"
 git submodule update --init --recursive
 
 function print_disk_usage() {
-  df -h || echo df failed
-  du -hs /tmpfs/docker || echo du failed
+  sudo df -h || echo df failed
+  sudo du -hs /tmpfs/docker || echo du failed
 }
 print_disk_usage
 trap print_disk_usage EXIT
