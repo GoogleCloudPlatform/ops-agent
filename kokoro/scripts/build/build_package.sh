@@ -33,6 +33,7 @@ OPS_AGENT_REPO_HASH="$(extract_git_hash .)"
 # Submodules aren't cloned by kokoro for github repos.
 git submodule update --init --recursive
 
+docker info
 function print_disk_usage() {
   sudo df -h || echo df failed
   sudo du -hs /tmpfs/docker || echo du failed
