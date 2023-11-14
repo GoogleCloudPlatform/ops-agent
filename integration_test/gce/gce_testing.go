@@ -1802,7 +1802,7 @@ func logLocation(logRootDir, testName string) string {
 // t.Name() inside the directory TEST_UNDECLARED_OUTPUTS_DIR.
 // If creating the logger fails, it will abort the test.
 // At the end of the test, the logger will be cleaned up.
-// TODO: Move this function along with logLocation() into the logging package,
+// TODO: Move this function along with logLocation() into the agents package,
 // since nothing else in this file depends on DirectoryLogger anymore.
 func SetupLogger(t *testing.T) *logging.DirectoryLogger {
 	t.Helper()
