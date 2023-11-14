@@ -33,6 +33,12 @@ OPS_AGENT_REPO_HASH="$(extract_git_hash .)"
 # Submodules aren't cloned by kokoro for github repos.
 git submodule update --init --recursive
 
+function print_disk_usage() {
+  df -h
+  du -hs /tmpfs/docker
+}
+trap print_disk_usage EXIT
+
 # Debugging why we are not getting Docker cache hits for presubmits.
 ls -Al submodules/opentelemetry-operations-collector/go.* || echo ls failed
 stat submodules/opentelemetry-operations-collector/go.* || echo stat failed
@@ -81,3 +87,5 @@ docker run \
       bash /signing/sign.sh /artifacts/*.rpm
     fi
 EOF
+
+exit 6 # I don't care about tests at this point
