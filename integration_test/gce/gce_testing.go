@@ -376,6 +376,11 @@ func IsWindows(platform string) bool {
 	return strings.HasPrefix(platform, "windows-") || strings.HasPrefix(platform, "sql-")
 }
 
+// IsWindowsCore returns whether the given platform is a version of Windows core.
+func IsWindowsCore(platform string) bool {
+	return strings.HasPrefix(platform, "windows-") && strings.HasSuffix("-core")
+}
+
 // PlatformKind returns "linux" or "windows" based on the given platform.
 func PlatformKind(platform string) string {
 	if IsWindows(platform) {
@@ -1306,7 +1311,7 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 			// Instance creation can also fail due to service unavailability.
 			strings.Contains(err.Error(), "currently unavailable") ||
 			// windows-*-core instances sometimes fail to be ssh-able: b/305721001
-			(IsWindows(options.Platform) && strings.Contains(err.Error(), windowsStartupFailedMessage)) ||
+			(IsWindowsCore(options.Platform) && strings.Contains(err.Error(), windowsStartupFailedMessage)) ||
 			// SLES instances sometimes fail to be ssh-able: b/186426190
 			(IsSUSE(options.Platform) && strings.Contains(err.Error(), startupFailedMessage)) ||
 			strings.Contains(err.Error(), prepareSLESMessage)
