@@ -34,9 +34,10 @@ OPS_AGENT_REPO_HASH="$(extract_git_hash .)"
 git submodule update --init --recursive
 
 function print_disk_usage() {
-  df -h
-  du -hs /tmpfs/docker
+  df -h || echo df failed
+  du -hs /tmpfs/docker || echo du failed
 }
+print_disk_usage
 trap print_disk_usage EXIT
 
 # Debugging why we are not getting Docker cache hits for presubmits.
