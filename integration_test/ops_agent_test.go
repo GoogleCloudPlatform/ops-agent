@@ -2657,6 +2657,10 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 				local:  path.Join(prometheusTestdata, "json_exporter_config.yaml"),
 				remote: path.Join("/opt", "json_exporter", "json_exporter_config.yaml"),
 			},
+{
+				local:  path.Join(prometheusTestdata, "http-server-for-prometheus-test.service"),
+				remote: path.Join("/etc", "systemd", "system", "http-server-for-prometheus-test.service"),
+			},
 			{
 				local:  path.Join(prometheusTestdata, "json-exporter-for-prometheus-test.service"),
 				remote: path.Join("/etc", "systemd", "system", "json-exporter-for-prometheus-test.service"),
@@ -2683,14 +2687,15 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 		}
 		// Wait until both are ready
 		time.Sleep(30 * time.Second)
-		liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl --fail "http://localhost:7979/probe?module=default&target=http://localhost:8000/data.json"`)
-		if liveCheckErr != nil {
-			t.Fatalf("Json Exporter failed to start: %v", liveCheckErr)
+		liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl "http://localhost:7979/probe?module=default&target=http://localhost:8000/data.json"`)
+		// We will abort when:
+		// 1. JSON exporter is not started: in this case the stderr will have:
+		// "curl: (7) Failed to connect to localhost port 7979 after 1 ms: Connection refused"
+		// 2. The HTTP server is not started: in this case the stdout will not
+		// have the expected Prometheus style metrics
+		if liveCheckErr != nil || strings.Contains(liveCheckOut.Stderr, "Connection refused") || !strings.Contains(liveCheckOut.Stdout, `test_counter_value{test_label="counter_label"} 1234`) {
+			t.Fatal("Json Exporter failed to start")
 		}
-		if !strings.Contains(liveCheckOut.Stdout, `test_counter_value{test_label="counter_label"} 1234`) {
-			t.Fatalf("Json Exporter didn't provide the expected output. Got: %v", liveCheckOut.Stdout)
-		}
-
 		// Initially, __address__ is the target[0] which is
 		// "http://localhost:8000/data.json";
 		// The first relabeling moves __address__ to __param_target, so we have
@@ -2875,7 +2880,7 @@ func TestPrometheusUntypedMetrics(t *testing.T) {
 	testPrometheusMetrics(t, config, testChecks)
 }
 
-func TestPrometheusUntypedFooBarReset(t *testing.T) {
+func TestPrometheusUntypedMetricsReset(t *testing.T) {
 	config := `metrics:
   receivers:
     prom_app:
@@ -3206,6 +3211,8 @@ func testPrometheusMetrics(t *testing.T, opsAgentConfig string, testChecks []moc
 		serviceFiles := []fileToUpload{
 			{local: path.Join(prometheusTestdata, "http_server.go"),
 				remote: path.Join(remoteWorkDir, "http_server.go")},
+{local: path.Join(prometheusTestdata, "http-server-for-prometheus-test.service"),
+				remote: path.Join("/etc", "systemd", "system", "http-server-for-prometheus-test.service")},
 		}
 
 		if len(testChecks) == 0 {
@@ -3224,22 +3231,18 @@ func testPrometheusMetrics(t *testing.T, opsAgentConfig string, testChecks []moc
 		if err := installGolang(ctx, logger, vm); err != nil {
 			t.Fatal(err)
 		}
-		// Build http_server.go first to separate that out from the server setup time.
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "/usr/local/go/bin/go build /opt/go-http-server/http_server.go"); err != nil {
-			t.Fatal(err)
-		}
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "nohup /usr/local/go/bin/go run /opt/go-http-server/http_server.go -port=8000 -dir=/opt/go-http-server/ &> /tmp/http_server_logs.txt &"); err != nil {
-			t.Fatal(err)
-		}
+		setupScript := `sudo systemctl daemon-reload
+			sudo systemctl enable http-server-for-prometheus-test
+			sudo systemctl restart http-server-for-prometheus-test`
+		setupOut, err := gce.RunScriptRemotely(ctx, logger, vm, string(setupScript), nil, nil)
 		if err != nil {
-			t.Fatalf("failed to start the http server in VM with err: %v", err)
+			t.Fatalf("failed to start the http server in VM via systemctl with err: %v, stderr: %s", err, setupOut.Stderr)
 		}
 		// Wait until the http server is ready
-		time.Sleep(10 * time.Second)
-
-		_, liveCheckErr := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl --fail "http://localhost:8000/data"`)
-		if liveCheckErr != nil {
-			t.Fatalf("Http server failed to start: %v", liveCheckErr)
+		time.Sleep(5 * time.Second)
+liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl "http://localhost:8000/data"`)
+		if liveCheckErr != nil || strings.Contains(liveCheckOut.Stderr, "Connection refused") {
+			t.Fatalf("Http server failed to start with stdout %s and stderr %s", liveCheckOut.Stdout, liveCheckOut.Stderr)
 		}
 		// 3. Config and start the agent
 		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, opsAgentConfig); err != nil {
