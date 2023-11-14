@@ -2657,7 +2657,7 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 				local:  path.Join(prometheusTestdata, "json_exporter_config.yaml"),
 				remote: path.Join("/opt", "json_exporter", "json_exporter_config.yaml"),
 			},
-{
+			{
 				local:  path.Join(prometheusTestdata, "http-server-for-prometheus-test.service"),
 				remote: path.Join("/etc", "systemd", "system", "http-server-for-prometheus-test.service"),
 			},
@@ -3211,7 +3211,7 @@ func testPrometheusMetrics(t *testing.T, opsAgentConfig string, testChecks []moc
 		serviceFiles := []fileToUpload{
 			{local: path.Join(prometheusTestdata, "http_server.go"),
 				remote: path.Join(remoteWorkDir, "http_server.go")},
-{local: path.Join(prometheusTestdata, "http-server-for-prometheus-test.service"),
+			{local: path.Join(prometheusTestdata, "http-server-for-prometheus-test.service"),
 				remote: path.Join("/etc", "systemd", "system", "http-server-for-prometheus-test.service")},
 		}
 
@@ -3240,7 +3240,7 @@ func testPrometheusMetrics(t *testing.T, opsAgentConfig string, testChecks []moc
 		}
 		// Wait until the http server is ready
 		time.Sleep(5 * time.Second)
-liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl "http://localhost:8000/data"`)
+		liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl "http://localhost:8000/data"`)
 		if liveCheckErr != nil || strings.Contains(liveCheckOut.Stderr, "Connection refused") {
 			t.Fatalf("Http server failed to start with stdout %s and stderr %s", liveCheckOut.Stdout, liveCheckOut.Stderr)
 		}
