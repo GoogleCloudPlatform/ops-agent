@@ -3249,7 +3249,9 @@ func testPrometheusMetrics(t *testing.T, opsAgentConfig string, testChecks []moc
 		}
 
 		// 4. Start the go http server
-		setupScript := `sudo systemctl daemon-reload
+		setupScript := `
+			sudo chcon -t bin_t /opt/go-http-server/http_server
+			sudo systemctl daemon-reload
 			sudo systemctl enable http-server-for-prometheus-test
 			sudo systemctl restart http-server-for-prometheus-test`
 		setupOut, err := gce.RunScriptRemotely(ctx, logger, vm, string(setupScript), nil, nil)
@@ -3257,6 +3259,7 @@ func testPrometheusMetrics(t *testing.T, opsAgentConfig string, testChecks []moc
 			t.Fatalf("failed to start the http server in VM via systemctl with err: %v, stderr: %s", err, setupOut.Stderr)
 		}
 		// Wait until the http server is ready
+
 		time.Sleep(15 * time.Second)
 		liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `curl "http://localhost:8000/data"`)
 		if liveCheckErr != nil || strings.Contains(liveCheckOut.Stderr, "Connection refused") {
