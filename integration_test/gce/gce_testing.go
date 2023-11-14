@@ -378,7 +378,7 @@ func IsWindows(platform string) bool {
 
 // IsWindowsCore returns whether the given platform is a version of Windows core.
 func IsWindowsCore(platform string) bool {
-	return strings.HasPrefix(platform, "windows-") && strings.HasSuffix("-core")
+	return strings.HasPrefix(platform, "windows-") && strings.HasSuffix(platform, "-core")
 }
 
 // PlatformKind returns "linux" or "windows" based on the given platform.
