@@ -676,7 +676,7 @@ func InstallStandaloneWindowsMonitoringAgent(ctx context.Context, logger *log.Lo
 
 func restartOpsAgentForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
-		return "net stop google-cloud-ops-agent /yes && net start google-cloud-ops-agent"
+		return "Restart-Service google-cloud-ops-agent -Force"
 	}
 	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
 	return "sudo service google-cloud-ops-agent restart || sudo systemctl restart google-cloud-ops-agent"
@@ -787,8 +787,8 @@ func SetupOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, config s
 	return SetupOpsAgentFrom(ctx, logger, vm, config, LocationFromEnvVars())
 }
 
-// RestartOpsAgent restarts the Ops Agent and waits for it to become available.
-func RestartOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+// restartOpsAgent restarts the Ops Agent and waits for it to become available.
+func restartOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	if _, err := gce.RunRemotely(ctx, logger, vm, "", restartOpsAgentForPlatform(vm.Platform)); err != nil {
 		return fmt.Errorf("restartOpsAgent() failed to restart ops agent: %v", err)
 	}
@@ -814,7 +814,7 @@ func SetupOpsAgentFrom(ctx context.Context, logger *log.Logger, vm *gce.VM, conf
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(config), util.ConfigPathForPlatform(vm.Platform)); err != nil {
 			return fmt.Errorf("SetupOpsAgentFrom() failed to upload config file: %v", err)
 		}
-		if err := RestartOpsAgent(ctx, logger, vm); err != nil {
+		if err := restartOpsAgent(ctx, logger, vm); err != nil {
 			return err
 		}
 	}
