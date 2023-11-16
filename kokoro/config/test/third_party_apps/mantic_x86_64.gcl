@@ -1,0 +1,10 @@
+import 'common.gcl' as common
+
+config build = common.third_party_apps_test {
+  params {
+    platforms = [
+      'ubuntu-2310-amd64',
+    ]
+    arch = 'x86_64'
+  }
+}

@@ -10,9 +10,9 @@ ARG OPENJDK_MAJOR_VERSION
 SHELL ["/bin/bash", "-c"]
 
 # Install golang
-ARG BUILDARCH
+ARG TARGETARCH
 ARG GO_VERSION
-ADD https://go.dev/dl/go${GO_VERSION}.linux-${BUILDARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
+ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
 RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
@@ -26,10 +26,14 @@ RUN cd submodules/opentelemetry-operations-collector && go mod download
 
 COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
 # Install gradle. The first invocation of gradlew does this
-RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon tasks
+RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
-RUN ./otel.sh /work/cache/
+RUN \
+unset OTEL_TRACES_EXPORTER && \
+unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
+unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
+./otel.sh /work/cache/
 
 FROM {target_name}-build-base AS {target_name}-build-fluent-bit
 WORKDIR /work
