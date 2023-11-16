@@ -16,12 +16,12 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
-	"syscall"
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
@@ -199,7 +199,7 @@ func (s *service) startSubagents() error {
 		defer handle.Close()
 		if err := handle.Start(); err != nil {
 			// TODO: Should we be ignoring failures for partial startup?
-			if !syscall.Errno().Is(windows.ERROR_SERVICE_ALREADY_RUNNING) {
+			if !errors.Is(err, windows.ERROR_SERVICE_ALREADY_RUNNING) {
 				s.log.Error(EngineEventID, fmt.Sprintf("failed to start %q: %v", svc.name, err))
 			}
 		}
