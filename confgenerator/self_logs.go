@@ -89,8 +89,8 @@ func generateHealthChecksLogsComponents(ctx context.Context) []fluentbit.Compone
 
 // This method creates a file input for the `logging-module.log` file, a regex parser for the
 // fluent-bit self logs and a translator of severity to the logging api format.
-func generateFluentBitSelfLogsComponents(ctx context.Context) []fluentbit.Component {
-	out := make([]fluentbit.Component, 0)
+func generateFluentBitSelfLogsComponents(ctx context.Context, logLevel string) []fluentbit.Component {
+	out := []fluentbit.Component{}
 	out = append(out, LoggingReceiverFilesMixin{
 		IncludePaths: []string{fluentbitSelfLogsPath(platform.FromContext(ctx))},
 		//Following: b/226668416 temporarily set storage.type to "memory"
@@ -108,6 +108,16 @@ func generateFluentBitSelfLogsComponents(ctx context.Context) []fluentbit.Compon
 			},
 		},
 	}.Components(ctx, fluentBitSelfLogsTag, "fluent-bit-self-log-regex-parsing")...)
+	if logLevel == "debug" {
+		out = append(out, fluentbit.Component{
+			Kind: "FILTER",
+			Config: map[string]string{
+				"Name":    "grep",
+				"Match":   fluentBitSelfLogsTag,
+				"Exclude": "severity DEBUG",
+			},
+		})
+	}
 	return out
 }
 
@@ -211,9 +221,9 @@ func generateSelfLogsProcessingComponents(ctx context.Context) []fluentbit.Compo
 	}.Components(ctx, opsAgentLogsMatch, "self-logs-processing")
 }
 
-func generateSelfLogsComponents(ctx context.Context, userAgent string) []fluentbit.Component {
+func generateSelfLogsComponents(ctx context.Context, userAgent, logLevel string) []fluentbit.Component {
 	out := make([]fluentbit.Component, 0)
-	out = append(out, generateFluentBitSelfLogsComponents(ctx)...)
+	out = append(out, generateFluentBitSelfLogsComponents(ctx, logLevel)...)
 	out = append(out, generateHealthChecksLogsComponents(ctx)...)
 	out = append(out, generateSelfLogsSamplingComponents(ctx)...)
 	out = append(out, generateStructuredHealthLogsComponents(ctx)...)
