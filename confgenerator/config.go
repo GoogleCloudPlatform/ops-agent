@@ -506,6 +506,10 @@ type LoggingReceiver interface {
 	Components(ctx context.Context, tag string) []fluentbit.Component
 }
 
+type ModifiableLoggingReceiver interface {
+	MergeWithProcessor(ctx context.Context, tag string, processor LoggingProcessor, processorComponents []fluentbit.Component) []fluentbit.Component
+}
+
 var LoggingReceiverTypes = &componentTypeRegistry[LoggingReceiver, loggingReceiverMap]{
 	Subagent: "logging", Kind: "receiver",
 }
@@ -572,6 +576,10 @@ type Metrics struct {
 type OTelReceiver interface {
 	Component
 	Pipelines(ctx context.Context) []otel.ReceiverPipeline
+}
+
+type ModifiableOtelReceiver interface {
+	MergeWithProcessor(ctx context.Context, processor MetricsProcessor) []otel.ReceiverPipeline
 }
 
 type MetricsReceiver interface {

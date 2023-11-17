@@ -49,12 +49,31 @@ func (r LoggingReceiverFiles) Type() string {
 }
 
 func (r LoggingReceiverFiles) Components(ctx context.Context, tag string) []fluentbit.Component {
-	return LoggingReceiverFilesMixin{
+	return r.MergeWithProcessor(ctx, tag, nil, nil)
+}
+
+func (r LoggingReceiverFiles) MergeWithProcessor(ctx context.Context, tag string, processor LoggingProcessor, processorComponents []fluentbit.Component) []fluentbit.Component {
+	receiverComponents := LoggingReceiverFilesMixin{
 		IncludePaths:            r.IncludePaths,
 		ExcludePaths:            r.ExcludePaths,
 		WildcardRefreshInterval: r.WildcardRefreshInterval,
 		RecordLogFilePath:       r.RecordLogFilePath,
 	}.Components(ctx, tag)
+	if processor != nil && processor.Type() == "parse_multiline" {
+		var multilineParserNames []string
+		for _, p := range processorComponents {
+			if p.Kind == "MULTILINE_PARSER" {
+				multilineParserNames = append(multilineParserNames, p.Config["name"])
+			}
+		}
+		for _, r := range receiverComponents {
+			if len(multilineParserNames) != 0 {
+				r.Config["multiline.parser"] = strings.Join(multilineParserNames, ",")
+			}
+
+		}
+	}
+	return receiverComponents
 }
 
 type LoggingReceiverFilesMixin struct {

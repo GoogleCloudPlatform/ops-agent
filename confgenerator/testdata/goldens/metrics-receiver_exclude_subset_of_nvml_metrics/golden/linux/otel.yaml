@@ -16,7 +16,7 @@ processors:
       exclude:
         match_type: regexp
         metric_names:
-        - "^agent\\.googleapis\\.com/.*$$"
+        - "^agent\\.googleapis\\.com/gpu/process/.*$$"
   filter/fluentbit_0:
     metrics:
       include:

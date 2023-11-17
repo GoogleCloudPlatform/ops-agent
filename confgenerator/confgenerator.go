@@ -147,7 +147,17 @@ func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]
 	outR := make(map[string]otel.ReceiverPipeline)
 	outP := make(map[string]otel.Pipeline)
 	addReceiver := func(pipelineType, pID, rID string, receiver OTelReceiver, processorIDs []string) error {
-		for i, receiverPipeline := range receiver.Pipelines(ctx) {
+		pipelines := receiver.Pipelines(ctx)
+		if mr, ok := receiver.(ModifiableOtelReceiver); ok {
+			for _, pID := range processorIDs {
+				processor, ok := m.Processors[pID]
+				if !ok {
+					return fmt.Errorf("processor %q not found", pID)
+				}
+				pipelines = mr.MergeWithProcessor(ctx, processor)
+			}
+		}
+		for i, receiverPipeline := range pipelines {
 			receiverPipelineName := strings.ReplaceAll(rID, "_", "__")
 			if i > 0 {
 				receiverPipelineName = fmt.Sprintf("%s_%d", receiverPipelineName, i)
@@ -251,26 +261,13 @@ func contains(s []string, str string) bool {
 	return false
 }
 
-func processUserDefinedMultilineParser(i int, pID string, receiver LoggingReceiver, processor LoggingProcessor, receiverComponents []fluentbit.Component, processorComponents []fluentbit.Component) error {
-	var multilineParserNames []string
+func validateMultilineProcessor(i int, pID string, receiver LoggingReceiver, processor LoggingProcessor, receiverComponents []fluentbit.Component, processorComponents []fluentbit.Component) error {
 	if processor.Type() != "parse_multiline" {
 		return nil
 	}
-	for _, p := range processorComponents {
-		if p.Kind == "MULTILINE_PARSER" {
-			multilineParserNames = append(multilineParserNames, p.Config["name"])
-		}
-	}
 	allowedMultilineReceiverTypes := []string{"files"}
-	for _, r := range receiverComponents {
-		if len(multilineParserNames) != 0 &&
-			!contains(allowedMultilineReceiverTypes, receiver.Type()) {
-			return fmt.Errorf(`processor %q with type "parse_multiline" can only be applied on receivers with type "files"`, pID)
-		}
-		if len(multilineParserNames) != 0 {
-			r.Config["multiline.parser"] = strings.Join(multilineParserNames, ",")
-		}
-
+	if !contains(allowedMultilineReceiverTypes, receiver.Type()) {
+		return fmt.Errorf(`processor %q with type "parse_multiline" can only be applied on receivers with type "files"`, pID)
 	}
 	if i != 0 {
 		return fmt.Errorf(`at most one logging processor with type "parse_multiline" is allowed in the pipeline. A logging processor with type "parse_multiline" must be right after a logging receiver with type "files"`)
@@ -333,7 +330,7 @@ func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAg
 				}
 				var components []fluentbit.Component
 				receiverComponents := receiver.Components(ctx, tag)
-				components = append(components, receiverComponents...)
+				receiverTag := tag
 
 				// To match on fluent_forward records, we need to account for the addition
 				// of the existing tag (unknown during config generation) as the suffix
@@ -347,6 +344,7 @@ func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAg
 				tags = append(tags, regexp.QuoteMeta(tag)+regexSuffix)
 				tag = tag + globSuffix
 
+				var allProcessorComponents []fluentbit.Component
 				for i, pID := range p.ProcessorIDs {
 					processor, ok := l.Processors[pID]
 					if !ok {
@@ -356,11 +354,16 @@ func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAg
 						return nil, fmt.Errorf("processor %q not found", pID)
 					}
 					processorComponents := processor.Components(ctx, tag, strconv.Itoa(i))
-					if err := processUserDefinedMultilineParser(i, pID, receiver, processor, receiverComponents, processorComponents); err != nil {
+					if mr, ok := receiver.(ModifiableLoggingReceiver); ok {
+						receiverComponents = mr.MergeWithProcessor(ctx, receiverTag, processor, processorComponents)
+					}
+					if err := validateMultilineProcessor(i, pID, receiver, processor, receiverComponents, processorComponents); err != nil {
 						return nil, err
 					}
-					components = append(components, processorComponents...)
+					allProcessorComponents = append(allProcessorComponents, processorComponents...)
 				}
+				components = append(components, receiverComponents...)
+				components = append(components, allProcessorComponents...)
 				components = append(components, setLogNameComponents(ctx, tag, rID, receiver.Type(), platform.FromContext(ctx).Hostname())...)
 
 				// Logs ingested using the fluent_forward receiver must add the existing_tag
