@@ -2687,6 +2687,10 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		if err := buildGoBinary(ctx, logger, vm, filesToUpload[0].remote, "/opt/go-http-server/"); err != nil {
+			t.Fatal(err)
+		}
+
 		// Run the setup script to run the http server and the JSON exporter
 		setupScript, err := testdataDir.ReadFile(path.Join(prometheusTestdata, "setup_json_exporter.sh"))
 		if err != nil {
@@ -3203,6 +3207,13 @@ func TestPrometheusSummaryMetrics(t *testing.T) {
 	testPrometheusMetrics(t, config, testChecks)
 }
 
+func buildGoBinary(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, source, dest string) error {
+	installCmd := fmt.Sprintf(`
+               /usr/local/go/bin/go build -o %s/ %s`, dest, source)
+	_, err := gce.RunScriptRemotely(ctx, logger, vm, installCmd, nil, nil)
+	return err
+}
+
 // testPrometheusMetrics tests different Prometheus metric types using static
 // testing files. The files will contain metrics in the right format and hosted
 // by a simple HTTP server so that the agent can scrape the metrics
@@ -3238,17 +3249,24 @@ func testPrometheusMetrics(t *testing.T, opsAgentConfig string, testChecks []moc
 			t.Fatal(err)
 		}
 
-		// 2. Setup the golang and start the go http server
+		// 2. Setup the golang
 		if err := installGolang(ctx, logger, vm); err != nil {
 			t.Fatal(err)
 		}
+
+		// 3. Build the http server
+		if err := buildGoBinary(ctx, logger, vm, serviceFiles[0].remote, remoteWorkDir); err != nil {
+			t.Fatal(err)
+		}
+
+		// 4. Start the go http server
 		setupScript := `sudo systemctl daemon-reload && sudo systemctl enable http-server-for-prometheus-test && sudo systemctl restart http-server-for-prometheus-test`
 		setupOut, err := gce.RunRemotely(ctx, logger, vm, "", setupScript)
 		if err != nil {
 			t.Fatalf("failed to start the http server in VM via systemctl with err: %v, stderr: %s", err, setupOut.Stderr)
 		}
 		// Wait until the http server is ready
-		time.Sleep(5 * time.Second)
+		time.Sleep(20 * time.Second)
 		liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger, vm, "", `curl "http://localhost:8000/data"`)
 		if liveCheckErr != nil || strings.Contains(liveCheckOut.Stderr, "Connection refused") {
 			t.Fatalf("Http server failed to start with stdout %s and stderr %s", liveCheckOut.Stdout, liveCheckOut.Stderr)
@@ -3893,7 +3911,7 @@ func unmarshalResource(in string) (*resourcedetector.GCEResource, error) {
 // the PATH before calling `go` as goPath
 func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	// TODO: use runtime.Version() to extract the go version
-	goVersion := "1.19"
+	goVersion := "1.20"
 	goArch := "amd64"
 	if gce.IsARM(vm.Platform) {
 		goArch = "arm64"

@@ -376,6 +376,11 @@ func IsWindows(platform string) bool {
 	return strings.HasPrefix(platform, "windows-") || strings.HasPrefix(platform, "sql-")
 }
 
+// IsWindowsCore returns whether the given platform is a version of Windows core.
+func IsWindowsCore(platform string) bool {
+	return strings.HasPrefix(platform, "windows-") && strings.HasSuffix(platform, "-core")
+}
+
 // PlatformKind returns "linux" or "windows" based on the given platform.
 func PlatformKind(platform string) string {
 	if IsWindows(platform) {
@@ -1307,6 +1312,8 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 			strings.Contains(err.Error(), "Internal error") ||
 			// Instance creation can also fail due to service unavailability.
 			strings.Contains(err.Error(), "currently unavailable") ||
+			// windows-*-core instances sometimes fail to be ssh-able: b/305721001
+			(IsWindowsCore(options.Platform) && strings.Contains(err.Error(), windowsStartupFailedMessage)) ||
 			// SLES instances sometimes fail to be ssh-able: b/186426190
 			(IsSUSE(options.Platform) && strings.Contains(err.Error(), startupFailedMessage)) ||
 			strings.Contains(err.Error(), prepareSLESMessage)
@@ -1680,6 +1687,8 @@ func FetchMetadata(ctx context.Context, logger *log.Logger, vm *VM) (map[string]
 const (
 	// Retry errors that look like b/186426190.
 	startupFailedMessage = "waitForStartLinux() failed: waiting for startup timed out"
+	// Retry errors that look like b/305721001.
+	windowsStartupFailedMessage = "waitForStartWindows() failed: ran out of attempts waiting for dummy command to run."
 )
 
 func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error {
@@ -1698,7 +1707,7 @@ func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error 
 
 	backoffPolicy := backoff.WithContext(backoff.NewConstantBackOff(vmInitBackoffDuration), ctx)
 	if err := backoff.Retry(printFoo, backoffPolicy); err != nil {
-		return fmt.Errorf("waitForStartWindows() failed: ran out of attempts waiting for dummy command to run. err=%v", err)
+		return fmt.Errorf("%s err=%v", windowsStartupFailedMessage, err)
 	}
 	return nil
 }
