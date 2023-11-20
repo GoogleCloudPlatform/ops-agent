@@ -377,7 +377,6 @@ func (r MetricsReceiverHostmetrics) ModifyReceiver(p confgenerator.MetricsProces
 			"agent.googleapis.com/gpu/processes/utilization",
 			"agent.googleapis.com/gpu/processes/max_bytes_used",
 		)
-		return r
 	}
 	return r
 }

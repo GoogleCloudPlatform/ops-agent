@@ -36,8 +36,7 @@ func (p MetricsProcessorExcludeMetrics) Type() string {
 func (p MetricsProcessorExcludeMetrics) Processors() []otel.Component {
 	var metricNames []string
 	for _, glob := range p.MetricsPattern {
-		pattern := globToRegex(glob, true)
-		metricNames = append(metricNames, pattern)
+		metricNames = append(metricNames, globToRegex(glob, true))
 	}
 	return []otel.Component{otel.MetricsFilter(
 		"exclude",
@@ -47,7 +46,7 @@ func (p MetricsProcessorExcludeMetrics) Processors() []otel.Component {
 }
 
 // globToRegex converts metrics glob patterns to regex patterns
-// For generating otel config,  $ needs to be escaped:
+// For generating otel config, `$` needs to be escaped:
 // https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/metricstransformprocessor#rename-multiple-metrics-using-substitution
 func globToRegex(glob string, escapeForOtel bool) string {
 	dollarSign := "$"
@@ -63,7 +62,7 @@ func globToRegex(glob string, escapeForOtel bool) string {
 }
 
 // AllMetricsExcluded checks if its MetricsPattern list can match all of the
-// input metrics, which means all of the metics will be excluded
+// input metrics which would indicate all of the metics will be excluded
 func (p MetricsProcessorExcludeMetrics) AllMetricsExcluded(metrics ...string) bool {
 OUTER:
 	for _, metric := range metrics {
