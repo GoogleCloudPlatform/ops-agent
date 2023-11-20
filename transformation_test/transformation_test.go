@@ -43,11 +43,6 @@ func (l *loggingProcessor) UnmarshalYAML(ctx context.Context, unmarshal func(int
 }
 
 func TestTransformationTests(t *testing.T) {
-	ctx := context.Background()
-	if len(*flbPath) == 0 {
-		t.Skip("--flb not supplied")
-	}
-
 	allTests, err := os.ReadDir("testdata")
 	if err != nil {
 		t.Fatal(err)
@@ -60,83 +55,94 @@ func TestTransformationTests(t *testing.T) {
 		}
 		t.Run(dir.Name(), func(t *testing.T) {
 			t.Parallel()
-			testStartTime := time.Now()
 			// Unmarshal transformation_config.yaml
 			var transformationConfig transformationTest
 			transformationConfig, err = readTransformationConfig(dir.Name())
 			if err != nil {
 				t.Fatal("failed to unmarshal config:", err)
 			}
-
-			// Generate config files
-			var genFiles map[string]string
-			genFiles, err = generateFluentBitConfigs(ctx, transformationConfig, dir.Name())
-
-			// Write config files in temp directory
-			tempPath := t.TempDir()
-			for k, v := range genFiles {
-				err := confgenerator.WriteConfigFile([]byte(v), filepath.Join(tempPath, k))
-
-				if err != nil {
-					t.Fatal(err)
-				}
-				t.Logf("generated file %q\n%s", k, v)
-			}
-
-			// Start Fluent-bit
-			cmd := exec.Command(
-				fmt.Sprintf("%s", *flbPath),
-				"-v",
-				fmt.Sprintf("--config=%s", filepath.Join(tempPath, flbMainConf)),
-				fmt.Sprintf("--parser=%s", filepath.Join(filepath.Join(tempPath, flbParserConf))))
-
-			var stdout, stderr io.ReadCloser
-			stdout, err = cmd.StdoutPipe()
-			if err != nil {
-				t.Fatal("stdout pipe failure", err)
-			}
-			stderr, err = cmd.StderrPipe()
-			if err != nil {
-				t.Fatal("stderr pipe failure", err)
-			}
-
-			if err := cmd.Start(); err != nil {
-				t.Fatal("Failed to start command:", err)
-			}
-
-			// stderr and stdout need to be read in parallel to prevent deadlock
-			var eg errgroup.Group
-			eg.Go(func() error {
-				// read stderr
-				slurp, _ := io.ReadAll(stderr)
-				t.Logf("stderr: %s\n", slurp)
-				return nil
+			t.Run("fluent-bit", func(t *testing.T) {
+				t.Parallel()
+				transformationConfig.runFluentBitTest(t, dir.Name())
 			})
-
-			// read and unmarshal output
-			var data []map[string]any
-			out, _ := io.ReadAll(stdout)
-			_ = eg.Wait()
-
-			err := yaml.Unmarshal(out, &data)
-			if err != nil {
-				t.Log(string(out))
-				t.Fatal(err)
-			}
-			// transform timestamp of actual results
-			for i, d := range data {
-				if date, ok := d["date"].(float64); ok {
-					date := time.UnixMicro(int64(date * 1e6)).UTC()
-					if date.After(testStartTime) {
-						data[i]["date"] = "now"
-					} else {
-						data[i]["date"] = date.Format(time.RFC3339Nano)
-					}
-				}
-			}
-			checkOutput(t, filepath.Join(dir.Name(), transformationOutput), data)
 		})
 	}
+}
+
+func (transformationConfig transformationTest) runFluentBitTest(t *testing.T, name string) {
+	if len(*flbPath) == 0 {
+		t.Skip("--flb not supplied")
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	// Generate config files
+	genFiles, err := generateFluentBitConfigs(ctx, name, transformationConfig)
+
+	// Write config files in temp directory
+	tempPath := t.TempDir()
+	for k, v := range genFiles {
+		err := confgenerator.WriteConfigFile([]byte(v), filepath.Join(tempPath, k))
+
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Logf("generated file %q\n%s", k, v)
+	}
+
+	testStartTime := time.Now()
+
+	// Start Fluent-bit
+	cmd := exec.Command(
+		fmt.Sprintf("%s", *flbPath),
+		"-v",
+		fmt.Sprintf("--config=%s", filepath.Join(tempPath, flbMainConf)),
+		fmt.Sprintf("--parser=%s", filepath.Join(filepath.Join(tempPath, flbParserConf))))
+
+	var stdout, stderr io.ReadCloser
+	stdout, err = cmd.StdoutPipe()
+	if err != nil {
+		t.Fatal("stdout pipe failure", err)
+	}
+	stderr, err = cmd.StderrPipe()
+	if err != nil {
+		t.Fatal("stderr pipe failure", err)
+	}
+
+	if err := cmd.Start(); err != nil {
+		t.Fatal("Failed to start command:", err)
+	}
+
+	// stderr and stdout need to be read in parallel to prevent deadlock
+	var eg errgroup.Group
+	eg.Go(func() error {
+		// read stderr
+		slurp, _ := io.ReadAll(stderr)
+		t.Logf("stderr: %s\n", slurp)
+		return nil
+	})
+
+	// read and unmarshal output
+	var data []map[string]any
+	out, _ := io.ReadAll(stdout)
+	_ = eg.Wait()
+
+	if err := yaml.Unmarshal(out, &data); err != nil {
+		t.Log(string(out))
+		t.Fatal(err)
+	}
+	// transform timestamp of actual results
+	for i, d := range data {
+		if date, ok := d["date"].(float64); ok {
+			date := time.UnixMicro(int64(date * 1e6)).UTC()
+			if date.After(testStartTime) {
+				data[i]["date"] = "now"
+			} else {
+				data[i]["date"] = date.Format(time.RFC3339Nano)
+			}
+		}
+	}
+	checkOutput(t, filepath.Join(name, transformationOutput), data)
 }
 
 func checkOutput(t *testing.T, name string, got []map[string]any) {
@@ -177,8 +183,8 @@ func readTransformationConfig(dir string) (transformationTest, error) {
 	return config, nil
 }
 
-func generateFluentBitConfigs(ctx context.Context, transformationTest transformationTest, dirPath string) (map[string]string, error) {
-	abs, err := filepath.Abs(filepath.Join("testdata", dirPath, transformationInput))
+func generateFluentBitConfigs(ctx context.Context, name string, transformationTest transformationTest) (map[string]string, error) {
+	abs, err := filepath.Abs(filepath.Join("testdata", name, transformationInput))
 	if err != nil {
 		return nil, err
 	}
