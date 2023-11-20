@@ -419,9 +419,9 @@ func (r *componentTypeRegistry[CI, M]) RegisterType(constructor func() CI, platf
 	r.TypeMap[name] = &componentFactory[CI]{constructor, platformsValue}
 }
 
-// unmarshalComponentYaml is the custom unmarshaller for reading a component's configuration from the config file.
+// UnmarshalComponentYaml is the custom unmarshaller for reading a component's configuration from the config file.
 // It first unmarshals into a struct containing only the "type" field, then looks up the config struct with the full set of fields for that type, and finally unmarshals into an instance of that struct.
-func (r *componentTypeRegistry[CI, M]) unmarshalComponentYaml(ctx context.Context, inner *CI, unmarshal func(interface{}) error) error {
+func (r *componentTypeRegistry[CI, M]) UnmarshalComponentYaml(ctx context.Context, inner *CI, unmarshal func(interface{}) error) error {
 	c := ConfigComponent{}
 	unmarshal(&c) // Get the type; ignore the error
 	var o interface{}
@@ -482,7 +482,7 @@ func (r *componentTypeRegistry[CI, M]) unmarshalToMap(ctx context.Context, m *M,
 	// Step 2: Unmarshal into the destination map
 	for k, u := range um {
 		var inner CI
-		if err := r.unmarshalComponentYaml(ctx, &inner, u.unmarshal); err != nil {
+		if err := r.UnmarshalComponentYaml(ctx, &inner, u.unmarshal); err != nil {
 			return err
 		}
 		(*m)[k] = inner

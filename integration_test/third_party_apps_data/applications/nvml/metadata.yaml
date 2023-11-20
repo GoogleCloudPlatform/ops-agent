@@ -23,31 +23,35 @@ configure_integration: |-
   You must install the NVIDIA driver on a host with NVIDIA GPUs. 
 supported_operating_systems: linux
 supported_app_version: ["515.65.01"]
-platforms_to_skip:
-  - centos-7
-  - centos-8
-  - debian-10
-  - debian-11
-  - debian-11-arm64
-  - debian-12
-  - rocky-linux-8
-  - rocky-linux-9
-  - rocky-linux-9-arm64
-  - sles-12
-  - sles-15
-  - sles-15-arm64
-  - ubuntu-2004-lts-arm64
-  - ubuntu-2204-lts
-  - ubuntu-2204-lts-arm64
-  - ubuntu-2304-amd64
-gpu_models:
-  - a100
-  - v100
-  - p4
-  - t4
-  - p100
-  - k80
-  - l4
+gpu_platforms:
+  - model: a100
+    platforms:
+      - ubuntu-2004-lts
+  - model: v100
+    platforms:
+      - ubuntu-2004-lts
+  - model: p4
+    platforms:
+      - ubuntu-2004-lts
+  - model: t4
+    platforms:
+      - ubuntu-2004-lts
+  - model: p100
+    platforms:
+      - ubuntu-2004-lts
+  - model: k80
+    platforms:
+      - ubuntu-2004-lts
+  - model: l4
+    platforms:
+      - centos-7
+      - debian-10
+      - debian-11
+      - rocky-linux-8
+      - rocky-linux-9
+      - sles-15
+      - ubuntu-2004-lts
+      - ubuntu-2204-lts
 expected_metrics:
   - type: agent.googleapis.com/gpu/utilization
     value_type: DOUBLE

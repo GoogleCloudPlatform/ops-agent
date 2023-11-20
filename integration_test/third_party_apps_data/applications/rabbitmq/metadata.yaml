@@ -31,6 +31,8 @@ platforms_to_skip:
   - debian-12
   - sles-12
   - ubuntu-2304-amd64
+  - ubuntu-2310-amd64
+  - ubuntu-2310-arm64
 supported_app_version: ["3.8", "3.9"]
 expected_metrics:
   - type: workload.googleapis.com/rabbitmq.consumer.count

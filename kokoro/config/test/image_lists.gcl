@@ -13,6 +13,24 @@ local template _distro {
 }
 
 // DEB Linux distros. (Do not modify this comment.)
+mantic_x86_64 = _distro {
+  release = [
+      'ubuntu-2310-amd64',
+      'ubuntu-minimal-2310-amd64',
+  ]
+  presubmit = [
+      'ubuntu-minimal-2310-amd64',
+  ]
+}
+mantic_aarch64 = _distro {
+  release = [
+      'ubuntu-2310-arm64',
+      'ubuntu-minimal-2310-arm64',
+  ]
+  presubmit = [
+      'ubuntu-minimal-2310-arm64',
+  ]
+}
 bookworm_x86_64 = _distro {
   release = [
       'debian-12',
@@ -130,7 +148,7 @@ sles15_x86_64 = _distro {
   release = [
     'sles-15',
     'sles-15-sp1-sap',
-    'sles-15-sp2-sap',
+    'sles-15-sp5-sap',
     'opensuse-leap',
     'opensuse-leap-15-4',
   ]
@@ -156,7 +174,6 @@ windows_x86_64 = _distro {
   ]
   presubmit = [
     'windows-2016-core',
-    // TODO(martijnvs): Switch this to windows-20h2-core.
-    'windows-2019',
+    'windows-2022',
   ]
 }
