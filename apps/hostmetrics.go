@@ -16,19 +16,18 @@ package apps
 
 import (
 	"context"
-	"regexp"
-	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/set"
 )
 
 type MetricsReceiverHostmetrics struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
+
+	DisableGPUMetrics bool `yaml:"-" tracking:"-"`
 }
 
 func (r MetricsReceiverHostmetrics) Type() string {
@@ -36,10 +35,6 @@ func (r MetricsReceiverHostmetrics) Type() string {
 }
 
 func (r MetricsReceiverHostmetrics) Pipelines(ctx context.Context) []otel.ReceiverPipeline {
-	return r.MergeWithProcessor(ctx, nil)
-}
-
-func (r MetricsReceiverHostmetrics) MergeWithProcessor(ctx context.Context, processor confgenerator.MetricsProcessor) []otel.ReceiverPipeline {
 	p := platform.FromContext(ctx)
 	processConfig := map[string]interface{}{
 		"mute_process_name_error": true,
@@ -334,19 +329,7 @@ func (r MetricsReceiverHostmetrics) MergeWithProcessor(ctx context.Context, proc
 		}},
 	}}
 
-	includeNvml := p.HasNvidiaGpu
-	if processor != nil {
-		if ep, ok := processor.(*MetricsProcessorExcludeMetrics); ok {
-			includeNvml = includeNvml && !canTurnOffReceiver([]string{
-				"agent.googleapis.com/gpu/utilization",
-				"agent.googleapis.com/gpu/memory/bytes_used",
-				"agent.googleapis.com/gpu/processes/utilization",
-				"agent.googleapis.com/gpu/processes/max_bytes_used",
-			}, ep.MetricsPattern)
-		}
-	}
-
-	if includeNvml {
+	if p.HasNvidiaGpu && !r.DisableGPUMetrics {
 		pipelines = append(pipelines, otel.ReceiverPipeline{
 			Receiver: otel.Component{
 				Type: "nvml",
@@ -386,17 +369,17 @@ func (r MetricsReceiverHostmetrics) MergeWithProcessor(ctx context.Context, proc
 	return pipelines
 }
 
-// TODO:
-func canTurnOffReceiver(expectedMetrics []string, metricsPattern []string) bool {
-	matched := set.Set[string]{}
-	for _, m := range expectedMetrics {
-		for _, rp := range metricsPattern {
-			if r, _ := regexp.MatchString(strings.ReplaceAll(rp, "*", ".*"), m); r {
-				matched.Add(m)
-			}
-		}
+func (r MetricsReceiverHostmetrics) ModifyReceiver(p confgenerator.MetricsProcessor) confgenerator.MetricsReceiver {
+	if ep, ok := p.(*MetricsProcessorExcludeMetrics); ok {
+		r.DisableGPUMetrics = ep.AllMetricsExcluded(
+			"agent.googleapis.com/gpu/utilization",
+			"agent.googleapis.com/gpu/memory/bytes_used",
+			"agent.googleapis.com/gpu/processes/utilization",
+			"agent.googleapis.com/gpu/processes/max_bytes_used",
+		)
+		return r
 	}
-	return len(matched) == len(expectedMetrics)
+	return r
 }
 
 func init() {

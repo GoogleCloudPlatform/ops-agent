@@ -506,10 +506,6 @@ type LoggingReceiver interface {
 	Components(ctx context.Context, tag string) []fluentbit.Component
 }
 
-type ModifiableLoggingReceiver interface {
-	MergeWithProcessor(ctx context.Context, tag string, processor LoggingProcessor, processorComponents []fluentbit.Component) []fluentbit.Component
-}
-
 var LoggingReceiverTypes = &componentTypeRegistry[LoggingReceiver, loggingReceiverMap]{
 	Subagent: "logging", Kind: "receiver",
 }
@@ -578,8 +574,9 @@ type OTelReceiver interface {
 	Pipelines(ctx context.Context) []otel.ReceiverPipeline
 }
 
-type ModifiableOtelReceiver interface {
-	MergeWithProcessor(ctx context.Context, processor MetricsProcessor) []otel.ReceiverPipeline
+// A ModifiableReceiver can modify the receiver based on the input processor
+type ModifiableReceiver interface {
+	ModifyReceiver(p MetricsProcessor) MetricsReceiver
 }
 
 type MetricsReceiver interface {
