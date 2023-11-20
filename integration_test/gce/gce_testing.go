@@ -838,7 +838,9 @@ func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, 
 // a "Storage Object Viewer" and "Storage Object Creator" on the bucket.
 func UploadContent(ctx context.Context, logger *log.Logger, vm *VM, content io.Reader, remotePath string) (err error) {
 	defer func() {
-		logger.Printf("Uploading file finished with err=%v", err)
+		if err != nil {
+			logger.Printf("Uploading file finished with err=%v", err)
+		}
 	}()
 	object := storageClient.Bucket(transfersBucket).Object(path.Join(vm.Name, remotePath))
 	writer := object.NewWriter(ctx)
@@ -907,7 +909,7 @@ func envVarMapToPowershellPrefix(env map[string]string) string {
 // $ErrorActionPreference = 'Stop'
 // This will cause a broader class of errors to be reported as an error (nonzero exit code)
 // by powershell.
-func RunScriptRemotely(ctx context.Context, logger *logging.DirectoryLogger, vm *VM, scriptContents string, flags []string, env map[string]string) (CommandOutput, error) {
+func RunScriptRemotely(ctx context.Context, logger *log.Logger, vm *VM, scriptContents string, flags []string, env map[string]string) (CommandOutput, error) {
 	var quotedFlags []string
 	for _, flag := range flags {
 		quotedFlags = append(quotedFlags, fmt.Sprintf("'%s'", flag))
@@ -918,21 +920,21 @@ func RunScriptRemotely(ctx context.Context, logger *logging.DirectoryLogger, vm 
 		// Use a UUID for the script name in case RunScriptRemotely is being
 		// called concurrently on the same VM.
 		scriptPath := "C:\\" + uuid.NewString() + ".ps1"
-		if err := UploadContent(ctx, logger.ToFile("file_uploads.txt"), vm, strings.NewReader(scriptContents), scriptPath); err != nil {
+		if err := UploadContent(ctx, logger, vm, strings.NewReader(scriptContents), scriptPath); err != nil {
 			return CommandOutput{}, err
 		}
 		// powershell -File seems to drop certain kinds of errors:
 		// https://stackoverflow.com/a/15779295
 		// In testing, adding $ErrorActionPreference = 'Stop' to the start of each
 		// script seems to work around this completely.
-		return RunRemotely(ctx, logger.ToMainLog(), vm, "", envVarMapToPowershellPrefix(env)+"powershell -File "+scriptPath+" "+flagsStr)
+		return RunRemotely(ctx, logger, vm, "", envVarMapToPowershellPrefix(env)+"powershell -File "+scriptPath+" "+flagsStr)
 	}
 	scriptPath := uuid.NewString() + ".sh"
 	// Write the script contents to <UUID>.sh, then tell bash to execute it with -x
 	// to print each line as it runs.
 	// Use a UUID for the script name in case RunScriptRemotely is being called
 	// concurrently on the same VM.
-	return RunRemotely(ctx, logger.ToMainLog(), vm, scriptContents, "cat - > "+scriptPath+" && sudo "+envVarMapToBashPrefix(env)+"bash -x "+scriptPath+" "+flagsStr)
+	return RunRemotely(ctx, logger, vm, scriptContents, "cat - > "+scriptPath+" && sudo "+envVarMapToBashPrefix(env)+"bash -x "+scriptPath+" "+flagsStr)
 }
 
 // MapToCommaSeparatedList converts a map of key-value pairs into a form that
@@ -1809,6 +1811,8 @@ func logLocation(logRootDir, testName string) string {
 // t.Name() inside the directory TEST_UNDECLARED_OUTPUTS_DIR.
 // If creating the logger fails, it will abort the test.
 // At the end of the test, the logger will be cleaned up.
+// TODO: Move this function along with logLocation() into the agents package,
+// since nothing else in this file depends on DirectoryLogger anymore.
 func SetupLogger(t *testing.T) *logging.DirectoryLogger {
 	t.Helper()
 	name := strings.Replace(t.Name(), "/", "_", -1)
