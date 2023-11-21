@@ -72,6 +72,10 @@ func TestTransformationTests(t *testing.T) {
 				t.Parallel()
 				transformationConfig.runFluentBitTest(t, dir.Name())
 			})
+			t.Run("otel", func(t *testing.T) {
+				t.Parallel()
+				transformationConfig.runOTelTest(t, dir.Name())
+			})
 		})
 	}
 }
