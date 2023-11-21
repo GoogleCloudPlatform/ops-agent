@@ -6,18 +6,24 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/goccy/go-yaml"
 	"github.com/google/go-cmp/cmp"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc"
 	"gotest.tools/v3/golden"
 )
 
@@ -30,7 +36,8 @@ const (
 )
 
 var (
-	flbPath = flag.String("flb", os.Getenv("FLB"), "Path to Fluent-bit binary")
+	flbPath        = flag.String("flb", os.Getenv("FLB"), "path to fluent-bit")
+	otelopscolPath = flag.String("otelopscol", os.Getenv("OTELOPSCOL"), "path to otelopscol")
 )
 
 type transformationTest []loggingProcessor
@@ -219,4 +226,133 @@ func generateFluentBitConfigs(ctx context.Context, name string, transformationTe
 	return fluentbit.ModularConfig{
 		Components: components,
 	}.Generate()
+}
+
+func (transformationConfig transformationTest) generateOTelConfig(t *testing.T, otlpAddr string) string {
+	config, err := otel.ModularConfig{
+		ReceiverPipelines: nil,
+		Pipelines:         nil,
+		Exporters: map[otel.ExporterType]otel.Component{
+			otel.System: otel.Component{
+				Type: "otlp",
+				Config: map[string]interface{}{
+					"endpoint": otlpAddr,
+					"tls": map[string]interface{}{
+						"insecure": true,
+					},
+				},
+			},
+		},
+	}.Generate()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return config
+}
+
+type mockLogsReceiver struct {
+	plogotlp.UnimplementedGRPCServer
+	srv  *grpc.Server
+	mtx  sync.Mutex
+	logs []plog.Logs
+}
+
+func (r *mockLogsReceiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plogotlp.ExportResponse, error) {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+	r.logs = append(r.logs, req.Logs())
+	return plogotlp.NewExportResponse(), nil
+}
+
+func otlpLogsReceiverOnGRPCServer(ln net.Listener) *mockLogsReceiver {
+	rcv := &mockLogsReceiver{
+		srv: grpc.NewServer(),
+	}
+
+	// Now run it as a gRPC server
+	plogotlp.RegisterGRPCServer(rcv.srv, rcv)
+	go func() {
+		_ = rcv.srv.Serve(ln)
+	}()
+
+	return rcv
+}
+
+func (transformationConfig transformationTest) runOTelTest(t *testing.T, name string) {
+	if len(*otelopscolPath) == 0 {
+		t.Skip("--otelopscol not supplied")
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Start an OTLP-compatible receiver.
+	ln, err := net.Listen("tcp", "localhost:")
+	if err != nil {
+		t.Fatalf("Failed to find an available address to run the gRPC server: %v", err)
+	}
+	rcv := otlpLogsReceiverOnGRPCServer(ln)
+	// Also closes the connection.
+	defer rcv.srv.GracefulStop()
+
+	config := transformationConfig.generateOTelConfig(t, ln.Addr().String())
+
+	testStartTime := time.Now()
+
+	// Start otelopscol
+	cmd := exec.Command(
+		fmt.Sprintf("%s", *otelopscolPath),
+		"--config=env:OTELOPSCOL_CONFIG",
+	)
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("OTELOPSCOL_CONFIG=%s", config),
+	)
+
+	// TODO
+	_ = ctx
+
+	var stdout, stderr io.ReadCloser
+	stdout, err = cmd.StdoutPipe()
+	if err != nil {
+		t.Fatal("stdout pipe failure", err)
+	}
+	stderr, err = cmd.StderrPipe()
+	if err != nil {
+		t.Fatal("stderr pipe failure", err)
+	}
+
+	if err := cmd.Start(); err != nil {
+		t.Fatal("Failed to start command:", err)
+	}
+
+	// stderr and stdout need to be read in parallel to prevent deadlock
+	var eg errgroup.Group
+	eg.Go(func() error {
+		// read stderr
+		slurp, _ := io.ReadAll(stderr)
+		t.Logf("stderr: %s\n", slurp)
+		return nil
+	})
+
+	// read and unmarshal output
+	var data []map[string]any
+	out, _ := io.ReadAll(stdout)
+	_ = eg.Wait()
+
+	if err := yaml.Unmarshal(out, &data); err != nil {
+		t.Log(string(out))
+		t.Fatal(err)
+	}
+	// transform timestamp of actual results
+	for i, d := range data {
+		if date, ok := d["date"].(float64); ok {
+			date := time.UnixMicro(int64(date * 1e6)).UTC()
+			if date.After(testStartTime) {
+				data[i]["date"] = "now"
+			} else {
+				data[i]["date"] = date.Format(time.RFC3339Nano)
+			}
+		}
+	}
+	checkOutput(t, filepath.Join(name, "output_otel.yml"), data)
 }
