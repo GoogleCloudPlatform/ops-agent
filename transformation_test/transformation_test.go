@@ -232,10 +232,34 @@ func generateFluentBitConfigs(ctx context.Context, name string, transformationTe
 	}.Generate()
 }
 
-func (transformationConfig transformationTest) generateOTelConfig(t *testing.T, otlpAddr string) string {
-	config, err := otel.ModularConfig{
-		ReceiverPipelines: nil,
-		Pipelines:         nil,
+func (transformationConfig transformationTest) generateOTelConfig(t *testing.T, name string, otlpAddr string) (string, error) {
+	abs, err := filepath.Abs(filepath.Join("testdata", name, transformationInput))
+	if err != nil {
+		return "", err
+	}
+	return otel.ModularConfig{
+		ReceiverPipelines: map[string]otel.ReceiverPipeline{
+			"input": otel.ReceiverPipeline{
+				Receiver: otel.Component{
+					Type: "filelog",
+					Config: map[string]interface{}{
+						"include": []string{
+							abs,
+						},
+						"start_at": "beginning",
+					},
+				},
+				Processors:    map[string][]otel.Component{"logs": nil},
+				ExporterTypes: map[string]otel.ExporterType{"logs": otel.System},
+			},
+		},
+		Pipelines: map[string]otel.Pipeline{
+			"input": otel.Pipeline{
+				Type:                 "logs",
+				ReceiverPipelineName: "input",
+				Processors:           nil, // FIXME
+			},
+		},
 		Exporters: map[otel.ExporterType]otel.Component{
 			otel.System: otel.Component{
 				Type: "otlp",
@@ -248,10 +272,6 @@ func (transformationConfig transformationTest) generateOTelConfig(t *testing.T, 
 			},
 		},
 	}.Generate()
-	if err != nil {
-		t.Fatal(err)
-	}
-	return config
 }
 
 type mockLogsReceiver struct {
@@ -299,7 +319,10 @@ func (transformationConfig transformationTest) runOTelTest(t *testing.T, name st
 	// Also closes the connection.
 	defer rcv.srv.GracefulStop()
 
-	config := transformationConfig.generateOTelConfig(t, ln.Addr().String())
+	config, err := transformationConfig.generateOTelConfig(t, name, ln.Addr().String())
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	testStartTime := time.Now()
 
