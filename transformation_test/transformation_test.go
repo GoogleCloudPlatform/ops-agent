@@ -5,7 +5,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io"
 	"net"
 	"os"
 	"os/exec"
@@ -20,7 +19,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/goccy/go-yaml"
 	"github.com/google/go-cmp/cmp"
-	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
@@ -90,6 +88,9 @@ func (transformationConfig transformationTest) runFluentBitTest(t *testing.T, na
 	defer cancel()
 	// Generate config files
 	genFiles, err := generateFluentBitConfigs(ctx, name, transformationConfig)
+	if err != nil {
+		t.Fatalf("failed to generate config files: %v", err)
+	}
 
 	// Write config files in temp directory
 	tempPath := t.TempDir()
@@ -111,38 +112,23 @@ func (transformationConfig transformationTest) runFluentBitTest(t *testing.T, na
 		fmt.Sprintf("--config=%s", filepath.Join(tempPath, flbMainConf)),
 		fmt.Sprintf("--parser=%s", filepath.Join(filepath.Join(tempPath, flbParserConf))))
 
-	var stdout, stderr io.ReadCloser
-	stdout, err = cmd.StdoutPipe()
-	if err != nil {
-		t.Fatal("stdout pipe failure", err)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		t.Fatal("Failed to run command:", err)
 	}
-	stderr, err = cmd.StderrPipe()
-	if err != nil {
-		t.Fatal("stderr pipe failure", err)
-	}
+	t.Logf("stderr: %s\n", stderr.Bytes())
 
-	if err := cmd.Start(); err != nil {
-		t.Fatal("Failed to start command:", err)
-	}
-
-	// stderr and stdout need to be read in parallel to prevent deadlock
-	var eg errgroup.Group
-	eg.Go(func() error {
-		// read stderr
-		slurp, _ := io.ReadAll(stderr)
-		t.Logf("stderr: %s\n", slurp)
-		return nil
-	})
-
-	// read and unmarshal output
+	// unmarshal output
 	var data []map[string]any
-	out, _ := io.ReadAll(stdout)
-	_ = eg.Wait()
 
+	out := stdout.Bytes()
 	if err := yaml.Unmarshal(out, &data); err != nil {
 		t.Log(string(out))
 		t.Fatal(err)
 	}
+
 	// transform timestamp of actual results
 	for i, d := range data {
 		if date, ok := d["date"].(float64); ok {
@@ -157,12 +143,12 @@ func (transformationConfig transformationTest) runFluentBitTest(t *testing.T, na
 	checkOutput(t, filepath.Join(name, transformationOutput), data)
 }
 
-func checkOutput(t *testing.T, name string, got []map[string]any) {
+func checkOutput(t *testing.T, name string, got any) {
 	t.Helper()
 	wantBytes := golden.Get(t, name)
 	gotBytes, err := yaml.Marshal(got)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("failed to marshal: %v", err)
 	}
 	t.Logf("%s", string(gotBytes))
 	if golden.FlagUpdate() {
@@ -278,16 +264,22 @@ func (transformationConfig transformationTest) generateOTelConfig(t *testing.T, 
 
 type mockLogsReceiver struct {
 	plogotlp.UnimplementedGRPCServer
-	srv  *grpc.Server
-	mtx  sync.Mutex
-	logs []plog.Logs
+	srv      *grpc.Server
+	mtx      sync.Mutex
+	requests []plogotlp.ExportRequest
 }
 
 func (r *mockLogsReceiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plogotlp.ExportResponse, error) {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
-	r.logs = append(r.logs, req.Logs())
+	r.requests = append(r.requests, req)
 	return plogotlp.NewExportResponse(), nil
+}
+
+func (r *mockLogsReceiver) Requests() []plogotlp.ExportRequest {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+	return append([]plogotlp.ExportRequest{}, r.requests...)
 }
 
 func otlpLogsReceiverOnGRPCServer(ln net.Listener) *mockLogsReceiver {
@@ -342,56 +334,86 @@ func (transformationConfig transformationTest) runOTelTest(t *testing.T, name st
 	// TODO
 	_ = ctx
 
-	var stdout, stderr io.ReadCloser
-	stdout, err = cmd.StdoutPipe()
-	if err != nil {
-		t.Fatal("stdout pipe failure", err)
-	}
-	stderr, err = cmd.StderrPipe()
-	if err != nil {
-		t.Fatal("stderr pipe failure", err)
-	}
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
 
 	if err := cmd.Start(); err != nil {
 		t.Fatal("Failed to start command:", err)
 	}
 
-	// stderr and stdout need to be read in parallel to prevent deadlock
 	var eg errgroup.Group
 	eg.Go(func() error {
-		// read stderr
-		slurp, _ := io.ReadAll(stderr)
-		t.Logf("stderr: %s\n", slurp)
-		return nil
+		return cmd.Wait()
 	})
-
-	go func() {
+	eg.Go(func() error {
 		// TODO: Figure out how to wait for the collector to process the logs before signaling shutdown.
 		time.Sleep(5 * time.Second)
 		if err := cmd.Process.Signal(os.Interrupt); err != nil {
-			t.Logf("failed to signal process: %v", err)
+			t.Errorf("failed to signal process: %v", err)
 		}
-	}()
+		return nil
+	})
+	if err := eg.Wait(); err != nil {
+		t.Errorf("process failed: %v", err)
+	}
+
+	t.Logf("stderr: %s\n", stderr.Bytes())
 
 	// read and unmarshal output
-	var data []map[string]any
-	out, _ := io.ReadAll(stdout)
-	_ = eg.Wait()
-
-	if err := yaml.Unmarshal(out, &data); err != nil {
-		t.Log(string(out))
-		t.Fatal(err)
-	}
-	// transform timestamp of actual results
-	for i, d := range data {
-		if date, ok := d["date"].(float64); ok {
-			date := time.UnixMicro(int64(date * 1e6)).UTC()
-			if date.After(testStartTime) {
-				data[i]["date"] = "now"
-			} else {
-				data[i]["date"] = date.Format(time.RFC3339Nano)
+	reqs := rcv.Requests()
+	var data []any
+	for _, r := range reqs {
+		b, err := r.MarshalJSON()
+		if err != nil {
+			t.Logf("failed to marshal request: %v", err)
+			continue
+		}
+		var req map[string]any
+		if err := yaml.Unmarshal(b, &req); err != nil {
+			t.Log(string(b))
+			t.Fatal(err)
+		}
+		// Replace resourceLogs[].scopeLogs[].logRecords[].observedTimeUnixNano with a human-readable timestamp
+		if v, ok := req["resourceLogs"].([]any); ok {
+			for _, v := range v {
+				v1, _ := v.(map[string]any)
+				v2, _ := v1["scopeLogs"].([]any)
+				for _, v := range v2 {
+					v1, _ := v.(map[string]any)
+					v2, _ := v1["logRecords"].([]any)
+					for _, v := range v2 {
+						v1 := v.(map[string]any)
+						if dateStr, ok := v1["observedTimeUnixNano"].(string); ok {
+							dateInt, err := strconv.ParseInt(dateStr, 10, 64)
+							if err != nil {
+								t.Logf("failed to parse %q: %v", dateStr, err)
+								continue
+							}
+							date := time.Unix(0, dateInt)
+							if date.After(testStartTime) {
+								v1["observedTimeUnixNano"] = "now"
+							} else {
+								v1["observedTimeUnixNano"] = date.Format(time.RFC3339Nano)
+							}
+						}
+					}
+				}
 			}
 		}
+
+		data = append(data, req)
 	}
+	// // transform timestamp of actual results
+	// for i, d := range data {
+	// 	if date, ok := d["date"].(float64); ok {
+	// 		date := time.UnixMicro(int64(date * 1e6)).UTC()
+	// 		if date.After(testStartTime) {
+	// 			data[i]["date"] = "now"
+	// 		} else {
+	// 			data[i]["date"] = date.Format(time.RFC3339Nano)
+	// 		}
+	// 	}
+	// }
 	checkOutput(t, filepath.Join(name, "output_otel.yml"), data)
 }
