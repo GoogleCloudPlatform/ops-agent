@@ -6,6 +6,10 @@
   feature: service:pipelines
   key: default_pipeline_overridden
   value: "true"
+- module: global
+  feature: default:self_log
+  key: default_self_log_file_collection
+  value: "true"
 - module: metrics
   feature: processors:exclude_metrics
   key: "[0].enabled"
