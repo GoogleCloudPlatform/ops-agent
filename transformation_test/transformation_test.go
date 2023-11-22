@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
+	_ "google.golang.org/grpc/encoding/gzip"
 	"gotest.tools/v3/golden"
 )
 
@@ -238,6 +239,7 @@ func (transformationConfig transformationTest) generateOTelConfig(t *testing.T, 
 		return "", err
 	}
 	return otel.ModularConfig{
+		DisableMetrics: true,
 		ReceiverPipelines: map[string]otel.ReceiverPipeline{
 			"input": otel.ReceiverPipeline{
 				Receiver: otel.Component{
@@ -324,6 +326,8 @@ func (transformationConfig transformationTest) runOTelTest(t *testing.T, name st
 		t.Fatal(err)
 	}
 
+	t.Logf("otelopscol config:\n%s", config)
+
 	testStartTime := time.Now()
 
 	// Start otelopscol
@@ -360,6 +364,14 @@ func (transformationConfig transformationTest) runOTelTest(t *testing.T, name st
 		t.Logf("stderr: %s\n", slurp)
 		return nil
 	})
+
+	go func() {
+		// TODO: Figure out how to wait for the collector to process the logs before signaling shutdown.
+		time.Sleep(5 * time.Second)
+		if err := cmd.Process.Signal(os.Interrupt); err != nil {
+			t.Logf("failed to signal process: %v", err)
+		}
+	}()
 
 	// read and unmarshal output
 	var data []map[string]any

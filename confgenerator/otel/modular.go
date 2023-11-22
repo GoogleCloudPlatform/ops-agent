@@ -107,6 +107,7 @@ func configToYaml(config interface{}) ([]byte, error) {
 }
 
 type ModularConfig struct {
+	DisableMetrics    bool
 	LogLevel          string
 	ReceiverPipelines map[string]ReceiverPipeline
 	Pipelines         map[string]Pipeline
@@ -130,11 +131,17 @@ func (c ModularConfig) Generate() (string, error) {
 	pipelines := map[string]interface{}{}
 	service := map[string]map[string]interface{}{
 		"pipelines": pipelines,
-		"telemetry": {
+		"telemetry": map[string]interface{}{
 			"metrics": map[string]interface{}{
+				// TODO: switch to metrics.readers so we can stop binding a port
 				"address": fmt.Sprintf("0.0.0.0:%d", MetricsPort),
 			},
 		},
+	}
+	if c.DisableMetrics {
+		service["telemetry"]["metrics"] = map[string]interface{}{
+			"level": "none",
+		}
 	}
 	if c.LogLevel != "info" {
 		service["telemetry"]["logs"] = map[string]interface{}{
