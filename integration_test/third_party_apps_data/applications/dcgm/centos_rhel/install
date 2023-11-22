@@ -1,7 +1,30 @@
 set -e
 source /etc/os-release
 KERNEL_VERSION=`uname -r`
-sudo yum install -y kernel-devel-${KERNEL_VERSION} pciutils gcc make wget yum-utils 
+
+# sudo yum install -y kernel-devel-${KERNEL_VERSION} pciutils gcc make wget yum-utils 
+# TODO(b/312455563): Temporary fix for Rocky Linux 9.2/8.8; uncomment the above line and remove this following section once the image has been updated to Rocky Linux 9.3/8.9
+sudo yum install -y pciutils gcc make wget yum-utils
+if ! sudo yum install -y kernel-devel-${KERNEL_VERSION}; then 
+    sudo yum install -y kernel-devel  # Install the latest kernel dev package first to bring in the dependencies, before switching to 9.2 vault repo
+    if [[ $ID == rocky && "${VERSION_ID}" == 9.2 ]]; then
+        sudo sed -i 's,mirrorlist=https://mirrors.rockylinux.org/mirrorlist?arch=$basearch&repo=AppStream-$releasever$rltype,baseurl=https://dl.rockylinux.org/vault/rocky/9.2/AppStream/x86_64/os/,g' /etc/yum.repos.d/rocky.repo
+    elif [[ $ID == rocky && "${VERSION_ID}" == 8.8 ]]; then
+        # Right now the Rocky Linux 8.8 packages are still in the main repo, and the vault repo is returning 403;
+        # It can move to the vault repo (archive repo) anytime and then the main repo will become unaccessable.
+        VAULT_STATUS=`curl -s -o /dev/null -w "%{http_code}" https://dl.rockylinux.org/vault/rocky/8.8/BaseOS/x86_64/os/`
+        if [[ $VAULT_STATUS == 403 ]]; then
+            sudo sed -i 's,mirrorlist=https://mirrors.rockylinux.org/mirrorlist?arch=$basearch&repo=BaseOS-$releasever,baseurl=https://download.rockylinux.org/pub/rocky/8.8/BaseOS/x86_64/os,g' /etc/yum.repos.d/Rocky-BaseOS.repo
+        else
+            sudo sed -i 's,mirrorlist=https://mirrors.rockylinux.org/mirrorlist?arch=$basearch&repo=BaseOS-$releasever,baseurl=https://dl.rockylinux.org/vault/rocky/8.8/BaseOS/x86_64/os/,g' /etc/yum.repos.d/Rocky-BaseOS.repo
+        fi
+    fi
+    sudo yum clean all 
+    sudo yum --showduplicates list available kernel-devel
+    sudo yum install -y kernel-devel-${KERNEL_VERSION}
+fi
+# End of the temporary fix
+
 
 # Install the driver the same way as the nvml app 
 # Prefer to install from the package manager since it is normally faster and has
