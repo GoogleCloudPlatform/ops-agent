@@ -52,6 +52,12 @@ func (uc *UnifiedConfig) GenerateFilesFromConfig(ctx context.Context, service, l
 	case "": // Validate-only.
 		return nil
 	case "fluentbit":
+		// Fetch resource information from the metadata server.
+		var err error
+		MetadataResource, err = resourcedetector.GetResource()
+		if err != nil {
+			return fmt.Errorf("can't get resource metadata: %w", err)
+		}
 		files, err := uc.GenerateFluentBitConfigs(ctx, logsDir, stateDir)
 		if err != nil {
 			return fmt.Errorf("can't parse configuration: %w", err)

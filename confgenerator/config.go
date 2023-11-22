@@ -128,6 +128,8 @@ func (ve validationError) Error() string {
 		return fmt.Sprintf("%q must be a minimum of %s", ve.Field(), ve.Param())
 	case "multipleof_time":
 		return fmt.Sprintf("%q must be a multiple of %s", ve.Field(), ve.Param())
+	case "eq":
+		return fmt.Sprintf("%q must be %s", ve.Field(), ve.Param())
 	case "oneof":
 		return fmt.Sprintf("%q must be one of [%s]", ve.Field(), ve.Param())
 	case "required":
@@ -156,6 +158,8 @@ func (ve validationError) Error() string {
 		// Assume validation has already failed by this point, that is, receiver_version must already be > 1
 		channels := ve.Value().([]string)
 		return validateWinlogChannels(channels).Error()
+	case "glob":
+		return fmt.Sprintf("%q must be a valid glob pattern", ve.Field())
 	}
 
 	return ve.FieldError.Error()
@@ -290,6 +294,10 @@ func newValidator() *validator.Validate {
 			return true
 		}
 		return validateWinlogChannels(receiver.Channels) == nil
+	})
+	v.RegisterValidation("glob", func(fl validator.FieldLevel) bool {
+		_, err := filepath.Match(fl.Field().String(), "")
+		return err == nil
 	})
 	// Validates that experimental config components are enabled via EXPERIMENTAL_FEATURES
 	registerExperimentalValidations(v)
