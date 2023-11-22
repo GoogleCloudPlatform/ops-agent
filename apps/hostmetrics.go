@@ -27,7 +27,7 @@ type MetricsReceiverHostmetrics struct {
 
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
 
-	disableGPUMetrics bool `yaml:"-" tracking:"-"`
+	disableGPUMetrics bool `yaml:"-"`
 }
 
 func (r MetricsReceiverHostmetrics) Type() string {
