@@ -415,5 +415,5 @@ func (transformationConfig transformationTest) runOTelTest(t *testing.T, name st
 	// 		}
 	// 	}
 	// }
-	checkOutput(t, filepath.Join(name, "output_otel.yml"), data)
+	checkOutput(t, filepath.Join(name, "output_otel.yaml"), data)
 }
