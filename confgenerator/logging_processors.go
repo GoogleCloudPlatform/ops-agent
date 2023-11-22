@@ -411,7 +411,7 @@ func (p LoggingProcessorGceMetadataAttributes) Components(ctx context.Context, t
 	}
 	sort.Strings(attributeKeys)
 	for _, k := range attributeKeys {
-		if !matchesAnyGlobs(p.Include, k) || matchesAnyGlobs(p.Exclude, k) {
+		if (len(p.Include) > 0 && !matchesAnyGlobs(p.Include, k)) || matchesAnyGlobs(p.Exclude, k) {
 			continue
 		}
 		v := gceMetadata.Metadata[k]
