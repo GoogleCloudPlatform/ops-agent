@@ -1,0 +1,9 @@
+[21:16] "exclude[0]" must be a valid glob pattern
+  18 |       type: gce_metadata_attributes
+  19 |       static: true
+  20 |       include: ["*"]
+> 21 |       exclude: ["[xyz"]
+                      ^
+  22 |   service:
+  23 |     pipelines:
+  24 |       default_pipeline:
