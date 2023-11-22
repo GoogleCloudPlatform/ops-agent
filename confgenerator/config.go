@@ -574,9 +574,12 @@ type OTelReceiver interface {
 	Pipelines(ctx context.Context) []otel.ReceiverPipeline
 }
 
-// A ModifiableReceiver can modify the receiver based on the input processor
-type ModifiableReceiver interface {
-	ModifyReceiver(p MetricsProcessor) MetricsReceiver
+type MetricsProcessorMerger interface {
+	// MergeMetricsProcessor attempts to merge p into the current receiver.
+	// It returns the new receiver; a processor or nil: if nil, then p has
+	// been merged into the new receiver and doesn't need to be added again; and
+	// true if merging is successful
+	MergeMetricsProcessor(p MetricsProcessor) (MetricsReceiver, MetricsProcessor, bool)
 }
 
 type MetricsReceiver interface {

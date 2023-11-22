@@ -36,7 +36,9 @@ func (p MetricsProcessorExcludeMetrics) Type() string {
 func (p MetricsProcessorExcludeMetrics) Processors() []otel.Component {
 	var metricNames []string
 	for _, glob := range p.MetricsPattern {
-		metricNames = append(metricNames, globToRegex(glob, true))
+		// $ needs to be escaped because reasons.
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/metricstransformprocessor#rename-multiple-metrics-using-substitution
+		metricNames = append(metricNames, strings.Replace(globToRegex(glob), "$", "$$", -1))
 	}
 	return []otel.Component{otel.MetricsFilter(
 		"exclude",
@@ -46,28 +48,22 @@ func (p MetricsProcessorExcludeMetrics) Processors() []otel.Component {
 }
 
 // globToRegex converts metrics glob patterns to regex patterns
-// For generating otel config, `$` needs to be escaped:
-// https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/metricstransformprocessor#rename-multiple-metrics-using-substitution
-func globToRegex(glob string, escapeForOtel bool) string {
-	dollarSign := "$"
-	if escapeForOtel {
-		dollarSign = "$$"
-	}
+func globToRegex(glob string) string {
 	var literals []string
 	for _, g := range strings.Split(glob, "*") {
-		literals = append(literals, strings.Replace(regexp.QuoteMeta(g), "$", dollarSign, -1))
+		literals = append(literals, regexp.QuoteMeta(g))
 	}
-	return fmt.Sprintf(`^%s%s`, strings.Join(literals, `.*`), dollarSign)
+	return fmt.Sprintf(`^%s$`, strings.Join(literals, `.*`))
 
 }
 
 // AllMetricsExcluded checks if its MetricsPattern list can match all of the
-// input metrics which would indicate all of the metics will be excluded
+// input metrics which would indicate all of the metrics will be excluded
 func (p MetricsProcessorExcludeMetrics) AllMetricsExcluded(metrics ...string) bool {
 OUTER:
 	for _, metric := range metrics {
 		for _, excludePattern := range p.MetricsPattern {
-			if r, _ := regexp.MatchString(globToRegex(excludePattern, false), metric); r {
+			if r, _ := regexp.MatchString(globToRegex(excludePattern), metric); r {
 				continue OUTER
 			}
 		}
