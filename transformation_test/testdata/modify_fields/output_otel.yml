@@ -1,0 +1,32 @@
+- resourceLogs:
+  - resource: {}
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: log.file.name
+          value:
+            stringValue: input.log
+        body:
+          stringValue: foo
+        observedTimeUnixNano: now
+        spanId: ""
+        traceId: ""
+      - attributes:
+        - key: log.file.name
+          value:
+            stringValue: input.log
+        body:
+          stringValue: goo
+        observedTimeUnixNano: now
+        spanId: ""
+        traceId: ""
+      - attributes:
+        - key: log.file.name
+          value:
+            stringValue: input.log
+        body:
+          stringValue: yes maybe no
+        observedTimeUnixNano: now
+        spanId: ""
+        traceId: ""
+      scope: {}

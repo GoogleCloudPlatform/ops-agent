@@ -1,0 +1,14 @@
+- resourceLogs:
+  - resource: {}
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: log.file.name
+          value:
+            stringValue: input.log
+        body:
+          stringValue: "{\"log\":\"{\\\"level\\\":\\\"info\\\",\\\"message\\\":\\\"start\\\"}\\n\",\"time\":\"2023-10-17T14:55:59.683530289Z\"}"
+        observedTimeUnixNano: now
+        spanId: ""
+        traceId: ""
+      scope: {}

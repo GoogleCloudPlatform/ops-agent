@@ -1,0 +1,23 @@
+- resourceLogs:
+  - resource: {}
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: log.file.name
+          value:
+            stringValue: input.log
+        body:
+          stringValue: "{\"key1\": 12345, \"key2\": \"abc\", \"time\": \"2006-07-28T13:22:04Z\"}"
+        observedTimeUnixNano: now
+        spanId: ""
+        traceId: ""
+      - attributes:
+        - key: log.file.name
+          value:
+            stringValue: input.log
+        body:
+          stringValue: "{\"key1\": 12345, \"key2\": \"abc\", \"time\": \"2006-07-28T13:22:04+01:00\"}"
+        observedTimeUnixNano: now
+        spanId: ""
+        traceId: ""
+      scope: {}
