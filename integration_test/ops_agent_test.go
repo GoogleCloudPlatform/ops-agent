@@ -42,6 +42,7 @@ AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
 package integration_test
 
 import (
+	"bytes"
 	"context"
 	"embed"
 	"encoding/json"
@@ -4641,6 +4642,49 @@ func TestNoNvmlOtelReceiverWithoutGpu(t *testing.T) {
 		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
 			t.Fatalf("unexpected error: %v", err)
 		}
+	})
+}
+
+func TestPartialSuccess(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		logPath := logPathForPlatform(vm.Platform)
+
+		config := fmt.Sprintf(`logging:
+  receivers:
+    files_1:
+      type: files
+      include_paths: [%s]
+  service:
+    pipelines:
+      p1:
+        receivers: [files_1]`, logPath)
+
+		testFile, err := os.ReadFile(path.Join("partial_success", "test.log"))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if err = gce.UploadContent(ctx, logger, vm, bytes.NewReader(testFile), logPath); err != nil {
+			t.Fatal(err)
+		}
+		if err = agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		var series []*monitoringpb.TimeSeries
+		series, err = gce.WaitForMetricSeries(ctx, logger, vm, "agent.googleapis.com/agent/log_entry_count", time.Hour, nil, false, 6)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		for _, s := range series {
+			t.Log(s.Metric.Labels["response_code"])
+		}
+
+		t.Fail()
+
 	})
 }
 
