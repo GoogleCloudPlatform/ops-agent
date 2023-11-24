@@ -18,7 +18,9 @@ import (
 	"context"
 	"fmt"
 	"path"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
@@ -65,6 +67,8 @@ func generateHealthLoggingPingComponent(ctx context.Context) []fluentbit.Compone
 				"Dummy":         `{"code": "LogPingOpsAgent", "severity": "DEBUG"}`,
 				"Interval_Sec":  "600",
 				"Interval_NSec": "0",
+				"Start_time_sec": strconv.FormatInt(time.Now().Unix(), 10),
+				"Start_time_nsec": "0",
 			},
 		},
 	}
