@@ -3499,6 +3499,7 @@ metrics:
       type: exclude_metrics
       metrics_pattern:
       - agent.googleapis.com/processes/*
+      - agent.googleapis.com/cpu/load_5m
   service:
     pipelines:
       default_pipeline:
@@ -3516,13 +3517,17 @@ metrics:
 		time.Sleep(3 * time.Minute)
 
 		existingMetric := "agent.googleapis.com/cpu/load_1m"
-		excludedMetric := "agent.googleapis.com/processes/cpu_time"
+		excludedIndividualMetric := "agent.googleapis.com/cpu/load_5m"
+		excludedWildcardMetric := "agent.googleapis.com/processes/cpu_time"
 
 		window := time.Minute
 		if _, err := gce.WaitForMetric(ctx, logger, vm, existingMetric, window, nil, false); err != nil {
 			t.Error(err)
 		}
-		if err := gce.AssertMetricMissing(ctx, logger, vm, excludedMetric, false, window); err != nil {
+		if err := gce.AssertMetricMissing(ctx, logger, vm, excludedIndividualMetric, false, window); err != nil {
+			t.Error(err)
+		}
+		if err := gce.AssertMetricMissing(ctx, logger, vm, excludedWildcardMetric, false, window); err != nil {
 			t.Error(err)
 		}
 	})
@@ -4410,7 +4415,7 @@ func TestDisableSelfLogCollection(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
-		ctx, logger, vm := agents.CommonSetup(t, platform)	
+		ctx, logger, vm := agents.CommonSetup(t, platform)
 
 		disableSelfLogCollection := `global:
   default_self_log_file_collection: false
@@ -4429,12 +4434,12 @@ func TestDisableSelfLogCollection(t *testing.T) {
 			t.Fatal(err)
 		}
 
-        if err := gce.AssertLogMissing(ctx, logger.ToMainLog(), vm, "ops-agent-fluent-bit", 2 * time.Minute, `severity="INFO"`); err != nil {
+		if err := gce.AssertLogMissing(ctx, logger.ToMainLog(), vm, "ops-agent-fluent-bit", 2*time.Minute, `severity="INFO"`); err != nil {
 			t.Error(err)
 		}
-        
-        query := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", 3 * time.Minute, query); err != nil {
+
+		query := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", 3*time.Minute, query); err != nil {
 			t.Error(err)
 		}
 	})
