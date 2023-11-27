@@ -800,26 +800,18 @@ func restartOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM) error 
 
 // SetupOpsAgentFrom is an overload of setupOpsAgent that allows the callsite to
 // decide which version of the agent gets installed.
-func SetupOpsAgentFrom(ctx context.Context, logger *log.Logger, vm *gce.VM, config string, location PackageLocation) error {
+func SetupOpsAgentFrom(ctx2 context.Context, logger *log.Logger, vm *gce.VM, config string, location PackageLocation) error {
+	ctx, cancel := context.WithTimeout(ctx2, 5*time.Minute)
+	defer cancel()
+
+	if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(config), util.ConfigPathForPlatform(vm.Platform)); err != nil {
+		return fmt.Errorf("SetupOpsAgentFrom() failed to upload config file: %v", err)
+	}
 	if err := InstallOpsAgent(ctx, logger, vm, location); err != nil {
 		return err
 	}
-	startupDelay := 20 * time.Second
-	if len(config) > 0 {
-		if gce.IsWindows(vm.Platform) {
-			// Sleep to avoid some flaky errors when restarting the agent because the
-			// services have not fully started up yet.
-			time.Sleep(startupDelay)
-		}
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(config), util.ConfigPathForPlatform(vm.Platform)); err != nil {
-			return fmt.Errorf("SetupOpsAgentFrom() failed to upload config file: %v", err)
-		}
-		if err := restartOpsAgent(ctx, logger, vm); err != nil {
-			return err
-		}
-	}
 	// Give agents time to start up.
-	time.Sleep(startupDelay)
+	time.Sleep(20 * time.Second)
 	return nil
 }
 
