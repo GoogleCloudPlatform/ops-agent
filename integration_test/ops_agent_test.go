@@ -3792,13 +3792,22 @@ func TestLoggingSelfLogs(t *testing.T) {
 		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, ""); err != nil {
 			t.Fatal(err)
 		}
+		start := time.Now()
 
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-fluent-bit", time.Hour, `severity="INFO"`); err != nil {
 			t.Error(err)
 		}
 
-		query := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, query); err != nil {
+		queryHealthCheck := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, queryHealthCheck); err != nil {
+			t.Error(err)
+		}
+
+		// Waiting 10 minutes (subtracting current test runtime) after
+		// Ops Agent startup for "LogPingOpsAgent" to show.
+		time.Sleep(10 * time.Minute - time.Now().Sub(start))
+		queryPing := fmt.Sprintf(`severity="INFO" AND jsonPayload.code="LogPingOpsAgent" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, queryPing); err != nil {
 			t.Error(err)
 		}
 	})
