@@ -3907,26 +3907,31 @@ func unmarshalResource(in string) (*resourcedetector.GCEResource, error) {
 	return &resource, err
 }
 
-// installGolang downloads and setup go, and return the required command to set
-// the PATH before calling `go` as goPath
+// installGolang downloads and sets up go on the given VM.  The caller is still
+// responsible for updating PATH to point to the installed binaries, see
+// `goPathCommandForPlatform`.
 func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
-	// TODO: use runtime.Version() to extract the go version
-	goVersion := "1.20"
+	// To update this, first run `mirror_content.sh` in this directory. Example:
+	//   ./mirror_content.sh https://go.dev/dl/go1.21.4.linux-{amd64,arm64}.tar.gz
+	// Then update this version.
+	goVersion := "1.21.4"
+
 	goArch := "amd64"
 	if gce.IsARM(vm.Platform) {
 		goArch = "arm64"
 	}
 	var installCmd string
 	if gce.IsWindows(vm.Platform) {
-		// TODO: host go windows installer in the GCS if `golang.org` throttle
+		// TODO: host go windows installer in GCS if `go.dev` throttles us.
 		installCmd = fmt.Sprintf(`
 			cd (New-TemporaryFile | %% { Remove-Item $_; New-Item -ItemType Directory -Path $_ })
 			Invoke-WebRequest "https://go.dev/dl/go%s.windows-%s.msi" -OutFile golang.msi
 			Start-Process msiexec.exe -ArgumentList "/i","golang.msi","/quiet" -Wait `, goVersion, goArch)
 	} else {
 		installCmd = fmt.Sprintf(`
+			set -o pipefail
 			gsutil cp \
-				"gs://stackdriver-test-143416-go-install/go%s.linux-%s.tar.gz" - | \
+				"gs://ops-agents-public-buckets-vendored-deps/mirrored-content/go.dev/dl/go%s.linux-%s.tar.gz" - | \
 				sudo tar --directory /usr/local -xzf /dev/stdin`, goVersion, goArch)
 	}
 	_, err := gce.RunRemotely(ctx, logger, vm, "", installCmd)
