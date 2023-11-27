@@ -3806,7 +3806,7 @@ func TestLoggingSelfLogs(t *testing.T) {
 		// Waiting 10 minutes (subtracting current test runtime) after
 		// Ops Agent startup for "LogPingOpsAgent" to show.
 		time.Sleep(10 * time.Minute - time.Now().Sub(start))
-		queryPing := fmt.Sprintf(`severity="INFO" AND jsonPayload.code="LogPingOpsAgent" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		queryPing := fmt.Sprintf(`severity="DEBUG" AND jsonPayload.code="LogPingOpsAgent" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, queryPing); err != nil {
 			t.Error(err)
 		}
