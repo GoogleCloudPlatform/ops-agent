@@ -773,7 +773,7 @@ Invoke-Expression "${env:UserProfile}\add-google-cloud-ops-agent-repo.ps1 -AlsoI
 
 	runInstallScript := func() error {
 		envVars := linuxEnvironment(preservedEnvironment)
-		_, err := gce.RunRemotely(ctx, logger, vm, "", "sudo "+envVars+" bash -x add-google-cloud-ops-agent-repo.sh --also-install")
+		_, err := gce.RunRemotely(ctx, logger, vm, "", "sudo "+envVars+" DEBIAN_FRONTEND=noninteractive bash -x add-google-cloud-ops-agent-repo.sh --also-install")
 		return err
 	}
 	if err := RunInstallFuncWithRetry(ctx, logger, vm, runInstallScript); err != nil {
