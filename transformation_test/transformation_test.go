@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
@@ -60,7 +61,7 @@ func TestTransformationTests(t *testing.T) {
 		}
 		t.Run(dir.Name(), func(t *testing.T) {
 			t.Parallel()
-			// testStartTime := time.Now()
+			testStartTime := time.Now()
 			// Unmarshal transformation_config.yaml
 			var transformationConfig transformationTest
 			transformationConfig, err = readTransformationConfig(dir.Name())
@@ -113,39 +114,35 @@ func TestTransformationTests(t *testing.T) {
 				return nil
 			})
 
-			var data []map[string]any
+			var d map[string]any
 			dec := json.NewDecoder(stdout)
 
 			for dec.More() {
-				var d map[string]interface{}
+				//var d map[string]any
 				err := dec.Decode(&d)
 				if err != nil {
 					t.Fatal(err)
 				}
-				data = append(data, d)
 			}
 
+			_ = eg.Wait()
+
 			// read and unmarshal output
-
-			// out, _ := io.ReadAll(stdout)
-			// _ = eg.Wait()
-
-			// err := yaml.Unmarshal(out, &data)
-			// if err != nil {
-			// 	t.Log(string(out))
-			// 	t.Fatal(err)
-			// }
-			// // transform timestamp of actual results
-			// for i, d := range data {
-			// 	if date, ok := d["date"].(float64); ok {
-			// 		date := time.UnixMicro(int64(date * 1e6)).UTC()
-			// 		if date.After(testStartTime) {
-			// 			data[i]["date"] = "now"
-			// 		} else {
-			// 			data[i]["date"] = date.Format(time.RFC3339Nano)
-			// 		}
-			// 	}
-			// }
+			// transform timestamp of actual results
+			entries := d["entries"].([]any)
+			var data []map[string]interface{}
+			for _, e := range entries {
+				entry := e.(map[string]interface{})
+				date := entry["timestamp"].(string)
+				timestamp, err := time.Parse(time.RFC3339Nano, date)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if timestamp.After(testStartTime) {
+					entry["timestamp"] = "now"
+				}
+				data = append(data, entry)
+			}
 			checkOutput(t, filepath.Join(dir.Name(), transformationOutput), data)
 		})
 	}
@@ -220,8 +217,8 @@ func generateFluentBitConfigs(ctx context.Context, transformationTest transforma
 			"Name":                          "stackdriver",
 			"Retry_Limit":                   "3",
 			"http_request_key":              "logging.googleapis.com/httpRequest",
-			"resource":                      "gce_instance",
 			"net.connect_timeout_log_error": "False",
+			"resource":                      "gce_instance",
 			"stackdriver_agent":             "Google-Cloud-Ops-Agent-Logging/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)",
 			"storage.total_limit_size":      "2G",
 			"tls":                           "On",
