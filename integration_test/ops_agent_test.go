@@ -3259,7 +3259,7 @@ func testPrometheusMetrics(t *testing.T, opsAgentConfig string, testChecks []moc
 
 		// 4. Start the go http server
 		setupScript := `sudo systemctl daemon-reload && sudo systemctl enable http-server-for-prometheus-test && sudo systemctl restart http-server-for-prometheus-test`
-		_, err := gce.RunRemotely(ctx, logger, vm, "", setupScript)
+		_, err = gce.RunRemotely(ctx, logger, vm, "", setupScript)
 		if err != nil {
 			t.Fatalf("failed to start the http server in VM via systemctl with err: %w", err)
 		}
@@ -3882,7 +3882,7 @@ func runResourceDetectorCli(ctx context.Context, logger *log.Logger, vm *gce.VM)
 		%s
 		cd %s
 		go run run_resource_detector.go`, goPathCommandForPlatform(vm.Platform), workDir)
-	_, err := gce.RunRemotely(ctx, logger, vm, "", cmd)
+	runnerOutput, err := gce.RunRemotely(ctx, logger, vm, "", cmd)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run resource detector in VM: %w", err)
 	}
