@@ -4650,7 +4650,6 @@ func TestPartialSuccess(t *testing.T) {
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		ctx, logger, vm := setupMainLogAndVM(t, platform)
 		logPath := logPathForPlatform(vm.Platform)
-
 		config := fmt.Sprintf(`logging:
   receivers:
     files_1:
@@ -4660,12 +4659,10 @@ func TestPartialSuccess(t *testing.T) {
     pipelines:
       p1:
         receivers: [files_1]`, logPath)
-
 		testFile, err := os.ReadFile(path.Join("partial_success", "test.log"))
 		if err != nil {
 			t.Fatal(err)
 		}
-
 		if err = gce.UploadContent(ctx, logger, vm, bytes.NewReader(testFile), logPath); err != nil {
 			t.Fatal(err)
 		}
@@ -4673,18 +4670,16 @@ func TestPartialSuccess(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		var series []*monitoringpb.TimeSeries
-		series, err = gce.WaitForMetricSeries(ctx, logger, vm, "agent.googleapis.com/agent/log_entry_count", time.Hour, nil, false, 6)
-		if err != nil {
-			t.Fatal(err)
+		// partialSuccess behaviour is documented at: https://cloud.google.com/logging/docs/reference/v2/rest/v2/entries/write
+		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="google"`); err != nil {
+			t.Error(err)
 		}
-
-		for _, s := range series {
-			t.Log(s.Metric.Labels["response_code"])
+		if err = gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="foo"`); err != nil {
+			t.Error(err)
 		}
-
-		t.Fail()
-
+		if err = gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="goo"`); err != nil {
+			t.Error(err)
+		}
 	})
 }
 
