@@ -3,10 +3,8 @@ package transformation_test
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -18,7 +16,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/goccy/go-yaml"
 	"github.com/google/go-cmp/cmp"
-	"golang.org/x/sync/errgroup"
 	"gotest.tools/v3/golden"
 )
 
@@ -91,41 +88,20 @@ func TestTransformationTests(t *testing.T) {
 				fmt.Sprintf("--config=%s", filepath.Join(tempPath, flbMainConf)),
 				fmt.Sprintf("--parser=%s", filepath.Join(filepath.Join(tempPath, flbParserConf))))
 
-			var stdout, stderr io.ReadCloser
-			stdout, err = cmd.StdoutPipe()
-			if err != nil {
-				t.Fatal("stdout pipe failure", err)
+			var stdout, stderr bytes.Buffer
+			cmd.Stdout = &stdout
+			cmd.Stderr = &stderr
+			if err := cmd.Run(); err != nil {
+				t.Fatal("Failed to run command:", err)
 			}
-			stderr, err = cmd.StderrPipe()
-			if err != nil {
-				t.Fatal("stderr pipe failure", err)
-			}
-
-			if err := cmd.Start(); err != nil {
-				t.Fatal("Failed to start command:", err)
-			}
-
-			// stderr and stdout need to be read in parallel to prevent deadlock
-			var eg errgroup.Group
-			eg.Go(func() error {
-				// read stderr
-				slurp, _ := io.ReadAll(stderr)
-				t.Logf("stderr: %s\n", slurp)
-				return nil
-			})
 
 			var d map[string]any
-			dec := json.NewDecoder(stdout)
 
-			for dec.More() {
-				//var d map[string]any
-				err := dec.Decode(&d)
-				if err != nil {
-					t.Fatal(err)
-				}
+			out := stdout.Bytes()
+			if err := yaml.Unmarshal(out, &d); err != nil {
+				t.Log(string(out))
+				t.Fatal(err)
 			}
-
-			_ = eg.Wait()
 
 			// read and unmarshal output
 			// transform timestamp of actual results
