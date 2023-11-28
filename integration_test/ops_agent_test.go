@@ -4659,7 +4659,7 @@ func TestPartialSuccess(t *testing.T) {
     pipelines:
       p1:
         receivers: [files_1]`, logPath)
-		testFile, err := os.ReadFile(path.Join("partial_success", "test.log"))
+		testFile, err := os.ReadFile(path.Join("testdata", "partial_success", "test.log"))
 		if err != nil {
 			t.Fatal(err)
 		}
