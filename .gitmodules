@@ -1,7 +1,6 @@
 [submodule "submodules/fluent-bit"]
 	path = submodules/fluent-bit
-	url = ../../avilevy18/fluent-bit.git
-	branch = avilevy-ops-agent-release-2.44.0
+	url = ../../fluent/fluent-bit.git
 [submodule "submodules/opentelemetry-java-contrib"]
 	path = submodules/opentelemetry-java-contrib
 	url = ../../open-telemetry/opentelemetry-java-contrib.git
