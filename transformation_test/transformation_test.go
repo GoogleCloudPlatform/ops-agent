@@ -96,6 +96,7 @@ func TestTransformationTests(t *testing.T) {
 			}
 
 			var d map[string]any
+			var data []map[string]interface{}
 
 			out := stdout.Bytes()
 			if err := yaml.Unmarshal(out, &d); err != nil {
@@ -103,22 +104,26 @@ func TestTransformationTests(t *testing.T) {
 				t.Fatal(err)
 			}
 
+			var entries []any
+			// Only search for entries if stdout is not null
+			if val, ok := d["entries"].([]any); ok {
+				entries = val
+				for _, e := range entries {
+					entry := e.(map[string]interface{})
+					date := entry["timestamp"].(string)
+					timestamp, err := time.Parse(time.RFC3339Nano, date)
+					if err != nil {
+						t.Fatal(err)
+					}
+					if timestamp.After(testStartTime) {
+						entry["timestamp"] = "now"
+					}
+					data = append(data, entry)
+				}
+			}
+
 			// read and unmarshal output
 			// transform timestamp of actual results
-			entries := d["entries"].([]any)
-			var data []map[string]interface{}
-			for _, e := range entries {
-				entry := e.(map[string]interface{})
-				date := entry["timestamp"].(string)
-				timestamp, err := time.Parse(time.RFC3339Nano, date)
-				if err != nil {
-					t.Fatal(err)
-				}
-				if timestamp.After(testStartTime) {
-					entry["timestamp"] = "now"
-				}
-				data = append(data, entry)
-			}
 			checkOutput(t, filepath.Join(dir.Name(), transformationOutput), data)
 		})
 	}

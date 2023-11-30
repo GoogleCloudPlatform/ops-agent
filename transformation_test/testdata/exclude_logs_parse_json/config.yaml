@@ -1,0 +1,4 @@
+- type: exclude_logs
+  match_any:
+  - jsonPayload.field =~ "value"
+- type: parse_json

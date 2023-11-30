@@ -1,0 +1,9 @@
+- type: parse_json
+- type: modify_fields
+  fields:
+    trace:
+      move_from: jsonPayload.none
+      default_value: value1
+- type: exclude_logs
+  match_any:
+  - trace =~ "value1"
