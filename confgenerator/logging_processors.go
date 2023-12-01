@@ -392,6 +392,10 @@ func matchesAnyGlobs(globs []string, k string) bool {
 	return false
 }
 
+const (
+	attributeLabelPrefix string = "compute.googleapis.com/attributes/"
+)
+
 func (p LoggingProcessorGceMetadataAttributes) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	processorName := fmt.Sprintf("%s.%s.gce_metadata", tag, uid)
 	resource := MetadataResource
@@ -415,7 +419,7 @@ func (p LoggingProcessorGceMetadataAttributes) Components(ctx context.Context, t
 			continue
 		}
 		v := gceMetadata.Metadata[k]
-		modifications[fmt.Sprintf(`labels."%s"`, k)] = &ModifyField{
+		modifications[fmt.Sprintf(`labels."%s%s"`, attributeLabelPrefix, k)] = &ModifyField{
 			StaticValue: &v,
 		}
 	}
