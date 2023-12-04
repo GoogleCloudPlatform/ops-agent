@@ -13,6 +13,14 @@ local template _distro {
 }
 
 // DEB Linux distros. (Do not modify this comment.)
+bookworm_aarch64 = _distro {
+  release = [
+      'debian-12-arm64',
+  ]
+  presubmit = [
+      'debian-12-arm64',
+  ]
+}
 mantic_x86_64 = _distro {
   release = [
       'ubuntu-2310-amd64',

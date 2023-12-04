@@ -8,9 +8,9 @@ sudo yum install -y pciutils gcc make wget yum-utils
 if ! sudo yum install -y kernel-devel-${KERNEL_VERSION}; then 
     sudo yum install -y kernel-devel  # Install the latest kernel dev package first to bring in the dependencies, before switching to 9.2 repo
     if [[ $ID == rocky && "${VERSION_ID}" == 9.2 ]]; then
-        sudo sed -i 's,mirrorlist=https://mirrors.rockylinux.org/mirrorlist?arch=$basearch&repo=AppStream-$releasever$rltype,mirrorlist=https://mirrors.rockylinux.org/mirrorlist?arch=$basearch\&repo=AppStream-9.2,g' /etc/yum.repos.d/rocky.repo
+        sudo sed -i 's,mirrorlist=https://mirrors.rockylinux.org/mirrorlist?arch=$basearch&repo=AppStream-$releasever$rltype,baseurl=https://dl.rockylinux.org/vault/rocky/9.2/AppStream/$basearch/os/,g' /etc/yum.repos.d/rocky.repo
     elif [[ $ID == rocky && "${VERSION_ID}" == 8.8 ]]; then
-        sudo sed -i 's,mirrorlist=https://mirrors.rockylinux.org/mirrorlist?arch=$basearch&repo=BaseOS-$releasever,mirrorlist=https://mirrors.rockylinux.org/mirrorlist?arch=$basearch\&repo=BaseOS-8.8,g' /etc/yum.repos.d/Rocky-BaseOS.repo
+        sudo sed -i 's,mirrorlist=https://mirrors.rockylinux.org/mirrorlist?arch=$basearch&repo=BaseOS-$releasever,baseurl=https://dl.rockylinux.org/vault/rocky/8.8/BaseOS/$basearch/os/,g' /etc/yum.repos.d/Rocky-BaseOS.repo
     fi
     sudo yum clean all 
     sudo yum --showduplicates list available kernel-devel
