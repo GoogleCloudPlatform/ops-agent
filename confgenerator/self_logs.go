@@ -94,26 +94,6 @@ func (p LoggingProcessorSampleLogs) Components(ctx context.Context, tag, uid str
 	}
 }
 
-type LoggingProcessorGrep struct {
-	Field string
-	Regex string
-}
-
-func (p LoggingProcessorGrep) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	filter := fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":  "grep",
-			"Match": tag,
-			"Regex": fmt.Sprintf("%s %s", p.Field, p.Regex),
-		},
-	}
-
-	return []fluentbit.Component{
-		filter,
-	}
-}
-
 // This method creates a file input for the `health-checks.log` file, a json parser for the
 // structured logs and a grep filter to avoid ingesting previous content of the file.
 func generateHealthChecksLogsComponents(ctx context.Context) []fluentbit.Component {

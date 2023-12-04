@@ -204,22 +204,16 @@ func (p *LoggingProcessorIisAccess) Components(ctx context.Context, tag, uid str
 	// iis logs "-" when a field does not have a value. Remove the field entirely when this happens.
 	c = append(c, fluentbit.LuaFilterComponents(tag, iisMergeRecordFieldsLuaFunction, iisMergeRecordFieldsLuaScriptContents)...)
 
-	c = append(c, []fluentbit.Component{
-		// This is used to exclude the header lines above the logs
+	// This is used to exclude the header lines above the logs
 
-		// EXAMPLE LINES:
-		// #Software: Microsoft Internet Information Services 10.0
-		// #Version: 1.0
-		// #Date: 2022-04-11 12:53:50
-		{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":    "grep",
-				"Match":   tag,
-				"Exclude": "message ^#(?:Fields|Date|Version|Software):",
-			},
-		},
-	}...)
+	// EXAMPLE LINES:
+	// #Software: Microsoft Internet Information Services 10.0
+	// #Version: 1.0
+	// #Date: 2022-04-11 12:53:50
+	c = append(c, confgenerator.LoggingProcessorGrep{
+		Field: "message",
+		Exclude: "^#(?:Fields|Date|Version|Software):",
+	}.Components(ctx, tag, "iis-exclude-header-lines")...)
 
 	fields := map[string]*confgenerator.ModifyField{
 		InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),

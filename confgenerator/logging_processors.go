@@ -275,6 +275,33 @@ func (p LoggingProcessorNestWildcard) Components(ctx context.Context, tag, uid s
 	}
 }
 
+type LoggingProcessorGrep struct {
+	Field   string `validate:"required"`
+	Regex   string `validate:"required_without=Exclude excluded_with=Exclude"`
+	Exclude string `validate:"required_without=Regex excluded_with=Regex"`
+}
+
+func (p LoggingProcessorGrep) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
+	config := map[string]string{
+		"Name":  "grep",
+		"Match": tag,
+	}
+	if p.Regex != "" {
+		config["Regex"] = fmt.Sprintf("%s %s", p.Field, p.Regex)
+	}
+	if p.Exclude != "" {
+		config["Exclude"] = fmt.Sprintf("%s %s", p.Field, p.Exclude)
+	}
+	filter := fluentbit.Component{
+		Kind: "FILTER",
+		Config: config,
+	}
+
+	return []fluentbit.Component{
+		filter,
+	}
+}
+
 var LegacyBuiltinProcessors = map[string]LoggingProcessor{
 	"lib:default_message_parser": &LoggingProcessorParseRegex{
 		Regex: `^(?<message>.*)$`,
