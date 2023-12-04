@@ -115,7 +115,7 @@ func (p *LoggingProcessorMongodb) Components(ctx context.Context, tag, uid strin
 func (p *LoggingProcessorMongodb) JsonLogComponents(ctx context.Context, tag, uid string) []fluentbit.Component {
 	c := p.jsonParserWithTimeKey(ctx, tag, uid)
 
-	c = append(c, p.promoteWiredTiger(tag, uid)...)
+	c = append(c, p.promoteWiredTiger(ctx, tag, uid)...)
 	c = append(c, p.renames(tag, uid)...)
 
 	return c
@@ -252,7 +252,7 @@ func (p *LoggingProcessorMongodb) renames(tag, uid string) []fluentbit.Component
 	return r
 }
 
-func (p *LoggingProcessorMongodb) promoteWiredTiger(tag, uid string) []fluentbit.Component {
+func (p *LoggingProcessorMongodb) promoteWiredTiger(ctx context.Context, tag, uid string) []fluentbit.Component {
 	// promote messages that are WiredTiger messages and are nested in attr.message
 	addPrefix := "temp_attributes_"
 	upNest := fluentbit.Component{
@@ -269,19 +269,16 @@ func (p *LoggingProcessorMongodb) promoteWiredTiger(tag, uid string) []fluentbit
 	hardRenameMessage := modify.NewHardRenameOptions(fmt.Sprintf("%smessage", addPrefix), "msg")
 	wiredTigerRename := hardRenameMessage.Component(tag)
 
-	renameRemainingAttributes := fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":          "nest",
-			"Wildcard":      fmt.Sprintf("%s*", addPrefix),
-			"Match":         tag,
-			"Operation":     "nest",
-			"Nest_under":    "attributes",
-			"Remove_prefix": addPrefix,
-		},
-	}
+	renameRemainingAttributes := confgenerator.LoggingProcessorNestWildcard{
+		Wildcard:  fmt.Sprintf("%s*", addPrefix),
+		NestUnder: "attributes",
+		RemovePrefix: addPrefix,
+	}.Components(ctx, tag, uid)
 
-	return []fluentbit.Component{upNest, wiredTigerRename, renameRemainingAttributes}
+	c := []fluentbit.Component{upNest, wiredTigerRename}
+	c = append(c, renameRemainingAttributes...)
+
+	return c
 }
 
 func (p *LoggingProcessorMongodb) RegexLogComponents(tag, uid string) []fluentbit.Component {
