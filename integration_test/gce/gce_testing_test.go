@@ -126,7 +126,7 @@ var powershellTestCases = []testCase{
 		stderrRegexp: "error_msg",
 	},
 	{
-		command:      "Write-Output $Input",
+		command:      "$Input | Write-Output",
 		stdin:        "5555",
 		fail:         false,
 		stdoutRegexp: "5555",
@@ -221,6 +221,18 @@ var bashTestCases = []testCase{
 		stdoutRegexp: "5555",
 		// Skip RunScriptRemotely because it doesn't support stdin.
 		skipRunScriptRemotely: true,
+	},
+
+	// A pair of tests for a detached process.
+	// These two tests must be run consecutively.
+	{
+		command: `nohup bash -c "sleep 3 && echo 'done sleeping' > out.txt" &`,
+		fail:    false,
+	},
+	{
+		command:      "sleep 5 && cat out.txt",
+		fail:         false,
+		stdoutRegexp: "done sleeping",
 	},
 
 	// ================= Tests for multi-line commands follow. ===================
