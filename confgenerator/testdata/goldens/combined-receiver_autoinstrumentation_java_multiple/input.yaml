@@ -1,0 +1,56 @@
+# Copyright 2022 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+combined:
+  receivers:
+    autoinstrumentation_1:
+      type: autoinstrumentation
+      generate_to_path: foo.properties
+      target_receiver: otlp_1
+      generation_type: properties
+    autoinstrumentation_2:
+      type: autoinstrumentation
+      generate_to_path: goo.properties
+      target_receiver: otlp_1
+      generation_type: properties
+    autoinstrumentation_3:
+      type: autoinstrumentation
+      generate_to_path: bar.properties
+      target_receiver: otlp_2
+      generation_type: properties
+    otlp_1:
+      type: otlp
+      metrics_mode: googlecloudmonitoring
+    otlp_2:
+      type: otlp
+      metrics_mode: googlecloudmonitoring
+      grpc_endpoint: 0.0.0.0:8000
+metrics:
+  service:
+    pipelines:
+      otlp_1:
+        receivers:
+          - otlp_1
+      otlp_2:
+        receivers:
+          - otlp_2
+traces:
+  service:
+    pipelines:
+      otlp_1:
+        receivers:
+          - otlp_1
+      otlp_2:
+        receivers:
+          - otlp_2

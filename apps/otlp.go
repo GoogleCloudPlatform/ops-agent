@@ -154,6 +154,10 @@ func (r ReceiverOTLP) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 	}}
 }
 
+func (r ReceiverOTLP) GetEndpoint() string {
+	return r.GRPCEndpoint
+}
+
 func init() {
 	confgenerator.CombinedReceiverTypes.RegisterType(func() confgenerator.CombinedReceiver { return &ReceiverOTLP{} })
 }

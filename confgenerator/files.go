@@ -76,6 +76,17 @@ func (uc *UnifiedConfig) GenerateFilesFromConfig(ctx context.Context, service, l
 		if err = WriteConfigFile([]byte(otelConfig), filepath.Join(outDir, "otel.yaml")); err != nil {
 			return err
 		}
+
+		configs, err := uc.GenerateAutoInstrumentationConfigs()
+		if err != nil {
+			return err
+		}
+		for _, config := range configs {
+			if err = WriteConfigFile(config.GeneratedFile, config.FileLocation); err != nil {
+				return err
+			}
+		}
+
 	default:
 		return fmt.Errorf("unknown service %q", service)
 	}

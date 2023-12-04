@@ -873,6 +873,18 @@ func (uc *UnifiedConfig) ValidateCombined() error {
 	return nil
 }
 
+func (uc *UnifiedConfig) AutoInstrumentationComponents() []AutoInstrumentationComponent {
+	var comps []AutoInstrumentationComponent
+	if uc.Combined != nil {
+		for _, v := range uc.Combined.Receivers {
+			if c, ok := v.(AutoInstrumentationComponent); ok {
+				comps = append(comps, c)
+			}
+		}
+	}
+	return comps
+}
+
 func (uc *UnifiedConfig) MetricsReceivers() (map[string]MetricsReceiver, error) {
 	validReceivers := map[string]MetricsReceiver{}
 	for k, v := range uc.Metrics.Receivers {
@@ -1136,4 +1148,21 @@ func validateSSLConfig(receivers metricsReceiverMap, ctx context.Context) error 
 // parameter is name of the parameter.
 func parameterErrorPrefix(subagent string, kind string, id string, componentType string, parameter string) string {
 	return fmt.Sprintf(`parameter %q in %q type %s %s %q`, parameter, componentType, subagent, kind, id)
+}
+
+type ComponentProperties interface {
+	Properties() ([]byte, string, error)
+}
+
+// AutoInstrumentationComponent cannot cast to AutoInstrumentationReceiver because of cyclical dependency
+type AutoInstrumentationComponent interface {
+	GetTargetReceiver() string
+	SetServiceName(name string)
+	GenerateConfig() (map[string]interface{}, error)
+	GetGenerationType() string
+	GetGenerateToPath() string
+	SetEndpoint(endpoint string)
+}
+type AutoInstrumentationCollectorComponent interface {
+	GetEndpoint() string
 }

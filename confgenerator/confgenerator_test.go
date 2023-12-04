@@ -215,6 +215,14 @@ func generateConfigs(pc platformConfig, testDir string) (got map[string]string, 
 	}
 	got["otel.yaml"] = otelGeneratedConfig
 
+	autoInstrumentationConfigs, err := uc.GenerateAutoInstrumentationConfigs()
+	if err != nil {
+		return
+	}
+	for _, config := range autoInstrumentationConfigs {
+		got[config.FileLocation] = string(config.GeneratedFile)
+	}
+
 	inputBytes, err := os.ReadFile(filepath.Join("testdata", testDir, inputFileName))
 
 	userConf, err := confgenerator.UnmarshalYamlToUnifiedConfig(ctx, inputBytes)

@@ -20,6 +20,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"log"
 	"path"
 	"regexp"
 	"sort"
@@ -29,6 +30,8 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/set"
+	"github.com/gookit/properties"
 )
 
 func googleCloudExporter(userAgent string, instrumentationLabels bool) otel.Component {
@@ -87,6 +90,7 @@ func googleManagedPrometheusExporter(userAgent string) otel.Component {
 }
 
 func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context) (string, error) {
+	log.Println("Generating Otel Config")
 	p := platform.FromContext(ctx)
 	userAgent, _ := p.UserAgent("Google-Cloud-Ops-Agent-Metrics")
 	metricVersionLabel, _ := p.VersionLabel("google-cloud-ops-agent-metrics")
@@ -141,11 +145,54 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context) (string, error)
 	return otelConfig, nil
 }
 
+type AutoInstrumentationConfig struct {
+	GeneratedFile []byte
+	FileLocation  string
+}
+
+func (uc *UnifiedConfig) GenerateAutoInstrumentationConfigs() ([]AutoInstrumentationConfig, error) {
+	autoComps := uc.AutoInstrumentationComponents()
+	var configs []AutoInstrumentationConfig
+	for _, comp := range autoComps {
+		var conf map[string]interface{}
+		conf, err := comp.GenerateConfig()
+		if err != nil {
+			return nil, err
+		}
+		autoConfig, err := marshalAutoInstrumentationByType(conf, comp.GetGenerationType())
+		if err != nil {
+			return nil, err
+		}
+		config := AutoInstrumentationConfig{
+			GeneratedFile: autoConfig,
+			FileLocation:  comp.GetGenerateToPath(),
+		}
+		configs = append(configs, config)
+	}
+	return configs, nil
+}
+
+func marshalAutoInstrumentationByType(conf map[string]interface{}, generationType string) ([]byte, error) {
+	switch generationType {
+	case "properties":
+		{
+			c, err := properties.Marshal(&conf)
+			if err != nil {
+				return nil, err
+			}
+			return c, nil
+		}
+	default:
+		return nil, fmt.Errorf("unknown autoinstrumentation generation_type")
+	}
+}
+
 // generateOtelPipelines generates a map of OTel pipeline names to OTel pipelines.
 func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]otel.ReceiverPipeline, map[string]otel.Pipeline, error) {
 	m := uc.Metrics
 	outR := make(map[string]otel.ReceiverPipeline)
 	outP := make(map[string]otel.Pipeline)
+	otlpReceiverIDsWithAutoInstrumentation := set.Set[string]{}
 	addReceiver := func(pipelineType, pID, rID string, receiver OTelReceiver, processorIDs []string) error {
 		for i, receiverPipeline := range receiver.Pipelines(ctx) {
 			receiverPipelineName := strings.ReplaceAll(rID, "_", "__")
@@ -157,6 +204,17 @@ func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]
 			if pipelineType != "metrics" {
 				// Don't prepend for metrics pipelines to preserve old golden configs.
 				prefix = fmt.Sprintf("%s_%s", pipelineType, prefix)
+			}
+
+			if receiver.Type() == "otlp" {
+				if _, ok := otlpReceiverIDsWithAutoInstrumentation[rID]; ok {
+					receiverPipeline.Processors["metrics"] = append(
+						receiverPipeline.Processors["metrics"],
+						otel.TransformationMetrics(
+							otel.FlattenResourceAttribute("service_name", "service_name"),
+						),
+					)
+				}
 			}
 
 			outR[receiverPipelineName] = receiverPipeline
@@ -180,6 +238,7 @@ func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]
 					return fmt.Errorf("processor %q not found", pID)
 				}
 				pipeline.Processors = append(pipeline.Processors, processor.Processors()...)
+
 			}
 			outP[prefix] = pipeline
 		}
@@ -190,6 +249,26 @@ func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]
 		if err != nil {
 			return nil, nil, err
 		}
+
+		// set AutoInstrumentation receivers service name
+		for name, receiver := range receivers {
+			if aiReceiver, ok := receiver.(AutoInstrumentationComponent); ok {
+				targetReceiver := aiReceiver.GetTargetReceiver()
+				aiReceiver.SetServiceName(name)
+				r, exists := receivers[targetReceiver]
+				if exists {
+					otlpReceiverIDsWithAutoInstrumentation.Add(targetReceiver)
+				} else {
+					return nil, nil, fmt.Errorf("cannot find autoinstrumentation target receiver: %s, please make sure there is an otlp receiver with the same name", targetReceiver)
+				}
+				if aicc, ok := r.(AutoInstrumentationCollectorComponent); ok {
+					aiReceiver.SetEndpoint(aicc.GetEndpoint())
+				} else {
+					return nil, nil, fmt.Errorf("%s is not a valid AutoInstrumentation target receiver", r.Type())
+				}
+			}
+		}
+
 		for pID, p := range m.Service.Pipelines {
 			for _, rID := range p.ReceiverIDs {
 				receiver, ok := receivers[rID]
