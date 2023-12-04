@@ -55,6 +55,65 @@ func healthChecksLogsPath() string {
 	return path.Join("${logs_dir}", "health-checks.log")
 }
 
+type LoggingProcessorSampleLogs struct {
+	Regex     string
+	TargetTag string
+	Code      string
+}
+
+func (p LoggingProcessorSampleLogs) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
+	// This filter samples specific input logs by matching with regex and re-emits
+	// a log with the target tag.
+	rewriteTag := fluentbit.Component{
+		Kind: "FILTER",
+		Config: map[string]string{
+			"Name":  "rewrite_tag",
+			"Match": tag,
+			"Rule":  fmt.Sprintf(`message %s %s true`, p.Regex, p.TargetTag),
+		},
+	}
+	// This filter sets the appropriate health code to the previously sampled logs. The `code` is also
+	// set to the `message` field for later translation in the pipeline.
+	// The current fluent-bit submodule doesn't accept whitespaces in the `Set` values, so `code` is
+	// used as a placeholder. This can be updated when the fix arrives to the current fluent-bit submodule
+	// `https://github.com/fluent/fluent-bit/issues/4286`.
+	rewriteMessage := fluentbit.Component{
+		Kind: "FILTER",
+		OrderedConfig: [][2]string{
+			{"Name", "modify"},
+			{"Match", p.TargetTag},
+			{"Condition", fmt.Sprintf(`Key_value_matches message %s`, p.Regex)},
+			{"Set", fmt.Sprintf(`message %s`, p.Code)},
+			{"Set", fmt.Sprintf(`code %s`, p.Code)},
+		},
+	}
+
+	return []fluentbit.Component{
+		rewriteTag,
+		rewriteMessage,
+	}
+}
+
+type LoggingProcessorGrep struct {
+	Field string
+	Regex string
+}
+
+func (p LoggingProcessorGrep) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
+	filter := fluentbit.Component{
+		Kind: "FILTER",
+		Config: map[string]string{
+			"Name":  "grep",
+			"Match": tag,
+			"Regex": fmt.Sprintf("%s %s", p.Field, p.Regex),
+		},
+	}
+
+	return []fluentbit.Component{
+		filter,
+	}
+}
+
 // This method creates a file input for the `health-checks.log` file, a json parser for the
 // structured logs and a grep filter to avoid ingesting previous content of the file.
 func generateHealthChecksLogsComponents(ctx context.Context) []fluentbit.Component {
@@ -70,20 +129,14 @@ func generateHealthChecksLogsComponents(ctx context.Context) []fluentbit.Compone
 			TimeFormat: "%Y-%m-%dT%H:%M:%S%z",
 		},
 	}.Components(ctx, healthLogsTag, "health-checks-json")...)
-	out = append(out, []fluentbit.Component{
-		// This is used to exclude any previous content of the `health-checks.log` file that does not contain
-		// the `jsonPayload.severity` field. Due to `https://github.com/fluent/fluent-bit/issues/7092` the
-		// filtering can't be done directly to the `logging.googleapis.com/severity` field.
-		// We cannot use `LoggingProcessorExcludeLogs` here since it doesn't exclude when the field is missing.
-		{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":  "grep",
-				"Match": healthLogsTag,
-				"Regex": fmt.Sprintf("%s INFO|ERROR|WARNING|DEBUG|info|error|warning|debug", logs.SeverityZapKey),
-			},
-		},
-	}...)
+	// This is used to exclude any previous content of the `health-checks.log` file that does not contain
+	// the `jsonPayload.severity` field. Due to `https://github.com/fluent/fluent-bit/issues/7092` the
+	// filtering can't be done directly to the `logging.googleapis.com/severity` field.
+	// We cannot use `LoggingProcessorExcludeLogs` here since it doesn't exclude when the field is missing.
+	out = append(out, LoggingProcessorGrep{
+		Field: logs.SeverityZapKey,
+		Regex: "INFO|ERROR|WARNING|DEBUG|info|error|warning|debug",
+	}.Components(ctx, healthLogsTag, "health-checks-severity")...)
 	return out
 }
 
@@ -134,31 +187,11 @@ func generateSelfLogsSamplingComponents(ctx context.Context) []fluentbit.Compone
 	out := make([]fluentbit.Component, 0)
 
 	for _, m := range selfLogTranslationList {
-		// This filter samples specific fluent-bit logs by matching with regex and re-emits
-		// an `ops-agent-health` log.
-		out = append(out, fluentbit.Component{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":  "rewrite_tag",
-				"Match": fluentBitSelfLogsTag,
-				"Rule":  fmt.Sprintf(`message %s %s true`, m.regexMatch, healthLogsTag),
-			},
-		})
-		// This filter sets the appropiate health code to the previously sampled logs. The `code` is also
-		// set to the `message` field for later translation in the pipeline.
-		// The current fluent-bit submodule doesn't accept whitespaces in the `Set` values, so `code` is
-		// used as a placeholder. This can be updated when the fix arrives to the current fluent-bit submodule
-		// `https://github.com/fluent/fluent-bit/issues/4286`.
-		out = append(out, fluentbit.Component{
-			Kind: "FILTER",
-			OrderedConfig: [][2]string{
-				{"Name", "modify"},
-				{"Match", healthLogsTag},
-				{"Condition", fmt.Sprintf(`Key_value_matches message %s`, m.regexMatch)},
-				{"Set", fmt.Sprintf(`message %s`, m.code)},
-				{"Set", fmt.Sprintf(`code %s`, m.code)},
-			},
-		})
+		out = append(out, LoggingProcessorSampleLogs{
+			Regex:     m.regexMatch,
+			TargetTag: healthLogsTag,
+			Code:      m.code,
+		}.Components(ctx, fluentBitSelfLogsTag, "health-logs-sampling")...)
 	}
 
 	return out
