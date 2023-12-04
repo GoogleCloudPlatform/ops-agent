@@ -298,9 +298,9 @@ func (p LoggingProcessorLift) Components(ctx context.Context, tag, uid string) [
 }
 
 type LoggingProcessorGrep struct {
-	Field   string `validate:"required"`
-	Regex   string `validate:"required_without=Exclude excluded_with=Exclude"`
-	Exclude string `validate:"required_without=Regex excluded_with=Regex"`
+	Field   string
+	Regex   string
+	Exclude string
 }
 
 func (p LoggingProcessorGrep) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
