@@ -99,7 +99,7 @@ func workDirForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
 		return `C:\work`
 	}
-	return "/root/work"
+	return "/tmp/work"
 }
 
 func startCommandForPlatform(platform string) string {
@@ -155,7 +155,7 @@ func makeDirectory(ctx context.Context, logger *log.Logger, vm *gce.VM, director
 	if gce.IsWindows(vm.Platform) {
 		createFolderCmd = fmt.Sprintf("New-Item -ItemType Directory -Path %s", directory)
 	} else {
-		createFolderCmd = fmt.Sprintf("sudo mkdir -p %s", directory)
+		createFolderCmd = fmt.Sprintf("mkdir -p %s", directory)
 	}
 	_, err := gce.RunRemotely(ctx, logger, vm, "", createFolderCmd)
 	return err
