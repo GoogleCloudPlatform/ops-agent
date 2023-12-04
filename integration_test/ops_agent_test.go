@@ -3954,7 +3954,6 @@ func runGoCode(ctx context.Context, logger *log.Logger, vm *gce.VM, content io.R
 	goInitAndRun := fmt.Sprintf(`
 		%s
 		cd %s
-		asdf
 		go mod init main
 		go get ./...
 		go run main.go`, goPathCommandForPlatform(vm.Platform), workDir)
