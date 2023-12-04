@@ -472,44 +472,23 @@ func (r LoggingReceiverSystemd) Components(ctx context.Context, tag string) []fl
 			{"0", "EMERGENCY"},
 		})
 	input = append(input, filters...)
-	input = append(input, fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":      "modify",
-			"Match":     tag,
-			"Condition": fmt.Sprintf("Key_exists %s", "CODE_FILE"),
-			"Copy":      fmt.Sprintf("CODE_FILE %s", "logging.googleapis.com/sourceLocation/file"),
-		},
-	})
-	input = append(input, fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":      "modify",
-			"Match":     tag,
-			"Condition": fmt.Sprintf("Key_exists %s", "CODE_FUNC"),
-			"Copy":      fmt.Sprintf("CODE_FUNC %s", "logging.googleapis.com/sourceLocation/function"),
-		},
-	})
-	input = append(input, fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":      "modify",
-			"Match":     tag,
-			"Condition": fmt.Sprintf("Key_exists %s", "CODE_LINE"),
-			"Copy":      fmt.Sprintf("CODE_LINE %s", "logging.googleapis.com/sourceLocation/line"),
-		},
-	})
-	input = append(input, fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":          "nest",
-			"Match":         tag,
-			"Operation":     "nest",
-			"Wildcard":      "logging.googleapis.com/sourceLocation/*",
-			"Nest_under":    "logging.googleapis.com/sourceLocation",
-			"Remove_prefix": "logging.googleapis.com/sourceLocation/",
-		},
-	})
+	input = append(input, modify.NewModify(
+		modify.NewKeyExistsCondition("CODE_FILE"),
+		modify.NewCopyOptions("CODE_FILE", "logging.googleapis.com/sourceLocation/file"),
+	).Component(tag))
+	input = append(input, modify.NewModify(
+		modify.NewKeyExistsCondition("CODE_FUNC"),
+		modify.NewCopyOptions("CODE_FUNC", "logging.googleapis.com/sourceLocation/function"),
+	).Component(tag))
+	input = append(input, modify.NewModify(
+		modify.NewKeyExistsCondition("CODE_LINE"),
+		modify.NewCopyOptions("CODE_LINE", "logging.googleapis.com/sourceLocation/line"),
+	).Component(tag))
+	input = append(input, LoggingProcessorNestWildcard{
+		Wildcard: "logging.googleapis.com/sourceLocation/*",
+		NestUnder: "logging.googleapis.com/sourceLocation",
+		RemovePrefix: "logging.googleapis.com/sourceLocation/",
+	}.Components(ctx, tag, "systemd-nest-wildcards")...)
 	return input
 }
 

@@ -161,6 +161,24 @@ func NewRemoveOptions(field string) ModifyOptions {
 	}
 }
 
+// NewCopyOptions creates the ModifyOptions that on `Component()` will construct a Copy
+// fluentbit component. Note that Copy does not overwrite fields if they exist
+func NewCopyOptions(field, copyTo string) ModifyOptions {
+	return ModifyOptions{
+		ModifyRule: CopyModifyKey,
+		Parameters: fmt.Sprintf("%s %s", field, copyTo),
+	}
+}
+
+// NewKeyExistsCondition creates the ModifyCondition that checks whether a given field
+// exists.
+func NewKeyExistsCondition(field string) ModifyCondition {
+	return ModifyCondition{
+		Condition: ModifyConditionKeyExists,
+		Parameters: fmt.Sprintf("%s", field),
+	}
+}
+
 // NewKeyValueMatchesCondition creates the ModifyCondition that checks whether a given field
 // matches the given regex.
 func NewKeyValueMatchesCondition(field, regex string) ModifyCondition {
