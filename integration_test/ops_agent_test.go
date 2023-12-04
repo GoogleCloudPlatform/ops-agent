@@ -3208,7 +3208,7 @@ func TestPrometheusSummaryMetrics(t *testing.T) {
 }
 
 func buildGoBinary(ctx context.Context, logger *log.Logger, vm *gce.VM, source, dest string) error {
-	_, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("/usr/local/go/bin/go build -o %s/ %s", dest, source))
+	_, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("sudo /usr/local/go/bin/go build -o %s/ %s", dest, source))
 	return err
 }
 
