@@ -423,6 +423,10 @@ func (p LoggingProcessorGceMetadataAttributes) Components(ctx context.Context, t
 			StaticValue: &v,
 		}
 	}
+	if len(modifications) == 0 {
+		log.Println("no attributes matched the gce_metadata_attributes filters")
+		return nil
+	}
 	return LoggingProcessorModifyFields{
 		Fields: modifications,
 	}.Components(ctx, tag, processorName)
