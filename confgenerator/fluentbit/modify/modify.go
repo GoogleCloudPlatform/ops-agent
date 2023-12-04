@@ -72,12 +72,20 @@ func (mo ModifyOptions) Component(tag string) fluentbit.Component {
 	return c
 }
 
+func (mo ModifyOptions) parameters() string {
+	return mo.Parameters
+}
+
 // ModifyCondition is a representation of a single modify block's condition in fluentbit
 type ModifyCondition struct {
 	Condition  ModifyConditionKey
 	// Parameters is the string input of the modify rule
 	// i.e "Condition Key_Value_Equals cpustats UNKNOWN"; Parameters = "cpustats UNKNOWN"
 	Parameters string
+}
+
+func (mc ModifyCondition) parameters() string {
+	return mc.Parameters
 }
 
 // MultiModifyOptions are a representation of a config for a modify block in fluentbit
@@ -159,5 +167,27 @@ func NewKeyValueMatchesCondition(field, regex string) ModifyCondition {
 	return ModifyCondition{
 		Condition: ModifyConditionKeyValueMatches,
 		Parameters: fmt.Sprintf("%s %s", field, regex),
+	}
+}
+
+// Marker interface for MultiModifyOptions construction.
+type modifyparameters interface{
+	parameters() string
+}
+
+func NewModify(parameters... modifyparameters) MultiModifyOptions {
+	var rules []ModifyOptions
+	var conditions []ModifyCondition
+	for _, p := range parameters {
+		switch v := p.(type) {
+		case ModifyOptions:
+			rules = append(rules, v)
+		case ModifyCondition:
+			conditions = append(conditions, v)
+		}
+	}
+	return MultiModifyOptions{
+		Rules: rules,
+		Conditions: conditions,
 	}
 }

@@ -78,15 +78,11 @@ func (p LoggingProcessorSampleLogs) Components(ctx context.Context, tag, uid str
 	// The current fluent-bit submodule doesn't accept whitespaces in the `Set` values, so `code` is
 	// used as a placeholder. This can be updated when the fix arrives to the current fluent-bit submodule
 	// `https://github.com/fluent/fluent-bit/issues/4286`.
-	rewriteMessage := modify.MultiModifyOptions{
-		Conditions: []modify.ModifyCondition{
-			modify.NewKeyValueMatchesCondition("message", p.Regex),
-		},
-		Rules: []modify.ModifyOptions{
-			modify.NewSetOptions("message", p.Code),
-			modify.NewSetOptions("code", p.Code),
-		},
-	}
+	rewriteMessage := modify.NewModify(
+		modify.NewKeyValueMatchesCondition("message", p.Regex),
+		modify.NewSetOptions("message", p.Code),
+		modify.NewSetOptions("code", p.Code),
+	)
 
 	return []fluentbit.Component{
 		rewriteTag,
