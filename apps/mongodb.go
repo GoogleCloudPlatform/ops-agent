@@ -169,21 +169,8 @@ func (p *LoggingProcessorMongodb) jsonParserWithTimeKey(ctx context.Context, tag
 	// IMPORTANT: now that we have lifted the json to top level
 	// we need to re-parse in order to properly set time at the
 	// parser level
-	nestFilters := fluentbit.LuaFilterComponents(tag, fluentbit.ParserNestLuaFunction, fmt.Sprintf(fluentbit.ParserNestLuaScriptContents, "message"))
-	parserFilter := fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":         "parser",
-			"Match":        tag,
-			"Key_Name":     "message",
-			"Reserve_Data": "True",
-			"Parser":       parserFilterComponent.OrderedConfig[0][1],
-		},
-	}
-	mergeFilters := fluentbit.LuaFilterComponents(tag, fluentbit.ParserMergeLuaFunction, fluentbit.ParserMergeLuaScriptContents)
-	c = append(c, nestFilters...)
-	c = append(c, parserFilter)
-	c = append(c, mergeFilters...)
+	parserName := parserFilterComponent.OrderedConfig[0][1]
+	c = append(c, fluentbit.ParserFilterComponents(tag, "message", []string{parserName}, false)...)
 
 	removeTimestamp := modify.NewRemoveOptions(timeKey)
 	c = append(c, removeTimestamp.Component(tag))
@@ -288,23 +275,10 @@ func (p *LoggingProcessorMongodb) RegexLogComponents(tag, uid string) []fluentbi
 	parser.Config["Regex"] = `^(?<timestamp>[^ ]*)\s+(?<s>\w)\s+(?<component>[^ ]+)\s+\[(?<context>[^\]]+)]\s+(?<message>.*?) *(?<ms>(\d+))?(:?ms)?$`
 	parser.Config["Key_Name"] = parseKey
 
-	nestFilters := fluentbit.LuaFilterComponents(tag, fluentbit.ParserNestLuaFunction, fmt.Sprintf(fluentbit.ParserNestLuaScriptContents, parseKey))
-	parserFilter := fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Match":        tag,
-			"Name":         "parser",
-			"Parser":       parserName,
-			"Reserve_Data": "True",
-			"Key_Name":     parseKey,
-		},
-	}
-	mergeFilters := fluentbit.LuaFilterComponents(tag, fluentbit.ParserMergeLuaFunction, fluentbit.ParserMergeLuaScriptContents)
+	parserFilters := fluentbit.ParserFilterComponents(tag, parseKey, []string{parserName}, false)
 
 	c = append(c, parser)
-	c = append(c, nestFilters...)
-	c = append(c, parserFilter)
-	c = append(c, mergeFilters...)
+	c = append(c, parserFilters...)
 
 	return c
 }
