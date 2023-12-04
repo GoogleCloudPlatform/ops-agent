@@ -3261,7 +3261,7 @@ func testPrometheusMetrics(t *testing.T, opsAgentConfig string, testChecks []moc
 		setupScript := `sudo systemctl daemon-reload && sudo systemctl enable http-server-for-prometheus-test && sudo systemctl restart http-server-for-prometheus-test`
 		_, err = gce.RunRemotely(ctx, logger, vm, "", setupScript)
 		if err != nil {
-			t.Fatalf("failed to start the http server in VM via systemctl with err: %w", err)
+			t.Fatalf("failed to start the http server in VM via systemctl with err: %v", err)
 		}
 		// Wait until the http server is ready
 		time.Sleep(20 * time.Second)
