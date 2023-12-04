@@ -185,15 +185,8 @@ func (p *LoggingProcessorMongodb) jsonParserWithTimeKey(ctx context.Context, tag
 	c = append(c, parserFilter)
 	c = append(c, mergeFilters...)
 
-	removeTimestamp := fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":   "modify",
-			"Match":  tag,
-			"Remove": timeKey,
-		},
-	}
-	c = append(c, removeTimestamp)
+	removeTimestamp := modify.NewRemoveOptions(timeKey)
+	c = append(c, removeTimestamp.Component(tag))
 
 	return c
 }

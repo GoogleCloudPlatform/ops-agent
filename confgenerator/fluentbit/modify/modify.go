@@ -82,7 +82,7 @@ func MapModify(tag string, modifications []ModifyOptions) []fluentbit.Component 
 	return c
 }
 
-// NewSetModifyOptions creates the ModifyOptions that will construct a Set modify
+// NewSetOptions creates the ModifyOptions that will construct a Set modify
 // where the `field` is set to the `value` parameter. Note this will overwrite if field
 // already exists
 func NewSetOptions(field, value string) ModifyOptions {
@@ -93,7 +93,7 @@ func NewSetOptions(field, value string) ModifyOptions {
 	return mo
 }
 
-// NewRenameModifyOptions creates the ModifyOptions that on `Component()` will construct a Rename
+// NewRenameOptions creates the ModifyOptions that on `Component()` will construct a Rename
 // fluentbit component. Note that Rename does not overwrite fields if they exist
 func NewRenameOptions(field, renameTo string) ModifyOptions {
 	mo := ModifyOptions{
@@ -103,13 +103,23 @@ func NewRenameOptions(field, renameTo string) ModifyOptions {
 	return mo
 }
 
-// NewHardRenameModifyOptions creates the ModifyOptions that on `Component()` will return
+// NewHardRenameOptions creates the ModifyOptions that on `Component()` will return
 // a fluentbit component that does a hard rename of `field` to `renameTo`. Note that this will overwrite
 // the current value of field if it does exist.
 func NewHardRenameOptions(field, renameTo string) ModifyOptions {
 	mo := ModifyOptions{
 		ModifyRule: HardRenameModifyKey,
 		Parameters: fmt.Sprintf("%s %s", field, renameTo),
+	}
+	return mo
+}
+
+// NewRemoveOptions creates the ModifyOptions that on `Component()` will construct a Remove
+// fluentbit component.
+func NewRemoveOptions(field string) ModifyOptions {
+	mo := ModifyOptions{
+		ModifyRule: RemoveModifyKey,
+		Parameters: fmt.Sprintf("%s", field),
 	}
 	return mo
 }
