@@ -20,6 +20,7 @@ import (
 
 	yaml "github.com/goccy/go-yaml"
 	"github.com/mitchellh/mapstructure"
+	commonconfig "github.com/prometheus/common/config"
 )
 
 const MetricsPort = 20201
@@ -97,7 +98,12 @@ func configToYaml(config interface{}) ([]byte, error) {
 	if err := mapstructure.Decode(config, &outMap); err != nil {
 		return nil, err
 	}
-	return yaml.Marshal(outMap)
+	return yaml.MarshalWithOptions(
+		outMap,
+		yaml.CustomMarshaler[commonconfig.Secret](func(s commonconfig.Secret) ([]byte, error) {
+			return []byte(s), nil
+		}),
+	)
 }
 
 type ModularConfig struct {

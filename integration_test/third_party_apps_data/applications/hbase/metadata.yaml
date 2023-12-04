@@ -47,6 +47,7 @@ minimum_supported_agent_version:
 platforms_to_skip:
   # Hbase only supports Java 11, which has no installation candidate for Debian 12
   - debian-12
+  - debian-12-arm64
 supported_operating_systems: linux
 supported_app_version: ["1.7.x", "2.3.x", "2.4.x"]
 expected_metrics:

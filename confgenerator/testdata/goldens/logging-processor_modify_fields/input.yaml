@@ -48,6 +48,10 @@ logging:
         jsonPayload.omitted:
           omit_if: jsonPayload.omitted = "-"
         jsonPayload.untouched:
+        spanId:
+          static_value: spanValue
+        trace:
+          move_from: jsonPayload.trace
   service:
     pipelines:
       p1:

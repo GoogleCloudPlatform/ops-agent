@@ -147,7 +147,7 @@ func installApps(ctx context.Context, vm *gce.VM, logger *logging.DirectoryLogge
 		if scriptContent, err := os.ReadFile(filepath.Join(installPath, "applications", app, folder, "install")); err == nil {
 			logger.ToMainLog().Printf("Installing %s to VM", app)
 			log.Default().Printf("Installing %s to VM", app)
-			if _, err := gce.RunScriptRemotely(ctx, logger, vm, string(scriptContent), nil, make(map[string]string)); err != nil {
+			if _, err := gce.RunScriptRemotely(ctx, logger.ToMainLog(), vm, string(scriptContent), nil, make(map[string]string)); err != nil {
 				return fmt.Errorf("Failed to install app %s %v", app, err)
 			}
 			logger.ToMainLog().Printf("Done Installing %s", app)
@@ -332,7 +332,7 @@ func runCustomScripts(ctx context.Context, vm *gce.VM, logger *logging.Directory
 
 		logger.ToMainLog().Printf("Running script from %s", script.Path)
 		log.Default().Printf("Running script from %s", script.Path)
-		if _, err := gce.RunScriptRemotely(ctx, logger, vm, string(scriptContent), script.Args, make(map[string]string)); err != nil {
+		if _, err := gce.RunScriptRemotely(ctx, logger.ToMainLog(), vm, string(scriptContent), script.Args, make(map[string]string)); err != nil {
 			return fmt.Errorf("Script with path %s failed to run %v", script.Path, err)
 		}
 		logger.ToMainLog().Printf("Done Running Script from  %s", script.Path)

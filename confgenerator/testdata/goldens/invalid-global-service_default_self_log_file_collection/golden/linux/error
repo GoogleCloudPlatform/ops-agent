@@ -1,0 +1,6 @@
+[16:37] cannot unmarshal string into Go struct field UnifiedConfig.Global of type bool
+  13 | # limitations under the License.
+  14 | 
+  15 | global:
+> 16 |   default_self_log_file_collection: None
+                                           ^
