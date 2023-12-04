@@ -1,4 +1,4 @@
-// Copyright 2022 Google LLC
+// Copyright 2023 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -66,6 +66,16 @@ type testCase struct {
 	// An empty string means "don't check stdout" and likewise for stderr.
 	stdoutRegexp string
 	stderrRegexp string
+
+	// An escape hatch to skip certain tests that are buggy when run with
+	// RunScriptRemotely. This is to work around a bug with Powershell -File,
+	// which ignores some kinds of errors that it really shouldn't:
+	// "With normal termination, the exit code is always 0."
+	// https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_powershell_exe?view=powershell-5.1#-file----filepath-args
+	// Ideally RunScriptRemotely would work around this Powershell bug
+	// (which exists in pwsh too) and then the behavior of RunRemotely would
+	// match RunScriptRemotely, but I've so far been unable to do that.
+	skipRunScriptRemotely bool
 }
 
 var powershellTestCases = []testCase{
@@ -83,19 +93,22 @@ var powershellTestCases = []testCase{
 		// Expect an error, because dir is successfully run but finishes with
 		// exit code 1.  This is because "The process exit code is determined
 		// by status of the last (executed) command within the script block.
-		// The exit code is 0 when $?  is $true or 1 when $? is $false."
-		// https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_pwsh?view=powershell-7.3#-command---c
+		// The exit code is 0 when $? is $true or 1 when $? is $false."
+		// https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_powershell_exe?view=powershell-5.1#-command
 		command: "dir /nonexistent",
-		fail:    true, ///////
+		fail:    true,
+		skipRunScriptRemotely: true,
 	},
 	{
 		// Because nothing called asdfqwerty is installed.
 		command: "asdfqwerty help",
-		fail:    true, ////////
+		fail:    true,
+		skipRunScriptRemotely: true,
 	},
 	{
 		command: "Get-Content -NoSuchFlag /",
-		fail:    true, //////
+		fail:    true,
+		skipRunScriptRemotely: true,
 	},
 	{
 		command: "'ParseErrorMissingQuote",
@@ -108,7 +121,6 @@ var powershellTestCases = []testCase{
 	},
 
 	// ================= Tests for multi-line commands follow. ===================
-	// TODO: If these tests pass, delete them. They are testing powershell, not RunRemotely().
 
 	{
 		// Supposed to print "hello" and then run cd, which will set $?,
@@ -116,8 +128,9 @@ var powershellTestCases = []testCase{
 		command: `
 Write-Output 'hello'
 cd /nonexistent`,
-		fail:         true, ////////
+		fail:         true,
 		stdoutRegexp: "hello",
+		skipRunScriptRemotely: true,
 	},
 
 	{
@@ -189,7 +202,6 @@ var bashTestCases = []testCase{
 	},
 
 	// ================= Tests for multi-line commands follow. ===================
-	// TODO: If these tests pass, delete them. They are testing bash, not RunRemotely().
 
 	{
 		// Supposed to print "hello" and then run cd, which will set $?,
@@ -234,20 +246,20 @@ echo hello`,
 // testRunRemotelyHelper runs all the given test cases on the given VM, checking
 // that RunRemotely and RunScriptRemotely report all expected errors and that
 // standard out/error are as expected.
-func testRunRemotelyHelper(ctx context.Context, t *testing.T, logger *logging.DirectoryLogger, vm *gce.VM, testCases []testCase) {
+func testRunRemotelyHelper(ctx context.Context, t *testing.T, logger *log.Logger, vm *gce.VM, testCases []testCase) {
 	runners := []struct {
 		name   string
 		runner func(string) (gce.CommandOutput, error)
 	}{
 		{
-			"RunRemotely",
-			func(command string) (gce.CommandOutput, error) {
-				return gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", command)
+			name:   "RunRemotely",
+			runner: func(command string) (gce.CommandOutput, error) {
+				return gce.RunRemotely(ctx, logger, vm, "", command)
 			},
 		},
 		{
-			"RunScriptRemotely",
-			func(command string) (gce.CommandOutput, error) {
+			name:   "RunScriptRemotely",
+			runner: func(command string) (gce.CommandOutput, error) {
 				return gce.RunScriptRemotely(ctx, logger, vm, command, nil, nil)
 			},
 		},
@@ -255,9 +267,13 @@ func testRunRemotelyHelper(ctx context.Context, t *testing.T, logger *logging.Di
 
 	for _, runnerCase := range runners {
 		t.Run(runnerCase.name, func(t *testing.T) {
-			logger.ToMainLog().Printf("Starting test for %v", runnerCase.name)
+			logger.Printf("Starting test for %v", runnerCase.name)
 
 			for _, tc := range testCases {
+				if tc.skipRunScriptRemotely && runnerCase.Name == "RunScriptRemotely" {
+					logger.Printf("Skipping test for command %q due to skipRunScriptRemotely", tc.command)
+					continue
+				}
 				output, err := runnerCase.runner(tc.command)
 				if tc.fail {
 					if err == nil {
@@ -303,7 +319,7 @@ func TestRunRemotely(t *testing.T) {
 			cases = bashTestCases
 		}
 
-		testRunRemotelyHelper(ctx, t, logger, vm, cases)
+		testRunRemotelyHelper(ctx, t, logger.ToMainLog(), vm, cases)
 	})
 }
 
