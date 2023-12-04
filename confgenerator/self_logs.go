@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit/modify"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
@@ -77,20 +78,19 @@ func (p LoggingProcessorSampleLogs) Components(ctx context.Context, tag, uid str
 	// The current fluent-bit submodule doesn't accept whitespaces in the `Set` values, so `code` is
 	// used as a placeholder. This can be updated when the fix arrives to the current fluent-bit submodule
 	// `https://github.com/fluent/fluent-bit/issues/4286`.
-	rewriteMessage := fluentbit.Component{
-		Kind: "FILTER",
-		OrderedConfig: [][2]string{
-			{"Name", "modify"},
-			{"Match", p.TargetTag},
-			{"Condition", fmt.Sprintf(`Key_value_matches message %s`, p.Regex)},
-			{"Set", fmt.Sprintf(`message %s`, p.Code)},
-			{"Set", fmt.Sprintf(`code %s`, p.Code)},
+	rewriteMessage := modify.MultiModifyOptions{
+		Conditions: []modify.ModifyCondition{
+			modify.NewKeyValueMatchesCondition("message", p.Regex),
+		},
+		Rules: []modify.ModifyOptions{
+			modify.NewSetOptions("message", p.Code),
+			modify.NewSetOptions("code", p.Code),
 		},
 	}
 
 	return []fluentbit.Component{
 		rewriteTag,
-		rewriteMessage,
+		rewriteMessage.Component(p.TargetTag),
 	}
 }
 

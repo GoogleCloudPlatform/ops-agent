@@ -47,10 +47,10 @@ const (
 	ModifyConditionKeyDoesNotExist ModifyConditionKey = "Key_does_not_exist"
 	ModifyConditionKeyValueEquals  ModifyConditionKey = "Key_value_equals"
 	ModifyConditionNoKeyMatches    ModifyConditionKey = "No_key_matches"
-	ModifyKeyValueMatches          ModifyConditionKey = "Key_value_matches"
+	ModifyConditionKeyValueMatches ModifyConditionKey = "Key_value_matches"
 )
 
-// ModifyOptions are a representation of a config for a modify block in fluentbit
+// ModifyOptions are a representation of a single modify rule in fluentbit
 type ModifyOptions struct {
 	ModifyRule ModifyRule
 	// Parameters is the string input of the modify rule
@@ -72,6 +72,39 @@ func (mo ModifyOptions) Component(tag string) fluentbit.Component {
 	return c
 }
 
+// ModifyCondition is a representation of a single modify block's condition in fluentbit
+type ModifyCondition struct {
+	Condition  ModifyConditionKey
+	// Parameters is the string input of the modify rule
+	// i.e "Condition Key_Value_Equals cpustats UNKNOWN"; Parameters = "cpustats UNKNOWN"
+	Parameters string
+}
+
+// MultiModifyOptions are a representation of a config for a modify block in fluentbit
+type MultiModifyOptions struct {
+	Rules []ModifyOptions
+	Conditions []ModifyCondition
+}
+
+// Component uses the option and transforms it into a Component
+func (mo MultiModifyOptions) Component(tag string) fluentbit.Component {
+	c := fluentbit.Component{
+		Kind: "FILTER",
+		OrderedConfig: [][2]string{
+			{"Name",  "modify"},
+			{"Match", tag},
+		},
+	}
+	for _, co := range mo.Conditions {
+		c.OrderedConfig = append(c.OrderedConfig, [2]string{"Condition", fmt.Sprintf("%s %s", co.Condition, co.Parameters)})
+	}
+	for _, r := range mo.Rules {
+		c.OrderedConfig = append(c.OrderedConfig, [2]string{string(r.ModifyRule), r.Parameters})
+	}
+
+	return c
+}
+
 // MapModify takes a list of ModifyOptions and converts them to Modify components
 // and returns a slice of them
 func MapModify(tag string, modifications []ModifyOptions) []fluentbit.Component {
@@ -86,40 +119,45 @@ func MapModify(tag string, modifications []ModifyOptions) []fluentbit.Component 
 // where the `field` is set to the `value` parameter. Note this will overwrite if field
 // already exists
 func NewSetOptions(field, value string) ModifyOptions {
-	mo := ModifyOptions{
+	return ModifyOptions{
 		ModifyRule: SetModifyKey,
 		Parameters: fmt.Sprintf("%s %s", field, value),
 	}
-	return mo
 }
 
 // NewRenameOptions creates the ModifyOptions that on `Component()` will construct a Rename
 // fluentbit component. Note that Rename does not overwrite fields if they exist
 func NewRenameOptions(field, renameTo string) ModifyOptions {
-	mo := ModifyOptions{
+	return ModifyOptions{
 		ModifyRule: RenameModifyKey,
 		Parameters: fmt.Sprintf("%s %s", field, renameTo),
 	}
-	return mo
 }
 
 // NewHardRenameOptions creates the ModifyOptions that on `Component()` will return
 // a fluentbit component that does a hard rename of `field` to `renameTo`. Note that this will overwrite
 // the current value of field if it does exist.
 func NewHardRenameOptions(field, renameTo string) ModifyOptions {
-	mo := ModifyOptions{
+	return ModifyOptions{
 		ModifyRule: HardRenameModifyKey,
 		Parameters: fmt.Sprintf("%s %s", field, renameTo),
 	}
-	return mo
 }
 
 // NewRemoveOptions creates the ModifyOptions that on `Component()` will construct a Remove
 // fluentbit component.
 func NewRemoveOptions(field string) ModifyOptions {
-	mo := ModifyOptions{
+	return ModifyOptions{
 		ModifyRule: RemoveModifyKey,
-		Parameters: fmt.Sprintf("%s", field),
+		Parameters: field,
 	}
-	return mo
+}
+
+// NewKeyValueMatchesCondition creates the ModifyCondition that checks whether a given field
+// matches the given regex.
+func NewKeyValueMatchesCondition(field, regex string) ModifyCondition {
+	return ModifyCondition{
+		Condition: ModifyConditionKeyValueMatches,
+		Parameters: fmt.Sprintf("%s %s", field, regex),
+	}
 }
