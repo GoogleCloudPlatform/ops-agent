@@ -275,6 +275,28 @@ func (p LoggingProcessorNestWildcard) Components(ctx context.Context, tag, uid s
 	}
 }
 
+type LoggingProcessorLift struct {
+	NestedUnder string
+	AddPrefix   string
+}
+
+func (p LoggingProcessorLift) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
+	filter := fluentbit.Component{
+		Kind: "FILTER",
+		Config: map[string]string{
+			"Name":          "nest",
+			"Match":         tag,
+			"Operation":     "lift",
+			"Nested_under":  p.NestedUnder,
+			"Add_prefix":    p.AddPrefix,
+		},
+	}
+
+	return []fluentbit.Component{
+		filter,
+	}
+}
+
 type LoggingProcessorGrep struct {
 	Field   string `validate:"required"`
 	Regex   string `validate:"required_without=Exclude excluded_with=Exclude"`

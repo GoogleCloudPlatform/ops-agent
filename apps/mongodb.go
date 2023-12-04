@@ -150,21 +150,16 @@ func (p *LoggingProcessorMongodb) jsonParserWithTimeKey(ctx context.Context, tag
 	timeKey := "time"
 	// have to bring $date to top level in order for it to be parsed as timeKey
 	// see https://github.com/fluent/fluent-bit/issues/1013
-	liftTs := fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":         "nest",
-			"Match":        tag,
-			"Operation":    "lift",
-			"Nested_under": "t",
-			"Add_prefix":   tempPrefix,
-		},
-	}
+	liftTs := confgenerator.LoggingProcessorLift{
+		NestedUnder: "t",
+		AddPrefix:   tempPrefix,
+	}.Components(ctx, tag, uid)
 
 	renameTsOption := modify.NewHardRenameOptions(fmt.Sprintf("%s$date", tempPrefix), timeKey)
 	renameTs := renameTsOption.Component(tag)
 
-	c = append(c, liftTs, renameTs)
+	c = append(c, liftTs...)
+	c = append(c, renameTs)
 
 	// IMPORTANT: now that we have lifted the json to top level
 	// we need to re-parse in order to properly set time at the
@@ -235,16 +230,10 @@ func (p *LoggingProcessorMongodb) renames(tag, uid string) []fluentbit.Component
 func (p *LoggingProcessorMongodb) promoteWiredTiger(ctx context.Context, tag, uid string) []fluentbit.Component {
 	// promote messages that are WiredTiger messages and are nested in attr.message
 	addPrefix := "temp_attributes_"
-	upNest := fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":         "nest",
-			"Match":        tag,
-			"Operation":    "lift",
-			"Nested_under": "attr",
-			"Add_prefix":   addPrefix,
-		},
-	}
+	upNest := confgenerator.LoggingProcessorLift{
+		NestedUnder: "attr",
+		AddPrefix:   addPrefix,
+	}.Components(ctx, tag, uid)
 
 	hardRenameMessage := modify.NewHardRenameOptions(fmt.Sprintf("%smessage", addPrefix), "msg")
 	wiredTigerRename := hardRenameMessage.Component(tag)
@@ -255,7 +244,8 @@ func (p *LoggingProcessorMongodb) promoteWiredTiger(ctx context.Context, tag, ui
 		RemovePrefix: addPrefix,
 	}.Components(ctx, tag, uid)
 
-	c := []fluentbit.Component{upNest, wiredTigerRename}
+	c := upNest
+	c = append(c, wiredTigerRename)
 	c = append(c, renameRemainingAttributes...)
 
 	return c
