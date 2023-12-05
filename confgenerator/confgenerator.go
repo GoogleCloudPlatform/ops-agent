@@ -381,6 +381,13 @@ func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAg
 			out = append(out, stackdriverOutputComponent(ctx, strings.Join(tags, "|"), userAgent, "2G"))
 		}
 		out = append(out, uc.generateSelfLogsComponents(ctx, userAgent)...)
+		out = append(out, LoggingProcessorGceMetadataAttributes{
+			Include: []string{
+				"dataproc-cluster-name",
+				"dataproc-cluster-uuid",
+				"dataproc-region",
+			},
+		}.Components(ctx, "*", "default-dataproc")...)
 	}
 	out = append(out, fluentbit.MetricsOutputComponent())
 

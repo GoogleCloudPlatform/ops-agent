@@ -149,6 +149,43 @@ func TestGoldens(t *testing.T) {
 	}
 }
 
+func TestDataprocDefaults(t *testing.T) {
+	t.Parallel()
+
+	goldensDir := "goldens"
+	testName := "builtin"
+	dataprocMetadata := map[string]string{
+		"dataproc-cluster-name": "test-cluster",
+		"dataproc-cluster-uuid": "test-uuid",
+		"dataproc-region": "test-region",
+	}
+
+	t.Run(testName, func(t *testing.T) {
+		t.Parallel()
+		pc := testPlatforms[0]
+		assert.Equal(t, pc.name, "linux")
+		// Update mocked resource to include Dataproc labels.
+		testResource := confgenerator.MetadataResource.(resourcedetector.GCEResource)
+		newMetadata := map[string]string{}
+		for k, v := range testResource.Metadata {
+			newMetadata[k] = v
+		}
+		for k, v := range dataprocMetadata {
+			newMetadata[k] = v
+		}
+		testResource.Metadata = newMetadata
+		pc.platform.ResourceOverride = testResource
+		t.Run(pc.name, func(t *testing.T) {
+			testDir := filepath.Join(goldensDir, testName)
+			got, err := generateConfigs(pc, testDir)
+			assert.NilError(t, err, "Failed to generate configs: %v", err)
+			if err := testGeneratedFiles(t, got, filepath.Join(testDir, goldenDir, "linux-dataproc")); err != nil {
+				t.Errorf("Failed to check generated configs: %v", err)
+			}
+		})
+	})
+}
+
 func getTestsInDir(t *testing.T, testDir string) []string {
 	t.Helper()
 
