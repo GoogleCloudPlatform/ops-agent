@@ -766,7 +766,7 @@ Invoke-Expression "${env:UserProfile}\add-google-cloud-ops-agent-repo.ps1 -AlsoI
 		return nil
 	}
 
-	if _, err := gce.InstallGsutilIfNeeded(ctx, logger, vm); err != nil {
+	if err := gce.InstallGsutilIfNeeded(ctx, logger, vm); err != nil {
 		return err
 	}
 
