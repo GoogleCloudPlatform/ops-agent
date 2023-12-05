@@ -4410,7 +4410,7 @@ func TestDisableSelfLogCollection(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
-		ctx, logger, vm := agents.CommonSetup(t, platform)	
+		ctx, logger, vm := agents.CommonSetup(t, platform)
 
 		disableSelfLogCollection := `global:
   default_self_log_file_collection: false
@@ -4429,12 +4429,12 @@ func TestDisableSelfLogCollection(t *testing.T) {
 			t.Fatal(err)
 		}
 
-        if err := gce.AssertLogMissing(ctx, logger.ToMainLog(), vm, "ops-agent-fluent-bit", 2 * time.Minute, `severity="INFO"`); err != nil {
+		if err := gce.AssertLogMissing(ctx, logger.ToMainLog(), vm, "ops-agent-fluent-bit", 2*time.Minute, `severity="INFO"`); err != nil {
 			t.Error(err)
 		}
-        
-        query := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", 3 * time.Minute, query); err != nil {
+
+		query := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", 3*time.Minute, query); err != nil {
 			t.Error(err)
 		}
 	})
