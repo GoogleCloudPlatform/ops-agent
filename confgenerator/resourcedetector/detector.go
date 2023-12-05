@@ -25,6 +25,7 @@ type Resource interface {
 	MonitoredResource() *monitoredres.MonitoredResource
 	OTelResourceAttributes() map[string]string
 	ProjectName() string
+	PrometheusStyleMetadata() map[string]string
 }
 
 // Get a resource instance for the current environment;
@@ -54,6 +55,10 @@ func (UnrecognizedPlatformResource) ProjectName() string {
 }
 
 func (UnrecognizedPlatformResource) MonitoredResource() *monitoredres.MonitoredResource {
+	return nil
+}
+
+func (UnrecognizedPlatformResource) PrometheusStyleMetadata() map[string]string {
 	return nil
 }
 
