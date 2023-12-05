@@ -134,7 +134,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context) (string, error)
 			otel.OTel:   googleCloudExporter(userAgent, true),
 			otel.GMP:    googleManagedPrometheusExporter(userAgent),
 		},
-	}.Generate()
+	}.Generate(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -378,7 +378,7 @@ func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAg
 			out = append(out, s.components...)
 		}
 		if len(tags) > 0 {
-			out = append(out, stackdriverOutputComponent(strings.Join(tags, "|"), userAgent, "2G"))
+			out = append(out, stackdriverOutputComponent(ctx, strings.Join(tags, "|"), userAgent, "2G"))
 		}
 		out = append(out, uc.generateSelfLogsComponents(ctx, userAgent)...)
 	}
