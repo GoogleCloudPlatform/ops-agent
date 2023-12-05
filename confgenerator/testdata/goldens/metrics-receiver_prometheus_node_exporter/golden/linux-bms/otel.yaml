@@ -6,10 +6,10 @@ exporters:
       resource_filters: []
       service_resource_labels: false
       skip_create_descriptor: true
-    retry_on_failure:
-      enabled: false
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
   googlemanagedprometheus:
+    metric:
+      add_metric_suffixes: false
     retry_on_failure:
       enabled: false
     untyped_double_export: true
@@ -494,23 +494,12 @@ receivers:
         - targets:
           - localhost:1234
           labels:
-            __meta_gce_instance_id: test-instance-id
-            __meta_gce_instance_name: test-instance-name
-            __meta_gce_interface_ipv4_nictest_interface: test-interface-ipv4
-            __meta_gce_machine_type: test-machine-type
-            __meta_gce_metadata_test_escape: $${foo:bar}
-            __meta_gce_metadata_test_key: test-value
-            __meta_gce_network: test-network
-            __meta_gce_private_ip: test-private-ip
-            __meta_gce_project: test-project
-            __meta_gce_public_ip: test-public-ip
-            __meta_gce_tags: test-tag
-            __meta_gce_zone: test-zone
-            cluster: __gce__
-            instance_name: test-instance-name
-            location: test-zone
-            machine_type: test-machine-type
-            namespace: test-instance-id
+            __meta_bms_instance_id: test-bms-instance
+            __meta_bms_location: test-bms-location
+            __meta_bms_project: test-bms-project
+            cluster: __bms__
+            location: test-bms-location
+            namespace: test-bms-instance
     preserve_untyped: true
 service:
   pipelines:

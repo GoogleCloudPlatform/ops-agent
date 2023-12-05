@@ -44,7 +44,7 @@ func getUserAndMergedConfigs(ctx context.Context, userConfPath string) (*confgen
 func main() {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Fatal("Recovered in run", r)
+			log.Fatalf("Recovering from a panic due to %v", r)
 		}
 	}()
 	if err := run(context.Background()); err != nil {

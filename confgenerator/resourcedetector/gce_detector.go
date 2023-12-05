@@ -14,7 +14,12 @@
 
 package resourcedetector
 
-import "google.golang.org/genproto/googleapis/api/monitoredres"
+import (
+	"strings"
+
+	"github.com/prometheus/prometheus/util/strutil"
+	"google.golang.org/genproto/googleapis/api/monitoredres"
+)
 
 type gceAttribute int
 
@@ -126,6 +131,50 @@ func (r GCEResource) MonitoredResource() *monitoredres.MonitoredResource {
 			"zone":        r.Zone,
 		},
 	}
+}
+
+func (r GCEResource) PrometheusStyleMetadata() map[string]string {
+	metaLabels := map[string]string{
+		"__meta_gce_instance_id":   r.InstanceID,
+		"__meta_gce_instance_name": r.InstanceName,
+		"__meta_gce_project":       r.Project,
+		"__meta_gce_zone":          r.Zone,
+		"__meta_gce_network":       r.Network,
+		// TODO(b/b/246995894): Add support for subnetwork label.
+		// "__meta_gce_subnetwork":    r.Subnetwork,
+		"__meta_gce_public_ip":    r.PublicIP,
+		"__meta_gce_private_ip":   r.PrivateIP,
+		"__meta_gce_tags":         r.Tags,
+		"__meta_gce_machine_type": r.MachineType,
+	}
+	prefix := "__meta_gce_"
+	for k, v := range r.Metadata {
+		sanitizedKey := "metadata_" + strutil.SanitizeLabelName(k)
+		metaLabels[prefix+sanitizedKey] = strings.ReplaceAll(v, "$", "$$")
+	}
+
+	// Labels are not available using the GCE metadata API.
+	// TODO(b/246995462): Add support for labels.
+	//
+	// for k, v := range r.Label {
+	// 	metaLabels[prefix+"label_"+k] = v
+	// }
+
+	for k, v := range r.InterfaceIPv4 {
+		sanitizedKey := "interface_ipv4_nic" + strutil.SanitizeLabelName(k)
+		metaLabels[prefix+sanitizedKey] = v
+	}
+
+	// Set the location, namespace and cluster labels.
+	metaLabels["location"] = r.Zone
+	metaLabels["namespace"] = r.InstanceID
+	metaLabels["cluster"] = "__gce__"
+
+	// Set some curated labels.
+	metaLabels["instance_name"] = r.InstanceName
+	metaLabels["machine_type"] = r.MachineType
+
+	return metaLabels
 }
 
 type GCEResourceBuilderInterface interface {
