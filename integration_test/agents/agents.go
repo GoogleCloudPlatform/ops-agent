@@ -751,7 +751,7 @@ func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, locati
 	}
 
 	if gce.IsWindows(vm.Platform) {
-		if _, err := gce.RunRemotely(ctx, logger, vm, "", `gsutil cp gs://stackdriver-test-143416-untrusted-file-transfers/martijnvs_b_298198277/add-google-cloud-ops-agent-repo.ps1 "${env:UserProfile}")`); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "", `gsutil cp gs://stackdriver-test-143416-untrusted-file-transfers/martijnvs_b_298198277/add-google-cloud-ops-agent-repo.ps1 "${env:UserProfile}"`); err != nil {
 			return fmt.Errorf("InstallOpsAgent() failed to download repo script: %w", err)
 		}
 		runScript := func() error {
