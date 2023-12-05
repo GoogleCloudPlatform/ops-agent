@@ -766,6 +766,10 @@ Invoke-Expression "${env:UserProfile}\add-google-cloud-ops-agent-repo.ps1 -AlsoI
 		return nil
 	}
 
+	if _, err := gce.InstallGsutilIfNeeded(ctx, logger, vm); err != nil {
+		return err
+	}
+
 	if _, err := gce.RunRemotely(ctx, logger, vm, "", "sudo gsutil cp gs://stackdriver-test-143416-untrusted-file-transfers/martijnvs_b_298198277/add-google-cloud-ops-agent-repo.sh ."); err != nil {
 		return fmt.Errorf("InstallOpsAgent() failed to download repo script: %w", err)
 	}
