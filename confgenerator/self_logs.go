@@ -62,6 +62,10 @@ type LoggingProcessorSampleLogs struct {
 	Code      string
 }
 
+func (p LoggingProcessorSampleLogs) Type() string {
+	return "internal:sample_logs"
+}
+
 func (p LoggingProcessorSampleLogs) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	// This filter samples specific input logs by matching with regex and re-emits
 	// a log with the target tag.

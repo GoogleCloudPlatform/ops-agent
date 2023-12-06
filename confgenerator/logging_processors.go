@@ -257,6 +257,10 @@ type LoggingProcessorNestWildcard struct {
 	RemovePrefix string
 }
 
+func (r LoggingProcessorNestWildcard) Type() string {
+	return "internal:nest_wildcard"
+}
+
 func (p LoggingProcessorNestWildcard) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	filter := fluentbit.Component{
 		Kind: "FILTER",
@@ -280,6 +284,10 @@ type LoggingProcessorLift struct {
 	AddPrefix   string
 }
 
+func (r LoggingProcessorLift) Type() string {
+	return "internal:lift"
+}
+
 func (p LoggingProcessorLift) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	filter := fluentbit.Component{
 		Kind: "FILTER",
@@ -301,6 +309,10 @@ type LoggingProcessorGrep struct {
 	Field   string
 	Regex   string
 	Exclude string
+}
+
+func (r LoggingProcessorGrep) Type() string {
+	return "internal:grep"
 }
 
 func (p LoggingProcessorGrep) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
