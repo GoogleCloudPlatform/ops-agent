@@ -893,8 +893,8 @@ func getFeaturesForComponent(i interface{}, parent []string) [][]string {
 	for j := 0; j < t.NumField(); j++ {
 		f := t.Field(j)
 		override, ok := f.Tag.Lookup("tracking")
-		if override == "-" {
-			// Skip fields with tracking tag "-".
+		if override == "-" || !f.IsExported() {
+			// Skip fields with tracking tag "-" and unexported fields.
 			continue
 		}
 		switch f.Type.Kind() {
