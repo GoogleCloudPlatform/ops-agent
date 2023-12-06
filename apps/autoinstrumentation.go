@@ -41,6 +41,7 @@ func (r *ReceiverAutoInstrumentation) GenerateConfig() (map[string]interface{}, 
 		"otel.logs.exporter":                  "none",
 		"otel.exporter.otlp.traces.endpoint":  fmt.Sprintf("http://%s", defaultGRPCEndpoint),
 		"otel.exporter.otlp.metrics.endpoint": fmt.Sprintf("http://%s", defaultGRPCEndpoint),
+		"otel.service.name":                   r.ServiceName,
 	}
 
 	if r.Endpoint != "" {

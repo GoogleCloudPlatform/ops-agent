@@ -14,7 +14,7 @@
 
 combined:
   receivers:
-    autoinstrumentation_name:
+    autoinstrumentation:
       type: autoinstrumentation
       generate_to_path: foo.properties
       target_receiver: otlp

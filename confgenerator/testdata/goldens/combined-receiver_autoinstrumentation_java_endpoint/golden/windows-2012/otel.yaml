@@ -527,7 +527,7 @@ processors:
     metric_statements:
       context: datapoint
       statements:
-      - set(attributes["service_name"], resource.attributes["service_name"])
+      - set(attributes["service_name"], resource.attributes["service.name"])
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s

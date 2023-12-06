@@ -211,7 +211,7 @@ func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]
 					receiverPipeline.Processors["metrics"] = append(
 						receiverPipeline.Processors["metrics"],
 						otel.TransformationMetrics(
-							otel.FlattenResourceAttribute("service_name", "service_name"),
+							otel.FlattenResourceAttribute("service.name", "service_name"),
 						),
 					)
 				}

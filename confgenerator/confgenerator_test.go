@@ -21,6 +21,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 
@@ -220,7 +221,9 @@ func generateConfigs(pc platformConfig, testDir string) (got map[string]string, 
 		return
 	}
 	for _, config := range autoInstrumentationConfigs {
-		got[config.FileLocation] = string(config.GeneratedFile)
+		lines := strings.Split(string(config.GeneratedFile), "\n")
+		sort.Strings(lines)
+		got[config.FileLocation] = strings.TrimSpace(strings.Join(lines, "\n"))
 	}
 
 	inputBytes, err := os.ReadFile(filepath.Join("testdata", testDir, inputFileName))
