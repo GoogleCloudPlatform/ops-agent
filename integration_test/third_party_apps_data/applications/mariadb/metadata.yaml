@@ -146,6 +146,10 @@ expected_metrics:
     monitored_resource: gce_instance
     labels:
       operation: deleted|inserted|read|updated
+    unavailable_on:
+      - ubuntu-2310-amd64
+      - ubuntu-2310-arm64
+      - debian-12-arm64
   - type: workload.googleapis.com/mysql.sorts
     value_type: INT64
     kind: CUMULATIVE

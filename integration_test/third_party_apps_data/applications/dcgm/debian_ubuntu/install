@@ -43,5 +43,6 @@ sudo apt-get update
 sudo apt-get install -y datacenter-gpu-manager
 sudo systemctl --now enable nvidia-dcgm
 
-# check DCGM service running and load profiling module
-dcgmi discovery --list
+# check if DCGM service is running
+# This command is only used for informational/debugging output.
+dcgmi discovery --list || true

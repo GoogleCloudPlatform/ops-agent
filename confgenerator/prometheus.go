@@ -26,6 +26,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/go-playground/validator/v10"
 	yaml "github.com/goccy/go-yaml"
 	commonconfig "github.com/prometheus/common/config"
@@ -33,7 +34,6 @@ import (
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	_ "github.com/prometheus/prometheus/discovery/install" // init() of this package registers service discovery impl.
-	strutil "github.com/prometheus/prometheus/util/strutil"
 )
 
 var (
@@ -60,13 +60,15 @@ func (r PrometheusMetrics) Type() string {
 	return "prometheus"
 }
 
-func (r PrometheusMetrics) Pipelines(_ context.Context) []otel.ReceiverPipeline {
-	// Get the resource metadata for the instance we're running on.
-	if gceMetadata, ok := MetadataResource.(resourcedetector.GCEResource); ok {
-		// Create a prometheus style mapping for the GCE metadata.
-		gceMetadataMap := createPrometheusStyleGCEMetadata(gceMetadata)
-
-		// Add the GCE metadata to the prometheus config.
+func (r PrometheusMetrics) Pipelines(ctx context.Context) []otel.ReceiverPipeline {
+	resource := MetadataResource
+	if p := platform.FromContext(ctx).ResourceOverride; p != nil {
+		resource = p
+	}
+	if resource != nil {
+		// Get the resource metadata for the instance we're running on.
+		resourceMetadataMap := resource.PrometheusStyleMetadata()
+		// Add the resource metadata to the prometheus config.
 		for i := range r.PromConfig.ScrapeConfigs {
 			// Iterate over the static configs.
 			for j := range r.PromConfig.ScrapeConfigs[i].ServiceDiscoveryConfigs {
@@ -76,8 +78,8 @@ func (r PrometheusMetrics) Pipelines(_ context.Context) []otel.ReceiverPipeline 
 					if labels == nil {
 						labels = model.LabelSet{}
 					}
-					for k, v := range gceMetadataMap {
-						// If there are conflicts, the GCE metadata should take precedence.
+					for k, v := range resourceMetadataMap {
+						// If there are conflicts, the resource metadata should take precedence.
 						labels[model.LabelName(k)] = model.LabelValue(v)
 					}
 
@@ -135,7 +137,12 @@ func prometheusToOtelComponent(m PrometheusMetrics) otel.Component {
 }
 
 func deepCopy(config promconfig.Config) (promconfig.Config, error) {
-	marshalledBytes, err := yaml.Marshal(config)
+	marshalledBytes, err := yaml.MarshalWithOptions(
+		config,
+		yaml.CustomMarshaler[commonconfig.Secret](func(s commonconfig.Secret) ([]byte, error) {
+			return []byte(s), nil
+		}),
+	)
 	if err != nil {
 		return promconfig.Config{}, fmt.Errorf("failed to convert Prometheus Config to yaml: %w", err)
 	}
@@ -145,50 +152,6 @@ func deepCopy(config promconfig.Config) (promconfig.Config, error) {
 	}
 
 	return copyConfig, nil
-}
-
-func createPrometheusStyleGCEMetadata(gceMetadata resourcedetector.GCEResource) map[string]string {
-	metaLabels := map[string]string{
-		"__meta_gce_instance_id":   gceMetadata.InstanceID,
-		"__meta_gce_instance_name": gceMetadata.InstanceName,
-		"__meta_gce_project":       gceMetadata.Project,
-		"__meta_gce_zone":          gceMetadata.Zone,
-		"__meta_gce_network":       gceMetadata.Network,
-		// TODO(b/b/246995894): Add support for subnetwork label.
-		// "__meta_gce_subnetwork":    gceMetadata.Subnetwork,
-		"__meta_gce_public_ip":    gceMetadata.PublicIP,
-		"__meta_gce_private_ip":   gceMetadata.PrivateIP,
-		"__meta_gce_tags":         gceMetadata.Tags,
-		"__meta_gce_machine_type": gceMetadata.MachineType,
-	}
-	prefix := "__meta_gce_"
-	for k, v := range gceMetadata.Metadata {
-		sanitizedKey := "metadata_" + strutil.SanitizeLabelName(k)
-		metaLabels[prefix+sanitizedKey] = strings.ReplaceAll(v, "$", "$$")
-	}
-
-	// Labels are not available using the GCE metadata API.
-	// TODO(b/246995462): Add support for labels.
-	//
-	// for k, v := range gceMetadata.Label {
-	// 	metaLabels[prefix+"label_"+k] = v
-	// }
-
-	for k, v := range gceMetadata.InterfaceIPv4 {
-		sanitizedKey := "interface_ipv4_nic" + strutil.SanitizeLabelName(k)
-		metaLabels[prefix+sanitizedKey] = v
-	}
-
-	// Set the location, namespace and cluster labels.
-	metaLabels["location"] = gceMetadata.Zone
-	metaLabels["namespace"] = gceMetadata.InstanceID
-	metaLabels["cluster"] = "__gce__"
-
-	// Set some curated labels.
-	metaLabels["instance_name"] = gceMetadata.InstanceName
-	metaLabels["machine_type"] = gceMetadata.MachineType
-
-	return metaLabels
 }
 
 func validatePrometheusConfig(sl validator.StructLevel) {

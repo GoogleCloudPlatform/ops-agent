@@ -6,7 +6,7 @@ sudo yum install -y \
 # https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/README.md#vendored-dependencies
 curl -L -o \
     activemq.tar.gz \
-    https://storage.googleapis.com/ops-agents-public-buckets-vendored-deps/mirrored-content/archive.apache.org/dist/activemq/5.16.3/apache-activemq-5.16.3-bin.tar.gz
+    https://storage.googleapis.com/ops-agents-public-buckets-vendored-deps/mirrored-content/archive.apache.org/dist/activemq/5.16.7/apache-activemq-5.16.7-bin.tar.gz
 
 sudo mkdir /opt/activemq
 sudo tar -xf \

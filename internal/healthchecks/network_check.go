@@ -15,11 +15,13 @@
 package healthchecks
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/cenkalti/backoff/v4"
 )
 
@@ -33,7 +35,7 @@ type networkRequest struct {
 }
 
 var (
-	requests = []networkRequest{
+	commonRequests = []networkRequest{
 		{
 			name:             "Logging API",
 			url:              "https://logging.googleapis.com/$discovery/rest",
@@ -58,6 +60,8 @@ var (
 			successMessage:   "Request to dl.google.com was successful.",
 			healthCheckError: DLApiConnErr,
 		},
+	}
+	gceRequests = []networkRequest{
 		{
 			name:             "GCE Metadata Server",
 			url:              "http://metadata.google.internal",
@@ -105,8 +109,16 @@ func (c NetworkCheck) Name() string {
 
 func (c NetworkCheck) RunCheck(logger logs.StructuredLogger) error {
 	var networkErrors []error
-	for _, r := range requests {
+	ctx := context.TODO()
+	p := platform.FromContext(ctx)
+	for _, r := range commonRequests {
 		networkErrors = append(networkErrors, r.SendRequest(logger))
 	}
+	if p.ResourceOverride == nil || p.ResourceOverride.MonitoredResource().Type == "gce_instance" {
+		for _, r := range gceRequests {
+			networkErrors = append(networkErrors, r.SendRequest(logger))
+		}
+	}
+
 	return errors.Join(networkErrors...)
 }

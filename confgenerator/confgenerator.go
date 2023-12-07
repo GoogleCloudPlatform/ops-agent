@@ -35,12 +35,6 @@ func googleCloudExporter(userAgent string, instrumentationLabels bool) otel.Comp
 	return otel.Component{
 		Type: "googlecloud",
 		Config: map[string]interface{}{
-			// (b/233372619) Due to a constraint in the Monarch API for retrying successful data points,
-			// leaving this enabled is causing adverse effects for some customers. Google OpenTelemetry team
-			// recommends disabling this.
-			"retry_on_failure": map[string]interface{}{
-				"enabled": false,
-			},
 			"user_agent": userAgent,
 			"metric": map[string]interface{}{
 				// Receivers are responsible for sending fully-qualified metric names.
@@ -68,6 +62,8 @@ func googleManagedPrometheusExporter(userAgent string) otel.Component {
 			// (b/233372619) Due to a constraint in the Monarch API for retrying successful data points,
 			// leaving this enabled is causing adverse effects for some customers. Google OpenTelemetry team
 			// recommends disabling this.
+			// (b/308675258) Need to update the `googlemanagedprometheus` exporter in otelopscol to deprecate this
+			// option
 			"retry_on_failure": map[string]interface{}{
 				"enabled": false,
 			},
@@ -81,6 +77,11 @@ func googleManagedPrometheusExporter(userAgent string) otel.Component {
 			// OTLP Gauge metrics ingested by the Ops Agent, that have this key will also be treated as untyped prometheus metrics
 			// if it is being exported to GMP. As such, this knob can be set to true.
 			"untyped_double_export": true,
+			// The exporter has the config option addMetricSuffixes with default value true. It will add Prometheus
+			// style suffixes to metric names, e.g., `_total` for a counter; set to false to collect metrics as is
+			"metric": map[string]interface{}{
+				"add_metric_suffixes": false,
+			},
 		},
 	}
 }
@@ -133,7 +134,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context) (string, error)
 			otel.OTel:   googleCloudExporter(userAgent, true),
 			otel.GMP:    googleManagedPrometheusExporter(userAgent),
 		},
-	}.Generate()
+	}.Generate(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -146,6 +147,21 @@ func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]
 	outR := make(map[string]otel.ReceiverPipeline)
 	outP := make(map[string]otel.Pipeline)
 	addReceiver := func(pipelineType, pID, rID string, receiver OTelReceiver, processorIDs []string) error {
+		if pipelineType == "metrics" {
+			for len(processorIDs) > 0 {
+				if mr, ok := receiver.(MetricsProcessorMerger); ok {
+					receiver, ok = mr.MergeMetricsProcessor(m.Processors[processorIDs[0]])
+					if ok {
+						processorIDs = processorIDs[1:]
+						// Only continue when the receiver can completely merge the processor;
+						// If the receiver is no longer a MetricsProcessorMerger, or it can't
+						// completely merge the current processor, break the loop
+						continue
+					}
+				}
+				break
+			}
+		}
 		for i, receiverPipeline := range receiver.Pipelines(ctx) {
 			receiverPipelineName := strings.ReplaceAll(rID, "_", "__")
 			if i > 0 {
@@ -226,7 +242,7 @@ func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]
 // It returns a map of filenames to file contents.
 func (uc *UnifiedConfig) GenerateFluentBitConfigs(ctx context.Context, logsDir string, stateDir string) (map[string]string, error) {
 	userAgent, _ := platform.FromContext(ctx).UserAgent("Google-Cloud-Ops-Agent-Logging")
-	components, err := uc.Logging.generateFluentbitComponents(ctx, userAgent)
+	components, err := uc.generateFluentbitComponents(ctx, userAgent)
 	if err != nil {
 		return nil, err
 	}
@@ -278,7 +294,8 @@ func processUserDefinedMultilineParser(i int, pID string, receiver LoggingReceiv
 }
 
 // generateFluentbitComponents generates a slice of fluentbit config sections to represent l.
-func (l *Logging) generateFluentbitComponents(ctx context.Context, userAgent string) ([]fluentbit.Component, error) {
+func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAgent string) ([]fluentbit.Component, error) {
+	l := uc.Logging
 	var out []fluentbit.Component
 	if l.Service.LogLevel == "" {
 		l.Service.LogLevel = "info"
@@ -376,10 +393,10 @@ func (l *Logging) generateFluentbitComponents(ctx context.Context, userAgent str
 			out = append(out, s.components...)
 		}
 		if len(tags) > 0 {
-			out = append(out, stackdriverOutputComponent(strings.Join(tags, "|"), userAgent, "2G"))
+			out = append(out, stackdriverOutputComponent(ctx, strings.Join(tags, "|"), userAgent, "2G"))
 		}
+		out = append(out, uc.generateSelfLogsComponents(ctx, userAgent)...)
 	}
-	out = append(out, generateSelfLogsComponents(ctx, userAgent)...)
 	out = append(out, fluentbit.MetricsOutputComponent())
 
 	return out, nil

@@ -290,6 +290,10 @@ See [Connect to a Windows VM](connect-to-windows-vm.md).
 
 See [Set up a Windows VM](set-up-windows-vm.md).
 
+#### Install Docker
+
+See [Get started: Prep Windows for containers](https://learn.microsoft.com/en-us/virtualization/windowscontainers/quick-start/set-up-environment?tabs=dockerce#windows-server-1).
+
 #### Trigger the build
 
 Note: Make sure you have finished the 3 steps above including some one-time

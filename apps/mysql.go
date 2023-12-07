@@ -105,9 +105,6 @@ func (r MetricsReceiverMySql) Pipelines(_ context.Context) []otel.ReceiverPipeli
 						"mysql.index.io.wait.time": map[string]interface{}{
 							"enabled": false,
 						},
-						"mysql.locked_connects": map[string]interface{}{
-							"enabled": false,
-						},
 						"mysql.mysqlx_connections": map[string]interface{}{
 							"enabled": false,
 						},

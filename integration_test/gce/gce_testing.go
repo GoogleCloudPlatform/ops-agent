@@ -157,10 +157,11 @@ const (
 	// take before it is forcibly killed.
 	SuggestedTimeout = 2 * time.Hour
 
-	// QueryMaxAttempts is the default number of retries when calling WaitForLog.
+	// QueryMaxAttempts is the default number of retries when calling WaitForLog and WaitForMetricSeries.
 	// Retries are spaced by 5 seconds, so 80 retries denotes 6 minutes 40 seconds total.
 	QueryMaxAttempts              = 80 // 6 minutes 40 seconds total.
 	queryMaxAttemptsMetricMissing = 5  // 25 seconds total.
+	queryMaxAttemptsLogMissing    = 5  // 25 seconds total.
 	queryBackoffDuration          = 5 * time.Second
 
 	// traceQueryDerate is the number of backoff durations to wait before retrying a trace query.
@@ -374,6 +375,11 @@ func SetGcloudPath(path string) {
 // IsWindows returns whether the given platform is a version of Windows (including Microsoft SQL Server).
 func IsWindows(platform string) bool {
 	return strings.HasPrefix(platform, "windows-") || strings.HasPrefix(platform, "sql-")
+}
+
+// IsWindowsCore returns whether the given platform is a version of Windows core.
+func IsWindowsCore(platform string) bool {
+	return strings.HasPrefix(platform, "windows-") && strings.HasSuffix(platform, "-core")
 }
 
 // PlatformKind returns "linux" or "windows" based on the given platform.
@@ -678,6 +684,32 @@ func QueryLog(ctx context.Context, logger *log.Logger, vm *VM, logNameRegex stri
 	return nil, fmt.Errorf("QueryLog() failed: %s not found, exhausted retries", logNameRegex)
 }
 
+// AssertLogMissing looks in the logging backend for a log matching the given query
+// and returns success if no data is found. To consider possible transient errors
+// while querying the backend we make queryMaxAttemptsMetricMissing query attempts.
+func AssertLogMissing(ctx context.Context, logger *log.Logger, vm *VM, logNameRegex string, window time.Duration, query string) error {
+	for attempt := 1; attempt <= queryMaxAttemptsLogMissing; attempt++ {
+		found, _, err := hasMatchingLog(ctx, logger, vm, logNameRegex, window, query)
+		if err == nil {
+			if found {
+				return fmt.Errorf("AssertLogMissing(log=%q): %v failed: unexpectedly found data for log", query, err)
+			}
+			// Success
+			return nil
+		}
+		logger.Printf("Query returned found=%v, err=%v, attempt=%d", found, err, attempt)
+		if err != nil && !strings.Contains(err.Error(), "Internal error encountered") {
+			// A non-retryable error.
+			return fmt.Errorf("AssertLogMissing() failed: %v", err)
+		}
+		// found was false, or we hit a retryable error.
+		time.Sleep(queryBackoffDuration)
+	}
+
+	// Success
+	return nil
+}
+
 // CommandOutput holds the textual output from running a subprocess.
 type CommandOutput struct {
 	Stdout string
@@ -838,7 +870,9 @@ func runRemotelyRaw(ctx context.Context, logger *log.Logger, vm *VM, stdin strin
 // a "Storage Object Viewer" and "Storage Object Creator" on the bucket.
 func UploadContent(ctx context.Context, logger *log.Logger, vm *VM, content io.Reader, remotePath string) (err error) {
 	defer func() {
-		logger.Printf("Uploading file finished with err=%v", err)
+		if err != nil {
+			logger.Printf("Uploading file finished with err=%v", err)
+		}
 	}()
 	object := storageClient.Bucket(transfersBucket).Object(path.Join(vm.Name, remotePath))
 	writer := object.NewWriter(ctx)
@@ -915,7 +949,7 @@ func envVarMapToCMDPrefix(env map[string]string) string {
 // $ErrorActionPreference = 'Stop'
 // This will cause a broader class of errors to be reported as an error (nonzero exit code)
 // by powershell.
-func RunScriptRemotely(ctx context.Context, logger *logging.DirectoryLogger, vm *VM, scriptContents string, flags []string, env map[string]string) (CommandOutput, error) {
+func RunScriptRemotely(ctx context.Context, logger *log.Logger, vm *VM, scriptContents string, flags []string, env map[string]string) (CommandOutput, error) {
 	var quotedFlags []string
 	for _, flag := range flags {
 		quotedFlags = append(quotedFlags, fmt.Sprintf("'%s'", flag))
@@ -926,21 +960,21 @@ func RunScriptRemotely(ctx context.Context, logger *logging.DirectoryLogger, vm 
 		// Use a UUID for the script name in case RunScriptRemotely is being
 		// called concurrently on the same VM.
 		scriptPath := "C:\\" + uuid.NewString() + ".ps1"
-		if err := UploadContent(ctx, logger.ToFile("file_uploads.txt"), vm, strings.NewReader(scriptContents), scriptPath); err != nil {
+		if err := UploadContent(ctx, logger, vm, strings.NewReader(scriptContents), scriptPath); err != nil {
 			return CommandOutput{}, err
 		}
 		// powershell -File seems to drop certain kinds of errors:
 		// https://stackoverflow.com/a/15779295
 		// In testing, adding $ErrorActionPreference = 'Stop' to the start of each
 		// script seems to work around this completely.
-		return runRemotelyRaw(ctx, logger.ToMainLog(), vm, "", envVarMapToCMDPrefix(env)+"pwsh -File "+scriptPath+" "+flagsStr)
+		return runRemotelyRaw(ctx, logger, vm, "", envVarMapToCMDPrefix(env)+"pwsh -File "+scriptPath+" "+flagsStr)
 	}
 	scriptPath := uuid.NewString() + ".sh"
 	// Write the script contents to <UUID>.sh, then tell bash to execute it with -x
 	// to print each line as it runs.
 	// Use a UUID for the script name in case RunScriptRemotely is being called
 	// concurrently on the same VM.
-	return RunRemotely(ctx, logger.ToMainLog(), vm, scriptContents, "cat - > "+scriptPath+" && sudo "+envVarMapToBashPrefix(env)+"bash -x "+scriptPath+" "+flagsStr)
+	return RunRemotely(ctx, logger, vm, scriptContents, "cat - > "+scriptPath+" && sudo "+envVarMapToBashPrefix(env)+"bash -x "+scriptPath+" "+flagsStr)
 }
 
 // MapToCommaSeparatedList converts a map of key-value pairs into a form that
@@ -1325,6 +1359,8 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 			strings.Contains(err.Error(), "Internal error") ||
 			// Instance creation can also fail due to service unavailability.
 			strings.Contains(err.Error(), "currently unavailable") ||
+			// windows-*-core instances sometimes fail to be ssh-able: b/305721001
+			(IsWindowsCore(options.Platform) && strings.Contains(err.Error(), windowsStartupFailedMessage)) ||
 			// SLES instances sometimes fail to be ssh-able: b/186426190
 			(IsSUSE(options.Platform) && strings.Contains(err.Error(), startupFailedMessage)) ||
 			strings.Contains(err.Error(), prepareSLESMessage)
@@ -1520,57 +1556,73 @@ func InstallGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) erro
 		return fmt.Errorf("this test does not know how to install gsutil on platform %q", vm.Platform)
 	}
 
-	// This is what's used on openSUSE.
-	repoSetupCmd := "sudo zypper --non-interactive refresh"
-
-	if strings.HasPrefix(vm.Platform, "sles-") {
-		// Use a vendored repo to reduce flakiness of the external repos.
-		// See http://go/sdi/releases/build-test-release/vendored for details.
-		repoArch := "x86-64"
-		if IsARM(vm.Platform) {
-			repoArch = "aarch64"
-		}
-		repo := "google-cloud-monitoring-sles12-" + repoArch + "-test-vendor"
-		if strings.HasPrefix(vm.Platform, "sles-15") {
-			repo = "google-cloud-monitoring-sles15-" + repoArch + "-test-vendor"
-		}
-		repoSetupCmd = `sudo zypper --non-interactive addrepo -g -t YUM https://us-yum.pkg.dev/projects/cloud-ops-agents-artifacts-dev/` + repo + ` test-vendor
-sudo rpm --import https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
-sudo zypper --non-interactive refresh test-vendor`
+	gcloudArch := "x86_64"
+	if IsARM(vm.Platform) {
+		gcloudArch = "arm"
 	}
-
-	installCmd := `set -ex
-
-` + repoSetupCmd + `
-sudo zypper --non-interactive install --force-resolution --capability 'python>=3.6'
-sudo zypper --non-interactive install python3-certifi
-
-# On SLES 12, python3 is Python 3.4. Tell gsutil/gcloud to use python3.6.
-export CLOUDSDK_PYTHON=/usr/bin/python3.6
-
-# Install gcloud (https://cloud.google.com/sdk/docs/downloads-interactive).
-curl -o install.sh https://sdk.cloud.google.com
+	gcloudPkg := "google-cloud-cli-453.0.0-linux-" + gcloudArch + ".tar.gz"
+	installFromTarball := `
+curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/` + gcloudPkg + `
 INSTALL_DIR="$(readlink --canonicalize .)"
 (
-		INSTALL_LOG="$(mktemp)"
-    # This command produces a lot of console spam, so we only display that
-    # output if there is a problem.
-    sudo --preserve-env bash install.sh --disable-prompts --install-dir="${INSTALL_DIR}" &>"${INSTALL_LOG}" || \
-      EXIT_CODE=$?
-    if [[ "${EXIT_CODE-}" ]]; then
-      cat "${INSTALL_LOG}"
-      exit "${EXIT_CODE}"
-    fi
-)
+	INSTALL_LOG="$(mktemp)"
+	# This command produces a lot of console spam, so we only display that
+	# output if there is a problem.
+	sudo tar -xf ` + gcloudPkg + ` -C ${INSTALL_DIR} 
+	sudo --preserve-env ${INSTALL_DIR}/google-cloud-sdk/install.sh -q &>"${INSTALL_LOG}" || \
+		EXIT_CODE=$?
+	if [[ "${EXIT_CODE-}" ]]; then
+		cat "${INSTALL_LOG}"
+		exit "${EXIT_CODE}"
+	fi
+)`
+	installCmd := `set -ex
+` + installFromTarball + `
+
+# Upgrade to the latest version
+sudo ${INSTALL_DIR}/google-cloud-sdk/bin/gcloud components update --quiet
+
+sudo ln -s ${INSTALL_DIR}/google-cloud-sdk/bin/gsutil /usr/bin/gsutil 
+`
+	// b/308962066: The GCloud CLI ARM Linux tarballs do not have bundled Python
+	// and the GCloud CLI requires Python >= 3.8. Install Python311 for ARM VMs
+	if IsARM(vm.Platform) {
+		// This is what's used on openSUSE.
+		repoSetupCmd := "sudo zypper --non-interactive refresh"
+		if strings.HasPrefix(vm.Platform, "sles-12") {
+			return fmt.Errorf("this test does not know how to install gsutil on platform %q", vm.Platform)
+		}
+		// For SLES 15 ARM: use a vendored repo to reduce flakiness of the
+		// external repos. See http://go/sdi/releases/build-test-release/vendored
+		// for details.
+		if strings.HasPrefix(vm.Platform, "sles-15") {
+			repoSetupCmd = `sudo zypper --non-interactive addrepo -g -t YUM https://us-yum.pkg.dev/projects/cloud-ops-agents-artifacts-dev/google-cloud-monitoring-sles15-aarch64-test-vendor test-vendor
+sudo rpm --import https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+sudo zypper --non-interactive refresh test-vendor`
+		}
+
+		installCmd = `set -ex
+` + repoSetupCmd + `
+sudo zypper --non-interactive install python311 python3-certifi
+
+# On SLES 15 and OpenSUSE Leap arm, python3 is Python 3.6. Tell gsutil/gcloud to use python3.11.
+export CLOUDSDK_PYTHON=/usr/bin/python3.11
+
+` + installFromTarball + `
+
+# Upgrade to the latest version
+sudo CLOUDSDK_PYTHON=/usr/bin/python3.11 ${INSTALL_DIR}/google-cloud-sdk/bin/gcloud components update --quiet
 
 # Make a "gsutil" bash script in /usr/bin that runs the copy of gsutil that
 # was installed into $INSTALL_DIR with CLOUDSDK_PYTHON set.
 sudo tee /usr/bin/gsutil > /dev/null << EOF
 #!/usr/bin/env bash
-CLOUDSDK_PYTHON=/usr/bin/python3.6 ${INSTALL_DIR}/google-cloud-sdk/bin/gsutil "\$@"
+CLOUDSDK_PYTHON=/usr/bin/python3.11 ${INSTALL_DIR}/google-cloud-sdk/bin/gsutil "\$@"
 EOF
 sudo chmod a+x /usr/bin/gsutil
 `
+	}
+
 	_, err := RunRemotely(ctx, logger, vm, "", installCmd)
 	return err
 }
@@ -1682,6 +1734,8 @@ func FetchMetadata(ctx context.Context, logger *log.Logger, vm *VM) (map[string]
 const (
 	// Retry errors that look like b/186426190.
 	startupFailedMessage = "waitForStartLinux() failed: waiting for startup timed out"
+	// Retry errors that look like b/305721001.
+	windowsStartupFailedMessage = "waitForStartWindows() failed: ran out of attempts waiting for dummy command to run."
 )
 
 func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error {
@@ -1700,7 +1754,7 @@ func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error 
 
 	backoffPolicy := backoff.WithContext(backoff.NewConstantBackOff(vmInitBackoffDuration), ctx)
 	if err := backoff.Retry(printFoo, backoffPolicy); err != nil {
-		return fmt.Errorf("waitForStartWindows() failed: ran out of attempts waiting for dummy command to run. err=%v", err)
+		return fmt.Errorf("%s err=%v", windowsStartupFailedMessage, err)
 	}
 	return nil
 }
@@ -1804,6 +1858,8 @@ func logLocation(logRootDir, testName string) string {
 // t.Name() inside the directory TEST_UNDECLARED_OUTPUTS_DIR.
 // If creating the logger fails, it will abort the test.
 // At the end of the test, the logger will be cleaned up.
+// TODO: Move this function along with logLocation() into the agents package,
+// since nothing else in this file depends on DirectoryLogger anymore.
 func SetupLogger(t *testing.T) *logging.DirectoryLogger {
 	t.Helper()
 	name := strings.Replace(t.Name(), "/", "_", -1)
