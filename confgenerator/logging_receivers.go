@@ -37,11 +37,9 @@ func DBPath(tag string) string {
 // A LoggingReceiverFiles represents the user configuration for a file receiver (fluentbit's tail plugin).
 type LoggingReceiverFiles struct {
 	ConfigComponent `yaml:",inline"`
-	// TODO: Use LoggingReceiverFilesMixin after figuring out the validation story.
-	IncludePaths            []string       `yaml:"include_paths" validate:"required,min=1"`
-	ExcludePaths            []string       `yaml:"exclude_paths,omitempty"`
-	WildcardRefreshInterval *time.Duration `yaml:"wildcard_refresh_interval,omitempty" validate:"omitempty,min=1s,multipleof_time=1s"`
-	RecordLogFilePath       *bool          `yaml:"record_log_file_path,omitempty"`
+	// Override the LoggingReceiverFilesMixin field to get different validation.
+	IncludePaths []string `yaml:"include_paths" validate:"required,min=1"`
+	LoggingReceiverFilesMixin `yaml:",inline"`
 }
 
 func (r LoggingReceiverFiles) Type() string {
