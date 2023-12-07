@@ -13,6 +13,7 @@ template config build = {
     keystore_keys = []
     artifacts = ['result/**']
   }
+  syntax error
 
   before_action = [
     { fetch_keystore = { keystore_resource = params.keystore_keys } },

@@ -783,7 +783,7 @@ func wrapPowershellCommand(command string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("set NO_COLOR=1 & pwsh -NonInteractive -OutputFormat Text -EncodedCommand %q", base64.StdEncoding.EncodeToString([]byte(encoded))), nil
+	return fmt.Sprintf("pwsh -NonInteractive -OutputFormat Text -EncodedCommand %q", base64.StdEncoding.EncodeToString([]byte(encoded))), nil
 }
 
 // RunRemotely runs a command on the provided VM.
@@ -933,7 +933,7 @@ func RunScriptRemotely(ctx context.Context, logger *logging.DirectoryLogger, vm 
 		// https://stackoverflow.com/a/15779295
 		// In testing, adding $ErrorActionPreference = 'Stop' to the start of each
 		// script seems to work around this completely.
-		return runRemotelyRaw(ctx, logger.ToMainLog(), vm, "", "set NO_COLOR=1 & "+envVarMapToCMDPrefix(env)+"pwsh -File "+scriptPath+" "+flagsStr)
+		return runRemotelyRaw(ctx, logger.ToMainLog(), vm, "", envVarMapToCMDPrefix(env)+"pwsh -File "+scriptPath+" "+flagsStr)
 	}
 	scriptPath := uuid.NewString() + ".sh"
 	// Write the script contents to <UUID>.sh, then tell bash to execute it with -x
@@ -1269,6 +1269,13 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		if _, err := RunRemotely(ctx,
 			logger, vm, "", `sudo yum -y --disablerepo=rhui-rhel*-7-* install yum-utils && sudo yum-config-manager --disable "rhui-rhel*-7-*"`); err != nil {
 			return nil, fmt.Errorf("disabling flaky repos failed : %w", err)
+		}
+	}
+
+	if IsWindows(vm.Platform) {
+		// Disables color-related ANSI sequences in pwsh output.
+		if _, err := RunRemotely(ctx, logger, vm, "", `[Environment]::SetEnvironmentVariable("NO_COLOR", "1", "Machine")`); err != nil {
+			return nil, err
 		}
 	}
 
