@@ -379,7 +379,7 @@ type LoggingProcessorGceMetadataAttributes struct {
 }
 
 func (p LoggingProcessorGceMetadataAttributes) Type() string {
-	return "gce_metadata_attributes"
+	return "internal:gce_metadata_attributes"
 }
 
 func matchesAnyGlobs(globs []string, k string) bool {
@@ -430,8 +430,4 @@ func (p LoggingProcessorGceMetadataAttributes) Components(ctx context.Context, t
 	return LoggingProcessorModifyFields{
 		Fields: modifications,
 	}.Components(ctx, tag, processorName)
-}
-
-func init() {
-	LoggingProcessorTypes.RegisterType(func() LoggingProcessor { return &LoggingProcessorGceMetadataAttributes{} })
 }

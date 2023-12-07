@@ -1,8 +1,0 @@
-[17:16] "static" is a required field
-  15 | logging:
-  16 |   processors:
-> 17 |     processor_1:
-                      ^
-  18 |       type: gce_metadata_attributes
-  19 |   service:
-  20 |     pipelines:

@@ -1,9 +1,0 @@
-[19:15] "static" must be true
-  16 |   processors:
-  17 |     processor_1:
-  18 |       type: gce_metadata_attributes
-> 19 |       static: false
-                     ^
-  20 |   service:
-  21 |     pipelines:
-  22 |       default_pipeline:

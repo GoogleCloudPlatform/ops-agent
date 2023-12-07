@@ -1,9 +1,0 @@
-[20:16] "include[0]" must be a valid glob pattern
-  17 |     processor_1:
-  18 |       type: gce_metadata_attributes
-  19 |       static: true
-> 20 |       include: ["abc["]
-                      ^
-  21 |   service:
-  22 |     pipelines:
-  23 |       default_pipeline:
