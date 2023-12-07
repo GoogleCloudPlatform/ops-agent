@@ -827,25 +827,20 @@ func wrapPowershellCommand(command string) (string, error) {
 // For extremely long commands, use RunScriptRemotely instead.
 // 'stdin' is what to supply to the command on stdin. It is usually "".
 // TODO: Remove the stdin parameter, because it is hardly used.
-func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, command string) (CommandOutput, error) {
+func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, command string) (_ CommandOutput, err error) {
 	logger.Printf("Running command remotely: %v", command)
-
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("Command failed: %v\n%v", command, err)
+		}
+	}()
 	wrappedCommand := command
 	if IsWindows(vm.Platform) {
-		var err error
 		wrappedCommand, err = wrapPowershellCommand(command)
 		if err != nil {
 			return CommandOutput{}, err
 		}
 	}
-	output, err := runRemotelyRaw(ctx, logger, vm, stdin, wrappedCommand)
-	if err != nil {
-		err = fmt.Errorf("Command failed: %v\n%v", command, err)
-	}
-	return output, err
-}
-
-func runRemotelyRaw(ctx context.Context, logger *log.Logger, vm *VM, stdin string, command string) (CommandOutput, error) {
 	// Raw ssh is used instead of "gcloud compute ssh" with OS Login because:
 	// 1. OS Login will generate new ssh keys for each kokoro run and they don't carry over.
 	//    This means that they pile up and need to be deleted periodically.
@@ -855,7 +850,7 @@ func runRemotelyRaw(ctx context.Context, logger *log.Logger, vm *VM, stdin strin
 	args = append(args, sshUserName+"@"+vm.IPAddress)
 	args = append(args, "-oIdentityFile="+privateKeyFile)
 	args = append(args, sshOptions...)
-	args = append(args, command)
+	args = append(args, wrappedCommand)
 	return runCommand(ctx, logger, stdin, args)
 }
 
@@ -930,14 +925,6 @@ func envVarMapToPowershellPrefix(env map[string]string) string {
 	return builder.String()
 }
 
-func envVarMapToCMDPrefix(env map[string]string) string {
-	var builder strings.Builder
-	for key, value := range env {
-		fmt.Fprintf(&builder, "set %s=%s & ", key, value)
-	}
-	return builder.String()
-}
-
 // RunScriptRemotely runs a script on the given VM.
 // The script should be a shell script for a Linux VM and powershell for a Windows VM.
 // env is a map containing environment variables to provide to the script as it runs.
@@ -967,7 +954,7 @@ func RunScriptRemotely(ctx context.Context, logger *log.Logger, vm *VM, scriptCo
 		// https://stackoverflow.com/a/15779295
 		// In testing, adding $ErrorActionPreference = 'Stop' to the start of each
 		// script seems to work around this completely.
-		return runRemotelyRaw(ctx, logger, vm, "", envVarMapToCMDPrefix(env)+"pwsh -File "+scriptPath+" "+flagsStr)
+		return RunRemotely(ctx, logger, vm, "", envVarMapToPowershellPrefix(env)+"pwsh -File "+scriptPath+" "+flagsStr)
 	}
 	scriptPath := uuid.NewString() + ".sh"
 	// Write the script contents to <UUID>.sh, then tell bash to execute it with -x
@@ -1307,8 +1294,11 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	}
 
 	if IsWindows(vm.Platform) {
-		// Disables color-related ANSI sequences in pwsh output.
-		if _, err := RunRemotely(ctx, logger, vm, "", `[Environment]::SetEnvironmentVariable("NO_COLOR", "1", "Machine")`); err != nil {
+		// __SuppressAnsiEscapeSequences disables color-related ANSI sequences in
+		// pwsh output. NO_COLOR is the officially supported variable to accomplish this,
+		// but it doesn't work in my testing. See also
+		// https://github.com/PowerShell/PowerShell/issues/19961.
+		if _, err := RunRemotely(ctx, logger, vm, "", `[Environment]::SetEnvironmentVariable("__SuppressAnsiEscapeSequences", "1", "Machine")`); err != nil {
 			return nil, err
 		}
 	}

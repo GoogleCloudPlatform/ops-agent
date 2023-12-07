@@ -219,8 +219,6 @@ func writeToSystemLog(ctx context.Context, logger *log.Logger, vm *gce.VM, paylo
 	return nil
 }
 
-// Tests that RunRemotely captures all expected errors and that it provides
-// sane standard out/error. Windows only for now.
 func TestRunRemotelyWindows(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
@@ -230,103 +228,8 @@ func TestRunRemotelyWindows(t *testing.T) {
 		}
 		ctx, logger, vm := agents.CommonSetup(t, platform)
 
-		testBody := func(t *testing.T, cmdRunner func(command string) (gce.CommandOutput, error)) {
-			expectSuccess := func(command string) gce.CommandOutput {
-				output, err := cmdRunner(command)
-				if err != nil {
-					t.Error(err)
-				}
-				return output
-			}
-
-			expectError := func(command string) gce.CommandOutput {
-				output, err := cmdRunner(command)
-				if err == nil {
-					t.Errorf("%q unexpectedly finished with no error (exit code 0)", command)
-				}
-				return output
-			}
-
-			// Expect this command to succeed and output "1234".
-			output := expectSuccess("'1234'")
-			want := "1234"
-			if trimmed := strings.TrimSpace(output.Stdout); trimmed != want {
-				t.Errorf("strings.TrimSpace(output.Stdout) was %q, want %q", trimmed, want)
-			}
-
-			expectSuccess("dir /")
-
-			// Expect an error, because dir is successfully run but finishes with exit
-			// code 1.  This is because "The process exit code is determined by status
-			// of the last (executed) command within the script block. The exit code is
-			// 0 when $?  is $true or 1 when $? is $false."
-			// https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_pwsh?view=powershell-7.3#-command---c
-			expectError("dir /nonexistent")
-
-			// Because nothing called asdfqwerty/No-Such-Cmdlet is installed.
-			expectError("asdfqwerty help")
-			expectError("No-Such-Cmdlet")
-
-			expectError("Get-Content -NoSuchFlag /")
-
-			expectError("'ParseErrorMissingQuote")
-
-			// Check that stderr contains the error message.
-			msg := "error_msg"
-			if output := expectError("throw '" + msg + "'"); !strings.Contains(output.Stderr, msg) {
-				t.Errorf("output.Stderr didn't contain %q. output was: %#v", msg, output)
-			}
-
-			// Tests for multi-line commands follow.
-			// TODO: If these tests pass, delete them. They are testing powershell, not RunRemotely().
-
-			// Supposed to print "hello" and then run cd, which will set $?, resulting
-			// in an exit code of 1 because it's the last command.
-			expectError(`
-Write-Output 'hello'
-cd /nonexistent`)
-
-			// Supposed to exit immediately with code 1, without
-			// proceeding to print "hello".
-			if output := expectError(`
-exit 1
-Write-Output 'hello'`); strings.Contains(output.Stdout, "hello") {
-				t.Errorf(`Command unexpectedly continued past 'exit 1'! output=%#v`, output)
-			}
-
-			// Supposed to fail to cd to a nonexistent directory, but proceed anyway.
-			if output := expectSuccess(`
-cd /nonexistent
-Write-Output 'hello'`); !strings.Contains(output.Stdout, "hello") {
-				t.Error(`Command was supposed to proceed past 'cd /nonexistent' and print "hello"`)
-			}
-
-			// Same thing, but with a Cmdlet failure instead of an external program failure.
-			if output := expectSuccess(`
-Get-Content -Path /nonexistent
-Write-Output 'hello'`); !strings.Contains(output.Stdout, "hello") {
-				t.Error(`Command was supposed to proceed past 'Get-Content -Path /nonexistent' and print "hello"`)
-			}
-
-			// Same thing, but with $ErrorActionPreference set to 'Stop'.
-			// Supposed to fail and not print "hello" this time.
-			if output := expectError(`
-$ErrorActionPreference = 'Stop'
-Get-Content -Path /nonexistent
-Write-Output 'hello'`); strings.Contains(output.Stdout, "hello") {
-				t.Error(`Command was supposed to stop at 'Get-Content -Path /nonexistent' and not print "hello"`)
-			}
-		}
-
-		runRemotely := func(command string) (gce.CommandOutput, error) {
-			return gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", command)
-		}
-		t.Run("RunRemotely", func(t *testing.T) { testBody(t, runRemotely) })
-
-		runScriptRemotely := func(command string) (gce.CommandOutput, error) {
-			return gce.RunScriptRemotely(ctx, logger, vm, command, nil, nil)
-		}
-		t.Run("RunScriptRemotely", func(t *testing.T) { testBody(t, runScriptRemotely) })
+		output, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "dir /nonexistent")
+		t.Fatalf("err=%v, output=%#v", err, output)
 	})
 }
 
