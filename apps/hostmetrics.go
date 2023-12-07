@@ -26,6 +26,8 @@ type MetricsReceiverHostmetrics struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
+
+	disableGPUMetrics bool `yaml:"-"`
 }
 
 func (r MetricsReceiverHostmetrics) Type() string {
@@ -327,7 +329,7 @@ func (r MetricsReceiverHostmetrics) Pipelines(ctx context.Context) []otel.Receiv
 		}},
 	}}
 
-	if p.HasNvidiaGpu {
+	if p.HasNvidiaGpu && !r.disableGPUMetrics {
 		pipelines = append(pipelines, otel.ReceiverPipeline{
 			Receiver: otel.Component{
 				Type: "nvml",
@@ -365,6 +367,20 @@ func (r MetricsReceiverHostmetrics) Pipelines(ctx context.Context) []otel.Receiv
 	}
 
 	return pipelines
+}
+
+func (r MetricsReceiverHostmetrics) MergeMetricsProcessor(p confgenerator.MetricsProcessor) (confgenerator.MetricsReceiver, bool) {
+	if ep, ok := p.(*MetricsProcessorExcludeMetrics); ok {
+		r.disableGPUMetrics = r.disableGPUMetrics || ep.AllMetricsExcluded(
+			"agent.googleapis.com/gpu/utilization",
+			"agent.googleapis.com/gpu/memory/bytes_used",
+			"agent.googleapis.com/gpu/processes/utilization",
+			"agent.googleapis.com/gpu/processes/max_bytes_used",
+		)
+	}
+	// p could have patterns to filter out metrics from other pipelines, so
+	// returns false to get p added to the final configuration
+	return r, false
 }
 
 func init() {

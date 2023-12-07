@@ -216,6 +216,9 @@ func trackingFeatures(c reflect.Value, md metadata, feature Feature) ([]Feature,
 		for i := 0; i < t.NumField(); i++ {
 			// Get the field, returns https://golang.org/pkg/reflect/#StructField
 			field := t.Field(i)
+			if !field.IsExported() {
+				continue
+			}
 			// Type field name is part of the ConfigComponent definition.
 			// All user visible component inlines that component, this field can help
 			// us assert that a certain component is enabled.
