@@ -147,6 +147,21 @@ func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]
 	outR := make(map[string]otel.ReceiverPipeline)
 	outP := make(map[string]otel.Pipeline)
 	addReceiver := func(pipelineType, pID, rID string, receiver OTelReceiver, processorIDs []string) error {
+		if pipelineType == "metrics" {
+			for len(processorIDs) > 0 {
+				if mr, ok := receiver.(MetricsProcessorMerger); ok {
+					receiver, ok = mr.MergeMetricsProcessor(m.Processors[processorIDs[0]])
+					if ok {
+						processorIDs = processorIDs[1:]
+						// Only continue when the receiver can completely merge the processor;
+						// If the receiver is no longer a MetricsProcessorMerger, or it can't
+						// completely merge the current processor, break the loop
+						continue
+					}
+				}
+				break
+			}
+		}
 		for i, receiverPipeline := range receiver.Pipelines(ctx) {
 			receiverPipelineName := strings.ReplaceAll(rID, "_", "__")
 			if i > 0 {
