@@ -3556,7 +3556,7 @@ metrics:
     pipelines:
       otlp:
         receivers: [otlp]
-				processors: [metrics_filter]
+        processors: [metrics_filter]
 traces:
   service:
     pipelines:
