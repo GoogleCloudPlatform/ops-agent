@@ -26,7 +26,7 @@ import (
 type MetricsProcessorExcludeMetrics struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 
-	MetricsPattern []string `yaml:"metrics_pattern,flow" validate:"dive,startswith=agent.googleapis.com/"`
+	MetricsPattern []string `yaml:"metrics_pattern,flow"`
 }
 
 func (p MetricsProcessorExcludeMetrics) Type() string {

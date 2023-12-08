@@ -12,13 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+combined:
+  receivers:
+    otlp:
+      type: otlp
+      grpc_endpoint: 0.0.0.0:4317
+      metrics_mode: googlecloudmonitoring
 metrics:
   processors:
     metrics_filter:
       type: exclude_metrics
       metrics_pattern:
-      - not.agent.googleapis.com/processes/*
+      - workload.googleapis.com/otlp.test.gauge
+      - workload.googleapis.com/otlp.test.prefix*
   service:
     pipelines:
-      default_pipeline:
+      otlp:
+        receivers: [otlp]
         processors: [metrics_filter]
+traces:
+  service:
+    pipelines:

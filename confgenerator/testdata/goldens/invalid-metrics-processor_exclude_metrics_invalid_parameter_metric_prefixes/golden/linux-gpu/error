@@ -1,9 +1,0 @@
-[20:7] "metrics_pattern[0]" must start with "agent.googleapis.com/"
-  17 |     metrics_filter:
-  18 |       type: exclude_metrics
-  19 |       metrics_pattern:
-> 20 |       - not.agent.googleapis.com/processes/*
-             ^
-  21 |   service:
-  22 |     pipelines:
-  23 |       default_pipeline:
