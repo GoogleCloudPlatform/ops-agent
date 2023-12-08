@@ -3578,15 +3578,15 @@ traces:
 			t.Fatal(err)
 		}
 
+		if _, err = gce.WaitForMetric(ctx, logger, vm, "workload.googleapis.com/otlp.test.cumulative", time.Hour, nil, false); err != nil {
+			t.Error(err)
+		}
+
 		// Wait long enough for the data to percolate through the backends
 		// under normal circumstances. Based on some experiments, 2 minutes
 		// is normal; wait a bit longer to be on the safe side.
 		time.Sleep(3 * time.Minute)
 		window := time.Minute
-
-		if _, err = gce.WaitForMetric(ctx, logger, vm, "workload.googleapis.com/otlp.test.cumulative", window, nil, false); err != nil {
-			t.Error(err)
-		}
 
 		// See testdata/otlp/metrics.go for the metrics we're sending
 		for _, m := range []string{
