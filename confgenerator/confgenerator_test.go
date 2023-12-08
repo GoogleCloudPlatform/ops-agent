@@ -57,20 +57,21 @@ var winlogv1channels = []string{
 }
 
 var (
-	testPlatforms = []platformConfig{
-		{
-			name:            "linux",
-			defaultLogsDir:  "/var/log/google-cloud-ops-agent",
-			defaultStateDir: "/var/lib/google-cloud-ops-agent/fluent-bit",
-			platform: platform.Platform{
-				Type: platform.Linux,
-				HostInfo: &host.InfoStat{
-					OS:              "linux",
-					Platform:        "linux_platform",
-					PlatformVersion: "linux_platform_version",
-				},
+	linuxTestPlatform = platformConfig{
+		name:            "linux",
+		defaultLogsDir:  "/var/log/google-cloud-ops-agent",
+		defaultStateDir: "/var/lib/google-cloud-ops-agent/fluent-bit",
+		platform: platform.Platform{
+			Type: platform.Linux,
+			HostInfo: &host.InfoStat{
+				OS:              "linux",
+				Platform:        "linux_platform",
+				PlatformVersion: "linux_platform_version",
 			},
 		},
+	}
+	testPlatforms = []platformConfig{
+		linuxTestPlatform,
 		{
 			name:            "linux-gpu",
 			defaultLogsDir:  "/var/log/google-cloud-ops-agent",
@@ -162,8 +163,7 @@ func TestDataprocDefaults(t *testing.T) {
 
 	t.Run(testName, func(t *testing.T) {
 		t.Parallel()
-		pc := testPlatforms[0]
-		assert.Equal(t, pc.name, "linux")
+		pc := linuxTestPlatform
 		// Update mocked resource to include Dataproc labels.
 		testResource := confgenerator.MetadataResource.(resourcedetector.GCEResource)
 		newMetadata := map[string]string{}
