@@ -418,20 +418,9 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  resource/_global_0:
-    attributes:
-    - action: upsert
-      key: cloud.platform
-      value: gce_instance
-    - action: upsert
-      key: cloud.project
-      value: test-project
-    - action: upsert
-      key: cloud.region
-      value: test-zone
-    - action: upsert
-      key: host.id
-      value: test-instance-id
+  resourcedetection/_global_0:
+    detectors:
+    - gcp
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
@@ -473,7 +462,7 @@ service:
       - filter/hostmetrics_1
       - metricstransform/hostmetrics_2
       - filter/default__pipeline_hostmetrics_0
-      - resource/_global_0
+      - resourcedetection/_global_0
       receivers:
       - hostmetrics/hostmetrics
     metrics/fluentbit:
@@ -482,7 +471,7 @@ service:
       processors:
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
-      - resource/_global_0
+      - resourcedetection/_global_0
       receivers:
       - prometheus/fluentbit
     metrics/otel:
@@ -491,7 +480,7 @@ service:
       processors:
       - filter/otel_0
       - metricstransform/otel_1
-      - resource/_global_0
+      - resourcedetection/_global_0
       receivers:
       - prometheus/otel
   telemetry:

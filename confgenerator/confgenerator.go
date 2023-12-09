@@ -393,9 +393,17 @@ func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAg
 			out = append(out, s.components...)
 		}
 		if len(tags) > 0 {
-			out = append(out, stackdriverOutputComponent(ctx, strings.Join(tags, "|"), userAgent, "2G"))
+			outputComponent, err := stackdriverOutputComponent(ctx, strings.Join(tags, "|"), userAgent, "2G")
+			if err != nil {
+				return nil, err
+			}
+			out = append(out, outputComponent)
 		}
-		out = append(out, uc.generateSelfLogsComponents(ctx, userAgent)...)
+		selfLogs, err := uc.generateSelfLogsComponents(ctx, userAgent)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, selfLogs...)
 		out = append(out, LoggingProcessorGceMetadataAttributes{
 			Include: []string{
 				"dataproc-cluster-name",

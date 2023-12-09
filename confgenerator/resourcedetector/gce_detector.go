@@ -108,10 +108,15 @@ type GCEResource struct {
 	Metadata      map[string]string
 	Label         map[string]string
 	InterfaceIPv4 map[string]string
+	AutoDetected  bool
 }
 
 func (r GCEResource) ProjectName() string {
 	return r.Project
+}
+
+func (r GCEResource) IsAutoDetected() bool {
+	return r.AutoDetected
 }
 
 func (r GCEResource) OTelResourceAttributes() map[string]string {
@@ -228,6 +233,7 @@ func (gd *GCEResourceBuilder) GetResource() (Resource, error) {
 		Metadata:      nestedAttributes[metadata],
 		Label:         nestedAttributes[label],
 		InterfaceIPv4: nestedAttributes[interfaceIPv4],
+		AutoDetected:  true,
 	}
 	return res, nil
 }

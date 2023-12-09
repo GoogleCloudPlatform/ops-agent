@@ -20,8 +20,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 )
 
 // ReadUnifiedConfigFromFile reads the user config file and returns a UnifiedConfig.
@@ -52,12 +50,6 @@ func (uc *UnifiedConfig) GenerateFilesFromConfig(ctx context.Context, service, l
 	case "": // Validate-only.
 		return nil
 	case "fluentbit":
-		// Fetch resource information from the metadata server.
-		var err error
-		MetadataResource, err = resourcedetector.GetResource()
-		if err != nil {
-			return fmt.Errorf("can't get resource metadata: %w", err)
-		}
 		files, err := uc.GenerateFluentBitConfigs(ctx, logsDir, stateDir)
 		if err != nil {
 			return fmt.Errorf("can't parse configuration: %w", err)
@@ -68,13 +60,6 @@ func (uc *UnifiedConfig) GenerateFilesFromConfig(ctx context.Context, service, l
 			}
 		}
 	case "otel":
-		// Fetch resource information from the metadata server.
-		var err error
-		MetadataResource, err = resourcedetector.GetResource()
-		if err != nil {
-			return fmt.Errorf("can't get resource metadata: %w", err)
-		}
-
 		otelConfig, err := uc.GenerateOtelConfig(ctx)
 		if err != nil {
 			return fmt.Errorf("can't parse configuration: %w", err)

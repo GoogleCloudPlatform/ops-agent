@@ -91,3 +91,10 @@ func (p Platform) Name() string {
 	}
 	panic(fmt.Sprintf("unknown type %v", p.Type))
 }
+
+func (p Platform) GetResource() (resourcedetector.Resource, error) {
+	if p.ResourceOverride != nil {
+		return p.ResourceOverride, nil
+	}
+	return resourcedetector.GetResource()
+}

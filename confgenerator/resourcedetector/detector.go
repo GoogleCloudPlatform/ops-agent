@@ -22,17 +22,37 @@ import (
 // An implementation of the Resource interface will have fields represent
 // available attributes about the current monitoring resource.
 type Resource interface {
+	ProjectName() string
+	IsAutoDetected() bool
 	MonitoredResource() *monitoredres.MonitoredResource
 	OTelResourceAttributes() map[string]string
-	ProjectName() string
 	PrometheusStyleMetadata() map[string]string
 }
+
+type resourceCache struct {
+	Resource Resource
+	Error    error
+}
+
+var cachedResourceAndError *resourceCache
 
 // Get a resource instance for the current environment;
 // In order to access the attributes of a specific type of resource,
 // needs to cast the returned Resource instance to its underlying type:
 // actual, ok := resource.(GCEResource)
 func GetResource() (Resource, error) {
+	if cachedResourceAndError != nil {
+		return cachedResourceAndError.Resource, cachedResourceAndError.Error
+	}
+	r, err := getUncachedResource()
+	cachedResourceAndError = &resourceCache{
+		Resource: r,
+		Error:    err,
+	}
+	return r, err
+}
+
+func getUncachedResource() (Resource, error) {
 	switch {
 	case gcp_metadata.OnGCE():
 		return GetGCEResource()
@@ -46,8 +66,8 @@ func GetResource() (Resource, error) {
 type UnrecognizedPlatformResource struct {
 }
 
-func (UnrecognizedPlatformResource) OTelResourceAttributes() map[string]string {
-	return nil
+func (UnrecognizedPlatformResource) IsAutoDetected() bool {
+	return true
 }
 
 func (UnrecognizedPlatformResource) ProjectName() string {
@@ -55,6 +75,10 @@ func (UnrecognizedPlatformResource) ProjectName() string {
 }
 
 func (UnrecognizedPlatformResource) MonitoredResource() *monitoredres.MonitoredResource {
+	return nil
+}
+
+func (UnrecognizedPlatformResource) OTelResourceAttributes() map[string]string {
 	return nil
 }
 

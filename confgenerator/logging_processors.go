@@ -375,7 +375,7 @@ type LoggingProcessorGceMetadataAttributes struct {
 	ConfigComponent `yaml:",inline"`
 	Include         []string `yaml:"include" validate:"dive,gt=0,glob"`
 	Exclude         []string `yaml:"exclude" validate:"dive,gt=0,glob"`
-	Static          *bool `yaml:"static" validate:"required,eq=true"`
+	Static          *bool    `yaml:"static" validate:"required,eq=true"`
 }
 
 func (p LoggingProcessorGceMetadataAttributes) Type() string {
@@ -398,9 +398,10 @@ const (
 
 func (p LoggingProcessorGceMetadataAttributes) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	processorName := fmt.Sprintf("%s.%s.gce_metadata", tag, uid)
-	resource := MetadataResource
-	if r := platform.FromContext(ctx).ResourceOverride; r != nil {
-		resource = r
+	resource, err := platform.FromContext(ctx).GetResource()
+	if err != nil {
+		log.Printf("can't get resource metadata: %v", err)
+		return nil
 	}
 	gceMetadata, ok := resource.(resourcedetector.GCEResource)
 	if !ok {
@@ -408,7 +409,7 @@ func (p LoggingProcessorGceMetadataAttributes) Components(ctx context.Context, t
 		log.Printf("ignoring the gce_metadata_attributes processor outside of GCE: %T", resource)
 		return nil
 	}
-	modifications := make(map[string]*ModifyField)
+	modifications := map[string]*ModifyField{}
 	var attributeKeys []string
 	for k, _ := range gceMetadata.Metadata {
 		attributeKeys = append(attributeKeys, k)
@@ -424,7 +425,6 @@ func (p LoggingProcessorGceMetadataAttributes) Components(ctx context.Context, t
 		}
 	}
 	if len(modifications) == 0 {
-		log.Println("no attributes matched the gce_metadata_attributes filters")
 		return nil
 	}
 	return LoggingProcessorModifyFields{

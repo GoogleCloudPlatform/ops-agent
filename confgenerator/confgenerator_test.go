@@ -57,6 +57,23 @@ var winlogv1channels = []string{
 }
 
 var (
+	// Set up the test environment with mocked data.
+	testResource = resourcedetector.GCEResource{
+		Project:       "test-project",
+		Zone:          "test-zone",
+		Network:       "test-network",
+		Subnetwork:    "test-subnetwork",
+		PublicIP:      "test-public-ip",
+		PrivateIP:     "test-private-ip",
+		InstanceID:    "test-instance-id",
+		InstanceName:  "test-instance-name",
+		Tags:          "test-tag",
+		MachineType:   "test-machine-type",
+		Metadata:      map[string]string{"test-key": "test-value", "test-escape": "${foo:bar}"},
+		Label:         map[string]string{"test-label-key": "test-label-value"},
+		InterfaceIPv4: map[string]string{"test-interface": "test-interface-ipv4"},
+		AutoDetected:  true,
+	}
 	linuxTestPlatform = platformConfig{
 		name:            "linux",
 		defaultLogsDir:  "/var/log/google-cloud-ops-agent",
@@ -68,6 +85,7 @@ var (
 				Platform:        "linux_platform",
 				PlatformVersion: "linux_platform_version",
 			},
+			ResourceOverride: testResource,
 		},
 	}
 	testPlatforms = []platformConfig{
@@ -83,7 +101,8 @@ var (
 					Platform:        "linux_platform",
 					PlatformVersion: "linux_platform_version",
 				},
-				HasNvidiaGpu: true,
+				ResourceOverride: testResource,
+				HasNvidiaGpu:     true,
 			},
 		},
 		{
@@ -99,6 +118,7 @@ var (
 					Platform:        "win_platform",
 					PlatformVersion: "win_platform_version",
 				},
+				ResourceOverride: testResource,
 			},
 		},
 		{
@@ -114,6 +134,7 @@ var (
 					Platform:        "win_platform",
 					PlatformVersion: "win_platform_version",
 				},
+				ResourceOverride: testResource,
 			},
 		},
 	}
@@ -158,14 +179,14 @@ func TestDataprocDefaults(t *testing.T) {
 	dataprocMetadata := map[string]string{
 		"dataproc-cluster-name": "test-cluster",
 		"dataproc-cluster-uuid": "test-uuid",
-		"dataproc-region": "test-region",
+		"dataproc-region":       "test-region",
 	}
 
 	t.Run(testName, func(t *testing.T) {
 		t.Parallel()
 		pc := linuxTestPlatform
 		// Update mocked resource to include Dataproc labels.
-		testResource := confgenerator.MetadataResource.(resourcedetector.GCEResource)
+		dataprocResource := testResource
 		newMetadata := map[string]string{}
 		for k, v := range testResource.Metadata {
 			newMetadata[k] = v
@@ -173,8 +194,8 @@ func TestDataprocDefaults(t *testing.T) {
 		for k, v := range dataprocMetadata {
 			newMetadata[k] = v
 		}
-		testResource.Metadata = newMetadata
-		pc.platform.ResourceOverride = testResource
+		dataprocResource.Metadata = newMetadata
+		pc.platform.ResourceOverride = dataprocResource
 		t.Run(pc.name, func(t *testing.T) {
 			testDir := filepath.Join(goldensDir, testName)
 			got, err := generateConfigs(pc, testDir)
@@ -347,25 +368,6 @@ func TestMain(m *testing.M) {
 }
 
 func init() {
-	testResource := resourcedetector.GCEResource{
-		Project:       "test-project",
-		Zone:          "test-zone",
-		Network:       "test-network",
-		Subnetwork:    "test-subnetwork",
-		PublicIP:      "test-public-ip",
-		PrivateIP:     "test-private-ip",
-		InstanceID:    "test-instance-id",
-		InstanceName:  "test-instance-name",
-		Tags:          "test-tag",
-		MachineType:   "test-machine-type",
-		Metadata:      map[string]string{"test-key": "test-value", "test-escape": "${foo:bar}"},
-		Label:         map[string]string{"test-label-key": "test-label-value"},
-		InterfaceIPv4: map[string]string{"test-interface": "test-interface-ipv4"},
-	}
-
-	// Set up the test environment with mocked data.
-	confgenerator.MetadataResource = testResource
-
 	// Enable experimental features here by calling:
 	//	 os.Setenv("EXPERIMENTAL_FEATURES", "...(comma-separated feature list)...")
 }
