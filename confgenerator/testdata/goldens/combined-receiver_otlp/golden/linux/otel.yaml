@@ -496,6 +496,13 @@ receivers:
           - 0.0.0.0:20201
 service:
   pipelines:
+    logs/logs_otlp_otlp:
+      exporters:
+      - googlecloud/otel
+      processors:
+      - resourcedetection/_global_1
+      receivers:
+      - otlp/otlp
     metrics/default__pipeline_hostmetrics:
       exporters:
       - googlecloud

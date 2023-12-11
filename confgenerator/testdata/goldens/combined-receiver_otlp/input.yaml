@@ -28,3 +28,9 @@ traces:
       otlp:
         receivers:
           - otlp
+logging:
+  service:
+    pipelines:
+      otlp:
+        receivers:
+          - otlp

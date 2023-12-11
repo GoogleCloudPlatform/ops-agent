@@ -788,7 +788,7 @@ type TracesService struct {
 
 func (uc *UnifiedConfig) Validate(ctx context.Context) error {
 	if uc.Logging != nil {
-		if err := uc.Logging.Validate(); err != nil {
+		if err := uc.ValidateLogging(); err != nil {
 			return err
 		}
 	}
@@ -810,7 +810,8 @@ func (uc *UnifiedConfig) Validate(ctx context.Context) error {
 	return nil
 }
 
-func (l *Logging) Validate() error {
+func (uc *UnifiedConfig) ValidateLogging() error {
+	l := uc.Logging
 	subagent := "logging"
 	if len(l.Exporters) > 0 {
 		log.Print(`The "logging.exporters" field is no longer needed and will be ignored. This does not change any functionality. Please remove it from your configuration.`)
@@ -818,18 +819,28 @@ func (l *Logging) Validate() error {
 	if l.Service == nil {
 		return nil
 	}
+	validReceivers := map[string]bool{}
+	for k := range l.Receivers {
+		validReceivers[k] = true
+	}
+	if uc.Combined != nil {
+		for k := range uc.Combined.Receivers {
+			// TODO: What about combined receivers that don't support logging (none exist today)?
+			validReceivers[k] = true
+		}
+	}
+	validProcessors := map[string]LoggingProcessor{}
+	for k, v := range l.Processors {
+		validProcessors[k] = v
+	}
+	for _, k := range defaultProcessors {
+		validProcessors[k] = nil
+	}
 	portTaken := map[uint16]string{} // port -> receiverId map
 	for _, id := range sortedKeys(l.Service.Pipelines) {
 		p := l.Service.Pipelines[id]
-		if err := validateComponentKeys(l.Receivers, p.ReceiverIDs, subagent, "receiver", id); err != nil {
+		if err := validateComponentKeys(validReceivers, p.ReceiverIDs, subagent, "receiver", id); err != nil {
 			return err
-		}
-		validProcessors := map[string]LoggingProcessor{}
-		for k, v := range l.Processors {
-			validProcessors[k] = v
-		}
-		for _, k := range defaultProcessors {
-			validProcessors[k] = nil
 		}
 		if err := validateComponentKeys(validProcessors, p.ProcessorIDs, subagent, "processor", id); err != nil {
 			return err
@@ -912,7 +923,8 @@ func (uc *UnifiedConfig) TracesReceivers() (map[string]TracesReceiver, error) {
 
 func (uc *UnifiedConfig) OTelLoggingReceivers() (map[string]OTelReceiver, error) {
 	validReceivers := map[string]OTelReceiver{}
-	if uc.Logging != nil {
+	if uc.Logging != nil && uc.Logging.Service != nil && uc.Logging.Service.OTelLogging {
+		// Require experimental flag for logging receivers
 		for k, v := range uc.Logging.Receivers {
 			if v, ok := v.(OTelReceiver); ok {
 				validReceivers[k] = v
@@ -920,6 +932,7 @@ func (uc *UnifiedConfig) OTelLoggingReceivers() (map[string]OTelReceiver, error)
 		}
 	}
 	if uc.Combined != nil {
+		// Combined receivers always use OTel
 		for k, v := range uc.Combined.Receivers {
 			if _, ok := uc.Logging.Receivers[k]; ok {
 				return nil, fmt.Errorf("logging receiver %q has the same name as combined receiver %q", k, k)
@@ -1093,7 +1106,8 @@ func validateWinlogRenderAsXML(receivers loggingReceiverMap, receiverIDs []strin
 		var receiver LoggingReceiver
 		var winlogReceiver *LoggingReceiverWindowsEventLog
 		if receiver, ok = receivers[receiverID]; !ok {
-			panic(fmt.Sprintf(`receiver "%s" not found in receiver map: %v`, receiverID, receivers))
+			// Rely on other validation to make sure the receiver exists
+			continue
 		}
 		if winlogReceiver, ok = receiver.(*LoggingReceiverWindowsEventLog); !ok {
 			continue

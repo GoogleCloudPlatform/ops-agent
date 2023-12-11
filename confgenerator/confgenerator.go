@@ -224,7 +224,7 @@ func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]
 			}
 		}
 	}
-	if l != nil && l.Service != nil && l.Service.OTelLogging {
+	if l != nil && l.Service != nil {
 		receivers, err := uc.OTelLoggingReceivers()
 		if err != nil {
 			return nil, nil, err
@@ -233,6 +233,10 @@ func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]
 			for _, rID := range p.ReceiverIDs {
 				receiver, ok := receivers[rID]
 				if !ok {
+					if _, ok := l.Receivers[rID]; !l.Service.OTelLogging && ok {
+						// If the receiver exists but doesn't support OTel, we rely on fluent-bit to handle it.
+						continue
+					}
 					return nil, nil, fmt.Errorf("logging receiver %q not found", rID)
 				}
 				if err := addReceiver("logs", pID, rID, receiver, p.ProcessorIDs); err != nil {
@@ -248,7 +252,7 @@ func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]
 // It returns a map of filenames to file contents.
 func (uc *UnifiedConfig) GenerateFluentBitConfigs(ctx context.Context, logsDir string, stateDir string) (map[string]string, error) {
 	userAgent, _ := platform.FromContext(ctx).UserAgent("Google-Cloud-Ops-Agent-Logging")
-	components, err := uc.Logging.generateFluentbitComponents(ctx, userAgent)
+	components, err := uc.generateFluentbitComponents(ctx, userAgent)
 	if err != nil {
 		return nil, err
 	}
@@ -300,7 +304,8 @@ func processUserDefinedMultilineParser(i int, pID string, receiver LoggingReceiv
 }
 
 // generateFluentbitComponents generates a slice of fluentbit config sections to represent l.
-func (l *Logging) generateFluentbitComponents(ctx context.Context, userAgent string) ([]fluentbit.Component, error) {
+func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAgent string) ([]fluentbit.Component, error) {
+	l := uc.Logging
 	var out []fluentbit.Component
 	if l.Service.LogLevel == "" {
 		l.Service.LogLevel = "info"
@@ -321,6 +326,12 @@ func (l *Logging) generateFluentbitComponents(ctx context.Context, userAgent str
 			for _, rID := range p.ReceiverIDs {
 				receiver, ok := l.Receivers[rID]
 				if !ok {
+					if uc.Combined != nil {
+						if _, ok := uc.Combined.Receivers[rID]; ok {
+							// Combined receivers are always handled by OTel
+							continue
+						}
+					}
 					return nil, fmt.Errorf("receiver %q not found", rID)
 				}
 				tag := fmt.Sprintf("%s.%s", pID, rID)
