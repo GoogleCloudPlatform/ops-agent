@@ -403,9 +403,6 @@ type componentTypeRegistry[CI componentInterface, M ~map[string]CI] struct {
 
 func (r *componentTypeRegistry[CI, M]) RegisterType(constructor func() CI, platforms ...platform.Type) {
 	name := constructor().Type()
-	if strings.HasPrefix(name, "internal:") {
-		panic(fmt.Sprintf("attempt to register an internal %s %s type: %q", r.Subagent, r.Kind, name))
-	}
 	if _, ok := r.TypeMap[name]; ok {
 		panic(fmt.Sprintf("attempt to register duplicate %s %s type: %q", r.Subagent, r.Kind, name))
 	}

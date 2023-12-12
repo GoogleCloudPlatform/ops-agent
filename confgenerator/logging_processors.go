@@ -18,15 +18,11 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit/modify"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
 // TODO: Add a validation check that will allow only one unique language exceptions that focus in one specific language.
@@ -367,66 +363,4 @@ end`, lua))...)
 
 func init() {
 	LoggingProcessorTypes.RegisterType(func() LoggingProcessor { return &LoggingProcessorExcludeLogs{} })
-}
-
-// A LoggingProcessorGceMetadataAttributes annotates logs with labels
-// corresponding to instance attributes from the GCE metadata server.
-type LoggingProcessorGceMetadataAttributes struct {
-	ConfigComponent `yaml:",inline"`
-	Include         []string `yaml:"include"`
-	Exclude         []string `yaml:"exclude"`
-}
-
-func (p LoggingProcessorGceMetadataAttributes) Type() string {
-	return "internal:gce_metadata_attributes"
-}
-
-func matchesAnyGlobs(globs []string, k string) bool {
-	for _, g := range globs {
-		// Errors would have been caught by the validators.
-		if ok, _ := filepath.Match(g, k); ok {
-			return true
-		}
-	}
-	return false
-}
-
-const (
-	attributeLabelPrefix string = "compute.googleapis.com/attributes/"
-)
-
-func (p LoggingProcessorGceMetadataAttributes) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	processorName := fmt.Sprintf("%s.%s.gce_metadata", tag, uid)
-	resource, err := platform.FromContext(ctx).GetResource()
-	if err != nil {
-		log.Printf("can't get resource metadata: %v", err)
-		return nil
-	}
-	gceMetadata, ok := resource.(resourcedetector.GCEResource)
-	if !ok {
-		// Not on GCE; no attributes to detect.
-		log.Printf("ignoring the gce_metadata_attributes processor outside of GCE: %T", resource)
-		return nil
-	}
-	modifications := map[string]*ModifyField{}
-	var attributeKeys []string
-	for k, _ := range gceMetadata.Metadata {
-		attributeKeys = append(attributeKeys, k)
-	}
-	sort.Strings(attributeKeys)
-	for _, k := range attributeKeys {
-		if (len(p.Include) > 0 && !matchesAnyGlobs(p.Include, k)) || matchesAnyGlobs(p.Exclude, k) {
-			continue
-		}
-		v := gceMetadata.Metadata[k]
-		modifications[fmt.Sprintf(`labels."%s%s"`, attributeLabelPrefix, k)] = &ModifyField{
-			StaticValue: &v,
-		}
-	}
-	if len(modifications) == 0 {
-		return nil
-	}
-	return LoggingProcessorModifyFields{
-		Fields: modifications,
-	}.Components(ctx, tag, processorName)
 }
