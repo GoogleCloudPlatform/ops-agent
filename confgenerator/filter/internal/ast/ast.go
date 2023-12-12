@@ -43,6 +43,22 @@ type Attrib interface{}
 // Each element of the slice is not yet unescaped (if needed).
 type Target []string
 
+var logEntryRootValueMapToOTel = map[string][]string{
+	"severity": {"severity_text"},
+	"logName":  {"attributes", "gcp.log_name"},
+	// TODO: trace and span ID use different encoding
+	"trace":  {"trace_id"},
+	"spanId": {"span_id"},
+}
+
+var logEntryRootStructMapToOTel = map[string][]string{
+	"jsonPayload": {"body"},
+	"labels":      {"attributes"},
+	// "operation": {}, // TODO: Missing in OTel exporter
+	"sourceLocation": {"attributes", "gcp.source_location"},
+	"httpRequest":    {"attributes", "gcp.http_request"},
+}
+
 var logEntryRootValueMapToFluentBit = map[string]string{
 	"severity": "logging.googleapis.com/severity",
 	"logName":  "logging.googleapis.com/logName",
@@ -58,6 +74,27 @@ var logEntryRootStructMapToFluentBit = map[string]string{
 	// that package here results in a circular import. That should move somewhere
 	// better, and once it does we can use that here.
 	"httpRequest": "logging.googleapis.com/httpRequest",
+}
+
+func (m Target) ottlPath() ([]string, error) {
+	unquoted, err := m.Unquote()
+	if err != nil {
+		return nil, err
+	}
+	var otel []string
+	if len(unquoted) == 1 {
+		if v, ok := logEntryRootValueMapToOTel[unquoted[0]]; ok {
+			otel = v
+		}
+	} else if len(unquoted) > 1 {
+		if v, ok := logEntryRootStructMapToOTel[unquoted[0]]; ok {
+			otel = append(v, unquoted[1:]...)
+		}
+	}
+	if otel == nil {
+		return nil, fmt.Errorf("field %q not found", strings.Join(m, "."))
+	}
+	return otel, nil
 }
 
 func (m Target) fluentBitPath() ([]string, error) {
@@ -123,6 +160,19 @@ func (m Target) RecordAccessor() (string, error) {
 		recordAccessor = recordAccessor + fmt.Sprintf(`['%s']`, strings.ReplaceAll(part, `'`, `''`))
 	}
 	return recordAccessor, nil
+}
+
+// OTTLAccessor returns a string that can be used to refer to the field in OTTL
+func (m Target) OTTLAccessor() (string, error) {
+	otel, err := m.ottlPath()
+	if err != nil {
+		return "", err
+	}
+	parts := []string{otel[0]}
+	for _, p := range otel[1:] {
+		parts = append(parts, fmt.Sprintf(`[%q]`, p))
+	}
+	return strings.Join(parts, ""), nil
 }
 
 // LuaAccessor returns the value of the target (with write=false) or a function that takes one argument to set the target (with write=true).
