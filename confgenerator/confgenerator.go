@@ -153,6 +153,13 @@ func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]
 				prefix = fmt.Sprintf("%s_%s", pipelineType, prefix)
 			}
 
+			if processors, ok := receiverPipeline.Processors["logs"]; ok {
+				receiverPipeline.Processors["logs"] = append(
+					processors,
+					otelSetLogNameComponents(ctx, rID, platform.FromContext(ctx).Hostname())...,
+				)
+			}
+
 			outR[receiverPipelineName] = receiverPipeline
 
 			pipeline := otel.Pipeline{

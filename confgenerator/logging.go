@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
 
 const InstrumentationSourceLabel = `labels."logging.googleapis.com/instrumentation_source"`
@@ -42,6 +43,27 @@ func setLogNameComponents(ctx context.Context, tag, logName, receiverType string
 			// },
 		},
 	}.Components(ctx, tag, "setlogname")
+}
+
+func otelSetLogNameComponents(_ context.Context, logName, hostName string) []otel.Component {
+	statements := []string{
+		// TODO: Prepend `receiver_id.` if it already exists, like the `fluent_forward` receiver?
+		fmt.Sprintf(`set(attributes["gcp.log_name"], %q) where attributes["gcp.log_name"] == nil`, logName),
+		fmt.Sprintf(`set(attributes["compute.googleapis.com/resource_name"], %q) where attributes["compute.googleapis.com/resource_name"] == nil`, hostName),
+	}
+	return []otel.Component{
+		{
+			Type: "transform",
+			Config: map[string]any{
+				"log_statements": []map[string]any{
+					{
+						"context":    "log",
+						"statements": statements,
+					},
+				},
+			},
+		},
+	}
 }
 
 // stackdriverOutputComponent generates a component that outputs logs matching the regex `match` using `userAgent`.

@@ -128,11 +128,6 @@ func (r ReceiverOTLP) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 
 	receiverPipelineType, metricsRDM, metricsProcessors := r.metricsProcessors()
 
-	logsProcessors := []otel.Component{
-		// TODO: Add `gcp.log_name` attribute with pipeline name if not present (should we prepend `pipeline_name.` if the attribute is already present?
-		// TODO: Add `labels."compute.googleapis.com"/resource_name`?
-	}
-
 	return []otel.ReceiverPipeline{{
 		ExporterTypes: map[string]otel.ExporterType{
 			"metrics": receiverPipelineType,
@@ -152,7 +147,7 @@ func (r ReceiverOTLP) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 		Processors: map[string][]otel.Component{
 			"metrics": metricsProcessors,
 			"traces":  nil,
-			"logs":    logsProcessors,
+			"logs":    nil,
 		},
 		ResourceDetectionModes: map[string]otel.ResourceDetectionMode{
 			"metrics": metricsRDM,
