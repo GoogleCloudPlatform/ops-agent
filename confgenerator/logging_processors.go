@@ -373,9 +373,8 @@ func init() {
 // corresponding to instance attributes from the GCE metadata server.
 type LoggingProcessorGceMetadataAttributes struct {
 	ConfigComponent `yaml:",inline"`
-	Include         []string `yaml:"include" validate:"dive,gt=0,glob"`
-	Exclude         []string `yaml:"exclude" validate:"dive,gt=0,glob"`
-	Static          *bool    `yaml:"static" validate:"required,eq=true"`
+	Include         []string `yaml:"include"`
+	Exclude         []string `yaml:"exclude"`
 }
 
 func (p LoggingProcessorGceMetadataAttributes) Type() string {
