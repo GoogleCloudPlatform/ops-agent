@@ -46,6 +46,21 @@ func NewMember(m string) (*Member, error) {
 	return &Member{r.LHS}, nil
 }
 
+// NewMemberLegacy attempts to parse m as a filter member.
+// If it fails, it prepends `body.` and tries again.
+// This is used by legacy config options that allowed bare body field names.
+func NewMemberLegacy(m string) (*Member, error) {
+	out, err := NewMember(m)
+	if err != nil {
+		// Bare fields in legacy configs refer to elements of `jsonPayload`; try parsing with a `jsonPayload.` prefix if it fails to parse
+		out, err := NewMember(fmt.Sprintf("jsonPayload.%s", m))
+		if err == nil {
+			return out, nil
+		}
+	}
+	return out, err
+}
+
 // Equals checks if two valid members are equal.
 // Invalid members are never equal.
 func (m Member) Equals(m2 Member) bool {

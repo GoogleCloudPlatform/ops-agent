@@ -106,6 +106,24 @@ func (p ParserShared) Component(tag, uid string) (fluentbit.Component, string) {
 	return fluentbit.ParserComponentBase(p.TimeFormat, p.TimeKey, p.Types, tag, uid)
 }
 
+func (p ParserShared) TimestampStatements() ([]string, error) {
+	if p.TimeKey == "" {
+		return nil, nil
+	}
+	from, err := filter.NewMemberLegacy(p.TimeKey)
+	if err != nil {
+		return nil, err
+	}
+	fromAccessor, err := from.OTTLAccessor()
+	if err != nil {
+		return nil, err
+	}
+	return []string{
+		fmt.Sprintf(`set(time, Time(%s, %q))`, fromAccessor, p.TimeFormat),
+		fmt.Sprintf(`delete(%s)`, fromAccessor),
+	}, nil
+}
+
 func (p ParserShared) TimestampConfig() map[string]any {
 	if p.TimeKey == "" {
 		return nil
@@ -141,30 +159,50 @@ func (p LoggingProcessorParseJson) Components(ctx context.Context, tag, uid stri
 }
 
 func (p LoggingProcessorParseJson) Processors() []otel.Component {
+	out, err := p.processors()
+	if err != nil {
+		// It shouldn't be possible to get here if the input validation is working
+		panic(err)
+	}
+	return out
+}
+
+func (p LoggingProcessorParseJson) processors() ([]otel.Component, error) {
 	from := p.Field
 	// TODO: Parse field using filter.Member (but somehow also continue to support bare fields as currently allowed)
 	if from == "" {
-		from = "message"
+		from = "body.message"
 	}
-	from = fmt.Sprintf("body.%s", from)
+	m, err := filter.NewMemberLegacy(from)
+	if err != nil {
+		return nil, err
+	}
 
-	parserConfig := map[string]any{
-		"type":       "json_parser",
-		"parse_from": from,
-		"parse_to":   "body", // TODO: Handle special fields documented at https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/configuration#special-fields
+	fromAccessor, err := m.OTTLAccessor()
+	if err != nil {
+		return nil, err
 	}
-	if t := p.TimestampConfig(); t != nil {
-		parserConfig["timestamp"] = t
+
+	statements := []string{
+		fmt.Sprintf(`set(body, ParseJSON(%s))`, fromAccessor),
 	}
+
+	ts, err := p.TimestampStatements()
+	if err != nil {
+		return nil, err
+	} else if len(ts) != 0 {
+		statements = append(statements, ts...)
+	}
+
 	// TODO: Support p.Types
-	return []otel.Component{{
-		Type: "logstransform",
-		Config: map[string]any{
-			"operators": []map[string]any{
-				parserConfig,
-			},
-		},
-	}}
+
+	// TODO: Handle special fields documented at https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/configuration#special-fields
+
+	// TODO: Support merging instead of replacing.
+	return []otel.Component{otel.Transform(
+		"log", "log",
+		statements...,
+	)}, nil
 }
 
 func init() {

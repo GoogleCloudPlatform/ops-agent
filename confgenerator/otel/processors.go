@@ -126,6 +126,19 @@ func RegexpRename(regexp string, rename string, operations ...map[string]interfa
 	return out
 }
 
+// Transform returns a transform processor object that executes statements on statementType data.
+func Transform(statementType, context string, statements ...string) Component {
+	return Component{
+		Type: "transform",
+		Config: map[string]map[string]any{
+			fmt.Sprintf("%s_statements", statementType): {
+				"context":    context,
+				"statements": statements,
+			},
+		},
+	}
+}
+
 // TransformationMetrics returns a transform processor object that contains all the queries passed into it.
 func TransformationMetrics(queries ...TransformQuery) Component {
 	queryStrings := []string{}
