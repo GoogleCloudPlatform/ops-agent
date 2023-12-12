@@ -449,6 +449,12 @@ processors:
     detectors:
     - gcp
     override: false
+  transform/otlp_0:
+    log_statements:
+    - context: log
+      statements:
+      - set(attributes["gcp.log_name"], "otlp") where attributes["gcp.log_name"] == nil
+      - set(attributes["compute.googleapis.com/resource_name"], "") where attributes["compute.googleapis.com/resource_name"] == nil
   transform/otlp_1:
     error_mode: ignore
     metric_statements:
@@ -500,6 +506,7 @@ service:
       exporters:
       - googlecloud/otel
       processors:
+      - transform/otlp_0
       - resourcedetection/_global_1
       receivers:
       - otlp/otlp

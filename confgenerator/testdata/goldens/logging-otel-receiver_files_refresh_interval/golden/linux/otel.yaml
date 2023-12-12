@@ -429,6 +429,18 @@ processors:
   resourcedetection/_global_0:
     detectors:
     - gcp
+  transform/log__source__id1_0:
+    log_statements:
+    - context: log
+      statements:
+      - set(attributes["gcp.log_name"], "log_source_id1") where attributes["gcp.log_name"] == nil
+      - set(attributes["compute.googleapis.com/resource_name"], "") where attributes["compute.googleapis.com/resource_name"] == nil
+  transform/syslog_0:
+    log_statements:
+    - context: log
+      statements:
+      - set(attributes["gcp.log_name"], "syslog") where attributes["gcp.log_name"] == nil
+      - set(attributes["compute.googleapis.com/resource_name"], "") where attributes["compute.googleapis.com/resource_name"] == nil
 receivers:
   filelog/log__source__id1:
     exclude: []
@@ -490,6 +502,7 @@ service:
       exporters:
       - googlecloud/otel
       processors:
+      - transform/syslog_0
       - resourcedetection/_global_0
       receivers:
       - filelog/syslog
@@ -497,6 +510,7 @@ service:
       exporters:
       - googlecloud/otel
       processors:
+      - transform/log__source__id1_0
       - resourcedetection/_global_0
       receivers:
       - filelog/log__source__id1
