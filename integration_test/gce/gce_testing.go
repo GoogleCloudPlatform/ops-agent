@@ -332,7 +332,7 @@ func imageProject(family string) (string, error) {
 		return "opensuse-cloud", nil
 	case "sles":
 		// There are a few different cases:
-		// "sles-15" and "sles-15-sp1-sap".
+		// "sles-15" and "sles-15-sp*-sap".
 		if strings.Contains(family, "-sap") {
 			return "suse-sap-cloud", nil
 		}
