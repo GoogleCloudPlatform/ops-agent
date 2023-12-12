@@ -148,6 +148,9 @@ func (ve validationError) Error() string {
 	case "field":
 		_, err := filter.NewMember(ve.Value().(string))
 		return fmt.Sprintf("%q: %v", ve.Field(), err)
+	case "fieldlegacy":
+		_, err := filter.NewMemberLegacy(ve.Value().(string))
+		return fmt.Sprintf("%q: %v", ve.Field(), err)
 	case "distinctfield":
 		return fmt.Sprintf("%q specified multiple times", ve.Value().(string))
 	case "writablefield":
@@ -210,6 +213,11 @@ func newValidator() *validator.Validate {
 	// field validates that a Cloud Logging field expression is valid
 	v.RegisterValidation("field", func(fl validator.FieldLevel) bool {
 		_, err := filter.NewMember(fl.Field().String())
+		// TODO: Disallow specific target fields?
+		return err == nil
+	})
+	v.RegisterValidation("fieldlegacy", func(fl validator.FieldLevel) bool {
+		_, err := filter.NewMemberLegacy(fl.Field().String())
 		// TODO: Disallow specific target fields?
 		return err == nil
 	})

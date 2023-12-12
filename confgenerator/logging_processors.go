@@ -93,8 +93,8 @@ func init() {
 
 // ParserShared holds common parameters that are used by all processors that are implemented with fluentbit's "parser" filter.
 type ParserShared struct {
-	TimeKey    string `yaml:"time_key,omitempty" validate:"required_with=TimeFormat"` // by default does not parse timestamp
-	TimeFormat string `yaml:"time_format,omitempty" validate:"required_with=TimeKey"` // must be provided if time_key is present
+	TimeKey    string `yaml:"time_key,omitempty" validate:"required_with=TimeFormat,omitempty,fieldlegacy"` // by default does not parse timestamp
+	TimeFormat string `yaml:"time_format,omitempty" validate:"required_with=TimeKey"`                       // must be provided if time_key is present
 	// Types allows parsing the extracted fields.
 	// Not exposed to users for now, but can be used by app receivers.
 	// Documented at https://docs.fluentbit.io/manual/v/1.3/parser
@@ -214,7 +214,7 @@ func init() {
 type LoggingProcessorParseRegex struct {
 	ConfigComponent `yaml:",inline"`
 	ParserShared    `yaml:",inline"`
-	Field           string `yaml:"field,omitempty"`
+	Field           string `yaml:"field,omitempty" validate:"omitempty,fieldlegacy"`
 	PreserveKey     bool   `yaml:"-"`
 
 	Regex string `yaml:"regex,omitempty" validate:"required"`
