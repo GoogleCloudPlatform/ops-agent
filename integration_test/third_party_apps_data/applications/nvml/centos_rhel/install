@@ -32,6 +32,10 @@ case $DEVICE_CODE in
         ;;
     *)
         # Installing latest version of NVIDIA CUDA and driver
+        # Data Center/Tesla drivers and CUDA are released on different schedules;
+        # normally we install the matching versions of driver and CUDA 
+        # ($DRIVER_VERSION == $CUDA_BUNDLED_DRIVER_VERSION); due to https://github.com/NVIDIA/open-gpu-kernel-modules/issues/550
+        # we install a newer version of the driver
         DRIVER_VERSION=535.129.03
         CUDA_VERSION=12.2.2
         CUDA_BUNDLED_DRIVER_VERSION=535.104.05
@@ -41,6 +45,8 @@ esac
 echo "Installing NVIDIA CUDA $CUDA_VERSION with driver $DRIVER_VERSION"
 curl -fSsl -O https://us.download.nvidia.com/tesla/$DRIVER_VERSION/NVIDIA-Linux-x86_64-$DRIVER_VERSION.run
 sudo bash ./NVIDIA-Linux-x86_64-$DRIVER_VERSION.run --silent
+# Install the CUDA toolkit only, so that the CUDA toolkit uses the Data Center driver installed in the previous step
+# See https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html for CUDA and driver compatibility 
 curl -fSsl -O https://developer.download.nvidia.com/compute/cuda/$CUDA_VERSION/local_installers/cuda_${CUDA_VERSION}_${CUDA_BUNDLED_DRIVER_VERSION}_linux.run
 sudo sh cuda_${CUDA_VERSION}_${CUDA_BUNDLED_DRIVER_VERSION}_linux.run --toolkit --silent
 
