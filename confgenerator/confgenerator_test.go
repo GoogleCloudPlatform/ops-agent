@@ -57,20 +57,38 @@ var winlogv1channels = []string{
 }
 
 var (
-	testPlatforms = []platformConfig{
-		{
-			name:            "linux",
-			defaultLogsDir:  "/var/log/google-cloud-ops-agent",
-			defaultStateDir: "/var/lib/google-cloud-ops-agent/fluent-bit",
-			platform: platform.Platform{
-				Type: platform.Linux,
-				HostInfo: &host.InfoStat{
-					OS:              "linux",
-					Platform:        "linux_platform",
-					PlatformVersion: "linux_platform_version",
-				},
+	// Set up the test environment with mocked data.
+	testResource = resourcedetector.GCEResource{
+		Project:       "test-project",
+		Zone:          "test-zone",
+		Network:       "test-network",
+		Subnetwork:    "test-subnetwork",
+		PublicIP:      "test-public-ip",
+		PrivateIP:     "test-private-ip",
+		InstanceID:    "test-instance-id",
+		InstanceName:  "test-instance-name",
+		Tags:          "test-tag",
+		MachineType:   "test-machine-type",
+		Metadata:      map[string]string{"test-key": "test-value", "test-escape": "${foo:bar}"},
+		Label:         map[string]string{"test-label-key": "test-label-value"},
+		InterfaceIPv4: map[string]string{"test-interface": "test-interface-ipv4"},
+	}
+	linuxTestPlatform = platformConfig{
+		name:            "linux",
+		defaultLogsDir:  "/var/log/google-cloud-ops-agent",
+		defaultStateDir: "/var/lib/google-cloud-ops-agent/fluent-bit",
+		platform: platform.Platform{
+			Type: platform.Linux,
+			HostInfo: &host.InfoStat{
+				OS:              "linux",
+				Platform:        "linux_platform",
+				PlatformVersion: "linux_platform_version",
 			},
+			TestGCEResourceOverride: testResource,
 		},
+	}
+	testPlatforms = []platformConfig{
+		linuxTestPlatform,
 		{
 			name:            "linux-gpu",
 			defaultLogsDir:  "/var/log/google-cloud-ops-agent",
@@ -82,7 +100,8 @@ var (
 					Platform:        "linux_platform",
 					PlatformVersion: "linux_platform_version",
 				},
-				HasNvidiaGpu: true,
+				TestGCEResourceOverride: testResource,
+				HasNvidiaGpu:            true,
 			},
 		},
 		{
@@ -98,6 +117,7 @@ var (
 					Platform:        "win_platform",
 					PlatformVersion: "win_platform_version",
 				},
+				TestGCEResourceOverride: testResource,
 			},
 		},
 		{
@@ -113,6 +133,7 @@ var (
 					Platform:        "win_platform",
 					PlatformVersion: "win_platform_version",
 				},
+				TestGCEResourceOverride: testResource,
 			},
 		},
 	}
@@ -147,6 +168,42 @@ func TestGoldens(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDataprocDefaults(t *testing.T) {
+	t.Parallel()
+
+	goldensDir := "goldens"
+	testName := "builtin"
+	dataprocMetadata := map[string]string{
+		"dataproc-cluster-name": "test-cluster",
+		"dataproc-cluster-uuid": "test-uuid",
+		"dataproc-region":       "test-region",
+	}
+
+	t.Run(testName, func(t *testing.T) {
+		t.Parallel()
+		pc := linuxTestPlatform
+		// Update mocked resource to include Dataproc labels.
+		dataprocResource := testResource
+		newMetadata := map[string]string{}
+		for k, v := range testResource.Metadata {
+			newMetadata[k] = v
+		}
+		for k, v := range dataprocMetadata {
+			newMetadata[k] = v
+		}
+		dataprocResource.Metadata = newMetadata
+		pc.platform.TestGCEResourceOverride = dataprocResource
+		t.Run(pc.name, func(t *testing.T) {
+			testDir := filepath.Join(goldensDir, testName)
+			got, err := generateConfigs(pc, testDir)
+			assert.NilError(t, err, "Failed to generate configs: %v", err)
+			if err := testGeneratedFiles(t, got, filepath.Join(testDir, goldenDir, "linux-dataproc")); err != nil {
+				t.Errorf("Failed to check generated configs: %v", err)
+			}
+		})
+	})
 }
 
 func getTestsInDir(t *testing.T, testDir string) []string {
@@ -310,25 +367,6 @@ func TestMain(m *testing.M) {
 }
 
 func init() {
-	testResource := resourcedetector.GCEResource{
-		Project:       "test-project",
-		Zone:          "test-zone",
-		Network:       "test-network",
-		Subnetwork:    "test-subnetwork",
-		PublicIP:      "test-public-ip",
-		PrivateIP:     "test-private-ip",
-		InstanceID:    "test-instance-id",
-		InstanceName:  "test-instance-name",
-		Tags:          "test-tag",
-		MachineType:   "test-machine-type",
-		Metadata:      map[string]string{"test-key": "test-value", "test-escape": "${foo:bar}"},
-		Label:         map[string]string{"test-label-key": "test-label-value"},
-		InterfaceIPv4: map[string]string{"test-interface": "test-interface-ipv4"},
-	}
-
-	// Set up the test environment with mocked data.
-	confgenerator.MetadataResource = testResource
-
 	// Enable experimental features here by calling:
 	//	 os.Setenv("EXPERIMENTAL_FEATURES", "...(comma-separated feature list)...")
 }

@@ -3751,6 +3751,34 @@ func TestLoggingSelfLogs(t *testing.T) {
 	})
 }
 
+func TestLoggingDataprocAttributes(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if gce.IsWindows(platform) {
+			t.Skip("Dataproc tests aren't supported on Windows")
+		}
+		ctx, logger, vm := agents.CommonSetupWithExtraCreateArgumentsAndMetadata(t, platform, nil, map[string]string{
+			"dataproc-cluster-name": "my-test-cluster",
+		})
+
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+
+		if err := writeToSystemLog(ctx, logger.ToMainLog(), vm, "123456789"); err != nil {
+			t.Fatal(err)
+		}
+
+		tag := systemLogTagForPlatform(vm.Platform)
+		query := fmt.Sprintf(`labels."compute.googleapis.com/attributes/dataproc-cluster-name"="my-test-cluster" AND %s`, logMessageQueryForPlatform(vm.Platform, "123456789"))
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, tag, time.Hour, query); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
 func diagnosticsLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	time.Sleep(3 * time.Minute)
 	// Query for a metric sent by the diagnostics service from the last

@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"reflect"
 	"sort"
@@ -25,7 +26,6 @@ import (
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/go-playground/validator/v10"
 	yaml "github.com/goccy/go-yaml"
@@ -34,12 +34,6 @@ import (
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	_ "github.com/prometheus/prometheus/discovery/install" // init() of this package registers service discovery impl.
-)
-
-var (
-	// MetadataResource is the resource metadata for the instance we're running on.
-	// Note: This is a global variable so that it can be set in tests.
-	MetadataResource resourcedetector.Resource
 )
 
 type PrometheusMetrics struct {
@@ -61,9 +55,10 @@ func (r PrometheusMetrics) Type() string {
 }
 
 func (r PrometheusMetrics) Pipelines(ctx context.Context) []otel.ReceiverPipeline {
-	resource := MetadataResource
-	if p := platform.FromContext(ctx).ResourceOverride; p != nil {
-		resource = p
+	resource, err := platform.FromContext(ctx).GetResource()
+	if err != nil {
+		log.Printf("can't get resource metadata: %v", err)
+		return nil
 	}
 	if resource != nil {
 		// Get the resource metadata for the instance we're running on.
