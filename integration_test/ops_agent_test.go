@@ -3497,6 +3497,7 @@ metrics:
       type: exclude_metrics
       metrics_pattern:
       - agent.googleapis.com/processes/*
+      - agent.googleapis.com/cpu/load_5m
   service:
     pipelines:
       default_pipeline:
@@ -3514,14 +3515,85 @@ metrics:
 		time.Sleep(3 * time.Minute)
 
 		existingMetric := "agent.googleapis.com/cpu/load_1m"
-		excludedMetric := "agent.googleapis.com/processes/cpu_time"
+		excludedIndividualMetric := "agent.googleapis.com/cpu/load_5m"
+		excludedWildcardMetric := "agent.googleapis.com/processes/cpu_time"
 
 		window := time.Minute
 		if _, err := gce.WaitForMetric(ctx, logger, vm, existingMetric, window, nil, false); err != nil {
 			t.Error(err)
 		}
-		if err := gce.AssertMetricMissing(ctx, logger, vm, excludedMetric, false, window); err != nil {
+		if err := gce.AssertMetricMissing(ctx, logger, vm, excludedIndividualMetric, false, window); err != nil {
 			t.Error(err)
+		}
+		if err := gce.AssertMetricMissing(ctx, logger, vm, excludedWildcardMetric, false, window); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
+func TestExcludeWorkloadMetrics(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		otlpConfig := `
+combined:
+  receivers:
+    otlp:
+      type: otlp
+      grpc_endpoint: 0.0.0.0:4317
+      metrics_mode: googlecloudmonitoring
+metrics:
+  processors:
+    metrics_filter:
+      type: exclude_metrics
+      metrics_pattern:
+      - workload.googleapis.com/otlp.test.gauge
+      - workload.googleapis.com/otlp.test.prefix*
+  service:
+    pipelines:
+      otlp:
+        receivers: [otlp]
+        processors: [metrics_filter]
+traces:
+  service:
+    pipelines:
+`
+		if err := agents.SetupOpsAgent(ctx, logger, vm, otlpConfig); err != nil {
+			t.Fatal(err)
+		}
+
+		// Generate metric traffic with dummy app
+		metricFile, err := testdataDir.Open(path.Join("testdata", "otlp", "metrics.go"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer metricFile.Close()
+		if err := installGolang(ctx, logger, vm); err != nil {
+			t.Fatal(err)
+		}
+		if err = runGoCode(ctx, logger, vm, metricFile); err != nil {
+			t.Fatal(err)
+		}
+
+		if _, err = gce.WaitForMetric(ctx, logger, vm, "workload.googleapis.com/otlp.test.cumulative", time.Hour, nil, false); err != nil {
+			t.Error(err)
+		}
+
+		// Wait long enough for the data to percolate through the backends
+		// under normal circumstances. Based on some experiments, 2 minutes
+		// is normal; wait a bit longer to be on the safe side.
+		time.Sleep(3 * time.Minute)
+		window := time.Minute
+
+		// See testdata/otlp/metrics.go for the metrics we're sending
+		for _, m := range []string{
+			"workload.googleapis.com/otlp.test.gauge",
+			"workload.googleapis.com/otlp.test.prefix3/workload.googleapis.com/abc",
+		} {
+			if err = gce.AssertMetricMissing(ctx, logger, vm, m, false, window); err != nil {
+				t.Error(err)
+			}
 		}
 	})
 }
@@ -4408,7 +4480,7 @@ func TestDisableSelfLogCollection(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
-		ctx, logger, vm := agents.CommonSetup(t, platform)	
+		ctx, logger, vm := agents.CommonSetup(t, platform)
 
 		disableSelfLogCollection := `global:
   default_self_log_file_collection: false
@@ -4427,12 +4499,12 @@ func TestDisableSelfLogCollection(t *testing.T) {
 			t.Fatal(err)
 		}
 
-        if err := gce.AssertLogMissing(ctx, logger.ToMainLog(), vm, "ops-agent-fluent-bit", 2 * time.Minute, `severity="INFO"`); err != nil {
+		if err := gce.AssertLogMissing(ctx, logger.ToMainLog(), vm, "ops-agent-fluent-bit", 2*time.Minute, `severity="INFO"`); err != nil {
 			t.Error(err)
 		}
-        
-        query := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", 3 * time.Minute, query); err != nil {
+
+		query := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", 3*time.Minute, query); err != nil {
 			t.Error(err)
 		}
 	})
