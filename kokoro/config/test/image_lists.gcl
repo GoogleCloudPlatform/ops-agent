@@ -118,7 +118,6 @@ centos8_x86_64 = _distro {
   release = [
     // RHEL.
     'rhel-8',
-    'rhel-8-1-sap-ha',
     'rhel-8-2-sap-ha',
     'rhel-8-4-sap-ha',
     'rhel-8-6-sap-ha',
@@ -155,7 +154,7 @@ sles12_x86_64 = _distro {
 sles15_x86_64 = _distro {
   release = [
     'sles-15',
-    'sles-15-sp1-sap',
+    'sles-15-sp2-sap',
     'sles-15-sp5-sap',
     'opensuse-leap',
     'opensuse-leap-15-4',

@@ -212,6 +212,24 @@ func TestBed(t *testing.T) {
 			),
 		},
 		{
+			Name: "UnexportedBool",
+			Config: &confgenerator.UnifiedConfig{
+				Metrics: &confgenerator.Metrics{
+					Receivers: map[string]confgenerator.MetricsReceiver{
+						"metricsReceiverFoo": &MetricsReceiverFoo{
+							ConfigComponent: confgenerator.ConfigComponent{
+								Type: "MetricsReceiverFoo",
+							},
+							MetricsReceiverInlineFoo: MetricsReceiverInlineFoo{
+								unexportedBool: true,
+							},
+						},
+					},
+				},
+			},
+			Expected: expectedTestFeatureBase,
+		},
+		{
 			Name: "PointerBool",
 			Config: &confgenerator.UnifiedConfig{
 				Metrics: &confgenerator.Metrics{
@@ -619,6 +637,7 @@ type MetricsReceiverInlineFoo struct {
 	StringWithTracking    string                      `yaml:"stringWithTracking" tracking:""`
 	StringWithoutTracking string                      `yaml:"stringWithoutTracking"`
 	Bool                  bool                        `yaml:"bool"`
+	unexportedBool        bool                        `yaml:"-"`
 	Ptr                   *bool                       `yaml:"ptr"`
 	Struct                MetricsReceiverInnerPointer `yaml:"struct" tracking:"override"`
 }
@@ -874,8 +893,8 @@ func getFeaturesForComponent(i interface{}, parent []string) [][]string {
 	for j := 0; j < t.NumField(); j++ {
 		f := t.Field(j)
 		override, ok := f.Tag.Lookup("tracking")
-		if override == "-" {
-			// Skip fields with tracking tag "-".
+		if override == "-" || !f.IsExported() {
+			// Skip fields with tracking tag "-" and unexported fields.
 			continue
 		}
 		switch f.Type.Kind() {

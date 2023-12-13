@@ -36,7 +36,7 @@ AGENT_PACKAGES_IN_GCS, for details see README.md.
 
 	PROJECT=dev_project \
 	ZONES=us-central1-b \
-	PLATFORMS=debian-10,centos-8,rhel-8-1-sap-ha,sles-15,ubuntu-2004-lts,windows-2016,windows-2019 \
+	PLATFORMS=debian-10,centos-8,rhel-8-2-sap-ha,sles-15,ubuntu-2004-lts,windows-2016,windows-2019 \
 	go test -v ops_agent_test.go \
 	  -test.parallel=1000 \
 	  -tags=integration_test \
@@ -332,7 +332,7 @@ func imageProject(family string) (string, error) {
 		return "opensuse-cloud", nil
 	case "sles":
 		// There are a few different cases:
-		// "sles-15" and "sles-15-sp1-sap".
+		// "sles-15" and "sles-15-sp*-sap".
 		if strings.Contains(family, "-sap") {
 			return "suse-sap-cloud", nil
 		}

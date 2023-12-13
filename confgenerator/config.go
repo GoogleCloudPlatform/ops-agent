@@ -574,6 +574,13 @@ type OTelReceiver interface {
 	Pipelines(ctx context.Context) []otel.ReceiverPipeline
 }
 
+type MetricsProcessorMerger interface {
+	// MergeMetricsProcessor attempts to merge p into the current receiver.
+	// It returns the new receiver; and true if the processor has been merged
+	// into the receiver completely
+	MergeMetricsProcessor(p MetricsProcessor) (MetricsReceiver, bool)
+}
+
 type MetricsReceiver interface {
 	OTelReceiver
 }
