@@ -100,6 +100,5 @@ func (p Platform) GetResource() (resourcedetector.Resource, error) {
 	} else if p.ResourceOverride != nil {
 		return p.ResourceOverride, nil
 	}
-	r, err := resourcedetector.GetResource()
-	return r, err
+	return resourcedetector.GetResource()
 }
