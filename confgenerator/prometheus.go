@@ -55,7 +55,7 @@ func (r PrometheusMetrics) Type() string {
 }
 
 func (r PrometheusMetrics) Pipelines(ctx context.Context) []otel.ReceiverPipeline {
-	resource, _, err := platform.FromContext(ctx).GetResource()
+	resource, err := platform.FromContext(ctx).GetResource()
 	if err != nil {
 		log.Printf("can't get resource metadata: %v", err)
 		return nil

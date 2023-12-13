@@ -17,7 +17,6 @@ package apps
 import (
 	"context"
 	"fmt"
-	"log"
 	"regexp"
 	"strings"
 
@@ -51,20 +50,10 @@ func (ReceiverOTLP) gmpResourceProcessors(ctx context.Context) []otel.Component 
 		return fmt.Sprintf(`set(%s, %s) where %s != nil and resource.attributes["cloud.platform"] == "%s"`,
 			target, source, source, platform)
 	}
-	resourceProcessorFunc := otel.GCPResourceDetector
-
-	resource, autodetected, err := platform.FromContext(ctx).GetResource()
-	if err != nil {
-		log.Printf("can't get resource metadata: %v", err)
-		return nil
+	processor := otel.GCPResourceDetector(false)
+	if r := platform.FromContext(ctx).ResourceOverride; r != nil {
+		processor = otel.ResourceTransform(r.OTelResourceAttributes(), false)
 	}
-	if !autodetected {
-		resourceProcessorFunc = func(override bool) otel.Component {
-			return otel.ResourceTransform(resource.OTelResourceAttributes(), override)
-		}
-	}
-
-	processor := resourceProcessorFunc(false)
 	return []otel.Component{
 		processor,
 		{

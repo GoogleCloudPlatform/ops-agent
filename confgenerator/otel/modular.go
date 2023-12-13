@@ -152,23 +152,17 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 		"service":    service,
 	}
 
-	resourceProcessorFunc := GCPResourceDetector
-
-	resource, autodetected, err := pl.GetResource()
-	if err != nil {
-		return "", fmt.Errorf("can't get resource metadata: %w", err)
+	resourceDetectionProcessors := map[ResourceDetectionMode]Component{
+		Override:     GCPResourceDetector(true),
+		SetIfMissing: GCPResourceDetector(false),
 	}
-	if !autodetected {
-		resourceProcessorFunc = func(override bool) Component {
-			return ResourceTransform(resource.OTelResourceAttributes(), override)
+
+	if pl.ResourceOverride != nil {
+		resourceDetectionProcessors = map[ResourceDetectionMode]Component{
+			Override:     ResourceTransform(pl.ResourceOverride.OTelResourceAttributes(), true),
+			SetIfMissing: ResourceTransform(pl.ResourceOverride.OTelResourceAttributes(), false),
 		}
 	}
-
-	resourceDetectionProcessors := map[ResourceDetectionMode]Component{
-		Override:     resourceProcessorFunc(true),
-		SetIfMissing: resourceProcessorFunc(false),
-	}
-
 	resourceDetectionProcessorNames := map[ResourceDetectionMode]string{
 		Override:     resourceDetectionProcessors[Override].name("_global_0"),
 		SetIfMissing: resourceDetectionProcessors[SetIfMissing].name("_global_1"),

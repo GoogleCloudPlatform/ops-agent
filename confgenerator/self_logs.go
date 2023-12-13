@@ -211,7 +211,7 @@ func generateSelfLogsProcessingComponents(ctx context.Context) []fluentbit.Compo
 	}.Components(ctx, opsAgentLogsMatch, "self-logs-processing")
 }
 
-func (uc *UnifiedConfig) generateSelfLogsComponents(ctx context.Context, userAgent string) ([]fluentbit.Component, error) {
+func (uc *UnifiedConfig) generateSelfLogsComponents(ctx context.Context, userAgent string) []fluentbit.Component {
 	out := make([]fluentbit.Component, 0)
 	out = append(out, generateFluentBitSelfLogsComponents(ctx)...)
 	out = append(out, generateHealthChecksLogsComponents(ctx)...)
@@ -224,10 +224,6 @@ func (uc *UnifiedConfig) generateSelfLogsComponents(ctx context.Context, userAge
 		// Ingest fluent-bit logs to Cloud Logging if enabled.
 		outputLogNames = append(outputLogNames, fluentBitSelfLogsTag)
 	}
-	outputComponent, err := stackdriverOutputComponent(ctx, strings.Join(outputLogNames, "|"), userAgent, "")
-	if err != nil {
-		return nil, err
-	}
-	out = append(out, outputComponent)
-	return out, nil
+	out = append(out, stackdriverOutputComponent(ctx, strings.Join(outputLogNames, "|"), userAgent, ""))
+	return out
 }

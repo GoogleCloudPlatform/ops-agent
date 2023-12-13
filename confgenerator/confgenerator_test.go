@@ -84,8 +84,7 @@ var (
 				Platform:        "linux_platform",
 				PlatformVersion: "linux_platform_version",
 			},
-			ResourceOverride:     testResource,
-			ResourceAutodetected: true,
+			TestGCEResourceOverride: testResource,
 		},
 	}
 	testPlatforms = []platformConfig{
@@ -101,9 +100,8 @@ var (
 					Platform:        "linux_platform",
 					PlatformVersion: "linux_platform_version",
 				},
-				ResourceOverride:     testResource,
-				ResourceAutodetected: true,
-				HasNvidiaGpu:         true,
+				TestGCEResourceOverride: testResource,
+				HasNvidiaGpu:            true,
 			},
 		},
 		{
@@ -119,8 +117,7 @@ var (
 					Platform:        "win_platform",
 					PlatformVersion: "win_platform_version",
 				},
-				ResourceOverride:     testResource,
-				ResourceAutodetected: true,
+				TestGCEResourceOverride: testResource,
 			},
 		},
 		{
@@ -136,8 +133,7 @@ var (
 					Platform:        "win_platform",
 					PlatformVersion: "win_platform_version",
 				},
-				ResourceOverride:     testResource,
-				ResourceAutodetected: true,
+				TestGCEResourceOverride: testResource,
 			},
 		},
 	}
@@ -198,7 +194,7 @@ func TestDataprocDefaults(t *testing.T) {
 			newMetadata[k] = v
 		}
 		dataprocResource.Metadata = newMetadata
-		pc.platform.ResourceOverride = dataprocResource
+		pc.platform.TestGCEResourceOverride = dataprocResource
 		t.Run(pc.name, func(t *testing.T) {
 			testDir := filepath.Join(goldensDir, testName)
 			got, err := generateConfigs(pc, testDir)

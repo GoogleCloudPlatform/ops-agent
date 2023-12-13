@@ -48,17 +48,12 @@ func setLogNameComponents(ctx context.Context, tag, logName, receiverType string
 }
 
 // stackdriverOutputComponent generates a component that outputs logs matching the regex `match` using `userAgent`.
-func stackdriverOutputComponent(ctx context.Context, match, userAgent string, storageLimitSize string) (fluentbit.Component, error) {
-	r, autodetected, err := platform.FromContext(ctx).GetResource()
-	if err != nil {
-		return fluentbit.Component{}, fmt.Errorf("can't get resource metadata: %w", err)
-	}
-	mr := r.MonitoredResource()
+func stackdriverOutputComponent(ctx context.Context, match, userAgent string, storageLimitSize string) fluentbit.Component {
 	config := map[string]string{
 		// https://docs.fluentbit.io/manual/pipeline/outputs/stackdriver
 		"Name":              "stackdriver",
 		"Match_Regex":       fmt.Sprintf("^(%s)$", match),
-		"resource":          mr.Type,
+		"resource":          "gce_instance",
 		"stackdriver_agent": userAgent,
 
 		"http_request_key": HttpRequestKey,
@@ -78,12 +73,14 @@ func stackdriverOutputComponent(ctx context.Context, match, userAgent string, st
 		// Mute these errors until https://github.com/fluent/fluent-bit/issues/4473 is fixed.
 		"net.connect_timeout_log_error": "False",
 	}
-	if !autodetected {
+	if r := platform.FromContext(ctx).ResourceOverride; r != nil {
+		mr := r.MonitoredResource()
 		var labels []string
 		for k, v := range mr.Labels {
 			labels = append(labels, fmt.Sprintf("%s=%s", k, v))
 		}
 		sort.Strings(labels)
+		config["resource"] = mr.Type
 		config["resource_labels"] = strings.Join(labels, ",")
 	}
 
@@ -96,5 +93,5 @@ func stackdriverOutputComponent(ctx context.Context, match, userAgent string, st
 	return fluentbit.Component{
 		Kind:   "OUTPUT",
 		Config: config,
-	}, nil
+	}
 }

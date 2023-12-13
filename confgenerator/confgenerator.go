@@ -312,7 +312,7 @@ const (
 // to instance attributes from the GCE metadata server.
 func addGceMetadataAttributesComponents(ctx context.Context, attributes []string, tag, uid string) []fluentbit.Component {
 	processorName := fmt.Sprintf("%s.%s.gce_metadata", tag, uid)
-	resource, _, err := platform.FromContext(ctx).GetResource()
+	resource, err := platform.FromContext(ctx).GetResource()
 	if err != nil {
 		log.Printf("can't get resource metadata: %v", err)
 		return nil
@@ -446,17 +446,9 @@ func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAg
 			out = append(out, s.components...)
 		}
 		if len(tags) > 0 {
-			outputComponent, err := stackdriverOutputComponent(ctx, strings.Join(tags, "|"), userAgent, "2G")
-			if err != nil {
-				return nil, err
-			}
-			out = append(out, outputComponent)
+			out = append(out, stackdriverOutputComponent(ctx, strings.Join(tags, "|"), userAgent, "2G"))
 		}
-		selfLogs, err := uc.generateSelfLogsComponents(ctx, userAgent)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, selfLogs...)
+		out = append(out, uc.generateSelfLogsComponents(ctx, userAgent)...)
 		out = append(out, addGceMetadataAttributesComponents(ctx, []string{
 			"dataproc-cluster-name",
 			"dataproc-cluster-uuid",
