@@ -141,7 +141,7 @@ func (p ParserShared) TimestampConfig() map[string]any {
 type LoggingProcessorParseJson struct {
 	ConfigComponent `yaml:",inline"`
 	ParserShared    `yaml:",inline"`
-	Field           string `yaml:"field,omitempty"`
+	Field           string `yaml:"field,omitempty" validate:"omitempty,fieldlegacy"`
 }
 
 func (r LoggingProcessorParseJson) Type() string {
