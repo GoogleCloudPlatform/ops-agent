@@ -46,8 +46,8 @@ echo "Installing NVIDIA Data Center driver $DRIVER_VERSION"
 curl -fSsl -O https://us.download.nvidia.com/tesla/$DRIVER_VERSION/NVIDIA-Linux-x86_64-$DRIVER_VERSION.run
 sudo bash ./NVIDIA-Linux-x86_64-$DRIVER_VERSION.run --silent
 # Install the CUDA toolkit only, so that the CUDA toolkit uses the Data Center driver installed in the previous step
-# See https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html for CUDA and driver compatibility 
-echo "Installing CUDA Toolkit $CUDA_VERSION from CUDA installer cuda_${CUDA_VERSION}_${CUDA_BUNDLED_DRIVER_VERSION}_linux.run."
+# See https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/ for CUDA and driver compatibility
+echo "Installing CUDA Toolkit $CUDA_VERSION from CUDA installer with bundled driver $CUDA_BUNDLED_DRIVER_VERSION"
 curl -fSsl -O https://developer.download.nvidia.com/compute/cuda/$CUDA_VERSION/local_installers/cuda_${CUDA_VERSION}_${CUDA_BUNDLED_DRIVER_VERSION}_linux.run
 sudo sh cuda_${CUDA_VERSION}_${CUDA_BUNDLED_DRIVER_VERSION}_linux.run --toolkit --silent
 
