@@ -312,7 +312,7 @@ const (
 // to instance attributes from the GCE metadata server.
 func addGceMetadataAttributesComponents(ctx context.Context, attributes []string, tag, uid string) []fluentbit.Component {
 	processorName := fmt.Sprintf("%s.%s.gce_metadata", tag, uid)
-	resource, err := platform.FromContext(ctx).GetResource()
+	resource, _, err := platform.FromContext(ctx).GetResource()
 	if err != nil {
 		log.Printf("can't get resource metadata: %v", err)
 		return nil

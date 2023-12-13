@@ -72,7 +72,6 @@ var (
 		Metadata:      map[string]string{"test-key": "test-value", "test-escape": "${foo:bar}"},
 		Label:         map[string]string{"test-label-key": "test-label-value"},
 		InterfaceIPv4: map[string]string{"test-interface": "test-interface-ipv4"},
-		AutoDetected:  true,
 	}
 	linuxTestPlatform = platformConfig{
 		name:            "linux",
@@ -85,7 +84,8 @@ var (
 				Platform:        "linux_platform",
 				PlatformVersion: "linux_platform_version",
 			},
-			ResourceOverride: testResource,
+			ResourceOverride:     testResource,
+			ResourceAutodetected: true,
 		},
 	}
 	testPlatforms = []platformConfig{
@@ -101,8 +101,9 @@ var (
 					Platform:        "linux_platform",
 					PlatformVersion: "linux_platform_version",
 				},
-				ResourceOverride: testResource,
-				HasNvidiaGpu:     true,
+				ResourceOverride:     testResource,
+				ResourceAutodetected: true,
+				HasNvidiaGpu:         true,
 			},
 		},
 		{
@@ -118,7 +119,8 @@ var (
 					Platform:        "win_platform",
 					PlatformVersion: "win_platform_version",
 				},
-				ResourceOverride: testResource,
+				ResourceOverride:     testResource,
+				ResourceAutodetected: true,
 			},
 		},
 		{
@@ -134,7 +136,8 @@ var (
 					Platform:        "win_platform",
 					PlatformVersion: "win_platform_version",
 				},
-				ResourceOverride: testResource,
+				ResourceOverride:     testResource,
+				ResourceAutodetected: true,
 			},
 		},
 	}

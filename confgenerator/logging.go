@@ -49,7 +49,7 @@ func setLogNameComponents(ctx context.Context, tag, logName, receiverType string
 
 // stackdriverOutputComponent generates a component that outputs logs matching the regex `match` using `userAgent`.
 func stackdriverOutputComponent(ctx context.Context, match, userAgent string, storageLimitSize string) (fluentbit.Component, error) {
-	r, err := platform.FromContext(ctx).GetResource()
+	r, autodetected, err := platform.FromContext(ctx).GetResource()
 	if err != nil {
 		return fluentbit.Component{}, fmt.Errorf("can't get resource metadata: %w", err)
 	}
@@ -78,7 +78,7 @@ func stackdriverOutputComponent(ctx context.Context, match, userAgent string, st
 		// Mute these errors until https://github.com/fluent/fluent-bit/issues/4473 is fixed.
 		"net.connect_timeout_log_error": "False",
 	}
-	if !r.IsAutoDetected() {
+	if !autodetected {
 		var labels []string
 		for k, v := range mr.Labels {
 			labels = append(labels, fmt.Sprintf("%s=%s", k, v))

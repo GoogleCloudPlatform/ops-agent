@@ -24,12 +24,13 @@ import (
 )
 
 type Platform struct {
-	Type               Type
-	WindowsBuildNumber string
-	WinlogV1Channels   []string
-	HostInfo           *host.InfoStat
-	HasNvidiaGpu       bool
-	ResourceOverride   resourcedetector.Resource
+	Type                 Type
+	WindowsBuildNumber   string
+	WinlogV1Channels     []string
+	HostInfo             *host.InfoStat
+	HasNvidiaGpu         bool
+	ResourceOverride     resourcedetector.Resource
+	ResourceAutodetected bool
 }
 
 type Type int
@@ -92,9 +93,10 @@ func (p Platform) Name() string {
 	panic(fmt.Sprintf("unknown type %v", p.Type))
 }
 
-func (p Platform) GetResource() (resourcedetector.Resource, error) {
+func (p Platform) GetResource() (resourcedetector.Resource, bool, error) {
 	if p.ResourceOverride != nil {
-		return p.ResourceOverride, nil
+		return p.ResourceOverride, p.ResourceAutodetected, nil
 	}
-	return resourcedetector.GetResource()
+	r, err := resourcedetector.GetResource()
+	return r, true, err
 }

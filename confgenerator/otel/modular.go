@@ -154,11 +154,11 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 
 	resourceProcessorFunc := GCPResourceDetector
 
-	resource, err := pl.GetResource()
+	resource, autodetected, err := pl.GetResource()
 	if err != nil {
 		return "", fmt.Errorf("can't get resource metadata: %w", err)
 	}
-	if !resource.IsAutoDetected() {
+	if !autodetected {
 		resourceProcessorFunc = func(override bool) Component {
 			return ResourceTransform(resource.OTelResourceAttributes(), override)
 		}

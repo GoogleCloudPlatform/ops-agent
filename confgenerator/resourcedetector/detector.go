@@ -23,7 +23,6 @@ import (
 // available attributes about the current monitoring resource.
 type Resource interface {
 	ProjectName() string
-	IsAutoDetected() bool
 	MonitoredResource() *monitoredres.MonitoredResource
 	OTelResourceAttributes() map[string]string
 	PrometheusStyleMetadata() map[string]string
@@ -64,10 +63,6 @@ func getUncachedResource() (Resource, error) {
 // UnrecognizedPlatformResource that returns an empty resource instance without any attributes
 // for unrecognized environments
 type UnrecognizedPlatformResource struct {
-}
-
-func (UnrecognizedPlatformResource) IsAutoDetected() bool {
-	return true
 }
 
 func (UnrecognizedPlatformResource) ProjectName() string {

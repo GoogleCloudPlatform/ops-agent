@@ -53,12 +53,12 @@ func (ReceiverOTLP) gmpResourceProcessors(ctx context.Context) []otel.Component 
 	}
 	resourceProcessorFunc := otel.GCPResourceDetector
 
-	resource, err := platform.FromContext(ctx).GetResource()
+	resource, autodetected, err := platform.FromContext(ctx).GetResource()
 	if err != nil {
 		log.Printf("can't get resource metadata: %v", err)
 		return nil
 	}
-	if !resource.IsAutoDetected() {
+	if !autodetected {
 		resourceProcessorFunc = func(override bool) otel.Component {
 			return otel.ResourceTransform(resource.OTelResourceAttributes(), override)
 		}
