@@ -596,11 +596,11 @@ func isRetriableInstallError(platform string, err error) bool {
 		strings.Contains(err.Error(), "context deadline exceeded") {
 		return true // See b/197127877 for history.
 	}
-	if platform == "rhel-8-1-sap-ha" &&
+	if strings.HasPrefix(platform, "rhel-8-") && strings.HasSuffix(platform, "-sap-ha") &&
 		strings.Contains(err.Error(), "Could not refresh the google-cloud-ops-agent yum repositories") {
 		return true // See b/174039270 for history.
 	}
-	if platform == "rhel-8-1-sap-ha" &&
+	if strings.HasPrefix(platform, "rhel-8-") && strings.HasSuffix(platform, "-sap-ha") &&
 		strings.Contains(err.Error(), "Failed to download metadata for repo 'rhui-rhel-8-") {
 		return true // This happens when the RHEL servers are down. See b/189950957.
 	}
@@ -638,7 +638,7 @@ func RunInstallFuncWithRetry(ctx context.Context, logger *log.Logger, vm *gce.VM
 	shouldRetry := func(err error) bool { return isRetriableInstallError(vm.Platform, err) }
 	installWithRecovery := func() error {
 		err := installFunc()
-		if err != nil && shouldRetry(err) && vm.Platform == "rhel-8-1-sap-ha" {
+		if err != nil && shouldRetry(err) && strings.HasPrefix(vm.Platform, "rhel-8-") && strings.HasSuffix(vm.Platform, "-sap-ha") {
 			logger.Println("attempting recovery steps from https://access.redhat.com/discussions/4656371 so that subsequent attempts are more likely to succeed... see b/189950957")
 			gce.RunRemotely(ctx, logger, vm, "", "sudo dnf clean all && sudo rm -r /var/cache/dnf && sudo dnf upgrade")
 		}

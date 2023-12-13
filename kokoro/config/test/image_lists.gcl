@@ -118,7 +118,6 @@ centos8_x86_64 = _distro {
   release = [
     // RHEL.
     'rhel-8',
-    'rhel-8-1-sap-ha',
     'rhel-8-2-sap-ha',
     'rhel-8-4-sap-ha',
     'rhel-8-6-sap-ha',
