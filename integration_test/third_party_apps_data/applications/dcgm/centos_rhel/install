@@ -31,7 +31,7 @@ case $DEVICE_CODE in
         ;;
     *)
         # Installing latest version of NVIDIA CUDA and driver
-        DRIVER_VERSION=535.104.05
+        DRIVER_VERSION=535.129.03
         ;;
 esac
 
