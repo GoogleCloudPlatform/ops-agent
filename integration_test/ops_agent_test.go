@@ -99,7 +99,7 @@ func workDirForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
 		return `C:\work`
 	}
-	return "/root/work"
+	return "/tmp/work"
 }
 
 func startCommandForPlatform(platform string) string {
@@ -155,7 +155,7 @@ func makeDirectory(ctx context.Context, logger *log.Logger, vm *gce.VM, director
 	if gce.IsWindows(vm.Platform) {
 		createFolderCmd = fmt.Sprintf("New-Item -ItemType Directory -Path %s", directory)
 	} else {
-		createFolderCmd = fmt.Sprintf("sudo mkdir -p %s", directory)
+		createFolderCmd = fmt.Sprintf("mkdir -p %s", directory)
 	}
 	_, err := gce.RunRemotely(ctx, logger, vm, "", createFolderCmd)
 	return err
@@ -2696,7 +2696,7 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to open setup script: %s", err)
 		}
-		setupOut, err := gce.RunScriptRemotely(ctx, logger, vm, string(setupScript), nil, nil)
+		setupOut, err := gce.RunRemotely(ctx, logger, vm, "", string(setupScript))
 		if err != nil {
 			t.Fatalf("failed to run json exporter in VM with err: %v, stderr: %s", err, setupOut.Stderr)
 		}
@@ -3208,9 +3208,7 @@ func TestPrometheusSummaryMetrics(t *testing.T) {
 }
 
 func buildGoBinary(ctx context.Context, logger *log.Logger, vm *gce.VM, source, dest string) error {
-	installCmd := fmt.Sprintf(`
-               /usr/local/go/bin/go build -o %s/ %s`, dest, source)
-	_, err := gce.RunScriptRemotely(ctx, logger, vm, installCmd, nil, nil)
+	_, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("sudo /usr/local/go/bin/go build -o %s/ %s", dest, source))
 	return err
 }
 
@@ -3261,9 +3259,9 @@ func testPrometheusMetrics(t *testing.T, opsAgentConfig string, testChecks []moc
 
 		// 4. Start the go http server
 		setupScript := `sudo systemctl daemon-reload && sudo systemctl enable http-server-for-prometheus-test && sudo systemctl restart http-server-for-prometheus-test`
-		setupOut, err := gce.RunRemotely(ctx, logger, vm, "", setupScript)
+		_, err = gce.RunRemotely(ctx, logger, vm, "", setupScript)
 		if err != nil {
-			t.Fatalf("failed to start the http server in VM via systemctl with err: %v, stderr: %s", err, setupOut.Stderr)
+			t.Fatalf("failed to start the http server in VM via systemctl with err: %v", err)
 		}
 		// Wait until the http server is ready
 		time.Sleep(20 * time.Second)
@@ -3984,9 +3982,9 @@ func runResourceDetectorCli(ctx context.Context, logger *log.Logger, vm *gce.VM)
 		%s
 		cd %s
 		go run run_resource_detector.go`, goPathCommandForPlatform(vm.Platform), workDir)
-	runnerOutput, err := gce.RunScriptRemotely(ctx, logger, vm, cmd, nil, nil)
+	runnerOutput, err := gce.RunRemotely(ctx, logger, vm, "", cmd)
 	if err != nil {
-		return nil, fmt.Errorf("failed to run resource detector in VM: %s", runnerOutput.Stderr)
+		return nil, fmt.Errorf("failed to run resource detector in VM: %w", err)
 	}
 
 	// Parse the output
@@ -4059,7 +4057,7 @@ func runGoCode(ctx context.Context, logger *log.Logger, vm *gce.VM, content io.R
 		go mod init main
 		go get ./...
 		go run main.go`, goPathCommandForPlatform(vm.Platform), workDir)
-	_, err := gce.RunScriptRemotely(ctx, logger, vm, goInitAndRun, nil, nil)
+	_, err := gce.RunRemotely(ctx, logger, vm, "", goInitAndRun)
 	return err
 }
 
@@ -4577,7 +4575,7 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
           echo "Hello world! $x" >> ~/log_%d.log
           ((x++))
         done`, logsPerSecond, logsPerSecond)
-		_, err := gce.RunScriptRemotely(ctx, logger, vm, generateLogPerSecondFile, nil, nil)
+		_, err := gce.RunRemotely(ctx, logger, vm, "", generateLogPerSecondFile)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -4600,8 +4598,7 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		output, err := gce.RunScriptRemotely(ctx, logger, vm, generateLogsScript, nil, nil)
-
+		output, err := gce.RunRemotely(ctx, logger, vm, "", generateLogsScript)
 		if err != nil {
 			t.Fatal(err)
 		}
