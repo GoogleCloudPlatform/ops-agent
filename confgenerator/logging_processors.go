@@ -201,7 +201,6 @@ func (p LoggingProcessorParseJson) Processors() []otel.Component {
 
 func (p LoggingProcessorParseJson) processors() ([]otel.Component, error) {
 	from := p.Field
-	// TODO: Parse field using filter.Member (but somehow also continue to support bare fields as currently allowed)
 	if from == "" {
 		from = "body.message"
 	}
