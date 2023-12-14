@@ -20,6 +20,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"log"
 	"path"
 	"regexp"
 	"sort"
@@ -28,6 +29,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
@@ -293,6 +295,57 @@ func processUserDefinedMultilineParser(i int, pID string, receiver LoggingReceiv
 	return nil
 }
 
+func sliceContains(s []string, v string) bool {
+	for _, e := range s {
+		if e == v {
+			return true
+		}
+	}
+	return false
+}
+
+const (
+	attributeLabelPrefix string = "compute.googleapis.com/attributes/"
+)
+
+// addGceMetadataAttributesComponents annotates logs with labels corresponding
+// to instance attributes from the GCE metadata server.
+func addGceMetadataAttributesComponents(ctx context.Context, attributes []string, tag, uid string) []fluentbit.Component {
+	processorName := fmt.Sprintf("%s.%s.gce_metadata", tag, uid)
+	resource, err := platform.FromContext(ctx).GetResource()
+	if err != nil {
+		log.Printf("can't get resource metadata: %v", err)
+		return nil
+	}
+	gceMetadata, ok := resource.(resourcedetector.GCEResource)
+	if !ok {
+		// Not on GCE; no attributes to detect.
+		log.Printf("ignoring the gce_metadata_attributes processor outside of GCE: %T", resource)
+		return nil
+	}
+	modifications := map[string]*ModifyField{}
+	var attributeKeys []string
+	for k, _ := range gceMetadata.Metadata {
+		attributeKeys = append(attributeKeys, k)
+	}
+	sort.Strings(attributeKeys)
+	for _, k := range attributeKeys {
+		if !sliceContains(attributes, k) {
+			continue
+		}
+		v := gceMetadata.Metadata[k]
+		modifications[fmt.Sprintf(`labels."%s%s"`, attributeLabelPrefix, k)] = &ModifyField{
+			StaticValue: &v,
+		}
+	}
+	if len(modifications) == 0 {
+		return nil
+	}
+	return LoggingProcessorModifyFields{
+		Fields: modifications,
+	}.Components(ctx, tag, processorName)
+}
+
 // generateFluentbitComponents generates a slice of fluentbit config sections to represent l.
 func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAgent string) ([]fluentbit.Component, error) {
 	l := uc.Logging
@@ -396,6 +449,11 @@ func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAg
 			out = append(out, stackdriverOutputComponent(ctx, strings.Join(tags, "|"), userAgent, "2G"))
 		}
 		out = append(out, uc.generateSelfLogsComponents(ctx, userAgent)...)
+		out = append(out, addGceMetadataAttributesComponents(ctx, []string{
+			"dataproc-cluster-name",
+			"dataproc-cluster-uuid",
+			"dataproc-region",
+		}, "*", "default-dataproc")...)
 	}
 	out = append(out, fluentbit.MetricsOutputComponent())
 
