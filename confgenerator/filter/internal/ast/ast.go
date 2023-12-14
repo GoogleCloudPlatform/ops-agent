@@ -21,6 +21,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/generated/token"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 )
 
 type Attrib interface{}
@@ -163,16 +164,12 @@ func (m Target) RecordAccessor() (string, error) {
 }
 
 // OTTLAccessor returns a string that can be used to refer to the field in OTTL
-func (m Target) OTTLAccessor() (string, error) {
+func (m Target) OTTLAccessor() (ottl.Value, error) {
 	otel, err := m.ottlPath()
 	if err != nil {
 		return "", err
 	}
-	parts := []string{otel[0]}
-	for _, p := range otel[1:] {
-		parts = append(parts, fmt.Sprintf(`[%q]`, p))
-	}
-	return strings.Join(parts, ""), nil
+	return ottl.PathToValue(otel...), nil
 }
 
 // LuaAccessor returns the value of the target (with write=false) or a function that takes one argument to set the target (with write=true).

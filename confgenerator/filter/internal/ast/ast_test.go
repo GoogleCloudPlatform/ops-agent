@@ -17,6 +17,7 @@ package ast
 import (
 	"testing"
 
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -50,7 +51,7 @@ func TestValidPath(t *testing.T) {
 		want          string
 		fluentBitPath []string
 		ottlPath      []string
-		ottlAccessor  string
+		ottlAccessor  ottl.Value
 	}{
 		{
 			Target{"jsonPayload", "hello"},

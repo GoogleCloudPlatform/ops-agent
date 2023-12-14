@@ -24,6 +24,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit/modify"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 )
 
 // TODO: Add a validation check that will allow only one unique language exceptions that focus in one specific language.
@@ -106,7 +107,7 @@ func (p ParserShared) Component(tag, uid string) (fluentbit.Component, string) {
 	return fluentbit.ParserComponentBase(p.TimeFormat, p.TimeKey, p.Types, tag, uid)
 }
 
-func (p ParserShared) TimestampStatements() ([]string, error) {
+func (p ParserShared) TimestampStatements() (ottl.Statements, error) {
 	if p.TimeKey == "" {
 		return nil, nil
 	}
@@ -118,10 +119,10 @@ func (p ParserShared) TimestampStatements() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return []string{
-		fmt.Sprintf(`set(time, Time(%s, %q))`, fromAccessor, p.TimeFormat),
-		fmt.Sprintf(`delete(%s)`, fromAccessor),
-	}, nil
+	return ottl.NewStatements(
+		ottl.PathToValue("time").Set(fromAccessor.ToTime(p.TimeFormat)),
+		fromAccessor.Delete(),
+	), nil
 }
 
 func (p ParserShared) TimestampConfig() map[string]any {
@@ -135,6 +136,37 @@ func (p ParserShared) TimestampConfig() map[string]any {
 		"layout_type": "strptime",
 		"layout":      p.TimeFormat,
 	}
+}
+
+func (p ParserShared) TypesStatements() (ottl.Statements, error) {
+	var out ottl.Statements
+	for field, fieldType := range p.Types {
+		m, err := filter.NewMemberLegacy(field)
+		if err != nil {
+			return nil, err
+		}
+		a, err := m.OTTLAccessor()
+		if err != nil {
+			return nil, err
+		}
+		// See OTTL docs at https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs
+		switch fieldType {
+		case "string":
+			out = out.Append(a.Set(a.ToString()))
+		case "integer":
+			out = out.Append(a.Set(a.ToInt()))
+		case "bool":
+			out = out.Append(a.SetToBool(a))
+		case "float":
+			out = out.Append(a.Set(a.ToFloat()))
+		case "hex":
+			// TODO: Not exposed in OTTL
+			fallthrough
+		default:
+			return nil, fmt.Errorf("type %q not supported for field %s", fieldType, m)
+		}
+	}
+	return out, nil
 }
 
 // A LoggingProcessorParseJson parses the specified field as JSON.
@@ -183,25 +215,27 @@ func (p LoggingProcessorParseJson) processors() ([]otel.Component, error) {
 		return nil, err
 	}
 
-	statements := []string{
-		fmt.Sprintf(`set(body, ParseJSON(%s))`, fromAccessor),
-	}
+	statements := ottl.NewStatements(
+		ottl.PathToValue("body").Set(fromAccessor.ParseJSON()),
+	)
 
 	ts, err := p.TimestampStatements()
 	if err != nil {
 		return nil, err
-	} else if len(ts) != 0 {
-		statements = append(statements, ts...)
 	}
-
-	// TODO: Support p.Types
+	statements = statements.Append(ts)
+	ts, err = p.TypesStatements()
+	if err != nil {
+		return nil, err
+	}
+	statements = statements.Append(ts)
 
 	// TODO: Handle special fields documented at https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/configuration#special-fields
 
 	// TODO: Support merging instead of replacing.
 	return []otel.Component{otel.Transform(
 		"log", "log",
-		statements...,
+		statements,
 	)}, nil
 }
 

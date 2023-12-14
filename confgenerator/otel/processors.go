@@ -19,6 +19,8 @@ import (
 	"path"
 	"sort"
 	"strings"
+
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 )
 
 // Helper functions to easily build up processor configs.
@@ -127,7 +129,7 @@ func RegexpRename(regexp string, rename string, operations ...map[string]interfa
 }
 
 // Transform returns a transform processor object that executes statements on statementType data.
-func Transform(statementType, context string, statements ...string) Component {
+func Transform(statementType, context string, statements ottl.Statements) Component {
 	return Component{
 		Type: "transform",
 		Config: map[string]map[string]any{
