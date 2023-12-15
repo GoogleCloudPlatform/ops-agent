@@ -2,13 +2,17 @@
   - resource: {}
     scopeLogs:
     - logRecords:
-      - attributes:
-        - key: log.file.name
-          value:
-            stringValue: input.log
-        body:
-          stringValue: "{\"key1\": 12345, \"key2\": \"abc\", \"time\": \"2006-07-28T13:22\"}"
+      - body:
+          kvlistValue:
+            values:
+            - key: key2
+              value:
+                stringValue: abc
+            - key: key1
+              value:
+                doubleValue: 12345
         observedTimeUnixNano: now
         spanId: ""
+        timeUnixNano: "1154107320000000000"
         traceId: ""
       scope: {}
