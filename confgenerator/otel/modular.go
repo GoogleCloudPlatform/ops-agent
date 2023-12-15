@@ -107,12 +107,17 @@ func configToYaml(config interface{}) ([]byte, error) {
 }
 
 type ModularConfig struct {
-	DisableMetrics    bool
 	LogLevel          string
 	ReceiverPipelines map[string]ReceiverPipeline
 	Pipelines         map[string]Pipeline
 
 	Exporters map[ExporterType]Component
+
+	// Test-only options:
+	// Don't generate any self-metrics (
+	DisableMetrics bool
+	// Emit collector logs as JSON
+	JSONLogs bool
 }
 
 // Generate an OT YAML config file for c.
@@ -146,6 +151,11 @@ func (c ModularConfig) Generate() (string, error) {
 	if c.LogLevel != "info" {
 		service["telemetry"]["logs"] = map[string]interface{}{
 			"level": c.LogLevel,
+		}
+	}
+	if c.JSONLogs {
+		service["telemetry"]["logs"] = map[string]interface{}{
+			"encoding": "json",
 		}
 	}
 

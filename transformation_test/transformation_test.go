@@ -3,8 +3,10 @@ package transformation_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"os/exec"
@@ -143,7 +145,7 @@ func (transformationConfig transformationTest) runFluentBitTest(t *testing.T, na
 	checkOutput(t, filepath.Join(name, transformationOutput), data)
 }
 
-func checkOutput(t *testing.T, name string, got any) {
+func checkOutput(t *testing.T, name string, got []map[string]any) {
 	t.Helper()
 	wantBytes := golden.Get(t, name)
 	gotBytes, err := yaml.Marshal(got)
@@ -241,6 +243,7 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 
 	return otel.ModularConfig{
 		DisableMetrics: true,
+		JSONLogs:       true,
 		ReceiverPipelines: map[string]otel.ReceiverPipeline{
 			"input": rp[0],
 		},
@@ -337,18 +340,21 @@ func (transformationConfig transformationTest) runOTelTest(t *testing.T, name st
 	// TODO
 	_ = ctx
 
-	var stdout, stderr bytes.Buffer
+	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
+
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		t.Fatal("Failed to create stderr pipe:", err)
+	}
 
 	if err := cmd.Start(); err != nil {
 		t.Fatal("Failed to start command:", err)
 	}
 
+	var errors []map[string]any
+
 	var eg errgroup.Group
-	eg.Go(func() error {
-		return cmd.Wait()
-	})
 	eg.Go(func() error {
 		// TODO: Figure out how to wait for the collector to process the logs before signaling shutdown.
 		time.Sleep(5 * time.Second)
@@ -357,15 +363,40 @@ func (transformationConfig transformationTest) runOTelTest(t *testing.T, name st
 		}
 		return nil
 	})
+	eg.Go(func() error {
+		d := json.NewDecoder(stderr)
+		for {
+			log := map[string]any{}
+			if err := d.Decode(&log); err == io.EOF {
+				return nil
+			} else if err != nil {
+				return err
+			}
+			delete(log, "ts")
+			level, _ := log["level"].(string)
+			if level != "info" && level != "debug" && level != "None" {
+				errors = append(errors, log)
+			}
+			b, err := json.Marshal(log)
+			if err != nil {
+				t.Errorf("failed to marshal otel log: %v", err)
+			} else {
+				t.Logf("collector log output: %s", b)
+			}
+		}
+	})
+
 	if err := eg.Wait(); err != nil {
+		t.Errorf("errgroup failed: %v", err)
+	}
+
+	if err := cmd.Wait(); err != nil {
 		t.Errorf("process failed: %v", err)
 	}
 
-	t.Logf("stderr: %s\n", stderr.Bytes())
-
 	// read and unmarshal output
 	reqs := rcv.Requests()
-	var data []any
+	var data []map[string]any
 	for _, r := range reqs {
 		b, err := r.MarshalJSON()
 		if err != nil {
@@ -406,6 +437,10 @@ func (transformationConfig transformationTest) runOTelTest(t *testing.T, name st
 		}
 
 		data = append(data, req)
+	}
+	// Package up collector errors to be included in the golden output.
+	if len(errors) != 0 {
+		data = append(data, map[string]any{"collector_errors": errors})
 	}
 	// // transform timestamp of actual results
 	// for i, d := range data {
