@@ -470,7 +470,7 @@ processors:
       statements:
       - set(body, ParseJSON(body["key_1"]))
       - set(time, Time(body["time_key_1"], "time_format_1"))
-      - delete(body["time_key_1"])
+      - delete_key(body, "time_key_1")
   transform/syslog_0:
     log_statements:
     - context: log

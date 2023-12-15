@@ -27,51 +27,64 @@ func statementf(format string, args ...any) Statement {
 	return Statement(fmt.Sprintf(format, args...))
 }
 
-type Value string
+// Value represents something that has a value in OTTL (either LValue or RValue)
+type Value interface {
+	fmt.Stringer
+}
 
-func PathToValue(path ...string) Value {
+// LValue represents a field (path) that can be written to.
+type LValue []string
+
+func (path LValue) String() string {
 	parts := []string{path[0]}
 	for _, p := range path[1:] {
 		parts = append(parts, fmt.Sprintf(`[%q]`, p))
 	}
-	return Value(strings.Join(parts, ""))
+	return strings.Join(parts, "")
+}
+
+// RValue represents an arbitrary expression that can be evaluated to a value.
+type RValue string
+
+func (v RValue) String() string {
+	return string(v)
 }
 
 func valuef(format string, args ...any) Value {
-	return Value(fmt.Sprintf(format, args...))
+	return RValue(fmt.Sprintf(format, args...))
 }
 
-func (a Value) Set(b Value) Statements {
+func (a LValue) Set(b Value) Statements {
 	return Statements{
 		statementf(`set(%s, %s)`, a, b),
 	}
 }
 
-func (a Value) ToString() Value {
+func ToString(a Value) Value {
 	return valuef(`Concat([%s], "")`, a)
 }
 
-func (a Value) ToInt() Value {
+func ToInt(a Value) Value {
 	return valuef(`Int(%s)`, a)
 }
 
-func (a Value) ToFloat() Value {
+func ToFloat(a Value) Value {
 	return valuef(`Double(%s)`, a)
 }
 
-func (a Value) ToTime(strpformat string) Value {
+func ToTime(a Value, strpformat string) Value {
 	return valuef(`Time(%s, %q)`, a, strpformat)
 }
 
-func (a Value) ParseJSON() Value {
+func ParseJSON(a Value) Value {
 	return valuef(`ParseJSON(%s)`, a)
 }
 
-func (a Value) SetToBool(b Value) Statements {
+func (a LValue) SetToBool(b Value) Statements {
 	// https://github.com/fluent/fluent-bit/blob/fd402681ad0ca0427395b07bb8a37c7c1c846cca/src/flb_parser.c#L1261
 	// "true" = true, "false" = false, else error
 	var out Statements
-	if a != b {
+	if a.String() != b.String() {
 		out = append(out, statementf(`set(%s, %s)`, a, b))
 	}
 	out = append(out,
@@ -81,9 +94,11 @@ func (a Value) SetToBool(b Value) Statements {
 	return out
 }
 
-func (a Value) Delete() Statements {
+func (a LValue) Delete() Statements {
+	parent := a[:len(a)-1]
+	child := a[len(a)-1]
 	return Statements{
-		statementf(`delete(%s)`, a),
+		statementf(`delete_key(%s, %q)`, parent, child),
 	}
 }
 

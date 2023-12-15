@@ -164,12 +164,12 @@ func (m Target) RecordAccessor() (string, error) {
 }
 
 // OTTLAccessor returns a string that can be used to refer to the field in OTTL
-func (m Target) OTTLAccessor() (ottl.Value, error) {
+func (m Target) OTTLAccessor() (ottl.LValue, error) {
 	otel, err := m.ottlPath()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return ottl.PathToValue(otel...), nil
+	return ottl.LValue(otel), nil
 }
 
 // LuaAccessor returns the value of the target (with write=false) or a function that takes one argument to set the target (with write=true).

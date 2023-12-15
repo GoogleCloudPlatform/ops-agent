@@ -219,37 +219,40 @@ func generateFluentBitConfigs(ctx context.Context, name string, transformationTe
 	}.Generate()
 }
 
-func (transformationConfig transformationTest) generateOTelConfig(t *testing.T, name string, otlpAddr string) (string, error) {
+func (transformationConfig transformationTest) generateOTelConfig(ctx context.Context, t *testing.T, name string, otlpAddr string) (string, error) {
 	abs, err := filepath.Abs(filepath.Join("testdata", name, transformationInput))
 	if err != nil {
 		return "", err
 	}
+	var components []otel.Component
+	for _, p := range transformationConfig {
+		if p, ok := p.LoggingProcessor.(confgenerator.OTelProcessor); ok {
+			components = append(components, p.Processors()...)
+		} else {
+			t.Fatalf("not an OTel processor: %v", p)
+		}
+	}
+
+	rp := confgenerator.LoggingReceiverFilesMixin{
+		IncludePaths: []string{
+			abs,
+		},
+	}.Pipelines(ctx)
+
 	return otel.ModularConfig{
 		DisableMetrics: true,
 		ReceiverPipelines: map[string]otel.ReceiverPipeline{
-			"input": otel.ReceiverPipeline{
-				Receiver: otel.Component{
-					Type: "filelog",
-					Config: map[string]interface{}{
-						"include": []string{
-							abs,
-						},
-						"start_at": "beginning",
-					},
-				},
-				Processors:    map[string][]otel.Component{"logs": nil},
-				ExporterTypes: map[string]otel.ExporterType{"logs": otel.System},
-			},
+			"input": rp[0],
 		},
 		Pipelines: map[string]otel.Pipeline{
 			"input": otel.Pipeline{
 				Type:                 "logs",
 				ReceiverPipelineName: "input",
-				Processors:           nil, // FIXME
+				Processors:           components,
 			},
 		},
 		Exporters: map[otel.ExporterType]otel.Component{
-			otel.System: otel.Component{
+			otel.OTel: otel.Component{
 				Type: "otlp",
 				Config: map[string]interface{}{
 					"endpoint": otlpAddr,
@@ -313,7 +316,7 @@ func (transformationConfig transformationTest) runOTelTest(t *testing.T, name st
 	// Also closes the connection.
 	defer rcv.srv.GracefulStop()
 
-	config, err := transformationConfig.generateOTelConfig(t, name, ln.Addr().String())
+	config, err := transformationConfig.generateOTelConfig(ctx, t, name, ln.Addr().String())
 	if err != nil {
 		t.Fatal(err)
 	}

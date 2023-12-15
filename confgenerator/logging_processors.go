@@ -120,7 +120,7 @@ func (p ParserShared) TimestampStatements() (ottl.Statements, error) {
 		return nil, err
 	}
 	return ottl.NewStatements(
-		ottl.PathToValue("time").Set(fromAccessor.ToTime(p.TimeFormat)),
+		ottl.LValue{"time"}.Set(ottl.ToTime(fromAccessor, p.TimeFormat)),
 		fromAccessor.Delete(),
 	), nil
 }
@@ -152,13 +152,13 @@ func (p ParserShared) TypesStatements() (ottl.Statements, error) {
 		// See OTTL docs at https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs
 		switch fieldType {
 		case "string":
-			out = out.Append(a.Set(a.ToString()))
+			out = out.Append(a.Set(ottl.ToString(a)))
 		case "integer":
-			out = out.Append(a.Set(a.ToInt()))
+			out = out.Append(a.Set(ottl.ToInt(a)))
 		case "bool":
 			out = out.Append(a.SetToBool(a))
 		case "float":
-			out = out.Append(a.Set(a.ToFloat()))
+			out = out.Append(a.Set(ottl.ToFloat(a)))
 		case "hex":
 			// TODO: Not exposed in OTTL
 			fallthrough
@@ -215,7 +215,7 @@ func (p LoggingProcessorParseJson) processors() ([]otel.Component, error) {
 	}
 
 	statements := ottl.NewStatements(
-		ottl.PathToValue("body").Set(fromAccessor.ParseJSON()),
+		ottl.LValue{"body"}.Set(ottl.ParseJSON(fromAccessor)),
 	)
 
 	ts, err := p.TimestampStatements()

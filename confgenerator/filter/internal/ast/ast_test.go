@@ -17,7 +17,6 @@ package ast
 import (
 	"testing"
 
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -51,7 +50,7 @@ func TestValidPath(t *testing.T) {
 		want          string
 		fluentBitPath []string
 		ottlPath      []string
-		ottlAccessor  ottl.Value
+		ottlAccessor  string
 	}{
 		{
 			Target{"jsonPayload", "hello"},
@@ -127,7 +126,7 @@ func TestValidPath(t *testing.T) {
 			if err != nil {
 				t.Errorf("got unexpected error: %v", err)
 			}
-			if diff := cmp.Diff(gotAccessor, test.ottlAccessor); diff != "" {
+			if diff := cmp.Diff(gotAccessor.String(), test.ottlAccessor); diff != "" {
 				t.Errorf("unexpected OTTL accessor (got -/want +):\n%s", diff)
 			}
 		})
