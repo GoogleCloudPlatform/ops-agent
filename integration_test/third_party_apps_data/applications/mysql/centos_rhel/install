@@ -3,6 +3,7 @@ set -e
 source /etc/os-release
 VERSION_ID=${VERSION_ID%%.*}
 
+sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2023
 sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2022
 sudo yum -y install https://repo.mysql.com/mysql80-community-release-el${VERSION_ID}-1.noarch.rpm
 
