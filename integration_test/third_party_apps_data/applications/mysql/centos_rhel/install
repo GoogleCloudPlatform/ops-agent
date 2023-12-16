@@ -3,18 +3,9 @@ set -e
 source /etc/os-release
 VERSION_ID=${VERSION_ID%%.*}
 
-mysql_repo_pkg_name=''
-if [[ "${VERSION_ID}" == 7 ]]; then
-  mysql_repo_pkg_name=mysql80-community-release-el${VERSION_ID}-11.noarch.rpm
-elif [[ "${VERSION_ID}" == 8 ]]; then
-  mysql_repo_pkg_name=mysql80-community-release-el${VERSION_ID}-9.noarch.rpm
-elif [[ "${VERSION_ID}" == 9 ]]; then
-  mysql_repo_pkg_name=mysql80-community-release-el${VERSION_ID}-5.noarch.rpm
-fi
-
 sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2023
 sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2022
-sudo yum -y install https://repo.mysql.com/${mysql_repo_pkg_name}
+sudo yum -y install https://repo.mysql.com/mysql80-community-release-el${VERSION_ID}.rpm
 
 if [ ${VERSION_ID} == 8 ]; then
   sudo yum -y module disable mysql
