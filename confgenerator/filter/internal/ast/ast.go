@@ -16,6 +16,7 @@ package ast
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -435,6 +436,43 @@ func (r Restriction) FluentConfig(tag, key string) ([]fluentbit.Component, strin
 	if expr != "" {
 		// All comparisons involving a missing field are false
 		return nil, fmt.Sprintf(`(function(v) if v == nil then return false end return %s end)(%s)`, expr, lhs)
+	}
+	// This is all the supported operators.
+	panic(fmt.Errorf("unknown operator: %s", r.Operator))
+}
+
+func (r Restriction) OTTLExpression(key string) ottl.Value {
+	lhs, _ := r.LHS.OTTLAccessor()
+
+	// TODO: Add support for numeric comparisons
+
+	var expr ottl.Value
+
+	switch r.Operator {
+	case "GLOBAL", "<", "<=", ">", ">=":
+		panic(fmt.Errorf("unimplemented operator: %s", r.Operator))
+	case ":":
+		// substring match, case insensitive
+		expr = ottl.IsMatch(lhs, fmt.Sprintf(`(?i)%s`, regexp.QuoteMeta(r.RHS)))
+	case "=~", "!~":
+		// regex match, case sensitive
+
+		expr = ottl.IsMatch(lhs, r.RHS)
+		// TODO: Support Ruby regex syntax
+
+		if r.Operator == "!~" {
+			expr = ottl.Not(expr)
+		}
+	case "=", "!=":
+		// equality, case insensitive
+		expr = ottl.IsMatch(lhs, fmt.Sprintf(`(?i)^%s$`, regexp.QuoteMeta(r.RHS)))
+		if r.Operator == "!~" {
+			expr = ottl.Not(expr)
+		}
+	}
+	if expr != nil {
+		// All comparisons involving a missing field are false
+		return ottl.And(lhs.IsPresent(), expr)
 	}
 	// This is all the supported operators.
 	panic(fmt.Errorf("unknown operator: %s", r.Operator))

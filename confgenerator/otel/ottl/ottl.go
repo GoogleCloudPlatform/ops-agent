@@ -74,6 +74,15 @@ func (a LValue) SetIfNull(b Value) Statements {
 	}
 }
 
+// IsPresent returns true if the field is recursively present (with any value)
+func (a LValue) IsPresent() Value {
+	var conditions []Value
+	for i := 1; i <= len(a); i++ {
+		conditions = append(conditions, IsNotNil(a[:i]))
+	}
+	return And(conditions...)
+}
+
 func ToString(a Value) Value {
 	return valuef(`Concat([%s], "")`, a)
 }
@@ -92,6 +101,26 @@ func ToTime(a Value, strpformat string) Value {
 
 func ParseJSON(a Value) Value {
 	return valuef(`ParseJSON(%s)`, a)
+}
+
+func IsMatch(target Value, pattern string) Value {
+	return valuef(`IsMatch(%s, %q)`, target, pattern)
+}
+
+func Not(a Value) Value {
+	return valuef(`(not %s)`, a)
+}
+
+func And(conditions ...Value) Value {
+	var out []string
+	for _, c := range conditions {
+		out = append(out, c.String())
+	}
+	return valuef(`(%s)`, strings.Join(out, " and "))
+}
+
+func IsNotNil(a Value) Value {
+	return valuef(`%s != nil`, a)
 }
 
 func (a LValue) SetToBool(b Value) Statements {
