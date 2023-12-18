@@ -2,30 +2,39 @@
   - resource: {}
     scopeLogs:
     - logRecords:
-      - attributes:
-        - key: log.file.name
-          value:
-            stringValue: input.log
-        body:
-          stringValue: foo
+      - body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: foo
+            - key: hello
+              value:
+                stringValue: world
         observedTimeUnixNano: now
         spanId: ""
         traceId: ""
-      - attributes:
-        - key: log.file.name
-          value:
-            stringValue: input.log
-        body:
-          stringValue: goo
+      - body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: goo
+            - key: hello
+              value:
+                stringValue: world
         observedTimeUnixNano: now
         spanId: ""
         traceId: ""
-      - attributes:
-        - key: log.file.name
-          value:
-            stringValue: input.log
-        body:
-          stringValue: yes maybe no
+      - body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: yes maybe no
+            - key: hello
+              value:
+                stringValue: world
         observedTimeUnixNano: now
         spanId: ""
         traceId: ""

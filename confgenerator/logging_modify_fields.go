@@ -17,11 +17,14 @@ package confgenerator
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 )
 
 type ModifyField struct {
@@ -31,6 +34,8 @@ type ModifyField struct {
 	StaticValue  *string `yaml:"static_value" validate:"excluded_with=MoveFrom CopyFrom DefaultValue"`
 	DefaultValue *string `yaml:"default_value" validate:"excluded_with=StaticValue"`
 
+	// OTTL expression with copied value
+	sourceValue ottl.Value `yaml:"-"`
 	// Name of Lua variable with copied value
 	sourceVar string `yaml:"-"`
 	// Name of Lua variable with omit boolean
@@ -228,6 +233,142 @@ end
 	components = append(components, fluentbit.LuaFilterComponents(tag, "process", lua.String())...)
 
 	return components, nil
+}
+
+func (p LoggingProcessorModifyFields) Processors() []otel.Component {
+	out, err := p.processors()
+	if err != nil {
+		// It shouldn't be possible to get here if the input validation is working
+		panic(err)
+	}
+	return out
+}
+
+func (p LoggingProcessorModifyFields) processors() ([]otel.Component, error) {
+	var statements ottl.Statements
+
+	var dests []string
+	for dest, field := range p.Fields {
+		if field == nil {
+			// Nothing to do for this field
+			continue
+		}
+		dests = append(dests, dest)
+	}
+	sort.Strings(dests)
+
+	// map of (dest field as OTTL expression) to (source field as OTTL expression)
+	fieldMappings := map[string]ottl.LValue{}
+	// slice of OTTL fields to delete
+	var moveFromFields []ottl.LValue
+	// map of (variable name) to (filter object)
+	omitFilters := map[string]*filter.Filter{}
+
+	for i, dest := range dests {
+		field := p.Fields[dest]
+		if field.MoveFrom == "" && field.CopyFrom == "" && field.StaticValue == nil {
+			// Default to modifying field in place
+			field.CopyFrom = dest
+		}
+		for j, name := range []*string{&field.MoveFrom, &field.CopyFrom} {
+			if *name == "" {
+				continue
+			}
+			m, err := filter.NewMember(*name)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse field %q: %w", *name, err)
+
+			}
+			accessor, err := m.OTTLAccessor()
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert field %q to OTTL: %w", *name, err)
+			}
+			key := accessor.String()
+			if _, ok := fieldMappings[key]; !ok {
+				new := ottl.LValue{
+					"cache",
+					fmt.Sprintf("__field_%d", i),
+				}
+				fieldMappings[key] = new
+				statements = statements.Append(new.Set(accessor))
+			}
+			field.sourceValue = fieldMappings[key]
+			if j == 0 { // MoveFrom
+				moveFromFields = append(moveFromFields, accessor)
+			}
+		}
+		if field.OmitIf != "" {
+			f, err := filter.NewFilter(field.OmitIf)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse filter %q: %w", field.OmitIf, err)
+			}
+			field.omitVar = fmt.Sprintf("__omit_%d", i)
+			omitFilters[field.omitVar] = f
+		}
+	}
+	// Step 2: OmitIf conditions
+	// TODO
+
+	// Step 3: Remove any MoveFrom fields
+	// Sort first to make the resulting configs deterministic
+	sort.Slice(moveFromFields, func(i, j int) bool {
+		return moveFromFields[i].String() < moveFromFields[j].String()
+	})
+	var last ottl.LValue
+	for _, v := range moveFromFields {
+		if !slices.Equal(last, v) {
+			statements = statements.Append(v.Delete())
+		}
+		last = v
+	}
+	// Step 4: Assign values
+	for _, dest := range dests {
+		field := p.Fields[dest]
+		outM, err := filter.NewMember(dest)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse output field %q: %m", dest, err)
+		}
+
+		src := ottl.Null()
+		if field.sourceValue != nil {
+			src = field.sourceValue
+		}
+		if field.StaticValue != nil {
+			src = ottl.StringLiteral(*field.StaticValue)
+		}
+		value := ottl.LValue{"cache", "value"}
+		statements = statements.Append(
+			value.Set(src),
+		)
+		if field.DefaultValue != nil {
+			statements = statements.Append(
+				value.SetIfNull(src),
+			)
+		}
+
+		// TODO: Process MapValues
+
+		switch field.Type {
+		case "integer":
+			statements = statements.Append(value.Set(ottl.ToInt(value)))
+		case "float":
+			statements = statements.Append(value.Set(ottl.ToFloat(value)))
+		case "YesNoBoolean":
+			// TODO
+			return nil, fmt.Errorf("YesNoBoolean unsupported")
+		}
+
+		// TODO: omit if
+		ra, err := outM.OTTLAccessor()
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert %v to OTTL accessor: %w", outM, err)
+		}
+		statements = statements.Append(ra.Set(value))
+	}
+	return []otel.Component{otel.Transform(
+		"log", "log",
+		statements,
+	)}, nil
 }
 
 func init() {

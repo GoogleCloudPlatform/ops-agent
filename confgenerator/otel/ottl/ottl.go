@@ -54,9 +54,23 @@ func valuef(format string, args ...any) Value {
 	return RValue(fmt.Sprintf(format, args...))
 }
 
+func StringLiteral(v string) Value {
+	return valuef(`%q`, v)
+}
+
+func Null() Value {
+	return valuef("null")
+}
+
 func (a LValue) Set(b Value) Statements {
 	return Statements{
 		statementf(`set(%s, %s)`, a, b),
+	}
+}
+
+func (a LValue) SetIfNull(b Value) Statements {
+	return Statements{
+		statementf(`set(%s, %s) where %s == null`, a, b, a),
 	}
 }
 

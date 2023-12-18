@@ -228,8 +228,8 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 	}
 	var components []otel.Component
 	for _, p := range transformationConfig {
-		if p, ok := p.LoggingProcessor.(confgenerator.OTelProcessor); ok {
-			components = append(components, p.Processors()...)
+		if op, ok := p.LoggingProcessor.(confgenerator.OTelProcessor); ok {
+			components = append(components, op.Processors()...)
 		} else {
 			t.Fatalf("not an OTel processor: %v", p)
 		}
