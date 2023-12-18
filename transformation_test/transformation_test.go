@@ -352,7 +352,7 @@ func (transformationConfig transformationTest) runOTelTest(t *testing.T, name st
 		t.Fatal("Failed to start command:", err)
 	}
 
-	var errors []map[string]any
+	var errors []any
 
 	var eg errgroup.Group
 	eg.Go(func() error {

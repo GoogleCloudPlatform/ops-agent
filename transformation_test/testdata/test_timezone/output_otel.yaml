@@ -5,12 +5,12 @@
       - body:
           kvlistValue:
             values:
-            - key: key1
-              value:
-                doubleValue: 12345
             - key: key2
               value:
                 stringValue: abc
+            - key: key1
+              value:
+                doubleValue: 12345
         observedTimeUnixNano: now
         spanId: ""
         timeUnixNano: "1154107320000000000"
