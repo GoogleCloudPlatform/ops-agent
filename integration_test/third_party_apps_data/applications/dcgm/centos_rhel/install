@@ -31,11 +31,11 @@ case $DEVICE_CODE in
         ;;
     *)
         # Installing latest version of NVIDIA CUDA and driver
-        DRIVER_VERSION=535.104.05
+        DRIVER_VERSION=535.129.03
         ;;
 esac
 
-echo "Installing NVIDIA CUDA $CUDA_VERSION with driver $DRIVER_VERSION"
+echo "Installing NVIDIA Data Center driver $DRIVER_VERSION"
 curl -fSsl -O https://us.download.nvidia.com/tesla/$DRIVER_VERSION/NVIDIA-Linux-x86_64-$DRIVER_VERSION.run
 sudo bash ./NVIDIA-Linux-x86_64-$DRIVER_VERSION.run --silent
 

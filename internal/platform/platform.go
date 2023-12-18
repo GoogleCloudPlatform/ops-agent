@@ -30,6 +30,8 @@ type Platform struct {
 	HostInfo           *host.InfoStat
 	HasNvidiaGpu       bool
 	ResourceOverride   resourcedetector.Resource
+	// Resource override only for GCE metadata unit testing
+	TestGCEResourceOverride resourcedetector.Resource
 }
 
 type Type int
@@ -90,4 +92,14 @@ func (p Platform) Name() string {
 		return "linux"
 	}
 	panic(fmt.Sprintf("unknown type %v", p.Type))
+}
+
+func (p Platform) GetResource() (resourcedetector.Resource, error) {
+	if p.TestGCEResourceOverride != nil {
+		return p.TestGCEResourceOverride, nil
+	} else if p.ResourceOverride != nil {
+		return p.ResourceOverride, nil
+	}
+	r, err := resourcedetector.GetResource()
+	return r, err
 }

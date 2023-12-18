@@ -36,7 +36,7 @@ AGENT_PACKAGES_IN_GCS, for details see README.md.
 
 	PROJECT=dev_project \
 	ZONES=us-central1-b \
-	PLATFORMS=debian-10,centos-8,rhel-8-1-sap-ha,sles-15,ubuntu-2004-lts,windows-2016,windows-2019 \
+	PLATFORMS=debian-10,centos-8,rhel-8-2-sap-ha,sles-15,ubuntu-2004-lts,windows-2016,windows-2019 \
 	go test -v ops_agent_test.go \
 	  -test.parallel=1000 \
 	  -tags=integration_test \
@@ -332,7 +332,7 @@ func imageProject(family string) (string, error) {
 		return "opensuse-cloud", nil
 	case "sles":
 		// There are a few different cases:
-		// "sles-15" and "sles-15-sp1-sap".
+		// "sles-15" and "sles-15-sp*-sap".
 		if strings.Contains(family, "-sap") {
 			return "suse-sap-cloud", nil
 		}
@@ -820,13 +820,15 @@ func wrapPowershellCommand(command string) (string, error) {
 
 // RunRemotely runs a command on the provided VM.
 // The command should be a shell command if the VM is Linux, or powershell if the VM is Windows.
-// Returns the combined stdout+stderr as a string, plus an error if there was
-// a problem.
+// Returns the stdout and stderr, plus an error if there was a problem.
 //
 // 'command' is what to run on the machine. Example: "cat /tmp/foo; echo hello"
 // For extremely long commands, use RunScriptRemotely instead.
 // 'stdin' is what to supply to the command on stdin. It is usually "".
 // TODO: Remove the stdin parameter, because it is hardly used.
+//
+// When making changes to this function, please test them by running
+// gce_testing_test.go (manually).
 func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, command string) (_ CommandOutput, err error) {
 	logger.Printf("Running command remotely: %v", command)
 	defer func() {
@@ -954,6 +956,8 @@ func RunScriptRemotely(ctx context.Context, logger *log.Logger, vm *VM, scriptCo
 		// https://stackoverflow.com/a/15779295
 		// In testing, adding $ErrorActionPreference = 'Stop' to the start of each
 		// script seems to work around this completely.
+		//
+		// To test changes to this command, please run gce_testing_test.go (manually).
 		return RunRemotely(ctx, logger, vm, "", envVarMapToPowershellPrefix(env)+"pwsh -File "+scriptPath+" "+flagsStr)
 	}
 	scriptPath := uuid.NewString() + ".sh"
@@ -961,6 +965,12 @@ func RunScriptRemotely(ctx context.Context, logger *log.Logger, vm *VM, scriptCo
 	// to print each line as it runs.
 	// Use a UUID for the script name in case RunScriptRemotely is being called
 	// concurrently on the same VM.
+	//
+	// Note: if we ever decide to support a stdin parameter to this function, we can
+	// accomplish that by splitting the below command into two RunRemotely() calls:
+	// one to put scriptContents into a file and another to execute the script.
+	//
+	// To test changes to this command, please run gce_testing_test.go (manually).
 	return RunRemotely(ctx, logger, vm, scriptContents, "cat - > "+scriptPath+" && sudo "+envVarMapToBashPrefix(env)+"bash -x "+scriptPath+" "+flagsStr)
 }
 
