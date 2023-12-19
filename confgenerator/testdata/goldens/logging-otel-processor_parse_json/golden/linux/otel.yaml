@@ -439,9 +439,9 @@ processors:
     log_statements:
       context: log
       statements:
-      - set(body, ParseJSON(body["key_1"]))
-      - set(time, Time(body["time_key_1"], "time_format_1"))
-      - delete_key(body, "time_key_1")
+      - set(body, ParseJSON(body["key_1"])) where (body != nil and body["key_1"] != nil)
+      - set(time, Time(body["time_key_1"], "time_format_1")) where (body != nil and body["time_key_1"] != nil)
+      - delete_key(body, "time_key_1") where (body != nil and body["time_key_1"] != nil)
   transform/syslog_0:
     log_statements:
     - context: log
