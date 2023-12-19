@@ -74,6 +74,12 @@ func (a LValue) SetIfNull(b Value) Statements {
 	}
 }
 
+func (a LValue) SetIf(b, condition Value) Statements {
+	return Statements{
+		statementf(`set(%s, %s) where %s`, a, b, condition),
+	}
+}
+
 // IsPresent returns true if the field is recursively present (with any value)
 func (a LValue) IsPresent() Value {
 	var conditions []Value
@@ -137,11 +143,12 @@ func (a LValue) SetToBool(b Value) Statements {
 	return out
 }
 
+// Delete removes a (potentially nested) key from its parent maps, if that key exists.
 func (a LValue) Delete() Statements {
 	parent := a[:len(a)-1]
 	child := a[len(a)-1]
 	return Statements{
-		statementf(`delete_key(%s, %q)`, parent, child),
+		statementf(`delete_key(%s, %q) where %s`, parent, child, a.IsPresent()),
 	}
 }
 

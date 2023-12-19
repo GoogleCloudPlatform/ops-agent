@@ -290,7 +290,7 @@ func (p LoggingProcessorModifyFields) processors() ([]otel.Component, error) {
 					fmt.Sprintf("__field_%d", i),
 				}
 				fieldMappings[key] = new
-				statements = statements.Append(new.Set(accessor))
+				statements = statements.Append(new.SetIf(accessor, accessor.IsPresent()))
 			}
 			field.sourceValue = fieldMappings[key]
 			if j == 0 { // MoveFrom

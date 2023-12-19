@@ -120,7 +120,8 @@ func (p ParserShared) TimestampStatements() (ottl.Statements, error) {
 		return nil, err
 	}
 	return ottl.NewStatements(
-		ottl.LValue{"time"}.Set(ottl.ToTime(fromAccessor, p.TimeFormat)),
+		// TODO: What if parsing fails?
+		ottl.LValue{"time"}.SetIf(ottl.ToTime(fromAccessor, p.TimeFormat), fromAccessor.IsPresent()),
 		fromAccessor.Delete(),
 	), nil
 }
@@ -215,7 +216,7 @@ func (p LoggingProcessorParseJson) processors() ([]otel.Component, error) {
 	}
 
 	statements := ottl.NewStatements(
-		ottl.LValue{"body"}.Set(ottl.ParseJSON(fromAccessor)),
+		ottl.LValue{"body"}.SetIf(ottl.ParseJSON(fromAccessor), fromAccessor.IsPresent()),
 	)
 
 	ts, err := p.TimestampStatements()
