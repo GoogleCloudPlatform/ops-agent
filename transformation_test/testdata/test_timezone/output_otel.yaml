@@ -3,14 +3,10 @@
     scopeLogs:
     - logRecords:
       - body:
-          kvlistValue:
-            values:
-            - key: key1
-              value:
-                doubleValue: 12345
-            - key: key2
-              value:
-                stringValue: abc
+          key1:
+            doubleValue: 12345
+          key2:
+            stringValue: abc
         observedTimeUnixNano: now
         spanId: ""
         timeUnixNano: "1154107320000000000"

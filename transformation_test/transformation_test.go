@@ -418,6 +418,7 @@ func (transformationConfig transformationTest) runOTelTest(t *testing.T, name st
 					v2, _ := v1["logRecords"].([]any)
 					for _, v := range v2 {
 						v1 := v.(map[string]any)
+						// Convert timestamp to "now" or a human-readable timestamp
 						if dateStr, ok := v1["observedTimeUnixNano"].(string); ok {
 							dateInt, err := strconv.ParseInt(dateStr, 10, 64)
 							if err != nil {
@@ -429,6 +430,19 @@ func (transformationConfig transformationTest) runOTelTest(t *testing.T, name st
 								v1["observedTimeUnixNano"] = "now"
 							} else {
 								v1["observedTimeUnixNano"] = date.Format(time.RFC3339Nano)
+							}
+						}
+						// Convert kvlistValue to a map
+						if body, ok := v1["body"].(map[string]any); ok {
+							if kv, ok := body["kvlistValue"].(map[string]any); ok {
+								kvOut := map[string]any{}
+								for _, kv := range kv["values"].([]any) {
+									kv1 := kv.(map[string]any)
+									key := kv1["key"].(string)
+									value := kv1["value"]
+									kvOut[key] = value
+								}
+								v1["body"] = kvOut
 							}
 						}
 					}

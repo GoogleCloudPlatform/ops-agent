@@ -3,38 +3,26 @@
     scopeLogs:
     - logRecords:
       - body:
-          kvlistValue:
-            values:
-            - key: message
-              value:
-                stringValue: foo
-            - key: hello
-              value:
-                stringValue: world
+          hello:
+            stringValue: world
+          message:
+            stringValue: foo
         observedTimeUnixNano: now
         spanId: ""
         traceId: ""
       - body:
-          kvlistValue:
-            values:
-            - key: message
-              value:
-                stringValue: goo
-            - key: hello
-              value:
-                stringValue: world
+          hello:
+            stringValue: world
+          message:
+            stringValue: goo
         observedTimeUnixNano: now
         spanId: ""
         traceId: ""
       - body:
-          kvlistValue:
-            values:
-            - key: message
-              value:
-                stringValue: yes maybe no
-            - key: hello
-              value:
-                stringValue: world
+          hello:
+            stringValue: world
+          message:
+            stringValue: yes maybe no
         observedTimeUnixNano: now
         spanId: ""
         traceId: ""
