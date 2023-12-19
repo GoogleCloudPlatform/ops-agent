@@ -138,7 +138,7 @@ func (transformationConfig transformationTest) runFluentBitTest(t *testing.T, na
 			if date.After(testStartTime) {
 				data[i]["date"] = "now"
 			} else {
-				data[i]["date"] = date.Format(time.RFC3339Nano)
+				data[i]["date"] = date.UTC().Format(time.RFC3339Nano)
 			}
 		}
 	}
@@ -419,17 +419,19 @@ func (transformationConfig transformationTest) runOTelTest(t *testing.T, name st
 					for _, v := range v2 {
 						v1 := v.(map[string]any)
 						// Convert timestamp to "now" or a human-readable timestamp
-						if dateStr, ok := v1["observedTimeUnixNano"].(string); ok {
-							dateInt, err := strconv.ParseInt(dateStr, 10, 64)
-							if err != nil {
-								t.Logf("failed to parse %q: %v", dateStr, err)
-								continue
-							}
-							date := time.Unix(0, dateInt)
-							if date.After(testStartTime) {
-								v1["observedTimeUnixNano"] = "now"
-							} else {
-								v1["observedTimeUnixNano"] = date.Format(time.RFC3339Nano)
+						for _, name := range []string{"observedTimeUnixNano", "timeUnixNano"} {
+							if dateStr, ok := v1[name].(string); ok {
+								dateInt, err := strconv.ParseInt(dateStr, 10, 64)
+								if err != nil {
+									t.Logf("failed to parse %q: %v", dateStr, err)
+									continue
+								}
+								date := time.Unix(0, dateInt)
+								if date.After(testStartTime) {
+									v1[name] = "now"
+								} else {
+									v1[name] = date.UTC().Format(time.RFC3339Nano)
+								}
 							}
 						}
 						// Convert kvlistValue to a map
@@ -456,16 +458,5 @@ func (transformationConfig transformationTest) runOTelTest(t *testing.T, name st
 	if len(errors) != 0 {
 		data = append(data, map[string]any{"collector_errors": errors})
 	}
-	// // transform timestamp of actual results
-	// for i, d := range data {
-	// 	if date, ok := d["date"].(float64); ok {
-	// 		date := time.UnixMicro(int64(date * 1e6)).UTC()
-	// 		if date.After(testStartTime) {
-	// 			data[i]["date"] = "now"
-	// 		} else {
-	// 			data[i]["date"] = date.Format(time.RFC3339Nano)
-	// 		}
-	// 	}
-	// }
 	checkOutput(t, filepath.Join(name, "output_otel.yaml"), data)
 }

@@ -9,6 +9,6 @@
             stringValue: abc
         observedTimeUnixNano: now
         spanId: ""
-        timeUnixNano: "1154107320000000000"
+        timeUnixNano: 2006-07-28T17:22:00Z
         traceId: ""
       scope: {}
