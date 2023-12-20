@@ -127,19 +127,6 @@ func (p ParserShared) TimestampStatements() (ottl.Statements, error) {
 	), nil
 }
 
-func (p ParserShared) TimestampConfig() map[string]any {
-	if p.TimeKey == "" {
-		return nil
-	}
-	// TODO: Support arbitrary fields using filter.Member
-	from := fmt.Sprintf("body.%s", p.TimeKey)
-	return map[string]any{
-		"parse_from":  from,
-		"layout_type": "strptime",
-		"layout":      p.TimeFormat,
-	}
-}
-
 func (p ParserShared) TypesStatements() (ottl.Statements, error) {
 	var out ottl.Statements
 	for field, fieldType := range p.Types {
