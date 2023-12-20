@@ -3,6 +3,9 @@ source /etc/os-release
 VERSION_ID=${VERSION_ID%%.*}
 
 install_cuda_from_runfile() {
+    # Ref: https://docs.nvidia.com/datacenter/tesla/tesla-installation-notes/index.html#runfile
+    # This method requires the match kernel-devel package to be installed, and 
+    # the package may be absent from the repo and cause this method to fail
     sudo yum install -y kernel-devel-$(uname -r) pciutils gcc make wget yum-utils 
 
     # Installing latest version of NVIDIA CUDA and driver
@@ -29,11 +32,13 @@ install_cuda_from_runfile() {
 try_install() {
     for install_method in "$@"
     do
-        echo "Installing with $install_method..."
+        echo "Installing NVIDIA driver and CUDA with $install_method..."
+        # Run the installation method in a subshell with -e so that the function
+        # exit on error
         set +e ; ( set -e; $install_method ) ; exit_code=$?
         set -e
         if [ $exit_code -eq 0 ]; then
-            echo "Install successful with $install_method."
+            echo "NVIDIA driver and CUDA has been installed successfully with $install_method."
             return 
         fi
     done
@@ -42,6 +47,7 @@ try_install() {
 
 handle_rehl7() {
     install_cuda_from_package_manager() {
+        # Ref: https://developer.nvidia.com/cuda-12-2-2-download-archive?target_os=Linux&target_arch=x86_64&Distribution=RHEL&target_version=7&target_type=rpm_network
         sudo yum install -y yum-utils
         sudo yum-config-manager \
         --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel$VERSION_ID/x86_64/cuda-rhel$VERSION_ID.repo
@@ -57,6 +63,7 @@ handle_rehl7() {
 
 handle_common() {
     install_cuda_from_package_manager() {
+        # Ref: https://developer.nvidia.com/cuda-12-2-2-download-archive?target_os=Linux&target_arch=x86_64&Distribution=RHEL&target_version=8&target_type=rpm_network
         sudo dnf config-manager \
         --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel$VERSION_ID/x86_64/cuda-rhel$VERSION_ID.repo
         sudo dnf clean all
