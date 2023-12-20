@@ -1,54 +1,73 @@
 set -e
 source /etc/os-release
-KERNEL_VERSION=`uname -r`
-
-# sudo yum install -y kernel-devel-${KERNEL_VERSION} pciutils gcc make wget yum-utils 
-# TODO(b/312949832): Temporary fix for Rocky Linux 9.2/8.8; uncomment the above line and remove this following section once the image has been updated to Rocky Linux 9.3/8.9
-sudo yum install -y pciutils gcc make wget yum-utils
-if ! sudo yum install -y kernel-devel-${KERNEL_VERSION}; then 
-    sudo yum install -y kernel-devel  # Install the latest kernel dev package first to bring in the dependencies, before switching to 9.2 repo
-    if [[ $ID == rocky && "${VERSION_ID}" == 9.2 ]]; then
-        sudo sed -i 's,mirrorlist=https://mirrors.rockylinux.org/mirrorlist?arch=$basearch&repo=AppStream-$releasever$rltype,baseurl=https://dl.rockylinux.org/vault/rocky/9.2/AppStream/$basearch/os/,g' /etc/yum.repos.d/rocky.repo
-    elif [[ $ID == rocky && "${VERSION_ID}" == 8.8 ]]; then
-        sudo sed -i 's,mirrorlist=https://mirrors.rockylinux.org/mirrorlist?arch=$basearch&repo=BaseOS-$releasever,baseurl=https://dl.rockylinux.org/vault/rocky/8.8/BaseOS/$basearch/os/,g' /etc/yum.repos.d/Rocky-BaseOS.repo
-    fi
-    sudo yum clean all 
-    sudo yum --showduplicates list available kernel-devel
-    sudo yum install -y kernel-devel-${KERNEL_VERSION}
-fi
-# End of the temporary fix
-
-
-# Install the driver the same way as the nvml app 
-# Prefer to install from the package manager since it is normally faster and has
-# less errors on installation; fallback to the runfile method if the package 
-# manager's package is not working or not compitible with the GPU model
-DEVICE_CODE=$(lspci -n | grep -Po '10de:[\w\d]{4}')
-case $DEVICE_CODE in
-    10de:102d)
-        # Install a specific version for NVIDIA Tesla K80, R470 is the last supported version
-        DRIVER_VERSION=470.82.01
-        ;;
-    *)
-        # Installing latest version of NVIDIA CUDA and driver
-        DRIVER_VERSION=535.129.03
-        ;;
-esac
-
-echo "Installing NVIDIA Data Center driver $DRIVER_VERSION"
-curl -fSsl -O https://us.download.nvidia.com/tesla/$DRIVER_VERSION/NVIDIA-Linux-x86_64-$DRIVER_VERSION.run
-sudo bash ./NVIDIA-Linux-x86_64-$DRIVER_VERSION.run --silent
-
-# check NVIDIA driver installation succeeded
-nvidia-smi
-
-# Install DCGM
 VERSION_ID=${VERSION_ID%%.*}
-sudo yum-config-manager \
-    --add-repo http://developer.download.nvidia.com/compute/cuda/repos/rhel$VERSION_ID/x86_64/cuda-rhel$VERSION_ID.repo
-sudo yum clean expire-cache
-sudo yum install -y datacenter-gpu-manager
-sudo systemctl --now enable nvidia-dcgm
 
-# check DCGM service running and load profiling module
-dcgmi discovery --list
+install_driver_from_runfile() {
+    sudo yum install -y kernel-devel-$(uname -r) pciutils gcc make wget yum-utils 
+    local DRIVER_VERSION=535.129.03
+    echo "Installing NVIDIA Data Center driver $DRIVER_VERSION"
+    curl -fSsl -O https://us.download.nvidia.com/tesla/$DRIVER_VERSION/NVIDIA-Linux-x86_64-$DRIVER_VERSION.run
+    sudo bash ./NVIDIA-Linux-x86_64-$DRIVER_VERSION.run --silent
+
+    # check NVIDIA driver installation succeeded
+    nvidia-smi
+}
+
+install_dcgm() {
+    sudo yum install -y yum-utils
+    sudo yum-config-manager \
+    --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel$VERSION_ID/x86_64/cuda-rhel$VERSION_ID.repo
+    sudo yum clean expire-cache
+    sudo yum install -y datacenter-gpu-manager
+    sudo systemctl --now enable nvidia-dcgm 
+
+    # check DCGM service running and load profiling module
+    dcgmi discovery --list
+}
+
+try_install() {
+    for install_method in "$@"
+    do
+        echo "Installing with $install_method..."
+        set +e ; ( set -e; $install_method ) ; exit_code=$?
+        set -e
+        if [ $exit_code -eq 0 ]; then
+            echo "Install successful with $install_method."
+            return 
+        fi
+    done
+    return 1
+}
+
+handle_rehl7() {
+    install_driver_from_package_manager() {
+        sudo yum install -y yum-utils
+        sudo yum-config-manager \
+        --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel$VERSION_ID/x86_64/cuda-rhel$VERSION_ID.repo
+        sudo yum clean all
+        sudo yum -y install nvidia-driver-latest-dkms
+
+        # check NVIDIA driver installation succeeded
+        nvidia-smi
+    }
+    try_install install_driver_from_runfile install_driver_from_package_manager
+}
+
+handle_common() {
+    install_driver_from_package_manager() {
+        sudo dnf config-manager \
+        --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel$VERSION_ID/x86_64/cuda-rhel$VERSION_ID.repo
+        sudo dnf clean all
+        sudo dnf -y module install nvidia-driver:latest
+
+        # check NVIDIA driver installation succeeded
+        nvidia-smi
+    }
+    try_install install_driver_from_package_manager install_driver_from_runfile
+}
+
+case "$VERSION_ID" in
+    7) handle_rehl7;;
+    *) handle_common;;
+esac
+install_dcgm
