@@ -293,7 +293,10 @@ func (p LoggingProcessorModifyFields) statements() (ottl.Statements, error) {
 					fmt.Sprintf("__field_%d", i),
 				}
 				fieldMappings[key] = new
-				statements = statements.Append(new.SetIf(accessor, accessor.IsPresent()))
+				statements = statements.Append(
+					new.Delete(),
+					new.SetIf(accessor, accessor.IsPresent()),
+				)
 			}
 			field.sourceValue = fieldMappings[key]
 			if j == 0 { // MoveFrom
@@ -312,7 +315,10 @@ func (p LoggingProcessorModifyFields) statements() (ottl.Statements, error) {
 	// Step 2: OmitIf conditions
 	for i, f := range omitFilters {
 		name := fmt.Sprintf("__omit_%d", i)
-		statements = statements.Append(ottl.LValue{"cache", name}.SetIf(ottl.True(), f.OTTLExpression()))
+		statements = statements.Append(
+			ottl.LValue{"cache", name}.Set(ottl.False()),
+			ottl.LValue{"cache", name}.SetIf(ottl.True(), f.OTTLExpression()),
+		)
 	}
 
 	// Step 3: Remove any MoveFrom fields
