@@ -1,0 +1,61 @@
+# Copyright 2022 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+logging:
+  receivers:
+    sample_logs:
+      type: files
+      include_paths: [/tmp/*.log]
+  processors:
+    simple:
+      type: modify_fields
+      fields:
+        jsonPayload.hello:
+          static_value: world
+        jsonPayload.moved:
+          move_from: jsonPayload.move_source
+        jsonPayload.copied:
+          copy_from: jsonPayload.source
+        jsonPayload.integer:
+          type: integer
+        jsonPayload.float:
+          type: float
+        jsonPayload.nested.structure.field:
+          copy_from: jsonPayload.unnested
+        labels."label2":
+          copy_from: labels."label1"
+        labels."label3":
+          default_value: default
+        severity:
+          copy_from: jsonPayload.level
+          map_values:
+            W: WARNING
+            CAUTION: WARNING
+            I: INFO
+        jsonPayload.default:
+          default_value: this field was missing
+        jsonPayload.omitted:
+          omit_if: jsonPayload.omitted = "-"
+        jsonPayload.untouched:
+        spanId:
+          static_value: spanValue
+        trace:
+          move_from: jsonPayload.trace
+  service:
+    experimental_otel_logging: true
+    pipelines:
+      p1:
+        receivers: [sample_logs]
+        processors:
+        - simple
