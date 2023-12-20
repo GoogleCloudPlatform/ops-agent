@@ -74,6 +74,13 @@ func TestValidPath(t *testing.T) {
 			`severity_text`,
 		},
 		{
+			Target{"httpRequest"},
+			"httpRequest",
+			[]string{"logging.googleapis.com/httpRequest"},
+			[]string{"attributes", "gcp.http_request"},
+			`attributes["gcp.http_request"]`,
+		},
+		{
 			Target{"httpRequest", "status"},
 			"httpRequest.status",
 			[]string{"logging.googleapis.com/httpRequest", "status"},

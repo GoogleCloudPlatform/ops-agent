@@ -155,3 +155,7 @@ end
 `)
 	return out, lua.String()
 }
+
+func FluentBitSpecialFields() map[string]string {
+	return ast.FluentBitSpecialFields()
+}

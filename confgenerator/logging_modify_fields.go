@@ -151,7 +151,7 @@ function process(tag, timestamp, record)
 		field := p.Fields[dest]
 		outM, err := filter.NewMember(dest)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse output field %q: %m", dest, err)
+			return nil, fmt.Errorf("failed to parse output field %q: %w", dest, err)
 		}
 
 		src := "nil"
@@ -236,15 +236,18 @@ end
 }
 
 func (p LoggingProcessorModifyFields) Processors() []otel.Component {
-	out, err := p.processors()
+	out, err := p.statements()
 	if err != nil {
 		// It shouldn't be possible to get here if the input validation is working
 		panic(err)
 	}
-	return out
+	return []otel.Component{otel.Transform(
+		"log", "log",
+		out,
+	)}
 }
 
-func (p LoggingProcessorModifyFields) processors() ([]otel.Component, error) {
+func (p LoggingProcessorModifyFields) statements() (ottl.Statements, error) {
 	var statements ottl.Statements
 
 	var dests []string
@@ -326,7 +329,7 @@ func (p LoggingProcessorModifyFields) processors() ([]otel.Component, error) {
 		field := p.Fields[dest]
 		outM, err := filter.NewMember(dest)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse output field %q: %m", dest, err)
+			return nil, fmt.Errorf("failed to parse output field %q: %w", dest, err)
 		}
 
 		src := ottl.Null()
@@ -365,10 +368,7 @@ func (p LoggingProcessorModifyFields) processors() ([]otel.Component, error) {
 		}
 		statements = statements.Append(ra.Set(value))
 	}
-	return []otel.Component{otel.Transform(
-		"log", "log",
-		statements,
-	)}, nil
+	return statements, nil
 }
 
 func init() {

@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sort"
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
@@ -170,6 +171,29 @@ func (p ParserShared) TypesStatements() (ottl.Statements, error) {
 	return out, nil
 }
 
+// Handle special fields documented at https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/configuration#special-fields
+func (p ParserShared) FluentBitSpecialFieldsStatements() ottl.Statements {
+	fields := filter.FluentBitSpecialFields()
+	var names []string
+	for f := range fields {
+		names = append(names, f)
+	}
+	sort.Strings(names)
+	modifyFields := map[string]*ModifyField{}
+	for _, f := range names {
+		// TODO: trace and span ID need parsing (see comment in ast.go)
+		modifyFields[fields[f]] = &ModifyField{
+			MoveFrom: fmt.Sprintf(`jsonPayload.%q`, f),
+		}
+	}
+	statements, err := LoggingProcessorModifyFields{Fields: modifyFields}.statements()
+	if err != nil {
+		// Should be impossible
+		panic(err)
+	}
+	return statements
+}
+
 // A LoggingProcessorParseJson parses the specified field as JSON.
 type LoggingProcessorParseJson struct {
 	ConfigComponent `yaml:",inline"`
@@ -230,7 +254,7 @@ func (p LoggingProcessorParseJson) processors() ([]otel.Component, error) {
 	}
 	statements = statements.Append(ts)
 
-	// TODO: Handle special fields documented at https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/configuration#special-fields
+	statements = statements.Append(p.FluentBitSpecialFieldsStatements())
 
 	// TODO: Support merging instead of replacing.
 	return []otel.Component{otel.Transform(

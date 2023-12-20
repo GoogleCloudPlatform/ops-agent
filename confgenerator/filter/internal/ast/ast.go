@@ -78,6 +78,23 @@ var logEntryRootStructMapToFluentBit = map[string]string{
 	"httpRequest": "logging.googleapis.com/httpRequest",
 }
 
+func FluentBitSpecialFields() map[string]string {
+	out := map[string]string{}
+	for _, m := range []map[string]string{
+		logEntryRootValueMapToFluentBit,
+		logEntryRootStructMapToFluentBit,
+	} {
+		for k, v := range m {
+			if _, ok := logEntryRootValueMapToOTel[k]; ok {
+				out[v] = k
+			} else if _, ok := logEntryRootStructMapToOTel[k]; ok {
+				out[v] = k
+			}
+		}
+	}
+	return out
+}
+
 func (m Target) ottlPath() ([]string, error) {
 	unquoted, err := m.Unquote()
 	if err != nil {
@@ -86,6 +103,9 @@ func (m Target) ottlPath() ([]string, error) {
 	var otel []string
 	if len(unquoted) == 1 {
 		if v, ok := logEntryRootValueMapToOTel[unquoted[0]]; ok {
+			otel = v
+		}
+		if v, ok := logEntryRootStructMapToOTel[unquoted[0]]; ok {
 			otel = v
 		}
 	} else if len(unquoted) > 1 {
@@ -145,20 +165,34 @@ func (m Target) Equals(m2 Target) bool {
 	return true
 }
 
+func (m Target) checkValidCharacters() error {
+	unquoted, err := m.Unquote()
+	if err != nil {
+		return err
+	}
+	for _, part := range unquoted {
+		// Disallowed characters because they cannot be encoded in a fluent-bit Record Accessor.
+		// \r is allowed in a Record Accessor, but we disallow it to avoid issues on Windows.
+		// (interestingly, \f and \v work fine...)
+		// TODO: Remove when fluent-bit is no longer supported
+		if strings.ContainsAny(part, "\n\r\", ") {
+			return fmt.Errorf("target may not contain line breaks, spaces, commas, or double-quotes: %q", part)
+		}
+	}
+	return nil
+}
+
 // RecordAccessor returns a string that can be used as a key in a FluentBit config
 func (m Target) RecordAccessor() (string, error) {
 	fluentBit, err := m.fluentBitPath()
 	if err != nil {
 		return "", err
 	}
+	if err := m.checkValidCharacters(); err != nil {
+		return "", err
+	}
 	recordAccessor := "$record"
 	for _, part := range fluentBit {
-		// Disallowed characters because they cannot be encoded in a Record Accessor.
-		// \r is allowed in a Record Accessor, but we disallow it to avoid issues on Windows.
-		// (interestingly, \f and \v work fine...)
-		if strings.ContainsAny(part, "\n\r\", ") {
-			return "", fmt.Errorf("target may not contain line breaks, spaces, commas, or double-quotes: %q", part)
-		}
 		recordAccessor = recordAccessor + fmt.Sprintf(`['%s']`, strings.ReplaceAll(part, `'`, `''`))
 	}
 	return recordAccessor, nil
@@ -168,6 +202,10 @@ func (m Target) RecordAccessor() (string, error) {
 func (m Target) OTTLAccessor() (ottl.LValue, error) {
 	otel, err := m.ottlPath()
 	if err != nil {
+		return nil, err
+	}
+	if err := m.checkValidCharacters(); err != nil {
+		// TODO: Unnecessary, but preserved until we drop fluent-bit.
 		return nil, err
 	}
 	return ottl.LValue(otel), nil
@@ -316,7 +354,10 @@ func NewRestriction(lhs, operator, rhs Attrib) (*Restriction, error) {
 		// Eager validation
 		_, err := lhs.RecordAccessor()
 		if err != nil {
-			return nil, err
+			_, err := lhs.OTTLAccessor()
+			if err != nil {
+				return nil, err
+			}
 		}
 		r.LHS = lhs
 	default:
