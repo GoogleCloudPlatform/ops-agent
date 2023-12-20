@@ -265,7 +265,7 @@ func (p LoggingProcessorModifyFields) statements() (ottl.Statements, error) {
 	// slice of OTTL fields to delete
 	var moveFromFields []ottl.LValue
 	// map of (variable name) to (filter object)
-	omitFilters := map[string]*filter.Filter{}
+	var omitFilters []*filter.Filter
 
 	for i, dest := range dests {
 		field := p.Fields[dest]
@@ -305,12 +305,15 @@ func (p LoggingProcessorModifyFields) statements() (ottl.Statements, error) {
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse filter %q: %w", field.OmitIf, err)
 			}
-			field.omitVar = fmt.Sprintf("__omit_%d", i)
-			omitFilters[field.omitVar] = f
+			field.omitVar = fmt.Sprintf("__omit_%d", len(omitFilters))
+			omitFilters = append(omitFilters, f)
 		}
 	}
 	// Step 2: OmitIf conditions
-	// TODO
+	for i, f := range omitFilters {
+		name := fmt.Sprintf("__omit_%d", i)
+		statements = statements.Append(ottl.LValue{"cache", name}.SetIf(ottl.True(), f.OTTLExpression()))
+	}
 
 	// Step 3: Remove any MoveFrom fields
 	// Sort first to make the resulting configs deterministic
@@ -361,12 +364,15 @@ func (p LoggingProcessorModifyFields) statements() (ottl.Statements, error) {
 			return nil, fmt.Errorf("YesNoBoolean unsupported")
 		}
 
-		// TODO: omit if
 		ra, err := outM.OTTLAccessor()
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert %v to OTTL accessor: %w", outM, err)
 		}
-		statements = statements.Append(ra.Set(value))
+		statements = statements.Append(ra.SetIf(value, value.IsPresent()))
+
+		if field.omitVar != "" {
+			statements = statements.Append(ra.DeleteIf(ottl.LValue{"cache", field.omitVar}))
+		}
 	}
 	return statements, nil
 }

@@ -58,6 +58,10 @@ func StringLiteral(v string) Value {
 	return valuef(`%q`, v)
 }
 
+func True() Value {
+	return valuef("true")
+}
+
 func Null() Value {
 	return valuef("null")
 }
@@ -77,6 +81,12 @@ func (a LValue) SetIfNull(b Value) Statements {
 func (a LValue) SetIf(b, condition Value) Statements {
 	return Statements{
 		statementf(`set(%s, %s) where %s`, a, b, condition),
+	}
+}
+
+func (a LValue) MergeMaps(source Value, strategy string) Statements {
+	return Statements{
+		statementf(`merge_maps(%s, %s, %q)`, a, source, strategy),
 	}
 }
 
@@ -157,6 +167,15 @@ func (a LValue) Delete() Statements {
 	child := a[len(a)-1]
 	return Statements{
 		statementf(`delete_key(%s, %q) where %s`, parent, child, a.IsPresent()),
+	}
+}
+
+// Delete removes a (potentially nested) key from its parent maps, if that key exists.
+func (a LValue) DeleteIf(cond Value) Statements {
+	parent := a[:len(a)-1]
+	child := a[len(a)-1]
+	return Statements{
+		statementf(`delete_key(%s, %q) where %s`, parent, child, And(a.IsPresent(), cond)),
 	}
 }
 
