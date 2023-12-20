@@ -127,6 +127,10 @@ func IsMatch(target Value, pattern string) Value {
 	return valuef(`IsMatch(%s, %q)`, target, pattern)
 }
 
+func Equals(a, b Value) Value {
+	return valuef(`(%s) == (%s)`, a, b)
+}
+
 func Not(a Value) Value {
 	return valuef(`(not %s)`, a)
 }

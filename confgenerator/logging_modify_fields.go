@@ -358,8 +358,30 @@ func (p LoggingProcessorModifyFields) statements() (ottl.Statements, error) {
 			)
 		}
 
-		// TODO: Process MapValues
+		// Process MapValues
+		if len(field.MapValues) > 0 {
+			mapped_value := ottl.LValue{"cache", "mapped_value"}
+			statements = statements.Append(
+				mapped_value.Delete(),
+			)
+			if !field.MapValuesExclusive {
+				statements = statements.Append(
+					mapped_value.SetIf(value, value.IsPresent()),
+				)
+			}
+			var keys []string
+			for k := range field.MapValues {
+				keys = append(keys, k)
+			}
+			sort.Strings(keys)
+			for _, k := range keys {
+				statements = statements.Append(
+					mapped_value.SetIf(ottl.StringLiteral(field.MapValues[k]), ottl.Equals(value, ottl.StringLiteral(k))),
+				)
+			}
 
+			value = mapped_value
+		}
 		switch field.Type {
 		case "integer":
 			statements = statements.Append(value.Set(ottl.ToInt(value)))
