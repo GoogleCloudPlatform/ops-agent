@@ -62,8 +62,8 @@ func True() Value {
 	return valuef("true")
 }
 
-func Null() Value {
-	return valuef("null")
+func Nil() Value {
+	return valuef("nil")
 }
 
 func (a LValue) Set(b Value) Statements {
@@ -72,9 +72,9 @@ func (a LValue) Set(b Value) Statements {
 	}
 }
 
-func (a LValue) SetIfNull(b Value) Statements {
+func (a LValue) SetIfNil(b Value) Statements {
 	return Statements{
-		statementf(`set(%s, %s) where %s == null`, a, b, a),
+		statementf(`set(%s, %s) where %s == nil`, a, b, a),
 	}
 }
 
@@ -86,7 +86,7 @@ func (a LValue) SetIf(b, condition Value) Statements {
 
 func (a LValue) MergeMaps(source Value, strategy string) Statements {
 	return Statements{
-		statementf(`merge_maps(%s, %s, %q)`, a, source, strategy),
+		statementf(`merge_maps(%s, %s, %q) where %s`, a, source, strategy, IsNotNil(source)),
 	}
 }
 

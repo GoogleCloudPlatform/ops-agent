@@ -471,7 +471,7 @@ processors:
       - set(body, ParseJSON(body["key_1"])) where (body != nil and body["key_1"] != nil)
       - set(time, Time(body["time_key_1"], "time_format_1")) where (body != nil and body["time_key_1"] != nil)
       - delete_key(body, "time_key_1") where (body != nil and body["time_key_1"] != nil)
-      - merge_maps(attributes, body["logging.googleapis.com/labels"], "upsert")
+      - merge_maps(attributes, body["logging.googleapis.com/labels"], "upsert") where body["logging.googleapis.com/labels"] != nil
       - set(cache["__field_0"], body["logging.googleapis.com/httpRequest"]) where (body != nil and body["logging.googleapis.com/httpRequest"] != nil)
       - delete_key(body, "logging.googleapis.com/httpRequest") where (body != nil and body["logging.googleapis.com/httpRequest"] != nil)
       - set(cache["value"], cache["__field_0"])

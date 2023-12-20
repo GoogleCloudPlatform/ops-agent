@@ -335,7 +335,7 @@ func (p LoggingProcessorModifyFields) statements() (ottl.Statements, error) {
 			return nil, fmt.Errorf("failed to parse output field %q: %w", dest, err)
 		}
 
-		src := ottl.Null()
+		src := ottl.Nil()
 		if field.sourceValue != nil {
 			src = field.sourceValue
 		}
@@ -348,7 +348,7 @@ func (p LoggingProcessorModifyFields) statements() (ottl.Statements, error) {
 		)
 		if field.DefaultValue != nil {
 			statements = statements.Append(
-				value.SetIfNull(src),
+				value.SetIfNil(src),
 			)
 		}
 
