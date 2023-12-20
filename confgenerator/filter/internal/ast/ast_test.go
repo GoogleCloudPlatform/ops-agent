@@ -144,7 +144,6 @@ func TestInvalidFluentBitPath(t *testing.T) {
 	for _, test := range []Target{
 		{"notJsonPayload"},
 		{"jsonPayload"},
-		{"sourceLocation"},
 		{"jsonPayload", `"broken\descape"`},
 	} {
 		test := test

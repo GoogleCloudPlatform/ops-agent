@@ -71,16 +71,22 @@ func TestShouldParse(t *testing.T) {
 			if filter == nil {
 				t.Fatal("got nil filter")
 			}
-			components, expr := AllFluentConfig("logname", map[string]*Filter{"filter": filter})
-			t.Logf("components = %+v", components)
-			t.Logf("expression =\n%s", expr)
-			if components != nil {
-				files, err := fluentbit.ModularConfig{Components: components}.Generate()
-				if err != nil {
-					t.Error(err)
+			t.Run("fluent-bit", func(t *testing.T) {
+				components, expr := AllFluentConfig("logname", map[string]*Filter{"filter": filter})
+				t.Logf("components = %+v", components)
+				t.Logf("expression =\n%s", expr)
+				if components != nil {
+					files, err := fluentbit.ModularConfig{Components: components}.Generate()
+					if err != nil {
+						t.Error(err)
+					}
+					t.Logf("generated config:\n%v", files)
 				}
-				t.Logf("generated config:\n%v", files)
-			}
+			})
+			t.Run("ottl", func(t *testing.T) {
+				value := filter.OTTLExpression()
+				t.Logf("expression = %s", value)
+			})
 		})
 	}
 }

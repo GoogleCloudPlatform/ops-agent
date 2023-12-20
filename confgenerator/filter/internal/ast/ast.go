@@ -105,10 +105,8 @@ func (m Target) ottlPath() ([]string, error) {
 		if v, ok := logEntryRootValueMapToOTel[unquoted[0]]; ok {
 			otel = v
 		}
-		if v, ok := logEntryRootStructMapToOTel[unquoted[0]]; ok {
-			otel = v
-		}
-	} else if len(unquoted) > 1 {
+	}
+	if len(unquoted) >= 1 {
 		if v, ok := logEntryRootStructMapToOTel[unquoted[0]]; ok {
 			otel = append(v, unquoted[1:]...)
 		}
@@ -129,10 +127,11 @@ func (m Target) fluentBitPath() ([]string, error) {
 		if v, ok := logEntryRootValueMapToFluentBit[unquoted[0]]; ok {
 			fluentBit = []string{v}
 		}
-	} else if len(m) > 1 {
+	}
+	if len(unquoted) >= 1 {
 		if v, ok := logEntryRootStructMapToFluentBit[unquoted[0]]; ok {
 			fluentBit = prepend(v, unquoted[1:])
-		} else if unquoted[0] == "jsonPayload" {
+		} else if unquoted[0] == "jsonPayload" && len(unquoted) > 1 {
 			// Special case for jsonPayload, where the root "jsonPayload" must be omitted
 			fluentBit = unquoted[1:]
 		}
@@ -202,10 +201,6 @@ func (m Target) RecordAccessor() (string, error) {
 func (m Target) OTTLAccessor() (ottl.LValue, error) {
 	otel, err := m.ottlPath()
 	if err != nil {
-		return nil, err
-	}
-	if err := m.checkValidCharacters(); err != nil {
-		// TODO: Unnecessary, but preserved until we drop fluent-bit.
 		return nil, err
 	}
 	return ottl.LValue(otel), nil
@@ -352,6 +347,11 @@ func NewRestriction(lhs, operator, rhs Attrib) (*Restriction, error) {
 	switch lhs := lhs.(type) {
 	case Target:
 		// Eager validation
+		if err := lhs.checkValidCharacters(); err != nil {
+			// TODO: Unnecessary, but preserved until we drop fluent-bit.
+			return nil, err
+		}
+
 		_, err := lhs.RecordAccessor()
 		if err != nil {
 			_, err := lhs.OTTLAccessor()
@@ -482,7 +482,7 @@ func (r Restriction) FluentConfig(tag, key string) ([]fluentbit.Component, strin
 	panic(fmt.Errorf("unknown operator: %s", r.Operator))
 }
 
-func (r Restriction) OTTLExpression(key string) ottl.Value {
+func (r Restriction) OTTLExpression() ottl.Value {
 	lhs, _ := r.LHS.OTTLAccessor()
 
 	// TODO: Add support for numeric comparisons
@@ -525,6 +525,9 @@ type Expression interface {
 
 	// FluentConfig returns an optional sequence of fluentbit operations and a Lua expression that can be evaluated to determine if the expression matches the record.
 	FluentConfig(tag, key string) ([]fluentbit.Component, string)
+
+	// OTTLExpression returns an OTTL value that can be used to evaluate the expression.
+	OTTLExpression() ottl.Value
 
 	fmt.Stringer
 }
@@ -584,6 +587,14 @@ func (s exprSlice) FluentConfig(tag, key, operator string) ([]fluentbit.Componen
 	return components, fmt.Sprintf(`(%s)`, strings.Join(exprs, operator))
 }
 
+func (s exprSlice) OTTLExpression(operator func(...ottl.Value) ottl.Value) ottl.Value {
+	var values []ottl.Value
+	for _, e := range s {
+		values = append(values, e.OTTLExpression())
+	}
+	return operator(values...)
+}
+
 func (s exprSlice) String(operator string) string {
 	var out []string
 	for _, e := range s {
@@ -594,6 +605,10 @@ func (s exprSlice) String(operator string) string {
 
 func (c Conjunction) FluentConfig(tag, key string) ([]fluentbit.Component, string) {
 	return exprSlice(c).FluentConfig(tag, key, " and ")
+}
+
+func (c Conjunction) OTTLExpression() ottl.Value {
+	return exprSlice(c).OTTLExpression(ottl.And)
 }
 
 func (c Conjunction) String() string {
@@ -631,6 +646,10 @@ func (d Disjunction) FluentConfig(tag, key string) ([]fluentbit.Component, strin
 	return exprSlice(d).FluentConfig(tag, key, " or ")
 }
 
+func (d Disjunction) OTTLExpression() ottl.Value {
+	return exprSlice(d).OTTLExpression(ottl.Or)
+}
+
 func (d Disjunction) String() string {
 	return exprSlice(d).String("OR")
 }
@@ -646,6 +665,10 @@ func (n Negation) Simplify() Expression {
 func (n Negation) FluentConfig(tag, key string) ([]fluentbit.Component, string) {
 	c, expr := n.Expression.FluentConfig(tag, key)
 	return c, fmt.Sprintf("(not %s)", expr)
+}
+
+func (n Negation) OTTLExpression() ottl.Value {
+	return ottl.Not(n.Expression.OTTLExpression())
 }
 
 func (n Negation) String() string {

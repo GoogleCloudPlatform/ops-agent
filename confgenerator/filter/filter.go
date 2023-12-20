@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/generated/lexer"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/generated/parser"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 )
 
 type Member struct {
@@ -89,6 +90,10 @@ func NewFilter(f string) (*Filter, error) {
 // innerFluentConfig returns components that are intended to be positioned between corresponding nest/lift filters and a Lua expression to evaluate.
 func (f *Filter) innerFluentConfig(tag, prefix string) ([]fluentbit.Component, string) {
 	return f.expr.FluentConfig(tag, prefix)
+}
+
+func (f Filter) OTTLExpression() ottl.Value {
+	return f.expr.OTTLExpression()
 }
 
 func (f Filter) String() string {

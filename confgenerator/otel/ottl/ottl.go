@@ -125,6 +125,14 @@ func And(conditions ...Value) Value {
 	return valuef(`(%s)`, strings.Join(out, " and "))
 }
 
+func Or(conditions ...Value) Value {
+	var out []string
+	for _, c := range conditions {
+		out = append(out, c.String())
+	}
+	return valuef(`(%s)`, strings.Join(out, " or "))
+}
+
 func IsNotNil(a Value) Value {
 	return valuef(`%s != nil`, a)
 }
