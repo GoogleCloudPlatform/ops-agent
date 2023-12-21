@@ -86,7 +86,7 @@ func removeFromSlice(original []string, toRemove string) []string {
 }
 
 // assertFilePresence returns an error if the provided file path doesn't exist on the VM.
-func assertFilePresence(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, filePath string) error {
+func assertFilePresence(ctx context.Context, logger *log.Logger, vm *gce.VM, filePath string) error {
 	var fileQuery string
 	if gce.IsWindows(vm.Platform) {
 		fileQuery = fmt.Sprintf(`Test-Path -Path "%s"`, filePath)
@@ -94,7 +94,7 @@ func assertFilePresence(ctx context.Context, logger *logging.DirectoryLogger, vm
 		fileQuery = fmt.Sprintf(`sudo test -f %s`, filePath)
 	}
 
-	out, err := gce.RunScriptRemotely(ctx, logger, vm, fileQuery, nil, nil)
+	out, err := gce.RunRemotely(ctx, logger, vm, "", fileQuery)
 	if err != nil {
 		return fmt.Errorf("error accessing backup file: %v", err)
 	}
@@ -138,8 +138,8 @@ func readFileFromScriptsDir(scriptPath string) ([]byte, error) {
 // The scriptPath should be relative to SCRIPTS_DIR.
 // The script should be a shell script for a Linux VM and powershell for a Windows VM.
 // env is a map containing environment variables to provide to the script as it runs.
-func runScriptFromScriptsDir(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, scriptPath string, env map[string]string) (gce.CommandOutput, error) {
-	logger.ToMainLog().Printf("Running script with path %s", scriptPath)
+func runScriptFromScriptsDir(ctx context.Context, logger *log.Logger, vm *gce.VM, scriptPath string, env map[string]string) (gce.CommandOutput, error) {
+	logger.Printf("Running script with path %s", scriptPath)
 
 	scriptContents, err := readFileFromScriptsDir(scriptPath)
 	if err != nil {
@@ -419,7 +419,7 @@ func stripUnavailableFields(fields []*metadata.LogFields, platform string) []*me
 	return result
 }
 
-func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, logs []*metadata.ExpectedLog) error {
+func runLoggingTestCases(ctx context.Context, logger *log.Logger, vm *gce.VM, logs []*metadata.ExpectedLog) error {
 	// Wait for each entry in LogEntries concurrently. This is especially helpful
 	// when	the assertions fail: we don't want to wait for each one to time out
 	// back-to-back.
@@ -444,7 +444,7 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 			query := constructQuery(entry.LogName, entry.Fields)
 
 			// Query logging backend for log matching the query.
-			actualLog, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, entry.LogName, 1*time.Hour, query, gce.QueryMaxAttempts)
+			actualLog, err := gce.QueryLog(ctx, logger, vm, entry.LogName, 1*time.Hour, query, gce.QueryMaxAttempts)
 			if err != nil {
 				c <- err
 				return
@@ -466,9 +466,9 @@ func runLoggingTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	return err
 }
 
-func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metrics []*metadata.ExpectedMetric, fc *feature_tracking_metadata.FeatureTrackingContainer) error {
+func runMetricsTestCases(ctx context.Context, logger *log.Logger, vm *gce.VM, metrics []*metadata.ExpectedMetric, fc *feature_tracking_metadata.FeatureTrackingContainer) error {
 	var err error
-	logger.ToMainLog().Printf("Parsed expectedMetrics: %s", util.DumpPointerArray(metrics, "%+v"))
+	logger.Printf("Parsed expectedMetrics: %s", util.DumpPointerArray(metrics, "%+v"))
 	// Wait for the representative metric first, which is intended to *always*
 	// be sent. If it doesn't exist, we fail fast and skip running the other metrics;
 	// if it does exist, we go on to the other metrics in parallel, by which point they
@@ -488,7 +488,7 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	}
 	// Give some catch-up time to the remaining metrics, which tend to be configured
 	// for a 60-second interval, plus 10 seconds to let the data propagate in the backend.
-	logger.ToMainLog().Println("Found representative metric, sleeping before checking remaining metrics")
+	logger.Println("Found representative metric, sleeping before checking remaining metrics")
 	time.Sleep(70 * time.Second)
 	// Wait for all remaining metrics, skipping the optional ones.
 	// TODO: Improve coverage for optional metrics.
@@ -496,11 +496,11 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	var requiredMetrics []*metadata.ExpectedMetric
 	for _, metric := range metrics {
 		if metric.Optional || metric.Representative {
-			logger.ToMainLog().Printf("Skipping optional or representative metric %s", metric.Type)
+			logger.Printf("Skipping optional or representative metric %s", metric.Type)
 			continue
 		}
 		if metadata.SliceContains(metric.UnavailableOn, vm.Platform) {
-			logger.ToMainLog().Printf("Skipping metric %s due to unavailable_on", metric.Type)
+			logger.Printf("Skipping metric %s due to unavailable_on", metric.Type)
 			continue
 		}
 		requiredMetrics = append(requiredMetrics, metric)
@@ -517,11 +517,11 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	}
 
 	if fc == nil {
-		logger.ToMainLog().Printf("skipping feature tracking integration tests")
+		logger.Printf("skipping feature tracking integration tests")
 		return err
 	}
 
-	series, ft_err := gce.WaitForMetricSeries(ctx, logger.ToMainLog(), vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", 1*time.Hour, nil, false, len(fc.Features))
+	series, ft_err := gce.WaitForMetricSeries(ctx, logger, vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", 1*time.Hour, nil, false, len(fc.Features))
 	if ft_err != nil {
 		return multierr.Append(err, ft_err)
 	}
@@ -529,8 +529,8 @@ func runMetricsTestCases(ctx context.Context, logger *logging.DirectoryLogger, v
 	return multierr.Append(err, feature_tracking_metadata.AssertFeatureTrackingMetrics(series, fc.Features))
 }
 
-func assertMetric(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, metric *metadata.ExpectedMetric) error {
-	series, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, metric.Type, 1*time.Hour, nil, false)
+func assertMetric(ctx context.Context, logger *log.Logger, vm *gce.VM, metric *metadata.ExpectedMetric) error {
+	series, err := gce.WaitForMetric(ctx, logger, vm, metric.Type, 1*time.Hour, nil, false)
 	if err != nil {
 		// Optional metrics can be missing
 		if metric.Optional && gce.IsExhaustedRetriesMetricError(err) {
@@ -562,7 +562,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	}
 
 	if _, err = runScriptFromScriptsDir(
-		ctx, logger, vm, path.Join("applications", app, folder, "install"), installEnv); err != nil {
+		ctx, logger.ToMainLog(), vm, path.Join("applications", app, folder, "install"), installEnv); err != nil {
 		return retryable, fmt.Errorf("error installing %s: %v", app, err)
 	}
 
@@ -589,12 +589,12 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		return nonRetryable, fmt.Errorf("error installing agent: %v", err)
 	}
 
-	if _, err = runScriptFromScriptsDir(ctx, logger, vm, path.Join("applications", app, "enable"), nil); err != nil {
+	if _, err = runScriptFromScriptsDir(ctx, logger.ToMainLog(), vm, path.Join("applications", app, "enable"), nil); err != nil {
 		return nonRetryable, fmt.Errorf("error enabling %s: %v", app, err)
 	}
 
 	backupConfigFilePath := util.ConfigPathForPlatform(vm.Platform) + ".bak"
-	if err = assertFilePresence(ctx, logger, vm, backupConfigFilePath); err != nil {
+	if err = assertFilePresence(ctx, logger.ToMainLog(), vm, backupConfigFilePath); err != nil {
 		return nonRetryable, fmt.Errorf("error when fetching back up config file %s: %v", backupConfigFilePath, err)
 	}
 
@@ -602,7 +602,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	exerciseScript := path.Join("applications", app, "exercise")
 	if _, err := readFileFromScriptsDir(exerciseScript); err == nil {
 		logger.ToMainLog().Println("exercise script found, running...")
-		if _, err = runScriptFromScriptsDir(ctx, logger, vm, exerciseScript, nil); err != nil {
+		if _, err = runScriptFromScriptsDir(ctx, logger.ToMainLog(), vm, exerciseScript, nil); err != nil {
 			return nonRetryable, fmt.Errorf("error exercising %s: %v", app, err)
 		}
 	}
@@ -612,7 +612,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		// TODO(b/254325217): bad bad bad, remove this horrible hack once we fix Aerospike on SLES
 		if app == AerospikeApp && folder == "sles" {
 			logger.ToMainLog().Printf("skipping aerospike logging tests (b/254325217)")
-		} else if err = runLoggingTestCases(ctx, logger, vm, metadata.ExpectedLogs); err != nil {
+		} else if err = runLoggingTestCases(ctx, logger.ToMainLog(), vm, metadata.ExpectedLogs); err != nil {
 			return nonRetryable, err
 		}
 	}
@@ -645,7 +645,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 
 		fc, err := getExpectedFeatures(app)
 
-		if err = runMetricsTestCases(ctx, logger, vm, metadata.ExpectedMetrics, fc); err != nil {
+		if err = runMetricsTestCases(ctx, logger.ToMainLog(), vm, metadata.ExpectedMetrics, fc); err != nil {
 			return nonRetryable, err
 		}
 	}

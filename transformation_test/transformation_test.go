@@ -265,7 +265,7 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 				},
 			},
 		},
-	}.Generate()
+	}.Generate(ctx)
 }
 
 type mockLogsReceiver struct {

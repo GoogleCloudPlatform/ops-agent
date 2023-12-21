@@ -28,7 +28,6 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/googleapis/gax-go/v2/apierror"
 	metricpb "google.golang.org/genproto/googleapis/api/metric"
-	"google.golang.org/genproto/googleapis/api/monitoredres"
 	"google.golang.org/grpc/codes"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -40,18 +39,7 @@ const (
 	MaxMonitoringPingRetries     = 1
 )
 
-func getGCEMetadata() (resourcedetector.GCEResource, error) {
-	MetadataResource, err := resourcedetector.GetResource()
-	if err != nil {
-		return resourcedetector.GCEResource{}, fmt.Errorf("can't get resource metadata: %w", err)
-	}
-	if gceMetadata, ok := MetadataResource.(resourcedetector.GCEResource); ok {
-		return gceMetadata, nil
-	}
-	return resourcedetector.GCEResource{}, fmt.Errorf("not in GCE")
-}
-
-func createMonitoringPingRequest(gceMetadata resourcedetector.GCEResource) *monitoringpb.CreateTimeSeriesRequest {
+func createMonitoringPingRequest(resource resourcedetector.Resource) *monitoringpb.CreateTimeSeriesRequest {
 	metricType := "agent.googleapis.com/agent/ops_agent/enabled_receivers"
 	now := &timestamppb.Timestamp{
 		Seconds: time.Now().Unix(),
@@ -62,20 +50,14 @@ func createMonitoringPingRequest(gceMetadata resourcedetector.GCEResource) *moni
 		},
 	}
 	req := &monitoringpb.CreateTimeSeriesRequest{
-		Name: "projects/" + gceMetadata.Project,
+		Name: "projects/" + resource.ProjectName(),
 		TimeSeries: []*monitoringpb.TimeSeries{{
 			MetricKind: metricpb.MetricDescriptor_GAUGE,
 			ValueType:  metricpb.MetricDescriptor_INT64,
 			Metric: &metricpb.Metric{
 				Type: metricType,
 			},
-			Resource: &monitoredres.MonitoredResource{
-				Type: "gce_instance",
-				Labels: map[string]string{
-					"instance_id": gceMetadata.InstanceID,
-					"zone":        gceMetadata.Zone,
-				},
-			},
+			Resource: resource.MonitoredResource(),
 			Points: []*monitoringpb.Point{{
 				Interval: &monitoringpb.TimeInterval{
 					StartTime: now,
@@ -92,26 +74,21 @@ func createMonitoringPingRequest(gceMetadata resourcedetector.GCEResource) *moni
 // authentication configuration are valid. To accomplish this, monitoringPing writes a
 // time series point with empty values to an Ops Agent specific metric.
 // This method mirrors the "(c *Client) Ping" method in "cloud.google.com/go/logging".
-func monitoringPing(ctx context.Context, client monitoring.MetricClient, gceMetadata resourcedetector.GCEResource) error {
+func monitoringPing(ctx context.Context, client monitoring.MetricClient, resource resourcedetector.Resource) error {
 	// Points written to a time series must be at least 5 seconds apart. Because `monitoringPing` might
 	// be called multiple times in quick succession, the first attempted request to `CreateTimeSeries`
 	// may fail. We can retry the request >5 seconds later in such cases.
 	// https://cloud.google.com/monitoring/quotas
 	pingBackoff := backoff.WithMaxRetries(backoff.NewConstantBackOff(6*time.Second), MaxMonitoringPingRetries)
-	pingOperation := func() error { return client.CreateTimeSeries(ctx, createMonitoringPingRequest(gceMetadata)) }
+	pingOperation := func() error { return client.CreateTimeSeries(ctx, createMonitoringPingRequest(resource)) }
 	return backoff.Retry(pingOperation, pingBackoff)
 }
 
-func runLoggingCheck(logger logs.StructuredLogger) error {
+func runLoggingCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
 	ctx := context.Background()
-	gceMetadata, err := getGCEMetadata()
-	if err != nil {
-		return fmt.Errorf("can't get GCE metadata")
-	}
-	logger.Infof("GCE Metadata queried successfully")
 
 	// New Logging Client
-	logClient, err := logging.NewClient(ctx, gceMetadata.Project)
+	logClient, err := logging.NewClient(ctx, resource.ProjectName())
 	if err != nil {
 		return err
 	}
@@ -151,13 +128,8 @@ func runLoggingCheck(logger logs.StructuredLogger) error {
 	return nil
 }
 
-func runMonitoringCheck(logger logs.StructuredLogger) error {
+func runMonitoringCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
 	ctx := context.Background()
-	gceMetadata, err := getGCEMetadata()
-	if err != nil {
-		return fmt.Errorf("can't get GCE metadata")
-	}
-	logger.Infof("GCE Metadata queried successfully")
 
 	// New Monitoring Client
 	monClient, err := monitoring.NewMetricClient(ctx)
@@ -167,7 +139,7 @@ func runMonitoringCheck(logger logs.StructuredLogger) error {
 	defer monClient.Close()
 	logger.Infof("monitoring client was created successfully")
 
-	if err := monitoringPing(ctx, *monClient, gceMetadata); err != nil {
+	if err := monitoringPing(ctx, *monClient, resource); err != nil {
 		logger.Infof(err.Error())
 		var apiErr *apierror.APIError
 		if errors.As(err, &apiErr) {
@@ -207,7 +179,11 @@ func (c APICheck) Name() string {
 }
 
 func (c APICheck) RunCheck(logger logs.StructuredLogger) error {
-	monErr := runMonitoringCheck(logger)
-	logErr := runLoggingCheck(logger)
+	resource, err := resourcedetector.GetResource()
+	if err != nil {
+		return fmt.Errorf("failed to detect the resource: %v", err)
+	}
+	monErr := runMonitoringCheck(logger, resource)
+	logErr := runLoggingCheck(logger, resource)
 	return errors.Join(monErr, logErr)
 }

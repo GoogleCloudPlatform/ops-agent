@@ -20,6 +20,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"log"
 	"path"
 	"regexp"
 	"sort"
@@ -28,6 +29,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
@@ -127,7 +129,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context) (string, error)
 			otel.OTel:   googleCloudExporter(userAgent, true),
 			otel.GMP:    googleManagedPrometheusExporter(userAgent),
 		},
-	}.Generate()
+	}.Generate(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -141,6 +143,21 @@ func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]
 	outR := make(map[string]otel.ReceiverPipeline)
 	outP := make(map[string]otel.Pipeline)
 	addReceiver := func(pipelineType, pID, rID string, receiver OTelReceiver, processorIDs []string) error {
+		if pipelineType == "metrics" {
+			for len(processorIDs) > 0 {
+				if mr, ok := receiver.(MetricsProcessorMerger); ok {
+					receiver, ok = mr.MergeMetricsProcessor(m.Processors[processorIDs[0]])
+					if ok {
+						processorIDs = processorIDs[1:]
+						// Only continue when the receiver can completely merge the processor;
+						// If the receiver is no longer a MetricsProcessorMerger, or it can't
+						// completely merge the current processor, break the loop
+						continue
+					}
+				}
+				break
+			}
+		}
 		for i, receiverPipeline := range receiver.Pipelines(ctx) {
 			receiverPipelineName := strings.ReplaceAll(rID, "_", "__")
 			if i > 0 {
@@ -310,6 +327,57 @@ func processUserDefinedMultilineParser(i int, pID string, receiver LoggingReceiv
 	return nil
 }
 
+func sliceContains(s []string, v string) bool {
+	for _, e := range s {
+		if e == v {
+			return true
+		}
+	}
+	return false
+}
+
+const (
+	attributeLabelPrefix string = "compute.googleapis.com/attributes/"
+)
+
+// addGceMetadataAttributesComponents annotates logs with labels corresponding
+// to instance attributes from the GCE metadata server.
+func addGceMetadataAttributesComponents(ctx context.Context, attributes []string, tag, uid string) []fluentbit.Component {
+	processorName := fmt.Sprintf("%s.%s.gce_metadata", tag, uid)
+	resource, err := platform.FromContext(ctx).GetResource()
+	if err != nil {
+		log.Printf("can't get resource metadata: %v", err)
+		return nil
+	}
+	gceMetadata, ok := resource.(resourcedetector.GCEResource)
+	if !ok {
+		// Not on GCE; no attributes to detect.
+		log.Printf("ignoring the gce_metadata_attributes processor outside of GCE: %T", resource)
+		return nil
+	}
+	modifications := map[string]*ModifyField{}
+	var attributeKeys []string
+	for k, _ := range gceMetadata.Metadata {
+		attributeKeys = append(attributeKeys, k)
+	}
+	sort.Strings(attributeKeys)
+	for _, k := range attributeKeys {
+		if !sliceContains(attributes, k) {
+			continue
+		}
+		v := gceMetadata.Metadata[k]
+		modifications[fmt.Sprintf(`labels."%s%s"`, attributeLabelPrefix, k)] = &ModifyField{
+			StaticValue: &v,
+		}
+	}
+	if len(modifications) == 0 {
+		return nil
+	}
+	return LoggingProcessorModifyFields{
+		Fields: modifications,
+	}.Components(ctx, tag, processorName)
+}
+
 // generateFluentbitComponents generates a slice of fluentbit config sections to represent l.
 func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAgent string) ([]fluentbit.Component, error) {
 	l := uc.Logging
@@ -416,10 +484,15 @@ func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAg
 			out = append(out, s.components...)
 		}
 		if len(tags) > 0 {
-			out = append(out, stackdriverOutputComponent(strings.Join(tags, "|"), userAgent, "2G"))
+			out = append(out, stackdriverOutputComponent(ctx, strings.Join(tags, "|"), userAgent, "2G"))
 		}
+		out = append(out, uc.generateSelfLogsComponents(ctx, userAgent)...)
+		out = append(out, addGceMetadataAttributesComponents(ctx, []string{
+			"dataproc-cluster-name",
+			"dataproc-cluster-uuid",
+			"dataproc-region",
+		}, "*", "default-dataproc")...)
 	}
-	out = append(out, generateSelfLogsComponents(ctx, userAgent)...)
 	out = append(out, fluentbit.MetricsOutputComponent())
 
 	return out, nil

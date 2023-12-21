@@ -401,3 +401,32 @@ func GCPResourceDetector(override bool) Component {
 		Config: config,
 	}
 }
+
+// ResourceTransform returns a Component that applies changes on resource attributes.
+func ResourceTransform(attributes map[string]string, override bool) Component {
+	a := []map[string]interface{}{}
+	keys := make([]string, 0, len(attributes))
+	for k := range attributes {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	action := "insert"
+	if override {
+		action = "upsert"
+	}
+	for _, v := range keys {
+		a = append(a, map[string]interface{}{
+			"key":    v,
+			"value":  attributes[v],
+			"action": action,
+		})
+	}
+	config := map[string]interface{}{
+		"attributes": a,
+	}
+	return Component{
+		Type:   "resource",
+		Config: config,
+	}
+}
