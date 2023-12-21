@@ -82,16 +82,16 @@ func TestTransformationTests(t *testing.T) {
 }
 
 func (transformationConfig transformationTest) runFluentBitTest(t *testing.T, name string) {
-	if len(*flbPath) == 0 {
-		t.Skip("--flb not supplied")
-	}
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	// Generate config files
 	genFiles, err := generateFluentBitConfigs(ctx, name, transformationConfig)
 	if err != nil {
 		t.Fatalf("failed to generate config files: %v", err)
+	}
+
+	if len(*flbPath) == 0 {
+		t.Skip("--flb not supplied")
 	}
 
 	// Write config files in temp directory
@@ -303,10 +303,6 @@ func otlpLogsReceiverOnGRPCServer(ln net.Listener) *mockLogsReceiver {
 }
 
 func (transformationConfig transformationTest) runOTelTest(t *testing.T, name string) {
-	if len(*otelopscolPath) == 0 {
-		t.Skip("--otelopscol not supplied")
-	}
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -325,6 +321,10 @@ func (transformationConfig transformationTest) runOTelTest(t *testing.T, name st
 	}
 
 	t.Logf("otelopscol config:\n%s", config)
+
+	if len(*otelopscolPath) == 0 {
+		t.Skip("--otelopscol not supplied")
+	}
 
 	testStartTime := time.Now()
 
