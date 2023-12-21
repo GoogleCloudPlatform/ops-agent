@@ -147,7 +147,6 @@ func (transformationConfig transformationTest) runFluentBitTest(t *testing.T, na
 
 func checkOutput(t *testing.T, name string, got []map[string]any) {
 	t.Helper()
-	wantBytes := golden.Get(t, name)
 	gotBytes, err := yaml.Marshal(got)
 	if err != nil {
 		t.Fatalf("failed to marshal: %v", err)
@@ -157,6 +156,7 @@ func checkOutput(t *testing.T, name string, got []map[string]any) {
 		golden.AssertBytes(t, gotBytes, name)
 		return
 	}
+	wantBytes := golden.Get(t, name)
 	var want []map[string]any
 	if err := yaml.Unmarshal(wantBytes, &want); err != nil {
 		t.Fatal(err)
