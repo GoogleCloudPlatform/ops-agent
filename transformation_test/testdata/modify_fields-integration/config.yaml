@@ -1,0 +1,36 @@
+- type: parse_json
+- type: modify_fields
+  fields:
+    labels."my.cool.service/foo":
+      copy_from: jsonPayload.field
+    labels."static":
+      static_value: hello world
+    labels."label2":
+      move_from: labels."label1"
+    severity:
+      static_value: WARNING
+    jsonPayload.field2:
+      move_from: jsonPayload.field
+      omit_if: jsonPayload.missing_field = "present"
+    jsonPayload.default_present:
+      default_value: default
+    jsonPayload.default_absent:
+      default_value: default
+    jsonPayload.integer:
+      static_value: 15
+      type: integer
+    jsonPayload.float:
+      static_value: 10.5
+#      type: float
+    jsonPayload.mapped_field:
+      copy_from: jsonPayload.field
+      map_values:
+        value: new_value
+        value2: wrong_value
+    jsonPayload.omitted:
+      static_value: broken
+      omit_if: jsonPayload.field = "field value"
+    trace:
+      move_from: jsonPayload.trace
+    spanId:
+      copy_from: jsonPayload.spanId

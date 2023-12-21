@@ -333,6 +333,7 @@ func (p LoggingProcessorModifyFields) statements() (ottl.Statements, error) {
 		}
 		last = v
 	}
+
 	// Step 4: Assign values
 	for _, dest := range dests {
 		field := p.Fields[dest]
@@ -354,7 +355,7 @@ func (p LoggingProcessorModifyFields) statements() (ottl.Statements, error) {
 		)
 		if field.DefaultValue != nil {
 			statements = statements.Append(
-				value.SetIfNil(src),
+				value.SetIfNil(ottl.StringLiteral(*field.DefaultValue)),
 			)
 		}
 
@@ -399,7 +400,7 @@ func (p LoggingProcessorModifyFields) statements() (ottl.Statements, error) {
 		statements = statements.Append(ra.SetIf(value, value.IsPresent()))
 
 		if field.omitVar != "" {
-			statements = statements.Append(ra.DeleteIf(ottl.LValue{"cache", field.omitVar}))
+			statements = statements.Append(ra.DeleteIf(ottl.Equals(ottl.LValue{"cache", field.omitVar}, ottl.True())))
 		}
 	}
 	return statements, nil

@@ -1,0 +1,40 @@
+- resourceLogs:
+  - resource: {}
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: label2
+          value:
+            stringValue: label1 value
+        - key: my.cool.service/foo
+          value:
+            stringValue: field value
+        - key: static
+          value:
+            stringValue: hello world
+        body:
+          default_absent:
+            stringValue: default
+          default_present:
+            stringValue: original
+          field2:
+            stringValue: field value
+          float:
+            stringValue: "10.5"
+          integer:
+            intValue: "15"
+          logging.googleapis.com/labels:
+            kvlistValue:
+              values:
+              - key: label1
+                value:
+                  stringValue: label1 value
+          mapped_field:
+            stringValue: field value
+          spanId:
+            stringValue: span_id_value
+        observedTimeUnixNano: now
+        severityText: WARNING
+        spanId: ""
+        traceId: ""
+      scope: {}

@@ -1,0 +1,15 @@
+- date: now
+  default_absent: default
+  default_present: original
+  field2: field value
+  float: "10.5"
+  integer: 15
+  logging.googleapis.com/labels:
+    label2: label1 value
+    my.cool.service/foo: field value
+    static: hello world
+  logging.googleapis.com/severity: WARNING
+  logging.googleapis.com/spanId: span_id_value
+  logging.googleapis.com/trace: trace_value
+  mapped_field: field value
+  spanId: span_id_value

@@ -491,7 +491,7 @@ processors:
       - set(cache["value"], cache["__field_0"])
       - set(body["copied"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_1"])
-      - set(cache["value"], cache["__field_1"]) where cache["value"] == nil
+      - set(cache["value"], "this field was missing") where cache["value"] == nil
       - set(body["default"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_2"])
       - set(cache["value"], Double(cache["value"]))
@@ -507,18 +507,18 @@ processors:
       - set(body["nested"]["structure"]["field"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_7"])
       - set(body["omitted"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(body, "omitted") where ((body != nil and body["omitted"] != nil) and cache["__omit_0"])
+      - delete_key(body, "omitted") where ((body != nil and body["omitted"] != nil) and cache["__omit_0"] == true)
       - set(cache["value"], cache["__field_8"])
       - set(attributes["label2"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_9"])
-      - set(cache["value"], cache["__field_9"]) where cache["value"] == nil
+      - set(cache["value"], "default") where cache["value"] == nil
       - set(attributes["label3"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_10"])
       - delete_key(cache, "mapped_value") where (cache != nil and cache["mapped_value"] != nil)
       - set(cache["mapped_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - set(cache["mapped_value"], "WARNING") where (cache["value"]) == ("CAUTION")
-      - set(cache["mapped_value"], "INFO") where (cache["value"]) == ("I")
-      - set(cache["mapped_value"], "WARNING") where (cache["value"]) == ("W")
+      - set(cache["mapped_value"], "WARNING") where cache["value"] == "CAUTION"
+      - set(cache["mapped_value"], "INFO") where cache["value"] == "I"
+      - set(cache["mapped_value"], "WARNING") where cache["value"] == "W"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(cache["value"], "spanValue")
       - set(span_id, cache["value"]) where (cache != nil and cache["value"] != nil)

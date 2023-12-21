@@ -222,7 +222,7 @@ func (p LoggingProcessorParseJson) Processors() []otel.Component {
 func (p LoggingProcessorParseJson) processors() ([]otel.Component, error) {
 	from := p.Field
 	if from == "" {
-		from = "body.message"
+		from = "jsonPayload.message"
 	}
 	m, err := filter.NewMemberLegacy(from)
 	if err != nil {
