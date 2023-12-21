@@ -1,6 +1,7 @@
 package transformation_test
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -364,7 +365,18 @@ func (transformationConfig transformationTest) runOTelTest(t *testing.T, name st
 		return nil
 	})
 	eg.Go(func() error {
-		d := json.NewDecoder(stderr)
+		r := bufio.NewReader(stderr)
+		if c, err := r.Peek(1); err != nil {
+			return err
+		} else if !bytes.Equal(c, []byte("{")) {
+			// If the config fails to parse, otel will emit plain test.
+			b, err := io.ReadAll(r)
+			if err != nil {
+				return err
+			}
+			return fmt.Errorf("stderr: %s", string(b))
+		}
+		d := json.NewDecoder(r)
 		for {
 			log := map[string]any{}
 			if err := d.Decode(&log); err == io.EOF {
