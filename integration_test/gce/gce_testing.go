@@ -1029,7 +1029,7 @@ var (
 	overriddenImageFamilies = map[string]string{
 		"opensuse-leap-15-4": "opensuse-leap-15-4-v20230603-x86-64",
 		// TODO(b/288286057): remove this override once the 3P app tests are working with newer images.
-		"sles-15": "sles-15-sp4-v20230322-x86-64",
+		// "sles-15": "sles-15-sp4-v20230322-x86-64",
 	}
 )
 
@@ -1558,7 +1558,7 @@ INSTALL_DIR="$(readlink --canonicalize .)"
 	INSTALL_LOG="$(mktemp)"
 	# This command produces a lot of console spam, so we only display that
 	# output if there is a problem.
-	sudo tar -xf ` + gcloudPkg + ` -C ${INSTALL_DIR} 
+	sudo tar -xf ` + gcloudPkg + ` -C ${INSTALL_DIR}
 	sudo --preserve-env ${INSTALL_DIR}/google-cloud-sdk/install.sh -q &>"${INSTALL_LOG}" || \
 		EXIT_CODE=$?
 	if [[ "${EXIT_CODE-}" ]]; then
@@ -1572,7 +1572,7 @@ INSTALL_DIR="$(readlink --canonicalize .)"
 # Upgrade to the latest version
 sudo ${INSTALL_DIR}/google-cloud-sdk/bin/gcloud components update --quiet
 
-sudo ln -s ${INSTALL_DIR}/google-cloud-sdk/bin/gsutil /usr/bin/gsutil 
+sudo ln -s ${INSTALL_DIR}/google-cloud-sdk/bin/gsutil /usr/bin/gsutil
 `
 	// b/308962066: The GCloud CLI ARM Linux tarballs do not have bundled Python
 	// and the GCloud CLI requires Python >= 3.8. Install Python311 for ARM VMs
