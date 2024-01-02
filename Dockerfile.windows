@@ -92,6 +92,10 @@ RUN Start-Process msiexec.exe `
 WORKDIR /goget
 RUN go install github.com/google/googet/v2/goopack@latest;
 
+# Debug why we get docker cache misses for release builds.
+RUN go install github.com/MShekow/directory-checksum@main
+RUN directory-checksum --max-depth=3 .
+
 ###############################################################################
 # Build fluent-bit
 ###############################################################################

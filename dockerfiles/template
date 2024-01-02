@@ -17,6 +17,9 @@ RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
+# Debug why we get docker cache misses for release builds.
+RUN go install github.com/MShekow/directory-checksum@main
+RUN directory-checksum --max-depth=3 .
 
 FROM {target_name}-build-base AS {target_name}-build-otel
 WORKDIR /work

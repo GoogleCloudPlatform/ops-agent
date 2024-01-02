@@ -102,6 +102,9 @@ RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
+# Debug why we get docker cache misses for release builds.
+RUN go install github.com/MShekow/directory-checksum@main
+RUN directory-checksum --max-depth=3 .
 
 FROM centos7-build-base AS centos7-build-otel
 WORKDIR /work
@@ -180,6 +183,7 @@ FROM scratch AS centos7
 COPY --from=centos7-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-7.tgz
 COPY --from=centos7-build /google-cloud-ops-agent*.rpm /
 
+
 # ======================================
 # Build Ops Agent for centos-8 
 # ======================================
@@ -205,6 +209,9 @@ RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
+# Debug why we get docker cache misses for release builds.
+RUN go install github.com/MShekow/directory-checksum@main
+RUN directory-checksum --max-depth=3 .
 
 FROM centos8-build-base AS centos8-build-otel
 WORKDIR /work
@@ -283,6 +290,7 @@ FROM scratch AS centos8
 COPY --from=centos8-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-8.tgz
 COPY --from=centos8-build /google-cloud-ops-agent*.rpm /
 
+
 # ======================================
 # Build Ops Agent for rockylinux-9 
 # ======================================
@@ -311,6 +319,9 @@ RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
+# Debug why we get docker cache misses for release builds.
+RUN go install github.com/MShekow/directory-checksum@main
+RUN directory-checksum --max-depth=3 .
 
 FROM rockylinux9-build-base AS rockylinux9-build-otel
 WORKDIR /work
@@ -389,6 +400,7 @@ FROM scratch AS rockylinux9
 COPY --from=rockylinux9-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-rockylinux-9.tgz
 COPY --from=rockylinux9-build /google-cloud-ops-agent*.rpm /
 
+
 # ======================================
 # Build Ops Agent for debian-bookworm 
 # ======================================
@@ -412,6 +424,9 @@ RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
+# Debug why we get docker cache misses for release builds.
+RUN go install github.com/MShekow/directory-checksum@main
+RUN directory-checksum --max-depth=3 .
 
 FROM bookworm-build-base AS bookworm-build-otel
 WORKDIR /work
@@ -490,6 +505,7 @@ FROM scratch AS bookworm
 COPY --from=bookworm-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-bookworm.tgz
 COPY --from=bookworm-build /google-cloud-ops-agent*.deb /
 
+
 # ======================================
 # Build Ops Agent for debian-bullseye 
 # ======================================
@@ -513,6 +529,9 @@ RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
+# Debug why we get docker cache misses for release builds.
+RUN go install github.com/MShekow/directory-checksum@main
+RUN directory-checksum --max-depth=3 .
 
 FROM bullseye-build-base AS bullseye-build-otel
 WORKDIR /work
@@ -591,6 +610,7 @@ FROM scratch AS bullseye
 COPY --from=bullseye-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-bullseye.tgz
 COPY --from=bullseye-build /google-cloud-ops-agent*.deb /
 
+
 # ======================================
 # Build Ops Agent for debian-buster 
 # ======================================
@@ -616,6 +636,9 @@ RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
+# Debug why we get docker cache misses for release builds.
+RUN go install github.com/MShekow/directory-checksum@main
+RUN directory-checksum --max-depth=3 .
 
 FROM buster-build-base AS buster-build-otel
 WORKDIR /work
@@ -694,6 +717,7 @@ FROM scratch AS buster
 COPY --from=buster-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-buster.tgz
 COPY --from=buster-build /google-cloud-ops-agent*.deb /
 
+
 # ======================================
 # Build Ops Agent for sles-12 
 # ======================================
@@ -736,6 +760,9 @@ RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
+# Debug why we get docker cache misses for release builds.
+RUN go install github.com/MShekow/directory-checksum@main
+RUN directory-checksum --max-depth=3 .
 
 FROM sles12-build-base AS sles12-build-otel
 WORKDIR /work
@@ -814,6 +841,7 @@ FROM scratch AS sles12
 COPY --from=sles12-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-sles-12.tgz
 COPY --from=sles12-build /google-cloud-ops-agent*.rpm /
 
+
 # ======================================
 # Build Ops Agent for sles-15 
 # ======================================
@@ -842,6 +870,9 @@ RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
+# Debug why we get docker cache misses for release builds.
+RUN go install github.com/MShekow/directory-checksum@main
+RUN directory-checksum --max-depth=3 .
 
 FROM sles15-build-base AS sles15-build-otel
 WORKDIR /work
@@ -920,6 +951,7 @@ FROM scratch AS sles15
 COPY --from=sles15-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-sles-15.tgz
 COPY --from=sles15-build /google-cloud-ops-agent*.rpm /
 
+
 # ======================================
 # Build Ops Agent for ubuntu-focal 
 # ======================================
@@ -943,6 +975,9 @@ RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
+# Debug why we get docker cache misses for release builds.
+RUN go install github.com/MShekow/directory-checksum@main
+RUN directory-checksum --max-depth=3 .
 
 FROM focal-build-base AS focal-build-otel
 WORKDIR /work
@@ -1021,6 +1056,7 @@ FROM scratch AS focal
 COPY --from=focal-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-focal.tgz
 COPY --from=focal-build /google-cloud-ops-agent*.deb /
 
+
 # ======================================
 # Build Ops Agent for ubuntu-jammy 
 # ======================================
@@ -1044,6 +1080,9 @@ RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
+# Debug why we get docker cache misses for release builds.
+RUN go install github.com/MShekow/directory-checksum@main
+RUN directory-checksum --max-depth=3 .
 
 FROM jammy-build-base AS jammy-build-otel
 WORKDIR /work
@@ -1122,6 +1161,7 @@ FROM scratch AS jammy
 COPY --from=jammy-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-jammy.tgz
 COPY --from=jammy-build /google-cloud-ops-agent*.deb /
 
+
 # ======================================
 # Build Ops Agent for ubuntu-lunar 
 # ======================================
@@ -1145,6 +1185,9 @@ RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
+# Debug why we get docker cache misses for release builds.
+RUN go install github.com/MShekow/directory-checksum@main
+RUN directory-checksum --max-depth=3 .
 
 FROM lunar-build-base AS lunar-build-otel
 WORKDIR /work
@@ -1223,6 +1266,7 @@ FROM scratch AS lunar
 COPY --from=lunar-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-lunar.tgz
 COPY --from=lunar-build /google-cloud-ops-agent*.deb /
 
+
 # ======================================
 # Build Ops Agent for ubuntu-mantic 
 # ======================================
@@ -1246,6 +1290,9 @@ RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
+# Debug why we get docker cache misses for release builds.
+RUN go install github.com/MShekow/directory-checksum@main
+RUN directory-checksum --max-depth=3 .
 
 FROM mantic-build-base AS mantic-build-otel
 WORKDIR /work
@@ -1323,6 +1370,7 @@ RUN ./pkg/deb/build.sh
 FROM scratch AS mantic
 COPY --from=mantic-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-mantic.tgz
 COPY --from=mantic-build /google-cloud-ops-agent*.deb /
+
 
 FROM scratch
 COPY --from=centos7 /* /
