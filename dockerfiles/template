@@ -17,6 +17,7 @@ RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
+
 FROM {target_name}-build-base AS {target_name}-build-otel
 WORKDIR /work
 # Download golang deps
@@ -78,7 +79,7 @@ COPY . /work
 
 # Debug why we get docker cache misses for release builds.
 RUN go install github.com/MShekow/directory-checksum@main
-RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work && exit 1
+RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work
 
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang

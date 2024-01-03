@@ -102,6 +102,7 @@ RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
+
 FROM centos7-build-base AS centos7-build-otel
 WORKDIR /work
 # Download golang deps
@@ -163,7 +164,7 @@ COPY . /work
 
 # Debug why we get docker cache misses for release builds.
 RUN go install github.com/MShekow/directory-checksum@main
-RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work && exit 1
+RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work
 
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
@@ -208,6 +209,7 @@ ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VER
 RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
+
 
 FROM centos8-build-base AS centos8-build-otel
 WORKDIR /work
@@ -270,7 +272,7 @@ COPY . /work
 
 # Debug why we get docker cache misses for release builds.
 RUN go install github.com/MShekow/directory-checksum@main
-RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work && exit 1
+RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work
 
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
@@ -318,6 +320,7 @@ ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VER
 RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
+
 
 FROM rockylinux9-build-base AS rockylinux9-build-otel
 WORKDIR /work
@@ -380,7 +383,7 @@ COPY . /work
 
 # Debug why we get docker cache misses for release builds.
 RUN go install github.com/MShekow/directory-checksum@main
-RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work && exit 1
+RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work
 
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
@@ -423,6 +426,7 @@ ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VER
 RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
+
 
 FROM bookworm-build-base AS bookworm-build-otel
 WORKDIR /work
@@ -485,7 +489,7 @@ COPY . /work
 
 # Debug why we get docker cache misses for release builds.
 RUN go install github.com/MShekow/directory-checksum@main
-RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work && exit 1
+RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work
 
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
@@ -528,6 +532,7 @@ ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VER
 RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
+
 
 FROM bullseye-build-base AS bullseye-build-otel
 WORKDIR /work
@@ -590,7 +595,7 @@ COPY . /work
 
 # Debug why we get docker cache misses for release builds.
 RUN go install github.com/MShekow/directory-checksum@main
-RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work && exit 1
+RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work
 
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
@@ -635,6 +640,7 @@ ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VER
 RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
+
 
 FROM buster-build-base AS buster-build-otel
 WORKDIR /work
@@ -697,7 +703,7 @@ COPY . /work
 
 # Debug why we get docker cache misses for release builds.
 RUN go install github.com/MShekow/directory-checksum@main
-RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work && exit 1
+RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work
 
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
@@ -760,6 +766,7 @@ RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 
+
 FROM sles12-build-base AS sles12-build-otel
 WORKDIR /work
 # Download golang deps
@@ -821,7 +828,7 @@ COPY . /work
 
 # Debug why we get docker cache misses for release builds.
 RUN go install github.com/MShekow/directory-checksum@main
-RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work && exit 1
+RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work
 
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
@@ -869,6 +876,7 @@ ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VER
 RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
+
 
 FROM sles15-build-base AS sles15-build-otel
 WORKDIR /work
@@ -931,7 +939,7 @@ COPY . /work
 
 # Debug why we get docker cache misses for release builds.
 RUN go install github.com/MShekow/directory-checksum@main
-RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work && exit 1
+RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work
 
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
@@ -974,6 +982,7 @@ ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VER
 RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
+
 
 FROM focal-build-base AS focal-build-otel
 WORKDIR /work
@@ -1036,7 +1045,7 @@ COPY . /work
 
 # Debug why we get docker cache misses for release builds.
 RUN go install github.com/MShekow/directory-checksum@main
-RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work && exit 1
+RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work
 
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
@@ -1079,6 +1088,7 @@ ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VER
 RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
+
 
 FROM jammy-build-base AS jammy-build-otel
 WORKDIR /work
@@ -1141,7 +1151,7 @@ COPY . /work
 
 # Debug why we get docker cache misses for release builds.
 RUN go install github.com/MShekow/directory-checksum@main
-RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work && exit 1
+RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work
 
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
@@ -1184,6 +1194,7 @@ ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VER
 RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
+
 
 FROM lunar-build-base AS lunar-build-otel
 WORKDIR /work
@@ -1246,7 +1257,7 @@ COPY . /work
 
 # Debug why we get docker cache misses for release builds.
 RUN go install github.com/MShekow/directory-checksum@main
-RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work && exit 1
+RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work
 
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
@@ -1289,6 +1300,7 @@ ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VER
 RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
+
 
 FROM mantic-build-base AS mantic-build-otel
 WORKDIR /work
@@ -1351,7 +1363,7 @@ COPY . /work
 
 # Debug why we get docker cache misses for release builds.
 RUN go install github.com/MShekow/directory-checksum@main
-RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work && exit 1
+RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work
 
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
