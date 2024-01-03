@@ -23,12 +23,6 @@
             stringValue: "10.5"
           integer:
             intValue: "15"
-          logging.googleapis.com/labels:
-            kvlistValue:
-              values:
-              - key: label1
-                value:
-                  stringValue: label1 value
           mapped_field:
             stringValue: field value
           spanId:

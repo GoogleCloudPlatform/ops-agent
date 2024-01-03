@@ -169,9 +169,11 @@ func (p ParserShared) FluentBitSpecialFieldsStatements() ottl.Statements {
 		names = append(names, f)
 	}
 	sort.Strings(names)
+	labels := ottl.LValue{"body", "logging.googleapis.com/labels"}
 	statements := ottl.NewStatements(
 		// Do labels first so other fields can override it.
-		ottl.LValue{"attributes"}.MergeMaps(ottl.LValue{"body", "logging.googleapis.com/labels"}, "upsert"),
+		ottl.LValue{"attributes"}.MergeMaps(labels, "upsert"),
+		labels.Delete(),
 	)
 	for _, f := range names {
 		// TODO: trace and span ID need parsing (see comment in ast.go)
