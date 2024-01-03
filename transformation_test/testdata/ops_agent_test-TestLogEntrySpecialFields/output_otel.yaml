@@ -1,0 +1,47 @@
+- resourceLogs:
+  - resource: {}
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: label1
+          value:
+            stringValue: value1
+        - key: label2
+          value:
+            stringValue: value2
+        - key: gcp.source_location
+          value:
+            kvlistValue:
+              values:
+              - key: file
+                value:
+                  stringValue: file
+              - key: line
+                value:
+                  stringValue: "1"
+              - key: function
+                value:
+                  stringValue: function
+        body:
+          logging.googleapis.com/operation:
+            kvlistValue:
+              values:
+              - key: last
+                value:
+                  boolValue: true
+              - key: id
+                value:
+                  stringValue: id
+              - key: producer
+                value:
+                  stringValue: producer
+              - key: first
+                value:
+                  boolValue: true
+          normal_field:
+            stringValue: value
+        observedTimeUnixNano: now
+        severityText: WARNING
+        spanId: ""
+        traceId: ""
+      scope: {}

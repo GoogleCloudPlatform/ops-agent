@@ -1,0 +1,17 @@
+- date: now
+  logging.googleapis.com/labels:
+    label1: value1
+    label2: value2
+  logging.googleapis.com/operation:
+    first: true
+    id: id
+    last: true
+    producer: producer
+  logging.googleapis.com/severity: WARNING
+  logging.googleapis.com/sourceLocation:
+    file: file
+    function: function
+    line: "1"
+  logging.googleapis.com/spanId: spanId
+  logging.googleapis.com/trace: trace
+  normal_field: value
