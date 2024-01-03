@@ -48,7 +48,7 @@ func NewMember(m string) (*Member, error) {
 }
 
 // NewMemberLegacy attempts to parse m as a filter member.
-// If it fails, it prepends `body.` and tries again.
+// If it fails, it prepends `jsonPayload.` and tries again.
 // This is used by legacy config options that allowed bare body field names.
 func NewMemberLegacy(m string) (*Member, error) {
 	out, err := NewMember(m)
