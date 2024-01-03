@@ -42,6 +42,7 @@ AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
 package integration_test
 
 import (
+	"bytes"
 	"context"
 	"embed"
 	"encoding/json"
@@ -4694,6 +4695,44 @@ func TestNoNvmlOtelReceiverWithoutGpu(t *testing.T) {
 			t.Error("expected no logs to contain Nvidia or nvml when the instance has no gpu")
 		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
 			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+}
+
+func TestPartialSuccess(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		logPath := logPathForPlatform(vm.Platform)
+		config := fmt.Sprintf(`logging:
+  receivers:
+    files_1:
+      type: files
+      include_paths: [%s]
+  service:
+    pipelines:
+      p1:
+        receivers: [files_1]`, logPath)
+		testFile, err := os.ReadFile(path.Join("testdata", "partial_success", "test.log"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err = gce.UploadContent(ctx, logger, vm, bytes.NewReader(testFile), logPath); err != nil {
+			t.Fatal(err)
+		}
+		if err = agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		// partialSuccess behaviour is documented at: https://cloud.google.com/logging/docs/reference/v2/rest/v2/entries/write
+		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="google"`); err != nil {
+			t.Error(err)
+		}
+		if err = gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="foo"`); err != nil {
+			t.Error(err)
+		}
+		if err = gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="goo"`); err != nil {
+			t.Error(err)
 		}
 	})
 }
