@@ -49,24 +49,17 @@ func setLogNameComponents(ctx context.Context, tag, logName, receiverType string
 }
 
 func otelSetLogNameComponents(_ context.Context, logName, hostName string) []otel.Component {
-	statements := []string{
-		// TODO: Prepend `receiver_id.` if it already exists, like the `fluent_forward` receiver?
-		fmt.Sprintf(`set(attributes["gcp.log_name"], %q) where attributes["gcp.log_name"] == nil`, logName),
-		fmt.Sprintf(`set(attributes["compute.googleapis.com/resource_name"], %q) where attributes["compute.googleapis.com/resource_name"] == nil`, hostName),
-	}
-	return []otel.Component{
-		{
-			Type: "transform",
-			Config: map[string]any{
-				"log_statements": []map[string]any{
-					{
-						"context":    "log",
-						"statements": statements,
-					},
-				},
+	return LoggingProcessorModifyFields{
+		Fields: map[string]*ModifyField{
+			// TODO: Prepend `receiver_id.` if it already exists, like the `fluent_forward` receiver?
+			"logName": {
+				DefaultValue: &logName,
+			},
+			`labels."compute.googleapis.com/resource_name"`: {
+				DefaultValue: &hostName,
 			},
 		},
-	}
+	}.Processors()
 }
 
 // stackdriverOutputComponent generates a component that outputs logs matching the regex `match` using `userAgent`.
