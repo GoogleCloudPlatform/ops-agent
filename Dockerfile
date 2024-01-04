@@ -162,6 +162,10 @@ FROM centos7-build-golang-base AS centos7-build
 WORKDIR /work
 COPY . /work
 
+# Debug why we get docker cache misses for release builds.
+RUN go install github.com/MShekow/directory-checksum@main
+RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work
+
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
@@ -179,6 +183,7 @@ RUN ./pkg/rpm/build.sh
 FROM scratch AS centos7
 COPY --from=centos7-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-7.tgz
 COPY --from=centos7-build /google-cloud-ops-agent*.rpm /
+
 
 # ======================================
 # Build Ops Agent for centos-8 
@@ -265,6 +270,10 @@ FROM centos8-build-golang-base AS centos8-build
 WORKDIR /work
 COPY . /work
 
+# Debug why we get docker cache misses for release builds.
+RUN go install github.com/MShekow/directory-checksum@main
+RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work
+
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
@@ -282,6 +291,7 @@ RUN ./pkg/rpm/build.sh
 FROM scratch AS centos8
 COPY --from=centos8-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-8.tgz
 COPY --from=centos8-build /google-cloud-ops-agent*.rpm /
+
 
 # ======================================
 # Build Ops Agent for rockylinux-9 
@@ -371,6 +381,10 @@ FROM rockylinux9-build-golang-base AS rockylinux9-build
 WORKDIR /work
 COPY . /work
 
+# Debug why we get docker cache misses for release builds.
+RUN go install github.com/MShekow/directory-checksum@main
+RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work
+
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
@@ -388,6 +402,7 @@ RUN ./pkg/rpm/build.sh
 FROM scratch AS rockylinux9
 COPY --from=rockylinux9-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-rockylinux-9.tgz
 COPY --from=rockylinux9-build /google-cloud-ops-agent*.rpm /
+
 
 # ======================================
 # Build Ops Agent for debian-bookworm 
@@ -472,6 +487,10 @@ FROM bookworm-build-golang-base AS bookworm-build
 WORKDIR /work
 COPY . /work
 
+# Debug why we get docker cache misses for release builds.
+RUN go install github.com/MShekow/directory-checksum@main
+RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work
+
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
@@ -489,6 +508,7 @@ RUN ./pkg/deb/build.sh
 FROM scratch AS bookworm
 COPY --from=bookworm-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-bookworm.tgz
 COPY --from=bookworm-build /google-cloud-ops-agent*.deb /
+
 
 # ======================================
 # Build Ops Agent for debian-bullseye 
@@ -573,6 +593,10 @@ FROM bullseye-build-golang-base AS bullseye-build
 WORKDIR /work
 COPY . /work
 
+# Debug why we get docker cache misses for release builds.
+RUN go install github.com/MShekow/directory-checksum@main
+RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work
+
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
@@ -590,6 +614,7 @@ RUN ./pkg/deb/build.sh
 FROM scratch AS bullseye
 COPY --from=bullseye-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-bullseye.tgz
 COPY --from=bullseye-build /google-cloud-ops-agent*.deb /
+
 
 # ======================================
 # Build Ops Agent for debian-buster 
@@ -676,6 +701,10 @@ FROM buster-build-golang-base AS buster-build
 WORKDIR /work
 COPY . /work
 
+# Debug why we get docker cache misses for release builds.
+RUN go install github.com/MShekow/directory-checksum@main
+RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work
+
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
@@ -693,6 +722,7 @@ RUN ./pkg/deb/build.sh
 FROM scratch AS buster
 COPY --from=buster-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-buster.tgz
 COPY --from=buster-build /google-cloud-ops-agent*.deb /
+
 
 # ======================================
 # Build Ops Agent for sles-12 
@@ -796,6 +826,10 @@ FROM sles12-build-golang-base AS sles12-build
 WORKDIR /work
 COPY . /work
 
+# Debug why we get docker cache misses for release builds.
+RUN go install github.com/MShekow/directory-checksum@main
+RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work
+
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
@@ -813,6 +847,7 @@ RUN ./pkg/rpm/build.sh
 FROM scratch AS sles12
 COPY --from=sles12-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-sles-12.tgz
 COPY --from=sles12-build /google-cloud-ops-agent*.rpm /
+
 
 # ======================================
 # Build Ops Agent for sles-15 
@@ -902,6 +937,10 @@ FROM sles15-build-golang-base AS sles15-build
 WORKDIR /work
 COPY . /work
 
+# Debug why we get docker cache misses for release builds.
+RUN go install github.com/MShekow/directory-checksum@main
+RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work
+
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
@@ -919,6 +958,7 @@ RUN ./pkg/rpm/build.sh
 FROM scratch AS sles15
 COPY --from=sles15-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-sles-15.tgz
 COPY --from=sles15-build /google-cloud-ops-agent*.rpm /
+
 
 # ======================================
 # Build Ops Agent for ubuntu-focal 
@@ -1003,6 +1043,10 @@ FROM focal-build-golang-base AS focal-build
 WORKDIR /work
 COPY . /work
 
+# Debug why we get docker cache misses for release builds.
+RUN go install github.com/MShekow/directory-checksum@main
+RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work
+
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
@@ -1020,6 +1064,7 @@ RUN ./pkg/deb/build.sh
 FROM scratch AS focal
 COPY --from=focal-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-focal.tgz
 COPY --from=focal-build /google-cloud-ops-agent*.deb /
+
 
 # ======================================
 # Build Ops Agent for ubuntu-jammy 
@@ -1104,6 +1149,10 @@ FROM jammy-build-golang-base AS jammy-build
 WORKDIR /work
 COPY . /work
 
+# Debug why we get docker cache misses for release builds.
+RUN go install github.com/MShekow/directory-checksum@main
+RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work
+
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
@@ -1121,6 +1170,7 @@ RUN ./pkg/deb/build.sh
 FROM scratch AS jammy
 COPY --from=jammy-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-jammy.tgz
 COPY --from=jammy-build /google-cloud-ops-agent*.deb /
+
 
 # ======================================
 # Build Ops Agent for ubuntu-lunar 
@@ -1205,6 +1255,10 @@ FROM lunar-build-golang-base AS lunar-build
 WORKDIR /work
 COPY . /work
 
+# Debug why we get docker cache misses for release builds.
+RUN go install github.com/MShekow/directory-checksum@main
+RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work
+
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
@@ -1222,6 +1276,7 @@ RUN ./pkg/deb/build.sh
 FROM scratch AS lunar
 COPY --from=lunar-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-lunar.tgz
 COPY --from=lunar-build /google-cloud-ops-agent*.deb /
+
 
 # ======================================
 # Build Ops Agent for ubuntu-mantic 
@@ -1306,6 +1361,10 @@ FROM mantic-build-golang-base AS mantic-build
 WORKDIR /work
 COPY . /work
 
+# Debug why we get docker cache misses for release builds.
+RUN go install github.com/MShekow/directory-checksum@main
+RUN ${HOME}/go/bin/directory-checksum --max-depth=3 /work
+
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
@@ -1323,6 +1382,7 @@ RUN ./pkg/deb/build.sh
 FROM scratch AS mantic
 COPY --from=mantic-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-mantic.tgz
 COPY --from=mantic-build /google-cloud-ops-agent*.deb /
+
 
 FROM scratch
 COPY --from=centos7 /* /
