@@ -4707,6 +4707,7 @@ logging:
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
 			t.Fatalf("error uploading log: %v", err)
 		}
+		t.Fail()
 	})
 }
 
