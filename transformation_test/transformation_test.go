@@ -446,23 +446,12 @@ func (transformationConfig transformationTest) runOTelTest(t *testing.T, name st
 								}
 							}
 						}
-						// Convert kvlistValue to a map
-						if body, ok := v1["body"].(map[string]any); ok {
-							if kv, ok := body["kvlistValue"].(map[string]any); ok {
-								kvOut := map[string]any{}
-								for _, kv := range kv["values"].([]any) {
-									kv1 := kv.(map[string]any)
-									key := kv1["key"].(string)
-									value := kv1["value"]
-									kvOut[key] = value
-								}
-								v1["body"] = kvOut
-							}
-						}
 					}
 				}
 			}
 		}
+
+		req = replaceKvlistValues(req).(map[string]any)
 
 		data = append(data, req)
 	}
@@ -471,4 +460,33 @@ func (transformationConfig transformationTest) runOTelTest(t *testing.T, name st
 		data = append(data, map[string]any{"collector_errors": errors})
 	}
 	checkOutput(t, filepath.Join(name, "output_otel.yaml"), data)
+}
+
+func replaceKvlistValues(data any) any {
+	if m, ok := data.(map[string]any); ok {
+		out := map[string]any{}
+		for k, v := range m {
+			// Convert kvlistValue to a map
+			if kv, ok := v.(map[string]any); ok && k == "kvlistValue" {
+				kvOut := map[string]any{}
+				for _, kv := range kv["values"].([]any) {
+					kv1 := kv.(map[string]any)
+					key := kv1["key"].(string)
+					value := kv1["value"]
+					kvOut[key] = replaceKvlistValues(value)
+				}
+				return kvOut
+			}
+			out[k] = replaceKvlistValues(v)
+		}
+		return out
+	}
+	if s, ok := data.([]any); ok {
+		var out []any
+		for _, v := range s {
+			out = append(out, replaceKvlistValues(v))
+		}
+		return out
+	}
+	return data
 }

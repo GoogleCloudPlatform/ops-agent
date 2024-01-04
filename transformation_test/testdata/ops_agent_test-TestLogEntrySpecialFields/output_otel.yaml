@@ -11,33 +11,22 @@
             stringValue: value2
         - key: gcp.source_location
           value:
-            kvlistValue:
-              values:
-              - key: file
-                value:
-                  stringValue: file
-              - key: line
-                value:
-                  stringValue: "1"
-              - key: function
-                value:
-                  stringValue: function
+            file:
+              stringValue: file
+            function:
+              stringValue: function
+            line:
+              stringValue: "1"
         body:
           logging.googleapis.com/operation:
-            kvlistValue:
-              values:
-              - key: last
-                value:
-                  boolValue: true
-              - key: id
-                value:
-                  stringValue: id
-              - key: producer
-                value:
-                  stringValue: producer
-              - key: first
-                value:
-                  boolValue: true
+            first:
+              boolValue: true
+            id:
+              stringValue: id
+            last:
+              boolValue: true
+            producer:
+              stringValue: producer
           normal_field:
             stringValue: value
         observedTimeUnixNano: now
