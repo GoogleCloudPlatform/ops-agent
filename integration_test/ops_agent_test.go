@@ -4750,8 +4750,7 @@ logging:
       include_paths:
         - %s
   service:
-    logging:
-      compress: gzip
+    compress: gzip
 `
 		config := fmt.Sprintf(configStr, file1)
 		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
