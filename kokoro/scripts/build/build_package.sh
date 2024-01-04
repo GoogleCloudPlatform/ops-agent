@@ -25,6 +25,8 @@ set -e
 set -x
 set -o pipefail
 
+exit 7
+
 RESULT_DIR=${RESULT_DIR:-"${KOKORO_ARTIFACTS_DIR}/result"}
 export RESULT_DIR
 
