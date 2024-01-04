@@ -3764,7 +3764,6 @@ func TestLoggingDataprocAttributes(t *testing.T) {
 			t.Fatal(err)
 		}
 
-
 		if err := writeToSystemLog(ctx, logger.ToMainLog(), vm, "123456789"); err != nil {
 			t.Fatal(err)
 		}
@@ -4679,6 +4678,35 @@ func TestRestartVM(t *testing.T) {
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
+	})
+}
+
+func TestLogCompression(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
+		configStr := `
+logging:
+  receivers:
+    f1:
+      type: files
+      include_paths:
+        - %s
+  service:
+    logging:
+      compress: gzip
+`
+		config := fmt.Sprintf(configStr, file1)
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		line := `{"parsed-field":"parsed-value", "overwritten-field":"overwritten", "logging.googleapis.com/labels": {"parsed-label":"parsed-label", "overwritten-label":"overwritten"}, "logging.googleapis.com/sourceLocation": {"file": "overwritten-file-path"}}` + "\n"
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
+			t.Fatalf("error uploading log: %v", err)
+		}
 	})
 }
 
