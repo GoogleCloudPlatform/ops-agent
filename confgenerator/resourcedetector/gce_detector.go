@@ -150,7 +150,12 @@ func (r GCEResource) PrometheusStyleMetadata() map[string]string {
 	prefix := "__meta_gce_"
 	for k, v := range r.Metadata {
 		sanitizedKey := "metadata_" + strutil.SanitizeLabelName(k)
-		metaLabels[prefix+sanitizedKey] = strings.ReplaceAll(v, "$", "$$")
+		// Once https://github.com/open-telemetry/opentelemetry-collector/issues/9204
+		// is fixed, this will no longer be needed.
+		sanitizedVal := strings.ReplaceAll(v, "${", "_{")
+		sanitizedVal = strings.ReplaceAll(sanitizedVal, "$", "$$")
+		metaLabels[prefix+sanitizedKey] = sanitizedVal
+
 	}
 
 	// Labels are not available using the GCE metadata API.
