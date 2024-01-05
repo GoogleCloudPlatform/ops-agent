@@ -4698,6 +4698,45 @@ func TestNoNvmlOtelReceiverWithoutGpu(t *testing.T) {
 	})
 }
 
+func TestPartialSuccess(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		logPath := logPathForPlatform(vm.Platform)
+		config := fmt.Sprintf(`logging:
+  receivers:
+    files_1:
+      type: files
+      include_paths: [%s]
+  service:
+    pipelines:
+      p1:
+        receivers: [files_1]`, logPath)
+		testFile, err := os.Open(path.Join("testdata", "partial_success", "test.log"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer testFile.Close()
+		if err = gce.UploadContent(ctx, logger, vm, testFile, logPath); err != nil {
+			t.Fatal(err)
+		}
+		if err = agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		// partialSuccess behaviour is documented at: https://cloud.google.com/logging/docs/reference/v2/rest/v2/entries/write
+		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="google"`); err != nil {
+			t.Error(err)
+		}
+		if err = gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="foo"`); err != nil {
+			t.Error(err)
+		}
+		if err = gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="goo"`); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
 func TestRestartVM(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
