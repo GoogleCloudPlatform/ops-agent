@@ -4748,8 +4748,6 @@ func TestLogCompression(t *testing.T) {
       type: files
       include_paths:
       - %s
-  service:
-    compress: gzip
   processors:
     modify:
       type: modify_fields
@@ -4793,6 +4791,7 @@ func TestLogCompression(t *testing.T) {
     google:
       type: google_cloud_logging
   service:
+    compress: gzip
     pipelines:
       p1:
         receivers: [f1]
