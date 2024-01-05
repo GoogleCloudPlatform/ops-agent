@@ -42,7 +42,6 @@ AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
 package integration_test
 
 import (
-	"bytes"
 	"context"
 	"embed"
 	"encoding/json"
@@ -4713,11 +4712,11 @@ func TestPartialSuccess(t *testing.T) {
     pipelines:
       p1:
         receivers: [files_1]`, logPath)
-		testFile, err := os.ReadFile(path.Join("testdata", "partial_success", "test.log"))
+		testFile, err := os.Open(path.Join("testdata", "partial_success", "test.log"))
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err = gce.UploadContent(ctx, logger, vm, bytes.NewReader(testFile), logPath); err != nil {
+		if err = gce.UploadContent(ctx, logger, vm, testFile, logPath); err != nil {
 			t.Fatal(err)
 		}
 		if err = agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
