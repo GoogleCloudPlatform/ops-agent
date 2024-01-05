@@ -115,7 +115,7 @@ func (p *LoggingProcessorMongodb) Components(ctx context.Context, tag, uid strin
 func (p *LoggingProcessorMongodb) JsonLogComponents(ctx context.Context, tag, uid string) []fluentbit.Component {
 	c := p.jsonParserWithTimeKey(ctx, tag, uid)
 
-	c = append(c, p.promoteWiredTiger(tag, uid)...)
+	c = append(c, p.promoteWiredTiger(ctx, tag, uid)...)
 	c = append(c, p.renames(tag, uid)...)
 
 	return c
@@ -150,50 +150,25 @@ func (p *LoggingProcessorMongodb) jsonParserWithTimeKey(ctx context.Context, tag
 	timeKey := "time"
 	// have to bring $date to top level in order for it to be parsed as timeKey
 	// see https://github.com/fluent/fluent-bit/issues/1013
-	liftTs := fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":         "nest",
-			"Match":        tag,
-			"Operation":    "lift",
-			"Nested_under": "t",
-			"Add_prefix":   tempPrefix,
-		},
-	}
+	liftTs := confgenerator.LoggingProcessorLift{
+		NestedUnder: "t",
+		AddPrefix:   tempPrefix,
+	}.Components(ctx, tag, uid)
 
 	renameTsOption := modify.NewHardRenameOptions(fmt.Sprintf("%s$date", tempPrefix), timeKey)
 	renameTs := renameTsOption.Component(tag)
 
-	c = append(c, liftTs, renameTs)
+	c = append(c, liftTs...)
+	c = append(c, renameTs)
 
 	// IMPORTANT: now that we have lifted the json to top level
 	// we need to re-parse in order to properly set time at the
 	// parser level
-	nestFilters := fluentbit.LuaFilterComponents(tag, fluentbit.ParserNestLuaFunction, fmt.Sprintf(fluentbit.ParserNestLuaScriptContents, "message"))
-	parserFilter := fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":         "parser",
-			"Match":        tag,
-			"Key_Name":     "message",
-			"Reserve_Data": "True",
-			"Parser":       parserFilterComponent.OrderedConfig[0][1],
-		},
-	}
-	mergeFilters := fluentbit.LuaFilterComponents(tag, fluentbit.ParserMergeLuaFunction, fluentbit.ParserMergeLuaScriptContents)
-	c = append(c, nestFilters...)
-	c = append(c, parserFilter)
-	c = append(c, mergeFilters...)
+	parserName := parserFilterComponent.OrderedConfig[0][1]
+	c = append(c, fluentbit.ParserFilterComponents(tag, "message", []string{parserName}, false)...)
 
-	removeTimestamp := fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":   "modify",
-			"Match":  tag,
-			"Remove": timeKey,
-		},
-	}
-	c = append(c, removeTimestamp)
+	removeTimestamp := modify.NewRemoveOptions(timeKey)
+	c = append(c, removeTimestamp.Component(tag))
 
 	return c
 }
@@ -252,36 +227,28 @@ func (p *LoggingProcessorMongodb) renames(tag, uid string) []fluentbit.Component
 	return r
 }
 
-func (p *LoggingProcessorMongodb) promoteWiredTiger(tag, uid string) []fluentbit.Component {
+func (p *LoggingProcessorMongodb) promoteWiredTiger(ctx context.Context, tag, uid string) []fluentbit.Component {
 	// promote messages that are WiredTiger messages and are nested in attr.message
 	addPrefix := "temp_attributes_"
-	upNest := fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":         "nest",
-			"Match":        tag,
-			"Operation":    "lift",
-			"Nested_under": "attr",
-			"Add_prefix":   addPrefix,
-		},
-	}
+	upNest := confgenerator.LoggingProcessorLift{
+		NestedUnder: "attr",
+		AddPrefix:   addPrefix,
+	}.Components(ctx, tag, uid)
 
 	hardRenameMessage := modify.NewHardRenameOptions(fmt.Sprintf("%smessage", addPrefix), "msg")
 	wiredTigerRename := hardRenameMessage.Component(tag)
 
-	renameRemainingAttributes := fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":          "nest",
-			"Wildcard":      fmt.Sprintf("%s*", addPrefix),
-			"Match":         tag,
-			"Operation":     "nest",
-			"Nest_under":    "attributes",
-			"Remove_prefix": addPrefix,
-		},
-	}
+	renameRemainingAttributes := confgenerator.LoggingProcessorNestWildcard{
+		Wildcard:  fmt.Sprintf("%s*", addPrefix),
+		NestUnder: "attributes",
+		RemovePrefix: addPrefix,
+	}.Components(ctx, tag, uid)
 
-	return []fluentbit.Component{upNest, wiredTigerRename, renameRemainingAttributes}
+	c := upNest
+	c = append(c, wiredTigerRename)
+	c = append(c, renameRemainingAttributes...)
+
+	return c
 }
 
 func (p *LoggingProcessorMongodb) RegexLogComponents(tag, uid string) []fluentbit.Component {
@@ -298,23 +265,10 @@ func (p *LoggingProcessorMongodb) RegexLogComponents(tag, uid string) []fluentbi
 	parser.Config["Regex"] = `^(?<timestamp>[^ ]*)\s+(?<s>\w)\s+(?<component>[^ ]+)\s+\[(?<context>[^\]]+)]\s+(?<message>.*?) *(?<ms>(\d+))?(:?ms)?$`
 	parser.Config["Key_Name"] = parseKey
 
-	nestFilters := fluentbit.LuaFilterComponents(tag, fluentbit.ParserNestLuaFunction, fmt.Sprintf(fluentbit.ParserNestLuaScriptContents, parseKey))
-	parserFilter := fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Match":        tag,
-			"Name":         "parser",
-			"Parser":       parserName,
-			"Reserve_Data": "True",
-			"Key_Name":     parseKey,
-		},
-	}
-	mergeFilters := fluentbit.LuaFilterComponents(tag, fluentbit.ParserMergeLuaFunction, fluentbit.ParserMergeLuaScriptContents)
+	parserFilters := fluentbit.ParserFilterComponents(tag, parseKey, []string{parserName}, false)
 
 	c = append(c, parser)
-	c = append(c, nestFilters...)
-	c = append(c, parserFilter)
-	c = append(c, mergeFilters...)
+	c = append(c, parserFilters...)
 
 	return c
 }

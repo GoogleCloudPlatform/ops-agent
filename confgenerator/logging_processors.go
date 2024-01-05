@@ -257,6 +257,10 @@ type LoggingProcessorNestWildcard struct {
 	RemovePrefix string
 }
 
+func (r LoggingProcessorNestWildcard) Type() string {
+	return "internal:nest_wildcard"
+}
+
 func (p LoggingProcessorNestWildcard) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	filter := fluentbit.Component{
 		Kind: "FILTER",
@@ -268,6 +272,63 @@ func (p LoggingProcessorNestWildcard) Components(ctx context.Context, tag, uid s
 			"Nest_under":    p.NestUnder,
 			"Remove_prefix": p.RemovePrefix,
 		},
+	}
+
+	return []fluentbit.Component{
+		filter,
+	}
+}
+
+type LoggingProcessorLift struct {
+	NestedUnder string
+	AddPrefix   string
+}
+
+func (r LoggingProcessorLift) Type() string {
+	return "internal:lift"
+}
+
+func (p LoggingProcessorLift) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
+	filter := fluentbit.Component{
+		Kind: "FILTER",
+		Config: map[string]string{
+			"Name":          "nest",
+			"Match":         tag,
+			"Operation":     "lift",
+			"Nested_under":  p.NestedUnder,
+			"Add_prefix":    p.AddPrefix,
+		},
+	}
+
+	return []fluentbit.Component{
+		filter,
+	}
+}
+
+type LoggingProcessorGrep struct {
+	Field   string
+	Regex   string
+	Exclude string
+}
+
+func (r LoggingProcessorGrep) Type() string {
+	return "internal:grep"
+}
+
+func (p LoggingProcessorGrep) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
+	config := map[string]string{
+		"Name":  "grep",
+		"Match": tag,
+	}
+	if p.Regex != "" {
+		config["Regex"] = fmt.Sprintf("%s %s", p.Field, p.Regex)
+	}
+	if p.Exclude != "" {
+		config["Exclude"] = fmt.Sprintf("%s %s", p.Field, p.Exclude)
+	}
+	filter := fluentbit.Component{
+		Kind: "FILTER",
+		Config: config,
 	}
 
 	return []fluentbit.Component{
