@@ -1460,8 +1460,6 @@ func TestModifyFields(t *testing.T) {
       type: files
       include_paths:
       - %s
-  service:
-    compress: gzip
   processors:
     modify:
       type: modify_fields
@@ -4744,12 +4742,14 @@ func TestLogCompression(t *testing.T) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, platform)
 		file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
-		configStr := `
+		config := fmt.Sprintf(`logging:
   receivers:
     f1:
       type: files
       include_paths:
       - %s
+  service:
+    compress: gzip
   processors:
     modify:
       type: modify_fields
@@ -4798,8 +4798,8 @@ func TestLogCompression(t *testing.T) {
         receivers: [f1]
         processors: [json, modify]
         exporters: [google]
-`
-		config := fmt.Sprintf(configStr, file1)
+`, file1)
+
 		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
