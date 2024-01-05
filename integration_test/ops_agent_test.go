@@ -4716,6 +4716,7 @@ func TestPartialSuccess(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		defer testFile.Close()
 		if err = gce.UploadContent(ctx, logger, vm, testFile, logPath); err != nil {
 			t.Fatal(err)
 		}
