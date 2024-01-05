@@ -1,29 +1,35 @@
-- resourceLogs:
-  - resource: {}
-    scopeLogs:
-    - logRecords:
-      - body:
-          hello:
-            stringValue: world
-          message:
-            stringValue: foo
-        observedTimeUnixNano: now
-        spanId: ""
-        traceId: ""
-      - body:
-          hello:
-            stringValue: world
-          message:
-            stringValue: goo
-        observedTimeUnixNano: now
-        spanId: ""
-        traceId: ""
-      - body:
-          hello:
-            stringValue: world
-          message:
-            stringValue: yes maybe no
-        observedTimeUnixNano: now
-        spanId: ""
-        traceId: ""
-      scope: {}
+- entries:
+  - jsonPayload:
+      hello: world
+      message: foo
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        location: global
+        namespace: ""
+        node_id: ""
+      type: generic_node
+    timestamp: 2024-01-05T00:20:23.329756378Z
+  - jsonPayload:
+      hello: world
+      message: goo
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        location: global
+        namespace: ""
+        node_id: ""
+      type: generic_node
+    timestamp: 2024-01-05T00:20:23.329760626Z
+  - jsonPayload:
+      hello: world
+      message: yes maybe no
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        location: global
+        namespace: ""
+        node_id: ""
+      type: generic_node
+    timestamp: 2024-01-05T00:20:23.329761378Z
+  partialSuccess: true

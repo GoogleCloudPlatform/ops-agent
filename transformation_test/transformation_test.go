@@ -17,15 +17,16 @@ import (
 	"testing"
 	"time"
 
+	logpb "cloud.google.com/go/logging/apiv2/loggingpb"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/goccy/go-yaml"
 	"github.com/google/go-cmp/cmp"
-	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	_ "google.golang.org/grpc/encoding/gzip"
+	"google.golang.org/protobuf/encoding/protojson"
 	"gotest.tools/v3/golden"
 )
 
@@ -222,7 +223,7 @@ func generateFluentBitConfigs(ctx context.Context, name string, transformationTe
 	}.Generate()
 }
 
-func (transformationConfig transformationTest) generateOTelConfig(ctx context.Context, t *testing.T, name string, otlpAddr string) (string, error) {
+func (transformationConfig transformationTest) generateOTelConfig(ctx context.Context, t *testing.T, name string, addr string) (string, error) {
 	abs, err := filepath.Abs(filepath.Join("testdata", name, transformationInput))
 	if err != nil {
 		return "", err
@@ -257,11 +258,16 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 		},
 		Exporters: map[otel.ExporterType]otel.Component{
 			otel.OTel: otel.Component{
-				Type: "otlp",
-				Config: map[string]interface{}{
-					"endpoint": otlpAddr,
-					"tls": map[string]interface{}{
-						"insecure": true,
+				Type: "googlecloud",
+				Config: map[string]any{
+					"project": "my-project",
+					"sending_queue": map[string]any{
+						"enabled": false,
+					},
+					"log": map[string]any{
+						"default_log_name": "my-log-name",
+						"endpoint":         addr,
+						"use_insecure":     true,
 					},
 				},
 			},
@@ -269,38 +275,42 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 	}.Generate(ctx)
 }
 
-type mockLogsReceiver struct {
-	plogotlp.UnimplementedGRPCServer
+type mockLoggingServer struct {
+	logpb.UnimplementedLoggingServiceV2Server
 	srv      *grpc.Server
 	mtx      sync.Mutex
-	requests []plogotlp.ExportRequest
+	requests []*logpb.WriteLogEntriesRequest
 }
 
-func (r *mockLogsReceiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plogotlp.ExportResponse, error) {
-	r.mtx.Lock()
-	defer r.mtx.Unlock()
-	r.requests = append(r.requests, req)
-	return plogotlp.NewExportResponse(), nil
+func (s *mockLoggingServer) WriteLogEntries(
+	ctx context.Context,
+	request *logpb.WriteLogEntriesRequest,
+) (*logpb.WriteLogEntriesResponse, error) {
+
+	s.mtx.Lock()
+	defer s.mtx.Unlock()
+	s.requests = append(s.requests, request)
+	return &logpb.WriteLogEntriesResponse{}, nil
 }
 
-func (r *mockLogsReceiver) Requests() []plogotlp.ExportRequest {
-	r.mtx.Lock()
-	defer r.mtx.Unlock()
-	return append([]plogotlp.ExportRequest{}, r.requests...)
+func (s *mockLoggingServer) Requests() []*logpb.WriteLogEntriesRequest {
+	s.mtx.Lock()
+	defer s.mtx.Unlock()
+	return append([]*logpb.WriteLogEntriesRequest{}, s.requests...)
 }
 
-func otlpLogsReceiverOnGRPCServer(ln net.Listener) *mockLogsReceiver {
-	rcv := &mockLogsReceiver{
+func cloudLoggingOnGRPCServer(ln net.Listener) *mockLoggingServer {
+	s := &mockLoggingServer{
 		srv: grpc.NewServer(),
 	}
 
 	// Now run it as a gRPC server
-	plogotlp.RegisterGRPCServer(rcv.srv, rcv)
+	logpb.RegisterLoggingServiceV2Server(s.srv, s)
 	go func() {
-		_ = rcv.srv.Serve(ln)
+		_ = s.srv.Serve(ln)
 	}()
 
-	return rcv
+	return s
 }
 
 func (transformationConfig transformationTest) runOTelTest(t *testing.T, name string) {
@@ -312,9 +322,9 @@ func (transformationConfig transformationTest) runOTelTest(t *testing.T, name st
 	if err != nil {
 		t.Fatalf("Failed to find an available address to run the gRPC server: %v", err)
 	}
-	rcv := otlpLogsReceiverOnGRPCServer(ln)
+	s := cloudLoggingOnGRPCServer(ln)
 	// Also closes the connection.
-	defer rcv.srv.GracefulStop()
+	defer s.srv.GracefulStop()
 
 	config, err := transformationConfig.generateOTelConfig(ctx, t, name, ln.Addr().String())
 	if err != nil {
@@ -366,23 +376,23 @@ func (transformationConfig transformationTest) runOTelTest(t *testing.T, name st
 	})
 	eg.Go(func() error {
 		r := bufio.NewReader(stderr)
-		if c, err := r.Peek(1); err != nil {
-			return err
-		} else if !bytes.Equal(c, []byte("{")) {
-			// If the config fails to parse, otel will emit plain test.
-			b, err := io.ReadAll(r)
-			if err != nil {
-				return err
-			}
-			return fmt.Errorf("stderr: %s", string(b))
-		}
 		d := json.NewDecoder(r)
 		for {
 			log := map[string]any{}
 			if err := d.Decode(&log); err == io.EOF {
 				return nil
 			} else if err != nil {
-				return err
+				// Not valid JSON, just print the raw stderr.
+				// This happens when the config is invalid.
+				buf, err2 := io.ReadAll(d.Buffered())
+				if err2 != nil {
+					return err
+				}
+				buf2, err2 := io.ReadAll(r)
+				if err2 != nil {
+					return err
+				}
+				return fmt.Errorf("stderr: %s%s", string(buf), string(buf2))
 			}
 			delete(log, "ts")
 			level, _ := log["level"].(string)
@@ -407,10 +417,10 @@ func (transformationConfig transformationTest) runOTelTest(t *testing.T, name st
 	}
 
 	// read and unmarshal output
-	reqs := rcv.Requests()
+	reqs := s.Requests()
 	var data []map[string]any
 	for _, r := range reqs {
-		b, err := r.MarshalJSON()
+		b, err := protojson.Marshal(r)
 		if err != nil {
 			t.Logf("failed to marshal request: %v", err)
 			continue

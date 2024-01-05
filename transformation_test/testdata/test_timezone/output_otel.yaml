@@ -1,14 +1,13 @@
-- resourceLogs:
-  - resource: {}
-    scopeLogs:
-    - logRecords:
-      - body:
-          key1:
-            doubleValue: 12345
-          key2:
-            stringValue: abc
-        observedTimeUnixNano: now
-        spanId: ""
-        timeUnixNano: 2006-07-28T17:22:00Z
-        traceId: ""
-      scope: {}
+- entries:
+  - jsonPayload:
+      key1: 12345
+      key2: abc
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        location: global
+        namespace: ""
+        node_id: ""
+      type: generic_node
+    timestamp: 2006-07-28T17:22:00Z
+  partialSuccess: true

@@ -1,34 +1,22 @@
-- resourceLogs:
-  - resource: {}
-    scopeLogs:
-    - logRecords:
-      - attributes:
-        - key: label2
-          value:
-            stringValue: label1 value
-        - key: my.cool.service/foo
-          value:
-            stringValue: field value
-        - key: static
-          value:
-            stringValue: hello world
-        body:
-          default_absent:
-            stringValue: default
-          default_present:
-            stringValue: original
-          field2:
-            stringValue: field value
-          float:
-            stringValue: "10.5"
-          integer:
-            intValue: "15"
-          mapped_field:
-            stringValue: field value
-          spanId:
-            stringValue: span_id_value
-        observedTimeUnixNano: now
-        severityText: WARNING
-        spanId: ""
-        traceId: ""
-      scope: {}
+- entries:
+  - jsonPayload:
+      default_absent: default
+      default_present: original
+      field2: field value
+      float: "10.5"
+      integer: 15
+      mapped_field: field value
+      spanId: span_id_value
+    labels:
+      label2: label1 value
+      my.cool.service/foo: field value
+      static: hello world
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        location: global
+        namespace: ""
+        node_id: ""
+      type: generic_node
+    timestamp: 2024-01-05T00:20:23.348993840Z
+  partialSuccess: true
