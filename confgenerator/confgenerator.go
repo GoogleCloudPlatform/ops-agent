@@ -353,7 +353,11 @@ func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAg
 	if l.Service.LogLevel == "" {
 		l.Service.LogLevel = "info"
 	}
-	service := fluentbit.Service{LogLevel: l.Service.LogLevel}
+
+	if l.Service.CoroStackSize == "" {
+		l.Service.CoroStackSize = "24576"
+	}
+	service := fluentbit.Service{LogLevel: l.Service.LogLevel, CoroStackSize: l.Service.CoroStackSize}
 	out = append(out, service.Component())
 	out = append(out, fluentbit.MetricsInputComponent())
 
