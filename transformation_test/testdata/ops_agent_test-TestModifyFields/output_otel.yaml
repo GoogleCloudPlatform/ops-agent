@@ -18,5 +18,5 @@
         namespace: ""
         node_id: ""
       type: generic_node
-    timestamp: 2024-01-05T00:20:23.348993840Z
+    timestamp: now
   partialSuccess: true

@@ -430,38 +430,23 @@ func (transformationConfig transformationTest) runOTelTest(t *testing.T, name st
 			t.Log(string(b))
 			t.Fatal(err)
 		}
-		// Replace resourceLogs[].scopeLogs[].logRecords[].observedTimeUnixNano with a human-readable timestamp
-		if v, ok := req["resourceLogs"].([]any); ok {
+		// Replace entries[].timestamp with a human-readable timestamp
+		if v, ok := req["entries"].([]any); ok {
 			for _, v := range v {
 				v1, _ := v.(map[string]any)
-				v2, _ := v1["scopeLogs"].([]any)
-				for _, v := range v2 {
-					v1, _ := v.(map[string]any)
-					v2, _ := v1["logRecords"].([]any)
-					for _, v := range v2 {
-						v1 := v.(map[string]any)
-						// Convert timestamp to "now" or a human-readable timestamp
-						for _, name := range []string{"observedTimeUnixNano", "timeUnixNano"} {
-							if dateStr, ok := v1[name].(string); ok {
-								dateInt, err := strconv.ParseInt(dateStr, 10, 64)
-								if err != nil {
-									t.Logf("failed to parse %q: %v", dateStr, err)
-									continue
-								}
-								date := time.Unix(0, dateInt)
-								if date.After(testStartTime) {
-									v1[name] = "now"
-								} else {
-									v1[name] = date.UTC().Format(time.RFC3339Nano)
-								}
-							}
-						}
+				// Convert timestamp to "now" or a human-readable timestamp
+				if dateStr, ok := v1["timestamp"].(string); ok {
+					date, err := time.Parse(time.RFC3339Nano, dateStr)
+					if err != nil {
+						t.Logf("failed to parse %q: %v", dateStr, err)
+						continue
+					}
+					if date.After(testStartTime) {
+						v1["timestamp"] = "now"
 					}
 				}
 			}
 		}
-
-		req = replaceKvlistValues(req).(map[string]any)
 
 		data = append(data, req)
 	}
@@ -470,33 +455,4 @@ func (transformationConfig transformationTest) runOTelTest(t *testing.T, name st
 		data = append(data, map[string]any{"collector_errors": errors})
 	}
 	checkOutput(t, filepath.Join(name, "output_otel.yaml"), data)
-}
-
-func replaceKvlistValues(data any) any {
-	if m, ok := data.(map[string]any); ok {
-		out := map[string]any{}
-		for k, v := range m {
-			// Convert kvlistValue to a map
-			if kv, ok := v.(map[string]any); ok && k == "kvlistValue" {
-				kvOut := map[string]any{}
-				for _, kv := range kv["values"].([]any) {
-					kv1 := kv.(map[string]any)
-					key := kv1["key"].(string)
-					value := kv1["value"]
-					kvOut[key] = replaceKvlistValues(value)
-				}
-				return kvOut
-			}
-			out[k] = replaceKvlistValues(v)
-		}
-		return out
-	}
-	if s, ok := data.([]any); ok {
-		var out []any
-		for _, v := range s {
-			out = append(out, replaceKvlistValues(v))
-		}
-		return out
-	}
-	return data
 }

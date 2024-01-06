@@ -9,7 +9,7 @@
         namespace: ""
         node_id: ""
       type: generic_node
-    timestamp: 2024-01-05T00:20:23.329756378Z
+    timestamp: now
   - jsonPayload:
       hello: world
       message: goo
@@ -20,7 +20,7 @@
         namespace: ""
         node_id: ""
       type: generic_node
-    timestamp: 2024-01-05T00:20:23.329760626Z
+    timestamp: now
   - jsonPayload:
       hello: world
       message: yes maybe no
@@ -31,5 +31,5 @@
         namespace: ""
         node_id: ""
       type: generic_node
-    timestamp: 2024-01-05T00:20:23.329761378Z
+    timestamp: now
   partialSuccess: true
