@@ -460,16 +460,32 @@ processors:
     - gcp
   transform/log__source__id1_0:
     log_statements:
-    - context: log
+      context: log
       statements:
-      - set(attributes["gcp.log_name"], "log_source_id1") where attributes["gcp.log_name"] == nil
-      - set(attributes["compute.googleapis.com/resource_name"], "") where attributes["compute.googleapis.com/resource_name"] == nil
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
+      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["__field_1"], attributes["gcp.log_name"]) where (attributes != nil and attributes["gcp.log_name"] != nil)
+      - set(cache["value"], cache["__field_0"])
+      - set(cache["value"], "") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_1"])
+      - set(cache["value"], "log_source_id1") where cache["value"] == nil
+      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/syslog_0:
     log_statements:
-    - context: log
+      context: log
       statements:
-      - set(attributes["gcp.log_name"], "syslog") where attributes["gcp.log_name"] == nil
-      - set(attributes["compute.googleapis.com/resource_name"], "") where attributes["compute.googleapis.com/resource_name"] == nil
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
+      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["__field_1"], attributes["gcp.log_name"]) where (attributes != nil and attributes["gcp.log_name"] != nil)
+      - set(cache["value"], cache["__field_0"])
+      - set(cache["value"], "") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_1"])
+      - set(cache["value"], "syslog") where cache["value"] == nil
+      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
 receivers:
   filelog/log__source__id1:
     exclude: []
