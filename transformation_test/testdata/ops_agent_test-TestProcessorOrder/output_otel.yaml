@@ -1,0 +1,13 @@
+- entries:
+  - jsonPayload:
+      level: info
+      message: start
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        location: global
+        namespace: ""
+        node_id: ""
+      type: generic_node
+    timestamp: 2009-11-10T23:00:00Z
+  partialSuccess: true
