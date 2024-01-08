@@ -4807,7 +4807,6 @@ func TestLogCompression(t *testing.T) {
 		if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, `jsonPayload.message="google"`); err != nil {
 			t.Error(err)
 		}
-		t.Fail()
 	})
 }
 
