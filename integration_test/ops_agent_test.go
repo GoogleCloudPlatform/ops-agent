@@ -99,7 +99,7 @@ func workDirForPlatform(platform string) string {
 	if gce.IsWindows(platform) {
 		return `C:\work`
 	}
-	return "/root/work"
+	return "/tmp/work"
 }
 
 func startCommandForPlatform(platform string) string {
@@ -155,7 +155,7 @@ func makeDirectory(ctx context.Context, logger *log.Logger, vm *gce.VM, director
 	if gce.IsWindows(vm.Platform) {
 		createFolderCmd = fmt.Sprintf("New-Item -ItemType Directory -Path %s", directory)
 	} else {
-		createFolderCmd = fmt.Sprintf("sudo mkdir -p %s", directory)
+		createFolderCmd = fmt.Sprintf("mkdir -p %s", directory)
 	}
 	_, err := gce.RunRemotely(ctx, logger, vm, "", createFolderCmd)
 	return err
@@ -2643,6 +2643,61 @@ func TestPrometheusMetrics(t *testing.T) {
 	})
 }
 
+func TestPrometheusMetricsWithMetadata(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		metadataKey, metadataValue := "test", "${test:value}"
+		escapedMetadataValue := "_{test:value}"
+		ctx, logger, vm := agents.CommonSetupWithExtraCreateArgumentsAndMetadata(t, platform, nil, map[string]string{
+			metadataKey: metadataValue,
+		})
+
+		promConfig := fmt.Sprintf(`metrics:
+  receivers:
+    prometheus:
+      type: prometheus
+      config:
+        scrape_configs:
+          - job_name: 'prometheus'
+            scrape_interval: 10s
+            static_configs:
+              - targets: ['localhost:20202']
+            relabel_configs:
+              - source_labels: [__meta_gce_metadata_%s]
+                regex: '(.+)'
+                replacement: '${1}'
+                target_label: %s
+  service:
+    pipelines:
+      prometheus_pipeline:
+        receivers:
+          - prometheus
+`, metadataKey, metadataKey)
+
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, promConfig); err != nil {
+			t.Fatal(err)
+		}
+
+		// Wait long enough for the data to percolate through the backends
+		// under normal circumstances. Based on some experiments, 2 minutes
+		// is normal; wait a bit longer to be on the safe side.
+		time.Sleep(3 * time.Minute)
+
+		existingMetric := "prometheus.googleapis.com/fluentbit_uptime/counter"
+		window := time.Minute
+		metric, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, existingMetric, window, nil, true)
+		if err != nil {
+			t.Fatal(fmt.Errorf("failed to find metric %q in VM %q: %w", existingMetric, vm.Name, err))
+		}
+
+		metricLabels := metric.Metric.Labels
+		if metricLabels[metadataKey] != escapedMetadataValue {
+			t.Errorf("metric %q has VM metadata %q set to %q instead of %q", existingMetric, metadataKey, metricLabels[metadataKey], escapedMetadataValue)
+		}
+	})
+}
+
 // Test the Counter and Gauge metric types using a JSON Prometheus exporter
 // The JSON exporter will connect to a http server that serve static JSON files
 func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
@@ -2696,7 +2751,7 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to open setup script: %s", err)
 		}
-		setupOut, err := gce.RunScriptRemotely(ctx, logger, vm, string(setupScript), nil, nil)
+		setupOut, err := gce.RunRemotely(ctx, logger, vm, "", string(setupScript))
 		if err != nil {
 			t.Fatalf("failed to run json exporter in VM with err: %v, stderr: %s", err, setupOut.Stderr)
 		}
@@ -3208,9 +3263,7 @@ func TestPrometheusSummaryMetrics(t *testing.T) {
 }
 
 func buildGoBinary(ctx context.Context, logger *log.Logger, vm *gce.VM, source, dest string) error {
-	installCmd := fmt.Sprintf(`
-               /usr/local/go/bin/go build -o %s/ %s`, dest, source)
-	_, err := gce.RunScriptRemotely(ctx, logger, vm, installCmd, nil, nil)
+	_, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("sudo /usr/local/go/bin/go build -o %s/ %s", dest, source))
 	return err
 }
 
@@ -3261,9 +3314,9 @@ func testPrometheusMetrics(t *testing.T, opsAgentConfig string, testChecks []moc
 
 		// 4. Start the go http server
 		setupScript := `sudo systemctl daemon-reload && sudo systemctl enable http-server-for-prometheus-test && sudo systemctl restart http-server-for-prometheus-test`
-		setupOut, err := gce.RunRemotely(ctx, logger, vm, "", setupScript)
+		_, err = gce.RunRemotely(ctx, logger, vm, "", setupScript)
 		if err != nil {
-			t.Fatalf("failed to start the http server in VM via systemctl with err: %v, stderr: %s", err, setupOut.Stderr)
+			t.Fatalf("failed to start the http server in VM via systemctl with err: %v", err)
 		}
 		// Wait until the http server is ready
 		time.Sleep(20 * time.Second)
@@ -3499,6 +3552,7 @@ metrics:
       type: exclude_metrics
       metrics_pattern:
       - agent.googleapis.com/processes/*
+      - agent.googleapis.com/cpu/load_5m
   service:
     pipelines:
       default_pipeline:
@@ -3516,14 +3570,85 @@ metrics:
 		time.Sleep(3 * time.Minute)
 
 		existingMetric := "agent.googleapis.com/cpu/load_1m"
-		excludedMetric := "agent.googleapis.com/processes/cpu_time"
+		excludedIndividualMetric := "agent.googleapis.com/cpu/load_5m"
+		excludedWildcardMetric := "agent.googleapis.com/processes/cpu_time"
 
 		window := time.Minute
 		if _, err := gce.WaitForMetric(ctx, logger, vm, existingMetric, window, nil, false); err != nil {
 			t.Error(err)
 		}
-		if err := gce.AssertMetricMissing(ctx, logger, vm, excludedMetric, false, window); err != nil {
+		if err := gce.AssertMetricMissing(ctx, logger, vm, excludedIndividualMetric, false, window); err != nil {
 			t.Error(err)
+		}
+		if err := gce.AssertMetricMissing(ctx, logger, vm, excludedWildcardMetric, false, window); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
+func TestExcludeWorkloadMetrics(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		otlpConfig := `
+combined:
+  receivers:
+    otlp:
+      type: otlp
+      grpc_endpoint: 0.0.0.0:4317
+      metrics_mode: googlecloudmonitoring
+metrics:
+  processors:
+    metrics_filter:
+      type: exclude_metrics
+      metrics_pattern:
+      - workload.googleapis.com/otlp.test.gauge
+      - workload.googleapis.com/otlp.test.prefix*
+  service:
+    pipelines:
+      otlp:
+        receivers: [otlp]
+        processors: [metrics_filter]
+traces:
+  service:
+    pipelines:
+`
+		if err := agents.SetupOpsAgent(ctx, logger, vm, otlpConfig); err != nil {
+			t.Fatal(err)
+		}
+
+		// Generate metric traffic with dummy app
+		metricFile, err := testdataDir.Open(path.Join("testdata", "otlp", "metrics.go"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer metricFile.Close()
+		if err := installGolang(ctx, logger, vm); err != nil {
+			t.Fatal(err)
+		}
+		if err = runGoCode(ctx, logger, vm, metricFile); err != nil {
+			t.Fatal(err)
+		}
+
+		if _, err = gce.WaitForMetric(ctx, logger, vm, "workload.googleapis.com/otlp.test.cumulative", time.Hour, nil, false); err != nil {
+			t.Error(err)
+		}
+
+		// Wait long enough for the data to percolate through the backends
+		// under normal circumstances. Based on some experiments, 2 minutes
+		// is normal; wait a bit longer to be on the safe side.
+		time.Sleep(3 * time.Minute)
+		window := time.Minute
+
+		// See testdata/otlp/metrics.go for the metrics we're sending
+		for _, m := range []string{
+			"workload.googleapis.com/otlp.test.gauge",
+			"workload.googleapis.com/otlp.test.prefix3/workload.googleapis.com/abc",
+		} {
+			if err = gce.AssertMetricMissing(ctx, logger, vm, m, false, window); err != nil {
+				t.Error(err)
+			}
 		}
 	})
 }
@@ -3674,6 +3799,33 @@ func TestLoggingSelfLogs(t *testing.T) {
 
 		query := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, query); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
+func TestLoggingDataprocAttributes(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		if gce.IsWindows(platform) {
+			t.Skip("Dataproc tests aren't supported on Windows")
+		}
+		ctx, logger, vm := agents.CommonSetupWithExtraCreateArgumentsAndMetadata(t, platform, nil, map[string]string{
+			"dataproc-cluster-name": "my-test-cluster",
+		})
+
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := writeToSystemLog(ctx, logger.ToMainLog(), vm, "123456789"); err != nil {
+			t.Fatal(err)
+		}
+
+		tag := systemLogTagForPlatform(vm.Platform)
+		query := fmt.Sprintf(`labels."compute.googleapis.com/attributes/dataproc-cluster-name"="my-test-cluster" AND %s`, logMessageQueryForPlatform(vm.Platform, "123456789"))
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, tag, time.Hour, query); err != nil {
 			t.Error(err)
 		}
 	})
@@ -3884,9 +4036,9 @@ func runResourceDetectorCli(ctx context.Context, logger *log.Logger, vm *gce.VM)
 		%s
 		cd %s
 		go run run_resource_detector.go`, goPathCommandForPlatform(vm.Platform), workDir)
-	runnerOutput, err := gce.RunScriptRemotely(ctx, logger, vm, cmd, nil, nil)
+	runnerOutput, err := gce.RunRemotely(ctx, logger, vm, "", cmd)
 	if err != nil {
-		return nil, fmt.Errorf("failed to run resource detector in VM: %s", runnerOutput.Stderr)
+		return nil, fmt.Errorf("failed to run resource detector in VM: %w", err)
 	}
 
 	// Parse the output
@@ -3907,26 +4059,31 @@ func unmarshalResource(in string) (*resourcedetector.GCEResource, error) {
 	return &resource, err
 }
 
-// installGolang downloads and setup go, and return the required command to set
-// the PATH before calling `go` as goPath
+// installGolang downloads and sets up go on the given VM.  The caller is still
+// responsible for updating PATH to point to the installed binaries, see
+// `goPathCommandForPlatform`.
 func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
-	// TODO: use runtime.Version() to extract the go version
-	goVersion := "1.20"
+	// To update this, first run `mirror_content.sh` in this directory. Example:
+	//   ./mirror_content.sh https://go.dev/dl/go1.21.4.linux-{amd64,arm64}.tar.gz
+	// Then update this version.
+	goVersion := "1.21.4"
+
 	goArch := "amd64"
 	if gce.IsARM(vm.Platform) {
 		goArch = "arm64"
 	}
 	var installCmd string
 	if gce.IsWindows(vm.Platform) {
-		// TODO: host go windows installer in the GCS if `golang.org` throttle
+		// TODO: host go windows installer in GCS if `go.dev` throttles us.
 		installCmd = fmt.Sprintf(`
 			cd (New-TemporaryFile | %% { Remove-Item $_; New-Item -ItemType Directory -Path $_ })
 			Invoke-WebRequest "https://go.dev/dl/go%s.windows-%s.msi" -OutFile golang.msi
 			Start-Process msiexec.exe -ArgumentList "/i","golang.msi","/quiet" -Wait `, goVersion, goArch)
 	} else {
 		installCmd = fmt.Sprintf(`
+			set -o pipefail
 			gsutil cp \
-				"gs://stackdriver-test-143416-go-install/go%s.linux-%s.tar.gz" - | \
+				"gs://ops-agents-public-buckets-vendored-deps/mirrored-content/go.dev/dl/go%s.linux-%s.tar.gz" - | \
 				sudo tar --directory /usr/local -xzf /dev/stdin`, goVersion, goArch)
 	}
 	_, err := gce.RunRemotely(ctx, logger, vm, "", installCmd)
@@ -3954,7 +4111,7 @@ func runGoCode(ctx context.Context, logger *log.Logger, vm *gce.VM, content io.R
 		go mod init main
 		go get ./...
 		go run main.go`, goPathCommandForPlatform(vm.Platform), workDir)
-	_, err := gce.RunScriptRemotely(ctx, logger, vm, goInitAndRun, nil, nil)
+	_, err := gce.RunRemotely(ctx, logger, vm, "", goInitAndRun)
 	return err
 }
 
@@ -4405,7 +4562,7 @@ func TestDisableSelfLogCollection(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
-		ctx, logger, vm := agents.CommonSetup(t, platform)	
+		ctx, logger, vm := agents.CommonSetup(t, platform)
 
 		disableSelfLogCollection := `global:
   default_self_log_file_collection: false
@@ -4424,12 +4581,12 @@ func TestDisableSelfLogCollection(t *testing.T) {
 			t.Fatal(err)
 		}
 
-        if err := gce.AssertLogMissing(ctx, logger.ToMainLog(), vm, "ops-agent-fluent-bit", 2 * time.Minute, `severity="INFO"`); err != nil {
+		if err := gce.AssertLogMissing(ctx, logger.ToMainLog(), vm, "ops-agent-fluent-bit", 2*time.Minute, `severity="INFO"`); err != nil {
 			t.Error(err)
 		}
-        
-        query := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", 3 * time.Minute, query); err != nil {
+
+		query := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", 3*time.Minute, query); err != nil {
 			t.Error(err)
 		}
 	})
@@ -4472,7 +4629,7 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
           echo "Hello world! $x" >> ~/log_%d.log
           ((x++))
         done`, logsPerSecond, logsPerSecond)
-		_, err := gce.RunScriptRemotely(ctx, logger, vm, generateLogPerSecondFile, nil, nil)
+		_, err := gce.RunRemotely(ctx, logger, vm, "", generateLogPerSecondFile)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -4495,8 +4652,7 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		output, err := gce.RunScriptRemotely(ctx, logger, vm, generateLogsScript, nil, nil)
-
+		output, err := gce.RunRemotely(ctx, logger, vm, "", generateLogsScript)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -4538,6 +4694,45 @@ func TestNoNvmlOtelReceiverWithoutGpu(t *testing.T) {
 			t.Error("expected no logs to contain Nvidia or nvml when the instance has no gpu")
 		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
 			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+}
+
+func TestPartialSuccess(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		logPath := logPathForPlatform(vm.Platform)
+		config := fmt.Sprintf(`logging:
+  receivers:
+    files_1:
+      type: files
+      include_paths: [%s]
+  service:
+    pipelines:
+      p1:
+        receivers: [files_1]`, logPath)
+		testFile, err := os.Open(path.Join("testdata", "partial_success", "test.log"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer testFile.Close()
+		if err = gce.UploadContent(ctx, logger, vm, testFile, logPath); err != nil {
+			t.Fatal(err)
+		}
+		if err = agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		// partialSuccess behaviour is documented at: https://cloud.google.com/logging/docs/reference/v2/rest/v2/entries/write
+		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="google"`); err != nil {
+			t.Error(err)
+		}
+		if err = gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="foo"`); err != nil {
+			t.Error(err)
+		}
+		if err = gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="goo"`); err != nil {
+			t.Error(err)
 		}
 	})
 }
