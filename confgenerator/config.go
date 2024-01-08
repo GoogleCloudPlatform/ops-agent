@@ -555,6 +555,7 @@ func (m *loggingProcessorMap) UnmarshalYAML(ctx context.Context, unmarshal func(
 }
 
 type LoggingService struct {
+	Compress    string               `yaml:"compress,omitempty" validate:"omitempty,oneof=gzip"`
 	LogLevel    string               `yaml:"log_level,omitempty" validate:"omitempty,oneof=error warn info debug trace"`
 	Pipelines   map[string]*Pipeline `validate:"dive,keys,startsnotwith=lib:"`
 	OTelLogging bool                 `yaml:"experimental_otel_logging,omitempty" validate:"omitempty,experimental=otel_logging"`
