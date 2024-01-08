@@ -224,6 +224,6 @@ func (uc *UnifiedConfig) generateSelfLogsComponents(ctx context.Context, userAge
 		// Ingest fluent-bit logs to Cloud Logging if enabled.
 		outputLogNames = append(outputLogNames, fluentBitSelfLogsTag)
 	}
-	out = append(out, stackdriverOutputComponent(ctx, strings.Join(outputLogNames, "|"), userAgent, "", ""))
+	out = append(out, stackdriverOutputComponent(ctx, strings.Join(outputLogNames, "|"), userAgent, ""))
 	return out
 }

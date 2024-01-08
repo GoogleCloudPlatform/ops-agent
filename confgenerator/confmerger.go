@@ -86,9 +86,6 @@ func mergeConfigs(original, overrides *UnifiedConfig) {
 			if overrides.Logging.Service.LogLevel != "info" {
 				original.Logging.Service.LogLevel = overrides.Logging.Service.LogLevel
 			}
-			if overrides.Logging.Service.Compress != "" {
-				original.Logging.Service.Compress = overrides.Logging.Service.Compress
-			}
 			for name, pipeline := range overrides.Logging.Service.Pipelines {
 				// skips logging.service.pipelines.*.exporters
 				pipeline.ExporterIDs = nil

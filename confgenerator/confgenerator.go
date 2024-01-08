@@ -446,7 +446,7 @@ func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAg
 			out = append(out, s.components...)
 		}
 		if len(tags) > 0 {
-			out = append(out, stackdriverOutputComponent(ctx, strings.Join(tags, "|"), userAgent, "2G", l.Service.Compress))
+			out = append(out, stackdriverOutputComponent(ctx, strings.Join(tags, "|"), userAgent, "2G"))
 		}
 		out = append(out, uc.generateSelfLogsComponents(ctx, userAgent)...)
 		out = append(out, addGceMetadataAttributesComponents(ctx, []string{

@@ -4775,41 +4775,6 @@ func TestRestartVM(t *testing.T) {
 	})
 }
 
-func TestLogCompression(t *testing.T) {
-	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
-		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
-		file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
-		config := fmt.Sprintf(`logging:
-  receivers:
-    f1:
-      type: files
-      include_paths:
-        - %s
-  service:
-    pipelines:
-      p1:
-        receivers:
-          - f1
-`, file1)
-
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
-			t.Fatal(err)
-		}
-
-		line := `google` + "\n"
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
-			t.Fatalf("error uploading log: %v", err)
-		}
-
-		// Expect to see the log with the modifications applied
-		if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, `jsonPayload.message="google"`); err != nil {
-			t.Error(err)
-		}
-	})
-}
-
 func TestMain(m *testing.M) {
 	code := m.Run()
 	gce.CleanupKeysOrDie()
