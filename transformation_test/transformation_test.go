@@ -145,7 +145,8 @@ func checkOutput(t *testing.T, name string, got []map[string]any) {
 	if err := yaml.Unmarshal(wantBytes, &want); err != nil {
 		t.Fatal(err)
 	}
-	if diff := cmp.Diff(got, want); diff != "" {
+
+	if diff := cmp.Diff(gotBytes, wantBytes); diff != "" {
 		t.Fatalf("got(-)/want(+):\n%s", diff)
 	}
 }
