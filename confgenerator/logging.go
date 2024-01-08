@@ -48,7 +48,7 @@ func setLogNameComponents(ctx context.Context, tag, logName, receiverType string
 }
 
 // stackdriverOutputComponent generates a component that outputs logs matching the regex `match` using `userAgent`.
-func stackdriverOutputComponent(ctx context.Context, match, userAgent string, storageLimitSize string) fluentbit.Component {
+func stackdriverOutputComponent(ctx context.Context, match, userAgent, storageLimitSize, compress string) fluentbit.Component {
 	config := map[string]string{
 		// https://docs.fluentbit.io/manual/pipeline/outputs/stackdriver
 		"Name":              "stackdriver",
@@ -88,6 +88,11 @@ func stackdriverOutputComponent(ctx context.Context, match, userAgent string, st
 		// Limit the maximum number of fluent-bit chunks in the filesystem for the current
 		// output logical destination.
 		config["storage.total_limit_size"] = storageLimitSize
+	}
+
+	if compress != "" {
+		// Add payload compression
+		config["compress"] = compress
 	}
 
 	return fluentbit.Component{
