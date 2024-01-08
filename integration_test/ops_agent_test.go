@@ -3803,8 +3803,8 @@ func TestLoggingSelfLogs(t *testing.T) {
 			t.Error(err)
 		}
 
-		// Waiting 10 minutes (subtracting current test runtime) after
-		// Ops Agent startup for "LogPingOpsAgent" to show.
+		// Waiting 10 minutes (subtracting current test runtime) after Ops Agent startup for
+		// "LogPingOpsAgent" to show. We can remove wait when feature b/319102785 is complete.
 		time.Sleep(10 * time.Minute - time.Now().Sub(start))
 		queryPing := fmt.Sprintf(`severity="DEBUG" AND jsonPayload.code="LogPingOpsAgent" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, queryPing); err != nil {
