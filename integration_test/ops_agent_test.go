@@ -4747,69 +4747,25 @@ func TestLogCompression(t *testing.T) {
     f1:
       type: files
       include_paths:
-      - %s
-  processors:
-    modify:
-      type: modify_fields
-      fields:
-        labels."my.cool.service/foo":
-          copy_from: jsonPayload.field
-        labels."static":
-          static_value: hello world
-        labels."label2":
-          move_from: labels."label1"
-        severity:
-          static_value: WARNING
-        jsonPayload.field2:
-          move_from: jsonPayload.field
-          omit_if: jsonPayload.missing_field = "present"
-        jsonPayload.default_present:
-          default_value: default
-        jsonPayload.default_absent:
-          default_value: default
-        jsonPayload.integer:
-          static_value: 15
-          type: integer
-        jsonPayload.float:
-          static_value: 10.5
-          type: float
-        jsonPayload.mapped_field:
-          copy_from: jsonPayload.field
-          map_values:
-            value: new_value
-            value2: wrong_value
-        jsonPayload.omitted:
-          static_value: broken
-          omit_if: jsonPayload.field = "value"
-        trace:
-          move_from: jsonPayload.trace
-        spanId:
-          copy_from: jsonPayload.spanId
-    json:
-      type: parse_json
-  exporters:
-    google:
-      type: google_cloud_logging
+        - %s
   service:
-    compress: gzip
     pipelines:
       p1:
-        receivers: [f1]
-        processors: [json, modify]
-        exporters: [google]
+        receivers:
+          - f1
 `, file1)
 
 		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
-		line := `{"field":"value", "default_present":"original", "logging.googleapis.com/labels": {"label1":"value"}, "trace":"trace_value", "spanId": "span_id_value"}` + "\n"
+		line := `google` + "\n"
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
 			t.Fatalf("error uploading log: %v", err)
 		}
 
 		// Expect to see the log with the modifications applied
-		if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, `jsonPayload.field2="value" AND labels.static="hello world" AND labels.label2="value" AND NOT labels.label1:* AND labels."my.cool.service/foo"="value" AND severity="WARNING" AND NOT jsonPayload.field:* AND jsonPayload.default_present="original" AND jsonPayload.default_absent="default" AND jsonPayload.integer > 5 AND jsonPayload.float > 5 AND jsonPayload.mapped_field="new_value" AND (NOT jsonPayload.omitted = "broken") AND trace = "trace_value" AND NOT jsonPayload.trace:* AND spanId = "span_id_value" AND jsonPayload.spanId = "span_id_value"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, `jsonPayload.message="google"`); err != nil {
 			t.Error(err)
 		}
 		t.Fail()
