@@ -1,34 +1,24 @@
-- collector_errors:
-  - caller: logs/processor.go:54
-    error: "failed to execute statement: set(time, Time(body[\"time\"], \"%Y-%m-%dT%H:%M:%S%z\")) where (body != nil and body[\"time\"] != nil), parsing time \"2006-07-28T13:22:04Z\" as \"2006-01-02T15:04:05-0700\": cannot parse \"Z\" as \"-0700\""
-    level: error
-    msg: failed processing logs
-    stacktrace: |-
-      github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs.(*Processor).ProcessLogs
-      	/root/go/pkg/mod/github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor@v0.87.0/internal/logs/processor.go:54
-      go.opentelemetry.io/collector/processor/processorhelper.NewLogsProcessor.func1
-      	/root/go/pkg/mod/go.opentelemetry.io/collector/processor@v0.87.0/processorhelper/logs.go:52
-      go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
-      	/root/go/pkg/mod/go.opentelemetry.io/collector/consumer@v0.87.0/logs.go:25
-      go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
-      	/root/go/pkg/mod/go.opentelemetry.io/collector/consumer@v0.87.0/logs.go:25
-      github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry.(*logsConsumer).ConsumeLogs
-      	/root/go/pkg/mod/github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.87.0/consumerretry/logs.go:37
-      github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.(*receiver).consumerLoop
-      	/root/go/pkg/mod/github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.87.0/adapter/receiver.go:124
-  - caller: consumerretry/logs.go:39
-    error: "failed to execute statement: set(time, Time(body[\"time\"], \"%Y-%m-%dT%H:%M:%S%z\")) where (body != nil and body[\"time\"] != nil), parsing time \"2006-07-28T13:22:04Z\" as \"2006-01-02T15:04:05-0700\": cannot parse \"Z\" as \"-0700\""
-    level: error
-    msg: ConsumeLogs() failed. Enable retry_on_failure to slow down reading logs and avoid dropping.
-    stacktrace: |-
-      github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry.(*logsConsumer).ConsumeLogs
-      	/root/go/pkg/mod/github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.87.0/consumerretry/logs.go:39
-      github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.(*receiver).consumerLoop
-      	/root/go/pkg/mod/github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.87.0/adapter/receiver.go:124
-  - caller: adapter/receiver.go:126
-    error: "failed to execute statement: set(time, Time(body[\"time\"], \"%Y-%m-%dT%H:%M:%S%z\")) where (body != nil and body[\"time\"] != nil), parsing time \"2006-07-28T13:22:04Z\" as \"2006-01-02T15:04:05-0700\": cannot parse \"Z\" as \"-0700\""
-    level: error
-    msg: ConsumeLogs() failed
-    stacktrace: |-
-      github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.(*receiver).consumerLoop
-      	/root/go/pkg/mod/github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.87.0/adapter/receiver.go:126
+- entries:
+  - jsonPayload:
+      key1: 12345
+      key2: abc
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        location: global
+        namespace: ""
+        node_id: ""
+      type: generic_node
+    timestamp: 2006-07-28T13:22:04Z
+  - jsonPayload:
+      key1: 12345
+      key2: abc
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        location: global
+        namespace: ""
+        node_id: ""
+      type: generic_node
+    timestamp: 2006-07-28T12:22:04Z
+  partialSuccess: true

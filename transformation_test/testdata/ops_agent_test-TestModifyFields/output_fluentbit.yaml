@@ -2,7 +2,7 @@
   default_absent: default
   default_present: original
   field2: field value
-  float: "10.5"
+  float: 10.5
   integer: 15
   logging.googleapis.com/labels:
     label2: label1 value

@@ -3,7 +3,7 @@
       default_absent: default
       default_present: original
       field2: field value
-      float: "10.5"
+      float: 10.5
       integer: 15
       mapped_field: field value
       spanId: span_id_value

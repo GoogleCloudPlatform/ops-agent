@@ -21,7 +21,7 @@
       type: integer
     jsonPayload.float:
       static_value: 10.5
-#      type: float
+      type: float
     jsonPayload.mapped_field:
       copy_from: jsonPayload.field
       map_values:
