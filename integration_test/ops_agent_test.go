@@ -3792,13 +3792,22 @@ func TestLoggingSelfLogs(t *testing.T) {
 		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, ""); err != nil {
 			t.Fatal(err)
 		}
+		start := time.Now()
 
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-fluent-bit", time.Hour, `severity="INFO"`); err != nil {
 			t.Error(err)
 		}
 
-		query := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, query); err != nil {
+		queryHealthCheck := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, queryHealthCheck); err != nil {
+			t.Error(err)
+		}
+
+		// Waiting 10 minutes (subtracting current test runtime) after Ops Agent startup for
+		// "LogPingOpsAgent" to show. We can remove wait when feature b/319102785 is complete.
+		time.Sleep(10 * time.Minute - time.Now().Sub(start))
+		queryPing := fmt.Sprintf(`severity="DEBUG" AND jsonPayload.code="LogPingOpsAgent" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, queryPing); err != nil {
 			t.Error(err)
 		}
 	})
@@ -4772,6 +4781,41 @@ func TestRestartVM(t *testing.T) {
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
+	})
+}
+
+func TestLogCompression(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
+		config := fmt.Sprintf(`logging:
+  receivers:
+    f1:
+      type: files
+      include_paths:
+        - %s
+  service:
+    pipelines:
+      p1:
+        receivers:
+          - f1
+`, file1)
+
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		line := `google` + "\n"
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
+			t.Fatalf("error uploading log: %v", err)
+		}
+
+		// Expect to see the log with the modifications applied
+		if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, `jsonPayload.message="google"`); err != nil {
+			t.Error(err)
+		}
 	})
 }
 
