@@ -2,7 +2,7 @@
 // grouped by the most fine-grained build artifact (in this case, the
 // per-distro Ops Agent package).
 
-local template _distro {
+template distro {
   // List of release images.
   release = external
   // The representative images to be used in presubmit (defaults to none).
@@ -13,7 +13,7 @@ local template _distro {
 }
 
 // DEB Linux distros. (Do not modify this comment.)
-bookworm_aarch64 = _distro {
+bookworm_aarch64 = distro {
   release = [
       'debian-12-arm64',
   ]
@@ -21,7 +21,7 @@ bookworm_aarch64 = _distro {
       'debian-12-arm64',
   ]
 }
-mantic_x86_64 = _distro {
+mantic_x86_64 = distro {
   release = [
       'ubuntu-2310-amd64',
       'ubuntu-minimal-2310-amd64',
@@ -30,7 +30,7 @@ mantic_x86_64 = _distro {
       'ubuntu-minimal-2310-amd64',
   ]
 }
-mantic_aarch64 = _distro {
+mantic_aarch64 = distro {
   release = [
       'ubuntu-2310-arm64',
       'ubuntu-minimal-2310-arm64',
@@ -39,7 +39,7 @@ mantic_aarch64 = _distro {
       'ubuntu-minimal-2310-arm64',
   ]
 }
-bookworm_x86_64 = _distro {
+bookworm_x86_64 = distro {
   release = [
       'debian-12',
   ]
@@ -47,7 +47,7 @@ bookworm_x86_64 = _distro {
       'debian-12',
   ]
 }
-lunar_x86_64 = _distro {
+lunar_x86_64 = distro {
   release = [
       'ubuntu-2304-amd64',
       'ubuntu-minimal-2304-amd64',
@@ -56,26 +56,26 @@ lunar_x86_64 = _distro {
       'ubuntu-2304-amd64',
   ]
 }
-buster_x86_64 = _distro {
+buster_x86_64 = distro {
   release = ['debian-10']
   presubmit = ['debian-10']
 }
-bullseye_x86_64 = _distro {
+bullseye_x86_64 = distro {
   release = ['debian-11']
   presubmit = ['debian-11']
 }
-bullseye_aarch64 = _distro {
+bullseye_aarch64 = distro {
   release = ['debian-11-arm64']
   presubmit = ['debian-11-arm64']
 }
-focal_x86_64 = _distro {
+focal_x86_64 = distro {
   release = [
     'ubuntu-2004-lts',
     'ubuntu-minimal-2004-lts',
   ]
   presubmit = ['ubuntu-minimal-2004-lts']
 }
-focal_aarch64 = _distro {
+focal_aarch64 = distro {
   release = [
       'ubuntu-2004-lts-arm64',
       'ubuntu-minimal-2004-lts-arm64',
@@ -84,7 +84,7 @@ focal_aarch64 = _distro {
       'ubuntu-2004-lts-arm64',
   ]
 }
-jammy_x86_64 = _distro {
+jammy_x86_64 = distro {
   release = [
     'ubuntu-2204-lts',
     'ubuntu-minimal-2204-lts',
@@ -93,7 +93,7 @@ jammy_x86_64 = _distro {
       'ubuntu-minimal-2204-lts',
   ]
 }
-jammy_aarch64 = _distro {
+jammy_aarch64 = distro {
   release = [
     'ubuntu-2204-lts-arm64',
     'ubuntu-minimal-2204-lts-arm64',
@@ -104,7 +104,7 @@ jammy_aarch64 = _distro {
 }
 
 // RPM Linux distros. (Do not modify this comment.)
-centos7_x86_64 = _distro {
+centos7_x86_64 = distro {
   release = [
     // CentOS.
     'centos-7',
@@ -114,7 +114,7 @@ centos7_x86_64 = _distro {
   ]
   presubmit = ['centos-7']
 }
-centos8_x86_64 = _distro {
+centos8_x86_64 = distro {
   release = [
     // RHEL.
     'rhel-8',
@@ -126,7 +126,7 @@ centos8_x86_64 = _distro {
   ]
   presubmit = ['rocky-linux-8']
 }
-rockylinux9_x86_64 = _distro {
+rockylinux9_x86_64 = distro {
   release = [
     // RHEL.
     'rhel-9',
@@ -135,7 +135,7 @@ rockylinux9_x86_64 = _distro {
   ]
   presubmit = ['rocky-linux-9']
 }
-rockylinux9_aarch64 = _distro {
+rockylinux9_aarch64 = distro {
   release = [
     // RHEL.
     'rhel-9-arm64',
@@ -144,14 +144,14 @@ rockylinux9_aarch64 = _distro {
   ]
   presubmit = ['rocky-linux-9-arm64']
 }
-sles12_x86_64 = _distro {
+sles12_x86_64 = distro {
   release = [
     'sles-12',
     'sles-12-sp5-sap',
   ]
   presubmit = ['sles-12']
 }
-sles15_x86_64 = _distro {
+sles15_x86_64 = distro {
   release = [
     'sles-15',
     'sles-15-sp2-sap',
@@ -161,7 +161,7 @@ sles15_x86_64 = _distro {
   ]
   presubmit = ['sles-15']
 }
-sles15_aarch64 = _distro {
+sles15_aarch64 = distro {
   release = [
     'sles-15-arm64',
     'opensuse-leap-arm64',
@@ -170,7 +170,7 @@ sles15_aarch64 = _distro {
 }
 
 // Windows distros.
-windows_x86_64 = _distro {
+windows_x86_64 = distro {
   release = [
     'windows-2016',
     'windows-2016-core',
