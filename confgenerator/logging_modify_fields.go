@@ -351,6 +351,8 @@ func (p LoggingProcessorModifyFields) statements() (ottl.Statements, error) {
 		}
 		value := ottl.LValue{"cache", "value"}
 		statements = statements.Append(
+			// Set silently fails to set if the value is nil, so we delete first.
+			value.Delete(),
 			value.Set(src),
 		)
 		if field.DefaultValue != nil {
