@@ -1273,6 +1273,16 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		return nil, err
 	}
 
+	if isUbuntu(vm.Platform) {
+		// Taken from https://askubuntu.com/a/1039155 to fix b/310644585.
+		// This is unnecessary for newer versions of apt because apt was fixed
+		// (https://bugs.debian.org/754103) to wait for the lock instead of
+		// failing out immediately.
+		if _, err := RunRemotely(ctx, logger, vm, "", "sudo systemctl disable apt-daily.service && sudo systemctl disable apt-daily.timer && sudo systemctl disable apt-daily-upgrade.timer && sudo systemctl disable apt-daily-upgrade.service"); err != nil {
+			return nil, fmt.Errorf("attemptCreateInstance() failed to disable apt background updates: %v", err)
+		}
+	}
+
 	if IsSUSE(vm.Platform) {
 		// Set download.max_silent_tries to 5 (by default, it is commented out in
 		// the config file). This should help with issues like b/211003972.
@@ -1304,6 +1314,10 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	}
 
 	return vm, nil
+}
+
+func isUbuntu(platform string) bool {
+	return strings.HasPrefix(platform, "ubuntu-")
 }
 
 func IsSUSE(platform string) bool {
