@@ -1,5 +1,12 @@
 set -e 
 
+source /etc/os-release
+SUSE_VERSION="${VERSION_ID%%.*}"
+
+# SLES 15 SP5 has moved Java 8 to a legacy module
+if [[ "${SUSE_VERSION}" == 15 ]]; then
+  sudo SUSEConnect --product sle-module-legacy/15.5/x86_64
+fi
 
 if [[ "$(uname -m)" == aarch64 ]]; then
   sudo zypper install -y curl bzip2 net-tools

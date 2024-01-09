@@ -16,6 +16,10 @@ if [[ "$(uname -m)" == aarch64 ]]; then
   # GCP arm64 machines ship with Java 11 vs Java 8 support
   sudo zypper -n install java-11-openjdk java-11-openjdk-devel
 else
+  # SLES 15 SP5 has moved Java 8 to a legacy module
+  if [[ "${SUSE_VERSION}" == 15 ]]; then
+    sudo SUSEConnect --product sle-module-legacy/15.5/x86_64
+  fi
   sudo zypper -n install java-1_8_0-openjdk java-1_8_0-openjdk-devel
 fi
 
