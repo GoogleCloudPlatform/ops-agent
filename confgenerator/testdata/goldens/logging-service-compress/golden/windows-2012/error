@@ -1,0 +1,6 @@
+[16:15] Component of type "log_compression" cannot be used with the current version of the Ops Agent
+  13 | # limitations under the License.
+  14 | logging:
+  15 |   service:
+> 16 |     compress: gzip
+                     ^
