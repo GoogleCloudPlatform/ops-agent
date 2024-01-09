@@ -116,10 +116,11 @@ func (r GCEResource) ProjectName() string {
 
 func (r GCEResource) OTelResourceAttributes() map[string]string {
 	return map[string]string{
-		"cloud.platform": "gce_instance",
-		"cloud.project":  r.Project,
-		"cloud.region":   r.Zone,
-		"host.id":        r.InstanceID,
+		"cloud.platform":          "gcp_compute_engine",
+		"cloud.project":           r.Project,
+		"cloud.availability_zone": r.Zone,
+		"cloud.region":            r.Zone,
+		"host.id":                 r.InstanceID,
 	}
 }
 

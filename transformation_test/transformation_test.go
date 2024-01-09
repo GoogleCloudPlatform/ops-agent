@@ -21,8 +21,11 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/goccy/go-yaml"
 	"github.com/google/go-cmp/cmp"
+	"github.com/shirou/gopsutil/host"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	_ "google.golang.org/grpc/encoding/gzip"
@@ -224,6 +227,22 @@ func generateFluentBitConfigs(ctx context.Context, name string, transformationTe
 }
 
 func (transformationConfig transformationTest) generateOTelConfig(ctx context.Context, t *testing.T, name string, addr string) (string, error) {
+	pl := platform.Platform{
+		Type: platform.Linux,
+		HostInfo: &host.InfoStat{
+			Hostname:        "hostname",
+			OS:              "linux",
+			Platform:        "linux_platform",
+			PlatformVersion: "linux_platform_version",
+		},
+		ResourceOverride: resourcedetector.GCEResource{
+			Project:    "my-project",
+			Zone:       "test-zone",
+			InstanceID: "test-instance-id",
+		},
+	}
+	ctx = pl.TestContext(ctx)
+
 	abs, err := filepath.Abs(filepath.Join("testdata", name, transformationInput))
 	if err != nil {
 		return "", err
