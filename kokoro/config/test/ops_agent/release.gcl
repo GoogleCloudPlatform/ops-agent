@@ -12,7 +12,7 @@ _parse_distro = lambda tag: {
 config build = common.ops_agent_test {
   params {
     local _distro_arch = _parse_distro(params.environment._LOUHI_TAG_NAME)
-    platforms = image_lists.get(_distro_arch.distro + '_' + _distro_arch.arch).release
+    platforms = image_lists.get(_distro_arch.distro + '_' + _distro_arch.arch, 'invalid_distro').release
     arch = _distro_arch.arch
 
     environment {
