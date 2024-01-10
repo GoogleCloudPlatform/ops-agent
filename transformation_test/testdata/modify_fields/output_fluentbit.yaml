@@ -1,15 +1,20 @@
-- jsonPayload:
-    hello: world
-    message: foo
-  logName: projects/my-project/logs/transformation_test
-  timestamp: now
-- jsonPayload:
-    hello: world
-    message: goo
-  logName: projects/my-project/logs/transformation_test
-  timestamp: now
-- jsonPayload:
-    hello: world
-    message: yes maybe no
-  logName: projects/my-project/logs/transformation_test
-  timestamp: now
+- entries:
+  - jsonPayload:
+      hello: world
+      message: foo
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      hello: world
+      message: goo
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      hello: world
+      message: yes maybe no
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance

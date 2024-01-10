@@ -1,6 +1,7 @@
 package transformation_test
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"flag"
@@ -92,33 +93,39 @@ func TestTransformationTests(t *testing.T) {
 			cmd.Stdout = &stdout
 			cmd.Stderr = &stderr
 			if err := cmd.Run(); err != nil {
+				t.Log(stderr.String())
 				t.Fatal("Failed to run command:", err)
 			}
 
-			var d map[string]any
+			var d []map[string]any
 			var data []map[string]interface{}
 
-			out := stdout.Bytes()
-			if err := yaml.Unmarshal(out, &d); err != nil {
-				t.Log(string(out))
-				t.Fatal(err)
+			sc := bufio.NewScanner(bytes.NewReader(stdout.Bytes()))
+			for sc.Scan() {
+				var req map[string]any
+				out := sc.Bytes()
+				if err := yaml.Unmarshal(out, &req); err != nil {
+					t.Log(string(out))
+					t.Fatal(err)
+				}
+				d = append(d, req)
 			}
 
-			var entries []any
-			// Only search for entries if stdout is not null
-			if val, ok := d["entries"].([]any); ok {
-				entries = val
-				for _, e := range entries {
-					entry := e.(map[string]interface{})
-					date := entry["timestamp"].(string)
-					timestamp, err := time.Parse(time.RFC3339Nano, date)
-					if err != nil {
-						t.Fatal(err)
+			for _, req := range d {
+				// Only search for entries if stdout is not null
+				if val, ok := req["entries"].([]any); ok {
+					for _, e := range val {
+						entry := e.(map[string]interface{})
+						date := entry["timestamp"].(string)
+						timestamp, err := time.Parse(time.RFC3339Nano, date)
+						if err != nil {
+							t.Fatal(err)
+						}
+						if timestamp.After(testStartTime) {
+							entry["timestamp"] = "now"
+						}
 					}
-					if timestamp.After(testStartTime) {
-						entry["timestamp"] = "now"
-					}
-					data = append(data, entry)
+					data = append(data, req)
 				}
 			}
 

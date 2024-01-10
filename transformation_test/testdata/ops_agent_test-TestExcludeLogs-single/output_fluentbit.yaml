@@ -1,4 +1,9 @@
-- jsonPayload:
-    field: other
-  logName: projects/my-project/logs/transformation_test
-  timestamp: now
+- entries:
+  - jsonPayload:
+      field: other
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance
