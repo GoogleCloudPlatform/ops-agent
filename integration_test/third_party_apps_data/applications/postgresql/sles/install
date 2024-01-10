@@ -3,6 +3,9 @@ set -e
 source /etc/os-release
 SUSE_VERSION="${VERSION_ID%%.*}"
 
+SERVICE_NAME="postgresql"
+DATA_DIR="/var/lib/pgsql/data"
+
 if [[ "${SUSE_VERSION}" == 12 ]]; then
   sudo zypper addrepo https://download.postgresql.org/pub/repos/zypp/repo/pgdg-sles-12-pg14.repo
   sudo zypper --non-interactive --no-gpg-checks ref
@@ -11,14 +14,19 @@ elif [[ "${SUSE_VERSION}" == 15 ]]; then
   sudo zypper addrepo https://download.postgresql.org/pub/repos/zypp/repo/pgdg-sles-15-pg14.repo
   sudo zypper --non-interactive --no-gpg-checks ref
   sudo zypper --no-gpg-checks in -y postgresql14-server postgresql14-contrib postgresql14
+
+  SERVICE_NAME="postgresql-14"
+  DATA_DIR="/var/lib/pgsql/14/data"
+
+  sudo /usr/pgsql-14/bin/postgresql-14-setup initdb
 fi
 
-sudo systemctl enable postgresql
-sudo service postgresql restart
+sudo systemctl enable $SERVICE_NAME
+sudo service $SERVICE_NAME restart
 
 sudo su postgres -c "psql postgres -c \"ALTER ROLE postgres WITH PASSWORD 'abc123';\""
 
-sudo sh -c 'echo "host    all             all             127.0.0.1/32            scram-sha-256" > /var/lib/pgsql/data/pg_hba.conf'
-sudo sh -c 'echo "host    all             all             ::1/128                 scram-sha-256" >> /var/lib/pgsql/data/pg_hba.conf'
+sudo sh -c 'echo "host    all             all             127.0.0.1/32            scram-sha-256" > $DATA_DIR/pg_hba.conf'
+sudo sh -c 'echo "host    all             all             ::1/128                 scram-sha-256" >> $DATA_DIR/pg_hba.conf'
 
-sudo service postgresql restart
+sudo service $SERVICE_NAME restart
