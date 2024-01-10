@@ -1,0 +1,4 @@
+- type: parse_json
+- type: exclude_logs
+  match_any:
+  - 'jsonPayload.field1 = "first" AND jsonPayload.field2 =~ "second"'
