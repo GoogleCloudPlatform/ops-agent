@@ -207,6 +207,7 @@ func generateFluentBitConfigs(ctx context.Context, transformationTest transforma
 			"tls.verify":                    "Off",
 			"workers":                       "8",
 			"test_log_entry_format":         "true",
+			"export_to_project_id":          "my-project",
 		},
 	}
 	components = append(components, output)

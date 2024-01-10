@@ -1,15 +1,15 @@
 - jsonPayload:
     hello: world
     message: foo
-  logName: projects/(null)/logs/transformation_test
+  logName: projects/my-project/logs/transformation_test
   timestamp: now
 - jsonPayload:
     hello: world
     message: goo
-  logName: projects/(null)/logs/transformation_test
+  logName: projects/my-project/logs/transformation_test
   timestamp: now
 - jsonPayload:
     hello: world
     message: yes maybe no
-  logName: projects/(null)/logs/transformation_test
+  logName: projects/my-project/logs/transformation_test
   timestamp: now

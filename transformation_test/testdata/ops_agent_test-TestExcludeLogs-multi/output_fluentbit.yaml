@@ -1,5 +1,5 @@
 - jsonPayload:
     field1: nope, include me!
     field2: second
-  logName: projects/(null)/logs/transformation_test
+  logName: projects/my-project/logs/transformation_test
   timestamp: now

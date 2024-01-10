@@ -8,7 +8,7 @@
     original-label: original-label
     overwritten-label: overwritten
     parsed-label: parsed-label
-  logName: projects/(null)/logs/transformation_test
+  logName: projects/my-project/logs/transformation_test
   severity: 400
   sourceLocation:
     file: overwritten-file-path

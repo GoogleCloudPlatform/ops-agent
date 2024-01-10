@@ -1,5 +1,5 @@
 - jsonPayload:
     level: info
     message: start
-  logName: projects/(null)/logs/transformation_test
+  logName: projects/my-project/logs/transformation_test
   timestamp: 2023-10-17T14:55:59.683530289Z

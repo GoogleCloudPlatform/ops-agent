@@ -1,4 +1,0 @@
-- jsonPayload:
-    field: value
-  logName: projects/(null)/logs/transformation_test
-  timestamp: now
