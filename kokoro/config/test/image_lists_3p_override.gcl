@@ -1,81 +1,81 @@
-import 'image_lists.gcl'
+import 'image_lists.gcl' as image_lists
 
 // DEB Linux distros. (Do not modify this comment.)
-mantic_x86_64 = distro {
+mantic_x86_64 = image_lists.distro {
   release = [
       'ubuntu-2310-amd64',
   ]
 }
-mantic_aarch64 = distro {
+mantic_aarch64 = image_lists.distro {
   release = [
       'ubuntu-2310-arm64',
   ]
 }
-lunar_x86_64 = distro {
+lunar_x86_64 = image_lists.distro {
   release = [
       'ubuntu-2304-amd64',
   ]
 }
-focal_x86_64 = distro {
+focal_x86_64 = image_lists.distro {
   release = [
     'ubuntu-2004-lts',
   ]
 }
-focal_aarch64 = distro {
+focal_aarch64 = image_lists.distro {
   release = [
       'ubuntu-2004-lts-arm64',
   ]
 }
-jammy_x86_64 = distro {
+jammy_x86_64 = image_lists.distro {
   release = [
     'ubuntu-2204-lts',
   ]
 }
-jammy_aarch64 = distro {
+jammy_aarch64 = image_lists.distro {
   release = [
     'ubuntu-2204-lts-arm64',
   ]
 }
 
 // RPM Linux distros. (Do not modify this comment.)
-centos7_x86_64 = distro {
+centos7_x86_64 = image_lists.distro {
   release = [
     'centos-7',
   ]
 }
-centos8_x86_64 = distro {
+centos8_x86_64 = image_lists.distro {
   release = [
     'rocky-linux-8',
   ]
 }
-rockylinux9_x86_64 = distro {
+rockylinux9_x86_64 = image_lists.distro {
   release = [
     'rocky-linux-9',
   ]
 }
-rockylinux9_aarch64 = distro {
+rockylinux9_aarch64 = image_lists.distro {
   release = [
     'rocky-linux-9-arm64',
   ]
 }
-sles12_x86_64 = distro {
+sles12_x86_64 = image_lists.distro {
   release = [
     'sles-12',
   ]
 }
-sles15_x86_64 = distro {
+sles15_x86_64 = image_lists.distro {
   release = [
     'sles-15',
   ]
 }
-sles15_aarch64 = distro {
+sles15_aarch64 = image_lists.distro {
   release = [
     'sles-15-arm64',
   ]
 }
 
 // Windows distros.
-windows_x86_64 = distro {
+windows_x86_64 = image_lists.distro {
   release = [
     'windows-2019',
     'sql-std-2019-win-2019',
