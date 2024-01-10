@@ -116,6 +116,9 @@ func mainErr() error {
 	if distro == "" {
 		return errors.New("Env variable DISTRO cannot be empty")
 	}
+	if ttl == "" {
+		return errors.New("Env variable TTL cannot be empty")
+	}
 
 	// Create the VM.
 	options := gce.VMOptions{
