@@ -358,6 +358,7 @@ func createInstance(ctx context.Context, config *Config, logger *log.Logger) (*g
 
 	options := gce.VMOptions{
 		Platform:             config.ImageFamily,
+		TimeToLive:           "14d",
 		Image:                config.Image,
 		ImageFamilyScope:     config.ImageFamilyScope,
 		ImageProject:         config.ImageProject,
