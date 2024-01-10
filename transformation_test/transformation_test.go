@@ -1,15 +1,16 @@
 package transformation_test
 
 import (
-	"bufio"
 	"bytes"
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -97,15 +98,15 @@ func TestTransformationTests(t *testing.T) {
 				t.Fatal("Failed to run command:", err)
 			}
 
-			var d []map[string]any
-			var data []map[string]interface{}
+			d := []map[string]any{}
+			data := []map[string]interface{}{}
 
-			sc := bufio.NewScanner(bytes.NewReader(stdout.Bytes()))
-			for sc.Scan() {
+			dec := json.NewDecoder(strings.NewReader(stdout.String()))
+			for dec.More() {
 				var req map[string]any
-				out := sc.Bytes()
-				if err := yaml.Unmarshal(out, &req); err != nil {
-					t.Log(string(out))
+				// decode an array value (Message)
+				err := dec.Decode(&req)
+				if err != nil {
 					t.Fatal(err)
 				}
 				d = append(d, req)
@@ -125,8 +126,8 @@ func TestTransformationTests(t *testing.T) {
 							entry["timestamp"] = "now"
 						}
 					}
-					data = append(data, req)
 				}
+				data = append(data, req)
 			}
 
 			// read and unmarshal output
@@ -153,7 +154,7 @@ func checkOutput(t *testing.T, name string, got []map[string]any) {
 		t.Fatal(err)
 	}
 
-	if diff := cmp.Diff(gotBytes, wantBytes); diff != "" {
+	if diff := cmp.Diff(got, want); diff != "" {
 		t.Fatalf("got(-)/want(+):\n%s", diff)
 	}
 }

@@ -10,11 +10,11 @@
       overwritten-label: overwritten
       parsed-label: parsed-label
     logName: projects/my-project/logs/transformation_test
-    severity: 400
+    severity: 400.0
     sourceLocation:
       file: overwritten-file-path
       function: ""
-      line: 0
+      line: 0.0
     timestamp: now
   partialSuccess: true
   resource:
