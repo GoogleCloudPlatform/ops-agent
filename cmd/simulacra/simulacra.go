@@ -357,8 +357,10 @@ func createInstance(ctx context.Context, config *Config, logger *log.Logger) (*g
 	}
 
 	options := gce.VMOptions{
-		Platform:             config.ImageFamily,
-		TimeToLive:           "14d",
+		Platform: config.ImageFamily,
+		// TODO: Revert this setting once the default in gce_testing.go is
+		// changed to be infinite.
+		TimeToLive:           "365d",
 		Image:                config.Image,
 		ImageFamilyScope:     config.ImageFamilyScope,
 		ImageProject:         config.ImageProject,
