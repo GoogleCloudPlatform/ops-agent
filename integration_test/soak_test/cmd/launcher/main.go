@@ -57,7 +57,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -114,22 +113,19 @@ func mainErr() error {
 	// Log to stderr.
 	logger := log.Default()
 
-	parsedTTL, err := time.ParseDuration(ttl)
-	if err != nil {
-		return fmt.Errorf("Could not parse TTL duration %q: %w", ttl, err)
-	}
 	if distro == "" {
 		return errors.New("Env variable DISTRO cannot be empty")
+	}
+	if ttl == "" {
+		return errors.New("Env variable TTL cannot be empty")
 	}
 
 	// Create the VM.
 	options := gce.VMOptions{
 		Platform:    distro,
+		TimeToLive:  ttl,
 		Name:        vmName,
 		MachineType: "e2-standard-16",
-		Labels: map[string]string{
-			"ttl": strconv.Itoa(int(parsedTTL / time.Minute)),
-		},
 		Metadata: map[string]string{
 			// This is to avoid Windows updates and reboots (b/295165549), and
 			// also to avoid throughput blips when the OS Config agent runs
