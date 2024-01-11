@@ -14,7 +14,8 @@ config build = common.ops_agent_test {
   params {
     local _tag = _parse_louhi_tag(params.environment._LOUHI_TAG_NAME)
     local _distro_arch = _tag.distro + '_' + _tag.arch
-    platforms = platforms = third_party_image_lists.get(_distro_arch, image_lists.get(_distro_arch, 'invalid_distro')).release
+    // Default to `3p_override` and fall back to `image_lists` if there's no entry.
+    platforms = image_lists_3p_override.get(_distro_arch, image_lists.get(_distro_arch, 'invalid_distro')).release
     arch = _tag.arch
 
     environment {
