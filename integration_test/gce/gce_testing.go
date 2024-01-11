@@ -1216,10 +1216,6 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		// gateway that is configured in our testing project.
 		args = append(args, "--no-address")
 	}
-	// TEMPORARY FOR TESTING
-	if options.TimeToLive == "" {
-		return nil, errors.New("unset TimeToLive")
-	}
 	if options.TimeToLive != "" {
 		args = append(args, "--max-run-duration="+options.TimeToLive, "--instance-termination-action=DELETE", "--provisioning-model=STANDARD")
 	}
