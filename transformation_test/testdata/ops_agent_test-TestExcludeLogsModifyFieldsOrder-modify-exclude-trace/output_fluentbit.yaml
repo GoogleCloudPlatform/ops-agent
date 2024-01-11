@@ -1,0 +1,11 @@
+- entries:
+  - jsonPayload:
+      query_field: value
+    logName: projects/my-project/logs/transformation_test
+    spanId: value2
+    timestamp: now
+    trace: value1
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance

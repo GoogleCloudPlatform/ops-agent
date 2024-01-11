@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -123,30 +124,44 @@ func (transformationConfig transformationTest) runFluentBitTest(t *testing.T, na
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
+		t.Log(stderr.String())
 		t.Fatal("Failed to run command:", err)
 	}
 	t.Logf("stderr: %s\n", stderr.Bytes())
 
 	// unmarshal output
-	var data []map[string]any
+	data := []map[string]any{}
 
-	out := stdout.Bytes()
-	if err := yaml.Unmarshal(out, &data); err != nil {
-		t.Log(string(out))
-		t.Fatal(err)
+	dec := json.NewDecoder(strings.NewReader(stdout.String()))
+	for {
+		var req map[string]any
+		// decode an array value (Message)
+		if err := dec.Decode(&req); err == io.EOF {
+			break
+		} else if err != nil {
+			t.Fatal(err)
+		}
+		data = append(data, req)
 	}
 
 	// transform timestamp of actual results
-	for i, d := range data {
-		if date, ok := d["date"].(float64); ok {
-			date := time.UnixMicro(int64(date * 1e6)).UTC()
-			if date.After(testStartTime) {
-				data[i]["date"] = "now"
-			} else {
-				data[i]["date"] = date.UTC().Format(time.RFC3339Nano)
+	for _, req := range data {
+		// Only search for entries if stdout is not null
+		if val, ok := req["entries"].([]any); ok {
+			for _, e := range val {
+				entry := e.(map[string]interface{})
+				date := entry["timestamp"].(string)
+				timestamp, err := time.Parse(time.RFC3339Nano, date)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if timestamp.After(testStartTime) {
+					entry["timestamp"] = "now"
+				}
 			}
 		}
 	}
+
 	checkOutput(t, filepath.Join(name, transformationOutput), data)
 }
 
@@ -166,6 +181,7 @@ func checkOutput(t *testing.T, name string, got []map[string]any) {
 	if err := yaml.Unmarshal(wantBytes, &want); err != nil {
 		t.Fatal(err)
 	}
+
 	if diff := cmp.Diff(got, want); diff != "" {
 		t.Fatalf("got(-)/want(+):\n%s", diff)
 	}
@@ -215,9 +231,19 @@ func generateFluentBitConfigs(ctx context.Context, name string, transformationTe
 	output := fluentbit.Component{
 		Kind: "OUTPUT",
 		Config: map[string]string{
-			"Name":   "stdout",
-			"Match":  "*",
-			"Format": "json",
+			"Match":                         "*",
+			"Name":                          "stackdriver",
+			"Retry_Limit":                   "3",
+			"http_request_key":              "logging.googleapis.com/httpRequest",
+			"net.connect_timeout_log_error": "False",
+			"resource":                      "gce_instance",
+			"stackdriver_agent":             "Google-Cloud-Ops-Agent-Logging/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)",
+			"storage.total_limit_size":      "2G",
+			"tls":                           "On",
+			"tls.verify":                    "Off",
+			"workers":                       "8",
+			"test_log_entry_format":         "true",
+			"export_to_project_id":          "my-project",
 		},
 	}
 	components = append(components, output)
@@ -252,7 +278,7 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 		if op, ok := p.LoggingProcessor.(confgenerator.OTelProcessor); ok {
 			components = append(components, op.Processors()...)
 		} else {
-			t.Fatalf("not an OTel processor: %v", p)
+			t.Fatalf("not an OTel processor: %#v", p.LoggingProcessor)
 		}
 	}
 
