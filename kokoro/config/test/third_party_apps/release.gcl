@@ -1,8 +1,7 @@
 import 'common.gcl' as common
 import '../image_lists.gcl' as image_lists
-import '../image_lists_3p_override.gcl' as image_lists_3p_override
 
-_parse_louhi_tag = lambda tag: {
+_parse_distro = lambda tag: {
   parts = split(tag, '/')
   ret = {
     distro = parts[3]
@@ -10,18 +9,13 @@ _parse_louhi_tag = lambda tag: {
   }
 }.ret
 
-config build = common.ops_agent_test {
+config build = common.third_party_apps_test {
   params {
-    local _tag = _parse_louhi_tag(params.environment._LOUHI_TAG_NAME)
-    local _distro_arch = _tag.distro + '_' + _tag.arch
-    // Default to `3p_override` and fall back to `image_lists` if there's no entry.
-    platforms = image_lists_3p_override.get(_distro_arch, image_lists.get(_distro_arch, 'invalid_distro')).release
-    arch = _tag.arch
+    local _distro_arch = _parse_distro(params.environment._LOUHI_TAG_NAME)
+    platforms = image_lists.get(_distro_arch.distro + '_' + _distro_arch.arch, 'invalid_distro').presubmit
+    arch = _distro_arch.arch
 
     environment {
-      // Disable -test.short mode when testing nightly releases.
-      SHORT = null
-
       // The release builds run as a different service account.
       TRANSFERS_BUCKET = 'stackdriver-test-143416-file-transfers'
       SERVICE_EMAIL =
