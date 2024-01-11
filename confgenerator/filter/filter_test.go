@@ -84,7 +84,10 @@ func TestShouldParse(t *testing.T) {
 				}
 			})
 			t.Run("ottl", func(t *testing.T) {
-				value := filter.OTTLExpression()
+				value, err := filter.OTTLExpression()
+				if err != nil {
+					t.Error(err)
+				}
 				t.Logf("expression = %s", value)
 			})
 		})

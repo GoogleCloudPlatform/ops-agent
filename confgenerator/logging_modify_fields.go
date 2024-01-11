@@ -315,9 +315,13 @@ func (p LoggingProcessorModifyFields) statements() (ottl.Statements, error) {
 	// Step 2: OmitIf conditions
 	for i, f := range omitFilters {
 		name := fmt.Sprintf("__omit_%d", i)
+		expr, err := f.OTTLExpression()
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse omit_if condition %q: %w", f, err)
+		}
 		statements = statements.Append(
 			ottl.LValue{"cache", name}.Set(ottl.False()),
-			ottl.LValue{"cache", name}.SetIf(ottl.True(), f.OTTLExpression()),
+			ottl.LValue{"cache", name}.SetIf(ottl.True(), expr),
 		)
 	}
 

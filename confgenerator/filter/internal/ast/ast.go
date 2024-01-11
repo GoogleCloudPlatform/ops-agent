@@ -23,6 +23,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/generated/token"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
+	"go.uber.org/multierr"
 )
 
 type Attrib interface{}
@@ -482,7 +483,7 @@ func (r Restriction) FluentConfig(tag, key string) ([]fluentbit.Component, strin
 	panic(fmt.Errorf("unknown operator: %s", r.Operator))
 }
 
-func (r Restriction) OTTLExpression() ottl.Value {
+func (r Restriction) OTTLExpression() (ottl.Value, error) {
 	lhs, _ := r.LHS.OTTLAccessor()
 
 	// TODO: Add support for numeric comparisons
@@ -491,12 +492,16 @@ func (r Restriction) OTTLExpression() ottl.Value {
 
 	switch r.Operator {
 	case "GLOBAL", "<", "<=", ">", ">=":
-		panic(fmt.Errorf("unimplemented operator: %s", r.Operator))
+		return nil, fmt.Errorf("unimplemented operator: %s", r.Operator)
 	case ":":
 		// substring match, case insensitive
 		expr = ottl.IsMatch(lhs, fmt.Sprintf(`(?i)%s`, regexp.QuoteMeta(r.RHS)))
 	case "=~", "!~":
 		// regex match, case sensitive
+
+		if _, err := regexp.Compile(r.RHS); err != nil {
+			return nil, fmt.Errorf("unsupported regex %q: %w", r.RHS, err)
+		}
 
 		expr = ottl.IsMatch(lhs, r.RHS)
 		// TODO: Support Ruby regex syntax
@@ -513,10 +518,10 @@ func (r Restriction) OTTLExpression() ottl.Value {
 	}
 	if expr != nil {
 		// All comparisons involving a missing field are false
-		return ottl.And(lhs.IsPresent(), expr)
+		return ottl.And(lhs.IsPresent(), expr), nil
 	}
 	// This is all the supported operators.
-	panic(fmt.Errorf("unknown operator: %s", r.Operator))
+	return nil, fmt.Errorf("unknown operator: %s", r.Operator)
 }
 
 type Expression interface {
@@ -527,7 +532,7 @@ type Expression interface {
 	FluentConfig(tag, key string) ([]fluentbit.Component, string)
 
 	// OTTLExpression returns an OTTL value that can be used to evaluate the expression.
-	OTTLExpression() ottl.Value
+	OTTLExpression() (ottl.Value, error)
 
 	fmt.Stringer
 }
@@ -587,12 +592,15 @@ func (s exprSlice) FluentConfig(tag, key, operator string) ([]fluentbit.Componen
 	return components, fmt.Sprintf(`(%s)`, strings.Join(exprs, operator))
 }
 
-func (s exprSlice) OTTLExpression(operator func(...ottl.Value) ottl.Value) ottl.Value {
+func (s exprSlice) OTTLExpression(operator func(...ottl.Value) ottl.Value) (ottl.Value, error) {
 	var values []ottl.Value
+	var err error
 	for _, e := range s {
-		values = append(values, e.OTTLExpression())
+		value, eerr := e.OTTLExpression()
+		values = append(values, value)
+		multierr.AppendInto(&err, eerr)
 	}
-	return operator(values...)
+	return operator(values...), err
 }
 
 func (s exprSlice) String(operator string) string {
@@ -607,7 +615,7 @@ func (c Conjunction) FluentConfig(tag, key string) ([]fluentbit.Component, strin
 	return exprSlice(c).FluentConfig(tag, key, " and ")
 }
 
-func (c Conjunction) OTTLExpression() ottl.Value {
+func (c Conjunction) OTTLExpression() (ottl.Value, error) {
 	return exprSlice(c).OTTLExpression(ottl.And)
 }
 
@@ -646,7 +654,7 @@ func (d Disjunction) FluentConfig(tag, key string) ([]fluentbit.Component, strin
 	return exprSlice(d).FluentConfig(tag, key, " or ")
 }
 
-func (d Disjunction) OTTLExpression() ottl.Value {
+func (d Disjunction) OTTLExpression() (ottl.Value, error) {
 	return exprSlice(d).OTTLExpression(ottl.Or)
 }
 
@@ -667,8 +675,12 @@ func (n Negation) FluentConfig(tag, key string) ([]fluentbit.Component, string) 
 	return c, fmt.Sprintf("(not %s)", expr)
 }
 
-func (n Negation) OTTLExpression() ottl.Value {
-	return ottl.Not(n.Expression.OTTLExpression())
+func (n Negation) OTTLExpression() (ottl.Value, error) {
+	value, err := n.Expression.OTTLExpression()
+	if err != nil {
+		return nil, err
+	}
+	return ottl.Not(value), nil
 }
 
 func (n Negation) String() string {

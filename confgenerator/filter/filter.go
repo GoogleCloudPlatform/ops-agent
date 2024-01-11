@@ -92,7 +92,7 @@ func (f *Filter) innerFluentConfig(tag, prefix string) ([]fluentbit.Component, s
 	return f.expr.FluentConfig(tag, prefix)
 }
 
-func (f Filter) OTTLExpression() ottl.Value {
+func (f Filter) OTTLExpression() (ottl.Value, error) {
 	return f.expr.OTTLExpression()
 }
 
