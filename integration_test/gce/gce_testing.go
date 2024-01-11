@@ -1079,12 +1079,7 @@ func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map
 }
 
 func addFrameworkLabels(inputLabels map[string]string) (map[string]string, error) {
-	labelsCopy := map[string]string{
-		// Attach labels to automate cleanup
-		"env": "test",
-		"ttl": "180", // minutes
-	}
-
+	labelsCopy := make(map[string]string)
 	for k, v := range inputLabels {
 		labelsCopy[k] = v
 	}
@@ -1192,7 +1187,8 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	}
 
 	args := []string{
-		"compute", "instances", "create", vm.Name,
+		// "beta" is needed for --max-run-duration below.
+		"beta", "compute", "instances", "create", vm.Name,
 		"--project=" + vm.Project,
 		"--zone=" + vm.Zone,
 		"--machine-type=" + vm.MachineType,
@@ -1220,6 +1216,11 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		// gateway that is configured in our testing project.
 		args = append(args, "--no-address")
 	}
+	ttl := options.TimeToLive
+	if ttl == "" {
+		ttl = "3h"
+	}
+	args = append(args, "--max-run-duration="+ttl, "--instance-termination-action=DELETE", "--provisioning-model=STANDARD")
 	args = append(args, options.ExtraCreateArguments...)
 
 	output, err := RunGcloud(ctx, logger, "", args)
@@ -1874,12 +1875,17 @@ type VMOptions struct {
 	// Optional. If unspecified, 'Platform' must be specified.
 	// Normally passed as --image to gcloud compute images create.
 	Image string
-	// Optional. If missing, a random name will be generated.
-	Name string
 	// Optional. Passed as --image-project to "gcloud compute images create".
 	// If not supplied, the framework will attempt to guess the right project
 	// to use based on Platform.
 	ImageProject string
+	// Optional. The default TimeToLive is "3h", meaning 3 hours. After that the
+	// VM will be deleted.
+	// TODO: b/227348032 -  Change the default TimeToLive to infinite and move
+	// the 3h to each callsite into this library.
+	TimeToLive string
+	// Optional. If missing, a random name will be generated.
+	Name string
 	// Optional. If missing, the environment variable PROJECT will be used.
 	Project string
 	// Optional. If missing, the environment variable ZONE will be used.
