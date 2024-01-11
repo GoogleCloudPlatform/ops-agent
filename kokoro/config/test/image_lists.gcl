@@ -180,7 +180,7 @@ windows_x86_64 = _distro {
     'windows-2022-core',
   ]
   presubmit = [
-    'windows-2016-core',
-    'windows-2022',
+    'windows-2019',
+    'sql-std-2019-win-2019',
   ]
 }
