@@ -34,7 +34,7 @@ func (r MetricsReceiverHostmetrics) Type() string {
 	return "hostmetrics"
 }
 
-func (r MetricsReceiverHostmetrics) Pipelines(ctx context.Context) []otel.ReceiverPipeline {
+func (r MetricsReceiverHostmetrics) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	p := platform.FromContext(ctx)
 	processConfig := map[string]interface{}{
 		"mute_process_name_error": true,
@@ -366,7 +366,7 @@ func (r MetricsReceiverHostmetrics) Pipelines(ctx context.Context) []otel.Receiv
 		})
 	}
 
-	return pipelines
+	return pipelines, nil
 }
 
 func (r MetricsReceiverHostmetrics) MergeMetricsProcessor(p confgenerator.MetricsProcessor) (confgenerator.MetricsReceiver, bool) {

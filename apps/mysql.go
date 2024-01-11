@@ -44,7 +44,7 @@ func (r MetricsReceiverMySql) Type() string {
 	return "mysql"
 }
 
-func (r MetricsReceiverMySql) Pipelines(_ context.Context) []otel.ReceiverPipeline {
+func (r MetricsReceiverMySql) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
 	transport := "tcp"
 	if r.Endpoint == "" {
 		transport = "unix"
@@ -153,7 +153,7 @@ func (r MetricsReceiverMySql) Pipelines(_ context.Context) []otel.ReceiverPipeli
 				otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 			}},
 		},
-	}
+	}, nil
 }
 
 var mysqlLegacyReplicationQueries = []sqlReceiverQuery{

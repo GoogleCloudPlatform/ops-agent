@@ -75,7 +75,7 @@ func (r MetricsReceiverVault) Type() string {
 	return "vault"
 }
 
-func (r MetricsReceiverVault) Pipelines(_ context.Context) []otel.ReceiverPipeline {
+func (r MetricsReceiverVault) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultVaultEndpoint
 	}
@@ -174,7 +174,7 @@ func (r MetricsReceiverVault) Pipelines(_ context.Context) []otel.ReceiverPipeli
 			),
 			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
-	}}
+	}}, nil
 }
 
 type metricTransformer struct {

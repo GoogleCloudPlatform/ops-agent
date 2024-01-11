@@ -40,7 +40,7 @@ func (MetricsReceiverCouchdb) Type() string {
 	return "couchdb"
 }
 
-func (r MetricsReceiverCouchdb) Pipelines(_ context.Context) []otel.ReceiverPipeline {
+func (r MetricsReceiverCouchdb) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultCouchdbEndpoint
 	}
@@ -61,7 +61,7 @@ func (r MetricsReceiverCouchdb) Pipelines(_ context.Context) []otel.ReceiverPipe
 			),
 			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
-	}}
+	}}, nil
 }
 
 func init() {

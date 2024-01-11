@@ -158,7 +158,11 @@ func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]
 				break
 			}
 		}
-		for i, receiverPipeline := range receiver.Pipelines(ctx) {
+		receiverPipelines, err := receiver.Pipelines(ctx)
+		if err != nil {
+			return fmt.Errorf("receiver %q has invalid configuration: %w", rID, err)
+		}
+		for i, receiverPipeline := range receiverPipelines {
 			receiverPipelineName := strings.ReplaceAll(rID, "_", "__")
 			if i > 0 {
 				receiverPipelineName = fmt.Sprintf("%s_%d", receiverPipelineName, i)
@@ -207,7 +211,11 @@ func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]
 				if !ok {
 					return fmt.Errorf("processor %q not found", pID)
 				}
-				pipeline.Processors = append(pipeline.Processors, processor.Processors()...)
+				if processors, err := processor.Processors(ctx); err != nil {
+					return fmt.Errorf("processor %q has invalid configuration: %w", pID, err)
+				} else {
+					pipeline.Processors = append(pipeline.Processors, processors...)
+				}
 			}
 			outP[prefix] = pipeline
 		}
@@ -253,7 +261,8 @@ func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]
 		if err != nil {
 			return nil, nil, err
 		}
-		for pID, p := range l.Service.Pipelines {
+		for _, pID := range sortedKeys(l.Service.Pipelines) {
+			p := l.Service.Pipelines[pID]
 			for _, rID := range p.ReceiverIDs {
 				receiver, ok := receivers[rID]
 				if !ok {

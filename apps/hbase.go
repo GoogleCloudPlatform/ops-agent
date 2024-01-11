@@ -35,7 +35,7 @@ func (r MetricsReceiverHbase) Type() string {
 	return "hbase"
 }
 
-func (r MetricsReceiverHbase) Pipelines(_ context.Context) []otel.ReceiverPipeline {
+func (r MetricsReceiverHbase) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
 	targetSystem := "hbase"
 	if r.MetricsReceiverSharedCollectJVM.ShouldCollectJVMMetrics() {
 		targetSystem = fmt.Sprintf("%s,%s", targetSystem, "jvm")

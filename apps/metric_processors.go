@@ -15,6 +15,7 @@
 package apps
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strings"
@@ -33,7 +34,7 @@ func (p MetricsProcessorExcludeMetrics) Type() string {
 	return "exclude_metrics"
 }
 
-func (p MetricsProcessorExcludeMetrics) Processors() []otel.Component {
+func (p MetricsProcessorExcludeMetrics) Processors(_ context.Context) ([]otel.Component, error) {
 	var metricNames []string
 	for _, glob := range p.MetricsPattern {
 		// $ needs to be escaped because reasons.
@@ -44,7 +45,7 @@ func (p MetricsProcessorExcludeMetrics) Processors() []otel.Component {
 		"exclude",
 		"regexp",
 		metricNames...,
-	)}
+	)}, nil
 }
 
 // globToRegex converts metrics glob patterns to regex patterns

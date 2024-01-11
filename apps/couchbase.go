@@ -43,7 +43,7 @@ func (r MetricsReceiverCouchbase) Type() string {
 }
 
 // Pipelines will construct the prometheus receiver configuration
-func (r MetricsReceiverCouchbase) Pipelines(_ context.Context) []otel.ReceiverPipeline {
+func (r MetricsReceiverCouchbase) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
 	targets := []string{r.Endpoint}
 	if r.Endpoint == "" {
 		targets = []string{defaultCouchbaseEndpoint}
@@ -163,7 +163,7 @@ func (r MetricsReceiverCouchbase) Pipelines(_ context.Context) []otel.ReceiverPi
 			otel.TransformationMetrics(r.transformMetrics()...),
 			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
-	}}
+	}}, nil
 }
 
 type couchbaseMetric struct {

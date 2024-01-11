@@ -159,7 +159,7 @@ func (p ParserShared) TypesStatements() (ottl.Statements, error) {
 }
 
 // Handle special fields documented at https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/configuration#special-fields
-func (p ParserShared) FluentBitSpecialFieldsStatements() ottl.Statements {
+func (p ParserShared) FluentBitSpecialFieldsStatements(ctx context.Context) ottl.Statements {
 	fields := filter.FluentBitSpecialFields()
 	var names []string
 	for f := range fields {
@@ -181,7 +181,7 @@ func (p ParserShared) FluentBitSpecialFieldsStatements() ottl.Statements {
 			fields[f]: &ModifyField{
 				MoveFrom: fmt.Sprintf(`jsonPayload.%q`, f),
 			},
-		}}.statements()
+		}}.statements(ctx)
 		if err != nil {
 			// Should be impossible
 			panic(err)
@@ -212,16 +212,7 @@ func (p LoggingProcessorParseJson) Components(ctx context.Context, tag, uid stri
 	return parserFilters
 }
 
-func (p LoggingProcessorParseJson) Processors() []otel.Component {
-	out, err := p.processors()
-	if err != nil {
-		// It shouldn't be possible to get here if the input validation is working
-		panic(err)
-	}
-	return out
-}
-
-func (p LoggingProcessorParseJson) processors() ([]otel.Component, error) {
+func (p LoggingProcessorParseJson) Processors(ctx context.Context) ([]otel.Component, error) {
 	from := p.Field
 	if from == "" {
 		from = "jsonPayload.message"
@@ -251,7 +242,7 @@ func (p LoggingProcessorParseJson) processors() ([]otel.Component, error) {
 	}
 	statements = statements.Append(ts)
 
-	statements = statements.Append(p.FluentBitSpecialFieldsStatements())
+	statements = statements.Append(p.FluentBitSpecialFieldsStatements(ctx))
 
 	// TODO: Support merging instead of replacing.
 	return []otel.Component{otel.Transform(

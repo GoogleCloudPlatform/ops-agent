@@ -629,8 +629,8 @@ func (m MetricsReceiverFoo) Type() string {
 	return "metricsReceiverFoo"
 }
 
-func (m MetricsReceiverFoo) Pipelines(_ context.Context) []otel.ReceiverPipeline {
-	return nil
+func (m MetricsReceiverFoo) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, nil
 }
 
 type MetricsReceiverInlineFoo struct {
@@ -947,8 +947,8 @@ func (m Example) Type() string {
 	return "example"
 }
 
-func (m Example) Pipelines(_ context.Context) []otel.ReceiverPipeline {
-	return nil
+func (m Example) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, nil
 }
 
 func TestNestedStructs(t *testing.T) {

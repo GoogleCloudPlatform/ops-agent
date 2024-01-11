@@ -62,7 +62,7 @@ func (r LoggingReceiverFiles) Components(ctx context.Context, tag string) []flue
 	return r.mixin().Components(ctx, tag)
 }
 
-func (r LoggingReceiverFiles) Pipelines(ctx context.Context) []otel.ReceiverPipeline {
+func (r LoggingReceiverFiles) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	return r.mixin().Pipelines(ctx)
 }
 
@@ -168,7 +168,7 @@ func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) [
 	return c
 }
 
-func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) []otel.ReceiverPipeline {
+func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	operators := []map[string]any{}
 	receiver_config := map[string]any{
 		"include":           r.IncludePaths,
@@ -210,7 +210,7 @@ func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) []otel.Receive
 		ExporterTypes: map[string]otel.ExporterType{
 			"logs": otel.OTel,
 		},
-	}}
+	}}, nil
 }
 
 func init() {

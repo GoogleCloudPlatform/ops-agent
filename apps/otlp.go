@@ -125,7 +125,7 @@ func (r ReceiverOTLP) metricsProcessors(ctx context.Context) (otel.ExporterType,
 	}
 }
 
-func (r ReceiverOTLP) Pipelines(ctx context.Context) []otel.ReceiverPipeline {
+func (r ReceiverOTLP) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	endpoint := r.GRPCEndpoint
 	if endpoint == "" {
 		endpoint = defaultGRPCEndpoint
@@ -159,7 +159,7 @@ func (r ReceiverOTLP) Pipelines(ctx context.Context) []otel.ReceiverPipeline {
 			"traces":  otel.SetIfMissing,
 			"logs":    otel.SetIfMissing,
 		},
-	}}
+	}}, nil
 }
 
 func init() {

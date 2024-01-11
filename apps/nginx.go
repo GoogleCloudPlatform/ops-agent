@@ -36,7 +36,7 @@ func (r MetricsReceiverNginx) Type() string {
 	return "nginx"
 }
 
-func (r MetricsReceiverNginx) Pipelines(_ context.Context) []otel.ReceiverPipeline {
+func (r MetricsReceiverNginx) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
 	if r.StubStatusURL == "" {
 		r.StubStatusURL = defaultStubStatusURL
 	}
@@ -55,7 +55,7 @@ func (r MetricsReceiverNginx) Pipelines(_ context.Context) []otel.ReceiverPipeli
 			),
 			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
-	}}
+	}}, nil
 }
 
 func init() {

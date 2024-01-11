@@ -51,7 +51,7 @@ var (
 )
 
 // Pipelines is the OTEL pipelines created from MetricsReceiverAerospike
-func (r MetricsReceiverAerospike) Pipelines(_ context.Context) []otel.ReceiverPipeline {
+func (r MetricsReceiverAerospike) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultAerospikeEndpoint
 	}
@@ -99,7 +99,7 @@ func (r MetricsReceiverAerospike) Pipelines(_ context.Context) []otel.ReceiverPi
 			),
 			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
-	}}
+	}}, nil
 }
 
 func init() {

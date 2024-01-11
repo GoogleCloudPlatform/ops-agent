@@ -235,19 +235,18 @@ end
 	return components, nil
 }
 
-func (p LoggingProcessorModifyFields) Processors() []otel.Component {
-	out, err := p.statements()
+func (p LoggingProcessorModifyFields) Processors(ctx context.Context) ([]otel.Component, error) {
+	out, err := p.statements(ctx)
 	if err != nil {
-		// It shouldn't be possible to get here if the input validation is working
-		panic(err)
+		return nil, err
 	}
 	return []otel.Component{otel.Transform(
 		"log", "log",
 		out,
-	)}
+	)}, nil
 }
 
-func (p LoggingProcessorModifyFields) statements() (ottl.Statements, error) {
+func (p LoggingProcessorModifyFields) statements(_ context.Context) (ottl.Statements, error) {
 	var statements ottl.Statements
 
 	var dests []string

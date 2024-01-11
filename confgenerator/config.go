@@ -581,7 +581,7 @@ type Metrics struct {
 
 type OTelReceiver interface {
 	Component
-	Pipelines(ctx context.Context) []otel.ReceiverPipeline
+	Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error)
 }
 
 type MetricsProcessorMerger interface {
@@ -676,10 +676,10 @@ func (m MetricsReceiverSharedJVM) WithDefaultAdditionalJars(defaultAdditionalJar
 
 // ConfigurePipelines sets up a Receiver using the MetricsReceiverSharedJVM and the targetSystem.
 // This is used alongside the passed in processors to return a single Pipeline in an array.
-func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, processors []otel.Component) []otel.ReceiverPipeline {
+func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, processors []otel.Component) ([]otel.ReceiverPipeline, error) {
 	jarPath, err := FindJarPath()
 	if err != nil {
-		log.Printf(`Encountered an error discovering the location of the JMX Metrics Exporter, %v`, err)
+		return nil, fmt.Errorf("failed to discover the location of the JMX metrics exporter: %w", err)
 	}
 
 	config := map[string]interface{}{
@@ -708,7 +708,7 @@ func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, proces
 			Config: config,
 		},
 		Processors: map[string][]otel.Component{"metrics": processors},
-	}}
+	}}, nil
 }
 
 type MetricsReceiverSharedCollectJVM struct {
@@ -774,7 +774,7 @@ func (m *combinedReceiverMap) UnmarshalYAML(ctx context.Context, unmarshal func(
 
 type OTelProcessor interface {
 	Component
-	Processors() []otel.Component
+	Processors(context.Context) ([]otel.Component, error)
 }
 
 type MetricsProcessor interface {
@@ -1165,7 +1165,11 @@ func validateIncompatibleJVMReceivers(typeCounts map[string]int) error {
 
 func validateSSLConfig(receivers metricsReceiverMap, ctx context.Context) error {
 	for receiverId, receiver := range receivers {
-		for _, pipeline := range receiver.Pipelines(ctx) {
+		receiverPipelines, err := receiver.Pipelines(ctx)
+		if err != nil {
+			continue
+		}
+		for _, pipeline := range receiverPipelines {
 			if tlsCfg, ok := pipeline.Receiver.Config.(map[string]interface{})["tls"]; ok {
 				cfg := tlsCfg.(map[string]interface{})
 				// If insecure, no other fields are allowed

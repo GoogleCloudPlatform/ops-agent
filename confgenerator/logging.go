@@ -48,8 +48,8 @@ func setLogNameComponents(ctx context.Context, tag, logName, receiverType string
 	}.Components(ctx, tag, "setlogname")
 }
 
-func otelSetLogNameComponents(_ context.Context, logName, hostName string) []otel.Component {
-	return LoggingProcessorModifyFields{
+func otelSetLogNameComponents(ctx context.Context, logName, hostName string) []otel.Component {
+	components, err := LoggingProcessorModifyFields{
 		Fields: map[string]*ModifyField{
 			// TODO: Prepend `receiver_id.` if it already exists, like the `fluent_forward` receiver?
 			"logName": {
@@ -59,7 +59,12 @@ func otelSetLogNameComponents(_ context.Context, logName, hostName string) []ote
 				DefaultValue: &hostName,
 			},
 		},
-	}.Processors()
+	}.Processors(ctx)
+	if err != nil {
+		// We're generating a hard-coded config, so this should never fail.
+		panic(err)
+	}
+	return components
 }
 
 // stackdriverOutputComponent generates a component that outputs logs matching the regex `match` using `userAgent`.
