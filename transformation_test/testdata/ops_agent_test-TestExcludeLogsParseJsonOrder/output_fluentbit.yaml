@@ -1,9 +1,8 @@
 - entries:
   - jsonPayload:
-      key1: 12345.0
-      key2: abc
+      field: value
     logName: projects/my-project/logs/transformation_test
-    timestamp: 2006-07-28T13:22:00.000000000Z
+    timestamp: now
   partialSuccess: true
   resource:
     labels: {}

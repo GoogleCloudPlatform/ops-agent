@@ -1,0 +1,19 @@
+- type: modify_fields
+  fields:
+    labels."non-overwritten-label":
+      static_value: non-overwritten
+    labels."overwritten-label":
+      static_value: non-overwritten
+    labels."original-label":
+      static_value: original-label
+    severity:
+      static_value: WARNING
+    sourceLocation.file:
+      static_value: non-overwritten-file-path
+    jsonPayload."non-overwritten-field":
+      static_value: non-overwritten
+    jsonPayload."overwritten-field":
+      static_value: non-overwritten
+    jsonPayload."original-field":
+      static_value: original-value
+- type: parse_json

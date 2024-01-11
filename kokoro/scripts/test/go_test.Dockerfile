@@ -6,4 +6,7 @@ RUN curl -sSL https://sdk.cloud.google.com | bash
 
 ENV PATH $PATH:/root/google-cloud-sdk/bin
 
+# Needed for --max-run-duration, see b/227348032.
+RUN gcloud components install beta
+
 RUN go install -v github.com/jstemmer/go-junit-report/v2@latest
