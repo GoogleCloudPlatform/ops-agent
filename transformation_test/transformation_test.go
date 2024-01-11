@@ -3,13 +3,14 @@ package transformation_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -17,7 +18,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/goccy/go-yaml"
 	"github.com/google/go-cmp/cmp"
-	"golang.org/x/sync/errgroup"
 	"gotest.tools/v3/golden"
 )
 
@@ -90,50 +90,48 @@ func TestTransformationTests(t *testing.T) {
 				fmt.Sprintf("--config=%s", filepath.Join(tempPath, flbMainConf)),
 				fmt.Sprintf("--parser=%s", filepath.Join(filepath.Join(tempPath, flbParserConf))))
 
-			var stdout, stderr io.ReadCloser
-			stdout, err = cmd.StdoutPipe()
-			if err != nil {
-				t.Fatal("stdout pipe failure", err)
-			}
-			stderr, err = cmd.StderrPipe()
-			if err != nil {
-				t.Fatal("stderr pipe failure", err)
+			var stdout, stderr bytes.Buffer
+			cmd.Stdout = &stdout
+			cmd.Stderr = &stderr
+			if err := cmd.Run(); err != nil {
+				t.Log(stderr.String())
+				t.Fatal("Failed to run command:", err)
 			}
 
-			if err := cmd.Start(); err != nil {
-				t.Fatal("Failed to start command:", err)
+			d := []map[string]any{}
+			data := []map[string]interface{}{}
+
+			dec := json.NewDecoder(strings.NewReader(stdout.String()))
+			for dec.More() {
+				var req map[string]any
+				// decode an array value (Message)
+				err := dec.Decode(&req)
+				if err != nil {
+					t.Fatal(err)
+				}
+				d = append(d, req)
 			}
 
-			// stderr and stdout need to be read in parallel to prevent deadlock
-			var eg errgroup.Group
-			eg.Go(func() error {
-				// read stderr
-				slurp, _ := io.ReadAll(stderr)
-				t.Logf("stderr: %s\n", slurp)
-				return nil
-			})
-
-			// read and unmarshal output
-			var data []map[string]any
-			out, _ := io.ReadAll(stdout)
-			_ = eg.Wait()
-
-			err := yaml.Unmarshal(out, &data)
-			if err != nil {
-				t.Log(string(out))
-				t.Fatal(err)
-			}
-			// transform timestamp of actual results
-			for i, d := range data {
-				if date, ok := d["date"].(float64); ok {
-					date := time.UnixMicro(int64(date * 1e6)).UTC()
-					if date.After(testStartTime) {
-						data[i]["date"] = "now"
-					} else {
-						data[i]["date"] = date.Format(time.RFC3339Nano)
+			for _, req := range d {
+				// Only search for entries if stdout is not null
+				if val, ok := req["entries"].([]any); ok {
+					for _, e := range val {
+						entry := e.(map[string]interface{})
+						date := entry["timestamp"].(string)
+						timestamp, err := time.Parse(time.RFC3339Nano, date)
+						if err != nil {
+							t.Fatal(err)
+						}
+						if timestamp.After(testStartTime) {
+							entry["timestamp"] = "now"
+						}
 					}
 				}
+				data = append(data, req)
 			}
+
+			// read and unmarshal output
+			// transform timestamp of actual results
 			checkOutput(t, filepath.Join(dir.Name(), transformationOutput), data)
 		})
 	}
@@ -155,6 +153,7 @@ func checkOutput(t *testing.T, name string, got []map[string]any) {
 	if err := yaml.Unmarshal(wantBytes, &want); err != nil {
 		t.Fatal(err)
 	}
+
 	if diff := cmp.Diff(got, want); diff != "" {
 		t.Fatalf("got(-)/want(+):\n%s", diff)
 	}
@@ -204,9 +203,19 @@ func generateFluentBitConfigs(ctx context.Context, transformationTest transforma
 	output := fluentbit.Component{
 		Kind: "OUTPUT",
 		Config: map[string]string{
-			"Name":   "stdout",
-			"Match":  "*",
-			"Format": "json",
+			"Match":                         "*",
+			"Name":                          "stackdriver",
+			"Retry_Limit":                   "3",
+			"http_request_key":              "logging.googleapis.com/httpRequest",
+			"net.connect_timeout_log_error": "False",
+			"resource":                      "gce_instance",
+			"stackdriver_agent":             "Google-Cloud-Ops-Agent-Logging/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)",
+			"storage.total_limit_size":      "2G",
+			"tls":                           "On",
+			"tls.verify":                    "Off",
+			"workers":                       "8",
+			"test_log_entry_format":         "true",
+			"export_to_project_id":          "my-project",
 		},
 	}
 	components = append(components, output)

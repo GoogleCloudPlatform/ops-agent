@@ -1,3 +1,10 @@
-- date: 2023-10-17T14:55:59.68353Z
-  level: info
-  message: start
+- entries:
+  - jsonPayload:
+      level: info
+      message: start
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2023-10-17T14:55:59.683530289Z
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance
