@@ -1,17 +1,24 @@
-- date: now
-  logging.googleapis.com/labels:
-    label1: value1
-    label2: value2
-  logging.googleapis.com/operation:
-    first: true
-    id: id
-    last: true
-    producer: producer
-  logging.googleapis.com/severity: WARNING
-  logging.googleapis.com/sourceLocation:
-    file: file
-    function: function
-    line: "1"
-  logging.googleapis.com/spanId: spanId
-  logging.googleapis.com/trace: trace
-  normal_field: value
+- entries:
+  - jsonPayload:
+      normal_field: value
+    labels:
+      label1: value1
+      label2: value2
+    logName: projects/my-project/logs/transformation_test
+    operation:
+      first: true
+      id: id
+      last: true
+      producer: producer
+    severity: 400.0
+    sourceLocation:
+      file: file
+      function: function
+      line: 1.0
+    spanId: spanId
+    timestamp: now
+    trace: trace
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance
