@@ -276,17 +276,24 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 	var components []otel.Component
 	for _, p := range transformationConfig {
 		if op, ok := p.LoggingProcessor.(confgenerator.OTelProcessor); ok {
-			components = append(components, op.Processors()...)
+			processors, err := op.Processors(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			components = append(components, processors...)
 		} else {
 			t.Fatalf("not an OTel processor: %#v", p.LoggingProcessor)
 		}
 	}
 
-	rp := confgenerator.LoggingReceiverFilesMixin{
+	rp, err := confgenerator.LoggingReceiverFilesMixin{
 		IncludePaths: []string{
 			abs,
 		},
 	}.Pipelines(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	return otel.ModularConfig{
 		DisableMetrics: true,
