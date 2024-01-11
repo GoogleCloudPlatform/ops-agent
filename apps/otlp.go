@@ -22,6 +22,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
 // TODO: The collector defaults to this, but should we default to 127.0.0.1 or ::1 instead?
@@ -42,15 +43,19 @@ func (r ReceiverOTLP) Type() string {
 	return "otlp"
 }
 
-func (ReceiverOTLP) gmpResourceProcessors() []otel.Component {
+func (ReceiverOTLP) gmpResourceProcessors(ctx context.Context) []otel.Component {
 	// Keep in sync with logic in confgenerator/prometheus.go
-	stmt := func(target, source string) string {
+	stmt := func(target, source, platform string) string {
 		// if cloud.provider == "gcp" && cloud.platform == "gcp_compute_engine"
-		return fmt.Sprintf(`set(%s, %s) where %s != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"`,
-			target, source, source)
+		return fmt.Sprintf(`set(%s, %s) where %s != nil and resource.attributes["cloud.platform"] == "%s"`,
+			target, source, source, platform)
+	}
+	processor := otel.GCPResourceDetector(false)
+	if r := platform.FromContext(ctx).ResourceOverride; r != nil {
+		processor = otel.ResourceTransform(r.OTelResourceAttributes(), false)
 	}
 	return []otel.Component{
-		otel.GCPResourceDetector(false),
+		processor,
 		{
 			Type: "transform",
 			Config: map[string]interface{}{
@@ -58,17 +63,17 @@ func (ReceiverOTLP) gmpResourceProcessors() []otel.Component {
 				"metric_statements": []map[string]interface{}{{
 					"context": "datapoint",
 					"statements": []string{
+						// GCE
 						// location = cloud.availability_zone
-						stmt(`attributes["location"]`, `resource.attributes["cloud.availability_zone"]`),
+						stmt(`attributes["location"]`, `resource.attributes["cloud.availability_zone"]`, "gcp_compute_engine"),
 						// namespace = host.id
-						stmt(`attributes["namespace"]`, `resource.attributes["host.id"]`),
+						stmt(`attributes["namespace"]`, `resource.attributes["host.id"]`, "gcp_compute_engine"),
 						// cluster = "__gce__"
-						stmt(`attributes["cluster"]`, `"__gce__"`),
+						stmt(`attributes["cluster"]`, `"__gce__"`, "gcp_compute_engine"),
 						// instance_name = host.name
-						stmt(`attributes["instance_name"]`, `resource.attributes["host.name"]`),
+						stmt(`attributes["instance_name"]`, `resource.attributes["host.name"]`, "gcp_compute_engine"),
 						// machine_type = host.type
-						stmt(`attributes["machine_type"]`, `resource.attributes["host.type"]`),
-						// job and instance should be automatically set from service labels
+						stmt(`attributes["machine_type"]`, `resource.attributes["host.type"]`, "gcp_compute_engine"),
 					},
 				}},
 			},
@@ -78,9 +83,9 @@ func (ReceiverOTLP) gmpResourceProcessors() []otel.Component {
 	}
 }
 
-func (r ReceiverOTLP) metricsProcessors() (otel.ExporterType, otel.ResourceDetectionMode, []otel.Component) {
+func (r ReceiverOTLP) metricsProcessors(ctx context.Context) (otel.ExporterType, otel.ResourceDetectionMode, []otel.Component) {
 	if r.MetricsMode != "googlecloudmonitoring" {
-		return otel.GMP, otel.None, r.gmpResourceProcessors()
+		return otel.GMP, otel.None, r.gmpResourceProcessors(ctx)
 	}
 	var knownDomainsRegexEscaped []string
 	for _, knownDomain := range knownDomains {
@@ -109,7 +114,7 @@ func (r ReceiverOTLP) metricsProcessors() (otel.ExporterType, otel.ResourceDetec
 	// a processor and replace all of this stuff with that processor.
 	//
 	// [1] https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/blob/main/exporter/collector/config.go#L158
-	return otel.OTel, otel.Upsert, []otel.Component{
+	return otel.OTel, otel.SetIfMissing, []otel.Component{
 		otel.MetricsTransform(
 			otel.RegexpRename(`^(.*)$`, `A${1}`),
 			otel.RegexpRename(fmt.Sprintf(`^A((?:[a-z]+\.)*(?:%s)/.+)$`, strings.Join(knownDomainsRegexEscaped, "|")), `B${1}`),
@@ -120,13 +125,13 @@ func (r ReceiverOTLP) metricsProcessors() (otel.ExporterType, otel.ResourceDetec
 	}
 }
 
-func (r ReceiverOTLP) Pipelines(_ context.Context) []otel.ReceiverPipeline {
+func (r ReceiverOTLP) Pipelines(ctx context.Context) []otel.ReceiverPipeline {
 	endpoint := r.GRPCEndpoint
 	if endpoint == "" {
 		endpoint = defaultGRPCEndpoint
 	}
 
-	receiverPipelineType, metricsRDM, metricsProcessors := r.metricsProcessors()
+	receiverPipelineType, metricsRDM, metricsProcessors := r.metricsProcessors(ctx)
 
 	return []otel.ReceiverPipeline{{
 		ExporterTypes: map[string]otel.ExporterType{
@@ -149,7 +154,7 @@ func (r ReceiverOTLP) Pipelines(_ context.Context) []otel.ReceiverPipeline {
 		},
 		ResourceDetectionModes: map[string]otel.ResourceDetectionMode{
 			"metrics": metricsRDM,
-			"traces":  otel.Upsert,
+			"traces":  otel.SetIfMissing,
 		},
 	}}
 }

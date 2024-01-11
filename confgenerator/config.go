@@ -547,6 +547,7 @@ func (m *loggingProcessorMap) UnmarshalYAML(ctx context.Context, unmarshal func(
 }
 
 type LoggingService struct {
+	Compress  string               `yaml:"compress,omitempty" validate:"omitempty,oneof=gzip,experimental=log_compression"`
 	LogLevel  string               `yaml:"log_level,omitempty" validate:"omitempty,oneof=error warn info debug trace"`
 	Pipelines map[string]*Pipeline `validate:"dive,keys,startsnotwith=lib:"`
 }
@@ -572,6 +573,13 @@ type Metrics struct {
 type OTelReceiver interface {
 	Component
 	Pipelines(ctx context.Context) []otel.ReceiverPipeline
+}
+
+type MetricsProcessorMerger interface {
+	// MergeMetricsProcessor attempts to merge p into the current receiver.
+	// It returns the new receiver; and true if the processor has been merged
+	// into the receiver completely
+	MergeMetricsProcessor(p MetricsProcessor) (MetricsReceiver, bool)
 }
 
 type MetricsReceiver interface {

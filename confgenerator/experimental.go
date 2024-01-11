@@ -46,6 +46,9 @@ func IsExperimentalFeatureEnabled(feature string) bool {
 }
 
 func registerExperimentalValidations(v *validator.Validate) {
+	v.RegisterValidation("experimental", func(fl validator.FieldLevel) bool {
+		return fl.Field().IsZero() || IsExperimentalFeatureEnabled(fl.Param())
+	})
 	v.RegisterStructValidation(componentValidator, ConfigComponent{})
 }
 

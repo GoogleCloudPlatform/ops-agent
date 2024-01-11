@@ -55,6 +55,21 @@ func healthChecksLogsPath() string {
 	return path.Join("${logs_dir}", "health-checks.log")
 }
 
+func generateHealthLoggingPingComponent(ctx context.Context) []fluentbit.Component {
+	return []fluentbit.Component{
+		{
+			Kind: "INPUT",
+			Config: map[string]string{
+				"Name":          "dummy",
+				"Tag":           healthLogsTag,
+				"Dummy":         `{"code": "LogPingOpsAgent", "severity": "DEBUG"}`,
+				"Interval_Sec":  "600",
+				"Interval_NSec": "0",
+			},
+		},
+	}
+}
+
 // This method creates a file input for the `health-checks.log` file, a json parser for the
 // structured logs and a grep filter to avoid ingesting previous content of the file.
 func generateHealthChecksLogsComponents(ctx context.Context) []fluentbit.Component {
@@ -211,13 +226,20 @@ func generateSelfLogsProcessingComponents(ctx context.Context) []fluentbit.Compo
 	}.Components(ctx, opsAgentLogsMatch, "self-logs-processing")
 }
 
-func generateSelfLogsComponents(ctx context.Context, userAgent string) []fluentbit.Component {
+func (uc *UnifiedConfig) generateSelfLogsComponents(ctx context.Context, userAgent string) []fluentbit.Component {
 	out := make([]fluentbit.Component, 0)
+	out = append(out, generateHealthLoggingPingComponent(ctx)...)
 	out = append(out, generateFluentBitSelfLogsComponents(ctx)...)
 	out = append(out, generateHealthChecksLogsComponents(ctx)...)
 	out = append(out, generateSelfLogsSamplingComponents(ctx)...)
 	out = append(out, generateStructuredHealthLogsComponents(ctx)...)
 	out = append(out, generateSelfLogsProcessingComponents(ctx)...)
-	out = append(out, stackdriverOutputComponent(strings.Join([]string{fluentBitSelfLogsTag, healthLogsTag}, "|"), userAgent, ""))
+
+	outputLogNames := []string{healthLogsTag}
+	if uc.Global.GetDefaultSelfLogFileCollection() {
+		// Ingest fluent-bit logs to Cloud Logging if enabled.
+		outputLogNames = append(outputLogNames, fluentBitSelfLogsTag)
+	}
+	out = append(out, stackdriverOutputComponent(ctx, strings.Join(outputLogNames, "|"), userAgent, "", ""))
 	return out
 }

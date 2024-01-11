@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -72,6 +73,7 @@ type CustomFeatures interface {
 // tag will be used instead of value from UnifiedConfig.
 func ExtractFeatures(uc *UnifiedConfig) ([]Feature, error) {
 	allFeatures := getOverriddenDefaultPipelines(uc)
+	allFeatures = append(allFeatures, getSelfLogCollection(uc))
 
 	var err error
 	var tempTrackedFeatures []Feature
@@ -214,6 +216,9 @@ func trackingFeatures(c reflect.Value, md metadata, feature Feature) ([]Feature,
 		for i := 0; i < t.NumField(); i++ {
 			// Get the field, returns https://golang.org/pkg/reflect/#StructField
 			field := t.Field(i)
+			if !field.IsExported() {
+				continue
+			}
 			// Type field name is part of the ConfigComponent definition.
 			// All user visible component inlines that component, this field can help
 			// us assert that a certain component is enabled.
@@ -430,6 +435,21 @@ func getMetadata(field reflect.StructField) metadata {
 		// See this for more details: https://pkg.go.dev/gopkg.in/yaml.v2#Unmarshal
 		yamlTag: yamlTags[0],
 	}
+}
+
+func getSelfLogCollection(uc *UnifiedConfig) Feature {
+	feature := Feature{
+		Module: "global",
+		Kind:   "default",
+		Type:   "self_log",
+		Key:    []string{"default_self_log_file_collection"},
+		Value:  "true",
+	}
+	if uc.Global != nil {
+		feature.Value = strconv.FormatBool(uc.Global.GetDefaultSelfLogFileCollection())
+	}
+
+	return feature
 }
 
 func getOverriddenDefaultPipelines(uc *UnifiedConfig) []Feature {

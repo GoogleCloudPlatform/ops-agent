@@ -1,9 +1,20 @@
-- date: now
-  hello: world
-  message: foo
-- date: now
-  hello: world
-  message: goo
-- date: now
-  hello: world
-  message: yes maybe no
+- entries:
+  - jsonPayload:
+      hello: world
+      message: foo
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      hello: world
+      message: goo
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      hello: world
+      message: yes maybe no
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance

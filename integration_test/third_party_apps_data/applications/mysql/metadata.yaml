@@ -39,6 +39,7 @@ platforms_to_skip:
   # MySQL is not currently supported on various distros.
   - debian-11-arm64
   - debian-12
+  - debian-12-arm64
   - sles-15-arm64
 supported_app_version: ["8.0", "5.7"]
 expected_metrics:

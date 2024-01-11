@@ -36,7 +36,7 @@ AGENT_PACKAGES_IN_GCS, for details see README.md.
 
 	PROJECT=dev_project \
 	ZONES=us-central1-b \
-	PLATFORMS=debian-10,centos-8,rhel-8-1-sap-ha,sles-15,ubuntu-2004-lts,windows-2016,windows-2019 \
+	PLATFORMS=debian-10,centos-8,rhel-8-2-sap-ha,sles-15,ubuntu-2004-lts,windows-2016,windows-2019 \
 	go test -v ops_agent_test.go \
 	  -test.parallel=1000 \
 	  -tags=integration_test \
@@ -157,10 +157,11 @@ const (
 	// take before it is forcibly killed.
 	SuggestedTimeout = 2 * time.Hour
 
-	// QueryMaxAttempts is the default number of retries when calling WaitForLog.
+	// QueryMaxAttempts is the default number of retries when calling WaitForLog and WaitForMetricSeries.
 	// Retries are spaced by 5 seconds, so 80 retries denotes 6 minutes 40 seconds total.
 	QueryMaxAttempts              = 80 // 6 minutes 40 seconds total.
 	queryMaxAttemptsMetricMissing = 5  // 25 seconds total.
+	queryMaxAttemptsLogMissing    = 5  // 25 seconds total.
 	queryBackoffDuration          = 5 * time.Second
 
 	// traceQueryDerate is the number of backoff durations to wait before retrying a trace query.
@@ -331,7 +332,7 @@ func imageProject(family string) (string, error) {
 		return "opensuse-cloud", nil
 	case "sles":
 		// There are a few different cases:
-		// "sles-15" and "sles-15-sp1-sap".
+		// "sles-15" and "sles-15-sp*-sap".
 		if strings.Contains(family, "-sap") {
 			return "suse-sap-cloud", nil
 		}
@@ -374,6 +375,11 @@ func SetGcloudPath(path string) {
 // IsWindows returns whether the given platform is a version of Windows (including Microsoft SQL Server).
 func IsWindows(platform string) bool {
 	return strings.HasPrefix(platform, "windows-") || strings.HasPrefix(platform, "sql-")
+}
+
+// IsWindowsCore returns whether the given platform is a version of Windows core.
+func IsWindowsCore(platform string) bool {
+	return strings.HasPrefix(platform, "windows-") && strings.HasSuffix(platform, "-core")
 }
 
 // PlatformKind returns "linux" or "windows" based on the given platform.
@@ -678,6 +684,32 @@ func QueryLog(ctx context.Context, logger *log.Logger, vm *VM, logNameRegex stri
 	return nil, fmt.Errorf("QueryLog() failed: %s not found, exhausted retries", logNameRegex)
 }
 
+// AssertLogMissing looks in the logging backend for a log matching the given query
+// and returns success if no data is found. To consider possible transient errors
+// while querying the backend we make queryMaxAttemptsMetricMissing query attempts.
+func AssertLogMissing(ctx context.Context, logger *log.Logger, vm *VM, logNameRegex string, window time.Duration, query string) error {
+	for attempt := 1; attempt <= queryMaxAttemptsLogMissing; attempt++ {
+		found, _, err := hasMatchingLog(ctx, logger, vm, logNameRegex, window, query)
+		if err == nil {
+			if found {
+				return fmt.Errorf("AssertLogMissing(log=%q): %v failed: unexpectedly found data for log", query, err)
+			}
+			// Success
+			return nil
+		}
+		logger.Printf("Query returned found=%v, err=%v, attempt=%d", found, err, attempt)
+		if err != nil && !strings.Contains(err.Error(), "Internal error encountered") {
+			// A non-retryable error.
+			return fmt.Errorf("AssertLogMissing() failed: %v", err)
+		}
+		// found was false, or we hit a retryable error.
+		time.Sleep(queryBackoffDuration)
+	}
+
+	// Success
+	return nil
+}
+
 // CommandOutput holds the textual output from running a subprocess.
 type CommandOutput struct {
 	Stdout string
@@ -788,13 +820,15 @@ func wrapPowershellCommand(command string) (string, error) {
 
 // RunRemotely runs a command on the provided VM.
 // The command should be a shell command if the VM is Linux, or powershell if the VM is Windows.
-// Returns the combined stdout+stderr as a string, plus an error if there was
-// a problem.
+// Returns the stdout and stderr, plus an error if there was a problem.
 //
 // 'command' is what to run on the machine. Example: "cat /tmp/foo; echo hello"
 // For extremely long commands, use RunScriptRemotely instead.
 // 'stdin' is what to supply to the command on stdin. It is usually "".
 // TODO: Remove the stdin parameter, because it is hardly used.
+//
+// When making changes to this function, please test them by running
+// gce_testing_test.go (manually).
 func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, command string) (_ CommandOutput, err error) {
 	logger.Printf("Running command remotely: %v", command)
 	defer func() {
@@ -833,7 +867,9 @@ func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, 
 // a "Storage Object Viewer" and "Storage Object Creator" on the bucket.
 func UploadContent(ctx context.Context, logger *log.Logger, vm *VM, content io.Reader, remotePath string) (err error) {
 	defer func() {
-		logger.Printf("Uploading file finished with err=%v", err)
+		if err != nil {
+			logger.Printf("Uploading file finished with err=%v", err)
+		}
 	}()
 	object := storageClient.Bucket(transfersBucket).Object(path.Join(vm.Name, remotePath))
 	writer := object.NewWriter(ctx)
@@ -902,7 +938,7 @@ func envVarMapToPowershellPrefix(env map[string]string) string {
 // $ErrorActionPreference = 'Stop'
 // This will cause a broader class of errors to be reported as an error (nonzero exit code)
 // by powershell.
-func RunScriptRemotely(ctx context.Context, logger *logging.DirectoryLogger, vm *VM, scriptContents string, flags []string, env map[string]string) (CommandOutput, error) {
+func RunScriptRemotely(ctx context.Context, logger *log.Logger, vm *VM, scriptContents string, flags []string, env map[string]string) (CommandOutput, error) {
 	var quotedFlags []string
 	for _, flag := range flags {
 		quotedFlags = append(quotedFlags, fmt.Sprintf("'%s'", flag))
@@ -913,21 +949,29 @@ func RunScriptRemotely(ctx context.Context, logger *logging.DirectoryLogger, vm 
 		// Use a UUID for the script name in case RunScriptRemotely is being
 		// called concurrently on the same VM.
 		scriptPath := "C:\\" + uuid.NewString() + ".ps1"
-		if err := UploadContent(ctx, logger.ToFile("file_uploads.txt"), vm, strings.NewReader(scriptContents), scriptPath); err != nil {
+		if err := UploadContent(ctx, logger, vm, strings.NewReader(scriptContents), scriptPath); err != nil {
 			return CommandOutput{}, err
 		}
 		// powershell -File seems to drop certain kinds of errors:
 		// https://stackoverflow.com/a/15779295
 		// In testing, adding $ErrorActionPreference = 'Stop' to the start of each
 		// script seems to work around this completely.
-		return RunRemotely(ctx, logger.ToMainLog(), vm, "", envVarMapToPowershellPrefix(env)+"powershell -File "+scriptPath+" "+flagsStr)
+		//
+		// To test changes to this command, please run gce_testing_test.go (manually).
+		return RunRemotely(ctx, logger, vm, "", envVarMapToPowershellPrefix(env)+"powershell -File "+scriptPath+" "+flagsStr)
 	}
 	scriptPath := uuid.NewString() + ".sh"
 	// Write the script contents to <UUID>.sh, then tell bash to execute it with -x
 	// to print each line as it runs.
 	// Use a UUID for the script name in case RunScriptRemotely is being called
 	// concurrently on the same VM.
-	return RunRemotely(ctx, logger.ToMainLog(), vm, scriptContents, "cat - > "+scriptPath+" && sudo "+envVarMapToBashPrefix(env)+"bash -x "+scriptPath+" "+flagsStr)
+	//
+	// Note: if we ever decide to support a stdin parameter to this function, we can
+	// accomplish that by splitting the below command into two RunRemotely() calls:
+	// one to put scriptContents into a file and another to execute the script.
+	//
+	// To test changes to this command, please run gce_testing_test.go (manually).
+	return RunRemotely(ctx, logger, vm, scriptContents, "cat - > "+scriptPath+" && sudo "+envVarMapToBashPrefix(env)+"bash -x "+scriptPath+" "+flagsStr)
 }
 
 // MapToCommaSeparatedList converts a map of key-value pairs into a form that
@@ -984,8 +1028,6 @@ func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM) error {
 var (
 	overriddenImageFamilies = map[string]string{
 		"opensuse-leap-15-4": "opensuse-leap-15-4-v20230603-x86-64",
-		// TODO(b/288286057): remove this override once the 3P app tests are working with newer images.
-		"sles-15": "sles-15-sp4-v20230322-x86-64",
 	}
 )
 
@@ -1305,6 +1347,8 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 			strings.Contains(err.Error(), "Internal error") ||
 			// Instance creation can also fail due to service unavailability.
 			strings.Contains(err.Error(), "currently unavailable") ||
+			// windows-*-core instances sometimes fail to be ssh-able: b/305721001
+			(IsWindowsCore(options.Platform) && strings.Contains(err.Error(), windowsStartupFailedMessage)) ||
 			// SLES instances sometimes fail to be ssh-able: b/186426190
 			(IsSUSE(options.Platform) && strings.Contains(err.Error(), startupFailedMessage)) ||
 			strings.Contains(err.Error(), prepareSLESMessage)
@@ -1678,6 +1722,8 @@ func FetchMetadata(ctx context.Context, logger *log.Logger, vm *VM) (map[string]
 const (
 	// Retry errors that look like b/186426190.
 	startupFailedMessage = "waitForStartLinux() failed: waiting for startup timed out"
+	// Retry errors that look like b/305721001.
+	windowsStartupFailedMessage = "waitForStartWindows() failed: ran out of attempts waiting for dummy command to run."
 )
 
 func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error {
@@ -1696,7 +1742,7 @@ func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error 
 
 	backoffPolicy := backoff.WithContext(backoff.NewConstantBackOff(vmInitBackoffDuration), ctx)
 	if err := backoff.Retry(printFoo, backoffPolicy); err != nil {
-		return fmt.Errorf("waitForStartWindows() failed: ran out of attempts waiting for dummy command to run. err=%v", err)
+		return fmt.Errorf("%s err=%v", windowsStartupFailedMessage, err)
 	}
 	return nil
 }
@@ -1800,6 +1846,8 @@ func logLocation(logRootDir, testName string) string {
 // t.Name() inside the directory TEST_UNDECLARED_OUTPUTS_DIR.
 // If creating the logger fails, it will abort the test.
 // At the end of the test, the logger will be cleaned up.
+// TODO: Move this function along with logLocation() into the agents package,
+// since nothing else in this file depends on DirectoryLogger anymore.
 func SetupLogger(t *testing.T) *logging.DirectoryLogger {
 	t.Helper()
 	name := strings.Replace(t.Name(), "/", "_", -1)

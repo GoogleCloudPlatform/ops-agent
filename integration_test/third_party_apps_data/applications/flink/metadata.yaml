@@ -21,6 +21,7 @@ description: |-
 platforms_to_skip:
   # Flink only supports Java 11, which has no installation candidate for Debian 12
   - debian-12
+  - debian-12-arm64
 supported_app_version: ["1.12.5", "1.13.6", "1.14.4"]
 configure_integration: ""
 expected_metrics:
