@@ -28,6 +28,7 @@ logging:
           static_value: world
           omit_if: jsonPayload.omitted =~ "(?!foo)bar"
   service:
+    experimental_otel_logging: true
     pipelines:
       p1:
         receivers: [sample_logs]
