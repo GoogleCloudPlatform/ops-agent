@@ -415,7 +415,7 @@ func lookupMetric(ctx context.Context, logger *log.Logger, vm *VM, metric string
 	}
 
 	if isPrometheus {
-		filters = append(filters, fmt.Sprintf(`resource.labels.namespace = "%d"`, vm.ID))
+		filters = append(filters, fmt.Sprintf(`resource.labels.namespace = "%d/%s"`, vm.ID, vm.Name))
 	} else {
 		filters = append(filters, fmt.Sprintf(`resource.labels.instance_id = "%d"`, vm.ID))
 	}

@@ -541,7 +541,7 @@ receivers:
             instance_name: test-instance-name
             location: test-zone
             machine_type: test-machine-type
-            namespace: test-instance-id
+            namespace: test-instance-id/test-instance-name
     preserve_untyped: true
 service:
   pipelines:
