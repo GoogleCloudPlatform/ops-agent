@@ -1,0 +1,19 @@
+distros:
+- name: bookworm_x86_64
+  architecture: x86_64
+  test-distros:
+  - representative:
+    - debian-12
+- name: windows_x86_64
+  architecture: x86_64
+  test-distros:
+  - representative:
+    - windows-2016-core
+    - windows-2022
+  - exhaustive:
+    - windows-2016
+    - windows-2016-core
+    - windows-2019
+    - windows-2019-core
+    - windows-2022
+    - windows-2022-core
