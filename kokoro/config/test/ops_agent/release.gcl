@@ -1,7 +1,7 @@
 import 'common.gcl' as common
 import '../image_lists.gcl' as image_lists
 
-_parse_distro = lambda tag: {
+local _parse_distro = lambda tag: {
   parts = split(tag, '/')
   ret = {
     distro = parts[3]
@@ -11,7 +11,7 @@ _parse_distro = lambda tag: {
 
 config build = common.ops_agent_test {
   params {
-    local _distro_arch = _parse_distro(params.environment._LOUHI_TAG_NAME)
+    local _distro_arch = _parse_distro(env_vars['_LOUHI_TAG_NAME'])
     platforms = image_lists.get(_distro_arch.distro + '_' + _distro_arch.arch, 'invalid_distro').release
     arch = _distro_arch.arch
 
