@@ -49,18 +49,16 @@ install_dcgm() {
 }
 
 try_install() {
+    # Export all functions for the bash subprocess
+    eval "$(declare -F | sed 's/ -f / -fx /')"
+    export VERSION_ID=$VERSION_ID
     for install_method in "$@"; do
         echo "Installing NVIDIA driver with $install_method..."
-        # Temporarily disable the "-e" option so that failures in the function
-        # won't cause this script to exit; also run the installation method in a
-        # subshell with -e so that the function itself will exit immediately if 
-        # any command encounters error
-        set +e ; ( set -e; $install_method ) ; exit_code=$?
-        set -e
-        if [ $exit_code -eq 0 ]; then
+        # Can't use a subshell because of https://lists.gnu.org/archive/html/bug-bash/2012-12/msg00094.html
+        bash -$- -c $install_method && {
             echo "NVIDIA driver has been installed successfully with $install_method."
             return 0
-        fi
+        }
     done
     echo "NVIDIA driver cannot be installed; all installation methods failed."
     return 1
@@ -89,7 +87,7 @@ handle_common() {
 
     remove_driver_package() {
         # Ref: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#removing-cuda-toolkit-and-driver
-        sudo dnf -y module remove --all nvidia-driver
+        sudo yum -y module remove --all nvidia-driver
     }
 }
 
