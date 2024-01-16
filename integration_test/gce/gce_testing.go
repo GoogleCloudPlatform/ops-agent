@@ -1085,7 +1085,7 @@ func addFrameworkLabels(inputLabels map[string]string, timeToLive string) (map[s
 
 	parsedTTL, err := time.ParseDuration(timeToLive)
 	if err != nil {
-		return fmt.Errorf("Could not parse TTL duration %q: %w", timeToLive, err)
+		return nil, fmt.Errorf("Could not parse TTL duration %q: %w", timeToLive, err)
 	}
 
 	labelsCopy := map[string]string{
