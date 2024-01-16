@@ -1,12 +1,74 @@
 distros:
-- name: bookworm_x86_64
-  architecture: x86_64
+- name: bookworm
+  architectures:
+  - x86_64
+  - aarch64
+  test_distros:
+  - representative:
+    - arch: x86_64
+      images:
+      - foo1
+    - arch: aarch64
+      images:
+      - foo1
+  - exhaustive:
+    - arch: x86_64
+      images:
+      - foo1
+    - arch: aarch64
+      images:
+      - foo1
+- name: bulleye
+  architectures:
+  - x86_64
+  - aarch64
+- name: buster
+  architectures:
+  - x86_64
+- name: centos7
+  architectures:
+  - x86_64
+- name: focal
+  architectures:
+  - x86_64
+  - aarch64
+- name: jammy
+  architectures:
+  - x86_64
+  - aarch64
+- name: lunar
+  architectures:
+  - x86_64
+- name: mantic
+  architectures:
+  - x86_64
+  - aarch64
+- name: rockylinux8
+  architectures:
+  - x86_64
+- name: rockylinux9
+  architectures:
+  - x86_64
+  - aarch64
+- name: sles12
+  architectures:
+  - x86_64
+- name: sles15
+  architectures:
+  - x86_64
+  - aarch64
+- name: stretch
+  architectures:
+  - x86_64
+- name: windows
+  architectures:
+  - x86_64
   test-distros:
   - representative:
     - debian-12
 - name: windows_x86_64
   architecture: x86_64
-  test-distros:
+  test_distros:
   - representative:
     - windows-2016-core
     - windows-2022
