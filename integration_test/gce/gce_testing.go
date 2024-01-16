@@ -1078,8 +1078,26 @@ func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map
 	return metadataCopy, nil
 }
 
-func addFrameworkLabels(inputLabels map[string]string) (map[string]string, error) {
-	labelsCopy := make(map[string]string)
+func addFrameworkLabels(inputLabels map[string]string, timeToLive string) (map[string]string, error) {
+	if timeToLive == "" {
+		timeToLive = "3h"
+	}
+
+	parsedTTL, err := time.ParseDuration(timeToLive)
+	if err != nil {
+		return fmt.Errorf("Could not parse TTL duration %q: %w", timeToLive, err)
+	}
+
+	labelsCopy := map[string]string{
+		// Attach labels to automate cleanup. This uses
+		// http://go/sdi-integ-test#automated-vm-cleanup to do the cleanup.
+		// --max-run-duration was attempted in
+		// github.com/GoogleCloudPlatform/ops-agent/pull/1574, but it hangs and/or
+		// OOMs sometimes.
+		"env": "test",
+		"ttl": strconv.Itoa(int(parsedTTL / time.Minute)), // minutes
+	}
+
 	for k, v := range inputLabels {
 		labelsCopy[k] = v
 	}
@@ -1164,7 +1182,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	if err != nil {
 		return nil, fmt.Errorf("attemptCreateInstance() could not construct valid metadata: %v", err)
 	}
-	newLabels, err := addFrameworkLabels(options.Labels)
+	newLabels, err := addFrameworkLabels(options.Labels, options.TimeToLive)
 	if err != nil {
 		return nil, fmt.Errorf("attemptCreateInstance() could not construct valid labels: %v", err)
 	}
@@ -1187,8 +1205,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	}
 
 	args := []string{
-		// "beta" is needed for --max-run-duration below.
-		"beta", "compute", "instances", "create", vm.Name,
+		"compute", "instances", "create", vm.Name,
 		"--project=" + vm.Project,
 		"--zone=" + vm.Zone,
 		"--machine-type=" + vm.MachineType,
@@ -1216,11 +1233,6 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		// gateway that is configured in our testing project.
 		args = append(args, "--no-address")
 	}
-	ttl := options.TimeToLive
-	if ttl == "" {
-		ttl = "3h"
-	}
-	args = append(args, "--max-run-duration="+ttl, "--instance-termination-action=DELETE", "--provisioning-model=STANDARD")
 	args = append(args, options.ExtraCreateArguments...)
 
 	output, err := RunGcloud(ctx, logger, "", args)
