@@ -79,13 +79,28 @@ function set_platforms() {
   if [ -n "${PLATFORMS}" ]; then
     return 0
   fi
+  # if _LOUHI_TAG_NAME is defined, set TARGET and ARCH env vars by parsing it.
+  # Example value: louhi/2.46.0/foobar/windows/x86_64/start
+  if [ -n "${_LOUHI_TAG_NAME}" ]; then
+    local split_tag=(${IN//;/ })
+    TARGET=${arrIN[3]}
+    ARCH=${arrIN[4]}
+  fi
   # if TARGET is not set, return an error
   if [ -z "${TARGET}" ]; then
-    echo "At least one of TARGET/PLATFORMS must be set" 1>&2
+    echo "At least one of TARGET/PLATFORMS must be set." 1>&2
     return 1
   fi
-  # handle _LOUHI_TAG somewhere
-  platforms_partial=$(yaml project.yaml "['distros']['${TARGET}']['test_distros']['representative']")
-  # base is representative in yaml
-  # if not presubmit job, add on exhaustive distros
+  # if ARCH is not set, return an error
+  if [ -z "${ARCH}" ]; then
+    echo "If TARGET is set, ARCH must be as well." 1>&2
+    return 1
+  fi
+  # At minimum, PLATFORMS will be the distros from "representative" for TARGET/ARCH in projects.yaml.
+  local platforms=$(yaml project.yaml "['targets']['${TARGET}']['architectures']['${ARCH}']['representative']")
+  # If not a presubmit job, add the exhaustive list of test distros.
+  if ["${KOKORO_ROOT_JOB_TYPE:-$KOKORO_JOB_TYPE}" != PRESUBMIT_*]; then
+    platforms="${platforms},$(yaml project.yaml "['targets']['${TARGET}']['architectures']['${ARCH}']['exhaustive'])" | true
+  fi
+  PLATFORMS=${platforms}
 }
