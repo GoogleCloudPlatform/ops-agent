@@ -66,3 +66,26 @@ function track_flakiness()
   export_to_sponge_config "ng3_test_type" "INTEGRATION"
   export_to_sponge_config "ng3_sponge_url" "https://fusion2.corp.google.com/invocations/${KOKORO_BUILD_ID}"
 }
+
+# A helper for parsing YAML files.
+# Ex: VALUE=$(yaml ~/my_yaml_file.yaml "['a_key']")
+function yaml() {
+  python3 -c "import yaml;f=yaml.safe_load(open('$1'))$2;print(','.join(str(i) for i in f) if type(f)==list else f);"
+}
+
+# This function expects to be run at the root of the git repo.
+function set_platforms() {
+  # if PLATFORMS is defined, do nothing
+  if [ -n "${PLATFORMS}" ]; then
+    return 0
+  fi
+  # if TARGET is not set, return an error
+  if [ -z "${TARGET}" ]; then
+    echo "At least one of TARGET/PLATFORMS must be set" 1>&2
+    return 1
+  fi
+  # handle _LOUHI_TAG somewhere
+  platforms_partial=$(yaml project.yaml "['distros']['${TARGET}']['test_distros']['representative']")
+  # base is representative in yaml
+  # if not presubmit job, add on exhaustive distros
+}
