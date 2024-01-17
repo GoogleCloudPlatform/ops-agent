@@ -85,7 +85,7 @@ function set_platforms() {
   local platforms=$(yaml project.yaml "['targets']['${TARGET}']['architectures']['${ARCH}']['representative']")
   # If not a presubmit job, add the exhaustive list of test distros.
   if ["${KOKORO_ROOT_JOB_TYPE:-$KOKORO_JOB_TYPE}" != PRESUBMIT_*]; then
-    platforms="${platforms},$(yaml project.yaml "['targets']['${TARGET}']['architectures']['${ARCH}']['exhaustive']")" | true
+    platforms=${platforms},$(yaml project.yaml "['targets']['${TARGET}']['architectures']['${ARCH}']['exhaustive']") || true
   fi
   PLATFORMS="${platforms}"
 }
