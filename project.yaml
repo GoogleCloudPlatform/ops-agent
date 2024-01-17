@@ -5,77 +5,208 @@ distros:
   - aarch64
   test_distros:
   - representative:
-    - arch: x86_64
+    - architecture: x86_64
       images:
-      - foo1
-    - arch: aarch64
+      - debian-12
+    - architecture: aarch64
       images:
-      - foo1
-  - exhaustive:
-    - arch: x86_64
-      images:
-      - foo1
-    - arch: aarch64
-      images:
-      - foo1
-- name: bulleye
+      - debian-12-arm64
+  # - exhaustive:
+  #   - architecture: x86_64
+  #     images:
+  #     - foo1
+  #   - architecture: aarch64
+  #     images:
+  #     - foo1
+- name: bullseye
   architectures:
   - x86_64
   - aarch64
+  test_distros:
+  - representative:
+    - architecture: x86_64
+      images:
+      - debian-11
+    - architecture: aarch64
+      images:
+      - debian-11-arm64
 - name: buster
   architectures:
   - x86_64
+  test_distros:
+  - representative:
+    - architecture: x86_64
+      images:
+      - debian-10
 - name: centos7
   architectures:
   - x86_64
+  test_distros:
+  - representative:
+    - architecture: x86_64
+      images:
+      - centos-7
+  - exhaustive:
+    - architecture: x86_64
+      images:
+      - rhel-7
+      - rhel-7-9-sap-ha
 - name: focal
   architectures:
   - x86_64
   - aarch64
+  test_distros:
+  - representative:
+    - architecture: x86_64
+      images:
+      - ubuntu-minimal-2004-lts
+    - architecture: aarch64
+      images:
+      - ubuntu-minimal-2004-lts-arm64
+  - exhaustive:
+    - architecture: x86_64
+      images:
+      - ubuntu-2004-lts
+    - architecture: aarch64
+      images:
+      - ubuntu-2004-lts-arm64
 - name: jammy
   architectures:
   - x86_64
   - aarch64
+  test_distros:
+  - representative:
+    - architecture: x86_64
+      images:
+      - ubuntu-minimal-2204-lts
+    - architecture: aarch64
+      images:
+      - ubuntu-minimal-2204-lts-arm64
+  - exhaustive:
+    - architecture: x86_64
+      images:
+      - ubuntu-2204-lts
+    - architecture: aarch64
+      images:
+      - ubuntu-2204-lts-arm64
 - name: lunar
   architectures:
   - x86_64
+  test_distros:
+  - representative:
+    - architecture: x86_64
+      images:
+      - ubuntu-2304-amd64
+  - exhaustive:
+    - architecture: x86_64
+      images:
+      - ubuntu-minimal-2304-amd64
 - name: mantic
   architectures:
   - x86_64
   - aarch64
+  test_distros:
+  - representative:
+    - architecture: x86_64
+      images:
+      - ubuntu-minimal-2310-amd64
+    - architecture: aarch64
+      images:
+      - ubuntu-minimal-2310-arm64
+  - exhaustive:
+    - architecture: x86_64
+      images:
+      - ubuntu-2310-amd64
+    - architecture: aarch64
+      images:
+      - ubuntu-2310-arm64
 - name: rockylinux8
   architectures:
   - x86_64
+  test_distros:
+  - representative:
+    - architecture: x86_64
+      images:
+      - rocky-linux-8
+  - exhaustive:
+    - architecture: x86_64
+      images:
+      - rhel-8
+      - rhel-8-2-sap-ha
+      - rhel-8-4-sap-ha
+      - rhel-8-6-sap-ha
 - name: rockylinux9
   architectures:
   - x86_64
   - aarch64
+  test_distros:
+  - representative:
+    - architecture: x86_64
+      images:
+      - rocky-linux-9
+    - architecture: aarch64
+      images:
+      - rocky-linux-9-arm64
+  - exhaustive:
+    - architecture: x86_64
+      images:
+      - rhel-9
+    - architecture: aarch64
+      images:
+      - rhel-9-arm64
 - name: sles12
   architectures:
   - x86_64
+  test_distros:
+  - representative:
+    - architecture: x86_64
+      images:
+      - sles-12
+  - exhaustive:
+    - architecture: x86_64
+      images:
+      - sles-12-sp5-sap
 - name: sles15
   architectures:
   - x86_64
   - aarch64
-- name: stretch
-  architectures:
-  - x86_64
+  test_distros:
+  - representative:
+    - architecture: x86_64
+      images:
+      - sles-15
+    - architecture: aarch64
+      images:
+      - sles-15-arm64
+  - exhaustive:
+    - architecture: x86_64
+      images:
+      - sles-15-sp2-sap
+      - sles-15-sp5-sap
+      - opensuse-leap
+      - opensuse-leap-15-4
+    - architecture: aarch64
+      images:
+      - opensuse-leap-arm64
 - name: windows
   architectures:
   - x86_64
-  test-distros:
+  test_distros:
   - representative:
-    - debian-12
+    - architecture: x86_64
+      images:
+      - windows-2016-core
+      - sql-std-2019-win-2019
+      - windows-2022
+  - exhaustive:
+    - architecture: x86_64
+      images:
+      - windows-2016
+      - windows-2019
+      - windows-2019-core
+      - windows-2022-core
 - name: windows_x86_64
   architecture: x86_64
   test_distros:
   - representative:
-    - windows-2016-core
-    - windows-2022
   - exhaustive:
-    - windows-2016
-    - windows-2016-core
-    - windows-2019
-    - windows-2019-core
-    - windows-2022
-    - windows-2022-core
