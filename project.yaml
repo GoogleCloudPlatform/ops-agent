@@ -205,8 +205,3 @@ distros:
       - windows-2019
       - windows-2019-core
       - windows-2022-core
-- name: windows_x86_64
-  architecture: x86_64
-  test_distros:
-  - representative:
-  - exhaustive:
