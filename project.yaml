@@ -11,13 +11,6 @@ distros:
     - architecture: aarch64
       images:
       - debian-12-arm64
-  # - exhaustive:
-  #   - architecture: x86_64
-  #     images:
-  #     - foo1
-  #   - architecture: aarch64
-  #     images:
-  #     - foo1
 - name: bullseye
   architectures:
   - x86_64
