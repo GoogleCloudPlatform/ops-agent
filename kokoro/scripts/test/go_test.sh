@@ -65,7 +65,7 @@ function set_platforms() {
     return 0
   fi
   # if _LOUHI_TAG_NAME is defined, set TARGET and ARCH env vars by parsing it.
-  # Example value: louhi/2.46.0/foobar/windows/x86_64/start
+  # Example value: louhi/2.46.0/shortref/windows/x86_64/start
   if [ -n "${_LOUHI_TAG_NAME}" ]; then
     local split_tag=(${_LOUHI_TAG_NAME//\// })
     TARGET="${split_tag[3]}"
