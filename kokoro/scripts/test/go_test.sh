@@ -72,8 +72,8 @@ function set_platforms() {
   # if _LOUHI_TAG_NAME is defined, set TARGET and ARCH env vars by parsing it.
   # Example value: louhi/2.46.0/shortref/windows/x86_64/start
   if [[ -n "${_LOUHI_TAG_NAME}" ]]; then
-    TARGET="$(echo -n "${_LOUHI_TAG_NAME} | cut --delimiter="/" --fields=4)"  
-    ARCH="$(echo -n "${_LOUHI_TAG_NAME} | cut --delimiter="/" --fields=5)"  
+    TARGET="$(echo -n "${_LOUHI_TAG_NAME}" | cut --delimiter="/" --fields=4)"
+    ARCH="$(echo -n "${_LOUHI_TAG_NAME}" | cut --delimiter="/" --fields=5)"
   fi
   # if TARGET is not set, return an error
   if [[ -z "${TARGET}" ]]; then
