@@ -50,7 +50,7 @@ if [[ -n "${KOKORO_GITHUB_PULL_REQUEST_NUMBER}" ]]; then  # Per-PR cache
     build_params+=(--cache-from=type=registry,ref="${CACHE}:${DISTRO}_${ARCH}_PR${KOKORO_GITHUB_PULL_REQUEST_NUMBER}")
     build_params+=(--cache-to=type=registry,ref="${CACHE}:${DISTRO}_${ARCH}_PR${KOKORO_GITHUB_PULL_REQUEST_NUMBER}",mode=max)
 fi
-if [[ "${KOKORO_ROOT_JOB_TYPE}" == "CONTINUOUS_INTEGRATION" ]]; then  # 
+if [[ "${KOKORO_ROOT_JOB_TYPE}" == "CONTINUOUS_INTEGRATION" ]]; then  # CI cache
     build_params+=(--cache-to=type=registry,ref="${CACHE}:${DISTRO}_${ARCH}",mode=max)
 fi
 
@@ -59,27 +59,16 @@ docker buildx build . \
   --cache-from=type=registry,ref="${CACHE}:${DISTRO}_${ARCH}" \
   --build-arg BUILDKIT_INLINE_CACHE=1 \
   --progress=plain \
-  --target "${DISTRO}-build" \
-  -t build_image \
+  --target "${DISTRO}" \
+  -o . \
   "${build_params[@]}"
 
-docker history --no-trunc build_image
+cp google-cloud-ops-agent*.${PKGFORMAT} "${RESULT_DIR}/artifacts"
 
-SIGNING_DIR="$(pwd)/kokoro/scripts/build/signing"
 if [[ "${PKGFORMAT}" == "rpm" && "${SKIP_SIGNING}" != "true" ]]; then
   RPM_SIGNING_KEY="${KOKORO_KEYSTORE_DIR}/71565_rpm-signing-key"
+  SIGNING_DIR="$(pwd)/kokoro/scripts/build/signing"
+
   cp "${RPM_SIGNING_KEY}" "${SIGNING_DIR}/signing-key"
+  bash "${SIGNING_DIR}"/sign.sh "${RESULT_DIR}"/artifacts/*.rpm
 fi
-
-docker run \
-  -i \
-  -v "${RESULT_DIR}":/artifacts \
-  -v "${SIGNING_DIR}":/signing \
-  build_image \
-  bash <<EOF
-    cp /google-cloud-ops-agent*.${PKGFORMAT} /artifacts
-
-    if [[ "${PKGFORMAT}" == "rpm" && "${SKIP_SIGNING}" != "true" ]]; then
-      bash /signing/sign.sh /artifacts/*.rpm
-    fi
-EOF
