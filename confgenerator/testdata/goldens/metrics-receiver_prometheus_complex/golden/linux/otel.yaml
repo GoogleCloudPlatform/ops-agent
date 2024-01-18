@@ -500,7 +500,7 @@ receivers:
             instance_name: test-instance-name
             location: test-zone
             machine_type: test-machine-type
-            namespace: test-instance-id
+            namespace: test-instance-id/test-instance-name
       - job_name: drop
         honor_timestamps: true
         scrape_interval: 10s
@@ -560,7 +560,7 @@ receivers:
             instance_name: test-instance-name
             location: test-zone
             machine_type: test-machine-type
-            namespace: test-instance-id
+            namespace: test-instance-id/test-instance-name
     preserve_untyped: true
 service:
   pipelines:
