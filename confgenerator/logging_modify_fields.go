@@ -403,6 +403,13 @@ func (p LoggingProcessorModifyFields) statements(_ context.Context) (ottl.Statem
 			return nil, fmt.Errorf("failed to convert %v to OTTL accessor: %w", outM, err)
 		}
 		statements = statements.Append(ra.SetIf(value, value.IsPresent()))
+		if (slices.Equal(ra, ottl.LValue{"severity_text"})) {
+			// As a special case for severity_text, we need to zero out severity_number to make sure the text takes effect.
+			// TODO: Add a unit test for this.
+			statements = statements.Append(
+				ottl.LValue{"severity_number"}.SetIf(ottl.IntLiteral(0), value.IsPresent()),
+			)
+		}
 
 		if field.omitVar != "" {
 			statements = statements.Append(ra.DeleteIf(ottl.Equals(ottl.LValue{"cache", field.omitVar}, ottl.True())))

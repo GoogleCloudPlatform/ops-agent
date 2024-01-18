@@ -58,6 +58,10 @@ func StringLiteral(v string) Value {
 	return valuef(`%q`, v)
 }
 
+func IntLiteral(v int) Value {
+	return valuef(`%d`, v)
+}
+
 func False() Value {
 	return valuef("false")
 }
