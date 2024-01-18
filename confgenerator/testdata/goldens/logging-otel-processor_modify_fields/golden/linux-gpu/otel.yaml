@@ -481,9 +481,11 @@ processors:
       - delete_key(cache, "__field_9") where (cache != nil and cache["__field_9"] != nil)
       - set(cache["__field_9"], attributes["label3"]) where (attributes != nil and attributes["label3"] != nil)
       - delete_key(cache, "__field_10") where (cache != nil and cache["__field_10"] != nil)
-      - set(cache["__field_10"], body["level"]) where (body != nil and body["level"] != nil)
-      - delete_key(cache, "__field_12") where (cache != nil and cache["__field_12"] != nil)
-      - set(cache["__field_12"], body["trace"]) where (body != nil and body["trace"] != nil)
+      - set(cache["__field_10"], body) where (body != nil)
+      - delete_key(cache, "__field_11") where (cache != nil and cache["__field_11"] != nil)
+      - set(cache["__field_11"], body["level"]) where (body != nil and body["level"] != nil)
+      - delete_key(cache, "__field_13") where (cache != nil and cache["__field_13"] != nil)
+      - set(cache["__field_13"], body["trace"]) where (body != nil and body["trace"] != nil)
       - set(cache["__omit_0"], false)
       - set(cache["__omit_0"], true) where ((body != nil and body["omitted"] != nil) and IsMatch(body["omitted"], "(?i)^-$"))
       - delete_key(body, "move_source") where (body != nil and body["move_source"] != nil)
@@ -525,17 +527,21 @@ processors:
       - set(attributes["label3"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_10"])
+      - set(attributes["text"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_11"])
       - delete_key(cache, "mapped_value") where (cache != nil and cache["mapped_value"] != nil)
       - set(cache["mapped_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - set(cache["mapped_value"], "WARNING") where cache["value"] == "CAUTION"
       - set(cache["mapped_value"], "INFO") where cache["value"] == "I"
       - set(cache["mapped_value"], "WARNING") where cache["value"] == "W"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
+      - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], "spanValue")
       - set(span_id, cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_12"])
+      - set(cache["value"], cache["__field_13"])
       - set(trace_id, cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/sample__logs_0:
     log_statements:

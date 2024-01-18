@@ -50,8 +50,9 @@ var logEntryRootValueMapToOTel = map[string][]string{
 	"severity": {"severity_text"},
 	"logName":  {"attributes", "gcp.log_name"},
 	// TODO: trace and span ID use different encoding
-	"trace":  {"trace_id"},
-	"spanId": {"span_id"},
+	"trace":       {"trace_id"},
+	"spanId":      {"span_id"},
+	"textPayload": {"body"},
 }
 
 var logEntryRootStructMapToOTel = map[string][]string{

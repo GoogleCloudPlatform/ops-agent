@@ -21,6 +21,8 @@ logging:
     simple:
       type: modify_fields
       fields:
+        labels.text:
+          copy_from: textPayload
         jsonPayload.hello:
           static_value: world
         jsonPayload.moved:

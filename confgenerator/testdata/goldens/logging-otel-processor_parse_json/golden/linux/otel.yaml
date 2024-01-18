@@ -472,6 +472,7 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_0"])
       - set(severity_text, cache["value"]) where (cache != nil and cache["value"] != nil)
+      - set(severity_number, 0) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
       - set(cache["__field_0"], body["logging.googleapis.com/sourceLocation"]) where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil)
       - delete_key(body, "logging.googleapis.com/sourceLocation") where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil)
