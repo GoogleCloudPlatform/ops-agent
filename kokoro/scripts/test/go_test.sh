@@ -56,20 +56,24 @@ git config --global --add safe.directory "$(pwd)"
 # A helper for parsing YAML files.
 # Ex: VALUE=$(yaml ~/my_yaml_file.yaml "['a_key']")
 function yaml() {
-  python3 -c "import yaml;f=yaml.safe_load(open('$1'))$2;print(','.join(str(i) for i in f) if type(f)==list else f);"
+  python3 -c "import yaml
+data=yaml.safe_load(open('$1'))$2
+if type(data)==list:
+  print(','.join(str(elem) for elem in data))
+else:
+ print(data)"
 }
 
 function set_platforms() {
   # if PLATFORMS is defined, do nothing
-  if [ -n "${PLATFORMS}" ]; then
+  if [[] -n "${PLATFORMS}" ]]; then
     return 0
   fi
   # if _LOUHI_TAG_NAME is defined, set TARGET and ARCH env vars by parsing it.
   # Example value: louhi/2.46.0/shortref/windows/x86_64/start
   if [ -n "${_LOUHI_TAG_NAME}" ]; then
-    local split_tag=(${_LOUHI_TAG_NAME//\// })
-    TARGET="${split_tag[3]}"
-    ARCH="${split_tag[4]}"
+    TARGET="$(echo -n "${_LOUHI_TAG_NAME} | cut --delimiter="/" --fields=4)"  
+    ARCH="$(echo -n "${_LOUHI_TAG_NAME} | cut --delimiter="/" --fields=5)"  
   fi
   # if TARGET is not set, return an error
   if [ -z "${TARGET}" ]; then

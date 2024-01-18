@@ -95,20 +95,20 @@ targets:
             rhel-8-2-sap-ha
             rhel-8-4-sap-ha
             rhel-8-6-sap-ha
-    rockylinux9
-  architectures:
-    x86_64:
-      test_distros:
-        representative:
-          rocky-linux-9
-        exhaustive:
-          rhel-9
-    aarch64:
-      test_distros:
-        representative:
-          rocky-linux-9-arm64
-        exhaustive:
-          rhel-9-arm64
+  rockylinux9:
+    architectures:
+      x86_64:
+        test_distros:
+          representative:
+            rocky-linux-9
+          exhaustive:
+            rhel-9
+      aarch64:
+        test_distros:
+          representative:
+            rocky-linux-9-arm64
+          exhaustive:
+            rhel-9-arm64
   sles12:
     architectures:
       x86_64:
