@@ -54,6 +54,7 @@ if [[ "${KOKORO_ROOT_JOB_TYPE}" == "CONTINUOUS_INTEGRATION" ]]; then  #
     build_params+=(--cache-to=type=registry,ref="${CACHE}:${DISTRO}_${ARCH}",mode=max)
 fi
 
+docker buildx create --use
 docker buildx build . \
   --cache-from=type=registry,ref="${CACHE}:${DISTRO}_${ARCH}" \
   --build-arg BUILDKIT_INLINE_CACHE=1 \
