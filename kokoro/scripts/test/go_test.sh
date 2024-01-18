@@ -66,7 +66,7 @@ else:
 
 function set_platforms() {
   # if PLATFORMS is defined, do nothing
-  if [[] -n "${PLATFORMS}" ]]; then
+  if [[ -n "${PLATFORMS}" ]]; then
     return 0
   fi
   # if _LOUHI_TAG_NAME is defined, set TARGET and ARCH env vars by parsing it.
