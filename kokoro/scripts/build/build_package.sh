@@ -47,8 +47,8 @@ CACHE="${ARTIFACT_REGISTRY}/stackdriver-test-143416/google-cloud-ops-agent-build
 
 build_params=()
 if [[ -n "${KOKORO_GITHUB_PULL_REQUEST_NUMBER}" ]]; then  # Per-PR cache
-    build_params+=(--cache-from=type=registry,ref="${CACHE}:${DISTRO}_${ARCH}_${KOKORO_GITHUB_PULL_REQUEST_NUMBER}")
-    build_params+=(--cache-to=type=registry,ref="${CACHE}:${DISTRO}_${ARCH}_${KOKORO_GITHUB_PULL_REQUEST_NUMBER}",mode=max)
+    build_params+=(--cache-from=type=registry,ref="${CACHE}:${DISTRO}_${ARCH}_PR${KOKORO_GITHUB_PULL_REQUEST_NUMBER}")
+    build_params+=(--cache-to=type=registry,ref="${CACHE}:${DISTRO}_${ARCH}_PR${KOKORO_GITHUB_PULL_REQUEST_NUMBER}",mode=max)
 fi
 if [[ "${KOKORO_ROOT_JOB_TYPE}" == "CONTINUOUS_INTEGRATION" ]]; then  # 
     build_params+=(--cache-to=type=registry,ref="${CACHE}:${DISTRO}_${ARCH}",mode=max)
