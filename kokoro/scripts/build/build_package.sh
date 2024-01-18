@@ -43,25 +43,26 @@ export_to_sponge_config "PACKAGE_VERSION" "${PKG_VERSION}"
 ARCH="$(docker info --format '{{.Architecture}}')"
 ARTIFACT_REGISTRY="us-docker.pkg.dev"
 docker-credential-gcr configure-docker --registries="${ARTIFACT_REGISTRY}"
-CACHE_LOCATION="${ARTIFACT_REGISTRY}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:${DISTRO}_${ARCH}"
+CACHE="${ARTIFACT_REGISTRY}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache"
 
-DOCKER_BUILDKIT=1 docker build . \
-  --cache-from="${CACHE_LOCATION}" \
+build_params=()
+if [[ -n "${GITHUB_PULL_REQUEST_NUMBER_unified_agents}" ]]; then  # Per-PR cache
+    build_params+=(--cache-from=type=registry,ref="${CACHE}:${DISTRO}_${ARCH}_${GITHUB_PULL_REQUEST_NUMBER_unified_agents}")
+    build_params+=(--cache-to=type=registry,ref="${CACHE}:${DISTRO}_${ARCH}_${GITHUB_PULL_REQUEST_NUMBER_unified_agents}",mode=max)
+fi
+if [[ "${KOKORO_ROOT_JOB_TYPE}" == "CONTINUOUS_INTEGRATION" ]]; then  # 
+    build_params+=(--cache-to=type=registry,ref="${CACHE}:${DISTRO}_${ARCH}",mode=max)
+fi
+
+docker buildx build . \
+  --cache-from=type=registry,ref="${CACHE}:${DISTRO}_${ARCH}" \
   --build-arg BUILDKIT_INLINE_CACHE=1 \
   --progress=plain \
   --target "${DISTRO}-build" \
-  -t build_image
+  -t build_image \
+  "${build_params[@]}"
 
 docker history --no-trunc build_image
-
-# Tell our continuous build to update the cache. Our other builds do not
-# write to any kind of cache, for example a per-PR cache, because the
-# push takes a few minutes and adds little value over just using the continuous
-# build's cache.
-if [[ "${KOKORO_ROOT_JOB_TYPE}" == "CONTINUOUS_INTEGRATION" ]]; then
-  docker image tag build_image "${CACHE_LOCATION}"
-  docker push "${CACHE_LOCATION}"
-fi
 
 SIGNING_DIR="$(pwd)/kokoro/scripts/build/signing"
 if [[ "${PKGFORMAT}" == "rpm" && "${SKIP_SIGNING}" != "true" ]]; then
