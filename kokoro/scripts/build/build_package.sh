@@ -46,9 +46,9 @@ docker-credential-gcr configure-docker --registries="${ARTIFACT_REGISTRY}"
 CACHE="${ARTIFACT_REGISTRY}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache"
 
 build_params=()
-if [[ -n "${GITHUB_PULL_REQUEST_NUMBER_unified_agents}" ]]; then  # Per-PR cache
-    build_params+=(--cache-from=type=registry,ref="${CACHE}:${DISTRO}_${ARCH}_${GITHUB_PULL_REQUEST_NUMBER_unified_agents}")
-    build_params+=(--cache-to=type=registry,ref="${CACHE}:${DISTRO}_${ARCH}_${GITHUB_PULL_REQUEST_NUMBER_unified_agents}",mode=max)
+if [[ -n "${KOKORO_GITHUB_PULL_REQUEST_NUMBER}" ]]; then  # Per-PR cache
+    build_params+=(--cache-from=type=registry,ref="${CACHE}:${DISTRO}_${ARCH}_${KOKORO_GITHUB_PULL_REQUEST_NUMBER}")
+    build_params+=(--cache-to=type=registry,ref="${CACHE}:${DISTRO}_${ARCH}_${KOKORO_GITHUB_PULL_REQUEST_NUMBER}",mode=max)
 fi
 if [[ "${KOKORO_ROOT_JOB_TYPE}" == "CONTINUOUS_INTEGRATION" ]]; then  # 
     build_params+=(--cache-to=type=registry,ref="${CACHE}:${DISTRO}_${ARCH}",mode=max)
