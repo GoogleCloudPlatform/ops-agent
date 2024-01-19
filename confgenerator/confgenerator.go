@@ -195,24 +195,27 @@ func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]
 					return fmt.Errorf("prometheus receivers are incompatible with Ops Agent processors")
 				}
 			}
-			for _, pID := range processorIDs {
+			for _, prID := range processorIDs {
 				var processor OTelProcessor
 				var ok bool
 				if pipelineType == "metrics" {
-					processor, ok = m.Processors[pID]
+					processor, ok = m.Processors[prID]
 				} else if pipelineType == "logs" {
 					var p LoggingProcessor
-					p, ok = l.Processors[pID]
+					p, ok = l.Processors[prID]
 					if ok {
 						processor, ok = p.(OTelProcessor)
+						if !ok {
+							return fmt.Errorf("processor %q not supported in pipeline %q", prID, pID)
+						}
 					}
 				}
 				// TODO: Add trace processors?
 				if !ok {
-					return fmt.Errorf("processor %q not found", pID)
+					return fmt.Errorf("processor %q not found", prID)
 				}
 				if processors, err := processor.Processors(ctx); err != nil {
-					return fmt.Errorf("processor %q has invalid configuration: %w", pID, err)
+					return fmt.Errorf("processor %q has invalid configuration: %w", prID, err)
 				} else {
 					pipeline.Processors = append(pipeline.Processors, processors...)
 				}
