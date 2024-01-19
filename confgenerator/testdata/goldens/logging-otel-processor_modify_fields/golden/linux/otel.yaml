@@ -510,10 +510,10 @@ processors:
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], "spanValue")
-      - set(span_id, cache["value"]) where (cache != nil and cache["value"] != nil)
+      - set(span_id.string, cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_13"])
-      - set(trace_id, cache["value"]) where (cache != nil and cache["value"] != nil)
+      - set(trace_id.string, cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/sample__logs_0:
     log_statements:
       context: log
