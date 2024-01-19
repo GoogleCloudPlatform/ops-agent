@@ -194,7 +194,7 @@ func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.Receiv
 		operators = append(operators, map[string]any{
 			"id":   "record_log_file_path",
 			"type": "move",
-			"from": "body.log.file.path",
+			"from": `attributes["log.file.path"]`,
 			"to":   `attributes["agent.googleapis.com/log_file_path"]`,
 		})
 	}
