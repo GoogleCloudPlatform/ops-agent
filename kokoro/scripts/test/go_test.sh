@@ -53,6 +53,50 @@ track_flakiness
 # Avoids "fatal: detected dubious ownership in repository" errors on Kokoro containers.
 git config --global --add safe.directory "$(pwd)"
 
+# A helper for parsing YAML files.
+# Ex: VALUE=$(yaml ~/my_yaml_file.yaml "['a_key']")
+function yaml() {
+  python3 -c "import yaml
+data=yaml.safe_load(open('$1'))$2
+if type(data)==list:
+  print(','.join(str(elem) for elem in data))
+else:
+ print(data)"
+}
+
+function set_platforms() {
+  # if PLATFORMS is defined, do nothing
+  if [[ -n "${PLATFORMS}" ]]; then
+    return 0
+  fi
+  # if _LOUHI_TAG_NAME is defined, set TARGET and ARCH env vars by parsing it.
+  # Example value: louhi/2.46.0/shortref/windows/x86_64/start
+  if [[ -n "${_LOUHI_TAG_NAME}" ]]; then
+    TARGET="$(echo -n "${_LOUHI_TAG_NAME}" | cut --delimiter="/" --fields=4)"
+    ARCH="$(echo -n "${_LOUHI_TAG_NAME}" | cut --delimiter="/" --fields=5)"
+  fi
+  # if TARGET is not set, return an error
+  if [[ -z "${TARGET}" ]]; then
+    echo "At least one of TARGET/PLATFORMS must be set." 1>&2
+    return 1
+  fi
+  # if ARCH is not set, return an error
+  if [[ -z "${ARCH}" ]]; then
+    echo "If TARGET is set, ARCH must be as well." 1>&2
+    return 1
+  fi
+  # At minimum, PLATFORMS will be the distros from "representative" for TARGET/ARCH in projects.yaml.
+  local platforms=$(yaml project.yaml "['targets']['${TARGET}']['architectures']['${ARCH}']['test_distros']['representative']")
+  # If not a presubmit job, add the exhaustive list of test distros.
+  if ! [[ "${KOKORO_ROOT_JOB_TYPE:-$KOKORO_JOB_TYPE}" =~ ^PRESUBMIT_ ]]; then
+    # ['test_distros']['exhaustive'] is an optional field.
+    platforms=${platforms},$(yaml project.yaml "['targets']['${TARGET}']['architectures']['${ARCH}']['test_distros']['exhaustive']") || true
+  fi
+  PLATFORMS="${platforms}"
+}
+
+set_platforms
+
 # If a built agent was passed in from Kokoro directly, use that.
 if compgen -G "${KOKORO_GFILE_DIR}/result/google-cloud-ops-agent*" > /dev/null; then
   # Upload the agent packages to GCS.
