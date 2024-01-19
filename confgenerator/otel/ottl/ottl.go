@@ -16,6 +16,7 @@ package ottl
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -75,21 +76,29 @@ func Nil() Value {
 }
 
 func (a LValue) Set(b Value) Statements {
-	return Statements{
-		statementf(`set(%s, %s)`, a, b),
-	}
+	return a.SetIf(b, nil)
 }
 
 func (a LValue) SetIfNil(b Value) Statements {
-	return Statements{
-		statementf(`set(%s, %s) where %s == nil`, a, b, a),
-	}
+	return a.SetIf(b, valuef(`%s == nil`, a))
 }
 
 func (a LValue) SetIf(b, condition Value) Statements {
-	return Statements{
-		statementf(`set(%s, %s) where %s`, a, b, condition),
+	var condStr string
+	if condition != nil {
+		condStr = fmt.Sprintf(" where %s", condition)
 	}
+	statements := Statements{
+		statementf(`set(%s, %s)%s`, a, b, condStr),
+	}
+	if (slices.Equal(a, LValue{"severity_text"})) {
+		// As a special case for severity_text, we need to zero out severity_number to make sure the text takes effect.
+		// TODO: Add a unit test for this.
+		statements = statements.Append(
+			LValue{"severity_number"}.SetIf(IntLiteral(0), condition),
+		)
+	}
+	return statements
 }
 
 func (a LValue) MergeMaps(source Value, strategy string) Statements {
