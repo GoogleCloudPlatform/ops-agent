@@ -3,54 +3,54 @@
   - stderr: |
       
       panic: runtime error: invalid memory address or nil pointer dereference
-      [signal SIGSEGV: segmentation violation code=0x1 addr=0x8 pc=0xXX]
+      [signal SIGSEGV: segmentation violation code=0xX addr=0xX pc=0xX]
       
       goroutine N [running]:
       go.opentelemetry.io/collector/pdata/pcommon.ByteSlice.AsRaw(...)
       	go.opentelemetry.io/collector/pdata@v1.0.0/pcommon/generated_byteslice.go:37
       github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector.logMapper.logToSplitEntries(...)
-      	github.com/!google!cloud!platform/opentelemetry-operations-go/exporter/collector@v0.45.0/logs.go:397 +0xXX
+      	github.com/!google!cloud!platform/opentelemetry-operations-go/exporter/collector@v0.45.0/logs.go:397 +0xX
       github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector.logMapper.createEntries(...)
-      	github.com/!google!cloud!platform/opentelemetry-operations-go/exporter/collector@v0.45.0/logs.go:282 +0xXX
+      	github.com/!google!cloud!platform/opentelemetry-operations-go/exporter/collector@v0.45.0/logs.go:282 +0xX
       github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector.(*LogsExporter).PushLogs(...)
-      	github.com/!google!cloud!platform/opentelemetry-operations-go/exporter/collector@v0.45.0/logs.go:199 +0xXX
+      	github.com/!google!cloud!platform/opentelemetry-operations-go/exporter/collector@v0.45.0/logs.go:199 +0xX
       go.opentelemetry.io/collector/exporter/exporterhelper.(*logsRequest).Export(...)
-      	go.opentelemetry.io/collector/exporter@v0.91.0/exporterhelper/logs.go:58 +0xXX
+      	go.opentelemetry.io/collector/exporter@v0.91.0/exporterhelper/logs.go:58 +0xX
       go.opentelemetry.io/collector/exporter/exporterhelper.(*timeoutSender).send(...)
-      	go.opentelemetry.io/collector/exporter@v0.91.0/exporterhelper/timeout_sender.go:38 +0xXX
+      	go.opentelemetry.io/collector/exporter@v0.91.0/exporterhelper/timeout_sender.go:38 +0xX
       go.opentelemetry.io/collector/exporter/exporterhelper.(*baseRequestSender).send(...)
-      	go.opentelemetry.io/collector/exporter@v0.91.0/exporterhelper/common.go:33 +0xXX
+      	go.opentelemetry.io/collector/exporter@v0.91.0/exporterhelper/common.go:33 +0xX
       go.opentelemetry.io/collector/exporter/exporterhelper.(*logsExporterWithObservability).send(...)
-      	go.opentelemetry.io/collector/exporter@v0.91.0/exporterhelper/logs.go:170 +0xXX
+      	go.opentelemetry.io/collector/exporter@v0.91.0/exporterhelper/logs.go:170 +0xX
       go.opentelemetry.io/collector/exporter/exporterhelper.(*baseRequestSender).send(...)
       	go.opentelemetry.io/collector/exporter@v0.91.0/exporterhelper/common.go:33
       go.opentelemetry.io/collector/exporter/exporterhelper.(*errorLoggingRequestSender).send(...)
-      	go.opentelemetry.io/collector/exporter@v0.91.0/exporterhelper/common.go:47 +0xXX
+      	go.opentelemetry.io/collector/exporter@v0.91.0/exporterhelper/common.go:47 +0xX
       go.opentelemetry.io/collector/exporter/exporterhelper.(*baseExporter).send(...)
       	go.opentelemetry.io/collector/exporter@v0.91.0/exporterhelper/common.go:193
       go.opentelemetry.io/collector/exporter/exporterhelper.NewLogsExporter.func1(...)
-      	go.opentelemetry.io/collector/exporter@v0.91.0/exporterhelper/logs.go:98 +0xXX
+      	go.opentelemetry.io/collector/exporter@v0.91.0/exporterhelper/logs.go:98 +0xX
       go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs(...)
       	go.opentelemetry.io/collector/consumer@v0.91.0/logs.go:25
       go.opentelemetry.io/collector/processor/processorhelper.NewLogsProcessor.func1(...)
-      	go.opentelemetry.io/collector/processor@v0.91.0/processorhelper/logs.go:60 +0xXX
+      	go.opentelemetry.io/collector/processor@v0.91.0/processorhelper/logs.go:60 +0xX
       go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs(...)
       	go.opentelemetry.io/collector/consumer@v0.91.0/logs.go:25
       go.opentelemetry.io/collector/processor/processorhelper.NewLogsProcessor.func1(...)
-      	go.opentelemetry.io/collector/processor@v0.91.0/processorhelper/logs.go:60 +0xXX
+      	go.opentelemetry.io/collector/processor@v0.91.0/processorhelper/logs.go:60 +0xX
       go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs(...)
       	go.opentelemetry.io/collector/consumer@v0.91.0/logs.go:25
       go.opentelemetry.io/collector/processor/processorhelper.NewLogsProcessor.func1(...)
-      	go.opentelemetry.io/collector/processor@v0.91.0/processorhelper/logs.go:60 +0xXX
+      	go.opentelemetry.io/collector/processor@v0.91.0/processorhelper/logs.go:60 +0xX
       go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs(...)
       	go.opentelemetry.io/collector/consumer@v0.91.0/logs.go:25
       go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs(...)
       	go.opentelemetry.io/collector/consumer@v0.91.0/logs.go:25
       go.opentelemetry.io/collector/internal/fanoutconsumer.(*logsConsumer).ConsumeLogs(...)
-      	go.opentelemetry.io/collector@v0.91.0/internal/fanoutconsumer/logs.go:65 +0xXX
+      	go.opentelemetry.io/collector@v0.91.0/internal/fanoutconsumer/logs.go:65 +0xX
       github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry.(*logsConsumer).ConsumeLogs(...)
-      	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.91.1-0.20240104101950-d95d8c6f4a42/consumerretry/logs.go:37 +0xXX
+      	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.91.1-0.20240104101950-d95d8c6f4a42/consumerretry/logs.go:37 +0xX
       github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.(*receiver).consumerLoop(...)
-      	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.91.0/adapter/receiver.go:125 +0xXX
+      	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.91.0/adapter/receiver.go:125 +0xX
       created by github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.(*receiver).Start in goroutine N
-      	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.91.0/adapter/receiver.go:68 +0xXX
+      	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.91.0/adapter/receiver.go:68 +0xX

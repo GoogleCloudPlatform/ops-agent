@@ -459,7 +459,7 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 				// Remove function arguments
 				stderr = regexp.MustCompile(`(?m)^(.*)\(.+\)$`).ReplaceAllString(stderr, "$1(...)")
 				// Remove anything that looks like an address
-				stderr = regexp.MustCompile(`0x[0-9a-f]{2,}`).ReplaceAllString(stderr, "0xXX")
+				stderr = regexp.MustCompile(`0x[0-9a-f]+`).ReplaceAllString(stderr, "0xX")
 				// Remove goroutine numbers
 				stderr = regexp.MustCompile(`goroutine \d+`).ReplaceAllString(stderr, "goroutine N")
 				errors = append(errors, map[string]any{"stderr": stderr})
