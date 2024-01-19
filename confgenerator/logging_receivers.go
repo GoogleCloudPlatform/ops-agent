@@ -190,12 +190,12 @@ func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.Receiv
 		"to":   "body.message",
 	})
 	if r.RecordLogFilePath != nil && *r.RecordLogFilePath {
-		receiver_config["include_file_name"] = true
+		receiver_config["include_file_path"] = true
 		operators = append(operators, map[string]any{
 			"id":   "record_log_file_path",
 			"type": "move",
-			"from": "body.log.file.name",
-			"to":   `body["agent.googleapis.com/log_file_path"]`,
+			"from": "body.log.file.path",
+			"to":   `attributes["agent.googleapis.com/log_file_path"]`,
 		})
 	}
 	receiver_config["operators"] = operators

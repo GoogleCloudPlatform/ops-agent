@@ -1635,6 +1635,16 @@ func TestResourceNameLabel(t *testing.T) {
 
 func TestLogFilePathLabel(t *testing.T) {
 	t.Parallel()
+	t.Run("fluent-bit", func(t *testing.T) {
+		testLogFilePathLabel(t, false)
+	})
+	t.Run("otel", func(t *testing.T) {
+		testLogFilePathLabel(t, true)
+	})
+}
+
+func testLogFilePathLabel(t *testing.T, otel bool) {
+	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, platform)
@@ -1651,11 +1661,19 @@ func TestLogFilePathLabel(t *testing.T) {
     json:
       type: parse_json
   service:
+    experimental_otel_logging: %v
     pipelines:
       p1:
         receivers: [f1]
         processors: [json]
-`, file1)
+`, file1, otel)
+
+		if otel {
+			// Turn on the otel feature gate.
+			if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "otel_logging"}); err != nil {
+				t.Fatal(err)
+			}
+		}
 
 		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
@@ -3805,7 +3823,7 @@ func TestLoggingSelfLogs(t *testing.T) {
 
 		// Waiting 10 minutes (subtracting current test runtime) after Ops Agent startup for
 		// "LogPingOpsAgent" to show. We can remove wait when feature b/319102785 is complete.
-		time.Sleep(10 * time.Minute - time.Now().Sub(start))
+		time.Sleep(10*time.Minute - time.Now().Sub(start))
 		queryPing := fmt.Sprintf(`severity="DEBUG" AND jsonPayload.code="LogPingOpsAgent" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, queryPing); err != nil {
 			t.Error(err)
