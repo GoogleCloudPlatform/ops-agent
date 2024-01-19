@@ -8,5 +8,5 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: 2006-07-28T17:22:00Z
+    timestamp: 2006-07-28T20:22:00Z
   partialSuccess: true

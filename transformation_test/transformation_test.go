@@ -410,6 +410,8 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 	)
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("OTELOPSCOL_CONFIG=%s", config),
+		// Run all tests in a non-UTC timezone to test timezone handling.
+		"TZ=America/Los_Angeles",
 	)
 
 	// TODO
