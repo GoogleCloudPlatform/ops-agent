@@ -15,7 +15,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -332,31 +331,29 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 
 type mockLoggingServer struct {
 	logpb.UnimplementedLoggingServiceV2Server
-	srv      *grpc.Server
-	mtx      sync.Mutex
-	requests []*logpb.WriteLogEntriesRequest
+	srv       *grpc.Server
+	requestCh chan<- *logpb.WriteLogEntriesRequest
 }
 
 func (s *mockLoggingServer) WriteLogEntries(
 	ctx context.Context,
 	request *logpb.WriteLogEntriesRequest,
 ) (*logpb.WriteLogEntriesResponse, error) {
-
-	s.mtx.Lock()
-	defer s.mtx.Unlock()
-	s.requests = append(s.requests, request)
+	s.requestCh <- request
 	return &logpb.WriteLogEntriesResponse{}, nil
 }
 
-func (s *mockLoggingServer) Requests() []*logpb.WriteLogEntriesRequest {
-	s.mtx.Lock()
-	defer s.mtx.Unlock()
-	return append([]*logpb.WriteLogEntriesRequest{}, s.requests...)
+func (s *mockLoggingServer) GracefulStop() {
+	// Also closes the connection.
+	s.srv.GracefulStop()
+	close(s.requestCh)
 }
 
-func cloudLoggingOnGRPCServer(ln net.Listener) *mockLoggingServer {
+func cloudLoggingOnGRPCServer(ln net.Listener) (*mockLoggingServer, <-chan *logpb.WriteLogEntriesRequest) {
+	ch := make(chan *logpb.WriteLogEntriesRequest)
 	s := &mockLoggingServer{
-		srv: grpc.NewServer(),
+		srv:       grpc.NewServer(),
+		requestCh: ch,
 	}
 
 	// Now run it as a gRPC server
@@ -365,7 +362,7 @@ func cloudLoggingOnGRPCServer(ln net.Listener) *mockLoggingServer {
 		_ = s.srv.Serve(ln)
 	}()
 
-	return s
+	return s, ch
 }
 
 func (transformationConfig transformationTest) runOTelTest(t *testing.T, name string) {
@@ -383,9 +380,14 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 	if err != nil {
 		t.Fatalf("Failed to find an available address to run the gRPC server: %v", err)
 	}
-	s := cloudLoggingOnGRPCServer(ln)
-	// Also closes the connection.
-	defer s.srv.GracefulStop()
+	s, requestCh := cloudLoggingOnGRPCServer(ln)
+
+	eg, ctx := errgroup.WithContext(ctx)
+	eg.Go(func() error {
+		<-ctx.Done()
+		s.GracefulStop()
+		return nil
+	})
 
 	got := []map[string]any{}
 
@@ -414,9 +416,6 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 		"TZ=America/Los_Angeles",
 	)
 
-	// TODO
-	_ = ctx
-
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
 
@@ -431,15 +430,7 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 
 	var errors []any
 
-	var eg errgroup.Group
-	eg.Go(func() error {
-		// TODO: Figure out how to wait for the collector to process the logs before signaling shutdown.
-		time.Sleep(5 * time.Second)
-		if err := cmd.Process.Signal(os.Interrupt); err != nil {
-			t.Errorf("failed to signal process: %v", err)
-		}
-		return nil
-	})
+	// Read from stderr until EOF and put any errors in `errors`.
 	eg.Go(func() error {
 		r := bufio.NewReader(stderr)
 		d := json.NewDecoder(r)
@@ -485,56 +476,81 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 			}
 		}
 	})
+	// Read requests and signal the process to exit after a timeout.
+	eg.Go(func() error {
+		timeout := 5 * time.Second
+		for {
+			select {
+			case r, ok := <-requestCh:
+				if !ok {
+					return nil
+				}
+				got = append(got, sanitizeWriteLogEntriesRequest(t, r, testStartTime))
+				timeout = 1 * time.Second
+			case <-time.After(timeout):
+				// Wait for up to 5s for the first log, then up to 1s for subsequent logs.
+				if err := cmd.Process.Signal(os.Interrupt); err != nil {
+					t.Errorf("failed to signal process: %v", err)
+				}
+			}
+		}
+	})
+	var exit_error string
+	// Wait for the process to exit.
+	eg.Go(func() error {
+		if err := cmd.Wait(); err != nil {
+			if err, ok := err.(*exec.ExitError); ok {
+				exit_error = err.String()
+				t.Logf("process terminated with error: %v", err)
+			} else {
+				return fmt.Errorf("process failed: %w", err)
+			}
+		}
+		cancel()
+		return nil
+	})
 
 	if err := eg.Wait(); err != nil {
 		t.Errorf("errgroup failed: %v", err)
 	}
 
-	if err := cmd.Wait(); err != nil {
-		if err, ok := err.(*exec.ExitError); ok {
-			got = append(got, map[string]any{"exit_error": err.String()})
-			t.Logf("process terminated with error: %v", err)
-		} else {
-			t.Errorf("process failed: %v", err)
-		}
+	// Package up errors to be included in the golden output.
+	if exit_error != "" {
+		got = append(got, map[string]any{"exit_error": exit_error})
 	}
-
-	// read and unmarshal output
-	reqs := s.Requests()
-	for _, r := range reqs {
-		b, err := protojson.Marshal(r)
-		if err != nil {
-			t.Logf("failed to marshal request: %v", err)
-			continue
-		}
-		var req map[string]any
-		if err := yaml.Unmarshal(b, &req); err != nil {
-			t.Log(string(b))
-			t.Fatal(err)
-		}
-		// Replace entries[].timestamp with a human-readable timestamp
-		if v, ok := req["entries"].([]any); ok {
-			for _, v := range v {
-				v1, _ := v.(map[string]any)
-				// Convert timestamp to "now" or a human-readable timestamp
-				if dateStr, ok := v1["timestamp"].(string); ok {
-					date, err := time.Parse(time.RFC3339Nano, dateStr)
-					if err != nil {
-						t.Logf("failed to parse %q: %v", dateStr, err)
-						continue
-					}
-					if date.After(testStartTime) {
-						v1["timestamp"] = "now"
-					}
-				}
-			}
-		}
-
-		got = append(got, req)
-	}
-	// Package up collector errors to be included in the golden output.
 	if len(errors) != 0 {
 		got = append(got, map[string]any{"collector_errors": errors})
 	}
 	return got
+}
+
+func sanitizeWriteLogEntriesRequest(t *testing.T, r *logpb.WriteLogEntriesRequest, testStartTime time.Time) map[string]any {
+	b, err := protojson.Marshal(r)
+	if err != nil {
+		t.Logf("failed to marshal request: %v", err)
+		return nil
+	}
+	var req map[string]any
+	if err := yaml.Unmarshal(b, &req); err != nil {
+		t.Log(string(b))
+		t.Fatal(err)
+	}
+	// Replace entries[].timestamp with a human-readable timestamp
+	if v, ok := req["entries"].([]any); ok {
+		for _, v := range v {
+			v1, _ := v.(map[string]any)
+			// Convert timestamp to "now" or a human-readable timestamp
+			if dateStr, ok := v1["timestamp"].(string); ok {
+				date, err := time.Parse(time.RFC3339Nano, dateStr)
+				if err != nil {
+					t.Logf("failed to parse %q: %v", dateStr, err)
+					return nil
+				}
+				if date.After(testStartTime) {
+					v1["timestamp"] = "now"
+				}
+			}
+		}
+	}
+	return req
 }
