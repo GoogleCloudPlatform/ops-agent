@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -167,7 +168,7 @@ func (transformationConfig transformationTest) runFluentBitTest(t *testing.T, na
 
 func checkOutput(t *testing.T, name string, got []map[string]any) {
 	t.Helper()
-	gotBytes, err := yaml.Marshal(got)
+	gotBytes, err := yaml.MarshalWithOptions(got, yaml.UseLiteralStyleIfMultiline(true))
 	if err != nil {
 		t.Fatalf("failed to marshal: %v", err)
 	}
@@ -365,6 +366,10 @@ func cloudLoggingOnGRPCServer(ln net.Listener) *mockLoggingServer {
 	return s
 }
 
+type stderrError struct {
+	Stderr string `yaml:"stderr,flow"`
+}
+
 func (transformationConfig transformationTest) runOTelTest(t *testing.T, name string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -444,7 +449,19 @@ func (transformationConfig transformationTest) runOTelTest(t *testing.T, name st
 				if err2 != nil {
 					return err
 				}
-				return fmt.Errorf("stderr: %s%s", string(buf), string(buf2))
+				stderr := fmt.Sprintf("%s%s", string(buf), string(buf2))
+				t.Logf("collector stderr:\n%s", stderr)
+				// We need to remove non-deterministic information from stacktraces so the goldens don't keep changing.
+				// Remove $GOPATH
+				stderr = regexp.MustCompile(`(?m)^\t(.*?)pkg/mod/`).ReplaceAllString(stderr, "\t")
+				// Remove function arguments
+				stderr = regexp.MustCompile(`(?m)^(.*)\(.+\)$`).ReplaceAllString(stderr, "$1(...)")
+				// Remove anything that looks like an address
+				stderr = regexp.MustCompile(`0x[0-9a-f]{2,}`).ReplaceAllString(stderr, "0xXX")
+				// Remove goroutine numbers
+				stderr = regexp.MustCompile(`goroutine \d+`).ReplaceAllString(stderr, "goroutine N")
+				errors = append(errors, &stderrError{stderr})
+				return nil
 			}
 			delete(log, "ts")
 			level, _ := log["level"].(string)
@@ -464,13 +481,19 @@ func (transformationConfig transformationTest) runOTelTest(t *testing.T, name st
 		t.Errorf("errgroup failed: %v", err)
 	}
 
+	var data []map[string]any
+
 	if err := cmd.Wait(); err != nil {
-		t.Errorf("process failed: %v", err)
+		if err, ok := err.(*exec.ExitError); ok {
+			data = append(data, map[string]any{"exit_error": err.String()})
+			t.Logf("process terminated with error: %v", err)
+		} else {
+			t.Errorf("process failed: %v", err)
+		}
 	}
 
 	// read and unmarshal output
 	reqs := s.Requests()
-	var data []map[string]any
 	for _, r := range reqs {
 		b, err := protojson.Marshal(r)
 		if err != nil {
