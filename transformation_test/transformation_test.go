@@ -253,6 +253,8 @@ func generateFluentBitConfigs(ctx context.Context, name string, transformationTe
 	}.Generate()
 }
 
+// generateOTelConfig attempts to generate an OTel config file for the test case.
+// It calls t.Fatal if there is something wrong with the test case, or returns an error if the config is invalid.
 func (transformationConfig transformationTest) generateOTelConfig(ctx context.Context, t *testing.T, name string, addr string) (string, error) {
 	pl := platform.Platform{
 		Type: platform.Linux,
@@ -272,7 +274,7 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 
 	abs, err := filepath.Abs(filepath.Join("testdata", name, transformationInput))
 	if err != nil {
-		return "", err
+		t.Fatal(err)
 	}
 	var components []otel.Component
 	for _, p := range transformationConfig {
@@ -283,7 +285,7 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 			}
 			components = append(components, processors...)
 		} else {
-			t.Fatalf("not an OTel processor: %#v", p.LoggingProcessor)
+			return "", fmt.Errorf("not an OTel processor: %#v", p.LoggingProcessor)
 		}
 	}
 
@@ -293,7 +295,7 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 		},
 	}.Pipelines(ctx)
 	if err != nil {
-		t.Fatal(err)
+		return "", err
 	}
 
 	return otel.ModularConfig{
@@ -371,6 +373,12 @@ type stderrError struct {
 }
 
 func (transformationConfig transformationTest) runOTelTest(t *testing.T, name string) {
+	got := transformationConfig.runOTelTestInner(t, name)
+
+	checkOutput(t, filepath.Join(name, "output_otel.yaml"), got)
+}
+
+func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, name string) []map[string]any {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -383,9 +391,12 @@ func (transformationConfig transformationTest) runOTelTest(t *testing.T, name st
 	// Also closes the connection.
 	defer s.srv.GracefulStop()
 
+	var got []map[string]any
+
 	config, err := transformationConfig.generateOTelConfig(ctx, t, name, ln.Addr().String())
 	if err != nil {
-		t.Fatal(err)
+		got = append(got, map[string]any{"config_error": err.Error()})
+		return got
 	}
 
 	t.Logf("otelopscol config:\n%s", config)
@@ -481,11 +492,9 @@ func (transformationConfig transformationTest) runOTelTest(t *testing.T, name st
 		t.Errorf("errgroup failed: %v", err)
 	}
 
-	var data []map[string]any
-
 	if err := cmd.Wait(); err != nil {
 		if err, ok := err.(*exec.ExitError); ok {
-			data = append(data, map[string]any{"exit_error": err.String()})
+			got = append(got, map[string]any{"exit_error": err.String()})
 			t.Logf("process terminated with error: %v", err)
 		} else {
 			t.Errorf("process failed: %v", err)
@@ -523,11 +532,11 @@ func (transformationConfig transformationTest) runOTelTest(t *testing.T, name st
 			}
 		}
 
-		data = append(data, req)
+		got = append(got, req)
 	}
 	// Package up collector errors to be included in the golden output.
 	if len(errors) != 0 {
-		data = append(data, map[string]any{"collector_errors": errors})
+		got = append(got, map[string]any{"collector_errors": errors})
 	}
-	checkOutput(t, filepath.Join(name, "output_otel.yaml"), data)
+	return got
 }

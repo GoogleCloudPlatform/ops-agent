@@ -1,0 +1,1 @@
+- config_error: "not an OTel processor: &confgenerator.LoggingProcessorExcludeLogs{ConfigComponent:confgenerator.ConfigComponent{Type:\"exclude_logs\"}, MatchAny:[]string{\"trace =~ \\\"value1\\\"\"}}"
