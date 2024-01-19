@@ -368,10 +368,6 @@ func cloudLoggingOnGRPCServer(ln net.Listener) *mockLoggingServer {
 	return s
 }
 
-type stderrError struct {
-	Stderr string `yaml:"stderr,flow"`
-}
-
 func (transformationConfig transformationTest) runOTelTest(t *testing.T, name string) {
 	got := transformationConfig.runOTelTestInner(t, name)
 
@@ -391,7 +387,7 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 	// Also closes the connection.
 	defer s.srv.GracefulStop()
 
-	var got []map[string]any
+	got := []map[string]any{}
 
 	config, err := transformationConfig.generateOTelConfig(ctx, t, name, ln.Addr().String())
 	if err != nil {
@@ -471,7 +467,7 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 				stderr = regexp.MustCompile(`0x[0-9a-f]{2,}`).ReplaceAllString(stderr, "0xXX")
 				// Remove goroutine numbers
 				stderr = regexp.MustCompile(`goroutine \d+`).ReplaceAllString(stderr, "goroutine N")
-				errors = append(errors, &stderrError{stderr})
+				errors = append(errors, map[string]any{"stderr": stderr})
 				return nil
 			}
 			delete(log, "ts")
