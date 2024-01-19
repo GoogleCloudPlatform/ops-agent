@@ -1669,7 +1669,7 @@ func testLogFilePathLabel(t *testing.T, otel bool) {
 
 		if otel {
 			// Turn on the otel feature gate.
-			if err := gce.SetEnvironmentVariables(ctx, logger.ToMainLog(), vm, map[string]string{"EXPERIMENTAL_FEATURES": "otel_logging"}); err != nil {
+			if err := gce.SetEnvironmentVariables(ctx, logger, vm, map[string]string{"EXPERIMENTAL_FEATURES": "otel_logging"}); err != nil {
 				t.Fatal(err)
 			}
 		}
