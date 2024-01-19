@@ -151,15 +151,15 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 			"level": "none",
 		}
 	}
+	logs := map[string]any{}
 	if c.LogLevel != "info" {
-		service["telemetry"]["logs"] = map[string]interface{}{
-			"level": c.LogLevel,
-		}
+		logs["level"] = "debug"
 	}
 	if c.JSONLogs {
-		service["telemetry"]["logs"] = map[string]interface{}{
-			"encoding": "json",
-		}
+		logs["encoding"] = "json"
+	}
+	if len(logs) > 0 {
+		service["telemetry"]["logs"] = logs
 	}
 
 	configMap := map[string]interface{}{

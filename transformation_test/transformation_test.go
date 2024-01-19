@@ -300,6 +300,7 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 	return otel.ModularConfig{
 		DisableMetrics: true,
 		JSONLogs:       true,
+		LogLevel:       "debug",
 		ReceiverPipelines: map[string]otel.ReceiverPipeline{
 			"input": rp[0],
 		},
@@ -432,6 +433,7 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 
 	// Read from stderr until EOF and put any errors in `errors`.
 	eg.Go(func() error {
+		consumingCount := 0
 		r := bufio.NewReader(stderr)
 		d := json.NewDecoder(r)
 		for {
@@ -463,37 +465,35 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 				errors = append(errors, map[string]any{"stderr": stderr})
 				return nil
 			}
-			delete(log, "ts")
-			level, _ := log["level"].(string)
-			if level != "info" && level != "debug" && level != "None" {
-				errors = append(errors, log)
-			}
 			b, err := json.Marshal(log)
 			if err != nil {
 				t.Errorf("failed to marshal otel log: %v", err)
 			} else {
 				t.Logf("collector log output: %s", b)
 			}
-		}
-	})
-	// Read requests and signal the process to exit after a timeout.
-	eg.Go(func() error {
-		timeout := 5 * time.Second
-		for {
-			select {
-			case r, ok := <-requestCh:
-				if !ok {
-					return nil
-				}
-				got = append(got, sanitizeWriteLogEntriesRequest(t, r, testStartTime))
-				timeout = 1 * time.Second
-			case <-time.After(timeout):
-				// Wait for up to 5s for the first log, then up to 1s for subsequent logs.
-				if err := cmd.Process.Signal(os.Interrupt); err != nil {
-					t.Errorf("failed to signal process: %v", err)
+			delete(log, "ts")
+			level, _ := log["level"].(string)
+			if level != "info" && level != "debug" && level != "None" {
+				errors = append(errors, log)
+			}
+			msg, _ := log["msg"].(string)
+			if strings.HasPrefix(msg, "Consuming files") {
+				consumingCount += 1
+				if consumingCount == 2 {
+					// We've processed the entire input file. Signal the collector to stop.
+					if err := cmd.Process.Signal(os.Interrupt); err != nil {
+						t.Errorf("failed to signal process: %v", err)
+					}
 				}
 			}
 		}
+	})
+	// Read and sanitize requests.
+	eg.Go(func() error {
+		for r := range requestCh {
+			got = append(got, sanitizeWriteLogEntriesRequest(t, r, testStartTime))
+		}
+		return nil
 	})
 	var exit_error string
 	// Wait for the process to exit.
