@@ -62,7 +62,6 @@ import (
 
 	cloudlogging "cloud.google.com/go/logging"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
 	feature_tracking_metadata "github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
@@ -843,7 +842,7 @@ func TestHTTPRequestLog(t *testing.T) {
 		}
 
 		// Log with HTTP request data nested under "logging.googleapis.com/httpRequest".
-		const newHTTPRequestKey = confgenerator.HttpRequestKey
+		const newHTTPRequestKey = "logging.googleapis.com/httpRequest"
 		const newHTTPRequestLogId = "new_request_log"
 		newLogBody := map[string]interface{}{
 			"logId":           newHTTPRequestLogId,
