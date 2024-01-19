@@ -4452,6 +4452,11 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		// Use a longer service startup delay to allow the health check backoffs to complete.
+		// Health check backoffs take up to 30s, and SetupOpsAgent already waits for 20s,
+		// so wait an additional 20s for some extra buffer.
+		time.Sleep(20 * time.Second)
+
 		cmdOut, err := gce.RunRemotely(ctx, logger, vm, "", getRecentServiceOutputForPlatform(vm.Platform))
 		if err != nil {
 			t.Fatal(err)
@@ -4504,6 +4509,10 @@ func TestNetworkHealthCheck(t *testing.T) {
 		if _, err := gce.RunRemotely(ctx, logger, vm, "", startCommandForPlatform(vm.Platform)); err != nil {
 			t.Fatal(err)
 		}
+
+		// Use a longer service startup delay to allow the health check backoffs to complete.
+		// Health check backoffs take up to 30s, so wait for 40s to have some extra buffer.
+		time.Sleep(40 * time.Second)
 
 		cmdOut, err = gce.RunRemotely(ctx, logger, vm, "", getRecentServiceOutputForPlatform(vm.Platform))
 		if err != nil {
