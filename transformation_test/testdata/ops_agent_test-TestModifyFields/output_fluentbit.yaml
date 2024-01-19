@@ -15,6 +15,23 @@
     severity: 400.0
     spanId: facefeedb0bacafe
     timestamp: now
+    trace: projects/my-project/traces/deadcafedeadc0defacefeedb0bacafe
+  - jsonPayload:
+      default_absent: default
+      default_present: original
+      field2: field value
+      float: 10.5
+      integer: 15.0
+      mapped_field: field value
+      spanId: facefeedb0bacafe
+    labels:
+      label2: label1 value
+      my.cool.service/foo: field value
+      static: hello world
+    logName: projects/my-project/logs/transformation_test
+    severity: 400.0
+    spanId: facefeedb0bacafe
+    timestamp: now
     trace: deadcafedeadc0defacefeedb0bacafe
   partialSuccess: true
   resource:

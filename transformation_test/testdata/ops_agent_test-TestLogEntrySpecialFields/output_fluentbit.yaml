@@ -17,7 +17,7 @@
       line: 1.0
     spanId: facefeedb0bacafe
     timestamp: now
-    trace: deadcafedeadc0defacefeedb0bacafe
+    trace: projects/my-project/traces/deadcafedeadc0defacefeedb0bacafe
   partialSuccess: true
   resource:
     labels: {}

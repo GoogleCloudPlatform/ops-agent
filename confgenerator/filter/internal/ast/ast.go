@@ -49,8 +49,9 @@ type Target []string
 var logEntryRootValueMapToOTel = map[string][]string{
 	"severity": {"severity_text"},
 	"logName":  {"attributes", "gcp.log_name"},
-	// TODO: The "trace" field has the format `projects/$project/traces/$trace`. The `trace_id.string` field has the format `$trace` and does not support a project prefix.
-	// We probably need to strip the `projects/$project/traces/` prefix on write, and we might also need to add the prefix on read.
+	// The "trace" field has the format `projects/$project/traces/$trace`. The `trace_id.string` field has the format `$trace` and does not support a project prefix.
+	// N.B. While these look like they're map elements, `trace_id["string"]` does not work. They must be referred to as `trace_id.string`.
+	// N.B. See special handling of trace_id.string in ottl.go
 	"trace":       {"trace_id.string"},
 	"spanId":      {"span_id.string"},
 	"textPayload": {"body"},

@@ -513,7 +513,10 @@ processors:
       - set(span_id.string, cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_13"])
-      - set(trace_id.string, cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "__setif_value") where (cache != nil and cache["__setif_value"] != nil)
+      - set(cache["__setif_value"], cache["value"])
+      - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "")
+      - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
   transform/sample__logs_0:
     log_statements:
       context: log

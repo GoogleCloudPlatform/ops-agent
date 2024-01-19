@@ -1,1 +1,2 @@
+{"field":"field value", "default_present":"original", "logging.googleapis.com/labels": {"label1":"label1 value"}, "trace":"projects/my-project/traces/deadcafedeadc0defacefeedb0bacafe", "spanId": "facefeedb0bacafe"}
 {"field":"field value", "default_present":"original", "logging.googleapis.com/labels": {"label1":"label1 value"}, "trace":"deadcafedeadc0defacefeedb0bacafe", "spanId": "facefeedb0bacafe"}

@@ -4,7 +4,7 @@
     logName: projects/my-project/logs/transformation_test
     spanId: facefeedb0bacafe
     timestamp: now
-    trace: deadcafedeadc0defacefeedb0bacafe
+    trace: projects/my-project/traces/deadcafedeadc0defacefeedb0bacafe
   partialSuccess: true
   resource:
     labels: {}

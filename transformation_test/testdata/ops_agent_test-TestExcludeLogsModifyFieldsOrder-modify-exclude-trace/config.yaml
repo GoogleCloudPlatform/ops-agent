@@ -6,4 +6,4 @@
   fields:
     trace:
       move_from: jsonPayload.none
-      default_value: deadcafedeadc0defacefeedb0bacafe
+      default_value: projects/my-project/traces/deadcafedeadc0defacefeedb0bacafe

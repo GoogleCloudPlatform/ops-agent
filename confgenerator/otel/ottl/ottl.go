@@ -28,6 +28,10 @@ func statementf(format string, args ...any) Statement {
 	return Statement(fmt.Sprintf(format, args...))
 }
 
+func statementsf(format string, args ...any) Statements {
+	return Statements{statementf(format, args...)}
+}
+
 // Value represents something that has a value in OTTL (either LValue or RValue)
 type Value interface {
 	fmt.Stringer
@@ -88,9 +92,27 @@ func (a LValue) SetIf(b, condition Value) Statements {
 	if condition != nil {
 		condStr = fmt.Sprintf(" where %s", condition)
 	}
-	statements := Statements{
-		statementf(`set(%s, %s)%s`, a, b, condStr),
+	var statements Statements
+	if (slices.Equal(a, LValue{"trace_id.string"})) {
+		// LogEntry's `trace` field is expected to contain a `projects/$foo/traces/` prefix.
+		// Remove it if present.
+		// replace_pattern is a statement, not a value, in OTTL, so we have to mutate a cached copy of the value.
+		cache := LValue{"cache", "__setif_value"}
+		statements = statements.Append(
+			cache.Delete(),
+			cache.Set(b),
+			statementsf(
+				`replace_pattern(%s, %q, %q)`,
+				cache,
+				`^projects/([^/]*)/traces/`,
+				"",
+			),
+		)
+		b = cache
 	}
+	statements = statements.Append(
+		statementsf(`set(%s, %s)%s`, a, b, condStr),
+	)
 	if (slices.Equal(a, LValue{"severity_text"})) {
 		// As a special case for severity_text, we need to zero out severity_number to make sure the text takes effect.
 		// TODO: Add a unit test for this.
