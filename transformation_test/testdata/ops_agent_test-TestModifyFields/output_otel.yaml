@@ -6,7 +6,7 @@
       float: 10.5
       integer: 15
       mapped_field: field value
-      spanId: span_id_value
+      spanId: facefeedb0bacafe
     labels:
       label2: label1 value
       my.cool.service/foo: field value
@@ -17,5 +17,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    spanId: facefeedb0bacafe
     timestamp: now
+    trace: projects/my-project/traces/deadcafedeadc0defacefeedb0bacafe
   partialSuccess: true

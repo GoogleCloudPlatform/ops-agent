@@ -17,7 +17,6 @@ package confgenerator
 import (
 	"context"
 	"fmt"
-	"log"
 	"sort"
 	"strings"
 
@@ -457,19 +456,26 @@ type LoggingProcessorExcludeLogs struct {
 	MatchAny        []string `yaml:"match_any" validate:"required,dive,filter"`
 }
 
-func (r LoggingProcessorExcludeLogs) Type() string {
+func (p LoggingProcessorExcludeLogs) Type() string {
 	return "exclude_logs"
 }
 
-func (p LoggingProcessorExcludeLogs) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorExcludeLogs) filters() ([]*filter.Filter, error) {
 	filters := make([]*filter.Filter, 0, len(p.MatchAny))
 	for _, condition := range p.MatchAny {
 		filter, err := filter.NewFilter(condition)
 		if err != nil {
-			log.Printf("error parsing condition '%s': %v", condition, err)
-			return nil
+			return nil, fmt.Errorf("error parsing condition '%s': %v", condition, err)
 		}
 		filters = append(filters, filter)
+	}
+	return filters, nil
+}
+
+func (p LoggingProcessorExcludeLogs) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
+	filters, err := p.filters()
+	if err != nil {
+		panic(err)
 	}
 	components, lua := filter.AllFluentConfig(tag, map[string]*filter.Filter{
 		"match": filter.MatchesAny(filters),
@@ -484,6 +490,25 @@ function process(tag, timestamp, record)
   return 2, 0, record
 end`, lua))...)
 	return components
+}
+
+func (p LoggingProcessorExcludeLogs) Processors(ctx context.Context) ([]otel.Component, error) {
+	filters, err := p.filters()
+	if err != nil {
+		return nil, err
+	}
+	var expressions []ottl.Value
+	for _, f := range filters {
+		expr, err := f.OTTLExpression()
+		if err != nil {
+			return nil, fmt.Errorf("failed to process condition %q: %w", f, err)
+		}
+		expressions = append(expressions, expr)
+	}
+	return []otel.Component{otel.Filter(
+		"logs", "log_record",
+		expressions,
+	)}, nil
 }
 
 func init() {

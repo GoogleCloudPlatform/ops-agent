@@ -2,9 +2,9 @@
   - jsonPayload:
       query_field: value
     logName: projects/my-project/logs/transformation_test
-    spanId: value2
+    spanId: facefeedb0bacafe
     timestamp: now
-    trace: value1
+    trace: deadcafedeadc0defacefeedb0bacafe
   partialSuccess: true
   resource:
     labels: {}

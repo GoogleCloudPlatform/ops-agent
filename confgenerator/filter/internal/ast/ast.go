@@ -49,9 +49,10 @@ type Target []string
 var logEntryRootValueMapToOTel = map[string][]string{
 	"severity": {"severity_text"},
 	"logName":  {"attributes", "gcp.log_name"},
-	// TODO: trace and span ID use different encoding
-	"trace":       {"trace_id"},
-	"spanId":      {"span_id"},
+	// TODO: The "trace" field has the format `projects/$project/traces/$trace`. The `trace_id.string` field has the format `$trace` and does not support a project prefix.
+	// We probably need to strip the `projects/$project/traces/` prefix on write, and we might also need to add the prefix on read.
+	"trace":       {"trace_id.string"},
+	"spanId":      {"span_id.string"},
 	"textPayload": {"body"},
 }
 

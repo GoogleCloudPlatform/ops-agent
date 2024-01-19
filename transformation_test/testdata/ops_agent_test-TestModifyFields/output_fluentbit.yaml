@@ -6,16 +6,16 @@
       float: 10.5
       integer: 15.0
       mapped_field: field value
-      spanId: span_id_value
+      spanId: facefeedb0bacafe
     labels:
       label2: label1 value
       my.cool.service/foo: field value
       static: hello world
     logName: projects/my-project/logs/transformation_test
     severity: 400.0
-    spanId: span_id_value
+    spanId: facefeedb0bacafe
     timestamp: now
-    trace: trace_value
+    trace: deadcafedeadc0defacefeedb0bacafe
   partialSuccess: true
   resource:
     labels: {}

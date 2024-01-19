@@ -15,9 +15,9 @@
       file: file
       function: function
       line: 1.0
-    spanId: spanId
+    spanId: facefeedb0bacafe
     timestamp: now
-    trace: trace
+    trace: deadcafedeadc0defacefeedb0bacafe
   partialSuccess: true
   resource:
     labels: {}

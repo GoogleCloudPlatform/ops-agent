@@ -1,1 +1,11 @@
-- config_error: "not an OTel processor: &confgenerator.LoggingProcessorExcludeLogs{ConfigComponent:confgenerator.ConfigComponent{Type:\"exclude_logs\"}, MatchAny:[]string{\"jsonPayload.field: \\\"pattern\\\"\"}}"
+- entries:
+  - jsonPayload:
+      field: other
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
+  partialSuccess: true

@@ -128,6 +128,8 @@ func RegexpRename(regexp string, rename string, operations ...map[string]interfa
 	return out
 }
 
+// TODO: Add error_mode: ignore to transform and filter (but disable in tests?).
+
 // Transform returns a transform processor object that executes statements on statementType data.
 func Transform(statementType, context string, statements ottl.Statements) Component {
 	return Component{
@@ -136,6 +138,22 @@ func Transform(statementType, context string, statements ottl.Statements) Compon
 			fmt.Sprintf("%s_statements", statementType): {
 				"context":    context,
 				"statements": statements,
+			},
+		},
+	}
+}
+
+// Filter returns a filter processor object that drops dataType.context data matching any of the expressions.
+func Filter(dataType, context string, expressions []ottl.Value) Component {
+	var strings []string
+	for _, e := range expressions {
+		strings = append(strings, e.String())
+	}
+	return Component{
+		Type: "filter",
+		Config: map[string]map[string]any{
+			dataType: {
+				context: strings,
 			},
 		},
 	}
