@@ -134,8 +134,9 @@ func RegexpRename(regexp string, rename string, operations ...map[string]interfa
 func Transform(statementType, context string, statements ottl.Statements) Component {
 	return Component{
 		Type: "transform",
-		Config: map[string]map[string]any{
-			fmt.Sprintf("%s_statements", statementType): {
+		Config: map[string]any{
+			"error_mode": "ignore",
+			fmt.Sprintf("%s_statements", statementType): map[string]any{
 				"context":    context,
 				"statements": statements,
 			},
@@ -151,8 +152,9 @@ func Filter(dataType, context string, expressions []ottl.Value) Component {
 	}
 	return Component{
 		Type: "filter",
-		Config: map[string]map[string]any{
-			dataType: {
+		Config: map[string]any{
+			"error_mode": "ignore",
+			dataType: map[string]any{
 				context: strings,
 			},
 		},

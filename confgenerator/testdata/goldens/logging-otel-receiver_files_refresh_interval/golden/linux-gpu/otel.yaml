@@ -459,6 +459,7 @@ processors:
     detectors:
     - gcp
   transform/log__source__id1_0:
+    error_mode: ignore
     log_statements:
       context: log
       statements:
@@ -475,6 +476,7 @@ processors:
       - set(cache["value"], "log_source_id1") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/syslog_0:
+    error_mode: ignore
     log_statements:
       context: log
       statements:

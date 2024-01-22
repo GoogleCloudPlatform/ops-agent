@@ -459,6 +459,7 @@ processors:
     detectors:
     - gcp
   transform/logs_p1_sample__logs_0:
+    error_mode: ignore
     log_statements:
       context: log
       statements:
@@ -547,6 +548,7 @@ processors:
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "")
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
   transform/sample__logs_0:
+    error_mode: ignore
     log_statements:
       context: log
       statements:
@@ -563,6 +565,7 @@ processors:
       - set(cache["value"], "sample_logs") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/syslog_0:
+    error_mode: ignore
     log_statements:
       context: log
       statements:
