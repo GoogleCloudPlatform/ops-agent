@@ -79,5 +79,5 @@ docker run \
 
     if [[ "${PKGFORMAT}" == "rpm" && "${SKIP_SIGNING}" != "true" ]]; then
       bash /signing/sign.sh /artifacts/*.rpm
-          fi
+    fi
 EOF
