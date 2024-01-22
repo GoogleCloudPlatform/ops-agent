@@ -128,8 +128,6 @@ func RegexpRename(regexp string, rename string, operations ...map[string]interfa
 	return out
 }
 
-// TODO: Add error_mode: ignore to transform and filter (but disable in tests?).
-
 // Transform returns a transform processor object that executes statements on statementType data.
 func Transform(statementType, context string, statements ottl.Statements) Component {
 	return Component{

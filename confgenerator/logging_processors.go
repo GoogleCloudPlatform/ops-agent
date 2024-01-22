@@ -182,7 +182,6 @@ func (p ParserShared) FluentBitSpecialFieldsStatements(ctx context.Context) ottl
 		labels.Delete(),
 	)
 	for _, f := range names {
-		// TODO: trace and span ID need parsing (see comment in ast.go)
 		s, err := LoggingProcessorModifyFields{Fields: map[string]*ModifyField{
 			fields[f]: &ModifyField{
 				MoveFrom: fmt.Sprintf(`jsonPayload.%q`, f),
