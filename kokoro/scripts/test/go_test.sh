@@ -101,10 +101,7 @@ set_platforms
 if compgen -G "${KOKORO_GFILE_DIR}/result/google-cloud-ops-agent*" > /dev/null; then
   # Upload the agent packages to GCS.
   AGENT_PACKAGES_IN_GCS="gs://${TRANSFERS_BUCKET}/agent_packages/${KOKORO_BUILD_ID}"
-  # Only copy built agents, not other artifacts
-  gsutil cp -r "${KOKORO_GFILE_DIR}/result/*.deb" "${AGENT_PACKAGES_IN_GCS}/" || \
-  gsutil cp -r "${KOKORO_GFILE_DIR}/result/*.rpm" "${AGENT_PACKAGES_IN_GCS}/" || \
-  gsutil cp -r "${KOKORO_GFILE_DIR}/result/*.goo" "${AGENT_PACKAGES_IN_GCS}/"
+  gsutil cp -r "${KOKORO_GFILE_DIR}/result/*" "${AGENT_PACKAGES_IN_GCS}/"
 
   # AGENT_PACKAGES_IN_GCS is used to tell Ops Agent integration tests
   # (https://github.com/GoogleCloudPlatform/ops-agent/tree/master/integration_test)

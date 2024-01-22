@@ -59,14 +59,24 @@ docker buildx build . \
   --cache-from=type=registry,ref="${CACHE}:${DISTRO}_${ARCH}" \
   --build-arg BUILDKIT_INLINE_CACHE=1 \
   --progress=plain \
-  --target "${DISTRO}" \
-  -o "${RESULT_DIR}" \
+  --target "${DISTRO}-build" \
+  -t build_image \
   "${build_params[@]}"
 
+SIGNING_DIR="$(pwd)/kokoro/scripts/build/signing"
 if [[ "${PKGFORMAT}" == "rpm" && "${SKIP_SIGNING}" != "true" ]]; then
   RPM_SIGNING_KEY="${KOKORO_KEYSTORE_DIR}/71565_rpm-signing-key"
-  SIGNING_DIR="$(pwd)/kokoro/scripts/build/signing"
-
   cp "${RPM_SIGNING_KEY}" "${SIGNING_DIR}/signing-key"
-  bash "${SIGNING_DIR}"/sign.sh "${RESULT_DIR}"/*.rpm
 fi
+
+docker run \
+  -i \
+  -v "${RESULT_DIR}":/artifacts \
+  -v "${SIGNING_DIR}":/signing \
+  build_image \
+  bash <<EOF
+    cp /google-cloud-ops-agent*.${PKGFORMAT} /artifacts
+    if [[ "${PKGFORMAT}" == "rpm" && "${SKIP_SIGNING}" != "true" ]]; then
+      bash /signing/sign.sh /artifacts/*.rpm
+          fi
+EOF
