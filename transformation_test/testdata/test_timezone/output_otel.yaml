@@ -12,6 +12,7 @@
   - jsonPayload:
       key1: 12345
       key2: abc
+      time: unparsable time
     logName: projects/my-project/logs/my-log-name
     resource:
       labels:
@@ -25,4 +26,4 @@
     error: "parsing time \"unparsable time\" as \"2006-01-02T15:04\": cannot parse \"unparsable time\" as \"2006\""
     level: warn
     msg: failed to execute statement
-    statement: set(time, Time(body["time"], "%Y-%m-%dT%H:%M")) where (body != nil and body["time"] != nil)
+    statement: set(cache["__time_valid"], true) where ((body != nil and body["time"] != nil) and Time(body["time"], "%Y-%m-%dT%H:%M") != nil)

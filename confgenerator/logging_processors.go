@@ -119,10 +119,17 @@ func (p ParserShared) TimestampStatements() (ottl.Statements, error) {
 	if err != nil {
 		return nil, err
 	}
+	flag := ottl.LValue{"cache", "__time_valid"}
+	// Replicate fluent-bit behavior of preserving the existing field if the time is unparsable.
+	// The result of `ToTime` cannot be stored in `cache`, so instead we store a boolean flag.
 	return ottl.NewStatements(
-		// TODO: What if parsing fails?
-		ottl.LValue{"time"}.SetIf(ottl.ToTime(fromAccessor, p.TimeFormat), fromAccessor.IsPresent()),
-		fromAccessor.Delete(),
+		flag.Set(ottl.False()),
+		flag.SetIf(ottl.True(), ottl.And(
+			fromAccessor.IsPresent(),
+			ottl.IsNotNil(ottl.ToTime(fromAccessor, p.TimeFormat)),
+		)),
+		ottl.LValue{"time"}.SetIf(ottl.ToTime(fromAccessor, p.TimeFormat), ottl.Equals(flag, ottl.True())),
+		fromAccessor.DeleteIf(ottl.Equals(flag, ottl.True())),
 	), nil
 }
 
