@@ -143,6 +143,21 @@ var selfLogTranslationList = []selfLogTranslationEntry{
 		message:    fmt.Sprintf("Ops Agent failed to parse logs, Code: LogParseErr, Documentation: %s", troubleshootFindInfoURL),
 		code:       "LogParseErr",
 	},
+	{
+		regexMatch: `\[ warn\].*\serror\sparsing\slog\smessage\swith\sparser.*`,
+		message:    fmt.Sprintf("Ops Agent failed to parse logs, Code: LogParseErr, Documentation: %s", troubleshootFindInfoURL),
+		code:       "LogParseErr",
+	},
+	{
+		regexMatch: `\[error\].*\sparsers\sreturned\san\serror.*`,
+		message:    fmt.Sprintf("Ops Agent failed to parse logs, Code: LogParseErr, Documentation: %s", troubleshootFindInfoURL),
+		code:       "LogParseErr",
+	},
+	{
+		regexMatch: `\[error\].*\sNo\ssuch\sfile\sor\sdirectory.*`,
+		message:    fmt.Sprintf("Ops Agent not found path or directory, Code: LogPathNotFound, Documentation: %s", troubleshootFindInfoURL),
+		code:       "LogPathNotFound",
+	},
 }
 
 func generateSelfLogsSamplingComponents(ctx context.Context) []fluentbit.Component {
