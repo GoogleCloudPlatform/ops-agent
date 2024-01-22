@@ -846,6 +846,7 @@ func CommonSetup(t *testing.T, platform string) (context.Context, *logging.Direc
 func CommonSetupWithExtraCreateArguments(t *testing.T, platform string, extraCreateArguments []string) (context.Context, *logging.DirectoryLogger, *gce.VM) {
 	return CommonSetupWithExtraCreateArgumentsAndMetadata(t, platform, extraCreateArguments, nil)
 }
+
 // CommonSetupWithExtraCreateArgumentsAndMetadata sets up the VM for testing with extra creation arguments for the `gcloud compute instances create` command and additional metadata.
 func CommonSetupWithExtraCreateArgumentsAndMetadata(t *testing.T, platform string, extraCreateArguments []string, additionalMetadata map[string]string) (context.Context, *logging.DirectoryLogger, *gce.VM) {
 	t.Helper()
@@ -854,7 +855,14 @@ func CommonSetupWithExtraCreateArgumentsAndMetadata(t *testing.T, platform strin
 
 	logger := gce.SetupLogger(t)
 	logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
-	vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), gce.VMOptions{Platform: platform, MachineType: RecommendedMachineType(platform), ExtraCreateArguments: extraCreateArguments, Metadata: additionalMetadata})
+	options := gce.VMOptions{
+		Platform:             platform,
+		TimeToLive:           "3h",
+		MachineType:          RecommendedMachineType(platform),
+		ExtraCreateArguments: extraCreateArguments,
+		Metadata:             additionalMetadata,
+	}
+	vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), options)
 	logger.ToMainLog().Printf("VM is ready: %#v", vm)
 	t.Cleanup(func() {
 		RunOpsAgentDiagnostics(ctx, logger, vm)

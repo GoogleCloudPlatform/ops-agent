@@ -15,6 +15,7 @@
 package resourcedetector
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/prometheus/prometheus/util/strutil"
@@ -173,7 +174,7 @@ func (r GCEResource) PrometheusStyleMetadata() map[string]string {
 
 	// Set the location, namespace and cluster labels.
 	metaLabels["location"] = r.Zone
-	metaLabels["namespace"] = r.InstanceID
+	metaLabels["namespace"] = fmt.Sprintf("%s/%s", r.InstanceID, r.InstanceName)
 	metaLabels["cluster"] = "__gce__"
 
 	// Set some curated labels.
