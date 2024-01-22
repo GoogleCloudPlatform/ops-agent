@@ -9,4 +9,20 @@
         zone: test-zone
       type: gce_instance
     timestamp: 2006-07-28T20:22:00Z
+  - jsonPayload:
+      key1: 12345
+      key2: abc
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
   partialSuccess: true
+- collector_errors:
+  - caller: ottl@v0.91.0/parser.go:273
+    error: "parsing time \"unparsable time\" as \"2006-01-02T15:04\": cannot parse \"unparsable time\" as \"2006\""
+    level: warn
+    msg: failed to execute statement
+    statement: set(time, Time(body["time"], "%Y-%m-%dT%H:%M")) where (body != nil and body["time"] != nil)
