@@ -25,6 +25,10 @@ set -e
 set -x
 set -o pipefail
 
+# DO NOT MERGE
+# check if gpg is installed
+gpg
+
 RESULT_DIR=${RESULT_DIR:-"${KOKORO_ARTIFACTS_DIR}/result"}
 export RESULT_DIR
 
