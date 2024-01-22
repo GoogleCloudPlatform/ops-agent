@@ -70,7 +70,6 @@ if [[ "${KOKORO_ROOT_JOB_TYPE}" == "CONTINUOUS_INTEGRATION" ]]; then
 fi
 
 SIGNING_DIR="$(pwd)/kokoro/scripts/build/signing"
-
 if [[ "${PKGFORMAT}" == "rpm" && "${SKIP_SIGNING}" != "true" ]]; then
   RPM_SIGNING_KEY="${KOKORO_KEYSTORE_DIR}/71565_rpm-signing-key"
   cp "${RPM_SIGNING_KEY}" "${SIGNING_DIR}/signing-key"
@@ -83,6 +82,7 @@ docker run \
   build_image \
   bash <<EOF
     cp /google-cloud-ops-agent*.${PKGFORMAT} /artifacts
+
     if [[ "${PKGFORMAT}" == "rpm" && "${SKIP_SIGNING}" != "true" ]]; then
       bash /signing/sign.sh /artifacts/*.rpm
     fi
