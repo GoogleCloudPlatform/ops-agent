@@ -3805,7 +3805,7 @@ func TestLoggingSelfLogs(t *testing.T) {
 
 		// Waiting 10 minutes (subtracting current test runtime) after Ops Agent startup for
 		// "LogPingOpsAgent" to show. We can remove wait when feature b/319102785 is complete.
-		time.Sleep(10 * time.Minute - time.Now().Sub(start))
+		time.Sleep(10*time.Minute - time.Now().Sub(start))
 		queryPing := fmt.Sprintf(`severity="DEBUG" AND jsonPayload.code="LogPingOpsAgent" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, queryPing); err != nil {
 			t.Error(err)
@@ -4512,7 +4512,8 @@ func TestNetworkHealthCheck(t *testing.T) {
 
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "FAIL", "LogApiConnErr")
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "FAIL", "MonApiConnErr")
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "WARNING", "PacApiConnErr")
+		// TODO(b/321220138): restore this once there's a more reliable endpoint.
+		// checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "WARNING", "PacApiConnErr")
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "WARNING", "DLApiConnErr")
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "FAIL", "MonApiConnErr")
