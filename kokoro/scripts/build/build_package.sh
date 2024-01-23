@@ -47,6 +47,7 @@ CACHE="${ARTIFACT_REGISTRY}/stackdriver-test-143416/google-cloud-ops-agent-build
 
 build_params=()
 if [[ -n "${KOKORO_GITHUB_PULL_REQUEST_NUMBER}" ]]; then  # Per-PR cache
+    # In this case we will be caching from multiple sources.
     build_params+=(--cache-from=type=registry,ref="${CACHE}_PR${KOKORO_GITHUB_PULL_REQUEST_NUMBER}")
     build_params+=(--cache-to=type=registry,ref="${CACHE}_PR${KOKORO_GITHUB_PULL_REQUEST_NUMBER}",mode=max)
 fi
