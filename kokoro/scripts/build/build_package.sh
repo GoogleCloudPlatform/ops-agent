@@ -62,6 +62,7 @@ docker buildx build . \
   --progress=plain \
   --target "${DISTRO}-build" \
   -t build_image \
+  --load \
   "${build_params[@]}"
 
 SIGNING_DIR="$(pwd)/kokoro/scripts/build/signing"
