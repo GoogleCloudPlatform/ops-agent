@@ -491,6 +491,37 @@ func (r LoggingReceiverWindowsEventLog) Components(ctx context.Context, tag stri
 	return append(input, filters...)
 }
 
+func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
+	// TODO: r.IsDefaultVersion() should use the old windows event log API, but the Collector doesn't have a receiver for that.
+	var out []otel.ReceiverPipeline
+	for _, c := range r.Channels {
+		receiver_config := map[string]any{
+			"channel":       c,
+			"start_at":      "beginning",
+			"poll_interval": "1s",
+			// TODO: Configure storage
+		}
+		if r.RenderAsXML {
+			receiver_config["raw"] = true
+			// TODO: Rename to `jsonPayload.raw_xml`
+		}
+		// TODO: Add operators to convert to fluent-bit's format?
+		out = append(out, otel.ReceiverPipeline{
+			Receiver: otel.Component{
+				Type:   "windowseventlog",
+				Config: receiver_config,
+			},
+			Processors: map[string][]otel.Component{
+				"logs": nil,
+			},
+			ExporterTypes: map[string]otel.ExporterType{
+				"logs": otel.OTel,
+			},
+		})
+	}
+	return out, nil
+}
+
 func init() {
 	LoggingReceiverTypes.RegisterType(func() LoggingReceiver { return &LoggingReceiverWindowsEventLog{} }, platform.Windows)
 }
