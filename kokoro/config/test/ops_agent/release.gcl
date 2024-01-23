@@ -1,5 +1,7 @@
 import 'common.gcl' as common
 
+platforms = []
+
 config build = common.ops_agent_test {
   params {
     environment {

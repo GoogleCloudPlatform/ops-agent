@@ -28,7 +28,7 @@ local _zones_for_arch = {
 
 template config common = {
   params = {
-    platforms = null
+    platforms = external
     build_file = external
 
     // This is only used for determining the value of ZONES.
