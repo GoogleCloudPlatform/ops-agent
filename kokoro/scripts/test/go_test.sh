@@ -86,6 +86,7 @@ function set_platforms() {
     return 1
   fi
   # At minimum, PLATFORMS will be the distros from "representative" for TARGET/ARCH in projects.yaml.
+  local platforms
   platforms=$(yaml project.yaml "['targets']['${TARGET}']['architectures']['${ARCH}']['test_distros']['representative']")
   # If not a presubmit job, add the exhaustive list of test distros.
   if ! [[ "${KOKORO_ROOT_JOB_TYPE:-$KOKORO_JOB_TYPE}" =~ ^PRESUBMIT_ ]]; then
