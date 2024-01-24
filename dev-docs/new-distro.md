@@ -54,7 +54,7 @@ manifest as runtime errors that won't show up until tests are run.
     unit tests and integration tests for your PR. **Ignore any
     `third_party_apps_test` failures for now, since we will not enable that
     test for your new distro until later.** (See
-    [later section on third_party_apps_test](#running-third-party-apps-test-against-the-new-distro)
+    [later section on third_party_apps_test](#running-third_party_apps_test-against-the-new-distro)
     for details.)
 
 1.  Once builds and "Ops Agent integration test" (AKA `ops_agent_test`) are
@@ -122,21 +122,20 @@ The instructions are very similar to the instructions for `ops_agent_test`.
 
 1.  Make a PR at this point to make Kokro run builds and tests. Problems
     with the new distro will show up as failures in the `third party apps
-    integration test (Bullseye)`, since you repurposed `bullseye.gcl` in
+    integration test (Bullseye)`, since you repurposed `bullseye_$arch.gcl` in
     the previous step. At this point you can look at the test failures and
     determine how much work is needed to get them to pass. You may need to
     add your new distro to a few places in
     [third_party_apps_data/test_config.yaml](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/third_party_apps_data/test_config.yaml)
     to disable your new platform for certain problematic apps.
 
-1.  Once `third party apps integration test (Bullseye)` (AKA
-    `third_party_apps_test`) is passing, Revert the temporary changes to the
-    Kokoro configs (the 2-3 `bullseye.gcl` files in the earlier step).
-    Get your PR reviewed and merge it to `master`.
+1.  Once `third party apps integration test (Bullseye)` is passing, Revert the
+    temporary changes to the Kokoro configs (the various `bullseye_$arch.gcl`
+    files in the earlier step). Get your PR reviewed and merge it to `master`.
 
 ## Troubleshooting
 
-Error: *failed to solve with frontend dockerfile.v0: failed to create LLB definition: target stage $DISTRO_SHORT could not be found*
+Error: `failed to solve with frontend dockerfile.v0: failed to create LLB definition: target stage $DISTRO_SHORT could not be found`
 
 Reason: The build didn't pick up your Dockerfile changes or there was a name
 mismatch. There could be a few reasons for this:
