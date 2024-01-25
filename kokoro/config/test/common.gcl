@@ -40,7 +40,7 @@ template config common = {
       PROJECT = 'stackdriver-test-143416'
       ZONES = _zones_for_arch.get(arch, 'invalid_zone')
 
-      PLATFORMS = join(platforms, ',')
+      PLATFORMS = cond(platforms != [], join(platforms, ','), null)
     }
   }
 
