@@ -7,6 +7,8 @@ template config third_party_apps_test = common.go_test {
     environment {
       // For presubmits, we want to pass -test.short, which will skip
       // most app+distro pairs.
+      // TODO(martijnvans): Remove this setting from here once we've switched
+      // over to the configs in the 'presubmit' directory.
       SHORT = 'true'
     }
   }
