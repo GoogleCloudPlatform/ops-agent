@@ -158,6 +158,10 @@ func ParseJSON(a Value) Value {
 	return valuef(`ParseJSON(%s)`, a)
 }
 
+func ConvertCase(a Value, toCase string) Value {
+	return valuef(`ConvertCase(%s, %q)`, a, toCase)
+}
+
 func IsMatch(target Value, pattern string) Value {
 	return valuef(`IsMatch(%s, %q)`, target, pattern)
 }
@@ -220,6 +224,21 @@ func (a LValue) DeleteIf(cond Value) Statements {
 	return Statements{
 		statementf(`delete_key(%s, %q) where %s`, parent, child, And(a.IsPresent(), cond)),
 	}
+}
+
+func (a LValue) KeepKeys(keys ...string) Statements {
+	var quotedKeys []string
+	for _, k := range keys {
+		quotedKeys = append(
+			quotedKeys,
+			fmt.Sprintf("%q", k),
+		)
+	}
+	return statementsf(
+		`keep_keys(%s, [%s])`,
+		a,
+		strings.Join(quotedKeys, ", "),
+	)
 }
 
 func NewStatements(a ...Statements) Statements {

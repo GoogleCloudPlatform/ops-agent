@@ -17,6 +17,7 @@ package confgenerator
 import (
 	"context"
 	"fmt"
+	"log"
 	"path"
 	"strconv"
 	"strings"
@@ -25,6 +26,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit/modify"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
@@ -505,6 +507,10 @@ func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.R
 			receiver_config["raw"] = true
 			// TODO: Rename to `jsonPayload.raw_xml`
 		}
+		var p []otel.Component
+		if r.IsDefaultVersion() {
+			p = windowsEventLogV1Processors(ctx)
+		}
 		// TODO: Add operators to convert to fluent-bit's format?
 		out = append(out, otel.ReceiverPipeline{
 			Receiver: otel.Component{
@@ -512,7 +518,7 @@ func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.R
 				Config: receiver_config,
 			},
 			Processors: map[string][]otel.Component{
-				"logs": nil,
+				"logs": p,
 			},
 			ExporterTypes: map[string]otel.ExporterType{
 				"logs": otel.OTel,
@@ -520,6 +526,65 @@ func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.R
 		})
 	}
 	return out, nil
+}
+
+func windowsEventLogV1Processors(ctx context.Context) []otel.Component {
+	// The winlog input in fluent-bit has a completely different structure, so we need to convert the OTel format into the fluent-bit format.
+	var empty string
+	p := &LoggingProcessorModifyFields{
+		EmptyBody: true,
+		Fields: map[string]*ModifyField{
+			"jsonPayload.Channel":      {CopyFrom: "jsonPayload.channel"},
+			"jsonPayload.ComputerName": {CopyFrom: "jsonPayload.computer"},
+			"jsonPayload.Data": {
+				CopyFrom:     "jsonPayload.event_data.binary",
+				DefaultValue: &empty,
+				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
+					return v.Set(ottl.ConvertCase(v, "lower"))
+				},
+			},
+			// TODO: OTel puts the human-readable category at jsonPayload.task, but we need them to add the integer version.
+			//"jsonPayload.EventCategory": {StaticValue: "0", Type: "integer"},
+			"jsonPayload.EventID": {CopyFrom: "jsonPayload.event_id.id"},
+			"jsonPayload.EventType": {
+				CopyFrom: "jsonPayload.level",
+				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
+					// TODO: What if there are multiple keywords?
+					keywords := ottl.LValue{"cache", "body", "keywords"}
+					keyword0 := ottl.RValue("cache.body.keywords[0]")
+					return ottl.NewStatements(
+						v.SetIf(ottl.StringLiteral("SuccessAudit"), ottl.And(
+							keywords.IsPresent(),
+							ottl.IsNotNil(keyword0),
+							ottl.Equals(keyword0, ottl.StringLiteral("Audit Success")),
+						)),
+						v.SetIf(ottl.StringLiteral("FailureAudit"), ottl.And(
+							keywords.IsPresent(),
+							ottl.IsNotNil(keyword0),
+							ottl.Equals(keyword0, ottl.StringLiteral("Audit Failure")),
+						)),
+					)
+				},
+			},
+			// TODO: Fix OTel receiver to provide raw non-parsed messages.
+			"jsonPayload.Message":      {CopyFrom: "jsonPayload.message"},
+			"jsonPayload.Qualifiers":   {CopyFrom: "jsonPayload.event_id.qualifiers"},
+			"jsonPayload.RecordNumber": {CopyFrom: "jsonPayload.record_id"},
+			"jsonPayload.Sid":          {CopyFrom: "jsonPayload.security.user_id"},
+			// TODO: Prefer jsonPayload.provider.event_source if present and non-empty
+			"jsonPayload.SourceName": {CopyFrom: "jsonPayload.provider.name"},
+			// TODO: Convert from array of maps to array of strings
+			"jsonPayload.StringInserts": {CopyFrom: "jsonPayload.event_data.data"},
+			// TODO: Reformat? (v1 was "YYYY-MM-DD hh:mm:ss +0000", OTel is "YYYY-MM-DDThh:mm:ssZ")
+			"jsonPayload.TimeGenerated": {CopyFrom: "jsonPayload.system_time"},
+			// TODO: Reformat?
+			"jsonPayload.TimeWritten": {CopyFrom: "jsonPayload.system_time"},
+		}}
+	c, err := p.Processors(ctx)
+	if err != nil {
+		log.Fatalf("failed to generate hardcoded config: %v", err)
+	}
+	return c
 }
 
 func init() {

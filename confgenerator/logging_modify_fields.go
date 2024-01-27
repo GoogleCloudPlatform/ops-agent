@@ -42,9 +42,10 @@ type ModifyField struct {
 	omitVar string `yaml:"-"`
 
 	// Operations to perform
-	Type      string            `yaml:"type" validate:"omitempty,oneof=integer float"`
-	OmitIf    string            `yaml:"omit_if" validate:"omitempty,filter"`
-	MapValues map[string]string `yaml:"map_values"`
+	Type              string                            `yaml:"type" validate:"omitempty,oneof=integer float"`
+	CustomConvertFunc func(ottl.LValue) ottl.Statements `yaml:"-"`
+	OmitIf            string                            `yaml:"omit_if" validate:"omitempty,filter"`
+	MapValues         map[string]string                 `yaml:"map_values"`
 	// In case the source field's value does not match any keys specified in the map_values pairs,
 	// the destination field will be forcefully unset if map_values_exclusive is true,
 	// or left untouched if map_values_exclusive is false.
@@ -54,6 +55,10 @@ type ModifyField struct {
 type LoggingProcessorModifyFields struct {
 	ConfigComponent `yaml:",inline"`
 	Fields          map[string]*ModifyField `yaml:"fields" validate:"dive,keys,field,distinctfield,writablefield,endkeys" tracking:"-"`
+
+	// For use by other processors, if set this will clear out `jsonPayload`, leaving only the fields set above.
+	// Only supported in OTel.
+	EmptyBody bool `yaml:"-" tracking:"-"`
 }
 
 func (p LoggingProcessorModifyFields) Type() string {
@@ -337,6 +342,12 @@ func (p LoggingProcessorModifyFields) statements(_ context.Context) (ottl.Statem
 		last = v
 	}
 
+	if p.EmptyBody {
+		// With no keys, will clear out the body, leaving a copy at cache.body.
+		statements = statements.Append(ottl.LValue{"cache", "body"}.Set(ottl.LValue{"body"}))
+		statements = statements.Append(ottl.LValue{"body"}.KeepKeys())
+	}
+
 	// Step 4: Assign values
 	for _, dest := range dests {
 		field := p.Fields[dest]
@@ -396,6 +407,10 @@ func (p LoggingProcessorModifyFields) statements(_ context.Context) (ottl.Statem
 		case "YesNoBoolean":
 			// TODO
 			return nil, fmt.Errorf("YesNoBoolean unsupported")
+		}
+
+		if field.CustomConvertFunc != nil {
+			statements = statements.Append(field.CustomConvertFunc(value))
 		}
 
 		ra, err := outM.OTTLAccessor()
