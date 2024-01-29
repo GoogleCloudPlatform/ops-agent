@@ -94,6 +94,7 @@ function set_platforms() {
     platforms=${platforms},$(yaml project.yaml "['targets']['${TARGET}']['architectures']['${ARCH}']['test_distros']['exhaustive']") || true
   fi
   PLATFORMS="${platforms}"
+  export PLATFORMS
 }
 
 set_platforms
