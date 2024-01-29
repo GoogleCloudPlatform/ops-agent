@@ -571,8 +571,8 @@ func windowsEventLogV1Processors(ctx context.Context) []otel.Component {
 			"jsonPayload.Qualifiers":   {CopyFrom: "jsonPayload.event_id.qualifiers"},
 			"jsonPayload.RecordNumber": {CopyFrom: "jsonPayload.record_id"},
 			"jsonPayload.Sid":          {CopyFrom: "jsonPayload.security.user_id"},
-			// TODO: Prefer jsonPayload.provider.event_source if present and non-empty
-			"jsonPayload.SourceName": {CopyFrom: "jsonPayload.provider.name"},
+			"jsonPayload.SourceName2":  {CopyFrom: "jsonPayload.provider.event_source"},
+			"jsonPayload.SourceName":   {CopyFrom: "jsonPayload.provider.name"},
 			// TODO: Convert from array of maps to array of strings
 			"jsonPayload.StringInserts": {CopyFrom: "jsonPayload.event_data.data"},
 			// TODO: Reformat? (v1 was "YYYY-MM-DD hh:mm:ss +0000", OTel is "YYYY-MM-DDThh:mm:ssZ")
@@ -580,11 +580,20 @@ func windowsEventLogV1Processors(ctx context.Context) []otel.Component {
 			// TODO: Reformat?
 			"jsonPayload.TimeWritten": {CopyFrom: "jsonPayload.system_time"},
 		}}
-	c, err := p.Processors(ctx)
+	s, err := p.statements(ctx)
 	if err != nil {
 		log.Fatalf("failed to generate hardcoded config: %v", err)
 	}
-	return c
+	eventSource := ottl.LValue{"body", "SourceName2"}
+	s = s.Append(
+		// Prefer jsonPayload.provider.event_source if present and non-empty
+		ottl.LValue{"body", "SourceName"}.SetIf(eventSource, ottl.And(eventSource.IsPresent(), ottl.Not(ottl.Equals(eventSource, ottl.StringLiteral(""))))),
+		eventSource.Delete(),
+	)
+	return []otel.Component{otel.Transform(
+		"log", "log",
+		s,
+	)}
 }
 
 func init() {

@@ -344,8 +344,10 @@ func (p LoggingProcessorModifyFields) statements(_ context.Context) (ottl.Statem
 
 	if p.EmptyBody {
 		// With no keys, will clear out the body, leaving a copy at cache.body.
-		statements = statements.Append(ottl.LValue{"cache", "body"}.Set(ottl.LValue{"body"}))
-		statements = statements.Append(ottl.LValue{"body"}.KeepKeys())
+		statements = statements.Append(
+			ottl.LValue{"cache", "body"}.Set(ottl.LValue{"body"}),
+			ottl.LValue{"body"}.KeepKeys(),
+		)
 	}
 
 	// Step 4: Assign values
