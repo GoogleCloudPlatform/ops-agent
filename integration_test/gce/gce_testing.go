@@ -1925,12 +1925,15 @@ func SetupVM(ctx context.Context, t *testing.T, logger *log.Logger, options VMOp
 }
 
 // RunForEachPlatform runs a subtest for each platform defined in PLATFORMS.
-func RunForEachPlatform(t *testing.T, f func(t *testing.T, platform string)) {
+func RunForEachPlatform(t *testing.T, testBody func(t *testing.T, platform string)) {
 	platforms := strings.Split(os.Getenv("PLATFORMS"), ",")
+	if len(platforms) == 0 {
+		t.Fatal("PLATFORMS env variable must be nonempty for RunForEachPlatform.")
+	}
 	for _, platform := range platforms {
 		platform := platform // https://golang.org/doc/faq#closures_and_goroutines
 		t.Run(platform, func(t *testing.T) {
-			f(t, platform)
+			testBody(t, platform)
 		})
 	}
 }
