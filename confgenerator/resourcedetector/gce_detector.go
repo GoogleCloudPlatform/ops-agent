@@ -15,6 +15,7 @@
 package resourcedetector
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/prometheus/prometheus/util/strutil"
@@ -150,7 +151,12 @@ func (r GCEResource) PrometheusStyleMetadata() map[string]string {
 	prefix := "__meta_gce_"
 	for k, v := range r.Metadata {
 		sanitizedKey := "metadata_" + strutil.SanitizeLabelName(k)
-		metaLabels[prefix+sanitizedKey] = strings.ReplaceAll(v, "$", "$$")
+		// Once https://github.com/open-telemetry/opentelemetry-collector/issues/9204
+		// is fixed, this will no longer be needed.
+		sanitizedVal := strings.ReplaceAll(v, "${", "_{")
+		sanitizedVal = strings.ReplaceAll(sanitizedVal, "$", "$$")
+		metaLabels[prefix+sanitizedKey] = sanitizedVal
+
 	}
 
 	// Labels are not available using the GCE metadata API.
@@ -167,7 +173,7 @@ func (r GCEResource) PrometheusStyleMetadata() map[string]string {
 
 	// Set the location, namespace and cluster labels.
 	metaLabels["location"] = r.Zone
-	metaLabels["namespace"] = r.InstanceID
+	metaLabels["namespace"] = fmt.Sprintf("%s/%s", r.InstanceID, r.InstanceName)
 	metaLabels["cluster"] = "__gce__"
 
 	// Set some curated labels.

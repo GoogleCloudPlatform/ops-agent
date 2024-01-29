@@ -43,17 +43,18 @@ manifest as runtime errors that won't show up until tests are run.
     or [kokoro/config/build/presubmit/bullseye_aarch64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/build/presubmit/bullseye_aarch64.gcl),
     replace `bullseye` with `$DISTRO_SHORT` and change `deb` to `rpm` if
     needed. Then in
-    [kokoro/config/test/ops_agent/bullseye_x86_64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/ops_agent/bullseye_x86_64.gcl)
-    or [kokoro/config/test/ops_agent/bullseye_aarch64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/ops_agent/bullseye_aarch64.gcl),
-    replace `image_lists.debian.distros.bullseye.presubmit` with
-    `$DISTRO_FAMILY`. This will cause the `bullseye` Kokoro build to build
-    and test your distro instead.
+    [kokoro/config/test/ops_agent/presubmit/bullseye_x86_64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/ops_agent/presubmit/bullseye_x86_64.gcl)
+    or [kokoro/config/test/ops_agent/presubmit/bullseye_aarch64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/ops_agent/presubmit/bullseye_aarch64.gcl),
+    replace `image_lists.bullseye_x86_64.presubmit` with
+    `$DISTRO_FAMILY` (in a single-element list, like `['sles-15']`).
+    This will cause the bullseye Kokoro build to build and test your
+    distro instead.
 
 1.  Make a PR at this point if you haven't already. GitHub will kick off
     unit tests and integration tests for your PR. **Ignore any
     `third_party_apps_test` failures for now, since we will not enable that
     test for your new distro until later.** (See
-    [later section on third_party_apps_test](#running-third-party-apps-test-against-the-new-distro)
+    [later section on third_party_apps_test](#running-third_party_apps_test-against-the-new-distro)
     for details.)
 
 1.  Once builds and "Ops Agent integration test" (AKA `ops_agent_test`) are
@@ -89,11 +90,15 @@ The instructions are very similar to the instructions for `ops_agent_test`.
     ([Sample PR](https://github.com/GoogleCloudPlatform/ops-agent/pull/1044)):
 
     *   In
-        [build/presubmit/bullseye.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/build/presubmit/bullseye.gcl),
+        [build/presubmit/bullseye_x86_64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/build/presubmit/bullseye_x86_64.gcl)
+        or
+        [build/presubmit/bullseye_aarch64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/build/presubmit/bullseye_aarch64.gcl),
         set `DISTRO` to `'$DISTRO_SHORT'` (instead of `'bullseye'`) and
         change `deb` to `rpm` if needed.
     *   In
-        [test/third_party_apps/bullseye.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/third_party_apps/bullseye.gcl),
+        [test/third_party_apps/presubmit/bullseye_x86_64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/third_party_apps/bullseye_x86_64.gcl)
+        or
+        [test/third_party_apps/presubmit/bullseye_aarch64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/third_party_apps/bullseye_aarch64.gcl),
         set `platforms` to `['$DISTRO_FAMILY']` (instead of
         `['debian-11']`). You should also add this section right after the
         `platforms =` line:
@@ -107,7 +112,9 @@ The instructions are very similar to the instructions for `ops_agent_test`.
         ```
 
     *   In
-        [test/ops_agent/bullseye.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/ops_agent/bullseye.gcl),
+        [test/ops_agent/presubmit/bullseye_x86_64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/ops_agent/presubmit/bullseye_x86_64.gcl)
+        or
+        [test/ops_agent/presubmit/bullseye_aarch64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/ops_agent/presubmit/bullseye_aarch64.gcl),
         set `platforms` to `['$DISTRO_FAMILY']`. This step is optional but
         if you don't do it, `ops_agent_test` will later fail and you'll have
         to remember to ignore those failures (since it will still be trying
@@ -115,21 +122,20 @@ The instructions are very similar to the instructions for `ops_agent_test`.
 
 1.  Make a PR at this point to make Kokro run builds and tests. Problems
     with the new distro will show up as failures in the `third party apps
-    integration test (Bullseye)`, since you repurposed `bullseye.gcl` in
+    integration test (Bullseye)`, since you repurposed `bullseye_$arch.gcl` in
     the previous step. At this point you can look at the test failures and
     determine how much work is needed to get them to pass. You may need to
     add your new distro to a few places in
     [third_party_apps_data/test_config.yaml](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/third_party_apps_data/test_config.yaml)
     to disable your new platform for certain problematic apps.
 
-1.  Once `third party apps integration test (Bullseye)` (AKA
-    `third_party_apps_test`) is passing, Revert the temporary changes to the
-    Kokoro configs (the 2-3 `bullseye.gcl` files in the earlier step).
-    Get your PR reviewed and merge it to `master`.
-    
+1.  Once `third party apps integration test (Bullseye)` is passing, Revert the
+    temporary changes to the Kokoro configs (the various `bullseye_$arch.gcl`
+    files in the earlier step). Get your PR reviewed and merge it to `master`.
+
 ## Troubleshooting
 
-Error: *failed to solve with frontend dockerfile.v0: failed to create LLB definition: target stage $DISTRO_SHORT could not be found*
+Error: `failed to solve with frontend dockerfile.v0: failed to create LLB definition: target stage $DISTRO_SHORT could not be found`
 
 Reason: The build didn't pick up your Dockerfile changes or there was a name
 mismatch. There could be a few reasons for this:
@@ -138,3 +144,7 @@ mismatch. There could be a few reasons for this:
 *   The value of `DISTRO` in `kokoro/config/build/presubmit/$DISTRO_SHORT.gcl`
     doesn't match the `target_name` in `dockerfiles/compile.go`.
 *   You haven't committed *and pushed* the `Dockerfile` change yet.
+
+Error: `error building image: GET https://index.docker.io/v2/library/cmake--recent/manifests/latest: UNAUTHORIZED: authentication required; [map[Action:pull Class: Name:library/cmake--recent Type:repository]]`
+
+Reason: You need to add `DOCKER_BUILDKIT=1` before your `docker build` command.

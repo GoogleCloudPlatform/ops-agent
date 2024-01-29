@@ -1,0 +1,3 @@
+import '../common.gcl' as common
+
+template config ops_agent_test = common.ops_agent_test {}
