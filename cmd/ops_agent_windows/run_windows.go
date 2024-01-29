@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -26,6 +27,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
+	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
@@ -197,7 +199,9 @@ func (s *service) startSubagents() error {
 		defer handle.Close()
 		if err := handle.Start(); err != nil {
 			// TODO: Should we be ignoring failures for partial startup?
-			s.log.Error(EngineEventID, fmt.Sprintf("failed to start %q: %v", svc.name, err))
+			if !errors.Is(err, windows.ERROR_SERVICE_ALREADY_RUNNING) {
+				s.log.Error(EngineEventID, fmt.Sprintf("failed to start %q: %v", svc.name, err))
+			}
 		}
 	}
 	return nil
