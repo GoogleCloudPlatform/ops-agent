@@ -260,7 +260,7 @@ func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]
 		}
 	}
 	if l != nil && l.Service != nil {
-		receivers, err := uc.OTelLoggingReceivers()
+		receivers, err := uc.OTelLoggingReceivers(ctx)
 		if err != nil {
 			return nil, nil, err
 		}

@@ -937,7 +937,7 @@ func (uc *UnifiedConfig) TracesReceivers() (map[string]TracesReceiver, error) {
 	return validReceivers, nil
 }
 
-func (uc *UnifiedConfig) OTelLoggingReceivers() (map[string]OTelReceiver, error) {
+func (uc *UnifiedConfig) OTelLoggingReceivers(ctx context.Context) (map[string]OTelReceiver, error) {
 	validReceivers := map[string]OTelReceiver{}
 	if uc.Logging != nil && uc.Logging.Service != nil && uc.Logging.Service.OTelLogging {
 		// Require experimental flag for logging receivers
@@ -947,7 +947,7 @@ func (uc *UnifiedConfig) OTelLoggingReceivers() (map[string]OTelReceiver, error)
 			}
 		}
 	}
-	if uc.Combined != nil {
+	if uc.Combined != nil && experimentsFromContext(ctx)["otlp_logging"] {
 		// Combined receivers always use OTel
 		for k, v := range uc.Combined.Receivers {
 			if _, ok := uc.Logging.Receivers[k]; ok {
