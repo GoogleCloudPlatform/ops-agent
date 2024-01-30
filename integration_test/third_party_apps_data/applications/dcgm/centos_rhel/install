@@ -51,7 +51,7 @@ install_dcgm() {
 try_install() {
     # Export all functions for the bash subprocess
     eval "$(declare -F | sed 's/ -f / -fx /')"
-    export VERSION_ID=$VERSION_ID
+    export VERSION_ID
     for install_method in "$@"; do
         echo "Installing NVIDIA driver with $install_method..."
         # Can't use a subshell because of https://lists.gnu.org/archive/html/bug-bash/2012-12/msg00094.html
