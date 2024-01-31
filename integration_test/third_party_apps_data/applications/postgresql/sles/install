@@ -4,7 +4,9 @@ source /etc/os-release
 SUSE_VERSION="${VERSION_ID%%.*}"
 
 SERVICE_NAME="postgresql"
-DATA_DIR="/var/lib/pgsql/data"
+DATA_ROOT=/var/lib/pgsql
+CFG_ROOT=/var/lib/pgsql
+BIN_DIR=/usr/lib/postgresql14/bin
 
 if [[ "${SUSE_VERSION}" == 12 ]]; then
   sudo zypper addrepo https://download.postgresql.org/pub/repos/zypp/repo/pgdg-sles-12-pg14.repo
@@ -16,7 +18,9 @@ elif [[ "${SUSE_VERSION}" == 15 ]]; then
   sudo zypper --no-gpg-checks in -y postgresql14-server postgresql14-contrib postgresql14
 
   SERVICE_NAME="postgresql-14"
-  DATA_DIR="/var/lib/pgsql/14/data"
+  DATA_ROOT=/var/lib/pgsql/14
+  CFG_ROOT=/var/lib/pgsql/14
+  BIN_DIR=/usr/pgsql-14/bin
 
   sudo /usr/pgsql-14/bin/postgresql-14-setup initdb
 fi
@@ -25,10 +29,66 @@ sudo systemctl enable $SERVICE_NAME
 sudo service $SERVICE_NAME restart
 
 sudo su postgres -c "psql postgres -c \"ALTER ROLE postgres WITH PASSWORD 'abc123';\""
+sudo su postgres -c "psql postgres -c \"CREATE ROLE replica_user WITH REPLICATION LOGIN PASSWORD 'abc123';\""
 
-sudo tee "${DATA_DIR}"/pg_hba.conf > /dev/null << EOF
+# This has to be removed for SLES12 where the file has other auth settings that cause issues with the replica
+sudo rm ${CFG_ROOT}/data/pg_hba.conf
+sudo tee ${CFG_ROOT}/data/pg_hba.conf << EOF
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+
+# "local" is for Unix domain socket connections only
+local   all             all                                     peer
+# IPv4 local connections:
+host    all             all             127.0.0.1/32            ident
+# IPv6 local connections:
+host    all             all             ::1/128                 ident
+# allow local connections
 host    all             all             127.0.0.1/32            scram-sha-256
 host    all             all             ::1/128                 scram-sha-256
+# allow replica connection from localhost
+host  replication   replica_user  localhost  md5
+EOF
+
+### Everything following this comment is designed to set up a paused replica to get replication metrics
+sudo tee -a ${CFG_ROOT}/data/postgresql.conf << EOF
+wal_level = logical
+wal_log_hints = on
 EOF
 
 sudo service $SERVICE_NAME restart
+
+# backup from primary to repl directory and configure replication
+sudo tee ${DATA_ROOT}/.pgpass << EOF
+*:*:*:replica_user:abc123
+EOF
+sudo chown postgres:postgres ${DATA_ROOT}/.pgpass
+sudo chmod 600 ${DATA_ROOT}/.pgpass
+sudo PGPASSFILE=${DATA_ROOT}/.pgpass pg_basebackup -h localhost -U replica_user -X stream -C -S replica_2 -v -R -w -D ${DATA_ROOT}/repl/
+
+# This has to be removed for SLES12 where the file has other auth settings that cause issues with the replica
+sudo rm ${CFG_ROOT}/repl/pg_hba.conf
+sudo touch ${DATA_ROOT}/repl/pg_hba.conf
+sudo tee -a ${DATA_ROOT}/repl/pg_hba.conf << EOF
+# "local" is for Unix domain socket connections only
+local   all             all                                     peer
+# IPv4 local connections:
+host    all             all             127.0.0.1/32            scram-sha-256
+# IPv6 local connections:
+host    all             all             ::1/128                 scram-sha-256
+# Allow replication connections from localhost, by a user with the
+# replication privilege.
+local   replication     all                                     peer
+host    replication     all             127.0.0.1/32            scram-sha-256
+host    replication     all             ::1/128                 scram-sha-256
+EOF
+
+sudo tee ${DATA_ROOT}/repl/postgresql.conf << EOF
+port = 5434
+EOF
+
+sudo chown -R postgres:postgres ${DATA_ROOT}/repl
+
+# start the replica in the background
+sudo su postgres -c "$BIN_DIR/postgres -D ${DATA_ROOT}/repl" &
+# pause the replication so we see delay metrics populated
+sudo su postgres -c "PGPASSWORD=abc123 psql postgres -h localhost -p 5434 -c  \"SELECT pg_wal_replay_pause();\""
