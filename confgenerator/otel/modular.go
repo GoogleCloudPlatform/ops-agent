@@ -116,7 +116,7 @@ type ModularConfig struct {
 	Exporters map[ExporterType]Component
 
 	// Test-only options:
-	// Don't generate any self-metrics (
+	// Don't generate any self-metrics
 	DisableMetrics bool
 	// Emit collector logs as JSON
 	JSONLogs bool
