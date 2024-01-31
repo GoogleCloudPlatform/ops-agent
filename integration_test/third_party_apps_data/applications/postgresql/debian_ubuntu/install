@@ -57,6 +57,8 @@ EOF
 sudo chown -R postgres:postgres ${DATA_ROOT}/repl
 
 # start the replica in the background
-sudo su postgres -c "/usr/lib/postgresql/14/bin/postgres -D ${DATA_ROOT}/repl" &
+nohup sudo su postgres -c "/usr/lib/postgresql/14/bin/postgres -D ${DATA_ROOT}/repl" &
+# give it time to start, since we put it in the background
+sleep 5
 # pause the replication so we see delay metrics populated
 sudo su postgres -c "PGPASSWORD=abc123 psql postgres -h localhost -p 5434 -c  \"SELECT pg_wal_replay_pause();\""
