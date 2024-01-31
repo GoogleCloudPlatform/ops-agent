@@ -937,13 +937,20 @@ func (uc *UnifiedConfig) TracesReceivers() (map[string]TracesReceiver, error) {
 	return validReceivers, nil
 }
 
-func (uc *UnifiedConfig) OTelLoggingReceivers(ctx context.Context) (map[string]OTelReceiver, error) {
-	validReceivers := map[string]OTelReceiver{}
-	if uc.Logging != nil && uc.Logging.Service != nil && uc.Logging.Service.OTelLogging {
-		// Require experimental flag for logging receivers
+func (uc *UnifiedConfig) loggingReceivers(ctx context.Context, includeFluentBit bool) (map[string]Component, error) {
+	validReceivers := map[string]Component{}
+	if uc.Logging != nil {
 		for k, v := range uc.Logging.Receivers {
-			if v, ok := v.(OTelReceiver); ok {
+			if includeFluentBit {
+				// All logging receivers are compatible with Fluent Bit
 				validReceivers[k] = v
+			}
+			if uc.Logging.Service != nil && uc.Logging.Service.OTelLogging {
+				// Only some logging receivers are compatible with OTel,
+				// and they require an experiment flag
+				if _, ok := v.(OTelReceiver); ok {
+					validReceivers[k] = v
+				}
 			}
 		}
 	}
@@ -953,9 +960,32 @@ func (uc *UnifiedConfig) OTelLoggingReceivers(ctx context.Context) (map[string]O
 			if _, ok := uc.Logging.Receivers[k]; ok {
 				return nil, fmt.Errorf("logging receiver %q has the same name as combined receiver %q", k, k)
 			}
-			if v, ok := v.(OTelReceiver); ok {
+			if _, ok := v.(OTelReceiver); ok {
 				validReceivers[k] = v
 			}
+		}
+	}
+	return validReceivers, nil
+}
+
+// AllLoggingReceivers returns all Fluent Bit and OTel logging receivers in the given config.
+// Every returned Component will be either a LoggingReceiver or an OTelReceiver.
+func (uc *UnifiedConfig) AllLoggingReceivers(ctx context.Context) (map[string]Component, error) {
+	return uc.loggingReceivers(ctx, true)
+}
+
+func (uc *UnifiedConfig) OTelLoggingReceivers(ctx context.Context) (map[string]OTelReceiver, error) {
+	validReceivers := map[string]OTelReceiver{}
+	otelComponents, err := uc.loggingReceivers(ctx, false)
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range otelComponents {
+		if v, ok := v.(OTelReceiver); ok {
+			validReceivers[k] = v
+		} else {
+			// Shouldn't happen
+			log.Fatalf("unexpected non-OTel receiver %s returned from loggingReceivers", k)
 		}
 	}
 	return validReceivers, nil
