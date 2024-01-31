@@ -1216,11 +1216,9 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		// gateway that is configured in our testing project.
 		args = append(args, "--no-address")
 	}
-	ttl := options.TimeToLive
-	if ttl == "" {
-		ttl = "3h"
+	if options.TimeToLive != "" {
+		args = append(args, "--max-run-duration="+options.TimeToLive, "--instance-termination-action=DELETE", "--provisioning-model=STANDARD")
 	}
-	args = append(args, "--max-run-duration="+ttl, "--instance-termination-action=DELETE", "--provisioning-model=STANDARD")
 	args = append(args, options.ExtraCreateArguments...)
 
 	output, err := RunGcloud(ctx, logger, "", args)
@@ -1879,10 +1877,13 @@ type VMOptions struct {
 	// If not supplied, the framework will attempt to guess the right project
 	// to use based on Platform.
 	ImageProject string
-	// Optional. The default TimeToLive is "3h", meaning 3 hours. After that the
-	// VM will be deleted.
-	// TODO: b/227348032 -  Change the default TimeToLive to infinite and move
-	// the 3h to each callsite into this library.
+	// Optional. Set this to a duration like "3h" or "1d" to configure the VM to
+	// be automatically deleted after the specified amount of time. This is
+	// a recommended setting for short-lived VMs even if your code calls
+	// DeleteInstance(), because this setting will take effect even if your code
+	// crashes before calling DeleteInstance(), and besides DeleteInstance() can
+	// fail. Calling DeleteInstance() is still recommended even if your code sets
+	// a TimeToLive to free up VM resources as soon as possible.
 	TimeToLive string
 	// Optional. If missing, a random name will be generated.
 	Name string
