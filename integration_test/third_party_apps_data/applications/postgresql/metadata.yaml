@@ -128,7 +128,6 @@ expected_metrics:
     labels:
       replication_client: .*
     monitored_resource: gce_instance
-    optional: true
     type: workload.googleapis.com/postgresql.replication.data_delay
     value_type: INT64
   - kind: CUMULATIVE
@@ -167,7 +166,6 @@ expected_metrics:
     value_type: INT64
   - kind: GAUGE
     monitored_resource: gce_instance
-    optional: true
     type: workload.googleapis.com/postgresql.wal.age
     value_type: INT64
   - kind: GAUGE
@@ -175,7 +173,6 @@ expected_metrics:
       operation: flush|replay|write
       replication_client: .*
     monitored_resource: gce_instance
-    optional: true
     type: workload.googleapis.com/postgresql.wal.lag
     value_type: INT64
 expected_logs:
