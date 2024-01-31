@@ -515,7 +515,7 @@ func (r Restriction) OTTLExpression() (ottl.Value, error) {
 	case "=", "!=":
 		// equality, case insensitive
 		expr = ottl.IsMatch(lhs, fmt.Sprintf(`(?i)^%s$`, regexp.QuoteMeta(r.RHS)))
-		if r.Operator == "!~" {
+		if r.Operator == "!=" {
 			expr = ottl.Not(expr)
 		}
 	}

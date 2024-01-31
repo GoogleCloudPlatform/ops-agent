@@ -30,6 +30,9 @@
     jsonPayload.omitted:
       static_value: broken
       omit_if: jsonPayload.field = "field value"
+    jsonPayload.omitted2:
+      static_value: broken
+      omit_if: jsonPayload.field != "foo"
     trace:
       move_from: jsonPayload.trace
     spanId:
