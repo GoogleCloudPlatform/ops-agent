@@ -18,12 +18,12 @@ sudo tee -a ${CFG_ROOT}/main/postgresql.conf << EOF
 wal_level = logical
 wal_log_hints = on
 archive_mode = on
-archive_command = 'test ! -f $DATA_ROOT/archive/%f && cp %p $DATA_ROOT/archive/%f'
+archive_command = 'test ! -f $DATA_ROOT/main/archive/%f && cp %p $DATA_ROOT/main/archive/%f'
 archive_timeout = 10s
 EOF
 
-sudo mkdir $DATA_ROOT/archive/
-sudo chown postgres:postgres $DATA_ROOT/archive/
+sudo mkdir $DATA_ROOT/main/archive/
+sudo chown postgres:postgres $DATA_ROOT/main/archive/
 
 # allow replica connection from localhost
 sudo tee -a ${CFG_ROOT}/main/pg_hba.conf << EOF
