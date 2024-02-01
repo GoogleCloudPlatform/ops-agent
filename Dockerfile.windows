@@ -100,9 +100,6 @@ COPY submodules/fluent-bit /work/submodules/fluent-bit
 
 WORKDIR /work/submodules/fluent-bit/build
 
-# Debug why we get docker cache misses for release builds.
-RUN go run github.com/MShekow/directory-checksum@main --max-depth=3 /work
-
 RUN cmake -G "'Visual Studio 16 2019'" -DCMAKE_BUILD_TYPE=RELWITHDEBINFO -DFLB_OUT_KINESIS_STREAMS=OFF ../;
 
 RUN cmake --build . --config Release; `
