@@ -698,6 +698,8 @@ type PackageLocation struct {
 	repoCodename string
 	// Region the packages live in in Artifact Registry. Requires repoSuffix
 	// to be nonempty.
+	repoURL string
+	// Direct URL to Repo.
 	artifactRegistryRegion string
 }
 
@@ -707,6 +709,7 @@ func LocationFromEnvVars() PackageLocation {
 		packagesInGCS:          os.Getenv("AGENT_PACKAGES_IN_GCS"),
 		repoSuffix:             os.Getenv("REPO_SUFFIX"),
 		repoCodename:           os.Getenv("REPO_CODENAME"),
+		repoURL:                os.Getenv("REPO_URL"),
 		artifactRegistryRegion: os.Getenv("ARTIFACT_REGISTRY_REGION"),
 	}
 }
@@ -733,8 +736,8 @@ func windowsEnvironment(environment map[string]string) string {
 // PackageLocation to determine where to install the agent from. For details
 // about PackageLocation, see the documentation for the PackageLocation struct.
 func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, location PackageLocation) error {
-	if location.packagesInGCS != "" && location.repoSuffix != "" {
-		return fmt.Errorf("invalid PackageLocation: cannot provide both location.packagesInGCS and location.repoSuffix. location=%#v")
+	if location.packagesInGCS != "" && location.repoSuffix != "" && location.repoURL != "" {
+		return fmt.Errorf("invalid PackageLocation: cannot provide more than one: (location.packagesInGCS, location.repoSuffix, location.repoURL). location=%#v")
 	}
 	if location.artifactRegistryRegion != "" && location.repoSuffix == "" {
 		return fmt.Errorf("invalid PackageLocation: location.artifactRegistryRegion was nonempty yet location.repoSuffix was empty. location=%#v")
@@ -747,6 +750,7 @@ func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, locati
 	preservedEnvironment := map[string]string{
 		"REPO_SUFFIX":              location.repoSuffix,
 		"REPO_CODENAME":            location.repoCodename,
+		"REPO_URL":                 location.repoURL,
 		"ARTIFACT_REGISTRY_REGION": location.artifactRegistryRegion,
 	}
 
