@@ -696,10 +696,10 @@ type PackageLocation struct {
 	// This setting is only used for ARM builds at the moment, and ignored when
 	// installing from Artifact Registry.
 	repoCodename string
+	// Direct URL to Repo.
+	repoURL string
 	// Region the packages live in in Artifact Registry. Requires repoSuffix
 	// to be nonempty.
-	repoURL string
-	// Direct URL to Repo.
 	artifactRegistryRegion string
 }
 
