@@ -696,8 +696,6 @@ type PackageLocation struct {
 	// This setting is only used for ARM builds at the moment, and ignored when
 	// installing from Artifact Registry.
 	repoCodename string
-	// Direct URL to Repo.
-	repoURL string
 	// Region the packages live in in Artifact Registry. Requires repoSuffix
 	// to be nonempty.
 	artifactRegistryRegion string
@@ -709,7 +707,6 @@ func LocationFromEnvVars() PackageLocation {
 		packagesInGCS:          os.Getenv("AGENT_PACKAGES_IN_GCS"),
 		repoSuffix:             os.Getenv("REPO_SUFFIX"),
 		repoCodename:           os.Getenv("REPO_CODENAME"),
-		repoURL:                os.Getenv("REPO_URL"),
 		artifactRegistryRegion: os.Getenv("ARTIFACT_REGISTRY_REGION"),
 	}
 }
@@ -732,22 +729,12 @@ func windowsEnvironment(environment map[string]string) string {
 	return toEnvironment(environment, `$env:%s='%s'`, "\n")
 }
 
-func nTrue(b ...bool) int {
-    n := 0
-    for _, v := range b {
-        if v {
-            n++
-        }
-    }
-    return n
-}
-
 // InstallOpsAgent installs the Ops Agent on the given VM. Consults the given
 // PackageLocation to determine where to install the agent from. For details
 // about PackageLocation, see the documentation for the PackageLocation struct.
 func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, location PackageLocation) error {
-	if nTrue(location.packagesInGCS != "", location.repoSuffix != "", location.repoURL != "") > 1 {
-		return fmt.Errorf("invalid PackageLocation: cannot provide more than one: (location.packagesInGCS, location.repoSuffix, location.repoURL). location=%#v")
+	if location.packagesInGCS != "" && location.repoSuffix != "" {
+		return fmt.Errorf("invalid PackageLocation: cannot provide both location.packagesInGCS and location.repoSuffix. location=%#v")
 	}
 	if location.artifactRegistryRegion != "" && location.repoSuffix == "" {
 		return fmt.Errorf("invalid PackageLocation: location.artifactRegistryRegion was nonempty yet location.repoSuffix was empty. location=%#v")
@@ -760,7 +747,6 @@ func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, locati
 	preservedEnvironment := map[string]string{
 		"REPO_SUFFIX":              location.repoSuffix,
 		"REPO_CODENAME":            location.repoCodename,
-		"REPO_URL":                 location.repoURL,
 		"ARTIFACT_REGISTRY_REGION": location.artifactRegistryRegion,
 	}
 

@@ -72,11 +72,12 @@ function set_platforms() {
   # if _LOUHI_TAG_NAME is defined, set TARGET and ARCH env vars by parsing it.
   # Example value: louhi/2.46.0/shortref/windows/x86_64/start
   if [[ -n "${_LOUHI_TAG_NAME:-}" ]]; then
-    SHORT_REF="$(echo -n "${_LOUHI_TAG_NAME}" | cut --delimiter="/" --fields=3)"
+    REPO_SUFFIX="$(echo -n "${_LOUHI_TAG_NAME}" | cut --delimiter="/" --fields=3)"  # the shortref is the repo suffix
+    export REPO_SUFFIX
     TARGET="$(echo -n "${_LOUHI_TAG_NAME}" | cut --delimiter="/" --fields=4)"
     ARCH="$(echo -n "${_LOUHI_TAG_NAME}" | cut --delimiter="/" --fields=5)"
-    REPO_URL="google-cloud-ops-agent-${TARGET}-${ARCH//_/-}-${SHORT_REF}"
-    export REPO_URL
+    REPO_PROJECT="${_STAGING_ARTIFACTS_PROJECT_ID}"  # Louhi is responsible for passing this.
+    export REPO_PROJECT
   fi
   # if TARGET is not set, return an error
   if [[ -z "${TARGET:-}" ]]; then
