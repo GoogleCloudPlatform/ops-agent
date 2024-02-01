@@ -732,11 +732,21 @@ func windowsEnvironment(environment map[string]string) string {
 	return toEnvironment(environment, `$env:%s='%s'`, "\n")
 }
 
+func nTrue(b ...bool) int {
+    n := 0
+    for _, v := range b {
+        if v {
+            n++
+        }
+    }
+    return n
+}
+
 // InstallOpsAgent installs the Ops Agent on the given VM. Consults the given
 // PackageLocation to determine where to install the agent from. For details
 // about PackageLocation, see the documentation for the PackageLocation struct.
 func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, location PackageLocation) error {
-	if location.packagesInGCS != "" && location.repoSuffix != "" && location.repoURL != "" {
+	if nTrue(location.packagesInGCS != "", location.repoSuffix != "", location.repoURL != "") > 1 {
 		return fmt.Errorf("invalid PackageLocation: cannot provide more than one: (location.packagesInGCS, location.repoSuffix, location.repoURL). location=%#v")
 	}
 	if location.artifactRegistryRegion != "" && location.repoSuffix == "" {
