@@ -34,7 +34,13 @@ CFG_ROOT=/var/lib/pgsql/14
 sudo tee -a ${CFG_ROOT}/data/postgresql.conf << EOF
 wal_level = logical
 wal_log_hints = on
+archive_mode = on
+archive_command = 'test ! -f $DATA_ROOT/archive/%f && cp %p $DATA_ROOT/archive/%f'
+archive_timeout = 10s
 EOF
+
+sudo mkdir $DATA_ROOT/archive/
+sudo chown postgres:postgres $DATA_ROOT/archive/
 
 # allow replica connection from localhost
 sudo tee -a ${CFG_ROOT}/data/pg_hba.conf << EOF
