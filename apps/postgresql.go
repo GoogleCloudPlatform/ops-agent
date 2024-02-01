@@ -79,6 +79,11 @@ func (r MetricsReceiverPostgresql) Pipelines(_ context.Context) []otel.ReceiverP
 				otel.FlattenResourceAttribute("postgresql.database.name", "database"),
 				otel.FlattenResourceAttribute("postgresql.table.name", "table"),
 				otel.FlattenResourceAttribute("postgresql.index.name", "index"),
+				// As of version 0.89, the postgresql receiver supports a double-precision wal.lag metric replacement
+				// the following two transforms convert it back to integer-precision wal.lag for backwards compatibility.
+				// The two metrics are mutually exclusive so we do not need to worry about overwriting or removing the original wal.lag.
+				otel.ConvertFloatToInt("postgresql.wal.delay"),
+				otel.SetName("postgresql.wal.delay", "postgresql.wal.lag"),
 			),
 			otel.MetricsTransform(
 				otel.UpdateMetric("postgresql.bgwriter.duration",

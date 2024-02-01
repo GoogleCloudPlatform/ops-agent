@@ -450,6 +450,8 @@ processors:
       - set(attributes["database"], resource.attributes["postgresql.database.name"])
       - set(attributes["table"], resource.attributes["postgresql.table.name"])
       - set(attributes["index"], resource.attributes["postgresql.index.name"])
+      - set(value_int, Int(value_double)) where metric.name == "postgresql.wal.delay"
+      - set(metric.name, "postgresql.wal.lag") where metric.name == "postgresql.wal.delay"
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
