@@ -955,7 +955,11 @@ type pipelineInstance struct {
 	backend pipelineBackend
 }
 
-func (uc *UnifiedConfig) MetricsPipelines(ctx context.Context) ([]pipelineInstance, error) {
+func (pi *pipelineInstance) Types() (string, string) {
+	return pi.pipelineType, pi.receiver.Type()
+}
+
+func (uc *UnifiedConfig) metricsPipelines(ctx context.Context) ([]pipelineInstance, error) {
 	receivers, err := uc.MetricsReceivers()
 	if err != nil {
 		return nil, err
@@ -1006,7 +1010,7 @@ func (uc *UnifiedConfig) MetricsPipelines(ctx context.Context) ([]pipelineInstan
 	return out, nil
 }
 
-func (uc *UnifiedConfig) TracesPipelines(ctx context.Context) ([]pipelineInstance, error) {
+func (uc *UnifiedConfig) tracesPipelines(ctx context.Context) ([]pipelineInstance, error) {
 	receivers, err := uc.TracesReceivers()
 	if err != nil {
 		return nil, err
@@ -1032,7 +1036,7 @@ func (uc *UnifiedConfig) TracesPipelines(ctx context.Context) ([]pipelineInstanc
 	return out, nil
 }
 
-func (uc *UnifiedConfig) LoggingPipelines(ctx context.Context) ([]pipelineInstance, error) {
+func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]pipelineInstance, error) {
 	l := uc.Logging
 	if l == nil {
 		return nil, nil
@@ -1083,6 +1087,22 @@ func (uc *UnifiedConfig) LoggingPipelines(ctx context.Context) ([]pipelineInstan
 		}
 	}
 	return out, nil
+}
+
+func (uc *UnifiedConfig) Pipelines(ctx context.Context) ([]pipelineInstance, error) {
+	metricsPipelines, err := uc.metricsPipelines(ctx)
+	if err != nil {
+		return nil, err
+	}
+	tracesPipelines, err := uc.tracesPipelines(ctx)
+	if err != nil {
+		return nil, err
+	}
+	loggingPipelines, err := uc.loggingPipelines(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return append(append(metricsPipelines, tracesPipelines...), loggingPipelines...), nil
 }
 
 // LoggingReceivers returns a map of potential logging receivers.

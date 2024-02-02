@@ -281,19 +281,10 @@ func appendMaps[T any](out map[string]T, maps ...map[string]T) {
 func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]otel.ReceiverPipeline, map[string]otel.Pipeline, error) {
 	outR := make(map[string]otel.ReceiverPipeline)
 	outP := make(map[string]otel.Pipeline)
-	metricsPipelines, err := uc.MetricsPipelines(ctx)
+	pipelines, err := uc.Pipelines(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
-	tracesPipelines, err := uc.TracesPipelines(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-	loggingPipelines, err := uc.LoggingPipelines(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-	pipelines := append(append(metricsPipelines, tracesPipelines...), loggingPipelines...)
 	for _, pipeline := range pipelines {
 		if pipeline.backend != backendOTel {
 			continue
@@ -434,7 +425,7 @@ func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAg
 		// Type for sorting.
 		var sources []fbSource
 		var tags []string
-		pipelines, err := uc.LoggingPipelines(ctx)
+		pipelines, err := uc.Pipelines(ctx)
 		if err != nil {
 			return nil, err
 		}
