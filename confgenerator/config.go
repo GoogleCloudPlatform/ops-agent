@@ -937,25 +937,183 @@ func (uc *UnifiedConfig) TracesReceivers() (map[string]TracesReceiver, error) {
 	return validReceivers, nil
 }
 
-func (uc *UnifiedConfig) OTelLoggingReceivers(ctx context.Context) (map[string]OTelReceiver, error) {
-	validReceivers := map[string]OTelReceiver{}
-	if uc.Logging != nil && uc.Logging.Service != nil && uc.Logging.Service.OTelLogging {
-		// Require experimental flag for logging receivers
-		for k, v := range uc.Logging.Receivers {
-			if v, ok := v.(OTelReceiver); ok {
-				validReceivers[k] = v
+type pipelineBackend int
+
+const (
+	backendOTel pipelineBackend = iota
+	backendFluentBit
+)
+
+type pipelineInstance struct {
+	pID, rID     string
+	pipelineType string
+	receiver     Component
+	processors   []struct {
+		id string
+		Component
+	}
+	backend pipelineBackend
+}
+
+func (uc *UnifiedConfig) MetricsPipelines(ctx context.Context) ([]pipelineInstance, error) {
+	receivers, err := uc.MetricsReceivers()
+	if err != nil {
+		return nil, err
+	}
+	var out []pipelineInstance
+	if uc.Metrics != nil && uc.Metrics.Service != nil {
+		for pID, p := range uc.Metrics.Service.Pipelines {
+			for _, rID := range p.ReceiverIDs {
+				receiver, ok := receivers[rID]
+				if !ok {
+					return nil, fmt.Errorf("metrics receiver %q not found", rID)
+				}
+				var processors []struct {
+					id string
+					Component
+				}
+				canMerge := true
+				for _, prID := range p.ProcessorIDs {
+					processor, ok := uc.Metrics.Processors[prID]
+					if !ok {
+						return nil, fmt.Errorf("processor %q not found", prID)
+					}
+					if mr, ok := receiver.(MetricsProcessorMerger); ok && canMerge {
+						receiver, ok = mr.MergeMetricsProcessor(processor)
+						if ok {
+							// Only continue when the receiver can completely merge the processor;
+							// If the receiver is no longer a MetricsProcessorMerger, or it can't
+							// completely merge the current processor, break the loop
+							continue
+						}
+					}
+					canMerge = false
+					processors = append(processors, struct {
+						id string
+						Component
+					}{prID, processor})
+				}
+				out = append(out, pipelineInstance{
+					pipelineType: "metrics",
+					pID:          pID,
+					rID:          rID,
+					receiver:     receiver,
+					processors:   processors,
+				})
 			}
 		}
 	}
-	if uc.Combined != nil && experimentsFromContext(ctx)["otlp_logging"] {
-		// Combined receivers always use OTel
+	return out, nil
+}
+
+func (uc *UnifiedConfig) TracesPipelines(ctx context.Context) ([]pipelineInstance, error) {
+	receivers, err := uc.TracesReceivers()
+	if err != nil {
+		return nil, err
+	}
+	var out []pipelineInstance
+	if uc.Traces != nil && uc.Traces.Service != nil {
+		for pID, p := range uc.Traces.Service.Pipelines {
+			for _, rID := range p.ReceiverIDs {
+				receiver, ok := receivers[rID]
+				if !ok {
+					return nil, fmt.Errorf("traces receiver %q not found", rID)
+				}
+				out = append(out, pipelineInstance{
+					pipelineType: "traces",
+					pID:          pID,
+					rID:          rID,
+					receiver:     receiver,
+					processors:   nil,
+				})
+			}
+		}
+	}
+	return out, nil
+}
+
+func (uc *UnifiedConfig) LoggingPipelines(ctx context.Context) ([]pipelineInstance, error) {
+	l := uc.Logging
+	if l == nil {
+		return nil, nil
+	}
+	receivers, err := uc.LoggingReceivers(ctx)
+	if err != nil {
+		return nil, err
+	}
+	exp_otlp := experimentsFromContext(ctx)["otlp_logging"]
+	exp_otel := l.Service.OTelLogging
+	var out []pipelineInstance
+	for _, pID := range sortedKeys(l.Service.Pipelines) {
+		p := l.Service.Pipelines[pID]
+		for _, rID := range p.ReceiverIDs {
+			receiver, ok := receivers[rID]
+			if !ok {
+				return nil, fmt.Errorf("logging receiver %q not found", rID)
+			}
+			var processors []struct {
+				id string
+				Component
+			}
+			for _, prID := range p.ProcessorIDs {
+				processor, ok := l.Processors[prID]
+				if !ok {
+					processor, ok = LegacyBuiltinProcessors[prID]
+				}
+				if !ok {
+					return nil, fmt.Errorf("processor %q not found", prID)
+				}
+				processors = append(processors, struct {
+					id string
+					Component
+				}{prID, processor})
+			}
+			instance := pipelineInstance{
+				pipelineType: "logs",
+				backend:      backendFluentBit,
+				pID:          pID,
+				rID:          rID,
+				receiver:     receiver,
+				processors:   processors,
+			}
+			if exp_otel || (receiver.Type() == "otlp" && exp_otlp) {
+				instance.backend = backendOTel
+			}
+			out = append(out, instance)
+		}
+	}
+	return out, nil
+}
+
+// LoggingReceivers returns a map of potential logging receivers.
+// Each Component may or may not be usable in fluent-bit or otel.
+func (uc *UnifiedConfig) LoggingReceivers(ctx context.Context) (map[string]Component, error) {
+	out := map[string]Component{}
+	if uc.Logging != nil {
+		for k, v := range uc.Logging.Receivers {
+			out[k] = v
+		}
+	}
+	if uc.Combined != nil {
 		for k, v := range uc.Combined.Receivers {
-			if _, ok := uc.Logging.Receivers[k]; ok {
+			if _, ok := out[k]; ok {
 				return nil, fmt.Errorf("logging receiver %q has the same name as combined receiver %q", k, k)
 			}
-			if v, ok := v.(OTelReceiver); ok {
-				validReceivers[k] = v
-			}
+			out[k] = v
+		}
+	}
+	return out, nil
+}
+
+func (uc *UnifiedConfig) OTelLoggingReceivers(ctx context.Context) (map[string]OTelReceiver, error) {
+	receivers, err := uc.LoggingReceivers(ctx)
+	if err != nil {
+		return nil, err
+	}
+	validReceivers := map[string]OTelReceiver{}
+	for k, v := range receivers {
+		if v, ok := v.(OTelReceiver); ok {
+			validReceivers[k] = v
 		}
 	}
 	return validReceivers, nil
