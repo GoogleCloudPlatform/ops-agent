@@ -49,7 +49,7 @@ func (r MetricsReceiverOracleDB) Type() string {
 	return "oracledb"
 }
 
-func (r MetricsReceiverOracleDB) Pipelines(_ context.Context) []otel.ReceiverPipeline {
+func (r MetricsReceiverOracleDB) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
 	endpoint := r.Endpoint
 	if r.Endpoint == "" {
 		endpoint = defaultOracleDBEndpoint
@@ -117,7 +117,7 @@ func (r MetricsReceiverOracleDB) Pipelines(_ context.Context) []otel.ReceiverPip
 			),
 			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
-	}}
+	}}, nil
 }
 
 var oracleQueries = []sqlReceiverQuery{

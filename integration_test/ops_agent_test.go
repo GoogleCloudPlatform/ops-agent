@@ -62,7 +62,6 @@ import (
 
 	cloudlogging "cloud.google.com/go/logging"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
 	feature_tracking_metadata "github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
@@ -843,7 +842,7 @@ func TestHTTPRequestLog(t *testing.T) {
 		}
 
 		// Log with HTTP request data nested under "logging.googleapis.com/httpRequest".
-		const newHTTPRequestKey = confgenerator.HttpRequestKey
+		const newHTTPRequestKey = "logging.googleapis.com/httpRequest"
 		const newHTTPRequestLogId = "new_request_log"
 		newLogBody := map[string]interface{}{
 			"logId":           newHTTPRequestLogId,
@@ -1635,6 +1634,16 @@ func TestResourceNameLabel(t *testing.T) {
 
 func TestLogFilePathLabel(t *testing.T) {
 	t.Parallel()
+	t.Run("fluent-bit", func(t *testing.T) {
+		testLogFilePathLabel(t, false)
+	})
+	t.Run("otel", func(t *testing.T) {
+		testLogFilePathLabel(t, true)
+	})
+}
+
+func testLogFilePathLabel(t *testing.T, otel bool) {
+	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, platform)
@@ -1651,11 +1660,19 @@ func TestLogFilePathLabel(t *testing.T) {
     json:
       type: parse_json
   service:
+    experimental_otel_logging: %v
     pipelines:
       p1:
         receivers: [f1]
         processors: [json]
-`, file1)
+`, file1, otel)
+
+		if otel {
+			// Turn on the otel feature gate.
+			if err := gce.SetEnvironmentVariables(ctx, logger, vm, map[string]string{"EXPERIMENTAL_FEATURES": "otel_logging"}); err != nil {
+				t.Fatal(err)
+			}
+		}
 
 		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)

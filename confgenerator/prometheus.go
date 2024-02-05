@@ -54,11 +54,11 @@ func (r PrometheusMetrics) Type() string {
 	return "prometheus"
 }
 
-func (r PrometheusMetrics) Pipelines(ctx context.Context) []otel.ReceiverPipeline {
+func (r PrometheusMetrics) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	resource, err := platform.FromContext(ctx).GetResource()
 	if err != nil {
 		log.Printf("can't get resource metadata: %v", err)
-		return nil
+		return nil, nil
 	}
 	if resource != nil {
 		// Get the resource metadata for the instance we're running on.
@@ -98,7 +98,7 @@ func (r PrometheusMetrics) Pipelines(ctx context.Context) []otel.ReceiverPipelin
 		ResourceDetectionModes: map[string]otel.ResourceDetectionMode{
 			"metrics": otel.None,
 		},
-	}}
+	}}, nil
 }
 
 // Generate otel components for the prometheus config used. It is the same config except

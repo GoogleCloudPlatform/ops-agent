@@ -36,7 +36,7 @@ func (r MetricsReceiverApache) Type() string {
 	return "apache"
 }
 
-func (r MetricsReceiverApache) Pipelines(_ context.Context) []otel.ReceiverPipeline {
+func (r MetricsReceiverApache) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
 	if r.ServerStatusURL == "" {
 		r.ServerStatusURL = defaultServerStatusURL
 	}
@@ -63,7 +63,7 @@ func (r MetricsReceiverApache) Pipelines(_ context.Context) []otel.ReceiverPipel
 			),
 			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
-	}}
+	}}, nil
 }
 
 func init() {

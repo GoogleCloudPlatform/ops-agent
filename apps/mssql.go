@@ -34,7 +34,7 @@ func (MetricsReceiverMssql) Type() string {
 	return "mssql"
 }
 
-func (m MetricsReceiverMssql) Pipelines(_ context.Context) []otel.ReceiverPipeline {
+func (m MetricsReceiverMssql) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
 	if m.ReceiverVersion == "2" {
 		return []otel.ReceiverPipeline{{
 			Receiver: otel.Component{
@@ -57,7 +57,7 @@ func (m MetricsReceiverMssql) Pipelines(_ context.Context) []otel.ReceiverPipeli
 				otel.NormalizeSums(),
 				otel.ModifyInstrumentationScope(m.Type(), "2.0"),
 			}},
-		}}
+		}}, nil
 	}
 
 	return []otel.ReceiverPipeline{{
@@ -103,7 +103,7 @@ func (m MetricsReceiverMssql) Pipelines(_ context.Context) []otel.ReceiverPipeli
 			),
 			otel.ModifyInstrumentationScope(m.Type(), "1.0"),
 		}},
-	}}
+	}}, nil
 }
 
 func init() {

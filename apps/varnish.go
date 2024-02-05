@@ -33,7 +33,7 @@ func (MetricsReceiverVarnish) Type() string {
 	return "varnish"
 }
 
-func (r MetricsReceiverVarnish) Pipelines(_ context.Context) []otel.ReceiverPipeline {
+func (r MetricsReceiverVarnish) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
 	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "varnish",
@@ -50,7 +50,7 @@ func (r MetricsReceiverVarnish) Pipelines(_ context.Context) []otel.ReceiverPipe
 			),
 			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
-	}}
+	}}, nil
 }
 
 func init() {

@@ -15,6 +15,7 @@
 package self_metrics_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
@@ -23,11 +24,12 @@ import (
 	"gotest.tools/v3/assert"
 )
 
-var (
-	tests = []struct {
-		name             string
-		config           *confgenerator.UnifiedConfig
-		enabledReceivers self_metrics.EnabledReceivers
+func TestEnabledReceiversDefaultConfig(t *testing.T) {
+	for _, test := range []struct {
+		name                 string
+		config               *confgenerator.UnifiedConfig
+		enabledReceivers     self_metrics.EnabledReceivers
+		experimentalFeatures string
 	}{
 		{
 			name:   "builtin_linux",
@@ -54,7 +56,13 @@ var (
 					},
 				},
 				Logging: &confgenerator.Logging{
-					Service: &confgenerator.LoggingService{},
+					Service: &confgenerator.LoggingService{
+						Pipelines: map[string]*confgenerator.Pipeline{
+							"otlp": {
+								ReceiverIDs: []string{"otlp"},
+							},
+						},
+					},
 				},
 				Metrics: &confgenerator.Metrics{
 					Service: &confgenerator.MetricsService{
@@ -68,16 +76,14 @@ var (
 			},
 			enabledReceivers: self_metrics.EnabledReceivers{
 				MetricsReceiverCountsByType: map[string]int{"otlp": 1},
-				LogsReceiverCountsByType:    map[string]int{},
+				LogsReceiverCountsByType:    map[string]int{"otlp": 1},
 			},
+			experimentalFeatures: "otlp_logging",
 		},
-	}
-)
-
-func TestEnabledReceiversDefaultConfig(t *testing.T) {
-	for _, test := range tests {
+	} {
 		t.Run(test.name, func(t *testing.T) {
-			eR, err := self_metrics.CountEnabledReceivers(test.config)
+			ctx := confgenerator.ContextWithExperiments(context.Background(), confgenerator.ParseExperimentalFeatures(test.experimentalFeatures))
+			eR, err := self_metrics.CountEnabledReceivers(ctx, test.config)
 			assert.NilError(t, err)
 			assert.DeepEqual(t, eR, test.enabledReceivers)
 		})
