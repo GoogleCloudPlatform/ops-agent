@@ -34,7 +34,7 @@ func (r MetricsReceiverActivemq) Type() string {
 	return "activemq"
 }
 
-func (r MetricsReceiverActivemq) Pipelines(_ context.Context) []otel.ReceiverPipeline {
+func (r MetricsReceiverActivemq) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
 
 	targetSystem := "activemq"
 

@@ -236,6 +236,12 @@ func getTestsInDir(t *testing.T, testDir string) []string {
 func generateConfigs(pc platformConfig, testDir string) (got map[string]string, err error) {
 	ctx := pc.platform.TestContext(context.Background())
 
+	if features, err := os.ReadFile(filepath.Join("testdata", testDir, "EXPERIMENTAL_FEATURES")); err == nil {
+		ctx = confgenerator.ContextWithExperiments(ctx, confgenerator.ParseExperimentalFeatures(string(features)))
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return nil, err
+	}
+
 	got = make(map[string]string)
 	defer func() {
 		if err != nil {
@@ -325,7 +331,7 @@ func testGeneratedFiles(t *testing.T, generatedFiles map[string]string, testDir 
 		},
 	)
 	if golden.FlagUpdate() && os.IsNotExist(err) {
-		if err := os.Mkdir(goldenPath, 0777); err != nil {
+		if err := os.MkdirAll(goldenPath, 0777); err != nil {
 			return err
 		}
 	} else if err != nil {
@@ -364,9 +370,4 @@ func TestMain(m *testing.M) {
 		return "/path/to/executables/opentelemetry-java-contrib-jmx-metrics.jar", nil
 	}
 	os.Exit(m.Run())
-}
-
-func init() {
-	// Enable experimental features here by calling:
-	//	 os.Setenv("EXPERIMENTAL_FEATURES", "...(comma-separated feature list)...")
 }

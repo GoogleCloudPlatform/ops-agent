@@ -43,48 +43,29 @@ type EnabledReceivers struct {
 	LogsReceiverCountsByType    map[string]int
 }
 
-func CountEnabledReceivers(uc *confgenerator.UnifiedConfig) (EnabledReceivers, error) {
+func CountEnabledReceivers(ctx context.Context, uc *confgenerator.UnifiedConfig) (EnabledReceivers, error) {
 	eR := EnabledReceivers{
 		MetricsReceiverCountsByType: make(map[string]int),
 		LogsReceiverCountsByType:    make(map[string]int),
 	}
-	metricsReceivers, err := uc.MetricsReceivers()
+	pipelines, err := uc.Pipelines(ctx)
 	if err != nil {
 		return eR, err
 	}
-
-	// Logging Pipelines
-	for _, p := range uc.Logging.Service.Pipelines {
-		err := countReceivers(eR.LogsReceiverCountsByType, p, uc.Logging.Receivers)
-		if err != nil {
-			return eR, err
-		}
-	}
-
-	// Metrics Pipelines
-	for _, p := range uc.Metrics.Service.Pipelines {
-		err := countReceivers(eR.MetricsReceiverCountsByType, p, metricsReceivers)
-		if err != nil {
-			return eR, err
+	for _, p := range pipelines {
+		pipelineType, receiverType := p.Types()
+		if pipelineType == "metrics" {
+			eR.MetricsReceiverCountsByType[receiverType] += 1
+		} else if pipelineType == "logs" {
+			eR.LogsReceiverCountsByType[receiverType] += 1
 		}
 	}
 
 	return eR, nil
 }
 
-func countReceivers[C confgenerator.Component](receiverCounts map[string]int, p *confgenerator.Pipeline, receivers map[string]C) error {
-	for _, rID := range p.ReceiverIDs {
-		if r, ok := receivers[rID]; ok {
-			receiverCounts[r.Type()] += 1
-		} else {
-			return fmt.Errorf("receiver id %s not found in unified config", rID)
-		}
-	}
-	return nil
-}
-
-func InstrumentEnabledReceiversMetric(uc *confgenerator.UnifiedConfig, meter metricapi.Meter) error {
-	eR, err := CountEnabledReceivers(uc)
+func InstrumentEnabledReceiversMetric(ctx context.Context, uc *confgenerator.UnifiedConfig, meter metricapi.Meter) error {
+	eR, err := CountEnabledReceivers(ctx, uc)
 	if err != nil {
 		return err
 	}
@@ -220,7 +201,7 @@ func CollectOpsAgentSelfMetrics(ctx context.Context, userUc, mergedUc *confgener
 	}
 
 	enabledReceiversProvider := CreateEnabledReceiversMeterProvider(exporter, res)
-	err = InstrumentEnabledReceiversMetric(mergedUc, enabledReceiversProvider.Meter("ops_agent/self_metrics"))
+	err = InstrumentEnabledReceiversMetric(ctx, mergedUc, enabledReceiversProvider.Meter("ops_agent/self_metrics"))
 	if err != nil {
 		return fmt.Errorf("failed to instrument enabled receivers: %w", err)
 	}
