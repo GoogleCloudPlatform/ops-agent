@@ -34,7 +34,7 @@ func (r MetricsReceiverSolr) Type() string {
 	return "solr"
 }
 
-func (r MetricsReceiverSolr) Pipelines(_ context.Context) []otel.ReceiverPipeline {
+func (r MetricsReceiverSolr) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
 	targetSystem := "solr"
 
 	return r.MetricsReceiverSharedJVM.

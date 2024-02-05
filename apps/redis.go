@@ -40,7 +40,7 @@ func (r MetricsReceiverRedis) Type() string {
 	return "redis"
 }
 
-func (r MetricsReceiverRedis) Pipelines(_ context.Context) []otel.ReceiverPipeline {
+func (r MetricsReceiverRedis) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
 	if r.Address == "" {
 		r.Address = defaultRedisEndpoint
 	}
@@ -76,7 +76,7 @@ func (r MetricsReceiverRedis) Pipelines(_ context.Context) []otel.ReceiverPipeli
 			),
 			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
-	}}
+	}}, nil
 }
 
 func init() {
