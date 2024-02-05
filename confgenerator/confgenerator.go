@@ -21,6 +21,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
+	"maps"
 	"path"
 	"regexp"
 	"sort"
@@ -269,14 +270,6 @@ func (p pipelineInstance) otelComponents(ctx context.Context) (map[string]otel.R
 	return outR, outP, nil
 }
 
-func appendMaps[T any](out map[string]T, maps ...map[string]T) {
-	for _, in := range maps {
-		for k, v := range in {
-			out[k] = v
-		}
-	}
-}
-
 // generateOtelPipelines generates a map of OTel pipeline names to OTel pipelines.
 func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]otel.ReceiverPipeline, map[string]otel.Pipeline, error) {
 	outR := make(map[string]otel.ReceiverPipeline)
@@ -293,8 +286,8 @@ func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]
 		if err != nil {
 			return nil, nil, err
 		}
-		appendMaps(outR, pipeR)
-		appendMaps(outP, pipeP)
+		maps.Copy(outR, pipeR)
+		maps.Copy(outP, pipeP)
 	}
 	return outR, outP, nil
 }
