@@ -696,6 +696,9 @@ type PackageLocation struct {
 	// This setting is only used for ARM builds at the moment, and ignored when
 	// installing from Artifact Registry.
 	repoCodename string
+	// Package repository GCP project to install from. Requires repoSuffix
+	// to be nonempty.
+	repoProject string
 	// Region the packages live in in Artifact Registry. Requires repoSuffix
 	// to be nonempty.
 	artifactRegistryRegion string
@@ -707,6 +710,7 @@ func LocationFromEnvVars() PackageLocation {
 		packagesInGCS:          os.Getenv("AGENT_PACKAGES_IN_GCS"),
 		repoSuffix:             os.Getenv("REPO_SUFFIX"),
 		repoCodename:           os.Getenv("REPO_CODENAME"),
+		repoProject:            os.Getenv("REPO_PROJECT"),
 		artifactRegistryRegion: os.Getenv("ARTIFACT_REGISTRY_REGION"),
 	}
 }
@@ -747,6 +751,7 @@ func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, locati
 	preservedEnvironment := map[string]string{
 		"REPO_SUFFIX":              location.repoSuffix,
 		"REPO_CODENAME":            location.repoCodename,
+		"REPO_PROJECT":             location.repoProject,
 		"ARTIFACT_REGISTRY_REGION": location.artifactRegistryRegion,
 	}
 
