@@ -72,12 +72,11 @@ function set_platforms() {
   # if _LOUHI_TAG_NAME is defined, set TARGET and ARCH env vars by parsing it.
   # Example value: louhi/2.46.0/shortref/windows/x86_64/start
   if [[ -n "${_LOUHI_TAG_NAME:-}" ]]; then
-    REPO_SUFFIX="$(echo -n "${_LOUHI_TAG_NAME}" | cut --delimiter="/" --fields=3)"  # the shortref is the repo suffix
-    export REPO_SUFFIX
-    TARGET="$(echo -n "${_LOUHI_TAG_NAME}" | cut --delimiter="/" --fields=4)"
-    ARCH="$(echo -n "${_LOUHI_TAG_NAME}" | cut --delimiter="/" --fields=5)"
-    REPO_PROJECT="${_STAGING_ARTIFACTS_PROJECT_ID}"  # Louhi is responsible for passing this.
-    export REPO_PROJECT
+    local -a _LOUHI_TAG_COMPONENTS=(${_LOUHI_TAG_NAME//\// })  
+    export REPO_SUFFIX="${_LOUHI_TAG_COMPONENTS[2]}"  # the shortref is the repo suffix
+    TARGET="${_LOUHI_TAG_COMPONENTS[3]}"
+    ARCH="${_LOUHI_TAG_COMPONENTS[4]}"
+    export REPO_PROJECT="${_STAGING_ARTIFACTS_PROJECT_ID}"  # Louhi is responsible for passing this.
   fi
   # if TARGET is not set, return an error
   if [[ -z "${TARGET:-}" ]]; then
