@@ -1306,7 +1306,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	if IsWindows(vm.Platform) {
 		// __SuppressAnsiEscapeSequences disables color-related ANSI sequences in
 		// pwsh output. NO_COLOR is the officially supported variable to accomplish this,
-		// but it doesn't work in my testing. See also
+		// but it doesn't actually work. See also
 		// https://github.com/PowerShell/PowerShell/issues/19961.
 		if _, err := RunRemotely(ctx, logger, vm, "", `[Environment]::SetEnvironmentVariable("__SuppressAnsiEscapeSequences", "1", "Machine")`); err != nil {
 			return nil, err

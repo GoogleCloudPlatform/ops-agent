@@ -219,20 +219,6 @@ func writeToSystemLog(ctx context.Context, logger *log.Logger, vm *gce.VM, paylo
 	return nil
 }
 
-func TestRunRemotelyWindows(t *testing.T) {
-	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
-		t.Parallel()
-		if !gce.IsWindows(platform) {
-			t.SkipNow()
-		}
-		ctx, logger, vm := agents.CommonSetup(t, platform)
-
-		output, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", "dir /nonexistent")
-		t.Fatalf("err=%v, output=%#v", err, output)
-	})
-}
-
 func TestParseMultilineFileJava(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
