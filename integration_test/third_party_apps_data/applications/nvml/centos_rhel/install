@@ -1,55 +1,111 @@
 set -e
-KERNEL_VERSION=`uname -r`
-
-# sudo yum install -y kernel-devel-${KERNEL_VERSION} pciutils gcc make wget yum-utils 
-# TODO(b/312949832): Temporary fix for Rocky Linux 9.2/8.8; uncomment the above line and remove this following section once the image has been updated to Rocky Linux 9.3/8.9
 source /etc/os-release
-sudo yum install -y pciutils gcc make wget yum-utils
-if ! sudo yum install -y kernel-devel-${KERNEL_VERSION}; then 
-    sudo yum install -y kernel-devel  # Install the latest kernel dev package first to bring in the dependencies, before switching to 9.2 repo
-    if [[ $ID == rocky && "${VERSION_ID}" == 9.2 ]]; then
-        sudo sed -i 's,mirrorlist=https://mirrors.rockylinux.org/mirrorlist?arch=$basearch&repo=AppStream-$releasever$rltype,baseurl=https://dl.rockylinux.org/vault/rocky/9.2/AppStream/$basearch/os/,g' /etc/yum.repos.d/rocky.repo
-    elif [[ $ID == rocky && "${VERSION_ID}" == 8.8 ]]; then
-        sudo sed -i 's,mirrorlist=https://mirrors.rockylinux.org/mirrorlist?arch=$basearch&repo=BaseOS-$releasever,baseurl=https://dl.rockylinux.org/vault/rocky/8.8/BaseOS/$basearch/os/,g' /etc/yum.repos.d/Rocky-BaseOS.repo
-    fi
-    sudo yum clean all 
-    sudo yum --showduplicates list available kernel-devel
-    sudo yum install -y kernel-devel-${KERNEL_VERSION}
-fi
-# End of the temporary fix
+VERSION_ID=${VERSION_ID%%.*}
 
-# Install CUDA and driver together, since the `exercise` script needs to run a 
-# CUDA sample app to generating GPU process metrics
-# Prefer to install from the package manager since it is normally faster and has
-# less errors on installation; fallback to the runfile method if the package 
-# manager's package is not working or not compitible with the GPU model
-DEVICE_CODE=$(lspci -n | grep -Po '10de:[\w\d]{4}')
-case $DEVICE_CODE in
-    10de:102d)
-        # Install a specific version for NVIDIA Tesla K80, R470 is the last supported version
-        DRIVER_VERSION=470.82.01
-        CUDA_VERSION=11.4.4
-        ;;
-    *)
-        # Installing latest version of NVIDIA CUDA and driver
-        # Data Center/Tesla drivers and CUDA are released on different schedules;
-        # normally we install the matching versions of driver and CUDA 
-        # ($DRIVER_VERSION == $CUDA_BUNDLED_DRIVER_VERSION); due to https://github.com/NVIDIA/open-gpu-kernel-modules/issues/550
-        # we install a newer version of the driver
-        DRIVER_VERSION=535.129.03
-        CUDA_VERSION=12.2.2
-        CUDA_BUNDLED_DRIVER_VERSION=535.104.05
-        ;;
+verify_driver() {
+    # Verify NVIDIA driver:
+    # Installation could finish successfully but the driver is still unusable
+    # A common error when running this check:
+    # "NVIDIA-SMI has failed because it couldn't communicate with the NVIDIA 
+    # driver. Make sure that the latest NVIDIA driver is installed and running."
+    nvidia-smi
+}
+
+install_cuda_from_runfile() {
+    # Ref: https://docs.nvidia.com/datacenter/tesla/tesla-installation-notes/index.html#runfile
+    # This method requires the matching kernel-devel package to be installed, and 
+    # the package may be absent from the repo and cause this method to fail
+    # Remove existing installation before using the runfile
+    remove_cuda_package
+    remove_driver_package
+    sudo yum install -y kernel-devel-$(uname -r) pciutils gcc make wget yum-utils 
+
+    # Installing latest version of NVIDIA CUDA and driver
+    # Data Center/Tesla drivers and CUDA are released on different schedules;
+    # normally we install the matching versions of driver and CUDA 
+    # ($DRIVER_VERSION == $CUDA_BUNDLED_DRIVER_VERSION); due to https://github.com/NVIDIA/open-gpu-kernel-modules/issues/550
+    # we install a newer version of the driver
+    local DRIVER_VERSION=535.129.03
+    local CUDA_VERSION=12.2.2
+    local CUDA_BUNDLED_DRIVER_VERSION=535.104.05
+    echo "Installing NVIDIA Data Center driver $DRIVER_VERSION"
+    curl -fSsl -O https://us.download.nvidia.com/tesla/$DRIVER_VERSION/NVIDIA-Linux-x86_64-$DRIVER_VERSION.run
+    sudo bash ./NVIDIA-Linux-x86_64-$DRIVER_VERSION.run --silent
+    # Install the CUDA toolkit only, so that the CUDA toolkit uses the Data Center driver installed in the previous step
+    # See https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/ for CUDA and driver compatibility
+    echo "Installing CUDA Toolkit $CUDA_VERSION from CUDA installer with bundled driver $CUDA_BUNDLED_DRIVER_VERSION"
+    curl -fSsl -O https://developer.download.nvidia.com/compute/cuda/$CUDA_VERSION/local_installers/cuda_${CUDA_VERSION}_${CUDA_BUNDLED_DRIVER_VERSION}_linux.run
+    sudo sh cuda_${CUDA_VERSION}_${CUDA_BUNDLED_DRIVER_VERSION}_linux.run --toolkit --silent
+    verify_driver
+}
+
+setup_repo() {
+    sudo yum install -y yum-utils
+    sudo yum-config-manager \
+        --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel$VERSION_ID/x86_64/cuda-rhel$VERSION_ID.repo
+    sudo yum clean all
+}
+
+install_cuda_from_package_manager() {
+    setup_repo
+    install_driver_package
+    sudo yum -y install cuda
+    verify_driver
+}
+
+remove_cuda_package() {
+    # Ref: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#removing-cuda-toolkit-and-driver
+    sudo yum -y remove "cuda*" "*cublas*" "*cufft*" "*cufile*" "*curand*" \
+        "*cusolver*" "*cusparse*" "*gds-tools*" "*npp*" "*nvjpeg*" "nsight*" \
+        "*nvvm*"
+}
+
+try_install() {
+    # Export all functions for the bash subprocess
+    eval "$(declare -F | sed 's/ -f / -fx /')"
+    export VERSION_ID
+    for install_method in "$@"; do
+        echo "Installing NVIDIA driver and CUDA with $install_method..."
+        # Can't use a subshell because of https://lists.gnu.org/archive/html/bug-bash/2012-12/msg00094.html
+        bash -$- -c $install_method && {
+            echo "NVIDIA driver and CUDA has been installed successfully with $install_method."
+            return 0
+        }
+    done
+    echo "NVIDIA driver and CUDA cannot be installed; all installation methods failed."
+    return 1
+}
+
+handle_rhel7() {
+    install_driver_package() {
+        # Ref: https://docs.nvidia.com/datacenter/tesla/tesla-installation-notes/index.html#centos7
+        # For Centos - we can expect the repo to have the matching version of 
+        # kernel packages, and the driver package needs those kernel packages
+        sudo yum install -y kernel-devel-$(uname -r) kernel-headers-$(uname -r)
+        sudo yum -y install nvidia-driver-latest-dkms
+    }
+
+    remove_driver_package() {
+        # Ref: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#removing-cuda-toolkit-and-driver
+        sudo yum -y remove "*nvidia*"
+    }
+}
+
+handle_common() {
+    install_driver_package() {
+        # Ref: https://developer.nvidia.com/cuda-12-2-2-download-archive?target_os=Linux&target_arch=x86_64&Distribution=RHEL&target_version=8&target_type=rpm_network
+        sudo yum -y module install nvidia-driver:latest
+    }
+
+    remove_driver_package() {
+        # Ref: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#removing-cuda-toolkit-and-driver
+        sudo yum -y module remove --all nvidia-driver
+    }
+
+}
+
+case "$VERSION_ID" in
+    7) handle_rhel7;;
+    *) handle_common;;
 esac
-
-echo "Installing NVIDIA Data Center driver $DRIVER_VERSION"
-curl -fSsl -O https://us.download.nvidia.com/tesla/$DRIVER_VERSION/NVIDIA-Linux-x86_64-$DRIVER_VERSION.run
-sudo bash ./NVIDIA-Linux-x86_64-$DRIVER_VERSION.run --silent
-# Install the CUDA toolkit only, so that the CUDA toolkit uses the Data Center driver installed in the previous step
-# See https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/ for CUDA and driver compatibility
-echo "Installing CUDA Toolkit $CUDA_VERSION from CUDA installer with bundled driver $CUDA_BUNDLED_DRIVER_VERSION"
-curl -fSsl -O https://developer.download.nvidia.com/compute/cuda/$CUDA_VERSION/local_installers/cuda_${CUDA_VERSION}_${CUDA_BUNDLED_DRIVER_VERSION}_linux.run
-sudo sh cuda_${CUDA_VERSION}_${CUDA_BUNDLED_DRIVER_VERSION}_linux.run --toolkit --silent
-
-# check NVIDIA driver installation succeeded
-nvidia-smi
+try_install install_cuda_from_package_manager install_cuda_from_runfile
