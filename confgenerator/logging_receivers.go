@@ -17,7 +17,6 @@ package confgenerator
 import (
 	"context"
 	"fmt"
-	"log"
 	"path"
 	"strconv"
 	"strings"
@@ -509,9 +508,13 @@ func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.R
 		}
 		var p []otel.Component
 		if r.IsDefaultVersion() {
-			p = windowsEventLogV1Processors(ctx)
+			var err error
+			p, err = windowsEventLogV1Processors(ctx)
+			if err != nil {
+				return nil, err
+			}
 		}
-		// TODO: Add operators to convert to fluent-bit's format?
+		// TODO: Add processors for fluent-bit's V2 format.
 		out = append(out, otel.ReceiverPipeline{
 			Receiver: otel.Component{
 				Type:   "windowseventlog",
@@ -528,7 +531,7 @@ func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.R
 	return out, nil
 }
 
-func windowsEventLogV1Processors(ctx context.Context) []otel.Component {
+func windowsEventLogV1Processors(ctx context.Context) ([]otel.Component, error) {
 	// The winlog input in fluent-bit has a completely different structure, so we need to convert the OTel format into the fluent-bit format.
 	var empty string
 	p := &LoggingProcessorModifyFields{
@@ -570,9 +573,27 @@ func windowsEventLogV1Processors(ctx context.Context) []otel.Component {
 			"jsonPayload.Message":      {CopyFrom: "jsonPayload.message"},
 			"jsonPayload.Qualifiers":   {CopyFrom: "jsonPayload.event_id.qualifiers"},
 			"jsonPayload.RecordNumber": {CopyFrom: "jsonPayload.record_id"},
-			"jsonPayload.Sid":          {CopyFrom: "jsonPayload.security.user_id"},
-			"jsonPayload.SourceName2":  {CopyFrom: "jsonPayload.provider.event_source"},
-			"jsonPayload.SourceName":   {CopyFrom: "jsonPayload.provider.name"},
+			"jsonPayload.Sid": {
+				CopyFrom:     "jsonPayload.security.user_id",
+				DefaultValue: &empty,
+			},
+			"jsonPayload.SourceName": {
+				CopyFrom: "jsonPayload.provider.name",
+				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
+					// Prefer jsonPayload.provider.event_source if present and non-empty
+					eventSource := ottl.LValue{"cache", "body", "provider", "event_source"}
+					return v.SetIf(
+						eventSource,
+						ottl.And(
+							eventSource.IsPresent(),
+							ottl.Not(ottl.Equals(
+								eventSource,
+								ottl.StringLiteral(""),
+							)),
+						),
+					)
+				},
+			},
 			// TODO: Convert from array of maps to array of strings
 			"jsonPayload.StringInserts": {CopyFrom: "jsonPayload.event_data.data"},
 			// TODO: Reformat? (v1 was "YYYY-MM-DD hh:mm:ss +0000", OTel is "YYYY-MM-DDThh:mm:ssZ")
@@ -580,20 +601,7 @@ func windowsEventLogV1Processors(ctx context.Context) []otel.Component {
 			// TODO: Reformat?
 			"jsonPayload.TimeWritten": {CopyFrom: "jsonPayload.system_time"},
 		}}
-	s, err := p.statements(ctx)
-	if err != nil {
-		log.Fatalf("failed to generate hardcoded config: %v", err)
-	}
-	eventSource := ottl.LValue{"body", "SourceName2"}
-	s = s.Append(
-		// Prefer jsonPayload.provider.event_source if present and non-empty
-		ottl.LValue{"body", "SourceName"}.SetIf(eventSource, ottl.And(eventSource.IsPresent(), ottl.Not(ottl.Equals(eventSource, ottl.StringLiteral(""))))),
-		eventSource.Delete(),
-	)
-	return []otel.Component{otel.Transform(
-		"log", "log",
-		s,
-	)}
+	return p.Processors(ctx)
 }
 
 func init() {
