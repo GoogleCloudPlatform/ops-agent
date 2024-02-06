@@ -51,7 +51,13 @@ Invoke-Program git submodule update --init
 $artifact_registry='us-docker.pkg.dev'
 Invoke-Program docker-credential-gcr configure-docker --registries="$artifact_registry"
 $arch = Invoke-Program docker info --format '{{.Architecture}}'
-$cache_location="${artifact_registry}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:windows-${arch}"
+$suffix = ''
+if ($env:KOKORO_JOB_TYPE -eq 'RELEASE') {
+  # There's some difference between release builds and other kinds of builds
+  # that makes release builds slow unless they use a separate cache. See b/318538879.
+  $suffix = '-release'
+}
+$cache_location="${artifact_registry}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:windows-${arch}${suffix}"
 Invoke-Program docker pull $cache_location
 Invoke-Program docker build --cache-from="${cache_location}" -t $tag -f './Dockerfile.windows' .
 Invoke-Program docker create --name $name $tag

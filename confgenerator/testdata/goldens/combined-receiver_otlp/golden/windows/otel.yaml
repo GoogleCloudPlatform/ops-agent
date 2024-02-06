@@ -521,6 +521,23 @@ processors:
     detectors:
     - gcp
     override: false
+  transform/otlp_0:
+    error_mode: ignore
+    log_statements:
+      context: log
+      statements:
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
+      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["__field_1"], attributes["gcp.log_name"]) where (attributes != nil and attributes["gcp.log_name"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"])
+      - set(cache["value"], "") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_1"])
+      - set(cache["value"], "otlp") where cache["value"] == nil
+      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/otlp_1:
     error_mode: ignore
     metric_statements:
@@ -603,6 +620,14 @@ receivers:
       object: SQLServer:Databases
 service:
   pipelines:
+    logs/logs_otlp_otlp:
+      exporters:
+      - googlecloud/otel
+      processors:
+      - transform/otlp_0
+      - resourcedetection/_global_1
+      receivers:
+      - otlp/otlp
     metrics/default__pipeline_hostmetrics:
       exporters:
       - googlecloud

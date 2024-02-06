@@ -77,10 +77,10 @@ RUN Expand-Archive /local/win_flex_bison.zip -Destination /WinFlexBison; `
 #
 # Install Golang
 #
-ADD https://go.dev/dl/go1.20.8.windows-amd64.msi /local/go1.20.8.windows-amd64.msi
+ADD https://go.dev/dl/go1.21.5.windows-amd64.msi /local/go1.21.5.windows-amd64.msi
 
 RUN Start-Process msiexec.exe `
-    -ArgumentList '/i C:\local\go1.20.8.windows-amd64.msi ', '/quiet ', `
+    -ArgumentList '/i C:\local\go1.21.5.windows-amd64.msi ', '/quiet ', `
     '/norestart ', 'ALLUSERS=1,INSTALLDIR=C:\Go' -NoNewWindow -Wait;
 
 #
@@ -99,9 +99,6 @@ RUN go install github.com/google/googet/v2/goopack@latest;
 COPY submodules/fluent-bit /work/submodules/fluent-bit
 
 WORKDIR /work/submodules/fluent-bit/build
-
-# Debug why we get docker cache misses for release builds.
-RUN go run github.com/MShekow/directory-checksum@main --max-depth=3 /work
 
 RUN cmake -G "'Visual Studio 16 2019'" -DCMAKE_BUILD_TYPE=RELWITHDEBINFO -DFLB_OUT_KINESIS_STREAMS=OFF ../;
 

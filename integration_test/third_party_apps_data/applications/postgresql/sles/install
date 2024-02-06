@@ -39,9 +39,9 @@ sudo tee ${CFG_ROOT}/data/pg_hba.conf << EOF
 # "local" is for Unix domain socket connections only
 local   all             all                                     peer
 # IPv4 local connections:
-host    all             all             127.0.0.1/32            ident
+host    all             all             127.0.0.1/32            scram-sha-256
 # IPv6 local connections:
-host    all             all             ::1/128                 ident
+host    all             all             ::1/128                 scram-sha-256
 # allow local connections
 host    all             all             127.0.0.1/32            scram-sha-256
 host    all             all             ::1/128                 scram-sha-256
@@ -54,12 +54,12 @@ sudo tee -a ${CFG_ROOT}/data/postgresql.conf << EOF
 wal_level = logical
 wal_log_hints = on
 archive_mode = on
-archive_command = 'test ! -f $DATA_ROOT/archive/%f && cp %p $DATA_ROOT/archive/%f'
+archive_command = 'test ! -f $DATA_ROOT/data/archive/%f && cp %p $DATA_ROOT/data/archive/%f'
 archive_timeout = 10s
 EOF
 
-sudo mkdir $DATA_ROOT/archive/
-sudo chown postgres:postgres $DATA_ROOT/archive/
+sudo mkdir $DATA_ROOT/data/archive/
+sudo chown postgres:postgres $DATA_ROOT/data/archive/
 
 sudo service $SERVICE_NAME restart
 

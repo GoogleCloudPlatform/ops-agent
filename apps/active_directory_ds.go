@@ -32,7 +32,7 @@ func (r MetricsReceiverActiveDirectoryDS) Type() string {
 	return "active_directory_ds"
 }
 
-func (r MetricsReceiverActiveDirectoryDS) Pipelines(_ context.Context) []otel.ReceiverPipeline {
+func (r MetricsReceiverActiveDirectoryDS) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
 	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "active_directory_ds",
@@ -47,7 +47,7 @@ func (r MetricsReceiverActiveDirectoryDS) Pipelines(_ context.Context) []otel.Re
 			),
 			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
-	}}
+	}}, nil
 }
 
 func init() {

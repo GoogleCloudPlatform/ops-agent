@@ -154,7 +154,7 @@ func (s MetricsReceiverSapHana) Type() string {
 	return "saphana"
 }
 
-func (s MetricsReceiverSapHana) Pipelines(_ context.Context) []otel.ReceiverPipeline {
+func (s MetricsReceiverSapHana) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
 	if s.Endpoint == "" {
 		s.Endpoint = defaultSapHanaEndpoint
 	}
@@ -185,7 +185,7 @@ func (s MetricsReceiverSapHana) Pipelines(_ context.Context) []otel.ReceiverPipe
 			),
 			otel.ModifyInstrumentationScope(s.Type(), "1.0"),
 		}},
-	}}
+	}}, nil
 }
 
 func init() {

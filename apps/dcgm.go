@@ -35,7 +35,7 @@ func (r MetricsReceiverDcgm) Type() string {
 	return "dcgm"
 }
 
-func (r MetricsReceiverDcgm) Pipelines(_ context.Context) []otel.ReceiverPipeline {
+func (r MetricsReceiverDcgm) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultDcgmEndpoint
 	}
@@ -62,7 +62,7 @@ func (r MetricsReceiverDcgm) Pipelines(_ context.Context) []otel.ReceiverPipelin
 			),
 			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
-	}}
+	}}, nil
 }
 
 func init() {

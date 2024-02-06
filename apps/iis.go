@@ -36,7 +36,7 @@ func (r MetricsReceiverIis) Type() string {
 	return "iis"
 }
 
-func (r MetricsReceiverIis) Pipelines(_ context.Context) []otel.ReceiverPipeline {
+func (r MetricsReceiverIis) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
 	if r.ReceiverVersion == "2" {
 		return []otel.ReceiverPipeline{{
 			Receiver: otel.Component{
@@ -70,7 +70,7 @@ func (r MetricsReceiverIis) Pipelines(_ context.Context) []otel.ReceiverPipeline
 				otel.NormalizeSums(),
 				otel.ModifyInstrumentationScope(r.Type(), "2.0"),
 			}},
-		}}
+		}}, nil
 	}
 
 	// Return version 1 if version is anything other than 2
@@ -139,7 +139,7 @@ func (r MetricsReceiverIis) Pipelines(_ context.Context) []otel.ReceiverPipeline
 			otel.NormalizeSums(),
 			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
-	}}
+	}}, nil
 }
 
 func init() {
