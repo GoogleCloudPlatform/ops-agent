@@ -76,7 +76,7 @@ function set_platforms() {
     export REPO_SUFFIX="${_LOUHI_TAG_COMPONENTS[2]}"  # the shortref is the repo suffix
     TARGET="${_LOUHI_TAG_COMPONENTS[3]}"
     ARCH="${_LOUHI_TAG_COMPONENTS[4]}"
-    export REPO_PROJECT="${_STAGING_ARTIFACTS_PROJECT_ID}"  # Louhi is responsible for passing this.
+    export ARTIFACT_REGISTRY_PROJECT="${_STAGING_ARTIFACTS_PROJECT_ID}"  # Louhi is responsible for passing this.
   fi
   # if TARGET is not set, return an error
   if [[ -z "${TARGET:-}" ]]; then
