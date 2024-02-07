@@ -74,16 +74,6 @@ targets:
           - ubuntu-minimal-2204-lts-arm64
           exhaustive:
           - ubuntu-2204-lts-arm64
-  lunar:
-    package_extension:
-      deb
-    architectures:
-      x86_64:
-        test_distros:
-          representative:
-          - ubuntu-2304-amd64
-          exhaustive:
-          - ubuntu-minimal-2304-amd64
   mantic:
     package_extension:
       deb
