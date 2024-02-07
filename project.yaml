@@ -62,14 +62,6 @@ targets:
           - ubuntu-minimal-2204-lts-arm64
           exhaustive:
           - ubuntu-2204-lts-arm64
-  lunar:
-    architectures:
-      x86_64:
-        test_distros:
-          representative:
-          - ubuntu-2304-amd64
-          exhaustive:
-          - ubuntu-minimal-2304-amd64
   mantic:
     architectures:
       x86_64:
