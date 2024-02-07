@@ -130,13 +130,8 @@ minimum_supported_agent_version:
   logging: 2.23.0
 supported_operating_systems: linux
 platforms_to_skip:
-  # Unable to install Aerospike on various distros.
-  - debian-12
-  - debian-12-arm64
-  - sles-12
-  - rocky-linux-9
-  - rocky-linux-9-arm64
-  - ubuntu-2304-amd64
-  - ubuntu-2310-amd64
-  - ubuntu-2310-arm64
+  - sles-12  # Not supported by Aerospike.
+  - ubuntu-2304-amd64  # Not supported by Aerospike.
+  - ubuntu-2310-amd64  # Not supported by Aerospike.
+  - ubuntu-2310-arm64  # Not supported by Aerospike.
 public_url: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/aerospike
