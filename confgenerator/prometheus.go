@@ -37,7 +37,7 @@ import (
 	_ "github.com/prometheus/prometheus/discovery/install" // init() of this package registers service discovery impl.
 )
 
-const minScrapeInterval = model.Duration(5 * time.Second)
+const minScrapeInterval = model.Duration(10 * time.Second)
 
 type PrometheusMetrics struct {
 	ConfigComponent `yaml:",inline"`
