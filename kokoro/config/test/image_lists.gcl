@@ -47,15 +47,6 @@ bookworm_x86_64 = _distro {
       'debian-12',
   ]
 }
-lunar_x86_64 = _distro {
-  release = [
-      'ubuntu-2304-amd64',
-      'ubuntu-minimal-2304-amd64',
-  ]
-  presubmit = [
-      'ubuntu-2304-amd64',
-  ]
-}
 buster_x86_64 = _distro {
   release = ['debian-10']
   presubmit = ['debian-10']

@@ -77,6 +77,10 @@ function set_platforms() {
     TARGET="${_LOUHI_TAG_COMPONENTS[3]}"
     ARCH="${_LOUHI_TAG_COMPONENTS[4]}"
     export ARTIFACT_REGISTRY_PROJECT="${_STAGING_ARTIFACTS_PROJECT_ID}"  # Louhi is responsible for passing this.
+    EXT=$(yaml project.yaml "['targets']['${TARGET}']['package_extension']")
+    if [[ "${EXT}" == "deb" ]]; then
+      export REPO_CODENAME="${TARGET}-${ARCH}"
+    fi
   fi
   # if TARGET is not set, return an error
   if [[ -z "${TARGET:-}" ]]; then
