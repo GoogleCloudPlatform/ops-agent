@@ -1,0 +1,1 @@
+Key: 'PrometheusMetrics.config.config' Error:Field validation for 'config' failed on the 'error validation scrap_config for job prometheus: scrape_interval must be equal to or greater than 5s' tag

@@ -24,6 +24,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
@@ -35,6 +36,8 @@ import (
 	"github.com/prometheus/prometheus/discovery"
 	_ "github.com/prometheus/prometheus/discovery/install" // init() of this package registers service discovery impl.
 )
+
+const MinScrapeInterval model.Duration = model.Duration(5 * time.Second)
 
 type PrometheusMetrics struct {
 	ConfigComponent `yaml:",inline"`
@@ -225,6 +228,9 @@ func validatePrometheus(promConfig promconfig.Config) (string, error) {
 	}
 
 	for _, sc := range promConfig.ScrapeConfigs {
+		if sc.ScrapeInterval < MinScrapeInterval {
+			return "scrape_interval", fmt.Errorf("error validation scrap_config for job %v: scrape_interval must be equal to or greater than %v", sc.JobName, MinScrapeInterval.String())
+		}
 		if sc.HonorLabels {
 			return "honor_labels", fmt.Errorf("error validating scrape_config for job %v: %v", sc.JobName, "honor_labels is not supported")
 		}
