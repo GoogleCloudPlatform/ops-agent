@@ -25,11 +25,11 @@
 - module: metrics
   feature: receivers:prometheus
   key: "[0].config.[0].scrape_configs.scrape_interval"
-  value: 5s
+  value: 10s
 - module: metrics
   feature: receivers:prometheus
   key: "[0].config.[0].scrape_configs.scrape_timeout"
-  value: 1s
+  value: 10s
 - module: metrics
   feature: receivers:prometheus
   key: "[0].config.[0].scrape_configs.static_config_target_groups"
@@ -45,11 +45,11 @@
 - module: metrics
   feature: receivers:prometheus
   key: "[0].config.[1].scrape_configs.scrape_interval"
-  value: 6s
+  value: 10s
 - module: metrics
   feature: receivers:prometheus
   key: "[0].config.[1].scrape_configs.scrape_timeout"
-  value: 6s
+  value: 10s
 - module: metrics
   feature: receivers:prometheus
   key: "[0].config.[1].scrape_configs.static_config_target_groups"
