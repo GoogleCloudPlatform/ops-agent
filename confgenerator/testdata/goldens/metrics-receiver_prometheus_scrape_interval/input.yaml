@@ -23,6 +23,11 @@ metrics:
             static_configs:
             - targets:
               - localhost:1234
+          - job_name: prometheus1
+            scrape_interval: 6s
+            static_configs:
+            - targets:
+              - localhost:1234
   service:
     pipelines:
       prometheus_pipeline:
