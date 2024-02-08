@@ -232,6 +232,7 @@ func validatePrometheus(promConfig promconfig.Config) (string, error) {
 			sc.ScrapeInterval = minScrapeInterval
 			sc.ScrapeTimeout = minScrapeInterval
 			log.Printf("scrape_interval must be at least %v; adjusting to minimum accepted value\n", minScrapeInterval)
+			log.Printf("adjusting scrape_timeout to %v\n", minScrapeInterval)
 		}
 		if sc.HonorLabels {
 			return "honor_labels", fmt.Errorf("error validating scrape_config for job %v: %v", sc.JobName, "honor_labels is not supported")
