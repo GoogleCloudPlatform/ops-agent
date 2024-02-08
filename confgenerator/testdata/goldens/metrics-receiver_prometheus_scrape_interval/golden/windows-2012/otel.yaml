@@ -549,7 +549,7 @@ receivers:
       - job_name: prometheus
         honor_timestamps: true
         scrape_interval: 10s
-        scrape_timeout: 10s
+        scrape_timeout: 1s
         metrics_path: /metrics
         scheme: http
         follow_redirects: true
