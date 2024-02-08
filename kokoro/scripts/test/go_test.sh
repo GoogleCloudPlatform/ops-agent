@@ -98,8 +98,7 @@ function set_platforms() {
   # If not a presubmit job, add the exhaustive list of test distros.
   if [[ "${TEST_EXHAUSTIVE_DISTROS:-}" == "1" ]]; then
     # ['test_distros']['exhaustive'] is an optional field.
-    exhaustive_platforms=$(yaml project.yaml "['targets']['${TARGET}']['architectures']['${ARCH}']['test_distros']['exhaustive']") || break
-    platforms="${platforms},${exhaustive_platforms}"
+    exhaustive_platforms=$(yaml project.yaml "['targets']['${TARGET}']['architectures']['${ARCH}']['test_distros']['exhaustive']") && platforms="${platforms},${exhaustive_platforms}"
   fi
   PLATFORMS="${platforms}"
   export PLATFORMS
