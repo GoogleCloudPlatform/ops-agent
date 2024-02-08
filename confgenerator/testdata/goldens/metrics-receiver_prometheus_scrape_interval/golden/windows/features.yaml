@@ -45,7 +45,7 @@
 - module: metrics
   feature: receivers:prometheus
   key: "[0].config.[1].scrape_configs.scrape_interval"
-  value: 10s
+  value: 11s
 - module: metrics
   feature: receivers:prometheus
   key: "[0].config.[1].scrape_configs.scrape_timeout"

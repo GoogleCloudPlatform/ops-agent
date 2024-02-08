@@ -578,7 +578,7 @@ receivers:
             namespace: test-instance-id/test-instance-name
       - job_name: prometheus1
         honor_timestamps: true
-        scrape_interval: 10s
+        scrape_interval: 11s
         scrape_timeout: 10s
         metrics_path: /metrics
         scheme: http
