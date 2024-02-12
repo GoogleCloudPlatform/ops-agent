@@ -64,6 +64,15 @@ else:
  print(data)"
 }
 
+# A helper function for joining a bash array.
+# Ex. join_by , a b c -> a,b,c
+function join_by {
+  local d=${1-} f=${2-}
+  if shift 2; then
+    printf %s "$f" "${@/#/$d}"
+  fi
+}
+
 function set_platforms() {
   # if PLATFORMS is defined, do nothing
   if [[ -n "${PLATFORMS:-}" ]]; then
@@ -107,7 +116,41 @@ function set_platforms() {
   export PLATFORMS
 }
 
+# Note: if we ever need to change regions, we will need to set up a new
+# Cloud Router and Cloud NAT gateway for that region. This is because
+# we use --no-address on Kokoro, because of b/169084857.
+# The new Cloud NAT gateway must have "Minimum ports per VM instance"
+# set to 512 as per this article:
+# https://cloud.google.com/knowledge/kb/sles-unable-to-fetch-updates-when-behind-cloud-nat-000004450
+function set_zones() {
+  if [[ "${ARCH:-}" == "x86_64" ]]; then
+    zones=(
+      us-central1-a=3
+      us-central1-b=3
+      us-central1-c=3
+      us-central1-f=3
+      us-east1-b=2
+      us-east1-c=2
+      us-east1-d=2
+    )
+  # T2A machines are only available on us-central1-{a,b,f}.
+  # See warning above about changing regions.
+  elif [[ "${ARCH:-}" == "aarch64" ]]; then
+    zones=(
+      us-central1-a
+      us-central1-b
+      us-central1-f
+    )
+  else
+    zones=(
+      invalid_zone
+    )
+  fi
+  export ZONES="$(join_by , ${zones[@]})"
+}
+
 set_platforms
+set_zones
 
 # If a built agent was passed in from Kokoro directly, use that.
 if compgen -G "${KOKORO_GFILE_DIR}/result/google-cloud-ops-agent*" > /dev/null; then
