@@ -1025,6 +1025,23 @@ func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM) error {
 	return err
 }
 
+// prepareApt gets apt-based distros ready by running "sudo apt-get update"
+// repeatedly until it succeeds. This is to speed up subsequent apt-get updates
+// to minimize races and increase the chances of success for retries, such as
+// those added in cl/605088398 to the install scripts. See b/310644585.
+func prepareApt(ctx context.Context, logger *log.Logger, vm *VM) error {
+	var attemptErr error
+	updateFunc := func() error {
+		_, attemptErr = RunRemotely(ctx, logger, vm, "sudo apt-get update")
+		return attemptErr
+	}
+	backoffPolicy := backoff.WithContext(backoff.NewConstantBackOff(20 * time.Second), ctx)
+	if err := backoff.Retry(updateFunc, backoffPolicy); err != nil {
+		return fmt.Errorf(`"sudo apt-get update" failed repeatedly (%v); last error: %w`, err, attemptErr)
+	}
+	return nil
+}
+
 var (
 	overriddenImageFamilies = map[string]string{
 		"opensuse-leap-15-4": "opensuse-leap-15-4-v20230603-x86-64",
@@ -1284,6 +1301,12 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		}
 	}
 
+	if IsDebianUbuntu(vm.Platform) {
+		if err := prepareApt(ctx, logger, vm); err != nil {
+			return nil, err
+		}
+	}
+
 	if IsSUSE(vm.Platform) {
 		// Set ZYPP_LOCK_TIMEOUT so tests that use zypper don't randomly fail
 		// because some background process happened to be using zypper at the same time.
@@ -1323,6 +1346,10 @@ func IsARM(platform string) bool {
 	// At the time of writing, all ARM images and image families on GCE
 	// contain "arm64" (and none contain "aarch" nor "arm" without the "64").
 	return strings.Contains(platform, "arm64")
+}
+
+func IsDebianUbuntu(platform string) bool {
+	return strings.HasPrefix(platform, "debian-") || strings.HasPrefix(platform, "ubuntu-")
 }
 
 // CreateInstance launches a new VM instance based on the given options.
