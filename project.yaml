@@ -34,6 +34,8 @@ targets:
   centos7:
     package_extension:
       rpm
+    repo_name:
+      el7
     architectures:
       x86_64:
         test_distros:
@@ -93,6 +95,8 @@ targets:
   rockylinux8:
     package_extension:
       rpm
+    repo_name:
+      el8
     architectures:
       x86_64:
         test_distros:
@@ -106,6 +110,8 @@ targets:
   rockylinux9:
     package_extension:
       rpm
+    repo_name:
+      el9
     architectures:
       x86_64:
         test_distros:
