@@ -11,6 +11,7 @@ template config common = {
     artifacts = []
 
     environment = {
+      ARCH = arch
       PROJECT = 'stackdriver-test-143416'
       PLATFORMS = cond(platforms != [], join(platforms, ','), null)
     }
