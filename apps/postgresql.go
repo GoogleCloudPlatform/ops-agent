@@ -45,7 +45,7 @@ func (r MetricsReceiverPostgresql) Type() string {
 	return "postgresql"
 }
 
-func (r MetricsReceiverPostgresql) Pipelines(_ context.Context) []otel.ReceiverPipeline {
+func (r MetricsReceiverPostgresql) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
 	transport := "tcp"
 	if r.Endpoint == "" {
 		transport = "unix"
@@ -88,7 +88,7 @@ func (r MetricsReceiverPostgresql) Pipelines(_ context.Context) []otel.ReceiverP
 			),
 			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
-	}}
+	}}, nil
 }
 
 func init() {

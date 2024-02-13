@@ -1,0 +1,1 @@
+processor "simple" has invalid configuration: failed to convert operation to OTTL accessor: field "operation" not found

@@ -1,0 +1,1 @@
+processor "simple" has invalid configuration: failed to parse omit_if condition "jsonPayload.omitted =~ \"(?!foo)bar\"": unsupported regex "(?!foo)bar": error parsing regexp: invalid or unsupported Perl syntax: `(?!`

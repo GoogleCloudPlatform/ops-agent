@@ -1,0 +1,24 @@
+- entries:
+  - jsonPayload:
+      normal_field: value
+    labels:
+      label1: value1
+      label2: value2
+    logName: projects/my-project/logs/transformation_test
+    operation:
+      first: true
+      id: id
+      last: true
+      producer: producer
+    severity: 400.0
+    sourceLocation:
+      file: file
+      function: function
+      line: 1.0
+    spanId: facefeedb0bacafe
+    timestamp: now
+    trace: projects/my-project/traces/deadcafedeadc0defacefeedb0bacafe
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance

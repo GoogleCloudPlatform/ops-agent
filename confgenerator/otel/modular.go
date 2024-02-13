@@ -114,6 +114,12 @@ type ModularConfig struct {
 	Pipelines         map[string]Pipeline
 
 	Exporters map[ExporterType]Component
+
+	// Test-only options:
+	// Don't generate any self-metrics
+	DisableMetrics bool
+	// Emit collector logs as JSON
+	JSONLogs bool
 }
 
 // Generate an OT YAML config file for c.
@@ -133,16 +139,27 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 	pipelines := map[string]interface{}{}
 	service := map[string]map[string]interface{}{
 		"pipelines": pipelines,
-		"telemetry": {
+		"telemetry": map[string]interface{}{
 			"metrics": map[string]interface{}{
+				// TODO: switch to metrics.readers so we can stop binding a port
 				"address": fmt.Sprintf("0.0.0.0:%d", MetricsPort),
 			},
 		},
 	}
-	if c.LogLevel != "info" {
-		service["telemetry"]["logs"] = map[string]interface{}{
-			"level": c.LogLevel,
+	if c.DisableMetrics {
+		service["telemetry"]["metrics"] = map[string]interface{}{
+			"level": "none",
 		}
+	}
+	logs := map[string]any{}
+	if c.LogLevel != "info" {
+		logs["level"] = "debug"
+	}
+	if c.JSONLogs {
+		logs["encoding"] = "json"
+	}
+	if len(logs) > 0 {
+		service["telemetry"]["logs"] = logs
 	}
 
 	configMap := map[string]interface{}{

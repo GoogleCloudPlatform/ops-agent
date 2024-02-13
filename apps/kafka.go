@@ -35,7 +35,7 @@ func (r MetricsReceiverKafka) Type() string {
 	return "kafka"
 }
 
-func (r MetricsReceiverKafka) Pipelines(_ context.Context) []otel.ReceiverPipeline {
+func (r MetricsReceiverKafka) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
 	targetSystem := "kafka"
 	return r.MetricsReceiverSharedJVM.
 		WithDefaultEndpoint(defaultKafkaEndpoint).

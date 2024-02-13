@@ -64,6 +64,18 @@ else:
  print(data)"
 }
 
+# A helper function for joining a bash array.
+# Ex. join_by , a b c -> a,b,c
+function join_by() {
+  delim="$1"
+  for (( i = 2; i <= $#; i++)); do
+    printf "${!i}"  # The ith positional argument
+    if [[ $i -ne $# ]]; then
+      printf "${delim}"
+    fi
+  done
+}
+
 function set_platforms() {
   # if PLATFORMS is defined, do nothing
   if [[ -n "${PLATFORMS:-}" ]]; then
@@ -72,8 +84,15 @@ function set_platforms() {
   # if _LOUHI_TAG_NAME is defined, set TARGET and ARCH env vars by parsing it.
   # Example value: louhi/2.46.0/shortref/windows/x86_64/start
   if [[ -n "${_LOUHI_TAG_NAME:-}" ]]; then
-    TARGET="$(echo -n "${_LOUHI_TAG_NAME}" | cut --delimiter="/" --fields=4)"
-    ARCH="$(echo -n "${_LOUHI_TAG_NAME}" | cut --delimiter="/" --fields=5)"
+    local -a _LOUHI_TAG_COMPONENTS=(${_LOUHI_TAG_NAME//\// })  
+    export REPO_SUFFIX="${_LOUHI_TAG_COMPONENTS[2]}"  # the shortref is the repo suffix
+    TARGET="${_LOUHI_TAG_COMPONENTS[3]}"
+    ARCH="${_LOUHI_TAG_COMPONENTS[4]}"
+    export ARTIFACT_REGISTRY_PROJECT="${_STAGING_ARTIFACTS_PROJECT_ID}"  # Louhi is responsible for passing this.
+    EXT=$(yaml project.yaml "['targets']['${TARGET}']['package_extension']")
+    if [[ "${EXT}" == "deb" ]]; then
+      export REPO_CODENAME="${TARGET}-${ARCH}"
+    fi
   fi
   # if TARGET is not set, return an error
   if [[ -z "${TARGET:-}" ]]; then
@@ -89,15 +108,53 @@ function set_platforms() {
   local platforms
   platforms=$(yaml project.yaml "['targets']['${TARGET}']['architectures']['${ARCH}']['test_distros']['representative']")
   # If not a presubmit job, add the exhaustive list of test distros.
-  if ! [[ "${KOKORO_ROOT_JOB_TYPE:-$KOKORO_JOB_TYPE}" =~ ^PRESUBMIT_ ]]; then
+  if [[ "${TEST_EXHAUSTIVE_DISTROS:-}" == "1" ]]; then
     # ['test_distros']['exhaustive'] is an optional field.
-    platforms=${platforms},$(yaml project.yaml "['targets']['${TARGET}']['architectures']['${ARCH}']['test_distros']['exhaustive']") || true
+    exhaustive_platforms=$(yaml project.yaml "['targets']['${TARGET}']['architectures']['${ARCH}']['test_distros']['exhaustive']") || true
+    if [[ -n "${exhaustive_platforms:-}" ]]; then
+      platforms="${platforms},${exhaustive_platforms}"
+    fi
   fi
   PLATFORMS="${platforms}"
   export PLATFORMS
 }
 
+# Note: if we ever need to change regions, we will need to set up a new
+# Cloud Router and Cloud NAT gateway for that region. This is because
+# we use --no-address on Kokoro, because of b/169084857.
+# The new Cloud NAT gateway must have "Minimum ports per VM instance"
+# set to 512 as per this article:
+# https://cloud.google.com/knowledge/kb/sles-unable-to-fetch-updates-when-behind-cloud-nat-000004450
+function set_zones() {
+  if [[ "${ARCH:-}" == "x86_64" ]]; then
+    zone_list=(
+      us-central1-a=3
+      us-central1-b=3
+      us-central1-c=3
+      us-central1-f=3
+      us-east1-b=2
+      us-east1-c=2
+      us-east1-d=2
+    )
+  # T2A machines are only available on us-central1-{a,b,f}.
+  # See warning above about changing regions.
+  elif [[ "${ARCH:-}" == "aarch64" ]]; then
+    zone_list=(
+      us-central1-a
+      us-central1-b
+      us-central1-f
+    )
+  else
+    zone_list=(
+      invalid_zone
+    )
+  fi
+  zones=$(join_by , "${zone_list[@]}")
+  export ZONES=$zones
+}
+
 set_platforms
+set_zones
 
 # If a built agent was passed in from Kokoro directly, use that.
 if compgen -G "${KOKORO_GFILE_DIR}/result/google-cloud-ops-agent*" > /dev/null; then

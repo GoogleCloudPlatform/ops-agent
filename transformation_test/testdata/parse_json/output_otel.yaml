@@ -1,0 +1,12 @@
+- entries:
+  - jsonPayload:
+      level: info
+      message: start
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2023-10-17T14:55:59.683530289Z
+  partialSuccess: true
