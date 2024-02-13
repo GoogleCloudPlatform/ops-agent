@@ -66,11 +66,14 @@ else:
 
 # A helper function for joining a bash array.
 # Ex. join_by , a b c -> a,b,c
-function join_by {
-  local d=${1-} f=${2-}
-  if shift 2; then
-    printf %s "$f" "${@/#/$d}"
-  fi
+function join_by() {
+  delim="$1"
+  for (( i = 2; i <= $#; i++)); do
+    printf "${!i}"  # The ith positional argument
+    if [[ $i -ne $# ]]; then
+      printf "${delim}"
+    fi
+  done
 }
 
 function set_platforms() {
@@ -124,7 +127,7 @@ function set_platforms() {
 # https://cloud.google.com/knowledge/kb/sles-unable-to-fetch-updates-when-behind-cloud-nat-000004450
 function set_zones() {
   if [[ "${ARCH:-}" == "x86_64" ]]; then
-    zones=(
+    zone_list=(
       us-central1-a=3
       us-central1-b=3
       us-central1-c=3
@@ -136,17 +139,18 @@ function set_zones() {
   # T2A machines are only available on us-central1-{a,b,f}.
   # See warning above about changing regions.
   elif [[ "${ARCH:-}" == "aarch64" ]]; then
-    zones=(
+    zone_list=(
       us-central1-a
       us-central1-b
       us-central1-f
     )
   else
-    zones=(
+    zone_list=(
       invalid_zone
     )
   fi
-  export ZONES="$(join_by , ${zones[@]})"
+  zones=$(join_by , "${zone_list[@]}")
+  export ZONES=$zones
 }
 
 set_platforms
