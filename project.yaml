@@ -66,15 +66,15 @@ targets:
       x86_64:
         test_distros:
           representative:
-          - ubuntu-minimal-2004-lts
-          exhaustive:
           - ubuntu-2004-lts
+          exhaustive:
+          - ubuntu-minimal-2004-lts
       aarch64:
         test_distros:
           representative:
-          - ubuntu-minimal-2004-lts-arm64
-          exhaustive:
           - ubuntu-2004-lts-arm64
+          exhaustive:
+          - ubuntu-minimal-2004-lts-arm64
   jammy:
     package_extension:
       deb
@@ -82,15 +82,15 @@ targets:
       x86_64:
         test_distros:
           representative:
-          - ubuntu-minimal-2204-lts
-          exhaustive:
           - ubuntu-2204-lts
+          exhaustive:
+          - ubuntu-minimal-2204-lts
       aarch64:
         test_distros:
           representative:
-          - ubuntu-minimal-2204-lts-arm64
-          exhaustive:
           - ubuntu-2204-lts-arm64
+          exhaustive:
+          - ubuntu-minimal-2204-lts-arm64
   mantic:
     package_extension:
       deb
@@ -98,15 +98,15 @@ targets:
       x86_64:
         test_distros:
           representative:
-          - ubuntu-minimal-2310-amd64
-          exhaustive:
           - ubuntu-2310-amd64
+          exhaustive:
+          - ubuntu-minimal-2310-amd64
       aarch64:
         test_distros:
           representative:
-          - ubuntu-minimal-2310-arm64
-          exhaustive:
           - ubuntu-2310-arm64
+          exhaustive:
+          - ubuntu-minimal-2310-arm64
   rockylinux9:
     package_extension:
       rpm
