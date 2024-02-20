@@ -761,7 +761,7 @@ func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, locati
 		}
 		runScript := func() error {
 			scriptCmd := fmt.Sprintf(`%s
-& ${env:UserProfile}\add-google-cloud-ops-agent-repo.ps1 -AlsoInstall`, windowsEnvironment(preservedEnvironment))
+& "${env:UserProfile}\add-google-cloud-ops-agent-repo.ps1" -AlsoInstall`, windowsEnvironment(preservedEnvironment))
 			_, err := gce.RunRemotely(ctx, logger, vm, "", scriptCmd)
 			return err
 		}
