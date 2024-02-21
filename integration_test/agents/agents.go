@@ -749,7 +749,7 @@ func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, locati
 	}
 
 	preservedEnvironment := map[string]string{
-		"REPO_SUFFIX":              "asdf",
+		"REPO_SUFFIX":              location.repoSuffix,
 		"REPO_CODENAME":            location.repoCodename,
 		"ARTIFACT_REGISTRY_PROJECT":             location.artifactRegistryProject,
 		"ARTIFACT_REGISTRY_REGION": location.artifactRegistryRegion,
@@ -766,9 +766,9 @@ func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, locati
 			return err
 		}
 		if err := RunInstallFuncWithRetry(ctx, logger, vm, runScript); err != nil {
-			return fmt.Errorf("yay, InstallOpsAgent() failed to run repo script: %w", err)
+			return fmt.Errorf("InstallOpsAgent() failed to run repo script: %w", err)
 		}
-		return fmt.Errorf("failed to produce error when an error was expected! %s", "err")
+		return nil
 	}
 
 	if _, err := gce.RunRemotely(ctx,
