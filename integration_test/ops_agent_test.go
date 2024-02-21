@@ -4728,6 +4728,7 @@ func TestNoNvmlOtelReceiverWithoutGpu(t *testing.T) {
 func TestPartialSuccess(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+ 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, platform)
 		logPath := logPathForPlatform(vm.Platform)
 		config := fmt.Sprintf(`logging:
