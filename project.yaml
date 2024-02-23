@@ -10,7 +10,7 @@ targets:
       aarch64:
         test_distros:
           representative:
-          - debian-12-arm
+          - debian-12-arm64
   bullseye:
     package_extension:
       deb
@@ -22,7 +22,7 @@ targets:
       aarch64:
         test_distros:
           representative:
-          - debian-11-arm
+          - debian-11-arm64
   buster:
     package_extension:
       deb
@@ -44,55 +44,7 @@ targets:
           exhaustive:
           - rhel-7
           - rhel-7-9-sap-ha
-  focal:
-    package_extension:
-      deb
-    architectures:
-      x86_64:
-        test_distros:
-          representative:
-          - ubuntu-minimal-2004-lts
-          exhaustive:
-          - ubuntu-2004-lts
-      aarch64:
-        test_distros:
-          representative:
-          - ubuntu-minimal-2004-lts-arm64
-          exhaustive:
-          - ubuntu-2004-lts-arm64
-  jammy:
-    package_extension:
-      deb
-    architectures:
-      x86_64:
-        test_distros:
-          representative:
-          - ubuntu-minimal-2204-lts
-          exhaustive:
-          - ubuntu-2204-lts
-      aarch64:
-        test_distros:
-          representative:
-          - ubuntu-minimal-2204-lts-arm64
-          exhaustive:
-          - ubuntu-2204-lts-arm64
-  mantic:
-    package_extension:
-      deb
-    architectures:
-      x86_64:
-        test_distros:
-          representative:
-          - ubuntu-minimal-2310-lts
-          exhaustive:
-          - ubuntu-2310-lts
-      aarch64:
-        test_distros:
-          representative:
-          - ubuntu-minimal-2310-lts-arm64
-          exhaustive:
-          - ubuntu-2310-lts-arm64
-  rockylinux8:
+  centos8:
     package_extension:
       rpm
     repo_name:
@@ -107,6 +59,54 @@ targets:
           - rhel-8-2-sap-ha
           - rhel-8-4-sap-ha
           - rhel-8-6-sap-ha
+  focal:
+    package_extension:
+      deb
+    architectures:
+      x86_64:
+        test_distros:
+          representative:
+          - ubuntu-2004-lts
+          exhaustive:
+          - ubuntu-minimal-2004-lts
+      aarch64:
+        test_distros:
+          representative:
+          - ubuntu-2004-lts-arm64
+          exhaustive:
+          - ubuntu-minimal-2004-lts-arm64
+  jammy:
+    package_extension:
+      deb
+    architectures:
+      x86_64:
+        test_distros:
+          representative:
+          - ubuntu-2204-lts
+          exhaustive:
+          - ubuntu-minimal-2204-lts
+      aarch64:
+        test_distros:
+          representative:
+          - ubuntu-2204-lts-arm64
+          exhaustive:
+          - ubuntu-minimal-2204-lts-arm64
+  mantic:
+    package_extension:
+      deb
+    architectures:
+      x86_64:
+        test_distros:
+          representative:
+          - ubuntu-2310-amd64
+          exhaustive:
+          - ubuntu-minimal-2310-amd64
+      aarch64:
+        test_distros:
+          representative:
+          - ubuntu-2310-arm64
+          exhaustive:
+          - ubuntu-minimal-2310-arm64
   rockylinux9:
     package_extension:
       rpm
