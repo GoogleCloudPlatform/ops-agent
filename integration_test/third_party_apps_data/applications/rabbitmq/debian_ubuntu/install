@@ -44,7 +44,14 @@ curl -s \
     sudo bash
 
 sudo apt-get update
-sudo apt-get install -y rabbitmq-server
+
+if [[ "${VERSION_ID}" == 10 ]]; then
+  # Versions starting at 3.13 require Erlang 26 which is difficult/impossible to install
+  # on debian 10, so we need to pin the version of rabbitmq-server
+  sudo apt-get install -y rabbitmq-server=3.12.13-1
+else
+  sudo apt-get install -y rabbitmq-server
+fi
 
 sudo systemctl daemon-reload
 sudo systemctl enable rabbitmq-server
