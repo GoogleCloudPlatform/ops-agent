@@ -544,11 +544,6 @@ receivers:
   postgresql/postgresql:
     collection_interval: 30s
     endpoint: localhost:3306
-    metrics:
-      postgresql.wal.delay:
-        enabled: true
-      postgresql.wal.lag:
-        enabled: false
     password: pwd
     tls:
       ca_file: /path/to/ca
