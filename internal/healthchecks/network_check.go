@@ -17,6 +17,7 @@ package healthchecks
 import (
 	"context"
 	"errors"
+	"net"
 	"net/http"
 	"time"
 
@@ -72,6 +73,14 @@ var (
 	}
 )
 
+func isHostNotFound(err error) bool {
+	var dnsError *net.DNSError
+	if errors.As(err, &dnsError) {
+		return dnsError.IsNotFound
+	}
+	return false
+}
+
 func (r networkRequest) SendRequest(logger logs.StructuredLogger) error {
 	var response *http.Response
 	var err error
@@ -87,7 +96,7 @@ func (r networkRequest) SendRequest(logger logs.StructuredLogger) error {
 		}
 	}
 	if err != nil {
-		if isTimeoutError(err) || isConnectionRefusedError(err) {
+		if isTimeoutError(err) || isConnectionRefusedError(err) || isHostNotFound(err) {
 			return r.healthCheckError
 		}
 		return err
