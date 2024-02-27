@@ -1060,7 +1060,7 @@ func TestProcessorOrder(t *testing.T) {
 
 		// When not using UTC timestamps, the parsing with "%Y-%m-%dT%H:%M:%S.%L%z" doesn't work
 		// correctly in windows (b/218888265).
-		line := fmt.Sprintf(`{"log":"{\"level\":\"info\",\"message\":\"start\"}\n","time":"%s"}`, time.Now().UTC().Format(time.RFC3339Nano)) + "\n"
+		line := fmt.Sprintf(`{"log":"{\"level\":\"info\",\"message\":\"start\",\"overwritten\":\"yes\"}\n","time":"%s","preserved":"yes","overwritten":"no"}`, time.Now().UTC().Format(time.RFC3339Nano)) + "\n"
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), logPath); err != nil {
 			t.Fatalf("error writing dummy log line: %v", err)
 		}
@@ -1071,8 +1071,10 @@ func TestProcessorOrder(t *testing.T) {
 		}
 
 		want := &structpb.Struct{Fields: map[string]*structpb.Value{
-			"level":   {Kind: &structpb.Value_StringValue{StringValue: "info"}},
-			"message": {Kind: &structpb.Value_StringValue{StringValue: "start"}},
+			"level":       {Kind: &structpb.Value_StringValue{StringValue: "info"}},
+			"message":     {Kind: &structpb.Value_StringValue{StringValue: "start"}},
+			"preserved":   {Kind: &structpb.Value_StringValue{StringValue: "yes"}},
+			"overwritten": {Kind: &structpb.Value_StringValue{StringValue: "yes"}},
 		}}
 
 		got, ok := entry.Payload.(proto.Message)
@@ -4728,7 +4730,7 @@ func TestNoNvmlOtelReceiverWithoutGpu(t *testing.T) {
 func TestPartialSuccess(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
- 		t.Parallel()
+		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, platform)
 		logPath := logPathForPlatform(vm.Platform)
 		config := fmt.Sprintf(`logging:
