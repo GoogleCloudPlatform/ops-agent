@@ -191,6 +191,11 @@ func ConvertGaugeToSum(metricName string) TransformQuery {
 	return TransformQuery(fmt.Sprintf(`convert_gauge_to_sum("cumulative", true) where metric.name == "%s"`, metricName))
 }
 
+// ConvertFloatToInt returns an expression where a float-valued metric can be converted to an int
+func ConvertFloatToInt(metricName string) TransformQuery {
+	return TransformQuery(fmt.Sprintf(`set(value_int, Int(value_double)) where metric.name == "%s"`, metricName))
+}
+
 // SetDescription returns a metrics transform expression where the metrics description will be set to what is provided
 func SetDescription(metricName, metricDescription string) TransformQuery {
 	return TransformQuery(fmt.Sprintf(`set(metric.description, "%s") where metric.name == "%s"`, metricDescription, metricName))
