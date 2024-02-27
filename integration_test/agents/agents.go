@@ -756,15 +756,20 @@ func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, locati
 	}
 
 	if gce.IsWindows(vm.Platform) {
+		// Note that these commands match the ones from our public install docs
+		// (https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/installation)
+		// and keeping them in sync is encouraged so that we are testing the
+		// same commands that our customers are running.
 		if _, err := gce.RunRemotely(ctx, logger, vm, "", `(New-Object Net.WebClient).DownloadFile("https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.ps1", "${env:UserProfile}\add-google-cloud-ops-agent-repo.ps1")`); err != nil {
 			return fmt.Errorf("InstallOpsAgent() failed to download repo script: %w", err)
 		}
 		runScript := func() error {
 			scriptCmd := fmt.Sprintf(`%s
-Invoke-Expression "${env:UserProfile}\add-google-cloud-ops-agent-repo.ps1 -AlsoInstall"`, windowsEnvironment(preservedEnvironment))
+& "${env:UserProfile}\add-google-cloud-ops-agent-repo.ps1" -AlsoInstall`, windowsEnvironment(preservedEnvironment))
 			_, err := gce.RunRemotely(ctx, logger, vm, "", scriptCmd)
 			return err
 		}
+		// TODO: b/202526819 - Remove retries once the script does retries internally.
 		if err := RunInstallFuncWithRetry(ctx, logger, vm, runScript); err != nil {
 			return fmt.Errorf("InstallOpsAgent() failed to run repo script: %w", err)
 		}
