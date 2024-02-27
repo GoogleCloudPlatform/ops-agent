@@ -124,8 +124,16 @@ func (a LValue) SetIf(b, condition Value) Statements {
 }
 
 func (a LValue) MergeMaps(source Value, strategy string) Statements {
+	return a.MergeMapsIf(source, strategy, IsNotNil(source))
+}
+
+func (a LValue) MergeMapsIf(source Value, strategy string, condition Value) Statements {
+	var condStr string
+	if condition != nil {
+		condStr = fmt.Sprintf(" where %s", condition)
+	}
 	return Statements{
-		statementf(`merge_maps(%s, %s, %q) where %s`, a, source, strategy, IsNotNil(source)),
+		statementf(`merge_maps(%s, %s, %q)%s`, a, source, strategy, condStr),
 	}
 }
 
