@@ -232,8 +232,12 @@ func (p LoggingProcessorParseJson) Processors(ctx context.Context) ([]otel.Compo
 		return nil, err
 	}
 
+	cachedJSON := ottl.LValue{"cache", "__parsed_json"}
 	statements := ottl.NewStatements(
-		ottl.LValue{"body"}.SetIf(ottl.ParseJSON(fromAccessor), fromAccessor.IsPresent()),
+		cachedJSON.SetIf(ottl.ParseJSON(fromAccessor), fromAccessor.IsPresent()),
+		fromAccessor.DeleteIf(cachedJSON.IsPresent()),
+		ottl.LValue{"body"}.MergeMapsIf(cachedJSON, "upsert", cachedJSON.IsPresent()),
+		cachedJSON.Delete(),
 	)
 
 	ts, err := p.TimestampStatements()
@@ -249,7 +253,6 @@ func (p LoggingProcessorParseJson) Processors(ctx context.Context) ([]otel.Compo
 
 	statements = statements.Append(p.FluentBitSpecialFieldsStatements(ctx))
 
-	// TODO: Support merging instead of replacing.
 	return []otel.Component{otel.Transform(
 		"log", "log",
 		statements,
