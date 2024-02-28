@@ -3,6 +3,7 @@
       level: info
       message: start
       overwritten: "yes"
+      preserved: "yes"
     logName: projects/my-project/logs/my-log-name
     resource:
       labels:
