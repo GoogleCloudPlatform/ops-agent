@@ -24,7 +24,7 @@ case $DEVICE_CODE in
         ;;
     *)
         echo "Installing latest version of NVIDIA CUDA and driver"
-        sudo zypper --non-interactive install -y cuda
+        sudo zypper --non-interactive install -y cuda-drivers-545
         ;;
 esac
 
