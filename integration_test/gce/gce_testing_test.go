@@ -58,6 +58,16 @@ func SetupLoggerAndVM(t *testing.T, platform string) (context.Context, *logging.
 	return ctx, logger, vm
 }
 
+// randomBytes returns a byte slice of the given size with randomly-generated
+// contents.
+func randomBytes(t *testing.T, size int) []byte {
+	result := make([]byte, size)
+	if _, err := rand.Read(result); err != nil {
+		t.Fatal(err)
+	}
+	return result
+}
+
 type testCase struct {
 	command string
 	stdin   string
@@ -185,96 +195,108 @@ Write-Output 'hello'`,
 	},
 }
 
-var bashTestCases = []testCase{
-	{
-		command: "echo 1234 && echo 5678 1>&2",
-		fail:    false,
-		// Expect this command to output "1234" to stdout and "5678" to stderr.
-		stdoutRegexp: "1234",
-		stderrRegexp: "5678",
-	},
-	{
-		command: "ls /",
-		fail:    false,
-	},
-	{
-		command: "ls /nonexistent",
-		fail:    true,
-	},
-	{
-		// Because nothing called asdfqwerty is installed.
-		command: "asdfqwerty help",
-		fail:    true,
-	},
-	{
-		command: "'parse_error_missing_quote",
-		fail:    true,
-	},
-	{
-		command: "exit 1",
-		fail:    true,
-	},
-	{
-		command:      "cat /dev/stdin",
-		stdin:        "5555",
-		fail:         false,
-		stdoutRegexp: "5555",
-		// Skip RunScriptRemotely because it doesn't support stdin.
-		skipRunScriptRemotely: true,
-	},
+func bashTestCases(t *testing.T) []testCase {
+	return []testCase{
+		{
+			command: "echo 1234 && echo 5678 1>&2",
+			fail:    false,
+			// Expect this command to output "1234" to stdout and "5678" to stderr.
+			stdoutRegexp: "1234",
+			stderrRegexp: "5678",
+		},
+		{
+			command: "ls /",
+			fail:    false,
+		},
+		{
+			command: "ls /nonexistent",
+			fail:    true,
+		},
+		{
+			// Because nothing called asdfqwerty is installed.
+			command: "asdfqwerty help",
+			fail:    true,
+		},
+		{
+			command: "'parse_error_missing_quote",
+			fail:    true,
+		},
+		{
+			command: "exit 1",
+			fail:    true,
+		},
+		{
+			command:      "cat /dev/stdin",
+			stdin:        "5555",
+			fail:         false,
+			stdoutRegexp: "5555",
+			// Skip RunScriptRemotely because it doesn't support stdin.
+			skipRunScriptRemotely: true,
+		},
+		{
+			// Test a large stdin as a regression test for a bug where runCommand()
+			// would hang if its stdin was too long.
+			command:      "cat /dev/stdin | wc --bytes",
+			stdin:        randomBytes(t, 100_000_000),
+			fail:         false,
+			stdoutRegexp: "100000000",
+			// Skip RunScriptRemotely because it doesn't support stdin.
+			skipRunScriptRemotely: true,
+		},
 
-	// A pair of tests for a detached process.
-	// These two tests must be run consecutively.
-	{
-		command: `nohup bash -c "sleep 3 && echo 'done sleeping' > out.txt" &`,
-		fail:    false,
-	},
-	{
-		command:      "sleep 5 && cat out.txt",
-		fail:         false,
-		stdoutRegexp: "done sleeping",
-	},
+		// A pair of tests for a detached process.
+		// These two tests must be run consecutively.
+		{
+			command: `nohup bash -c "sleep 3 && echo 'done sleeping' > out.txt" &`,
+			fail:    false,
+		},
+		{
+			command:      "sleep 5 && cat out.txt",
+			fail:         false,
+			stdoutRegexp: "done sleeping",
+		},
 
-	// ================= Tests for multi-line commands follow. ===================
+		// ================= Tests for multi-line commands follow. ===================
 
-	{
-		// Supposed to print "hello" and then run cd, which will set $?,
-		// resulting in an exit code of 1 because it's the last command.
-		command: `
+		{
+			// Supposed to print "hello" and then run cd, which will set $?,
+			// resulting in an exit code of 1 because it's the last command.
+			command: `
 echo hello
 cd /nonexistent`,
-		fail:         true,
-		stdoutRegexp: "hello",
-	},
+			fail:         true,
+			stdoutRegexp: "hello",
+		},
 
-	{
-		// Supposed to exit immediately with code 1, without
-		// proceeding to print "hello".
-		command: `
+		{
+			// Supposed to exit immediately with code 1, without
+			// proceeding to print "hello".
+			command: `
 exit 1
 echo hello`,
-		fail:         true,
-		stdoutRegexp: "^$",
-	},
+			fail:         true,
+			stdoutRegexp: "^$",
+		},
 
-	{
-		// Supposed to fail to cd to a nonexistent directory, but proceed anyway.
-		command: `
+		{
+			// Supposed to fail to cd to a nonexistent directory, but proceed anyway.
+			command: `
 cd /nonexistent
 echo hello`,
-		fail:         false,
-		stdoutRegexp: "hello",
-	},
-	{
-		// Same thing, but with "set -e".
-		// Supposed to fail and not print "hello" this time.
-		command: `
+			fail:         false,
+			stdoutRegexp: "hello",
+		},
+		{
+			// Same thing, but with "set -e".
+			// Supposed to fail and not print "hello" this time.
+			command: `
 set -e
 cd /nonexistent
 echo hello`,
-		fail:         true,
-		stdoutRegexp: "^$",
-	},
+			fail:         true,
+			stdoutRegexp: "^$",
+		},
+	}
 }
 
 // testRunRemotelyHelper runs all the given test cases on the given VM, checking
@@ -355,7 +377,7 @@ func TestRunRemotely(t *testing.T) {
 		if gce.IsWindows(platform) {
 			cases = powershellTestCases
 		} else {
-			cases = bashTestCases
+			cases = bashTestCases(t)
 		}
 
 		testRunRemotelyHelper(ctx, t, logger.ToMainLog(), vm, cases)
