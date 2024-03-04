@@ -816,13 +816,18 @@ func wrapPowershellCommand(command string) (string, error) {
 // 'command' is what to run on the machine. Example: "cat /tmp/foo; echo hello"
 // For extremely long commands, use RunScriptRemotely instead.
 // 'stdin' is what to supply to the command on stdin. It is usually "".
-// TODO: Remove the stdin parameter, because it is hardly used. Create a new
-// function RunRemotelyStdin, accepting an io.Reader instead of a string,
-// for the few places that need stdin.
+// TODO: Remove the stdin parameter. Any callsite that needs to pass
+// data over standard input should use RunRemotelyStdin.
 //
 // When making changes to this function, please test them by running
 // gce_testing_test.go (manually).
 func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, command string) (_ CommandOutput, err error) {
+	return RunRemotelyStdin(ctx, logger, vm, strings.NewReader(stdin), command)
+}
+
+// RunRemotelyStdin is just like RunRemotely but it accepts an io.Reader
+// for what data to pass in over standard input to the command.
+func RunRemotelyStdin(ctx context.Context, logger *log.Logger, vm *VM, stdin io.Reader, command string) (_ CommandOutput, err error) {
 	logger.Printf("Running command remotely: %v", command)
 	defer func() {
 		if err != nil {
@@ -846,7 +851,7 @@ func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, 
 	args = append(args, "-oIdentityFile="+privateKeyFile)
 	args = append(args, sshOptions...)
 	args = append(args, wrappedCommand)
-	return runCommand(ctx, logger, strings.NewReader(stdin), args)
+	return runCommand(ctx, logger, stdin, args)
 }
 
 // UploadContent takes an io.Reader and uploads its contents as a file to a

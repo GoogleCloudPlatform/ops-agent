@@ -32,10 +32,14 @@ See gce_testing.go for documentation on what these do.
 package gce_test
 
 import (
+	"bytes"
 	"context"
+	"crypto/rand"
+	"io"
 	"log"
 	"os"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
@@ -70,7 +74,7 @@ func randomBytes(t *testing.T, size int) []byte {
 
 type testCase struct {
 	command string
-	stdin   string
+	stdin   io.Reader
 
 	fail bool
 
@@ -137,7 +141,7 @@ var powershellTestCases = []testCase{
 	},
 	{
 		command:      "$Input | Write-Output",
-		stdin:        "5555",
+		stdin:        strings.NewReader("5555"),
 		fail:         false,
 		stdoutRegexp: "5555",
 		// Skip RunScriptRemotely because it doesn't support stdin.
@@ -227,7 +231,7 @@ func bashTestCases(t *testing.T) []testCase {
 		},
 		{
 			command:      "cat /dev/stdin",
-			stdin:        "5555",
+			stdin:        strings.NewReader("5555"),
 			fail:         false,
 			stdoutRegexp: "5555",
 			// Skip RunScriptRemotely because it doesn't support stdin.
@@ -237,7 +241,7 @@ func bashTestCases(t *testing.T) []testCase {
 			// Test a large stdin as a regression test for a bug where runCommand()
 			// would hang if its stdin was too long.
 			command:      "cat /dev/stdin | wc --bytes",
-			stdin:        randomBytes(t, 100_000_000),
+			stdin:        bytes.NewReader(randomBytes(t, 100_000_000)),
 			fail:         false,
 			stdoutRegexp: "100000000",
 			// Skip RunScriptRemotely because it doesn't support stdin.
@@ -305,18 +309,18 @@ echo hello`,
 func testRunRemotelyHelper(ctx context.Context, t *testing.T, logger *log.Logger, vm *gce.VM, testCases []testCase) {
 	runners := []struct {
 		name   string
-		runner func(string, string) (gce.CommandOutput, error)
+		runner func(io.Reader, string) (gce.CommandOutput, error)
 	}{
 		{
-			name: "RunRemotely",
-			runner: func(stdin, command string) (gce.CommandOutput, error) {
-				return gce.RunRemotely(ctx, logger, vm, stdin, command)
+			name: "RunRemotelyStdin",
+			runner: func(stdin io.Reader, command string) (gce.CommandOutput, error) {
+				return gce.RunRemotelyStdin(ctx, logger, vm, stdin, command)
 			},
 		},
 		{
 			name: "RunScriptRemotely",
-			runner: func(stdin, command string) (gce.CommandOutput, error) {
-				if stdin != "" {
+			runner: func(stdin io.Reader, command string) (gce.CommandOutput, error) {
+				if stdin != nil {
 					msg := "RunScriptRemotely doesn't support nonempty values of stdin."
 					logger.Println(msg)
 					t.Error(msg)
