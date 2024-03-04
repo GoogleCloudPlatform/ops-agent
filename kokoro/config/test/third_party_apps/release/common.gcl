@@ -3,9 +3,6 @@ import '../common.gcl' as common
 template config third_party_apps_test = common.third_party_apps_test {
   params {
     environment {
-      // Disable -test.short mode when testing nightly releases.
-      SHORT = null
-
       // The release builds run as a different service account.
       TRANSFERS_BUCKET = 'stackdriver-test-143416-file-transfers'
       SERVICE_EMAIL =

@@ -1,0 +1,12 @@
+- entries:
+  - jsonPayload:
+      level: info
+      message: start
+      overwritten: "yes"
+      preserved: "yes"
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2009-11-10T23:00:00.000001000Z
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance

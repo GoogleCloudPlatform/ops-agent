@@ -10,3 +10,7 @@ ENV PATH $PATH:/root/google-cloud-sdk/bin
 RUN gcloud components install beta
 
 RUN go install -v github.com/jstemmer/go-junit-report/v2@latest
+
+RUN apt-get update
+
+RUN apt-get install --yes python3-yaml

@@ -1,0 +1,11 @@
+import '../common.gcl' as common
+
+template config third_party_apps_test = common.third_party_apps_test {
+  params {
+    environment {
+      // For presubmits, we want to pass -test.short, which will skip
+      // most app+distro pairs.
+      SHORT = 'true'
+    }
+  }
+}

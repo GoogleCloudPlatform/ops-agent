@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/generated/lexer"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/generated/parser"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 )
 
 type Member struct {
@@ -44,6 +45,21 @@ func NewMember(m string) (*Member, error) {
 		return nil, fmt.Errorf("not a field: %#v", out)
 	}
 	return &Member{r.LHS}, nil
+}
+
+// NewMemberLegacy attempts to parse m as a filter member.
+// If it fails, it prepends `jsonPayload.` and tries again.
+// This is used by legacy config options that allowed bare body field names.
+func NewMemberLegacy(m string) (*Member, error) {
+	out, err := NewMember(m)
+	if err != nil {
+		// Bare fields in legacy configs refer to elements of `jsonPayload`; try parsing with a `jsonPayload.` prefix if it fails to parse
+		out, err := NewMember(fmt.Sprintf("jsonPayload.%s", m))
+		if err == nil {
+			return out, nil
+		}
+	}
+	return out, err
 }
 
 // Equals checks if two valid members are equal.
@@ -74,6 +90,10 @@ func NewFilter(f string) (*Filter, error) {
 // innerFluentConfig returns components that are intended to be positioned between corresponding nest/lift filters and a Lua expression to evaluate.
 func (f *Filter) innerFluentConfig(tag, prefix string) ([]fluentbit.Component, string) {
 	return f.expr.FluentConfig(tag, prefix)
+}
+
+func (f Filter) OTTLExpression() (ottl.Value, error) {
+	return f.expr.OTTLExpression()
 }
 
 func (f Filter) String() string {
@@ -139,4 +159,8 @@ for k, v in pairs(record) do
 end
 `)
 	return out, lua.String()
+}
+
+func FluentBitSpecialFields() map[string]string {
+	return ast.FluentBitSpecialFields()
 }
