@@ -1444,9 +1444,9 @@ func DeleteInstance(logger *log.Logger, vm *VM) error {
 				"--zone=" + vm.Zone,
 				vm.Name,
 			})
-		// GCE sometimes responds with "The service is currently unavailable".
-		// Retry these errors, by returning them directly.
-		if err != nil && strings.Contains(err.Error(), "unavailable") {
+		// GCE sometimes responds with 502 or 503 errors. Retry these errors
+		// (and other 50x errors for good measure), by returning them directly.
+		if err != nil && strings.Contains(err.Error(), "Error 50") {
 			return err
 		}
 		// Wrap other errors in backoff.Permanent() to avoid retrying those.
