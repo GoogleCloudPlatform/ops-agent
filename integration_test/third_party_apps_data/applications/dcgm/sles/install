@@ -24,6 +24,7 @@ case $DEVICE_CODE in
         ;;
     *)
         echo "Installing latest version of NVIDIA CUDA and driver"
+        # TODO(b/328095390): Remove the temporary fix and use the metapackage without version (i.e., cuda). 
         sudo zypper --non-interactive install -y cuda-drivers-545
         ;;
 esac
