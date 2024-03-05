@@ -223,7 +223,7 @@ func init() {
 		log.Fatalf("init() failed to make a temporary directory for ssh keys: %v", err)
 	}
 	privateKeyFile = filepath.Join(keysDir, "gce_testing_key")
-	if _, err := runCommand(ctx, log.Default(), "", []string{"ssh-keygen", "-t", "rsa", "-f", privateKeyFile, "-C", sshUserName, "-N", ""}); err != nil {
+	if _, err := runCommand(ctx, log.Default(), nil, []string{"ssh-keygen", "-t", "rsa", "-f", privateKeyFile, "-C", sshUserName, "-N", ""}); err != nil {
 		log.Fatalf("init() failed to generate new public+private key pair: %v", err)
 	}
 	publicKeyFile = privateKeyFile + ".pub"
@@ -731,25 +731,14 @@ func (writer *ThreadSafeWriter) Write(p []byte) (int, error) {
 // and stderr, and an error if the binary had a nonzero exit code.
 // args is a slice containing the binary to invoke along with all its arguments,
 // e.g. {"echo", "hello"}.
-func runCommand(ctx context.Context, logger *log.Logger, stdin string, args []string) (CommandOutput, error) {
+func runCommand(ctx context.Context, logger *log.Logger, stdin io.Reader, args []string) (CommandOutput, error) {
 	var output CommandOutput
 	if len(args) < 1 {
 		return output, fmt.Errorf("runCommand() needs a nonempty argument slice, got %v", args)
 	}
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 
-	stdinPipe, err := cmd.StdinPipe()
-	if err != nil {
-		return output, fmt.Errorf("runCommand() failed to open a pipe to stdin: %v", err)
-	}
-
-	if _, err = io.WriteString(stdinPipe, stdin); err != nil {
-		return output, fmt.Errorf("runCommand() failed to write to stdin: %v", err)
-	}
-
-	if err = stdinPipe.Close(); err != nil {
-		return output, fmt.Errorf("runCommand() failed to close stdin: %v", err)
-	}
+	cmd.Stdin = stdin
 
 	var stdoutBuilder strings.Builder
 	var stderrBuilder strings.Builder
@@ -759,7 +748,9 @@ func runCommand(ctx context.Context, logger *log.Logger, stdin string, args []st
 	cmd.Stdout = io.MultiWriter(&stdoutBuilder, interleavedWriter)
 	cmd.Stderr = io.MultiWriter(&stderrBuilder, interleavedWriter)
 
-	if err = cmd.Run(); err != nil {
+	err := cmd.Run()
+
+	if err != nil {
 		err = fmt.Errorf("Command failed: %v\n%v\nstdout+stderr: %s", args, err, interleavedBuilder.String())
 	}
 
@@ -782,7 +773,7 @@ func runCommand(ctx context.Context, logger *log.Logger, stdin string, args []st
 // http://go/sdi-gcloud-vs-api
 func RunGcloud(ctx context.Context, logger *log.Logger, stdin string, args []string) (CommandOutput, error) {
 	logger.Printf("Running command: gcloud %v", args)
-	return runCommand(ctx, logger, stdin, append([]string{gcloudPath}, args...))
+	return runCommand(ctx, logger, strings.NewReader(stdin), append([]string{gcloudPath}, args...))
 }
 
 var (
@@ -825,11 +816,18 @@ func wrapPowershellCommand(command string) (string, error) {
 // 'command' is what to run on the machine. Example: "cat /tmp/foo; echo hello"
 // For extremely long commands, use RunScriptRemotely instead.
 // 'stdin' is what to supply to the command on stdin. It is usually "".
-// TODO: Remove the stdin parameter, because it is hardly used.
+// TODO: Remove the stdin parameter. Any callsite that needs to pass
+// data over standard input should use RunRemotelyStdin.
 //
 // When making changes to this function, please test them by running
 // gce_testing_test.go (manually).
 func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, command string) (_ CommandOutput, err error) {
+	return RunRemotelyStdin(ctx, logger, vm, strings.NewReader(stdin), command)
+}
+
+// RunRemotelyStdin is just like RunRemotely but it accepts an io.Reader
+// for what data to pass in over standard input to the command.
+func RunRemotelyStdin(ctx context.Context, logger *log.Logger, vm *VM, stdin io.Reader, command string) (_ CommandOutput, err error) {
 	logger.Printf("Running command remotely: %v", command)
 	defer func() {
 		if err != nil {
