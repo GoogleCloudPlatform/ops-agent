@@ -34,7 +34,9 @@ package gce_test
 import (
 	"bytes"
 	"context"
+	"crypto/md5"
 	"crypto/rand"
+	"fmt"
 	"io"
 	"log"
 	"os"
