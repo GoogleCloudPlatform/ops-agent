@@ -388,6 +388,67 @@ func TestRunRemotely(t *testing.T) {
 	})
 }
 
+// eachByte returns a byte slice with each byte represented once in it.
+func eachByte() []byte {
+	result := make([]byte, 128)
+	for i := 0; i < 128; i++ {
+		result[i] = byte(i)
+	}
+	return result
+}
+
+// calculateRemoteMD5 computes the MD5 of the given file in a
+// platform-specific way and returns the result as a lowercase hex string.
+func calculateRemoteMD5(ctx context.Context, logger *log.Logger, vm *gce.VM, path string) (string, error) {
+	if gce.IsWindows(vm.Platform) {
+		output, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("(Get-FileHash -Algorithm MD5 -Path '%s').Hash", path))
+		if err != nil {
+			return "", err
+		}
+		return strings.ToLower(strings.TrimSpace(output.Stdout)), nil
+	}
+
+	output, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("set -o pipefail; md5sum '%s' | cut --field 1 --delimiter ' '", path))
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(output.Stdout), nil
+}
+
+func TestUploadContent(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+
+		ctx, logger, vm := SetupLoggerAndVM(t, platform)
+
+		cases := [][]byte{
+			[]byte("hello\n"),
+			[]byte(""),
+			eachByte(),
+			randomBytes(t, 100_000_000),
+		}
+		// Chosen to be platform agnostic, and as a bonus, requires sudo on Linux.
+		// TODO: Test a file location that requires Administrator access on Windows.
+		path := "/test_upload_content"
+		for _, data := range cases {
+			if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, bytes.NewReader(data), path); err != nil {
+				t.Fatalf("Uploading %v bytes failed: %v", len(data), err)
+			}
+
+			expectedMD5 := fmt.Sprintf("%x", md5.Sum(data))
+			actualMD5, err := calculateRemoteMD5(ctx, logger.ToMainLog(), vm, path)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if expectedMD5 != actualMD5 {
+				t.Errorf("got MD5 %q for file %v, want %q", actualMD5, path, expectedMD5)
+			}
+		}
+	})
+}
+
 func TestMain(m *testing.M) {
 	code := m.Run()
 	gce.CleanupKeysOrDie()
