@@ -806,7 +806,7 @@ func wrapPowershellCommand(command string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("powershell -NonInteractive -EncodedCommand %q", base64.StdEncoding.EncodeToString([]byte(encoded))), nil
+	return fmt.Sprintf("pwsh -NonInteractive -OutputFormat Text -EncodedCommand %q", base64.StdEncoding.EncodeToString([]byte(encoded))), nil
 }
 
 // RunRemotely runs a command on the provided VM.
@@ -864,42 +864,21 @@ func RunRemotelyStdin(ctx context.Context, logger *log.Logger, vm *VM, stdin io.
 // the "Compute Engine default service account" for PROJECT as
 // a "Storage Object Viewer" and "Storage Object Creator" on the bucket.
 func UploadContent(ctx context.Context, logger *log.Logger, vm *VM, content io.Reader, remotePath string) (err error) {
-	if !IsWindows(vm.Platform) {
-		// Pass the content in on stdin and tell "tee" to write it to the file.
+	if IsWindows(vm.Platform) {
+		// Create eenclosing directory/directories.
+		if _, err := RunRemotely(ctx, logger, vm, "", fmt.Sprintf("$parent = Split-Path -Parent '%s'; New-Item -Type Directory -Force $parent", remotePath)); err != nil {
+			return err
+		}
+
+		// Pass the content in on stdin and write it to a file.
 		// This is to avoid having to quote the content correctly for the shell.
-		// Use "sudo" to write to the file in case elevated privileges are necessary.
-		_, err = RunRemotelyStdin(ctx, logger, vm, content, fmt.Sprintf("sudo tee '%s' > /dev/null", remotePath))
+		_, err = RunRemotelyStdin(ctx, logger, vm, content, fmt.Sprintf("[System.IO.File]::WriteAllBytes('%s', $Input)", remotePath))
 		return err
 	}
-
-	defer func() {
-		if err != nil {
-			logger.Printf("Uploading file finished with err=%v", err)
-		}
-	}()
-	object := storageClient.Bucket(transfersBucket).Object(path.Join(vm.Name, remotePath))
-	writer := object.NewWriter(ctx)
-	_, copyErr := io.Copy(writer, content)
-	// We have to make sure to call Close() here in order to tell it to finish
-	// the upload operation.
-	closeErr := writer.Close()
-	err = multierr.Combine(copyErr, closeErr)
-	if err != nil {
-		return fmt.Errorf("UploadContent() could not write data into storage object: %v", err)
-	}
-	// Make sure to clean up the object once we're done with it.
-	// Note: if the preceding io.Copy() or writer.Close() fails, the object will
-	// not be uploaded and there is no need to delete it:
-	// https://cloud.google.com/storage/docs/resumable-uploads#introduction
-	// (note that the go client libraries use resumable uploads).
-	defer func() {
-		deleteErr := object.Delete(ctx)
-		if deleteErr != nil {
-			err = fmt.Errorf("UploadContent() finished with err=%v, then cleanup of %v finished with err=%v", err, object.ObjectName(), deleteErr)
-		}
-	}()
-
-	_, err = RunRemotely(ctx, logger, vm, "", fmt.Sprintf(`Read-GcsObject -Force -Bucket "%s" -ObjectName "%s" -OutFile "%s"`, object.BucketName(), object.ObjectName(), remotePath))
+	// Pass the content in on stdin and tell "tee" to write it to the file.
+	// This is to avoid having to quote the content correctly for the shell.
+	// Use "sudo" in case elevated privileges are necessary.
+	_, err = RunRemotelyStdin(ctx, logger, vm, content, fmt.Sprintf(`sudo mkdir -p "$(dirname '%s')" && sudo tee '%s' > /dev/null`, remotePath, remotePath))
 	return err
 }
 
@@ -956,7 +935,7 @@ func RunScriptRemotely(ctx context.Context, logger *log.Logger, vm *VM, scriptCo
 		// script seems to work around this completely.
 		//
 		// To test changes to this command, please run gce_testing_test.go (manually).
-		return RunRemotely(ctx, logger, vm, "", envVarMapToPowershellPrefix(env)+"powershell -File "+scriptPath+" "+flagsStr)
+		return RunRemotely(ctx, logger, vm, "", envVarMapToPowershellPrefix(env)+"pwsh -File "+scriptPath+" "+flagsStr)
 	}
 	scriptPath := uuid.NewString() + ".sh"
 	// Write the script contents to <UUID>.sh, then tell bash to execute it with -x
@@ -1295,6 +1274,16 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		if _, err := RunRemotely(ctx,
 			logger, vm, "", `sudo yum -y --disablerepo=rhui-rhel*-7-* install yum-utils && sudo yum-config-manager --disable "rhui-rhel*-7-*"`); err != nil {
 			return nil, fmt.Errorf("disabling flaky repos failed : %w", err)
+		}
+	}
+
+	if IsWindows(vm.Platform) {
+		// __SuppressAnsiEscapeSequences disables color-related ANSI sequences in
+		// pwsh output. NO_COLOR is the officially supported variable to accomplish this,
+		// but it doesn't actually work. See also
+		// https://github.com/PowerShell/PowerShell/issues/19961.
+		if _, err := RunRemotely(ctx, logger, vm, "", `[Environment]::SetEnvironmentVariable("__SuppressAnsiEscapeSequences", "1", "Machine")`); err != nil {
+			return nil, err
 		}
 	}
 

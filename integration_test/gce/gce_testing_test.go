@@ -425,14 +425,15 @@ func TestUploadContent(t *testing.T) {
 		ctx, logger, vm := SetupLoggerAndVM(t, platform)
 
 		cases := [][]byte{
-			[]byte("hello\n"),
+			[]byte("hello"),
+			[]byte("goodbye\n"),
 			[]byte(""),
 			eachByte(),
 			randomBytes(t, 100_000_000),
 		}
 		// Chosen to be platform agnostic, and as a bonus, requires sudo on Linux.
 		// TODO: Test a file location that requires Administrator access on Windows.
-		path := "/test_upload_content"
+		path := "/test_upload_content/content"
 		for _, data := range cases {
 			if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, bytes.NewReader(data), path); err != nil {
 				t.Fatalf("Uploading %v bytes failed: %v", len(data), err)
@@ -445,7 +446,14 @@ func TestUploadContent(t *testing.T) {
 			}
 
 			if expectedMD5 != actualMD5 {
-				t.Errorf("got MD5 %q for file %v, want %q", actualMD5, path, expectedMD5)
+				t.Errorf("got MD5 %q for file %v (size %v), want %q", actualMD5, path, len(data), expectedMD5)
+				if len(data) < 1000 {
+					output, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", fmt.Sprintf("Get-Content -AsByteStream '%s'", path))
+					if err != nil {
+						t.Fatal(err)
+					}
+					t.Errorf("size %v file contents: %v", len(data), output.Stdout)
+				}
 			}
 		}
 	})
