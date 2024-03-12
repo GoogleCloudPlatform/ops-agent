@@ -215,7 +215,7 @@ fi
 go install gotest.tools/gotestsum@latest
 
 TEST_UNDECLARED_OUTPUTS_DIR="${LOGS_DIR}" \
-  gotestsum --rerun-fails --format=standard-verbose "${TEST_SUITE_NAME}.go" \
+  gotestsum --rerun-fails -- -v "${TEST_SUITE_NAME}.go" \
   "${args[@]}" \
   2>&1 \
   | tee "${STDERR_STDOUT_FILE}"
