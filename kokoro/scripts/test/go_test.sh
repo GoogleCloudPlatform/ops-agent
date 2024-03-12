@@ -212,8 +212,10 @@ if [[ "${SHORT:-false}" == "true" ]]; then
   args+=( "-test.short" )
 fi
 
+go install gotest.tools/gotestsum@latest
+
 TEST_UNDECLARED_OUTPUTS_DIR="${LOGS_DIR}" \
-  go test -v "${TEST_SUITE_NAME}.go" \
+  gotestsum --rerun-fails -v "${TEST_SUITE_NAME}.go" \
   "${args[@]}" \
   2>&1 \
   | tee "${STDERR_STDOUT_FILE}"
