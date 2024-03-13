@@ -211,7 +211,7 @@ go install gotest.tools/gotestsum@latest
 
 TEST_UNDECLARED_OUTPUTS_DIR="${LOGS_DIR}" \
   gotestsum --rerun-fails \
-  --packages="${TEST_SUITE_NAME}.go" \
+  --packages=./"${TEST_SUITE_NAME}.go" \
   --junitfile "${LOGS_DIR}/sponge_log.xml" \
   -- -v  \
   "${args[@]}" \
