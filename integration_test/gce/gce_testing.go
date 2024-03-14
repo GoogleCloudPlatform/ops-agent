@@ -1137,7 +1137,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		return nil, fmt.Errorf("attemptCreateInstance() could not construct valid labels: %v", err)
 	}
 
-	re := regexp.MustCompile(`(?P<Project>[a-z-]+(?!-))-(?P<Delimeter>[:=])-(?P<ImageOrFamily>[a-z0-9-]+(?!-))`)
+	re := regexp.MustCompile(`(?P<Project>[a-z-]+)-(?P<Delimeter>[:=])-(?P<ImageOrFamily>[a-z0-9-]+)`)
 	matches := re.FindStringSubmatch(options.Image)
 	projectIndex := re.SubexpIndex("Project")
 	delimIndex := re.SubexpIndex("Delimeter")
