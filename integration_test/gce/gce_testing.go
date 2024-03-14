@@ -309,7 +309,7 @@ type VM struct {
 // imageProject returns the image project providing the given image family.
 func imageProject(family string) (string, error) {
 	firstWord := strings.Split(family, ":")[0]
-	return firstWord
+	return firstWord, nil
 }
 
 // SyslogLocation returns a filesystem path to the system log. This function
@@ -1142,6 +1142,8 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	projectIndex := re.SubexpIndex("Project")
 	delimIndex := re.SubexpIndex("Delimeter")
 	imageOrFamilyIndex := re.SubexpIndex("ImageOrFamily")
+
+    imageOrImageFamilyFlag := ""
 
 	switch matches[delimIndex] {
 	case ":":
