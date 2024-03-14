@@ -1139,12 +1139,15 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 
 	re := regexp.MustCompile(`(?P<Project>[a-z-]+(?!-))-(?P<Delimeter>[:=])-(?P<ImageOrFamily>[a-z0-9-]+(?!-))`)
 	matches := re.FindStringSubmatch(options.Image)
+	projectIndex := re.SubexpIndex("Project")
+	delimIndex := re.SubexpIndex("Delimeter")
+	imageOrFamilyIndex := re.SubexpIndex("ImageOrFamily")
 
-	switch re.SubexpIndex("Delimeter") {
+	switch matches[delimIndex] {
 	case ":":
-		imageOrImageFamilyFlag = "--image-family=" + re.SubexpIndex("ImageOrFamily")
+		imageOrImageFamilyFlag = "--image-family=" + matches[imageOrFamilyIndex]
 	case "=":
-		imageOrImageFamilyFlag = "--image=" + re.SubexpIndex("ImageOrFamily")
+		imageOrImageFamilyFlag = "--image=" + matches[imageOrFamilyIndex]
 	default:
 		return nil, fmt.Errorf("could not parse image string %s", options.Image)
 	}
@@ -1161,7 +1164,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		"--project=" + vm.Project,
 		"--zone=" + vm.Zone,
 		"--machine-type=" + vm.MachineType,
-		"--image-project=" + re.SubexpIndex("Project"),
+		"--image-project=" + matches[projectIndex],
 		imageOrImageFamilyFlag,
 		"--image-family-scope=" + imageFamilyScope,
 		"--network=" + vm.Network,
