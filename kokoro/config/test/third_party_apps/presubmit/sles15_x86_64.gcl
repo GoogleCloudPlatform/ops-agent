@@ -2,6 +2,6 @@ import 'common.gcl' as common
 
 config build = common.third_party_apps_test {
   params {
-    platforms = ['sles-15']
+    platforms = ['suse-cloud:sles-15']
   }
 }
