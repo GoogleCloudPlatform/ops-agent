@@ -217,4 +217,3 @@ TEST_UNDECLARED_OUTPUTS_DIR="${LOGS_DIR}" \
   "${args[@]}" \
   2>&1 \
   | tee "${STDERR_STDOUT_FILE}"
-  
