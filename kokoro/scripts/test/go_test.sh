@@ -193,6 +193,11 @@ if [[ "${TEST_SUITE_NAME}" == "os_config_test" ]]; then
 fi
 
 STDERR_STDOUT_FILE="${KOKORO_ARTIFACTS_DIR}/test_stderr_stdout.txt"
+function produce_xml() {
+  cat "${STDERR_STDOUT_FILE}" | "$(go env GOPATH)/bin/go-junit-report" > "${LOGS_DIR}/sponge_log.xml"
+}
+# Always run produce_xml on exit, whether the test passes or fails.
+trap produce_xml EXIT
 
 # Boost the max number of open files from 1024 to 1 million.
 ulimit -n 1000000
@@ -207,13 +212,9 @@ if [[ "${SHORT:-false}" == "true" ]]; then
   args+=( "-test.short" )
 fi
 
-go install gotest.tools/gotestsum@latest
-
 TEST_UNDECLARED_OUTPUTS_DIR="${LOGS_DIR}" \
-  gotestsum --rerun-fails \
-  --packages=./"${TEST_SUITE_NAME}.go" \
-  --junitfile "${LOGS_DIR}/sponge_log.xml" \
-  -- -v  \
+  go test -v "${TEST_SUITE_NAME}.go" \
   "${args[@]}" \
   2>&1 \
   | tee "${STDERR_STDOUT_FILE}"
+  
