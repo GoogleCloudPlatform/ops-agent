@@ -1136,10 +1136,11 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		return nil, fmt.Errorf("attemptCreateInstance() could not construct valid labels: %v", err)
 	}
 
+	delim := ""
 	if strings.Contains(options.Image, ":"){
-		delim := ":"
+		delim = ":"
 	} else if strings.Contains(options.Image, "="){
-		delim := "="
+		delim = "="
 	} else {
 		return nil, fmt.Errorf("could not parse image string %s", options.Image)
 	}
@@ -1148,11 +1149,12 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	imageProject := s[0]
 	imageOrFamily := s[1]
 
+	imageOrImageFamilyFlag := ""
 	switch delim  {
 		case ":":
-			imageOrImageFamilyFlag := "--image-family=" + imageOrFamily
+			imageOrImageFamilyFlag = "--image-family=" + imageOrFamily
 		case "=":
-			imageOrImageFamilyFlag := "--image=" + imageOrFamily
+			imageOrImageFamilyFlag = "--image=" + imageOrFamily
 	}
 
 	imageFamilyScope := options.ImageFamilyScope
