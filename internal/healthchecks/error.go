@@ -98,7 +98,7 @@ var (
 		Message:      "Request to GCE Metadata server failed",
 		Action:       "Check your internet connection and firewall rules.",
 		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/troubleshoot-run-ingest#network-issues",
-		IsFatal:      true,
+		IsFatal:      false,
 	}
 	LogApiScopeErr = HealthCheckError{
 		Code:         "LogApiScopeErr",
