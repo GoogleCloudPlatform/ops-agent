@@ -1143,8 +1143,10 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	} else {
 		return nil, fmt.Errorf("could not parse image string %s", options.Image)
 	}
-
-	imageProject, imageOrFamily := strings.Split(platformsEnv, delim)
+ 
+	s := strings.Split(platformsEnv, delim)
+	imageProject := s[0]
+	imageOrFamily := s[1]
 
 	switch delim  {
 		case ":":
