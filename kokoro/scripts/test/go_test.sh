@@ -207,11 +207,9 @@ if [[ "${SHORT:-false}" == "true" ]]; then
   args+=( "-test.short" )
 fi
 
-# "${GOTESTSUM_ARGS:-}"
-
 TEST_UNDECLARED_OUTPUTS_DIR="${LOGS_DIR}" \
   gotestsum \
-  --rerun-fails \
+  "${GOTESTSUM_ARGS:-}" \
   --packages=./"${TEST_SUITE_NAME}.go" \
   --junitfile "${LOGS_DIR}/sponge_log.xml" \
   -- -v  \
