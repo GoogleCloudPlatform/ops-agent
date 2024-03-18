@@ -145,8 +145,8 @@ sles12_x86_64 = _distro {
 sles15_x86_64 = _distro {
   release = [
     'suse-cloud:sles-15',
-    'suse-sap-cloud:rhel-sap-cloud:sles-15-sp2-sap',
-    'suse-sap-cloud:rhel-sap-cloud:sles-15-sp5-sap',
+    'suse-sap-cloud:sles-15-sp2-sap',
+    'suse-sap-cloud:sles-15-sp5-sap',
     'opensuse-cloud:opensuse-leap',
     'opensuse-cloud=opensuse-leap-15-4-v20231208-x86-64',
   ]
