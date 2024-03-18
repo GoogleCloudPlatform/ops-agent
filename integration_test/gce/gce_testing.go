@@ -94,7 +94,6 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -1136,22 +1135,22 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	if err != nil {
 		return nil, fmt.Errorf("attemptCreateInstance() could not construct valid labels: %v", err)
 	}
-
-	re := regexp.MustCompile(`(?P<Project>[a-z-]+)-(?P<Delimeter>[:=])-(?P<ImageOrFamily>[a-z0-9-]+)`)
-	matches := re.FindStringSubmatch(options.Image)
-	projectIndex := re.SubexpIndex("Project")
-	delimIndex := re.SubexpIndex("Delimeter")
-	imageOrFamilyIndex := re.SubexpIndex("ImageOrFamily")
+    
+    if strings.Contains(options.Image, ":"){
+		delim = ":"
+	} else if strings.Contains(options.Image, "="){
+		delim = "="
+	} else {
+		return nil, fmt.Errorf("could not parse image string %s", options.Image)
+	}
 
     imageOrImageFamilyFlag := ""
 
-	switch matches[delimIndex] {
-	case ":":
-		imageOrImageFamilyFlag = "--image-family=" + matches[imageOrFamilyIndex]
-	case "=":
-		imageOrImageFamilyFlag = "--image=" + matches[imageOrFamilyIndex]
-	default:
-		return nil, fmt.Errorf("could not parse image string %s", options.Image)
+	switch delim  {
+		case ":":
+			imageOrImageFamilyFlag = "--image-family=" + matches[imageOrFamilyIndex]
+		case "=":
+			imageOrImageFamilyFlag = "--image=" + matches[imageOrFamilyIndex]
 	}
 
 	imageFamilyScope := options.ImageFamilyScope
