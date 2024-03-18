@@ -209,10 +209,9 @@ fi
 
 TEST_UNDECLARED_OUTPUTS_DIR="${LOGS_DIR}" \
   gotestsum \
-  "${GOTESTSUM_ARGS:-}" \
   --packages=./"${TEST_SUITE_NAME}.go" \
-  --junitfile "${LOGS_DIR}/sponge_log.xml" \
-  -- -v  \
-  "${args[@]}" \
+  --format=standard-verbose \
+  --junitfile="${LOGS_DIR}/sponge_log.xml" \
+  -- "${args[@]}" \
   2>&1 \
   | tee "${STDERR_STDOUT_FILE}"
