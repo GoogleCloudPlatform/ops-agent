@@ -1025,7 +1025,7 @@ func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM) error {
 
 var (
 	overriddenImageFamilies = map[string]string{
-		"opensuse-leap-15-4": "opensuse-leap-15-4-v20230603-x86-64",
+		"opensuse-leap-15-4": "opensuse-leap-15-4-v20231208-x86-64",
 	}
 )
 
