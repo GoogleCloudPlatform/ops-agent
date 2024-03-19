@@ -1444,6 +1444,10 @@ func DeleteInstance(logger *log.Logger, vm *VM) error {
 				"--zone=" + vm.Zone,
 				vm.Name,
 			})
+		// TODO: comment, also double check logic
+		if err != nil && strings.Contains(err.Error(), "not found") && attempt > 1 {
+			return nil
+		}
 		// GCE sometimes responds with 502 or 503 errors. Retry these errors
 		// (and other 50x errors for good measure), by returning them directly.
 		if err != nil && strings.Contains(err.Error(), "Error 50") {
