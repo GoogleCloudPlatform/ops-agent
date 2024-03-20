@@ -207,8 +207,6 @@ if [[ "${SHORT:-false}" == "true" ]]; then
   args+=( "-test.short" )
 fi
 
-GOTESTSUM_ARGS='--rerun-fails --rerun-fails-max-failures=5'
-
  # GOTESTSUM_ARGS is intentionally unquoted
 TEST_UNDECLARED_OUTPUTS_DIR="${LOGS_DIR}" \
   gotestsum \
