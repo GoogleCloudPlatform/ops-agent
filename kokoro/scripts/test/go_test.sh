@@ -197,23 +197,28 @@ STDERR_STDOUT_FILE="${KOKORO_ARTIFACTS_DIR}/test_stderr_stdout.txt"
 # Boost the max number of open files from 1024 to 1 million.
 ulimit -n 1000000
 
+# Set up some command line flags for "gotestsum".
+gotestsum_args=(
+  --packages=./"${TEST_SUITE_NAME}.go"
+  --format=standard-verbose
+  --junitfile="${LOGS_DIR}/sponge_log.xml"
+)
+if [[ -n "${GOTESTSUM_RERUN_FAILS:-}" ]]; then
+  go_test_args+=( "--rerun-rails=${GOTESTSUM_RERUN_FAILS}" )
+fi
+
 # Set up some command line flags for "go test".
-args=(
+go_test_args=(
   -test.parallel=1000
   -tags=integration_test
   -timeout=3h
 )
 if [[ "${SHORT:-false}" == "true" ]]; then
-  args+=( "-test.short" )
+  go_test_args+=( "-test.short" )
 fi
 
- # GOTESTSUM_ARGS is intentionally unquoted
 TEST_UNDECLARED_OUTPUTS_DIR="${LOGS_DIR}" \
-  gotestsum \
-  ${GOTESTSUM_ARGS:-} \
-  --packages=./"${TEST_SUITE_NAME}.go" \
-  --format=standard-verbose \
-  --junitfile="${LOGS_DIR}/sponge_log.xml" \
-  -- "${args[@]}" \
+  gotestsum "${gotestsum_args[@]}" \
+  -- "${go_test_args[@]}" \
   2>&1 \
   | tee "${STDERR_STDOUT_FILE}"
