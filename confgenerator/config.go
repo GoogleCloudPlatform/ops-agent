@@ -790,8 +790,9 @@ func (m *metricsProcessorMap) UnmarshalYAML(ctx context.Context, unmarshal func(
 }
 
 type MetricsService struct {
-	LogLevel  string               `yaml:"log_level,omitempty" validate:"omitempty,oneof=error warn info debug"`
-	Pipelines map[string]*Pipeline `yaml:"pipelines" validate:"dive,keys,startsnotwith=lib:"`
+	LogLevel    string               `yaml:"log_level,omitempty" validate:"omitempty,oneof=error warn info debug"`
+	EnablePprof bool                 `yaml:"enable_pprof,omitempty"`
+	Pipelines   map[string]*Pipeline `yaml:"pipelines" validate:"dive,keys,startsnotwith=lib:"`
 }
 
 type Traces struct {

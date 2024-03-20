@@ -123,6 +123,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context) (string, error)
 	}
 	otelConfig, err := otel.ModularConfig{
 		LogLevel:          uc.Metrics.Service.LogLevel,
+		EnablePprof:       uc.Metrics.Service.EnablePprof,
 		ReceiverPipelines: receiverPipelines,
 		Pipelines:         pipelines,
 		Exporters: map[otel.ExporterType]otel.Component{

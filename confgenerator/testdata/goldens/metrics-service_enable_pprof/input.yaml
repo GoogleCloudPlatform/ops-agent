@@ -1,0 +1,4 @@
+metrics:
+  service:
+    log_level: debug
+    enable_pprof: true

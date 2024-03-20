@@ -126,6 +126,7 @@ func mergeConfigs(original, overrides *UnifiedConfig) {
 			if overrides.Metrics.Service.LogLevel != "info" {
 				original.Metrics.Service.LogLevel = overrides.Metrics.Service.LogLevel
 			}
+			original.Metrics.Service.EnablePprof = overrides.Metrics.Service.EnablePprof
 			for name, pipeline := range overrides.Metrics.Service.Pipelines {
 				// skips metrics.service.pipelines.*.exporters
 				pipeline.ExporterIDs = nil

@@ -109,11 +109,12 @@ func configToYaml(config interface{}) ([]byte, error) {
 }
 
 type ModularConfig struct {
-	LogLevel          string
+	LogLevel    string
+	EnablePprof bool
+
 	ReceiverPipelines map[string]ReceiverPipeline
 	Pipelines         map[string]Pipeline
-
-	Exporters map[ExporterType]Component
+	Exporters         map[ExporterType]Component
 
 	// Test-only options:
 	// Don't generate any self-metrics
@@ -135,20 +136,25 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 	receivers := map[string]interface{}{}
 	processors := map[string]interface{}{}
 	exporters := map[string]interface{}{}
-	exporterNames := map[ExporterType]string{}
-	pipelines := map[string]interface{}{}
-	service := map[string]map[string]interface{}{
-		"pipelines": pipelines,
-		"telemetry": map[string]interface{}{
-			"metrics": map[string]interface{}{
-				// TODO: switch to metrics.readers so we can stop binding a port
-				"address": fmt.Sprintf("0.0.0.0:%d", MetricsPort),
-			},
+	extensions := map[string]interface{}{
+		"pprof": nil,
+	}
+	telemetry := map[string]interface{}{
+		"metrics": map[string]interface{}{
+			// TODO: switch to metrics.readers so we can stop binding a port
+			"address": fmt.Sprintf("0.0.0.0:%d", MetricsPort),
 		},
 	}
+	exporterNames := map[ExporterType]string{}
+	pipelines := map[string]interface{}{}
+	service := map[string]any{
+		"pipelines": pipelines,
+	}
 	if c.DisableMetrics {
-		service["telemetry"]["metrics"] = map[string]interface{}{
-			"level": "none",
+		telemetry["metrics"] = map[string]interface{}{
+			"metrics": map[string]interface{}{
+				"level": "none",
+			},
 		}
 	}
 	logs := map[string]any{}
@@ -159,13 +165,20 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 		logs["encoding"] = "json"
 	}
 	if len(logs) > 0 {
-		service["telemetry"]["logs"] = logs
+		telemetry["logs"] = logs
+	}
+
+	service["telemetry"] = telemetry
+
+	if c.EnablePprof {
+		service["extensions"] = []string{"pprof"}
 	}
 
 	configMap := map[string]interface{}{
 		"receivers":  receivers,
 		"processors": processors,
 		"exporters":  exporters,
+		"extensions": extensions,
 		"service":    service,
 	}
 
@@ -237,14 +250,4 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 		return "", err
 	}
 	return string(out), nil
-}
-
-func contains(s []string, str string) bool {
-	for _, v := range s {
-		if v == str {
-			return true
-		}
-	}
-
-	return false
 }
