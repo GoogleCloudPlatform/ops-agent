@@ -209,7 +209,7 @@ fi
 
 TEST_UNDECLARED_OUTPUTS_DIR="${LOGS_DIR}" \
   gotestsum \
-  ${GOTESTSUM_ARGS} \ # intentionally unquoted
+  ${GOTESTSUM_ARGS:-} \ # intentionally unquoted
   --packages=./"${TEST_SUITE_NAME}.go" \
   --format=standard-verbose \
   --junitfile="${LOGS_DIR}/sponge_log.xml" \
