@@ -208,7 +208,7 @@ if [[ "${SHORT:-false}" == "true" ]]; then
 fi
 
 TEST_UNDECLARED_OUTPUTS_DIR="${LOGS_DIR}" \
-  gotestsum \
+  gotestsum ${GOTESTSUM_ARGS} \
   --packages=./"${TEST_SUITE_NAME}.go" \
   --format=standard-verbose \
   --junitfile="${LOGS_DIR}/sponge_log.xml" \
