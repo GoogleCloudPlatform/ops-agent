@@ -187,7 +187,7 @@ else
   cd integration_test
 fi
 
-if [[ "${TEST_SUITE_NAME}" == "os_config_test" ]]; then
+if [[ "${TEST_SUITE_NAME}" == "os_config_test" || "${TEST_SUITE_NAME}" == "gcloud_policies_test" ]]; then
   GCLOUD_TO_TEST="${KOKORO_BLAZE_DIR}/${GCLOUD_LITE_BLAZE_PATH}"
   export GCLOUD_TO_TEST
 fi
