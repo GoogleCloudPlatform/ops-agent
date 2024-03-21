@@ -48,6 +48,11 @@ cd ../../../
 # Source the common utilities, for track_flakiness.
 source kokoro/scripts/utils/common.sh
 
+# Download and install a newer version of go.
+sudo rm -rf /usr/local/go
+wget --quiet --output-document=/dev/stdout https://golang.org/dl/go1.22.linux-amd64.tar.gz | \
+  sudo tar --directory /usr/local -xzf /dev/stdin
+
 track_flakiness
 
 # Avoids "fatal: detected dubious ownership in repository" errors on Kokoro containers.
