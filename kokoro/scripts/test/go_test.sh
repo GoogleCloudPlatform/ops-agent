@@ -50,8 +50,8 @@ source kokoro/scripts/utils/common.sh
 
 # Download and install a newer version of go.
 rm -rf /usr/local/go
-wget --quiet --output-document=/dev/stdout https://golang.org/dl/go1.22.linux-amd64.tar.gz | \
-  tar --directory /usr/local -xzf /dev/stdin
+wget --output-document=foo.tar.gz https://golang.org/dl/go1.22.linux-amd64.tar.gz
+tar --directory /usr/local -xzf foo.tar.gz
 
 track_flakiness
 
