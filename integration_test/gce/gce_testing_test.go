@@ -410,7 +410,7 @@ func calculateRemoteMD5(ctx context.Context, logger *log.Logger, vm *gce.VM, pat
 		return strings.ToLower(strings.TrimSpace(output.Stdout)), nil
 	}
 
-	output, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("set -o pipefail; md5sum '%s' | cut --field 1 --delimiter ' '", path))
+	output, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("set -o pipefail; sudo md5sum '%s' | cut --field 1 --delimiter ' '", path))
 	if err != nil {
 		return "", err
 	}
@@ -431,7 +431,6 @@ func TestUploadContent(t *testing.T) {
 			randomBytes(t, 100_000_000),
 		}
 		// Chosen to be platform agnostic, and as a bonus, requires sudo on Linux.
-		// TODO: Test a file location that requires Administrator access on Windows.
 		path := "/test_upload_content"
 		for _, data := range cases {
 			if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, bytes.NewReader(data), path); err != nil {
