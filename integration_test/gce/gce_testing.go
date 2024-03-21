@@ -865,13 +865,10 @@ func RunRemotelyStdin(ctx context.Context, logger *log.Logger, vm *VM, stdin io.
 // a "Storage Object Viewer" and "Storage Object Creator" on the bucket.
 func UploadContent(ctx context.Context, logger *log.Logger, vm *VM, content io.Reader, remotePath string) (err error) {
 	if !IsWindows(vm.Platform) {
-		if _, err := RunRemotely(ctx, logger, vm, fmt.Sprintf(`sudo mkdir -p "$(dirname '%s')"`, remotePath)); err != nil {
-			return err
-		}
-		// Pass the content in on stdin and tell "tee" to write it to the file.
+		// Pass the content in on stdin and tell "cp" to copy it to the file.
 		// This is to avoid having to quote the content correctly for the shell.
-		// Use "sudo" to write to the file in case elevated privileges are necessary.
-		_, err = RunRemotelyStdin(ctx, logger, vm, content, fmt.Sprintf("sudo tee '%s' > /dev/null", remotePath))
+		// Use "sudo" in case elevated privileges are necessary.
+		_, err = RunRemotelyStdin(ctx, logger, vm, content, fmt.Sprintf(`sudo mkdir -p "$(dirname '%s')" && sudo cp /dev/stdin '%s'`, remotePath, remotePath))
 		return err
 	}
 
