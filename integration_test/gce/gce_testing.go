@@ -857,7 +857,7 @@ func RunRemotelyStdin(ctx context.Context, logger *log.Logger, vm *VM, stdin io.
 // UploadContent takes an io.Reader and uploads its contents as a file to a
 // given path on the given VM.
 //
-// In order for this function to work, the currently active application default
+// When used for a Windows VM, the currently active application default
 // credentials (GOOGLE_APPLICATION_CREDENTIALS) need to be able to upload to
 // fileTransferBucket, and also the role running on the remote VM needs to be
 // given permission to read from that bucket. This was accomplished by adding
@@ -865,6 +865,9 @@ func RunRemotelyStdin(ctx context.Context, logger *log.Logger, vm *VM, stdin io.
 // a "Storage Object Viewer" and "Storage Object Creator" on the bucket.
 func UploadContent(ctx context.Context, logger *log.Logger, vm *VM, content io.Reader, remotePath string) (err error) {
 	if !IsWindows(vm.Platform) {
+		if _, err := RunRemotely(ctx, logger, vm, fmt.Sprintf(`sudo mkdir -p "$(dirname '%s')"`, remotePath)); err != nil {
+			return err
+		}
 		// Pass the content in on stdin and tell "tee" to write it to the file.
 		// This is to avoid having to quote the content correctly for the shell.
 		// Use "sudo" to write to the file in case elevated privileges are necessary.
