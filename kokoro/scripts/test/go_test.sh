@@ -192,8 +192,6 @@ if [[ "${TEST_SUITE_NAME}" == "os_config_test" ]]; then
   export GCLOUD_TO_TEST
 fi
 
-STDERR_STDOUT_FILE="${KOKORO_ARTIFACTS_DIR}/test_stderr_stdout.txt"
-
 # Boost the max number of open files from 1024 to 1 million.
 ulimit -n 1000000
 
@@ -219,6 +217,4 @@ fi
 
 TEST_UNDECLARED_OUTPUTS_DIR="${LOGS_DIR}" \
   gotestsum "${gotestsum_args[@]}" \
-  -- "${go_test_args[@]}" \
-  2>&1 \
-  | tee "${STDERR_STDOUT_FILE}"
+  -- "${go_test_args[@]}"
