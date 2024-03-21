@@ -868,7 +868,7 @@ func UploadContent(ctx context.Context, logger *log.Logger, vm *VM, content io.R
 		// Pass the content in on stdin and tell "cp" to copy it to the file.
 		// This is to avoid having to quote the content correctly for the shell.
 		// Use "sudo" in case elevated privileges are necessary.
-		_, err = RunRemotelyStdin(ctx, logger, vm, content, fmt.Sprintf("sudo cp /dev/stdin '%s'", remotePath, remotePath))
+		_, err = RunRemotelyStdin(ctx, logger, vm, content, fmt.Sprintf("sudo cp /dev/stdin '%s'", remotePath))
 		return err
 	}
 
