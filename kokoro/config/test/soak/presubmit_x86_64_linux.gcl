@@ -3,7 +3,7 @@ import 'common.gcl' as common
 config build = common.soak_test {
   params {
     environment {
-      DISTRO = 'ubuntu-2004-lts'
+      DISTRO = 'ubuntu-os-cloud:ubuntu-2004-lts'
     }
   }
 }

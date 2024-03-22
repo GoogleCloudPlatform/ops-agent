@@ -307,39 +307,8 @@ type VM struct {
 
 // imageProject returns the image project providing the given image family.
 func imageProject(family string) (string, error) {
-	firstWord := strings.Split(family, "-")[0]
-	switch firstWord {
-	case "windows":
-		return "windows-cloud", nil
-	case "sql":
-		return "windows-sql-cloud", nil
-	case "centos":
-		return "centos-cloud", nil
-	case "debian":
-		return "debian-cloud", nil
-	case "ubuntu":
-		return "ubuntu-os-cloud", nil
-	case "rhel":
-		// There are a few different cases:
-		// "rhel-7", "rhel-7-4-sap", and "rhel-7-6-sap-ha".
-		if strings.Contains(family, "-sap") {
-			return "rhel-sap-cloud", nil
-		}
-		return "rhel-cloud", nil
-	case "rocky":
-		return "rocky-linux-cloud", nil
-	case "opensuse":
-		return "opensuse-cloud", nil
-	case "sles":
-		// There are a few different cases:
-		// "sles-15" and "sles-15-sp*-sap".
-		if strings.Contains(family, "-sap") {
-			return "suse-sap-cloud", nil
-		}
-		return "suse-cloud", nil
-	default:
-		return "", fmt.Errorf("could not find match for family %s", family)
-	}
+	firstWord := strings.Split(family, ":")[0]
+	return firstWord, nil
 }
 
 // SyslogLocation returns a filesystem path to the system log. This function
@@ -1167,15 +1136,25 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		return nil, fmt.Errorf("attemptCreateInstance() could not construct valid labels: %v", err)
 	}
 
-	imageOrImageFamilyFlag := "--image=" + options.Image
+	delim := ""
+	if strings.Contains(options.Image, ":"){
+		delim = ":"
+	} else if strings.Contains(options.Image, "="){
+		delim = "="
+	} else {
+		return nil, fmt.Errorf("could not parse image string %s", options.Image)
+	}
+ 
+	s := strings.Split(options.Image, delim)
+	imageProject := s[0]
+	imageOrFamily := s[1]
 
-	if options.Platform != "" {
-		imageOrImageFamilyFlag = "--image-family=" + options.Platform
-
-		if image, ok := overriddenImageFamilies[options.Platform]; ok {
-			imageOrImageFamilyFlag = "--image=" + image
-		}
-
+	imageOrImageFamilyFlag := ""
+	switch delim  {
+		case ":":
+			imageOrImageFamilyFlag = "--image-family=" + imageOrFamily
+		case "=":
+			imageOrImageFamilyFlag = "--image=" + imageOrFamily
 	}
 
 	imageFamilyScope := options.ImageFamilyScope
@@ -1190,7 +1169,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		"--project=" + vm.Project,
 		"--zone=" + vm.Zone,
 		"--machine-type=" + vm.MachineType,
-		"--image-project=" + imgProject,
+		"--image-project=" + imageProject,
 		imageOrImageFamilyFlag,
 		"--image-family-scope=" + imageFamilyScope,
 		"--network=" + vm.Network,
