@@ -3817,15 +3817,15 @@ func TestLoggingSelfLogs(t *testing.T) {
 			t.Error(err)
 		}
 
-		queryHealthCheck := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		queryHealthCheck := `severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, queryHealthCheck); err != nil {
 			t.Error(err)
 		}
 
 		// Waiting 10 minutes (subtracting current test runtime) after Ops Agent startup for
 		// "LogPingOpsAgent" to show. We can remove wait when feature b/319102785 is complete.
-		time.Sleep(10*time.Minute - time.Now().Sub(start))
-		queryPing := fmt.Sprintf(`severity="DEBUG" AND jsonPayload.code="LogPingOpsAgent" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		time.Sleep(10*time.Minute - time.Since(start))
+		queryPing := `severity="DEBUG" AND jsonPayload.code="LogPingOpsAgent" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, queryPing); err != nil {
 			t.Error(err)
 		}
@@ -4471,6 +4471,11 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		// Use a longer service startup delay to allow the health check backoffs to complete.
+		// Health check backoffs take up to 30s, and SetupOpsAgent already waits for 20s,
+		// so wait an additional 20s for some extra buffer.
+		time.Sleep(20 * time.Second)
+
 		cmdOut, err := gce.RunRemotely(ctx, logger, vm, "", getRecentServiceOutputForPlatform(vm.Platform))
 		if err != nil {
 			t.Fatal(err)
@@ -4480,7 +4485,7 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "FAIL", "OtelMetricsPortErr")
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "FAIL", "MonApiScopeErr")
 
-		query := fmt.Sprintf(`severity="ERROR" AND jsonPayload.code="MonApiScopeErr" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		query := `severity="ERROR" AND jsonPayload.code="MonApiScopeErr" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`
 		if err := gce.WaitForLog(ctx, logger, vm, "ops-agent-health", time.Hour, query); err != nil {
 			t.Error(err)
 		}
@@ -4523,6 +4528,10 @@ func TestNetworkHealthCheck(t *testing.T) {
 		if _, err := gce.RunRemotely(ctx, logger, vm, "", startCommandForPlatform(vm.Platform)); err != nil {
 			t.Fatal(err)
 		}
+
+		// Use a longer service startup delay to allow the health check backoffs to complete.
+		// Health check backoffs take up to 30s, so wait for 40s to have some extra buffer.
+		time.Sleep(40 * time.Second)
 
 		cmdOut, err = gce.RunRemotely(ctx, logger, vm, "", getRecentServiceOutputForPlatform(vm.Platform))
 		if err != nil {
@@ -4579,7 +4588,7 @@ func TestParsingFailureCheck(t *testing.T) {
 			t.Fatalf("error writing dummy log line: %v", err)
 		}
 
-		query := fmt.Sprintf(`severity="ERROR" AND jsonPayload.code="LogParseErr" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		query := `severity="ERROR" AND jsonPayload.code="LogParseErr" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`
 		if err := gce.WaitForLog(ctx, logger, vm, "ops-agent-health", time.Hour, query); err != nil {
 			t.Error(err)
 		}
@@ -4614,7 +4623,7 @@ func TestDisableSelfLogCollection(t *testing.T) {
 			t.Error(err)
 		}
 
-		query := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		query := `severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", 3*time.Minute, query); err != nil {
 			t.Error(err)
 		}
