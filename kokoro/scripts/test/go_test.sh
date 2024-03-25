@@ -202,7 +202,7 @@ gotestsum_args=(
   --junitfile="${LOGS_DIR}/sponge_log.xml"
 )
 if [[ -n "${GOTESTSUM_RERUN_FAILS:-}" ]]; then
-  go_test_args+=( "--rerun-fails=${GOTESTSUM_RERUN_FAILS}" )
+  gotestsum_args+=( "--rerun-fails=${GOTESTSUM_RERUN_FAILS}" )
 fi
 
 # Set up some command line flags for "go test".
