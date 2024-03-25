@@ -806,7 +806,7 @@ func wrapPowershellCommand(command string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("powershell -NonInteractive -EncodedCommand %q", base64.StdEncoding.EncodeToString([]byte(encoded))), nil
+	return fmt.Sprintf("pwsh -NonInteractive -OutputFormat Text -EncodedCommand %q", base64.StdEncoding.EncodeToString([]byte(encoded))), nil
 }
 
 // RunRemotely runs a command on the provided VM.
@@ -864,42 +864,21 @@ func RunRemotelyStdin(ctx context.Context, logger *log.Logger, vm *VM, stdin io.
 // the "Compute Engine default service account" for PROJECT as
 // a "Storage Object Viewer" and "Storage Object Creator" on the bucket.
 func UploadContent(ctx context.Context, logger *log.Logger, vm *VM, content io.Reader, remotePath string) (err error) {
-	defer func() {
-		if err != nil {
-			logger.Printf("Uploading file finished with err=%v", err)
-		}
-	}()
-	object := storageClient.Bucket(transfersBucket).Object(path.Join(vm.Name, remotePath))
-	writer := object.NewWriter(ctx)
-	_, copyErr := io.Copy(writer, content)
-	// We have to make sure to call Close() here in order to tell it to finish
-	// the upload operation.
-	closeErr := writer.Close()
-	err = multierr.Combine(copyErr, closeErr)
-	if err != nil {
-		return fmt.Errorf("UploadContent() could not write data into storage object: %v", err)
-	}
-	// Make sure to clean up the object once we're done with it.
-	// Note: if the preceding io.Copy() or writer.Close() fails, the object will
-	// not be uploaded and there is no need to delete it:
-	// https://cloud.google.com/storage/docs/resumable-uploads#introduction
-	// (note that the go client libraries use resumable uploads).
-	defer func() {
-		deleteErr := object.Delete(ctx)
-		if deleteErr != nil {
-			err = fmt.Errorf("UploadContent() finished with err=%v, then cleanup of %v finished with err=%v", err, object.ObjectName(), deleteErr)
-		}
-	}()
-
 	if IsWindows(vm.Platform) {
-		_, err = RunRemotely(ctx, logger, vm, "", fmt.Sprintf(`Read-GcsObject -Force -Bucket "%s" -ObjectName "%s" -OutFile "%s"`, object.BucketName(), object.ObjectName(), remotePath))
+		// Create eenclosing directory/directories.
+		if _, err := RunRemotely(ctx, logger, vm, "", fmt.Sprintf("$parent = Split-Path -Parent '%s'; New-Item -Type Directory -Force $parent", remotePath)); err != nil {
+			return err
+		}
+
+		// Pass the content in on stdin and write it to a file.
+		// This is to avoid having to quote the content correctly for the shell.
+		_, err = RunRemotelyStdin(ctx, logger, vm, content, fmt.Sprintf("[System.IO.File]::WriteAllBytes('%s', $Input)", remotePath))
 		return err
 	}
-	if err := InstallGsutilIfNeeded(ctx, logger, vm); err != nil {
-		return err
-	}
-	objectPath := fmt.Sprintf("gs://%s/%s", object.BucketName(), object.ObjectName())
-	_, err = RunRemotely(ctx, logger, vm, "", fmt.Sprintf("sudo gsutil cp '%s' '%s'", objectPath, remotePath))
+	// Pass the content in on stdin and tell "tee" to write it to the file.
+	// This is to avoid having to quote the content correctly for the shell.
+	// Use "sudo" in case elevated privileges are necessary.
+	_, err = RunRemotelyStdin(ctx, logger, vm, content, fmt.Sprintf(`sudo mkdir -p "$(dirname '%s')" && sudo tee '%s' > /dev/null`, remotePath, remotePath))
 	return err
 }
 
@@ -956,7 +935,7 @@ func RunScriptRemotely(ctx context.Context, logger *log.Logger, vm *VM, scriptCo
 		// script seems to work around this completely.
 		//
 		// To test changes to this command, please run gce_testing_test.go (manually).
-		return RunRemotely(ctx, logger, vm, "", envVarMapToPowershellPrefix(env)+"powershell -File "+scriptPath+" "+flagsStr)
+		return RunRemotely(ctx, logger, vm, "", envVarMapToPowershellPrefix(env)+"pwsh -File "+scriptPath+" "+flagsStr)
 	}
 	scriptPath := uuid.NewString() + ".sh"
 	// Write the script contents to <UUID>.sh, then tell bash to execute it with -x
@@ -1298,6 +1277,16 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		}
 	}
 
+	if IsWindows(vm.Platform) {
+		// __SuppressAnsiEscapeSequences disables color-related ANSI sequences in
+		// pwsh output. NO_COLOR is the officially supported variable to accomplish this,
+		// but it doesn't actually work. See also
+		// https://github.com/PowerShell/PowerShell/issues/19961.
+		if _, err := RunRemotely(ctx, logger, vm, "", `[Environment]::SetEnvironmentVariable("__SuppressAnsiEscapeSequences", "1", "Machine")`); err != nil {
+			return nil, err
+		}
+	}
+
 	return vm, nil
 }
 
@@ -1533,95 +1522,6 @@ func RestartInstance(ctx context.Context, logger *log.Logger, vm *VM) error {
 	}
 
 	return StartInstance(ctx, logger, vm)
-}
-
-// InstallGsutilIfNeeded installs gsutil on instances that don't already have
-// it installed. This is only currently the case for some old versions of SUSE.
-func InstallGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) error {
-	if IsWindows(vm.Platform) {
-		return nil
-	}
-	if _, err := RunRemotely(ctx, logger, vm, "", "sudo gsutil --version"); err == nil {
-		// Success, no need to install gsutil.
-		return nil
-	}
-	logger.Printf("gsutil not found, installing it...")
-
-	// SUSE seems to be the only distro without gsutil, so what follows is all
-	// very SUSE-specific.
-	if !IsSUSE(vm.Platform) {
-		return fmt.Errorf("this test does not know how to install gsutil on platform %q", vm.Platform)
-	}
-
-	gcloudArch := "x86_64"
-	if IsARM(vm.Platform) {
-		gcloudArch = "arm"
-	}
-	gcloudPkg := "google-cloud-cli-453.0.0-linux-" + gcloudArch + ".tar.gz"
-	installFromTarball := `
-curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/` + gcloudPkg + `
-INSTALL_DIR="$(readlink --canonicalize .)"
-(
-	INSTALL_LOG="$(mktemp)"
-	# This command produces a lot of console spam, so we only display that
-	# output if there is a problem.
-	sudo tar -xf ` + gcloudPkg + ` -C ${INSTALL_DIR} 
-	sudo --preserve-env ${INSTALL_DIR}/google-cloud-sdk/install.sh -q &>"${INSTALL_LOG}" || \
-		EXIT_CODE=$?
-	if [[ "${EXIT_CODE-}" ]]; then
-		cat "${INSTALL_LOG}"
-		exit "${EXIT_CODE}"
-	fi
-)`
-	installCmd := `set -ex
-` + installFromTarball + `
-
-# Upgrade to the latest version
-sudo ${INSTALL_DIR}/google-cloud-sdk/bin/gcloud components update --quiet
-
-sudo ln -s ${INSTALL_DIR}/google-cloud-sdk/bin/gsutil /usr/bin/gsutil 
-`
-	// b/308962066: The GCloud CLI ARM Linux tarballs do not have bundled Python
-	// and the GCloud CLI requires Python >= 3.8. Install Python311 for ARM VMs
-	if IsARM(vm.Platform) {
-		// This is what's used on openSUSE.
-		repoSetupCmd := "sudo zypper --non-interactive refresh"
-		if strings.HasPrefix(vm.Platform, "sles-12") {
-			return fmt.Errorf("this test does not know how to install gsutil on platform %q", vm.Platform)
-		}
-		// For SLES 15 ARM: use a vendored repo to reduce flakiness of the
-		// external repos. See http://go/sdi/releases/build-test-release/vendored
-		// for details.
-		if strings.HasPrefix(vm.Platform, "sles-15") {
-			repoSetupCmd = `sudo zypper --non-interactive addrepo -g -t YUM https://us-yum.pkg.dev/projects/cloud-ops-agents-artifacts-dev/google-cloud-monitoring-sles15-aarch64-test-vendor test-vendor
-sudo rpm --import https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
-sudo zypper --non-interactive refresh test-vendor`
-		}
-
-		installCmd = `set -ex
-` + repoSetupCmd + `
-sudo zypper --non-interactive install python311 python3-certifi
-
-# On SLES 15 and OpenSUSE Leap arm, python3 is Python 3.6. Tell gsutil/gcloud to use python3.11.
-export CLOUDSDK_PYTHON=/usr/bin/python3.11
-
-` + installFromTarball + `
-
-# Upgrade to the latest version
-sudo CLOUDSDK_PYTHON=/usr/bin/python3.11 ${INSTALL_DIR}/google-cloud-sdk/bin/gcloud components update --quiet
-
-# Make a "gsutil" bash script in /usr/bin that runs the copy of gsutil that
-# was installed into $INSTALL_DIR with CLOUDSDK_PYTHON set.
-sudo tee /usr/bin/gsutil > /dev/null << EOF
-#!/usr/bin/env bash
-CLOUDSDK_PYTHON=/usr/bin/python3.11 ${INSTALL_DIR}/google-cloud-sdk/bin/gsutil "\$@"
-EOF
-sudo chmod a+x /usr/bin/gsutil
-`
-	}
-
-	_, err := RunRemotely(ctx, logger, vm, "", installCmd)
-	return err
 }
 
 // instance is a subset of the official instance type from the GCE compute API
