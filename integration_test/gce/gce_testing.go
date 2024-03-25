@@ -158,11 +158,11 @@ const (
 	SuggestedTimeout = 2 * time.Hour
 
 	// QueryMaxAttempts is the default number of retries when calling WaitForLog and WaitForMetricSeries.
-	// Retries are spaced by 5 seconds, so 80 retries denotes 6 minutes 40 seconds total.
-	QueryMaxAttempts              = 80 // 6 minutes 40 seconds total.
-	queryMaxAttemptsMetricMissing = 5  // 25 seconds total.
-	queryMaxAttemptsLogMissing    = 5  // 25 seconds total.
-	queryBackoffDuration          = 5 * time.Second
+	// Retries are spaced by 10 seconds, so 40 retries denotes 6 minutes 40 seconds total.
+	QueryMaxAttempts              = 40 // 6 minutes 40 seconds total.
+	queryMaxAttemptsMetricMissing = 5  // 50 seconds total.
+	queryMaxAttemptsLogMissing    = 5  // 50 seconds total.
+	queryBackoffDuration          = 10 * time.Second
 
 	// traceQueryDerate is the number of backoff durations to wait before retrying a trace query.
 	// Cloud Trace quota is incredibly low, and each call to ListTraces uses 25 quota tokens.
@@ -1344,6 +1344,9 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 			strings.Contains(err.Error(), "Internal error") ||
 			// Instance creation can also fail due to service unavailability.
 			strings.Contains(err.Error(), "currently unavailable") ||
+			// This error is a consequence of running gcloud concurrently, which is actually
+			// unsupported. In the absence of a better fix, just retry such errors.
+		        strings.Contains(err.Error(), "database is locked") ||
 			// windows-*-core instances sometimes fail to be ssh-able: b/305721001
 			(IsWindowsCore(options.Platform) && strings.Contains(err.Error(), windowsStartupFailedMessage)) ||
 			// SLES instances sometimes fail to be ssh-able: b/186426190
@@ -1436,7 +1439,9 @@ func DeleteInstance(logger *log.Logger, vm *VM) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 	backoffPolicy := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(30*time.Second), 10), ctx)
+	attempt := 0
 	tryDelete := func() error {
+		attempt++
 		_, err := RunGcloud(ctx, logger, "",
 			[]string{
 				"compute", "instances", "delete",
@@ -1444,16 +1449,23 @@ func DeleteInstance(logger *log.Logger, vm *VM) error {
 				"--zone=" + vm.Zone,
 				vm.Name,
 			})
+		if err == nil {
+			return nil
+		}
 		// GCE sometimes responds with 502 or 503 errors. Retry these errors
 		// (and other 50x errors for good measure), by returning them directly.
-		if err != nil && strings.Contains(err.Error(), "Error 50") {
+		if strings.Contains(err.Error(), "Error 50") {
 			return err
 		}
-		// Wrap other errors in backoff.Permanent() to avoid retrying those.
-		if err != nil {
-			return backoff.Permanent(err)
+		// "not found" can happen when a previous attempt actually did delete
+		// the VM but there was some communication problem along the way.
+		// Consider that a successful deletion. Only do this when there has
+		// been a previous attempt.
+		if strings.Contains(err.Error(), "not found") && attempt > 1 {
+			return nil
 		}
-		return nil
+		// Wrap other errors in backoff.Permanent() to avoid retrying those.
+		return backoff.Permanent(err)
 	}
 	err := backoff.Retry(tryDelete, backoffPolicy)
 	if err == nil {
