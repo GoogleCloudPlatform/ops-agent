@@ -18,17 +18,17 @@ case "${VERSION_ID}" in
     ;;
 esac
 
-sudo yum install -y postgresql14-server postgresql14-contrib
-sudo systemctl enable postgresql-14
+sudo yum install -y postgresql15-server postgresql15-contrib
+sudo systemctl enable postgresql-15
 
-sudo /usr/pgsql-14/bin/postgresql-14-setup initdb
-sudo service postgresql-14 restart
+sudo /usr/pgsql-15/bin/postgresql-15-setup initdb
+sudo service postgresql-15 restart
 
 sudo su postgres -c "psql postgres -c \"ALTER ROLE postgres WITH PASSWORD 'abc123';\""
 sudo su postgres -c "psql postgres -c \"CREATE ROLE replica_user WITH REPLICATION LOGIN PASSWORD 'abc123';\""
 
-DATA_ROOT=/var/lib/pgsql/14
-CFG_ROOT=/var/lib/pgsql/14
+DATA_ROOT=/var/lib/pgsql/15
+CFG_ROOT=/var/lib/pgsql/15
 
 ### Everything following this comment is designed to set up a paused replica to get replication metrics
 sudo tee -a ${CFG_ROOT}/data/postgresql.conf << EOF
@@ -47,7 +47,7 @@ sudo tee -a ${CFG_ROOT}/data/pg_hba.conf << EOF
 host  replication   replica_user  localhost  md5
 EOF
 
-sudo systemctl restart postgresql-14
+sudo systemctl restart postgresql-15
 
 # backup from primary to repl directory and configure replication
 sudo tee ${DATA_ROOT}/.pgpass << EOF
@@ -80,7 +80,7 @@ EOF
 sudo chown -R postgres:postgres ${DATA_ROOT}/repl
 
 # start the replica in the background
-nohup sudo su postgres -c "/usr/pgsql-14/bin/postgres -D ${DATA_ROOT}/repl" 2>/dev/null >/dev/null </dev/null &
+nohup sudo su postgres -c "/usr/pgsql-15/bin/postgres -D ${DATA_ROOT}/repl" 2>/dev/null >/dev/null </dev/null &
 # give it time to start, since we put it in the background
 sleep 5
 # pause the replication so we see delay metrics populated
