@@ -58,8 +58,8 @@ if ($env:KOKORO_JOB_TYPE -eq 'RELEASE') {
   $suffix = '-release'
 }
 $cache_location="${artifact_registry}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:windows-${arch}${suffix}"
-Invoke-Program docker pull $cache_location
-Invoke-Program docker build --cache-from="${cache_location}" -t $tag -f './Dockerfile.windows' .
+# Invoke-Program docker pull $cache_location
+Invoke-Program docker build -t $tag -f './Dockerfile.windows' .
 Invoke-Program docker create --name $name $tag
 Invoke-Program docker cp "${name}:/work/out" $env:KOKORO_ARTIFACTS_DIR
 
@@ -68,10 +68,10 @@ Invoke-Program docker cp "${name}:/work/out" $env:KOKORO_ARTIFACTS_DIR
 # write to any kind of cache, for example a per-PR cache, because the
 # push takes a few minutes and adds little value over just using the continuous
 # build's cache.
-if ($env:KOKORO_ROOT_JOB_TYPE -eq 'CONTINUOUS_INTEGRATION') {
-  Invoke-Program docker image tag $tag $cache_location
-  Invoke-Program docker push $cache_location
-}
+# if ($env:KOKORO_ROOT_JOB_TYPE -eq 'CONTINUOUS_INTEGRATION') {
+Invoke-Program docker image tag $tag $cache_location
+Invoke-Program docker push $cache_location
+# }
 
 # Copy the .goo file from $env:KOKORO_ARTIFACTS_DIR/out to $env:KOKORO_ARTIFACTS_DIR/result.
 # The .goo file is the installable package that is distributed to customers.
