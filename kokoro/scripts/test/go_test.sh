@@ -182,7 +182,7 @@ if [[ -n "${TEST_SOURCE_PIPER_LOCATION-}" ]]; then
   # Make a module containing the latest dependencies from GitHub.
   go mod init "${TEST_SUITE_NAME}"
   go get github.com/GoogleCloudPlatform/ops-agent@master
-  go mod tidy -compat=${GO_VERSION}
+  go mod tidy -compat=1.17
 else
   cd integration_test
 fi
