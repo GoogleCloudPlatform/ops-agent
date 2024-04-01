@@ -2,6 +2,9 @@ import 'common.gcl' as common
 
 config build = common.third_party_apps_test {
   params {
-    platforms = ['sles-12']
+    environment {
+      TARGET = 'sles12'
+      ARCH = 'x86_64'
+    }
   }
 }

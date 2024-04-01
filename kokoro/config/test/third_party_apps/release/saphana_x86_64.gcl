@@ -2,6 +2,14 @@ import 'common.gcl' as common
 
 config build = common.third_party_apps_test {
   params {
+    environment {
+      TARGET = 'bookworm'
+      ARCH = 'x86_64'
+    }
+  }
+}
+
+  params {
     // Created in b/230338826.
     platforms = ['sles-15-sp4-sap-saphana']
 

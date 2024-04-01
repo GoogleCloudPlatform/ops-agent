@@ -2,6 +2,9 @@ import 'common.gcl' as common
 
 config build = common.third_party_apps_test {
   params {
-    platforms = ['debian-11']
+    environment {
+      TARGET = 'bullseye'
+      ARCH = 'x86_64'
+    }
   }
 }

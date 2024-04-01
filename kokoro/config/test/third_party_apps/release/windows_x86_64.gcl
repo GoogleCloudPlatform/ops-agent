@@ -2,11 +2,9 @@ import 'common.gcl' as common
 
 config build = common.third_party_apps_test {
   params {
-    platforms = [
-      'windows-2019',
-      'sql-std-2019-win-2019',
-      'windows-2022',
-      'sql-std-2022-win-2022',
-    ]
+    environment {
+      TARGET = 'windows'
+      ARCH = 'x86_64'
+    }
   }
 }

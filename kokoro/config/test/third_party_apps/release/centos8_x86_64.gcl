@@ -2,6 +2,9 @@ import 'common.gcl' as common
 
 config build = common.third_party_apps_test {
   params {
-    platforms = ['rocky-linux-8']
+    environment {
+      TARGET = 'centos8'
+      ARCH = 'x86_64'
+    }
   }
 }
