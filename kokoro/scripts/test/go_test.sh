@@ -22,7 +22,7 @@
 # And also the following, documented at the top of gce_testing.go and
 # $TEST_SUITE_NAME.go:
 # 1. PROJECT
-# 2. ZONE
+# 2. ZONES
 # 3. TRANSFERS_BUCKET
 #
 # If TEST_SOURCE_PIPER_LOCATION is defined, this script will look for test
@@ -32,9 +32,12 @@
 # install_scripts_test:
 #   * AGENTS_TO_TEST: comma-separated list of agents to test.
 #   * SCRIPTS_DIR: path to installation scripts to test.
-# os_config_test:
+# os_config_test and gcloud_policies_test:
 #   * GCLOUD_LITE_BLAZE_PATH: path to just-built copy of gcloud_lite to use for
 #     testing.
+# ops_agent_policies_test:
+#   * POLICIES_DIR: path to policy .yaml files to test.
+#   * ZONE: a single zone to run tests in (ZONES is ignored).
 
 set -e
 set -u
@@ -126,6 +129,10 @@ function set_platforms() {
 # set to 512 as per this article:
 # https://cloud.google.com/knowledge/kb/sles-unable-to-fetch-updates-when-behind-cloud-nat-000004450
 function set_zones() {
+   # if ZONES is defined, do nothing
+  if [[ -n "${ZONES:-}" ]]; then
+    return 0
+  fi
   if [[ "${ARCH:-}" == "x86_64" ]]; then
     zone_list=(
       us-central1-a=3
