@@ -12,6 +12,7 @@ template config soak_test = common.go_test {
 
     environment {
       ZONES = 'us-central1-a'
+      TARGET = split(basename(myfilename()), '_')[0]
     }
   }
 }
