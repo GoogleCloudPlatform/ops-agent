@@ -7,6 +7,7 @@ template config third_party_apps_test = common.third_party_apps_test {
       TRANSFERS_BUCKET = 'stackdriver-test-143416-file-transfers'
       SERVICE_EMAIL =
           'build-and-test@stackdriver-test-143416.iam.gserviceaccount.com'
+      GOTESTSUM_RERUN_FAILS = '2'
     }
   }
 }
