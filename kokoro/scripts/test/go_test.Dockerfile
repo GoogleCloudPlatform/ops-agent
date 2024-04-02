@@ -9,7 +9,7 @@ ENV PATH $PATH:/root/google-cloud-sdk/bin
 # Needed for --max-run-duration, see b/227348032.
 RUN gcloud components install beta
 
-RUN go install gotest.tools/gotestsum@latest
+RUN go install gotest.tools/gotestsum@main
 
 RUN apt-get update
 
