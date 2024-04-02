@@ -1144,7 +1144,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	} else if strings.Contains(options.Image, "="){
 		delim = "="
 	} else {
-		return nil, fmt.Errorf("could not parse options.Image from struct: \"%s\"", string(options))
+		return nil, fmt.Errorf("could not parse options.Image from struct: %v", options)
 	}
  
 	s := strings.Split(options.Image, delim)
