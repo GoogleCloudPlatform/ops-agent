@@ -2,18 +2,12 @@ import '../utils/functions.gcl' as functions
 
 template config common = {
   params = {
-    platforms = external
     build_file = external
-
-    // This is only used for determining the value of ZONES.
-    arch = 'x86_64'
 
     artifacts = []
 
     environment = {
-      ARCH = arch
       PROJECT = 'stackdriver-test-143416'
-      PLATFORMS = cond(platforms != [], join(platforms, ','), null)
     }
   }
 

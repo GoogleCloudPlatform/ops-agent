@@ -22,7 +22,7 @@
 # And also the following, documented at the top of gce_testing.go and
 # $TEST_SUITE_NAME.go:
 # 1. PROJECT
-# 2. ZONE
+# 2. ZONES
 # 3. TRANSFERS_BUCKET
 #
 # If TEST_SOURCE_PIPER_LOCATION is defined, this script will look for test
@@ -32,9 +32,12 @@
 # install_scripts_test:
 #   * AGENTS_TO_TEST: comma-separated list of agents to test.
 #   * SCRIPTS_DIR: path to installation scripts to test.
-# os_config_test:
+# os_config_test and gcloud_policies_test:
 #   * GCLOUD_LITE_BLAZE_PATH: path to just-built copy of gcloud_lite to use for
 #     testing.
+# ops_agent_policies_test:
+#   * POLICIES_DIR: path to policy .yaml files to test.
+#   * ZONE: a single zone to run tests in (ZONES is ignored).
 
 set -e
 set -u
@@ -126,6 +129,10 @@ function set_platforms() {
 # set to 512 as per this article:
 # https://cloud.google.com/knowledge/kb/sles-unable-to-fetch-updates-when-behind-cloud-nat-000004450
 function set_zones() {
+   # if ZONES is defined, do nothing
+  if [[ -n "${ZONES:-}" ]]; then
+    return 0
+  fi
   if [[ "${ARCH:-}" == "x86_64" ]]; then
     zone_list=(
       us-central1-a=3
@@ -176,42 +183,49 @@ if [[ -n "${TEST_SOURCE_PIPER_LOCATION-}" ]]; then
     SCRIPTS_DIR="${KOKORO_PIPER_DIR}/${SCRIPTS_DIR}"
     export SCRIPTS_DIR
   fi
+  if [[ -n "${POLICIES_DIR-}" ]]; then
+    POLICIES_DIR="${KOKORO_PIPER_DIR}/${POLICIES_DIR}"
+    export POLICIES_DIR
+  fi
 
   cd "${KOKORO_PIPER_DIR}/${TEST_SOURCE_PIPER_LOCATION}/${TEST_SUITE_NAME}"
 
   # Make a module containing the latest dependencies from GitHub.
   go mod init "${TEST_SUITE_NAME}"
   go get github.com/GoogleCloudPlatform/ops-agent@master
-  go mod tidy -compat=${GO_VERSION}
+  go mod tidy -compat=1.17
 else
   cd integration_test
 fi
 
-if [[ "${TEST_SUITE_NAME}" == "os_config_test" ]]; then
+if [[ "${TEST_SUITE_NAME}" == "os_config_test" || "${TEST_SUITE_NAME}" == "gcloud_policies_test" ]]; then
   GCLOUD_TO_TEST="${KOKORO_BLAZE_DIR}/${GCLOUD_LITE_BLAZE_PATH}"
   export GCLOUD_TO_TEST
 fi
 
-STDERR_STDOUT_FILE="${KOKORO_ARTIFACTS_DIR}/test_stderr_stdout.txt"
-
 # Boost the max number of open files from 1024 to 1 million.
 ulimit -n 1000000
 
+# Set up some command line flags for "gotestsum".
+gotestsum_args=(
+  --packages=./"${TEST_SUITE_NAME}.go"
+  --format=standard-verbose
+  --junitfile="${LOGS_DIR}/sponge_log.xml"
+)
+if [[ -n "${GOTESTSUM_RERUN_FAILS:-}" ]]; then
+  gotestsum_args+=( "--rerun-fails=${GOTESTSUM_RERUN_FAILS}" )
+fi
+
 # Set up some command line flags for "go test".
-args=(
+go_test_args=(
   -test.parallel=1000
   -tags=integration_test
   -timeout=3h
 )
 if [[ "${SHORT:-false}" == "true" ]]; then
-  args+=( "-test.short" )
+  go_test_args+=( "-test.short" )
 fi
 
 TEST_UNDECLARED_OUTPUTS_DIR="${LOGS_DIR}" \
-  gotestsum \
-  --packages=./"${TEST_SUITE_NAME}.go" \
-  --format=standard-verbose \
-  --junitfile="${LOGS_DIR}/sponge_log.xml" \
-  -- "${args[@]}" \
-  2>&1 \
-  | tee "${STDERR_STDOUT_FILE}"
+  gotestsum "${gotestsum_args[@]}" \
+  -- "${go_test_args[@]}"

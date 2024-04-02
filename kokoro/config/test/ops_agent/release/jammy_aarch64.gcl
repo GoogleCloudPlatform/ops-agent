@@ -1,9 +1,10 @@
 import 'common.gcl' as common
-import '../../image_lists.gcl' as image_lists
 
 config build = common.ops_agent_test {
   params {
-    platforms = image_lists.jammy_aarch64.release
-    arch = 'aarch64'
+    environment {
+      TARGET = 'jammy'
+      ARCH = 'aarch64'
+    }
   }
 }

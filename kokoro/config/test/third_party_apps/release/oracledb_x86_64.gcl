@@ -2,10 +2,10 @@ import 'common.gcl' as common
 
 config build = common.third_party_apps_test {
   params {
-    platforms = ['rhel-7']
-
     environment {
+      PLATFORMS = 'rhel-7'
       INSTANCE_SIZE = 'n2-highmem-8'
+      ARCH = 'x86_64'
     }
   }
 }
