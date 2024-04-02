@@ -1136,13 +1136,15 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		return nil, fmt.Errorf("attemptCreateInstance() could not construct valid labels: %v", err)
 	}
 
+
+
 	delim := ""
 	if strings.Contains(options.Image, ":"){
 		delim = ":"
 	} else if strings.Contains(options.Image, "="){
 		delim = "="
 	} else {
-		return nil, fmt.Errorf("could not parse image string %s", options.Image)
+		return nil, fmt.Errorf("could not parse options.Image from struct: \"%s\"", string(options))
 	}
  
 	s := strings.Split(options.Image, delim)

@@ -3,7 +3,7 @@ import 'common.gcl' as common
   params {
     environment {
       // Created in b/230338826.
-      PLATFORMS = 'sles-15-sp4-sap-saphana'
+      PLATFORMS = 'suse-sap-cloud:sles-15-sp4-sap-saphana'
       // These instances need a lot of RAM.
       INSTANCE_SIZE = 'n2-highmem-8'
       ARCH = 'x86_64'

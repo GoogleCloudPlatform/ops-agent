@@ -3,7 +3,7 @@ import 'common.gcl' as common
 config build = common.soak_test {
   params {
     environment {
-      DISTRO = 'windows-2022'
+      DISTRO = 'windows-cloud:windows-2022'
     }
   }
 }
