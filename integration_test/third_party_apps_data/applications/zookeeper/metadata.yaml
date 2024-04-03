@@ -22,6 +22,9 @@ description: |-
   latency, active requests, and active connections. The integration also collects
   ZooKeeper logs and parses them into a JSON payload. The result includes fields
   for node ID, source, level, and message.
+configure_integration: |-
+  The Zookeeper receiver collects metrics from a Zookeeper instance, using the `mntr` command.
+  The `mntr` 4 letter word command needs to be enabled for the receiver to be able to collect metrics.
 minimum_supported_agent_version:
   metrics: 2.10.0
   logging: 2.11.0
