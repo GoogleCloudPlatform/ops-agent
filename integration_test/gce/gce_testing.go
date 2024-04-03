@@ -1139,15 +1139,15 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 
 
 	delim := ""
-	if strings.Contains(options.Image, ":"){
+	if strings.Contains(options.Platform, ":"){
 		delim = ":"
-	} else if strings.Contains(options.Image, "="){
+	} else if strings.Contains(options.Platform, "="){
 		delim = "="
 	} else {
-		return nil, fmt.Errorf("could not parse options.Image from struct: %v", options)
+		return nil, fmt.Errorf("could not parse options.Image from struct: %+v", options)
 	}
  
-	s := strings.Split(options.Image, delim)
+	s := strings.Split(options.Platform, delim)
 	imageProject := s[0]
 	imageOrFamily := s[1]
 
