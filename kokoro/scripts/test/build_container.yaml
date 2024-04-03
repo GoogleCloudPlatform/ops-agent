@@ -8,13 +8,11 @@ steps:
       - cp
       - gs://stackdriver-test-143416-grte/grte-runtimes.deb
       - kokoro/scripts/test/
-  - name: gcr.io/cloud-builders/docker
-    id: build-and-push
-    entrypoint: bash
+  - name: 'gcr.io/kaniko-project/executor:latest'
+    id: kaniko-build
     args:
-      - -exc
-      - |
-          cd kokoro/scripts/test
-          tag=us-east4-docker.pkg.dev/stackdriver-test-143416/build-tools/test-env:latest
-          docker build -f go_test.Dockerfile . -t "$tag"
-          docker push "$tag"
+    - --destination=us-east4-docker.pkg.dev/stackdriver-test-143416/build-tools/test-env:latest
+    - --cache=true
+    - --cache-copy-layers=true
+    - --context=kokoro/scripts/test
+    - --dockerfile=kokoro/scripts/test/go_test.Dockerfile
