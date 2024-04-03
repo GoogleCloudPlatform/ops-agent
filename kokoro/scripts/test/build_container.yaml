@@ -1,0 +1,20 @@
+# This is triggered on every push to master and builds/pushes go_test.Dockerfile.
+steps:
+  - name: gcr.io/google.com/cloudsdktool/google-cloud-cli
+    id: download-grte
+    args:
+      - gcloud
+      - storage
+      - cp
+      - gs://stackdriver-test-143416-grte/grte-runtimes.deb
+      - kokoro/scripts/test/
+  - name: gcr.io/cloud-builders/docker
+    id: build-and-push
+    entrypoint: bash
+    args:
+      - -exc
+      - |
+          cd kokoro/scripts/test
+          tag=us-east4-docker.pkg.dev/stackdriver-test-143416/build-tools/test-env:latest
+          docker build -f go_test.Dockerfile . -t "$tag"
+          docker push "$tag"

@@ -16,5 +16,5 @@ RUN apt-get update
 RUN apt-get install --yes python3-yaml
 
 # Install go/grte.
-COPY grtev5-runtimes.deb /install/grte-debs/
-RUN cd /install/grte-debs && dpkg -i *.deb
+COPY grte-runtimes.deb /install/grte-debs/
+RUN dpkg -i /install/grte-debs/*.deb
