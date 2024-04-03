@@ -81,6 +81,7 @@ handle_rhel7() {
 
 handle_common() {
     install_driver_package() {
+        #TODO: b/332690428 - Remove this temporary fix for Rocky Linux 9 rocky-linux-9-v20240313 with kernel 5.14.0-362.18.1.el9_3.0.1.x86_64 
         case $(uname -r) in
             5.14.0-362.18.1.el9_3.0.1.x86_64) 
                 sudo ln -s /lib/modules/5.14.0-362.18.1.el9_3.0.1.x86_64 /lib/modules/5.14.0-362.18.1.el9_3.x86_64
