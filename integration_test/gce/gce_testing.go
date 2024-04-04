@@ -986,12 +986,6 @@ func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM) error {
 	return err
 }
 
-var (
-	overriddenImageFamilies = map[string]string{
-		"opensuse-leap-15-4": "opensuse-leap-15-4-v20231208-x86-64",
-	}
-)
-
 func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map[string]string, error) {
 	metadataCopy := make(map[string]string)
 
@@ -1069,10 +1063,47 @@ func getVMPlatform(image string, platform string) (string, error) {
 	return "", errors.New("at least one of image or platform must be specified")
 }
 
+func parseImageSpec(options VMOptions) (error) {
+	if options.ImageSpec == "" {
+		return nil
+	}
+
+	if options.Image != "" || options.ImageFamily != "" || options.ImageProject != "" {
+		return fmt.Errorf("If options.ImageSpec is set, options.(Image|ImageFamily|ImageProject|Platform) cannot be: %+v", options)
+	}
+
+	delim := ""
+	if strings.Contains(options.ImageSpec, ":"){
+		delim = ":"
+	} else if strings.Contains(options.ImageSpec, "="){
+		delim = "="
+	} else {
+		return nil, fmt.Errorf("could not parse options.ImageSpec from struct: %+v", options)
+	}
+
+	s := strings.Split(options.ImageSpec, delim)
+	options.ImageProject = s[0]
+	options.Platform := s[1]
+
+	switch delim  {
+		case ":":
+			options.ImageFamily = s[1]
+		case "=":
+			options.Image = s[1]
+	}
+
+	return nil
+}
+
 // attemptCreateInstance creates a VM instance and waits for it to be ready.
 // Returns a VM object or an error (never both). The caller is responsible for
 // deleting the VM if (and only if) the returned error is nil.
 func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOptions) (vmToReturn *VM, errToReturn error) {
+
+	err := parseImageSpec(options)
+	if err != nil {
+		return nil, err
+	}
 
 	platform, err := getVMPlatform(options.Image, options.Platform)
 	if err != nil {
@@ -1114,21 +1145,12 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	}
 
 	imgProject := options.ImageProject
-
-	delim := ""
-	if strings.Contains(options.Platform, ":"){
-		delim = ":"
-	} else if strings.Contains(options.Platform, "="){
-		delim = "="
-	} else {
-		return nil, fmt.Errorf("could not parse options.Platform from struct: %+v", options)
-	}
- 
-	s := strings.Split(options.Platform, delim)
-	imageOrFamily := s[1]
-
 	if imgProject == "" {
-		imgProject = s[0]
+		var err error
+		imgProject, err = imageProject(vm.Platform)
+		if err != nil {
+			return nil, fmt.Errorf("attemptCreateInstance() could not find image project: %v", err)
+		}
 	}
 	newMetadata, err := addFrameworkMetadata(vm.Platform, options.Metadata)
 	if err != nil {
@@ -1139,12 +1161,15 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		return nil, fmt.Errorf("attemptCreateInstance() could not construct valid labels: %v", err)
 	}
 
-	imageOrImageFamilyFlag := ""
-	switch delim  {
-		case ":":
-			imageOrImageFamilyFlag = "--image-family=" + imageOrFamily
-		case "=":
-			imageOrImageFamilyFlag = "--image=" + imageOrFamily
+	imageOrImageFamilyFlag := "--image=" + options.Image
+
+	if options.Platform != "" {
+		imageOrImageFamilyFlag = "--image-family=" + options.Platform
+
+		if image, ok := overriddenImageFamilies[options.Platform]; ok {
+			imageOrImageFamilyFlag = "--image=" + image
+		}
+
 	}
 
 	imageFamilyScope := options.ImageFamilyScope
@@ -1846,6 +1871,9 @@ func SetupLogger(t *testing.T) *logging.DirectoryLogger {
 
 // VMOptions specifies settings when creating a VM via CreateInstance() or SetupVM().
 type VMOptions struct {
+	// Optional. Can be used to pass image/image family & image project in one
+	// string. If set, Platform/Image/ImageProject should not be set.
+	ImageSpec string
 	// Required. Normally passed as --image-family to
 	// "gcloud compute images create".
 	Platform string
