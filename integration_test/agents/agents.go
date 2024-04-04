@@ -749,10 +749,10 @@ func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, locati
 	}
 
 	preservedEnvironment := map[string]string{
-		"REPO_SUFFIX":              location.repoSuffix,
-		"REPO_CODENAME":            location.repoCodename,
-		"ARTIFACT_REGISTRY_PROJECT":             location.artifactRegistryProject,
-		"ARTIFACT_REGISTRY_REGION": location.artifactRegistryRegion,
+		"REPO_SUFFIX":               location.repoSuffix,
+		"REPO_CODENAME":             location.repoCodename,
+		"ARTIFACT_REGISTRY_PROJECT": location.artifactRegistryProject,
+		"ARTIFACT_REGISTRY_REGION":  location.artifactRegistryRegion,
 	}
 
 	if gce.IsWindows(vm.Platform) {
@@ -880,6 +880,95 @@ func CommonSetupWithExtraCreateArgumentsAndMetadata(t *testing.T, platform strin
 	return ctx, logger, vm
 }
 
+// installGsutilIfNeeded installs gsutil on instances that don't already have
+// it installed. This is only currently the case for some old versions of SUSE.
+func installGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	if gce.IsWindows(vm.Platform) {
+		return nil
+	}
+	if _, err := gce.RunRemotely(ctx, logger, vm, "", "sudo gsutil --version"); err == nil {
+		// Success, no need to install gsutil.
+		return nil
+	}
+	logger.Printf("gsutil not found, installing it...")
+
+	// SUSE seems to be the only distro without gsutil, so what follows is all
+	// very SUSE-specific.
+	if !gce.IsSUSE(vm.Platform) {
+		return fmt.Errorf("this test does not know how to install gsutil on platform %q", vm.Platform)
+	}
+
+	gcloudArch := "x86_64"
+	if gce.IsARM(vm.Platform) {
+		gcloudArch = "arm"
+	}
+	gcloudPkg := "google-cloud-cli-453.0.0-linux-" + gcloudArch + ".tar.gz"
+	installFromTarball := `
+curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/` + gcloudPkg + `
+INSTALL_DIR="$(readlink --canonicalize .)"
+(
+	INSTALL_LOG="$(mktemp)"
+	# This command produces a lot of console spam, so we only display that
+	# output if there is a problem.
+	sudo tar -xf ` + gcloudPkg + ` -C ${INSTALL_DIR} 
+	sudo --preserve-env ${INSTALL_DIR}/google-cloud-sdk/install.sh -q &>"${INSTALL_LOG}" || \
+		EXIT_CODE=$?
+	if [[ "${EXIT_CODE-}" ]]; then
+		cat "${INSTALL_LOG}"
+		exit "${EXIT_CODE}"
+	fi
+)`
+	installCmd := `set -ex
+` + installFromTarball + `
+
+# Upgrade to the latest version
+sudo ${INSTALL_DIR}/google-cloud-sdk/bin/gcloud components update --quiet
+
+sudo ln -s ${INSTALL_DIR}/google-cloud-sdk/bin/gsutil /usr/bin/gsutil 
+`
+	// b/308962066: The GCloud CLI ARM Linux tarballs do not have bundled Python
+	// and the GCloud CLI requires Python >= 3.8. Install Python311 for ARM VMs
+	if gce.IsARM(vm.Platform) {
+		// This is what's used on openSUSE.
+		repoSetupCmd := "sudo zypper --non-interactive refresh"
+		if strings.HasPrefix(vm.Platform, "sles-12") {
+			return fmt.Errorf("this test does not know how to install gsutil on platform %q", vm.Platform)
+		}
+		// For SLES 15 ARM: use a vendored repo to reduce flakiness of the
+		// external repos. See http://go/sdi/releases/build-test-release/vendored
+		// for details.
+		if strings.HasPrefix(vm.Platform, "sles-15") {
+			repoSetupCmd = `sudo zypper --non-interactive addrepo -g -t YUM https://us-yum.pkg.dev/projects/cloud-ops-agents-artifacts-dev/google-cloud-monitoring-sles15-aarch64-test-vendor test-vendor
+sudo rpm --import https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+sudo zypper --non-interactive refresh test-vendor`
+		}
+
+		installCmd = `set -ex
+` + repoSetupCmd + `
+sudo zypper --non-interactive install python311 python3-certifi
+
+# On SLES 15 and OpenSUSE Leap arm, python3 is Python 3.6. Tell gsutil/gcloud to use python3.11.
+export CLOUDSDK_PYTHON=/usr/bin/python3.11
+
+` + installFromTarball + `
+
+# Upgrade to the latest version
+sudo CLOUDSDK_PYTHON=/usr/bin/python3.11 ${INSTALL_DIR}/google-cloud-sdk/bin/gcloud components update --quiet
+
+# Make a "gsutil" bash script in /usr/bin that runs the copy of gsutil that
+# was installed into $INSTALL_DIR with CLOUDSDK_PYTHON set.
+sudo tee /usr/bin/gsutil > /dev/null << EOF
+#!/usr/bin/env bash
+CLOUDSDK_PYTHON=/usr/bin/python3.11 ${INSTALL_DIR}/google-cloud-sdk/bin/gsutil "\$@"
+EOF
+sudo chmod a+x /usr/bin/gsutil
+`
+	}
+
+	_, err := gce.RunRemotely(ctx, logger, vm, "", installCmd)
+	return err
+}
+
 // InstallPackageFromGCS installs the agent package from GCS onto the given Linux VM.
 //
 // gcsPath must point to a GCS Path that contains .deb/.rpm/.goo files to install on the testing VMs.
@@ -892,7 +981,7 @@ func InstallPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, 
 	if _, err := gce.RunRemotely(ctx, logger, vm, "", "mkdir -p /tmp/agentUpload"); err != nil {
 		return err
 	}
-	if err := gce.InstallGsutilIfNeeded(ctx, logger, vm); err != nil {
+	if err := installGsutilIfNeeded(ctx, logger, vm); err != nil {
 		return err
 	}
 	if _, err := gce.RunRemotely(ctx, logger, vm, "", "sudo gsutil cp -r "+gcsPath+"/* /tmp/agentUpload"); err != nil {

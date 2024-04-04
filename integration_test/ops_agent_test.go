@@ -152,9 +152,24 @@ func diagnosticsProcessNamesForPlatform(platform string) []string {
 func makeDirectory(ctx context.Context, logger *log.Logger, vm *gce.VM, directory string) error {
 	var createFolderCmd string
 	if gce.IsWindows(vm.Platform) {
-		createFolderCmd = fmt.Sprintf("New-Item -ItemType Directory -Path %s", directory)
+		createFolderCmd = fmt.Sprintf("New-Item -ItemType Directory -Force -Path '%s'", directory)
 	} else {
-		createFolderCmd = fmt.Sprintf("mkdir -p %s", directory)
+		createFolderCmd = fmt.Sprintf("mkdir -p '%s'", directory)
+	}
+	_, err := gce.RunRemotely(ctx, logger, vm, "", createFolderCmd)
+	return err
+}
+
+// makeParentDirectory strips off the last part of remotePath in a
+// platform-aware way and creates that directory (and any ancestor
+// directories necessary) on the given VM. For example, for remotePath
+// "/foo/bar/baz", this function will create /foo/bar on the remote machine.
+func makeParentDirectory(ctx context.Context, logger *log.Logger, vm *gce.VM, remotePath string) error {
+	var createFolderCmd string
+	if gce.IsWindows(vm.Platform) {
+		createFolderCmd = fmt.Sprintf("$parent = Split-Path -Parent '%s'; New-Item -Type Directory -Force -Path $parent", remotePath)
+	} else {
+		createFolderCmd = fmt.Sprintf(`mkdir -p dirname "$('%s')"`, remotePath)
 	}
 	_, err := gce.RunRemotely(ctx, logger, vm, "", createFolderCmd)
 	return err
@@ -3528,13 +3543,16 @@ type mockPrometheusCheck struct {
 func uploadFiles(ctx context.Context, logger *log.Logger, vm *gce.VM, fs embed.FS, files []fileToUpload) error {
 	for _, upload := range files {
 		err := func() error {
+			if err := makeParentDirectory(ctx, logger, vm, upload.remote); err != nil {
+				return err
+			}
+
 			f, err := fs.Open(upload.local)
 			if err != nil {
 				return err
 			}
 			defer f.Close()
-			err = gce.UploadContent(ctx, logger, vm, f, upload.remote)
-			return err
+			return gce.UploadContent(ctx, logger, vm, f, upload.remote)
 		}()
 		if err != nil {
 			return err
