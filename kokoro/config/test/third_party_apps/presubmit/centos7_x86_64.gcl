@@ -2,6 +2,9 @@ import 'common.gcl' as common
 
 config build = common.third_party_apps_test {
   params {
-    platforms = ['centos-7']
+    environment {
+      TARGET = 'centos7'
+      ARCH = 'x86_64'
+    }
   }
 }

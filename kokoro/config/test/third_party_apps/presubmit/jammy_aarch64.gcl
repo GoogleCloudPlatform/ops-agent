@@ -2,7 +2,9 @@ import 'common.gcl' as common
 
 config build = common.third_party_apps_test {
   params {
-    platforms = ['ubuntu-2204-lts-arm64']
-    arch = 'aarch64'
+    environment {
+      TARGET = 'jammy'
+      ARCH = 'aarch64'
+    }
   }
 }

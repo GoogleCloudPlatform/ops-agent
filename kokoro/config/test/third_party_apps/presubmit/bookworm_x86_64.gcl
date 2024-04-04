@@ -2,8 +2,9 @@ import 'common.gcl' as common
 
 config build = common.third_party_apps_test {
   params {
-    platforms = [
-      'debian-12',
-    ]
+    environment {
+      TARGET = 'bookworm'
+      ARCH = 'x86_64'
+    }
   }
 }
