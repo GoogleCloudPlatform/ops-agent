@@ -1078,7 +1078,7 @@ func parseImageSpec(options VMOptions) (error) {
 	} else if strings.Contains(options.ImageSpec, "="){
 		delim = "="
 	} else {
-		return nil, fmt.Errorf("could not parse options.ImageSpec from struct: %+v", options)
+		return fmt.Errorf("could not parse options.ImageSpec from struct: %+v", options)
 	}
 
 	s := strings.Split(options.ImageSpec, delim)
