@@ -8,6 +8,7 @@ template config ops_agent_test = common.ops_agent_test {
       SERVICE_EMAIL =
           'build-and-test@stackdriver-test-143416.iam.gserviceaccount.com'
       TEST_EXHAUSTIVE_DISTROS = '1'
+      GOTESTSUM_RERUN_FAILS = '2'
     }
   }
 }
