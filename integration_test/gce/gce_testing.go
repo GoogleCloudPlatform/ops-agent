@@ -305,12 +305,6 @@ type VM struct {
 	AlreadyDeleted bool
 }
 
-// imageProject returns the image project providing the given image family.
-func imageProject(family string) (string, error) {
-	firstWord := strings.Split(family, ":")[0]
-	return firstWord, nil
-}
-
 // SyslogLocation returns a filesystem path to the system log. This function
 // assumes the platform is some kind of Linux.
 func SyslogLocation(platform string) string {
@@ -1120,12 +1114,21 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	}
 
 	imgProject := options.ImageProject
+
+	delim := ""
+	if strings.Contains(options.Platform, ":"){
+		delim = ":"
+	} else if strings.Contains(options.Platform, "="){
+		delim = "="
+	} else {
+		return nil, fmt.Errorf("could not parse options.Platform from struct: %+v", options)
+	}
+ 
+	s := strings.Split(options.Platform, delim)
+	imageOrFamily := s[1]
+
 	if imgProject == "" {
-		var err error
-		imgProject, err = imageProject(vm.Platform)
-		if err != nil {
-			return nil, fmt.Errorf("attemptCreateInstance() could not find image project: %v", err)
-		}
+		imgProject = s[0]
 	}
 	newMetadata, err := addFrameworkMetadata(vm.Platform, options.Metadata)
 	if err != nil {
@@ -1135,21 +1138,6 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	if err != nil {
 		return nil, fmt.Errorf("attemptCreateInstance() could not construct valid labels: %v", err)
 	}
-
-
-
-	delim := ""
-	if strings.Contains(options.Platform, ":"){
-		delim = ":"
-	} else if strings.Contains(options.Platform, "="){
-		delim = "="
-	} else {
-		return nil, fmt.Errorf("could not parse options.Image from struct: %+v", options)
-	}
- 
-	s := strings.Split(options.Platform, delim)
-	imageProject := s[0]
-	imageOrFamily := s[1]
 
 	imageOrImageFamilyFlag := ""
 	switch delim  {
@@ -1171,7 +1159,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		"--project=" + vm.Project,
 		"--zone=" + vm.Zone,
 		"--machine-type=" + vm.MachineType,
-		"--image-project=" + imageProject,
+		"--image-project=" + imgProject,
 		imageOrImageFamilyFlag,
 		"--image-family-scope=" + imageFamilyScope,
 		"--network=" + vm.Network,
