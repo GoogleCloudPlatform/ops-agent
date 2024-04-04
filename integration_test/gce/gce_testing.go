@@ -1145,13 +1145,6 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	}
 
 	imgProject := options.ImageProject
-	if imgProject == "" {
-		var err error
-		imgProject, err = imageProject(vm.Platform)
-		if err != nil {
-			return nil, fmt.Errorf("attemptCreateInstance() could not find image project: %v", err)
-		}
-	}
 	newMetadata, err := addFrameworkMetadata(vm.Platform, options.Metadata)
 	if err != nil {
 		return nil, fmt.Errorf("attemptCreateInstance() could not construct valid metadata: %v", err)
