@@ -14,3 +14,7 @@ RUN go install gotest.tools/gotestsum@main
 RUN apt-get update
 
 RUN apt-get install --yes python3-yaml
+
+# Install go/grte.
+COPY grte-runtimes.deb /install/grte-debs/
+RUN dpkg -i /install/grte-debs/*.deb
