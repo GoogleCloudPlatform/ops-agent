@@ -1320,6 +1320,11 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 	ctx, cancel := context.WithTimeout(origCtx, 3*vmInitTimeout)
 	defer cancel()
 
+	err := parseImageSpec(options)
+	if err != nil {
+		return nil, err
+	}
+
 	shouldRetry := func(err error) bool {
 		// VM creation can hit quota, especially when re-running presubmits,
 		// or when multple people are running tests.
@@ -1907,12 +1912,6 @@ type VMOptions struct {
 // At the end of the test, the VM will be cleaned up.
 func SetupVM(ctx context.Context, t *testing.T, logger *log.Logger, options VMOptions) *VM {
 	t.Helper()
-
-
-	err := parseImageSpec(options)
-	if err != nil {
-		t.Fatalf("SetupVM() error creating instance: %v", err)
-	}
 
 	vm, err := CreateInstance(ctx, logger, options)
 	if err != nil {
