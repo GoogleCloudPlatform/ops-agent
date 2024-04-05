@@ -866,7 +866,7 @@ func CommonSetupWithExtraCreateArgumentsAndMetadata(t *testing.T, platform strin
 	logger := gce.SetupLogger(t)
 	logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
 	options := gce.VMOptions{
-		Platform:             platform,
+		ImageSpec:            platform,
 		TimeToLive:           "3h",
 		MachineType:          RecommendedMachineType(platform),
 		ExtraCreateArguments: extraCreateArguments,
