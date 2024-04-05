@@ -1091,6 +1091,9 @@ func parseImageSpec(options VMOptions) (error) {
 			options.Image = s[1]
 	}
 
+	// We do this in case subsequent calls try to expand ImageSpec again.
+	options.ImageSpec = ""
+
 	return nil
 }
 
@@ -1904,6 +1907,12 @@ type VMOptions struct {
 // At the end of the test, the VM will be cleaned up.
 func SetupVM(ctx context.Context, t *testing.T, logger *log.Logger, options VMOptions) *VM {
 	t.Helper()
+
+
+	err := parseImageSpec(options)
+	if err != nil {
+		t.Fatalf("SetupVM() error creating instance: %v", err)
+	}
 
 	vm, err := CreateInstance(ctx, logger, options)
 	if err != nil {
