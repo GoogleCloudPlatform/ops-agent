@@ -1063,7 +1063,7 @@ func getVMPlatform(image string, platform string) (string, error) {
 	return "", errors.New("at least one of image or platform must be specified")
 }
 
-func parseImageSpec(options VMOptions) (error) {
+func parseImageSpec(options *VMOptions) (error) {
 	if options.ImageSpec == "" {
 		return nil
 	}
