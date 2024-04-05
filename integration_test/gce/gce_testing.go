@@ -1068,8 +1068,8 @@ func parseImageSpec(options VMOptions) (error) {
 		return nil
 	}
 
-	if options.Image != "" || options.ImageFamily != "" || options.ImageProject != "" {
-		return fmt.Errorf("If options.ImageSpec is set, options.(Image|ImageFamily|ImageProject|Platform) cannot be: %+v", options)
+	if options.Image != "" || options.ImageProject != "" || options.Platform != "" {
+		return fmt.Errorf("If options.ImageSpec is set, options.(Image|ImageProject|Platform) cannot be: %+v", options)
 	}
 
 	delim := ""
@@ -1083,11 +1083,10 @@ func parseImageSpec(options VMOptions) (error) {
 
 	s := strings.Split(options.ImageSpec, delim)
 	options.ImageProject = s[0]
-	options.Platform := s[1]
 
 	switch delim  {
 		case ":":
-			options.ImageFamily = s[1]
+			options.Platform = s[1]
 		case "=":
 			options.Image = s[1]
 	}
@@ -1158,11 +1157,6 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 
 	if options.Platform != "" {
 		imageOrImageFamilyFlag = "--image-family=" + options.Platform
-
-		if image, ok := overriddenImageFamilies[options.Platform]; ok {
-			imageOrImageFamilyFlag = "--image=" + image
-		}
-
 	}
 
 	imageFamilyScope := options.ImageFamilyScope
