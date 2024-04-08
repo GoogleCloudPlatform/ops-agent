@@ -867,7 +867,7 @@ var gpuModels = map[string]accelerator{
 }
 
 const (
-	SAPHANAPlatform = "sles-15-sp4-sap-saphana"
+	SAPHANAPlatform = "suse-sap-cloud:sles-15-sp4-sap-saphana"
 	SAPHANAApp      = "saphana"
 
 	OracleDBApp  = "oracledb"

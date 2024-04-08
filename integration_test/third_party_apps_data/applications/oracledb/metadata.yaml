@@ -49,22 +49,22 @@ configure_integration: |-
 supported_operating_systems: linux
 # Oracle DB is difficult to install on these platforms.
 platforms_to_skip:
-  - debian-10
-  - debian-11
-  - debian-11-arm64
-  - debian-12
-  - debian-12-arm64
-  - ubuntu-2004-lts
-  - ubuntu-2004-lts-arm64
-  - ubuntu-2204-lts
-  - ubuntu-2204-lts-arm64
-  - ubuntu-2310-amd64
-  - ubuntu-2310-arm64
-  - sles-12
-  - sles-15
-  - sles-15-arm64
-  - rocky-linux-9
-  - rocky-linux-9-arm64
+  - debian-cloud:debian-10
+  - debian-cloud:debian-11
+  - debian-cloud:debian-11-arm64
+  - debian-cloud:debian-12
+  - debian-cloud:debian-12-arm64
+  - ubuntu-os-cloud:ubuntu-2004-lts
+  - ubuntu-os-cloud:ubuntu-2004-lts-arm64
+  - ubuntu-os-cloud:ubuntu-2204-lts
+  - ubuntu-os-cloud:ubuntu-2204-lts-arm64
+  - ubuntu-os-cloud:ubuntu-2310-amd64
+  - ubuntu-os-cloud:ubuntu-2310-arm64
+  - suse-cloud:sles-12
+  - suse-cloud:sles-15
+  - suse-cloud:sles-15-arm64
+  - rocky-linux-cloud:rocky-linux-9
+  - rocky-linux-cloud:rocky-linux-9-arm64
 supported_app_version: ["12.2", "18c", "19c", "21c"]
 expected_metrics:
   - type: workload.googleapis.com/oracle.backup.latest
