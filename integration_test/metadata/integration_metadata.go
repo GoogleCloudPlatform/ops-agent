@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"strings"
 
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/go-playground/validator/v10"
