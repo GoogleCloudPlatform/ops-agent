@@ -911,7 +911,7 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool) {
 			tests[i].skipReason = "Skipping test due to 'platforms_to_skip' entry in metadata.yaml"
 		}
 		for _, gpuPlatform := range test.metadata.GpuPlatforms {
-			if test.gpu != nil && test.gpu.model == gpuPlatform.Model && !metadata.SliceContains(test.platform, gpuPlatform.Platforms) {
+			if test.gpu != nil && test.gpu.model == gpuPlatform.Model && !metadata.SliceContains(gpuPlatform.Platforms, test.platform) {
 				tests[i].skipReason = "Skipping test due to 'gpu_platforms.platforms' entry in metadata.yaml"
 			}
 		}
