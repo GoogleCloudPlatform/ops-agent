@@ -24,7 +24,7 @@ else
   sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2023
   sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2022
   sudo zypper -n install https://dev.mysql.com/get/${mysql_repo_pkg_name}
-  sudo zypper -n install mysql-community-server
+  sudo zypper -n install mysql-community-server=8.0.35
 fi
 
 if [[ "${SUSE_VERSION}" == 12 ]]; then
