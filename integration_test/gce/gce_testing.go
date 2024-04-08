@@ -1024,9 +1024,7 @@ func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM) error {
 }
 
 var (
-	overriddenImageFamilies = map[string]string{
-		"opensuse-leap-15-4": "opensuse-leap-15-4-v20231208-x86-64",
-	}
+	overriddenImageFamilies = map[string]string{}
 )
 
 func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map[string]string, error) {
