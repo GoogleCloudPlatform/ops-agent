@@ -143,6 +143,7 @@ targets:
         test_distros:
           representative:
           - sles-15
+          - opensuse-leap-15-4
           exhaustive:
           - sles-15-sp2-sap
           - sles-15-sp5-sap
