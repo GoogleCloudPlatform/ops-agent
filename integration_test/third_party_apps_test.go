@@ -986,6 +986,7 @@ func TestThirdPartyApps(t *testing.T) {
 					MachineType:          agents.RecommendedMachineType(tc.platform),
 					ExtraCreateArguments: nil,
 				}
+				gce.parseImageSpec(&options)
 				if tc.gpu != nil {
 					options.ExtraCreateArguments = append(
 						options.ExtraCreateArguments,

@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"strings"
 
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/go-playground/validator/v10"
@@ -132,7 +133,7 @@ func UnmarshalAndValidate(data []byte, i interface{}) error {
 
 func SliceContains(slice []string, toFind string) bool {
 	for _, entry := range slice {
-		if entry == toFind {
+		if strings.Contains(entry, toFind) || strings.Contains(toFind, entry) {
 			return true
 		}
 	}
