@@ -1102,7 +1102,7 @@ func parseImageSpec(options *VMOptions) (error) {
 // deleting the VM if (and only if) the returned error is nil.
 func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOptions) (vmToReturn *VM, errToReturn error) {
 
-	err := parseImageSpec(options)
+	err := parseImageSpec(&options)
 	if err != nil {
 		return nil, err
 	}
@@ -1320,7 +1320,7 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 	ctx, cancel := context.WithTimeout(origCtx, 3*vmInitTimeout)
 	defer cancel()
 
-	err := parseImageSpec(options)
+	err := parseImageSpec(&options)
 	if err != nil {
 		return nil, err
 	}
