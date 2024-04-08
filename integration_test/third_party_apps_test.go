@@ -867,7 +867,7 @@ var gpuModels = map[string]accelerator{
 }
 
 const (
-	SAPHANAPlatform = "suse-sap-cloud:sles-15-sp4-sap-saphana"
+	SAPHANAPlatform = "stackdriver-test-143416:sles-15-sp4-sap-saphana"
 	SAPHANAApp      = "saphana"
 
 	OracleDBApp  = "oracledb"
@@ -998,7 +998,6 @@ func TestThirdPartyApps(t *testing.T) {
 				if tc.platform == SAPHANAPlatform {
 					// This image needs an SSD in order to be performant enough.
 					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-type=pd-ssd")
-					options.ImageProject = "stackdriver-test-143416"
 				}
 				if tc.app == OracleDBApp {
 					options.MachineType = "e2-highmem-8"
