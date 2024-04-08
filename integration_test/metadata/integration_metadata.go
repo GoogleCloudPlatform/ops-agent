@@ -132,7 +132,7 @@ func UnmarshalAndValidate(data []byte, i interface{}) error {
 
 func SliceContains(slice []string, toFind string) bool {
 	for _, entry := range slice {
-		if strings.Contains(entry, toFind) {
+		if strings.Contains(entry, toFind) || strings.Contains(toFind, entry) {
 			return true
 		}
 	}
