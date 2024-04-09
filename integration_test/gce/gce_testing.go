@@ -966,7 +966,7 @@ func RunScriptRemotely(ctx context.Context, logger *log.Logger, vm *VM, scriptCo
 	// one to put scriptContents into a file and another to execute the script.
 	//
 	// To test changes to this command, please run gce_testing_test.go (manually).
-	return RunRemotelyStdin(ctx, logger, vm, scriptContents, "cat - > "+scriptPath+" && sudo "+envVarMapToBashPrefix(env)+"bash -x "+scriptPath+" "+flagsStr)
+	return RunRemotelyStdin(ctx, logger, vm, strings.NewReader(scriptContents), "cat - > "+scriptPath+" && sudo "+envVarMapToBashPrefix(env)+"bash -x "+scriptPath+" "+flagsStr)
 }
 
 // MapToCommaSeparatedList converts a map of key-value pairs into a form that
