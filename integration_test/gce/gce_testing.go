@@ -1110,7 +1110,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	vm := &VM{
 		Project:   options.Project,
 		Platform:  platform,
-		ImageSpec: options.ImageSpec
+		ImageSpec: options.ImageSpec,
 		Name:      options.Name,
 		Network:   os.Getenv("NETWORK_NAME"),
 		Zone:      options.Zone,
