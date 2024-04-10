@@ -36,7 +36,7 @@ AGENT_PACKAGES_IN_GCS, for details see README.md.
 
 	PROJECT=dev_project \
 	ZONES=us-central1-b \
-	PLATFORMS=debian-10,centos-8,rhel-8-2-sap-ha,sles-15,ubuntu-2004-lts,windows-2016,windows-2019 \
+	PLATFORMS=debian-cloud:debian-10,rocky-linux-cloud:rocky-linux-8,rhel-sap-cloud:rhel-8-2-sap-ha,suse-cloud:sles-15,ubuntu-os-cloud:ubuntu-2004-lts,windows-cloud:windows-2016,windows-cloud:windows-2019 \
 	go test -v ops_agent_test.go \
 	  -test.parallel=1000 \
 	  -tags=integration_test \
@@ -295,6 +295,7 @@ type VM struct {
 	Project     string
 	Network     string
 	Platform    string
+	ImageSpec   string
 	Zone        string
 	MachineType string
 	ID          int64
@@ -1059,7 +1060,8 @@ func getVMPlatform(image string, platform string) (string, error) {
 
 	return "", errors.New("at least one of image or platform must be specified")
 }
-
+// parseImageSpec looks for the ImageSpec field in VMOptions and sets
+// ImageProject/Image/Platform accordingly.
 func parseImageSpec(options *VMOptions) (error) {
 	if options.ImageSpec == "" {
 		return nil
@@ -1088,9 +1090,6 @@ func parseImageSpec(options *VMOptions) (error) {
 			options.Image = s[1]
 	}
 
-	// We do this in case subsequent calls try to expand ImageSpec again.
-	options.ImageSpec = ""
-
 	return nil
 }
 
@@ -1109,11 +1108,12 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		return nil, err
 	}
 	vm := &VM{
-		Project:  options.Project,
-		Platform: platform,
-		Name:     options.Name,
-		Network:  os.Getenv("NETWORK_NAME"),
-		Zone:     options.Zone,
+		Project:   options.Project,
+		Platform:  platform,
+		ImageSpec: options.ImageSpec
+		Name:      options.Name,
+		Network:   os.Getenv("NETWORK_NAME"),
+		Zone:      options.Zone,
 	}
 	if vm.Name == "" {
 		// The VM name needs to adhere to these restrictions:
@@ -1317,7 +1317,6 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 	ctx, cancel := context.WithTimeout(origCtx, 3*vmInitTimeout)
 	defer cancel()
 
-	err := parseImageSpec(&options)
 	if err != nil {
 		return nil, err
 	}
@@ -1865,6 +1864,10 @@ func SetupLogger(t *testing.T) *logging.DirectoryLogger {
 type VMOptions struct {
 	// Optional. Can be used to pass image/image family & image project in one
 	// string. If set, Platform/Image/ImageProject should not be set.
+	//
+	// Example Image Specs:
+	// Image Family / Project: `<project>:<family>`
+	// Specific Image / Project: `<project>=<image>``
 	ImageSpec string
 	// Required. Normally passed as --image-family to
 	// "gcloud compute images create".

@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
-	"strings"
 
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/go-playground/validator/v10"
@@ -133,9 +132,7 @@ func UnmarshalAndValidate(data []byte, i interface{}) error {
 
 func SliceContains(slice []string, toFind string) bool {
 	for _, entry := range slice {
-		// vm.Platform (ex. `sles-15`) does not align with ImageSpec (ex. `suse-cloud:sles-15`)
-		// TODO, remove lingering references to "Platform" and use "Image Spec" instead.
-		if strings.HasSuffix(entry, toFind) {
+		if entry == toFind {
 			return true
 		}
 	}
