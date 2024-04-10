@@ -411,10 +411,8 @@ func verifyLog(actualLog *cloudlogging.Entry, expectedLog *metadata.ExpectedLog)
 // the current platform.
 func stripUnavailableFields(fields []*metadata.LogFields, platform string) []*metadata.LogFields {
 	var result []*metadata.LogFields
-	fmt.Printf("FOOPLATFORM: %v\n", platform)
 	for _, field := range fields {
-		fmt.Printf("FOOVAILABLE: %v\n", field.UnavailableOn)
-		fmt.Printf("FOOBOOL: %v\n", !metadata.SliceContains(field.UnavailableOn, platform))
+		fmt.Printf("FOOPLATFORM: %v AVAILABLE: %v RESULT: %v\n", platform, field.UnavailableOn,!metadata.SliceContains(field.UnavailableOn, platform))
 		if !metadata.SliceContains(field.UnavailableOn, platform) {
 			result = append(result, field)
 		}
