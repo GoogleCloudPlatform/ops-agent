@@ -778,14 +778,11 @@ func wrapPowershellCommand(command string) (string, error) {
 //
 // 'command' is what to run on the machine. Example: "cat /tmp/foo; echo hello"
 // For extremely long commands, use RunScriptRemotely instead.
-// 'stdin' is what to supply to the command on stdin. It is usually "".
-// TODO: Remove the stdin parameter. Any callsite that needs to pass
-// data over standard input should use RunRemotelyStdin.
 //
 // When making changes to this function, please test them by running
 // gce_testing_test.go (manually).
-func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, command string) (_ CommandOutput, err error) {
-	return RunRemotelyStdin(ctx, logger, vm, strings.NewReader(stdin), command)
+func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, command string) (_ CommandOutput, err error) {
+	return RunRemotelyStdin(ctx, logger, vm, nil, command)
 }
 
 // RunRemotelyStdin is just like RunRemotely but it accepts an io.Reader
@@ -855,14 +852,14 @@ func UploadContent(ctx context.Context, logger *log.Logger, vm *VM, content io.R
 	}()
 
 	if IsWindows(vm.Platform) {
-		_, err = RunRemotely(ctx, logger, vm, "", fmt.Sprintf(`Read-GcsObject -Force -Bucket "%s" -ObjectName "%s" -OutFile "%s"`, object.BucketName(), object.ObjectName(), remotePath))
+		_, err = RunRemotely(ctx, logger, vm, fmt.Sprintf(`Read-GcsObject -Force -Bucket "%s" -ObjectName "%s" -OutFile "%s"`, object.BucketName(), object.ObjectName(), remotePath))
 		return err
 	}
 	if err := InstallGsutilIfNeeded(ctx, logger, vm); err != nil {
 		return err
 	}
 	objectPath := fmt.Sprintf("gs://%s/%s", object.BucketName(), object.ObjectName())
-	_, err = RunRemotely(ctx, logger, vm, "", fmt.Sprintf("sudo gsutil cp '%s' '%s'", objectPath, remotePath))
+	_, err = RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo gsutil cp '%s' '%s'", objectPath, remotePath))
 	return err
 }
 
@@ -919,7 +916,7 @@ func RunScriptRemotely(ctx context.Context, logger *log.Logger, vm *VM, scriptCo
 		// script seems to work around this completely.
 		//
 		// To test changes to this command, please run gce_testing_test.go (manually).
-		return RunRemotely(ctx, logger, vm, "", envVarMapToPowershellPrefix(env)+"powershell -File "+scriptPath+" "+flagsStr)
+		return RunRemotely(ctx, logger, vm, envVarMapToPowershellPrefix(env)+"powershell -File "+scriptPath+" "+flagsStr)
 	}
 	scriptPath := uuid.NewString() + ".sh"
 	// Write the script contents to <UUID>.sh, then tell bash to execute it with -x
@@ -932,7 +929,7 @@ func RunScriptRemotely(ctx context.Context, logger *log.Logger, vm *VM, scriptCo
 	// one to put scriptContents into a file and another to execute the script.
 	//
 	// To test changes to this command, please run gce_testing_test.go (manually).
-	return RunRemotely(ctx, logger, vm, scriptContents, "cat - > "+scriptPath+" && sudo "+envVarMapToBashPrefix(env)+"bash -x "+scriptPath+" "+flagsStr)
+	return RunRemotelyStdin(ctx, logger, vm, strings.NewReader(scriptContents), "cat - > "+scriptPath+" && sudo "+envVarMapToBashPrefix(env)+"bash -x "+scriptPath+" "+flagsStr)
 }
 
 // MapToCommaSeparatedList converts a map of key-value pairs into a form that
@@ -961,11 +958,11 @@ const (
 func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM) error {
 	backoffPolicy := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(5*time.Second), 5), ctx) // 5 attempts.
 	err := backoff.Retry(func() error {
-		_, err := RunRemotely(ctx, logger, vm, "", "sudo /usr/sbin/registercloudguest --force")
+		_, err := RunRemotely(ctx, logger, vm, "sudo /usr/sbin/registercloudguest --force")
 		return err
 	}, backoffPolicy)
 	if err != nil {
-		RunRemotely(ctx, logger, vm, "", "sudo cat /var/log/cloudregister")
+		RunRemotely(ctx, logger, vm, "sudo cat /var/log/cloudregister")
 		return fmt.Errorf("error running registercloudguest: %v", err)
 	}
 
@@ -977,11 +974,11 @@ func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM) error {
 		// timezone-java was selected arbitrarily as a package that:
 		// a) can be installed from the default repos, and
 		// b) isn't installed already.
-		_, zypperErr := RunRemotely(ctx, logger, vm, "", "sudo zypper --non-interactive --gpg-auto-import-keys refresh && sudo zypper --non-interactive install timezone-java")
+		_, zypperErr := RunRemotely(ctx, logger, vm, "sudo zypper --non-interactive --gpg-auto-import-keys refresh && sudo zypper --non-interactive install timezone-java")
 		return zypperErr
 	}, backoffPolicy)
 	if err != nil {
-		RunRemotely(ctx, logger, vm, "", "sudo cat /var/log/zypper.log")
+		RunRemotely(ctx, logger, vm, "sudo cat /var/log/zypper.log")
 	}
 	return err
 }
@@ -1255,7 +1252,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	if IsSUSE(vm.Platform) {
 		// Set download.max_silent_tries to 5 (by default, it is commented out in
 		// the config file). This should help with issues like b/211003972.
-		if _, err := RunRemotely(ctx, logger, vm, "", "sudo sed -i -E 's/.*download.max_silent_tries.*/download.max_silent_tries = 5/g' /etc/zypp/zypp.conf"); err != nil {
+		if _, err := RunRemotely(ctx, logger, vm, "sudo sed -i -E 's/.*download.max_silent_tries.*/download.max_silent_tries = 5/g' /etc/zypp/zypp.conf"); err != nil {
 			return nil, fmt.Errorf("attemptCreateInstance() failed to configure retries in zypp.conf: %v", err)
 		}
 	}
@@ -1269,7 +1266,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	if IsSUSE(vm.Platform) {
 		// Set ZYPP_LOCK_TIMEOUT so tests that use zypper don't randomly fail
 		// because some background process happened to be using zypper at the same time.
-		if _, err := RunRemotely(ctx, logger, vm, "", `echo 'ZYPP_LOCK_TIMEOUT=300' | sudo tee -a /etc/environment`); err != nil {
+		if _, err := RunRemotely(ctx, logger, vm, `echo 'ZYPP_LOCK_TIMEOUT=300' | sudo tee -a /etc/environment`); err != nil {
 			return nil, err
 		}
 	}
@@ -1277,7 +1274,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	// Removing flaky rhel-7 repositories due to b/265341502
 	if isRHEL7SAPHA(vm.Platform) {
 		if _, err := RunRemotely(ctx,
-			logger, vm, "", `sudo yum -y --disablerepo=rhui-rhel*-7-* install yum-utils && sudo yum-config-manager --disable "rhui-rhel*-7-*"`); err != nil {
+			logger, vm, `sudo yum -y --disablerepo=rhui-rhel*-7-* install yum-utils && sudo yum-config-manager --disable "rhui-rhel*-7-*"`); err != nil {
 			return nil, fmt.Errorf("disabling flaky repos failed : %w", err)
 		}
 	}
@@ -1386,7 +1383,7 @@ func SetEnvironmentVariables(ctx context.Context, logger *log.Logger, vm *VM, en
 		for key, value := range envVariables {
 			envVariableCmd := fmt.Sprintf(`setx %s "%s" /M`, key, value)
 			logger.Println("envVariableCmd " + envVariableCmd)
-			if _, err := RunRemotely(ctx, logger, vm, "", envVariableCmd); err != nil {
+			if _, err := RunRemotely(ctx, logger, vm, envVariableCmd); err != nil {
 				return err
 			}
 		}
@@ -1406,13 +1403,13 @@ func SetEnvironmentVariables(ctx context.Context, logger *log.Logger, vm *VM, en
 	} {
 		dir := fmt.Sprintf("/etc/systemd/system/%s.service.d", service)
 		cmd := fmt.Sprintf(`sudo mkdir -p %s && echo -e '%s' | sudo tee %s/override.conf`, dir, override, dir)
-		if _, err := RunRemotely(ctx, logger, vm, "", cmd); err != nil {
+		if _, err := RunRemotely(ctx, logger, vm, cmd); err != nil {
 			return err
 		}
 	}
 	// Reload the systemd daemon to pick up the new settings edited in the previous command
 	daemonReload := "sudo systemctl daemon-reload"
-	_, err := RunRemotely(ctx, logger, vm, "", daemonReload)
+	_, err := RunRemotely(ctx, logger, vm, daemonReload)
 	return err
 }
 
@@ -1530,7 +1527,7 @@ func InstallGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) erro
 	if IsWindows(vm.Platform) {
 		return nil
 	}
-	if _, err := RunRemotely(ctx, logger, vm, "", "sudo gsutil --version"); err == nil {
+	if _, err := RunRemotely(ctx, logger, vm, "sudo gsutil --version"); err == nil {
 		// Success, no need to install gsutil.
 		return nil
 	}
@@ -1609,7 +1606,7 @@ sudo chmod a+x /usr/bin/gsutil
 `
 	}
 
-	_, err := RunRemotely(ctx, logger, vm, "", installCmd)
+	_, err := RunRemotely(ctx, logger, vm, installCmd)
 	return err
 }
 
@@ -1732,7 +1729,7 @@ func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error 
 		attempt++
 		ctx, cancel := context.WithTimeout(ctx, vmInitPokeSSHTimeout)
 		defer cancel()
-		output, err := RunRemotely(ctx, logger, vm, "", "'foo'")
+		output, err := RunRemotely(ctx, logger, vm, "'foo'")
 		logger.Printf("Printing 'foo' finished with err=%v, attempt #%d\noutput: %v",
 			err, attempt, output)
 		return err
@@ -1768,7 +1765,7 @@ func waitForStartLinux(ctx context.Context, logger *log.Logger, vm *VM) error {
 	isStartupDone := func() error {
 		ctx, cancel := context.WithTimeout(ctx, vmInitPokeSSHTimeout)
 		defer cancel()
-		output, err := RunRemotely(ctx, logger, vm, "", "systemctl is-system-running")
+		output, err := RunRemotely(ctx, logger, vm, "systemctl is-system-running")
 
 		// There are a few cases for what is-system-running returns:
 		// https://www.freedesktop.org/software/systemd/man/systemctl.html#is-system-running
@@ -1782,7 +1779,7 @@ func waitForStartLinux(ctx context.Context, logger *log.Logger, vm *VM) error {
 			// to run the test. There are various unnecessary services that could be
 			// failing, see b/185473981 and b/185182238 for some examples.
 			// But let's at least print out which services failed into the logs.
-			RunRemotely(ctx, logger, vm, "", "systemctl --failed")
+			RunRemotely(ctx, logger, vm, "systemctl --failed")
 			return nil
 		}
 		// There are several reasons this could be failing, but usually if we get
@@ -1802,7 +1799,7 @@ func waitForStartLinux(ctx context.Context, logger *log.Logger, vm *VM) error {
 		// TODO(b/259122953): wait until sudo is ready
 		backoffPolicy := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(slesStartupSudoDelay), slesStartupSudoMaxAttempts), ctx)
 		err := backoff.Retry(func() error {
-			_, err := RunRemotely(ctx, logger, vm, "", "sudo ls /root")
+			_, err := RunRemotely(ctx, logger, vm, "sudo ls /root")
 			return err
 		}, backoffPolicy)
 		if err != nil {
