@@ -1317,10 +1317,6 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 	ctx, cancel := context.WithTimeout(origCtx, 3*vmInitTimeout)
 	defer cancel()
 
-	if err != nil {
-		return nil, err
-	}
-
 	shouldRetry := func(err error) bool {
 		// VM creation can hit quota, especially when re-running presubmits,
 		// or when multple people are running tests.
