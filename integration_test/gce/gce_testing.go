@@ -295,6 +295,7 @@ type VM struct {
 	Project     string
 	Network     string
 	Platform    string
+	// The VMOptions.ImageSpec used the create the VM.
 	ImageSpec   string
 	Zone        string
 	MachineType string
@@ -1060,6 +1061,7 @@ func getVMPlatform(image string, platform string) (string, error) {
 
 	return "", errors.New("at least one of image or platform must be specified")
 }
+
 // parseImageSpec looks for the ImageSpec field in VMOptions and sets
 // ImageProject/Image/Platform accordingly.
 func parseImageSpec(options *VMOptions) (error) {
