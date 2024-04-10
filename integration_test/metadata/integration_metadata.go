@@ -133,6 +133,8 @@ func UnmarshalAndValidate(data []byte, i interface{}) error {
 
 func SliceContains(slice []string, toFind string) bool {
 	for _, entry := range slice {
+		// vm.Platform (ex. `sles-15`) does not align with ImageSpec (ex. `suse-cloud:sles-15`)
+		// TODO, remove lingering references to "Platform" and use "Image Spec" instead.
 		if strings.HasSuffix(entry, toFind) {
 			return true
 		}

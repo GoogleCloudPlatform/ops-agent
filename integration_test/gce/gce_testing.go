@@ -1139,7 +1139,6 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	if vm.MachineType == "" {
 		vm.MachineType = options.MachineType
 	}
-	fmt.Printf("FOO: %#v", options)
 	if vm.MachineType == "" {
 		vm.MachineType = "e2-standard-4"
 		if IsARM(vm.Platform) {
