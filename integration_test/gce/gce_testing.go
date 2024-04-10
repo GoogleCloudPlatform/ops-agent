@@ -1062,10 +1062,23 @@ func getVMPlatform(image string, platform string) (string, error) {
 	return "", errors.New("at least one of image or platform must be specified")
 }
 
+// In cases where ImageSpec is not being used yet, construct it from known fields.
+func constructImageSpec(options *VMOptions) {
+	if if options.ImageSpec != "" || options.ImageProject == "" {
+		return
+	}
+	if options.Platform != "" {
+		options.ImageSpec = fmt.Sprintf("%s:%s", options.ImageProject, options.Platform)
+	} else if options.Image != "" {
+		options.ImageSpec = fmt.Sprintf("%s=%s", options.ImageProject, options.Image)
+	}
+}
+
 // parseImageSpec looks for the ImageSpec field in VMOptions and sets
 // ImageProject/Image/Platform accordingly.
 func parseImageSpec(options *VMOptions) (error) {
 	if options.ImageSpec == "" {
+		constructImageSpec(&options)
 		return nil
 	}
 
