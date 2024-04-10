@@ -66,14 +66,14 @@ func (p LoggingProcessorModifyFields) Type() string {
 }
 
 func (p LoggingProcessorModifyFields) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	c, err := p.components(tag, uid)
+	c, err := p.components(tag)
 	if err != nil {
 		// It shouldn't be possible to get here if the input validation is working, so treat this as a code bug.
 		panic(err)
 	}
 	return c
 }
-func (p LoggingProcessorModifyFields) components(tag, uid string) ([]fluentbit.Component, error) {
+func (p LoggingProcessorModifyFields) components(tag string) ([]fluentbit.Component, error) {
 	var lua strings.Builder
 	lua.WriteString(`
 function process(tag, timestamp, record)

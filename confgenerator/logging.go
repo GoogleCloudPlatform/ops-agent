@@ -29,7 +29,7 @@ const InstrumentationSourceLabel = `labels."logging.googleapis.com/instrumentati
 const HttpRequestKey = "logging.googleapis.com/httpRequest"
 
 // setLogNameComponents generates a series of components that rewrites the tag on log entries tagged `tag` to be `logName`.
-func setLogNameComponents(ctx context.Context, tag, logName, receiverType string, hostName string) []fluentbit.Component {
+func setLogNameComponents(ctx context.Context, tag, logName string, hostName string) []fluentbit.Component {
 	return LoggingProcessorModifyFields{
 		Fields: map[string]*ModifyField{
 			"logName": {

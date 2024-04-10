@@ -197,7 +197,7 @@ func (p pipelineInstance) fluentBitComponents(ctx context.Context) (fbSource, er
 		}
 		components = append(components, processorComponents...)
 	}
-	components = append(components, setLogNameComponents(ctx, tag, p.rID, receiver.Type(), platform.FromContext(ctx).Hostname())...)
+	components = append(components, setLogNameComponents(ctx, tag, p.rID, platform.FromContext(ctx).Hostname())...)
 
 	// Logs ingested using the fluent_forward receiver must add the existing_tag
 	// on the record to the LogName. This is done with a Lua filter.
@@ -377,7 +377,7 @@ func addGceMetadataAttributesComponents(ctx context.Context, attributes []string
 	}
 	modifications := map[string]*ModifyField{}
 	var attributeKeys []string
-	for k, _ := range gceMetadata.Metadata {
+	for k := range gceMetadata.Metadata {
 		attributeKeys = append(attributeKeys, k)
 	}
 	sort.Strings(attributeKeys)
@@ -405,16 +405,23 @@ type fbSource struct {
 
 // generateFluentbitComponents generates a slice of fluentbit config sections to represent l.
 func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAgent string) ([]fluentbit.Component, error) {
-	l := uc.Logging
-	var out []fluentbit.Component
-	if l.Service.LogLevel == "" {
-		l.Service.LogLevel = "info"
+	out := []fluentbit.Component{}
+	if uc.Logging == nil {
+		return out, nil
 	}
-	service := fluentbit.Service{LogLevel: l.Service.LogLevel}
-	out = append(out, service.Component())
-	out = append(out, fluentbit.MetricsInputComponent())
 
-	if l != nil && l.Service != nil && !l.Service.OTelLogging {
+	l := uc.Logging
+
+	if l.Service != nil {
+		if l.Service.LogLevel == "" {
+			l.Service.LogLevel = "info"
+		}
+		service := fluentbit.Service{LogLevel: l.Service.LogLevel}
+		out = append(out, service.Component())
+		out = append(out, fluentbit.MetricsInputComponent())
+	}
+
+	if !l.Service.OTelLogging && l.Receivers != nil {
 		// Type for sorting.
 		var sources []fbSource
 		var tags []string

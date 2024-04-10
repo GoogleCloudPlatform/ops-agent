@@ -124,7 +124,7 @@ func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) [
 		config["Refresh_Interval"] = strconv.Itoa(refreshIntervalSeconds)
 	}
 
-	if r.RecordLogFilePath != nil && *r.RecordLogFilePath == true {
+	if r.RecordLogFilePath != nil && *r.RecordLogFilePath {
 		config["Path_Key"] = "agent.googleapis.com/log_file_path"
 	}
 

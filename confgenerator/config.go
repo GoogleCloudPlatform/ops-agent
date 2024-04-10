@@ -64,11 +64,11 @@ func (uc *UnifiedConfig) HasCombined() bool {
 func (uc *UnifiedConfig) DeepCopy(ctx context.Context) (*UnifiedConfig, error) {
 	toYaml, err := yaml.Marshal(uc)
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert UnifiedConfig to yaml: %w.", err)
+		return nil, fmt.Errorf("failed to convert UnifiedConfig to yaml: %w", err)
 	}
 	fromYaml, err := UnmarshalYamlToUnifiedConfig(ctx, toYaml)
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert yaml to UnifiedConfig: %w.", err)
+		return nil, fmt.Errorf("failed to convert yaml to UnifiedConfig: %w", err)
 	}
 
 	return fromYaml, nil
@@ -444,7 +444,7 @@ func (r *componentTypeRegistry[CI, M]) UnmarshalComponentYaml(ctx context.Contex
 			}
 		}
 		sort.Strings(supportedTypes)
-		return fmt.Errorf(`%s %s with type %q is not supported. Supported %s %s types: [%s].`,
+		return fmt.Errorf(`%s %s with type %q is not supported. Supported %s %s types: [%s]`,
 			r.Subagent, r.Kind, c.Type,
 			r.Subagent, r.Kind, strings.Join(supportedTypes, ", "))
 	}
@@ -888,7 +888,7 @@ func (uc *UnifiedConfig) ValidateCombined() error {
 	if c == nil {
 		return nil
 	}
-	for k, _ := range c.Receivers {
+	for k := range c.Receivers {
 		for _, f := range []struct {
 			name    string
 			missing bool
@@ -959,7 +959,7 @@ func (pi *pipelineInstance) Types() (string, string) {
 	return pi.pipelineType, pi.receiver.Type()
 }
 
-func (uc *UnifiedConfig) metricsPipelines(ctx context.Context) ([]pipelineInstance, error) {
+func (uc *UnifiedConfig) metricsPipelines() ([]pipelineInstance, error) {
 	receivers, err := uc.MetricsReceivers()
 	if err != nil {
 		return nil, err
@@ -1010,7 +1010,7 @@ func (uc *UnifiedConfig) metricsPipelines(ctx context.Context) ([]pipelineInstan
 	return out, nil
 }
 
-func (uc *UnifiedConfig) tracesPipelines(ctx context.Context) ([]pipelineInstance, error) {
+func (uc *UnifiedConfig) tracesPipelines() ([]pipelineInstance, error) {
 	receivers, err := uc.TracesReceivers()
 	if err != nil {
 		return nil, err
@@ -1090,11 +1090,11 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]pipelineInstan
 }
 
 func (uc *UnifiedConfig) Pipelines(ctx context.Context) ([]pipelineInstance, error) {
-	metricsPipelines, err := uc.metricsPipelines(ctx)
+	metricsPipelines, err := uc.metricsPipelines()
 	if err != nil {
 		return nil, err
 	}
-	tracesPipelines, err := uc.tracesPipelines(ctx)
+	tracesPipelines, err := uc.tracesPipelines()
 	if err != nil {
 		return nil, err
 	}
@@ -1245,7 +1245,7 @@ func validateComponentKeys[V any](components map[string]V, refs []string, subage
 	componentSet := set.FromMapKeys(components)
 	for _, componentRef := range refs {
 		if !componentSet.Contains(componentRef) {
-			return fmt.Errorf("%s %s %q from pipeline %q is not defined.", subagent, kind, componentRef, pipeline)
+			return fmt.Errorf("%s %s %q from pipeline %q is not defined", subagent, kind, componentRef, pipeline)
 		}
 	}
 	return nil
@@ -1262,9 +1262,9 @@ func validateComponentTypeCounts[C Component](components map[string]C, refs []st
 		r[t] += 1
 		if limit, ok := componentTypeLimits[t]; ok && r[t] > limit {
 			if limit == 1 {
-				return nil, fmt.Errorf("at most one %s %s with type %q is allowed.", subagent, kind, t)
+				return nil, fmt.Errorf("at most one %s %s with type %q is allowed", subagent, kind, t)
 			}
-			return nil, fmt.Errorf("at most %d %s %ss with type %q are allowed.", limit, subagent, kind, t)
+			return nil, fmt.Errorf("at most %d %s %ss with type %q are allowed", limit, subagent, kind, t)
 		}
 	}
 	return r, nil
@@ -1277,10 +1277,10 @@ func validateReceiverPorts(taken map[uint16]string, receiverPortMap map[string]u
 			if portRID, ok := taken[port]; ok {
 				if portRID == pipelineRID {
 					// One network receiver is used by two pipelines
-					return nil, fmt.Errorf("logging receiver %s listening on port %d can not be used in two pipelines.", pipelineRID, port)
+					return nil, fmt.Errorf("logging receiver %s listening on port %d can not be used in two pipelines", pipelineRID, port)
 				} else {
 					// Two network receivers are using the same port
-					return nil, fmt.Errorf("two logging receivers %s and %s can not listen on the same port %d.", portRID, pipelineRID, port)
+					return nil, fmt.Errorf("two logging receivers %s and %s can not listen on the same port %d", portRID, pipelineRID, port)
 				}
 			} else {
 				// Modifying the input map by adding the port and receiverID of the current pipeline to mark the port as taken
@@ -1369,12 +1369,4 @@ func validateSSLConfig(receivers metricsReceiverMap, ctx context.Context) error 
 	}
 
 	return nil
-}
-
-// parameterErrorPrefix returns the common parameter error prefix.
-// id is the id of the receiver, processor, or exporter.
-// componentType is the type of the receiver or processor, e.g. "hostmetrics".
-// parameter is name of the parameter.
-func parameterErrorPrefix(subagent string, kind string, id string, componentType string, parameter string) string {
-	return fmt.Sprintf(`parameter %q in %q type %s %s %q`, parameter, componentType, subagent, kind, id)
 }

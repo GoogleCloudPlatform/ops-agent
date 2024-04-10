@@ -271,7 +271,6 @@ func trackingFeatures(c reflect.Value, md metadata, feature Feature) ([]Feature,
 			}
 			vAtKey := v.MapIndex(reflect.ValueOf(key))
 			t := vAtKey.Type()
-			fs := make([]Feature, 0)
 
 			k := fmt.Sprintf("[%d]", i)
 			if md.keepKeys {
@@ -287,6 +286,7 @@ func trackingFeatures(c reflect.Value, md metadata, feature Feature) ([]Feature,
 			mdCopy := md.deepCopy()
 
 			var err error
+			var fs []Feature
 			if t.Kind() == reflect.Struct {
 				f.Key = append(f.Key, k)
 				mdCopy.yamlTag = ""
@@ -323,9 +323,9 @@ func trackingFeatures(c reflect.Value, md metadata, feature Feature) ([]Feature,
 
 			v := v.Index(i)
 			t := v.Type()
-			fs := make([]Feature, 0)
 			m2 := md.deepCopy()
 
+			var fs []Feature
 			var err error
 			if t.Kind() == reflect.Struct {
 				f.Key = append(f.Key, fmt.Sprintf("[%d]", i))

@@ -30,7 +30,7 @@ func ReadUnifiedConfigFromFile(ctx context.Context, path string) (*UnifiedConfig
 			// If the user config file does not exist, we don't want any overrides.
 			return nil, nil
 		}
-		return nil, fmt.Errorf("failed to retrieve the user config file %q: %w \n", path, err)
+		return nil, fmt.Errorf("failed to retrieve the user config file %q: %w", path, err)
 	}
 
 	data, err := os.ReadFile(path)
