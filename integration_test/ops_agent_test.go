@@ -156,7 +156,7 @@ func makeDirectory(ctx context.Context, logger *log.Logger, vm *gce.VM, director
 	} else {
 		createFolderCmd = fmt.Sprintf("mkdir -p %s", directory)
 	}
-	_, err := gce.RunRemotely(ctx, logger, vm, "", createFolderCmd)
+	_, err := gce.RunRemotely(ctx, logger, vm, createFolderCmd)
 	return err
 }
 
@@ -176,12 +176,12 @@ func writeToWindowsEventLogWithSeverity(ctx context.Context, logger *log.Logger,
 	// *somewhere*. So the workaround is to make the log source's name unique
 	// per logName.
 	source := logName + "__ops_agent_test"
-	if _, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("if(![System.Diagnostics.EventLog]::SourceExists('%s')) { New-EventLog -LogName '%s' -Source '%s' }", source, logName, source)); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("if(![System.Diagnostics.EventLog]::SourceExists('%s')) { New-EventLog -LogName '%s' -Source '%s' }", source, logName, source)); err != nil {
 		return fmt.Errorf("writeToWindowsEventLogWithSeverity(logName=%q, payload=%q, severity=%q) failed to register new source %v: %v", logName, payload, severity, source, err)
 	}
 
 	// Use a Powershell here-string to avoid most quoting issues.
-	if _, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("Write-EventLog -LogName '%s' -EventId 1 -Source '%s' -EntryType '%s' -Message @'\n%s\n'@", logName, source, severity, payload)); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("Write-EventLog -LogName '%s' -EventId 1 -Source '%s' -EntryType '%s' -Message @'\n%s\n'@", logName, source, severity, payload)); err != nil {
 		return fmt.Errorf("writeToWindowsEventLogWithSeverity(logName=%q, payload=%q, severity=%q) failed: %v", logName, payload, severity, err)
 	}
 	return nil
@@ -212,7 +212,7 @@ func writeToSystemLog(ctx context.Context, logger *log.Logger, vm *gce.VM, paylo
 	// Pass the content in on stdin and run "cat -" to tell cat to copy from stdin.
 	// This is to avoid having to quote the content correctly for the shell.
 	// "tee -a" will append to the file.
-	if _, err := gce.RunRemotely(ctx, logger, vm, line, fmt.Sprintf("cat - | sudo tee -a '%s' > /dev/null", location)); err != nil {
+	if _, err := gce.RunRemotelyStdin(ctx, logger, vm, strings.NewReader(line), fmt.Sprintf("cat - | sudo tee -a '%s' > /dev/null", location)); err != nil {
 		return fmt.Errorf("writeToSystemLog() failed to write %q to %s: %v", line, location, err)
 	}
 	return nil
@@ -1128,11 +1128,11 @@ func TestSyslogTCP(t *testing.T) {
 		// detecting a failure if the exclusion message were to actually be included.
 
 		// Write test message for exclusion using the program called logger.
-		if _, err := gce.RunRemotely(ctx, logger, vm, "", "logger -n 0.0.0.0 --tcp --port=5140 -- abc test pattern xyz"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "logger -n 0.0.0.0 --tcp --port=5140 -- abc test pattern xyz"); err != nil {
 			t.Fatalf("Error writing dummy log line: %v", err)
 		}
 		// Write test message for inclusion.
-		if _, err := gce.RunRemotely(ctx, logger, vm, "", "logger -n 0.0.0.0 --tcp --port=5140 -- abcdefg"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "logger -n 0.0.0.0 --tcp --port=5140 -- abcdefg"); err != nil {
 			t.Fatalf("Error writing dummy log line: %v", err)
 		}
 
@@ -1180,7 +1180,7 @@ func TestSyslogUDP(t *testing.T) {
 		}
 
 		// Write "abcdefg" using the program called logger.
-		if _, err := gce.RunRemotely(ctx, logger, vm, "", "logger -n 0.0.0.0 --udp --port=5140 -- abcdefg"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "logger -n 0.0.0.0 --udp --port=5140 -- abcdefg"); err != nil {
 			t.Fatalf("Error writing dummy log line: %v", err)
 		}
 
@@ -1750,7 +1750,7 @@ EOF
 			fluentBitArgs)
 	}
 
-	if _, err := gce.RunRemotely(ctx, logger, vm, "", command); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, command); err != nil {
 		return "", err
 	}
 	return remoteFile, nil
@@ -1775,7 +1775,7 @@ func writeLinesToRemoteFile(ctx context.Context, logger *log.Logger, vm *gce.VM,
 			appendCommand = fmt.Sprintf(`Get-Content %s | Out-File -Encoding Ascii -Append %s`, tempPath, remoteFile)
 		}
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, "", appendCommand); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, appendCommand); err != nil {
 			return err
 		}
 	}
@@ -2233,7 +2233,7 @@ func TestWindowsEventLogWithNonDefaultTimeZone(t *testing.T) {
 			t.SkipNow()
 		}
 		ctx, logger, vm := setupMainLogAndVM(t, platform)
-		if _, err := gce.RunRemotely(ctx, logger, vm, "", `Set-TimeZone -Id "Eastern Standard Time"`); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, `Set-TimeZone -Id "Eastern Standard Time"`); err != nil {
 			t.Fatal(err)
 		}
 		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
@@ -2283,7 +2283,7 @@ func TestSystemdLog(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, "", "echo 'my_systemd_log_message' | systemd-cat"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_log_message' | systemd-cat"); err != nil {
 			t.Fatalf("Error writing dummy Systemd log line: %v", err)
 		}
 
@@ -2318,7 +2318,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 	if !gce.IsWindows(vm.Platform) {
 		// Enable swap file: https://linuxize.com/post/create-a-linux-swap-file/
 		// We do this so that swap file metrics will show up.
-		_, err := gce.RunRemotely(ctx, logger, vm, "", strings.Join([]string{
+		_, err := gce.RunRemotely(ctx, logger, vm, strings.Join([]string{
 			"sudo dd if=/dev/zero of=/swapfile bs=1024 count=102400",
 			"sudo chmod 600 /swapfile",
 			"(sudo mkswap /swapfile || sudo /usr/sbin/mkswap /swapfile)",
@@ -2770,13 +2770,13 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to open setup script: %s", err)
 		}
-		setupOut, err := gce.RunRemotely(ctx, logger, vm, "", string(setupScript))
+		setupOut, err := gce.RunRemotely(ctx, logger, vm, string(setupScript))
 		if err != nil {
 			t.Fatalf("failed to run json exporter in VM with err: %v, stderr: %s", err, setupOut.Stderr)
 		}
 		// Wait until both are ready
 		time.Sleep(30 * time.Second)
-		liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger, vm, "", `curl "http://localhost:7979/probe?module=default&target=http://localhost:8000/data.json"`)
+		liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger, vm, `curl "http://localhost:7979/probe?module=default&target=http://localhost:8000/data.json"`)
 		// We will abort when:
 		// 1. JSON exporter is not started: in this case the stderr will have:
 		// "curl: (7) Failed to connect to localhost port 7979 after 1 ms: Connection refused"
@@ -3282,7 +3282,7 @@ func TestPrometheusSummaryMetrics(t *testing.T) {
 }
 
 func buildGoBinary(ctx context.Context, logger *log.Logger, vm *gce.VM, source, dest string) error {
-	_, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("sudo /usr/local/go/bin/go build -o %s/ %s", dest, source))
+	_, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo /usr/local/go/bin/go build -o %s/ %s", dest, source))
 	return err
 }
 
@@ -3333,13 +3333,13 @@ func testPrometheusMetrics(t *testing.T, opsAgentConfig string, testChecks []moc
 
 		// 4. Start the go http server
 		setupScript := `sudo systemctl daemon-reload && sudo systemctl enable http-server-for-prometheus-test && sudo systemctl restart http-server-for-prometheus-test`
-		_, err = gce.RunRemotely(ctx, logger, vm, "", setupScript)
+		_, err = gce.RunRemotely(ctx, logger, vm, setupScript)
 		if err != nil {
 			t.Fatalf("failed to start the http server in VM via systemctl with err: %v", err)
 		}
 		// Wait until the http server is ready
 		time.Sleep(20 * time.Second)
-		liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger, vm, "", `curl "http://localhost:8000/data"`)
+		liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger, vm, `curl "http://localhost:8000/data"`)
 		if liveCheckErr != nil || strings.Contains(liveCheckOut.Stderr, "Connection refused") {
 			t.Fatalf("Http server failed to start with stdout %s and stderr %s", liveCheckOut.Stdout, liveCheckOut.Stderr)
 		}
@@ -3688,7 +3688,7 @@ func fetchPID(ctx context.Context, logger *log.Logger, vm *gce.VM, processName s
 			cmd = "sudo pgrep " + processName
 		}
 	}
-	output, err := gce.RunRemotely(ctx, logger, vm, "", cmd)
+	output, err := gce.RunRemotely(ctx, logger, vm, cmd)
 	if err != nil {
 		return "", fmt.Errorf("fetchPID(%q) failed: %v", processName, err)
 	}
@@ -3724,7 +3724,7 @@ func terminateProcess(ctx context.Context, logger *log.Logger, vm *gce.VM, proce
 			cmd = "sudo pkill -SIGABRT " + processName
 		}
 	}
-	_, err := gce.RunRemotely(ctx, logger, vm, "", cmd)
+	_, err := gce.RunRemotely(ctx, logger, vm, cmd)
 	if err != nil {
 		return fmt.Errorf("terminateProcess(%q) failed: %v", processName, err)
 	}
@@ -3902,7 +3902,7 @@ func testWindowsStandaloneAgentConflict(t *testing.T, installStandalone func(ctx
 		  LogName = 'Application'
 			ProviderName = 'google-cloud-ops-agent'
 		} | Select-Object -ExpandProperty Message`
-		out, err := gce.RunRemotely(ctx, logger, vm, "", getEvents)
+		out, err := gce.RunRemotely(ctx, logger, vm, getEvents)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -4064,7 +4064,7 @@ func runResourceDetectorCli(ctx context.Context, logger *log.Logger, vm *gce.VM)
 		%s
 		cd %s
 		go run run_resource_detector.go`, goPathCommandForPlatform(vm.Platform), workDir)
-	runnerOutput, err := gce.RunRemotely(ctx, logger, vm, "", cmd)
+	runnerOutput, err := gce.RunRemotely(ctx, logger, vm, cmd)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run resource detector in VM: %w", err)
 	}
@@ -4114,7 +4114,7 @@ func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 				"gs://ops-agents-public-buckets-vendored-deps/mirrored-content/go.dev/dl/go%s.linux-%s.tar.gz" - | \
 				sudo tar --directory /usr/local -xzf /dev/stdin`, goVersion, goArch)
 	}
-	_, err := gce.RunRemotely(ctx, logger, vm, "", installCmd)
+	_, err := gce.RunRemotely(ctx, logger, vm, installCmd)
 	return err
 }
 
@@ -4139,7 +4139,7 @@ func runGoCode(ctx context.Context, logger *log.Logger, vm *gce.VM, content io.R
 		go mod init main
 		go get ./...
 		go run main.go`, goPathCommandForPlatform(vm.Platform), workDir)
-	_, err := gce.RunRemotely(ctx, logger, vm, "", goInitAndRun)
+	_, err := gce.RunRemotely(ctx, logger, vm, goInitAndRun)
 	return err
 }
 
@@ -4461,7 +4461,7 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 			}
 		}
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, "", listenToPortForPlatform(vm.Platform)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, listenToPortForPlatform(vm.Platform)); err != nil {
 			t.Fatal(err)
 		}
 		// Wait for port to be in listen mode.
@@ -4471,7 +4471,7 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cmdOut, err := gce.RunRemotely(ctx, logger, vm, "", getRecentServiceOutputForPlatform(vm.Platform))
+		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForPlatform(vm.Platform))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -4501,7 +4501,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cmdOut, err := gce.RunRemotely(ctx, logger, vm, "", getRecentServiceOutputForPlatform(vm.Platform))
+		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForPlatform(vm.Platform))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -4510,7 +4510,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, "", stopCommandForPlatform(vm.Platform)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, stopCommandForPlatform(vm.Platform)); err != nil {
 			t.Fatal(err)
 		}
 
@@ -4520,11 +4520,11 @@ func TestNetworkHealthCheck(t *testing.T) {
 		}
 		time.Sleep(time.Minute)
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, "", startCommandForPlatform(vm.Platform)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, startCommandForPlatform(vm.Platform)); err != nil {
 			t.Fatal(err)
 		}
 
-		cmdOut, err = gce.RunRemotely(ctx, logger, vm, "", getRecentServiceOutputForPlatform(vm.Platform))
+		cmdOut, err = gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForPlatform(vm.Platform))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -4600,13 +4600,13 @@ func TestDisableSelfLogCollection(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", stopCommandForPlatform(vm.Platform)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, stopCommandForPlatform(vm.Platform)); err != nil {
 			t.Fatal(err)
 		}
 
 		time.Sleep(2 * time.Minute)
 
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", startCommandForPlatform(vm.Platform)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, startCommandForPlatform(vm.Platform)); err != nil {
 			t.Fatal(err)
 		}
 
@@ -4658,7 +4658,7 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
           echo "Hello world! $x" >> ~/log_%d.log
           ((x++))
         done`, logsPerSecond, logsPerSecond)
-		_, err := gce.RunRemotely(ctx, logger, vm, "", generateLogPerSecondFile)
+		_, err := gce.RunRemotely(ctx, logger, vm, generateLogPerSecondFile)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -4681,7 +4681,7 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		output, err := gce.RunRemotely(ctx, logger, vm, "", generateLogsScript)
+		output, err := gce.RunRemotely(ctx, logger, vm, generateLogsScript)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -4779,7 +4779,7 @@ func TestRestartVM(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cmdOut, err := gce.RunRemotely(ctx, logger, vm, "", getRecentServiceOutputForPlatform(vm.Platform))
+		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForPlatform(vm.Platform))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -4794,7 +4794,7 @@ func TestRestartVM(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cmdOut, err = gce.RunRemotely(ctx, logger, vm, "", getRecentServiceOutputForPlatform(vm.Platform))
+		cmdOut, err = gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForPlatform(vm.Platform))
 		if err != nil {
 			t.Fatal(err)
 		}
