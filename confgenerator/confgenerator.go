@@ -413,10 +413,8 @@ func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAg
 	l := uc.Logging
 
 	logLevel := "info"
-	if l.Service != nil {
-		if l.Service.LogLevel != "" {
-			logLevel = l.Service.LogLevel
-		}
+	if l.Service != nil && l.Service.LogLevel != "" {
+		logLevel = l.Service.LogLevel
 	}
 
 	service := fluentbit.Service{LogLevel: logLevel}
