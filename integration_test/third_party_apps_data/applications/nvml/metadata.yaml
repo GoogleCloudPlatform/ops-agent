@@ -26,32 +26,32 @@ supported_app_version: ["515.65.01"]
 gpu_platforms:
   - model: a100
     platforms:
-      - ubuntu-2004-lts
+      - ubuntu-os-cloud:ubuntu-2004-lts
   - model: v100
     platforms:
-      - ubuntu-2004-lts
+      - ubuntu-os-cloud:ubuntu-2004-lts
   - model: p4
     platforms:
-      - ubuntu-2004-lts
+      - ubuntu-os-cloud:ubuntu-2004-lts
   - model: t4
     platforms:
-      - ubuntu-2004-lts
+      - ubuntu-os-cloud:ubuntu-2004-lts
   - model: p100
     platforms:
-      - ubuntu-2004-lts
+      - ubuntu-os-cloud:ubuntu-2004-lts
   - model: k80
     platforms:
-      - ubuntu-2004-lts
+      - ubuntu-os-cloud:ubuntu-2004-lts
   - model: l4
     platforms:
-      - centos-7
-      - debian-10
-      - debian-11
-      - rocky-linux-8
-      - rocky-linux-9
-      - sles-15
-      - ubuntu-2004-lts
-      - ubuntu-2204-lts
+      - centos-cloud:centos-7
+      - debian-cloud:debian-10
+      - debian-cloud:debian-11
+      - rocky-linux-cloud:rocky-linux-8
+      - rocky-linux-cloud:rocky-linux-9
+      - suse-cloud:sles-15
+      - ubuntu-os-cloud:ubuntu-2004-lts
+      - ubuntu-os-cloud:ubuntu-2204-lts
 expected_metrics:
   - type: agent.googleapis.com/gpu/utilization
     value_type: DOUBLE

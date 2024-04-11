@@ -21,7 +21,7 @@ For instructions, see the top of gce_testing.go.
 This test needs the following environment variables to be defined, in addition
 to the ones mentioned at the top of gce_testing.go:
 
-PLATFORMS: a comma-separated list of distros to test, e.g. "centos-7,centos-8".
+PLATFORMS: a comma-separated list of image specs to test, e.g. "suse-cloud:sles-12,ubuntu-os-cloud:ubuntu-2310-amd64".
 
 The following variables are optional:
 
@@ -408,11 +408,11 @@ func verifyLog(actualLog *cloudlogging.Entry, expectedLog *metadata.ExpectedLog)
 }
 
 // stripUnavailableFields removes the fields that are listed as unavailable_on
-// the current platform.
-func stripUnavailableFields(fields []*metadata.LogFields, platform string) []*metadata.LogFields {
+// the current image spec.
+func stripUnavailableFields(fields []*metadata.LogFields, imageSpec string) []*metadata.LogFields {
 	var result []*metadata.LogFields
 	for _, field := range fields {
-		if !metadata.SliceContains(field.UnavailableOn, platform) {
+		if !metadata.SliceContains(field.UnavailableOn, imageSpec) {
 			result = append(result, field)
 		}
 	}
@@ -431,14 +431,14 @@ func runLoggingTestCases(ctx context.Context, logger *log.Logger, vm *gce.VM, lo
 		// underlying struct.
 		entry := *entry
 		go func() {
-			// Strip out the fields that are not available on this platform.
+			// Strip out the fields that are not available on this image spec.
 			// We do this here so that:
 			// 1. the field is never mentioned in the query we send, and
 			// 2. verifyLogField treats it as any other unexpected field, which
 			//    means it will fail the test ("expected no value for field").
 			//    This could result in annoying test failures if the app suddenly
 			//    begins reporting a log field on a certain platform.
-			entry.Fields = stripUnavailableFields(entry.Fields, vm.Platform)
+			entry.Fields = stripUnavailableFields(entry.Fields, vm.ImageSpec)
 
 			// Construct query using remaining fields with a nonempty regex.
 			query := constructQuery(entry.LogName, entry.Fields)
@@ -499,7 +499,7 @@ func runMetricsTestCases(ctx context.Context, logger *log.Logger, vm *gce.VM, me
 			logger.Printf("Skipping optional or representative metric %s", metric.Type)
 			continue
 		}
-		if metadata.SliceContains(metric.UnavailableOn, vm.Platform) {
+		if metadata.SliceContains(metric.UnavailableOn, vm.ImageSpec) {
 			logger.Printf("Skipping metric %s due to unavailable_on", metric.Type)
 			continue
 		}
@@ -867,7 +867,7 @@ var gpuModels = map[string]accelerator{
 }
 
 const (
-	SAPHANAPlatform = "sles-15-sp4-sap-saphana"
+	SAPHANAPlatform = "stackdriver-test-143416:sles-15-sp4-sap-saphana"
 	SAPHANAApp      = "saphana"
 
 	OracleDBApp  = "oracledb"
@@ -981,7 +981,7 @@ func TestThirdPartyApps(t *testing.T) {
 				logger := gce.SetupLogger(t)
 				logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
 				options := gce.VMOptions{
-					Platform:             tc.platform,
+					ImageSpec:            tc.platform,
 					TimeToLive:           "3h",
 					MachineType:          agents.RecommendedMachineType(tc.platform),
 					ExtraCreateArguments: nil,
@@ -998,7 +998,6 @@ func TestThirdPartyApps(t *testing.T) {
 				if tc.platform == SAPHANAPlatform {
 					// This image needs an SSD in order to be performant enough.
 					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-type=pd-ssd")
-					options.ImageProject = "stackdriver-test-143416"
 				}
 				if tc.app == OracleDBApp {
 					options.MachineType = "e2-highmem-8"
