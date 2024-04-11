@@ -1,1 +1,1 @@
-logging receiver "windows_event_log" from pipeline "host" is not defined
+logging receiver "windows_event_log" from pipeline "host" is not defined.

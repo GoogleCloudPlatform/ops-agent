@@ -55,7 +55,7 @@ func healthChecksLogsPath() string {
 	return path.Join("${logs_dir}", "health-checks.log")
 }
 
-func generateHealthLoggingPingComponent() []fluentbit.Component {
+func generateHealthLoggingPingComponent(_ context.Context) []fluentbit.Component {
 	return []fluentbit.Component{
 		{
 			Kind: "INPUT",
@@ -145,7 +145,7 @@ var selfLogTranslationList = []selfLogTranslationEntry{
 	},
 }
 
-func generateSelfLogsSamplingComponents() []fluentbit.Component {
+func generateSelfLogsSamplingComponents(_ context.Context) []fluentbit.Component {
 	out := make([]fluentbit.Component, 0)
 
 	for _, m := range selfLogTranslationList {
@@ -228,10 +228,10 @@ func generateSelfLogsProcessingComponents(ctx context.Context) []fluentbit.Compo
 
 func (uc *UnifiedConfig) generateSelfLogsComponents(ctx context.Context, userAgent string) []fluentbit.Component {
 	out := make([]fluentbit.Component, 0)
-	out = append(out, generateHealthLoggingPingComponent()...)
+	out = append(out, generateHealthLoggingPingComponent(ctx)...)
 	out = append(out, generateFluentBitSelfLogsComponents(ctx)...)
 	out = append(out, generateHealthChecksLogsComponents(ctx)...)
-	out = append(out, generateSelfLogsSamplingComponents()...)
+	out = append(out, generateSelfLogsSamplingComponents(ctx)...)
 	out = append(out, generateStructuredHealthLogsComponents(ctx)...)
 	out = append(out, generateSelfLogsProcessingComponents(ctx)...)
 

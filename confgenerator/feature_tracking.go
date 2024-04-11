@@ -285,8 +285,8 @@ func trackingFeatures(c reflect.Value, md metadata, feature Feature) ([]Feature,
 
 			mdCopy := md.deepCopy()
 
-			var err error
 			var fs []Feature
+			var err error
 			if t.Kind() == reflect.Struct {
 				f.Key = append(f.Key, k)
 				mdCopy.yamlTag = ""

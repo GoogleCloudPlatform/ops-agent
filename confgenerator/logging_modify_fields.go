@@ -73,6 +73,7 @@ func (p LoggingProcessorModifyFields) Components(ctx context.Context, tag, uid s
 	}
 	return c
 }
+
 func (p LoggingProcessorModifyFields) components(tag string) ([]fluentbit.Component, error) {
 	var lua strings.Builder
 	lua.WriteString(`

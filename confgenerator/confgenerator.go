@@ -412,14 +412,16 @@ func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAg
 
 	l := uc.Logging
 
+	logLevel := "info"
 	if l.Service != nil {
-		if l.Service.LogLevel == "" {
-			l.Service.LogLevel = "info"
+		if l.Service.LogLevel != "" {
+			logLevel = l.Service.LogLevel
 		}
-		service := fluentbit.Service{LogLevel: l.Service.LogLevel}
-		out = append(out, service.Component())
-		out = append(out, fluentbit.MetricsInputComponent())
 	}
+
+	service := fluentbit.Service{LogLevel: logLevel}
+	out = append(out, service.Component())
+	out = append(out, fluentbit.MetricsInputComponent())
 
 	if !l.Service.OTelLogging && l.Receivers != nil {
 		// Type for sorting.
