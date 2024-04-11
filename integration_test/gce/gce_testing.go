@@ -295,7 +295,7 @@ type VM struct {
 	Project     string
 	Network     string
 	Platform    string
-	// The VMOptions.ImageSpec used the create the VM.
+	// The VMOptions.ImageSpec used to create the VM.
 	ImageSpec   string
 	Zone        string
 	MachineType string
