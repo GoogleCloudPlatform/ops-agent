@@ -1078,7 +1078,7 @@ func constructImageSpec(options *VMOptions) {
 // ImageProject/Image/Platform accordingly.
 func parseImageSpec(options *VMOptions) (error) {
 	if options.ImageSpec == "" {
-		constructImageSpec(&options)
+		constructImageSpec(options)
 		return nil
 	}
 
