@@ -8,10 +8,10 @@ the rest of the steps are documented in a Google-internal markdown doc.
 The following steps refer to `$DISTRO_SHORT` and `$DISTRO_FAMILY`. You will
 need to replace these with appropriate names for your new distro. Example
 values for these variables are: `hirsute` for `$DISTRO_SHORT` and
-`ubuntu-2104` for `$DISTRO_FAMILY`.
+`ubuntu-os-cloud:ubuntu-2104` for `$DISTRO_FAMILY`.
 
 NOTE: Some Ubuntu releases are LTS and some are not. For LTS releases, make
-sure the distro family ends in `-lts`. For example, `ubuntu-2004-lts`.
+sure the distro family ends in `-lts`. For example, `ubuntu-os-cloud:ubuntu-2004-lts`.
 
 For a list of existing distro families, consult
 [image_lists.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/image_lists.gcl)
@@ -46,7 +46,7 @@ manifest as runtime errors that won't show up until tests are run.
     [kokoro/config/test/ops_agent/presubmit/bullseye_x86_64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/ops_agent/presubmit/bullseye_x86_64.gcl)
     or [kokoro/config/test/ops_agent/presubmit/bullseye_aarch64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/ops_agent/presubmit/bullseye_aarch64.gcl),
     replace `image_lists.bullseye_x86_64.presubmit` with
-    `$DISTRO_FAMILY` (in a single-element list, like `['sles-15']`).
+    `$DISTRO_FAMILY` (in a single-element list, like `['suse-cloud:sles-15']`).
     This will cause the bullseye Kokoro build to build and test your
     distro instead.
 
