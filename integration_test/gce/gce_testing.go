@@ -1064,7 +1064,7 @@ func getVMPlatform(image string, platform string) (string, error) {
 
 // In cases where ImageSpec is not being used yet, construct it from known fields.
 func constructImageSpec(options *VMOptions) {
-	if if options.ImageSpec != "" || options.ImageProject == "" {
+	if options.ImageSpec != "" || options.ImageProject == "" {
 		return
 	}
 	if options.Platform != "" {
