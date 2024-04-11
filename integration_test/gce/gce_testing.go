@@ -958,7 +958,7 @@ func RunScriptRemotely(ctx context.Context, logger *log.Logger, vm *VM, scriptCo
 		// script seems to work around this completely.
 		//
 		// To test changes to this command, please run gce_testing_test.go (manually).
-		return RunRemotely(ctx, logger, vm, "", envVarMapToPowershellPrefix(env)+"pwsh -File "+scriptPath+" "+flagsStr)
+		return RunRemotely(ctx, logger, vm, envVarMapToPowershellPrefix(env)+"pwsh -File "+scriptPath+" "+flagsStr)
 	}
 	scriptPath := uuid.NewString() + ".sh"
 	// Write the script contents to <UUID>.sh, then tell bash to execute it with -x
@@ -1305,10 +1305,10 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 
 	if IsWindows(vm.Platform) {
 		// __SuppressAnsiEscapeSequences disables color-related ANSI sequences in
-		// pwsh output. NO_COLOR is the officially supported variable to accomplish this,
-		// but it doesn't actually work. See also
+		// pwsh output. NO_COLOR is supposed to be the officially supported variable
+		// to accomplish this but it doesn't work. See:
 		// https://github.com/PowerShell/PowerShell/issues/19961.
-		if _, err := RunRemotely(ctx, logger, vm, "", `[Environment]::SetEnvironmentVariable("__SuppressAnsiEscapeSequences", "1", "Machine")`); err != nil {
+		if _, err := RunRemotely(ctx, logger, vm, `[Environment]::SetEnvironmentVariable("__SuppressAnsiEscapeSequences", "1", "Machine")`); err != nil {
 			return nil, err
 		}
 	}
