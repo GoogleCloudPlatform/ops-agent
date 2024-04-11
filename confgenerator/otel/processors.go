@@ -19,6 +19,8 @@ import (
 	"path"
 	"sort"
 	"strings"
+
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 )
 
 // Helper functions to easily build up processor configs.
@@ -126,6 +128,37 @@ func RegexpRename(regexp string, rename string, operations ...map[string]interfa
 	return out
 }
 
+// Transform returns a transform processor object that executes statements on statementType data.
+func Transform(statementType, context string, statements ottl.Statements) Component {
+	return Component{
+		Type: "transform",
+		Config: map[string]any{
+			"error_mode": "ignore",
+			fmt.Sprintf("%s_statements", statementType): map[string]any{
+				"context":    context,
+				"statements": statements,
+			},
+		},
+	}
+}
+
+// Filter returns a filter processor object that drops dataType.context data matching any of the expressions.
+func Filter(dataType, context string, expressions []ottl.Value) Component {
+	var strings []string
+	for _, e := range expressions {
+		strings = append(strings, e.String())
+	}
+	return Component{
+		Type: "filter",
+		Config: map[string]any{
+			"error_mode": "ignore",
+			dataType: map[string]any{
+				context: strings,
+			},
+		},
+	}
+}
+
 // TransformationMetrics returns a transform processor object that contains all the queries passed into it.
 func TransformationMetrics(queries ...TransformQuery) Component {
 	queryStrings := []string{}
@@ -156,6 +189,11 @@ func FlattenResourceAttribute(resourceAttribute, metricAttribute string) Transfo
 // ConvertGaugeToSum returns an expression where a gauge metric can be converted into a sum
 func ConvertGaugeToSum(metricName string) TransformQuery {
 	return TransformQuery(fmt.Sprintf(`convert_gauge_to_sum("cumulative", true) where metric.name == "%s"`, metricName))
+}
+
+// ConvertFloatToInt returns an expression where a float-valued metric can be converted to an int
+func ConvertFloatToInt(metricName string) TransformQuery {
+	return TransformQuery(fmt.Sprintf(`set(value_int, Int(value_double)) where metric.name == "%s"`, metricName))
 }
 
 // SetDescription returns a metrics transform expression where the metrics description will be set to what is provided

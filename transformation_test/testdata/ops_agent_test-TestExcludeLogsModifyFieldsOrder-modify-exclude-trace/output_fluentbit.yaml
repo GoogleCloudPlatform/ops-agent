@@ -1,0 +1,11 @@
+- entries:
+  - jsonPayload:
+      query_field: value
+    logName: projects/my-project/logs/transformation_test
+    spanId: facefeedb0bacafe
+    timestamp: now
+    trace: projects/my-project/traces/deadcafedeadc0defacefeedb0bacafe
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance

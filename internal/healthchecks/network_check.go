@@ -48,12 +48,13 @@ var (
 			successMessage:   "Request to the Monitoring API was successful.",
 			healthCheckError: MonApiConnErr,
 		},
-		{
-			name:             "Packages API",
-			url:              "https://packages.cloud.google.com",
-			successMessage:   "Request to packages.cloud.google.com was successful.",
-			healthCheckError: PacApiConnErr,
-		},
+		// TODO(b/321220138): restore this once there's a more reliable endpoint.
+		// {
+		// 	name:             "Packages API",
+		// 	url:              "https://packages.cloud.google.com",
+		// 	successMessage:   "Request to packages.cloud.google.com was successful.",
+		// 	healthCheckError: PacApiConnErr,
+		// },
 		{
 			name:             "dl.google.com",
 			url:              "https://dl.google.com",

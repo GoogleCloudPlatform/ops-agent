@@ -94,7 +94,7 @@ func assertFilePresence(ctx context.Context, logger *log.Logger, vm *gce.VM, fil
 		fileQuery = fmt.Sprintf(`sudo test -f %s`, filePath)
 	}
 
-	out, err := gce.RunRemotely(ctx, logger, vm, "", fileQuery)
+	out, err := gce.RunRemotely(ctx, logger, vm, fileQuery)
 	if err != nil {
 		return fmt.Errorf("error accessing backup file: %v", err)
 	}
@@ -556,7 +556,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		// Gets us around problematic prompts for user input.
 		installEnv["DEBIAN_FRONTEND"] = "noninteractive"
 		// Configures sudo to keep the value of DEBIAN_FRONTEND that we set.
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, "", `echo 'Defaults env_keep += "DEBIAN_FRONTEND"' | sudo tee -a /etc/sudoers`); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, `echo 'Defaults env_keep += "DEBIAN_FRONTEND"' | sudo tee -a /etc/sudoers`); err != nil {
 			return nonRetryable, err
 		}
 	}
@@ -982,6 +982,7 @@ func TestThirdPartyApps(t *testing.T) {
 				logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
 				options := gce.VMOptions{
 					Platform:             tc.platform,
+					TimeToLive:           "3h",
 					MachineType:          agents.RecommendedMachineType(tc.platform),
 					ExtraCreateArguments: nil,
 				}

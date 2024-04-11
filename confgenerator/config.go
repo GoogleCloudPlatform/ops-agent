@@ -148,6 +148,9 @@ func (ve validationError) Error() string {
 	case "field":
 		_, err := filter.NewMember(ve.Value().(string))
 		return fmt.Sprintf("%q: %v", ve.Field(), err)
+	case "fieldlegacy":
+		_, err := filter.NewMemberLegacy(ve.Value().(string))
+		return fmt.Sprintf("%q: %v", ve.Field(), err)
 	case "distinctfield":
 		return fmt.Sprintf("%q specified multiple times", ve.Value().(string))
 	case "writablefield":
@@ -210,6 +213,11 @@ func newValidator() *validator.Validate {
 	// field validates that a Cloud Logging field expression is valid
 	v.RegisterValidation("field", func(fl validator.FieldLevel) bool {
 		_, err := filter.NewMember(fl.Field().String())
+		// TODO: Disallow specific target fields?
+		return err == nil
+	})
+	v.RegisterValidation("fieldlegacy", func(fl validator.FieldLevel) bool {
+		_, err := filter.NewMemberLegacy(fl.Field().String())
 		// TODO: Disallow specific target fields?
 		return err == nil
 	})
@@ -547,8 +555,10 @@ func (m *loggingProcessorMap) UnmarshalYAML(ctx context.Context, unmarshal func(
 }
 
 type LoggingService struct {
-	LogLevel  string               `yaml:"log_level,omitempty" validate:"omitempty,oneof=error warn info debug trace"`
-	Pipelines map[string]*Pipeline `validate:"dive,keys,startsnotwith=lib:"`
+	Compress    string               `yaml:"compress,omitempty" validate:"omitempty,oneof=gzip,experimental=log_compression"`
+	LogLevel    string               `yaml:"log_level,omitempty" validate:"omitempty,oneof=error warn info debug trace"`
+	Pipelines   map[string]*Pipeline `validate:"dive,keys,startsnotwith=lib:"`
+	OTelLogging bool                 `yaml:"experimental_otel_logging,omitempty" validate:"omitempty,experimental=otel_logging"`
 }
 
 type Pipeline struct {
@@ -571,7 +581,7 @@ type Metrics struct {
 
 type OTelReceiver interface {
 	Component
-	Pipelines(ctx context.Context) []otel.ReceiverPipeline
+	Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error)
 }
 
 type MetricsProcessorMerger interface {
@@ -666,10 +676,10 @@ func (m MetricsReceiverSharedJVM) WithDefaultAdditionalJars(defaultAdditionalJar
 
 // ConfigurePipelines sets up a Receiver using the MetricsReceiverSharedJVM and the targetSystem.
 // This is used alongside the passed in processors to return a single Pipeline in an array.
-func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, processors []otel.Component) []otel.ReceiverPipeline {
+func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, processors []otel.Component) ([]otel.ReceiverPipeline, error) {
 	jarPath, err := FindJarPath()
 	if err != nil {
-		log.Printf(`Encountered an error discovering the location of the JMX Metrics Exporter, %v`, err)
+		return nil, fmt.Errorf("failed to discover the location of the JMX metrics exporter: %w", err)
 	}
 
 	config := map[string]interface{}{
@@ -698,7 +708,7 @@ func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, proces
 			Config: config,
 		},
 		Processors: map[string][]otel.Component{"metrics": processors},
-	}}
+	}}, nil
 }
 
 type MetricsReceiverSharedCollectJVM struct {
@@ -762,9 +772,13 @@ func (m *combinedReceiverMap) UnmarshalYAML(ctx context.Context, unmarshal func(
 	return CombinedReceiverTypes.unmarshalToMap(ctx, m, unmarshal)
 }
 
-type MetricsProcessor interface {
+type OTelProcessor interface {
 	Component
-	Processors() []otel.Component
+	Processors(context.Context) ([]otel.Component, error)
+}
+
+type MetricsProcessor interface {
+	OTelProcessor
 }
 
 var MetricsProcessorTypes = &componentTypeRegistry[MetricsProcessor, metricsProcessorMap]{
@@ -790,7 +804,7 @@ type TracesService struct {
 
 func (uc *UnifiedConfig) Validate(ctx context.Context) error {
 	if uc.Logging != nil {
-		if err := uc.Logging.Validate(); err != nil {
+		if err := uc.ValidateLogging(); err != nil {
 			return err
 		}
 	}
@@ -812,7 +826,8 @@ func (uc *UnifiedConfig) Validate(ctx context.Context) error {
 	return nil
 }
 
-func (l *Logging) Validate() error {
+func (uc *UnifiedConfig) ValidateLogging() error {
+	l := uc.Logging
 	subagent := "logging"
 	if len(l.Exporters) > 0 {
 		log.Print(`The "logging.exporters" field is no longer needed and will be ignored. This does not change any functionality. Please remove it from your configuration.`)
@@ -820,18 +835,28 @@ func (l *Logging) Validate() error {
 	if l.Service == nil {
 		return nil
 	}
+	validReceivers := map[string]bool{}
+	for k := range l.Receivers {
+		validReceivers[k] = true
+	}
+	if uc.Combined != nil {
+		for k := range uc.Combined.Receivers {
+			// TODO: What about combined receivers that don't support logging (none exist today)?
+			validReceivers[k] = true
+		}
+	}
+	validProcessors := map[string]LoggingProcessor{}
+	for k, v := range l.Processors {
+		validProcessors[k] = v
+	}
+	for _, k := range defaultProcessors {
+		validProcessors[k] = nil
+	}
 	portTaken := map[uint16]string{} // port -> receiverId map
 	for _, id := range sortedKeys(l.Service.Pipelines) {
 		p := l.Service.Pipelines[id]
-		if err := validateComponentKeys(l.Receivers, p.ReceiverIDs, subagent, "receiver", id); err != nil {
+		if err := validateComponentKeys(validReceivers, p.ReceiverIDs, subagent, "receiver", id); err != nil {
 			return err
-		}
-		validProcessors := map[string]LoggingProcessor{}
-		for k, v := range l.Processors {
-			validProcessors[k] = v
-		}
-		for _, k := range defaultProcessors {
-			validProcessors[k] = nil
 		}
 		if err := validateComponentKeys(validProcessors, p.ProcessorIDs, subagent, "processor", id); err != nil {
 			return err
@@ -882,8 +907,10 @@ func (uc *UnifiedConfig) ValidateCombined() error {
 
 func (uc *UnifiedConfig) MetricsReceivers() (map[string]MetricsReceiver, error) {
 	validReceivers := map[string]MetricsReceiver{}
-	for k, v := range uc.Metrics.Receivers {
-		validReceivers[k] = v
+	if uc.Metrics != nil {
+		for k, v := range uc.Metrics.Receivers {
+			validReceivers[k] = v
+		}
 	}
 	if uc.Combined != nil {
 		for k, v := range uc.Combined.Receivers {
@@ -905,6 +932,208 @@ func (uc *UnifiedConfig) TracesReceivers() (map[string]TracesReceiver, error) {
 			if _, ok := v.(TracesReceiver); ok {
 				validReceivers[k] = v
 			}
+		}
+	}
+	return validReceivers, nil
+}
+
+type pipelineBackend int
+
+const (
+	backendOTel pipelineBackend = iota
+	backendFluentBit
+)
+
+type pipelineInstance struct {
+	pID, rID     string
+	pipelineType string
+	receiver     Component
+	processors   []struct {
+		id string
+		Component
+	}
+	backend pipelineBackend
+}
+
+func (pi *pipelineInstance) Types() (string, string) {
+	return pi.pipelineType, pi.receiver.Type()
+}
+
+func (uc *UnifiedConfig) metricsPipelines(ctx context.Context) ([]pipelineInstance, error) {
+	receivers, err := uc.MetricsReceivers()
+	if err != nil {
+		return nil, err
+	}
+	var out []pipelineInstance
+	if uc.Metrics != nil && uc.Metrics.Service != nil {
+		for pID, p := range uc.Metrics.Service.Pipelines {
+			for _, rID := range p.ReceiverIDs {
+				receiver, ok := receivers[rID]
+				if !ok {
+					return nil, fmt.Errorf("metrics receiver %q not found", rID)
+				}
+				var processors []struct {
+					id string
+					Component
+				}
+				canMerge := true
+				for _, prID := range p.ProcessorIDs {
+					processor, ok := uc.Metrics.Processors[prID]
+					if !ok {
+						return nil, fmt.Errorf("processor %q not found", prID)
+					}
+					if mr, ok := receiver.(MetricsProcessorMerger); ok && canMerge {
+						receiver, ok = mr.MergeMetricsProcessor(processor)
+						if ok {
+							// Only continue when the receiver can completely merge the processor;
+							// If the receiver is no longer a MetricsProcessorMerger, or it can't
+							// completely merge the current processor, break the loop
+							continue
+						}
+					}
+					canMerge = false
+					processors = append(processors, struct {
+						id string
+						Component
+					}{prID, processor})
+				}
+				out = append(out, pipelineInstance{
+					pipelineType: "metrics",
+					pID:          pID,
+					rID:          rID,
+					receiver:     receiver,
+					processors:   processors,
+				})
+			}
+		}
+	}
+	return out, nil
+}
+
+func (uc *UnifiedConfig) tracesPipelines(ctx context.Context) ([]pipelineInstance, error) {
+	receivers, err := uc.TracesReceivers()
+	if err != nil {
+		return nil, err
+	}
+	var out []pipelineInstance
+	if uc.Traces != nil && uc.Traces.Service != nil {
+		for pID, p := range uc.Traces.Service.Pipelines {
+			for _, rID := range p.ReceiverIDs {
+				receiver, ok := receivers[rID]
+				if !ok {
+					return nil, fmt.Errorf("traces receiver %q not found", rID)
+				}
+				out = append(out, pipelineInstance{
+					pipelineType: "traces",
+					pID:          pID,
+					rID:          rID,
+					receiver:     receiver,
+					processors:   nil,
+				})
+			}
+		}
+	}
+	return out, nil
+}
+
+func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]pipelineInstance, error) {
+	l := uc.Logging
+	if l == nil {
+		return nil, nil
+	}
+	receivers, err := uc.LoggingReceivers(ctx)
+	if err != nil {
+		return nil, err
+	}
+	exp_otlp := experimentsFromContext(ctx)["otlp_logging"]
+	exp_otel := l.Service.OTelLogging
+	var out []pipelineInstance
+	for _, pID := range sortedKeys(l.Service.Pipelines) {
+		p := l.Service.Pipelines[pID]
+		for _, rID := range p.ReceiverIDs {
+			receiver, ok := receivers[rID]
+			if !ok {
+				return nil, fmt.Errorf("logging receiver %q not found", rID)
+			}
+			var processors []struct {
+				id string
+				Component
+			}
+			for _, prID := range p.ProcessorIDs {
+				processor, ok := l.Processors[prID]
+				if !ok {
+					processor, ok = LegacyBuiltinProcessors[prID]
+				}
+				if !ok {
+					return nil, fmt.Errorf("processor %q not found", prID)
+				}
+				processors = append(processors, struct {
+					id string
+					Component
+				}{prID, processor})
+			}
+			instance := pipelineInstance{
+				pipelineType: "logs",
+				backend:      backendFluentBit,
+				pID:          pID,
+				rID:          rID,
+				receiver:     receiver,
+				processors:   processors,
+			}
+			if exp_otel || (receiver.Type() == "otlp" && exp_otlp) {
+				instance.backend = backendOTel
+			}
+			out = append(out, instance)
+		}
+	}
+	return out, nil
+}
+
+func (uc *UnifiedConfig) Pipelines(ctx context.Context) ([]pipelineInstance, error) {
+	metricsPipelines, err := uc.metricsPipelines(ctx)
+	if err != nil {
+		return nil, err
+	}
+	tracesPipelines, err := uc.tracesPipelines(ctx)
+	if err != nil {
+		return nil, err
+	}
+	loggingPipelines, err := uc.loggingPipelines(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return append(append(metricsPipelines, tracesPipelines...), loggingPipelines...), nil
+}
+
+// LoggingReceivers returns a map of potential logging receivers.
+// Each Component may or may not be usable in fluent-bit or otel.
+func (uc *UnifiedConfig) LoggingReceivers(ctx context.Context) (map[string]Component, error) {
+	out := map[string]Component{}
+	if uc.Logging != nil {
+		for k, v := range uc.Logging.Receivers {
+			out[k] = v
+		}
+	}
+	if uc.Combined != nil {
+		for k, v := range uc.Combined.Receivers {
+			if _, ok := out[k]; ok {
+				return nil, fmt.Errorf("logging receiver %q has the same name as combined receiver %q", k, k)
+			}
+			out[k] = v
+		}
+	}
+	return out, nil
+}
+
+func (uc *UnifiedConfig) OTelLoggingReceivers(ctx context.Context) (map[string]OTelReceiver, error) {
+	receivers, err := uc.LoggingReceivers(ctx)
+	if err != nil {
+		return nil, err
+	}
+	validReceivers := map[string]OTelReceiver{}
+	for k, v := range receivers {
+		if v, ok := v.(OTelReceiver); ok {
+			validReceivers[k] = v
 		}
 	}
 	return validReceivers, nil
@@ -1071,7 +1300,8 @@ func validateWinlogRenderAsXML(receivers loggingReceiverMap, receiverIDs []strin
 		var receiver LoggingReceiver
 		var winlogReceiver *LoggingReceiverWindowsEventLog
 		if receiver, ok = receivers[receiverID]; !ok {
-			panic(fmt.Sprintf(`receiver "%s" not found in receiver map: %v`, receiverID, receivers))
+			// Rely on other validation to make sure the receiver exists
+			continue
 		}
 		if winlogReceiver, ok = receiver.(*LoggingReceiverWindowsEventLog); !ok {
 			continue
@@ -1113,7 +1343,11 @@ func validateIncompatibleJVMReceivers(typeCounts map[string]int) error {
 
 func validateSSLConfig(receivers metricsReceiverMap, ctx context.Context) error {
 	for receiverId, receiver := range receivers {
-		for _, pipeline := range receiver.Pipelines(ctx) {
+		receiverPipelines, err := receiver.Pipelines(ctx)
+		if err != nil {
+			continue
+		}
+		for _, pipeline := range receiverPipelines {
 			if tlsCfg, ok := pipeline.Receiver.Config.(map[string]interface{})["tls"]; ok {
 				cfg := tlsCfg.(map[string]interface{})
 				// If insecure, no other fields are allowed

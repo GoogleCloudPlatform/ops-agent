@@ -49,41 +49,64 @@ func TestValidPath(t *testing.T) {
 		in            Target
 		want          string
 		fluentBitPath []string
+		ottlPath      []string
+		ottlAccessor  string
 	}{
 		{
 			Target{"jsonPayload", "hello"},
 			"jsonPayload.hello",
 			[]string{"hello"},
+			[]string{"body", "hello"},
+			`body["hello"]`,
 		},
 		{
 			Target{`"json\u0050ayload"`, "hello"},
 			"jsonPayload.hello",
 			[]string{"hello"},
+			[]string{"body", "hello"},
+			`body["hello"]`,
 		},
 		{
 			Target{"severity"},
 			"severity",
 			[]string{"logging.googleapis.com/severity"},
+			[]string{"severity_text"},
+			`severity_text`,
+		},
+		{
+			Target{"httpRequest"},
+			"httpRequest",
+			[]string{"logging.googleapis.com/httpRequest"},
+			[]string{"attributes", "gcp.http_request"},
+			`attributes["gcp.http_request"]`,
 		},
 		{
 			Target{"httpRequest", "status"},
 			"httpRequest.status",
 			[]string{"logging.googleapis.com/httpRequest", "status"},
+			[]string{"attributes", "gcp.http_request", "status"},
+			`attributes["gcp.http_request"]["status"]`,
 		},
 		{
 			Target{"sourceLocation", "line"},
 			"sourceLocation.line",
 			[]string{"logging.googleapis.com/sourceLocation", "line"},
+			[]string{"attributes", "gcp.source_location", "line"},
+			`attributes["gcp.source_location"]["line"]`,
 		},
 		{
 			Target{"labels", "custom"},
 			"labels.custom",
 			[]string{"logging.googleapis.com/labels", "custom"},
+			[]string{"attributes", "custom"},
+			`attributes["custom"]`,
 		},
 		{
 			Target{`jsonPayload`, `"escaped fields \a\b\f\n\r\t\v"`},
 			`jsonPayload."escaped\u0020fields\u0020\a\b\f\n\r\t\v"`,
 			[]string{"escaped fields \a\b\f\n\r\t\v"},
+			[]string{"body", "escaped fields \a\b\f\n\r\t\v"},
+			`body["escaped fields \a\b\f\n\r\t\v"]`,
 		},
 	} {
 		test := test
@@ -99,6 +122,20 @@ func TestValidPath(t *testing.T) {
 			if diff := cmp.Diff(gotPath, test.fluentBitPath); diff != "" {
 				t.Errorf("unexpected fluent-bit path (got -/want +):\n%s", diff)
 			}
+			gotPath, err = test.in.ottlPath()
+			if err != nil {
+				t.Errorf("got unexpected error: %v", err)
+			}
+			if diff := cmp.Diff(gotPath, test.ottlPath); diff != "" {
+				t.Errorf("unexpected OTTL path (got -/want +):\n%s", diff)
+			}
+			gotAccessor, err := test.in.OTTLAccessor()
+			if err != nil {
+				t.Errorf("got unexpected error: %v", err)
+			}
+			if diff := cmp.Diff(gotAccessor.String(), test.ottlAccessor); diff != "" {
+				t.Errorf("unexpected OTTL accessor (got -/want +):\n%s", diff)
+			}
 		})
 	}
 }
@@ -107,7 +144,6 @@ func TestInvalidFluentBitPath(t *testing.T) {
 	for _, test := range []Target{
 		{"notJsonPayload"},
 		{"jsonPayload"},
-		{"sourceLocation"},
 		{"jsonPayload", `"broken\descape"`},
 	} {
 		test := test

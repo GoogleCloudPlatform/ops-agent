@@ -67,7 +67,7 @@ func (ReceiverOTLP) gmpResourceProcessors(ctx context.Context) []otel.Component 
 						// location = cloud.availability_zone
 						stmt(`attributes["location"]`, `resource.attributes["cloud.availability_zone"]`, "gcp_compute_engine"),
 						// namespace = host.id
-						stmt(`attributes["namespace"]`, `resource.attributes["host.id"]`, "gcp_compute_engine"),
+						stmt(`attributes["namespace"]`, `Concat([resource.attributes["host.id"], resource.attributes["host.name"]], "/")`, "gcp_compute_engine"),
 						// cluster = "__gce__"
 						stmt(`attributes["cluster"]`, `"__gce__"`, "gcp_compute_engine"),
 						// instance_name = host.name
@@ -125,7 +125,7 @@ func (r ReceiverOTLP) metricsProcessors(ctx context.Context) (otel.ExporterType,
 	}
 }
 
-func (r ReceiverOTLP) Pipelines(ctx context.Context) []otel.ReceiverPipeline {
+func (r ReceiverOTLP) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	endpoint := r.GRPCEndpoint
 	if endpoint == "" {
 		endpoint = defaultGRPCEndpoint
@@ -137,6 +137,7 @@ func (r ReceiverOTLP) Pipelines(ctx context.Context) []otel.ReceiverPipeline {
 		ExporterTypes: map[string]otel.ExporterType{
 			"metrics": receiverPipelineType,
 			"traces":  otel.OTel,
+			"logs":    otel.OTel,
 		},
 		Receiver: otel.Component{
 			Type: "otlp",
@@ -151,12 +152,14 @@ func (r ReceiverOTLP) Pipelines(ctx context.Context) []otel.ReceiverPipeline {
 		Processors: map[string][]otel.Component{
 			"metrics": metricsProcessors,
 			"traces":  nil,
+			"logs":    nil,
 		},
 		ResourceDetectionModes: map[string]otel.ResourceDetectionMode{
 			"metrics": metricsRDM,
 			"traces":  otel.SetIfMissing,
+			"logs":    otel.SetIfMissing,
 		},
-	}}
+	}}, nil
 }
 
 func init() {

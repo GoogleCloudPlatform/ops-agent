@@ -1,0 +1,10 @@
+- entries:
+  - jsonPayload:
+      field1: nope, include me!
+      field2: second
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance

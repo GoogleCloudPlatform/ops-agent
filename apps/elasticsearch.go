@@ -45,7 +45,7 @@ func (r MetricsReceiverElasticsearch) Type() string {
 	return "elasticsearch"
 }
 
-func (r MetricsReceiverElasticsearch) Pipelines(_ context.Context) []otel.ReceiverPipeline {
+func (r MetricsReceiverElasticsearch) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultElasticsearchEndpoint
 	}
@@ -91,7 +91,7 @@ func (r MetricsReceiverElasticsearch) Pipelines(_ context.Context) []otel.Receiv
 			),
 			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
-	}}
+	}}, nil
 }
 
 func (r MetricsReceiverElasticsearch) skipJVMMetricsConfig(metricsConfig map[string]interface{}) {

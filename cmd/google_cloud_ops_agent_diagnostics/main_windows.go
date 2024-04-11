@@ -85,12 +85,11 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 	s.log.Info(DiagnosticsEventID, "obtained unified configuration")
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 
-	defer func() {
-		changes <- svc.Status{State: svc.StopPending}
-	}()
-
 	go func() {
 		// Manage windows service signals
+		defer func() {
+			changes <- svc.Status{State: svc.StopPending}
+		}()
 		for {
 			select {
 			case c := <-r:

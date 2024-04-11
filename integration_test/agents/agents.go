@@ -183,12 +183,12 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 	// hang, so give them a shorter timeout to avoid hanging the whole test.
 	metricsCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	gce.RunRemotely(metricsCtx, logger.ToFile("fluent_bit_metrics.txt"), vm, "", "sudo curl -s localhost:20202/metrics")
-	gce.RunRemotely(metricsCtx, logger.ToFile("otel_metrics.txt"), vm, "", "sudo curl -s localhost:20201/metrics")
+	gce.RunRemotely(metricsCtx, logger.ToFile("fluent_bit_metrics.txt"), vm, "sudo curl -s localhost:20202/metrics")
+	gce.RunRemotely(metricsCtx, logger.ToFile("otel_metrics.txt"), vm, "sudo curl -s localhost:20201/metrics")
 
-	gce.RunRemotely(ctx, logger.ToFile("systemctl_status_for_ops_agent.txt"), vm, "", "sudo systemctl status google-cloud-ops-agent*")
+	gce.RunRemotely(ctx, logger.ToFile("systemctl_status_for_ops_agent.txt"), vm, "sudo systemctl status google-cloud-ops-agent*")
 
-	gce.RunRemotely(ctx, logger.ToFile("journalctl_output.txt"), vm, "", "sudo journalctl -xe")
+	gce.RunRemotely(ctx, logger.ToFile("journalctl_output.txt"), vm, "sudo journalctl -xe")
 
 	for _, log := range []string{
 		gce.SyslogLocation(vm.Platform),
@@ -201,21 +201,21 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 		"/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml",
 	} {
 		_, basename := path.Split(log)
-		gce.RunRemotely(ctx, logger.ToFile(basename+txtSuffix), vm, "", "sudo cat "+log)
+		gce.RunRemotely(ctx, logger.ToFile(basename+txtSuffix), vm, "sudo cat "+log)
 	}
 }
 
 func runOpsAgentDiagnosticsWindows(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) {
-	gce.RunRemotely(ctx, logger.ToFile("windows_System_log.txt"), vm, "", "Get-WinEvent -LogName System | Format-Table -AutoSize -Wrap")
+	gce.RunRemotely(ctx, logger.ToFile("windows_System_log.txt"), vm, "Get-WinEvent -LogName System | Format-Table -AutoSize -Wrap")
 
-	gce.RunRemotely(ctx, logger.ToFile("Get-Service_output.txt"), vm, "", "Get-Service google-cloud-ops-agent* | Format-Table -AutoSize -Wrap")
+	gce.RunRemotely(ctx, logger.ToFile("Get-Service_output.txt"), vm, "Get-Service google-cloud-ops-agent* | Format-Table -AutoSize -Wrap")
 
-	gce.RunRemotely(ctx, logger.ToFile("ops_agent_logs.txt"), vm, "", "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent' } | Format-Table -AutoSize -Wrap")
-	gce.RunRemotely(ctx, logger.ToFile("ops_agent_diagnostics_logs.txt"), vm, "", "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent-diagnostics' } | Format-Table -AutoSize -Wrap")
-	gce.RunRemotely(ctx, logger.ToFile("open_telemetry_agent_logs.txt"), vm, "", "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent-opentelemetry-collector' } | Format-Table -AutoSize -Wrap")
+	gce.RunRemotely(ctx, logger.ToFile("ops_agent_logs.txt"), vm, "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent' } | Format-Table -AutoSize -Wrap")
+	gce.RunRemotely(ctx, logger.ToFile("ops_agent_diagnostics_logs.txt"), vm, "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent-diagnostics' } | Format-Table -AutoSize -Wrap")
+	gce.RunRemotely(ctx, logger.ToFile("open_telemetry_agent_logs.txt"), vm, "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent-opentelemetry-collector' } | Format-Table -AutoSize -Wrap")
 	// Fluent-Bit has not implemented exporting logs to the Windows event log yet.
-	gce.RunRemotely(ctx, logger.ToFile("fluent_bit_agent_logs.txt"), vm, "", fmt.Sprintf("Get-Content -Path '%s' -Raw", `C:\ProgramData\Google\Cloud Operations\Ops Agent\log\logging-module.log`))
-	gce.RunRemotely(ctx, logger.ToFile("health-checks.txt"), vm, "", fmt.Sprintf("Get-Content -Path '%s' -Raw", `C:\ProgramData\Google\Cloud Operations\Ops Agent\log\health-checks.log`))
+	gce.RunRemotely(ctx, logger.ToFile("fluent_bit_agent_logs.txt"), vm, fmt.Sprintf("Get-Content -Path '%s' -Raw", `C:\ProgramData\Google\Cloud Operations\Ops Agent\log\logging-module.log`))
+	gce.RunRemotely(ctx, logger.ToFile("health-checks.txt"), vm, fmt.Sprintf("Get-Content -Path '%s' -Raw", `C:\ProgramData\Google\Cloud Operations\Ops Agent\log\health-checks.log`))
 
 	for _, conf := range []string{
 		`C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml`,
@@ -225,7 +225,7 @@ func runOpsAgentDiagnosticsWindows(ctx context.Context, logger *logging.Director
 	} {
 		pathParts := strings.Split(conf, `\`)
 		basename := pathParts[len(pathParts)-1]
-		gce.RunRemotely(ctx, logger.ToFile(basename+txtSuffix), vm, "", fmt.Sprintf("Get-Content -Path '%s' -Raw", conf))
+		gce.RunRemotely(ctx, logger.ToFile(basename+txtSuffix), vm, fmt.Sprintf("Get-Content -Path '%s' -Raw", conf))
 	}
 }
 
@@ -266,7 +266,7 @@ func CheckServicesRunning(ctx context.Context, logger *log.Logger, vm *gce.VM, s
 	var err error
 	for _, service := range services {
 		if gce.IsWindows(vm.Platform) {
-			output, statusErr := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("(Get-Service -Name '%s').Status", service.ServiceName))
+			output, statusErr := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("(Get-Service -Name '%s').Status", service.ServiceName))
 			if statusErr != nil {
 				err = multierr.Append(err, fmt.Errorf("no service named %q could be found: %v", service.ServiceName, statusErr))
 				continue
@@ -278,7 +278,7 @@ func CheckServicesRunning(ctx context.Context, logger *log.Logger, vm *gce.VM, s
 			}
 			continue
 		}
-		if _, statusErr := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("sudo service %s status", service.ServiceName)); statusErr != nil {
+		if _, statusErr := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo service %s status", service.ServiceName)); statusErr != nil {
 			err = multierr.Append(err, fmt.Errorf("RunRemotely(): status of %s was not OK. error was: %v", service.ServiceName, statusErr))
 		}
 	}
@@ -317,7 +317,7 @@ func CheckServicesNotRunning(ctx context.Context, logger *log.Logger, vm *gce.VM
 			// We currently only see case #1, but let's permit case #2 as well.
 			// The following command should output nothing, or maybe just a blank
 			// line, in either case.
-			output, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("Get-Service | Where-Object {$_.Name -eq '%s' -and $_.Status -eq 'Running'}", service.ServiceName))
+			output, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("Get-Service | Where-Object {$_.Name -eq '%s' -and $_.Status -eq 'Running'}", service.ServiceName))
 			if err != nil {
 				return fmt.Errorf("CheckServicesNotRunning(): error looking up running services named %v: %v", service.ServiceName, err)
 			}
@@ -329,7 +329,7 @@ func CheckServicesNotRunning(ctx context.Context, logger *log.Logger, vm *gce.VM
 		if service.ServiceName == "google-fluentd" {
 			continue // TODO(b/159817885): Assert that google-fluentd is not running.
 		}
-		if _, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("! sudo service %s status", service.ServiceName)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("! sudo service %s status", service.ServiceName)); err != nil {
 			return fmt.Errorf("CheckServicesNotRunning(): command could not be run or status of %s was unexpectedly OK. err: %v", service.ServiceName, err)
 		}
 	}
@@ -340,7 +340,7 @@ func CheckServicesNotRunning(ctx context.Context, logger *log.Logger, vm *gce.VM
 func tryInstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs []string) error {
 	pkgsString := strings.Join(pkgs, " ")
 	if gce.IsWindows(vm.Platform) {
-		_, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("googet -noconfirm install %s", pkgsString))
+		_, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("googet -noconfirm install %s", pkgsString))
 		return err
 	}
 	cmd := ""
@@ -356,7 +356,7 @@ func tryInstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkg
 	} else {
 		return fmt.Errorf("tryInstallPackages() doesn't support platform %q", vm.Platform)
 	}
-	_, err := gce.RunRemotely(ctx, logger, vm, "", cmd)
+	_, err := gce.RunRemotely(ctx, logger, vm, cmd)
 	return err
 }
 
@@ -375,7 +375,7 @@ func InstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs [
 func UninstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs []string) error {
 	pkgsString := strings.Join(pkgs, " ")
 	if gce.IsWindows(vm.Platform) {
-		if _, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("googet -noconfirm remove %s", pkgsString)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("googet -noconfirm remove %s", pkgsString)); err != nil {
 			return fmt.Errorf("could not uninstall %s. err: %v", pkgsString, err)
 		}
 		return nil
@@ -393,7 +393,7 @@ func UninstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs
 	} else {
 		return fmt.Errorf("UninstallPackages() doesn't support platform %q", vm.Platform)
 	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, "", cmd); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, cmd); err != nil {
 		return fmt.Errorf("could not uninstall %s. err: %v", pkgsString, err)
 	}
 	return nil
@@ -406,7 +406,7 @@ func checkPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs []s
 		errPrefix = "not "
 	}
 	if gce.IsWindows(vm.Platform) {
-		output, err := gce.RunRemotely(ctx, logger, vm, "", "googet installed")
+		output, err := gce.RunRemotely(ctx, logger, vm, "googet installed")
 		if err != nil {
 			return err
 		}
@@ -445,7 +445,7 @@ func checkPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs []s
 		} else {
 			return fmt.Errorf("checkPackages() does not support platform: %s", vm.Platform)
 		}
-		if _, err := gce.RunRemotely(ctx, logger, vm, "", cmd); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, cmd); err != nil {
 			return fmt.Errorf("command could not be run or %q was unexpectedly %sinstalled. err: %v", pkg, errPrefix, err)
 		}
 	}
@@ -500,7 +500,7 @@ func StripTildeSuffix(version string) string {
 }
 
 func fetchPackageVersionWindows(ctx context.Context, logger *log.Logger, vm *gce.VM, pkg string) (semver.Version, error) {
-	output, err := gce.RunRemotely(ctx, logger, vm, "", "googet installed -info "+pkg)
+	output, err := gce.RunRemotely(ctx, logger, vm, "googet installed -info "+pkg)
 	if err != nil {
 		return semver.Version{}, err
 	}
@@ -544,7 +544,7 @@ func fetchPackageVersion(ctx context.Context, logger *log.Logger, vm *gce.VM, pk
 		if IsRPMBased(vm.Platform) {
 			cmd = `rpm --query --queryformat=%\{VERSION} ` + pkg
 		}
-		output, err := gce.RunRemotely(ctx, logger, vm, "", cmd)
+		output, err := gce.RunRemotely(ctx, logger, vm, cmd)
 		if err != nil {
 			return err
 		}
@@ -640,7 +640,7 @@ func RunInstallFuncWithRetry(ctx context.Context, logger *log.Logger, vm *gce.VM
 		err := installFunc()
 		if err != nil && shouldRetry(err) && strings.HasPrefix(vm.Platform, "rhel-8-") && strings.HasSuffix(vm.Platform, "-sap-ha") {
 			logger.Println("attempting recovery steps from https://access.redhat.com/discussions/4656371 so that subsequent attempts are more likely to succeed... see b/189950957")
-			gce.RunRemotely(ctx, logger, vm, "", "sudo dnf clean all && sudo rm -r /var/cache/dnf && sudo dnf upgrade")
+			gce.RunRemotely(ctx, logger, vm, "sudo dnf clean all && sudo rm -r /var/cache/dnf && sudo dnf upgrade")
 		}
 		if err != nil && !shouldRetry(err) {
 			err = backoff.Permanent(err)
@@ -659,7 +659,7 @@ func InstallStandaloneWindowsLoggingAgent(ctx context.Context, logger *log.Logge
 	// The command needed to be adjusted to work in a non-GUI context.
 	cmd := `(New-Object Net.WebClient).DownloadFile("https://dl.google.com/cloudagents/windows/StackdriverLogging-v1-16.exe", "${env:UserProfile}\StackdriverLogging-v1-16.exe")
 		Start-Process -FilePath "${env:UserProfile}\StackdriverLogging-v1-16.exe" -ArgumentList "/S" -Wait -NoNewWindow`
-	_, err := gce.RunRemotely(ctx, logger, vm, "", cmd)
+	_, err := gce.RunRemotely(ctx, logger, vm, cmd)
 	return err
 }
 
@@ -670,7 +670,7 @@ func InstallStandaloneWindowsMonitoringAgent(ctx context.Context, logger *log.Lo
 	// The command needed to be adjusted to work in a non-GUI context.
 	cmd := `(New-Object Net.WebClient).DownloadFile("https://repo.stackdriver.com/windows/StackdriverMonitoring-GCM-46.exe", "${env:UserProfile}\StackdriverMonitoring-GCM-46.exe")
 		Start-Process -FilePath "${env:UserProfile}\StackdriverMonitoring-GCM-46.exe" -ArgumentList "/S" -Wait -NoNewWindow`
-	_, err := gce.RunRemotely(ctx, logger, vm, "", cmd)
+	_, err := gce.RunRemotely(ctx, logger, vm, cmd)
 	return err
 }
 
@@ -696,6 +696,9 @@ type PackageLocation struct {
 	// This setting is only used for ARM builds at the moment, and ignored when
 	// installing from Artifact Registry.
 	repoCodename string
+	// Package repository GCP project to install from. Requires repoSuffix
+	// to be nonempty.
+	artifactRegistryProject string
 	// Region the packages live in in Artifact Registry. Requires repoSuffix
 	// to be nonempty.
 	artifactRegistryRegion string
@@ -704,10 +707,11 @@ type PackageLocation struct {
 // LocationFromEnvVars assembles a PackageLocation from environment variables.
 func LocationFromEnvVars() PackageLocation {
 	return PackageLocation{
-		packagesInGCS:          os.Getenv("AGENT_PACKAGES_IN_GCS"),
-		repoSuffix:             os.Getenv("REPO_SUFFIX"),
-		repoCodename:           os.Getenv("REPO_CODENAME"),
-		artifactRegistryRegion: os.Getenv("ARTIFACT_REGISTRY_REGION"),
+		packagesInGCS:           os.Getenv("AGENT_PACKAGES_IN_GCS"),
+		repoSuffix:              os.Getenv("REPO_SUFFIX"),
+		repoCodename:            os.Getenv("REPO_CODENAME"),
+		artifactRegistryProject: os.Getenv("ARTIFACT_REGISTRY_PROJECT"),
+		artifactRegistryRegion:  os.Getenv("ARTIFACT_REGISTRY_REGION"),
 	}
 }
 
@@ -747,19 +751,25 @@ func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, locati
 	preservedEnvironment := map[string]string{
 		"REPO_SUFFIX":              location.repoSuffix,
 		"REPO_CODENAME":            location.repoCodename,
+		"ARTIFACT_REGISTRY_PROJECT":             location.artifactRegistryProject,
 		"ARTIFACT_REGISTRY_REGION": location.artifactRegistryRegion,
 	}
 
 	if gce.IsWindows(vm.Platform) {
-		if _, err := gce.RunRemotely(ctx, logger, vm, "", `(New-Object Net.WebClient).DownloadFile("https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.ps1", "${env:UserProfile}\add-google-cloud-ops-agent-repo.ps1")`); err != nil {
+		// Note that these commands match the ones from our public install docs
+		// (https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/installation)
+		// and keeping them in sync is encouraged so that we are testing the
+		// same commands that our customers are running.
+		if _, err := gce.RunRemotely(ctx, logger, vm, `(New-Object Net.WebClient).DownloadFile("https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.ps1", "${env:UserProfile}\add-google-cloud-ops-agent-repo.ps1")`); err != nil {
 			return fmt.Errorf("InstallOpsAgent() failed to download repo script: %w", err)
 		}
 		runScript := func() error {
 			scriptCmd := fmt.Sprintf(`%s
-Invoke-Expression "${env:UserProfile}\add-google-cloud-ops-agent-repo.ps1 -AlsoInstall"`, windowsEnvironment(preservedEnvironment))
-			_, err := gce.RunRemotely(ctx, logger, vm, "", scriptCmd)
+& "${env:UserProfile}\add-google-cloud-ops-agent-repo.ps1" -AlsoInstall`, windowsEnvironment(preservedEnvironment))
+			_, err := gce.RunRemotely(ctx, logger, vm, scriptCmd)
 			return err
 		}
+		// TODO: b/202526819 - Remove retries once the script does retries internally.
 		if err := RunInstallFuncWithRetry(ctx, logger, vm, runScript); err != nil {
 			return fmt.Errorf("InstallOpsAgent() failed to run repo script: %w", err)
 		}
@@ -767,13 +777,13 @@ Invoke-Expression "${env:UserProfile}\add-google-cloud-ops-agent-repo.ps1 -AlsoI
 	}
 
 	if _, err := gce.RunRemotely(ctx,
-		logger, vm, "", "curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh"); err != nil {
+		logger, vm, "curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh"); err != nil {
 		return fmt.Errorf("InstallOpsAgent() failed to download repo script: %w", err)
 	}
 
 	runInstallScript := func() error {
 		envVars := linuxEnvironment(preservedEnvironment)
-		_, err := gce.RunRemotely(ctx, logger, vm, "", "sudo "+envVars+" bash -x add-google-cloud-ops-agent-repo.sh --also-install")
+		_, err := gce.RunRemotely(ctx, logger, vm, "sudo "+envVars+" bash -x add-google-cloud-ops-agent-repo.sh --also-install")
 		return err
 	}
 	if err := RunInstallFuncWithRetry(ctx, logger, vm, runInstallScript); err != nil {
@@ -789,7 +799,7 @@ func SetupOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, config s
 
 // restartOpsAgent restarts the Ops Agent and waits for it to become available.
 func restartOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
-	if _, err := gce.RunRemotely(ctx, logger, vm, "", restartOpsAgentForPlatform(vm.Platform)); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, restartOpsAgentForPlatform(vm.Platform)); err != nil {
 		return fmt.Errorf("restartOpsAgent() failed to restart ops agent: %v", err)
 	}
 	// Give agents time to shut down. Fluent-Bit's default shutdown grace period
@@ -846,6 +856,7 @@ func CommonSetup(t *testing.T, platform string) (context.Context, *logging.Direc
 func CommonSetupWithExtraCreateArguments(t *testing.T, platform string, extraCreateArguments []string) (context.Context, *logging.DirectoryLogger, *gce.VM) {
 	return CommonSetupWithExtraCreateArgumentsAndMetadata(t, platform, extraCreateArguments, nil)
 }
+
 // CommonSetupWithExtraCreateArgumentsAndMetadata sets up the VM for testing with extra creation arguments for the `gcloud compute instances create` command and additional metadata.
 func CommonSetupWithExtraCreateArgumentsAndMetadata(t *testing.T, platform string, extraCreateArguments []string, additionalMetadata map[string]string) (context.Context, *logging.DirectoryLogger, *gce.VM) {
 	t.Helper()
@@ -854,7 +865,14 @@ func CommonSetupWithExtraCreateArgumentsAndMetadata(t *testing.T, platform strin
 
 	logger := gce.SetupLogger(t)
 	logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
-	vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), gce.VMOptions{Platform: platform, MachineType: RecommendedMachineType(platform), ExtraCreateArguments: extraCreateArguments, Metadata: additionalMetadata})
+	options := gce.VMOptions{
+		Platform:             platform,
+		TimeToLive:           "3h",
+		MachineType:          RecommendedMachineType(platform),
+		ExtraCreateArguments: extraCreateArguments,
+		Metadata:             additionalMetadata,
+	}
+	vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), options)
 	logger.ToMainLog().Printf("VM is ready: %#v", vm)
 	t.Cleanup(func() {
 		RunOpsAgentDiagnostics(ctx, logger, vm)
@@ -871,24 +889,24 @@ func InstallPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, 
 	if gce.IsWindows(vm.Platform) {
 		return installWindowsPackageFromGCS(ctx, logger, vm, gcsPath)
 	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, "", "mkdir -p /tmp/agentUpload"); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "mkdir -p /tmp/agentUpload"); err != nil {
 		return err
 	}
 	if err := gce.InstallGsutilIfNeeded(ctx, logger, vm); err != nil {
 		return err
 	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, "", "sudo gsutil cp -r "+gcsPath+"/* /tmp/agentUpload"); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "sudo gsutil cp -r "+gcsPath+"/* /tmp/agentUpload"); err != nil {
 		return fmt.Errorf("error copying down agent package from GCS: %v", err)
 	}
 	// Print the contents of /tmp/agentUpload into the logs.
-	if _, err := gce.RunRemotely(ctx, logger, vm, "", "ls /tmp/agentUpload"); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "ls /tmp/agentUpload"); err != nil {
 		return err
 	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, "", "rm /tmp/agentUpload/*dbgsym* || echo nothing to delete"); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "rm /tmp/agentUpload/*dbgsym* || echo nothing to delete"); err != nil {
 		return err
 	}
 	if IsRPMBased(vm.Platform) {
-		if _, err := gce.RunRemotely(ctx, logger, vm, "", "sudo rpm --upgrade -v --force /tmp/agentUpload/*"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo rpm --upgrade -v --force /tmp/agentUpload/*"); err != nil {
 			return fmt.Errorf("error installing agent from .rpm file: %v", err)
 		}
 		return nil
@@ -898,7 +916,7 @@ func InstallPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, 
 	// 1. install stable package from Rapture
 	// 2. install just-built package from GCS
 	// Nor do I know why apt considers that sequence to be a downgrade.
-	if _, err := gce.RunRemotely(ctx, logger, vm, "", "sudo apt install --allow-downgrades --yes --verbose-versions /tmp/agentUpload/*"); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "sudo apt install --allow-downgrades --yes --verbose-versions /tmp/agentUpload/*"); err != nil {
 		return fmt.Errorf("error installing agent from .deb file: %v", err)
 	}
 	return nil
@@ -906,13 +924,13 @@ func InstallPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, 
 
 // Installs the agent package from GCS (see packagesInGCS) onto the given Windows VM.
 func installWindowsPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, gcsPath string) error {
-	if _, err := gce.RunRemotely(ctx, logger, vm, "", "New-Item -ItemType directory -Path C:\\agentUpload"); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "New-Item -ItemType directory -Path C:\\agentUpload"); err != nil {
 		return err
 	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, "", fmt.Sprintf("gsutil cp -r %s/*.goo C:\\agentUpload", gcsPath)); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("gsutil cp -r %s/*.goo C:\\agentUpload", gcsPath)); err != nil {
 		return fmt.Errorf("error copying down agent package from GCS: %v", err)
 	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, "", "googet -noconfirm -verbose install -reinstall (Get-ChildItem C:\\agentUpload\\*.goo | Select-Object -Expand FullName)"); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "googet -noconfirm -verbose install -reinstall (Get-ChildItem C:\\agentUpload\\*.goo | Select-Object -Expand FullName)"); err != nil {
 		return fmt.Errorf("error installing agent from .goo file: %v", err)
 	}
 	return nil

@@ -57,7 +57,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -88,7 +87,7 @@ func main() {
 // Pause updates for 35 days to avoid reboots (b/297357060) using:
 // https://stackoverflow.com/a/64862952/1188632
 func pauseWindowsUpdates(ctx context.Context, logger *log.Logger, vm *gce.VM) (gce.CommandOutput, error) {
-	return gce.RunRemotely(ctx, logger, vm, "", `
+	return gce.RunRemotely(ctx, logger, vm, `
 $ErrorActionPreference = 'Stop'
 
 $now = Get-Date
@@ -114,22 +113,19 @@ func mainErr() error {
 	// Log to stderr.
 	logger := log.Default()
 
-	parsedTTL, err := time.ParseDuration(ttl)
-	if err != nil {
-		return fmt.Errorf("Could not parse TTL duration %q: %w", ttl, err)
-	}
 	if distro == "" {
 		return errors.New("Env variable DISTRO cannot be empty")
+	}
+	if ttl == "" {
+		return errors.New("Env variable TTL cannot be empty")
 	}
 
 	// Create the VM.
 	options := gce.VMOptions{
 		Platform:    distro,
+		TimeToLive:  ttl,
 		Name:        vmName,
 		MachineType: "e2-standard-16",
-		Labels: map[string]string{
-			"ttl": strconv.Itoa(int(parsedTTL / time.Minute)),
-		},
 		Metadata: map[string]string{
 			// This is to avoid Windows updates and reboots (b/295165549), and
 			// also to avoid throughput blips when the OS Config agent runs
@@ -195,7 +191,7 @@ $pythonInstallDir = "$env:SystemDrive\Python"
 $pythonPath = "$pythonInstallDir\python.exe"
 Start-Process "$tempDir\$pythonInstallerName" -Wait -ArgumentList "/quiet TargetDir=$pythonInstallDir InstallAllUsers=1"
 `
-		if _, err := gce.RunRemotely(ctx, logger, vm, "", installPython); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, installPython); err != nil {
 			return fmt.Errorf("Could not install Python: %w", err)
 		}
 	} else {
@@ -223,7 +219,7 @@ Start-Process "$tempDir\$pythonInstallerName" -Wait -ArgumentList "/quiet Target
   &> %v &
 `, logGeneratorPath, logSizeInBytes, logRate, logPath, debugLogPath)
 	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, "", startLogGenerator); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, startLogGenerator); err != nil {
 		return err
 	}
 
@@ -232,7 +228,7 @@ Start-Process "$tempDir\$pythonInstallerName" -Wait -ArgumentList "/quiet Target
 	if !gce.IsWindows(vm.Platform) {
 		time.Sleep(5 * time.Second)
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, "", "cat "+debugLogPath); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "cat "+debugLogPath); err != nil {
 			return err
 		}
 	}

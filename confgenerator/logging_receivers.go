@@ -24,6 +24,8 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit/modify"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
@@ -48,13 +50,21 @@ func (r LoggingReceiverFiles) Type() string {
 	return "files"
 }
 
-func (r LoggingReceiverFiles) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (r LoggingReceiverFiles) mixin() LoggingReceiverFilesMixin {
 	return LoggingReceiverFilesMixin{
 		IncludePaths:            r.IncludePaths,
 		ExcludePaths:            r.ExcludePaths,
 		WildcardRefreshInterval: r.WildcardRefreshInterval,
 		RecordLogFilePath:       r.RecordLogFilePath,
-	}.Components(ctx, tag)
+	}
+}
+
+func (r LoggingReceiverFiles) Components(ctx context.Context, tag string) []fluentbit.Component {
+	return r.mixin().Components(ctx, tag)
+}
+
+func (r LoggingReceiverFiles) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
+	return r.mixin().Pipelines(ctx)
 }
 
 type LoggingReceiverFilesMixin struct {
@@ -157,6 +167,51 @@ func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) [
 	})
 
 	return c
+}
+
+func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
+	operators := []map[string]any{}
+	receiver_config := map[string]any{
+		"include":           r.IncludePaths,
+		"exclude":           r.ExcludePaths,
+		"start_at":          "beginning",
+		"include_file_name": false,
+	}
+	if i := r.WildcardRefreshInterval; i != nil {
+		receiver_config["poll_interval"] = i.String()
+	}
+	// TODO: Configure `storage` to store file checkpoints
+	// TODO: Configure multiline rules
+	// TODO: Support BufferInMemory
+	// OTel parses the log to `body` by default; put it in a `message` field to match fluent-bit's behavior.
+	operators = append(operators, map[string]any{
+		"id":   "body",
+		"type": "move",
+		"from": "body",
+		"to":   "body.message",
+	})
+	if r.RecordLogFilePath != nil && *r.RecordLogFilePath {
+		receiver_config["include_file_path"] = true
+		operators = append(operators, map[string]any{
+			"id":   "record_log_file_path",
+			"type": "move",
+			"from": `attributes["log.file.path"]`,
+			"to":   `attributes["agent.googleapis.com/log_file_path"]`,
+		})
+	}
+	receiver_config["operators"] = operators
+	return []otel.ReceiverPipeline{{
+		Receiver: otel.Component{
+			Type:   "filelog",
+			Config: receiver_config,
+		},
+		Processors: map[string][]otel.Component{
+			"logs": nil,
+		},
+		ExporterTypes: map[string]otel.ExporterType{
+			"logs": otel.OTel,
+		},
+	}}, nil
 }
 
 func init() {
@@ -435,6 +490,118 @@ func (r LoggingReceiverWindowsEventLog) Components(ctx context.Context, tag stri
 	}
 
 	return append(input, filters...)
+}
+
+func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
+	// TODO: r.IsDefaultVersion() should use the old windows event log API, but the Collector doesn't have a receiver for that.
+	var out []otel.ReceiverPipeline
+	for _, c := range r.Channels {
+		receiver_config := map[string]any{
+			"channel":       c,
+			"start_at":      "beginning",
+			"poll_interval": "1s",
+			// TODO: Configure storage
+		}
+		if r.RenderAsXML {
+			receiver_config["raw"] = true
+			// TODO: Rename to `jsonPayload.raw_xml`
+		}
+		var p []otel.Component
+		if r.IsDefaultVersion() {
+			var err error
+			p, err = windowsEventLogV1Processors(ctx)
+			if err != nil {
+				return nil, err
+			}
+		}
+		// TODO: Add processors for fluent-bit's V2 format.
+		out = append(out, otel.ReceiverPipeline{
+			Receiver: otel.Component{
+				Type:   "windowseventlog",
+				Config: receiver_config,
+			},
+			Processors: map[string][]otel.Component{
+				"logs": p,
+			},
+			ExporterTypes: map[string]otel.ExporterType{
+				"logs": otel.OTel,
+			},
+		})
+	}
+	return out, nil
+}
+
+func windowsEventLogV1Processors(ctx context.Context) ([]otel.Component, error) {
+	// The winlog input in fluent-bit has a completely different structure, so we need to convert the OTel format into the fluent-bit format.
+	var empty string
+	p := &LoggingProcessorModifyFields{
+		EmptyBody: true,
+		Fields: map[string]*ModifyField{
+			"jsonPayload.Channel":      {CopyFrom: "jsonPayload.channel"},
+			"jsonPayload.ComputerName": {CopyFrom: "jsonPayload.computer"},
+			"jsonPayload.Data": {
+				CopyFrom:     "jsonPayload.event_data.binary",
+				DefaultValue: &empty,
+				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
+					return v.Set(ottl.ConvertCase(v, "lower"))
+				},
+			},
+			// TODO: OTel puts the human-readable category at jsonPayload.task, but we need them to add the integer version.
+			//"jsonPayload.EventCategory": {StaticValue: "0", Type: "integer"},
+			"jsonPayload.EventID": {CopyFrom: "jsonPayload.event_id.id"},
+			"jsonPayload.EventType": {
+				CopyFrom: "jsonPayload.level",
+				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
+					// TODO: What if there are multiple keywords?
+					keywords := ottl.LValue{"cache", "body", "keywords"}
+					keyword0 := ottl.RValue("cache.body.keywords[0]")
+					return ottl.NewStatements(
+						v.SetIf(ottl.StringLiteral("SuccessAudit"), ottl.And(
+							keywords.IsPresent(),
+							ottl.IsNotNil(keyword0),
+							ottl.Equals(keyword0, ottl.StringLiteral("Audit Success")),
+						)),
+						v.SetIf(ottl.StringLiteral("FailureAudit"), ottl.And(
+							keywords.IsPresent(),
+							ottl.IsNotNil(keyword0),
+							ottl.Equals(keyword0, ottl.StringLiteral("Audit Failure")),
+						)),
+					)
+				},
+			},
+			// TODO: Fix OTel receiver to provide raw non-parsed messages.
+			"jsonPayload.Message":      {CopyFrom: "jsonPayload.message"},
+			"jsonPayload.Qualifiers":   {CopyFrom: "jsonPayload.event_id.qualifiers"},
+			"jsonPayload.RecordNumber": {CopyFrom: "jsonPayload.record_id"},
+			"jsonPayload.Sid": {
+				CopyFrom:     "jsonPayload.security.user_id",
+				DefaultValue: &empty,
+			},
+			"jsonPayload.SourceName": {
+				CopyFrom: "jsonPayload.provider.name",
+				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
+					// Prefer jsonPayload.provider.event_source if present and non-empty
+					eventSource := ottl.LValue{"cache", "body", "provider", "event_source"}
+					return v.SetIf(
+						eventSource,
+						ottl.And(
+							eventSource.IsPresent(),
+							ottl.Not(ottl.Equals(
+								eventSource,
+								ottl.StringLiteral(""),
+							)),
+						),
+					)
+				},
+			},
+			// TODO: Convert from array of maps to array of strings
+			"jsonPayload.StringInserts": {CopyFrom: "jsonPayload.event_data.data"},
+			// TODO: Reformat? (v1 was "YYYY-MM-DD hh:mm:ss +0000", OTel is "YYYY-MM-DDThh:mm:ssZ")
+			"jsonPayload.TimeGenerated": {CopyFrom: "jsonPayload.system_time"},
+			// TODO: Reformat?
+			"jsonPayload.TimeWritten": {CopyFrom: "jsonPayload.system_time"},
+		}}
+	return p.Processors(ctx)
 }
 
 func init() {

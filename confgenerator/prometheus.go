@@ -24,6 +24,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
@@ -35,6 +36,8 @@ import (
 	"github.com/prometheus/prometheus/discovery"
 	_ "github.com/prometheus/prometheus/discovery/install" // init() of this package registers service discovery impl.
 )
+
+const minScrapeInterval = model.Duration(10 * time.Second)
 
 type PrometheusMetrics struct {
 	ConfigComponent `yaml:",inline"`
@@ -54,11 +57,11 @@ func (r PrometheusMetrics) Type() string {
 	return "prometheus"
 }
 
-func (r PrometheusMetrics) Pipelines(ctx context.Context) []otel.ReceiverPipeline {
+func (r PrometheusMetrics) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	resource, err := platform.FromContext(ctx).GetResource()
 	if err != nil {
 		log.Printf("can't get resource metadata: %v", err)
-		return nil
+		return nil, nil
 	}
 	if resource != nil {
 		// Get the resource metadata for the instance we're running on.
@@ -98,7 +101,7 @@ func (r PrometheusMetrics) Pipelines(ctx context.Context) []otel.ReceiverPipelin
 		ResourceDetectionModes: map[string]otel.ResourceDetectionMode{
 			"metrics": otel.None,
 		},
-	}}
+	}}, nil
 }
 
 // Generate otel components for the prometheus config used. It is the same config except
@@ -225,6 +228,10 @@ func validatePrometheus(promConfig promconfig.Config) (string, error) {
 	}
 
 	for _, sc := range promConfig.ScrapeConfigs {
+		if sc.ScrapeInterval < minScrapeInterval {
+			sc.ScrapeInterval = minScrapeInterval
+			log.Printf("scrape_interval must be at least %v; adjusting to minimum accepted value\n", minScrapeInterval)
+		}
 		if sc.HonorLabels {
 			return "honor_labels", fmt.Errorf("error validating scrape_config for job %v: %v", sc.JobName, "honor_labels is not supported")
 		}

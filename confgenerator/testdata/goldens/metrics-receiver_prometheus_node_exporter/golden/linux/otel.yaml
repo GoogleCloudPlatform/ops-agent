@@ -487,7 +487,8 @@ receivers:
             __meta_gce_instance_name: test-instance-name
             __meta_gce_interface_ipv4_nictest_interface: test-interface-ipv4
             __meta_gce_machine_type: test-machine-type
-            __meta_gce_metadata_test_escape: $${foo:bar}
+            __meta_gce_metadata_test_escape: $$foo
+            __meta_gce_metadata_test_escape_parentheses: _{foo:bar}
             __meta_gce_metadata_test_key: test-value
             __meta_gce_network: test-network
             __meta_gce_private_ip: test-private-ip
@@ -499,7 +500,7 @@ receivers:
             instance_name: test-instance-name
             location: test-zone
             machine_type: test-machine-type
-            namespace: test-instance-id
+            namespace: test-instance-id/test-instance-name
     preserve_untyped: true
 service:
   pipelines:

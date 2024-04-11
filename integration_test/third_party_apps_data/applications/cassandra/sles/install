@@ -12,6 +12,11 @@ if [[ "${ID}" == opensuse-leap && "${VERSION_ID}" == 15.[01] ]]; then
 fi
 sudo zypper -n refresh
 
+# SLES 15 SP5 has moved Java 8 to a legacy module
+if [[ "${SUSE_VERSION}" == 15 ]]; then
+  sudo SUSEConnect --product sle-module-legacy/15.5/$(uname -m)
+fi
+
 sudo zypper -n install java-1_8_0-openjdk java-1_8_0-openjdk-devel
 
 # There is no official or even semi-official zypper package for cassandra

@@ -13,7 +13,7 @@ name=Apache Cassandra
 baseurl=https://redhat.cassandra.apache.org/41x/
 gpgcheck=1
 repo_gpgcheck=1
-gpgkey=https://www.apache.org/dist/cassandra/KEYS
+gpgkey=https://downloads.apache.org/cassandra/KEYS
 EOF
 
 sudo mv cassandra.repo /etc/yum.repos.d/cassandra.repo

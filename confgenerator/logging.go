@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
@@ -47,8 +48,27 @@ func setLogNameComponents(ctx context.Context, tag, logName, receiverType string
 	}.Components(ctx, tag, "setlogname")
 }
 
+func otelSetLogNameComponents(ctx context.Context, logName, hostName string) []otel.Component {
+	components, err := LoggingProcessorModifyFields{
+		Fields: map[string]*ModifyField{
+			// TODO: Prepend `receiver_id.` if it already exists, like the `fluent_forward` receiver?
+			"logName": {
+				DefaultValue: &logName,
+			},
+			`labels."compute.googleapis.com/resource_name"`: {
+				DefaultValue: &hostName,
+			},
+		},
+	}.Processors(ctx)
+	if err != nil {
+		// We're generating a hard-coded config, so this should never fail.
+		panic(err)
+	}
+	return components
+}
+
 // stackdriverOutputComponent generates a component that outputs logs matching the regex `match` using `userAgent`.
-func stackdriverOutputComponent(ctx context.Context, match, userAgent string, storageLimitSize string) fluentbit.Component {
+func stackdriverOutputComponent(ctx context.Context, match, userAgent, storageLimitSize, compress string) fluentbit.Component {
 	config := map[string]string{
 		// https://docs.fluentbit.io/manual/pipeline/outputs/stackdriver
 		"Name":              "stackdriver",
@@ -88,6 +108,11 @@ func stackdriverOutputComponent(ctx context.Context, match, userAgent string, st
 		// Limit the maximum number of fluent-bit chunks in the filesystem for the current
 		// output logical destination.
 		config["storage.total_limit_size"] = storageLimitSize
+	}
+
+	if compress != "" {
+		// Add payload compression
+		config["compress"] = compress
 	}
 
 	return fluentbit.Component{

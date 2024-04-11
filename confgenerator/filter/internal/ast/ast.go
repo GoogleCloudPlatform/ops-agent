@@ -16,11 +16,14 @@ package ast
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/generated/token"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
+	"go.uber.org/multierr"
 )
 
 type Attrib interface{}
@@ -43,6 +46,25 @@ type Attrib interface{}
 // Each element of the slice is not yet unescaped (if needed).
 type Target []string
 
+var logEntryRootValueMapToOTel = map[string][]string{
+	"severity": {"severity_text"},
+	"logName":  {"attributes", "gcp.log_name"},
+	// The "trace" field has the format `projects/$project/traces/$trace`. The `trace_id.string` field has the format `$trace` and does not support a project prefix.
+	// N.B. While these look like they're map elements, `trace_id["string"]` does not work. They must be referred to as `trace_id.string`.
+	// N.B. See special handling of trace_id.string in ottl.go
+	"trace":       {"trace_id.string"},
+	"spanId":      {"span_id.string"},
+	"textPayload": {"body"},
+}
+
+var logEntryRootStructMapToOTel = map[string][]string{
+	"jsonPayload": {"body"},
+	"labels":      {"attributes"},
+	// "operation": {}, // TODO: Missing in OTel exporter
+	"sourceLocation": {"attributes", "gcp.source_location"},
+	"httpRequest":    {"attributes", "gcp.http_request"},
+}
+
 var logEntryRootValueMapToFluentBit = map[string]string{
 	"severity": "logging.googleapis.com/severity",
 	"logName":  "logging.googleapis.com/logName",
@@ -60,6 +82,45 @@ var logEntryRootStructMapToFluentBit = map[string]string{
 	"httpRequest": "logging.googleapis.com/httpRequest",
 }
 
+func FluentBitSpecialFields() map[string]string {
+	out := map[string]string{}
+	for _, m := range []map[string]string{
+		logEntryRootValueMapToFluentBit,
+		logEntryRootStructMapToFluentBit,
+	} {
+		for k, v := range m {
+			if _, ok := logEntryRootValueMapToOTel[k]; ok {
+				out[v] = k
+			} else if _, ok := logEntryRootStructMapToOTel[k]; ok {
+				out[v] = k
+			}
+		}
+	}
+	return out
+}
+
+func (m Target) ottlPath() ([]string, error) {
+	unquoted, err := m.Unquote()
+	if err != nil {
+		return nil, err
+	}
+	var otel []string
+	if len(unquoted) == 1 {
+		if v, ok := logEntryRootValueMapToOTel[unquoted[0]]; ok {
+			otel = v
+		}
+	}
+	if len(unquoted) >= 1 {
+		if v, ok := logEntryRootStructMapToOTel[unquoted[0]]; ok {
+			otel = append(v, unquoted[1:]...)
+		}
+	}
+	if otel == nil {
+		return nil, fmt.Errorf("field %q not found", strings.Join(m, "."))
+	}
+	return otel, nil
+}
+
 func (m Target) fluentBitPath() ([]string, error) {
 	unquoted, err := m.Unquote()
 	if err != nil {
@@ -70,10 +131,11 @@ func (m Target) fluentBitPath() ([]string, error) {
 		if v, ok := logEntryRootValueMapToFluentBit[unquoted[0]]; ok {
 			fluentBit = []string{v}
 		}
-	} else if len(m) > 1 {
+	}
+	if len(unquoted) >= 1 {
 		if v, ok := logEntryRootStructMapToFluentBit[unquoted[0]]; ok {
 			fluentBit = prepend(v, unquoted[1:])
-		} else if unquoted[0] == "jsonPayload" {
+		} else if unquoted[0] == "jsonPayload" && len(unquoted) > 1 {
 			// Special case for jsonPayload, where the root "jsonPayload" must be omitted
 			fluentBit = unquoted[1:]
 		}
@@ -106,23 +168,46 @@ func (m Target) Equals(m2 Target) bool {
 	return true
 }
 
+func (m Target) checkValidCharacters() error {
+	unquoted, err := m.Unquote()
+	if err != nil {
+		return err
+	}
+	for _, part := range unquoted {
+		// Disallowed characters because they cannot be encoded in a fluent-bit Record Accessor.
+		// \r is allowed in a Record Accessor, but we disallow it to avoid issues on Windows.
+		// (interestingly, \f and \v work fine...)
+		// TODO: Remove when fluent-bit is no longer supported
+		if strings.ContainsAny(part, "\n\r\", ") {
+			return fmt.Errorf("target may not contain line breaks, spaces, commas, or double-quotes: %q", part)
+		}
+	}
+	return nil
+}
+
 // RecordAccessor returns a string that can be used as a key in a FluentBit config
 func (m Target) RecordAccessor() (string, error) {
 	fluentBit, err := m.fluentBitPath()
 	if err != nil {
 		return "", err
 	}
+	if err := m.checkValidCharacters(); err != nil {
+		return "", err
+	}
 	recordAccessor := "$record"
 	for _, part := range fluentBit {
-		// Disallowed characters because they cannot be encoded in a Record Accessor.
-		// \r is allowed in a Record Accessor, but we disallow it to avoid issues on Windows.
-		// (interestingly, \f and \v work fine...)
-		if strings.ContainsAny(part, "\n\r\", ") {
-			return "", fmt.Errorf("target may not contain line breaks, spaces, commas, or double-quotes: %q", part)
-		}
 		recordAccessor = recordAccessor + fmt.Sprintf(`['%s']`, strings.ReplaceAll(part, `'`, `''`))
 	}
 	return recordAccessor, nil
+}
+
+// OTTLAccessor returns a string that can be used to refer to the field in OTTL
+func (m Target) OTTLAccessor() (ottl.LValue, error) {
+	otel, err := m.ottlPath()
+	if err != nil {
+		return nil, err
+	}
+	return ottl.LValue(otel), nil
 }
 
 // LuaAccessor returns the value of the target (with write=false) or a function that takes one argument to set the target (with write=true).
@@ -266,9 +351,17 @@ func NewRestriction(lhs, operator, rhs Attrib) (*Restriction, error) {
 	switch lhs := lhs.(type) {
 	case Target:
 		// Eager validation
+		if err := lhs.checkValidCharacters(); err != nil {
+			// TODO: Unnecessary, but preserved until we drop fluent-bit.
+			return nil, err
+		}
+
 		_, err := lhs.RecordAccessor()
 		if err != nil {
-			return nil, err
+			_, err := lhs.OTTLAccessor()
+			if err != nil {
+				return nil, err
+			}
 		}
 		r.LHS = lhs
 	default:
@@ -393,12 +486,56 @@ func (r Restriction) FluentConfig(tag, key string) ([]fluentbit.Component, strin
 	panic(fmt.Errorf("unknown operator: %s", r.Operator))
 }
 
+func (r Restriction) OTTLExpression() (ottl.Value, error) {
+	lhs, _ := r.LHS.OTTLAccessor()
+
+	// TODO: Add support for numeric comparisons
+
+	var expr ottl.Value
+
+	switch r.Operator {
+	case "GLOBAL", "<", "<=", ">", ">=":
+		return nil, fmt.Errorf("unimplemented operator: %s", r.Operator)
+	case ":":
+		// substring match, case insensitive
+		expr = ottl.IsMatch(lhs, fmt.Sprintf(`(?i)%s`, regexp.QuoteMeta(r.RHS)))
+	case "=~", "!~":
+		// regex match, case sensitive
+
+		if _, err := regexp.Compile(r.RHS); err != nil {
+			return nil, fmt.Errorf("unsupported regex %q: %w", r.RHS, err)
+		}
+
+		expr = ottl.IsMatch(lhs, r.RHS)
+		// TODO: Support Ruby regex syntax
+
+		if r.Operator == "!~" {
+			expr = ottl.Not(expr)
+		}
+	case "=", "!=":
+		// equality, case insensitive
+		expr = ottl.IsMatch(lhs, fmt.Sprintf(`(?i)^%s$`, regexp.QuoteMeta(r.RHS)))
+		if r.Operator == "!=" {
+			expr = ottl.Not(expr)
+		}
+	}
+	if expr != nil {
+		// All comparisons involving a missing field are false
+		return ottl.And(lhs.IsPresent(), expr), nil
+	}
+	// This is all the supported operators.
+	return nil, fmt.Errorf("unknown operator: %s", r.Operator)
+}
+
 type Expression interface {
 	// Simplify returns a logically equivalent Expression.
 	Simplify() Expression
 
 	// FluentConfig returns an optional sequence of fluentbit operations and a Lua expression that can be evaluated to determine if the expression matches the record.
 	FluentConfig(tag, key string) ([]fluentbit.Component, string)
+
+	// OTTLExpression returns an OTTL value that can be used to evaluate the expression.
+	OTTLExpression() (ottl.Value, error)
 
 	fmt.Stringer
 }
@@ -458,6 +595,17 @@ func (s exprSlice) FluentConfig(tag, key, operator string) ([]fluentbit.Componen
 	return components, fmt.Sprintf(`(%s)`, strings.Join(exprs, operator))
 }
 
+func (s exprSlice) OTTLExpression(operator func(...ottl.Value) ottl.Value) (ottl.Value, error) {
+	var values []ottl.Value
+	var err error
+	for _, e := range s {
+		value, eerr := e.OTTLExpression()
+		values = append(values, value)
+		multierr.AppendInto(&err, eerr)
+	}
+	return operator(values...), err
+}
+
 func (s exprSlice) String(operator string) string {
 	var out []string
 	for _, e := range s {
@@ -468,6 +616,10 @@ func (s exprSlice) String(operator string) string {
 
 func (c Conjunction) FluentConfig(tag, key string) ([]fluentbit.Component, string) {
 	return exprSlice(c).FluentConfig(tag, key, " and ")
+}
+
+func (c Conjunction) OTTLExpression() (ottl.Value, error) {
+	return exprSlice(c).OTTLExpression(ottl.And)
 }
 
 func (c Conjunction) String() string {
@@ -505,6 +657,10 @@ func (d Disjunction) FluentConfig(tag, key string) ([]fluentbit.Component, strin
 	return exprSlice(d).FluentConfig(tag, key, " or ")
 }
 
+func (d Disjunction) OTTLExpression() (ottl.Value, error) {
+	return exprSlice(d).OTTLExpression(ottl.Or)
+}
+
 func (d Disjunction) String() string {
 	return exprSlice(d).String("OR")
 }
@@ -520,6 +676,14 @@ func (n Negation) Simplify() Expression {
 func (n Negation) FluentConfig(tag, key string) ([]fluentbit.Component, string) {
 	c, expr := n.Expression.FluentConfig(tag, key)
 	return c, fmt.Sprintf("(not %s)", expr)
+}
+
+func (n Negation) OTTLExpression() (ottl.Value, error) {
+	value, err := n.Expression.OTTLExpression()
+	if err != nil {
+		return nil, err
+	}
+	return ottl.Not(value), nil
 }
 
 func (n Negation) String() string {

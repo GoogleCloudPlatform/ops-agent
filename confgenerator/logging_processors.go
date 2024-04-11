@@ -17,12 +17,14 @@ package confgenerator
 import (
 	"context"
 	"fmt"
-	"log"
+	"sort"
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit/modify"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 )
 
 // TODO: Add a validation check that will allow only one unique language exceptions that focus in one specific language.
@@ -92,8 +94,8 @@ func init() {
 
 // ParserShared holds common parameters that are used by all processors that are implemented with fluentbit's "parser" filter.
 type ParserShared struct {
-	TimeKey    string `yaml:"time_key,omitempty" validate:"required_with=TimeFormat"` // by default does not parse timestamp
-	TimeFormat string `yaml:"time_format,omitempty" validate:"required_with=TimeKey"` // must be provided if time_key is present
+	TimeKey    string `yaml:"time_key,omitempty" validate:"required_with=TimeFormat,omitempty,fieldlegacy"` // by default does not parse timestamp
+	TimeFormat string `yaml:"time_format,omitempty" validate:"required_with=TimeKey"`                       // must be provided if time_key is present
 	// Types allows parsing the extracted fields.
 	// Not exposed to users for now, but can be used by app receivers.
 	// Documented at https://docs.fluentbit.io/manual/v/1.3/parser
@@ -105,11 +107,100 @@ func (p ParserShared) Component(tag, uid string) (fluentbit.Component, string) {
 	return fluentbit.ParserComponentBase(p.TimeFormat, p.TimeKey, p.Types, tag, uid)
 }
 
+func (p ParserShared) TimestampStatements() (ottl.Statements, error) {
+	if p.TimeKey == "" {
+		return nil, nil
+	}
+	from, err := filter.NewMemberLegacy(p.TimeKey)
+	if err != nil {
+		return nil, err
+	}
+	fromAccessor, err := from.OTTLAccessor()
+	if err != nil {
+		return nil, err
+	}
+	flag := ottl.LValue{"cache", "__time_valid"}
+	// Replicate fluent-bit behavior of preserving the existing field if the time is unparsable.
+	// The result of `ToTime` cannot be stored in `cache`, so instead we store a boolean flag.
+	return ottl.NewStatements(
+		flag.Set(ottl.False()),
+		flag.SetIf(ottl.True(), ottl.And(
+			fromAccessor.IsPresent(),
+			ottl.IsNotNil(ottl.ToTime(fromAccessor, p.TimeFormat)),
+		)),
+		ottl.LValue{"time"}.SetIf(ottl.ToTime(fromAccessor, p.TimeFormat), ottl.Equals(flag, ottl.True())),
+		fromAccessor.DeleteIf(ottl.Equals(flag, ottl.True())),
+	), nil
+}
+
+func (p ParserShared) TypesStatements() (ottl.Statements, error) {
+	var out ottl.Statements
+	for field, fieldType := range p.Types {
+		m, err := filter.NewMemberLegacy(field)
+		if err != nil {
+			return nil, err
+		}
+		a, err := m.OTTLAccessor()
+		if err != nil {
+			return nil, err
+		}
+		// See OTTL docs at https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs
+		switch fieldType {
+		case "string":
+			out = out.Append(a.Set(ottl.ToString(a)))
+		case "integer":
+			out = out.Append(a.Set(ottl.ToInt(a)))
+		case "bool":
+			out = out.Append(a.SetToBool(a))
+		case "float":
+			out = out.Append(a.Set(ottl.ToFloat(a)))
+		case "hex":
+			// TODO: Not exposed in OTTL
+			fallthrough
+		default:
+			return nil, fmt.Errorf("type %q not supported for field %s", fieldType, m)
+		}
+	}
+	return out, nil
+}
+
+// Handle special fields documented at https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/configuration#special-fields
+func (p ParserShared) FluentBitSpecialFieldsStatements(ctx context.Context) ottl.Statements {
+	fields := filter.FluentBitSpecialFields()
+	var names []string
+	for f := range fields {
+		if fields[f] == "labels" {
+			continue
+		}
+		names = append(names, f)
+	}
+	sort.Strings(names)
+	labels := ottl.LValue{"body", "logging.googleapis.com/labels"}
+	statements := ottl.NewStatements(
+		// Do labels first so other fields can override it.
+		ottl.LValue{"attributes"}.MergeMaps(labels, "upsert"),
+		labels.Delete(),
+	)
+	for _, f := range names {
+		s, err := LoggingProcessorModifyFields{Fields: map[string]*ModifyField{
+			fields[f]: &ModifyField{
+				MoveFrom: fmt.Sprintf(`jsonPayload.%q`, f),
+			},
+		}}.statements(ctx)
+		if err != nil {
+			// Should be impossible
+			panic(err)
+		}
+		statements = statements.Append(s)
+	}
+	return statements
+}
+
 // A LoggingProcessorParseJson parses the specified field as JSON.
 type LoggingProcessorParseJson struct {
 	ConfigComponent `yaml:",inline"`
 	ParserShared    `yaml:",inline"`
-	Field           string `yaml:"field,omitempty"`
+	Field           string `yaml:"field,omitempty" validate:"omitempty,fieldlegacy"`
 }
 
 func (r LoggingProcessorParseJson) Type() string {
@@ -126,6 +217,48 @@ func (p LoggingProcessorParseJson) Components(ctx context.Context, tag, uid stri
 	return parserFilters
 }
 
+func (p LoggingProcessorParseJson) Processors(ctx context.Context) ([]otel.Component, error) {
+	from := p.Field
+	if from == "" {
+		from = "jsonPayload.message"
+	}
+	m, err := filter.NewMemberLegacy(from)
+	if err != nil {
+		return nil, err
+	}
+
+	fromAccessor, err := m.OTTLAccessor()
+	if err != nil {
+		return nil, err
+	}
+
+	cachedJSON := ottl.LValue{"cache", "__parsed_json"}
+	statements := ottl.NewStatements(
+		cachedJSON.SetIf(ottl.ParseJSON(fromAccessor), fromAccessor.IsPresent()),
+		fromAccessor.DeleteIf(cachedJSON.IsPresent()),
+		ottl.LValue{"body"}.MergeMapsIf(cachedJSON, "upsert", cachedJSON.IsPresent()),
+		cachedJSON.Delete(),
+	)
+
+	ts, err := p.TimestampStatements()
+	if err != nil {
+		return nil, err
+	}
+	statements = statements.Append(ts)
+	ts, err = p.TypesStatements()
+	if err != nil {
+		return nil, err
+	}
+	statements = statements.Append(ts)
+
+	statements = statements.Append(p.FluentBitSpecialFieldsStatements(ctx))
+
+	return []otel.Component{otel.Transform(
+		"log", "log",
+		statements,
+	)}, nil
+}
+
 func init() {
 	LoggingProcessorTypes.RegisterType(func() LoggingProcessor { return &LoggingProcessorParseJson{} })
 }
@@ -135,7 +268,7 @@ func init() {
 type LoggingProcessorParseRegex struct {
 	ConfigComponent `yaml:",inline"`
 	ParserShared    `yaml:",inline"`
-	Field           string `yaml:"field,omitempty"`
+	Field           string `yaml:"field,omitempty" validate:"omitempty,fieldlegacy"`
 	PreserveKey     bool   `yaml:"-"`
 
 	Regex string `yaml:"regex,omitempty" validate:"required"`
@@ -332,19 +465,26 @@ type LoggingProcessorExcludeLogs struct {
 	MatchAny        []string `yaml:"match_any" validate:"required,dive,filter"`
 }
 
-func (r LoggingProcessorExcludeLogs) Type() string {
+func (p LoggingProcessorExcludeLogs) Type() string {
 	return "exclude_logs"
 }
 
-func (p LoggingProcessorExcludeLogs) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorExcludeLogs) filters() ([]*filter.Filter, error) {
 	filters := make([]*filter.Filter, 0, len(p.MatchAny))
 	for _, condition := range p.MatchAny {
 		filter, err := filter.NewFilter(condition)
 		if err != nil {
-			log.Printf("error parsing condition '%s': %v", condition, err)
-			return nil
+			return nil, fmt.Errorf("error parsing condition '%s': %v", condition, err)
 		}
 		filters = append(filters, filter)
+	}
+	return filters, nil
+}
+
+func (p LoggingProcessorExcludeLogs) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
+	filters, err := p.filters()
+	if err != nil {
+		panic(err)
 	}
 	components, lua := filter.AllFluentConfig(tag, map[string]*filter.Filter{
 		"match": filter.MatchesAny(filters),
@@ -359,6 +499,25 @@ function process(tag, timestamp, record)
   return 2, 0, record
 end`, lua))...)
 	return components
+}
+
+func (p LoggingProcessorExcludeLogs) Processors(ctx context.Context) ([]otel.Component, error) {
+	filters, err := p.filters()
+	if err != nil {
+		return nil, err
+	}
+	var expressions []ottl.Value
+	for _, f := range filters {
+		expr, err := f.OTTLExpression()
+		if err != nil {
+			return nil, fmt.Errorf("failed to process condition %q: %w", f, err)
+		}
+		expressions = append(expressions, expr)
+	}
+	return []otel.Component{otel.Filter(
+		"logs", "log_record",
+		expressions,
+	)}, nil
 }
 
 func init() {
