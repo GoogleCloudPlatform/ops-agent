@@ -34,7 +34,9 @@ package gce_test
 import (
 	"bytes"
 	"context"
+	"crypto/md5"
 	"crypto/rand"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -57,7 +59,7 @@ func SetupLoggerAndVM(t *testing.T, platform string) (context.Context, *logging.
 
 	logger := gce.SetupLogger(t)
 	logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
-	vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), gce.VMOptions{Platform: platform, MachineType: agents.RecommendedMachineType(platform)})
+	vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), gce.VMOptions{ImageSpec: platform, MachineType: agents.RecommendedMachineType(platform)})
 	logger.ToMainLog().Printf("VM is ready: %#v", vm)
 	return ctx, logger, vm
 }
@@ -304,7 +306,7 @@ echo hello`,
 }
 
 // testRunRemotelyHelper runs all the given test cases on the given VM, checking
-// that RunRemotelyStdin and RunScriptRemotely report all expected errors and that
+// that RunRemotely and RunScriptRemotely report all expected errors and that
 // standard out/error are as expected.
 func testRunRemotelyHelper(ctx context.Context, t *testing.T, logger *log.Logger, vm *gce.VM, testCases []testCase) {
 	runners := []struct {
@@ -385,6 +387,76 @@ func TestRunRemotely(t *testing.T) {
 		}
 
 		testRunRemotelyHelper(ctx, t, logger.ToMainLog(), vm, cases)
+	})
+}
+
+// eachByte returns a byte slice with each byte represented once in it.
+func eachByte() []byte {
+	result := make([]byte, 128)
+	for i := 0; i < 128; i++ {
+		result[i] = byte(i)
+	}
+	return result
+}
+
+// calculateRemoteMD5 computes the MD5 of the given file in a
+// platform-specific way and returns the result as a lowercase hex string.
+func calculateRemoteMD5(ctx context.Context, logger *log.Logger, vm *gce.VM, path string) (string, error) {
+	if gce.IsWindows(vm.Platform) {
+		output, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("(Get-FileHash -Algorithm MD5 -Path '%s').Hash", path))
+		if err != nil {
+			return "", err
+		}
+		return strings.ToLower(strings.TrimSpace(output.Stdout)), nil
+	}
+
+	output, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("set -o pipefail; md5sum '%s' | cut --field 1 --delimiter ' '", path))
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(output.Stdout), nil
+}
+
+func TestUploadContent(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+
+		ctx, logger, vm := SetupLoggerAndVM(t, platform)
+
+		cases := [][]byte{
+			[]byte("hello"),
+			[]byte("goodbye\n"),
+			[]byte(""),
+			eachByte(),
+			randomBytes(t, 100_000_000),
+		}
+		// Chosen to be platform agnostic, and as a bonus, requires sudo on Linux.
+		path := "/test_upload_content"
+
+		for _, data := range cases {
+			if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, bytes.NewReader(data), path); err != nil {
+				t.Fatalf("Uploading %v bytes failed: %v", len(data), err)
+			}
+
+			expectedMD5 := fmt.Sprintf("%x", md5.Sum(data))
+			actualMD5, err := calculateRemoteMD5(ctx, logger.ToMainLog(), vm, path)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if expectedMD5 != actualMD5 {
+				t.Errorf("got MD5 %q for file %v (size %v), want %q", actualMD5, path, len(data), expectedMD5)
+				if len(data) < 1000 {
+					// Use pwsh instead of powershell to get access to "-AsByteStream".
+					output, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, fmt.Sprintf(`pwsh -Command "Get-Content -AsByteStream '%s'"`, path))
+					if err != nil {
+						t.Fatal(err)
+					}
+					t.Errorf("size %v file contents (as bytes): %v", len(data), output.Stdout)
+				}
+			}
+		}
 	})
 }
 
