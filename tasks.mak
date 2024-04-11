@@ -93,7 +93,7 @@ endif
 # If you would like to use a custom build you can provide a REPO_SUFFIX or
 # AGENT_PACKAGES_IN_GCS. These targets function fine without either specified.
 ZONES ?= us-central1-b
-PLATFORMS ?= debian-11
+PLATFORMS ?= debian-cloud:debian-11
 
 integration_tests:
 	ZONES="${ZONES}" \

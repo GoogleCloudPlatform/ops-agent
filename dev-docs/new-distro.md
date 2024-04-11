@@ -100,7 +100,7 @@ The instructions are very similar to the instructions for `ops_agent_test`.
         or
         [test/third_party_apps/presubmit/bullseye_aarch64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/third_party_apps/bullseye_aarch64.gcl),
         set `platforms` to `['$DISTRO_FAMILY']` (instead of
-        `['debian-11']`). You should also add this section right after the
+        `['debian-cloud:debian-11']`). You should also add this section right after the
         `platforms =` line:
 
         ```gcl
