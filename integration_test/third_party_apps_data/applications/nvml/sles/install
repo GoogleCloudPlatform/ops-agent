@@ -1,6 +1,6 @@
 set -e
 
-sudo zypper --non-interactive install -y kernel-source pciutils gcc make wget
+sudo zypper --non-interactive install -y kernel-default-devel=$(uname -r | sed 's/\-default//') pciutils gcc make wget
 
 # Install CUDA and driver together, since the `exercise` script needs to run a 
 # CUDA sample app to generating GPU process metrics
