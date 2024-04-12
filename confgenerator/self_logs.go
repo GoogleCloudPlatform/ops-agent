@@ -155,8 +155,13 @@ var selfLogTranslationList = []selfLogTranslationEntry{
 	},
 	{
 		regexMatch: `\[error\].*\sNo\ssuch\sfile\sor\sdirectory.*`,
-		message:    fmt.Sprintf("Ops Agent not found path or directory, Code: LogPathNotFound, Documentation: %s", troubleshootFindInfoURL),
-		code:       "LogPathNotFound",
+		message:    fmt.Sprintf("Ops Agent path or directory not found, Code: LogPathNotFound, Documentation: %s", troubleshootFindInfoURL),
+		code:       "LogPathNotFoundErr",
+	},
+	{
+		regexMatch: `\[error\] \[in_winlog\] cannot read '.*' (6)`,
+		message:    fmt.Sprintf("Ops Agent windows event log failure, Code: LogWinEventLogErr, Documentation: %s", troubleshootFindInfoURL),
+		code:       "LogWinEventLogErr",
 	},
 }
 
