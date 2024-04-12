@@ -159,6 +159,11 @@ var selfLogTranslationList = []selfLogTranslationEntry{
 		code:       "LogPathNotFoundErr",
 	},
 	{
+		regexMatch: `\[error\].*read\serror,\scheck\spermissions:.*`,
+		message:    fmt.Sprintf("Ops Agent log read error, Code: LogPathNotFound, Documentation: %s", troubleshootFindInfoURL),
+		code:       "LogReadPermissionsErr",
+	},
+	{
 		regexMatch: `\[error\] \[in_winlog\] cannot read '.*' (6)`,
 		message:    fmt.Sprintf("Ops Agent windows event log failure, Code: LogWinEventLogErr, Documentation: %s", troubleshootFindInfoURL),
 		code:       "LogWinEventLogErr",
