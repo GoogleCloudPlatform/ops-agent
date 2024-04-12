@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
@@ -32,34 +33,13 @@ var (
 )
 
 const (
-	opsAgentLogsMatch       string = "ops-agent-*"
-	fluentBitSelfLogsTag    string = "ops-agent-fluent-bit"
-	healthLogsTag           string = "ops-agent-health"
-	sourceLocationKey       string = "logging.googleapis.com/sourceLocation"
-	agentVersionKey         string = "agent.googleapis.com/health/agentVersion"
-	agentKindKey            string = "agent.googleapis.com/health/agentKind"
-	schemaVersionKey        string = "agent.googleapis.com/health/schemaVersion"
-	troubleshootFindInfoURL string = "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/troubleshoot-find-info"
+	opsAgentLogsMatch    string = "ops-agent-*"
+	fluentBitSelfLogsTag string = "ops-agent-fluent-bit"
+	healthLogsTag        string = "ops-agent-health"
+	agentVersionKey      string = "agent.googleapis.com/health/agentVersion"
+	agentKindKey         string = "agent.googleapis.com/health/agentKind"
+	schemaVersionKey     string = "agent.googleapis.com/health/schemaVersion"
 )
-
-type selfLogTranslationEntry struct {
-	regexMatch string
-	message    string
-	code       string
-}
-
-var selfLogTranslationList = []selfLogTranslationEntry{
-	{
-		regexMatch: `\[error\]\s\[lib\]\sbackend\sfailed`,
-		message:    fmt.Sprintf("Ops Agent logging pipeline failed, Code: LogPipelineErr, Documentation: %s", troubleshootFindInfoURL),
-		code:       "LogPipelineErr",
-	},
-	{
-		regexMatch: `\[error\]\s\[parser\]\scannot\sparse`,
-		message:    fmt.Sprintf("Ops Agent failed to parse logs, Code: LogParseErr, Documentation: %s", troubleshootFindInfoURL),
-		code:       "LogParseErr",
-	},
-}
 
 func fluentbitSelfLogsPath(p platform.Platform) string {
 	loggingModule := "logging-module.log"
@@ -160,7 +140,7 @@ func generateInputFluentBitSelfLogsComponents(ctx context.Context, logLevel stri
 func generateFilterSelfLogsSamplingComponents(ctx context.Context) []fluentbit.Component {
 	out := make([]fluentbit.Component, 0)
 
-	for _, m := range selfLogTranslationList {
+	for _, m := range healthchecks.FluentBitSelfLogTranslationList {
 		// This filter samples specific fluent-bit logs by matching with regex and re-emits
 		// an `ops-agent-health` log.
 		out = append(out, fluentbit.Component{
@@ -168,7 +148,7 @@ func generateFilterSelfLogsSamplingComponents(ctx context.Context) []fluentbit.C
 			Config: map[string]string{
 				"Name":  "rewrite_tag",
 				"Match": fluentBitSelfLogsTag,
-				"Rule":  fmt.Sprintf(`message %s %s true`, m.regexMatch, healthLogsTag),
+				"Rule":  fmt.Sprintf(`message %s %s true`, m.RegexMatch, healthLogsTag),
 			},
 		})
 		// This filter sets the appropiate health code to the previously sampled logs. The `code` is also
@@ -178,9 +158,9 @@ func generateFilterSelfLogsSamplingComponents(ctx context.Context) []fluentbit.C
 			OrderedConfig: [][2]string{
 				{"Name", "modify"},
 				{"Match", healthLogsTag},
-				{"Condition", fmt.Sprintf(`Key_value_matches message %s`, m.regexMatch)},
-				{"Set", fmt.Sprintf(`code %s`, m.code)},
-				{"Set", fmt.Sprintf(`message "%s"`, m.message)},
+				{"Condition", fmt.Sprintf(`Key_value_matches message %s`, m.RegexMatch)},
+				{"Set", fmt.Sprintf(`code %s`, m.Code)},
+				{"Set", fmt.Sprintf(`message "%s"`, m.Message)},
 			},
 		})
 	}

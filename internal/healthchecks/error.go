@@ -21,6 +21,7 @@ const (
 	Generic    = "GENERIC"
 	Port       = "PORT"
 	Permission = "PERMISSION"
+	Runtime    = "RUNTIME"
 )
 
 type HealthCheckError struct {
@@ -164,6 +165,22 @@ var (
 		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/authorization",
 		IsFatal:      true,
 	}
+	LogPipelineErr = HealthCheckError{
+		Code:         "LogPipelineErr",
+		Class:        Runtime,
+		Message:      "Ops Agent logging pipeline failed",
+		Action:       "Refer to provided documentation link.",
+		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/troubleshoot-find-info",
+		IsFatal:      true,
+	}
+	LogParseErr = HealthCheckError{
+		Code:         "LogParseErr",
+		Class:        Runtime,
+		Message:      "Ops Agent failed to parse logs",
+		Action:       "Refer to provided documentation link.",
+		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/troubleshoot-find-info",
+		IsFatal:      true,
+	}
 	HcFailureErr = HealthCheckError{
 		Code:         "HcFailureErr",
 		Class:        Generic,
@@ -173,3 +190,22 @@ var (
 		IsFatal:      false,
 	}
 )
+
+type SelfLogTranslationEntry struct {
+	RegexMatch string
+	Message    string
+	Code       string
+}
+
+var FluentBitSelfLogTranslationList = []SelfLogTranslationEntry{
+	{
+		RegexMatch: `\[error\]\s\[lib\]\sbackend\sfailed`,
+		Message:    singleErrorResultMessage(LogPipelineErr, "Runtime Check"),
+		Code:       LogPipelineErr.Code,
+	},
+	{
+		RegexMatch: `\[error\]\s\[parser\]\scannot\sparse`,
+		Message:    singleErrorResultMessage(LogParseErr, "Runtime Check"),
+		Code:       LogParseErr.Code,
+	},
+}
