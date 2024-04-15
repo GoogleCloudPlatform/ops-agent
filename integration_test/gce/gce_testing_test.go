@@ -392,8 +392,8 @@ func TestRunRemotely(t *testing.T) {
 
 // eachByte returns a byte slice with each byte represented once in it.
 func eachByte() []byte {
-	result := make([]byte, 128)
-	for i := 0; i < 128; i++ {
+	result := make([]byte, 256)
+	for i := 0; i < 256; i++ {
 		result[i] = byte(i)
 	}
 	return result
