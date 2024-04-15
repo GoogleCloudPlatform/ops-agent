@@ -27,7 +27,7 @@ import (
 	"go.uber.org/multierr"
 )
 
-//go:embed ../agent_metrics/metadata.yaml
+//go:embed agent_metrics/metadata.yaml
 var agentMetricsMetadata []byte
 
 //go:embed applications
