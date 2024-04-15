@@ -448,12 +448,19 @@ func TestUploadContent(t *testing.T) {
 			if expectedMD5 != actualMD5 {
 				t.Errorf("got MD5 %q for file %v (size %v), want %q", actualMD5, path, len(data), expectedMD5)
 				if len(data) < 1000 {
-					// Use pwsh instead of powershell to get access to "-AsByteStream".
-					output, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, fmt.Sprintf(`pwsh -Command "Get-Content -AsByteStream '%s'"`, path))
+					var dumpCmd string
+					if gce.IsWindows(vm.Platform) {
+						// Use pwsh instead of powershell to get access to "-AsByteStream".
+						dumpCmd = fmt.Sprintf(`pwsh -Command "'bytes in base 10:'; Get-Content -AsByteStream '%s'"`, path)
+					} else {
+						dumpCmd = fmt.Sprintf("xxd '%s'", path)
+					}
+
+					output, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, dumpCmd)
 					if err != nil {
 						t.Fatal(err)
 					}
-					t.Errorf("size %v file contents (as bytes): %v", len(data), output.Stdout)
+					t.Errorf("size %v file contents: %v", len(data), output.Stdout)
 				}
 			}
 		}
