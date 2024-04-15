@@ -121,7 +121,8 @@ func generateInputFluentBitSelfLogsComponents(ctx context.Context, logLevel stri
 			},
 		},
 	}.Components(ctx, fluentBitSelfLogsTag, "fluent-bit-self-log-regex-parsing")...)
-	// Exclude exporting fluent-bit self-logs with severity debug.
+	// Disables sending fluent-bit debug logs to Cloud Logging due to endless spam.
+	// TODO: Remove when b/272779619 is fixed.
 	if logLevel == "debug" {
 		out = append(out, []fluentbit.Component{
 			{
