@@ -61,10 +61,10 @@ expected_metrics:
       server_name: .*
     unavailable_on:
       # https://github.com/GoogleCloudPlatform/ops-agent/issues/1173
-      - centos-7
-      - sles-12
-      - sles-15
-      - sles-15-arm64
+      - centos-cloud:centos-7
+      - suse-cloud:sles-12
+      - suse-cloud:sles-15
+      - suse-cloud:sles-15-arm64
   - type: workload.googleapis.com/apache.requests
     value_type: INT64
     kind: CUMULATIVE
@@ -171,10 +171,10 @@ expected_logs:
           # Unavailable for the same reasons as current_connections,
           # described in:
           # https://github.com/GoogleCloudPlatform/ops-agent/issues/1173
-          - centos-7
-          - sles-12
-          - sles-15
-          - sles-15-arm64
+          - centos-cloud:centos-7
+          - suse-cloud:sles-12
+          - suse-cloud:sles-15
+          - suse-cloud:sles-15-arm64
       - name: severity
         type: string
         description: ''
