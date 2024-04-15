@@ -30,7 +30,7 @@ import (
 //go:embed agent_metrics/metadata.yaml
 var agentMetricsMetadata []byte
 
-//go:embed applications
+//go:embed third_party_apps/applications
 var thirdPartyDataDir embed.FS
 
 func TestValidateMetadataOfThirdPartyApps(t *testing.T) {
@@ -43,7 +43,7 @@ func TestValidateMetadataOfThirdPartyApps(t *testing.T) {
 }
 
 func TestRequireMetadataForAllThirdPartyApps(t *testing.T) {
-	parentDirectory := "applications"
+	parentDirectory := "third_party_apps/applications"
 	dirs, err := thirdPartyDataDir.ReadDir(parentDirectory)
 	if err != nil {
 		t.Fatal(err)
