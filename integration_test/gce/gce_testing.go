@@ -287,10 +287,10 @@ func (f *logClientFactory) new(project string) (*logadmin.Client, error) {
 
 // VM represents an individual virtual machine.
 type VM struct {
-	Name        string
-	Project     string
-	Network     string
-	Platform    string
+	Name     string
+	Project  string
+	Network  string
+	Platform string
 	// The VMOptions.ImageSpec used to create the VM.
 	ImageSpec   string
 	Zone        string
@@ -1072,7 +1072,7 @@ func constructImageSpec(options *VMOptions) {
 
 // parseImageSpec looks for the ImageSpec field in VMOptions and sets
 // ImageProject/Image/Platform accordingly.
-func parseImageSpec(options *VMOptions) (error) {
+func parseImageSpec(options *VMOptions) error {
 	if options.ImageSpec == "" {
 		constructImageSpec(options)
 		return nil
@@ -1083,9 +1083,9 @@ func parseImageSpec(options *VMOptions) (error) {
 	}
 
 	delim := ""
-	if strings.Contains(options.ImageSpec, ":"){
+	if strings.Contains(options.ImageSpec, ":") {
 		delim = ":"
-	} else if strings.Contains(options.ImageSpec, "="){
+	} else if strings.Contains(options.ImageSpec, "=") {
 		delim = "="
 	} else {
 		return fmt.Errorf("could not parse options.ImageSpec from struct: %+v", options)
@@ -1094,11 +1094,11 @@ func parseImageSpec(options *VMOptions) (error) {
 	s := strings.Split(options.ImageSpec, delim)
 	options.ImageProject = s[0]
 
-	switch delim  {
-		case ":":
-			options.Platform = s[1]
-		case "=":
-			options.Image = s[1]
+	switch delim {
+	case ":":
+		options.Platform = s[1]
+	case "=":
+		options.Image = s[1]
 	}
 
 	return nil
@@ -1338,7 +1338,7 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 			strings.Contains(err.Error(), "currently unavailable") ||
 			// This error is a consequence of running gcloud concurrently, which is actually
 			// unsupported. In the absence of a better fix, just retry such errors.
-		        strings.Contains(err.Error(), "database is locked") ||
+			strings.Contains(err.Error(), "database is locked") ||
 			// windows-*-core instances sometimes fail to be ssh-able: b/305721001
 			(IsWindowsCore(options.Platform) && strings.Contains(err.Error(), windowsStartupFailedMessage)) ||
 			// SLES instances sometimes fail to be ssh-able: b/186426190
