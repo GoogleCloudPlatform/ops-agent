@@ -4091,7 +4091,7 @@ func unmarshalResource(in string) (*resourcedetector.GCEResource, error) {
 // responsible for updating PATH to point to the installed binaries, see
 // `goPathCommandForPlatform`.
 func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
-    if string.Contains(vm.ImageSpec, "ml-images") {
+    if strings.Contains(vm.ImageSpec, "ml-images") {
 		return nil
 	}
 
