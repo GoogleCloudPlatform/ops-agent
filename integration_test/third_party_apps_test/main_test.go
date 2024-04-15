@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build third_party_apps_test
+//go:build integration_test
 
 /*
 Test for third-party app integrations. Can be run with Kokoro or "go test".

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build ops_agent_test
+//go:build integration_test
 
 /*
 Test for core functionality of the Ops Agent.
