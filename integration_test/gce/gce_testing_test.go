@@ -306,7 +306,7 @@ echo hello`,
 }
 
 // testRunRemotelyHelper runs all the given test cases on the given VM, checking
-// that RunRemotely and RunScriptRemotely report all expected errors and that
+// that RunRemotelyStdin and RunScriptRemotely report all expected errors and that
 // standard out/error are as expected.
 func testRunRemotelyHelper(ctx context.Context, t *testing.T, logger *log.Logger, vm *gce.VM, testCases []testCase) {
 	runners := []struct {
