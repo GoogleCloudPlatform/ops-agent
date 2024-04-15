@@ -3817,12 +3817,6 @@ func TestLoggingSelfLogs(t *testing.T) {
 			t.Error(err)
 		}
 
-		// Verifies no fluent-bit debug logs are sent to Cloud Logging due to endless spam.
-		// TODO: Remove when b/272779619 is fixed.
-		if err := gce.AssertLogMissing(ctx, logger.ToMainLog(), vm, "ops-agent-fluent-bit", time.Hour, `severity="DEBUG"`); err != nil {
-			t.Error(err)
-		}
-
 		queryHealthCheck := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, queryHealthCheck); err != nil {
 			t.Error(err)
@@ -4590,6 +4584,28 @@ func TestParsingFailureCheck(t *testing.T) {
 			t.Error(err)
 		}
 
+	})
+}
+
+func TestNoFluentBitDebugSelfLogs(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		enableDebugLogLevel := `logging:
+  service:
+    log_level: debug
+`
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, enableDebugLogLevel); err != nil {
+			t.Fatal(err)
+		}
+
+		// Verifies no fluent-bit debug logs are sent to Cloud Logging due to endless spam.
+		// TODO: Remove when b/272779619 is fixed.
+		if err := gce.AssertLogMissing(ctx, logger.ToMainLog(), vm, "ops-agent-fluent-bit", time.Hour, `severity="DEBUG"`); err != nil {
+			t.Error(err)
+		}
 	})
 }
 
