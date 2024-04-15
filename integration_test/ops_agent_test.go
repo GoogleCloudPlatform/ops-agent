@@ -4091,6 +4091,11 @@ func unmarshalResource(in string) (*resourcedetector.GCEResource, error) {
 // responsible for updating PATH to point to the installed binaries, see
 // `goPathCommandForPlatform`.
 func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+    if string.Contains(vm.ImageSpec, "ml-images") {
+		return nil
+	}
+
+
 	// To update this, first run `mirror_content.sh` in this directory. Example:
 	//   ./mirror_content.sh https://go.dev/dl/go1.21.4.linux-{amd64,arm64}.tar.gz
 	// Then update this version.
