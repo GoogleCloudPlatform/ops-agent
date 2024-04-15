@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build integration_test
+//go:build third_party_apps_test
 
 /*
 Test for third-party app integrations. Can be run with Kokoro or "go test".
@@ -34,7 +34,7 @@ ARTIFACT_REGISTRY_REGION: If provided, signals to the install scripts that the
 	is in.
 */
 
-package integration_test
+package third_party_apps_test
 
 import (
 	"context"
@@ -672,7 +672,7 @@ func getExpectedFeatures(app string) (*feature_tracking_metadata.FeatureTracking
 
 // Returns a map of application name to its parsed and validated metadata.yaml.
 // The set of applications returned is authoritative and corresponds to the
-// directory names under integration_test/third_party_apps/applications.
+// directory names under integration_test/third_party_apps_test/applications.
 func fetchAppsAndMetadata(t *testing.T) map[string]metadata.IntegrationMetadata {
 	allApps := make(map[string]metadata.IntegrationMetadata)
 
@@ -722,14 +722,14 @@ func modifiedFiles(t *testing.T) []string {
 // means we should test all applications.
 func isCriticalFile(f string) bool {
 	if strings.HasPrefix(f, "submodules/") ||
-		strings.HasPrefix(f, "integration_test/third_party_apps/") {
+		strings.HasPrefix(f, "integration_test/third_party_apps_test/") {
 		return true
 	}
 	for _, criticalFile := range []string{
 		"go.mod",
 		"integration_test/agents/agents.go",
 		"integration_test/gce/gce_testing.go",
-		"integration_test/third_party_apps/test.go",
+		"integration_test/third_party_apps_test/test.go",
 	} {
 		if f == criticalFile {
 			return true
@@ -745,7 +745,7 @@ func isCriticalFile(f string) bool {
 // For non-critical code changes, extracts app names as follows:
 //
 //	apps/<appname>.go
-//	integration_test/third_party_apps/applications/<appname>/
+//	integration_test/third_party_apps_test/applications/<appname>/
 //
 // Checks the extracted app names against the set of all known apps.
 func determineImpactedApps(modifiedFiles []string, allApps map[string]metadata.IntegrationMetadata) map[string]bool {
@@ -778,9 +778,9 @@ func determineImpactedApps(modifiedFiles []string, allApps map[string]metadata.I
 					impactedApps[app] = true
 				}
 			}
-		} else if strings.HasPrefix(f, "integration_test/third_party_apps/applications/") {
-			// Folder names: integration_test/third_party_apps_data/applications/<app_name>
-			f := strings.TrimPrefix(f, "integration_test/third_party_apps/applications/")
+		} else if strings.HasPrefix(f, "integration_test/third_party_apps_test/applications/") {
+			// Folder names: integration_test/third_party_apps_test/applications/<app_name>
+			f := strings.TrimPrefix(f, "integration_test/third_party_apps_test/applications/")
 			f = strings.Split(f, "/")[0]
 			// The directories here are already authoritative, no
 			// need to check against list.

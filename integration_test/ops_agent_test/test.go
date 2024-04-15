@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build integration_test
+//go:build ops_agent_test
 
 /*
 Test for core functionality of the Ops Agent.
@@ -39,7 +39,7 @@ AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
 	.deb/.rpm/.goo files to install on the testing VMs. Takes precedence over
 	REPO_SUFFIX.
 */
-package integration_test
+package ops_agent_test
 
 import (
 	"context"
