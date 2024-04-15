@@ -68,7 +68,7 @@ var (
 	packagesInGCS = os.Getenv("AGENT_PACKAGES_IN_GCS")
 )
 
-//go:embed third_party_apps_data
+//go:embed applications
 var scriptsDir embed.FS
 
 var validate = metadata.NewIntegrationMetadataValidator()
