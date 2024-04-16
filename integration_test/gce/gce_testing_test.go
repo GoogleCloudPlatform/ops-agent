@@ -58,8 +58,13 @@ func SetupLoggerAndVM(t *testing.T, platform string) (context.Context, *logging.
 	t.Cleanup(cancel)
 
 	logger := gce.SetupLogger(t)
+	options := gce.VMOptions{
+		ImageSpec: platform,
+		TimeToLive: "3h",
+		MachineType: agents.RecommendedMachineType(platform),
+	}
 	logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
-	vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), gce.VMOptions{ImageSpec: platform, MachineType: agents.RecommendedMachineType(platform)})
+	vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), options)
 	logger.ToMainLog().Printf("VM is ready: %#v", vm)
 	return ctx, logger, vm
 }
