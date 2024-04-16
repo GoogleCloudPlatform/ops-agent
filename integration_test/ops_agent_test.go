@@ -4116,7 +4116,7 @@ func uninstallGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error 
 		sudo rm -rf /usr/local/go
 		unset GOPATH`
 	}
-	cmdOut, err := gce.RunRemotely(ctx, logger, vm, cmd)
+	_, err := gce.RunRemotely(ctx, logger, vm, cmd)
     if err != nil {
 		return err
 	}
@@ -4161,7 +4161,7 @@ func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 				"gs://ops-agents-public-buckets-vendored-deps/mirrored-content/go.dev/dl/go%s.linux-%s.tar.gz" - | \
 				sudo tar --directory /usr/local -xzf /dev/stdin`, goVersion, goArch)
 	}
-	_, err := gce.RunRemotely(ctx, logger, vm, installCmd)
+	_, err = gce.RunRemotely(ctx, logger, vm, installCmd)
 	return err
 }
 
