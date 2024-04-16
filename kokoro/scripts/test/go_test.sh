@@ -208,7 +208,7 @@ ulimit -n 1000000
 
 # Set up some command line flags for "gotestsum".
 gotestsum_args=(
-  --packages=./"${TEST_SUITE_NAME}.go"
+  --packages=./"${TEST_SUITE_NAME}"
   --format=standard-verbose
   --junitfile="${LOGS_DIR}/sponge_log.xml"
 )

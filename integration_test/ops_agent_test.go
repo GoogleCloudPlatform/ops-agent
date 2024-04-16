@@ -39,7 +39,7 @@ AGENT_PACKAGES_IN_GCS: If provided, a URL for a directory in GCS containing
 	.deb/.rpm/.goo files to install on the testing VMs. Takes precedence over
 	REPO_SUFFIX.
 */
-package integration_test
+package ops_agent_test
 
 import (
 	"context"

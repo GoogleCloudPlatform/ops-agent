@@ -34,7 +34,7 @@ ARTIFACT_REGISTRY_REGION: If provided, signals to the install scripts that the
 	is in.
 */
 
-package integration_test
+package third_party_apps_test
 
 import (
 	"context"
