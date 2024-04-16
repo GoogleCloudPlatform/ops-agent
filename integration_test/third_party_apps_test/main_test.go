@@ -131,7 +131,7 @@ func distroFolder(platform string) (string, error) {
 }
 
 func readFileFromScriptsDir(scriptPath string) ([]byte, error) {
-	return scriptsDir.ReadFile(path.Join("third_party_apps_data", scriptPath))
+	return scriptsDir.ReadFile(scriptPath)
 }
 
 // runScriptFromScriptsDir runs a script on the given VM.
