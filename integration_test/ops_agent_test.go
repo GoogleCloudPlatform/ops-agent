@@ -4092,9 +4092,9 @@ func unmarshalResource(in string) (*resourcedetector.GCEResource, error) {
 func golangVersion(ctx context.Context, logger *log.Logger, vm *gce.VM) (string, error) {
 	var cmd string
 	if gce.IsWindows(vm.Platform) {
-		cmd = ""
+		cmd = ``
 	} else {
-		cmd = "go version | grep -oP 'go[0-9]+\.[0-9]+' | sed 's/^go//'"
+		cmd = `go version | grep -oP 'go[0-9]+\.[0-9]+' | sed 's/^go//'`
 	}
 	cmdOut, err := gce.RunRemotely(ctx, logger, vm, installCmd)
     if err != nil {
