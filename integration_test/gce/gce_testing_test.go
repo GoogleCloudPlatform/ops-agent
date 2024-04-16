@@ -60,7 +60,7 @@ func SetupLoggerAndVM(t *testing.T, platform string) (context.Context, *logging.
 	logger := gce.SetupLogger(t)
 	options := gce.VMOptions{
 		ImageSpec: platform,
-		TimeToLive: "3h",
+		TimeToLive: "1h",
 		MachineType: agents.RecommendedMachineType(platform),
 	}
 	logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
