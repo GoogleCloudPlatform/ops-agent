@@ -1292,6 +1292,13 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		}
 	}
 
+	// See b/334918531.
+	if strings.Contains(vm.Platform, "debian-10") {
+		if _, err := RunRemotely(ctx, logger, vm, "sudo sed -i 's#https://deb.debian.org/debian buster-backports#https://archive.debian.org/debian buster-backports#' /etc/apt/sources.list"); err != nil {
+			return nil, fmt.Errorf("attemptCreateInstance() failed to reconfigure buster-backports: %v", err)
+		}
+	}
+
 	return vm, nil
 }
 
