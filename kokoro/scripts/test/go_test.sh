@@ -221,6 +221,7 @@ go_test_args=(
   -test.parallel=1000
   -tags=integration_test
   -timeout=3h
+  -test.run=TestRunRemotelyStdin
 )
 if [[ "${SHORT:-false}" == "true" ]]; then
   go_test_args+=( "-test.short" )

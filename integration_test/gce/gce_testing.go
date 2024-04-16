@@ -767,7 +767,7 @@ func wrapPowershellCommand(command string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("powershell -NonInteractive -EncodedCommand %q", base64.StdEncoding.EncodeToString([]byte(encoded))), nil
+	return fmt.Sprintf("pwsh -NonInteractive -OutputFormat Text -EncodedCommand %q", base64.StdEncoding.EncodeToString([]byte(encoded))), nil
 }
 
 // RunRemotely runs a command on the provided VM.
@@ -916,7 +916,7 @@ func RunScriptRemotely(ctx context.Context, logger *log.Logger, vm *VM, scriptCo
 		// script seems to work around this completely.
 		//
 		// To test changes to this command, please run gce_testing_test.go (manually).
-		return RunRemotely(ctx, logger, vm, envVarMapToPowershellPrefix(env)+"powershell -File "+scriptPath+" "+flagsStr)
+		return RunRemotely(ctx, logger, vm, envVarMapToPowershellPrefix(env)+"pwsh -File "+scriptPath+" "+flagsStr)
 	}
 	scriptPath := uuid.NewString() + ".sh"
 	// Write the script contents to <UUID>.sh, then tell bash to execute it with -x
@@ -1291,6 +1291,16 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 			return nil, fmt.Errorf("disabling flaky repos failed : %w", err)
 		}
 	}
+
+	if IsWindows(vm.Platform) {
+		// __SuppressAnsiEscapeSequences disables color-related ANSI sequences in
+		// pwsh output. NO_COLOR is supposed to be the officially supported variable
+		// to accomplish this but it doesn't work. See:
+		// https://github.com/PowerShell/PowerShell/issues/19961.
+		if _, err := RunRemotely(ctx, logger, vm, `[Environment]::SetEnvironmentVariable("__SuppressAnsiEscapeSequences", "1", "Machine")`); err != nil {
+			return nil, err
+    }
+  }
 
 	// See b/334918531.
 	if strings.Contains(vm.Platform, "debian-10") {

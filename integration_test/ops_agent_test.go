@@ -319,6 +319,29 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 	})
 }
 
+func TestRunRemotelyStdin(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := setupMainLogAndVM(t, platform)
+
+		var cmd string
+		if gce.IsWindows(platform) {
+			cmd = "$Input"
+		} else {
+			cmd = "cat /dev/stdin"
+		}
+
+		output, err := gce.RunRemotelyStdin(ctx, logger, vm, strings.NewReader("5555"), cmd)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(output.Stdout, "5555") {
+			t.Errorf("Expected 5555 to appear in output.Stdout. output: %+v", output)
+		}
+	})
+}
+
 func TestParseMultilineFileJavaPython(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
