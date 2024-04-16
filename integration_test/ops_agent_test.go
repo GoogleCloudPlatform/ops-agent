@@ -4096,14 +4096,14 @@ func golangVersion(ctx context.Context, logger *log.Logger, vm *gce.VM) (string,
 	} else {
 		cmd = `go version | grep -oP 'go[0-9]+\.[0-9]+' | sed 's/^go//'`
 	}
-	cmdOut, err := gce.RunRemotely(ctx, logger, vm, installCmd)
+	cmdOut, err := gce.RunRemotely(ctx, logger, vm, cmd)
     if err != nil {
-		return nil, err
+		return "", err
 	}
 	if cmdOut.Stderr != "" {
 		return "", nil
 	}
-    return cmdOut.Stdout
+    return cmdOut.Stdout, nil
 }
 
 // uninstallGolang removes the go installation on the VM.
@@ -4116,14 +4116,11 @@ func uninstallGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error 
 		sudo rm -rf /usr/local/go
 		unset GOPATH`
 	}
-	cmdOut, err := gce.RunRemotely(ctx, logger, vm, installCmd)
+	cmdOut, err := gce.RunRemotely(ctx, logger, vm, cmd)
     if err != nil {
-		return nil, err
+		return err
 	}
-	if cmdOut.Stderr != "" {
-		return nil, nil
-	}
-    return cmdOut.Stdout
+    return nil
 }
 
 // installGolang downloads and sets up go on the given VM. The caller is still
