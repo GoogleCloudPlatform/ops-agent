@@ -118,15 +118,21 @@ func distroFolder(platform string) (string, error) {
 	if gce.IsWindows(platform) {
 		return "windows", nil
 	}
-	firstWord := strings.Split(platform, "-")[0]
-	switch firstWord {
-	case "centos", "rhel", "rocky":
-		return "centos_rhel", nil
-	case "debian", "ubuntu":
-		return "debian_ubuntu", nil
-	case "opensuse", "sles":
-		return "sles", nil
-	}
+	if strings.HasPrefix(platform, "centos") ||
+		strings.HasPrefix(platform, "rhel") ||
+		strings.HasPrefix(platform, "rocky") {
+			return "centos_rhel", nil
+	} 
+	if strings.HasPrefix(platform, "debian") ||
+		strings.HasPrefix(platform, "ubuntu") ||
+		strings.HasPrefix(platform, "common-gpu-debian") {
+			return "debian_ubuntu", nil
+	} 
+	if strings.HasPrefix(platform, "opensuse") ||
+		strings.HasPrefix(platform, "sles") {
+			return "sles", nil
+	} 
+
 	return "", fmt.Errorf("distroFolder() could not find matching folder holding scripts for platform %s", platform)
 }
 
