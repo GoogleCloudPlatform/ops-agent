@@ -4022,17 +4022,17 @@ func runResourceDetectorCli(ctx context.Context, logger *log.Logger, vm *gce.VM)
 	filesToUpload := []struct {
 		local, remote string
 	}{
-		{local: "cmd/run_resource_detector/run_resource_detector.go",
+		{local: "../cmd/run_resource_detector/run_resource_detector.go",
 			remote: "run_resource_detector.go"},
-		{local: "../confgenerator/resourcedetector/detector.go",
+		{local: "../../confgenerator/resourcedetector/detector.go",
 			remote: "confgenerator/resourcedetector/detector.go"},
-		{local: "../confgenerator/resourcedetector/gce_detector.go",
+		{local: "../../confgenerator/resourcedetector/gce_detector.go",
 			remote: "confgenerator/resourcedetector/gce_detector.go"},
-		{local: "../confgenerator/resourcedetector/gce_metadata_provider.go",
+		{local: "../../confgenerator/resourcedetector/gce_metadata_provider.go",
 			remote: "confgenerator/resourcedetector/gce_metadata_provider.go"},
-		{local: "../go.mod",
+		{local: "../../go.mod",
 			remote: "go.mod"},
-		{local: "../go.sum",
+		{local: "../../go.sum",
 			remote: "go.sum"},
 	}
 
