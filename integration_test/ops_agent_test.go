@@ -4087,14 +4087,59 @@ func unmarshalResource(in string) (*resourcedetector.GCEResource, error) {
 	return &resource, err
 }
 
-// installGolang downloads and sets up go on the given VM.  The caller is still
-// responsible for updating PATH to point to the installed binaries, see
-// `goPathCommandForPlatform`.
-func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
-    if strings.Contains(vm.ImageSpec, "ml-images") {
-		return nil
+// golangVersion returns the version of go currently running on the VM as a string (e.g. "1.23.4").
+// If go is not currently installed, `nil` is returned.
+func golangVersion(ctx context.Context, logger *log.Logger, vm *gce.VM) (string, error) {
+	var cmd string
+	if gce.IsWindows(vm.Platform) {
+		cmd = ""
+	} else {
+		cmd = "go version | grep -oP 'go[0-9]+\.[0-9]+' | sed 's/^go//'"
 	}
+	cmdOut, err := gce.RunRemotely(ctx, logger, vm, installCmd)
+    if err != nil {
+		return nil, err
+	}
+	if cmdOut.Stderr != "" {
+		return "", nil
+	}
+    return cmdOut.Stdout
+}
 
+// uninstallGolang removes the go installation on the VM.
+func uninstallGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	var cmd string
+	if gce.IsWindows(vm.Platform) {
+		cmd = ""
+	} else {
+		cmd = `
+		sudo rm -rf /usr/local/go
+		unset GOPATH`
+	}
+	cmdOut, err := gce.RunRemotely(ctx, logger, vm, installCmd)
+    if err != nil {
+		return nil, err
+	}
+	if cmdOut.Stderr != "" {
+		return nil, nil
+	}
+    return cmdOut.Stdout
+}
+
+// installGolang downloads and sets up go on the given VM. The caller is still
+// responsible for updating PATH to point to the installed binaries, see
+// `goPathCommandForPlatform`. If go is already installed, uninstall it first.
+func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	ver, err := golangVersion(ctx, logger, vm)
+	if err != nil {
+		return err
+	}
+	if ver != "" {
+		err := uninstallGolang(ctx, logger, vm)
+		if err != nil {
+			return err
+		}
+	}
 
 	// To update this, first run `mirror_content.sh` in this directory. Example:
 	//   ./mirror_content.sh https://go.dev/dl/go1.21.4.linux-{amd64,arm64}.tar.gz
