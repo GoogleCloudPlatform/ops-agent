@@ -208,6 +208,7 @@ ulimit -n 1000000
 
 # Set up some command line flags for "gotestsum".
 gotestsum_args=(
+  --packages=./..."
   --format=standard-verbose
   --junitfile="${LOGS_DIR}/sponge_log.xml"
 )
