@@ -2329,7 +2329,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 		}
 	}
 
-	bytes, err := os.ReadFile(path.Join("../agent_metrics", "metadata.yaml"))
+	bytes, err := os.ReadFile(path.Join("agent_metrics", "metadata.yaml"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2404,7 +2404,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 	}
 	metricsWaitGroup.Wait()
 
-	featureBytes, err := os.ReadFile(path.Join("../agent_metrics", "features.yaml"))
+	featureBytes, err := os.ReadFile(path.Join("agent_metrics", "features.yaml"))
 	if err != nil {
 		t.Fatal("Could not find features.yaml")
 		return
