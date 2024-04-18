@@ -130,10 +130,6 @@ func distroFolder(platform string) (string, error) {
 	return "", fmt.Errorf("distroFolder() could not find matching folder holding scripts for platform %s", platform)
 }
 
-func readFileFromScriptsDir(scriptPath string) ([]byte, error) {
-	return scriptsDir.ReadFile(scriptPath)
-}
-
 // runScriptFromScriptsDir runs a script on the given VM.
 // The scriptPath should be relative to SCRIPTS_DIR.
 // The script should be a shell script for a Linux VM and powershell for a Windows VM.
@@ -141,7 +137,7 @@ func readFileFromScriptsDir(scriptPath string) ([]byte, error) {
 func runScriptFromScriptsDir(ctx context.Context, logger *log.Logger, vm *gce.VM, scriptPath string, env map[string]string) (gce.CommandOutput, error) {
 	logger.Printf("Running script with path %s", scriptPath)
 
-	scriptContents, err := readFileFromScriptsDir(scriptPath)
+	scriptContents, err := scriptsDir.ReadFile(scriptPath)
 	if err != nil {
 		return gce.CommandOutput{}, err
 	}
@@ -600,7 +596,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 
 	// Check if the exercise script exists, and run it if it does.
 	exerciseScript := path.Join("applications", app, "exercise")
-	if _, err := readFileFromScriptsDir(exerciseScript); err == nil {
+	if _, err := scriptsDir.ReadFile(exerciseScript); err == nil {
 		logger.ToMainLog().Println("exercise script found, running...")
 		if _, err = runScriptFromScriptsDir(ctx, logger.ToMainLog(), vm, exerciseScript, nil); err != nil {
 			return nonRetryable, fmt.Errorf("error exercising %s: %v", app, err)
@@ -657,7 +653,7 @@ func getExpectedFeatures(app string) (*feature_tracking_metadata.FeatureTracking
 	var fc feature_tracking_metadata.FeatureTrackingContainer
 
 	featuresScript := path.Join("applications", app, "features.yaml")
-	featureBytes, err := readFileFromScriptsDir(featuresScript)
+	featureBytes, err := scriptsDir.ReadFile(featuresScript)
 	if err != nil {
 		return nil, err
 	}
@@ -683,7 +679,7 @@ func fetchAppsAndMetadata(t *testing.T) map[string]metadata.IntegrationMetadata 
 	for _, file := range files {
 		app := file.Name()
 		var integrationMetadata metadata.IntegrationMetadata
-		testCaseBytes, err := readFileFromScriptsDir(path.Join("applications", app, "metadata.yaml"))
+		testCaseBytes, err := scriptsDir.ReadFile(path.Join("applications", app, "metadata.yaml"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -721,15 +717,14 @@ func modifiedFiles(t *testing.T) []string {
 // isCriticalFile returns true if the given modified source file
 // means we should test all applications.
 func isCriticalFile(f string) bool {
-	if strings.HasPrefix(f, "submodules/") ||
-		strings.HasPrefix(f, "integration_test/third_party_apps_test/") {
+	if strings.HasPrefix(f, "submodules/") {
 		return true
 	}
 	for _, criticalFile := range []string{
 		"go.mod",
 		"integration_test/agents/agents.go",
 		"integration_test/gce/gce_testing.go",
-		"integration_test/third_party_apps_test/test.go",
+		"integration_test/third_party_apps_test/main_test.go",
 	} {
 		if f == criticalFile {
 			return true
