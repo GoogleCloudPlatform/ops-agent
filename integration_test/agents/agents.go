@@ -353,6 +353,8 @@ func tryInstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkg
 	if err != nil {
 		return err
 	}
+
+	cmd := ""
 	switch distroOut.Stdout {
 	// case "debian":
 	// 	fallthrough
@@ -361,7 +363,6 @@ func tryInstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkg
 		default:
 			return fmt.Errorf("tryInstallPackages() doesn't support platform %q", vm.Platform)
 	}
-	// cmd := ""
 	// if strings.HasPrefix(vm.Platform, "centos-") ||
 	// 	strings.HasPrefix(vm.Platform, "rhel-") ||
 	// 	strings.HasPrefix(vm.Platform, "rocky-linux-") {
