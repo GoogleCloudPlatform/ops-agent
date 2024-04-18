@@ -349,25 +349,32 @@ func tryInstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkg
 		_, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("googet -noconfirm install %s", pkgsString))
 		return err
 	}
-	distroOut, _ := getDistro(ctx, logger, vm)
-	// if err != nil {
-	// 	return err
-	// }
-	distro := distroOut.Stdout
-	cmd := ""
-	if strings.HasPrefix(vm.Platform, "centos-") ||
-		strings.HasPrefix(vm.Platform, "rhel-") ||
-		strings.HasPrefix(vm.Platform, "rocky-linux-") {
-		cmd = fmt.Sprintf("sudo yum -y install %s", pkgsString)
-	} else if gce.IsSUSE(vm.Platform) {
-		cmd = fmt.Sprintf("sudo zypper --non-interactive install %s", pkgsString)
-	} else if distro == "debian" ||
-		strings.HasPrefix(vm.Platform, "ubuntu-") {
-		cmd = fmt.Sprintf("sudo apt-get update; sudo apt-get -y install %s", pkgsString)
-	} else {
-		return fmt.Errorf("tryInstallPackages() doesn't support platform %q", vm.Platform)
+	distroOut, err := getDistro(ctx, logger, vm)
+	if err != nil {
+		return err
 	}
-	_, err := gce.RunRemotely(ctx, logger, vm, cmd)
+	switch distroOut.Stdout {
+	// case "debian":
+	// 	fallthrough
+	case "debian":
+		cmd = fmt.Sprintf("sudo apt-get update; sudo apt-get -y install %s", pkgsString)
+		default:
+			return fmt.Errorf("tryInstallPackages() doesn't support platform %q", vm.Platform)
+	}
+	// cmd := ""
+	// if strings.HasPrefix(vm.Platform, "centos-") ||
+	// 	strings.HasPrefix(vm.Platform, "rhel-") ||
+	// 	strings.HasPrefix(vm.Platform, "rocky-linux-") {
+	// 	cmd = fmt.Sprintf("sudo yum -y install %s", pkgsString)
+	// } else if gce.IsSUSE(vm.Platform) {
+	// 	cmd = fmt.Sprintf("sudo zypper --non-interactive install %s", pkgsString)
+	// } else if distro == "debian" ||
+	// 	strings.HasPrefix(vm.Platform, "ubuntu-") {
+	// 	cmd = fmt.Sprintf("sudo apt-get update; sudo apt-get -y install %s", pkgsString)
+	// } else {
+	// 	return fmt.Errorf("tryInstallPackages() doesn't support platform %q", vm.Platform)
+	// }
+	_, err = gce.RunRemotely(ctx, logger, vm, cmd)
 	return err
 }
 
