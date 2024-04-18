@@ -336,6 +336,12 @@ func CheckServicesNotRunning(ctx context.Context, logger *log.Logger, vm *gce.VM
 	return nil
 }
 
+// getDistro returns the distro name of the vm.
+func getDistro(ctx context.Context, logger *log.Logger, vm *gce.VM) (string, error) {
+	cmd = fmt.Sprintf(`. /etc/os-release; echo $ID`)
+	return gce.RunRemotely(ctx, logger, vm, cmd)
+}
+
 // tryInstallPackages attempts once to install the given packages.
 func tryInstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs []string) error {
 	pkgsString := strings.Join(pkgs, " ")
@@ -343,6 +349,11 @@ func tryInstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkg
 		_, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("googet -noconfirm install %s", pkgsString))
 		return err
 	}
+	distroOut, err := getDistro(ctx, logger, vm)
+	// if err != nil {
+	// 	return err
+	// }
+	distro := distroOut.Stdout
 	cmd := ""
 	if strings.HasPrefix(vm.Platform, "centos-") ||
 		strings.HasPrefix(vm.Platform, "rhel-") ||
@@ -350,7 +361,7 @@ func tryInstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkg
 		cmd = fmt.Sprintf("sudo yum -y install %s", pkgsString)
 	} else if gce.IsSUSE(vm.Platform) {
 		cmd = fmt.Sprintf("sudo zypper --non-interactive install %s", pkgsString)
-	} else if strings.HasPrefix(vm.Platform, "debian-") ||
+	} else if distro == "debian" ||
 		strings.HasPrefix(vm.Platform, "ubuntu-") {
 		cmd = fmt.Sprintf("sudo apt-get update; sudo apt-get -y install %s", pkgsString)
 	} else {
