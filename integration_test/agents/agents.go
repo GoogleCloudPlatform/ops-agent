@@ -356,12 +356,12 @@ func tryInstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkg
 
 	cmd := ""
 	switch distroOut.Stdout {
-	// case "debian":
-	// 	fallthrough
-	case "debian":
+	case "debian ":
+		fallthrough
+	case "ubuntu":
 		cmd = fmt.Sprintf("sudo apt-get update; sudo apt-get -y install %s", pkgsString)
-		default:
-			return fmt.Errorf("tryInstallPackages() doesn't support platform %q", vm.Platform)
+	default:
+		return fmt.Errorf("tryInstallPackages() doesn't support platform %q", vm.Platform)
 	}
 	// if strings.HasPrefix(vm.Platform, "centos-") ||
 	// 	strings.HasPrefix(vm.Platform, "rhel-") ||
@@ -369,9 +369,6 @@ func tryInstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkg
 	// 	cmd = fmt.Sprintf("sudo yum -y install %s", pkgsString)
 	// } else if gce.IsSUSE(vm.Platform) {
 	// 	cmd = fmt.Sprintf("sudo zypper --non-interactive install %s", pkgsString)
-	// } else if distro == "debian" ||
-	// 	strings.HasPrefix(vm.Platform, "ubuntu-") {
-	// 	cmd = fmt.Sprintf("sudo apt-get update; sudo apt-get -y install %s", pkgsString)
 	// } else {
 	// 	return fmt.Errorf("tryInstallPackages() doesn't support platform %q", vm.Platform)
 	// }
