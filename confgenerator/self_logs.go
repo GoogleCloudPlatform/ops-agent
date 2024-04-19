@@ -207,7 +207,7 @@ func generateFilterMapSeverityFieldComponent(ctx context.Context) []fluentbit.Co
 }
 
 // This method creates a component that outputs all ops-agent self logs to Cloud Logging.
-func generateOutputSelfLogsComponent(ctx context.Context, userAgent string, DefaultSelfLogCollection bool) fluentbit.Component {
+func generateOutputSelfLogsComponent(ctx context.Context, userAgent string, ingestSelfLogs bool) fluentbit.Component {
 	outputLogNames := []string{healthLogsTag}
 	if DefaultSelfLogCollection {
 		// Ingest fluent-bit logs to Cloud Logging if enabled.
