@@ -27,10 +27,10 @@ import (
 	"go.uber.org/multierr"
 )
 
-//go:embed agent_metrics/metadata.yaml
+//go:embed ops_agent_test/agent_metrics/metadata.yaml
 var agentMetricsMetadata []byte
 
-//go:embed third_party_apps_data/applications
+//go:embed third_party_apps_test/applications
 var thirdPartyDataDir embed.FS
 
 func TestValidateMetadataOfThirdPartyApps(t *testing.T) {
@@ -43,7 +43,7 @@ func TestValidateMetadataOfThirdPartyApps(t *testing.T) {
 }
 
 func TestRequireMetadataForAllThirdPartyApps(t *testing.T) {
-	parentDirectory := "third_party_apps_data/applications"
+	parentDirectory := "third_party_apps_test/applications"
 	dirs, err := thirdPartyDataDir.ReadDir(parentDirectory)
 	if err != nil {
 		t.Fatal(err)
