@@ -337,7 +337,7 @@ func CheckServicesNotRunning(ctx context.Context, logger *log.Logger, vm *gce.VM
 }
 
 // getDistro returns the distro name of the vm.
-func getDistro(ctx context.Context, logger *log.Logger, vm *gce.VM) (gce.CommandOutput, error) {
+func getOS(ctx context.Context, logger *log.Logger, vm *gce.VM) (gce.CommandOutput, error) {
 	cmd := fmt.Sprintf(`. /etc/os-release; echo $ID`)
 	return gce.RunRemotely(ctx, logger, vm, cmd)
 }
@@ -349,14 +349,14 @@ func tryInstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkg
 		_, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("googet -noconfirm install %s", pkgsString))
 		return err
 	}
-	distroOut, err := getDistro(ctx, logger, vm)
+	distroOut, err := getOS(ctx, logger, vm)
 	if err != nil {
 		return err
 	}
 
 	cmd := ""
 	switch distroOut.Stdout {
-	case "debian ":
+	case "debian":
 		fallthrough
 	case "ubuntu":
 		cmd = fmt.Sprintf("sudo apt-get update; sudo apt-get -y install %s", pkgsString)
