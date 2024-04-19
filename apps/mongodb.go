@@ -115,8 +115,8 @@ func (p *LoggingProcessorMongodb) Components(ctx context.Context, tag, uid strin
 func (p *LoggingProcessorMongodb) JsonLogComponents(ctx context.Context, tag, uid string) []fluentbit.Component {
 	c := p.jsonParserWithTimeKey(ctx, tag, uid)
 
-	c = append(c, p.promoteWiredTiger(tag, uid)...)
-	c = append(c, p.renames(tag, uid)...)
+	c = append(c, p.promoteWiredTiger(tag)...)
+	c = append(c, p.renames(tag)...)
 
 	return c
 }
@@ -233,7 +233,7 @@ func (p *LoggingProcessorMongodb) severityParser(ctx context.Context, tag, uid s
 	return severityComponents
 }
 
-func (p *LoggingProcessorMongodb) renames(tag, uid string) []fluentbit.Component {
+func (p *LoggingProcessorMongodb) renames(tag string) []fluentbit.Component {
 	r := []fluentbit.Component{}
 	renames := []struct {
 		src  string
@@ -252,7 +252,7 @@ func (p *LoggingProcessorMongodb) renames(tag, uid string) []fluentbit.Component
 	return r
 }
 
-func (p *LoggingProcessorMongodb) promoteWiredTiger(tag, uid string) []fluentbit.Component {
+func (p *LoggingProcessorMongodb) promoteWiredTiger(tag string) []fluentbit.Component {
 	// promote messages that are WiredTiger messages and are nested in attr.message
 	addPrefix := "temp_attributes_"
 	upNest := fluentbit.Component{

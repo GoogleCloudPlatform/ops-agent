@@ -183,7 +183,7 @@ func (p ParserShared) FluentBitSpecialFieldsStatements(ctx context.Context) ottl
 	)
 	for _, f := range names {
 		s, err := LoggingProcessorModifyFields{Fields: map[string]*ModifyField{
-			fields[f]: &ModifyField{
+			fields[f]: {
 				MoveFrom: fmt.Sprintf(`jsonPayload.%q`, f),
 			},
 		}}.statements(ctx)

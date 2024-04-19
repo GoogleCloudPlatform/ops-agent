@@ -888,7 +888,7 @@ func (uc *UnifiedConfig) ValidateCombined() error {
 	if c == nil {
 		return nil
 	}
-	for k, _ := range c.Receivers {
+	for k := range c.Receivers {
 		for _, f := range []struct {
 			name    string
 			missing bool
@@ -959,7 +959,7 @@ func (pi *pipelineInstance) Types() (string, string) {
 	return pi.pipelineType, pi.receiver.Type()
 }
 
-func (uc *UnifiedConfig) metricsPipelines(ctx context.Context) ([]pipelineInstance, error) {
+func (uc *UnifiedConfig) metricsPipelines(_ context.Context) ([]pipelineInstance, error) {
 	receivers, err := uc.MetricsReceivers()
 	if err != nil {
 		return nil, err
@@ -1010,7 +1010,7 @@ func (uc *UnifiedConfig) metricsPipelines(ctx context.Context) ([]pipelineInstan
 	return out, nil
 }
 
-func (uc *UnifiedConfig) tracesPipelines(ctx context.Context) ([]pipelineInstance, error) {
+func (uc *UnifiedConfig) tracesPipelines(_ context.Context) ([]pipelineInstance, error) {
 	receivers, err := uc.TracesReceivers()
 	if err != nil {
 		return nil, err
@@ -1369,12 +1369,4 @@ func validateSSLConfig(receivers metricsReceiverMap, ctx context.Context) error 
 	}
 
 	return nil
-}
-
-// parameterErrorPrefix returns the common parameter error prefix.
-// id is the id of the receiver, processor, or exporter.
-// componentType is the type of the receiver or processor, e.g. "hostmetrics".
-// parameter is name of the parameter.
-func parameterErrorPrefix(subagent string, kind string, id string, componentType string, parameter string) string {
-	return fmt.Sprintf(`parameter %q in %q type %s %s %q`, parameter, componentType, subagent, kind, id)
 }

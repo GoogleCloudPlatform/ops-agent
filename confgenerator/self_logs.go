@@ -55,7 +55,7 @@ func healthChecksLogsPath() string {
 	return path.Join("${logs_dir}", "health-checks.log")
 }
 
-func generateHealthLoggingPingComponent(ctx context.Context) []fluentbit.Component {
+func generateHealthLoggingPingComponent(_ context.Context) []fluentbit.Component {
 	return []fluentbit.Component{
 		{
 			Kind: "INPUT",
@@ -145,7 +145,7 @@ var selfLogTranslationList = []selfLogTranslationEntry{
 	},
 }
 
-func generateSelfLogsSamplingComponents(ctx context.Context) []fluentbit.Component {
+func generateSelfLogsSamplingComponents(_ context.Context) []fluentbit.Component {
 	out := make([]fluentbit.Component, 0)
 
 	for _, m := range selfLogTranslationList {
