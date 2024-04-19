@@ -361,7 +361,7 @@ func tryInstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkg
 	case "ubuntu":
 		cmd = fmt.Sprintf("sudo apt-get update; sudo apt-get -y install %s", pkgsString)
 	default:
-		return fmt.Errorf("tryInstallPackages() doesn't support platform %q", vm.Platform)
+		return fmt.Errorf("tryInstallPackages() doesn't support platform %q with value '%q'", vm.Platform, distroOut.Stdout)
 	}
 	// if strings.HasPrefix(vm.Platform, "centos-") ||
 	// 	strings.HasPrefix(vm.Platform, "rhel-") ||
