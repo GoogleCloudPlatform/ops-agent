@@ -179,7 +179,7 @@ var (
 		Message:      "Ops Agent failed to parse logs",
 		Action:       "Refer to provided documentation link.",
 		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/troubleshoot-find-info",
-		IsFatal:      true,
+		IsFatal:      false,
 	}
 	HcFailureErr = HealthCheckError{
 		Code:         "HcFailureErr",
