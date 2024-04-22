@@ -4390,7 +4390,7 @@ metrics:
 }
 
 func isHealthCheckTestPlatform(platform string) bool {
-	return platform == "windows-2019" || platform == "debian-11"
+	return strings.HasSuffix(platform, "windows-2022") || strings.HasSuffix(platform, "debian-11")
 }
 
 func healthCheckResultMessage(name string, result string, code string) string {
@@ -4584,6 +4584,28 @@ func TestParsingFailureCheck(t *testing.T) {
 			t.Error(err)
 		}
 
+	})
+}
+
+func TestNoFluentBitDebugSelfLogs(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+		t.Parallel()
+		ctx, logger, vm := agents.CommonSetup(t, platform)
+
+		enableDebugLogLevel := `logging:
+  service:
+    log_level: debug
+`
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, enableDebugLogLevel); err != nil {
+			t.Fatal(err)
+		}
+
+		// Verifies no fluent-bit debug logs are sent to Cloud Logging due to endless spam.
+		// TODO: Remove when b/272779619 is fixed.
+		if err := gce.AssertLogMissing(ctx, logger.ToMainLog(), vm, "ops-agent-fluent-bit", time.Hour, `severity="DEBUG"`); err != nil {
+			t.Error(err)
+		}
 	})
 }
 
