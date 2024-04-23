@@ -4088,9 +4088,34 @@ func unmarshalResource(in string) (*resourcedetector.GCEResource, error) {
 }
 
 // installGolang downloads and sets up go on the given VM.  The caller is still
+// uninstallGolang removes the go installation on the VM.
+func uninstallGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	var cmd string
+	if gce.IsWindows(vm.Platform) {
+		// There is currently no need for this support.
+		return nil
+	} else {
+		cmd = `
+		sudo rm -rf /usr/local/go || true
+		unset GOPATH`
+	}
+	_, err := gce.RunRemotely(ctx, logger, vm, cmd)
+    if err != nil {
+		return err
+	}
+    return nil
+}
+
+// installGolang downloads and sets up go on the given VM. The caller is still
 // responsible for updating PATH to point to the installed binaries, see
 // `goPathCommandForPlatform`.
+// `goPathCommandForPlatform`. If go is already installed, uninstall it first.
 func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	err := uninstallGolang(ctx, logger, vm)
+	if err != nil {
+		return err
+	}
+
 	// To update this, first run `mirror_content.sh` in this directory. Example:
 	//   ./mirror_content.sh https://go.dev/dl/go1.21.4.linux-{amd64,arm64}.tar.gz
 	// Then update this version.
