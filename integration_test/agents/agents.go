@@ -338,7 +338,7 @@ func CheckServicesNotRunning(ctx context.Context, logger *log.Logger, vm *gce.VM
 
 // getDistro returns the distro name of the vm.
 func getOS(ctx context.Context, logger *log.Logger, vm *gce.VM) (gce.CommandOutput, error) {
-	cmd := fmt.Sprintf(`. /etc/os-release; echo $ID`)
+	cmd := fmt.Sprintf(`. /etc/os-release; echo -n $ID`)
 	return gce.RunRemotely(ctx, logger, vm, cmd)
 }
 
