@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/version"
@@ -32,15 +33,12 @@ var (
 )
 
 const (
-	opsAgentLogsMatch       string = "ops-agent-*"
-	fluentBitSelfLogsTag    string = "ops-agent-fluent-bit"
-	healthLogsTag           string = "ops-agent-health"
-	severityKey             string = "logging.googleapis.com/severity"
-	sourceLocationKey       string = "logging.googleapis.com/sourceLocation"
-	agentVersionKey         string = "agent.googleapis.com/health/agentVersion"
-	agentKindKey            string = "agent.googleapis.com/health/agentKind"
-	schemaVersionKey        string = "agent.googleapis.com/health/schemaVersion"
-	troubleshootFindInfoURL string = "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/troubleshoot-find-info"
+	opsAgentLogsMatch    string = "ops-agent-*"
+	fluentBitSelfLogsTag string = "ops-agent-fluent-bit"
+	healthLogsTag        string = "ops-agent-health"
+	agentVersionKey      string = "agent.googleapis.com/health/agentVersion"
+	agentKindKey         string = "agent.googleapis.com/health/agentKind"
+	schemaVersionKey     string = "agent.googleapis.com/health/schemaVersion"
 )
 
 func fluentbitSelfLogsPath(p platform.Platform) string {
@@ -55,7 +53,7 @@ func healthChecksLogsPath() string {
 	return path.Join("${logs_dir}", "health-checks.log")
 }
 
-func generateHealthLoggingPingComponent(ctx context.Context) []fluentbit.Component {
+func generateInputHealthLoggingPingComponent(ctx context.Context) []fluentbit.Component {
 	return []fluentbit.Component{
 		{
 			Kind: "INPUT",
@@ -72,7 +70,7 @@ func generateHealthLoggingPingComponent(ctx context.Context) []fluentbit.Compone
 
 // This method creates a file input for the `health-checks.log` file, a json parser for the
 // structured logs and a grep filter to avoid ingesting previous content of the file.
-func generateHealthChecksLogsComponents(ctx context.Context) []fluentbit.Component {
+func generateInputHealthChecksLogsComponents(ctx context.Context) []fluentbit.Component {
 	out := make([]fluentbit.Component, 0)
 	out = append(out, LoggingReceiverFilesMixin{
 		IncludePaths:   []string{healthChecksLogsPath()},
@@ -104,7 +102,7 @@ func generateHealthChecksLogsComponents(ctx context.Context) []fluentbit.Compone
 
 // This method creates a file input for the `logging-module.log` file, a regex parser for the
 // fluent-bit self logs and a translator of severity to the logging api format.
-func generateFluentBitSelfLogsComponents(ctx context.Context) []fluentbit.Component {
+func generateInputFluentBitSelfLogsComponents(ctx context.Context, logLevel string) []fluentbit.Component {
 	out := make([]fluentbit.Component, 0)
 	out = append(out, LoggingReceiverFilesMixin{
 		IncludePaths: []string{fluentbitSelfLogsPath(platform.FromContext(ctx))},
@@ -123,32 +121,27 @@ func generateFluentBitSelfLogsComponents(ctx context.Context) []fluentbit.Compon
 			},
 		},
 	}.Components(ctx, fluentBitSelfLogsTag, "fluent-bit-self-log-regex-parsing")...)
+	// Disables sending fluent-bit debug logs to Cloud Logging due to endless spam.
+	// TODO: Remove when b/272779619 is fixed.
+	if logLevel == "debug" {
+		out = append(out, []fluentbit.Component{
+			{
+				Kind: "FILTER",
+				Config: map[string]string{
+					"Name":    "grep",
+					"Match":   fluentBitSelfLogsTag,
+					"Exclude": "severity debug",
+				},
+			},
+		}...)
+	}
 	return out
 }
 
-type selfLogTranslationEntry struct {
-	regexMatch string
-	message    string
-	code       string
-}
-
-var selfLogTranslationList = []selfLogTranslationEntry{
-	{
-		regexMatch: `\[error\]\s\[lib\]\sbackend\sfailed`,
-		message:    fmt.Sprintf("Ops Agent logging pipeline failed, Code: LogPipelineErr, Documentation: %s", troubleshootFindInfoURL),
-		code:       "LogPipelineErr",
-	},
-	{
-		regexMatch: `\[error\]\s\[parser\]\scannot\sparse`,
-		message:    fmt.Sprintf("Ops Agent failed to parse logs, Code: LogParseErr, Documentation: %s", troubleshootFindInfoURL),
-		code:       "LogParseErr",
-	},
-}
-
-func generateSelfLogsSamplingComponents(ctx context.Context) []fluentbit.Component {
+func generateFilterSelfLogsSamplingComponents(ctx context.Context) []fluentbit.Component {
 	out := make([]fluentbit.Component, 0)
 
-	for _, m := range selfLogTranslationList {
+	for _, m := range healthchecks.FluentBitSelfLogTranslationList {
 		// This filter samples specific fluent-bit logs by matching with regex and re-emits
 		// an `ops-agent-health` log.
 		out = append(out, fluentbit.Component{
@@ -156,22 +149,18 @@ func generateSelfLogsSamplingComponents(ctx context.Context) []fluentbit.Compone
 			Config: map[string]string{
 				"Name":  "rewrite_tag",
 				"Match": fluentBitSelfLogsTag,
-				"Rule":  fmt.Sprintf(`message %s %s true`, m.regexMatch, healthLogsTag),
+				"Rule":  fmt.Sprintf(`message %s %s true`, m.RegexMatch, healthLogsTag),
 			},
 		})
-		// This filter sets the appropiate health code to the previously sampled logs. The `code` is also
-		// set to the `message` field for later translation in the pipeline.
-		// The current fluent-bit submodule doesn't accept whitespaces in the `Set` values, so `code` is
-		// used as a placeholder. This can be updated when the fix arrives to the current fluent-bit submodule
-		// `https://github.com/fluent/fluent-bit/issues/4286`.
+		// This filter sets the appropiate health code and message to the previously sampled logs.
 		out = append(out, fluentbit.Component{
 			Kind: "FILTER",
 			OrderedConfig: [][2]string{
 				{"Name", "modify"},
 				{"Match", healthLogsTag},
-				{"Condition", fmt.Sprintf(`Key_value_matches message %s`, m.regexMatch)},
-				{"Set", fmt.Sprintf(`message %s`, m.code)},
-				{"Set", fmt.Sprintf(`code %s`, m.code)},
+				{"Condition", fmt.Sprintf(`Key_value_matches message %s`, m.RegexMatch)},
+				{"Set", fmt.Sprintf(`code %s`, m.Code)},
+				{"Set", fmt.Sprintf(`message "%s"`, m.Message)},
 			},
 		})
 	}
@@ -181,14 +170,7 @@ func generateSelfLogsSamplingComponents(ctx context.Context) []fluentbit.Compone
 
 // This method creates a component that enforces the `Structured Health Logs` format to
 // all `ops-agent-health` logs. It sets `agentKind`, `agentVersion` and `schemaVersion`.
-// It also translates `code` to the rich text message from the `selfLogTranslationList`.
-func generateStructuredHealthLogsComponents(ctx context.Context) []fluentbit.Component {
-	// Convert translation list to map.
-	mapMessageFromCode := make(map[string]string)
-	for _, m := range selfLogTranslationList {
-		mapMessageFromCode[m.code] = m.message
-	}
-
+func generateFilterStructuredHealthLogsComponents(ctx context.Context) []fluentbit.Component {
 	return LoggingProcessorModifyFields{
 		Fields: map[string]*ModifyField{
 			fmt.Sprintf(`labels."%s"`, agentKindKey): {
@@ -200,16 +182,12 @@ func generateStructuredHealthLogsComponents(ctx context.Context) []fluentbit.Com
 			fmt.Sprintf(`labels."%s"`, schemaVersionKey): {
 				StaticValue: &schemaVersion,
 			},
-			"jsonPayload.message": {
-				MapValues:          mapMessageFromCode,
-				MapValuesExclusive: false,
-			},
 		},
 	}.Components(ctx, healthLogsTag, "set-structured-health-logs")
 }
 
-// This method processes all self logs to set the fields correctly before reaching the output plugin.
-func generateSelfLogsProcessingComponents(ctx context.Context) []fluentbit.Component {
+// This method processes all self logs to set the severity field correctly before reaching the output plugin.
+func generateFilterMapSeverityFieldComponent(ctx context.Context) []fluentbit.Component {
 	return LoggingProcessorModifyFields{
 		Fields: map[string]*ModifyField{
 			"severity": {
@@ -226,20 +204,25 @@ func generateSelfLogsProcessingComponents(ctx context.Context) []fluentbit.Compo
 	}.Components(ctx, opsAgentLogsMatch, "self-logs-processing")
 }
 
-func (uc *UnifiedConfig) generateSelfLogsComponents(ctx context.Context, userAgent string) []fluentbit.Component {
-	out := make([]fluentbit.Component, 0)
-	out = append(out, generateHealthLoggingPingComponent(ctx)...)
-	out = append(out, generateFluentBitSelfLogsComponents(ctx)...)
-	out = append(out, generateHealthChecksLogsComponents(ctx)...)
-	out = append(out, generateSelfLogsSamplingComponents(ctx)...)
-	out = append(out, generateStructuredHealthLogsComponents(ctx)...)
-	out = append(out, generateSelfLogsProcessingComponents(ctx)...)
-
+// This method creates a component that outputs all ops-agent self logs to Cloud Logging.
+func generateOutputSelfLogsComponent(ctx context.Context, userAgent string, ingestSelfLogs bool) fluentbit.Component {
 	outputLogNames := []string{healthLogsTag}
-	if uc.Global.GetDefaultSelfLogFileCollection() {
+	if ingestSelfLogs {
 		// Ingest fluent-bit logs to Cloud Logging if enabled.
 		outputLogNames = append(outputLogNames, fluentBitSelfLogsTag)
 	}
-	out = append(out, stackdriverOutputComponent(ctx, strings.Join(outputLogNames, "|"), userAgent, "", ""))
+	return stackdriverOutputComponent(ctx, strings.Join(outputLogNames, "|"), userAgent, "", "")
+}
+
+func (uc *UnifiedConfig) generateSelfLogsComponents(ctx context.Context, userAgent string) []fluentbit.Component {
+	out := make([]fluentbit.Component, 0)
+	out = append(out, generateInputHealthLoggingPingComponent(ctx)...)
+	out = append(out, generateInputFluentBitSelfLogsComponents(ctx, uc.Logging.Service.LogLevel)...)
+	out = append(out, generateInputHealthChecksLogsComponents(ctx)...)
+	out = append(out, generateFilterSelfLogsSamplingComponents(ctx)...)
+	out = append(out, generateFilterStructuredHealthLogsComponents(ctx)...)
+	out = append(out, generateFilterMapSeverityFieldComponent(ctx)...)
+	out = append(out, generateOutputSelfLogsComponent(ctx, userAgent, uc.Global.GetDefaultSelfLogFileCollection()))
+
 	return out
 }
