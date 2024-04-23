@@ -350,7 +350,7 @@ func tryInstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkg
 		cmd = fmt.Sprintf("sudo yum -y install %s", pkgsString)
 	} else if gce.IsSUSE(vm.Platform) {
 		cmd = fmt.Sprintf("sudo zypper --non-interactive install %s", pkgsString)
-	} else if strings.HasPrefix(vm.Platform, "debian-") ||
+	} else if strings.Contains(vm.Platform, "debian-") ||
 		strings.HasPrefix(vm.Platform, "ubuntu-") {
 		cmd = fmt.Sprintf("sudo apt-get update; sudo apt-get -y install %s", pkgsString)
 	} else {
@@ -387,7 +387,7 @@ func UninstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs
 		cmd = fmt.Sprintf("sudo yum -y remove %s", pkgsString)
 	} else if strings.HasPrefix(vm.Platform, "sles-") {
 		cmd = fmt.Sprintf("sudo zypper --non-interactive remove %s", pkgsString)
-	} else if strings.HasPrefix(vm.Platform, "debian-") ||
+	} else if strings.Contains(vm.Platform, "debian-") ||
 		strings.HasPrefix(vm.Platform, "ubuntu-") {
 		cmd = fmt.Sprintf("sudo apt-get -y remove %s", pkgsString)
 	} else {
@@ -431,7 +431,7 @@ func checkPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs []s
 			if !installed {
 				cmd = "! " + cmd
 			}
-		} else if strings.HasPrefix(vm.Platform, "debian-") ||
+		} else if strings.Contains(vm.Platform, "debian-") ||
 			strings.HasPrefix(vm.Platform, "ubuntu-") {
 			// dpkg's package states are documented in "man 1 dpkg".
 			// "config-files" means that the package is not installed but its config files
