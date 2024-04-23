@@ -718,8 +718,8 @@ func runCommand(ctx context.Context, logger *log.Logger, stdin io.Reader, args [
 	logger.Printf("exit code: %v", cmd.ProcessState.ExitCode())
 	logger.Printf("stdout+stderr: %s", interleavedBuilder.String())
 
-	output.Stdout = stdoutBuilder.String()
-	output.Stderr = stderrBuilder.String()
+	output.Stdout = strings.TrimSpace(stdoutBuilder.String())
+	output.Stderr = strings.TrimSpace(stderrBuilder.String())
 
 	return output, err
 }
