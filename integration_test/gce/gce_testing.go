@@ -1140,7 +1140,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	if err != nil {
 		return nil, err
 	}
-	append(args, image_flags...)
+	args = append(args, image_flags...)
 	if len(newMetadata) > 0 {
 		// The --metadata flag can't be empty, so we have to have a special case
 		// to omit the flag completely when the newMetadata map is empty.
