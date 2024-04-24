@@ -22,7 +22,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 )
 
-func getConfigPath(imageSpec string) string {
+func GetConfigPath(imageSpec string) string {
 	if gce.IsWindows(imageSpec) {
 		return `C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml`
 	}
