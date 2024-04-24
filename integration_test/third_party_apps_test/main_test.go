@@ -589,7 +589,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		return nonRetryable, fmt.Errorf("error enabling %s: %v", app, err)
 	}
 
-	backupConfigFilePath := util.ConfigPathForPlatform(vm.Platform) + ".bak"
+	backupConfigFilePath := util.ConfigPathForImage(vm.Platform) + ".bak"
 	if err = assertFilePresence(ctx, logger.ToMainLog(), vm, backupConfigFilePath); err != nil {
 		return nonRetryable, fmt.Errorf("error when fetching back up config file %s: %v", backupConfigFilePath, err)
 	}
@@ -876,7 +876,7 @@ const (
 // "linux_and_windows".
 func incompatibleOperatingSystem(testCase test) string {
 	supported := testCase.metadata.SupportedOperatingSystems
-	if !strings.Contains(supported, gce.PlatformKind(testCase.platform)) {
+	if !strings.Contains(supported, gce.OSKind(testCase.platform)) {
 		return fmt.Sprintf("Skipping test for platform %v because app %v only supports %v.", testCase.platform, testCase.app, supported)
 	}
 	return "" // We are testing on a supported platform for this app.
