@@ -131,7 +131,8 @@ func distroFolder(platform string) (string, error) {
 	if strings.HasPrefix(platform, "opensuse") ||
 		strings.HasPrefix(platform, "sles") {
 			return "sles", nil
-	}
+	} 
+
 	return "", fmt.Errorf("distroFolder() could not find matching folder holding scripts for platform %s", platform)
 }
 
