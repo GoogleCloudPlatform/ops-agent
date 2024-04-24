@@ -339,12 +339,12 @@ func IsWindows(imageSpec string) bool {
 
 // IsWindowsCore returns whether the given image spec is a version of Windows core.
 func IsWindowsCore(imageSpec string) bool {
-	return IsWindows(IsWindows) && strings.HasSuffix(imageSpec, "-core")
+	return IsWindows(imageSpec) && strings.HasSuffix(imageSpec, "-core")
 }
 
 // ImageSpecKind returns "linux" or "windows" based on the given image spec.
-func OSKind(IsWindows string) string {
-	if IsWindows(IsWindows) {
+func OSKind(imageSpec string) string {
+	if IsWindows(imageSpec) {
 		return "windows"
 	}
 	return "linux"
@@ -1049,17 +1049,17 @@ func installErr(pkg string, imageSpec string) error {
 
 // gcloudFlagsFromImageSpec returns the flags used in
 // `gcloud compute instances create` to specify the desired image.
-func gcloudFlagsFromImageSpec(imageSpec string) error {
+func gcloudFlagsFromImageSpec(imageSpec string) (string, error) {
 	delim := ""
-	if strings.Contains(options.ImageSpec, ":") {
+	if strings.Contains(imageSpec, ":") {
 		delim = ":"
-	} else if strings.Contains(options.ImageSpec, "=") {
+	} else if strings.Contains(imageSpec, "=") {
 		delim = "="
 	} else {
-		return fmt.Errorf("invalid imageSpec: %s", imageSpec)
+		return nil, fmt.Errorf("invalid imageSpec: %s", imageSpec)
 	}
 
-	s := strings.Split(options.ImageSpec, delim)
+	s := strings.Split(imageSpec, delim)
 	flags := []string{
 		"--image-project=" + s[0],
 	}
@@ -1069,7 +1069,7 @@ func gcloudFlagsFromImageSpec(imageSpec string) error {
 	case "=":
 		flags = append(flags, "--image="+s[1])
 	}
-	return flags
+	return flags, nil
 }
 
 // attemptCreateInstance creates a VM instance and waits for it to be ready.
@@ -1136,7 +1136,11 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		"--network=" + vm.Network,
 		"--format=json",
 	}
-	append(args, gcloudFlagsFromImageSpec(vm.ImageSpec)...)
+	image_flags, err := gcloudFlagsFromImageSpec(vm.ImageSpec)
+	if err != nil {
+		return nil, err
+	}
+	append(args, image_flags...)
 	if len(newMetadata) > 0 {
 		// The --metadata flag can't be empty, so we have to have a special case
 		// to omit the flag completely when the newMetadata map is empty.
