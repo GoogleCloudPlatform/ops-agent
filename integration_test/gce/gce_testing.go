@@ -1043,8 +1043,8 @@ func addFrameworkLabels(inputLabels map[string]string) (map[string]string, error
 	return labelsCopy, nil
 }
 
-func installErr(package string, imageSpec string) error {
-	return fmt.Errorf("this test does not know how to install %s on image spec: %s", package, imageSpec)
+func installErr(pkg string, imageSpec string) error {
+	return fmt.Errorf("this test does not know how to install %s on image spec: %s", pkg, imageSpec)
 }
 
 // gcloudFlagsFromImageSpec returns the flags used in
