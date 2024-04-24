@@ -1136,8 +1136,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		"--network=" + vm.Network,
 		"--format=json",
 	}
-	// vm.ImageSpec 
-	gcloudFlagsFromImageSpec()
+	append(args, gcloudFlagsFromImageSpec(vm.ImageSpec)...)
 	if len(newMetadata) > 0 {
 		// The --metadata flag can't be empty, so we have to have a special case
 		// to omit the flag completely when the newMetadata map is empty.
