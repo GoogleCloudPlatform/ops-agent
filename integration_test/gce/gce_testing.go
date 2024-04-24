@@ -1049,7 +1049,7 @@ func installErr(pkg string, imageSpec string) error {
 
 // gcloudFlagsFromImageSpec returns the flags used in
 // `gcloud compute instances create` to specify the desired image.
-func gcloudFlagsFromImageSpec(imageSpec string) (string, error) {
+func gcloudFlagsFromImageSpec(imageSpec string) ([]string, error) {
 	delim := ""
 	if strings.Contains(imageSpec, ":") {
 		delim = ":"
