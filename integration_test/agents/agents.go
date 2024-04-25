@@ -368,6 +368,7 @@ func tryInstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkg
 		cmd = fmt.Sprintf("sudo apt-get update; sudo apt-get -y install %s", pkgsString)
 	default:
 		return fmt.Errorf("tryInstallPackages() doesn't support platform %s with value '%s'", vm.Platform, distroOut.Stdout)
+	}
 	_, err = gce.RunRemotely(ctx, logger, vm, cmd)
 	return err
 }
