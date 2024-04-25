@@ -49,6 +49,7 @@ func (p LoggingProcessorMssqlLog) Components(ctx context.Context, tag string, ui
 		// 2022-03-20 00:00:01.90 Backup      Log was backed up. Database: demo, creation date(time): 2020/01/31(10:33:17), first LSN: 582441:259880:1, last LSN: 582441:259912:1, number of dump devices: 1, device information: (FILE=1, TYPE=DISK: {'\\server\share\DatabaseBackups\demo.trn'}). This is an informational message only. No user action is required.
 		// 2022-03-20 00:00:03.76 Logon       Error: 18456, Severity: 14, State: 38.
 		Regex: `^(?<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{2}) (?<process>\w+)\s+(?<message>[\s|\S]*)?`,
+		// Not sending the log timestamp from above because MSSQL logs use server time
 	}.Components(ctx, tag, uid)
 
 	c = append(c, fluentbit.Component{
@@ -71,8 +72,7 @@ func (r LoggingReceiverMssqlLog) Components(ctx context.Context, tag string) []f
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			"/var/opt/mssql/log/errorlog",
-			"Program Files\\Microsoft SQL Server\\MSSQL.n\\MSSQL\\LOG\\ERRORLOG",
-			"Program Files\\Microsoft SQL Server\\MSSQL.n\\MSSQL\\LOG\\ERRORLOG.n",
+			"C:\\MSSQL.*\\MSSQL\\LOG\\ERRORLOG",
 		}
 	}
 	r.MultilineRules = []confgenerator.MultilineRule{
