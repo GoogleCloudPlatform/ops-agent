@@ -370,11 +370,12 @@ func packageManagerCmd()(ctx context.Context, logger *log.Logger, vm *gce.VM) (s
 
 // managePackages calls the package manager of the vm with the provided instruction (install/remove) for a set of packages.
 func managePackages(ctx context.Context, logger *log.Logger, vm *gce.VM, instruction string, pkgs []string) error {
-	cmd, err := installCmd(ctx, logger, vm)
+	pkgMCmd, err := packageManagerCmd(ctx, logger, vm)
 	if err != nil {
 		return err
 	}
-	_, err = gce.RunRemotely(ctx, logger, vm, strings.Join(cmd, instruction, pkgs, " "))
+	cmd := fmt.Sprintf("%s %s %s", pkgMCmd, instruction, strings.Join(pkgs, " "))
+	_, err = gce.RunRemotely(ctx, logger, vm, cmd)
 	return err
 }
 
