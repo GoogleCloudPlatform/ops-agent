@@ -1,0 +1,6 @@
+[1:1] string was used where mapping is expected
+>  1 | $ErrorActionPreference = 'Stop'
+       ^
+   3 | # This config gets merged with the built-in Ops Agent config, which already
+   4 | # includes the v1 receiver in the default pipeline.
+   5 | 
