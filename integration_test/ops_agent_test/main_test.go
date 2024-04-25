@@ -80,7 +80,7 @@ import (
 //go:embed testdata
 var testdataDir embed.FS
 
-func logPathForImageSpec(imageSpec string) string {
+func logPathForImage(imageSpec string) string {
 	if gce.IsWindows(imageSpec) {
 		return `C:\mylog`
 	}
