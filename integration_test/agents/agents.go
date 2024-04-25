@@ -344,14 +344,14 @@ func tryInstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkg
 		return err
 	}
 	cmd := ""
-	if strings.HasPrefix(vm.ImageSpec, "centos-") ||
+	if strings.HasPrefix(vm.ImageSpec, "centos-cloud") ||
 		strings.HasPrefix(vm.ImageSpec, "rhel-") ||
-		strings.HasPrefix(vm.ImageSpec, "rocky-linux-") {
+		strings.HasPrefix(vm.ImageSpec, "rocky-linux-cloud") {
 		cmd = fmt.Sprintf("sudo yum -y install %s", pkgsString)
 	} else if gce.IsSUSE(vm.ImageSpec) {
 		cmd = fmt.Sprintf("sudo zypper --non-interactive install %s", pkgsString)
-	} else if strings.HasPrefix(vm.ImageSpec, "debian-") ||
-		strings.HasPrefix(vm.ImageSpec, "ubuntu-") {
+	} else if strings.HasPrefix(vm.ImageSpec, "debian-cloud") ||
+		strings.HasPrefix(vm.ImageSpec, "ubuntu-os-cloud") {
 		cmd = fmt.Sprintf("sudo apt-get update; sudo apt-get -y install %s", pkgsString)
 	} else {
 		return fmt.Errorf("tryInstallPackages() doesn't support image spec: %q", vm.ImageSpec)
@@ -381,14 +381,14 @@ func UninstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs
 		return nil
 	}
 	cmd := ""
-	if strings.HasPrefix(vm.ImageSpec, "centos-") ||
+	if strings.HasPrefix(vm.ImageSpec, "centos-cloud") ||
 		strings.HasPrefix(vm.ImageSpec, "rhel-") ||
-		strings.HasPrefix(vm.ImageSpec, "rocky-linux-") {
+		strings.HasPrefix(vm.ImageSpec, "rocky-linux-cloud") {
 		cmd = fmt.Sprintf("sudo yum -y remove %s", pkgsString)
-	} else if strings.HasPrefix(vm.ImageSpec, "sles-") {
+	} else if strings.HasPrefix(vm.ImageSpec, "suse-") {
 		cmd = fmt.Sprintf("sudo zypper --non-interactive remove %s", pkgsString)
-	} else if strings.HasPrefix(vm.ImageSpec, "debian-") ||
-		strings.HasPrefix(vm.ImageSpec, "ubuntu-") {
+	} else if strings.HasPrefix(vm.ImageSpec, "debian-cloud") ||
+		strings.HasPrefix(vm.ImageSpec, "ubuntu-os-cloud") {
 		cmd = fmt.Sprintf("sudo apt-get -y remove %s", pkgsString)
 	} else {
 		return fmt.Errorf("UninstallPackages() doesn't support image spec: %q", vm.ImageSpec)
@@ -431,8 +431,8 @@ func checkPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs []s
 			if !installed {
 				cmd = "! " + cmd
 			}
-		} else if strings.HasPrefix(vm.ImageSpec, "debian-") ||
-			strings.HasPrefix(vm.ImageSpec, "ubuntu-") {
+		} else if strings.HasPrefix(vm.ImageSpec, "debian-cloud") ||
+			strings.HasPrefix(vm.ImageSpec, "ubuntu-os-cloud") {
 			// dpkg's package states are documented in "man 1 dpkg".
 			// "config-files" means that the package is not installed but its config files
 			// are still on the system. Accepting both that and "not-installed" is more
@@ -481,10 +481,10 @@ func CheckAgentsUninstalled(ctx context.Context, logger *log.Logger, vm *gce.VM,
 
 // IsRPMBased checks if the image spec is RPM based.
 func IsRPMBased(imageSpec string) bool {
-	return strings.HasPrefix(imageSpec, "centos-") ||
+	return strings.HasPrefix(imageSpec, "centos-cloud") ||
 		strings.HasPrefix(imageSpec, "rhel-") ||
-		strings.HasPrefix(imageSpec, "rocky-linux-") ||
-		strings.HasPrefix(imageSpec, "sles-") ||
+		strings.HasPrefix(imageSpec, "rocky-linux-cloud") ||
+		strings.HasPrefix(imageSpec, "suse-") ||
 		strings.HasPrefix(imageSpec, "opensuse-")
 }
 
@@ -596,11 +596,11 @@ func isRetriableInstallError(imageSpec string, err error) bool {
 		strings.Contains(err.Error(), "context deadline exceeded") {
 		return true // See b/197127877 for history.
 	}
-	if strings.HasPrefix(imageSpec, "rhel-8-") && strings.HasSuffix(imageSpec, "-sap-ha") &&
+	if strings.Contains(imageSpec, "rhel-8-") && strings.HasSuffix(imageSpec, "-sap-ha") &&
 		strings.Contains(err.Error(), "Could not refresh the google-cloud-ops-agent yum repositories") {
 		return true // See b/174039270 for history.
 	}
-	if strings.HasPrefix(imageSpec, "rhel-8-") && strings.HasSuffix(imageSpec, "-sap-ha") &&
+	if strings.Contains(imageSpec, "rhel-8-") && strings.HasSuffix(imageSpec, "-sap-ha") &&
 		strings.Contains(err.Error(), "Failed to download metadata for repo 'rhui-rhel-8-") {
 		return true // This happens when the RHEL servers are down. See b/189950957.
 	}
@@ -610,17 +610,17 @@ func isRetriableInstallError(imageSpec string, err error) bool {
 	if strings.HasPrefix(imageSpec, "rhel-") && strings.Contains(err.Error(), "Encountered end of file") {
 		return true // b/184729120#comment31. Example: screen/4yK9evoY68LiaLr
 	}
-	if strings.HasPrefix(imageSpec, "ubuntu-") && strings.Contains(err.Error(), "Clearsigned file isn't valid") {
+	if strings.HasPrefix(imageSpec, "ubuntu-os-cloud") && strings.Contains(err.Error(), "Clearsigned file isn't valid") {
 		// The upstream repo was in an inconsistent state. The error looks like:
 		// screen/7U24zrRwADyYKqb
 		return true
 	}
-	if strings.HasPrefix(imageSpec, "ubuntu-") && strings.Contains(err.Error(), "Mirror sync in progress?") {
+	if strings.HasPrefix(imageSpec, "ubuntu-os-cloud") && strings.Contains(err.Error(), "Mirror sync in progress?") {
 		// The mirror repo was in an inconsistent state. The error looks like:
 		// http://screen/Ai2CHc7fcRosHJu
 		return true
 	}
-	if strings.HasPrefix(imageSpec, "ubuntu-") && strings.Contains(err.Error(), "Hash Sum mismatch") {
+	if strings.HasPrefix(imageSpec, "ubuntu-os-cloud") && strings.Contains(err.Error(), "Hash Sum mismatch") {
 		// The mirror repo was in an inconsistent state. The error looks like:
 		// http://screen/8HjakedwVnXZvw6
 		return true
@@ -638,7 +638,7 @@ func RunInstallFuncWithRetry(ctx context.Context, logger *log.Logger, vm *gce.VM
 	shouldRetry := func(err error) bool { return isRetriableInstallError(vm.ImageSpec, err) }
 	installWithRecovery := func() error {
 		err := installFunc()
-		if err != nil && shouldRetry(err) && strings.HasPrefix(vm.ImageSpec, "rhel-8-") && strings.HasSuffix(vm.ImageSpec, "-sap-ha") {
+		if err != nil && shouldRetry(err) && strings.Contains(vm.ImageSpec, "rhel-8-") && strings.HasSuffix(vm.ImageSpec, "-sap-ha") {
 			logger.Println("attempting recovery steps from https://access.redhat.com/discussions/4656371 so that subsequent attempts are more likely to succeed... see b/189950957")
 			gce.RunRemotely(ctx, logger, vm, "sudo dnf clean all && sudo rm -r /var/cache/dnf && sudo dnf upgrade")
 		}
