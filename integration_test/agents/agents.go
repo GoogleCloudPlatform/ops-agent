@@ -356,22 +356,18 @@ func tryInstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkg
 
 	cmd := ""
 	switch distroOut.Stdout {
+	case "centos":
+		fallthrough
+	case "rocky":
+		cmd = fmt.Sprintf("sudo yum -y install %s", pkgsString)
+	case "sles":
+		cmd = fmt.Sprintf("sudo zypper --non-interactive install %s", pkgsString)
 	case "debian":
 		fallthrough
 	case "ubuntu":
 		cmd = fmt.Sprintf("sudo apt-get update; sudo apt-get -y install %s", pkgsString)
 	default:
 		return fmt.Errorf("tryInstallPackages() doesn't support platform %q with value '%q'", vm.Platform, distroOut.Stdout)
-	}
-	// if strings.HasPrefix(vm.Platform, "centos-") ||
-	// 	strings.HasPrefix(vm.Platform, "rhel-") ||
-	// 	strings.HasPrefix(vm.Platform, "rocky-linux-") {
-	// 	cmd = fmt.Sprintf("sudo yum -y install %s", pkgsString)
-	// } else if gce.IsSUSE(vm.Platform) {
-	// 	cmd = fmt.Sprintf("sudo zypper --non-interactive install %s", pkgsString)
-	// } else {
-	// 	return fmt.Errorf("tryInstallPackages() doesn't support platform %q", vm.Platform)
-	// }
 	_, err = gce.RunRemotely(ctx, logger, vm, cmd)
 	return err
 }
