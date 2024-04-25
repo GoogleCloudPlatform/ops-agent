@@ -342,35 +342,45 @@ func getOS(ctx context.Context, logger *log.Logger, vm *gce.VM) (gce.CommandOutp
 	return gce.RunRemotely(ctx, logger, vm, cmd)
 }
 
-// tryInstallPackages attempts once to install the given packages.
-func tryInstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs []string) error {
+func packageManagerCmd()(ctx context.Context, logger *log.Logger, vm *gce.VM) (string, error) {
 	pkgsString := strings.Join(pkgs, " ")
 	if gce.IsWindows(vm.Platform) {
-		_, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("googet -noconfirm install %s", pkgsString))
-		return err
+		return "googet -noconfirm", nil
 	}
 	distroOut, err := getOS(ctx, logger, vm)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	cmd := ""
 	switch distroOut.Stdout {
 	case "centos":
 		fallthrough
 	case "rocky":
-		cmd = fmt.Sprintf("sudo yum -y install %s", pkgsString)
+		return "sudo yum -y", nil
 	case "sles":
-		cmd = fmt.Sprintf("sudo zypper --non-interactive install %s", pkgsString)
+		return "sudo zypper --non-interactive", nil
 	case "debian":
 		fallthrough
 	case "ubuntu":
-		cmd = fmt.Sprintf("sudo apt-get update; sudo apt-get -y install %s", pkgsString)
+		return "sudo apt-get update; sudo apt-get -y", nil
 	default:
-		return fmt.Errorf("tryInstallPackages() doesn't support platform %s with value '%s'", vm.Platform, distroOut.Stdout)
+		return "", fmt.Errorf("packageManagerCmd() doesn't support platform %s with value '%s'", vm.Platform, distroOut.Stdout)
 	}
-	_, err = gce.RunRemotely(ctx, logger, vm, cmd)
+}
+
+// managePackages calls the package manager of the vm with the provided instruction (install/remove) for a set of packages.
+func managePackages(ctx context.Context, logger *log.Logger, vm *gce.VM, instruction string, pkgs []string) error {
+	cmd, err := installCmd(ctx, logger, vm)
+	if err != nil {
+		return err
+	}
+	_, err = gce.RunRemotely(ctx, logger, vm, strings.Join(cmd, instruction, pkgs, " "))
 	return err
+}
+
+// tryInstallPackages attempts once to install the given packages.
+func tryInstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs []string) error {
+	return managePackages(ctx, logger, vm, "install", pkgs)
 }
 
 // InstallPackages installs the given packages on the given VM. Assumes repo is
@@ -386,39 +396,7 @@ func InstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs [
 
 // UninstallPackages removes the given packages from the given VM.
 func UninstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs []string) error {
-	pkgsString := strings.Join(pkgs, " ")
-	if gce.IsWindows(vm.Platform) {
-		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("googet -noconfirm remove %s", pkgsString)); err != nil {
-			return fmt.Errorf("could not uninstall %s. err: %v", pkgsString, err)
-		}
-		return nil
-	}
-	distroOut, err := getOS(ctx, logger, vm)
-	if err != nil {
-		return err
-	}
-
-	cmd := ""
-	switch distroOut.Stdout {
-	case "centos":
-		fallthrough
-	case "rocky":
-		cmd = fmt.Sprintf("sudo yum -y remove %s", pkgsString)
-	case "sles":
-		cmd = fmt.Sprintf("sudo zypper --non-interactive remove %s", pkgsString)
-	case "debian":
-		fallthrough
-	case "ubuntu":
-		cmd = fmt.Sprintf("sudo apt-get -y remove %s", pkgsString)
-	default:
-		return fmt.Errorf("UninstallPackages() doesn't support platform %s with value '%s'", vm.Platform, distroOut.Stdout)
-	_, err = gce.RunRemotely(ctx, logger, vm, cmd)
-	return err
-	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, cmd); err != nil {
-		return fmt.Errorf("could not uninstall %s. err: %v", pkgsString, err)
-	}
-	return nil
+	return managePackages(ctx, logger, vm, "remove", pkgs)
 }
 
 // checkPackages asserts that the given packages on the given VM are in a state matching the installed argument.
