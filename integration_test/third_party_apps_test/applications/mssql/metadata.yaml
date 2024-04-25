@@ -149,3 +149,15 @@ configuration_options:
         - name: receiver_version
           default: "1"
           description: Either 1 or 2. Version 2 has many more metrics available.
+expected_logs:
+  - log_name: mssql_errorlog
+    fields:
+      - name: jsonPayload.timestamp
+        type: string
+        description: Date and time that the event being logged occurred
+      - name: jsonPayload.process
+        type: string
+        description: Name or pid of the process associated with the event being logged
+      - name: jsonPayload.message
+        type: string
+        description: Log message

@@ -18,9 +18,79 @@ import (
 	"context"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
+
+type LoggingProcessorMssqlLog struct {
+	confgenerator.ConfigComponent `yaml:",inline"`
+}
+
+func (LoggingProcessorMssqlLog) Type() string {
+	return "mssql_errorlog"
+}
+
+func (p LoggingProcessorMssqlLog) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
+	c := confgenerator.LoggingProcessorParseRegex{
+		// SAMPLE LOG ENTRIES, including multiline:
+		//
+		// 2022-03-20 00:00:00.27 spid56      Microsoft SQL Server 2019 (RTM-CU4) (KB4548597) - 15.0.4033.1 (X64)
+		// 	Mar 14 2020 16:10:35
+		// 	Copyright (C) 2019 Microsoft Corporation
+		// 	Developer Edition (64-bit) on Windows Server 2019 Datacenter 10.0 <X64> (Build 17763: ) (Hypervisor)
+		//
+		// 2022-03-20 00:00:00.28 spid56      UTC adjustment: -5:00
+		// 2022-03-20 00:00:00.28 spid56      (c) Microsoft Corporation.
+		// 2022-03-20 00:00:00.28 spid56      All rights reserved.
+		// 2022-03-20 00:00:00.28 spid56      Server process ID is 3432.
+		// 2022-03-20 00:00:00.28 spid56      System Manufacturer: 'Google', System Model: 'Google Compute Engine'.
+		// 2022-03-20 00:00:00.28 spid56      Authentication mode is MIXED.
+		// 2022-03-20 00:00:01.90 Backup      Log was backed up. Database: demo, creation date(time): 2020/01/31(10:33:17), first LSN: 582441:259880:1, last LSN: 582441:259912:1, number of dump devices: 1, device information: (FILE=1, TYPE=DISK: {'\\server\share\DatabaseBackups\demo.trn'}). This is an informational message only. No user action is required.
+		// 2022-03-20 00:00:03.76 Logon       Error: 18456, Severity: 14, State: 38.
+		Regex: `^(?<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{2}) (?<process>\w+)\s+(?<message>[\s|\S]*)?`,
+	}.Components(ctx, tag, uid)
+
+	c = append(c, fluentbit.Component{
+		Kind: "FILTER",
+		Config: map[string]string{
+			"Name":  "modify",
+			"Match": tag,
+			"Add":   "logging.googleapis.com/severity info",
+		},
+	})
+	return c
+}
+
+type LoggingReceiverMssqlLog struct {
+	LoggingProcessorMssqlLog                `yaml:",inline"`
+	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+}
+
+func (r LoggingReceiverMssqlLog) Components(ctx context.Context, tag string) []fluentbit.Component {
+	if len(r.IncludePaths) == 0 {
+		r.IncludePaths = []string{
+			"/var/opt/mssql/log/errorlog",
+			"Program Files\\Microsoft SQL Server\\MSSQL.n\\MSSQL\\LOG\\ERRORLOG",
+			"Program Files\\Microsoft SQL Server\\MSSQL.n\\MSSQL\\LOG\\ERRORLOG.n",
+		}
+	}
+	r.MultilineRules = []confgenerator.MultilineRule{
+		{
+			StateName: "start_state",
+			NextState: "cont",
+			Regex:     `\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{2}`,
+		},
+		{
+			StateName: "cont",
+			NextState: "cont",
+			Regex:     `^(?!\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{2})`,
+		},
+	}
+	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c = append(c, r.LoggingProcessorMssqlLog.Components(ctx, tag, r.Type())...)
+	return c
+}
 
 type MetricsReceiverMssql struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
@@ -108,4 +178,6 @@ func (m MetricsReceiverMssql) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 
 func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverMssql{} }, platform.Windows)
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorMssqlLog{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverMssqlLog{} })
 }
