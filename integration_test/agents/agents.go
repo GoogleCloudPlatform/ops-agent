@@ -343,7 +343,6 @@ func getOS(ctx context.Context, logger *log.Logger, vm *gce.VM) (gce.CommandOutp
 }
 
 func packageManagerCmd(ctx context.Context, logger *log.Logger, vm *gce.VM) (string, error) {
-	pkgsString := strings.Join(pkgs, " ")
 	if gce.IsWindows(vm.Platform) {
 		return "googet -noconfirm", nil
 	}
