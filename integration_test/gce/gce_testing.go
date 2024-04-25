@@ -169,7 +169,6 @@ const (
 	vmInitPokeSSHTimeout              = 30 * time.Second
 	vmWinPasswordResetBackoffDuration = 30 * time.Second
 
-	slesStartupDelay           = 60 * time.Second
 	slesStartupSudoDelay       = 5 * time.Second
 	slesStartupSudoMaxAttempts = 60
 
@@ -285,14 +284,28 @@ func (f *logClientFactory) new(project string) (*logadmin.Client, error) {
 	return logClient, nil
 }
 
+// VMType represents what kind of image is being run.
+type VMType struct {
+	// The same as ID from /etc/os-release, or "windows".
+	ID string
+
+	// The same as VERSION_ID from /etc/os-release, or "" on Windows.
+	// TODO: implement something sane for Windows.
+	Version string
+
+	// On Linux, this is the output of "uname --machine". Either "x86_64" or "aarch64".
+	// On Windows this is "". TODO: implement something sane for Windows.
+	Arch string
+}
+
 // VM represents an individual virtual machine.
 type VM struct {
-	Name     string
-	Project  string
-	Network  string
-	Platform string
+	Name    string
+	Project string
+	Network string
 	// The VMOptions.ImageSpec used to create the VM.
 	ImageSpec   string
+	Type        VMType
 	Zone        string
 	MachineType string
 	ID          int64
@@ -338,9 +351,24 @@ func IsWindows(platform string) bool {
 	return strings.HasPrefix(platform, "windows-") || strings.HasPrefix(platform, "sql-")
 }
 
-// IsWindowsCore returns whether the given platform is a version of Windows core.
-func IsWindowsCore(platform string) bool {
-	return strings.HasPrefix(platform, "windows-") && strings.HasSuffix(platform, "-core")
+// imageSpecIsWindows returns whether the given imageSpec is a version of Windows.
+func imageSpecIsWindows(imageSpec string) bool {
+	for _, delim := range []string{":", "="} {
+		if strings.Contains(imageSpec, delim+"windows-") {
+			return true
+		}
+	}
+	return false
+}
+
+// imageSpecIsWindowsCore returns whether the given imageSpec is a version of Windows core.
+func imageSpecIsWindowsCore(imageSpec string) bool {
+	for _, delim := range []string{":", "="} {
+		if strings.Contains(imageSpec, delim+"windows-") && strings.HasSuffix(imageSpec, "-core") {
+			return true
+		}
+	}
+	return false
 }
 
 // PlatformKind returns "linux" or "windows" based on the given platform.
@@ -1260,7 +1288,23 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		return nil, err
 	}
 
-	if IsSUSE(vm.Platform) {
+	if imageSpecIsSUSE(options.ImageSpec) {
+		// Wait until sudo is ready; see b/259122953.
+		backoffPolicy := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(slesStartupSudoDelay), slesStartupSudoMaxAttempts), ctx)
+		err := backoff.Retry(func() error {
+			_, err := RunRemotely(ctx, logger, vm, "sudo ls /root")
+			return err
+		}, backoffPolicy)
+		if err != nil {
+			return fmt.Errorf("exceeded retries trying to get sudo: %v", err)
+		}
+	}
+
+	if err := populateVMType(ctx, logger, vm); err != nil {
+		return nil, err
+	}
+
+	if IsSUSE(vm.Type) {
 		// Set download.max_silent_tries to 5 (by default, it is commented out in
 		// the config file). This should help with issues like b/211003972.
 		if _, err := RunRemotely(ctx, logger, vm, "sudo sed -i -E 's/.*download.max_silent_tries.*/download.max_silent_tries = 5/g' /etc/zypp/zypp.conf"); err != nil {
@@ -1274,7 +1318,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		}
 	}
 
-	if IsSUSE(vm.Platform) {
+	if IsSUSE(vm.Type) {
 		// Set ZYPP_LOCK_TIMEOUT so tests that use zypper don't randomly fail
 		// because some background process happened to be using zypper at the same time.
 		if _, err := RunRemotely(ctx, logger, vm, `echo 'ZYPP_LOCK_TIMEOUT=300' | sudo tee -a /etc/environment`); err != nil {
@@ -1283,7 +1327,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	}
 
 	// Removing flaky rhel-7 repositories due to b/265341502
-	if isRHEL7SAPHA(vm.Platform) {
+	if isRHEL7SAPHA(vm.Type) {
 		if _, err := RunRemotely(ctx,
 			logger, vm, `sudo yum -y --disablerepo=rhui-rhel*-7-* install yum-utils && sudo yum-config-manager --disable "rhui-rhel*-7-*"`); err != nil {
 			return nil, fmt.Errorf("disabling flaky repos failed : %w", err)
@@ -1293,7 +1337,16 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	return vm, nil
 }
 
-func IsSUSE(platform string) bool {
+func imageSpecIsSUSE(imageSpec string) bool {
+	for _, delim := range []string{":", "="} {
+		if strings.Contains(imageSpec, delim+"sles-") || strings.Contains(imageSpec, delim+"opensuse-") {
+			return true
+		}
+	}
+	return false
+}
+
+func IsSUSE(t typ) bool {
 	return strings.HasPrefix(platform, "sles-") || strings.HasPrefix(platform, "opensuse-")
 }
 
@@ -1340,9 +1393,9 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 			// unsupported. In the absence of a better fix, just retry such errors.
 			strings.Contains(err.Error(), "database is locked") ||
 			// windows-*-core instances sometimes fail to be ssh-able: b/305721001
-			(IsWindowsCore(options.Platform) && strings.Contains(err.Error(), windowsStartupFailedMessage)) ||
+			(imageSpecIsWindowsCore(options.ImageSpec) && strings.Contains(err.Error(), windowsStartupFailedMessage)) ||
 			// SLES instances sometimes fail to be ssh-able: b/186426190
-			(IsSUSE(options.Platform) && strings.Contains(err.Error(), startupFailedMessage)) ||
+			(imageSpecIsSUSE(options.ImageSpec) && strings.Contains(err.Error(), startupFailedMessage)) ||
 			strings.Contains(err.Error(), prepareSLESMessage)
 	}
 
@@ -1541,7 +1594,7 @@ func InstallGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) erro
 
 	// SUSE seems to be the only distro without gsutil, so what follows is all
 	// very SUSE-specific.
-	if !IsSUSE(vm.Platform) {
+	if !IsSUSE(vm.Type) {
 		return fmt.Errorf("this test does not know how to install gsutil on platform %q", vm.Platform)
 	}
 
@@ -1756,7 +1809,7 @@ func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error 
 func waitForStartLinux(ctx context.Context, logger *log.Logger, vm *VM) error {
 	var backoffPolicy backoff.BackOff
 	backoffPolicy = backoff.NewConstantBackOff(vmInitBackoffDuration)
-	if IsSUSE(vm.Platform) {
+	if imageSpecIsSUSE(vm.ImageSpec) {
 		// Give up early on SUSE due to b/186426190. If this step times out, the
 		// error will be retried with a fresh VM.
 		backoffPolicy = backoff.WithMaxRetries(backoffPolicy, uint64((5*time.Minute)/vmInitBackoffDuration))
@@ -1798,21 +1851,6 @@ func waitForStartLinux(ctx context.Context, logger *log.Logger, vm *VM) error {
 		return fmt.Errorf("%v. Last err=%v", startupFailedMessage, err)
 	}
 
-	if IsSUSE(vm.Platform) {
-		// TODO(b/259122953): SUSE needs additional startup time. Remove once we have more
-		// sensible/deterministic workarounds for each of the individual problems.
-		time.Sleep(slesStartupDelay)
-		// TODO(b/259122953): wait until sudo is ready
-		backoffPolicy := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(slesStartupSudoDelay), slesStartupSudoMaxAttempts), ctx)
-		err := backoff.Retry(func() error {
-			_, err := RunRemotely(ctx, logger, vm, "sudo ls /root")
-			return err
-		}, backoffPolicy)
-		if err != nil {
-			return fmt.Errorf("exceeded retries trying to get sudo: %v", err)
-		}
-	}
-
 	return nil
 }
 
@@ -1825,6 +1863,47 @@ func waitForStart(ctx context.Context, logger *log.Logger, vm *VM) error {
 		return waitForStartWindows(ctx, logger, vm)
 	}
 	return waitForStartLinux(ctx, logger, vm)
+}
+
+func populateVMType(ctx context.Context, logger *log.Logger, vm *VM) error {
+	if imageSpecIsWindows(vm.ImageSpec) {
+		vm.Type.ID = "windows"
+		return nil
+	}
+
+	output, err := RunRemotely(ctx, logger, vm, "uname --machine")
+	if err != nil {
+		return err
+	}
+	vm.Type.Arch = strings.TrimSpace(output.Stdout)
+
+	output, err := RunRemotely(ctx, logger, vm, "cat /etc/os-release")
+	if err != nil {
+		return err
+	}
+	// Example /etc/os-release contents:
+	//
+	// NAME="Debian GNU/Linux"
+	// VERSION_CODENAME=bullseye
+	// ID=debian
+	lines = strings.Split(output.Stdout, "\n")
+	for line := range lines {
+		keyAndVal = strings.SplitN(line, "=", 2)
+		if len(keyAndVal) == 2 {
+			key := keyAndVal[0]
+			val := keyAndVal[1]
+
+			if key == "ID" {
+				vm.Type.ID = val
+			} else if key == "VERSION_ID" {
+				vm.Type.Version = val
+			}
+		}
+	}
+	if vm.Type.ID == "" {
+		return fmt.Errorf("Could not parse ID from /etc/os-release: \n%s", output.Stdout)
+	}
+	return nil
 }
 
 // logLocation returns a string pointing to the test log. When this test is run
