@@ -2300,7 +2300,7 @@ func TestSystemLogByDefault(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		tag := systemLogTagForImage(vm.ImafeSpec)
+		tag := systemLogTagForImage(vm.ImageSpec)
 		if err := gce.WaitForLog(ctx, logger, vm, tag, time.Hour, logMessageQueryForImage(vm.ImageSpec, "123456789")); err != nil {
 			t.Error(err)
 		}
@@ -2308,7 +2308,7 @@ func TestSystemLogByDefault(t *testing.T) {
 }
 
 func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, vm *gce.VM, window time.Duration) {
-	if !gce.IsWindows(vm.ImafeSpec) {
+	if !gce.IsWindows(vm.ImageSpec) {
 		// Enable swap file: https://linuxize.com/post/create-a-linux-swap-file/
 		// We do this so that swap file metrics will show up.
 		_, err := gce.RunRemotely(ctx, logger, vm, strings.Join([]string{
@@ -2361,7 +2361,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 	// query for the rest of the metrics. We used to query for all the metrics
 	// at once, but due to the "no metrics yet" retries, this ran us out of
 	// quota (b/185363780).
-	osKind := gce.OSKind(vm.ImafeSpec)
+	osKind := gce.OSKind(vm.ImageSpec)
 	var metricsWaitGroup sync.WaitGroup
 	for _, metric := range expectedMetrics {
 		metric := metric
@@ -3668,7 +3668,7 @@ traces:
 // fetchPID returns the process ID of the process with the given name on the given VM.
 func fetchPID(ctx context.Context, logger *log.Logger, vm *gce.VM, processName string) (string, error) {
 	var cmd string
-	if gce.IsWindows(vm.ImafeSpec) {
+	if gce.IsWindows(vm.ImageSpec) {
 		cmd = fmt.Sprintf("Get-Process -Name '%s' | Select-Object -Property Id | Format-Wide", processName)
 	} else {
 		// pgrep has a limit of 15 characters to lookup processes
@@ -3704,7 +3704,7 @@ func fetchPIDAndProcessName(ctx context.Context, logger *log.Logger, vm *gce.VM,
 
 func terminateProcess(ctx context.Context, logger *log.Logger, vm *gce.VM, processName string) error {
 	var cmd string
-	if gce.IsWindows(vm.ImafeSpec) {
+	if gce.IsWindows(vm.ImageSpec) {
 		cmd = fmt.Sprintf("Stop-Process -Name '%s' -PassThru -Force", processName)
 	} else {
 		// pkill has a limit of 15 characters to lookup processes
@@ -3772,7 +3772,7 @@ func TestMetricsAgentCrashRestart(t *testing.T) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
-		testAgentCrashRestart(ctx, t, logger, vm, metricsAgentProcessNamesForImage(vm.ImafeSpec), metricsLivenessChecker)
+		testAgentCrashRestart(ctx, t, logger, vm, metricsAgentProcessNamesForImage(vm.ImageSpec), metricsLivenessChecker)
 	})
 }
 
@@ -3781,7 +3781,7 @@ func loggingLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM)
 	if err := writeToSystemLog(ctx, logger, vm, msg); err != nil {
 		return err
 	}
-	tag := systemLogTagForImage(vm.ImafeSpec)
+	tag := systemLogTagForImage(vm.ImageSpec)
 	return gce.WaitForLog(ctx, logger, vm, tag, time.Hour, logMessageQueryForImage(vm.ImageSpec, msg))
 }
 
@@ -3844,7 +3844,7 @@ func TestLoggingDataprocAttributes(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		tag := systemLogTagForImage(vm.ImafeSpec)
+		tag := systemLogTagForImage(vm.ImageSpec)
 		query := fmt.Sprintf(`labels."compute.googleapis.com/attributes/dataproc-cluster-name"="my-test-cluster" AND %s`, logMessageQueryForImage(vm.ImageSpec, "123456789"))
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, tag, time.Hour, query); err != nil {
 			t.Error(err)
@@ -3867,7 +3867,7 @@ func TestDiagnosticsCrashRestart(t *testing.T) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
-		testAgentCrashRestart(ctx, t, logger, vm, diagnosticsProcessNamesForImage(vm.ImafeSpec), diagnosticsLivenessChecker)
+		testAgentCrashRestart(ctx, t, logger, vm, diagnosticsProcessNamesForImage(vm.ImageSpec), diagnosticsLivenessChecker)
 	})
 }
 
@@ -4030,7 +4030,7 @@ func runResourceDetectorCli(ctx context.Context, logger *log.Logger, vm *gce.VM)
 	}
 
 	// Create the folder structure on the VM
-	workDir := path.Join(workDirForImage(vm.ImafeSpec), "run_resource_detector")
+	workDir := path.Join(workDirForImage(vm.ImageSpec), "run_resource_detector")
 	packageDir := path.Join(workDir, "confgenerator", "resourcedetector")
 	if err := makeDirectory(ctx, logger, vm, packageDir); err != nil {
 		return nil, fmt.Errorf("failed to create folder %s in VM: %v", packageDir, err)
@@ -4056,7 +4056,7 @@ func runResourceDetectorCli(ctx context.Context, logger *log.Logger, vm *gce.VM)
 	cmd := fmt.Sprintf(`
 		%s
 		cd %s
-		go run run_resource_detector.go`, goPathCommandForImage(vm.ImafeSpec), workDir)
+		go run run_resource_detector.go`, goPathCommandForImage(vm.ImageSpec), workDir)
 	runnerOutput, err := gce.RunRemotely(ctx, logger, vm, cmd)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run resource detector in VM: %w", err)
@@ -4090,11 +4090,11 @@ func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	goVersion := "1.21.4"
 
 	goArch := "amd64"
-	if gce.IsARM(vm.ImafeSpec) {
+	if gce.IsARM(vm.ImageSpec) {
 		goArch = "arm64"
 	}
 	var installCmd string
-	if gce.IsWindows(vm.ImafeSpec) {
+	if gce.IsWindows(vm.ImageSpec) {
 		// TODO: host go windows installer in GCS if `go.dev` throttles us.
 		installCmd = fmt.Sprintf(`
 			cd (New-TemporaryFile | %% { Remove-Item $_; New-Item -ItemType Directory -Path $_ })
@@ -4119,7 +4119,7 @@ func goPathCommandForImage(imageSpec string) string {
 }
 
 func runGoCode(ctx context.Context, logger *log.Logger, vm *gce.VM, content io.Reader) error {
-	workDir := path.Join(workDirForImage(vm.ImafeSpec), "gocode")
+	workDir := path.Join(workDirForImage(vm.ImageSpec), "gocode")
 	if err := makeDirectory(ctx, logger, vm, workDir); err != nil {
 		return err
 	}
@@ -4131,7 +4131,7 @@ func runGoCode(ctx context.Context, logger *log.Logger, vm *gce.VM, content io.R
 		cd %s
 		go mod init main
 		go get ./...
-		go run main.go`, goPathCommandForImage(vm.ImafeSpec), workDir)
+		go run main.go`, goPathCommandForImage(vm.ImageSpec), workDir)
 	_, err := gce.RunRemotely(ctx, logger, vm, goInitAndRun)
 	return err
 }
@@ -4441,9 +4441,9 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 		ctx, dirLog, vm := agents.CommonSetupWithExtraCreateArguments(t, imageSpec, []string{"--scopes", customScopes})
 		logger := dirLog.ToMainLog()
 
-		if !gce.IsWindows(vm.ImafeSpec) {
+		if !gce.IsWindows(vm.ImageSpec) {
 			var packages []string
-			if gce.IsCentOS(vm.ImafeSpec) || gce.IsRHEL(vm.ImafeSpec) {
+			if gce.IsCentOS(vm.ImageSpec) || gce.IsRHEL(vm.ImageSpec) {
 				packages = []string{"nc"}
 			} else {
 				packages = []string{"netcat"}
@@ -4454,7 +4454,7 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 			}
 		}
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, listenToPortForImage(vm.ImafeSpec)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, listenToPortForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)
 		}
 		// Wait for port to be in listen mode.
@@ -4464,7 +4464,7 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImafeSpec))
+		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -4494,7 +4494,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImafeSpec))
+		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -4503,7 +4503,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, stopCommandForImage(vm.ImafeSpec)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, stopCommandForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)
 		}
 
@@ -4513,11 +4513,11 @@ func TestNetworkHealthCheck(t *testing.T) {
 		}
 		time.Sleep(time.Minute)
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, startCommandForImage(vm.ImafeSpec)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, startCommandForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)
 		}
 
-		cmdOut, err = gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImafeSpec))
+		cmdOut, err = gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -4615,13 +4615,13 @@ func TestDisableSelfLogCollection(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, stopCommandForImage(vm.ImafeSpec)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, stopCommandForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)
 		}
 
 		time.Sleep(2 * time.Minute)
 
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, startCommandForImage(vm.ImafeSpec)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, startCommandForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)
 		}
 
@@ -4794,7 +4794,7 @@ func TestRestartVM(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImafeSpec))
+		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -4809,7 +4809,7 @@ func TestRestartVM(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cmdOut, err = gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImafeSpec))
+		cmdOut, err = gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
 		if err != nil {
 			t.Fatal(err)
 		}
