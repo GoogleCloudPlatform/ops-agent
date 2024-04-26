@@ -1,16 +1,17 @@
-$ErrorActionPreference = 'Stop'
+# Copyright 2021 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-# This config gets merged with the built-in Ops Agent config, which already
-# includes the v1 receiver in the default pipeline.
-# Because the v2 receiver here uses a unique ID, it does not overwrite
-# the default receiver and so both receivers will be active simultaneously
-# during the test.
-
-# Create a back up of the existing file so existing configurations are not lost.
-Copy-Item -Path 'C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml' -Destination 'C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml.bak'
-
-# Configure the Ops Agent.
-Add-Content 'C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml' "
 logging:
   receivers:
     mssql:
@@ -19,7 +20,7 @@ logging:
     pipelines:
       mssql:
         receivers:
-        - mssql
+          - mssql
 metrics:
   receivers:
     mssql_v2:
@@ -29,10 +30,4 @@ metrics:
     pipelines:
       mssql_v2:
         receivers:
-        - mssql_v2
-"
-
-# Stop-Service may fail if the service isn't in a Running state yet.
-(Get-Service google-cloud-ops-agent*).WaitForStatus('Running', '00:03:00')
-Stop-Service google-cloud-ops-agent -Force
-Start-Service google-cloud-ops-agent*
+          - mssql_v2
