@@ -124,7 +124,7 @@ func distroFolder(imageSpec string) (string, error) {
 		return "centos_rhel", nil
 	case "debian", "ubuntu":
 		return "debian_ubuntu", nil
-	case "opensuse", "sles":
+	case "suse", "opensuse":
 		return "sles", nil
 	}
 	return "", fmt.Errorf("distroFolder() could not find matching folder holding scripts for image: %s", imageSpec)
