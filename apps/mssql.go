@@ -72,7 +72,7 @@ func (r LoggingReceiverMssqlLog) Components(ctx context.Context, tag string) []f
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			"/var/opt/mssql/log/errorlog",
-			"C:\\Program Files\\Microsoft SQL Server\\MSSQL.*\\MSSQL\\LOG\\ERRORLOG",
+			"C:\\Program Files\\Microsoft SQL Server\\MSSQL*\\MSSQL\\LOG\\ERRORLOG",
 		}
 	}
 	r.MultilineRules = []confgenerator.MultilineRule{
