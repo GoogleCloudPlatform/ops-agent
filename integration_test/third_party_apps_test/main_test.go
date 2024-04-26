@@ -914,7 +914,7 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool) {
 		if reason := incompatibleOperatingSystem(test); reason != "" {
 			tests[i].skipReason = reason
 		}
-		if test.app == "mssql" && gce.IsWindows(test.platform) && !strings.HasPrefix(test.platform, "sql-") {
+		if test.app == "mssql" && gce.IsWindows(test.platform) && !strings.Contains(test.platform, "sql-") {
 			tests[i].skipReason = "Skipping MSSQL test because this version of Windows doesn't have MSSQL"
 		}
 		isSAPHANAPlatform := test.platform == SAPHANAPlatform
