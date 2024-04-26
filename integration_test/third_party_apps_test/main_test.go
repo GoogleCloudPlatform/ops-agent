@@ -589,7 +589,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		return nonRetryable, fmt.Errorf("error enabling %s: %v", app, err)
 	}
 
-	backupConfigFilePath := util.ConfigPathForImage(vm.ImageSpec) + ".bak"
+	backupConfigFilePath := util.GetConfigPath(vm.ImageSpec) + ".bak"
 	if err = assertFilePresence(ctx, logger.ToMainLog(), vm, backupConfigFilePath); err != nil {
 		return nonRetryable, fmt.Errorf("error when fetching back up config file %s: %v", backupConfigFilePath, err)
 	}
