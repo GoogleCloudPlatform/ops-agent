@@ -352,15 +352,11 @@ func packageManagerCmd(ctx context.Context, logger *log.Logger, vm *gce.VM) (str
 	}
 
 	switch distroOut.Stdout {
-	case "centos":
-		fallthrough
-	case "rocky":
+	case "centos", "rocky":
 		return "sudo yum -y", nil
 	case "sles":
 		return "sudo zypper --non-interactive", nil
-	case "debian":
-		fallthrough
-	case "ubuntu":
+	case "debian", "ubuntu":
 		return "sudo apt-get update; sudo apt-get -y", nil
 	default:
 		return "", fmt.Errorf("packageManagerCmd() doesn't support platform %s with value '%s'", vm.Platform, distroOut.Stdout)
