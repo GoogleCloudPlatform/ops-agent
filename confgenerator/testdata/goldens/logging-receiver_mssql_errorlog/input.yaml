@@ -16,7 +16,7 @@ logging:
     mssql:
       type: mssql_errorlog
   service:
-    pipeines:
+    pipelines:
       mssql:
         receivers:
         - mssql
