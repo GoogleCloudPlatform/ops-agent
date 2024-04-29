@@ -11,6 +11,15 @@ Copy-Item -Path 'C:\Program Files\Google\Cloud Operations\Ops Agent\config\confi
 
 # Configure the Ops Agent.
 Add-Content 'C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml' "
+logging:
+  receivers:
+    mssql_errorlog:
+      type: mssql_errorlog
+  service:
+    pipelines:
+      mssql_errorlog:
+        receivers:
+        - mssql_errorlog
 metrics:
   receivers:
     mssql_v2:

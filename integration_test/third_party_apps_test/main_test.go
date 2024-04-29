@@ -802,8 +802,9 @@ type test struct {
 }
 
 var defaultPlatforms = map[string]bool{
-	"debian-10":    true,
-	"windows-2019": true,
+	"debian-10":             true,
+	"windows-2019":          true,
+	"sql-std-2019-win-2019": true,
 }
 
 var defaultApps = map[string]bool{
@@ -913,7 +914,7 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool) {
 		if reason := incompatibleOperatingSystem(test); reason != "" {
 			tests[i].skipReason = reason
 		}
-		if test.app == "mssql" && gce.IsWindows(test.platform) && !strings.HasPrefix(test.platform, "sql-") {
+		if test.app == "mssql" && gce.IsWindows(test.platform) && !strings.Contains(test.platform, "sql-") {
 			tests[i].skipReason = "Skipping MSSQL test because this version of Windows doesn't have MSSQL"
 		}
 		isSAPHANAPlatform := test.platform == SAPHANAPlatform
