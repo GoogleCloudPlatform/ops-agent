@@ -13,13 +13,13 @@ Copy-Item -Path 'C:\Program Files\Google\Cloud Operations\Ops Agent\config\confi
 Add-Content 'C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml' "
 logging:
   receivers:
-    mssql:
+    mssql_errorlog:
       type: mssql_errorlog
   service:
     pipelines:
-      mssql:
+      mssql_errorlog:
         receivers:
-        - mssql
+        - mssql_errorlog
 metrics:
   receivers:
     mssql_v2:
