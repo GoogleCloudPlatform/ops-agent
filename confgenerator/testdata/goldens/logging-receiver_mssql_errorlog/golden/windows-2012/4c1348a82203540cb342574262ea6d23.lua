@@ -34,7 +34,7 @@ end
 record["logging.googleapis.com/labels"]["compute.googleapis.com/resource_name"] = value
 end)(v)
 local v = __field_2;
-if v == nil then v = "mssql" end;
+if v == nil then v = "mssql_errorlog" end;
 (function(value)
 record["logging.googleapis.com/logName"] = value
 end)(v)
