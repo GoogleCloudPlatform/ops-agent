@@ -5,6 +5,7 @@ config build = common.build {
     environment {
       DISTRO = 'noble'
       PKGFORMAT = 'deb'
+      SHORT = 'false'
     }
   }
 }
