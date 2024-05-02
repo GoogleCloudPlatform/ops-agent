@@ -118,16 +118,25 @@ func distroFolder(imageSpec string) (string, error) {
 	if gce.IsWindows(imageSpec) {
 		return "windows", nil
 	}
-	firstWord := strings.Split(imageSpec, "-")[0]
+	delim := ""
+	if strings.contains(imageSpec, ":") {
+		delim = ":"
+	} else if strings.contains(imageSpec, "=") {
+		delim = "="
+	} else {
+		return "", fmt.Errorf("distroFolder() could not parse image spec: %s", imageSpec)
+	}
+	imageOrFamily := strings.Split(imageSpec, delim)[1]
+	firstWord := strings.Split(imageOrFamily, "-")[0]
 	switch firstWord {
 	case "centos", "rhel", "rocky":
 		return "centos_rhel", nil
 	case "debian", "ubuntu":
 		return "debian_ubuntu", nil
-	case "suse", "opensuse":
+	case "opensuse", "sles":
 		return "sles", nil
 	}
-	return "", fmt.Errorf("distroFolder() could not find matching folder holding scripts for image: %s", imageSpec)
+	return "", fmt.Errorf("distroFolder() could not find matching folder holding scripts for image spec: %s", imageSpec)
 }
 
 // runScriptFromScriptsDir runs a script on the given VM.
