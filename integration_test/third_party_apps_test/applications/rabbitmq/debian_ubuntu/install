@@ -24,7 +24,7 @@ case $VERSION_ID in
     echo "deb http://ppa.launchpad.net/rabbitmq/rabbitmq-erlang/ubuntu jammy main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
     ;;
   24.04)
-    echo "deb http://ppa.launchpad.net/rabbitmq/rabbitmq-erlang/ubuntu noble main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
+    echo "deb http://ppa.launchpad.net/rabbitmq/rabbitmq-erlang/ubuntu jammy main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
     ;;
   # debian
   10)
