@@ -30,6 +30,8 @@ platforms_to_skip:
   # mongodb is not currently supported on various distros.
   - ubuntu-os-cloud:ubuntu-2310-amd64
   - ubuntu-os-cloud:ubuntu-2310-arm64
+  - ubuntu-os-cloud:ubuntu-2404-lts-amd64
+  - ubuntu-os-cloud:ubuntu-2404-lts-arm64
   - debian-cloud:debian-12
   - debian-cloud:debian-12-arm64
   - suse-cloud:sles-15-arm64
