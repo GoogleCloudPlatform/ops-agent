@@ -83,11 +83,20 @@ type Config struct {
 	ImageProject string
 }
 
-func distroFolder(platform string) (string, error) {
-	if gce.IsWindows(platform) {
+func distroFolder(imageSpec string) (string, error) {
+	if gce.IsWindows(imageSpec) {
 		return "windows", nil
 	}
-	firstWord := strings.Split(platform, "-")[0]
+	delim := ""
+	if strings.contains(imageSpec, ":") {
+		delim = ":"
+	} else if strings.contains(imageSpec, "=") {
+		delim = "="
+	} else {
+		return "", fmt.Errorf("distroFolder() could not parse image spec: %s", imageSpec)
+	}
+	imageOrFamily := strings.Split(imageSpec, delim)[1]
+	firstWord := strings.Split(imageOrFamily, "-")[0]
 	switch firstWord {
 	case "centos", "rhel", "rocky":
 		return "centos_rhel", nil
@@ -96,7 +105,7 @@ func distroFolder(platform string) (string, error) {
 	case "opensuse", "sles":
 		return "sles", nil
 	}
-	return "", fmt.Errorf("distroFolder() could not find matching folder holding scripts for platform %s", platform)
+	return "", fmt.Errorf("distroFolder() could not find matching folder holding scripts for image spec: %s", imageSpec)
 }
 
 func setupOpsAgent(ctx context.Context, vm *gce.VM, logger *log.Logger, configFilePath string) error {
