@@ -1122,13 +1122,18 @@ func getReleaseInfo(ctx context.Context, logger *log.Logger, vm *VM, name string
 
 // getOS returns an OS struct containing information about the Operating System.
 func getOS(ctx context.Context, logger *log.Logger, vm *VM) (*OS, error) {
-	output, err := getReleaseInfo(ctx, logger, vm, `ID`)
+	if IsWindows(vm.ImageSpec) {
+		return &OS{
+			ID: "windows",
+		}, nil
+	}
+	id_output, err := getReleaseInfo(ctx, logger, vm, "ID")
 	if err != nil {
 		return nil, err
 	}
 
 	return &OS{
-		ID: output.Stdout,
+		ID: id_output.Stdout,
 	}, nil
 }
 
