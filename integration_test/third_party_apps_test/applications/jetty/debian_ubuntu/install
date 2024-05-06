@@ -55,5 +55,5 @@ sudo systemctl daemon-reload
 sudo systemctl enable jetty
 sudo systemctl restart jetty
 
-# Sleep to wait for agent to fully start before running "exercise" script
+# Sleep to wait for jetty to fully start before running "exercise" script
 sleep 5
