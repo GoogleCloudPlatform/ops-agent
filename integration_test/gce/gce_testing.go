@@ -285,6 +285,12 @@ func (f *logClientFactory) new(project string) (*logadmin.Client, error) {
 	return logClient, nil
 }
 
+// OS represents information on the Operating Systems.
+type OS struct {
+	// The same as ID from /etc/os-release, or "windows".
+	ID string
+}
+
 // VM represents an individual virtual machine.
 type VM struct {
 	Name     string
@@ -293,6 +299,7 @@ type VM struct {
 	Platform string
 	// The VMOptions.ImageSpec used to create the VM.
 	ImageSpec   string
+	OS          OS
 	Zone        string
 	MachineType string
 	ID          int64
@@ -1106,6 +1113,23 @@ func parseImageSpec(options *VMOptions) error {
 	return nil
 }
 
+// getReleaseInfo returns the value of the requested variable in /etc/os-release.
+// For possible values, look here: https://www.freedesktop.org/software/systemd/man/latest/os-release.html
+func getReleaseInfo(ctx context.Context, logger *log.Logger, vm *gce.VM, name string) (gce.CommandOutput, error) {
+	cmd := fmt.Sprintf(`. /etc/os-release && echo -n $%s`, name)
+	return gce.RunRemotely(ctx, logger, vm, cmd)
+}
+
+// getOS returns an OS struct containing information about the Operating System.
+func getOS(ctx context.Context, logger *log.Logger, vm *gce.VM) (*OS, error) {
+	if id, err := getReleaseInfo(ctx, logger, vm, cmd, `ID`); err != nil {
+		return nil, err
+	}
+	return &OS{
+		ID: id
+	}, nil
+}
+
 // attemptCreateInstance creates a VM instance and waits for it to be ready.
 // Returns a VM object or an error (never both). The caller is responsible for
 // deleting the VM if (and only if) the returned error is nil.
@@ -1262,7 +1286,11 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		return nil, err
 	}
 
-	if IsSUSE(vm.Platform) {
+	if vm.OS, err := getOS(ctx, logger, vm); err != nil {
+		return nil, err
+	}
+
+	if vm.OS.ID == "sles" {
 		// Set download.max_silent_tries to 5 (by default, it is commented out in
 		// the config file). This should help with issues like b/211003972.
 		if _, err := RunRemotely(ctx, logger, vm, "sudo sed -i -E 's/.*download.max_silent_tries.*/download.max_silent_tries = 5/g' /etc/zypp/zypp.conf"); err != nil {

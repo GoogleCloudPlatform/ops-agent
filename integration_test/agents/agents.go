@@ -336,22 +336,12 @@ func CheckServicesNotRunning(ctx context.Context, logger *log.Logger, vm *gce.VM
 	return nil
 }
 
-// getDistro returns the distro name of the vm.
-func getOS(ctx context.Context, logger *log.Logger, vm *gce.VM) (gce.CommandOutput, error) {
-	cmd := fmt.Sprintf(`. /etc/os-release && echo -n $ID`)
-	return gce.RunRemotely(ctx, logger, vm, cmd)
-}
-
-func packageManagerCmd(ctx context.Context, logger *log.Logger, vm *gce.VM) (string, error) {
+func packageManagerCmd(vm *gce.VM) (string, error) {
 	if gce.IsWindows(vm.Platform) {
 		return "googet -noconfirm", nil
 	}
-	distroOut, err := getOS(ctx, logger, vm)
-	if err != nil {
-		return "", err
-	}
 
-	switch distroOut.Stdout {
+	switch vm.OS.ID {
 	case "centos", "rocky":
 		return "sudo yum -y", nil
 	case "sles":
@@ -359,13 +349,13 @@ func packageManagerCmd(ctx context.Context, logger *log.Logger, vm *gce.VM) (str
 	case "debian", "ubuntu":
 		return "sudo apt-get update; sudo apt-get -y", nil
 	default:
-		return "", fmt.Errorf("packageManagerCmd() doesn't support platform %s with value '%s'", vm.Platform, distroOut.Stdout)
+		return "", fmt.Errorf("packageManagerCmd() doesn't support platform %s with value '%s'", vm.Platform, vm.OS.ID)
 	}
 }
 
 // managePackages calls the package manager of the vm with the provided instruction (install/remove) for a set of packages.
 func managePackages(ctx context.Context, logger *log.Logger, vm *gce.VM, instruction string, pkgs []string) error {
-	pkgMCmd, err := packageManagerCmd(ctx, logger, vm)
+	pkgMCmd, err := packageManagerCmd(vm)
 	if err != nil {
 		return err
 	}
