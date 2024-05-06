@@ -1115,13 +1115,13 @@ func parseImageSpec(options *VMOptions) error {
 
 // getReleaseInfo returns the value of the requested variable in /etc/os-release.
 // For possible values, look here: https://www.freedesktop.org/software/systemd/man/latest/os-release.html
-func getReleaseInfo(ctx context.Context, logger *log.Logger, vm *gce.VM, name string) (gce.CommandOutput, error) {
+func getReleaseInfo(ctx context.Context, logger *log.Logger, vm *VM, name string) (CommandOutput, error) {
 	cmd := fmt.Sprintf(`. /etc/os-release && echo -n $%s`, name)
-	return gce.RunRemotely(ctx, logger, vm, cmd)
+	return RunRemotely(ctx, logger, vm, cmd)
 }
 
 // getOS returns an OS struct containing information about the Operating System.
-func getOS(ctx context.Context, logger *log.Logger, vm *gce.VM) (*OS, error) {
+func getOS(ctx context.Context, logger *log.Logger, vm *VM) (*OS, error) {
 	if id, err := getReleaseInfo(ctx, logger, vm, cmd, `ID`); err != nil {
 		return nil, err
 	}
