@@ -66,15 +66,15 @@ targets:
       x86_64:
         test_distros:
           representative:
-          - ubuntu-os-cloud:ubuntu-2404-lts-amd64
+          - ubuntu-os-cloud:ubuntu-2004-lts
           exhaustive:
-          - ubuntu-os-cloud:ubuntu-minimal-2404-lts-amd64
+          - ubuntu-os-cloud:ubuntu-minimal-2004-lts
       aarch64:
         test_distros:
           representative:
-          - ubuntu-os-cloud:ubuntu-2404-lts-arm64
+          - ubuntu-os-cloud:ubuntu-2004-lts-arm64
           exhaustive:
-          - ubuntu-os-cloud:ubuntu-minimal-2404-lts-arm64
+          - ubuntu-os-cloud:ubuntu-minimal-2004-lts-arm64
   jammy:
     package_extension:
       deb
