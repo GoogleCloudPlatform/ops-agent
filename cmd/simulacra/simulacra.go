@@ -88,9 +88,9 @@ func distroFolder(imageSpec string) (string, error) {
 		return "windows", nil
 	}
 	delim := ""
-	if strings.contains(imageSpec, ":") {
+	if strings.Contains(imageSpec, ":") {
 		delim = ":"
-	} else if strings.contains(imageSpec, "=") {
+	} else if strings.Contains(imageSpec, "=") {
 		delim = "="
 	} else {
 		return "", fmt.Errorf("distroFolder() could not parse image spec: %s", imageSpec)
