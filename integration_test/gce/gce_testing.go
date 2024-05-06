@@ -1125,7 +1125,8 @@ func getOS(ctx context.Context, logger *log.Logger, vm *VM) (*OS, error) {
 	output, err := getReleaseInfo(ctx, logger, vm, `ID`)
 	if err != nil {
 		return nil, err
-	} else
+	}
+
 	return &OS{
 		ID: output.Stdout,
 	}, nil
