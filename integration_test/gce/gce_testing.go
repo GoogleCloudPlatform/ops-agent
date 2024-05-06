@@ -1122,7 +1122,8 @@ func getReleaseInfo(ctx context.Context, logger *log.Logger, vm *VM, name string
 
 // getOS returns an OS struct containing information about the Operating System.
 func getOS(ctx context.Context, logger *log.Logger, vm *VM) (*OS, error) {
-	if id, err := getReleaseInfo(ctx, logger, vm, cmd, `ID`); err != nil {
+	id := ""
+	if id, err := getReleaseInfo(ctx, logger, vm, `ID`); err != nil {
 		return nil, err
 	}
 	return &OS{
@@ -1286,8 +1287,10 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		return nil, err
 	}
 
-	if vm.OS, err := getOS(ctx, logger, vm); err != nil {
+	if os, err := getOS(ctx, logger, vm); err != nil {
 		return nil, err
+	} else {
+		vm.OS = os
 	}
 
 	if vm.OS.ID == "sles" {
