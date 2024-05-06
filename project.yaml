@@ -56,9 +56,9 @@ targets:
           - rocky-linux-cloud:rocky-linux-8
           exhaustive:
           - rhel-cloud:rhel-8
-          - rhel-sap-cloud:rhel-8-2-sap-ha
           - rhel-sap-cloud:rhel-8-4-sap-ha
           - rhel-sap-cloud:rhel-8-6-sap-ha
+          - rhel-sap-cloud:rhel-8-8-sap-ha
   focal:
     package_extension:
       deb
