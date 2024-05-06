@@ -3,9 +3,8 @@ import '../common.gcl' as common
 config build = common.build {
   params {
     environment {
-      DISTRO = 'noble'
+      DISTRO = 'focal'
       PKGFORMAT = 'deb'
-      SHORT = 'false'
     }
   }
 }
