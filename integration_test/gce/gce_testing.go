@@ -1126,7 +1126,7 @@ func getOS(ctx context.Context, logger *log.Logger, vm *gce.VM) (*OS, error) {
 		return nil, err
 	}
 	return &OS{
-		ID: id
+		ID: id,
 	}, nil
 }
 
