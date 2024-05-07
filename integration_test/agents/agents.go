@@ -385,7 +385,7 @@ func UninstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs
 		strings.HasPrefix(vm.ImageSpec, "rhel-") ||
 		strings.HasPrefix(vm.ImageSpec, "rocky-linux-cloud") {
 		cmd = fmt.Sprintf("sudo yum -y remove %s", pkgsString)
-	} else if strings.HasPrefix(vm.ImageSpec, "suse-") {
+	} else if gce.IsSUSE(vm.ImageSpec) {
 		cmd = fmt.Sprintf("sudo zypper --non-interactive remove %s", pkgsString)
 	} else if strings.HasPrefix(vm.ImageSpec, "debian-cloud") ||
 		strings.HasPrefix(vm.ImageSpec, "ubuntu-os-cloud") {
