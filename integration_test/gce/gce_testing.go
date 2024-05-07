@@ -1299,7 +1299,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		vm.OS = *os
 	}
 
-	if vm.OS.ID == "sles" {
+	if vm.OS.ID == "opensuse-leap" || vm.OS.ID == "sles" || vm.OS.ID == "sles-sap" {
 		// Set download.max_silent_tries to 5 (by default, it is commented out in
 		// the config file). This should help with issues like b/211003972.
 		if _, err := RunRemotely(ctx, logger, vm, "sudo sed -i -E 's/.*download.max_silent_tries.*/download.max_silent_tries = 5/g' /etc/zypp/zypp.conf"); err != nil {
