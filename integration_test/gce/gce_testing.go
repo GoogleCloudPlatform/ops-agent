@@ -36,7 +36,7 @@ AGENT_PACKAGES_IN_GCS, for details see README.md.
 
 	PROJECT=dev_project \
 	ZONES=us-central1-b \
-	PLATFORMS=debian-10,centos-8,rhel-8-2-sap-ha,sles-15,ubuntu-2004-lts,windows-2016,windows-2019 \
+	PLATFORMS=debian-cloud:debian-10,rocky-linux-cloud:rocky-linux-8,rhel-sap-cloud:rhel-8-8-sap-ha,suse-cloud:sles-15,ubuntu-os-cloud:ubuntu-2004-lts,windows-cloud:windows-2016,windows-cloud:windows-2019 \
 	go test -v ops_agent_test.go \
 	  -test.parallel=1000 \
 	  -tags=integration_test \
@@ -75,10 +75,6 @@ The default is "stackdriver-test-143416-file-transfers".
 INSTANCE_SIZE: What size of VMs to make. Passed in to gcloud as --machine-type.
 If provided, this value overrides the selection made by the callers to
 this library.
-
-DISABLE_PREPARE_SLES: Hopefully temporary option to disable workarounds for
-flaky startup of SLES VMs. Workarounds are disabled by setting this to the
-string "true".
 */
 package gce
 
@@ -291,10 +287,12 @@ func (f *logClientFactory) new(project string) (*logadmin.Client, error) {
 
 // VM represents an individual virtual machine.
 type VM struct {
-	Name        string
-	Project     string
-	Network     string
-	Platform    string
+	Name     string
+	Project  string
+	Network  string
+	Platform string
+	// The VMOptions.ImageSpec used to create the VM.
+	ImageSpec   string
 	Zone        string
 	MachineType string
 	ID          int64
@@ -303,43 +301,6 @@ type VM struct {
 	// rationale.
 	IPAddress      string
 	AlreadyDeleted bool
-}
-
-// imageProject returns the image project providing the given image family.
-func imageProject(family string) (string, error) {
-	firstWord := strings.Split(family, "-")[0]
-	switch firstWord {
-	case "windows":
-		return "windows-cloud", nil
-	case "sql":
-		return "windows-sql-cloud", nil
-	case "centos":
-		return "centos-cloud", nil
-	case "debian":
-		return "debian-cloud", nil
-	case "ubuntu":
-		return "ubuntu-os-cloud", nil
-	case "rhel":
-		// There are a few different cases:
-		// "rhel-7", "rhel-7-4-sap", and "rhel-7-6-sap-ha".
-		if strings.Contains(family, "-sap") {
-			return "rhel-sap-cloud", nil
-		}
-		return "rhel-cloud", nil
-	case "rocky":
-		return "rocky-linux-cloud", nil
-	case "opensuse":
-		return "opensuse-cloud", nil
-	case "sles":
-		// There are a few different cases:
-		// "sles-15" and "sles-15-sp*-sap".
-		if strings.Contains(family, "-sap") {
-			return "suse-sap-cloud", nil
-		}
-		return "suse-cloud", nil
-	default:
-		return "", fmt.Errorf("could not find match for family %s", family)
-	}
 }
 
 // SyslogLocation returns a filesystem path to the system log. This function
@@ -815,14 +776,11 @@ func wrapPowershellCommand(command string) (string, error) {
 //
 // 'command' is what to run on the machine. Example: "cat /tmp/foo; echo hello"
 // For extremely long commands, use RunScriptRemotely instead.
-// 'stdin' is what to supply to the command on stdin. It is usually "".
-// TODO: Remove the stdin parameter. Any callsite that needs to pass
-// data over standard input should use RunRemotelyStdin.
 //
 // When making changes to this function, please test them by running
 // gce_testing_test.go (manually).
-func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, stdin string, command string) (_ CommandOutput, err error) {
-	return RunRemotelyStdin(ctx, logger, vm, strings.NewReader(stdin), command)
+func RunRemotely(ctx context.Context, logger *log.Logger, vm *VM, command string) (_ CommandOutput, err error) {
+	return RunRemotelyStdin(ctx, logger, vm, nil, command)
 }
 
 // RunRemotelyStdin is just like RunRemotely but it accepts an io.Reader
@@ -863,6 +821,8 @@ func RunRemotelyStdin(ctx context.Context, logger *log.Logger, vm *VM, stdin io.
 // given permission to read from that bucket. This was accomplished by adding
 // the "Compute Engine default service account" for PROJECT as
 // a "Storage Object Viewer" and "Storage Object Creator" on the bucket.
+//
+// When making changes to this function, please run gce_testing_test.go (manually).
 func UploadContent(ctx context.Context, logger *log.Logger, vm *VM, content io.Reader, remotePath string) (err error) {
 	defer func() {
 		if err != nil {
@@ -892,14 +852,14 @@ func UploadContent(ctx context.Context, logger *log.Logger, vm *VM, content io.R
 	}()
 
 	if IsWindows(vm.Platform) {
-		_, err = RunRemotely(ctx, logger, vm, "", fmt.Sprintf(`Read-GcsObject -Force -Bucket "%s" -ObjectName "%s" -OutFile "%s"`, object.BucketName(), object.ObjectName(), remotePath))
+		_, err = RunRemotely(ctx, logger, vm, fmt.Sprintf(`Read-GcsObject -Force -Bucket "%s" -ObjectName "%s" -OutFile "%s"`, object.BucketName(), object.ObjectName(), remotePath))
 		return err
 	}
 	if err := InstallGsutilIfNeeded(ctx, logger, vm); err != nil {
 		return err
 	}
 	objectPath := fmt.Sprintf("gs://%s/%s", object.BucketName(), object.ObjectName())
-	_, err = RunRemotely(ctx, logger, vm, "", fmt.Sprintf("sudo gsutil cp '%s' '%s'", objectPath, remotePath))
+	_, err = RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo gsutil cp '%s' '%s'", objectPath, remotePath))
 	return err
 }
 
@@ -956,7 +916,7 @@ func RunScriptRemotely(ctx context.Context, logger *log.Logger, vm *VM, scriptCo
 		// script seems to work around this completely.
 		//
 		// To test changes to this command, please run gce_testing_test.go (manually).
-		return RunRemotely(ctx, logger, vm, "", envVarMapToPowershellPrefix(env)+"powershell -File "+scriptPath+" "+flagsStr)
+		return RunRemotely(ctx, logger, vm, envVarMapToPowershellPrefix(env)+"powershell -File "+scriptPath+" "+flagsStr)
 	}
 	scriptPath := uuid.NewString() + ".sh"
 	// Write the script contents to <UUID>.sh, then tell bash to execute it with -x
@@ -969,7 +929,7 @@ func RunScriptRemotely(ctx context.Context, logger *log.Logger, vm *VM, scriptCo
 	// one to put scriptContents into a file and another to execute the script.
 	//
 	// To test changes to this command, please run gce_testing_test.go (manually).
-	return RunRemotely(ctx, logger, vm, scriptContents, "cat - > "+scriptPath+" && sudo "+envVarMapToBashPrefix(env)+"bash -x "+scriptPath+" "+flagsStr)
+	return RunRemotelyStdin(ctx, logger, vm, strings.NewReader(scriptContents), "cat - > "+scriptPath+" && sudo "+envVarMapToBashPrefix(env)+"bash -x "+scriptPath+" "+flagsStr)
 }
 
 // MapToCommaSeparatedList converts a map of key-value pairs into a form that
@@ -998,11 +958,11 @@ const (
 func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM) error {
 	backoffPolicy := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(5*time.Second), 5), ctx) // 5 attempts.
 	err := backoff.Retry(func() error {
-		_, err := RunRemotely(ctx, logger, vm, "", "sudo /usr/sbin/registercloudguest --force")
+		_, err := RunRemotely(ctx, logger, vm, "sudo /usr/sbin/registercloudguest --force")
 		return err
 	}, backoffPolicy)
 	if err != nil {
-		RunRemotely(ctx, logger, vm, "", "sudo cat /var/log/cloudregister")
+		RunRemotely(ctx, logger, vm, "sudo cat /var/log/cloudregister")
 		return fmt.Errorf("error running registercloudguest: %v", err)
 	}
 
@@ -1014,20 +974,14 @@ func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM) error {
 		// timezone-java was selected arbitrarily as a package that:
 		// a) can be installed from the default repos, and
 		// b) isn't installed already.
-		_, zypperErr := RunRemotely(ctx, logger, vm, "", "sudo zypper --non-interactive --gpg-auto-import-keys refresh && sudo zypper --non-interactive install timezone-java")
+		_, zypperErr := RunRemotely(ctx, logger, vm, "sudo zypper --non-interactive --gpg-auto-import-keys refresh && sudo zypper --non-interactive install timezone-java")
 		return zypperErr
 	}, backoffPolicy)
 	if err != nil {
-		RunRemotely(ctx, logger, vm, "", "sudo cat /var/log/zypper.log")
+		RunRemotely(ctx, logger, vm, "sudo cat /var/log/zypper.log")
 	}
 	return err
 }
-
-var (
-	overriddenImageFamilies = map[string]string{
-		"opensuse-leap-15-4": "opensuse-leap-15-4-v20231208-x86-64",
-	}
-)
 
 func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map[string]string, error) {
 	metadataCopy := make(map[string]string)
@@ -1106,21 +1060,73 @@ func getVMPlatform(image string, platform string) (string, error) {
 	return "", errors.New("at least one of image or platform must be specified")
 }
 
+// In cases where ImageSpec is not being used yet, construct it from known fields.
+func constructImageSpec(options *VMOptions) {
+	if options.ImageSpec != "" || options.ImageProject == "" {
+		return
+	}
+	if options.Platform != "" {
+		options.ImageSpec = fmt.Sprintf("%s:%s", options.ImageProject, options.Platform)
+	} else if options.Image != "" {
+		options.ImageSpec = fmt.Sprintf("%s=%s", options.ImageProject, options.Image)
+	}
+}
+
+// parseImageSpec looks for the ImageSpec field in VMOptions and sets
+// ImageProject/Image/Platform accordingly.
+func parseImageSpec(options *VMOptions) error {
+	if options.ImageSpec == "" {
+		constructImageSpec(options)
+		return nil
+	}
+
+	if options.Image != "" || options.ImageProject != "" || options.Platform != "" {
+		return fmt.Errorf("If options.ImageSpec is set, options.(Image|ImageProject|Platform) cannot be: %+v", options)
+	}
+
+	delim := ""
+	if strings.Contains(options.ImageSpec, ":") {
+		delim = ":"
+	} else if strings.Contains(options.ImageSpec, "=") {
+		delim = "="
+	} else {
+		return fmt.Errorf("could not parse options.ImageSpec from struct: %+v", options)
+	}
+
+	s := strings.Split(options.ImageSpec, delim)
+	options.ImageProject = s[0]
+
+	switch delim {
+	case ":":
+		options.Platform = s[1]
+	case "=":
+		options.Image = s[1]
+	}
+
+	return nil
+}
+
 // attemptCreateInstance creates a VM instance and waits for it to be ready.
 // Returns a VM object or an error (never both). The caller is responsible for
 // deleting the VM if (and only if) the returned error is nil.
 func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOptions) (vmToReturn *VM, errToReturn error) {
+
+	err := parseImageSpec(&options)
+	if err != nil {
+		return nil, err
+	}
 
 	platform, err := getVMPlatform(options.Image, options.Platform)
 	if err != nil {
 		return nil, err
 	}
 	vm := &VM{
-		Project:  options.Project,
-		Platform: platform,
-		Name:     options.Name,
-		Network:  os.Getenv("NETWORK_NAME"),
-		Zone:     options.Zone,
+		Project:   options.Project,
+		Platform:  platform,
+		ImageSpec: options.ImageSpec,
+		Name:      options.Name,
+		Network:   os.Getenv("NETWORK_NAME"),
+		Zone:      options.Zone,
 	}
 	if vm.Name == "" {
 		// The VM name needs to adhere to these restrictions:
@@ -1151,13 +1157,6 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	}
 
 	imgProject := options.ImageProject
-	if imgProject == "" {
-		var err error
-		imgProject, err = imageProject(vm.Platform)
-		if err != nil {
-			return nil, fmt.Errorf("attemptCreateInstance() could not find image project: %v", err)
-		}
-	}
 	newMetadata, err := addFrameworkMetadata(vm.Platform, options.Metadata)
 	if err != nil {
 		return nil, fmt.Errorf("attemptCreateInstance() could not construct valid metadata: %v", err)
@@ -1171,11 +1170,6 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 
 	if options.Platform != "" {
 		imageOrImageFamilyFlag = "--image-family=" + options.Platform
-
-		if image, ok := overriddenImageFamilies[options.Platform]; ok {
-			imageOrImageFamilyFlag = "--image=" + image
-		}
-
 	}
 
 	imageFamilyScope := options.ImageFamilyScope
@@ -1271,12 +1265,12 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	if IsSUSE(vm.Platform) {
 		// Set download.max_silent_tries to 5 (by default, it is commented out in
 		// the config file). This should help with issues like b/211003972.
-		if _, err := RunRemotely(ctx, logger, vm, "", "sudo sed -i -E 's/.*download.max_silent_tries.*/download.max_silent_tries = 5/g' /etc/zypp/zypp.conf"); err != nil {
+		if _, err := RunRemotely(ctx, logger, vm, "sudo sed -i -E 's/.*download.max_silent_tries.*/download.max_silent_tries = 5/g' /etc/zypp/zypp.conf"); err != nil {
 			return nil, fmt.Errorf("attemptCreateInstance() failed to configure retries in zypp.conf: %v", err)
 		}
 	}
 
-	if strings.HasPrefix(vm.Platform, "sles-") && os.Getenv("DISABLE_PREPARE_SLES") != "true" {
+	if strings.HasPrefix(vm.Platform, "sles-") {
 		if err := prepareSLES(ctx, logger, vm); err != nil {
 			return nil, fmt.Errorf("%s: %v", prepareSLESMessage, err)
 		}
@@ -1285,7 +1279,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	if IsSUSE(vm.Platform) {
 		// Set ZYPP_LOCK_TIMEOUT so tests that use zypper don't randomly fail
 		// because some background process happened to be using zypper at the same time.
-		if _, err := RunRemotely(ctx, logger, vm, "", `echo 'ZYPP_LOCK_TIMEOUT=300' | sudo tee -a /etc/environment`); err != nil {
+		if _, err := RunRemotely(ctx, logger, vm, `echo 'ZYPP_LOCK_TIMEOUT=300' | sudo tee -a /etc/environment`); err != nil {
 			return nil, err
 		}
 	}
@@ -1293,8 +1287,15 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	// Removing flaky rhel-7 repositories due to b/265341502
 	if isRHEL7SAPHA(vm.Platform) {
 		if _, err := RunRemotely(ctx,
-			logger, vm, "", `sudo yum -y --disablerepo=rhui-rhel*-7-* install yum-utils && sudo yum-config-manager --disable "rhui-rhel*-7-*"`); err != nil {
+			logger, vm, `sudo yum -y --disablerepo=rhui-rhel*-7-* install yum-utils && sudo yum-config-manager --disable "rhui-rhel*-7-*"`); err != nil {
 			return nil, fmt.Errorf("disabling flaky repos failed : %w", err)
+		}
+	}
+
+	// See b/334918531.
+	if strings.Contains(vm.Platform, "debian-10") {
+		if _, err := RunRemotely(ctx, logger, vm, "sudo sed -i 's#https://deb.debian.org/debian buster-backports#https://archive.debian.org/debian buster-backports#' /etc/apt/sources.list"); err != nil {
+			return nil, fmt.Errorf("attemptCreateInstance() failed to reconfigure buster-backports: %v", err)
 		}
 	}
 
@@ -1346,7 +1347,7 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 			strings.Contains(err.Error(), "currently unavailable") ||
 			// This error is a consequence of running gcloud concurrently, which is actually
 			// unsupported. In the absence of a better fix, just retry such errors.
-		        strings.Contains(err.Error(), "database is locked") ||
+			strings.Contains(err.Error(), "database is locked") ||
 			// windows-*-core instances sometimes fail to be ssh-able: b/305721001
 			(IsWindowsCore(options.Platform) && strings.Contains(err.Error(), windowsStartupFailedMessage)) ||
 			// SLES instances sometimes fail to be ssh-able: b/186426190
@@ -1397,7 +1398,7 @@ func SetEnvironmentVariables(ctx context.Context, logger *log.Logger, vm *VM, en
 		for key, value := range envVariables {
 			envVariableCmd := fmt.Sprintf(`setx %s "%s" /M`, key, value)
 			logger.Println("envVariableCmd " + envVariableCmd)
-			if _, err := RunRemotely(ctx, logger, vm, "", envVariableCmd); err != nil {
+			if _, err := RunRemotely(ctx, logger, vm, envVariableCmd); err != nil {
 				return err
 			}
 		}
@@ -1417,13 +1418,13 @@ func SetEnvironmentVariables(ctx context.Context, logger *log.Logger, vm *VM, en
 	} {
 		dir := fmt.Sprintf("/etc/systemd/system/%s.service.d", service)
 		cmd := fmt.Sprintf(`sudo mkdir -p %s && echo -e '%s' | sudo tee %s/override.conf`, dir, override, dir)
-		if _, err := RunRemotely(ctx, logger, vm, "", cmd); err != nil {
+		if _, err := RunRemotely(ctx, logger, vm, cmd); err != nil {
 			return err
 		}
 	}
 	// Reload the systemd daemon to pick up the new settings edited in the previous command
 	daemonReload := "sudo systemctl daemon-reload"
-	_, err := RunRemotely(ctx, logger, vm, "", daemonReload)
+	_, err := RunRemotely(ctx, logger, vm, daemonReload)
 	return err
 }
 
@@ -1541,7 +1542,7 @@ func InstallGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) erro
 	if IsWindows(vm.Platform) {
 		return nil
 	}
-	if _, err := RunRemotely(ctx, logger, vm, "", "sudo gsutil --version"); err == nil {
+	if _, err := RunRemotely(ctx, logger, vm, "sudo gsutil --version"); err == nil {
 		// Success, no need to install gsutil.
 		return nil
 	}
@@ -1620,7 +1621,7 @@ sudo chmod a+x /usr/bin/gsutil
 `
 	}
 
-	_, err := RunRemotely(ctx, logger, vm, "", installCmd)
+	_, err := RunRemotely(ctx, logger, vm, installCmd)
 	return err
 }
 
@@ -1743,7 +1744,7 @@ func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error 
 		attempt++
 		ctx, cancel := context.WithTimeout(ctx, vmInitPokeSSHTimeout)
 		defer cancel()
-		output, err := RunRemotely(ctx, logger, vm, "", "'foo'")
+		output, err := RunRemotely(ctx, logger, vm, "'foo'")
 		logger.Printf("Printing 'foo' finished with err=%v, attempt #%d\noutput: %v",
 			err, attempt, output)
 		return err
@@ -1779,7 +1780,7 @@ func waitForStartLinux(ctx context.Context, logger *log.Logger, vm *VM) error {
 	isStartupDone := func() error {
 		ctx, cancel := context.WithTimeout(ctx, vmInitPokeSSHTimeout)
 		defer cancel()
-		output, err := RunRemotely(ctx, logger, vm, "", "systemctl is-system-running")
+		output, err := RunRemotely(ctx, logger, vm, "systemctl is-system-running")
 
 		// There are a few cases for what is-system-running returns:
 		// https://www.freedesktop.org/software/systemd/man/systemctl.html#is-system-running
@@ -1793,7 +1794,7 @@ func waitForStartLinux(ctx context.Context, logger *log.Logger, vm *VM) error {
 			// to run the test. There are various unnecessary services that could be
 			// failing, see b/185473981 and b/185182238 for some examples.
 			// But let's at least print out which services failed into the logs.
-			RunRemotely(ctx, logger, vm, "", "systemctl --failed")
+			RunRemotely(ctx, logger, vm, "systemctl --failed")
 			return nil
 		}
 		// There are several reasons this could be failing, but usually if we get
@@ -1813,7 +1814,7 @@ func waitForStartLinux(ctx context.Context, logger *log.Logger, vm *VM) error {
 		// TODO(b/259122953): wait until sudo is ready
 		backoffPolicy := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(slesStartupSudoDelay), slesStartupSudoMaxAttempts), ctx)
 		err := backoff.Retry(func() error {
-			_, err := RunRemotely(ctx, logger, vm, "", "sudo ls /root")
+			_, err := RunRemotely(ctx, logger, vm, "sudo ls /root")
 			return err
 		}, backoffPolicy)
 		if err != nil {
@@ -1877,6 +1878,13 @@ func SetupLogger(t *testing.T) *logging.DirectoryLogger {
 
 // VMOptions specifies settings when creating a VM via CreateInstance() or SetupVM().
 type VMOptions struct {
+	// Optional. Can be used to pass image/image family & image project in one
+	// string. If set, Platform/Image/ImageProject should not be set.
+	//
+	// Example Image Specs:
+	// Image Family / Project: `<project>:<family>`
+	// Specific Image / Project: `<project>=<image>``
+	ImageSpec string
 	// Required. Normally passed as --image-family to
 	// "gcloud compute images create".
 	Platform string

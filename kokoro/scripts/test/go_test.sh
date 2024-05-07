@@ -192,10 +192,10 @@ if [[ -n "${TEST_SOURCE_PIPER_LOCATION-}" ]]; then
 
   # Make a module containing the latest dependencies from GitHub.
   go mod init "${TEST_SUITE_NAME}"
-  go get github.com/GoogleCloudPlatform/ops-agent@master
+  go get "github.com/GoogleCloudPlatform/ops-agent@${BRANCH_TO_TEST_FROM_PIPER:-master}"
   go mod tidy -compat=1.17
 else
-  cd integration_test
+  cd "integration_test/${TEST_SUITE_NAME}"
 fi
 
 if [[ "${TEST_SUITE_NAME}" == "os_config_test" || "${TEST_SUITE_NAME}" == "gcloud_policies_test" ]]; then
@@ -208,7 +208,7 @@ ulimit -n 1000000
 
 # Set up some command line flags for "gotestsum".
 gotestsum_args=(
-  --packages=./"${TEST_SUITE_NAME}.go"
+  --packages=./...
   --format=standard-verbose
   --junitfile="${LOGS_DIR}/sponge_log.xml"
 )

@@ -6,11 +6,11 @@ targets:
       x86_64:
         test_distros:
           representative:
-          - debian-12
+          - debian-cloud:debian-12
       aarch64:
         test_distros:
           representative:
-          - debian-12-arm64
+          - debian-cloud:debian-12-arm64
   bullseye:
     package_extension:
       deb
@@ -18,11 +18,11 @@ targets:
       x86_64:
         test_distros:
           representative:
-          - debian-11
+          - debian-cloud:debian-11
       aarch64:
         test_distros:
           representative:
-          - debian-11-arm64
+          - debian-cloud:debian-11-arm64
   buster:
     package_extension:
       deb
@@ -30,7 +30,7 @@ targets:
       x86_64:
         test_distros:
           representative:
-          - debian-10
+          - debian-cloud:debian-10
   centos7:
     package_extension:
       rpm
@@ -40,10 +40,10 @@ targets:
       x86_64:
         test_distros:
           representative:
-          - centos-7
+          - centos-cloud:centos-7
           exhaustive:
-          - rhel-7
-          - rhel-7-9-sap-ha
+          - rhel-cloud:rhel-7
+          - rhel-sap-cloud:rhel-7-9-sap-ha
   centos8:
     package_extension:
       rpm
@@ -53,12 +53,12 @@ targets:
       x86_64:
         test_distros:
           representative:
-          - rocky-linux-8
+          - rocky-linux-cloud:rocky-linux-8
           exhaustive:
-          - rhel-8
-          - rhel-8-2-sap-ha
-          - rhel-8-4-sap-ha
-          - rhel-8-6-sap-ha
+          - rhel-cloud:rhel-8
+          - rhel-sap-cloud:rhel-8-4-sap-ha
+          - rhel-sap-cloud:rhel-8-6-sap-ha
+          - rhel-sap-cloud:rhel-8-8-sap-ha
   focal:
     package_extension:
       deb
@@ -66,15 +66,15 @@ targets:
       x86_64:
         test_distros:
           representative:
-          - ubuntu-2004-lts
+          - ubuntu-os-cloud:ubuntu-2004-lts
           exhaustive:
-          - ubuntu-minimal-2004-lts
+          - ubuntu-os-cloud:ubuntu-minimal-2004-lts
       aarch64:
         test_distros:
           representative:
-          - ubuntu-2004-lts-arm64
+          - ubuntu-os-cloud:ubuntu-2004-lts-arm64
           exhaustive:
-          - ubuntu-minimal-2004-lts-arm64
+          - ubuntu-os-cloud:ubuntu-minimal-2004-lts-arm64
   jammy:
     package_extension:
       deb
@@ -82,15 +82,15 @@ targets:
       x86_64:
         test_distros:
           representative:
-          - ubuntu-2204-lts
+          - ubuntu-os-cloud:ubuntu-2204-lts
           exhaustive:
-          - ubuntu-minimal-2204-lts
+          - ubuntu-os-cloud:ubuntu-minimal-2204-lts
       aarch64:
         test_distros:
           representative:
-          - ubuntu-2204-lts-arm64
+          - ubuntu-os-cloud:ubuntu-2204-lts-arm64
           exhaustive:
-          - ubuntu-minimal-2204-lts-arm64
+          - ubuntu-os-cloud:ubuntu-minimal-2204-lts-arm64
   mantic:
     package_extension:
       deb
@@ -98,15 +98,15 @@ targets:
       x86_64:
         test_distros:
           representative:
-          - ubuntu-2310-amd64
+          - ubuntu-os-cloud:ubuntu-2310-amd64
           exhaustive:
-          - ubuntu-minimal-2310-amd64
+          - ubuntu-os-cloud:ubuntu-minimal-2310-amd64
       aarch64:
         test_distros:
           representative:
-          - ubuntu-2310-arm64
+          - ubuntu-os-cloud:ubuntu-2310-arm64
           exhaustive:
-          - ubuntu-minimal-2310-arm64
+          - ubuntu-os-cloud:ubuntu-minimal-2310-arm64
   rockylinux9:
     package_extension:
       rpm
@@ -116,15 +116,15 @@ targets:
       x86_64:
         test_distros:
           representative:
-          - rocky-linux-9
+          - rocky-linux-cloud:rocky-linux-9
           exhaustive:
-          - rhel-9
+          - rhel-cloud:rhel-9
       aarch64:
         test_distros:
           representative:
-          - rocky-linux-9-arm64
+          - rocky-linux-cloud:rocky-linux-9-arm64
           exhaustive:
-          - rhel-9-arm64
+          - rhel-cloud:rhel-9-arm64
   sles12:
     package_extension:
       rpm
@@ -132,9 +132,9 @@ targets:
       x86_64:
         test_distros:
           representative:
-          - sles-12
+          - suse-cloud:sles-12
           exhaustive:
-          - sles-12-sp5-sap
+          - suse-sap-cloud:sles-12-sp5-sap
   sles15:
     package_extension:
       rpm
@@ -142,18 +142,18 @@ targets:
       x86_64:
         test_distros:
           representative:
-          - sles-15
+          - suse-cloud:sles-15
           exhaustive:
-          - sles-15-sp2-sap
-          - sles-15-sp5-sap
-          - opensuse-leap
-          - opensuse-leap-15-4
+          - suse-sap-cloud:sles-15-sp2-sap
+          - suse-sap-cloud:sles-15-sp5-sap
+          - opensuse-cloud:opensuse-leap
+          - opensuse-cloud=opensuse-leap-15-4-v20231208-x86-64
       aarch64:
         test_distros:
           representative:
-          - sles-15-arm64
+          - suse-cloud:sles-15-arm64
           exhaustive:
-          - opensuse-leap-arm64
+          - opensuse-cloud:opensuse-leap-arm64
   windows:
     package_extension:
       goo
@@ -161,11 +161,11 @@ targets:
       x86_64:
         test_distros:
           representative:
-          - windows-2016-core
-          - sql-std-2019-win-2019
-          - windows-2022
+          - windows-cloud:windows-2016-core
+          - windows-cloud:windows-2022
+          - windows-sql-cloud:sql-std-2019-win-2019
           exhaustive:
-          - windows-2016
-          - windows-2019
-          - windows-2019-core
-          - windows-2022-core
+          - windows-cloud:windows-2016
+          - windows-cloud:windows-2019
+          - windows-cloud:windows-2019-core
+          - windows-cloud:windows-2022-core
