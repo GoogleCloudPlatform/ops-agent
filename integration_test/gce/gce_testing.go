@@ -343,7 +343,7 @@ func IsWindowsCore(imageSpec string) bool {
 	return IsWindows(imageSpec) && strings.HasSuffix(imageSpec, "-core")
 }
 
-// ImageSpecKind returns "linux" or "windows" based on the given image spec.
+// OSKind returns "linux" or "windows" based on the given image spec.
 func OSKind(imageSpec string) string {
 	if IsWindows(imageSpec) {
 		return "windows"
@@ -1539,13 +1539,13 @@ sudo ln -s ${INSTALL_DIR}/google-cloud-sdk/bin/gsutil /usr/bin/gsutil
 	if IsARM(vm.ImageSpec) {
 		// This is what's used on openSUSE.
 		repoSetupCmd := "sudo zypper --non-interactive refresh"
-		if strings.HasPrefix(vm.ImageSpec, "sles-12") {
+		if strings.Contains(vm.ImageSpec, "sles-12") {
 			return installErr("gsutil", vm.ImageSpec)
 		}
 		// For SLES 15 ARM: use a vendored repo to reduce flakiness of the
 		// external repos. See http://go/sdi/releases/build-test-release/vendored
 		// for details.
-		if strings.HasPrefix(vm.ImageSpec, "sles-15") {
+		if strings.Contains(vm.ImageSpec, "sles-15") {
 			repoSetupCmd = `sudo zypper --non-interactive addrepo -g -t YUM https://us-yum.pkg.dev/projects/cloud-ops-agents-artifacts-dev/google-cloud-monitoring-sles15-aarch64-test-vendor test-vendor
 sudo rpm --import https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
 sudo zypper --non-interactive refresh test-vendor`

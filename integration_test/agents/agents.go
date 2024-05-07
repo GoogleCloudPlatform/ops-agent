@@ -484,8 +484,9 @@ func IsRPMBased(imageSpec string) bool {
 	return strings.HasPrefix(imageSpec, "centos-cloud") ||
 		strings.HasPrefix(imageSpec, "rhel-") ||
 		strings.HasPrefix(imageSpec, "rocky-linux-cloud") ||
-		strings.HasPrefix(imageSpec, "suse-") ||
-		strings.HasPrefix(imageSpec, "opensuse-") ||
+		strings.HasPrefix(imageSpec, "suse-cloud") ||
+		strings.HasPrefix(imageSpec, "suse-sap-cloud") ||
+		strings.HasPrefix(imageSpec, "opensuse-cloud") ||
 		strings.Contains(imageSpec, "sles-")
 }
 

@@ -160,6 +160,11 @@ function set_zones() {
   export ZONES=$zones
 }
 
+# Temporary compatibility shim for old PLATFORMS variable.
+if [[ -n "${PLATFORMS:-}" ]]; then
+  IMAGE_SPECS="${PLATFORMS}"
+fi
+
 set_image_specs
 set_zones
 

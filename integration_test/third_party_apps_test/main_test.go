@@ -922,7 +922,7 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool) {
 		if reason := incompatibleOperatingSystem(test); reason != "" {
 			tests[i].skipReason = reason
 		}
-		if test.app == "mssql" && gce.IsWindows(test.imageSpec) && !strings.HasPrefix(test.imageSpec, "sql-") {
+		if test.app == "mssql" && strings.HasPrefix(test.imageSpec, "windows-cloud") {
 			tests[i].skipReason = "Skipping MSSQL test because this version of Windows doesn't have MSSQL"
 		}
 		isSAPHANAImageSpec := test.imageSpec == SAPHANAImageSpec
