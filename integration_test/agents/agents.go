@@ -342,9 +342,9 @@ func packageManagerCmd(vm *gce.VM) (string, error) {
 	}
 
 	switch vm.OS.ID {
-	case "centos", "rocky":
+	case "centos", "rhel", "rocky":
 		return "sudo yum -y", nil
-	case "sles":
+	case "opensuse-leap", "sles", "sles-sap":
 		return "sudo zypper --non-interactive", nil
 	case "debian", "ubuntu":
 		return "sudo apt-get update; sudo apt-get -y", nil
