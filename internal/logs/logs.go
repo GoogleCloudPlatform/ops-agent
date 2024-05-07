@@ -17,7 +17,6 @@ package logs
 import (
 	"log"
 	"os"
-	"strconv"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -25,10 +24,9 @@ import (
 )
 
 const (
-	MessageZapKey        string = "message"
-	SeverityZapKey       string = "severity"
-	SourceLocationZapKey string = "logging.googleapis.com/sourceLocation"
-	TimeZapKey           string = "time"
+	MessageZapKey  string = "message"
+	SeverityZapKey string = "severity"
+	TimeZapKey     string = "time"
 )
 
 type StructuredLogger interface {
@@ -76,29 +74,15 @@ func (sm stringMap) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	return nil
 }
 
-func sourceLocationEncoder(caller zapcore.EntryCaller, enc zapcore.PrimitiveArrayEncoder) {
-	ae, ok := enc.(zapcore.ArrayEncoder)
-	if !ok {
-		zapcore.FullCallerEncoder(caller, enc)
-		return
-	}
-	ae.AppendObject(stringMap{
-		"file":     caller.File,
-		"function": caller.Function,
-		"line":     strconv.Itoa(caller.Line),
-	})
-}
-
 func New(file string) *ZapStructuredLogger {
 	cfg := zap.NewProductionConfig()
+	cfg.DisableCaller = true
 	cfg.DisableStacktrace = true
-	cfg.EncoderConfig.CallerKey = SourceLocationZapKey
 	cfg.EncoderConfig.MessageKey = MessageZapKey
 	cfg.EncoderConfig.LevelKey = SeverityZapKey
 	cfg.EncoderConfig.TimeKey = TimeZapKey
 	cfg.EncoderConfig.EncodeTime = zapcore.RFC3339TimeEncoder
 	cfg.EncoderConfig.EncodeLevel = severityEncoder
-	cfg.EncoderConfig.EncodeCaller = sourceLocationEncoder
 
 	cfg.OutputPaths = []string{
 		file,
