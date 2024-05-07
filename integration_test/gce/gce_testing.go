@@ -1255,7 +1255,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 }
 
 func IsSUSE(imageSpec string) bool {
-	return strings.HasPrefix(imageSpec, "suse-") || strings.HasPrefix(imageSpec, "opensuse-")
+	return strings.HasPrefix(imageSpec, "suse-") || strings.HasPrefix(imageSpec, "opensuse-") || strings.Contains(imageSpec, "sles-")
 }
 
 func IsCentOS(imageSpec string) bool {
