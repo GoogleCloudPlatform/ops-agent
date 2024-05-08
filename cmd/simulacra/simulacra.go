@@ -369,7 +369,11 @@ func createInstance(ctx context.Context, config *Config, logger *log.Logger) (*g
 		args = append(args, "--service-account="+config.ServiceAccount)
 	}
 
-	imageSpec := constructImageSpec(config)
+	imageSpec, err := constructImageSpec(config)
+
+	if err != nil {
+		return nil, err
+	}
 
 	options := gce.VMOptions{
 		ImageSpec:            imageSpec,
