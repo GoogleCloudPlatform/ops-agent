@@ -802,7 +802,7 @@ type test struct {
 }
 
 var defaultPlatforms = map[string]bool{
-	"debian-cloud:debian-10":    true,
+	"debian-cloud:debian-10":     true,
 	"windows-cloud:windows-2019": true,
 }
 
@@ -813,6 +813,7 @@ var defaultApps = map[string]bool{
 	// Chosen because it is the most nontrivial Windows app currently
 	// implemented.
 	"active_directory_ds": true,
+	"couchbase":           true,
 }
 
 var gpuModels = map[string]accelerator{

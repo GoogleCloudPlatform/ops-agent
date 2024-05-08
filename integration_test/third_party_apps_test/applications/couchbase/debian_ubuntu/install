@@ -3,7 +3,7 @@
 set -e
 
 sudo apt-get update
-sudo apt-get install -y gnupg bzip2 wget curl libncurses-dev
+sudo apt-get install -y gnupg bzip2 wget curl
 
 # N.B. Despite having "amd64" in the name, this is an "Architecture: all" package.
 curl -O "https://packages.couchbase.com/releases/couchbase-release/couchbase-release-1.0-amd64.deb"
