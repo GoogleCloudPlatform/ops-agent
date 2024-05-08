@@ -354,7 +354,7 @@ func runCustomScripts(ctx context.Context, vm *gce.VM, logger *logging.Directory
 func constructImageSpec(config *Config) (string, error) {
 	// If both or neither set, return error
 	if (config.ImageFamily != "") == (config.Image != "") {
-		return "", return fmt.Errorf("config.ImageFamily (%v) or config.Image (%v) must be set, but not both", config.ImageFamily, config.Image)
+		return "", fmt.Errorf("config.ImageFamily (%v) or config.Image (%v) must be set, but not both", config.ImageFamily, config.Image)
 	}
 	if config.ImageFamily != "" {
 		return fmt.Sprintf("%s:%s", config.ImageProject, config.ImageFamily), nil
@@ -369,7 +369,7 @@ func createInstance(ctx context.Context, config *Config, logger *log.Logger) (*g
 		args = append(args, "--service-account="+config.ServiceAccount)
 	}
 
-	imageSpec = constructImageSpec(config)
+	imageSpec := constructImageSpec(config)
 
 	options := gce.VMOptions{
 		ImageSpec:            imageSpec,
