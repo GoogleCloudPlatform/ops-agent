@@ -82,9 +82,9 @@ type TestCase struct {
 // AgentServices expands the list of packages to install into the list of services
 // that will end up running on the machine. This is necessary for the ops agent,
 // which is one package but results in multiple running agent services.
-func AgentServices(t *testing.T, platform string, pkgs []AgentPackage) []AgentService {
+func AgentServices(t *testing.T, imageSpec string, pkgs []AgentPackage) []AgentService {
 	t.Helper()
-	if gce.IsWindows(platform) {
+	if gce.IsWindows(imageSpec) {
 		if len(pkgs) != 1 || pkgs[0].Type != OpsAgentType {
 			t.Fatalf("AgentServices() assumes that the only package we want to install on Windows is the ops agent. Requested packages: %v", pkgs)
 		}
@@ -175,7 +175,7 @@ var (
 // directory managed by the given DirectoryLogger.
 func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) {
 	logger.ToMainLog().Printf("Starting RunOpsAgentDiagnostics()...")
-	if gce.IsWindows(vm.Platform) {
+	if gce.IsWindows(vm.ImageSpec) {
 		runOpsAgentDiagnosticsWindows(ctx, logger, vm)
 		return
 	}
@@ -191,7 +191,7 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 	gce.RunRemotely(ctx, logger.ToFile("journalctl_output.txt"), vm, "sudo journalctl -xe")
 
 	for _, log := range []string{
-		gce.SyslogLocation(vm.Platform),
+		gce.SyslogLocation(vm.ImageSpec),
 		"/var/log/google-cloud-ops-agent/health-checks.log",
 		"/etc/google-cloud-ops-agent/config.yaml",
 		"/var/log/google-cloud-ops-agent/subagents/logging-module.log",
@@ -265,7 +265,7 @@ func WaitForUptimeMetrics(ctx context.Context, logger *log.Logger, vm *gce.VM, s
 func CheckServicesRunning(ctx context.Context, logger *log.Logger, vm *gce.VM, services []AgentService) error {
 	var err error
 	for _, service := range services {
-		if gce.IsWindows(vm.Platform) {
+		if gce.IsWindows(vm.ImageSpec) {
 			output, statusErr := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("(Get-Service -Name '%s').Status", service.ServiceName))
 			if statusErr != nil {
 				err = multierr.Append(err, fmt.Errorf("no service named %q could be found: %v", service.ServiceName, statusErr))
@@ -309,7 +309,7 @@ func CheckServicesRunningAndWaitForMetrics(ctx context.Context, logger *log.Logg
 func CheckServicesNotRunning(ctx context.Context, logger *log.Logger, vm *gce.VM, services []AgentService) error {
 	logger.Print("Checking that agents are NOT running")
 	for _, service := range services {
-		if gce.IsWindows(vm.Platform) {
+		if gce.IsWindows(vm.ImageSpec) {
 			// There are two possible cases that are acceptable here:
 			// 1) the service has been deleted
 			// 2) the service still exists but is in some state other than "Running",
@@ -339,22 +339,22 @@ func CheckServicesNotRunning(ctx context.Context, logger *log.Logger, vm *gce.VM
 // tryInstallPackages attempts once to install the given packages.
 func tryInstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs []string) error {
 	pkgsString := strings.Join(pkgs, " ")
-	if gce.IsWindows(vm.Platform) {
+	if gce.IsWindows(vm.ImageSpec) {
 		_, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("googet -noconfirm install %s", pkgsString))
 		return err
 	}
 	cmd := ""
-	if strings.HasPrefix(vm.Platform, "centos-") ||
-		strings.HasPrefix(vm.Platform, "rhel-") ||
-		strings.HasPrefix(vm.Platform, "rocky-linux-") {
+	if strings.HasPrefix(vm.ImageSpec, "centos-cloud") ||
+		strings.HasPrefix(vm.ImageSpec, "rhel-") ||
+		strings.HasPrefix(vm.ImageSpec, "rocky-linux-cloud") {
 		cmd = fmt.Sprintf("sudo yum -y install %s", pkgsString)
-	} else if gce.IsSUSE(vm.Platform) {
+	} else if gce.IsSUSE(vm.ImageSpec) {
 		cmd = fmt.Sprintf("sudo zypper --non-interactive install %s", pkgsString)
-	} else if strings.HasPrefix(vm.Platform, "debian-") ||
-		strings.HasPrefix(vm.Platform, "ubuntu-") {
+	} else if strings.HasPrefix(vm.ImageSpec, "debian-cloud") ||
+		strings.HasPrefix(vm.ImageSpec, "ubuntu-os-cloud") {
 		cmd = fmt.Sprintf("sudo apt-get update; sudo apt-get -y install %s", pkgsString)
 	} else {
-		return fmt.Errorf("tryInstallPackages() doesn't support platform %q", vm.Platform)
+		return fmt.Errorf("tryInstallPackages() doesn't support image spec: %q", vm.ImageSpec)
 	}
 	_, err := gce.RunRemotely(ctx, logger, vm, cmd)
 	return err
@@ -374,24 +374,24 @@ func InstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs [
 // UninstallPackages removes the given packages from the given VM.
 func UninstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs []string) error {
 	pkgsString := strings.Join(pkgs, " ")
-	if gce.IsWindows(vm.Platform) {
+	if gce.IsWindows(vm.ImageSpec) {
 		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("googet -noconfirm remove %s", pkgsString)); err != nil {
 			return fmt.Errorf("could not uninstall %s. err: %v", pkgsString, err)
 		}
 		return nil
 	}
 	cmd := ""
-	if strings.HasPrefix(vm.Platform, "centos-") ||
-		strings.HasPrefix(vm.Platform, "rhel-") ||
-		strings.HasPrefix(vm.Platform, "rocky-linux-") {
+	if strings.HasPrefix(vm.ImageSpec, "centos-cloud") ||
+		strings.HasPrefix(vm.ImageSpec, "rhel-") ||
+		strings.HasPrefix(vm.ImageSpec, "rocky-linux-cloud") {
 		cmd = fmt.Sprintf("sudo yum -y remove %s", pkgsString)
-	} else if strings.HasPrefix(vm.Platform, "sles-") {
+	} else if gce.IsSUSE(vm.ImageSpec) {
 		cmd = fmt.Sprintf("sudo zypper --non-interactive remove %s", pkgsString)
-	} else if strings.HasPrefix(vm.Platform, "debian-") ||
-		strings.HasPrefix(vm.Platform, "ubuntu-") {
+	} else if strings.HasPrefix(vm.ImageSpec, "debian-cloud") ||
+		strings.HasPrefix(vm.ImageSpec, "ubuntu-os-cloud") {
 		cmd = fmt.Sprintf("sudo apt-get -y remove %s", pkgsString)
 	} else {
-		return fmt.Errorf("UninstallPackages() doesn't support platform %q", vm.Platform)
+		return fmt.Errorf("UninstallPackages() doesn't support image spec: %q", vm.ImageSpec)
 	}
 	if _, err := gce.RunRemotely(ctx, logger, vm, cmd); err != nil {
 		return fmt.Errorf("could not uninstall %s. err: %v", pkgsString, err)
@@ -405,7 +405,7 @@ func checkPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs []s
 	if installed {
 		errPrefix = "not "
 	}
-	if gce.IsWindows(vm.Platform) {
+	if gce.IsWindows(vm.ImageSpec) {
 		output, err := gce.RunRemotely(ctx, logger, vm, "googet installed")
 		if err != nil {
 			return err
@@ -426,13 +426,13 @@ func checkPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs []s
 	}
 	for _, pkg := range pkgs {
 		cmd := ""
-		if IsRPMBased(vm.Platform) {
+		if IsRPMBased(vm.ImageSpec) {
 			cmd = fmt.Sprintf("rpm --query %s", pkg)
 			if !installed {
 				cmd = "! " + cmd
 			}
-		} else if strings.HasPrefix(vm.Platform, "debian-") ||
-			strings.HasPrefix(vm.Platform, "ubuntu-") {
+		} else if strings.HasPrefix(vm.ImageSpec, "debian-cloud") ||
+			strings.HasPrefix(vm.ImageSpec, "ubuntu-os-cloud") {
 			// dpkg's package states are documented in "man 1 dpkg".
 			// "config-files" means that the package is not installed but its config files
 			// are still on the system. Accepting both that and "not-installed" is more
@@ -443,7 +443,7 @@ func checkPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs []s
 				cmd = "! (" + cmd + ")"
 			}
 		} else {
-			return fmt.Errorf("checkPackages() does not support platform: %s", vm.Platform)
+			return fmt.Errorf("checkPackages() does not support image spec: %s", vm.ImageSpec)
 		}
 		if _, err := gce.RunRemotely(ctx, logger, vm, cmd); err != nil {
 			return fmt.Errorf("command could not be run or %q was unexpectedly %sinstalled. err: %v", pkg, errPrefix, err)
@@ -479,13 +479,15 @@ func CheckAgentsUninstalled(ctx context.Context, logger *log.Logger, vm *gce.VM,
 	return nil
 }
 
-// IsRPMBased checks if the platform is RPM based.
-func IsRPMBased(platform string) bool {
-	return strings.HasPrefix(platform, "centos-") ||
-		strings.HasPrefix(platform, "rhel-") ||
-		strings.HasPrefix(platform, "rocky-linux-") ||
-		strings.HasPrefix(platform, "sles-") ||
-		strings.HasPrefix(platform, "opensuse-")
+// IsRPMBased checks if the image spec is RPM based.
+func IsRPMBased(imageSpec string) bool {
+	return strings.HasPrefix(imageSpec, "centos-cloud") ||
+		strings.HasPrefix(imageSpec, "rhel-") ||
+		strings.HasPrefix(imageSpec, "rocky-linux-cloud") ||
+		strings.HasPrefix(imageSpec, "suse-cloud") ||
+		strings.HasPrefix(imageSpec, "suse-sap-cloud") ||
+		strings.HasPrefix(imageSpec, "opensuse-cloud") ||
+		strings.Contains(imageSpec, "sles-")
 }
 
 // StripTildeSuffix strips off everything after the first ~ character. We see
@@ -535,13 +537,13 @@ func fetchPackageVersionWindows(ctx context.Context, logger *log.Logger, vm *gce
 // TODO(martijnvs): Understand why b/178096139 happens and remove the retries.
 func fetchPackageVersion(ctx context.Context, logger *log.Logger, vm *gce.VM, pkg string) (semver.Version, error) {
 	logger.Printf("Getting %s version", pkg)
-	if gce.IsWindows(vm.Platform) {
+	if gce.IsWindows(vm.ImageSpec) {
 		return fetchPackageVersionWindows(ctx, logger, vm, pkg)
 	}
 	var version semver.Version
 	tryGetVersion := func() error {
 		cmd := `dpkg-query --show --showformat=\$\{Version} ` + pkg
-		if IsRPMBased(vm.Platform) {
+		if IsRPMBased(vm.ImageSpec) {
 			cmd = `rpm --query --queryformat=%\{VERSION} ` + pkg
 		}
 		output, err := gce.RunRemotely(ctx, logger, vm, cmd)
@@ -549,7 +551,7 @@ func fetchPackageVersion(ctx context.Context, logger *log.Logger, vm *gce.VM, pk
 			return err
 		}
 		vStr := strings.TrimSpace(output.Stdout)
-		if !IsRPMBased(vm.Platform) {
+		if !IsRPMBased(vm.ImageSpec) {
 			vStr = StripTildeSuffix(vStr)
 		}
 		version, err = semver.Make(vStr)
@@ -585,42 +587,42 @@ func FetchPackageVersions(ctx context.Context, logger *log.Logger, vm *gce.VM, p
 }
 
 // isRetriableInstallError checks to see if the error may be transient.
-func isRetriableInstallError(platform string, err error) bool {
+func isRetriableInstallError(imageSpec string, err error) bool {
 	if strings.Contains(err.Error(), "Could not refresh zypper repositories.") ||
 		strings.Contains(err.Error(), "Credentials are invalid") ||
 		strings.Contains(err.Error(), "Resource temporarily unavailable") ||
 		strings.Contains(err.Error(), "System management is locked by the application") {
 		return true
 	}
-	if gce.IsWindows(platform) &&
+	if gce.IsWindows(imageSpec) &&
 		strings.Contains(err.Error(), "context deadline exceeded") {
 		return true // See b/197127877 for history.
 	}
-	if strings.HasPrefix(platform, "rhel-8-") && strings.HasSuffix(platform, "-sap-ha") &&
+	if strings.Contains(imageSpec, "rhel-8-") && strings.HasSuffix(imageSpec, "-sap-ha") &&
 		strings.Contains(err.Error(), "Could not refresh the google-cloud-ops-agent yum repositories") {
 		return true // See b/174039270 for history.
 	}
-	if strings.HasPrefix(platform, "rhel-8-") && strings.HasSuffix(platform, "-sap-ha") &&
+	if strings.Contains(imageSpec, "rhel-8-") && strings.HasSuffix(imageSpec, "-sap-ha") &&
 		strings.Contains(err.Error(), "Failed to download metadata for repo 'rhui-rhel-8-") {
 		return true // This happens when the RHEL servers are down. See b/189950957.
 	}
-	if strings.HasPrefix(platform, "rhel-") && strings.Contains(err.Error(), "SSL_ERROR_SYSCALL") {
+	if strings.HasPrefix(imageSpec, "rhel-") && strings.Contains(err.Error(), "SSL_ERROR_SYSCALL") {
 		return true // b/187661497. Example: screen/3PMwAvhNBKWVYub
 	}
-	if strings.HasPrefix(platform, "rhel-") && strings.Contains(err.Error(), "Encountered end of file") {
+	if strings.HasPrefix(imageSpec, "rhel-") && strings.Contains(err.Error(), "Encountered end of file") {
 		return true // b/184729120#comment31. Example: screen/4yK9evoY68LiaLr
 	}
-	if strings.HasPrefix(platform, "ubuntu-") && strings.Contains(err.Error(), "Clearsigned file isn't valid") {
+	if strings.HasPrefix(imageSpec, "ubuntu-os-cloud") && strings.Contains(err.Error(), "Clearsigned file isn't valid") {
 		// The upstream repo was in an inconsistent state. The error looks like:
 		// screen/7U24zrRwADyYKqb
 		return true
 	}
-	if strings.HasPrefix(platform, "ubuntu-") && strings.Contains(err.Error(), "Mirror sync in progress?") {
+	if strings.HasPrefix(imageSpec, "ubuntu-os-cloud") && strings.Contains(err.Error(), "Mirror sync in progress?") {
 		// The mirror repo was in an inconsistent state. The error looks like:
 		// http://screen/Ai2CHc7fcRosHJu
 		return true
 	}
-	if strings.HasPrefix(platform, "ubuntu-") && strings.Contains(err.Error(), "Hash Sum mismatch") {
+	if strings.HasPrefix(imageSpec, "ubuntu-os-cloud") && strings.Contains(err.Error(), "Hash Sum mismatch") {
 		// The mirror repo was in an inconsistent state. The error looks like:
 		// http://screen/8HjakedwVnXZvw6
 		return true
@@ -635,10 +637,10 @@ func isRetriableInstallError(platform string, err error) bool {
 // running apt/zypper/yum. installFunc can be any function that is invoking
 // apt/zypper/yum, directly or indirectly.
 func RunInstallFuncWithRetry(ctx context.Context, logger *log.Logger, vm *gce.VM, installFunc func() error) error {
-	shouldRetry := func(err error) bool { return isRetriableInstallError(vm.Platform, err) }
+	shouldRetry := func(err error) bool { return isRetriableInstallError(vm.ImageSpec, err) }
 	installWithRecovery := func() error {
 		err := installFunc()
-		if err != nil && shouldRetry(err) && strings.HasPrefix(vm.Platform, "rhel-8-") && strings.HasSuffix(vm.Platform, "-sap-ha") {
+		if err != nil && shouldRetry(err) && strings.Contains(vm.ImageSpec, "rhel-8-") && strings.HasSuffix(vm.ImageSpec, "-sap-ha") {
 			logger.Println("attempting recovery steps from https://access.redhat.com/discussions/4656371 so that subsequent attempts are more likely to succeed... see b/189950957")
 			gce.RunRemotely(ctx, logger, vm, "sudo dnf clean all && sudo rm -r /var/cache/dnf && sudo dnf upgrade")
 		}
@@ -674,8 +676,8 @@ func InstallStandaloneWindowsMonitoringAgent(ctx context.Context, logger *log.Lo
 	return err
 }
 
-func restartOpsAgentForPlatform(platform string) string {
-	if gce.IsWindows(platform) {
+func getRestartOpsAgentCmd(imageSpec string) string {
+	if gce.IsWindows(imageSpec) {
 		return "Restart-Service google-cloud-ops-agent -Force"
 	}
 	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
@@ -755,7 +757,7 @@ func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, locati
 		"ARTIFACT_REGISTRY_REGION": location.artifactRegistryRegion,
 	}
 
-	if gce.IsWindows(vm.Platform) {
+	if gce.IsWindows(vm.ImageSpec) {
 		// Note that these commands match the ones from our public install docs
 		// (https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/installation)
 		// and keeping them in sync is encouraged so that we are testing the
@@ -799,7 +801,7 @@ func SetupOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, config s
 
 // restartOpsAgent restarts the Ops Agent and waits for it to become available.
 func restartOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
-	if _, err := gce.RunRemotely(ctx, logger, vm, restartOpsAgentForPlatform(vm.Platform)); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, getRestartOpsAgentCmd(vm.ImageSpec)); err != nil {
 		return fmt.Errorf("restartOpsAgent() failed to restart ops agent: %v", err)
 	}
 	// Give agents time to shut down. Fluent-Bit's default shutdown grace period
@@ -816,12 +818,12 @@ func SetupOpsAgentFrom(ctx context.Context, logger *log.Logger, vm *gce.VM, conf
 	}
 	startupDelay := 20 * time.Second
 	if len(config) > 0 {
-		if gce.IsWindows(vm.Platform) {
+		if gce.IsWindows(vm.ImageSpec) {
 			// Sleep to avoid some flaky errors when restarting the agent because the
 			// services have not fully started up yet.
 			time.Sleep(startupDelay)
 		}
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(config), util.ConfigPathForPlatform(vm.Platform)); err != nil {
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(config), util.GetConfigPath(vm.ImageSpec)); err != nil {
 			return fmt.Errorf("SetupOpsAgentFrom() failed to upload config file: %v", err)
 		}
 		if err := restartOpsAgent(ctx, logger, vm); err != nil {
@@ -837,28 +839,28 @@ func SetupOpsAgentFrom(ctx context.Context, logger *log.Logger, vm *gce.VM, conf
 // (https://cloud.google.com/compute/docs/machine-types). Windows instances
 // are configured to be larger because they need more CPUs to start up in a
 // reasonable amount of time.
-func RecommendedMachineType(platform string) string {
-	if gce.IsWindows(platform) {
+func RecommendedMachineType(imageSpec string) string {
+	if gce.IsWindows(imageSpec) {
 		return "e2-standard-4"
 	}
-	if gce.IsARM(platform) {
+	if gce.IsARM(imageSpec) {
 		return "t2a-standard-2"
 	}
 	return "e2-standard-2"
 }
 
 // CommonSetup sets up the VM for testing.
-func CommonSetup(t *testing.T, platform string) (context.Context, *logging.DirectoryLogger, *gce.VM) {
-	return CommonSetupWithExtraCreateArguments(t, platform, nil)
+func CommonSetup(t *testing.T, imageSpec string) (context.Context, *logging.DirectoryLogger, *gce.VM) {
+	return CommonSetupWithExtraCreateArguments(t, imageSpec, nil)
 }
 
 // CommonSetupWithExtraCreateArguments sets up the VM for testing with extra creation arguments for the `gcloud compute instances create` command.
-func CommonSetupWithExtraCreateArguments(t *testing.T, platform string, extraCreateArguments []string) (context.Context, *logging.DirectoryLogger, *gce.VM) {
-	return CommonSetupWithExtraCreateArgumentsAndMetadata(t, platform, extraCreateArguments, nil)
+func CommonSetupWithExtraCreateArguments(t *testing.T, imageSpec string, extraCreateArguments []string) (context.Context, *logging.DirectoryLogger, *gce.VM) {
+	return CommonSetupWithExtraCreateArgumentsAndMetadata(t, imageSpec, extraCreateArguments, nil)
 }
 
 // CommonSetupWithExtraCreateArgumentsAndMetadata sets up the VM for testing with extra creation arguments for the `gcloud compute instances create` command and additional metadata.
-func CommonSetupWithExtraCreateArgumentsAndMetadata(t *testing.T, platform string, extraCreateArguments []string, additionalMetadata map[string]string) (context.Context, *logging.DirectoryLogger, *gce.VM) {
+func CommonSetupWithExtraCreateArgumentsAndMetadata(t *testing.T, imageSpec string, extraCreateArguments []string, additionalMetadata map[string]string) (context.Context, *logging.DirectoryLogger, *gce.VM) {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
 	t.Cleanup(cancel)
@@ -866,9 +868,9 @@ func CommonSetupWithExtraCreateArgumentsAndMetadata(t *testing.T, platform strin
 	logger := gce.SetupLogger(t)
 	logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
 	options := gce.VMOptions{
-		ImageSpec:            platform,
+		ImageSpec:            imageSpec,
 		TimeToLive:           "3h",
-		MachineType:          RecommendedMachineType(platform),
+		MachineType:          RecommendedMachineType(imageSpec),
 		ExtraCreateArguments: extraCreateArguments,
 		Metadata:             additionalMetadata,
 	}
@@ -886,7 +888,7 @@ func CommonSetupWithExtraCreateArgumentsAndMetadata(t *testing.T, platform strin
 // Packages with "dbgsym" in their name are skipped because customers don't
 // generally install those, so our tests shouldn't either.
 func InstallPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, gcsPath string) error {
-	if gce.IsWindows(vm.Platform) {
+	if gce.IsWindows(vm.ImageSpec) {
 		return installWindowsPackageFromGCS(ctx, logger, vm, gcsPath)
 	}
 	if _, err := gce.RunRemotely(ctx, logger, vm, "mkdir -p /tmp/agentUpload"); err != nil {
@@ -905,7 +907,7 @@ func InstallPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, 
 	if _, err := gce.RunRemotely(ctx, logger, vm, "rm /tmp/agentUpload/*dbgsym* || echo nothing to delete"); err != nil {
 		return err
 	}
-	if IsRPMBased(vm.Platform) {
+	if IsRPMBased(vm.ImageSpec) {
 		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo rpm --upgrade -v --force /tmp/agentUpload/*"); err != nil {
 			return fmt.Errorf("error installing agent from .rpm file: %v", err)
 		}

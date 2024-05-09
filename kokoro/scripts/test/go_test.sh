@@ -79,9 +79,9 @@ function join_by() {
   done
 }
 
-function set_platforms() {
-  # if PLATFORMS is defined, do nothing
-  if [[ -n "${PLATFORMS:-}" ]]; then
+function set_image_specs() {
+  # if IMAGE_SPECS is defined, do nothing
+  if [[ -n "${IMAGE_SPECS:-}" ]]; then
     return 0
   fi
   # if _LOUHI_TAG_NAME is defined, set TARGET and ARCH env vars by parsing it.
@@ -99,7 +99,7 @@ function set_platforms() {
   fi
   # if TARGET is not set, return an error
   if [[ -z "${TARGET:-}" ]]; then
-    echo "At least one of TARGET/PLATFORMS must be set." 1>&2
+    echo "At least one of TARGET/IMAGE_SPECS must be set." 1>&2
     return 1
   fi
   # if ARCH is not set, return an error
@@ -107,19 +107,19 @@ function set_platforms() {
     echo "If TARGET is set, ARCH must be as well." 1>&2
     return 1
   fi
-  # At minimum, PLATFORMS will be the distros from "representative" for TARGET/ARCH in projects.yaml.
-  local platforms
-  platforms=$(yaml project.yaml "['targets']['${TARGET}']['architectures']['${ARCH}']['test_distros']['representative']")
+  # At minimum, IMAGE_SPECS will be the images from "representative" for TARGET/ARCH in projects.yaml.
+  local image_specs
+  image_specs=$(yaml project.yaml "['targets']['${TARGET}']['architectures']['${ARCH}']['test_distros']['representative']")
   # If not a presubmit job, add the exhaustive list of test distros.
   if [[ "${TEST_EXHAUSTIVE_DISTROS:-}" == "1" ]]; then
     # ['test_distros']['exhaustive'] is an optional field.
-    exhaustive_platforms=$(yaml project.yaml "['targets']['${TARGET}']['architectures']['${ARCH}']['test_distros']['exhaustive']") || true
-    if [[ -n "${exhaustive_platforms:-}" ]]; then
-      platforms="${platforms},${exhaustive_platforms}"
+    exhaustive_image_specs=$(yaml project.yaml "['targets']['${TARGET}']['architectures']['${ARCH}']['test_distros']['exhaustive']") || true
+    if [[ -n "${exhaustive_image_specs:-}" ]]; then
+      image_specs="${image_specs},${exhaustive_image_specs}"
     fi
   fi
-  PLATFORMS="${platforms}"
-  export PLATFORMS
+  IMAGE_SPECS="${image_specs}"
+  export IMAGE_SPECS
 }
 
 # Note: if we ever need to change regions, we will need to set up a new
@@ -160,7 +160,12 @@ function set_zones() {
   export ZONES=$zones
 }
 
-set_platforms
+# Temporary compatibility shim for old PLATFORMS variable.
+if [[ -n "${PLATFORMS:-}" ]]; then
+  IMAGE_SPECS="${PLATFORMS}"
+fi
+
+set_image_specs
 set_zones
 
 # If a built agent was passed in from Kokoro directly, use that.
