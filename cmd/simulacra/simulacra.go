@@ -83,11 +83,20 @@ type Config struct {
 	ImageProject string
 }
 
-func distroFolder(platform string) (string, error) {
-	if gce.IsWindows(platform) {
+func distroFolder(imageSpec string) (string, error) {
+	if gce.IsWindows(imageSpec) {
 		return "windows", nil
 	}
-	firstWord := strings.Split(platform, "-")[0]
+	delim := ""
+	if strings.Contains(imageSpec, ":") {
+		delim = ":"
+	} else if strings.Contains(imageSpec, "=") {
+		delim = "="
+	} else {
+		return "", fmt.Errorf("distroFolder() could not parse image spec: %s", imageSpec)
+	}
+	imageOrFamily := strings.Split(imageSpec, delim)[1]
+	firstWord := strings.Split(imageOrFamily, "-")[0]
 	switch firstWord {
 	case "centos", "rhel", "rocky":
 		return "centos_rhel", nil
@@ -96,7 +105,7 @@ func distroFolder(platform string) (string, error) {
 	case "opensuse", "sles":
 		return "sles", nil
 	}
-	return "", fmt.Errorf("distroFolder() could not find matching folder holding scripts for platform %s", platform)
+	return "", fmt.Errorf("distroFolder() could not find matching folder holding scripts for image spec: %s", imageSpec)
 }
 
 func setupOpsAgent(ctx context.Context, vm *gce.VM, logger *log.Logger, configFilePath string) error {
@@ -137,7 +146,7 @@ func getAllReceivers(config *confgenerator.UnifiedConfig) (receivers []string) {
 // The function determines if a receiver requires a third party app installation if there is a corresponding install
 // script in the third party apps data folder whose path is specified using the installPath argument.
 func installApps(ctx context.Context, vm *gce.VM, logger *logging.DirectoryLogger, installPath string, receivers []string) error {
-	folder, err := distroFolder(vm.Platform)
+	folder, err := distroFolder(vm.ImageSpec)
 
 	if err != nil {
 		return err
@@ -342,12 +351,16 @@ func runCustomScripts(ctx context.Context, vm *gce.VM, logger *logging.Directory
 	return nil
 }
 
-func getRecommendedMachineType(imageFamily string, image string) string {
-	if imageFamily != "" {
-		return agents.RecommendedMachineType(imageFamily)
+func constructImageSpec(config *Config) (string, error) {
+	// If both or neither set, return error
+	if (config.ImageFamily != "") == (config.Image != "") {
+		return "", fmt.Errorf("config.ImageFamily (%v) or config.Image (%v) must be set, but not both", config.ImageFamily, config.Image)
 	}
-
-	return agents.RecommendedMachineType(image)
+	if config.ImageFamily != "" {
+		return fmt.Sprintf("%s:%s", config.ImageProject, config.ImageFamily), nil
+	} else {
+		return fmt.Sprintf("%s=%s", config.ImageProject, config.Image), nil
+	}
 }
 
 func createInstance(ctx context.Context, config *Config, logger *log.Logger) (*gce.VM, error) {
@@ -356,12 +369,16 @@ func createInstance(ctx context.Context, config *Config, logger *log.Logger) (*g
 		args = append(args, "--service-account="+config.ServiceAccount)
 	}
 
+	imageSpec, err := constructImageSpec(config)
+
+	if err != nil {
+		return nil, err
+	}
+
 	options := gce.VMOptions{
-		Platform:             config.ImageFamily,
-		Image:                config.Image,
+		ImageSpec:            imageSpec,
 		ImageFamilyScope:     config.ImageFamilyScope,
-		ImageProject:         config.ImageProject,
-		MachineType:          getRecommendedMachineType(config.ImageFamily, config.Image),
+		MachineType:          agents.RecommendedMachineType(imageSpec),
 		Name:                 config.Name,
 		Project:              config.Project,
 		Zone:                 config.Zone,
