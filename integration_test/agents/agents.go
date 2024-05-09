@@ -196,6 +196,7 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 		"/etc/google-cloud-ops-agent/config.yaml",
 		"/var/log/google-cloud-ops-agent/subagents/logging-module.log",
 		"/var/log/google-cloud-ops-agent/subagents/metrics-module.log",
+		"/var/log/nvidia-installer.log",
 		"/run/google-cloud-ops-agent-fluent-bit/fluent_bit_main.conf",
 		"/run/google-cloud-ops-agent-fluent-bit/fluent_bit_parser.conf",
 		"/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml",
