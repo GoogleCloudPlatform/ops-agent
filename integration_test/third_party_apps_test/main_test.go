@@ -123,9 +123,8 @@ func distroFolder(platform string) (string, error) {
 		strings.HasPrefix(platform, "rocky") {
 			return "centos_rhel", nil
 	} 
-	if strings.HasPrefix(platform, "debian") ||
-		strings.HasPrefix(platform, "ubuntu") ||
-		strings.HasPrefix(platform, "common-gpu-debian") {
+	if strings.Contains(platform, "debian") ||
+		strings.HasPrefix(platform, "ubuntu")  {
 			return "debian_ubuntu", nil
 	} 
 	if strings.HasPrefix(platform, "opensuse") ||
