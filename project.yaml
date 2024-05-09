@@ -19,7 +19,7 @@ targets:
         test_distros:
           representative:
           - debian-cloud:debian-11
-          - ml-images:common-gpu-debian-11-py310
+          - ml-images:common-cu118-debian-11-py310
       aarch64:
         test_distros:
           representative:
