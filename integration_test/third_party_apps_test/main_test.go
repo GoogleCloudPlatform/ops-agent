@@ -813,7 +813,6 @@ var defaultApps = map[string]bool{
 	// Chosen because it is the most nontrivial Windows app currently
 	// implemented.
 	"active_directory_ds": true,
-	"couchbase":           true,
 }
 
 var gpuModels = map[string]accelerator{
