@@ -337,7 +337,7 @@ func CheckServicesNotRunning(ctx context.Context, logger *log.Logger, vm *gce.VM
 }
 
 func packageManagerCmd(vm *gce.VM) (string, error) {
-	if gce.IsWindows(vm.Platform) {
+	if gce.IsWindows(vm.ImageSpec) {
 		return "googet -noconfirm", nil
 	}
 
@@ -349,7 +349,7 @@ func packageManagerCmd(vm *gce.VM) (string, error) {
 	case "debian", "ubuntu":
 		return "sudo apt-get update; sudo apt-get -y", nil
 	default:
-		return "", fmt.Errorf("packageManagerCmd() doesn't support platform %s with value '%s'", vm.Platform, vm.OS.ID)
+		return "", fmt.Errorf("packageManagerCmd() doesn't support image spec %s with value '%s'", vm.ImageSpec, vm.OS.ID)
 	}
 }
 
