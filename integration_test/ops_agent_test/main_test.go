@@ -4083,7 +4083,7 @@ func unmarshalResource(in string) (*resourcedetector.GCEResource, error) {
 // uninstallGolang removes the go installation on the VM.
 func uninstallGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	var cmd string
-	if gce.IsWindows(vm.Platform) {
+	if gce.IsWindows(vm.ImageSpec) {
 		// There is currently no need for this support.
 		return nil
 	} else {
@@ -4100,7 +4100,7 @@ func uninstallGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error 
 
 // installGolang downloads and sets up go on the given VM. The caller is still
 // responsible for updating PATH to point to the installed binaries, see
-// `goPathCommandForPlatform`. If go is already installed, uninstall it first.
+// `goPathCommandForImage`. If go is already installed, uninstall it first.
 func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	err := uninstallGolang(ctx, logger, vm)
 	if err != nil {
