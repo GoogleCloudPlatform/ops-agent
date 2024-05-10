@@ -1581,6 +1581,7 @@ INSTALL_DIR="$(readlink --canonicalize .)"
 sudo ${INSTALL_DIR}/google-cloud-sdk/bin/gcloud components update --quiet
 
 sudo ln -s ${INSTALL_DIR}/google-cloud-sdk/bin/gsutil /usr/bin/gsutil 
+sudo registercloudguest --force-new
 `
 	// b/308962066: The GCloud CLI ARM Linux tarballs do not have bundled Python
 	// and the GCloud CLI requires Python >= 3.8. Install Python311 for ARM VMs
