@@ -21,7 +21,7 @@ For instructions, see the top of gce_testing.go.
 This test needs the following environment variables to be defined, in addition
 to the ones mentioned at the top of gce_testing.go:
 
-PLATFORMS: a comma-separated list of image specs to test, e.g. "suse-cloud:sles-12,ubuntu-os-cloud:ubuntu-2310-amd64".
+IMAGE_SPECS: a comma-separated list of image specs to test, e.g. "suse-cloud:sles-12,ubuntu-os-cloud:ubuntu-2310-amd64".
 
 The following variables are optional:
 
@@ -88,7 +88,7 @@ func removeFromSlice(original []string, toRemove string) []string {
 // assertFilePresence returns an error if the provided file path doesn't exist on the VM.
 func assertFilePresence(ctx context.Context, logger *log.Logger, vm *gce.VM, filePath string) error {
 	var fileQuery string
-	if gce.IsWindows(vm.Platform) {
+	if gce.IsWindows(vm.ImageSpec) {
 		fileQuery = fmt.Sprintf(`Test-Path -Path "%s"`, filePath)
 	} else {
 		fileQuery = fmt.Sprintf(`sudo test -f %s`, filePath)
@@ -100,7 +100,7 @@ func assertFilePresence(ctx context.Context, logger *log.Logger, vm *gce.VM, fil
 	}
 
 	// Windows returns False if the path doesn't exist.
-	if gce.IsWindows(vm.Platform) && strings.Contains(out.Stdout, "False") {
+	if gce.IsWindows(vm.ImageSpec) && strings.Contains(out.Stdout, "False") {
 		return fmt.Errorf("couldn't find file %s. Output response %s. Error response: %s", filePath, out.Stdout, out.Stderr)
 	}
 
@@ -114,25 +114,29 @@ const (
 
 // distroFolder returns the distro family name we use in our directory hierarchy
 // inside the scripts directory.
-func distroFolder(platform string) (string, error) {
-	if gce.IsWindows(platform) {
+func distroFolder(imageSpec string) (string, error) {
+	if gce.IsWindows(imageSpec) {
 		return "windows", nil
 	}
-	if strings.HasPrefix(platform, "centos") ||
-		strings.HasPrefix(platform, "rhel") ||
-		strings.HasPrefix(platform, "rocky") {
-			return "centos_rhel", nil
-	} 
-	if strings.Contains(platform, "debian") ||
-		strings.HasPrefix(platform, "ubuntu")  {
-			return "debian_ubuntu", nil
-	} 
-	if strings.HasPrefix(platform, "opensuse") ||
-		strings.HasPrefix(platform, "sles") {
-			return "sles", nil
-	} 
-
-	return "", fmt.Errorf("distroFolder() could not find matching folder holding scripts for platform %s", platform)
+	delim := ""
+	if strings.Contains(imageSpec, ":") {
+		delim = ":"
+	} else if strings.Contains(imageSpec, "=") {
+		delim = "="
+	} else {
+		return "", fmt.Errorf("distroFolder() could not parse image spec: %s", imageSpec)
+	}
+	imageOrFamily := strings.Split(imageSpec, delim)[1]
+	firstWord := strings.Split(imageOrFamily, "-")[0]
+	switch firstWord {
+	case "centos", "rhel", "rocky":
+		return "centos_rhel", nil
+	case "debian", "ubuntu":
+		return "debian_ubuntu", nil
+	case "opensuse", "sles":
+		return "sles", nil
+	}
+	return "", fmt.Errorf("distroFolder() could not find matching folder holding scripts for image spec: %s", imageSpec)
 }
 
 // runScriptFromScriptsDir runs a script on the given VM.
@@ -438,7 +442,7 @@ func runLoggingTestCases(ctx context.Context, logger *log.Logger, vm *gce.VM, lo
 			// 2. verifyLogField treats it as any other unexpected field, which
 			//    means it will fail the test ("expected no value for field").
 			//    This could result in annoying test failures if the app suddenly
-			//    begins reporting a log field on a certain platform.
+			//    begins reporting a log field on a certain image.
 			entry.Fields = stripUnavailableFields(entry.Fields, vm.ImageSpec)
 
 			// Construct query using remaining fields with a nonempty regex.
@@ -547,7 +551,7 @@ func assertMetric(ctx context.Context, logger *log.Logger, vm *gce.VM, metric *m
 // Returns an error (nil on success), and a boolean indicating whether the error
 // is retryable.
 func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, app string, metadata metadata.IntegrationMetadata) (retry bool, err error) {
-	folder, err := distroFolder(vm.Platform)
+	folder, err := distroFolder(vm.ImageSpec)
 	if err != nil {
 		return nonRetryable, err
 	}
@@ -594,7 +598,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		return nonRetryable, fmt.Errorf("error enabling %s: %v", app, err)
 	}
 
-	backupConfigFilePath := util.ConfigPathForPlatform(vm.Platform) + ".bak"
+	backupConfigFilePath := util.GetConfigPath(vm.ImageSpec) + ".bak"
 	if err = assertFilePresence(ctx, logger.ToMainLog(), vm, backupConfigFilePath); err != nil {
 		return nonRetryable, fmt.Errorf("error when fetching back up config file %s: %v", backupConfigFilePath, err)
 	}
@@ -799,7 +803,7 @@ type accelerator struct {
 }
 
 type test struct {
-	platform   string
+	imageSpec  string
 	app        string
 	gpu        *accelerator
 	metadata   metadata.IntegrationMetadata
@@ -807,8 +811,8 @@ type test struct {
 }
 
 var defaultPlatforms = map[string]bool{
-	"debian-10":    true,
-	"windows-2019": true,
+	"debian-cloud:debian-10":    true,
+	"windows-cloud:windows-2019": true,
 }
 
 var defaultApps = map[string]bool{
@@ -867,7 +871,7 @@ var gpuModels = map[string]accelerator{
 }
 
 const (
-	SAPHANAPlatform = "stackdriver-test-143416:sles-15-sp4-sap-saphana"
+	SAPHANAImageSpec = "stackdriver-test-143416:sles-15-sp4-sap-saphana"
 	SAPHANAApp      = "saphana"
 
 	OracleDBApp  = "oracledb"
@@ -876,80 +880,80 @@ const (
 
 // incompatibleOperatingSystem looks at the supported_operating_systems field
 // of metadata.yaml for this app and returns a nonempty skip reason if it
-// thinks this app doesn't support the given platform.
+// thinks this app doesn't support the given image.
 // supported_operating_systems should only contain "linux", "windows", or
 // "linux_and_windows".
 func incompatibleOperatingSystem(testCase test) string {
 	supported := testCase.metadata.SupportedOperatingSystems
-	if !strings.Contains(supported, gce.PlatformKind(testCase.platform)) {
-		return fmt.Sprintf("Skipping test for platform %v because app %v only supports %v.", testCase.platform, testCase.app, supported)
+	if !strings.Contains(supported, gce.OSKind(testCase.imageSpec)) {
+		return fmt.Sprintf("Skipping test for image spec %v because app %v only supports %v.", testCase.imageSpec, testCase.app, supported)
 	}
-	return "" // We are testing on a supported platform for this app.
+	return "" // We are testing on a supported image for this app.
 }
 
 // When in `-short` test mode, mark some tests for skipping, based on
 // test_config and impacted apps.
-//   - For all impacted apps, test on all platforms.
-//   - Always test all apps against the default platform.
+//   - For all impacted apps, test on all images.
+//   - Always test all apps against the default image.
 //   - Always test the default app (postgres/active_directory_ds for now)
-//     on all platforms.
+//     on all images.
 //
 // `platforms_to_skip` overrides the above.
-// Also, restrict `SAPHANAPlatform` to only test `SAPHANAApp` and skip that
-// app on all other platforms too.
+// Also, restrict `SAPHANAImageSpec` to only test `SAPHANAApp` and skip that
+// app on all other images too.
 func determineTestsToSkip(tests []test, impactedApps map[string]bool) {
 	for i, test := range tests {
 		if testing.Short() {
 			_, testApp := impactedApps[test.app]
 			_, defaultApp := defaultApps[test.app]
-			_, defaultPlatform := defaultPlatforms[test.platform]
+			_, defaultPlatform := defaultPlatforms[test.imageSpec]
 			if !defaultPlatform && !defaultApp && !testApp {
 				tests[i].skipReason = fmt.Sprintf("skipping %v because it's not impacted by pending change", test.app)
 			}
 		}
-		if metadata.SliceContains(test.metadata.PlatformsToSkip, test.platform) {
+		if metadata.SliceContains(test.metadata.PlatformsToSkip, test.imageSpec) {
 			tests[i].skipReason = "Skipping test due to 'platforms_to_skip' entry in metadata.yaml"
 		}
 		for _, gpuPlatform := range test.metadata.GpuPlatforms {
-			if test.gpu != nil && test.gpu.model == gpuPlatform.Model && !metadata.SliceContains(gpuPlatform.Platforms, test.platform) {
+			if test.gpu != nil && test.gpu.model == gpuPlatform.Model && !metadata.SliceContains(gpuPlatform.Platforms, test.imageSpec) {
 				tests[i].skipReason = "Skipping test due to 'gpu_platforms.platforms' entry in metadata.yaml"
 			}
 		}
 		if reason := incompatibleOperatingSystem(test); reason != "" {
 			tests[i].skipReason = reason
 		}
-		if test.app == "mssql" && gce.IsWindows(test.platform) && !strings.HasPrefix(test.platform, "sql-") {
+		if test.app == "mssql" && strings.HasPrefix(test.imageSpec, "windows-cloud") {
 			tests[i].skipReason = "Skipping MSSQL test because this version of Windows doesn't have MSSQL"
 		}
-		isSAPHANAPlatform := test.platform == SAPHANAPlatform
+		isSAPHANAImageSpec := test.imageSpec == SAPHANAImageSpec
 		isSAPHANAApp := test.app == SAPHANAApp
-		if isSAPHANAPlatform != isSAPHANAApp {
-			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, SAPHANAApp, SAPHANAPlatform)
+		if isSAPHANAImageSpec != isSAPHANAApp {
+			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, SAPHANAApp, SAPHANAImageSpec)
 		}
 	}
 }
 
 // This is the entry point for the test. Runs runSingleTest
-// for each platform in PLATFORMS and each app in linuxApps or windowsApps.
+// for each image in IMAGE_SPECS and each app in linuxApps or windowsApps.
 func TestThirdPartyApps(t *testing.T) {
 	t.Cleanup(gce.CleanupKeysOrDie)
 
 	tests := []test{}
 	allApps := fetchAppsAndMetadata(t)
-	platforms := strings.Split(os.Getenv("PLATFORMS"), ",")
+	imageSpecs := strings.Split(os.Getenv("IMAGE_SPECS"), ",")
 
-	for _, platform := range platforms {
+	for _, imageSpec := range imageSpecs {
 		for app, metadata := range allApps {
 			if len(metadata.GpuPlatforms) > 0 {
 				for _, gpuPlatform := range metadata.GpuPlatforms {
 					if gpu, ok := gpuModels[gpuPlatform.Model]; !ok {
 						t.Fatalf("invalid gpu model name %s", gpuPlatform)
 					} else {
-						tests = append(tests, test{platform: platform, gpu: &gpu, app: app, metadata: metadata, skipReason: ""})
+						tests = append(tests, test{imageSpec: imageSpec, gpu: &gpu, app: app, metadata: metadata, skipReason: ""})
 					}
 				}
 			} else {
-				tests = append(tests, test{platform: platform, app: app, metadata: metadata, skipReason: ""})
+				tests = append(tests, test{imageSpec: imageSpec, app: app, metadata: metadata, skipReason: ""})
 			}
 		}
 	}
@@ -961,7 +965,7 @@ func TestThirdPartyApps(t *testing.T) {
 	for _, tc := range tests {
 		tc := tc // https://golang.org/doc/faq#closures_and_goroutines
 
-		testName := tc.platform + "/" + tc.app
+		testName := tc.imageSpec + "/" + tc.app
 		if tc.gpu != nil {
 			testName = testName + "/" + tc.gpu.fullName
 		}
@@ -981,9 +985,9 @@ func TestThirdPartyApps(t *testing.T) {
 				logger := gce.SetupLogger(t)
 				logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
 				options := gce.VMOptions{
-					ImageSpec:            tc.platform,
+					ImageSpec:            tc.imageSpec,
 					TimeToLive:           "3h",
-					MachineType:          agents.RecommendedMachineType(tc.platform),
+					MachineType:          agents.RecommendedMachineType(tc.imageSpec),
 					ExtraCreateArguments: nil,
 				}
 				if tc.gpu != nil {
@@ -995,13 +999,13 @@ func TestThirdPartyApps(t *testing.T) {
 					options.MachineType = tc.gpu.machineType
 					options.Zone = tc.gpu.availableZone
 				}
-				if tc.platform == SAPHANAPlatform {
+				if tc.imageSpec == SAPHANAImageSpec {
 					// This image needs an SSD in order to be performant enough.
 					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-type=pd-ssd")
 				}
 				if tc.app == OracleDBApp {
 					options.MachineType = "e2-highmem-8"
-					if gce.IsARM(tc.platform) {
+					if gce.IsARM(tc.imageSpec) {
 						// T2A doesn't have a highmem line, so pick the standard machine that's specced at least
 						// as well as e2-highmem-8.
 						options.MachineType = "t2a-standard-16"
@@ -1014,7 +1018,7 @@ func TestThirdPartyApps(t *testing.T) {
 
 				var retryable bool
 				retryable, err = runSingleTest(ctx, logger, vm, tc.app, tc.metadata)
-				t.Logf("Attempt %v of %s test of %s finished with err=%v, retryable=%v", attempt, tc.platform, tc.app, err, retryable)
+				t.Logf("Attempt %v of %s test of %s finished with err=%v, retryable=%v", attempt, tc.imageSpec, tc.app, err, retryable)
 				if err == nil {
 					return
 				}

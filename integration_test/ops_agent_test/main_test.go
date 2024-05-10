@@ -22,7 +22,7 @@ gce_testing.go.
 This test needs the following environment variables to be defined, in addition
 to the ones mentioned at the top of gce_testing.go:
 
-PLATFORMS: a comma-separated list of distros to test, e.g. "centos-7,centos-8".
+IAMGE_SPECS: a comma-separated list of images to test, e.g. "centos-cloud:centos-7,centos-cloud:centos-8".
 
 The following variables are optional:
 
@@ -80,52 +80,45 @@ import (
 //go:embed testdata
 var testdataDir embed.FS
 
-func logPathForPlatform(platform string) string {
-	if gce.IsWindows(platform) {
+func logPathForImage(imageSpec string) string {
+	if gce.IsWindows(imageSpec) {
 		return `C:\mylog`
 	}
 	return "/tmp/mylog"
 }
 
-func configPathForPlatform(platform string) string {
-	if gce.IsWindows(platform) {
-		return `C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml`
-	}
-	return "/etc/google-cloud-ops-agent/config.yaml"
-}
-
-func workDirForPlatform(platform string) string {
-	if gce.IsWindows(platform) {
+func workDirForImage(imageSpec string) string {
+	if gce.IsWindows(imageSpec) {
 		return `C:\work`
 	}
 	return "/tmp/work"
 }
 
-func startCommandForPlatform(platform string) string {
-	if gce.IsWindows(platform) {
+func startCommandForImage(imageSpec string) string {
+	if gce.IsWindows(imageSpec) {
 		return "Start-Service google-cloud-ops-agent"
 	}
 	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
 	return "sudo service google-cloud-ops-agent start || sudo systemctl start google-cloud-ops-agent"
 }
 
-func stopCommandForPlatform(platform string) string {
-	if gce.IsWindows(platform) {
+func stopCommandForImage(imageSpec string) string {
+	if gce.IsWindows(imageSpec) {
 		return "Stop-Service google-cloud-ops-agent -Force"
 	}
 	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
 	return "sudo service google-cloud-ops-agent stop || sudo systemctl stop google-cloud-ops-agent"
 }
 
-func systemLogTagForPlatform(platform string) string {
-	if gce.IsWindows(platform) {
+func systemLogTagForImage(imageSpec string) string {
+	if gce.IsWindows(imageSpec) {
 		return "windows_event_log"
 	}
 	return "syslog"
 }
 
-func logMessageQueryForPlatform(platform, message string) string {
-	if gce.IsWindows(platform) {
+func logMessageQueryForImage(imageSpec, message string) string {
+	if gce.IsWindows(imageSpec) {
 		// On Windows, we have to look in the capital-M Message field. On linux
 		// it is lowercase-m message.
 		// Also, Fluent-Bit adds an extra newline to our payload, so we need to
@@ -135,15 +128,15 @@ func logMessageQueryForPlatform(platform, message string) string {
 	return "jsonPayload.message=" + message
 }
 
-func metricsAgentProcessNamesForPlatform(platform string) []string {
-	if gce.IsWindows(platform) {
+func metricsAgentProcessNamesForImage(imageSpec string) []string {
+	if gce.IsWindows(imageSpec) {
 		return []string{"google-cloud-metrics-agent_windows_amd64"}
 	}
 	return []string{"otelopscol", "collectd"}
 }
 
-func diagnosticsProcessNamesForPlatform(platform string) []string {
-	if gce.IsWindows(platform) {
+func diagnosticsProcessNamesForImage(imageSpec string) []string {
+	if gce.IsWindows(imageSpec) {
 		return []string{"google-cloud-ops-agent-diagnostics"}
 	}
 	return []string{"google_cloud_ops_agent_diagnostics"}
@@ -151,7 +144,7 @@ func diagnosticsProcessNamesForPlatform(platform string) []string {
 
 func makeDirectory(ctx context.Context, logger *log.Logger, vm *gce.VM, directory string) error {
 	var createFolderCmd string
-	if gce.IsWindows(vm.Platform) {
+	if gce.IsWindows(vm.ImageSpec) {
 		createFolderCmd = fmt.Sprintf("New-Item -ItemType Directory -Path %s", directory)
 	} else {
 		createFolderCmd = fmt.Sprintf("mkdir -p %s", directory)
@@ -194,8 +187,8 @@ func writeToWindowsEventLogWithSeverity(ctx context.Context, logger *log.Logger,
 // logger.ToMainLog() throughout.
 // If you need to write to something besides the main log, just call
 // agents.CommonSetup instead.
-func setupMainLogAndVM(t *testing.T, platform string) (context.Context, *log.Logger, *gce.VM) {
-	ctx, dirLog, vm := agents.CommonSetup(t, platform)
+func setupMainLogAndVM(t *testing.T, imageSpec string) (context.Context, *log.Logger, *gce.VM) {
+	ctx, dirLog, vm := agents.CommonSetup(t, imageSpec)
 	return ctx, dirLog.ToMainLog(), vm
 }
 
@@ -204,11 +197,11 @@ func setupMainLogAndVM(t *testing.T, platform string) (context.Context, *log.Log
 // distro.
 // On Windows this is the "System" log within the event logging system.
 func writeToSystemLog(ctx context.Context, logger *log.Logger, vm *gce.VM, payload string) error {
-	if gce.IsWindows(vm.Platform) {
+	if gce.IsWindows(vm.ImageSpec) {
 		return writeToWindowsEventLog(ctx, logger, vm, "System", payload)
 	}
 	line := payload + "\n"
-	location := gce.SyslogLocation(vm.Platform)
+	location := gce.SyslogLocation(vm.ImageSpec)
 	// Pass the content in on stdin and run "cat -" to tell cat to copy from stdin.
 	// This is to avoid having to quote the content correctly for the shell.
 	// "tee -a" will append to the file.
@@ -220,13 +213,13 @@ func writeToSystemLog(ctx context.Context, logger *log.Logger, vm *gce.VM, paylo
 
 func TestParseMultilineFileJava(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		if gce.IsWindows(platform) {
+		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
 		}
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
-		logPath := logPathForPlatform(vm.Platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		logPath := logPathForImage(vm.ImageSpec)
 		config := fmt.Sprintf(`logging:
   receivers:
     files_1:
@@ -321,13 +314,13 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 
 func TestParseMultilineFileJavaPython(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		if gce.IsWindows(platform) {
+		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
 		}
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
-		logPath := logPathForPlatform(vm.Platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		logPath := logPathForImage(vm.ImageSpec)
 		config := fmt.Sprintf(`logging:
   receivers:
     files_1:
@@ -478,13 +471,13 @@ TypeError: can only concatenate str (not "int") to str
 
 func TestParseMultilineFileGolangJavaPython(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		if gce.IsWindows(platform) {
+		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
 		}
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
-		logPath := logPathForPlatform(vm.Platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		logPath := logPathForImage(vm.ImageSpec)
 		config := fmt.Sprintf(`logging:
   receivers:
     files_1:
@@ -597,13 +590,13 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 
 func TestParseMultilineFileMissingParser(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		if gce.IsWindows(platform) {
+		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
 		}
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
-		logPath := logPathForPlatform(vm.Platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		logPath := logPathForImage(vm.ImageSpec)
 		// In the config file, only match for Golang exceptions
 		config := fmt.Sprintf(`logging:
   receivers:
@@ -708,10 +701,10 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 
 func TestCustomLogFile(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
-		logPath := logPathForPlatform(vm.Platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		logPath := logPathForImage(vm.ImageSpec)
 		config := fmt.Sprintf(`logging:
   receivers:
     mylog_source:
@@ -758,11 +751,11 @@ func TestCustomLogFile(t *testing.T) {
 
 func TestCustomLogFormat(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
-		logPath := logPathForPlatform(vm.Platform)
+		logPath := logPathForImage(vm.ImageSpec)
 		config := fmt.Sprintf(`logging:
   receivers:
     mylog_source:
@@ -806,10 +799,10 @@ func TestCustomLogFormat(t *testing.T) {
 func TestHTTPRequestLog(t *testing.T) {
 	t.Parallel()
 
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
-		logPath := logPathForPlatform(vm.Platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		logPath := logPathForImage(vm.ImageSpec)
 		config := fmt.Sprintf(`logging:
   receivers:
     mylog_source:
@@ -933,10 +926,10 @@ func TestHTTPRequestLog(t *testing.T) {
 
 func TestLogEntrySpecialFields(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		ctx, logger, vm := agents.CommonSetup(t, platform)
-		file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
+		ctx, logger, vm := agents.CommonSetup(t, imageSpec)
+		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
 		configStr := `
 logging:
   receivers:
@@ -990,9 +983,9 @@ logging:
 
 func TestInvalidConfig(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
 		// Sample bad config sourced from:
 		// https://github.com/GoogleCloudPlatform/ops-agent/blob/master/confgenerator/testdata/invalid/linux/logging-receiver_reserved_id_prefix/input.yaml
@@ -1023,11 +1016,11 @@ func TestProcessorOrder(t *testing.T) {
 	// Due to the bug, the log contents came through as a string, not as
 	// parsed JSON.
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
-		logPath := logPathForPlatform(vm.Platform)
+		logPath := logPathForImage(vm.ImageSpec)
 		config := fmt.Sprintf(`logging:
   receivers:
     mylog_source:
@@ -1089,12 +1082,12 @@ func TestProcessorOrder(t *testing.T) {
 
 func TestSyslogTCP(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		if gce.IsWindows(platform) {
+		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
 		}
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
 		config := `logging:
   receivers:
@@ -1151,12 +1144,12 @@ func TestSyslogTCP(t *testing.T) {
 
 func TestSyslogUDP(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		if gce.IsWindows(platform) {
+		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
 		}
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
 		config := `logging:
   receivers:
@@ -1192,11 +1185,11 @@ func TestSyslogUDP(t *testing.T) {
 
 func TestExcludeLogs(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
-		file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
-		file2 := fmt.Sprintf("%s_2", logPathForPlatform(vm.Platform))
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
+		file2 := fmt.Sprintf("%s_2", logPathForImage(vm.ImageSpec))
 
 		// p1: validate the contains operator
 		// p2: validate that a rule which doesn't exclude a log but still matches
@@ -1277,11 +1270,11 @@ func TestExcludeLogs(t *testing.T) {
 
 func TestExcludeLogsParseJsonOrder(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
-		file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
-		file2 := fmt.Sprintf("%s_2", logPathForPlatform(vm.Platform))
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
+		file2 := fmt.Sprintf("%s_2", logPathForImage(vm.ImageSpec))
 
 		// This exclude_logs processor operates on a non-default field which is
 		// present if and only if the log is structured accordingly.
@@ -1356,12 +1349,12 @@ func TestExcludeLogsParseJsonOrder(t *testing.T) {
 
 func TestExcludeLogsModifyFieldsOrder(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		ctx, logger, vm := agents.CommonSetup(t, platform)
-		file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
-		file2 := fmt.Sprintf("%s_2", logPathForPlatform(vm.Platform))
-		file3 := fmt.Sprintf("%s_3", logPathForPlatform(vm.Platform))
+		ctx, logger, vm := agents.CommonSetup(t, imageSpec)
+		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
+		file2 := fmt.Sprintf("%s_2", logPathForImage(vm.ImageSpec))
+		file3 := fmt.Sprintf("%s_3", logPathForImage(vm.ImageSpec))
 
 		// This exclude_logs processor operates on a non-default field which is
 		// present if and only if the log is structured accordingly.
@@ -1450,10 +1443,10 @@ func TestExcludeLogsModifyFieldsOrder(t *testing.T) {
 
 func TestModifyFields(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
-		file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
 
 		config := fmt.Sprintf(`logging:
   receivers:
@@ -1529,10 +1522,10 @@ func TestModifyFields(t *testing.T) {
 
 func TestParseWithConflictsWithRecord(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
-		file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
 		configStr := `
 logging:
   receivers:
@@ -1596,10 +1589,10 @@ logging:
 
 func TestResourceNameLabel(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
-		file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
 
 		config := fmt.Sprintf(`logging:
   receivers:
@@ -1646,10 +1639,10 @@ func TestLogFilePathLabel(t *testing.T) {
 
 func testLogFilePathLabel(t *testing.T, otel bool) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
-		file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
 
 		config := fmt.Sprintf(`logging:
   receivers:
@@ -1688,7 +1681,7 @@ func testLogFilePathLabel(t *testing.T, otel bool) {
 		// In Windows the generated log_file_path "C:\mylog_1" uses a backslash.
 		// When constructing the query in WaithForLog the backslashes are escaped so
 		// replacing with two backslahes correctly queries for "C:\mylog_1" label.
-		if gce.IsWindows(platform) {
+		if gce.IsWindows(imageSpec) {
 			file1 = strings.Replace(file1, `\`, `\\`, 1)
 		}
 
@@ -1704,8 +1697,8 @@ func testLogFilePathLabel(t *testing.T, otel bool) {
 // path is returned by this function) and pipes its contents to an output configured via outputConfig.
 // An example outputConfig would be "-o tcp://127.0.0.1:5170".
 // Use parseInputAsJSON for structured input.
-func startFluentBitBackgroundPipe(ctx context.Context, logger *log.Logger, vm *gce.VM, platform string, parseInputAsJSON bool, outputConfig string) (string, error) {
-	dir := workDirForPlatform(platform)
+func startFluentBitBackgroundPipe(ctx context.Context, logger *log.Logger, vm *gce.VM, imageSpec string, parseInputAsJSON bool, outputConfig string) (string, error) {
+	dir := workDirForImage(imageSpec)
 	if err := makeDirectory(ctx, logger, vm, dir); err != nil {
 		return "", err
 	}
@@ -1739,7 +1732,7 @@ EOF
 		parserConfig,
 		// Escape record accessor dollar-signs
 		strings.ReplaceAll(fluentBitArgs, "$", `\$`))
-	if gce.IsWindows(platform) {
+	if gce.IsWindows(imageSpec) {
 		command = fmt.Sprintf(`
 			New-Item %s
 			"%s" | Out-File -Encoding Ascii %s
@@ -1759,19 +1752,19 @@ EOF
 // writeLinesToRemoteFile writes lines of text to a remote file.
 // Lines each have an implicit terminating newline character.
 // Lines are allowed to be huge.
-func writeLinesToRemoteFile(ctx context.Context, logger *log.Logger, vm *gce.VM, platform string, remoteFile string, lines ...string) error {
+func writeLinesToRemoteFile(ctx context.Context, logger *log.Logger, vm *gce.VM, imageSpec string, remoteFile string, lines ...string) error {
 	for _, line := range lines {
 		line += "\n"
 
 		// Use a temp-file as a buffer to allow for long lines.
-		tempPath := filepath.Join(workDirForPlatform(platform), "pipe_temp.log")
+		tempPath := filepath.Join(workDirForImage(imageSpec), "pipe_temp.log")
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), tempPath); err != nil {
 			return err
 		}
 
 		// Append the temp-file to the remote file.
 		appendCommand := fmt.Sprintf(`sudo cat %s | sudo tee -a %s > /dev/null`, tempPath, remoteFile)
-		if gce.IsWindows(platform) {
+		if gce.IsWindows(imageSpec) {
 			appendCommand = fmt.Sprintf(`Get-Content %s | Out-File -Encoding Ascii -Append %s`, tempPath, remoteFile)
 		}
 
@@ -1784,10 +1777,10 @@ func writeLinesToRemoteFile(ctx context.Context, logger *log.Logger, vm *gce.VM,
 
 func TestTCPLog(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
 		config := `logging:
   receivers:
@@ -1809,7 +1802,7 @@ func TestTCPLog(t *testing.T) {
 		// Start a background fluent-bit that outputs to TCP.
 		// The TCP receiver in the Ops Agent already parses to JSON,
 		// so don't double-parse it in the background fluent-bit.
-		pipePath, err := startFluentBitBackgroundPipe(ctx, logger, vm, platform, false, "-o tcp://127.0.0.1:5170 -p raw_message_key=$log")
+		pipePath, err := startFluentBitBackgroundPipe(ctx, logger, vm, imageSpec, false, "-o tcp://127.0.0.1:5170 -p raw_message_key=$log")
 		if err != nil {
 			t.Fatalf("Error starting fluent-bit background pipe: %v", err)
 		}
@@ -1825,7 +1818,7 @@ func TestTCPLog(t *testing.T) {
 			// is only 20 KB.
 			fmt.Sprintf(`{"large":"start%send"}`, strings.Repeat("a", 250_000)),
 		}
-		if err = writeLinesToRemoteFile(ctx, logger, vm, platform, pipePath, linesToWrite...); err != nil {
+		if err = writeLinesToRemoteFile(ctx, logger, vm, imageSpec, pipePath, linesToWrite...); err != nil {
 			t.Fatalf("Error writing dummy TCP log lines: %v", err)
 		}
 
@@ -1850,10 +1843,10 @@ func TestTCPLog(t *testing.T) {
 
 func TestFluentForwardLog(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
 		config := `logging:
   receivers:
@@ -1874,13 +1867,13 @@ func TestFluentForwardLog(t *testing.T) {
 		// the log structure is preserved, so enable JSON parsing.
 		var pipePath string
 		var err error
-		if pipePath, err = startFluentBitBackgroundPipe(ctx, logger, vm, platform, true, "-o forward://127.0.0.1:24224 -t forwarder_tag"); err != nil {
+		if pipePath, err = startFluentBitBackgroundPipe(ctx, logger, vm, imageSpec, true, "-o forward://127.0.0.1:24224 -t forwarder_tag"); err != nil {
 			t.Fatalf("Error starting fluent-bit background pipe: %v", err)
 		}
 
 		// Verify a large structured log that's reasonably close to the limit of 256 KB.
 		largeLog := fmt.Sprintf(`{"large":"start%send"}`, strings.Repeat("a", 250_000))
-		if err = writeLinesToRemoteFile(ctx, logger, vm, platform, pipePath, largeLog); err != nil {
+		if err = writeLinesToRemoteFile(ctx, logger, vm, imageSpec, pipePath, largeLog); err != nil {
 			t.Fatalf("Error writing dummy TCP log line: %v", err)
 		}
 
@@ -1892,12 +1885,12 @@ func TestFluentForwardLog(t *testing.T) {
 
 func TestWindowsEventLog(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		if !gce.IsWindows(platform) {
+		if !gce.IsWindows(imageSpec) {
 			t.SkipNow()
 		}
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
 		config := `logging:
   receivers:
@@ -1928,7 +1921,7 @@ func TestWindowsEventLog(t *testing.T) {
 		}
 
 		for _, payload := range payloads {
-			if err := gce.WaitForLog(ctx, logger, vm, "windows_event_log", time.Hour, logMessageQueryForPlatform(vm.Platform, payload)); err != nil {
+			if err := gce.WaitForLog(ctx, logger, vm, "windows_event_log", time.Hour, logMessageQueryForImage(vm.ImageSpec, payload)); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -1937,12 +1930,12 @@ func TestWindowsEventLog(t *testing.T) {
 
 func TestWindowsEventLogV1UnsupportedChannel(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		if !gce.IsWindows(platform) {
+		if !gce.IsWindows(imageSpec) {
 			t.SkipNow()
 		}
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
 		log := "windows_event_log"
 		channel := "Microsoft-Windows-User Control Panel/Operational"
@@ -1964,7 +1957,7 @@ func TestWindowsEventLogV1UnsupportedChannel(t *testing.T) {
 
 		// Quote-and-escape the query string so that Cloud Logging accepts it
 		expectedWarning := fmt.Sprintf(`"\"channels[1]\" contains a channel, \"%s\", which may not work properly on version 1 of windows_event_log"`, channel)
-		if err := gce.WaitForLog(ctx, logger, vm, log, time.Hour, logMessageQueryForPlatform(vm.Platform, expectedWarning)); err != nil {
+		if err := gce.WaitForLog(ctx, logger, vm, log, time.Hour, logMessageQueryForImage(vm.ImageSpec, expectedWarning)); err != nil {
 			t.Fatal(err)
 		}
 	})
@@ -1972,12 +1965,12 @@ func TestWindowsEventLogV1UnsupportedChannel(t *testing.T) {
 
 func TestWindowsEventLogV2(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		if !gce.IsWindows(platform) {
+		if !gce.IsWindows(imageSpec) {
 			t.SkipNow()
 		}
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
 		// Have to wait for startup feature tracking metrics to be sent
 		// before we tear down the service.
@@ -2052,7 +2045,7 @@ func TestWindowsEventLogV2(t *testing.T) {
 
 		// For winlog2_space, we simply check that the logs were ingested.
 		for _, payload := range payloads["winlog2_space"] {
-			if err := gce.WaitForLog(ctx, logger, vm, "winlog2_space", time.Hour, logMessageQueryForPlatform(vm.Platform, payload)); err != nil {
+			if err := gce.WaitForLog(ctx, logger, vm, "winlog2_space", time.Hour, logMessageQueryForImage(vm.ImageSpec, payload)); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -2061,8 +2054,8 @@ func TestWindowsEventLogV2(t *testing.T) {
 		// They can be distinguished by the presence of v1-only and v2-only fields
 		// in jsonPayload, e.g. TimeGenerated and TimeCreated respectively.
 		for _, payload := range payloads["winlog2_default"] {
-			queryV1 := logMessageQueryForPlatform(vm.Platform, payload) + " AND jsonPayload.TimeGenerated:*"
-			queryV2 := logMessageQueryForPlatform(vm.Platform, payload) + " AND jsonPayload.TimeCreated:*"
+			queryV1 := logMessageQueryForImage(vm.ImageSpec, payload) + " AND jsonPayload.TimeGenerated:*"
+			queryV2 := logMessageQueryForImage(vm.ImageSpec, payload) + " AND jsonPayload.TimeCreated:*"
 			if err := gce.WaitForLog(ctx, logger, vm, "windows_event_log", time.Hour, queryV1); err != nil {
 				t.Fatalf("expected v1 log for %s but it wasn't found: err=%v", payload, err)
 			}
@@ -2072,7 +2065,7 @@ func TestWindowsEventLogV2(t *testing.T) {
 		}
 
 		// Verify that the warning message has the correct severity.
-		if err := gce.WaitForLog(ctx, logger, vm, "winlog2_default", time.Hour, logMessageQueryForPlatform(vm.Platform, "warning_msg")+` AND severity="WARNING"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger, vm, "winlog2_default", time.Hour, logMessageQueryForImage(vm.ImageSpec, "warning_msg")+` AND severity="WARNING"`); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2081,7 +2074,7 @@ func TestWindowsEventLogV2(t *testing.T) {
 		// - that jsonPayload.raw_xml contains a valid XML document.
 		// - that a few sample fields are present in that XML document.
 		for _, payload := range payloads["winlog2_xml"] {
-			log, err := gce.QueryLog(ctx, logger, vm, "winlog2_xml", time.Hour, logMessageQueryForPlatform(vm.Platform, payload), gce.QueryMaxAttempts)
+			log, err := gce.QueryLog(ctx, logger, vm, "winlog2_xml", time.Hour, logMessageQueryForImage(vm.ImageSpec, payload), gce.QueryMaxAttempts)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -2227,12 +2220,12 @@ func hasKeyWithValueType[V any](m map[string]any, k string) bool {
 
 func TestWindowsEventLogWithNonDefaultTimeZone(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		if !gce.IsWindows(platform) {
+		if !gce.IsWindows(imageSpec) {
 			t.SkipNow()
 		}
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		if _, err := gce.RunRemotely(ctx, logger, vm, `Set-TimeZone -Id "Eastern Standard Time"`); err != nil {
 			t.Fatal(err)
 		}
@@ -2249,7 +2242,7 @@ func TestWindowsEventLogWithNonDefaultTimeZone(t *testing.T) {
 
 		// Validate that the log written to Cloud Logging has a timestamp that's
 		// close to eventTime. Use 24*time.Hour to cover all possible time zones.
-		logEntry, err := gce.QueryLog(ctx, logger, vm, "windows_event_log", 24*time.Hour, logMessageQueryForPlatform(platform, testMessage), gce.QueryMaxAttempts)
+		logEntry, err := gce.QueryLog(ctx, logger, vm, "windows_event_log", 24*time.Hour, logMessageQueryForImage(imageSpec, testMessage), gce.QueryMaxAttempts)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -2262,12 +2255,12 @@ func TestWindowsEventLogWithNonDefaultTimeZone(t *testing.T) {
 
 func TestSystemdLog(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		if gce.IsWindows(platform) {
+		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
 		}
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
 		config := `logging:
   receivers:
@@ -2295,9 +2288,9 @@ func TestSystemdLog(t *testing.T) {
 
 func TestSystemLogByDefault(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
 		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal(err)
@@ -2307,15 +2300,15 @@ func TestSystemLogByDefault(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		tag := systemLogTagForPlatform(vm.Platform)
-		if err := gce.WaitForLog(ctx, logger, vm, tag, time.Hour, logMessageQueryForPlatform(vm.Platform, "123456789")); err != nil {
+		tag := systemLogTagForImage(vm.ImageSpec)
+		if err := gce.WaitForLog(ctx, logger, vm, tag, time.Hour, logMessageQueryForImage(vm.ImageSpec, "123456789")); err != nil {
 			t.Error(err)
 		}
 	})
 }
 
 func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, vm *gce.VM, window time.Duration) {
-	if !gce.IsWindows(vm.Platform) {
+	if !gce.IsWindows(vm.ImageSpec) {
 		// Enable swap file: https://linuxize.com/post/create-a-linux-swap-file/
 		// We do this so that swap file metrics will show up.
 		_, err := gce.RunRemotely(ctx, logger, vm, strings.Join([]string{
@@ -2368,7 +2361,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 	// query for the rest of the metrics. We used to query for all the metrics
 	// at once, but due to the "no metrics yet" retries, this ran us out of
 	// quota (b/185363780).
-	platformKind := gce.PlatformKind(vm.Platform)
+	osKind := gce.OSKind(vm.ImageSpec)
 	var metricsWaitGroup sync.WaitGroup
 	for _, metric := range expectedMetrics {
 		metric := metric
@@ -2383,7 +2376,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 			continue
 		}
 
-		if metric.Platform != "" && metric.Platform != platformKind {
+		if metric.Platform != "" && metric.Platform != osKind {
 			continue
 		}
 
@@ -2432,10 +2425,10 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 
 func TestDefaultMetricsNoProxy(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal(err)
 		}
@@ -2447,9 +2440,9 @@ func TestDefaultMetricsNoProxy(t *testing.T) {
 // go/sdi-integ-test#proxy-testing
 func TestDefaultMetricsWithProxy(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		if !gce.IsWindows(platform) {
+		if !gce.IsWindows(imageSpec) {
 			t.Skip("Proxy test is currently only supported on windows.")
 		}
 		proxySettingsVal, proxySettingsPresent := os.LookupEnv("PROXY_SETTINGS")
@@ -2460,7 +2453,7 @@ func TestDefaultMetricsWithProxy(t *testing.T) {
 		if err := json.Unmarshal([]byte(proxySettingsVal), &settings); err != nil {
 			t.Fatal(err)
 		}
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		if err := gce.SetEnvironmentVariables(ctx, logger, vm, settings); err != nil {
 			t.Fatal(err)
 		}
@@ -2479,9 +2472,9 @@ func TestDefaultMetricsWithProxy(t *testing.T) {
 
 func TestPrometheusMetrics(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
 		promConfig := `metrics:
   receivers:
@@ -2664,11 +2657,11 @@ func TestPrometheusMetrics(t *testing.T) {
 
 func TestPrometheusMetricsWithMetadata(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		metadataKey, metadataValue := "test", "${test:value}"
 		escapedMetadataValue := "_{test:value}"
-		ctx, logger, vm := agents.CommonSetupWithExtraCreateArgumentsAndMetadata(t, platform, nil, map[string]string{
+		ctx, logger, vm := agents.CommonSetupWithExtraCreateArgumentsAndMetadata(t, imageSpec, nil, map[string]string{
 			metadataKey: metadataValue,
 		})
 
@@ -2721,13 +2714,13 @@ func TestPrometheusMetricsWithMetadata(t *testing.T) {
 // The JSON exporter will connect to a http server that serve static JSON files
 func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		// TODO: Set up JSON exporter stuff on Windows
-		if gce.IsWindows(platform) {
+		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
 		}
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		prometheusTestdata := path.Join("testdata", "prometheus")
 		filesToUpload := []fileToUpload{
 			{
@@ -3293,12 +3286,12 @@ func buildGoBinary(ctx context.Context, logger *log.Logger, vm *gce.VM, source, 
 // correctly received and processed
 func testPrometheusMetrics(t *testing.T, opsAgentConfig string, testChecks []mockPrometheusCheck) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		if gce.IsWindows(platform) {
+		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
 		}
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
 		prometheusTestdata := path.Join("testdata", "prometheus")
 		remoteWorkDir := path.Join("/opt", "go-http-server")
@@ -3545,10 +3538,10 @@ func uploadFiles(ctx context.Context, logger *log.Logger, vm *gce.VM, fs embed.F
 
 func TestExcludeMetrics(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
 		excludeConfig := `logging:
   receivers:
@@ -3607,9 +3600,9 @@ metrics:
 
 func TestExcludeWorkloadMetrics(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		otlpConfig := `
 combined:
   receivers:
@@ -3675,7 +3668,7 @@ traces:
 // fetchPID returns the process ID of the process with the given name on the given VM.
 func fetchPID(ctx context.Context, logger *log.Logger, vm *gce.VM, processName string) (string, error) {
 	var cmd string
-	if gce.IsWindows(vm.Platform) {
+	if gce.IsWindows(vm.ImageSpec) {
 		cmd = fmt.Sprintf("Get-Process -Name '%s' | Select-Object -Property Id | Format-Wide", processName)
 	} else {
 		// pgrep has a limit of 15 characters to lookup processes
@@ -3711,7 +3704,7 @@ func fetchPIDAndProcessName(ctx context.Context, logger *log.Logger, vm *gce.VM,
 
 func terminateProcess(ctx context.Context, logger *log.Logger, vm *gce.VM, processName string) error {
 	var cmd string
-	if gce.IsWindows(vm.Platform) {
+	if gce.IsWindows(vm.ImageSpec) {
 		cmd = fmt.Sprintf("Stop-Process -Name '%s' -PassThru -Force", processName)
 	} else {
 		// pkill has a limit of 15 characters to lookup processes
@@ -3775,11 +3768,11 @@ func metricsLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM)
 
 func TestMetricsAgentCrashRestart(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
-		testAgentCrashRestart(ctx, t, logger, vm, metricsAgentProcessNamesForPlatform(vm.Platform), metricsLivenessChecker)
+		testAgentCrashRestart(ctx, t, logger, vm, metricsAgentProcessNamesForImage(vm.ImageSpec), metricsLivenessChecker)
 	})
 }
 
@@ -3788,15 +3781,15 @@ func loggingLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM)
 	if err := writeToSystemLog(ctx, logger, vm, msg); err != nil {
 		return err
 	}
-	tag := systemLogTagForPlatform(vm.Platform)
-	return gce.WaitForLog(ctx, logger, vm, tag, time.Hour, logMessageQueryForPlatform(vm.Platform, msg))
+	tag := systemLogTagForImage(vm.ImageSpec)
+	return gce.WaitForLog(ctx, logger, vm, tag, time.Hour, logMessageQueryForImage(vm.ImageSpec, msg))
 }
 
 func TestLoggingAgentCrashRestart(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
 		testAgentCrashRestart(ctx, t, logger, vm, []string{"fluent-bit"}, loggingLivenessChecker)
 	})
@@ -3804,9 +3797,9 @@ func TestLoggingAgentCrashRestart(t *testing.T) {
 
 func TestLoggingSelfLogs(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		ctx, logger, vm := agents.CommonSetup(t, platform)
+		ctx, logger, vm := agents.CommonSetup(t, imageSpec)
 
 		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, ""); err != nil {
 			t.Fatal(err)
@@ -3834,12 +3827,12 @@ func TestLoggingSelfLogs(t *testing.T) {
 
 func TestLoggingDataprocAttributes(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		if gce.IsWindows(platform) {
+		if gce.IsWindows(imageSpec) {
 			t.Skip("Dataproc tests aren't supported on Windows")
 		}
-		ctx, logger, vm := agents.CommonSetupWithExtraCreateArgumentsAndMetadata(t, platform, nil, map[string]string{
+		ctx, logger, vm := agents.CommonSetupWithExtraCreateArgumentsAndMetadata(t, imageSpec, nil, map[string]string{
 			"dataproc-cluster-name": "my-test-cluster",
 		})
 
@@ -3851,8 +3844,8 @@ func TestLoggingDataprocAttributes(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		tag := systemLogTagForPlatform(vm.Platform)
-		query := fmt.Sprintf(`labels."compute.googleapis.com/attributes/dataproc-cluster-name"="my-test-cluster" AND %s`, logMessageQueryForPlatform(vm.Platform, "123456789"))
+		tag := systemLogTagForImage(vm.ImageSpec)
+		query := fmt.Sprintf(`labels."compute.googleapis.com/attributes/dataproc-cluster-name"="my-test-cluster" AND %s`, logMessageQueryForImage(vm.ImageSpec, "123456789"))
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, tag, time.Hour, query); err != nil {
 			t.Error(err)
 		}
@@ -3870,22 +3863,22 @@ func diagnosticsLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce
 
 func TestDiagnosticsCrashRestart(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
-		testAgentCrashRestart(ctx, t, logger, vm, diagnosticsProcessNamesForPlatform(vm.Platform), diagnosticsLivenessChecker)
+		testAgentCrashRestart(ctx, t, logger, vm, diagnosticsProcessNamesForImage(vm.ImageSpec), diagnosticsLivenessChecker)
 	})
 }
 
 func testWindowsStandaloneAgentConflict(t *testing.T, installStandalone func(ctx context.Context, logger *log.Logger, vm *gce.VM) error, wantError string) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		if !gce.IsWindows(platform) {
+		if !gce.IsWindows(imageSpec) {
 			t.SkipNow()
 		}
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
 		// 1. Install the standalone agent.
 		if err := installStandalone(ctx, logger, vm); err != nil {
@@ -3930,15 +3923,15 @@ func opsAgentLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM
 
 func TestUpgradeOpsAgent(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
 		// This will install the stable Ops Agent (REPO_SUFFIX="").
 		if err := agents.SetupOpsAgentFrom(ctx, logger, vm, "", agents.PackageLocation{}); err != nil {
 			// Installation from stable may fail before the first release on
-			// a new platform.
+			// a newly supported distro.
 			if strings.HasPrefix(err.Error(), "InstallOpsAgent() failed to run googet") ||
 				strings.HasPrefix(err.Error(), "InstallOpsAgent() error running repo script") {
 				t.Skipf("Installing stable agent failed with error %v; assuming first release.", err)
@@ -3966,9 +3959,9 @@ func TestUpgradeOpsAgent(t *testing.T) {
 
 func TestResourceDetectorOnGCE(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
 		actual, err := runResourceDetectorCli(ctx, logger, vm)
 		if err != nil {
@@ -4037,7 +4030,7 @@ func runResourceDetectorCli(ctx context.Context, logger *log.Logger, vm *gce.VM)
 	}
 
 	// Create the folder structure on the VM
-	workDir := path.Join(workDirForPlatform(vm.Platform), "run_resource_detector")
+	workDir := path.Join(workDirForImage(vm.ImageSpec), "run_resource_detector")
 	packageDir := path.Join(workDir, "confgenerator", "resourcedetector")
 	if err := makeDirectory(ctx, logger, vm, packageDir); err != nil {
 		return nil, fmt.Errorf("failed to create folder %s in VM: %v", packageDir, err)
@@ -4063,7 +4056,7 @@ func runResourceDetectorCli(ctx context.Context, logger *log.Logger, vm *gce.VM)
 	cmd := fmt.Sprintf(`
 		%s
 		cd %s
-		go run run_resource_detector.go`, goPathCommandForPlatform(vm.Platform), workDir)
+		go run run_resource_detector.go`, goPathCommandForImage(vm.ImageSpec), workDir)
 	runnerOutput, err := gce.RunRemotely(ctx, logger, vm, cmd)
 	if err != nil {
 		return nil, fmt.Errorf("failed to run resource detector in VM: %w", err)
@@ -4120,11 +4113,11 @@ func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	goVersion := "1.21.4"
 
 	goArch := "amd64"
-	if gce.IsARM(vm.Platform) {
+	if gce.IsARM(vm.ImageSpec) {
 		goArch = "arm64"
 	}
 	var installCmd string
-	if gce.IsWindows(vm.Platform) {
+	if gce.IsWindows(vm.ImageSpec) {
 		// TODO: host go windows installer in GCS if `go.dev` throttles us.
 		installCmd = fmt.Sprintf(`
 			cd (New-TemporaryFile | %% { Remove-Item $_; New-Item -ItemType Directory -Path $_ })
@@ -4141,15 +4134,15 @@ func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	return err
 }
 
-func goPathCommandForPlatform(platform string) string {
-	if gce.IsWindows(platform) {
+func goPathCommandForImage(imageSpec string) string {
+	if gce.IsWindows(imageSpec) {
 		return `$env:Path="C:\Program Files\Go\bin;$env:Path"`
 	}
 	return "export PATH=/usr/local/go/bin:$PATH"
 }
 
 func runGoCode(ctx context.Context, logger *log.Logger, vm *gce.VM, content io.Reader) error {
-	workDir := path.Join(workDirForPlatform(vm.Platform), "gocode")
+	workDir := path.Join(workDirForImage(vm.ImageSpec), "gocode")
 	if err := makeDirectory(ctx, logger, vm, workDir); err != nil {
 		return err
 	}
@@ -4161,16 +4154,16 @@ func runGoCode(ctx context.Context, logger *log.Logger, vm *gce.VM, content io.R
 		cd %s
 		go mod init main
 		go get ./...
-		go run main.go`, goPathCommandForPlatform(vm.Platform), workDir)
+		go run main.go`, goPathCommandForImage(vm.ImageSpec), workDir)
 	_, err := gce.RunRemotely(ctx, logger, vm, goInitAndRun)
 	return err
 }
 
 func TestOTLPMetricsGCM(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		otlpConfig := `
 combined:
   receivers:
@@ -4273,9 +4266,9 @@ traces:
 
 func TestOTLPMetricsGMP(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		otlpConfig := `
 combined:
   receivers:
@@ -4371,9 +4364,9 @@ traces:
 
 func TestOTLPTraces(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		otlpConfig := `
 combined:
   receivers:
@@ -4412,8 +4405,8 @@ metrics:
 	})
 }
 
-func isHealthCheckTestPlatform(platform string) bool {
-	return strings.HasSuffix(platform, "windows-2022") || strings.HasSuffix(platform, "debian-11")
+func isHealthCheckTestImage(imageSpec string) bool {
+	return strings.HasSuffix(imageSpec, "windows-2022") || strings.HasSuffix(imageSpec, "debian-11")
 }
 
 func healthCheckResultMessage(name string, result string, code string) string {
@@ -4429,8 +4422,8 @@ func checkExpectedHealthCheckResult(t *testing.T, output string, name string, ex
 	}
 }
 
-func getRecentServiceOutputForPlatform(platform string) string {
-	if gce.IsWindows(platform) {
+func getRecentServiceOutputForImage(imageSpec string) string {
+	if gce.IsWindows(imageSpec) {
 		cmd := strings.Join([]string{
 			"$ServiceStart = (Get-EventLog -LogName 'System' -Source 'Service Control Manager' -EntryType 'Information' -Message '*Google Cloud Ops Agent service entered the running state*' -Newest 1).TimeGenerated",
 			"$QueryStart = $ServiceStart - (New-TimeSpan -Seconds 30)",
@@ -4441,15 +4434,15 @@ func getRecentServiceOutputForPlatform(platform string) string {
 	return "sudo systemctl status google-cloud-ops-agent"
 }
 
-func listenToPortForPlatform(platform string) string {
-	if gce.IsWindows(platform) {
+func listenToPortForImage(imageSpec string) string {
+	if gce.IsWindows(imageSpec) {
 		cmd := strings.Join([]string{
 			`Invoke-WmiMethod -Path 'Win32_Process' -Name Create -ArgumentList 'powershell.exe -Command "$Listener = [System.Net.Sockets.TcpListener]20201; $Listener.Start(); Start-Sleep -Seconds 600"'`,
 		}, ";")
 
 		return cmd
 	}
-	if gce.IsCentOS(platform) || gce.IsSUSE(platform) {
+	if gce.IsCentOS(imageSpec) || gce.IsSUSE(imageSpec) {
 		return "nohup nc -l 20201 1>/dev/null 2>/dev/null &"
 	}
 	return "nohup nc -l -p 20201 1>/dev/null 2>/dev/null &"
@@ -4457,9 +4450,9 @@ func listenToPortForPlatform(platform string) string {
 
 func TestPortsAndAPIHealthChecks(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		if !isHealthCheckTestPlatform(platform) {
+		if !isHealthCheckTestImage(imageSpec) {
 			t.SkipNow()
 		}
 
@@ -4468,12 +4461,12 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 			"https://www.googleapis.com/auth/logging.write",
 			"https://www.googleapis.com/auth/devstorage.read_write",
 		}, ",")
-		ctx, dirLog, vm := agents.CommonSetupWithExtraCreateArguments(t, platform, []string{"--scopes", customScopes})
+		ctx, dirLog, vm := agents.CommonSetupWithExtraCreateArguments(t, imageSpec, []string{"--scopes", customScopes})
 		logger := dirLog.ToMainLog()
 
-		if !gce.IsWindows(vm.Platform) {
+		if !gce.IsWindows(vm.ImageSpec) {
 			var packages []string
-			if gce.IsCentOS(vm.Platform) || gce.IsRHEL(vm.Platform) {
+			if gce.IsCentOS(vm.ImageSpec) || gce.IsRHEL(vm.ImageSpec) {
 				packages = []string{"nc"}
 			} else {
 				packages = []string{"netcat"}
@@ -4484,7 +4477,7 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 			}
 		}
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, listenToPortForPlatform(vm.Platform)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, listenToPortForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)
 		}
 		// Wait for port to be in listen mode.
@@ -4494,7 +4487,7 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForPlatform(vm.Platform))
+		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -4512,19 +4505,19 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 
 func TestNetworkHealthCheck(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		if !isHealthCheckTestPlatform(platform) {
+		if !isHealthCheckTestImage(imageSpec) {
 			t.SkipNow()
 		}
 
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
 		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal(err)
 		}
 
-		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForPlatform(vm.Platform))
+		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -4533,7 +4526,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, stopCommandForPlatform(vm.Platform)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, stopCommandForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)
 		}
 
@@ -4543,11 +4536,11 @@ func TestNetworkHealthCheck(t *testing.T) {
 		}
 		time.Sleep(time.Minute)
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, startCommandForPlatform(vm.Platform)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, startCommandForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)
 		}
 
-		cmdOut, err = gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForPlatform(vm.Platform))
+		cmdOut, err = gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -4565,15 +4558,15 @@ func TestNetworkHealthCheck(t *testing.T) {
 
 func TestParsingFailureCheck(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		if !isHealthCheckTestPlatform(platform) {
+		if !isHealthCheckTestImage(imageSpec) {
 			t.SkipNow()
 		}
 
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
-		logPath := logPathForPlatform(vm.Platform)
+		logPath := logPathForImage(vm.ImageSpec)
 		config := fmt.Sprintf(`logging:
   receivers:
     mylog_source:
@@ -4612,9 +4605,9 @@ func TestParsingFailureCheck(t *testing.T) {
 
 func TestNoFluentBitDebugSelfLogs(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		ctx, logger, vm := agents.CommonSetup(t, platform)
+		ctx, logger, vm := agents.CommonSetup(t, imageSpec)
 
 		enableDebugLogLevel := `logging:
   service:
@@ -4634,9 +4627,9 @@ func TestNoFluentBitDebugSelfLogs(t *testing.T) {
 
 func TestDisableSelfLogCollection(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		ctx, logger, vm := agents.CommonSetup(t, platform)
+		ctx, logger, vm := agents.CommonSetup(t, imageSpec)
 
 		disableSelfLogCollection := `global:
   default_self_log_file_collection: false
@@ -4645,13 +4638,13 @@ func TestDisableSelfLogCollection(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, stopCommandForPlatform(vm.Platform)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, stopCommandForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)
 		}
 
 		time.Sleep(2 * time.Minute)
 
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, startCommandForPlatform(vm.Platform)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, startCommandForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)
 		}
 
@@ -4668,15 +4661,15 @@ func TestDisableSelfLogCollection(t *testing.T) {
 
 func TestBufferLimitSizeOpsAgent(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		if gce.IsWindows(platform) {
+		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
 		}
-		ctx, dirLog, vm := agents.CommonSetupWithExtraCreateArguments(t, platform, []string{"--boot-disk-size", "100G"})
+		ctx, dirLog, vm := agents.CommonSetupWithExtraCreateArguments(t, imageSpec, []string{"--boot-disk-size", "100G"})
 		logger := dirLog.ToMainLog()
 
-		logPath := logPathForPlatform(vm.Platform)
+		logPath := logPathForImage(vm.ImageSpec)
 		logsPerSecond := 100000
 		config := fmt.Sprintf(`logging:
   receivers:
@@ -4754,10 +4747,10 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
 // GPU, by checking the absence of nvml logs from otel
 func TestNoNvmlOtelReceiverWithoutGpu(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal(err)
 		}
@@ -4774,10 +4767,10 @@ func TestNoNvmlOtelReceiverWithoutGpu(t *testing.T) {
 
 func TestPartialSuccess(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
-		logPath := logPathForPlatform(vm.Platform)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		logPath := logPathForImage(vm.ImageSpec)
 		config := fmt.Sprintf(`logging:
   receivers:
     files_1:
@@ -4814,17 +4807,17 @@ func TestPartialSuccess(t *testing.T) {
 
 func TestRestartVM(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 
-		ctx, dirLog, vm := agents.CommonSetup(t, platform)
+		ctx, dirLog, vm := agents.CommonSetup(t, imageSpec)
 		logger := dirLog.ToMainLog()
 
 		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal(err)
 		}
 
-		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForPlatform(vm.Platform))
+		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -4839,7 +4832,7 @@ func TestRestartVM(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cmdOut, err = gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForPlatform(vm.Platform))
+		cmdOut, err = gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -4852,10 +4845,10 @@ func TestRestartVM(t *testing.T) {
 
 func TestLogCompression(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, platform)
-		file1 := fmt.Sprintf("%s_1", logPathForPlatform(vm.Platform))
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
 		config := fmt.Sprintf(`logging:
   receivers:
     f1:
