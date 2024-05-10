@@ -341,6 +341,7 @@ func packageManagerCmd(vm *gce.VM) (string, error) {
 	if gce.IsWindows(vm.ImageSpec) {
 		return "googet -noconfirm", nil
 	}
+
 	switch vm.OS.ID {
 	case "centos", "rhel", "rocky":
 		return "sudo yum -y", nil
