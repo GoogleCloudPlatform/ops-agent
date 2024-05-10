@@ -1506,13 +1506,16 @@ func InstallGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) erro
 		return installErr("gsutil", vm.ImageSpec)
 	}
 
+	if _, err := RunRemotely(ctx, logger, vm, "sudo registercloudguest --force-new"); err != nil {
+		return err
+	}
+
 	gcloudArch := "x86_64"
 	if IsARM(vm.ImageSpec) {
 		gcloudArch = "arm"
 	}
 	gcloudPkg := "google-cloud-cli-453.0.0-linux-" + gcloudArch + ".tar.gz"
 	installFromTarball := `
-sudo registercloudguest --force-new
 curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/` + gcloudPkg + `
 INSTALL_DIR="$(readlink --canonicalize .)"
 (
