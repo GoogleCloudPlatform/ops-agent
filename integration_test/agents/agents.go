@@ -752,10 +752,10 @@ func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, locati
 	}
 
 	preservedEnvironment := map[string]string{
-		"REPO_SUFFIX":              location.repoSuffix,
-		"REPO_CODENAME":            location.repoCodename,
-		"ARTIFACT_REGISTRY_PROJECT":             location.artifactRegistryProject,
-		"ARTIFACT_REGISTRY_REGION": location.artifactRegistryRegion,
+		"REPO_SUFFIX":               location.repoSuffix,
+		"REPO_CODENAME":             location.repoCodename,
+		"ARTIFACT_REGISTRY_PROJECT": location.artifactRegistryProject,
+		"ARTIFACT_REGISTRY_REGION":  location.artifactRegistryRegion,
 	}
 
 	if gce.IsWindows(vm.ImageSpec) {
@@ -894,6 +894,11 @@ func InstallPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, 
 	}
 	if _, err := gce.RunRemotely(ctx, logger, vm, "mkdir -p /tmp/agentUpload"); err != nil {
 		return err
+	}
+	if gce.IsSUSE(vm.ImageSpec) {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo registercloudguest --force-new"); err != nil {
+			return err
+		}
 	}
 	if err := gce.InstallGsutilIfNeeded(ctx, logger, vm); err != nil {
 		return err
