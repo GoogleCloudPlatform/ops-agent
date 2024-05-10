@@ -542,7 +542,7 @@ func assertMetric(ctx context.Context, logger *log.Logger, vm *gce.VM, metric *m
 // Returns an error (nil on success), and a boolean indicating whether the error
 // is retryable.
 func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, app string, metadata metadata.IntegrationMetadata) (retry bool, err error) {
-	folder, err := distroFolder(vm.ImageSpec)
+	folder, err := distroFolder(vm)
 	if err != nil {
 		return nonRetryable, err
 	}
