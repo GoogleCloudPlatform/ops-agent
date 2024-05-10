@@ -139,7 +139,7 @@ func mainErr() error {
 		return err
 	}
 
-	if gce.IsWindows(vm.Platform) {
+	if gce.IsWindows(vm.ImageSpec) {
 		if _, err := pauseWindowsUpdates(ctx, logger, vm); err != nil {
 			return err
 		}
@@ -177,7 +177,7 @@ func mainErr() error {
 	// Install Python.
 	// TODO: Consider shipping over a prebuilt binary so that we don't need to
 	// install Python.
-	if gce.IsWindows(vm.Platform) {
+	if gce.IsWindows(vm.ImageSpec) {
 		installPython := `$tempDir = "/tmp"
 mkdir $tempDir
 
@@ -206,7 +206,7 @@ Start-Process "$tempDir\$pythonInstallerName" -Wait -ArgumentList "/quiet Target
 
 	// Start log_generator.py asynchronously.
 	var startLogGenerator string
-	if gce.IsWindows(vm.Platform) {
+	if gce.IsWindows(vm.ImageSpec) {
 		// The best way I've found to start a process asynchronously. One downside
 		// is that standard output and standard error are lost.
 		startLogGenerator = fmt.Sprintf(`Invoke-WmiMethod -ComputerName . -Class Win32_Process -Name Create -ArgumentList "$env:SystemDrive\Python\python.exe %v --log-size-in-bytes=%v --log-rate=%v --log-write-type=file --file-path=%v"`, logGeneratorPath, logSizeInBytes, logRate, logPath)
@@ -225,7 +225,7 @@ Start-Process "$tempDir\$pythonInstallerName" -Wait -ArgumentList "/quiet Target
 
 	// Print log_generator log files to debug startup errors.
 	// These log files are unfortunately not available on Windows.
-	if !gce.IsWindows(vm.Platform) {
+	if !gce.IsWindows(vm.ImageSpec) {
 		time.Sleep(5 * time.Second)
 
 		if _, err := gce.RunRemotely(ctx, logger, vm, "cat "+debugLogPath); err != nil {

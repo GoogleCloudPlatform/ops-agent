@@ -36,7 +36,8 @@ AGENT_PACKAGES_IN_GCS, for details see README.md.
 
 	PROJECT=dev_project \
 	ZONES=us-central1-b \
-	PLATFORMS=debian-cloud:debian-10,rocky-linux-cloud:rocky-linux-8,rhel-sap-cloud:rhel-8-8-sap-ha,suse-cloud:sles-15,ubuntu-os-cloud:ubuntu-2004-lts,windows-cloud:windows-2016,windows-cloud:windows-2019 \
+	IMAGE_SPECS=debian-cloud:debian-10,rocky-linux-cloud:rocky-linux-8,rhel-sap-cloud:rhel-8-8-sap-ha,suse-cloud:sles-15,ubuntu-os-cloud:ubuntu-2004-lts,windows-cloud:windows-2016,windows-cloud:windows-2019 \
+
 	go test -v ops_agent_test.go \
 	  -test.parallel=1000 \
 	  -tags=integration_test \
@@ -290,7 +291,6 @@ type VM struct {
 	Name     string
 	Project  string
 	Network  string
-	Platform string
 	// The VMOptions.ImageSpec used to create the VM.
 	ImageSpec   string
 	Zone        string
@@ -304,9 +304,9 @@ type VM struct {
 }
 
 // SyslogLocation returns a filesystem path to the system log. This function
-// assumes the platform is some kind of Linux.
-func SyslogLocation(platform string) string {
-	if strings.Contains(platform, "debian") || strings.Contains(platform, "ubuntu") {
+// assumes the image spec is some kind of Linux.
+func SyslogLocation(imageSpec string) string {
+	if strings.Contains(imageSpec, "debian") || strings.Contains(imageSpec, "ubuntu") {
 		return "/var/log/syslog"
 	}
 	return "/var/log/messages"
@@ -333,19 +333,19 @@ func SetGcloudPath(path string) {
 	gcloudPath = path
 }
 
-// IsWindows returns whether the given platform is a version of Windows (including Microsoft SQL Server).
-func IsWindows(platform string) bool {
-	return strings.HasPrefix(platform, "windows-") || strings.HasPrefix(platform, "sql-")
+// IsWindows returns whether the given image spec is a version of Windows (including Microsoft SQL Server).
+func IsWindows(imageSpec string) bool {
+	return strings.HasPrefix(imageSpec, "windows-")
 }
 
-// IsWindowsCore returns whether the given platform is a version of Windows core.
-func IsWindowsCore(platform string) bool {
-	return strings.HasPrefix(platform, "windows-") && strings.HasSuffix(platform, "-core")
+// IsWindowsCore returns whether the given image spec is a version of Windows core.
+func IsWindowsCore(imageSpec string) bool {
+	return IsWindows(imageSpec) && strings.HasSuffix(imageSpec, "-core")
 }
 
-// PlatformKind returns "linux" or "windows" based on the given platform.
-func PlatformKind(platform string) string {
-	if IsWindows(platform) {
+// OSKind returns "linux" or "windows" based on the given image spec.
+func OSKind(imageSpec string) string {
+	if IsWindows(imageSpec) {
 		return "windows"
 	}
 	return "linux"
@@ -793,7 +793,7 @@ func RunRemotelyStdin(ctx context.Context, logger *log.Logger, vm *VM, stdin io.
 		}
 	}()
 	wrappedCommand := command
-	if IsWindows(vm.Platform) {
+	if IsWindows(vm.ImageSpec) {
 		wrappedCommand, err = wrapPowershellCommand(command)
 		if err != nil {
 			return CommandOutput{}, err
@@ -851,7 +851,7 @@ func UploadContent(ctx context.Context, logger *log.Logger, vm *VM, content io.R
 		}
 	}()
 
-	if IsWindows(vm.Platform) {
+	if IsWindows(vm.ImageSpec) {
 		_, err = RunRemotely(ctx, logger, vm, fmt.Sprintf(`Read-GcsObject -Force -Bucket "%s" -ObjectName "%s" -OutFile "%s"`, object.BucketName(), object.ObjectName(), remotePath))
 		return err
 	}
@@ -903,7 +903,7 @@ func RunScriptRemotely(ctx context.Context, logger *log.Logger, vm *VM, scriptCo
 	}
 	flagsStr := strings.Join(quotedFlags, " ")
 
-	if IsWindows(vm.Platform) {
+	if IsWindows(vm.ImageSpec) {
 		// Use a UUID for the script name in case RunScriptRemotely is being
 		// called concurrently on the same VM.
 		scriptPath := "C:\\" + uuid.NewString() + ".ps1"
@@ -983,7 +983,7 @@ func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM) error {
 	return err
 }
 
-func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map[string]string, error) {
+func addFrameworkMetadata(imageSpec string, inputMetadata map[string]string) (map[string]string, error) {
 	metadataCopy := make(map[string]string)
 
 	// Set serial-port-logging-enable to true by default to help diagnose startup
@@ -1011,7 +1011,7 @@ func addFrameworkMetadata(platform string, inputMetadata map[string]string) (map
 	}
 	metadataCopy["ssh-keys"] = fmt.Sprintf("%s:%s", sshUserName, string(publicKey))
 
-	if IsWindows(platform) {
+	if IsWindows(imageSpec) {
 		// From https://cloud.google.com/compute/docs/connect/windows-ssh#create_vm
 		if _, ok := metadataCopy["sysprep-specialize-script-cmd"]; ok {
 			return nil, errors.New("you cannot pass a sysprep script for Windows instances because they are needed to enable ssh-ing. Instead, wait for the instance to be ready and then run things with RunRemotely() or RunScriptRemotely()")
@@ -1044,85 +1044,41 @@ func addFrameworkLabels(inputLabels map[string]string) (map[string]string, error
 	return labelsCopy, nil
 }
 
-func getVMPlatform(image string, platform string) (string, error) {
-	if image != "" && platform != "" {
-		return "", fmt.Errorf("Both platform and image cannot be specified in VMOptions.")
-	}
-
-	if image != "" {
-		return image, nil
-	}
-
-	if platform != "" {
-		return platform, nil
-	}
-
-	return "", errors.New("at least one of image or platform must be specified")
+func installErr(pkg string, imageSpec string) error {
+	return fmt.Errorf("this test does not know how to install %s on image spec: %s", pkg, imageSpec)
 }
 
-// In cases where ImageSpec is not being used yet, construct it from known fields.
-func constructImageSpec(options *VMOptions) {
-	if options.ImageSpec != "" || options.ImageProject == "" {
-		return
-	}
-	if options.Platform != "" {
-		options.ImageSpec = fmt.Sprintf("%s:%s", options.ImageProject, options.Platform)
-	} else if options.Image != "" {
-		options.ImageSpec = fmt.Sprintf("%s=%s", options.ImageProject, options.Image)
-	}
-}
-
-// parseImageSpec looks for the ImageSpec field in VMOptions and sets
-// ImageProject/Image/Platform accordingly.
-func parseImageSpec(options *VMOptions) error {
-	if options.ImageSpec == "" {
-		constructImageSpec(options)
-		return nil
-	}
-
-	if options.Image != "" || options.ImageProject != "" || options.Platform != "" {
-		return fmt.Errorf("If options.ImageSpec is set, options.(Image|ImageProject|Platform) cannot be: %+v", options)
-	}
-
+// gcloudFlagsFromImageSpec returns the flags used in
+// `gcloud compute instances create` to specify the desired image.
+func gcloudFlagsFromImageSpec(imageSpec string) ([]string, error) {
 	delim := ""
-	if strings.Contains(options.ImageSpec, ":") {
+	if strings.Contains(imageSpec, ":") {
 		delim = ":"
-	} else if strings.Contains(options.ImageSpec, "=") {
+	} else if strings.Contains(imageSpec, "=") {
 		delim = "="
 	} else {
-		return fmt.Errorf("could not parse options.ImageSpec from struct: %+v", options)
+		return nil, fmt.Errorf("invalid imageSpec: %s", imageSpec)
 	}
 
-	s := strings.Split(options.ImageSpec, delim)
-	options.ImageProject = s[0]
-
+	s := strings.Split(imageSpec, delim)
+	flags := []string{
+		"--image-project=" + s[0],
+	}
 	switch delim {
 	case ":":
-		options.Platform = s[1]
+		flags = append(flags, "--image-family="+s[1])
 	case "=":
-		options.Image = s[1]
+		flags = append(flags, "--image="+s[1])
 	}
-
-	return nil
+	return flags, nil
 }
 
 // attemptCreateInstance creates a VM instance and waits for it to be ready.
 // Returns a VM object or an error (never both). The caller is responsible for
 // deleting the VM if (and only if) the returned error is nil.
 func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOptions) (vmToReturn *VM, errToReturn error) {
-
-	err := parseImageSpec(&options)
-	if err != nil {
-		return nil, err
-	}
-
-	platform, err := getVMPlatform(options.Image, options.Platform)
-	if err != nil {
-		return nil, err
-	}
 	vm := &VM{
 		Project:   options.Project,
-		Platform:  platform,
 		ImageSpec: options.ImageSpec,
 		Name:      options.Name,
 		Network:   os.Getenv("NETWORK_NAME"),
@@ -1151,25 +1107,18 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	}
 	if vm.MachineType == "" {
 		vm.MachineType = "e2-standard-4"
-		if IsARM(vm.Platform) {
+		if IsARM(vm.ImageSpec) {
 			vm.MachineType = "t2a-standard-4"
 		}
 	}
 
-	imgProject := options.ImageProject
-	newMetadata, err := addFrameworkMetadata(vm.Platform, options.Metadata)
+	newMetadata, err := addFrameworkMetadata(vm.ImageSpec, options.Metadata)
 	if err != nil {
 		return nil, fmt.Errorf("attemptCreateInstance() could not construct valid metadata: %v", err)
 	}
 	newLabels, err := addFrameworkLabels(options.Labels)
 	if err != nil {
 		return nil, fmt.Errorf("attemptCreateInstance() could not construct valid labels: %v", err)
-	}
-
-	imageOrImageFamilyFlag := "--image=" + options.Image
-
-	if options.Platform != "" {
-		imageOrImageFamilyFlag = "--image-family=" + options.Platform
 	}
 
 	imageFamilyScope := options.ImageFamilyScope
@@ -1184,12 +1133,15 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		"--project=" + vm.Project,
 		"--zone=" + vm.Zone,
 		"--machine-type=" + vm.MachineType,
-		"--image-project=" + imgProject,
-		imageOrImageFamilyFlag,
 		"--image-family-scope=" + imageFamilyScope,
 		"--network=" + vm.Network,
 		"--format=json",
 	}
+	image_flags, err := gcloudFlagsFromImageSpec(vm.ImageSpec)
+	if err != nil {
+		return nil, err
+	}
+	args = append(args, image_flags...)
 	if len(newMetadata) > 0 {
 		// The --metadata flag can't be empty, so we have to have a special case
 		// to omit the flag completely when the newMetadata map is empty.
@@ -1262,7 +1214,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		return nil, err
 	}
 
-	if IsSUSE(vm.Platform) {
+	if IsSUSE(vm.ImageSpec) {
 		// Set download.max_silent_tries to 5 (by default, it is commented out in
 		// the config file). This should help with issues like b/211003972.
 		if _, err := RunRemotely(ctx, logger, vm, "sudo sed -i -E 's/.*download.max_silent_tries.*/download.max_silent_tries = 5/g' /etc/zypp/zypp.conf"); err != nil {
@@ -1270,13 +1222,13 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		}
 	}
 
-	if strings.HasPrefix(vm.Platform, "sles-") {
+	if strings.HasPrefix(vm.ImageSpec, "sles-") {
 		if err := prepareSLES(ctx, logger, vm); err != nil {
 			return nil, fmt.Errorf("%s: %v", prepareSLESMessage, err)
 		}
 	}
 
-	if IsSUSE(vm.Platform) {
+	if IsSUSE(vm.ImageSpec) {
 		// Set ZYPP_LOCK_TIMEOUT so tests that use zypper don't randomly fail
 		// because some background process happened to be using zypper at the same time.
 		if _, err := RunRemotely(ctx, logger, vm, `echo 'ZYPP_LOCK_TIMEOUT=300' | sudo tee -a /etc/environment`); err != nil {
@@ -1285,7 +1237,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	}
 
 	// Removing flaky rhel-7 repositories due to b/265341502
-	if isRHEL7SAPHA(vm.Platform) {
+	if isRHEL7SAPHA(vm.ImageSpec) {
 		if _, err := RunRemotely(ctx,
 			logger, vm, `sudo yum -y --disablerepo=rhui-rhel*-7-* install yum-utils && sudo yum-config-manager --disable "rhui-rhel*-7-*"`); err != nil {
 			return nil, fmt.Errorf("disabling flaky repos failed : %w", err)
@@ -1293,7 +1245,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	}
 
 	// See b/334918531.
-	if strings.Contains(vm.Platform, "debian-10") {
+	if strings.Contains(vm.ImageSpec, "debian-10") {
 		if _, err := RunRemotely(ctx, logger, vm, "sudo sed -i 's#https://deb.debian.org/debian buster-backports#https://archive.debian.org/debian buster-backports#' /etc/apt/sources.list"); err != nil {
 			return nil, fmt.Errorf("attemptCreateInstance() failed to reconfigure buster-backports: %v", err)
 		}
@@ -1302,26 +1254,26 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	return vm, nil
 }
 
-func IsSUSE(platform string) bool {
-	return strings.HasPrefix(platform, "sles-") || strings.HasPrefix(platform, "opensuse-")
+func IsSUSE(imageSpec string) bool {
+	return strings.HasPrefix(imageSpec, "suse-") || strings.HasPrefix(imageSpec, "opensuse-") || strings.Contains(imageSpec, "sles-")
 }
 
-func IsCentOS(platform string) bool {
-	return strings.HasPrefix(platform, "centos-")
+func IsCentOS(imageSpec string) bool {
+	return strings.HasPrefix(imageSpec, "centos-cloud")
 }
 
-func IsRHEL(platform string) bool {
-	return strings.HasPrefix(platform, "rhel-")
+func IsRHEL(imageSpec string) bool {
+	return strings.HasPrefix(imageSpec, "rhel-")
 }
 
-func isRHEL7SAPHA(platform string) bool {
-	return strings.HasPrefix(platform, "rhel-7") && strings.HasSuffix(platform, "-sap-ha")
+func isRHEL7SAPHA(imageSpec string) bool {
+	return strings.Contains(imageSpec, "rhel-7") && strings.HasPrefix(imageSpec, "rhel-sap-cloud")
 }
 
-func IsARM(platform string) bool {
+func IsARM(imageSpec string) bool {
 	// At the time of writing, all ARM images and image families on GCE
 	// contain "arm64" (and none contain "aarch" nor "arm" without the "64").
-	return strings.Contains(platform, "arm64")
+	return strings.Contains(imageSpec, "arm64")
 }
 
 // CreateInstance launches a new VM instance based on the given options.
@@ -1349,9 +1301,9 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 			// unsupported. In the absence of a better fix, just retry such errors.
 			strings.Contains(err.Error(), "database is locked") ||
 			// windows-*-core instances sometimes fail to be ssh-able: b/305721001
-			(IsWindowsCore(options.Platform) && strings.Contains(err.Error(), windowsStartupFailedMessage)) ||
+			(IsWindowsCore(options.ImageSpec) && strings.Contains(err.Error(), windowsStartupFailedMessage)) ||
 			// SLES instances sometimes fail to be ssh-able: b/186426190
-			(IsSUSE(options.Platform) && strings.Contains(err.Error(), startupFailedMessage)) ||
+			(IsSUSE(options.ImageSpec) && strings.Contains(err.Error(), startupFailedMessage)) ||
 			strings.Contains(err.Error(), prepareSLESMessage)
 	}
 
@@ -1390,11 +1342,11 @@ func RemoveExternalIP(ctx context.Context, logger *log.Logger, vm *VM) error {
 	return err
 }
 
-// SetEnvironmentVariables sets the environment variables in the envVariables map on the given vm in a platform-dependent way.
-// On Windows platforms, variables set this way are visible to all processes.
-// On Linux platforms, variables set this way are visible to the Ops Agent services only.
+// SetEnvironmentVariables sets the environment variables in the envVariables map on the given vm in a os-dependent way.
+// On Windows VMs, variables set this way are visible to all processes.
+// On Linux VMs, variables set this way are visible to the Ops Agent services only.
 func SetEnvironmentVariables(ctx context.Context, logger *log.Logger, vm *VM, envVariables map[string]string) error {
-	if IsWindows(vm.Platform) {
+	if IsWindows(vm.ImageSpec) {
 		for key, value := range envVariables {
 			envVariableCmd := fmt.Sprintf(`setx %s "%s" /M`, key, value)
 			logger.Println("envVariableCmd " + envVariableCmd)
@@ -1539,7 +1491,7 @@ func RestartInstance(ctx context.Context, logger *log.Logger, vm *VM) error {
 // InstallGsutilIfNeeded installs gsutil on instances that don't already have
 // it installed. This is only currently the case for some old versions of SUSE.
 func InstallGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) error {
-	if IsWindows(vm.Platform) {
+	if IsWindows(vm.ImageSpec) {
 		return nil
 	}
 	if _, err := RunRemotely(ctx, logger, vm, "sudo gsutil --version"); err == nil {
@@ -1550,12 +1502,12 @@ func InstallGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) erro
 
 	// SUSE seems to be the only distro without gsutil, so what follows is all
 	// very SUSE-specific.
-	if !IsSUSE(vm.Platform) {
-		return fmt.Errorf("this test does not know how to install gsutil on platform %q", vm.Platform)
+	if !IsSUSE(vm.ImageSpec) {
+		return installErr("gsutil", vm.ImageSpec)
 	}
 
 	gcloudArch := "x86_64"
-	if IsARM(vm.Platform) {
+	if IsARM(vm.ImageSpec) {
 		gcloudArch = "arm"
 	}
 	gcloudPkg := "google-cloud-cli-453.0.0-linux-" + gcloudArch + ".tar.gz"
@@ -1585,16 +1537,16 @@ sudo registercloudguest --force-new
 `
 	// b/308962066: The GCloud CLI ARM Linux tarballs do not have bundled Python
 	// and the GCloud CLI requires Python >= 3.8. Install Python311 for ARM VMs
-	if IsARM(vm.Platform) {
+	if IsARM(vm.ImageSpec) {
 		// This is what's used on openSUSE.
 		repoSetupCmd := "sudo zypper --non-interactive refresh"
-		if strings.HasPrefix(vm.Platform, "sles-12") {
-			return fmt.Errorf("this test does not know how to install gsutil on platform %q", vm.Platform)
+		if strings.Contains(vm.ImageSpec, "sles-12") {
+			return installErr("gsutil", vm.ImageSpec)
 		}
 		// For SLES 15 ARM: use a vendored repo to reduce flakiness of the
 		// external repos. See http://go/sdi/releases/build-test-release/vendored
 		// for details.
-		if strings.HasPrefix(vm.Platform, "sles-15") {
+		if strings.Contains(vm.ImageSpec, "sles-15") {
 			repoSetupCmd = `sudo zypper --non-interactive addrepo -g -t YUM https://us-yum.pkg.dev/projects/cloud-ops-agents-artifacts-dev/google-cloud-monitoring-sles15-aarch64-test-vendor test-vendor
 sudo rpm --import https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
 sudo zypper --non-interactive refresh test-vendor`
@@ -1766,7 +1718,7 @@ func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error 
 func waitForStartLinux(ctx context.Context, logger *log.Logger, vm *VM) error {
 	var backoffPolicy backoff.BackOff
 	backoffPolicy = backoff.NewConstantBackOff(vmInitBackoffDuration)
-	if IsSUSE(vm.Platform) {
+	if IsSUSE(vm.ImageSpec) {
 		// Give up early on SUSE due to b/186426190. If this step times out, the
 		// error will be retried with a fresh VM.
 		backoffPolicy = backoff.WithMaxRetries(backoffPolicy, uint64((5*time.Minute)/vmInitBackoffDuration))
@@ -1808,7 +1760,7 @@ func waitForStartLinux(ctx context.Context, logger *log.Logger, vm *VM) error {
 		return fmt.Errorf("%v. Last err=%v", startupFailedMessage, err)
 	}
 
-	if IsSUSE(vm.Platform) {
+	if IsSUSE(vm.ImageSpec) {
 		// TODO(b/259122953): SUSE needs additional startup time. Remove once we have more
 		// sensible/deterministic workarounds for each of the individual problems.
 		time.Sleep(slesStartupDelay)
@@ -1831,7 +1783,7 @@ func waitForStartLinux(ctx context.Context, logger *log.Logger, vm *VM) error {
 // Note that this does not mean that the VM is fully initialized. We don't have
 // a good way to tell when the VM is fully initialized.
 func waitForStart(ctx context.Context, logger *log.Logger, vm *VM) error {
-	if IsWindows(vm.Platform) {
+	if IsWindows(vm.ImageSpec) {
 		return waitForStartWindows(ctx, logger, vm)
 	}
 	return waitForStartLinux(ctx, logger, vm)
@@ -1879,23 +1831,12 @@ func SetupLogger(t *testing.T) *logging.DirectoryLogger {
 
 // VMOptions specifies settings when creating a VM via CreateInstance() or SetupVM().
 type VMOptions struct {
-	// Optional. Can be used to pass image/image family & image project in one
-	// string. If set, Platform/Image/ImageProject should not be set.
+	// Required. Used to pass image/image family & image project in one string.
 	//
 	// Example Image Specs:
 	// Image Family / Project: `<project>:<family>`
 	// Specific Image / Project: `<project>=<image>``
 	ImageSpec string
-	// Required. Normally passed as --image-family to
-	// "gcloud compute images create".
-	Platform string
-	// Optional. If unspecified, 'Platform' must be specified.
-	// Normally passed as --image to gcloud compute images create.
-	Image string
-	// Optional. Passed as --image-project to "gcloud compute images create".
-	// If not supplied, the framework will attempt to guess the right project
-	// to use based on Platform.
-	ImageProject string
 	// Optional. Set this to a duration like "3h" or "1d" to configure the VM to
 	// be automatically deleted after the specified amount of time. This is
 	// a recommended setting for short-lived VMs even if your code calls
@@ -1944,24 +1885,24 @@ func SetupVM(ctx context.Context, t *testing.T, logger *log.Logger, options VMOp
 	return vm
 }
 
-// RunForEachPlatform runs a subtest for each platform defined in PLATFORMS.
-func RunForEachPlatform(t *testing.T, testBody func(t *testing.T, platform string)) {
-	platformsEnv := os.Getenv("PLATFORMS")
-	if platformsEnv == "" {
-		t.Fatal("PLATFORMS env variable must be nonempty for RunForEachPlatform.")
+// RunForEachImage runs a subtest for each image defined in IMAGE_SPECS.
+func RunForEachImage(t *testing.T, testBody func(t *testing.T, imageSpec string)) {
+	imageSpecsEnv := os.Getenv("IMAGE_SPECS")
+	if imageSpecsEnv == "" {
+		t.Fatal("IMAGE_SPECS env variable must be nonempty for RunForEachImage.")
 	}
-	platforms := strings.Split(platformsEnv, ",")
-	for _, platform := range platforms {
-		platform := platform // https://golang.org/doc/faq#closures_and_goroutines
-		t.Run(platform, func(t *testing.T) {
-			testBody(t, platform)
+	imageSpecs := strings.Split(imageSpecsEnv, ",")
+	for _, imageSpec := range imageSpecs {
+		imageSpec := imageSpec // https://golang.org/doc/faq#closures_and_goroutines
+		t.Run(imageSpec, func(t *testing.T) {
+			testBody(t, imageSpec)
 		})
 	}
 }
 
-// ArbitraryPlatform picks an arbitrary element from PLATFORMS and returns it.
-func ArbitraryPlatform() string {
-	return strings.Split(os.Getenv("PLATFORMS"), ",")[0]
+// ArbitraryImageSpec picks an arbitrary element from IMAGE_SPECS and returns it.
+func ArbitraryImageSpec() string {
+	return strings.Split(os.Getenv("IMAGE_SPECS"), ",")[0]
 }
 
 func areTagsValid(tags []string) (bool, error) {
