@@ -1539,8 +1539,8 @@ func InstallGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) erro
 
 	// SUSE seems to be the only distro without gsutil, so what follows is all
 	// very SUSE-specific.
-	if !IsSUSE(vm.ImageSpec) {
-		return installErr("gsutil", vm.ImageSpec)
+	if vm.OS.ID != "opensuse-leap" && vm.OS.ID != "sles" && vm.OS.ID != "sles-sap" {
+		return installErr("gsutil", vm.OS.ID)
 	}
 
 	gcloudArch := "x86_64"
