@@ -114,7 +114,7 @@ const (
 
 // distroFolder returns the distro family name we use in our directory hierarchy
 // inside the scripts directory.
-func distroFolder(imageSpec string) (string, error) {
+func distroFolder(vm *gce.VM) (string, error) {
 	if gce.IsWindows(imageSpec) {
 		return "windows", nil
 	}
