@@ -83,29 +83,22 @@ type Config struct {
 	ImageProject string
 }
 
-func distroFolder(imageSpec string) (string, error) {
-	if gce.IsWindows(imageSpec) {
+// distroFolder returns the distro family name we use in our directory hierarchy
+// inside the scripts directory.
+func distroFolder(vm *gce.VM) (string, error) {
+	if gce.IsWindows(vm.ImageSpec) {
 		return "windows", nil
 	}
-	delim := ""
-	if strings.Contains(imageSpec, ":") {
-		delim = ":"
-	} else if strings.Contains(imageSpec, "=") {
-		delim = "="
-	} else {
-		return "", fmt.Errorf("distroFolder() could not parse image spec: %s", imageSpec)
-	}
-	imageOrFamily := strings.Split(imageSpec, delim)[1]
-	firstWord := strings.Split(imageOrFamily, "-")[0]
-	switch firstWord {
+	switch vm.OS.ID {
 	case "centos", "rhel", "rocky":
 		return "centos_rhel", nil
 	case "debian", "ubuntu":
 		return "debian_ubuntu", nil
-	case "opensuse", "sles":
+	case "opensuse-leap", "sles", "sles-sap":
 		return "sles", nil
+	default:
+		return "", fmt.Errorf("distroFolder() could not find matching folder holding scripts for vm.OS.ID: %s", vm.OS.ID)
 	}
-	return "", fmt.Errorf("distroFolder() could not find matching folder holding scripts for image spec: %s", imageSpec)
 }
 
 func setupOpsAgent(ctx context.Context, vm *gce.VM, logger *log.Logger, configFilePath string) error {
@@ -146,7 +139,7 @@ func getAllReceivers(config *confgenerator.UnifiedConfig) (receivers []string) {
 // The function determines if a receiver requires a third party app installation if there is a corresponding install
 // script in the third party apps data folder whose path is specified using the installPath argument.
 func installApps(ctx context.Context, vm *gce.VM, logger *logging.DirectoryLogger, installPath string, receivers []string) error {
-	folder, err := distroFolder(vm.ImageSpec)
+	folder, err := distroFolder(vm)
 
 	if err != nil {
 		return err
