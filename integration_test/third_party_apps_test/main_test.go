@@ -115,7 +115,7 @@ const (
 // distroFolder returns the distro family name we use in our directory hierarchy
 // inside the scripts directory.
 func distroFolder(vm *gce.VM) (string, error) {
-	if gce.IsWindows(imageSpec) {
+	if gce.IsWindows(vm.ImageSpec) {
 		return "windows", nil
 	}
 	switch vm.OS.ID {
@@ -126,7 +126,7 @@ func distroFolder(vm *gce.VM) (string, error) {
 	case "opensuse-leap", "sles", "sles-sap":
 		return "sles", nil
 	default:
-		return "", fmt.Errorf("distroFolder() could not find matching folder holding scripts for image spec: %s", imageSpec)
+		return "", fmt.Errorf("distroFolder() could not find matching folder holding scripts for vm.OS.ID: %s", vm.OS.ID)
 	}
 }
 
