@@ -3,7 +3,7 @@ import 'common.gcl' as common
 config build = common.ops_agent_test {
   params {
     environment {
-      TARGET = 'mantic'
+      TARGET = 'noble'
       ARCH = 'aarch64'
     }
   }
