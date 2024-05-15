@@ -117,6 +117,12 @@ targets:
           - ubuntu-os-cloud:ubuntu-2404-lts-amd64
           exhaustive:
           - ubuntu-os-cloud:ubuntu-minimal-2404-lts-amd64
+      aarch64:
+        test_distros:
+          representative:
+          - ubuntu-os-cloud:ubuntu-2404-lts-arm64
+          exhaustive:
+          - ubuntu-os-cloud:ubuntu-minimal-2404-lts-arm64
   rockylinux9:
     package_extension:
       rpm
