@@ -811,7 +811,7 @@ type test struct {
 }
 
 var defaultPlatforms = map[string]bool{
-	"debian-cloud:debian-10":    true,
+	"debian-cloud:debian-10":     true,
 	"windows-cloud:windows-2019": true,
 }
 
@@ -856,12 +856,6 @@ var gpuModels = map[string]accelerator{
 		machineType:   "n1-standard-2",
 		availableZone: "us-central1-c",
 	},
-	"k80": {
-		model:         "k80",
-		fullName:      "nvidia-tesla-k80",
-		machineType:   "n1-standard-2",
-		availableZone: "us-central1-a",
-	},
 	"l4": {
 		model:         "l4",
 		fullName:      "nvidia-l4",
@@ -872,7 +866,7 @@ var gpuModels = map[string]accelerator{
 
 const (
 	SAPHANAImageSpec = "stackdriver-test-143416:sles-15-sp4-sap-saphana"
-	SAPHANAApp      = "saphana"
+	SAPHANAApp       = "saphana"
 
 	OracleDBApp  = "oracledb"
 	AerospikeApp = "aerospike"
