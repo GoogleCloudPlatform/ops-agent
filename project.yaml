@@ -1,4 +1,14 @@
 targets:
+  noble:
+    package_extension:
+      deb
+    architectures:
+      aarch64:
+        test_distros:
+          representative:
+          - ubuntu-os-cloud:ubuntu-2404-lts-arm64
+          exhaustive:
+          - ubuntu-os-cloud:ubuntu-minimal-2404-lts-arm64
   bookworm:
     package_extension:
       deb
