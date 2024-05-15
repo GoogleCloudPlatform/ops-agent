@@ -1,14 +1,4 @@
 targets:
-  noble:
-    package_extension:
-      deb
-    architectures:
-      x86_64:
-        test_distros:
-          representative:
-          - ubuntu-os-cloud:ubuntu-2404-lts-amd64
-          exhaustive:
-          - ubuntu-os-cloud:ubuntu-minimal-2404-lts-amd64
   bookworm:
     package_extension:
       deb
@@ -117,6 +107,16 @@ targets:
           - ubuntu-os-cloud:ubuntu-2310-arm64
           exhaustive:
           - ubuntu-os-cloud:ubuntu-minimal-2310-arm64
+  noble:
+    package_extension:
+      deb
+    architectures:
+      x86_64:
+        test_distros:
+          representative:
+          - ubuntu-os-cloud:ubuntu-2404-lts-amd64
+          exhaustive:
+          - ubuntu-os-cloud:ubuntu-minimal-2404-lts-amd64
   rockylinux9:
     package_extension:
       rpm
