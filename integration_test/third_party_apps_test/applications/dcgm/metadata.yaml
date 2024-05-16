@@ -23,7 +23,7 @@ configure_integration: |-
   You must install DCGM and run the DCGM daemon service. 
 supported_operating_systems: linux
 supported_app_version: ["3.1"]
-gpu_platforms: # p4, k80, p100 don't emit DCGM profiling metrics
+gpu_platforms: # p4, p100 don't emit DCGM profiling metrics
   - model: a100
     platforms:
       - ubuntu-os-cloud:ubuntu-2004-lts
