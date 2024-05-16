@@ -3810,7 +3810,7 @@ func TestLoggingSelfLogs(t *testing.T) {
 			t.Error(err)
 		}
 
-		queryHealthCheck := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
+		queryHealthCheck := fmt.Sprintf(`severity="WHATEVER" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, queryHealthCheck); err != nil {
 			t.Error(err)
 		}
