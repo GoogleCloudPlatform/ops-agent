@@ -31,6 +31,8 @@ platforms_to_skip:
   - suse-cloud:sles-12
   - ubuntu-os-cloud:ubuntu-2310-amd64
   - ubuntu-os-cloud:ubuntu-2310-arm64
+  - ubuntu-os-cloud:ubuntu-2404-lts-amd64
+  - ubuntu-os-cloud:ubuntu-2404-lts-arm64
 supported_app_version: ["3.8", "3.9"]
 expected_metrics:
   - type: workload.googleapis.com/rabbitmq.consumer.count

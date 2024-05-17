@@ -36,6 +36,8 @@ platforms_to_skip:
   - rocky-linux-cloud:rocky-linux-9-arm64
   - ubuntu-os-cloud:ubuntu-2310-amd64
   - ubuntu-os-cloud:ubuntu-2310-arm64
+  - ubuntu-os-cloud:ubuntu-2404-lts-amd64
+  - ubuntu-os-cloud:ubuntu-2404-lts-arm64
   - debian-cloud:debian-12
   - debian-cloud:debian-12-arm64
 supported_app_version: ["2.3+", "3.1+"]

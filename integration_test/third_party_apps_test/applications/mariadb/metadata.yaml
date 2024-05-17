@@ -148,6 +148,8 @@ expected_metrics:
     unavailable_on:
       - ubuntu-os-cloud:ubuntu-2310-amd64
       - ubuntu-os-cloud:ubuntu-2310-arm64
+      - ubuntu-os-cloud:ubuntu-2404-lts-amd64
+      - ubuntu-os-cloud:ubuntu-2404-lts-arm64
       - debian-cloud:debian-12-arm64
   - type: workload.googleapis.com/mysql.sorts
     value_type: INT64
