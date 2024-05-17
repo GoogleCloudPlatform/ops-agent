@@ -286,6 +286,12 @@ func (f *logClientFactory) new(project string) (*logadmin.Client, error) {
 	return logClient, nil
 }
 
+// OS represents information on the Operating Systems.
+type OS struct {
+	// The same as ID from /etc/os-release, or "windows".
+	ID string
+}
+
 // VM represents an individual virtual machine.
 type VM struct {
 	Name     string
@@ -293,6 +299,7 @@ type VM struct {
 	Network  string
 	// The VMOptions.ImageSpec used to create the VM.
 	ImageSpec   string
+	OS          OS
 	Zone        string
 	MachineType string
 	ID          int64
@@ -1073,6 +1080,30 @@ func gcloudFlagsFromImageSpec(imageSpec string) ([]string, error) {
 	return flags, nil
 }
 
+// getReleaseInfo returns the value of the requested variable in /etc/os-release.
+// For possible values, look here: https://www.freedesktop.org/software/systemd/man/latest/os-release.html
+func getReleaseInfo(ctx context.Context, logger *log.Logger, vm *VM, name string) (CommandOutput, error) {
+	cmd := fmt.Sprintf(`. /etc/os-release && echo -n $%s`, name)
+	return RunRemotely(ctx, logger, vm, cmd)
+}
+
+// getOS returns an OS struct containing information about the Operating System.
+func getOS(ctx context.Context, logger *log.Logger, vm *VM) (*OS, error) {
+	if IsWindows(vm.ImageSpec) {
+		return &OS{
+			ID: "windows",
+		}, nil
+	}
+	id_output, err := getReleaseInfo(ctx, logger, vm, "ID")
+	if err != nil {
+		return nil, err
+	}
+
+	return &OS{
+		ID: id_output.Stdout,
+	}, nil
+}
+
 // attemptCreateInstance creates a VM instance and waits for it to be ready.
 // Returns a VM object or an error (never both). The caller is responsible for
 // deleting the VM if (and only if) the returned error is nil.
@@ -1214,7 +1245,13 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		return nil, err
 	}
 
-	if IsSUSE(vm.ImageSpec) {
+	if os, err := getOS(ctx, logger, vm); err != nil {
+		return nil, err
+	} else {
+		vm.OS = *os
+	}
+
+	if vm.OS.ID == "opensuse-leap" || vm.OS.ID == "sles" || vm.OS.ID == "sles-sap" {
 		// Set download.max_silent_tries to 5 (by default, it is commented out in
 		// the config file). This should help with issues like b/211003972.
 		if _, err := RunRemotely(ctx, logger, vm, "sudo sed -i -E 's/.*download.max_silent_tries.*/download.max_silent_tries = 5/g' /etc/zypp/zypp.conf"); err != nil {

@@ -337,28 +337,37 @@ func CheckServicesNotRunning(ctx context.Context, logger *log.Logger, vm *gce.VM
 	return nil
 }
 
-// tryInstallPackages attempts once to install the given packages.
-func tryInstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs []string) error {
-	pkgsString := strings.Join(pkgs, " ")
+func packageManagerCmd(vm *gce.VM) (string, error) {
 	if gce.IsWindows(vm.ImageSpec) {
-		_, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("googet -noconfirm install %s", pkgsString))
+		return "googet -noconfirm", nil
+	}
+
+	switch vm.OS.ID {
+	case "centos", "rhel", "rocky":
+		return "sudo yum -y", nil
+	case "opensuse-leap", "sles", "sles-sap":
+		return "sudo zypper --non-interactive", nil
+	case "debian", "ubuntu":
+		return "sudo apt-get update; sudo apt-get -y", nil
+	default:
+		return "", fmt.Errorf("packageManagerCmd() doesn't support image spec %s with value '%s'", vm.ImageSpec, vm.OS.ID)
+	}
+}
+
+// managePackages calls the package manager of the vm with the provided instruction (install/remove) for a set of packages.
+func managePackages(ctx context.Context, logger *log.Logger, vm *gce.VM, instruction string, pkgs []string) error {
+	pkgMCmd, err := packageManagerCmd(vm)
+	if err != nil {
 		return err
 	}
-	cmd := ""
-	if strings.HasPrefix(vm.ImageSpec, "centos-cloud") ||
-		strings.HasPrefix(vm.ImageSpec, "rhel-") ||
-		strings.HasPrefix(vm.ImageSpec, "rocky-linux-cloud") {
-		cmd = fmt.Sprintf("sudo yum -y install %s", pkgsString)
-	} else if gce.IsSUSE(vm.ImageSpec) {
-		cmd = fmt.Sprintf("sudo zypper --non-interactive install %s", pkgsString)
-	} else if strings.HasPrefix(vm.ImageSpec, "debian-cloud") ||
-		strings.HasPrefix(vm.ImageSpec, "ubuntu-os-cloud") {
-		cmd = fmt.Sprintf("sudo apt-get update; sudo apt-get -y install %s", pkgsString)
-	} else {
-		return fmt.Errorf("tryInstallPackages() doesn't support image spec: %q", vm.ImageSpec)
-	}
-	_, err := gce.RunRemotely(ctx, logger, vm, cmd)
+	cmd := fmt.Sprintf("%s %s %s", pkgMCmd, instruction, strings.Join(pkgs, " "))
+	_, err = gce.RunRemotely(ctx, logger, vm, cmd)
 	return err
+}
+
+// tryInstallPackages attempts once to install the given packages.
+func tryInstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs []string) error {
+	return managePackages(ctx, logger, vm, "install", pkgs)
 }
 
 // InstallPackages installs the given packages on the given VM. Assumes repo is
@@ -374,30 +383,7 @@ func InstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs [
 
 // UninstallPackages removes the given packages from the given VM.
 func UninstallPackages(ctx context.Context, logger *log.Logger, vm *gce.VM, pkgs []string) error {
-	pkgsString := strings.Join(pkgs, " ")
-	if gce.IsWindows(vm.ImageSpec) {
-		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("googet -noconfirm remove %s", pkgsString)); err != nil {
-			return fmt.Errorf("could not uninstall %s. err: %v", pkgsString, err)
-		}
-		return nil
-	}
-	cmd := ""
-	if strings.HasPrefix(vm.ImageSpec, "centos-cloud") ||
-		strings.HasPrefix(vm.ImageSpec, "rhel-") ||
-		strings.HasPrefix(vm.ImageSpec, "rocky-linux-cloud") {
-		cmd = fmt.Sprintf("sudo yum -y remove %s", pkgsString)
-	} else if gce.IsSUSE(vm.ImageSpec) {
-		cmd = fmt.Sprintf("sudo zypper --non-interactive remove %s", pkgsString)
-	} else if strings.HasPrefix(vm.ImageSpec, "debian-cloud") ||
-		strings.HasPrefix(vm.ImageSpec, "ubuntu-os-cloud") {
-		cmd = fmt.Sprintf("sudo apt-get -y remove %s", pkgsString)
-	} else {
-		return fmt.Errorf("UninstallPackages() doesn't support image spec: %q", vm.ImageSpec)
-	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, cmd); err != nil {
-		return fmt.Errorf("could not uninstall %s. err: %v", pkgsString, err)
-	}
-	return nil
+	return managePackages(ctx, logger, vm, "remove", pkgs)
 }
 
 // checkPackages asserts that the given packages on the given VM are in a state matching the installed argument.
