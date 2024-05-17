@@ -877,7 +877,7 @@ func RetrieveContent(ctx context.Context, logger *log.Logger, vm *VM, remotePath
 		out, err := RunRemotely(ctx, logger, vm, fmt.Sprintf("Get-Content -Path '%s' -Raw", remotePath))
 		return out.Stdout, err
 	}
-	out, err := RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo cat "+remotePath))
+	out, err := RunRemotely(ctx, logger, vm, "sudo cat "+remotePath)
 	return out.Stdout, err
 }
 

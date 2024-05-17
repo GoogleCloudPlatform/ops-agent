@@ -4745,7 +4745,7 @@ func TestNoNvmlOtelReceiverWithoutGpu(t *testing.T) {
 		}
 
 		if strings.Contains(otelConfig, "nvml") {
-			t.Errorf("expects the nvml receiver not in the Otel configuration for VMs without GPU. Otel config: " + otelConfig)
+			t.Error("expects the nvml receiver not in the Otel configuration for VMs without GPU. Otel config: " + otelConfig)
 		}
 	})
 }
