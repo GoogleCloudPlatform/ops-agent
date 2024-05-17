@@ -10,30 +10,15 @@ sudo apt install -y linux-headers-${KERNEL_VERSION} software-properties-common p
 # Prefer to install from the package manager since it is normally faster and has
 # less errors on installation; fallback to the runfile method if the package 
 # manager's package is not working or not compitible with the GPU model
-DEVICE_CODE=$(lspci -n | grep -Po '10de:[\w\d]{4}')
 DISTRIBUTION=$(echo $ID$VERSION_ID | sed -e 's/\.//g')
-case $DEVICE_CODE in
-    10de:102d)
-        # Install a specific version for NVIDIA Tesla K80, R470 is the last supported version
-        DRIVER_VERSION=470.82.01
-        CUDA_VERSION=11.4.4
-        echo "Installing NVIDIA CUDA $CUDA_VERSION with driver $DRIVER_VERSION"
-        curl -fSsl -O https://us.download.nvidia.com/tesla/$DRIVER_VERSION/NVIDIA-Linux-x86_64-$DRIVER_VERSION.run
-        sudo bash ./NVIDIA-Linux-x86_64-$DRIVER_VERSION.run --silent
-        wget --no-verbose https://developer.download.nvidia.com/compute/cuda/$CUDA_VERSION/local_installers/cuda_${CUDA_VERSION}_${DRIVER_VERSION}_linux.run
-        sudo sh cuda_${CUDA_VERSION}_${DRIVER_VERSION}_linux.run --toolkit --silent
-        ;;
-    *)
-        echo "Installing latest version of NVIDIA CUDA and driver"
-        wget --no-verbose https://developer.download.nvidia.com/compute/cuda/repos/${DISTRIBUTION}/x86_64/cuda-keyring_1.0-1_all.deb
-        sudo dpkg -i cuda-keyring_1.0-1_all.deb
-        if [[ $ID == debian ]]; then
-            sudo add-apt-repository contrib
-        fi
-        sudo apt update
-        sudo apt -y install cuda 
-        ;;
-esac
+echo "Installing latest version of NVIDIA CUDA and driver"
+wget --no-verbose https://developer.download.nvidia.com/compute/cuda/repos/${DISTRIBUTION}/x86_64/cuda-keyring_1.0-1_all.deb
+sudo dpkg -i cuda-keyring_1.0-1_all.deb
+if [[ $ID == debian ]]; then
+    sudo add-apt-repository contrib
+fi
+sudo apt update
+sudo apt -y install cuda 
 
 # check NVIDIA driver installation succeeded
 nvidia-smi
