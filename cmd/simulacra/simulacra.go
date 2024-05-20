@@ -94,7 +94,7 @@ func distroFolder(vm *gce.VM) (string, error) {
 		return "centos_rhel", nil
 	case "debian", "ubuntu":
 		return "debian_ubuntu", nil
-	case "opensuse-leap", "sles", "sles-sap":
+	case "opensuse", "sles", "sles_sap":
 		return "sles", nil
 	default:
 		return "", fmt.Errorf("distroFolder() could not find matching folder holding scripts for vm.OS.ID: %s", vm.OS.ID)
