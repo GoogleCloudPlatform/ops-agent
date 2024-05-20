@@ -1251,7 +1251,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		vm.OS = *os
 	}
 
-	if vm.OS.ID == "opensuse-leap" || vm.OS.ID == "sles" || vm.OS.ID == "sles-sap" {
+	if vm.OS.ID == "opensuse" || vm.OS.ID == "sles" || vm.OS.ID == "sles_sap" {
 		// Set download.max_silent_tries to 5 (by default, it is commented out in
 		// the config file). This should help with issues like b/211003972.
 		if _, err := RunRemotely(ctx, logger, vm, "sudo sed -i -E 's/.*download.max_silent_tries.*/download.max_silent_tries = 5/g' /etc/zypp/zypp.conf"); err != nil {
@@ -1539,7 +1539,7 @@ func InstallGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) erro
 
 	// SUSE seems to be the only distro without gsutil, so what follows is all
 	// very SUSE-specific.
-	if vm.OS.ID != "opensuse-leap" && vm.OS.ID != "sles" && vm.OS.ID != "sles-sap" {
+	if vm.OS.ID != "opensuse" && vm.OS.ID != "sles" && vm.OS.ID != "sles_sap" {
 		return installErr("gsutil", vm.OS.ID)
 	}
 
