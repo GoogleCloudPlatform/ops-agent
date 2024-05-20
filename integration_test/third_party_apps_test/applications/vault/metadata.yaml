@@ -64,6 +64,8 @@ platforms_to_skip:
   # Vault is not supported on various distros.
   - ubuntu-os-cloud:ubuntu-2310-amd64
   - ubuntu-os-cloud:ubuntu-2310-arm64
+  - ubuntu-os-cloud:ubuntu-2404-lts-amd64
+  - ubuntu-os-cloud:ubuntu-2404-lts-arm64
 supported_app_version: ["1.6+"]
 expected_metrics:
   - type: workload.googleapis.com/vault.core.request.count
