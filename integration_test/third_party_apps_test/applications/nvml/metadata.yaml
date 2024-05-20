@@ -36,7 +36,7 @@ gpu_platforms:
   - model: t4
     platforms:
       - ubuntu-os-cloud:ubuntu-2004-lts
-      - ml-images:common-cu118-debian-11-py310
+      - ml-images:common-gpu-debian-11-py310
   - model: p100
     platforms:
       - ubuntu-os-cloud:ubuntu-2004-lts
