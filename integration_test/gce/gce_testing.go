@@ -294,9 +294,9 @@ type OS struct {
 
 // VM represents an individual virtual machine.
 type VM struct {
-	Name     string
-	Project  string
-	Network  string
+	Name    string
+	Project string
+	Network string
 	// The VMOptions.ImageSpec used to create the VM.
 	ImageSpec   string
 	OS          OS
@@ -868,6 +868,17 @@ func UploadContent(ctx context.Context, logger *log.Logger, vm *VM, content io.R
 	objectPath := fmt.Sprintf("gs://%s/%s", object.BucketName(), object.ObjectName())
 	_, err = RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo gsutil cp '%s' '%s'", objectPath, remotePath))
 	return err
+}
+
+// RetrieveContent retrieves the file content from the the given file path from
+// the remote VM
+func RetrieveContent(ctx context.Context, logger *log.Logger, vm *VM, remotePath string) (content string, err error) {
+	if IsWindows(vm.ImageSpec) {
+		out, err := RunRemotely(ctx, logger, vm, fmt.Sprintf("Get-Content -Path '%s' -Raw", remotePath))
+		return out.Stdout, err
+	}
+	out, err := RunRemotely(ctx, logger, vm, "sudo cat "+remotePath)
+	return out.Stdout, err
 }
 
 // envVarMapToBashPrefix converts a map of env variable name to value into a string
