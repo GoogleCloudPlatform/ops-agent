@@ -1,6 +1,6 @@
 set -e
 source /etc/os-release
-VERSION_ID=${VERSION_ID%%.*}
+MAJOR_VERSION_ID=${VERSION_ID%%.*}
 
 verify_driver() {
     # Verify NVIDIA driver:
@@ -11,14 +11,39 @@ verify_driver() {
     nvidia-smi
 }
 
+setup_rocky_vault_repo() {
+    # Setup the repo file to the Rocky vault repo: 
+    # https://wiki.rockylinux.org/rocky/repo/#vault
+    # The regular Rocky Linux 9 repo only has the latest kernel-devel package,
+    # and the vault repo contains all previous versions of the kernel-devel 
+    # package; need to get a version that matches the kernel to build the driver
+    cat << EOF > appstream-vault.repo
+[appstream-vault]
+name=Rocky Linux \$releasever - AppStream - Vault
+baseurl=http://dl.rockylinux.org/vault/rocky/$VERSION_ID/AppStream/\$basearch/os/
+gpgcheck=1
+enabled=1
+countme=1
+metadata_expire=6h
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Rocky-9
+EOF
+
+    sudo mv appstream-vault.repo /etc/yum.repos.d/appstream-vault.repo
+    sudo chown root:root /etc/yum.repos.d/appstream-vault.repo
+    sudo chmod 0644 /etc/yum.repos.d/appstream-vault.repo
+}
+
 install_driver_from_runfile() {
     # Ref: https://docs.nvidia.com/datacenter/tesla/tesla-installation-notes/index.html#runfile
     # This method requires the matching kernel-devel package to be installed, and 
     # the package may be absent from the repo and cause this method to fail
     # Remove existing installation before using the runfile
     remove_driver_package
+    if [ ${ID} == rocky ] && [ "$MAJOR_VERSION_ID" = 9 ]; then
+        setup_rocky_vault_repo
+    fi
     sudo yum install -y kernel-devel-$(uname -r) pciutils gcc make wget yum-utils 
-    local DRIVER_VERSION=535.129.03
+    local DRIVER_VERSION=550.54.15
     echo "Installing NVIDIA Data Center driver $DRIVER_VERSION"
     curl -fSsl -O https://us.download.nvidia.com/tesla/$DRIVER_VERSION/NVIDIA-Linux-x86_64-$DRIVER_VERSION.run
     sudo bash ./NVIDIA-Linux-x86_64-$DRIVER_VERSION.run --silent
@@ -28,7 +53,7 @@ install_driver_from_runfile() {
 setup_repo() {
     sudo yum install -y yum-utils
     sudo yum-config-manager \
-        --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel$VERSION_ID/x86_64/cuda-rhel$VERSION_ID.repo
+        --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel$MAJOR_VERSION_ID/x86_64/cuda-rhel$MAJOR_VERSION_ID.repo
     sudo yum clean all
 }
 
@@ -51,7 +76,7 @@ install_dcgm() {
 try_install() {
     # Export all functions for the bash subprocess
     eval "$(declare -F | sed 's/ -f / -fx /')"
-    export VERSION_ID
+    export MAJOR_VERSION_ID VERSION_ID ID
     for install_method in "$@"; do
         echo "Installing NVIDIA driver with $install_method..."
         # Can't use a subshell because of https://lists.gnu.org/archive/html/bug-bash/2012-12/msg00094.html
@@ -81,17 +106,12 @@ handle_rhel7() {
 
 handle_common() {
     install_driver_package() {
-        #TODO: b/332690428 - Remove this temporary fix for Rocky Linux 9 rocky-linux-9-v20240313 with kernel 5.14.0-362.18.1.el9_3.0.1.x86_64 
-        case $(uname -r) in
-            5.14.0-362.18.1.el9_3.0.1.x86_64) 
-                sudo ln -s /lib/modules/5.14.0-362.18.1.el9_3.0.1.x86_64 /lib/modules/5.14.0-362.18.1.el9_3.x86_64
-                sudo yum -y module install nvidia-driver:545
-                ;;
-            *)
-                # Ref: https://developer.nvidia.com/cuda-12-2-2-download-archive?target_os=Linux&target_arch=x86_64&Distribution=RHEL&target_version=8&target_type=rpm_network
-                sudo yum -y module install nvidia-driver:latest
-                ;;
-        esac
+        #TODO: b/332690428 - Remove this temporary fix for Rocky Linux 9 rocky-linux-9-v20240313 with kernel 5.14.0-362.24.1.el9_3.0.1.x86_64 
+        if [ $(uname -r) == 5.14.0-362.24.1.el9_3.0.1.x86_64 ]; then
+            sudo ln -s /lib/modules/5.14.0-362.24.1.el9_3.0.1.x86_64 /lib/modules/5.14.0-362.24.1.el9_3.x86_64
+        fi
+        # Ref: https://developer.nvidia.com/cuda-12-2-2-download-archive?target_os=Linux&target_arch=x86_64&Distribution=RHEL&target_version=8&target_type=rpm_network
+        sudo yum -y module install nvidia-driver:latest
     }
 
     remove_driver_package() {
@@ -100,7 +120,7 @@ handle_common() {
     }
 }
 
-case "$VERSION_ID" in
+case "$MAJOR_VERSION_ID" in
     7) handle_rhel7;;
     *) handle_common;;
 esac
