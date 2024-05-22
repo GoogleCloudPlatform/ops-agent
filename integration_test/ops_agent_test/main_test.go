@@ -4418,15 +4418,15 @@ func getRecentServiceOutputForImage(imageSpec string) string {
 	return "sudo systemctl status google-cloud-ops-agent"
 }
 
-func listenToPortForImage(imageSpec string) string {
-	if gce.IsWindows(imageSpec) {
+func listenToPortForImage(vm *gce.VM) string {
+	if gce.IsWindows(vm.ImageSpec) {
 		cmd := strings.Join([]string{
 			`Invoke-WmiMethod -Path 'Win32_Process' -Name Create -ArgumentList 'powershell.exe -Command "$Listener = [System.Net.Sockets.TcpListener]20201; $Listener.Start(); Start-Sleep -Seconds 600"'`,
 		}, ";")
 
 		return cmd
 	}
-	if gce.IsCentOS(imageSpec) || gce.IsSUSE(imageSpec) {
+	if gce.IsCentOS(vm.ImageSpec) || gce.IsSUSEVM(vm) {
 		return "nohup nc -l 20201 1>/dev/null 2>/dev/null &"
 	}
 	return "nohup nc -l -p 20201 1>/dev/null 2>/dev/null &"
@@ -4461,7 +4461,7 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 			}
 		}
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, listenToPortForImage(vm.ImageSpec)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, listenToPortForImage(vm)); err != nil {
 			t.Fatal(err)
 		}
 		// Wait for port to be in listen mode.
