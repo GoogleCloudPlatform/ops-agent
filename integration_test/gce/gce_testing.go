@@ -1252,14 +1252,14 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		logger.Printf("Unable to retrieve information about the VM's boot disk: %v", err)
 	}
 
+	if err := waitForStart(ctx, logger, vm); err != nil {
+		return nil, err
+	}
+
 	if os, err := getOS(ctx, logger, vm); err != nil {
 		return nil, err
 	} else {
 		vm.OS = *os
-	}
-
-	if err := waitForStart(ctx, logger, vm); err != nil {
-		return nil, err
 	}
 
 	if IsSUSEVM(vm) {
@@ -1773,7 +1773,7 @@ func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error 
 func waitForStartLinux(ctx context.Context, logger *log.Logger, vm *VM) error {
 	var backoffPolicy backoff.BackOff
 	backoffPolicy = backoff.NewConstantBackOff(vmInitBackoffDuration)
-	if IsSUSEVM(vm) {
+	if IsSUSEImageSpec(vm.ImageSpec) {
 		// Give up early on SUSE due to b/186426190. If this step times out, the
 		// error will be retried with a fresh VM.
 		backoffPolicy = backoff.WithMaxRetries(backoffPolicy, uint64((5*time.Minute)/vmInitBackoffDuration))
@@ -1815,7 +1815,7 @@ func waitForStartLinux(ctx context.Context, logger *log.Logger, vm *VM) error {
 		return fmt.Errorf("%v. Last err=%v", startupFailedMessage, err)
 	}
 
-	if IsSUSEVM(vm) {
+	if IsSUSEImageSpec(vm.ImageSpec) {
 		// TODO(b/259122953): SUSE needs additional startup time. Remove once we have more
 		// sensible/deterministic workarounds for each of the individual problems.
 		time.Sleep(slesStartupDelay)
