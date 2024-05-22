@@ -1811,7 +1811,7 @@ func waitForStartLinux(ctx context.Context, logger *log.Logger, vm *VM) error {
 		return fmt.Errorf("%v. Last err=%v", startupFailedMessage, err)
 	}
 
-	if IsSUSE(vm.ImageSpec) {
+	if IsSUSE(vm.OS.ID) {
 		// TODO(b/259122953): SUSE needs additional startup time. Remove once we have more
 		// sensible/deterministic workarounds for each of the individual problems.
 		time.Sleep(slesStartupDelay)
