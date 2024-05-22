@@ -379,7 +379,7 @@ func testRunRemotelyHelper(ctx context.Context, t *testing.T, logger *log.Logger
 
 func TestRunRemotely(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, platform string) {
 		t.Parallel()
 
 		ctx, logger, vm := SetupLoggerAndVM(t, platform)
@@ -424,7 +424,7 @@ func calculateRemoteMD5(ctx context.Context, logger *log.Logger, vm *gce.VM, pat
 
 func TestUploadContent(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachPlatform(t, func(t *testing.T, platform string) {
+	gce.RunForEachImage(t, func(t *testing.T, platform string) {
 		t.Parallel()
 
 		ctx, logger, vm := SetupLoggerAndVM(t, platform)

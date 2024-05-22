@@ -22,11 +22,18 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 )
 
-func ConfigPathForPlatform(platform string) string {
-	if gce.IsWindows(platform) {
+func GetConfigPath(imageSpec string) string {
+	if gce.IsWindows(imageSpec) {
 		return `C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml`
 	}
 	return "/etc/google-cloud-ops-agent/config.yaml"
+}
+
+func GetOtelConfigPath(imageSpec string) string {
+	if gce.IsWindows(imageSpec) {
+		return `C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\otel\otel.yaml`
+	}
+	return "/var/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml"
 }
 
 // DumpPointerArray formats the given array of pointers-to-structs as a strings

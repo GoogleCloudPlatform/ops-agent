@@ -430,11 +430,13 @@ func (r LoggingReceiverWindowsEventLog) Components(ctx context.Context, tag stri
 	input := []fluentbit.Component{{
 		Kind: "INPUT",
 		Config: map[string]string{
-			"Name":         inputName,
-			"Tag":          tag,
-			"Channels":     strings.Join(r.Channels, ","),
-			"Interval_Sec": "1",
-			"DB":           DBPath(tag),
+			"Name": inputName,
+			"Tag":  tag,
+			// TODO(@braydonk): Remove this upon the next Fluent Bit update. See https://github.com/fluent/fluent-bit/issues/8854
+			"String_Inserts": "true",
+			"Channels":       strings.Join(r.Channels, ","),
+			"Interval_Sec":   "1",
+			"DB":             DBPath(tag),
 		},
 	}}
 
