@@ -1252,17 +1252,17 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		logger.Printf("Unable to retrieve information about the VM's boot disk: %v", err)
 	}
 
-	if err := waitForStart(ctx, logger, vm); err != nil {
-		return nil, err
-	}
-
 	if os, err := getOS(ctx, logger, vm); err != nil {
 		return nil, err
 	} else {
 		vm.OS = *os
 	}
 
-	if vm.OS.ID == "opensuse" || vm.OS.ID == "opensuse-leap" || vm.OS.ID == "sles" || vm.OS.ID == "sles_sap" {
+	if err := waitForStart(ctx, logger, vm); err != nil {
+		return nil, err
+	}
+
+	if IsSUSE(vm.OS.ID) {
 		// Set download.max_silent_tries to 5 (by default, it is commented out in
 		// the config file). This should help with issues like b/211003972.
 		if _, err := RunRemotely(ctx, logger, vm, "sudo sed -i -E 's/.*download.max_silent_tries.*/download.max_silent_tries = 5/g' /etc/zypp/zypp.conf"); err != nil {
@@ -1270,13 +1270,13 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		}
 	}
 
-	if strings.HasPrefix(vm.ImageSpec, "sles-") {
+	if IsSLES(vm.OS.ID) {
 		if err := prepareSLES(ctx, logger, vm); err != nil {
 			return nil, fmt.Errorf("%s: %v", prepareSLESMessage, err)
 		}
 	}
 
-	if IsSUSE(vm.ImageSpec) {
+	if IsSUSE(vm.OS.ID) {
 		// Set ZYPP_LOCK_TIMEOUT so tests that use zypper don't randomly fail
 		// because some background process happened to be using zypper at the same time.
 		if _, err := RunRemotely(ctx, logger, vm, `echo 'ZYPP_LOCK_TIMEOUT=300' | sudo tee -a /etc/environment`); err != nil {
@@ -1302,8 +1302,12 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	return vm, nil
 }
 
-func IsSUSE(imageSpec string) bool {
-	return strings.HasPrefix(imageSpec, "suse-") || strings.HasPrefix(imageSpec, "opensuse-") || strings.Contains(imageSpec, "sles-")
+func IsSLES(vm_OS_ID string) bool {
+	return vm_OS_ID == "sles" || vm_OS_ID == "sles_sap"
+}
+
+func IsSUSE(vm_OS_ID string) bool {
+	return vm_OS_ID == "opensuse" || vm_OS_ID == "opensuse-leap" || vm_OS_ID == "sles" || vm_OS_ID == "sles_sap"
 }
 
 func IsCentOS(imageSpec string) bool {
@@ -1351,7 +1355,7 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 			// windows-*-core instances sometimes fail to be ssh-able: b/305721001
 			(IsWindowsCore(options.ImageSpec) && strings.Contains(err.Error(), windowsStartupFailedMessage)) ||
 			// SLES instances sometimes fail to be ssh-able: b/186426190
-			(IsSUSE(options.ImageSpec) && strings.Contains(err.Error(), startupFailedMessage)) ||
+			strings.Contains(err.Error(), startupFailedMessage) ||
 			strings.Contains(err.Error(), prepareSLESMessage)
 	}
 
@@ -1550,7 +1554,7 @@ func InstallGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) erro
 
 	// SUSE seems to be the only distro without gsutil, so what follows is all
 	// very SUSE-specific.
-	if vm.OS.ID != "opensuse" && vm.OS.ID != "opensuse-leap" && vm.OS.ID != "sles" && vm.OS.ID != "sles_sap" {
+	if IsSUSE(vm.OS.ID) {
 		return installErr("gsutil", vm.OS.ID)
 	}
 
@@ -1765,7 +1769,7 @@ func waitForStartWindows(ctx context.Context, logger *log.Logger, vm *VM) error 
 func waitForStartLinux(ctx context.Context, logger *log.Logger, vm *VM) error {
 	var backoffPolicy backoff.BackOff
 	backoffPolicy = backoff.NewConstantBackOff(vmInitBackoffDuration)
-	if IsSUSE(vm.ImageSpec) {
+	if IsSUSE(vm.OS.ID) {
 		// Give up early on SUSE due to b/186426190. If this step times out, the
 		// error will be retried with a fresh VM.
 		backoffPolicy = backoff.WithMaxRetries(backoffPolicy, uint64((5*time.Minute)/vmInitBackoffDuration))
