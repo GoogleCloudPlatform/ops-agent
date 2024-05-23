@@ -533,7 +533,6 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 		got = append(got, map[string]any{"exit_error": exitErr.Error()})
 	}
 	if len(errors) != 0 {
-		cleanStacktraceFromErrors(errors)
 		got = append(got, map[string]any{"collector_errors": errors})
 	}
 	return got
@@ -568,15 +567,4 @@ func sanitizeWriteLogEntriesRequest(t *testing.T, r *logpb.WriteLogEntriesReques
 		}
 	}
 	return req
-}
-
-func cleanStacktraceFromErrors(errors []any) []any {
-	for _, e := range errors {
-		errMap, ok := e.(map[string]any)
-		if !ok {
-			continue
-		}
-		delete(errMap, "stacktrace")
-	}
-	return errors
 }
