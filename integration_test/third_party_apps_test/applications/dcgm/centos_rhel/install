@@ -89,7 +89,7 @@ handle_common() {
                 ;;
             *)
                 # Ref: https://developer.nvidia.com/cuda-12-2-2-download-archive?target_os=Linux&target_arch=x86_64&Distribution=RHEL&target_version=8&target_type=rpm_network
-                sudo yum -y module install nvidia-driver:latest
+                sudo yum -y module install nvidia-driver:550
                 ;;
         esac
     }

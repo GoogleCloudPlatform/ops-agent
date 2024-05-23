@@ -59,8 +59,8 @@ func SetupLoggerAndVM(t *testing.T, platform string) (context.Context, *logging.
 
 	logger := gce.SetupLogger(t)
 	options := gce.VMOptions{
-		ImageSpec: platform,
-		TimeToLive: "1h",
+		ImageSpec:   platform,
+		TimeToLive:  "1h",
 		MachineType: agents.RecommendedMachineType(platform),
 	}
 	logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
@@ -407,7 +407,7 @@ func eachByte() []byte {
 // calculateRemoteMD5 computes the MD5 of the given file in a
 // platform-specific way and returns the result as a lowercase hex string.
 func calculateRemoteMD5(ctx context.Context, logger *log.Logger, vm *gce.VM, path string) (string, error) {
-	if gce.IsWindows(vm.Platform) {
+	if gce.IsWindows(vm.ImageSpec) {
 		output, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("(Get-FileHash -Algorithm MD5 -Path '%s').Hash", path))
 		if err != nil {
 			return "", err
@@ -454,7 +454,7 @@ func TestUploadContent(t *testing.T) {
 				t.Errorf("got MD5 %q for file %v (size %v), want %q", actualMD5, path, len(data), expectedMD5)
 				if len(data) < 1000 {
 					var dumpCmd string
-					if gce.IsWindows(vm.Platform) {
+					if gce.IsWindows(vm.ImageSpec) {
 						// Use pwsh instead of powershell to get access to "-AsByteStream".
 						dumpCmd = fmt.Sprintf(`pwsh -Command "'bytes in base 10:'; Get-Content -AsByteStream '%s'"`, path)
 					} else {
