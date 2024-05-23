@@ -1,6 +1,6 @@
 # Transformation Tests
 
-The transformation tests are tests that will run Fluent Bit and OpenTelemetry Operations Collector (otelopscol) directly in your environment and test the results of various logging operations to stdout. This is to check the correctness of log parsing expectations in a more lightweight way than full integration tests.
+The transformation tests are tests that will run Fluent Bit and OpenTelemetry Operations Collector (otelopscol) directly in your environment and verify the results of various logging operations by reading their output from stdout and stderr. This is to check the correctness of log parsing expectations in a more lightweight way than full integration tests.
 
 ## Makefile Usage
 
