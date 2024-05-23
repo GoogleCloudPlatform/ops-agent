@@ -17,17 +17,12 @@ set -x -e
 DESTDIR=$1
 mkdir -p $DESTDIR
 
+CMAKE_ARGS=`cat $(dirname $0)/fluent_bit_cmake_args`
+
 cd submodules/fluent-bit
 mkdir -p build
 cd build
-# CMAKE_INSTALL_PREFIX here will cause the binary to be put at
-# /usr/lib/google-cloud-ops-agent/bin/fluent-bit
-# Additionally, -DFLB_SHARED_LIB=OFF skips building libfluent-bit.so
-cmake .. \
-  -DFLB_HTTP_SERVER=ON -DFLB_DEBUG=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-  -DWITHOUT_HEADERS=ON -DFLB_SHARED_LIB=OFF -DFLB_STREAM_PROCESSOR=OFF \
-  -DFLB_MSGPACK_TO_JSON_INIT_BUFFER_SIZE=1.5 -DFLB_MSGPACK_TO_JSON_REALLOC_BUFFER_SIZE=.10 \
-  -DFLB_CONFIG_YAML=OFF
-make -j8
+cmake .. $CMAKE_ARGS
+make -j16
 
 mv ./bin/fluent-bit $DESTDIR
