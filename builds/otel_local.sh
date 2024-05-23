@@ -1,3 +1,4 @@
+#!/bin/bash
 # Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,12 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-features:
-- feature: receivers:rabbitmq
-  module: metrics
-  key: "[0].enabled"
-  value: true
-- feature: receivers:rabbitmq
-  module: logging
-  key: "[0].enabled"
-  value: true
+set -x -e
+DESTDIR=$1
+
+cd submodules/opentelemetry-operations-collector
+go build -tags=gpu -buildvcs=false -o "$DESTDIR/otelopscol" ./cmd/otelopscol

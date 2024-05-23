@@ -1,3 +1,17 @@
+// Copyright 2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package transformation_test
 
 import (
@@ -115,7 +129,7 @@ func (transformationConfig transformationTest) runFluentBitTest(t *testing.T, na
 
 	// Start Fluent-bit
 	cmd := exec.Command(
-		fmt.Sprintf("%s", *flbPath),
+		*flbPath,
 		"-v",
 		fmt.Sprintf("--config=%s", filepath.Join(tempPath, flbMainConf)),
 		fmt.Sprintf("--parser=%s", filepath.Join(filepath.Join(tempPath, flbParserConf))))
@@ -305,14 +319,14 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 			"input": rp[0],
 		},
 		Pipelines: map[string]otel.Pipeline{
-			"input": otel.Pipeline{
+			"input": {
 				Type:                 "logs",
 				ReceiverPipelineName: "input",
 				Processors:           components,
 			},
 		},
 		Exporters: map[otel.ExporterType]otel.Component{
-			otel.OTel: otel.Component{
+			otel.OTel: {
 				Type: "googlecloud",
 				Config: map[string]any{
 					"project": "my-project",
@@ -408,7 +422,7 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 
 	// Start otelopscol
 	cmd := exec.Command(
-		fmt.Sprintf("%s", *otelopscolPath),
+		*otelopscolPath,
 		"--config=env:OTELOPSCOL_CONFIG",
 	)
 	cmd.Env = append(os.Environ(),
@@ -495,15 +509,15 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 		}
 		return nil
 	})
-	var exit_error string
+	var exitErr error
 	// Wait for the process to exit.
 	eg.Go(func() error {
-		if err := cmd.Wait(); err != nil {
-			if err, ok := err.(*exec.ExitError); ok {
-				exit_error = err.String()
+		if cmdErr := cmd.Wait(); err != nil {
+			if err, ok := cmdErr.(*exec.ExitError); ok {
+				exitErr = err
 				t.Logf("process terminated with error: %v", err)
 			} else {
-				return fmt.Errorf("process failed: %w", err)
+				return fmt.Errorf("process failed: %w", cmdErr)
 			}
 		}
 		cancel()
@@ -515,10 +529,11 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 	}
 
 	// Package up errors to be included in the golden output.
-	if exit_error != "" {
-		got = append(got, map[string]any{"exit_error": exit_error})
+	if exitErr != nil {
+		got = append(got, map[string]any{"exit_error": exitErr.Error()})
 	}
 	if len(errors) != 0 {
+		cleanStacktraceFromErrors(errors)
 		got = append(got, map[string]any{"collector_errors": errors})
 	}
 	return got
@@ -553,4 +568,15 @@ func sanitizeWriteLogEntriesRequest(t *testing.T, r *logpb.WriteLogEntriesReques
 		}
 	}
 	return req
+}
+
+func cleanStacktraceFromErrors(errors []any) []any {
+	for _, e := range errors {
+		errMap, ok := e.(map[string]any)
+		if !ok {
+			continue
+		}
+		delete(errMap, "stacktrace")
+	}
+	return errors
 }
