@@ -109,14 +109,14 @@ endif
 	mkdir -p ./confgenerator/testdata/goldens/$(TEST_NAME)/golden
 	touch ./confgenerator/testdata/goldens/$(TEST_NAME)/input.yaml
 
-.PHONY: transformation_test
-transformation_test:
-ifeq ("$(wildcard $(PWD)/dist/fluent-bit)","")
+dist/fluent-bit:
 	$(MAKE) fluent_bit_local
-endif
-ifeq ("$(wildcard $(PWD)/dist/otelopscol)","")
+
+dist/otelopscol:
 	$(MAKE) otelopscol_local
-endif
+
+.PHONY: transformation_test
+transformation_test: dist/fluent-bit dist/otelopscol
 	FLB=$(PWD)/dist/fluent-bit OTELOPSCOL=$(PWD)/dist/otelopscol go test ./transformation_test $(if $(UPDATE),-update,)
 
 .PHONY: transformation_test_update
