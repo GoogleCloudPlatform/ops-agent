@@ -509,15 +509,16 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 		}
 		return nil
 	})
+
 	var exitErr error
 	// Wait for the process to exit.
 	eg.Go(func() error {
-		if cmdErr := cmd.Wait(); err != nil {
-			if err, ok := cmdErr.(*exec.ExitError); ok {
+		if err := cmd.Wait(); err != nil {
+			if _, ok := err.(*exec.ExitError); ok {
 				exitErr = err
 				t.Logf("process terminated with error: %v", err)
 			} else {
-				return fmt.Errorf("process failed: %w", cmdErr)
+				return fmt.Errorf("process failed: %w", err)
 			}
 		}
 		cancel()
