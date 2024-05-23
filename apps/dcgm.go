@@ -25,6 +25,7 @@ import (
 type MetricsReceiverDcgm struct {
 	confgenerator.ConfigComponent       `yaml:",inline"`
 	confgenerator.MetricsReceiverShared `yaml:",inline"`
+	confgenerator.VersionedReceivers    `yaml:",inline"`
 
 	Endpoint string `yaml:"endpoint" validate:"omitempty,hostname_port"`
 }

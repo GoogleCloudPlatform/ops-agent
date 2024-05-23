@@ -106,6 +106,9 @@ configuration_options:
         - name: collection_interval
           default: 60s
           description: A time.Duration value, such as 30s or 5m.
+        - name: receiver_version
+          default: "1"
+          description: Either 1 or 2. Version 2 has many more metrics available.
         - name: endpoint
           default: localhost:5555
           description: The DCGM service endpoint specified as 'hostname:port'
