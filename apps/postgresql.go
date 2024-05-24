@@ -134,7 +134,7 @@ func (p LoggingProcessorPostgresql) Components(ctx context.Context, tag string, 
 			{
 				StateName: "start_state",
 				NextState: "cont",
-				Regex:     `\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3,} \w+`,
+				Regex:     `^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3,} \w+`,
 			},
 			{
 				StateName: "cont",

@@ -91,7 +91,7 @@ func (p LoggingProcessorHbaseSystem) Components(ctx context.Context, tag string,
 			{
 				StateName: "start_state",
 				NextState: "cont",
-				Regex:     `\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\,\d{3,6}`,
+				Regex:     `^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\,\d{3,6}`,
 			},
 			{
 				StateName: "cont",

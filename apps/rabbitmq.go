@@ -100,7 +100,7 @@ func (r LoggingReceiverRabbitmq) Components(ctx context.Context, tag string) []f
 		{
 			StateName: "start_state",
 			NextState: "cont",
-			Regex:     `\d+-\d+-\d+ \d+:\d+:\d+\.\d+\+\d+:\d+`,
+			Regex:     `^\d+-\d+-\d+ \d+:\d+:\d+\.\d+\+\d+:\d+`,
 		},
 		{
 			StateName: "cont",
