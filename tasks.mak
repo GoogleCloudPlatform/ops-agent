@@ -41,12 +41,12 @@ build:
 .PHONY: fluent_bit_local
 fluent_bit_local:
 	mkdir -p $(PWD)/dist
-	$(shell ./builds/fluent_bit.sh $(PWD)/dist)
+	LOCAL_ONLY=true bash ./builds/fluent_bit.sh $(PWD)/dist
 
 .PHONY: otelopscol_local
 otelopscol_local:
 	mkdir -p $(PWD)/dist
-	$(shell ./builds/otel.sh $(PWD)/dist)
+	LOCAL_ONLY=true bash ./builds/otel.sh $(PWD)/dist
 
 ############
 # Tools

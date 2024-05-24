@@ -14,11 +14,19 @@
 # limitations under the License.
 
 set -x -e
-DESTDIR=$1
-otel_dir=/opt/google-cloud-ops-agent/subagents/opentelemetry-collector
-DESTDIR="${DESTDIR}${otel_dir}"
 
-if ! [[ "$1" = *"dist" ]]; then
+ROOTDIR="$1"
+otel_dir=/opt/google-cloud-ops-agent/subagents/opentelemetry-collector
+DESTDIR="${ROOTDIR}${otel_dir}"
+
+# Default values for go build arguments.
+BINARYLOCATION="$ROOTDIR/otelopscol"
+JAR_SHA_256=""
+LDFLAGS=""
+
+# If this is not a local build, then we build otel java and add it to
+# the ldflags, as well as changing the binary location.
+if [ "$LOCAL_ONLY" != "true" ]; then
     cd submodules/opentelemetry-java-contrib
 
     mkdir -p "$DESTDIR"
@@ -34,17 +42,12 @@ if ! [[ "$1" = *"dist" ]]; then
     mv ./META-INF/LICENSE ./META-INF/LICENSE.renamed
     zip -u "$DESTDIR/opentelemetry-java-contrib-jmx-metrics.jar" "META-INF/LICENSE.renamed"
 
+    JAR_SHA_256=($(sha256sum "$DESTDIR/opentelemetry-java-contrib-jmx-metrics.jar"))
+    LDFLAGS="-ldflags -X github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver.MetricsGathererHash=$JAR_SHA_256"
+    BINARYLOCATION="$DESTDIR/otelopscol"
+
     cd ../..
 fi
 
 cd submodules/opentelemetry-operations-collector
-
-if [[ "$1" = *"dist" ]]; then
-    go build -tags=gpu -buildvcs=false -o "$1/otelopscol" ./cmd/otelopscol
-else
-    # Using array assignment to drop the filename from the sha256sum output
-    JAR_SHA_256=($(sha256sum "$DESTDIR/opentelemetry-java-contrib-jmx-metrics.jar"))
-    go build -tags=gpu -buildvcs=false -o "$DESTDIR/otelopscol" \
-    -ldflags "-X github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver.MetricsGathererHash=$JAR_SHA_256" \
-    ./cmd/otelopscol
-fi
+go build -tags=gpu -buildvcs=false -o "$BINARYLOCATION" $LDFLAGS ./cmd/otelopscol
