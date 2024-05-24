@@ -42,11 +42,11 @@ if [ "$LOCAL_ONLY" != "true" ]; then
     zip -u "$DESTDIR/opentelemetry-java-contrib-jmx-metrics.jar" "META-INF/LICENSE.renamed"
 
     JAR_SHA_256=($(sha256sum "$DESTDIR/opentelemetry-java-contrib-jmx-metrics.jar"))
-    LDFLAGS="-ldflags \"-X github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver.MetricsGathererHash=$JAR_SHA_256\""
+    LDFLAGS="-X github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver.MetricsGathererHash=$JAR_SHA_256"
     BINARYLOCATION="$DESTDIR/otelopscol"
 
     cd ../..
 fi
 
 cd submodules/opentelemetry-operations-collector
-go build -tags=gpu -buildvcs=false -o "$BINARYLOCATION" $LDFLAGS ./cmd/otelopscol
+go build -tags=gpu -buildvcs=false -o "$BINARYLOCATION" -ldflags "$LDFLAGS" ./cmd/otelopscol
