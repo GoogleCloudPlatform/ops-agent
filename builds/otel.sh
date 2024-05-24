@@ -21,7 +21,6 @@ DESTDIR="${ROOTDIR}${otel_dir}"
 
 # Default values for go build arguments.
 BINARYLOCATION="$ROOTDIR/otelopscol"
-JAR_SHA_256=""
 LDFLAGS=""
 
 # If this is not a local build, then we build otel java and add it to
