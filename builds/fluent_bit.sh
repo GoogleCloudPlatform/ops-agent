@@ -15,16 +15,19 @@
 
 set -x -e
 
-DESTDIR="$1"
+DESTDIR=$1
 mkdir -p $DESTDIR
 
+fluent_bit_dir=/opt/google-cloud-ops-agent/subagents/fluent-bit
 CMAKE_ARGS=(
+  # CMAKE_INSTALL_PREFIX here will cause the binary to be put at
+  # /usr/lib/google-cloud-ops-agent/bin/fluent-bit
+  "-DCMAKE_INSTALL_PREFIX=$fluent_bit_dir"
   "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
   "-DFLB_HTTP_SERVER=ON"
   "-DFLB_DEBUG=OFF"
   "-DWITHOUT_HEADERS=ON"
-  # -DFLB_SHARED_LIB=OFF skips building libfluent-bit.so.
-  "-DFLB_SHARED_LIB=OFF"
+  "-DFLB_SHARED_LIB=OFF" # skips building libfluent-bit.so.
   "-DFLB_STREAM_PROCESSOR=OFF"
   "-DFLB_MSGPACK_TO_JSON_INIT_BUFFER_SIZE=1.5"
   "-DFLB_MSGPACK_TO_JSON_REALLOC_BUFFER_SIZE=.10"
@@ -35,23 +38,11 @@ cd submodules/fluent-bit
 mkdir -p build
 cd build
 
-if [ "$LOCAL_ONLY" = "true" ]; then
-  # If this is a local build, we can just build and copy the binary.
-  cmake .. ${CMAKE_ARGS[@]}
-  make -j8
-  cp ./bin/fluent-bit $DESTDIR
-
-# Otherwise, we do a full install.
-else
-  fluent_bit_dir=/opt/google-cloud-ops-agent/subagents/fluent-bit
-  # CMAKE_INSTALL_PREFIX here will cause the binary to be put at
-  # /usr/lib/google-cloud-ops-agent/bin/fluent-bit
-  cmake .. -DCMAKE_INSTALL_PREFIX=$fluent_bit_dir ${CMAKE_ARGS[@]}
-  make -j8
-  make DESTDIR="$DESTDIR" install
-  # We don't want fluent-bit's service or configuration, but there are no cmake
-  # flags to disable them. Prune after build.
-  rm "${DESTDIR}/lib/systemd/system/fluent-bit.service" || true
-  rm "${DESTDIR}/usr/lib/systemd/system/fluent-bit.service" || true
-  rm -r "${DESTDIR}${fluent_bit_dir}/etc"
-fi
+cmake .. "${CMAKE_ARGS[@]}"
+make -j8
+make DESTDIR="$DESTDIR" install
+# We don't want fluent-bit's service or configuration, but there are no cmake
+# flags to disable them. Prune after build.
+rm "${DESTDIR}/lib/systemd/system/fluent-bit.service" || true
+rm "${DESTDIR}/usr/lib/systemd/system/fluent-bit.service" || true
+rm -r "${DESTDIR}${fluent_bit_dir}/etc"

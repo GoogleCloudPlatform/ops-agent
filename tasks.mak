@@ -40,13 +40,11 @@ build:
 
 .PHONY: fluent_bit_local
 fluent_bit_local:
-	mkdir -p $(PWD)/dist
-	LOCAL_ONLY=true bash ./builds/fluent_bit.sh $(PWD)/dist
+	bash ./builds/fluent_bit.sh $(PWD)/dist
 
 .PHONY: otelopscol_local
 otelopscol_local:
-	mkdir -p $(PWD)/dist
-	LOCAL_ONLY=true bash ./builds/otel.sh $(PWD)/dist
+	SKIP_OTEL_JAVA=true bash ./builds/otel.sh $(PWD)/dist
 
 ############
 # Tools
@@ -109,15 +107,17 @@ endif
 	mkdir -p ./confgenerator/testdata/goldens/$(TEST_NAME)/golden
 	touch ./confgenerator/testdata/goldens/$(TEST_NAME)/input.yaml
 
-dist/fluent-bit:
+dist/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit:
 	$(MAKE) fluent_bit_local
 
-dist/otelopscol:
+dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol:
 	$(MAKE) otelopscol_local
 
 .PHONY: transformation_test
-transformation_test: dist/fluent-bit dist/otelopscol
-	FLB=$(PWD)/dist/fluent-bit OTELOPSCOL=$(PWD)/dist/otelopscol go test ./transformation_test $(if $(UPDATE),-update,)
+transformation_test: dist/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol
+	FLB=$(PWD)/dist/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit \
+	OTELOPSCOL=$(PWD)/dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol \
+	go test ./transformation_test $(if $(UPDATE),-update,)
 
 .PHONY: transformation_test_update
 transformation_test_update:
