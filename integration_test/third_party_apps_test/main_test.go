@@ -806,10 +806,11 @@ func determineImpactedApps(modifiedFiles []string, allApps map[string]metadata.I
 }
 
 type accelerator struct {
-	model         string
-	fullName      string
-	machineType   string
-	availableZone string
+	model            string
+	fullName         string
+	machineType      string
+	availableZone    string
+	acceleratorCount int
 }
 
 type test struct {
@@ -837,40 +838,53 @@ var defaultApps = map[string]bool{
 var gpuModels = map[string]accelerator{
 	// This is the A100 40G model; A100 80G is similar so skipping
 	"a100": {
-		model:         "a100",
-		fullName:      "nvidia-tesla-a100",
-		machineType:   "a2-highgpu-1g",
-		availableZone: "us-central1-a",
+		model:            "a100",
+		fullName:         "nvidia-tesla-a100",
+		machineType:      "a2-highgpu-1g",
+		availableZone:    "us-central1-a",
+		acceleratorCount: 1,
 	},
 	"v100": {
-		model:         "v100",
-		fullName:      "nvidia-tesla-v100",
-		machineType:   "n1-standard-2",
-		availableZone: "us-central1-a",
+		model:            "v100",
+		fullName:         "nvidia-tesla-v100",
+		machineType:      "n1-standard-2",
+		availableZone:    "us-central1-a",
+		acceleratorCount: 1,
 	},
 	"t4": {
-		model:         "t4",
-		fullName:      "nvidia-tesla-t4",
-		machineType:   "n1-standard-2",
-		availableZone: "us-central1-a",
+		model:            "t4",
+		fullName:         "nvidia-tesla-t4",
+		machineType:      "n1-standard-2",
+		availableZone:    "us-central1-a",
+		acceleratorCount: 1,
 	},
 	"p4": {
-		model:         "p4",
-		fullName:      "nvidia-tesla-p4",
-		machineType:   "n1-standard-2",
-		availableZone: "us-central1-a",
+		model:            "p4",
+		fullName:         "nvidia-tesla-p4",
+		machineType:      "n1-standard-2",
+		availableZone:    "us-central1-a",
+		acceleratorCount: 1,
 	},
 	"p100": {
-		model:         "p100",
-		fullName:      "nvidia-tesla-p100",
-		machineType:   "n1-standard-2",
-		availableZone: "us-central1-c",
+		model:            "p100",
+		fullName:         "nvidia-tesla-p100",
+		machineType:      "n1-standard-2",
+		availableZone:    "us-central1-c",
+		acceleratorCount: 1,
 	},
 	"l4": {
-		model:         "l4",
-		fullName:      "nvidia-l4",
-		machineType:   "g2-standard-4",
-		availableZone: "us-central1-a",
+		model:            "l4",
+		fullName:         "nvidia-l4",
+		machineType:      "g2-standard-4",
+		availableZone:    "us-central1-a",
+		acceleratorCount: 1,
+	},
+	"h100": {
+		model:            "h100",
+		fullName:         "nvidia-h100-80gb",
+		machineType:      "a3-highgpu-8g",
+		availableZone:    "us-west1-a",
+		acceleratorCount: 8,
 	},
 }
 
@@ -997,7 +1011,7 @@ func TestThirdPartyApps(t *testing.T) {
 				if tc.gpu != nil {
 					options.ExtraCreateArguments = append(
 						options.ExtraCreateArguments,
-						fmt.Sprintf("--accelerator=count=1,type=%s", tc.gpu.fullName),
+						fmt.Sprintf("--accelerator=count=%d,type=%s", tc.gpu.acceleratorCount, tc.gpu.fullName),
 						"--maintenance-policy=TERMINATE")
 					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-size=100GB")
 					options.MachineType = tc.gpu.machineType

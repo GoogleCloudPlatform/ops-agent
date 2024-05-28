@@ -51,6 +51,9 @@ gpu_platforms:
       - suse-cloud:sles-15
       - ubuntu-os-cloud:ubuntu-2004-lts
       - ubuntu-os-cloud:ubuntu-2204-lts
+  - model: h100
+    platforms:
+      - ubuntu-os-cloud:ubuntu-2004-lts
 expected_metrics:
   - type: agent.googleapis.com/gpu/utilization
     value_type: DOUBLE
