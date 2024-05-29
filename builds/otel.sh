@@ -24,7 +24,7 @@ mkdir -p $DESTDIR
 LDFLAGS=""
 
 # If this is not a local build, then we build otel java and add it to
-# the ldflags, as well as changing the binary location.
+# the ldflags.
 if [ "$SKIP_OTEL_JAVA" != "true" ]; then
     cd submodules/opentelemetry-java-contrib
 
