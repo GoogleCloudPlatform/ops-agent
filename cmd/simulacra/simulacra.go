@@ -89,7 +89,6 @@ func distroFolder(vm *gce.VM) (string, error) {
 	if gce.IsWindows(vm.ImageSpec) {
 		return "windows", nil
 	}
-
 	if gce.IsSUSEVM(vm) {
 		return "sles", nil
 	}
