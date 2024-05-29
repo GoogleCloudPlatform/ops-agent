@@ -40,9 +40,6 @@ gpu_platforms:
   - model: p100
     platforms:
       - ubuntu-os-cloud:ubuntu-2004-lts
-  - model: k80
-    platforms:
-      - ubuntu-os-cloud:ubuntu-2004-lts
   - model: l4
     platforms:
       - centos-cloud:centos-7

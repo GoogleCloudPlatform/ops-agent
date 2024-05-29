@@ -67,6 +67,7 @@ import (
 	feature_tracking_metadata "github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
 	"github.com/google/uuid"
 	"go.uber.org/multierr"
 	"golang.org/x/exp/slices"
@@ -209,6 +210,12 @@ func writeToSystemLog(ctx context.Context, logger *log.Logger, vm *gce.VM, paylo
 		return fmt.Errorf("writeToSystemLog() failed to write %q to %s: %v", line, location, err)
 	}
 	return nil
+}
+
+// retrieveOtelConfig retrieves the file content of the generated Otel config
+// file from the remote VM
+func retrieveOtelConfig(ctx context.Context, logger *log.Logger, vm *gce.VM) (content string, err error) {
+	return gce.RetrieveContent(ctx, logger, vm, util.GetOtelConfigPath(vm.ImageSpec))
 }
 
 func TestParseMultilineFileJava(t *testing.T) {
@@ -4434,15 +4441,15 @@ func getRecentServiceOutputForImage(imageSpec string) string {
 	return "sudo systemctl status google-cloud-ops-agent"
 }
 
-func listenToPortForImage(imageSpec string) string {
-	if gce.IsWindows(imageSpec) {
+func listenToPortForImage(vm *gce.VM) string {
+	if gce.IsWindows(vm.ImageSpec) {
 		cmd := strings.Join([]string{
 			`Invoke-WmiMethod -Path 'Win32_Process' -Name Create -ArgumentList 'powershell.exe -Command "$Listener = [System.Net.Sockets.TcpListener]20201; $Listener.Start(); Start-Sleep -Seconds 600"'`,
 		}, ";")
 
 		return cmd
 	}
-	if gce.IsCentOS(imageSpec) || gce.IsSUSE(imageSpec) {
+	if gce.IsCentOS(vm.ImageSpec) || gce.IsSUSEVM(vm) {
 		return "nohup nc -l 20201 1>/dev/null 2>/dev/null &"
 	}
 	return "nohup nc -l -p 20201 1>/dev/null 2>/dev/null &"
@@ -4477,7 +4484,7 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 			}
 		}
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, listenToPortForImage(vm.ImageSpec)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, listenToPortForImage(vm)); err != nil {
 			t.Fatal(err)
 		}
 		// Wait for port to be in listen mode.
@@ -4755,12 +4762,13 @@ func TestNoNvmlOtelReceiverWithoutGpu(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		time.Sleep(60 * time.Second)
-		_, err := gce.QueryLog(ctx, logger, vm, "syslog", time.Hour, `jsonPayload.message=~"Nvidia|nvml"`, 5)
-		if err == nil {
-			t.Error("expected no logs to contain Nvidia or nvml when the instance has no gpu")
-		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
-			t.Fatalf("unexpected error: %v", err)
+		otelConfig, err := retrieveOtelConfig(ctx, logger, vm)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if strings.Contains(otelConfig, "nvml") {
+			t.Error("expects the nvml receiver not in the Otel configuration for VMs without GPU. Otel config: " + otelConfig)
 		}
 	})
 }

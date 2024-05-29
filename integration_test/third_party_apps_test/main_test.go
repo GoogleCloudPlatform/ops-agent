@@ -118,13 +118,14 @@ func distroFolder(vm *gce.VM) (string, error) {
 	if gce.IsWindows(vm.ImageSpec) {
 		return "windows", nil
 	}
+	if gce.IsSUSEVM(vm) {
+		return "sles", nil
+	}
 	switch vm.OS.ID {
 	case "centos", "rhel", "rocky":
 		return "centos_rhel", nil
 	case "debian", "ubuntu":
 		return "debian_ubuntu", nil
-	case "opensuse-leap", "sles", "sles-sap":
-		return "sles", nil
 	default:
 		return "", fmt.Errorf("distroFolder() could not find matching folder holding scripts for vm.OS.ID: %s", vm.OS.ID)
 	}
@@ -802,7 +803,7 @@ type test struct {
 }
 
 var defaultPlatforms = map[string]bool{
-	"debian-cloud:debian-10":    true,
+	"debian-cloud:debian-10":     true,
 	"windows-cloud:windows-2019": true,
 }
 
@@ -847,12 +848,6 @@ var gpuModels = map[string]accelerator{
 		machineType:   "n1-standard-2",
 		availableZone: "us-central1-c",
 	},
-	"k80": {
-		model:         "k80",
-		fullName:      "nvidia-tesla-k80",
-		machineType:   "n1-standard-2",
-		availableZone: "us-central1-a",
-	},
 	"l4": {
 		model:         "l4",
 		fullName:      "nvidia-l4",
@@ -863,7 +858,7 @@ var gpuModels = map[string]accelerator{
 
 const (
 	SAPHANAImageSpec = "stackdriver-test-143416:sles-15-sp4-sap-saphana"
-	SAPHANAApp      = "saphana"
+	SAPHANAApp       = "saphana"
 
 	OracleDBApp  = "oracledb"
 	AerospikeApp = "aerospike"
