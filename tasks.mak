@@ -60,7 +60,7 @@ addlicense_check:
 
 .PHONY: addlicense_to
 addlicense_to:
-	addlicense -c "Google LLC" -l apache $(P)
+	addlicense -c "Google LLC" -l apache $(FILE)
 
 .PHONY: yaml_format
 yaml_format:
