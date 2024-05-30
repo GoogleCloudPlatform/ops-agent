@@ -4099,10 +4099,10 @@ func uninstallGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error 
 		unset GOPATH`
 	}
 	_, err := gce.RunRemotely(ctx, logger, vm, cmd)
-    if err != nil {
+	if err != nil {
 		return err
 	}
-    return nil
+	return nil
 }
 
 // installGolang downloads and sets up go on the given VM. The caller is still
