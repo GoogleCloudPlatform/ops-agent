@@ -92,6 +92,16 @@ func CastToSum(metrics ...string) Component {
 	}
 }
 
+// DeltaToRate returns a Component that converts each delta metric to a gauge rate.
+func DeltaToRate(metrics ...string) Component {
+	return Component{
+		Type: "deltatorate",
+		Config: map[string]interface{}{
+			"metrics": metrics,
+		},
+	}
+}
+
 // AddPrefix returns a config snippet that adds a domain prefix to all metrics.
 func AddPrefix(prefix string, operations ...map[string]interface{}) map[string]interface{} {
 	return RegexpRename(

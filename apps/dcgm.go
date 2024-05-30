@@ -102,7 +102,40 @@ func (r MetricsReceiverDcgm) Pipelines(_ context.Context) ([]otel.ReceiverPipeli
 		},
 		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsTransform(
+				otel.RenameMetric(
+					"gpu.dcgm.memory.bandwidth_utilization",
+					"dcgm.gpu.profiling.dram_utilization",
+				),
+				otel.RenameMetric(
+					"gpu.dcgm.nvlink.traffic",
+					"dcgm.gpu.profiling.nvlink_traffic_rate",
+				),
+				otel.RenameMetric(
+					"gpu.dcgm.pcie.traffic",
+					"dcgm.gpu.profiling.pcie_traffic_rate",
+				),
+				otel.RenameMetric(
+					"gpu.dcgm.pipe.utilization",
+					"dcgm.gpu.profiling.pipe_utilization",
+				),
+				otel.RenameMetric(
+					"gpu.dcgm.sm.occupancy",
+					"dcgm.gpu.profiling.sm_occupancy",
+				),
+				otel.RenameMetric(
+					"gpu.dcgm.sm.utilization",
+					"dcgm.gpu.profiling.sm_utilization",
+				),
 				otel.AddPrefix("workload.googleapis.com"),
+			),
+			otel.DeltaToRate(
+				"dcgm.gpu.profiling.nvlink_traffic_rate",
+				"dcgm.gpu.profiling.pcie_traffic_rate",
+			),
+			otel.TransformationMetrics(
+				otel.FlattenResourceAttribute("gpu.model", "model"),
+				otel.FlattenResourceAttribute("gpu.number", "gpu_number"),
+				otel.FlattenResourceAttribute("gpu.uuid", "uuid"),
 			),
 			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
