@@ -41,6 +41,25 @@ func (r MetricsReceiverDcgm) Pipelines(_ context.Context) ([]otel.ReceiverPipeli
 		r.Endpoint = defaultDcgmEndpoint
 	}
 
+	if r.ReceiverVersion == "2" {
+		return []otel.ReceiverPipeline{{
+			// TODO
+			Receiver: otel.Component{
+				Type: "dcgm",
+				Config: map[string]interface{}{
+					"collection_interval": r.CollectionIntervalString(),
+					"endpoint":            r.Endpoint,
+				},
+			},
+			Processors: map[string][]otel.Component{"metrics": {
+				otel.MetricsTransform(
+					otel.AddPrefix("workload.googleapis.com"),
+				),
+				otel.ModifyInstrumentationScope(r.Type(), "2.0"),
+			}},
+		}}, nil
+	}
+
 	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "dcgm",
