@@ -67,10 +67,34 @@ func (r MetricsReceiverDcgm) Pipelines(_ context.Context) ([]otel.ReceiverPipeli
 				"collection_interval": r.CollectionIntervalString(),
 				"endpoint":            r.Endpoint,
 				"metrics": map[string]interface{}{
-					"dcgm.gpu.utilization": map[string]bool{
+					"gpu.dcgm.clock.frequency": map[string]bool{
 						"enabled": false,
 					},
-					"dcgm.gpu.memory.bytes_used": map[string]bool{
+					"gpu.dcgm.clock.throttle_duration.time": map[string]bool{
+						"enabled": false,
+					},
+					"gpu.dcgm.codec.decoder.utilization": map[string]bool{
+						"enabled": false,
+					},
+					"gpu.dcgm.codec.encoder.utilization": map[string]bool{
+						"enabled": false,
+					},
+					"gpu.dcgm.ecc_errors": map[string]bool{
+						"enabled": false,
+					},
+					"gpu.dcgm.energy_consumption": map[string]bool{
+						"enabled": false,
+					},
+					"gpu.dcgm.memory.bytes_used": map[string]bool{
+						"enabled": false,
+					},
+					"gpu.dcgm.temperature": map[string]bool{
+						"enabled": false,
+					},
+					"gpu.dcgm.utilization": map[string]bool{
+						"enabled": false,
+					},
+					"gpu.dcgm.xid_errors": map[string]bool{
 						"enabled": false,
 					},
 				},

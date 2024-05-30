@@ -472,9 +472,25 @@ receivers:
     collection_interval: 60s
     endpoint: localhost:5555
     metrics:
-      dcgm.gpu.memory.bytes_used:
+      gpu.dcgm.clock.frequency:
         enabled: false
-      dcgm.gpu.utilization:
+      gpu.dcgm.clock.throttle_duration.time:
+        enabled: false
+      gpu.dcgm.codec.decoder.utilization:
+        enabled: false
+      gpu.dcgm.codec.encoder.utilization:
+        enabled: false
+      gpu.dcgm.ecc_errors:
+        enabled: false
+      gpu.dcgm.energy_consumption:
+        enabled: false
+      gpu.dcgm.memory.bytes_used:
+        enabled: false
+      gpu.dcgm.temperature:
+        enabled: false
+      gpu.dcgm.utilization:
+        enabled: false
+      gpu.dcgm.xid_errors:
         enabled: false
   hostmetrics/hostmetrics:
     collection_interval: 60s
