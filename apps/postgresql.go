@@ -116,7 +116,7 @@ func (p LoggingProcessorPostgresql) Components(ctx context.Context, tag string, 
 				{
 					// This parser matches most distributions' defaults by our testing
 					// log_line_prefix = '%m [%p] '
-					// log_line_prefix = '%m [%p] %u@%d '
+					// log_line_prefix = '%m [%p] %q%u@%d '
 					// Sample line: 2022-01-12 20:57:58.378 UTC [26241] LOG:  starting PostgreSQL 14.1 (Debian 14.1-1.pgdg100+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 8.3.0-6) 8.3.0, 64-bit
 					// Sample line: 2022-01-12 20:59:25.169 UTC [27445] postgres@postgres FATAL:  Peer authentication failed for user "postgres"
 					// Sample line: 2022-01-12 21:49:13.989 UTC [27836] postgres@postgres LOG:  duration: 1.074 ms  statement: select *
