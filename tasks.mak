@@ -87,16 +87,16 @@ test_confgenerator:
 	go test ./confgenerator $(if $(UPDATE),-update,)
 
 .PHONY: test_confgenerator_update
-test_confgenerator_update:
-	UPDATE=true $(MAKE) test_confgenerator
+test_confgenerator_update: UPDATE=true
+test_confgenerator_update: test_confgenerator
 
 .PHONY: test_metadata
 test_metadata:
 	go test ./integration_test/metadata $(if $(UPDATE),-update,)
 
 .PHONY: test_metadata_update
-test_metadata_update:
-	UPDATE=true $(MAKE) test_metadata
+test_metadata_update: UPDATE=true 
+test_metadata_update: test_metadata
 
 .PHONY: new_confgenerator_test
 new_confgenerator_test:
@@ -120,8 +120,8 @@ transformation_test: dist/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fl
 	go test ./transformation_test $(if $(UPDATE),-update,)
 
 .PHONY: transformation_test_update
-transformation_test_update:
-	UPDATE=true $(MAKE) transformation_test
+transformation_test_update: UPDATE=true 
+transformation_test_update: transformation_test
 
 ############
 # Integration Tests
