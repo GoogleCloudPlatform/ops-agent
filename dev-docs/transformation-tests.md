@@ -27,7 +27,7 @@ The transformation tests take paths to Fluent Bit and otelopscol binaries to exe
 sh ./builds/fluent_bit.sh $(pwd)/dist
 SKIP_OTEL_JAVA=true sh ./builds/otel.sh $(pwd)/dist
 ```
-After running each script, you will have a `dist` folder that contains the full installation of both agents.
+After running each script, you will have a `dist` folder that contains both agents within the full install directory. (Note that these instructions will not build OTel Java, if that is needed do not pass `SKIP_OTEL_JAVA`).
 
 The paths to each can passed into the test using environment variables or flags.
 ```bash

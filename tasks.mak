@@ -42,9 +42,10 @@ build:
 fluent_bit_local:
 	bash ./builds/fluent_bit.sh $(PWD)/dist
 
+SKIP_JAVA ?= true
 .PHONY: otelopscol_local
 otelopscol_local:
-	SKIP_OTEL_JAVA=true bash ./builds/otel.sh $(PWD)/dist
+	SKIP_OTEL_JAVA=${SKIP_JAVA} bash ./builds/otel.sh $(PWD)/dist
 
 ############
 # Tools
