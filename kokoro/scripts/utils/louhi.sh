@@ -1,4 +1,3 @@
-#!/bin/bash
 # Copyright 2022 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +23,7 @@ else:
  print(data)"
 }
 
-function read_louhi_tag() {
+function parse_louhi_tag() {
   # if _LOUHI_TAG_NAME is defined, set TARGET and ARCH env vars by parsing it.
   # Example value: louhi/2.46.0/shortref/windows/x86_64/start
   if [[ -n "${_LOUHI_TAG_NAME:-}" ]]; then
@@ -33,9 +32,5 @@ function read_louhi_tag() {
     TARGET="${_LOUHI_TAG_COMPONENTS[3]}"
     ARCH="${_LOUHI_TAG_COMPONENTS[4]}"
     export ARTIFACT_REGISTRY_PROJECT="${_STAGING_ARTIFACTS_PROJECT_ID}"  # Louhi is responsible for passing this.
-    EXT=$(yaml project.yaml "['targets']['${TARGET}']['package_extension']")
-    if [[ "${EXT}" == "deb" ]]; then
-      export REPO_CODENAME="${TARGET}-${ARCH}"
-    fi
   fi
 }

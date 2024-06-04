@@ -13,13 +13,12 @@ cd ../../../
 source kokoro/scripts/utils/louhi.sh
 
 # For soak tests run by Louhi
-read_louhi_tag
+parse_louhi_tag
 # if TARGET & ARCH are set, retrieve the soak distro from project.yaml
 if [[ -n "${TARGET:-}" && -n "${ARCH:-}" ]]; then
   DISTRO=$(yaml project.yaml "['targets']['${TARGET}']['architectures']['${ARCH}']['soak_distro']")
-  VM_NAME="soak-test-${REPO_SUFFIX}-${LABEL}"
+  export VM_NAME="soak-test-${REPO_SUFFIX}-${LABEL}"
   export DISTRO
-  export VM_NAME
 fi
 
 for GIT_ALIAS in git github; do
