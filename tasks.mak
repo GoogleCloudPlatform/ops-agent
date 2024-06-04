@@ -1,9 +1,9 @@
 # Copyright 2022 Google LLC
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# NOTICE: This file is purely for automation of development tasks. 
+# NOTICE: This file is purely for automation of development tasks.
 # No guarantee is made for these commands, and no dependencies should be made on any
 # targets. Building the Ops Agent should be done through the Dockerfile.
 
@@ -32,7 +32,8 @@ install_tools:
 ############
 
 build:
-	mkdir -p /tmp/google-cloud-ops-agent	
+	cd submodules/fluent-bit/build && find . ! -name ".empty" -type f -delete
+	mkdir -p /tmp/google-cloud-ops-agent
 	DOCKER_BUILDKIT=1 docker build -o /tmp/google-cloud-ops-agent . $(ARGS)
 
 ############
@@ -40,10 +41,10 @@ build:
 ############
 
 addlicense:
-	addlicense -ignore "submodules/**" -ignore "**/testdata/**" -ignore "**/built-in-config*" -c "Google LLC" -l apache . 
+	addlicense -ignore "submodules/**" -ignore "**/testdata/**" -ignore "**/built-in-config*" -c "Google LLC" -l apache .
 
 addlicense_check:
-	addlicense -check -ignore "submodules/**" -ignore "**/testdata/**" -ignore "**/built-in-config*" -c "Google LLC" -l apache . 
+	addlicense -check -ignore "submodules/**" -ignore "**/testdata/**" -ignore "**/built-in-config*" -c "Google LLC" -l apache .
 
 # Originally I made the argument to this "PATH" but of course that messes with
 # the PATH environment variable. :D
@@ -76,7 +77,7 @@ new_confgenerator_test:
 ifndef TEST_NAME
 	$(error "Please provide a TEST_NAME argument")
 endif
-	mkdir -p ./confgenerator/testdata/goldens/$(TEST_NAME) 
+	mkdir -p ./confgenerator/testdata/goldens/$(TEST_NAME)
 	mkdir -p ./confgenerator/testdata/goldens/$(TEST_NAME)/golden
 	touch ./confgenerator/testdata/goldens/$(TEST_NAME)/input.yaml
 
@@ -84,8 +85,8 @@ endif
 # Integration Tests
 ############
 
-# NOTE: You will need to set/export PROJECT and TRANSFERS_BUCKET manually for 
-# these targets. The Makefile will not ascribe defaults for these, since they 
+# NOTE: You will need to set/export PROJECT and TRANSFERS_BUCKET manually for
+# these targets. The Makefile will not ascribe defaults for these, since they
 # are specific to different user environments.
 #
 # Defaults are provided for ZONES and PLATFORMS.

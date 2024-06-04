@@ -23,6 +23,8 @@ import (
 	"strings"
 )
 
+var suseRepomdChecksum = "6dd0b89202b19dae873434c5f2ba01164205071581fc02365712be801e304b3b"
+
 //go:embed template
 var template string
 
@@ -107,7 +109,7 @@ var dockerfileArguments = []templateArguments{
 		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
 		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-${OPENJDK_MAJOR_VERSION}-openjdk-devel \
 		expect rpm-sign zip tzdata-java
-	
+
 		ENV JAVA_HOME /usr/lib/jvm/java-${OPENJDK_MAJOR_VERSION}-openjdk/`,
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "rockylinux-9",
@@ -159,7 +161,7 @@ ADD https://download.opensuse.org/repositories/home:/odassau/SLE_12_SP4/home:oda
 RUN set -x; \
 		# The 'OSS Update' repo signature is no longer valid, so verify the checksum instead.
 		zypper --no-gpg-check refresh 'OSS Update' && \
-		(echo 'b889b4bba03074cd66ef9c0184768f4816d4ccb1fa9ec2721c5583304c5f23d0  /var/cache/zypp/raw/OSS Update/repodata/repomd.xml' | sha256sum --check) && \
+		(echo '6dd0b89202b19dae873434c5f2ba01164205071581fc02365712be801e304b3b /var/cache/zypp/raw/OSS Update/repodata/repomd.xml' | sha256sum --check) && \
 		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip && \
 		# Remove expired root certificate.
 		mv /var/lib/ca-certificates/pem/DST_Root_CA_X3.pem /etc/pki/trust/blacklist/ && \

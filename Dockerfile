@@ -75,7 +75,7 @@ RUN set -xe; \
 
 
 # ======================================
-# Build Ops Agent for centos-7 
+# Build Ops Agent for centos-7
 # ======================================
 
 FROM centos:7 AS centos7-build-base
@@ -165,7 +165,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/rpm/build.sh || true
+RUN ./pkg/rpm/build.sh || true &> /dev/nul
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -181,7 +181,7 @@ COPY --from=centos7-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agen
 COPY --from=centos7-build /google-cloud-ops-agent*.rpm /
 
 # ======================================
-# Build Ops Agent for centos-8 
+# Build Ops Agent for centos-8
 # ======================================
 
 FROM rockylinux:8 AS centos8-build-base
@@ -268,7 +268,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/rpm/build.sh || true
+RUN ./pkg/rpm/build.sh || true &> /dev/nul
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -284,7 +284,7 @@ COPY --from=centos8-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agen
 COPY --from=centos8-build /google-cloud-ops-agent*.rpm /
 
 # ======================================
-# Build Ops Agent for rockylinux-9 
+# Build Ops Agent for rockylinux-9
 # ======================================
 
 FROM rockylinux:9 AS rockylinux9-build-base
@@ -298,7 +298,7 @@ RUN set -x; dnf -y update && \
 		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
 		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-${OPENJDK_MAJOR_VERSION}-openjdk-devel \
 		expect rpm-sign zip tzdata-java
-	
+
 		ENV JAVA_HOME /usr/lib/jvm/java-${OPENJDK_MAJOR_VERSION}-openjdk/
 
 SHELL ["/bin/bash", "-c"]
@@ -374,7 +374,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/rpm/build.sh || true
+RUN ./pkg/rpm/build.sh || true &> /dev/nul
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -390,7 +390,7 @@ COPY --from=rockylinux9-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-
 COPY --from=rockylinux9-build /google-cloud-ops-agent*.rpm /
 
 # ======================================
-# Build Ops Agent for debian-bookworm 
+# Build Ops Agent for debian-bookworm
 # ======================================
 
 FROM debian:bookworm AS bookworm-build-base
@@ -475,7 +475,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/deb/build.sh || true
+RUN ./pkg/deb/build.sh || true &> /dev/nul
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -491,7 +491,7 @@ COPY --from=bookworm-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-age
 COPY --from=bookworm-build /google-cloud-ops-agent*.deb /
 
 # ======================================
-# Build Ops Agent for debian-bullseye 
+# Build Ops Agent for debian-bullseye
 # ======================================
 
 FROM debian:bullseye AS bullseye-build-base
@@ -576,7 +576,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/deb/build.sh || true
+RUN ./pkg/deb/build.sh || true &> /dev/nul
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -592,7 +592,7 @@ COPY --from=bullseye-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-age
 COPY --from=bullseye-build /google-cloud-ops-agent*.deb /
 
 # ======================================
-# Build Ops Agent for debian-buster 
+# Build Ops Agent for debian-buster
 # ======================================
 
 FROM debian:buster AS buster-build-base
@@ -679,7 +679,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/deb/build.sh || true
+RUN ./pkg/deb/build.sh || true &> /dev/nul
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -695,7 +695,7 @@ COPY --from=buster-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent
 COPY --from=buster-build /google-cloud-ops-agent*.deb /
 
 # ======================================
-# Build Ops Agent for sles-12 
+# Build Ops Agent for sles-12
 # ======================================
 
 FROM opensuse/archive:42.3 AS sles12-build-base
@@ -706,7 +706,7 @@ ADD https://download.opensuse.org/repositories/home:/odassau/SLE_12_SP4/home:oda
 RUN set -x; \
 		# The 'OSS Update' repo signature is no longer valid, so verify the checksum instead.
 		zypper --no-gpg-check refresh 'OSS Update' && \
-		(echo 'b889b4bba03074cd66ef9c0184768f4816d4ccb1fa9ec2721c5583304c5f23d0  /var/cache/zypp/raw/OSS Update/repodata/repomd.xml' | sha256sum --check) && \
+		(echo '6dd0b89202b19dae873434c5f2ba01164205071581fc02365712be801e304b3b /var/cache/zypp/raw/OSS Update/repodata/repomd.xml' | sha256sum --check) && \
 		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip && \
 		# Remove expired root certificate.
 		mv /var/lib/ca-certificates/pem/DST_Root_CA_X3.pem /etc/pki/trust/blacklist/ && \
@@ -799,7 +799,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/rpm/build.sh || true
+RUN ./pkg/rpm/build.sh || true &> /dev/nul
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -815,7 +815,7 @@ COPY --from=sles12-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent
 COPY --from=sles12-build /google-cloud-ops-agent*.rpm /
 
 # ======================================
-# Build Ops Agent for sles-15 
+# Build Ops Agent for sles-15
 # ======================================
 
 FROM opensuse/leap:15.1 AS sles15-build-base
@@ -905,7 +905,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/rpm/build.sh || true
+RUN ./pkg/rpm/build.sh || true &> /dev/nul
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -921,7 +921,7 @@ COPY --from=sles15-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent
 COPY --from=sles15-build /google-cloud-ops-agent*.rpm /
 
 # ======================================
-# Build Ops Agent for ubuntu-focal 
+# Build Ops Agent for ubuntu-focal
 # ======================================
 
 FROM ubuntu:focal AS focal-build-base
@@ -1006,7 +1006,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/deb/build.sh || true
+RUN ./pkg/deb/build.sh || true &> /dev/nul
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -1022,7 +1022,7 @@ COPY --from=focal-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-
 COPY --from=focal-build /google-cloud-ops-agent*.deb /
 
 # ======================================
-# Build Ops Agent for ubuntu-jammy 
+# Build Ops Agent for ubuntu-jammy
 # ======================================
 
 FROM ubuntu:jammy AS jammy-build-base
@@ -1107,7 +1107,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/deb/build.sh || true
+RUN ./pkg/deb/build.sh || true &> /dev/nul
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -1123,7 +1123,7 @@ COPY --from=jammy-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-
 COPY --from=jammy-build /google-cloud-ops-agent*.deb /
 
 # ======================================
-# Build Ops Agent for ubuntu-mantic 
+# Build Ops Agent for ubuntu-mantic
 # ======================================
 
 FROM ubuntu:mantic AS mantic-build-base
@@ -1208,7 +1208,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/deb/build.sh || true
+RUN ./pkg/deb/build.sh || true &> /dev/nul
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -1224,7 +1224,7 @@ COPY --from=mantic-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent
 COPY --from=mantic-build /google-cloud-ops-agent*.deb /
 
 # ======================================
-# Build Ops Agent for ubuntu-noble 
+# Build Ops Agent for ubuntu-noble
 # ======================================
 
 FROM ubuntu:noble AS noble-build-base
@@ -1309,7 +1309,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/deb/build.sh || true
+RUN ./pkg/deb/build.sh || true &> /dev/nul
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml

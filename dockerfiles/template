@@ -1,5 +1,5 @@
 # ======================================
-# Build Ops Agent for {tar_distro_name} 
+# Build Ops Agent for {tar_distro_name}
 # ======================================
 
 FROM {from_image} AS {target_name}-build-base
@@ -80,7 +80,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-{package_build} || true
+{package_build} || true &> /dev/nul
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
