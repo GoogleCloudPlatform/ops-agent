@@ -13,7 +13,7 @@ cd ../../../
 source kokoro/scripts/utils/louhi.sh
 
 # For soak tests run by Louhi
-parse_louhi_tag
+populate_env_vars_from_louhi_tag_if_present
 # if TARGET & ARCH are set, retrieve the soak distro from project.yaml
 if [[ -n "${TARGET:-}" && -n "${ARCH:-}" ]]; then
   DISTRO=$(yaml project.yaml "['targets']['${TARGET}']['architectures']['${ARCH}']['soak_distro']")
