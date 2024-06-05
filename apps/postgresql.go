@@ -111,6 +111,7 @@ func (LoggingProcessorPostgresql) Type() string {
 func (p LoggingProcessorPostgresql) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
+			// Limited logging documentation: https://www.postgresql.org/docs/10/runtime-config-logging.html
 			Parsers: []confgenerator.RegexParser{
 				{
 					// This parser matches most distributions' defaults by our testing
@@ -130,13 +131,27 @@ func (p LoggingProcessorPostgresql) Components(ctx context.Context, tag string, 
 						},
 					},
 				},
+				{
+					// This parser matches the default log_line_prefix from SLES12 in our testing
+					// log_line_prefix = '%m %d %u [%p]'
+					// Sample line: 2024-05-30 15:34:26.572 UTC postgres postgres [23958]STATEMENT:  INSERT INTO
+					//					test2 (id) VALUES('1970-01-01 00:00:00.123 UTC');
+					Regex: `^(?<time>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3,} \w+)\s*(?:\s+(?<database>\S*)\s+(?<user>\S*))?\s*\[(?<tid>\d+)\]\s*(?<level>\w+):\s+(?<message>[\s\S]*)`,
+					Parser: confgenerator.ParserShared{
+						TimeKey:    "time",
+						TimeFormat: "%Y-%m-%d %H:%M:%S.%L %z",
+						Types: map[string]string{
+							"tid": "integer",
+						},
+					},
+				},
 			},
 		},
 		Rules: []confgenerator.MultilineRule{
 			{
 				StateName: "start_state",
 				NextState: "cont",
-				Regex:     `\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3,} \w+`,
+				Regex:     `^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3,} \w+`,
 			},
 			{
 				StateName: "cont",
@@ -186,7 +201,7 @@ type LoggingReceiverPostgresql struct {
 func (r LoggingReceiverPostgresql) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
-			// Default log paths for Debain / Ubuntu
+			// Default log paths for Debian / Ubuntu
 			"/var/log/postgresql/postgresql*.log",
 			// Default log paths for SLES
 			"/var/lib/pgsql/data/log/postgresql*.log",
