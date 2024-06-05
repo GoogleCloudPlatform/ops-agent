@@ -23,7 +23,7 @@ else:
  print(data)"
 }
 
-function parse_louhi_tag() {
+function populate_env_vars_from_louhi_tag_if_present() {
   # if _LOUHI_TAG_NAME is defined, set TARGET and ARCH env vars by parsing it.
   # Example value: louhi/2.46.0/shortref/windows/x86_64/start
   if [[ -n "${_LOUHI_TAG_NAME:-}" ]]; then
