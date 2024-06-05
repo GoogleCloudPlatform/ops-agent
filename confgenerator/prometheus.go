@@ -130,7 +130,7 @@ func prometheusToOtelComponent(m PrometheusMetrics) otel.Component {
 
 	return otel.Component{
 		Type:   "prometheus",
-		Config: map[string]interface{}{"config": copyPromConfig, "preserve_untyped": true},
+		Config: map[string]interface{}{"config": copyPromConfig},
 	}
 }
 
