@@ -462,6 +462,7 @@ receivers:
   memcached/memcached:
     collection_interval: 60s
     endpoint: localhost:11211
+    transport: tcp
   prometheus/fluentbit:
     config:
       scrape_configs:

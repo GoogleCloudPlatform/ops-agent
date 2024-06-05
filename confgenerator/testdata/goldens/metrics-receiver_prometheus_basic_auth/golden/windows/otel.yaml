@@ -12,7 +12,6 @@ exporters:
       add_metric_suffixes: false
     retry_on_failure:
       enabled: false
-    untyped_double_export: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
 processors:
   agentmetrics/hostmetrics_0:
@@ -586,7 +585,6 @@ receivers:
             location: test-zone
             machine_type: test-machine-type
             namespace: test-instance-id/test-instance-name
-    preserve_untyped: true
   windowsperfcounters/iis:
     collection_interval: 60s
     perfcounters:
