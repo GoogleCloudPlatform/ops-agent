@@ -23,8 +23,6 @@ import (
 	"strings"
 )
 
-var suseRepomdChecksum = "6dd0b89202b19dae873434c5f2ba01164205071581fc02365712be801e304b3b"
-
 //go:embed template
 var template string
 
