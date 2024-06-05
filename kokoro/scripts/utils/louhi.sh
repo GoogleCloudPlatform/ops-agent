@@ -33,4 +33,9 @@ function parse_louhi_tag() {
     ARCH="${_LOUHI_TAG_COMPONENTS[4]}"
     export ARTIFACT_REGISTRY_PROJECT="${_STAGING_ARTIFACTS_PROJECT_ID}"  # Louhi is responsible for passing this.
   fi
+
+  EXT=$(yaml project.yaml "['targets']['${TARGET}']['package_extension']")
+  if [[ "${EXT}" == "deb" ]]; then
+    export REPO_CODENAME="${TARGET}-${ARCH}"
+  fi
 }

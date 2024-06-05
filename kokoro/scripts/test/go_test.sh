@@ -77,10 +77,6 @@ function set_image_specs() {
   # if _LOUHI_TAG_NAME is defined, set TARGET and ARCH env vars by parsing it.
   # Example value: louhi/2.46.0/shortref/windows/x86_64/start
   parse_louhi_tag
-  EXT=$(yaml project.yaml "['targets']['${TARGET}']['package_extension']")
-  if [[ "${EXT}" == "deb" ]]; then
-    export REPO_CODENAME="${TARGET}-${ARCH}"
-  fi
   # if TARGET is not set, return an error
   if [[ -z "${TARGET:-}" ]]; then
     echo "At least one of TARGET/IMAGE_SPECS must be set." 1>&2
