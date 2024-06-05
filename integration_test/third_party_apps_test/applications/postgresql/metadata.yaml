@@ -179,11 +179,12 @@ expected_logs:
   - log_name: postgresql_general
     fields:
       - name: jsonPayload.message
-        value_regex: .*starting PostgreSQL.*
+        # There should be a line break between INTO and test2, this regex tests our multiline parsing
+        value_regex: '.*INSERT INTO\s+test2 \(id\) VALUES\(''1970-01-01 00:00:00\.123 UTC''\).*'
         type: string
         description: Log of the database action
       - name: jsonPayload.level
-        value_regex: LOG
+        value_regex: STATEMENT
         type: string
         description: Log severity or type of database interaction type for some logs
       - name: jsonPayload.tid

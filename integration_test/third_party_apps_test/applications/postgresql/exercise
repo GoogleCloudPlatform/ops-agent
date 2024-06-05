@@ -1,7 +1,11 @@
 set -e
 
 sudo su postgres -c "PGPASSWORD=abc123 psql postgres -h localhost -c  \"CREATE TABLE test1 (id serial PRIMARY KEY);\""
-sudo su postgres -c "PGPASSWORD=abc123 psql postgres -h localhost -c \"CREATE TABLE test2 (id serial PRIMARY KEY);\""
+sudo su postgres -c "PGPASSWORD=abc123 psql postgres -h localhost -c \"CREATE TABLE test2 (id text PRIMARY KEY);\""
 sudo su postgres -c "PGPASSWORD=abc123 psql postgres -h localhost -c \"CREATE INDEX otelindex ON test1(id);\""
 sudo su postgres -c "PGPASSWORD=abc123 psql postgres -h localhost -c \"CREATE INDEX otel2index ON test2(id);\""
-sudo su postgres -c "PGPASSWORD=abc123 psql postgres -h localhost -c \"INSERT INTO test2 (id) VALUES(67);\""
+sudo su postgres -c "PGPASSWORD=abc123 psql postgres -h localhost -c \"INSERT INTO 
+test2 (id) VALUES('1970-01-01 00:00:00.123 UTC');\""
+# second insert should fail and log a multiline with an extra timestamp, allowing us to test multiline log parsing
+sudo su postgres -c "PGPASSWORD=abc123 psql postgres -h localhost -c \"INSERT INTO 
+test2 (id) VALUES('1970-01-01 00:00:00.123 UTC');\"" || true # || true to prevent `set -e` from exiting the script on failed double insert

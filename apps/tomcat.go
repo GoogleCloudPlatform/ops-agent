@@ -92,7 +92,7 @@ func (p LoggingProcessorTomcatSystem) Components(ctx context.Context, tag string
 			{
 				StateName: "start_state",
 				NextState: "cont",
-				Regex:     `\d{2}-[A-Z]{1}[a-z]{2}-\d{4}\s\d{2}:\d{2}:\d{2}.\d{3}`,
+				Regex:     `^\d{2}-[A-Z]{1}[a-z]{2}-\d{4}\s\d{2}:\d{2}:\d{2}.\d{3}`,
 			},
 			{
 				StateName: "cont",
