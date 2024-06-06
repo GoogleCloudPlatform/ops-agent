@@ -38,7 +38,7 @@ function populate_env_vars_from_louhi_tag_if_present() {
 
       EXT=$(yaml project.yaml "['targets']['${TARGET}']['package_extension']")
       if [[ "${EXT}" == "deb" ]]; then
-        export REPO_CODENAME="${TARGET}-${ARCH}"
+        export REPO_CODENAME="${TARGET}-${ARCH//_/-}"
       fi
     fi
   fi
