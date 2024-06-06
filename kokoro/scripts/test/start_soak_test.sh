@@ -17,7 +17,7 @@ populate_env_vars_from_louhi_tag_if_present
 # if TARGET & ARCH are set, retrieve the soak distro from project.yaml
 if [[ -n "${TARGET:-}" && -n "${ARCH:-}" ]]; then
   DISTRO=$(yaml project.yaml "['targets']['${TARGET}']['architectures']['${ARCH}']['soak_distro']")
-  export VM_NAME="soak-test-${REPO_SUFFIX}-${LABEL}"
+  export VM_NAME="soak-test-${RELEASE_ID}-${TARGET}-${ARCH}-${LABEL}"
   export DISTRO
 fi
 
