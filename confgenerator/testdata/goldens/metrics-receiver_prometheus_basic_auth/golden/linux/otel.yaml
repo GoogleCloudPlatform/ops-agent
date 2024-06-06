@@ -48,11 +48,6 @@ processors:
         - otelcol_process_memory_rss
         - otelcol_grpc_io_client_completed_rpcs
         - otelcol_googlecloudmonitoring_point_count
-  groupbyattrs/prometheus_0:
-    keys:
-    - namespace
-    - cluster
-    - location
   metricstransform/fluentbit_1:
     transforms:
     - action: update
@@ -430,6 +425,16 @@ processors:
   resourcedetection/_global_0:
     detectors:
     - gcp
+  transform/prometheus_0:
+    metric_statements:
+      context: datapoint
+      statements:
+      - set(resource.attributes["location"], attributes["location"])
+      - set(resource.attributes["cluster"], attributes["cluster"])
+      - set(resource.attributes["namespace"], attributes["namespace"])
+      - delete_key(attributes, "location")
+      - delete_key(attributes, "cluster")
+      - delete_key(attributes, "namespace")
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
@@ -543,7 +548,7 @@ service:
       exporters:
       - googlemanagedprometheus
       processors:
-      - groupbyattrs/prometheus_0
+      - transform/prometheus_0
       receivers:
       - prometheus/prometheus
   telemetry:

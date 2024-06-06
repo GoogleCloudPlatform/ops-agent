@@ -92,7 +92,7 @@ func (r PrometheusMetrics) Pipelines(ctx context.Context) ([]otel.ReceiverPipeli
 		Processors: map[string][]otel.Component{
 			// Expect metrics, without any additional processing.
 			"metrics": {
-				otel.GroupByGMPAttrs(),
+				otel.GroupByGMPAttrs_OTTL(),
 			},
 		},
 		ExporterTypes: map[string]otel.ExporterType{

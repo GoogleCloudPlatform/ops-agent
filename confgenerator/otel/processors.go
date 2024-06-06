@@ -186,6 +186,16 @@ func FlattenResourceAttribute(resourceAttribute, metricAttribute string) Transfo
 	return TransformQuery(fmt.Sprintf(`set(attributes["%s"], resource.attributes["%s"])`, metricAttribute, resourceAttribute))
 }
 
+// GroupByAttribute returns an expression that makes a metric attribute into a resource attribute.
+func GroupByAttribute(attribute string) TransformQuery {
+	return TransformQuery(fmt.Sprintf(`set(resource.attributes["%s"], attributes["%s"])`, attribute, attribute))
+}
+
+// DeleteMetricAttribute returns an expression that removes the metric attribute specified.
+func DeleteMetricAttribute(metricAttribute string) TransformQuery {
+	return TransformQuery(fmt.Sprintf(`delete_key(attributes, "%s")`, metricAttribute))
+}
+
 // ConvertGaugeToSum returns an expression where a gauge metric can be converted into a sum
 func ConvertGaugeToSum(metricName string) TransformQuery {
 	return TransformQuery(fmt.Sprintf(`convert_gauge_to_sum("cumulative", true) where metric.name == "%s"`, metricName))
@@ -408,6 +418,24 @@ func GroupByGMPAttrs() Component {
 			"keys": []string{"namespace", "cluster", "location"},
 		},
 	}
+}
+
+// GroupByGMPAttrs_OTTL moves the "namespace", "cluster", and "location"
+// metric attributes to resource attributes similar to GroupByGMPAttrs.
+// The difference here is it uses OTTL instead of the groupbyattrs processor
+// since that processor discards certain metadata from the metrics that are
+// important to preserve prometheus untyped metrics.
+//
+// See more detail in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33419.
+func GroupByGMPAttrs_OTTL() Component {
+	return TransformationMetrics(
+		GroupByAttribute("location"),
+		GroupByAttribute("cluster"),
+		GroupByAttribute("namespace"),
+		DeleteMetricAttribute("location"),
+		DeleteMetricAttribute("cluster"),
+		DeleteMetricAttribute("namespace"),
+	)
 }
 
 // GCPResourceDetector returns a resourcedetection processor configured for only GCP.
