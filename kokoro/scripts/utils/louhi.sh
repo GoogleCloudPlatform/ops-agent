@@ -32,7 +32,7 @@ function populate_env_vars_from_louhi_tag_if_present() {
     TARGET="${_LOUHI_TAG_COMPONENTS[3]}"
     ARCH="${_LOUHI_TAG_COMPONENTS[4]}"
 
-    if [[ "${_USE_TEST_REPO:-1}" == "1" ]]; then
+    if [[ "${INSTALL_AGENT_UNDER_TEST:-1}" == "1" ]]; then
       export REPO_SUFFIX="${RELEASE_ID}"
       export ARTIFACT_REGISTRY_PROJECT="${_STAGING_ARTIFACTS_PROJECT_ID}"  # Louhi is responsible for passing this.
 
