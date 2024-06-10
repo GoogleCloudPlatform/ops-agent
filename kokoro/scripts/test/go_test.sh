@@ -48,24 +48,14 @@ set -o pipefail
 cd "$(readlink -f "$(dirname "$0")")"
 cd ../../../
 
-# Source the common utilities, for track_flakiness.
+# Source the common utilities.
 source kokoro/scripts/utils/common.sh
+source kokoro/scripts/utils/louhi.sh
 
 track_flakiness
 
 # Avoids "fatal: detected dubious ownership in repository" errors on Kokoro containers.
 git config --global --add safe.directory "$(pwd)"
-
-# A helper for parsing YAML files.
-# Ex: VALUE=$(yaml ~/my_yaml_file.yaml "['a_key']")
-function yaml() {
-  python3 -c "import yaml
-data=yaml.safe_load(open('$1'))$2
-if type(data)==list:
-  print(','.join(str(elem) for elem in data))
-else:
- print(data)"
-}
 
 # A helper function for joining a bash array.
 # Ex. join_by , a b c -> a,b,c
@@ -84,19 +74,7 @@ function set_image_specs() {
   if [[ -n "${IMAGE_SPECS:-}" ]]; then
     return 0
   fi
-  # if _LOUHI_TAG_NAME is defined, set TARGET and ARCH env vars by parsing it.
-  # Example value: louhi/2.46.0/shortref/windows/x86_64/start
-  if [[ -n "${_LOUHI_TAG_NAME:-}" ]]; then
-    local -a _LOUHI_TAG_COMPONENTS=(${_LOUHI_TAG_NAME//\// })  
-    export REPO_SUFFIX="${_LOUHI_TAG_COMPONENTS[2]}"  # the shortref is the repo suffix
-    TARGET="${_LOUHI_TAG_COMPONENTS[3]}"
-    ARCH="${_LOUHI_TAG_COMPONENTS[4]}"
-    export ARTIFACT_REGISTRY_PROJECT="${_STAGING_ARTIFACTS_PROJECT_ID}"  # Louhi is responsible for passing this.
-    EXT=$(yaml project.yaml "['targets']['${TARGET}']['package_extension']")
-    if [[ "${EXT}" == "deb" ]]; then
-      export REPO_CODENAME="${TARGET}-${ARCH}"
-    fi
-  fi
+  populate_env_vars_from_louhi_tag_if_present
   # if TARGET is not set, return an error
   if [[ -z "${TARGET:-}" ]]; then
     echo "At least one of TARGET/IMAGE_SPECS must be set." 1>&2

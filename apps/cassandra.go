@@ -109,7 +109,7 @@ func javaLogParsingComponents(ctx context.Context, processorType, tag, uid strin
 			{
 				StateName: "start_state",
 				NextState: "cont",
-				Regex:     `[A-Z]+\s+\[[^\]]+\] \d+`,
+				Regex:     `^[A-Z]+\s+\[[^\]]+\] \d+`,
 			},
 			{
 				StateName: "cont",

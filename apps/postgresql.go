@@ -111,15 +111,32 @@ func (LoggingProcessorPostgresql) Type() string {
 func (p LoggingProcessorPostgresql) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
+			// Limited logging documentation: https://www.postgresql.org/docs/10/runtime-config-logging.html
 			Parsers: []confgenerator.RegexParser{
 				{
-					// Limited logging documentation: https://www.postgresql.org/docs/10/runtime-config-logging.html
+					// This parser matches most distributions' defaults by our testing
+					// log_line_prefix = '%m [%p] '
+					// log_line_prefix = '%m [%p] %q%u@%d '
 					// Sample line: 2022-01-12 20:57:58.378 UTC [26241] LOG:  starting PostgreSQL 14.1 (Debian 14.1-1.pgdg100+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 8.3.0-6) 8.3.0, 64-bit
 					// Sample line: 2022-01-12 20:59:25.169 UTC [27445] postgres@postgres FATAL:  Peer authentication failed for user "postgres"
 					// Sample line: 2022-01-12 21:49:13.989 UTC [27836] postgres@postgres LOG:  duration: 1.074 ms  statement: select *
 					//    from pg_database
 					//    where 1=1;
-					Regex: `^(?<time>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3,} \w+)\s*\[(?<tid>\d+)\](?:\s+(?<role>\S*)@(?<user>\S*))?\s*(?<level>\w+):\s+(?<message>[\s\S]*)`,
+					Regex: `^(?<time>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3,} \w+)\s*\[(?<tid>\d+)\](?:\s+(?<user>\S*)@(?<database>\S*))?\s*(?<level>\w+):\s+(?<message>[\s\S]*)`,
+					Parser: confgenerator.ParserShared{
+						TimeKey:    "time",
+						TimeFormat: "%Y-%m-%d %H:%M:%S.%L %z",
+						Types: map[string]string{
+							"tid": "integer",
+						},
+					},
+				},
+				{
+					// This parser matches the default log_line_prefix from SLES12 in our testing
+					// log_line_prefix = '%m %d %u [%p]'
+					// Sample line: 2024-05-30 15:34:26.572 UTC postgres postgres [23958]STATEMENT:  INSERT INTO
+					//					test2 (id) VALUES('1970-01-01 00:00:00.123 UTC');
+					Regex: `^(?<time>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3,} \w+)\s*(?:\s+(?<database>\S*)\s+(?<user>\S*))?\s*\[(?<tid>\d+)\]\s*(?<level>\w+):\s+(?<message>[\s\S]*)`,
 					Parser: confgenerator.ParserShared{
 						TimeKey:    "time",
 						TimeFormat: "%Y-%m-%d %H:%M:%S.%L %z",
@@ -134,7 +151,7 @@ func (p LoggingProcessorPostgresql) Components(ctx context.Context, tag string, 
 			{
 				StateName: "start_state",
 				NextState: "cont",
-				Regex:     `\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3,} \w+`,
+				Regex:     `^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3,} \w+`,
 			},
 			{
 				StateName: "cont",
@@ -184,7 +201,7 @@ type LoggingReceiverPostgresql struct {
 func (r LoggingReceiverPostgresql) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
-			// Default log paths for Debain / Ubuntu
+			// Default log paths for Debian / Ubuntu
 			"/var/log/postgresql/postgresql*.log",
 			// Default log paths for SLES
 			"/var/lib/pgsql/data/log/postgresql*.log",

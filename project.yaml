@@ -65,6 +65,8 @@ targets:
       deb
     architectures:
       x86_64:
+        soak_distro:
+          ubuntu-os-cloud:ubuntu-2004-lts
         test_distros:
           representative:
           - ubuntu-os-cloud:ubuntu-2004-lts
@@ -176,6 +178,8 @@ targets:
       goo
     architectures:
       x86_64:
+        soak_distro:
+          windows-cloud:windows-2022
         test_distros:
           representative:
           - windows-cloud:windows-2016-core
