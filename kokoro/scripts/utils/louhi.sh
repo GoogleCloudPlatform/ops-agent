@@ -28,12 +28,11 @@ function populate_env_vars_from_louhi_tag_if_present() {
   # Example value: louhi/2.46.0/shortref/windows/x86_64/start
   if [[ -n "${_LOUHI_TAG_NAME:-}" ]]; then
     local -a _LOUHI_TAG_COMPONENTS=(${_LOUHI_TAG_NAME//\// })  
-    RELEASE_ID="${_LOUHI_TAG_COMPONENTS[2]}"
     TARGET="${_LOUHI_TAG_COMPONENTS[3]}"
     ARCH="${_LOUHI_TAG_COMPONENTS[4]}"
 
     if [[ "${INSTALL_AGENT_UNDER_TEST:-1}" == "1" ]]; then
-      export REPO_SUFFIX="${RELEASE_ID}"
+      export REPO_SUFFIX="${_LOUHI_EXECUTION_ID}"
       export ARTIFACT_REGISTRY_PROJECT="${_STAGING_ARTIFACTS_PROJECT_ID}"  # Louhi is responsible for passing this.
 
       EXT=$(yaml project.yaml "['targets']['${TARGET}']['package_extension']")
