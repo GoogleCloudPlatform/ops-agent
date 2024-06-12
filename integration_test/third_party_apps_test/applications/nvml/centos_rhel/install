@@ -40,7 +40,9 @@ install_cuda_from_runfile() {
 }
 
 setup_repo() {
-    sudo yum install -y yum-utils
+    # Enable EPEL (Extra Packages for Enterprise Linux) for packages such as DKMS
+    # Ref: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/#prepare-rhel-9-rocky-9
+    sudo yum install -y yum-utils epel-release
     sudo yum-config-manager \
         --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel$VERSION_ID/x86_64/cuda-rhel$VERSION_ID.repo
     sudo yum clean all
@@ -49,15 +51,7 @@ setup_repo() {
 install_cuda_from_package_manager() {
     setup_repo
     install_driver_package
-    #TODO: b/332690428 - Remove this temporary fix for Rocky Linux 9 rocky-linux-9-v20240313 with kernel 5.14.0-362.18.1.el9_3.0.1.x86_64 
-    case $(uname -r) in
-        5.14.0-362.18.1.el9_3.0.1.x86_64) 
-            sudo yum -y install cuda-12-3
-            ;;
-        *)
-            sudo yum -y install cuda-12-4
-            ;;
-    esac
+    sudo yum -y install cuda
     verify_driver
 }
 
@@ -101,17 +95,8 @@ handle_rhel7() {
 
 handle_common() {
     install_driver_package() {
-        #TODO: b/332690428 - Remove this temporary fix for Rocky Linux 9 rocky-linux-9-v20240313 with kernel 5.14.0-362.18.1.el9_3.0.1.x86_64 
-        case $(uname -r) in
-            5.14.0-362.18.1.el9_3.0.1.x86_64) 
-                sudo ln -s /lib/modules/5.14.0-362.18.1.el9_3.0.1.x86_64 /lib/modules/5.14.0-362.18.1.el9_3.x86_64
-                sudo yum -y module install nvidia-driver:545
-                ;;
-            *)
-                # Ref: https://developer.nvidia.com/cuda-12-2-2-download-archive?target_os=Linux&target_arch=x86_64&Distribution=RHEL&target_version=8&target_type=rpm_network
-                sudo yum -y module install nvidia-driver:550
-                ;;
-        esac
+        # Ref: https://developer.nvidia.com/cuda-12-2-2-download-archive?target_os=Linux&target_arch=x86_64&Distribution=RHEL&target_version=8&target_type=rpm_network
+        sudo yum -y module install nvidia-driver
     }
 
     remove_driver_package() {
