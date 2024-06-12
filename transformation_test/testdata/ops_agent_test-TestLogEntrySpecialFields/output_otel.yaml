@@ -6,40 +6,40 @@
     rejected_items: 1.0
     stacktrace: |-
       go.opentelemetry.io/collector/exporter/exporterhelper.(*baseExporter).send
-              /root/go/pkg/mod/go.opentelemetry.io/collector/exporter@v0.102.0/exporterhelper/common.go:296
+      	go.opentelemetry.io/collector/exporter@v0.102.0/exporterhelper/common.go:296
       go.opentelemetry.io/collector/exporter/exporterhelper.NewLogsRequestExporter.func1
-              /root/go/pkg/mod/go.opentelemetry.io/collector/exporter@v0.102.0/exporterhelper/logs.go:134
+      	go.opentelemetry.io/collector/exporter@v0.102.0/exporterhelper/logs.go:134
       go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
-              /root/go/pkg/mod/go.opentelemetry.io/collector/consumer@v0.102.0/logs.go:25
+      	go.opentelemetry.io/collector/consumer@v0.102.0/logs.go:25
       go.opentelemetry.io/collector/processor/processorhelper.NewLogsProcessor.func1
-              /root/go/pkg/mod/go.opentelemetry.io/collector/processor@v0.102.0/processorhelper/logs.go:56
+      	go.opentelemetry.io/collector/processor@v0.102.0/processorhelper/logs.go:56
       go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
-              /root/go/pkg/mod/go.opentelemetry.io/collector/consumer@v0.102.0/logs.go:25
+      	go.opentelemetry.io/collector/consumer@v0.102.0/logs.go:25
       go.opentelemetry.io/collector/processor/processorhelper.NewLogsProcessor.func1
-              /root/go/pkg/mod/go.opentelemetry.io/collector/processor@v0.102.0/processorhelper/logs.go:56
+      	go.opentelemetry.io/collector/processor@v0.102.0/processorhelper/logs.go:56
       go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
-              /root/go/pkg/mod/go.opentelemetry.io/collector/consumer@v0.102.0/logs.go:25
+      	go.opentelemetry.io/collector/consumer@v0.102.0/logs.go:25
       go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
-              /root/go/pkg/mod/go.opentelemetry.io/collector/consumer@v0.102.0/logs.go:25
+      	go.opentelemetry.io/collector/consumer@v0.102.0/logs.go:25
       go.opentelemetry.io/collector/internal/fanoutconsumer.(*logsConsumer).ConsumeLogs
-              /root/go/pkg/mod/go.opentelemetry.io/collector@v0.102.0/internal/fanoutconsumer/logs.go:62
+      	go.opentelemetry.io/collector@v0.102.0/internal/fanoutconsumer/logs.go:62
       github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry.(*logsConsumer).ConsumeLogs
-              /root/go/pkg/mod/github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.102.0/consumerretry/logs.go:37
+      	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.102.0/consumerretry/logs.go:37
       github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.(*receiver).consumerLoop
-              /root/go/pkg/mod/github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.102.0/adapter/receiver.go:126
+      	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.102.0/adapter/receiver.go:126
   - caller: consumerretry/logs.go:39
     error: "could not process attribute gcp.source_location: json: cannot unmarshal string into Go struct field LogEntrySourceLocation.line of type int64"
     level: error
     msg: ConsumeLogs() failed. Enable retry_on_failure to slow down reading logs and avoid dropping.
     stacktrace: |-
       github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry.(*logsConsumer).ConsumeLogs
-      /root/go/pkg/mod/github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.102.0/consumerretry/logs.go:39
+      	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.102.0/consumerretry/logs.go:39
       github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.(*receiver).consumerLoop
-      /root/go/pkg/mod/github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.102.0/adapter/receiver.go:126
+      	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.102.0/adapter/receiver.go:126
   - caller: adapter/receiver.go:128
     error: "could not process attribute gcp.source_location: json: cannot unmarshal string into Go struct field LogEntrySourceLocation.line of type int64"
     level: error
     msg: ConsumeLogs() failed
     stacktrace: |-
       github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.(*receiver).consumerLoop
-      /root/go/pkg/mod/github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.102.0/adapter/receiver.go:128
+      	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.102.0/adapter/receiver.go:128
