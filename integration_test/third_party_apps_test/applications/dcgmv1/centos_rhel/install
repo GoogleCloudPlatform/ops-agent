@@ -6,18 +6,18 @@ verify_driver() {
     # Verify NVIDIA driver:
     # Installation could finish successfully but the driver is still unusable
     # A common error when running this check:
-    # "NVIDIA-SMI has failed because it couldn't communicate with the NVIDIA 
+    # "NVIDIA-SMI has failed because it couldn't communicate with the NVIDIA
     # driver. Make sure that the latest NVIDIA driver is installed and running."
     nvidia-smi
 }
 
 install_driver_from_runfile() {
     # Ref: https://docs.nvidia.com/datacenter/tesla/tesla-installation-notes/index.html#runfile
-    # This method requires the matching kernel-devel package to be installed, and 
+    # This method requires the matching kernel-devel package to be installed, and
     # the package may be absent from the repo and cause this method to fail
     # Remove existing installation before using the runfile
     remove_driver_package
-    sudo yum install -y kernel-devel-$(uname -r) pciutils gcc make wget yum-utils 
+    sudo yum install -y kernel-devel-$(uname -r) pciutils gcc make wget yum-utils
     local DRIVER_VERSION=535.129.03
     echo "Installing NVIDIA Data Center driver $DRIVER_VERSION"
     curl -fSsl -O https://us.download.nvidia.com/tesla/$DRIVER_VERSION/NVIDIA-Linux-x86_64-$DRIVER_VERSION.run
@@ -44,7 +44,7 @@ install_dcgm() {
     # Ref: https://docs.nvidia.com/datacenter/dcgm/latest/user-guide/getting-started.html#rhel-centos-rocky-linux
     setup_repo
     sudo yum install -y datacenter-gpu-manager
-    sudo systemctl --now enable nvidia-dcgm 
+    sudo systemctl --now enable nvidia-dcgm
 
     # check DCGM service running and load profiling module
     dcgmi discovery --list
@@ -69,7 +69,7 @@ try_install() {
 handle_rhel7() {
     install_driver_package() {
         # Ref: https://docs.nvidia.com/datacenter/tesla/tesla-installation-notes/index.html#centos7
-        # For Centos - we can expect the repo to have the matching version of 
+        # For Centos - we can expect the repo to have the matching version of
         # kernel packages, and the driver package needs those kernel packages
         sudo yum install -y kernel-devel-$(uname -r) kernel-headers-$(uname -r)
         sudo yum -y install nvidia-driver-latest-dkms

@@ -5,9 +5,9 @@ sudo apt update
 KERNEL_VERSION=`uname -r`
 sudo apt install -y linux-headers-${KERNEL_VERSION} software-properties-common pciutils gcc make dkms wget
 
-# Install CUDA and driver the same way as the nvml app 
+# Install CUDA and driver the same way as the nvml app
 # Prefer to install from the package manager since it is normally faster and has
-# less errors on installation; fallback to the runfile method if the package 
+# less errors on installation; fallback to the runfile method if the package
 # manager's package is not working or not compitible with the GPU model
 DISTRIBUTION=$(echo $ID$VERSION_ID | sed -e 's/\.//g')
 # Need to add the keyring for installing CUDA and DCGM
@@ -18,7 +18,7 @@ if [[ $ID == debian ]]; then
     sudo add-apt-repository contrib
 fi
 sudo apt update
-sudo apt -y install cuda 
+sudo apt -y install cuda
 
 # check NVIDIA driver installation succeeded
 nvidia-smi

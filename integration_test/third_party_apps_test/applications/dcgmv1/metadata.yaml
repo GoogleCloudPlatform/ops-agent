@@ -20,7 +20,7 @@ description: |-
   The NVIDIA DataCenter GPU Manager (DCGM) integration collects advanced GPU metrics,
   including SM block utilization, Pipe utilization, PCIe and NVLink traffic.
 configure_integration: |-
-  You must install DCGM and run the DCGM daemon service. 
+  You must install DCGM and run the DCGM daemon service.
 supported_operating_systems: linux
 supported_app_version: ["3.1"]
 gpu_platforms: # p4, p100 don't emit DCGM profiling metrics
