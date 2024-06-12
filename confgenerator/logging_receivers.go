@@ -556,7 +556,7 @@ func windowsEventLogV1Processors(ctx context.Context) ([]otel.Component, error) 
 				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
 					// TODO: What if there are multiple keywords?
 					keywords := ottl.LValue{"cache", "body", "keywords"}
-					keyword0 := ottl.RValue("cache.body.keywords[0]")
+					keyword0 := ottl.RValue(`cache["body"]["keywords"][0]`)
 					return ottl.NewStatements(
 						v.SetIf(ottl.StringLiteral("SuccessAudit"), ottl.And(
 							keywords.IsPresent(),
