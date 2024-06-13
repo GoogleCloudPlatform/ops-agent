@@ -81,6 +81,8 @@ processors:
     - action: update
       include: gpu.dcgm.sm.utilization
       new_name: dcgm.gpu.profiling.sm_utilization
+  metricstransform/dcgm_2:
+    transforms:
     - action: update
       include: ^(.*)$$
       match_type: regexp
@@ -483,13 +485,13 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  modifyscope/dcgm_3:
+  modifyscope/dcgm_4:
     override_scope_name: agent.googleapis.com/dcgm
     override_scope_version: "1.0"
   resourcedetection/_global_0:
     detectors:
     - gcp
-  transform/dcgm_2:
+  transform/dcgm_3:
     metric_statements:
       context: datapoint
       statements:
@@ -561,8 +563,9 @@ service:
       processors:
       - metricstransform/dcgm_0
       - deltatorate/dcgm_1
-      - transform/dcgm_2
-      - modifyscope/dcgm_3
+      - metricstransform/dcgm_2
+      - transform/dcgm_3
+      - modifyscope/dcgm_4
       - resourcedetection/_global_0
       receivers:
       - dcgm/dcgm

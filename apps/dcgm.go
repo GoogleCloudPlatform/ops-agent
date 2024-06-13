@@ -126,11 +126,13 @@ func (r MetricsReceiverDcgm) Pipelines(_ context.Context) ([]otel.ReceiverPipeli
 					"gpu.dcgm.sm.utilization",
 					"dcgm.gpu.profiling.sm_utilization",
 				),
-				otel.AddPrefix("workload.googleapis.com"),
 			),
 			otel.DeltaToRate(
 				"dcgm.gpu.profiling.nvlink_traffic_rate",
 				"dcgm.gpu.profiling.pcie_traffic_rate",
+			),
+			otel.MetricsTransform(
+				otel.AddPrefix("workload.googleapis.com"),
 			),
 			otel.TransformationMetrics(
 				otel.FlattenResourceAttribute("gpu.model", "model"),
