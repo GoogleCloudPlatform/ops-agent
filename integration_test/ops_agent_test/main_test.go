@@ -4094,7 +4094,7 @@ func uninstallGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error 
 		// There is currently no need for this support.
 		return nil
 	} else {
-		cmd = `sudo rm -rf /usr/local/go || true`
+		cmd = `sudo rm -rf /usr/local/go`
 	}
 	_, err := gce.RunRemotely(ctx, logger, vm, cmd)
 	if err != nil {
