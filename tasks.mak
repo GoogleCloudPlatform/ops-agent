@@ -99,7 +99,7 @@ PLATFORMS ?= debian-cloud:debian-11
 integration_tests:
 	ZONES="${ZONES}" \
 	PLATFORMS="${PLATFORMS}" \
-	go test -v ./integration_test/ops_agent_test.go \
+	go test -v ./integration_test/ops_agent_test/main_test.go \
 	-test.parallel=1000 \
 	-tags=integration_test \
 	-timeout=4h

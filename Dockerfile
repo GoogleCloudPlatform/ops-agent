@@ -115,10 +115,10 @@ RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
 RUN \
-unset OTEL_TRACES_EXPORTER && \
-unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
-unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-./otel.sh /work/cache/
+    unset OTEL_TRACES_EXPORTER && \
+    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
+    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
+    ./otel.sh /work/cache/
 
 FROM centos7-build-base AS centos7-build-fluent-bit
 WORKDIR /work
@@ -165,7 +165,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/rpm/build.sh || true &> /dev/nul
+RUN ./pkg/rpm/build.sh || true &> /dev/null
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -218,10 +218,10 @@ RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
 RUN \
-unset OTEL_TRACES_EXPORTER && \
-unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
-unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-./otel.sh /work/cache/
+    unset OTEL_TRACES_EXPORTER && \
+    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
+    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
+    ./otel.sh /work/cache/
 
 FROM centos8-build-base AS centos8-build-fluent-bit
 WORKDIR /work
@@ -268,7 +268,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/rpm/build.sh || true &> /dev/nul
+RUN ./pkg/rpm/build.sh || true &> /dev/null
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -324,10 +324,10 @@ RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
 RUN \
-unset OTEL_TRACES_EXPORTER && \
-unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
-unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-./otel.sh /work/cache/
+    unset OTEL_TRACES_EXPORTER && \
+    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
+    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
+    ./otel.sh /work/cache/
 
 FROM rockylinux9-build-base AS rockylinux9-build-fluent-bit
 WORKDIR /work
@@ -374,7 +374,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/rpm/build.sh || true &> /dev/nul
+RUN ./pkg/rpm/build.sh || true &> /dev/null
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -425,10 +425,10 @@ RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
 RUN \
-unset OTEL_TRACES_EXPORTER && \
-unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
-unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-./otel.sh /work/cache/
+    unset OTEL_TRACES_EXPORTER && \
+    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
+    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
+    ./otel.sh /work/cache/
 
 FROM bookworm-build-base AS bookworm-build-fluent-bit
 WORKDIR /work
@@ -475,7 +475,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/deb/build.sh || true &> /dev/nul
+RUN ./pkg/deb/build.sh || true &> /dev/null
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -526,10 +526,10 @@ RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
 RUN \
-unset OTEL_TRACES_EXPORTER && \
-unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
-unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-./otel.sh /work/cache/
+    unset OTEL_TRACES_EXPORTER && \
+    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
+    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
+    ./otel.sh /work/cache/
 
 FROM bullseye-build-base AS bullseye-build-fluent-bit
 WORKDIR /work
@@ -576,7 +576,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/deb/build.sh || true &> /dev/nul
+RUN ./pkg/deb/build.sh || true &> /dev/null
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -629,10 +629,10 @@ RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
 RUN \
-unset OTEL_TRACES_EXPORTER && \
-unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
-unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-./otel.sh /work/cache/
+    unset OTEL_TRACES_EXPORTER && \
+    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
+    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
+    ./otel.sh /work/cache/
 
 FROM buster-build-base AS buster-build-fluent-bit
 WORKDIR /work
@@ -679,7 +679,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/deb/build.sh || true &> /dev/nul
+RUN ./pkg/deb/build.sh || true &> /dev/null
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -749,10 +749,10 @@ RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
 RUN \
-unset OTEL_TRACES_EXPORTER && \
-unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
-unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-./otel.sh /work/cache/
+    unset OTEL_TRACES_EXPORTER && \
+    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
+    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
+    ./otel.sh /work/cache/
 
 FROM sles12-build-base AS sles12-build-fluent-bit
 WORKDIR /work
@@ -799,7 +799,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/rpm/build.sh || true &> /dev/nul
+RUN ./pkg/rpm/build.sh || true &> /dev/null
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -855,10 +855,10 @@ RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
 RUN \
-unset OTEL_TRACES_EXPORTER && \
-unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
-unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-./otel.sh /work/cache/
+    unset OTEL_TRACES_EXPORTER && \
+    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
+    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
+    ./otel.sh /work/cache/
 
 FROM sles15-build-base AS sles15-build-fluent-bit
 WORKDIR /work
@@ -905,7 +905,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/rpm/build.sh || true &> /dev/nul
+RUN ./pkg/rpm/build.sh || true &> /dev/null
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -956,10 +956,10 @@ RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
 RUN \
-unset OTEL_TRACES_EXPORTER && \
-unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
-unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-./otel.sh /work/cache/
+    unset OTEL_TRACES_EXPORTER && \
+    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
+    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
+    ./otel.sh /work/cache/
 
 FROM focal-build-base AS focal-build-fluent-bit
 WORKDIR /work
@@ -1006,7 +1006,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/deb/build.sh || true &> /dev/nul
+RUN ./pkg/deb/build.sh || true &> /dev/null
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -1057,10 +1057,10 @@ RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
 RUN \
-unset OTEL_TRACES_EXPORTER && \
-unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
-unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-./otel.sh /work/cache/
+    unset OTEL_TRACES_EXPORTER && \
+    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
+    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
+    ./otel.sh /work/cache/
 
 FROM jammy-build-base AS jammy-build-fluent-bit
 WORKDIR /work
@@ -1107,7 +1107,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/deb/build.sh || true &> /dev/nul
+RUN ./pkg/deb/build.sh || true &> /dev/null
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -1158,10 +1158,10 @@ RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
 RUN \
-unset OTEL_TRACES_EXPORTER && \
-unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
-unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-./otel.sh /work/cache/
+    unset OTEL_TRACES_EXPORTER && \
+    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
+    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
+    ./otel.sh /work/cache/
 
 FROM mantic-build-base AS mantic-build-fluent-bit
 WORKDIR /work
@@ -1208,7 +1208,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/deb/build.sh || true &> /dev/nul
+RUN ./pkg/deb/build.sh || true &> /dev/null
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -1259,10 +1259,10 @@ RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang
 COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
 COPY ./builds/otel.sh .
 RUN \
-unset OTEL_TRACES_EXPORTER && \
-unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
-unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-./otel.sh /work/cache/
+    unset OTEL_TRACES_EXPORTER && \
+    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
+    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
+    ./otel.sh /work/cache/
 
 FROM noble-build-base AS noble-build-fluent-bit
 WORKDIR /work
@@ -1309,7 +1309,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/deb/build.sh || true &> /dev/nul
+RUN ./pkg/deb/build.sh || true &> /dev/null
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
