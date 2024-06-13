@@ -10,19 +10,19 @@
       go.opentelemetry.io/collector/exporter/exporterhelper.NewLogsRequestExporter.func1
       	go.opentelemetry.io/collector/exporter@v0.102.0/exporterhelper/logs.go:134
       go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
-      	go.opentelemetry.io/collector/consumer@v0.102.0/logs.go:25
+      	go.opentelemetry.io/collector/consumer@v0.102.1/logs.go:25
       go.opentelemetry.io/collector/processor/processorhelper.NewLogsProcessor.func1
       	go.opentelemetry.io/collector/processor@v0.102.0/processorhelper/logs.go:56
       go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
-      	go.opentelemetry.io/collector/consumer@v0.102.0/logs.go:25
+      	go.opentelemetry.io/collector/consumer@v0.102.1/logs.go:25
       go.opentelemetry.io/collector/processor/processorhelper.NewLogsProcessor.func1
       	go.opentelemetry.io/collector/processor@v0.102.0/processorhelper/logs.go:56
       go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
-      	go.opentelemetry.io/collector/consumer@v0.102.0/logs.go:25
+      	go.opentelemetry.io/collector/consumer@v0.102.1/logs.go:25
       go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
-      	go.opentelemetry.io/collector/consumer@v0.102.0/logs.go:25
+      	go.opentelemetry.io/collector/consumer@v0.102.1/logs.go:25
       go.opentelemetry.io/collector/internal/fanoutconsumer.(*logsConsumer).ConsumeLogs
-      	go.opentelemetry.io/collector@v0.102.0/internal/fanoutconsumer/logs.go:62
+      	go.opentelemetry.io/collector@v0.102.1/internal/fanoutconsumer/logs.go:62
       github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry.(*logsConsumer).ConsumeLogs
       	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.102.0/consumerretry/logs.go:37
       github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.(*receiver).consumerLoop
