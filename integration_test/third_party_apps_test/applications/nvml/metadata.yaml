@@ -45,6 +45,7 @@ gpu_platforms:
       - centos-cloud:centos-7
       - debian-cloud:debian-10
       - debian-cloud:debian-11
+      - ml-images:common-gpu-debian-11-py310
       - rocky-linux-cloud:rocky-linux-8
       - rocky-linux-cloud:rocky-linux-9
       - suse-cloud:sles-15
