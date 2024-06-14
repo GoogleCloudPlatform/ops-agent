@@ -54,6 +54,12 @@ platforms_to_skip:
   - debian-cloud:debian-11-arm64
   - debian-cloud:debian-12
   - debian-cloud:debian-12-arm64
+  - ml-images:common-gpu-debian-11-py310
+  - rocky-linux-cloud:rocky-linux-9
+  - rocky-linux-cloud:rocky-linux-9-arm64
+  - suse-cloud:sles-12
+  - suse-cloud:sles-15
+  - suse-cloud:sles-15-arm64
   - ubuntu-os-cloud:ubuntu-2004-lts
   - ubuntu-os-cloud:ubuntu-2004-lts-arm64
   - ubuntu-os-cloud:ubuntu-2204-lts
@@ -62,11 +68,6 @@ platforms_to_skip:
   - ubuntu-os-cloud:ubuntu-2310-arm64
   - ubuntu-os-cloud:ubuntu-2404-lts-amd64
   - ubuntu-os-cloud:ubuntu-2404-lts-arm64
-  - suse-cloud:sles-12
-  - suse-cloud:sles-15
-  - suse-cloud:sles-15-arm64
-  - rocky-linux-cloud:rocky-linux-9
-  - rocky-linux-cloud:rocky-linux-9-arm64
 supported_app_version: ["12.2", "18c", "19c", "21c"]
 expected_metrics:
   - type: workload.googleapis.com/oracle.backup.latest
