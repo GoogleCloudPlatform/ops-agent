@@ -432,12 +432,19 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  modifyscope/dcgm_1:
+  modifyscope/dcgm_2:
     override_scope_name: agent.googleapis.com/dcgm
     override_scope_version: "2.0"
   resourcedetection/_global_0:
     detectors:
     - gcp
+  transform/dcgm_1:
+    metric_statements:
+      context: datapoint
+      statements:
+      - set(attributes["model"], resource.attributes["gpu.model"])
+      - set(attributes["gpu_number"], resource.attributes["gpu.number"])
+      - set(attributes["uuid"], resource.attributes["gpu.uuid"])
 receivers:
   dcgm/dcgm:
     collection_interval: 60s
@@ -479,7 +486,8 @@ service:
       - googlecloud/otel
       processors:
       - metricstransform/dcgm_0
-      - modifyscope/dcgm_1
+      - transform/dcgm_1
+      - modifyscope/dcgm_2
       - resourcedetection/_global_0
       receivers:
       - dcgm/dcgm
