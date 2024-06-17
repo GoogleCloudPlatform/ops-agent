@@ -79,6 +79,16 @@ processors:
   metricstransform/dcgm_2:
     transforms:
     - action: update
+      include: dcgm.gpu.profiling.nvlink_traffic_rate
+      operations:
+      - action: toggle_scalar_data_type
+    - action: update
+      include: dcgm.gpu.profiling.pcie_traffic_rate
+      operations:
+      - action: toggle_scalar_data_type
+  metricstransform/dcgm_3:
+    transforms:
+    - action: update
       include: ^(.*)$$
       match_type: regexp
       new_name: workload.googleapis.com/$${1}
@@ -456,13 +466,13 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  modifyscope/dcgm_4:
+  modifyscope/dcgm_5:
     override_scope_name: agent.googleapis.com/dcgm
     override_scope_version: "1.0"
   resourcedetection/_global_0:
     detectors:
     - gcp
-  transform/dcgm_3:
+  transform/dcgm_4:
     metric_statements:
       context: datapoint
       statements:
@@ -533,8 +543,9 @@ service:
       - metricstransform/dcgm_0
       - deltatorate/dcgm_1
       - metricstransform/dcgm_2
-      - transform/dcgm_3
-      - modifyscope/dcgm_4
+      - metricstransform/dcgm_3
+      - transform/dcgm_4
+      - modifyscope/dcgm_5
       - resourcedetection/_global_0
       receivers:
       - dcgm/dcgm
