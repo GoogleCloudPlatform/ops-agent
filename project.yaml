@@ -166,6 +166,7 @@ targets:
           - suse-sap-cloud:sles-15-sp2-sap
           - suse-sap-cloud:sles-15-sp5-sap
           - opensuse-cloud:opensuse-leap
+          - opensuse-cloud=opensuse-leap-15-5-v20240516-x86-64
           - opensuse-cloud=opensuse-leap-15-6-v20240612-x86-64
       aarch64:
         test_distros:
