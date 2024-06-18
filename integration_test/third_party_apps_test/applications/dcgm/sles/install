@@ -1,0 +1,24 @@
+set -e
+
+sudo zypper --non-interactive install -y kernel-default-devel=$(uname -r | sed 's/\-default//') pciutils gcc make wget
+
+# Install CUDA and driver the same way as the nvml app
+# Prefer to install from the package manager since it is normally faster and has
+# less errors on installation; fallback to the runfile method if the package
+# manager's package is not working or not compitible with the GPU model
+DISTRIBUTION=$(. /etc/os-release;echo $ID$VERSION_ID | sed -e 's/\.[0-9]//')
+# Need to add the repo for installing CUDA and DCGM
+sudo zypper --non-interactive ar http://developer.download.nvidia.com/compute/cuda/repos/${DISTRIBUTION}/x86_64/cuda-${DISTRIBUTION}.repo
+sudo zypper --gpg-auto-import-keys --non-interactive refresh
+echo "Installing latest version of NVIDIA CUDA and driver"
+sudo zypper --non-interactive install -y cuda
+
+# check NVIDIA driver installation succeeded
+nvidia-smi
+
+# Install DCGM
+sudo zypper --non-interactive install datacenter-gpu-manager
+sudo systemctl --now enable nvidia-dcgm
+
+# check DCGM service running and load profiling module
+dcgmi discovery --list
