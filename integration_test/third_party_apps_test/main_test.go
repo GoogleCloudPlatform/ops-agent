@@ -31,7 +31,9 @@ REPO_SUFFIX: If provided, a package repository suffix to install the agent from.
     AGENT_PACKAGES_IN_GCS takes precedence over REPO_SUFFIX.
 ARTIFACT_REGISTRY_REGION: If provided, signals to the install scripts that the
     above REPO_SUFFIX is an artifact registry repo and specifies what region it
-	is in.
+    is in.
+ALL_APPS: If provided, select all applications for testing (skip filtering by
+    modified files).
 */
 
 package third_party_apps_test
@@ -748,6 +750,13 @@ func isCriticalFile(f string) bool {
 func determineImpactedApps(modifiedFiles []string, allApps map[string]metadata.IntegrationMetadata) map[string]bool {
 	impactedApps := make(map[string]bool)
 	defer log.Printf("impacted apps: %v", impactedApps)
+
+	if os.Getenv("ALL_APPS") == "true" {
+		for app := range allApps {
+			impactedApps[app] = true
+		}
+		return impactedApps
+	}
 
 	for _, f := range modifiedFiles {
 		if isCriticalFile(f) {
