@@ -491,6 +491,7 @@ receivers:
   memcached/memcached:
     collection_interval: 60s
     endpoint: localhost:11211
+    transport: tcp
   nvml/hostmetrics_1:
     collection_interval: 60s
   prometheus/fluentbit:

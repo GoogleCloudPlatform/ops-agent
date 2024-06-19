@@ -500,6 +500,11 @@ receivers:
   postgresql/postgresql:
     collection_interval: 60s
     endpoint: var/run/postgresql/:5432
+    metrics:
+      postgresql.wal.delay:
+        enabled: true
+      postgresql.wal.lag:
+        enabled: false
     password: pwd
     transport: unix
     username: usr

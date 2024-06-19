@@ -62,6 +62,14 @@ func (r MetricsReceiverPostgresql) Pipelines(_ context.Context) ([]otel.Receiver
 		"username":            r.Username,
 		"password":            r.Password.SecretValue(),
 		"transport":           transport,
+		"metrics": map[string]any{
+			"postgresql.wal.delay": map[string]any{
+				"enabled": true,
+			},
+			"postgresql.wal.lag": map[string]any{
+				"enabled": false,
+			},
+		},
 	}
 
 	if transport == "tcp" {
