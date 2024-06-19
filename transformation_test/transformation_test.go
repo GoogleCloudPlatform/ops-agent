@@ -453,15 +453,7 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 				}
 				stderr := fmt.Sprintf("%s%s", string(buf), string(buf2))
 				t.Logf("collector stderr:\n%s", stderr)
-				// We need to remove non-deterministic information from stacktraces so the goldens don't keep changing.
-				// Remove $GOPATH
-				stderr = regexp.MustCompile(`(?m)^\t(.*?)pkg/mod/`).ReplaceAllString(stderr, "\t")
-				// Remove function arguments
-				stderr = regexp.MustCompile(`(?m)^(.*)\(.+\)$`).ReplaceAllString(stderr, "$1(...)")
-				// Remove anything that looks like an address
-				stderr = regexp.MustCompile(`0x[0-9a-f]+`).ReplaceAllString(stderr, "0xX")
-				// Remove goroutine numbers
-				stderr = regexp.MustCompile(`goroutine \d+`).ReplaceAllString(stderr, "goroutine N")
+				stderr = sanitizeStacktrace(t, stderr)
 				errors = append(errors, map[string]any{"stderr": stderr})
 				return nil
 			}
@@ -485,6 +477,10 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 						t.Errorf("failed to signal process: %v", err)
 					}
 				}
+			}
+			stacktrace, ok := log["stacktrace"].(string)
+			if ok {
+				log["stacktrace"] = sanitizeStacktrace(t, stacktrace)
 			}
 		}
 	})
@@ -553,4 +549,17 @@ func sanitizeWriteLogEntriesRequest(t *testing.T, r *logpb.WriteLogEntriesReques
 		}
 	}
 	return req
+}
+
+func sanitizeStacktrace(t *testing.T, input string) string {
+	// We need to remove non-deterministic information from stacktraces so the goldens don't keep changing.
+	// Remove $GOPATH
+	result := regexp.MustCompile(`(?m)^\t(.*?)pkg/mod/`).ReplaceAllString(input, "\t")
+	// Remove function arguments
+	result = regexp.MustCompile(`(?m)^(.*)\(.+\)$`).ReplaceAllString(result, "$1(...)")
+	// Remove anything that looks like an address
+	result = regexp.MustCompile(`0x[0-9a-f]+`).ReplaceAllString(result, "0xX")
+	// Remove goroutine numbers
+	result = regexp.MustCompile(`goroutine \d+`).ReplaceAllString(result, "goroutine N")
+	return result
 }
