@@ -1299,6 +1299,14 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		}
 	}
 
+	// Pre-installed jupyter services on DLVM images cause port conflicts for third-party apps.
+	// See b/347107292.
+	if IsDLVMImage(vm.ImageSpec) {
+		if _, err := RunRemotely(ctx, logger, vm, "sudo service jupyter stop || true"); err != nil {
+			return nil, fmt.Errorf("attemptCreateInstance() failed to stop pre-installed jupyter service: %v", err)
+		}
+	}
+
 	return vm, nil
 }
 
@@ -1324,6 +1332,10 @@ func IsRHEL(imageSpec string) bool {
 
 func isRHEL7SAPHA(imageSpec string) bool {
 	return strings.Contains(imageSpec, "rhel-7") && strings.HasPrefix(imageSpec, "rhel-sap-cloud")
+}
+
+func IsDLVMImage(imageSpec string) bool {
+	return strings.HasPrefix(imageSpec, "ml-images")
 }
 
 func IsARM(imageSpec string) bool {
