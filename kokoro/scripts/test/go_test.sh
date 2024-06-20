@@ -208,6 +208,9 @@ go_test_args=(
 if [[ "${SHORT:-false}" == "true" ]]; then
   go_test_args+=( "-test.short" )
 fi
+if [[ -n "${TEST_SELECTOR:-}" ]]; then
+  go_test_args+=( "-test.run=${TEST_SELECTOR}" )
+fi
 
 TEST_UNDECLARED_OUTPUTS_DIR="${LOGS_DIR}" \
   gotestsum "${gotestsum_args[@]}" \

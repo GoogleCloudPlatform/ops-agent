@@ -31,7 +31,7 @@ REPO_SUFFIX: If provided, a package repository suffix to install the agent from.
     AGENT_PACKAGES_IN_GCS takes precedence over REPO_SUFFIX.
 ARTIFACT_REGISTRY_REGION: If provided, signals to the install scripts that the
     above REPO_SUFFIX is an artifact registry repo and specifies what region it
-	is in.
+    is in.
 */
 
 package third_party_apps_test
@@ -39,6 +39,7 @@ package third_party_apps_test
 import (
 	"context"
 	"embed"
+	"flag"
 	"fmt"
 	"log"
 	"math"
@@ -745,9 +746,19 @@ func isCriticalFile(f string) bool {
 //	integration_test/third_party_apps_test/applications/<appname>/
 //
 // Checks the extracted app names against the set of all known apps.
+// If tests were explicitly selected, or if no app is found as impacted, assume
+// all apps are.
 func determineImpactedApps(modifiedFiles []string, allApps map[string]metadata.IntegrationMetadata) map[string]bool {
 	impactedApps := make(map[string]bool)
 	defer log.Printf("impacted apps: %v", impactedApps)
+
+	if flag.Lookup("test.run") != nil {
+		// Honor explicit test selectors.
+		for app := range allApps {
+			impactedApps[app] = true
+		}
+		return impactedApps
+	}
 
 	for _, f := range modifiedFiles {
 		if isCriticalFile(f) {
@@ -761,7 +772,6 @@ func determineImpactedApps(modifiedFiles []string, allApps map[string]metadata.I
 
 	for _, f := range modifiedFiles {
 		if strings.HasPrefix(f, "apps/") {
-
 			// File names: apps/<f>.go
 			f := strings.TrimPrefix(f, "apps/")
 			f = strings.TrimSuffix(f, ".go")
@@ -782,8 +792,15 @@ func determineImpactedApps(modifiedFiles []string, allApps map[string]metadata.I
 			// The directories here are already authoritative, no
 			// need to check against list.
 			impactedApps[f] = true
-
 		}
+	}
+
+	if len(impactedApps) == 0 {
+		// If none of the apps are impacted, treat all of them as impacted.
+		for app := range allApps {
+			impactedApps[app] = true
+		}
+		return impactedApps
 	}
 	return impactedApps
 }

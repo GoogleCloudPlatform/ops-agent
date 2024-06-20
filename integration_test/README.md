@@ -14,7 +14,7 @@ a firewall that allows connections over port 22 for ssh. It is recommended for
 Googlers to use our prebuilt testing project. Ask a teammate (e.g. martijnvs@)
 for the project ID.
 
-You will also need a GCS bucket that is used to transfer files onto the 
+You will also need a GCS bucket that is used to transfer files onto the
 testing VMs. This is referred to as `${TRANSFERS_BUCKET}`. For Googlers,
 `stackdriver-test-143416-untrusted-file-transfers` is recommended.
 
@@ -46,15 +46,15 @@ When the setup steps are complete, you can run ops_agent_test from the
 ```
 make integration_tests PROJECT=${PROJECT} TRANSFERS_BUCKET=${TRANSFERS_BUCKET}
 ```
-Alternatively, you can export `PROJECT` and `TRANSFERS_BUCKET` in your 
-environment and simply call the target.  
-You can also specify the `ZONES` and `PLATFORMS` variables if you would like
+Alternatively, you can export `PROJECT` and `TRANSFERS_BUCKET` in your
+environment and simply call the target.
+You can also specify the `ZONES` and `IMAGE_SPECS` variables if you would like
 to run the tests on something other than the defaults (`us-central1-b` for
-ZONES and `debian-cloud:debian-11` for `PLATFORMS`).
+ZONES and `debian-cloud:debian-11` for `IMAGE_SPECS`).
 
 The above command will run the tests against the stable Ops Agent. To test
 against a pre-built but unreleased agent, you can use add the
-AGENT_PACKAGES_IN_GCS environment variable onto your command like this:
+`AGENT_PACKAGES_IN_GCS` environment variable onto your command like this:
 
 ```
 AGENT_PACKAGES_IN_GCS=gs://ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/build/buster/2068/20220926-132259/result \
@@ -99,7 +99,7 @@ go test -v ./integration_test \
     -test.run="TestThirdPartyApps/.*/(nvml|dcgm)"
 ```
 
-Make sure the platform you specify is included in the PLATFORMS environment
+Make sure the platform you specify is included in the `IMAGE_SPECS` environment
 variable.
 
 ### Testing Flow
@@ -129,6 +129,10 @@ The test is designed so that simply modifying files in the
 `third_party_apps_data` directory is sufficient to get the test runner to do the
 right thing. But we do expect that we will need to make big changes to both the
 data directory and the test runner before it is really meeting our needs.
+
+By default, the test will skip any applications that were not
+impacted by the currently modified set of files. However, if the modified files
+are unrelated to any apps, it assumes that all apps are impacted.
 
 ### Adding a new third-party application
 
