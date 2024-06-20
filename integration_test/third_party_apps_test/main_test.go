@@ -39,6 +39,7 @@ package third_party_apps_test
 import (
 	"context"
 	"embed"
+	"flag"
 	"fmt"
 	"log"
 	"math"
@@ -745,10 +746,19 @@ func isCriticalFile(f string) bool {
 //	integration_test/third_party_apps_test/applications/<appname>/
 //
 // Checks the extracted app names against the set of all known apps.
-// If no app is found as impacted, assume all apps are.
+// If tests were explicitly selected, or if no app is found as impacted, assume
+// all apps are.
 func determineImpactedApps(modifiedFiles []string, allApps map[string]metadata.IntegrationMetadata) map[string]bool {
 	impactedApps := make(map[string]bool)
 	defer log.Printf("impacted apps: %v", impactedApps)
+
+	if flag.Lookup("test.run") != nil {
+		// Honor explicit test selectors.
+		for app := range allApps {
+			impactedApps[app] = true
+		}
+		return impactedApps
+	}
 
 	for _, f := range modifiedFiles {
 		if isCriticalFile(f) {
