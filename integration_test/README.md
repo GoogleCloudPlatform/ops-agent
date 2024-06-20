@@ -130,10 +130,9 @@ The test is designed so that simply modifying files in the
 right thing. But we do expect that we will need to make big changes to both the
 data directory and the test runner before it is really meeting our needs.
 
-Note that, by default, the test will skip any applications that were not
-impacted by the currently modified set of files. To force the test to include
-all available applications, regardless of the current modifications, set the
-`ALL_APPS` environment variable to `true`.
+By default, the test will skip any applications that were not
+impacted by the currently modified set of files. However, if the modified files
+are unrelated to any apps, it assumes that all apps are impacted.
 
 ### Adding a new third-party application
 
