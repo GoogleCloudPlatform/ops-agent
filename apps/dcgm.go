@@ -53,6 +53,36 @@ func (r MetricsReceiverDcgm) Pipelines(_ context.Context) ([]otel.ReceiverPipeli
 			},
 			Processors: map[string][]otel.Component{"metrics": {
 				otel.MetricsTransform(
+					otel.UpdateMetric(
+						"gpu.dcgm.pipe.utilization",
+						otel.RenameLabel("gpu.pipe", "pipe"),
+					),
+					otel.UpdateMetric(
+						"gpu.dcgm.memory.bytes_used",
+						otel.RenameLabel("gpu.memory.state", "state"),
+					),
+					otel.UpdateMetric(
+						"gpu.dcgm.nvlink.io",
+						otel.RenameLabel("network.io.direction", "direction"),
+					),
+					otel.UpdateMetric(
+						"gpu.dcgm.pcie.io",
+						otel.RenameLabel("network.io.direction", "direction"),
+					),
+					otel.UpdateMetric(
+						"gpu.dcgm.clock.throttle_duration.time",
+						otel.RenameLabel("gpu.clock.violation", "violation"),
+					),
+					otel.UpdateMetric(
+						"gpu.dcgm.ecc_errors",
+						otel.RenameLabel("gpu.error.type", "error_type"),
+					),
+					otel.UpdateMetric(
+						"gpu.dcgm.xid_errors",
+						otel.RenameLabel("gpu.error.xid", "xid"),
+					),
+				),
+				otel.MetricsTransform(
 					otel.AddPrefix("workload.googleapis.com"),
 				),
 				otel.TransformationMetrics(
@@ -72,31 +102,49 @@ func (r MetricsReceiverDcgm) Pipelines(_ context.Context) ([]otel.ReceiverPipeli
 				"collection_interval": r.CollectionIntervalString(),
 				"endpoint":            r.Endpoint,
 				"metrics": map[string]interface{}{
+					"gpu.dcgm.utilization": map[string]bool{
+						"enabled": false,
+					},
+					"gpu.dcgm.sm.utilization": map[string]bool{
+						"enabled": true,
+					},
+					"gpu.dcgm.sm.occupancy": map[string]bool{
+						"enabled": true,
+					},
+					"gpu.dcgm.pipe.utilization": map[string]bool{
+						"enabled": true,
+					},
+					"gpu.dcgm.codec.encoder.utilization": map[string]bool{
+						"enabled": false,
+					},
+					"gpu.dcgm.codec.decoder.utilization": map[string]bool{
+						"enabled": false,
+					},
+					"gpu.dcgm.memory.bytes_used": map[string]bool{
+						"enabled": false,
+					},
+					"gpu.dcgm.memory.bandwidth_utilization": map[string]bool{
+						"enabled": true,
+					},
+					"gpu.dcgm.pcie.io": map[string]bool{
+						"enabled": true,
+					},
+					"gpu.dcgm.nvlink.io": map[string]bool{
+						"enabled": true,
+					},
+					"gpu.dcgm.energy_consumption": map[string]bool{
+						"enabled": false,
+					},
+					"gpu.dcgm.temperature": map[string]bool{
+						"enabled": false,
+					},
 					"gpu.dcgm.clock.frequency": map[string]bool{
 						"enabled": false,
 					},
 					"gpu.dcgm.clock.throttle_duration.time": map[string]bool{
 						"enabled": false,
 					},
-					"gpu.dcgm.codec.decoder.utilization": map[string]bool{
-						"enabled": false,
-					},
-					"gpu.dcgm.codec.encoder.utilization": map[string]bool{
-						"enabled": false,
-					},
 					"gpu.dcgm.ecc_errors": map[string]bool{
-						"enabled": false,
-					},
-					"gpu.dcgm.energy_consumption": map[string]bool{
-						"enabled": false,
-					},
-					"gpu.dcgm.memory.bytes_used": map[string]bool{
-						"enabled": false,
-					},
-					"gpu.dcgm.temperature": map[string]bool{
-						"enabled": false,
-					},
-					"gpu.dcgm.utilization": map[string]bool{
 						"enabled": false,
 					},
 					"gpu.dcgm.xid_errors": map[string]bool{
@@ -112,16 +160,27 @@ func (r MetricsReceiverDcgm) Pipelines(_ context.Context) ([]otel.ReceiverPipeli
 					"dcgm.gpu.profiling.dram_utilization",
 				),
 				otel.RenameMetric(
-					"gpu.dcgm.nvlink.traffic",
+					"gpu.dcgm.nvlink.io",
 					"dcgm.gpu.profiling.nvlink_traffic_rate",
+					otel.RenameLabel("network.io.direction", "direction"),
+					otel.RenameLabelValues("direction", map[string]string{
+						"receive":  "rx",
+						"transmit": "tx",
+					}),
 				),
 				otel.RenameMetric(
-					"gpu.dcgm.pcie.traffic",
+					"gpu.dcgm.pcie.io",
 					"dcgm.gpu.profiling.pcie_traffic_rate",
+					otel.RenameLabel("network.io.direction", "direction"),
+					otel.RenameLabelValues("direction", map[string]string{
+						"receive":  "rx",
+						"transmit": "tx",
+					}),
 				),
 				otel.RenameMetric(
 					"gpu.dcgm.pipe.utilization",
 					"dcgm.gpu.profiling.pipe_utilization",
+					otel.RenameLabel("gpu.pipe", "pipe"),
 				),
 				otel.RenameMetric(
 					"gpu.dcgm.sm.occupancy",

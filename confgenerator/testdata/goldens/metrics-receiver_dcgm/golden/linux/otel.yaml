@@ -62,14 +62,40 @@ processors:
       include: gpu.dcgm.memory.bandwidth_utilization
       new_name: dcgm.gpu.profiling.dram_utilization
     - action: update
-      include: gpu.dcgm.nvlink.traffic
+      include: gpu.dcgm.nvlink.io
       new_name: dcgm.gpu.profiling.nvlink_traffic_rate
+      operations:
+      - action: update_label
+        label: network.io.direction
+        new_label: direction
+      - action: update_label
+        label: direction
+        value_actions:
+        - new_value: rx
+          value: receive
+        - new_value: tx
+          value: transmit
     - action: update
-      include: gpu.dcgm.pcie.traffic
+      include: gpu.dcgm.pcie.io
       new_name: dcgm.gpu.profiling.pcie_traffic_rate
+      operations:
+      - action: update_label
+        label: network.io.direction
+        new_label: direction
+      - action: update_label
+        label: direction
+        value_actions:
+        - new_value: rx
+          value: receive
+        - new_value: tx
+          value: transmit
     - action: update
       include: gpu.dcgm.pipe.utilization
       new_name: dcgm.gpu.profiling.pipe_utilization
+      operations:
+      - action: update_label
+        label: gpu.pipe
+        new_label: pipe
     - action: update
       include: gpu.dcgm.sm.occupancy
       new_name: dcgm.gpu.profiling.sm_occupancy
@@ -496,8 +522,20 @@ receivers:
         enabled: false
       gpu.dcgm.energy_consumption:
         enabled: false
+      gpu.dcgm.memory.bandwidth_utilization:
+        enabled: true
       gpu.dcgm.memory.bytes_used:
         enabled: false
+      gpu.dcgm.nvlink.io:
+        enabled: true
+      gpu.dcgm.pcie.io:
+        enabled: true
+      gpu.dcgm.pipe.utilization:
+        enabled: true
+      gpu.dcgm.sm.occupancy:
+        enabled: true
+      gpu.dcgm.sm.utilization:
+        enabled: true
       gpu.dcgm.temperature:
         enabled: false
       gpu.dcgm.utilization:

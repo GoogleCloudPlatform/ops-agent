@@ -60,6 +60,50 @@ processors:
   metricstransform/dcgm_0:
     transforms:
     - action: update
+      include: gpu.dcgm.pipe.utilization
+      operations:
+      - action: update_label
+        label: gpu.pipe
+        new_label: pipe
+    - action: update
+      include: gpu.dcgm.memory.bytes_used
+      operations:
+      - action: update_label
+        label: gpu.memory.state
+        new_label: state
+    - action: update
+      include: gpu.dcgm.nvlink.io
+      operations:
+      - action: update_label
+        label: network.io.direction
+        new_label: direction
+    - action: update
+      include: gpu.dcgm.pcie.io
+      operations:
+      - action: update_label
+        label: network.io.direction
+        new_label: direction
+    - action: update
+      include: gpu.dcgm.clock.throttle_duration.time
+      operations:
+      - action: update_label
+        label: gpu.clock.violation
+        new_label: violation
+    - action: update
+      include: gpu.dcgm.ecc_errors
+      operations:
+      - action: update_label
+        label: gpu.error.type
+        new_label: error_type
+    - action: update
+      include: gpu.dcgm.xid_errors
+      operations:
+      - action: update_label
+        label: gpu.error.xid
+        new_label: xid
+  metricstransform/dcgm_1:
+    transforms:
+    - action: update
       include: ^(.*)$$
       match_type: regexp
       new_name: workload.googleapis.com/$${1}
@@ -461,13 +505,13 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  modifyscope/dcgm_2:
+  modifyscope/dcgm_3:
     override_scope_name: agent.googleapis.com/dcgm
     override_scope_version: "2.0"
   resourcedetection/_global_0:
     detectors:
     - gcp
-  transform/dcgm_1:
+  transform/dcgm_2:
     metric_statements:
       context: datapoint
       statements:
@@ -517,8 +561,9 @@ service:
       - googlecloud/otel
       processors:
       - metricstransform/dcgm_0
-      - transform/dcgm_1
-      - modifyscope/dcgm_2
+      - metricstransform/dcgm_1
+      - transform/dcgm_2
+      - modifyscope/dcgm_3
       - resourcedetection/_global_0
       receivers:
       - dcgm/dcgm

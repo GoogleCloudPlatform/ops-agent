@@ -61,15 +61,6 @@ expected_metrics:
       uuid: .*
       gpu_number: "[0-9]*"
       instrumentation_source: agent.googleapis.com/dcgm
-  - type: workload.googleapis.com/gpu.dcgm.sm.occupancy
-    value_type: DOUBLE
-    kind: GAUGE
-    monitored_resource: gce_instance
-    labels:
-      model: .*
-      uuid: .*
-      gpu_number: "[0-9]*"
-      instrumentation_source: agent.googleapis.com/dcgm
   - type: workload.googleapis.com/gpu.dcgm.pipe.utilization
     value_type: DOUBLE
     kind: GAUGE
@@ -106,7 +97,7 @@ expected_metrics:
       model: .*
       uuid: .*
       gpu_number: "[0-9]*"
-      memory_state: free|used|reserved
+      state: free|used|reserved
       instrumentation_source: agent.googleapis.com/dcgm
     representative: true
   - type: workload.googleapis.com/gpu.dcgm.memory.bandwidth_utilization
@@ -118,7 +109,7 @@ expected_metrics:
       uuid: .*
       gpu_number: "[0-9]*"
       instrumentation_source: agent.googleapis.com/dcgm
-  - type: workload.googleapis.com/gpu.dcgm.pcie.traffic
+  - type: workload.googleapis.com/gpu.dcgm.pcie.io
     value_type: INT64
     kind: CUMULATIVE
     monitored_resource: gce_instance
@@ -126,9 +117,9 @@ expected_metrics:
       model: .*
       uuid: .*
       gpu_number: "[0-9]*"
-      direction: tx|rx
+      direction: transmit|receive
       instrumentation_source: agent.googleapis.com/dcgm
-  - type: workload.googleapis.com/gpu.dcgm.nvlink.traffic
+  - type: workload.googleapis.com/gpu.dcgm.nvlink.io
     value_type: INT64
     kind: CUMULATIVE
     monitored_resource: gce_instance
@@ -136,7 +127,7 @@ expected_metrics:
       model: .*
       uuid: .*
       gpu_number: "[0-9]*"
-      direction: tx|rx
+      direction: transmit|receive
       instrumentation_source: agent.googleapis.com/dcgm
   - type: workload.googleapis.com/gpu.dcgm.energy_consumption
     value_type: DOUBLE
