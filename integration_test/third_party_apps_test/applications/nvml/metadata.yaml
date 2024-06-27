@@ -53,7 +53,7 @@ gpu_platforms:
       - ubuntu-os-cloud:ubuntu-2204-lts
   - model: h100
     platforms:
-      - ubuntu-os-cloud:ubuntu-2004-lts
+      - debian-cloud:debian-11
 expected_metrics:
   - type: agent.googleapis.com/gpu/utilization
     value_type: DOUBLE
