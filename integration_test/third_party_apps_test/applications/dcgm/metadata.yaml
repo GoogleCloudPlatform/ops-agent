@@ -43,6 +43,9 @@ gpu_platforms: # p4, p100 don't emit DCGM profiling metrics
       - suse-cloud:sles-15
       - ubuntu-os-cloud:ubuntu-2004-lts
       - ubuntu-os-cloud:ubuntu-2204-lts
+  - model: h100
+    platforms:
+      - debian-cloud:debian-11
 expected_metrics:
   - type: workload.googleapis.com/dcgm.gpu.profiling.sm_utilization
     value_type: DOUBLE
