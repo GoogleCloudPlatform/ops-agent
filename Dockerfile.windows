@@ -21,6 +21,10 @@ RUN Write-Host ('Creating folders'); `
     New-Item -Type Directory -Path /work/out/bin; `
     New-Item -Type Directory -Path /work/out/config;
 
+$action = New-ScheduledTaskAction -Execute 'Powershell.exe'-Argument '-NoProfile -WindowStyle Hidden -command "& {Set-DnsClientServerAddress -InterfaceAlias vEthernet* -ServerAddresses "8.8.8.8"}"';
+$trigger = New-ScheduledTaskTrigger -AtStartup;
+Register-ScheduledTask -Action $action -Trigger $trigger -TaskName "FixLocalDNS" -Description "Changes local DNS settings to address issue in Docker" -RunLevel Highest -User System;
+RUN Get-DnsClientServerAddress
 ###############################################################################
 # Install build prerequisites
 ###############################################################################
