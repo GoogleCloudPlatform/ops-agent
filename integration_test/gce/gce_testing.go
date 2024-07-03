@@ -991,7 +991,7 @@ func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM) error {
 		// be imported.
 		// To fix this, we force install a package. coreutils is arbitrarily
 		// chosen as it's all but guaranteed to be present.
-		_, zypperErr := RunRemotely(ctx, logger, vm, "sudo zypper --non-interactive --gpg-auto-import-keys refresh && sudo zypper --non-interactive install timezone-java")
+		_, zypperErr := RunRemotely(ctx, logger, vm, "sudo zypper --non-interactive --gpg-auto-import-keys refresh && sudo zypper --non-interactive install --force coreutils")
 		return zypperErr
 	}, backoffPolicy)
 	if err != nil {
