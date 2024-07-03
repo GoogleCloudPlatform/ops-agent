@@ -973,7 +973,7 @@ const (
 // First it repeatedly runs registercloudguest, then it repeatedly tries installing a dummy package until it succeeds.
 // When that happens, the VM is ready to install packages.
 // See b/148612123 and b/196246592 for some history about this.
-func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM, testPackage string) error {
+func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM) error {
 	backoffPolicy := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(5*time.Second), 5), ctx) // 5 attempts.
 	err := backoff.Retry(func() error {
 		_, err := RunRemotely(ctx, logger, vm, "sudo /usr/sbin/registercloudguest --force")
@@ -989,19 +989,10 @@ func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM, testPackage st
 		// --gpg-auto-import-keys is included to fix a rare flake where (due to
 		// a policy being installed already) there is a new key that needs to
 		// be imported.
-		// This function accepts a package to use for install.
-		// By default, timezone-java is selected as it is a package that:
+		// timezone-java was selected arbitrarily as a package that:
 		// a) can be installed from the default repos, and
 		// b) isn't installed already.
-		if testPackage == "" {
-			testPackage = "timezone-java"
-		}
-		_, zypperErr := RunRemotely(
-			ctx,
-			logger,
-			vm,
-			fmt.Sprintf("sudo zypper --non-interactive --gpg-auto-import-keys refresh && sudo zypper --non-interactive install %s", testPackage),
-		)
+		_, zypperErr := RunRemotely(ctx, logger, vm, "sudo zypper --non-interactive --gpg-auto-import-keys refresh && sudo zypper --non-interactive install timezone-java")
 		return zypperErr
 	}, backoffPolicy)
 	if err != nil {
@@ -1280,14 +1271,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	}
 
 	if IsSLESVM(vm) {
-		testPackage := ""
-		if IsSLESSP6(vm) {
-			// The default timezone-java package is not available in SP6.
-			// For SP6, we use another package with minimal dependencies
-			// that is quick to install.
-			testPackage = "abseil-cpp-devel"
-		}
-		if err := prepareSLES(ctx, logger, vm, testPackage); err != nil {
+		if err := prepareSLES(ctx, logger, vm); err != nil {
 			return nil, fmt.Errorf("%s: %v", prepareSLESMessage, err)
 		}
 	}
@@ -1328,10 +1312,6 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 
 func IsSLESVM(vm *VM) bool {
 	return vm.OS.ID == "sles" || vm.OS.ID == "sles_sap"
-}
-
-func IsSLESSP6(vm *VM) bool {
-	return strings.Contains(vm.ImageSpec, "sles-15-sp6")
 }
 
 func IsSUSEVM(vm *VM) bool {
@@ -1606,7 +1586,7 @@ INSTALL_DIR="$(readlink --canonicalize .)"
 	INSTALL_LOG="$(mktemp)"
 	# This command produces a lot of console spam, so we only display that
 	# output if there is a problem.
-	sudo tar -xf ` + gcloudPkg + ` -C ${INSTALL_DIR}
+	sudo tar -xf ` + gcloudPkg + ` -C ${INSTALL_DIR} 
 	sudo --preserve-env ${INSTALL_DIR}/google-cloud-sdk/install.sh -q &>"${INSTALL_LOG}" || \
 		EXIT_CODE=$?
 	if [[ "${EXIT_CODE-}" ]]; then
@@ -1620,7 +1600,7 @@ INSTALL_DIR="$(readlink --canonicalize .)"
 # Upgrade to the latest version
 sudo ${INSTALL_DIR}/google-cloud-sdk/bin/gcloud components update --quiet
 
-sudo ln -s ${INSTALL_DIR}/google-cloud-sdk/bin/gsutil /usr/bin/gsutil
+sudo ln -s ${INSTALL_DIR}/google-cloud-sdk/bin/gsutil /usr/bin/gsutil 
 `
 	// b/308962066: The GCloud CLI ARM Linux tarballs do not have bundled Python
 	// and the GCloud CLI requires Python >= 3.8. Install Python311 for ARM VMs
