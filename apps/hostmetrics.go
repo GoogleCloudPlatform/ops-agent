@@ -38,6 +38,7 @@ func (r MetricsReceiverHostmetrics) Pipelines(ctx context.Context) ([]otel.Recei
 	p := platform.FromContext(ctx)
 	processConfig := map[string]interface{}{
 		"mute_process_name_error": true,
+		"mute_process_exe_error": true,
 	}
 	if p.Type == platform.Windows {
 		processConfig["metrics"] = map[string]interface{}{
