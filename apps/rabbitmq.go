@@ -79,13 +79,13 @@ func (p *LoggingProcessorRabbitmq) Components(ctx context.Context, tag, uid stri
 }
 
 type LoggingReceiverRabbitmq struct {
-	LoggingProcessorRabbitmq                `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	LoggingProcessorRabbitmq `yaml:",inline"`
+	ReceiverMixin            confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r LoggingReceiverRabbitmq) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
+		r.ReceiverMixin.IncludePaths = []string{
 			"/var/log/rabbitmq/rabbit*.log",
 		}
 	}
@@ -96,7 +96,7 @@ func (r LoggingReceiverRabbitmq) Components(ctx context.Context, tag string) []f
 	// ===========
 	// ERROR: could not bind to distribution port 25672, it is in use by another node: rabbit@keith-testing-rabbitmq
 	//
-	r.MultilineRules = []confgenerator.MultilineRule{
+	r.ReceiverMixin.MultilineRules = []confgenerator.MultilineRule{
 		{
 			StateName: "start_state",
 			NextState: "cont",
@@ -108,7 +108,7 @@ func (r LoggingReceiverRabbitmq) Components(ctx context.Context, tag string) []f
 			Regex:     `^(?!\d+-\d+-\d+ \d+:\d+:\d+\.\d+\+\d+:\d+)`,
 		},
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := r.ReceiverMixin.Components(ctx, tag)
 	c = append(c, r.LoggingProcessorRabbitmq.Components(ctx, tag, "rabbitmq")...)
 	return c
 }
@@ -161,8 +161,9 @@ func (r MetricsReceiverRabbitmq) Pipelines(_ context.Context) ([]otel.ReceiverPi
 				otel.FlattenResourceAttribute("rabbitmq.queue.name", "queue_name"),
 				otel.FlattenResourceAttribute("rabbitmq.node.name", "node_name"),
 				otel.FlattenResourceAttribute("rabbitmq.vhost.name", "vhost_name"),
+				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+				otel.SetScopeVersion("1.0"),
 			),
-			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
 	}}, nil
 }

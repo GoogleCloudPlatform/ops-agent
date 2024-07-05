@@ -1,4 +1,18 @@
 #!/bin/bash
+# Copyright 2024 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 
 # See go/sdi-new-distro-detector for details on how this script is being used.
 # A short summary is that it is run periodically by GCB to file bugs when
@@ -40,7 +54,7 @@ gsutil -q cp "${LAST_KNOWN_LIST}" - \
   | tee known_families.txt
 
 # If there is a difference, print the diff, and...
-if ! diff known_families.txt current_families.txt; then
+if ! diff --ignore-all-space --ignore-blank-lines known_families.txt current_families.txt; then
   # Print instructions for handling the error.
   # Set +x temporarily so that the banner is only printed once.
   set +x

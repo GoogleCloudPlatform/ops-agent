@@ -50,7 +50,10 @@ func (r MetricsReceiverJetty) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 				otel.MetricsTransform(
 					otel.AddPrefix("workload.googleapis.com"),
 				),
-				otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+				otel.TransformationMetrics(
+					otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+					otel.SetScopeVersion("1.0"),
+				),
 			},
 		)
 }
@@ -72,17 +75,17 @@ func (LoggingProcessorJettyAccess) Type() string {
 }
 
 type LoggingReceiverJettyAccess struct {
-	LoggingProcessorJettyAccess             `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	LoggingProcessorJettyAccess `yaml:",inline"`
+	ReceiverMixin               confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r LoggingReceiverJettyAccess) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
+		r.ReceiverMixin.IncludePaths = []string{
 			"/opt/logs/*.request.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := r.ReceiverMixin.Components(ctx, tag)
 	c = append(c, r.LoggingProcessorJettyAccess.Components(ctx, tag, "jetty_access")...)
 	return c
 }

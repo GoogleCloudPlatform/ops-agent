@@ -50,7 +50,10 @@ func (r MetricsReceiverHadoop) Pipelines(_ context.Context) ([]otel.ReceiverPipe
 				otel.MetricsTransform(
 					otel.AddPrefix("workload.googleapis.com"),
 				),
-				otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+				otel.TransformationMetrics(
+					otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+					otel.SetScopeVersion("1.0"),
+				),
 			},
 		)
 }
@@ -106,20 +109,20 @@ func (p LoggingProcessorHadoop) Components(ctx context.Context, tag, uid string)
 }
 
 type LoggingReceiverHadoop struct {
-	LoggingProcessorHadoop                  `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
+	LoggingProcessorHadoop `yaml:",inline"`
+	ReceiverMixin          confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
 }
 
 func (r LoggingReceiverHadoop) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.IncludePaths) == 0 {
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
 		// Default logs for hadoop
-		r.IncludePaths = []string{
+		r.ReceiverMixin.IncludePaths = []string{
 			"/opt/hadoop/logs/hadoop-*.log",
 			"/opt/hadoop/logs/yarn-*.log",
 		}
 	}
 
-	r.MultilineRules = []confgenerator.MultilineRule{
+	r.ReceiverMixin.MultilineRules = []confgenerator.MultilineRule{
 		{
 			StateName: "start_state",
 			NextState: "cont",
@@ -132,7 +135,7 @@ func (r LoggingReceiverHadoop) Components(ctx context.Context, tag string) []flu
 		},
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := r.ReceiverMixin.Components(ctx, tag)
 
 	return append(c, r.LoggingProcessorHadoop.Components(ctx, tag, "hadoop")...)
 }

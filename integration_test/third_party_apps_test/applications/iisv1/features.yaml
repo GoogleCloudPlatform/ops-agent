@@ -1,0 +1,5 @@
+features:
+- module: logging
+  feature: receivers:iis_access
+  key: "[0].enabled"
+  value: "true"

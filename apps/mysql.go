@@ -23,8 +23,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
-
-	"github.com/go-sql-driver/mysql"
 )
 
 type MetricsReceiverMySql struct {
@@ -57,35 +55,7 @@ func (r MetricsReceiverMySql) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 		r.Username = "root"
 	}
 
-	// MySQL replication metrics are implemented separate to the main metrics pipeline so that 5.7 and 8.0 are both supported
-	sqlReceiverDriverConfig := mysql.Config{
-		User:   r.Username,
-		Passwd: r.Password.SecretValue(),
-		Net:    transport,
-		Addr:   r.Endpoint,
-		// This defaults to true in the mysql receiver, but we need to set it explicitly here
-		AllowNativePasswords: true,
-	}
-
 	return []otel.ReceiverPipeline{
-		{
-			Receiver: otel.Component{
-				Type: "sqlquery",
-				Config: map[string]interface{}{
-					"collection_interval": r.CollectionIntervalString(),
-					"driver":              "mysql",
-					"datasource":          sqlReceiverDriverConfig.FormatDSN(),
-					"queries":             sqlReceiverQueriesConfig(mysqlLegacyReplicationQueries),
-				},
-			},
-			Processors: map[string][]otel.Component{"metrics": {
-				otel.NormalizeSums(),
-				otel.MetricsTransform(
-					otel.AddPrefix("workload.googleapis.com"),
-				),
-				otel.ModifyInstrumentationScope(r.Type(), "1.0"),
-			}},
-		},
 		{
 			Receiver: otel.Component{
 				Type: "mysql",
@@ -124,10 +94,10 @@ func (r MetricsReceiverMySql) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 							"enabled": false,
 						},
 						"mysql.replica.sql_delay": map[string]interface{}{
-							"enabled": false,
+							"enabled": true,
 						},
 						"mysql.replica.time_behind_source": map[string]interface{}{
-							"enabled": false,
+							"enabled": true,
 						},
 					},
 				},
@@ -150,40 +120,13 @@ func (r MetricsReceiverMySql) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 					),
 					otel.AddPrefix("workload.googleapis.com"),
 				),
-				otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+				otel.TransformationMetrics(
+					otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+					otel.SetScopeVersion("1.0"),
+				),
 			}},
 		},
 	}, nil
-}
-
-var mysqlLegacyReplicationQueries = []sqlReceiverQuery{
-	{
-		query: `SHOW SLAVE STATUS`,
-		metrics: []sqlReceiverMetric{
-			{
-				metric_name:       "mysql.replica.sql_delay",
-				value_column:      "SQL_Delay",
-				unit:              "s",
-				description:       "The number of seconds that the replica must lag the source.",
-				data_type:         "sum",
-				monotonic:         "false",
-				value_type:        "int",
-				attribute_columns: []string{},
-				static_attributes: map[string]string{},
-			},
-			{
-				metric_name:       "mysql.replica.time_behind_source",
-				value_column:      "Seconds_Behind_Master",
-				unit:              "s",
-				description:       "This field is an indication of how “late” the replica is.",
-				data_type:         "sum",
-				monotonic:         "false",
-				value_type:        "int",
-				attribute_columns: []string{},
-				static_attributes: map[string]string{},
-			},
-		},
-	},
 }
 
 func init() {
@@ -628,47 +571,47 @@ func (p LoggingProcessorMysqlSlow) Components(ctx context.Context, tag string, u
 }
 
 type LoggingReceiverMysqlGeneral struct {
-	LoggingProcessorMysqlGeneral            `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	LoggingProcessorMysqlGeneral `yaml:",inline"`
+	ReceiverMixin                confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r LoggingReceiverMysqlGeneral) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
+		r.ReceiverMixin.IncludePaths = []string{
 			// Default log path for CentOS / RHEL / SLES / Debain / Ubuntu
 			"/var/lib/mysql/${HOSTNAME}.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := r.ReceiverMixin.Components(ctx, tag)
 	c = append(c, r.LoggingProcessorMysqlGeneral.Components(ctx, tag, "mysql_general")...)
 	return c
 }
 
 type LoggingReceiverMysqlSlow struct {
-	LoggingProcessorMysqlSlow               `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	LoggingProcessorMysqlSlow `yaml:",inline"`
+	ReceiverMixin             confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r LoggingReceiverMysqlSlow) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
+		r.ReceiverMixin.IncludePaths = []string{
 			// Default log path for CentOS / RHEL / SLES / Debain / Ubuntu
 			"/var/lib/mysql/${HOSTNAME}-slow.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := r.ReceiverMixin.Components(ctx, tag)
 	c = append(c, r.LoggingProcessorMysqlSlow.Components(ctx, tag, "mysql_slow")...)
 	return c
 }
 
 type LoggingReceiverMysqlError struct {
-	LoggingProcessorMysqlError              `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	LoggingProcessorMysqlError `yaml:",inline"`
+	ReceiverMixin              confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r LoggingReceiverMysqlError) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
+		r.ReceiverMixin.IncludePaths = []string{
 			// Default log path for CentOS / RHEL
 			"/var/log/mysqld.log",
 			// Default log path for SLES
@@ -682,7 +625,7 @@ func (r LoggingReceiverMysqlError) Components(ctx context.Context, tag string) [
 			"/var/lib/mysql/${HOSTNAME}.err",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := r.ReceiverMixin.Components(ctx, tag)
 	c = append(c, r.LoggingProcessorMysqlError.Components(ctx, tag, "mysql_error")...)
 	return c
 }

@@ -1,5 +1,37 @@
+# Copyright 2024 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 targets:
+  oracular:
+    os_versions: [ubuntu-24.10]
+    package_extension:
+      deb
+    architectures:
+      x86_64:
+        test_distros:
+          representative:
+          - ubuntu-os-cloud:ubuntu-2410-amd64
+          exhaustive:
+          - ubuntu-os-cloud:ubuntu-minimal-2410-amd64
+      aarch64:
+        test_distros:
+          representative:
+          - ubuntu-os-cloud:ubuntu-2410-arm64
+          exhaustive:
+          - ubuntu-os-cloud:ubuntu-minimal-2410-arm64
   bookworm:
+    os_versions: [debian-12]
     package_extension:
       deb
     architectures:
@@ -12,6 +44,7 @@ targets:
           representative:
           - debian-cloud:debian-12-arm64
   bullseye:
+    os_versions: [debian-11]
     package_extension:
       deb
     architectures:
@@ -20,32 +53,8 @@ targets:
           representative:
           - debian-cloud:debian-11
           - ml-images:common-gpu-debian-11-py310
-      aarch64:
-        test_distros:
-          representative:
-          - debian-cloud:debian-11-arm64
-  buster:
-    package_extension:
-      deb
-    architectures:
-      x86_64:
-        test_distros:
-          representative:
-          - debian-cloud:debian-10
-  centos7:
-    package_extension:
-      rpm
-    repo_name:
-      el7
-    architectures:
-      x86_64:
-        test_distros:
-          representative:
-          - centos-cloud:centos-7
-          exhaustive:
-          - rhel-cloud:rhel-7
-          - rhel-sap-cloud:rhel-7-9-sap-ha
   centos8:
+    os_versions: [centos-8,rocky-8,rhel-8]
     package_extension:
       rpm
     repo_name:
@@ -60,29 +69,19 @@ targets:
           - rhel-sap-cloud:rhel-8-4-sap-ha
           - rhel-sap-cloud:rhel-8-6-sap-ha
           - rhel-sap-cloud:rhel-8-8-sap-ha
-  focal:
+          - rocky-linux-cloud:rocky-linux-8-optimized-gcp
+      aarch64:
+        test_distros:
+          representative:
+          - rocky-linux-cloud:rocky-linux-8-optimized-gcp-arm64
+  jammy:
+    os_versions: [ubuntu-22.04]
     package_extension:
       deb
     architectures:
       x86_64:
         soak_distro:
-          ubuntu-os-cloud:ubuntu-2004-lts
-        test_distros:
-          representative:
-          - ubuntu-os-cloud:ubuntu-2004-lts
-          exhaustive:
-          - ubuntu-os-cloud:ubuntu-minimal-2004-lts
-      aarch64:
-        test_distros:
-          representative:
-          - ubuntu-os-cloud:ubuntu-2004-lts-arm64
-          exhaustive:
-          - ubuntu-os-cloud:ubuntu-minimal-2004-lts-arm64
-  jammy:
-    package_extension:
-      deb
-    architectures:
-      x86_64:
+          ubuntu-os-cloud:ubuntu-2204-lts
         test_distros:
           representative:
           - ubuntu-os-cloud:ubuntu-2204-lts
@@ -94,23 +93,8 @@ targets:
           - ubuntu-os-cloud:ubuntu-2204-lts-arm64
           exhaustive:
           - ubuntu-os-cloud:ubuntu-minimal-2204-lts-arm64
-  mantic:
-    package_extension:
-      deb
-    architectures:
-      x86_64:
-        test_distros:
-          representative:
-          - ubuntu-os-cloud:ubuntu-2310-amd64
-          exhaustive:
-          - ubuntu-os-cloud:ubuntu-minimal-2310-amd64
-      aarch64:
-        test_distros:
-          representative:
-          - ubuntu-os-cloud:ubuntu-2310-arm64
-          exhaustive:
-          - ubuntu-os-cloud:ubuntu-minimal-2310-arm64
   noble:
+    os_versions: [ubuntu-24.04]
     package_extension:
       deb
     architectures:
@@ -127,6 +111,7 @@ targets:
           exhaustive:
           - ubuntu-os-cloud:ubuntu-minimal-2404-lts-arm64
   rockylinux9:
+    os_versions: [rocky-9,rhel-9]
     package_extension:
       rpm
     repo_name:
@@ -138,13 +123,16 @@ targets:
           - rocky-linux-cloud:rocky-linux-9
           exhaustive:
           - rhel-cloud:rhel-9
+          - rocky-linux-cloud:rocky-linux-9-optimized-gcp
       aarch64:
         test_distros:
           representative:
           - rocky-linux-cloud:rocky-linux-9-arm64
           exhaustive:
           - rhel-cloud:rhel-9-arm64
+          - rocky-linux-cloud:rocky-linux-9-optimized-gcp-arm64
   sles12:
+    os_versions: [sles-12]
     package_extension:
       rpm
     architectures:
@@ -155,6 +143,7 @@ targets:
           exhaustive:
           - suse-sap-cloud:sles-12-sp5-sap
   sles15:
+    os_versions: [sles-15]
     package_extension:
       rpm
     architectures:
@@ -163,19 +152,18 @@ targets:
           representative:
           - suse-cloud:sles-15
           exhaustive:
-          - suse-sap-cloud:sles-15-sp2-sap
-          - suse-sap-cloud:sles-15-sp5-sap
+          - suse-sap-cloud:sles-15-sp6-sap
           - opensuse-cloud:opensuse-leap
-          - opensuse-cloud=opensuse-leap-15-5-v20240516-x86-64
-          - opensuse-cloud=opensuse-leap-15-6-v20240612-x86-64
+          - opensuse-cloud=opensuse-leap-15-5-v20250110-x86-64
+          - opensuse-cloud=opensuse-leap-15-6-v20250130-x86-64
       aarch64:
         test_distros:
           representative:
           - suse-cloud:sles-15-arm64
           exhaustive:
           - opensuse-cloud:opensuse-leap-arm64
-          - opensuse-cloud=opensuse-leap-15-5-v20240516-arm64
-          - opensuse-cloud=opensuse-leap-15-6-v20240612-arm64
+          - opensuse-cloud=opensuse-leap-15-5-v20250110-arm64
+          - opensuse-cloud=opensuse-leap-15-6-v20250130-arm64
   windows:
     package_extension:
       goo
@@ -186,10 +174,14 @@ targets:
         test_distros:
           representative:
           - windows-cloud:windows-2016-core
-          - windows-cloud:windows-2022
+          - windows-cloud:windows-2025
           - windows-sql-cloud:sql-std-2019-win-2019
+          - windows-sql-cloud:sql-std-2022-win-2025
           exhaustive:
           - windows-cloud:windows-2016
           - windows-cloud:windows-2019
+          - windows-cloud:windows-2022
           - windows-cloud:windows-2019-core
           - windows-cloud:windows-2022-core
+          - windows-cloud:windows-2025-core
+          - windows-sql-cloud:sql-std-2022-win-2022

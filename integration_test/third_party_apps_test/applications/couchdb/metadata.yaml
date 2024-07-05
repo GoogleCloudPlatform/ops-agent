@@ -23,6 +23,35 @@ description: |-
   database metrics, such as how many are open and the number of operations. The
   integration collects general CouchDB and access logs and parses them into a JSON
   payload. The result includes fields for user, host, level, and message.
+configure_integration: |-
+  This integration does not require any additional configuration with
+  CouchDB versions prior to 3.4.0, or on Debian-based distributions.
+
+  As of version 3.4.0, CouchDB behaves differently on RPM-based
+  distributions (like RHEL or Rocky Linux). To make CouchDB work with
+  this logging receiver's default configuration on such systems, you must
+  configure Apache CouchDB to write to `/var/log/couchdb/couchdb.log`
+  instead of journald.
+
+  To write logs to `/var/log/couchdb/couchdb.log`, complete the
+  following steps:
+
+  1. Create the file `/opt/couchdb/etc/local.d/ops-agent-filelog.ini`.
+
+  1. Add the following lines to the file:
+
+     ```none
+     [log]
+     writer = file
+     file = /var/log/couchdb/couchdb.log
+     level = info
+     ```
+
+  1. Restart Apache CouchDB:
+
+     ```
+     sudo systemctl restart couchdb
+     ```
 minimum_supported_agent_version:
   metrics: 2.10.0
   logging: 2.11.0
@@ -32,68 +61,77 @@ platforms_to_skip:
   - suse-cloud:sles-12
   - suse-cloud:sles-15
   - suse-cloud:sles-15-arm64
+  - rocky-linux-cloud:rocky-linux-8-optimized-gcp-arm64
   - rocky-linux-cloud:rocky-linux-9
+  - rocky-linux-cloud:rocky-linux-9-optimized-gcp
   - rocky-linux-cloud:rocky-linux-9-arm64
-  - ubuntu-os-cloud:ubuntu-2310-amd64
-  - ubuntu-os-cloud:ubuntu-2310-arm64
+  - rocky-linux-cloud:rocky-linux-9-optimized-gcp-arm64
   - ubuntu-os-cloud:ubuntu-2404-lts-amd64
   - ubuntu-os-cloud:ubuntu-2404-lts-arm64
+  - ubuntu-os-cloud:ubuntu-2410-amd64 # Possible support in the future
+  - ubuntu-os-cloud:ubuntu-minimal-2410-amd64 # Possible support in the future
+  - ubuntu-os-cloud:ubuntu-2410-arm64 # Possible support in the future
+  - ubuntu-os-cloud:ubuntu-minimal-2410-arm64 # Possible support in the future
   - debian-cloud:debian-12
   - debian-cloud:debian-12-arm64
-supported_app_version: ["2.3+", "3.1+"]
+supported_app_version: ["2.3.x", "3.1 and higher"]
 expected_metrics:
   - type: workload.googleapis.com/couchdb.average_request_time
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/couchdb.database.open
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     representative: true
   - type: workload.googleapis.com/couchdb.database.operations
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      operation: .*
+      - name: operation
+        value_regex: .*
   - type: workload.googleapis.com/couchdb.file_descriptor.open
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/couchdb.httpd.bulk_requests
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/couchdb.httpd.requests
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      http_method: .*
+      - name: http_method
+        value_regex: .*
   - type: workload.googleapis.com/couchdb.httpd.responses
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      http_status_code: .*
+      - name: http_status_code
+        value_regex: .*
   - type: workload.googleapis.com/couchdb.httpd.views
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      view: .*
+      - name: view
+        value_regex: .*
 expected_logs:
   - log_name: couchdb
     fields:
       - name: jsonPayload.node
         value_regex: couchdb
         type: string
-        description: node instance name
+        description: Node instance name
       - name: jsonPayload.path
         value_regex: /forbidden
         type: string
-        description: request path
+        description: Request path
       - name: jsonPayload.remote_user
         value_regex: undefined
         type: string
@@ -101,7 +139,7 @@ expected_logs:
       - name: jsonPayload.status_message
         value_regex: ok
         type: string
-        description: status code message
+        description: Status code message
       - name: jsonPayload.pid
         type: string
         description: Process ID
@@ -110,7 +148,7 @@ expected_logs:
         description: Log message
       - name: jsonPayload.host
         type: string
-        description: host instance name
+        description: Host instance name
       - name: jsonPayload.level
         type: string
         description: Log entry level
@@ -155,28 +193,28 @@ configuration_options:
       fields:
         - name: type
           default: null
-          description: The value must be couchdb.
+          description: This value must be `couchdb`.
         - name: include_paths
           default: '[/var/log/couchdb/couchdb.log]'
-          description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/couchdb*/*.log.
+          description: A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `/var/log/couchdb*/*.log`.
         - name: exclude_paths
           default: null
-          description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+          description: A list of filesystem path patterns to exclude from the set matched by `include_paths`.
         - name: record_log_file_path
           default: false
           description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
         - name: wildcard_refresh_interval
           default: 60s
-          description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+          description: The interval at which wildcard file paths in `include_paths` are refreshed. Given as a [time duration](https://pkg.go.dev/time#ParseDuration), for example `30s` or `2m`. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
   metrics:
     - type: couchdb
       fields:
         - name: type
           default: null
-          description: The value must be couchdb.
+          description: This value must be `couchdb`.
         - name: server_status_url
           default: http://localhost:5984
-          description: The URL exposed by couchdb.
+          description: The URL exposed by CouchDB.
         - name: username
           default: null
           description: The username used to connect to the server.
@@ -185,4 +223,4 @@ configuration_options:
           description: The password used to connect to the server.
         - name: collection_interval
           default: 60s
-          description: A time.Duration value, such as 30s or 5m.
+          description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.

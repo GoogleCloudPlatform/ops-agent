@@ -71,18 +71,6 @@ ENV JAVA_HOME /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/`
 
 var dockerfileArguments = []templateArguments{
 	{
-		from_image:  "centos:7",
-		target_name: "centos7",
-		install_packages: `RUN set -x; yum -y update && \
-		yum -y install git systemd \
-		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
-		gcc gcc-c++ make bison flex file systemd-devel zlib-devel gtest-devel rpm-build \
-		expect rpm-sign zip` + installJava + installCMake,
-		package_build:     "RUN ./pkg/rpm/build.sh",
-		tar_distro_name:   "centos-7",
-		package_extension: "rpm",
-	},
-	{
 		from_image:  "rockylinux:8",
 		target_name: "centos8",
 		install_packages: `RUN set -x; yum -y update && \
@@ -135,18 +123,6 @@ var dockerfileArguments = []templateArguments{
 		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "debian-bullseye",
-		package_extension: "deb",
-	},
-	{
-		from_image:  "debian:buster",
-		target_name: "buster",
-		install_packages: `RUN set -x; apt-get update && \
-		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config zip` + installJava,
-		package_build:     "RUN ./pkg/deb/build.sh",
-		tar_distro_name:   "debian-buster",
 		package_extension: "deb",
 	},
 	{
@@ -214,18 +190,6 @@ RUN ln -fs /usr/lib/systemd /lib/systemd` + installJava + installCMake,
 		package_extension: "deb",
 	},
 	{
-		from_image:  "ubuntu:mantic",
-		target_name: "mantic",
-		install_packages: `RUN set -x; apt-get update && \
-		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip debhelper`,
-		package_build:     "RUN ./pkg/deb/build.sh",
-		tar_distro_name:   "ubuntu-mantic",
-		package_extension: "deb",
-	},
-	{
 		from_image:  "ubuntu:noble",
 		target_name: "noble",
 		install_packages: `RUN set -x; apt-get update && \
@@ -235,6 +199,30 @@ RUN ln -fs /usr/lib/systemd /lib/systemd` + installJava + installCMake,
 		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip debhelper`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "ubuntu-noble",
+		package_extension: "deb",
+	},
+	{
+		from_image:  "ubuntu:oracular",
+		target_name: "oracular",
+		install_packages: `RUN set -x; apt-get update && \
+		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
+		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
+		build-essential cmake bison flex file systemd-dev debhelper libsystemd-dev \
+		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip`,
+		package_build:     "RUN ./pkg/deb/build.sh",
+		tar_distro_name:   "ubuntu-oracular",
+		package_extension: "deb",
+	},
+	{
+		from_image:  "ubuntu:plucky",
+		target_name: "plucky",
+		install_packages: `RUN set -x; apt-get update && \
+		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
+		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
+		build-essential cmake bison flex file systemd-dev debhelper libsystemd-dev \
+		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip`,
+		package_build:     "RUN ./pkg/deb/build.sh",
+		tar_distro_name:   "ubuntu-plucky",
 		package_extension: "deb",
 	},
 }

@@ -50,8 +50,17 @@ processors:
         metric_names:
         - otelcol_process_uptime
         - otelcol_process_memory_rss
-        - otelcol_grpc_io_client_completed_rpcs
-        - otelcol_googlecloudmonitoring_point_count
+        - grpc.client.attempt.duration
+        - googlecloudmonitoring/point_count
+  filter/otel_2:
+    metrics:
+      include:
+        match_type: strict
+        metric_names:
+        - otelcol_process_uptime
+        - otelcol_process_memory_rss
+        - grpc.client.attempt.duration_count
+        - googlecloudmonitoring/point_count
   metricstransform/fluentbit_1:
     transforms:
     - action: update
@@ -383,12 +392,6 @@ processors:
   metricstransform/mysqlmetrics_1:
     transforms:
     - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: workload.googleapis.com/$${1}
-  metricstransform/mysqlmetrics_1_1:
-    transforms:
-    - action: update
       include: "^mysql\\.buffer_pool\\.(.*)$$"
       match_type: regexp
       new_name: mysql.buffer_pool_$${1}
@@ -412,7 +415,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: workload.googleapis.com/$${1}
-  metricstransform/otel_1:
+  metricstransform/otel_3:
     transforms:
     - action: update
       include: otelcol_process_uptime
@@ -434,19 +437,18 @@ processors:
         aggregation_type: sum
         label_set: []
     - action: update
-      include: otelcol_grpc_io_client_completed_rpcs
+      include: grpc.client.attempt.duration_count
       new_name: agent/api_request_count
       operations:
-      - action: toggle_scalar_data_type
       - action: update_label
-        label: grpc_client_status
+        label: grpc.status
         new_label: state
       - action: aggregate_labels
         aggregation_type: sum
         label_set:
         - state
     - action: update
-      include: otelcol_googlecloudmonitoring_point_count
+      include: googlecloudmonitoring/point_count
       new_name: agent/monitoring/point_count
       operations:
       - action: toggle_scalar_data_type
@@ -458,17 +460,28 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  modifyscope/mysqlmetrics_1_2:
-    override_scope_name: agent.googleapis.com/mysql
-    override_scope_version: "1.0"
-  modifyscope/mysqlmetrics_2:
-    override_scope_name: agent.googleapis.com/mysql
-    override_scope_version: "1.0"
   normalizesums/mysqlmetrics_0: {}
-  normalizesums/mysqlmetrics_1_0: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
+  transform/mysqlmetrics_2:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "agent.googleapis.com/mysql")
+      - set(version, "1.0")
+  transform/ops_agent_0:
+    error_mode: ignore
+    metric_statements:
+    - context: datapoint
+      statements:
+      - set(time, Now())
+  transform/otel_1:
+    error_mode: ignore
+    metric_statements:
+    - context: metric
+      statements:
+      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
@@ -481,9 +494,11 @@ receivers:
       network: {}
       paging: {}
       process:
+        mute_process_all_errors: true
+        mute_process_exe_error: true
         mute_process_name_error: true
       processes: {}
-  mysql/mysqlmetrics_1:
+  mysql/mysqlmetrics:
     collection_interval: 30s
     endpoint: /var/run/mysqld/mysqld.sock
     metrics:
@@ -500,9 +515,9 @@ receivers:
       mysql.prepared_statements:
         enabled: false
       mysql.replica.sql_delay:
-        enabled: false
+        enabled: true
       mysql.replica.time_behind_source:
-        enabled: false
+        enabled: true
       mysql.table.io.wait.count:
         enabled: false
       mysql.table.io.wait.time:
@@ -512,6 +527,12 @@ receivers:
     password: pwd
     transport: unix
     username: usr
+  otlpjsonfile/ops_agent:
+    include:
+    - enabled_receivers_otlp.json
+    - feature_tracking_otlp.json
+    poll_interval: 1m0s
+    replay_file: true
   prometheus/fluentbit:
     config:
       scrape_configs:
@@ -529,31 +550,6 @@ receivers:
         static_configs:
         - targets:
           - 0.0.0.0:20201
-  sqlquery/mysqlmetrics:
-    collection_interval: 30s
-    datasource: usr:pwd@unix(/var/run/mysqld/mysqld.sock)/?checkConnLiveness=false&maxAllowedPacket=0
-    driver: mysql
-    queries:
-    - metrics:
-      - attribute_columns: []
-        data_type: sum
-        description: The number of seconds that the replica must lag the source.
-        metric_name: mysql.replica.sql_delay
-        monotonic: "false"
-        static_attributes: {}
-        unit: s
-        value_column: SQL_Delay
-        value_type: int
-      - attribute_columns: []
-        data_type: sum
-        description: This field is an indication of how “late” the replica is.
-        metric_name: mysql.replica.time_behind_source
-        monotonic: "false"
-        static_attributes: {}
-        unit: s
-        value_column: Seconds_Behind_Master
-        value_type: int
-      sql: SHOW SLAVE STATUS
 service:
   pipelines:
     metrics/default__pipeline_hostmetrics:
@@ -582,29 +578,37 @@ service:
       processors:
       - normalizesums/mysqlmetrics_0
       - metricstransform/mysqlmetrics_1
-      - modifyscope/mysqlmetrics_2
+      - transform/mysqlmetrics_2
       - resourcedetection/_global_0
       receivers:
-      - sqlquery/mysqlmetrics
-    metrics/mysqlpipeline_mysqlmetrics_1:
+      - mysql/mysqlmetrics
+    metrics/ops_agent:
       exporters:
-      - googlecloud/otel
+      - googlecloud
       processors:
-      - normalizesums/mysqlmetrics_1_0
-      - metricstransform/mysqlmetrics_1_1
-      - modifyscope/mysqlmetrics_1_2
+      - transform/ops_agent_0
       - resourcedetection/_global_0
       receivers:
-      - mysql/mysqlmetrics_1
+      - otlpjsonfile/ops_agent
     metrics/otel:
       exporters:
       - googlecloud
       processors:
       - filter/otel_0
-      - metricstransform/otel_1
+      - transform/otel_1
+      - filter/otel_2
+      - metricstransform/otel_3
       - resourcedetection/_global_0
       receivers:
       - prometheus/otel
   telemetry:
     metrics:
-      address: 0.0.0.0:20201
+      readers:
+      - pull:
+          exporter:
+            prometheus:
+              host: 0.0.0.0
+              port: 20201
+              without_scope_info: true
+              without_type_suffix: true
+              without_units: true

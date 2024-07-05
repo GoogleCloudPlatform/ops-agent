@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
@@ -59,7 +60,10 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 	defer cancel()
 	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown
 	changes <- svc.Status{State: svc.StartPending}
-	if err := s.parseFlags(args); err != nil {
+
+	allArgs := append([]string{}, os.Args[1:]...)
+	allArgs = append(allArgs, args[1:]...)
+	if err := s.parseFlags(allArgs); err != nil {
 		s.log.Error(EngineEventID, fmt.Sprintf("failed to parse arguments: %v", err))
 		// ERROR_INVALID_ARGUMENT
 		return false, 0x00000057
@@ -104,10 +108,7 @@ func (s *service) parseFlags(args []string) error {
 	var fs flag.FlagSet
 	fs.StringVar(&s.userConf, "in", "", "path to the user specified agent config")
 	fs.StringVar(&s.outDirectory, "out", "", "directory to write generated configuration files to")
-
-	allArgs := append([]string{}, os.Args[1:]...)
-	allArgs = append(allArgs, args[1:]...)
-	return fs.Parse(allArgs)
+	return fs.Parse(args)
 }
 
 func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfig) error {
@@ -168,16 +169,20 @@ func (s *service) generateConfigs(ctx context.Context) error {
 		return err
 	}
 	// TODO: Add flag for passing in log/run path?
+	logsDir := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log")
+	stateDir := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "run")
 	for _, subagent := range []string{
 		"otel",
 		"fluentbit",
 	} {
-		if err := uc.GenerateFilesFromConfig(
-			ctx,
-			subagent,
-			filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log"),
-			filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "run"),
-			filepath.Join(s.outDirectory, subagent)); err != nil {
+		outDir := filepath.Join(s.outDirectory, subagent)
+		if subagent == "otel" {
+			// The generated otlp metric json files are used only by the otel service.
+			if err = self_metrics.GenerateOpsAgentSelfMetricsOTLPJSON(ctx, s.userConf, outDir); err != nil {
+				return err
+			}
+		}
+		if err := uc.GenerateFilesFromConfig(ctx, subagent, logsDir, stateDir, outDir); err != nil {
 			return err
 		}
 	}

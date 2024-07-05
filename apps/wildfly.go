@@ -52,7 +52,10 @@ func (r MetricsReceiverWildfly) Pipelines(_ context.Context) ([]otel.ReceiverPip
 				otel.MetricsTransform(
 					otel.AddPrefix("workload.googleapis.com"),
 				),
-				otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+				otel.TransformationMetrics(
+					otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+					otel.SetScopeVersion("1.0"),
+				),
 			},
 		)
 }
@@ -112,13 +115,13 @@ func (p LoggingProcessorWildflySystem) Components(ctx context.Context, tag strin
 }
 
 type LoggingReceiverWildflySystem struct {
-	LoggingProcessorWildflySystem           `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	LoggingProcessorWildflySystem `yaml:",inline"`
+	ReceiverMixin                 confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r LoggingReceiverWildflySystem) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
+		r.ReceiverMixin.IncludePaths = []string{
 			// no package installers, default installation usually provides the following
 			// Standalone server log
 			"/opt/wildfly/standalone/log/server.log",
@@ -129,7 +132,7 @@ func (r LoggingReceiverWildflySystem) Components(ctx context.Context, tag string
 		}
 	}
 
-	r.MultilineRules = []confgenerator.MultilineRule{
+	r.ReceiverMixin.MultilineRules = []confgenerator.MultilineRule{
 		{
 			StateName: "start_state",
 			NextState: "cont",
@@ -142,7 +145,7 @@ func (r LoggingReceiverWildflySystem) Components(ctx context.Context, tag string
 		},
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := r.ReceiverMixin.Components(ctx, tag)
 	c = append(c, r.LoggingProcessorWildflySystem.Components(ctx, tag, "wildfly_system")...)
 	return c
 }

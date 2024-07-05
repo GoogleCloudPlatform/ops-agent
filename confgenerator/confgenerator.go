@@ -72,7 +72,15 @@ func googleManagedPrometheusExporter(userAgent string) otel.Component {
 	}
 }
 
-func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context) (string, error) {
+func (uc *UnifiedConfig) getOTelLogLevel() string {
+	logLevel := "info"
+	if uc.Metrics != nil && uc.Metrics.Service != nil && uc.Metrics.Service.LogLevel != "" {
+		logLevel = uc.Metrics.Service.LogLevel
+	}
+	return logLevel
+}
+
+func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) (string, error) {
 	p := platform.FromContext(ctx)
 	userAgent, _ := p.UserAgent("Google-Cloud-Ops-Agent-Metrics")
 	metricVersionLabel, _ := p.VersionLabel("google-cloud-ops-agent-metrics")
@@ -92,6 +100,12 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context) (string, error)
 		ReceiverPipelineName: "otel",
 	}
 
+	receiverPipelines["ops_agent"] = OpsAgentSelfMetricsPipeline(ctx, outDir)
+	pipelines["ops_agent"] = otel.Pipeline{
+		Type:                 "metrics",
+		ReceiverPipelineName: "ops_agent",
+	}
+
 	receiverPipelines["fluentbit"] = AgentSelfMetrics{
 		Version: loggingVersionLabel,
 		Port:    fluentbit.MetricsPort,
@@ -101,11 +115,8 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context) (string, error)
 		ReceiverPipelineName: "fluentbit",
 	}
 
-	if uc.Metrics.Service.LogLevel == "" {
-		uc.Metrics.Service.LogLevel = "info"
-	}
 	otelConfig, err := otel.ModularConfig{
-		LogLevel:          uc.Metrics.Service.LogLevel,
+		LogLevel:          uc.getOTelLogLevel(),
 		ReceiverPipelines: receiverPipelines,
 		Pipelines:         pipelines,
 		Exporters: map[otel.ExporterType]otel.Component{
@@ -180,7 +191,7 @@ func (p pipelineInstance) fluentBitComponents(ctx context.Context) (fbSource, er
 		}
 		components = append(components, processorComponents...)
 	}
-	components = append(components, setLogNameComponents(ctx, tag, p.rID, receiver.Type(), platform.FromContext(ctx).Hostname())...)
+	components = append(components, setLogNameComponents(ctx, tag, p.rID, receiver.Type())...)
 
 	// Logs ingested using the fluent_forward receiver must add the existing_tag
 	// on the record to the LogName. This is done with a Lua filter.
@@ -220,7 +231,7 @@ func (p pipelineInstance) otelComponents(ctx context.Context) (map[string]otel.R
 		if processors, ok := receiverPipeline.Processors["logs"]; ok {
 			receiverPipeline.Processors["logs"] = append(
 				processors,
-				otelSetLogNameComponents(ctx, p.rID, platform.FromContext(ctx).Hostname())...,
+				otelSetLogNameComponents(ctx, p.rID)...,
 			)
 		}
 

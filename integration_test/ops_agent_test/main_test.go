@@ -62,17 +62,20 @@ import (
 
 	cloudlogging "cloud.google.com/go/logging"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
+	secretmanager "cloud.google.com/go/secretmanager/apiv1"
+	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
 	feature_tracking_metadata "github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
-	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
-	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
 	"github.com/google/uuid"
 	"go.uber.org/multierr"
 	"golang.org/x/exp/slices"
 	"google.golang.org/genproto/googleapis/api/distribution"
 	"google.golang.org/genproto/googleapis/api/metric"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	structpb "google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v2"
@@ -93,22 +96,6 @@ func workDirForImage(imageSpec string) string {
 		return `C:\work`
 	}
 	return "/tmp/work"
-}
-
-func startCommandForImage(imageSpec string) string {
-	if gce.IsWindows(imageSpec) {
-		return "Start-Service google-cloud-ops-agent"
-	}
-	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
-	return "sudo service google-cloud-ops-agent start || sudo systemctl start google-cloud-ops-agent"
-}
-
-func stopCommandForImage(imageSpec string) string {
-	if gce.IsWindows(imageSpec) {
-		return "Stop-Service google-cloud-ops-agent -Force"
-	}
-	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
-	return "sudo service google-cloud-ops-agent stop || sudo systemctl stop google-cloud-ops-agent"
 }
 
 func systemLogTagForImage(imageSpec string) string {
@@ -134,13 +121,6 @@ func metricsAgentProcessNamesForImage(imageSpec string) []string {
 		return []string{"google-cloud-metrics-agent_windows_amd64"}
 	}
 	return []string{"otelopscol", "collectd"}
-}
-
-func diagnosticsProcessNamesForImage(imageSpec string) []string {
-	if gce.IsWindows(imageSpec) {
-		return []string{"google-cloud-ops-agent-diagnostics"}
-	}
-	return []string{"google_cloud_ops_agent_diagnostics"}
 }
 
 func makeDirectory(ctx context.Context, logger *log.Logger, vm *gce.VM, directory string) error {
@@ -193,6 +173,18 @@ func setupMainLogAndVM(t *testing.T, imageSpec string) (context.Context, *log.Lo
 	return ctx, dirLog.ToMainLog(), vm
 }
 
+// setupMainLogAndManagedInstaceGroupVM sets up a Managed Instance Group VM for testing
+// and returns it, along with a logger that writes to a file called main_log.txt.
+// This function is just a wrapper for agents.CommonSetup that returns a "plain"
+// log.Logger instead so that the callsite doesn't need to write
+// logger.ToMainLog() throughout.
+// If you need to write to something besides the main log, just call
+// agents.CommonSetup instead.
+func setupMainLogAndManagedInstaceGroupVM(t *testing.T, imageSpec string) (context.Context, *log.Logger, *gce.ManagedInstanceGroupVM) {
+	ctx, dirLog, migVM := agents.ManagedInstanceGroupVMSetup(t, imageSpec, nil, nil)
+	return ctx, dirLog.ToMainLog(), migVM
+}
+
 // writeToSystemLog writes the given payload to the VM's normal log location.
 // On Linux this is /var/log/syslog or /var/log/messages, depending on the
 // distro.
@@ -215,7 +207,27 @@ func writeToSystemLog(ctx context.Context, logger *log.Logger, vm *gce.VM, paylo
 // retrieveOtelConfig retrieves the file content of the generated Otel config
 // file from the remote VM
 func retrieveOtelConfig(ctx context.Context, logger *log.Logger, vm *gce.VM) (content string, err error) {
-	return gce.RetrieveContent(ctx, logger, vm, util.GetOtelConfigPath(vm.ImageSpec))
+	return gce.RetrieveContent(ctx, logger, vm, agents.GetOtelConfigPath(vm.ImageSpec))
+}
+
+// RunForEachLoggingSubagent runs a subtest for the logging subagent fluent-bit and otel.
+func RunForEachLoggingSubagent(t *testing.T, testBody func(t *testing.T, otel bool)) {
+	t.Helper()
+	t.Run("fluent-bit", func(t *testing.T) {
+		testBody(t, false)
+	})
+
+	t.Run("otel", func(t *testing.T) {
+		if gce.IsOpsAgentUAPPlugin() {
+			t.SkipNow()
+		}
+		testBody(t, true)
+	})
+}
+
+// setExperimentalFeatures sets the EXPERIMENTAL_FEATURES environment variable.
+func setExperimentalFeatures(ctx context.Context, logger *log.Logger, vm *gce.VM, feature string) error {
+	return gce.SetEnvironmentVariables(ctx, logger, vm, map[string]string{"EXPERIMENTAL_FEATURES": feature})
 }
 
 func TestParseMultilineFileJava(t *testing.T) {
@@ -756,6 +768,133 @@ func TestCustomLogFile(t *testing.T) {
 	})
 }
 
+func TestPluginGetStatusReturnsHealthyStatusOnSuccessfulOpsAgentStart(t *testing.T) {
+	t.Parallel()
+	if !gce.IsOpsAgentUAPPlugin() {
+		t.SkipNow()
+	}
+
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		cmdOut, err := gce.RunRemotely(ctx, logger, vm, agents.GetUAPPluginStatusForImage(vm.ImageSpec))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if !strings.Contains(cmdOut.Stdout, "The Ops Agent Plugin is running ok.") {
+			t.Error("expected the plugin to report that the Ops Agent is running")
+		}
+	})
+
+}
+
+func TestPluginGetStatusReturnsUnhealthyStatusOnSubAgentTermination(t *testing.T) {
+	t.Parallel()
+	if !gce.IsOpsAgentUAPPlugin() {
+		t.SkipNow()
+	}
+
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		cmdOut, err := gce.RunRemotely(ctx, logger, vm, agents.GetUAPPluginStatusForImage(vm.ImageSpec))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if !strings.Contains(cmdOut.Stdout, "The Ops Agent Plugin is running ok.") {
+			t.Error("expected the plugin to report that the Ops Agent is running")
+		}
+
+		_, processName, err := fetchPIDAndProcessName(ctx, logger, vm, []string{"fluent-bit"})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Simulate a subagent termination.
+		if err := terminateProcess(ctx, logger, vm, processName); err != nil {
+			t.Fatal(err)
+		}
+
+		time.Sleep(10 * time.Second)
+
+		cmdOut, err = gce.RunRemotely(ctx, logger, vm, agents.GetUAPPluginStatusForImage(vm.ImageSpec))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// A subagent termination should terminate the entire Ops Agent. In this case, the plugin is expected to return a non-healthy status for the Ops Agent.
+		if !strings.Contains(cmdOut.Stdout, "\"code\": 1") {
+			t.Error("expected the plugin to report that the Ops Agent is not running")
+		}
+
+		pid, _, err := fetchPIDAndProcessName(ctx, logger, vm, metricsAgentProcessNamesForImage(vm.ImageSpec))
+		if pid != "" {
+			t.Error("expected the plugin to terminate the other subagent when one crashes")
+		}
+	})
+
+}
+
+func TestKillChildJobsWhenPluginServerProcessTerminates(t *testing.T) {
+	t.Parallel()
+	if !gce.IsOpsAgentUAPPlugin() {
+		t.SkipNow()
+	}
+
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		cmdOut, err := gce.RunRemotely(ctx, logger, vm, agents.GetUAPPluginStatusForImage(vm.ImageSpec))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if !strings.Contains(cmdOut.Stdout, "The Ops Agent Plugin is running ok.") {
+			t.Error("expected the plugin to report that the Ops Agent is running")
+		}
+
+		_, processName, err := fetchPIDAndProcessName(ctx, logger, vm, []string{"plugin"})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Simulate a plugin gRPC server process termination
+		if err := terminateProcess(ctx, logger, vm, processName); err != nil {
+			t.Fatal(err)
+		}
+
+		time.Sleep(10 * time.Second)
+
+		pid, _, err := fetchPIDAndProcessName(ctx, logger, vm, metricsAgentProcessNamesForImage(vm.ImageSpec))
+		if pid != "" {
+			t.Error("expected the plugin to terminate otel subagent process when the parent gRPC server process terminates")
+		}
+
+		pid, err = fetchPID(ctx, logger, vm, "fluent-bit")
+		if pid != "" {
+			t.Error("expected the plugin to terminate fluent-bit subagent process when the parent gRPC server process terminates")
+		}
+	})
+
+}
+
 func TestCustomLogFormat(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
@@ -884,7 +1023,7 @@ func TestHTTPRequestLog(t *testing.T) {
 				"mylog_source",
 				time.Hour,
 				fmt.Sprintf("jsonPayload.logId=%q", logId),
-				gce.QueryMaxAttempts)
+				gce.LogQueryMaxAttempts)
 		}
 
 		isKeyInPayload := func(httpRequestKey string, entry *cloudlogging.Entry) bool {
@@ -1015,6 +1154,95 @@ func TestInvalidConfig(t *testing.T) {
 	})
 }
 
+func stringifyYaml(data string) string {
+	singleLine := strings.ReplaceAll(data, "\n", "\\n ")
+
+	// Trim any trailing space
+	return strings.TrimSpace(singleLine)
+}
+
+func TestInvalidStringConfigReceivedFromUAP(t *testing.T) {
+	t.Parallel()
+	if !gce.IsOpsAgentUAPPlugin() {
+		t.SkipNow()
+	}
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal("Expected agent to reject bad config.")
+		}
+		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StopCommandForImage(imageSpec)); err != nil {
+			t.Fatalf("Failed to stop the Ops Agent: %v", err)
+		}
+
+		// Sample bad config sourced from:
+		// https://github.com/GoogleCloudPlatform/ops-agent/blob/master/confgenerator/testdata/invalid/linux/logging-receiver_reserved_id_prefix/input.yaml
+		config := `invalid_config`
+		singleLineYaml := stringifyYaml(config)
+		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartOpsAgentViaUAPCommand(imageSpec, fmt.Sprintf("\"string_config\":\"%s\"", singleLineYaml))); err == nil {
+			// We expect this to fail because the config is invalid.
+			t.Fatal("Expected starting the Ops Agent with invalid config to fail.")
+		}
+	})
+}
+
+func TestCustomStringConfigReceivedFromUAP(t *testing.T) {
+	t.Parallel()
+	if !gce.IsOpsAgentUAPPlugin() {
+		t.SkipNow()
+	}
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+		if gce.IsWindows(imageSpec) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StopCommandForImage(imageSpec)); err != nil {
+			t.Fatalf("Failed to stop the Ops Agent: %v", err)
+		}
+
+		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
+		config := fmt.Sprintf(`logging:
+  receivers:
+    f1:
+      type: files
+      include_paths:
+      - %s
+  processors:
+    json:
+      type: parse_json
+  service:
+    pipelines:
+      p1:
+        receivers: [f1]
+        processors: [json]
+`, file1)
+		singleLineYaml := stringifyYaml(config)
+
+		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartOpsAgentViaUAPCommand(imageSpec, fmt.Sprintf("\"string_config\":\"%s\"", singleLineYaml))); err != nil {
+			t.Fatalf("Expected starting the Ops Agent with valid config to succeed: %v", err)
+		}
+
+		line := `{"default_present":"original"}` + "\n"
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
+			t.Fatalf("error uploading log: %v", err)
+		}
+
+		// Expect to see the log with the modifications applied
+		check := fmt.Sprintf(`labels."compute.googleapis.com/resource_name"="%s" AND jsonPayload.default_present="original"`, vm.Name)
+		if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, check); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
 func TestProcessorOrder(t *testing.T) {
 	// See b/194632049 and b/195105380.  In that bug, the generated Fluent Bit
 	// config had mis-ordered filters: json2 came before json1 because "log"
@@ -1065,7 +1293,7 @@ func TestProcessorOrder(t *testing.T) {
 			t.Fatalf("error writing dummy log line: %v", err)
 		}
 
-		entry, err := gce.QueryLog(ctx, logger, vm, "mylog_source", time.Hour, "", gce.QueryMaxAttempts)
+		entry, err := gce.QueryLog(ctx, logger, vm, "mylog_source", time.Hour, "", gce.LogQueryMaxAttempts)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1261,12 +1489,16 @@ func TestExcludeLogs(t *testing.T) {
 		}
 
 		// p2: Expect to see the log.
-		resultingLog2, err := gce.QueryLog(ctx, logger, vm, "f2", time.Hour, `jsonPayload.field1:*`, gce.QueryMaxAttempts)
+		resultingLog2, err := gce.QueryLog(ctx, logger, vm, "f2", time.Hour, `jsonPayload.field1:*`, gce.LogQueryMaxAttempts)
 		if err != nil {
 			t.Error(err)
 		}
 		// p2: Verify that there are no vestigial __match_ fields.
-		payload := resultingLog2.Payload.(*structpb.Struct)
+		payload := &structpb.Struct{}
+		if resultingLog2 != nil && resultingLog2.Payload != nil {
+			payload = resultingLog2.Payload.(*structpb.Struct)
+		}
+
 		for k := range payload.GetFields() {
 			if strings.HasPrefix(k, "__match_") {
 				t.Errorf("unexpected vestigial field: %s", k)
@@ -1636,22 +1868,14 @@ func TestResourceNameLabel(t *testing.T) {
 
 func TestLogFilePathLabel(t *testing.T) {
 	t.Parallel()
-	t.Run("fluent-bit", func(t *testing.T) {
-		testLogFilePathLabel(t, false)
-	})
-	t.Run("otel", func(t *testing.T) {
-		testLogFilePathLabel(t, true)
-	})
-}
-
-func testLogFilePathLabel(t *testing.T, otel bool) {
-	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachLoggingSubagent(t, func(t *testing.T, otel bool) {
 		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
+		gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+			t.Parallel()
+			ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+			file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
 
-		config := fmt.Sprintf(`logging:
+			config := fmt.Sprintf(`logging:
   receivers:
     f1:
       type: files
@@ -1669,34 +1893,34 @@ func testLogFilePathLabel(t *testing.T, otel bool) {
         processors: [json]
 `, file1, otel)
 
-		if otel {
-			// Turn on the otel feature gate.
-			if err := gce.SetEnvironmentVariables(ctx, logger, vm, map[string]string{"EXPERIMENTAL_FEATURES": "otel_logging"}); err != nil {
+			if otel {
+				if err := setExperimentalFeatures(ctx, logger, vm, "otel_logging"); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 				t.Fatal(err)
 			}
-		}
 
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
-			t.Fatal(err)
-		}
+			line := `{"default_present":"original"}` + "\n"
+			if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
+				t.Fatalf("error uploading log: %v", err)
+			}
 
-		line := `{"default_present":"original"}` + "\n"
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
-			t.Fatalf("error uploading log: %v", err)
-		}
+			// In Windows the generated log_file_path "C:\mylog_1" uses a backslash.
+			// When constructing the query in WaithForLog the backslashes are escaped so
+			// replacing with two backslahes correctly queries for "C:\mylog_1" label.
+			if gce.IsWindows(imageSpec) {
+				file1 = strings.Replace(file1, `\`, `\\`, 1)
+			}
 
-		// In Windows the generated log_file_path "C:\mylog_1" uses a backslash.
-		// When constructing the query in WaithForLog the backslashes are escaped so
-		// replacing with two backslahes correctly queries for "C:\mylog_1" label.
-		if gce.IsWindows(imageSpec) {
-			file1 = strings.Replace(file1, `\`, `\\`, 1)
-		}
-
-		// Expect to see log with label added.
-		check := fmt.Sprintf(`labels."agent.googleapis.com/log_file_path"="%s" AND jsonPayload.default_present="original"`, file1)
-		if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, check); err != nil {
-			t.Error(err)
-		}
+			// Expect to see log with label added.
+			check := fmt.Sprintf(`labels."agent.googleapis.com/log_file_path"="%s" AND jsonPayload.default_present="original"`, file1)
+			if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, check); err != nil {
+				t.Error(err)
+			}
+		})
 	})
 }
 
@@ -1739,15 +1963,41 @@ EOF
 		parserConfig,
 		// Escape record accessor dollar-signs
 		strings.ReplaceAll(fluentBitArgs, "$", `\$`))
+
 	if gce.IsWindows(imageSpec) {
 		command = fmt.Sprintf(`
-			New-Item %s
-			"%s" | Out-File -Encoding Ascii %s
-			Invoke-WmiMethod -Class Win32_Process -Name Create -ArgumentList 'C:\Program Files\Google\Cloud Operations\Ops Agent\bin\fluent-bit.exe %s'`,
+				New-Item %s
+				"%s" | Out-File -Encoding Ascii %s
+				Invoke-WmiMethod -Class Win32_Process -Name Create -ArgumentList 'C:\Program Files\Google\Cloud Operations\Ops Agent\bin\fluent-bit.exe %s'`,
 			remoteFile,
 			parserConfig,
 			parserFile,
 			fluentBitArgs)
+	}
+
+	if gce.IsOpsAgentUAPPlugin() {
+		command = fmt.Sprintf(`
+		sudo touch %s
+		sudo tee %s > /dev/null <<EOF
+%s
+EOF
+		sudo nohup ~/subagents/fluent-bit/bin/fluent-bit %s 1>/dev/null 2>/dev/null &`,
+			remoteFile,
+			parserFile,
+			parserConfig,
+			// Escape record accessor dollar-signs
+			strings.ReplaceAll(fluentBitArgs, "$", `\$`))
+
+		if gce.IsWindows(imageSpec) {
+			command = fmt.Sprintf(`
+				New-Item %s
+				"%s" | Out-File -Encoding Ascii %s
+				Invoke-WmiMethod -Class Win32_Process -Name Create -ArgumentList 'C:\fluent-bit.exe %s'`,
+				remoteFile,
+				parserConfig,
+				parserFile,
+				fluentBitArgs)
+		}
 	}
 
 	if _, err := gce.RunRemotely(ctx, logger, vm, command); err != nil {
@@ -1979,10 +2229,6 @@ func TestWindowsEventLogV2(t *testing.T) {
 		}
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
-		// Have to wait for startup feature tracking metrics to be sent
-		// before we tear down the service.
-		time.Sleep(20 * time.Second)
-
 		// There is a limitation on custom event log sources that requires their associated
 		// log names to have a unique eight-character prefix, so unfortunately we can only test
 		// at most one "Microsoft-*" log.
@@ -2023,7 +2269,7 @@ func TestWindowsEventLogV2(t *testing.T) {
 
 		// Have to wait for startup feature tracking metrics to be sent
 		// before we tear down the service.
-		time.Sleep(20 * time.Second)
+		time.Sleep(2 * time.Minute)
 
 		payloads := map[string]map[string]string{
 			"winlog2_space": {
@@ -2081,7 +2327,7 @@ func TestWindowsEventLogV2(t *testing.T) {
 		// - that jsonPayload.raw_xml contains a valid XML document.
 		// - that a few sample fields are present in that XML document.
 		for _, payload := range payloads["winlog2_xml"] {
-			log, err := gce.QueryLog(ctx, logger, vm, "winlog2_xml", time.Hour, logMessageQueryForImage(vm.ImageSpec, payload), gce.QueryMaxAttempts)
+			log, err := gce.QueryLog(ctx, logger, vm, "winlog2_xml", time.Hour, logMessageQueryForImage(vm.ImageSpec, payload), gce.LogQueryMaxAttempts)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -2122,12 +2368,6 @@ func TestWindowsEventLogV2(t *testing.T) {
 		}
 
 		expectedFeatures := []*feature_tracking_metadata.FeatureTracking{
-			{
-				Module:  "logging",
-				Feature: "service:pipelines",
-				Key:     "default_pipeline_overridden",
-				Value:   "false",
-			},
 			{
 				Module:  "metrics",
 				Feature: "service:pipelines",
@@ -2202,12 +2442,15 @@ func TestWindowsEventLogV2(t *testing.T) {
 			},
 		}
 
+		// Wait at least a minute since feature_tracking and enabled_receivers
+		// metrics are sent one minute after agent startup
+		time.Sleep(2 * time.Minute)
+
 		series, err := gce.WaitForMetricSeries(ctx, logger, vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", 2*time.Hour, nil, false, len(expectedFeatures))
 		if err != nil {
 			t.Error(err)
 			return
 		}
-
 		err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, expectedFeatures)
 		if err != nil {
 			t.Error(err)
@@ -2249,7 +2492,7 @@ func TestWindowsEventLogWithNonDefaultTimeZone(t *testing.T) {
 
 		// Validate that the log written to Cloud Logging has a timestamp that's
 		// close to eventTime. Use 24*time.Hour to cover all possible time zones.
-		logEntry, err := gce.QueryLog(ctx, logger, vm, "windows_event_log", 24*time.Hour, logMessageQueryForImage(imageSpec, testMessage), gce.QueryMaxAttempts)
+		logEntry, err := gce.QueryLog(ctx, logger, vm, "windows_event_log", 24*time.Hour, logMessageQueryForImage(imageSpec, testMessage), gce.LogQueryMaxAttempts)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -2262,34 +2505,64 @@ func TestWindowsEventLogWithNonDefaultTimeZone(t *testing.T) {
 
 func TestSystemdLog(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachLoggingSubagent(t, func(t *testing.T, otel bool) {
 		t.Parallel()
-		if gce.IsWindows(imageSpec) {
-			t.SkipNow()
-		}
-		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+			t.Parallel()
+			if gce.IsWindows(imageSpec) {
+				t.SkipNow()
+			}
+			ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
-		config := `logging:
+			config := fmt.Sprintf(`logging:
   receivers:
     systemd_logs:
       type: systemd_journald
   service:
+    experimental_otel_logging: %v
     pipelines:
       systemd_pipeline:
         receivers: [systemd_logs]
-`
+`, otel)
 
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
-			t.Fatal(err)
-		}
+			if otel {
+				if err := setExperimentalFeatures(ctx, logger, vm, "otel_logging"); err != nil {
+					t.Fatal(err)
+				}
+			}
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_log_message' | systemd-cat"); err != nil {
-			t.Fatalf("Error writing dummy Systemd log line: %v", err)
-		}
+			if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+				t.Fatal(err)
+			}
 
-		if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, "my_systemd_log_message"); err != nil {
-			t.Error(err)
-		}
+			if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_info_log_message' | systemd-cat --priority=info"); err != nil {
+				t.Fatalf("Error writing dummy Systemd log line: %v", err)
+			}
+
+			querySystemdInfoLog := fmt.Sprintf(`severity="INFO" AND jsonPayload.MESSAGE="my_systemd_info_log_message" AND jsonPayload.PRIORITY="6"`)
+			if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdInfoLog); err != nil {
+				t.Error(err)
+			}
+
+			if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_error_log_message' | systemd-cat --priority=err"); err != nil {
+				t.Fatalf("Error writing dummy Systemd log line: %v", err)
+			}
+
+			querySystemdErrorLog := fmt.Sprintf(`severity="ERROR" AND jsonPayload.MESSAGE="my_systemd_error_log_message" AND jsonPayload.PRIORITY="3"`)
+			if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdErrorLog); err != nil {
+				t.Error(err)
+			}
+
+			// TODO: b/400435104 - Re-enable when the `googlecloudexporter` supports all LogSeverity levels.
+			// if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_notice_log_message' | systemd-cat --priority=notice"); err != nil {
+			// 	t.Fatalf("Error writing dummy Systemd log line: %v", err)
+			// }
+
+			// querySystemdNoticeLog := fmt.Sprintf(`severity="NOTICE" AND jsonPayload.MESSAGE="my_systemd_notice_log_message" AND jsonPayload.PRIORITY="5"`)
+			// if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdNoticeLog); err != nil {
+			// 	t.Error(err)
+			// }
+		})
 	})
 }
 
@@ -2329,15 +2602,14 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 		}
 	}
 
-	bytes, err := os.ReadFile(path.Join("agent_metrics", "metadata.yaml"))
+	agentMetricsMetadata := path.Join("agent_metrics", "metadata.yaml")
+	bytes, err := os.ReadFile(agentMetricsMetadata)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	var agentMetrics struct {
-		ExpectedMetrics []*metadata.ExpectedMetric `yaml:"expected_metrics" validate:"onetrue=Representative,unique=Type,dive"`
-	}
-	err = yaml.UnmarshalStrict(bytes, &agentMetrics)
+	var agentMetrics metadata.ExpectedMetricsContainer
+	err = metadata.UnmarshalAndValidate(agentMetricsMetadata, bytes, &agentMetrics)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2352,6 +2624,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 
 		var series *monitoringpb.TimeSeries
 		series, err = gce.WaitForMetric(ctx, logger, vm, metric.Type, window, nil, false)
+
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -2440,6 +2713,10 @@ func TestDefaultMetricsNoProxy(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		// Wait at least a minute since feature_tracking and enabled_receivers
+		// metrics are sent one minute after agent startup
+		time.Sleep(2 * time.Minute)
+
 		testDefaultMetrics(ctx, t, logger, vm, time.Hour)
 	})
 }
@@ -2477,6 +2754,144 @@ func TestDefaultMetricsWithProxy(t *testing.T) {
 	})
 }
 
+func hasSecretEntry(ctx context.Context, client *secretmanager.Client, name string) (bool, error) {
+	req := &secretmanagerpb.AccessSecretVersionRequest{
+		Name: name,
+	}
+	// Call the API.
+	_, err := client.AccessSecretVersion(ctx, req)
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return false, nil
+		}
+		return false, fmt.Errorf("failed to access secret version: %w", err)
+	}
+	return true, nil
+}
+
+func addSecretEntry(ctx context.Context, client *secretmanager.Client, projectID string, secretID string, secretValue string) (*secretmanagerpb.SecretVersion, error) {
+	// Build secret creation request.
+	req := &secretmanagerpb.CreateSecretRequest{
+		Parent:   fmt.Sprintf("projects/%s", projectID),
+		SecretId: secretID,
+		Secret: &secretmanagerpb.Secret{
+			Replication: &secretmanagerpb.Replication{
+				Replication: &secretmanagerpb.Replication_Automatic_{
+					Automatic: &secretmanagerpb.Replication_Automatic{},
+				},
+			},
+		},
+	}
+	_, err := client.CreateSecret(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create secret: %w", err)
+	}
+
+	// Build secret version creation request.
+	addVersionReq := &secretmanagerpb.AddSecretVersionRequest{
+		Parent: fmt.Sprintf("projects/%s/secrets/%s", projectID, secretID),
+		Payload: &secretmanagerpb.SecretPayload{
+			Data: []byte(secretValue),
+		},
+	}
+
+	result, err := client.AddSecretVersion(ctx, addVersionReq)
+	if err != nil {
+		return nil, fmt.Errorf("failed to add secret version: %w", err)
+	}
+	return result, nil
+}
+func TestGoogleSecretManagerProvider(t *testing.T) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+		// GoogleSecretManagerProvider requires the following scope to be set in order to access secret entries in the Google secret manager.
+		// See: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/confmap/provider/googlesecretmanagerprovider/README.md#prerequisites.
+		customScope := "https://www.googleapis.com/auth/cloud-platform"
+		ctx, dirLog, vm := agents.CommonSetupWithExtraCreateArguments(t, imageSpec, []string{"--scopes", customScope})
+		logger := dirLog.ToMainLog()
+		projectID := vm.Project
+		secretID := "ops-agent-integration-test-google-secret-manager-provider"
+		secretName := fmt.Sprintf("projects/%s/secrets/%s/versions/1", projectID, secretID)
+		secretValue := "localhost:20202"
+		client, err := secretmanager.NewClient(ctx)
+		if err != nil {
+			t.Fatalf("failed to create secretmanager client: %v", err)
+		}
+		defer client.Close()
+		hasEntry, err := hasSecretEntry(ctx, client, secretName)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !hasEntry {
+			if _, err := addSecretEntry(ctx, client, projectID, secretID, secretValue); err != nil {
+				t.Fatalf("failed to add secret entry: %v", err)
+			}
+		}
+
+		config := fmt.Sprintf(`metrics:
+  receivers:
+    prometheus:
+      type: prometheus
+      config:
+        scrape_configs:
+          - job_name: 'prometheus'
+            scrape_interval: 10s
+            static_configs:
+              - targets: ['${googlesecretmanager:%s}']
+            relabel_configs:
+              - source_labels: [__meta_gce_instance_id]
+                regex: '(.+)'
+                replacement: '${1}'
+                target_label: instance_id
+  service:
+    pipelines:
+      prometheus_pipeline:
+        receivers:
+          - prometheus
+`, secretName)
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		// Wait long enough for the data to percolate through the backends
+		// under normal circumstances. Based on some experiments, 2 minutes
+		// is normal; wait a bit longer to be on the safe side.
+		time.Sleep(3 * time.Minute)
+
+		existingMetric := "prometheus.googleapis.com/fluentbit_uptime/counter"
+		window := time.Minute
+		metric, err := gce.WaitForMetric(ctx, logger, vm, existingMetric, window, nil, true)
+		if err != nil {
+			t.Fatal(fmt.Errorf("failed to find metric %q in VM %q: %w", existingMetric, vm.Name, err))
+		}
+
+		var multiErr error
+		metricValueType := metric.ValueType.String()
+		metricKind := metric.MetricKind.String()
+		metricResource := metric.Resource.Type
+		metricLabels := metric.Metric.Labels
+
+		if metricValueType != "DOUBLE" {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected value type %q", existingMetric, metricValueType))
+		}
+		if metricKind != "CUMULATIVE" {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected kind %q", existingMetric, metricKind))
+		}
+		if metricResource != "prometheus_target" {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected resource type %q", existingMetric, metricResource))
+		}
+		if metricLabels["instance_name"] != vm.Name {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected instance_name label %q. But expected %q", existingMetric, metricLabels["instance_name"], vm.Name))
+		}
+		if metricLabels["instance_id"] != fmt.Sprintf("%d", vm.ID) {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected instance_id label %q. But expected %q", existingMetric, metricLabels["instance_id"], fmt.Sprintf("%d", vm.ID)))
+		}
+		if multiErr != nil {
+			t.Error(multiErr)
+		}
+	})
+
+}
 func TestPrometheusMetrics(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
@@ -2810,7 +3225,7 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
             module: [default]
           static_configs:
             - targets:
-              - http://localhost:8000/data.json 
+              - http://localhost:8000/data.json
           relabel_configs:
             - source_labels: [__address__]
               target_label: __param_target
@@ -2819,7 +3234,7 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
               target_label: instance
               replacement: '$1'
             - target_label: __address__
-              replacement: localhost:7979 
+              replacement: localhost:7979
   service:
     pipelines:
       prom_pipeline:
@@ -3051,7 +3466,7 @@ func TestPrometheusUntypedMetricsReset(t *testing.T) {
 				{"prometheus.googleapis.com/untyped_metric/unknown", nil,
 					metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 10.0},
 				{"prometheus.googleapis.com/untyped_metric/unknown:counter", nil,
-					metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 10.0},
+					metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 0.0},
 			}
 
 			var multiErr error
@@ -3074,7 +3489,7 @@ func TestPrometheusUntypedMetricsReset(t *testing.T) {
 				{"prometheus.googleapis.com/untyped_metric/unknown", nil,
 					metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 1000.0},
 				{"prometheus.googleapis.com/untyped_metric/unknown:counter", nil,
-					metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 1000.0},
+					metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 990.0},
 			}
 
 			var multiErr error
@@ -3777,6 +4192,10 @@ func TestMetricsAgentCrashRestart(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
+		if gce.IsOpsAgentUAPPlugin() {
+			// Ops Agent Plugin does not restart subagents on termination.
+			t.SkipNow()
+		}
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
 		testAgentCrashRestart(ctx, t, logger, vm, metricsAgentProcessNamesForImage(vm.ImageSpec), metricsLivenessChecker)
@@ -3796,6 +4215,10 @@ func TestLoggingAgentCrashRestart(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
+		if gce.IsOpsAgentUAPPlugin() {
+			// Ops Agent Plugin does not restart subagents on termination.
+			t.SkipNow()
+		}
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
 		testAgentCrashRestart(ctx, t, logger, vm, []string{"fluent-bit"}, loggingLivenessChecker)
@@ -3859,25 +4282,6 @@ func TestLoggingDataprocAttributes(t *testing.T) {
 	})
 }
 
-func diagnosticsLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
-	time.Sleep(3 * time.Minute)
-	// Query for a metric sent by the diagnostics service from the last
-	// minute. Sleep for 3 minutes first to make sure we aren't picking
-	// up metrics from a previous instance of the diagnostics service.
-	_, err := gce.WaitForMetric(ctx, logger, vm, "agent.googleapis.com/agent/ops_agent/enabled_receivers", time.Minute, nil, false)
-	return err
-}
-
-func TestDiagnosticsCrashRestart(t *testing.T) {
-	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-
-		testAgentCrashRestart(ctx, t, logger, vm, diagnosticsProcessNamesForImage(vm.ImageSpec), diagnosticsLivenessChecker)
-	})
-}
-
 func testWindowsStandaloneAgentConflict(t *testing.T, installStandalone func(ctx context.Context, logger *log.Logger, vm *gce.VM) error, wantError string) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
@@ -3898,16 +4302,27 @@ func testWindowsStandaloneAgentConflict(t *testing.T, installStandalone func(ctx
 		}
 
 		// 3. Check the error log for a message about Ops Agent conflicting with standalone agent.
-		getEvents := `Get-WinEvent -FilterHashtable @{
+		if gce.IsOpsAgentUAPPlugin() {
+			cmdOut, err := gce.RunRemotely(ctx, logger, vm, agents.GetUAPPluginStatusForImage(vm.ImageSpec))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if strings.Contains(cmdOut.Stdout, "The Ops Agent Plugin is running ok.") {
+				t.Errorf("Ops Agent plugin should not be running when conflicting installations are present: %v, cmdOut: %v, cmdErr: %v", err, cmdOut.Stdout, cmdOut.Stderr)
+			}
+		} else {
+			getEvents := `Get-WinEvent -FilterHashtable @{
 		  LogName = 'Application'
 			ProviderName = 'google-cloud-ops-agent'
 		} | Select-Object -ExpandProperty Message`
-		out, err := gce.RunRemotely(ctx, logger, vm, getEvents)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !strings.Contains(out.Stdout, wantError) {
-			t.Fatalf("got error log = %q, want substring %q", out.Stdout, wantError)
+			out, err := gce.RunRemotely(ctx, logger, vm, getEvents)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(out.Stdout, wantError) {
+				t.Fatalf("got error log = %q, want substring %q", out.Stdout, wantError)
+			}
 		}
 	})
 }
@@ -3932,7 +4347,10 @@ func TestUpgradeOpsAgent(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-
+		if gce.IsOpsAgentUAPPlugin() {
+			// Ops Agent plugin version upgrade is handled by UAP.
+			t.SkipNow()
+		}
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
 		// This will install the stable Ops Agent (REPO_SUFFIX="").
@@ -3946,6 +4364,7 @@ func TestUpgradeOpsAgent(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		time.Sleep(2 * time.Minute)
 		// Wait for the Ops Agent to be active. Make sure that it is working.
 		if err := opsAgentLivenessChecker(ctx, logger, vm); err != nil {
 			t.Fatal(err)
@@ -3957,6 +4376,7 @@ func TestUpgradeOpsAgent(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		time.Sleep(2 * time.Minute)
 		// Make sure that the newly installed Ops Agent is working.
 		if err := opsAgentLivenessChecker(ctx, logger, vm); err != nil {
 			t.Fatal(err)
@@ -4112,10 +4532,10 @@ func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 		return err
 	}
 
-	// To update this, first run `mirror_content.sh` in this directory. Example:
+	// To update this, first run `mirror_content.sh` under `integration_test`. Example:
 	//   ./mirror_content.sh https://go.dev/dl/go1.21.4.linux-{amd64,arm64}.tar.gz
 	// Then update this version.
-	goVersion := "1.21.4"
+	goVersion := "1.23.0"
 
 	goArch := "amd64"
 	if gce.IsARM(vm.ImageSpec) {
@@ -4192,7 +4612,7 @@ traces:
 
 		// Have to wait for startup feature tracking metrics to be sent
 		// before we tear down the service.
-		time.Sleep(20 * time.Second)
+		time.Sleep(2 * time.Minute)
 
 		// Generate metric traffic with dummy app
 		metricFile, err := testdataDir.Open(path.Join("testdata", "otlp", "metrics.go"))
@@ -4296,7 +4716,7 @@ traces:
 
 		// Have to wait for startup feature tracking metrics to be sent
 		// before we tear down the service.
-		time.Sleep(20 * time.Second)
+		time.Sleep(2 * time.Minute)
 
 		// Generate metric traffic with dummy app
 		metricFile, err := testdataDir.Open(path.Join("testdata", "otlp", "metrics.go"))
@@ -4404,7 +4824,10 @@ metrics:
 			t.Fatal(err)
 		}
 
-		if _, err := gce.WaitForTrace(ctx, logger, vm, time.Hour); err != nil {
+		options := gce.WaitForTraceOptions{
+			Window: time.Hour,
+		}
+		if _, err := gce.WaitForTrace(ctx, logger, vm, options); err != nil {
 			t.Error(err)
 		}
 	})
@@ -4439,6 +4862,24 @@ func getRecentServiceOutputForImage(imageSpec string) string {
 	return "sudo systemctl status google-cloud-ops-agent"
 }
 
+func getHealthCheckResultsForImage(ctx context.Context, logger *log.Logger, vm *gce.VM) (string, error) {
+	if gce.IsOpsAgentUAPPlugin() {
+		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getHealthCheckLogsForUAPPluginByImage(vm.ImageSpec))
+		return cmdOut.Stdout, err
+
+	}
+	cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
+	return cmdOut.Stdout, err
+}
+
+func getHealthCheckLogsForUAPPluginByImage(imageSpec string) string {
+	if gce.IsWindows(imageSpec) {
+		return fmt.Sprintf("Get-Content -Path '%s' -Raw", `C:\ProgramData\Google\Compute Engine\google-guest-agent\agent_state\plugins\ops-agent-plugin\log\health-checks.log`)
+	}
+
+	return "sudo cat /var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/health-checks.log"
+}
+
 func listenToPortForImage(vm *gce.VM) string {
 	if gce.IsWindows(vm.ImageSpec) {
 		cmd := strings.Join([]string{
@@ -4457,7 +4898,7 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		if !isHealthCheckTestImage(imageSpec) {
+		if !isHealthCheckTestImage(imageSpec) || gce.IsOpsAgentUAPPlugin() {
 			t.SkipNow()
 		}
 
@@ -4492,14 +4933,14 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
+		cmdOut, err := getHealthCheckResultsForImage(ctx, logger, vm)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "FAIL", "OtelMetricsPortErr")
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "FAIL", "MonApiScopeErr")
+		checkExpectedHealthCheckResult(t, cmdOut, "Network", "PASS", "")
+		checkExpectedHealthCheckResult(t, cmdOut, "Ports", "FAIL", "OtelMetricsPortErr")
+		checkExpectedHealthCheckResult(t, cmdOut, "API", "FAIL", "MonApiScopeErr")
 
 		query := fmt.Sprintf(`severity="ERROR" AND jsonPayload.code="MonApiScopeErr" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
 		if err := gce.WaitForLog(ctx, logger, vm, "ops-agent-health", time.Hour, query); err != nil {
@@ -4522,16 +4963,16 @@ func TestNetworkHealthCheck(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
+		cmdOut, err := getHealthCheckResultsForImage(ctx, logger, vm)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
+		checkExpectedHealthCheckResult(t, cmdOut, "Network", "PASS", "")
+		checkExpectedHealthCheckResult(t, cmdOut, "Ports", "PASS", "")
+		checkExpectedHealthCheckResult(t, cmdOut, "API", "PASS", "")
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, stopCommandForImage(vm.ImageSpec)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StopCommandForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)
 		}
 
@@ -4539,25 +4980,25 @@ func TestNetworkHealthCheck(t *testing.T) {
 		if _, err := gce.AddTagToVm(ctx, logger, vm, []string{gce.DenyEgressTrafficTag}); err != nil {
 			t.Fatal(err)
 		}
-		time.Sleep(time.Minute)
+		time.Sleep(2 * time.Minute)
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, startCommandForImage(vm.ImageSpec)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartCommandForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)
 		}
 
-		cmdOut, err = gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
+		cmdOut, err = getHealthCheckResultsForImage(ctx, logger, vm)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "FAIL", "LogApiConnErr")
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "FAIL", "MonApiConnErr")
+		checkExpectedHealthCheckResult(t, cmdOut, "Network", "FAIL", "LogApiConnErr")
+		checkExpectedHealthCheckResult(t, cmdOut, "Network", "FAIL", "MonApiConnErr")
 		// TODO(b/321220138): restore this once there's a more reliable endpoint.
 		// checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "WARNING", "PacApiConnErr")
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "WARNING", "DLApiConnErr")
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "FAIL", "MonApiConnErr")
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "FAIL", "LogApiConnErr")
+		checkExpectedHealthCheckResult(t, cmdOut, "Network", "WARNING", "DLApiConnErr")
+		checkExpectedHealthCheckResult(t, cmdOut, "Ports", "PASS", "")
+		checkExpectedHealthCheckResult(t, cmdOut, "API", "FAIL", "MonApiConnErr")
+		checkExpectedHealthCheckResult(t, cmdOut, "API", "FAIL", "LogApiConnErr")
 	})
 }
 
@@ -4643,13 +5084,13 @@ func TestDisableSelfLogCollection(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, stopCommandForImage(vm.ImageSpec)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, agents.StopCommandForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)
 		}
 
 		time.Sleep(2 * time.Minute)
 
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, startCommandForImage(vm.ImageSpec)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, agents.StartCommandForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)
 		}
 
@@ -4823,29 +5264,59 @@ func TestRestartVM(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
-		if err != nil {
-			t.Fatal(err)
-		}
+		isUAPPlugin := gce.IsOpsAgentUAPPlugin()
+		if isUAPPlugin {
+			cmdOut, err := gce.RunRemotely(ctx, logger, vm, agents.GetUAPPluginStatusForImage(vm.ImageSpec))
+			if err != nil {
+				t.Fatal(err)
+			}
 
-		// Ensure sure all healthchecks pass before the restart
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
+			if !strings.Contains(cmdOut.Stdout, "is running ok") {
+				t.Errorf("expected the plugin to be running, but is not running, cmd out: %v, cmd err: %v", cmdOut.Stdout, cmdOut.Stderr)
+			}
+
+		} else {
+			cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
+			if err != nil {
+				t.Fatal(err)
+			}
+			// Ensure sure all healthchecks pass before the restart
+			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
+			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
+			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
+		}
 
 		logger.Printf(`Restarting instance. For details, see "VM_restart.txt".`)
 		if err := gce.RestartInstance(ctx, dirLog.ToFile("VM_restart.txt"), vm); err != nil {
 			t.Fatal(err)
 		}
 
-		cmdOut, err = gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
-		if err != nil {
-			t.Fatal(err)
-		}
+		if isUAPPlugin {
+			if err := agents.StartOpsAgentPluginServer(ctx, logger, vm, "1234"); err != nil {
+				t.Fatal(err)
+			}
+			// Buffer time to allow the Ops Agent Plugin gRPC server to start up and begin accepting gRPC requests.
+			time.Sleep(5 * time.Second)
+			if err := agents.StartOpsAgentPluginWithBackoff(ctx, logger, vm); err != nil {
+				t.Fatal(err)
+			}
 
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
+			cmdOut, err := gce.RunRemotely(ctx, logger, vm, agents.GetUAPPluginStatusForImage(vm.ImageSpec))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(cmdOut.Stdout, "is running ok") {
+				t.Error("expected the plugin to be running after the VM restart, but is not running")
+			}
+		} else {
+			cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
+			if err != nil {
+				t.Fatal(err)
+			}
+			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
+			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
+			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
+		}
 	})
 }
 
@@ -4879,6 +5350,160 @@ func TestLogCompression(t *testing.T) {
 
 		// Expect to see the log with the modifications applied
 		if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, `jsonPayload.message="google"`); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
+// listAndDeleteResources lists all gcloud resources of a given resourceType that match the gcloudFilter.
+// All the found listed resources are then deleted sequentially.
+// extraArguments can be used for different type of gcloud command requirements.
+func listAndDeleteResources(ctx context.Context, logger *log.Logger, resourceType []string, gcloudFilter string, extraArguments []string) error {
+	type gcloud_resource struct {
+		Name string
+		Zone string
+	}
+
+	listArgs := append(resourceType,
+		[]string{"list",
+			"--filter=" + gcloudFilter,
+			"--format=json",
+		}...)
+	listArgs = append(listArgs, extraArguments...)
+
+	output, err := gce.RunGcloud(ctx, logger, "", listArgs)
+	if err != nil {
+		return err
+	}
+
+	var resources []gcloud_resource
+	if err := json.Unmarshal([]byte(output.Stdout), &resources); err != nil {
+		return fmt.Errorf("could not parse JSON from %q: %v", output.Stdout, err)
+	}
+
+	// Nothing to delete.
+	if len(resources) == 0 {
+		return nil
+	}
+
+	for _, r := range resources {
+		deleteArgs := append(resourceType, []string{"delete", filepath.Base(r.Name), "--format=json"}...)
+		if r.Zone != "" {
+			deleteArgs = append(deleteArgs, "--zone")
+			deleteArgs = append(deleteArgs, filepath.Base(r.Zone))
+		}
+
+		deleteArgs = append(deleteArgs, extraArguments...)
+		_, err = gce.RunGcloud(ctx, logger, "", deleteArgs)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+const AppHubIntegrationTestApp = "ops-agent-app-hub-integration-test-app"
+
+func cleanupStaleResourcesForTestAppHubLogLabels(ctx context.Context, logger *log.Logger) error {
+	project := os.Getenv("PROJECT")
+	// 24h old resources are considered stale
+	staleResourceTime := time.Now().Add(-24 * time.Hour)
+
+	// Formated timestamp
+	staleResourceTimestamp := staleResourceTime.Format(time.RFC3339)
+
+	listAndDeleteResources(ctx, logger, []string{"compute", "instance-groups", "managed"},
+		"( creationTimestamp < "+staleResourceTimestamp+" AND name ~ .*test-[0-9]{1,8}-.*-mig$ )",
+		[]string{"--project", project})
+	listAndDeleteResources(ctx, logger, []string{"compute", "instance-templates"},
+		"( creationTimestamp < "+staleResourceTimestamp+" AND name ~ .*test-[0-9]{1,8}-.*-tmpl$ )",
+		[]string{"--project", project})
+	listAndDeleteResources(ctx, logger, []string{"apphub", "applications", "workloads"},
+		"( createTime < "+staleResourceTimestamp+" AND name ~ .*test-[0-9]{1,8}-.*-wl$ )",
+		[]string{"--project", project, "--application", AppHubIntegrationTestApp, "--location", "global"})
+
+	return nil
+}
+
+func TestAppHubLogLabels(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+
+		ctx, logger, migVM := setupMainLogAndManagedInstaceGroupVM(t, imageSpec)
+
+		// Cleanup stale resources
+		if imageSpec == gce.FirstImageSpec() {
+			// We don't need to clean stale (24h old) resources very often. This is only a guard
+			// in case the normal test cleanup is not executed correctly. We will only run the
+			// cleanup once per TestAppHubLogLabels execution to reduce race conditions.
+			t.Cleanup(func() { cleanupStaleResourcesForTestAppHubLogLabels(ctx, logger) })
+		}
+
+		// Setup Apphub #1 : Discover Managed Instance Group resource from AppHub API
+		vmRegion := migVM.Zone[:len(migVM.Zone)-2]
+		discoverMIGWorkloadArgs := []string{
+			"apphub", "discovered-workloads", "list",
+			"--project=" + migVM.Project,
+			"--location=" + vmRegion,
+			"--filter=workloadReference.uri ~ " + migVM.ManagedInstanceGroupName(),
+			"--uri",
+		}
+
+		output, err := gce.RunGcloud(ctx, logger, "", discoverMIGWorkloadArgs)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Setup Apphub #2 : Register Managed Instance Group as AppHub workload.
+		migResourceString := strings.Replace(output.Stdout, "https://apphub.googleapis.com/v1/", "", 1)
+		registerAppHubWorkloadArgs := []string{
+			"apphub", "applications", "workloads", "create", migVM.AppHubWorkloadName(),
+			"--application=" + AppHubIntegrationTestApp,
+			"--project=" + migVM.Project,
+			"--location=global",
+			"--discovered-workload=" + migResourceString,
+			"--format=json",
+		}
+
+		output, err = gce.RunGcloud(ctx, logger, "", registerAppHubWorkloadArgs)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		t.Cleanup(func() {
+			// Setup Apphub #3 : Delete apphub workload.
+			deleteAppHubWorkloadArgs := []string{
+				"apphub", "applications", "workloads", "delete", migVM.AppHubWorkloadName(),
+				"--application=" + AppHubIntegrationTestApp,
+				"--project=" + migVM.Project,
+				"--location=global",
+				"--format=json",
+			}
+
+			output, err = gce.RunGcloud(ctx, logger, "", deleteAppHubWorkloadArgs)
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+
+		if err := agents.SetupOpsAgent(ctx, logger, migVM.VM, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := writeToSystemLog(ctx, logger, migVM.VM, "123456789"); err != nil {
+			t.Fatal(err)
+		}
+
+		tag := systemLogTagForImage(migVM.ImageSpec)
+		query := logMessageQueryForImage(migVM.ImageSpec, "123456789")
+		query += fmt.Sprintf(` AND labels."compute.googleapis.com/instance_group_manager/name"="%s"`, migVM.ManagedInstanceGroupName())
+		query += fmt.Sprintf(` AND labels."compute.googleapis.com/instance_group_manager/zone"="%s"`, migVM.Zone)
+		query += fmt.Sprintf(` AND apphub.application.id="%s"`, AppHubIntegrationTestApp)
+		query += fmt.Sprintf(` AND apphub.workload.id="%s"`, migVM.AppHubWorkloadName())
+
+		if err := gce.WaitForLog(ctx, logger, migVM.VM, tag, time.Hour, query); err != nil {
 			t.Error(err)
 		}
 	})

@@ -89,7 +89,10 @@ func (r MetricsReceiverElasticsearch) Pipelines(_ context.Context) ([]otel.Recei
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+			otel.TransformationMetrics(
+				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+				otel.SetScopeVersion("1.0"),
+			),
 		}},
 	}}, nil
 }
@@ -269,14 +272,14 @@ func (p LoggingProcessorElasticsearchGC) Components(ctx context.Context, tag, ui
 }
 
 type LoggingReceiverElasticsearchJson struct {
-	LoggingProcessorElasticsearchJson       `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
+	LoggingProcessorElasticsearchJson `yaml:",inline"`
+	ReceiverMixin                     confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
 }
 
 func (r LoggingReceiverElasticsearchJson) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.IncludePaths) == 0 {
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
 		// Default JSON logs for Elasticsearch
-		r.IncludePaths = []string{
+		r.ReceiverMixin.IncludePaths = []string{
 			"/var/log/elasticsearch/*_server.json",
 			"/var/log/elasticsearch/*_deprecation.json",
 			"/var/log/elasticsearch/*_index_search_slowlog.json",
@@ -294,7 +297,7 @@ func (r LoggingReceiverElasticsearchJson) Components(ctx context.Context, tag st
 	// "at org.elasticsearch.bootstrap.Elasticsearch.init(Elasticsearch.java:166) ~[elasticsearch-7.16.2.jar:7.16.2]",
 	// "... 6 more"] }
 
-	r.MultilineRules = []confgenerator.MultilineRule{
+	r.ReceiverMixin.MultilineRules = []confgenerator.MultilineRule{
 		{
 			StateName: "start_state",
 			NextState: "cont",
@@ -307,24 +310,24 @@ func (r LoggingReceiverElasticsearchJson) Components(ctx context.Context, tag st
 		},
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := r.ReceiverMixin.Components(ctx, tag)
 	return append(c, r.LoggingProcessorElasticsearchJson.Components(ctx, tag, "elasticsearch_json")...)
 }
 
 type LoggingReceiverElasticsearchGC struct {
-	LoggingProcessorElasticsearchGC         `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
+	LoggingProcessorElasticsearchGC `yaml:",inline"`
+	ReceiverMixin                   confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
 }
 
 func (r LoggingReceiverElasticsearchGC) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.IncludePaths) == 0 {
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
 		// Default GC log for Elasticsearch
-		r.IncludePaths = []string{
+		r.ReceiverMixin.IncludePaths = []string{
 			"/var/log/elasticsearch/gc.log",
 		}
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := r.ReceiverMixin.Components(ctx, tag)
 	return append(c, r.LoggingProcessorElasticsearchGC.Components(ctx, tag, "elasticsearch_gc")...)
 }
 

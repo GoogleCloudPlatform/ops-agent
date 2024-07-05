@@ -13,139 +13,149 @@
 # limitations under the License.
 
 public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/mssql"
-app_url: "https://docs.microsoft.com/en-us/sql/sql-server"
+app_url: "https://docs.microsoft.com/sql/sql-server/"
 short_name: SQL Server
 long_name: Microsoft SQL Server
 logo_path: /stackdriver/images/mssql.png # supplied by google technical writer
-description: "The v1 Microsoft SQL Server integration collects metrics from your SQL Server\ninstances. The metrics provide transaction-rate information and also data on\nopen connections.\n\nThe v2 Microsoft SQL Server integration collects metrics from your SQL Server\ninstances and databases. Page, batch, lock, and user connection count information\nis provided at the instance level. Transaction and transaction log information\nis provided at the database level. \n\nFor more information on SQL Server, see the\n[SQL Server](https://docs.microsoft.com/en-us/sql/sql-server)\ndocumentation."
+description: |-
+  The v1 Microsoft SQL Server integration collects metrics from your SQL Server
+  instances. The metrics provide transaction-rate information and also data on
+  open connections.
+
+  The v2 Microsoft SQL Server integration collects metrics from your SQL Server
+  instances and databases. Page, batch, lock, and user connection count information
+  is provided at the instance level. Transaction and transaction log information
+  is provided at the database level.
+
+  This integration doesn't support SQL Server named instances.
 minimum_supported_agent_version:
   metrics: 2.15.0
 supported_operating_systems: windows
-supported_app_version: ["11.x", "12.x", "13.x", "14.x", "15.x"]
+platforms_to_skip:
+  # Skip non-sql images.
+  - windows-cloud:windows-2016-core
+  - windows-cloud:windows-2022
+supported_app_version: ["11.x", "12.x", "13.x", "14.x", "15.x", "16.x"]
 expected_metrics:
-  # v1 metrics
-  - type: agent.googleapis.com/mssql/connections/user
-    value_type: DOUBLE
-    kind: GAUGE
-    monitored_resource: gce_instance
-    representative: true
-  - type: agent.googleapis.com/mssql/transaction_rate
-    value_type: DOUBLE
-    kind: GAUGE
-    monitored_resource: gce_instance
-  - type: agent.googleapis.com/mssql/write_transaction_rate
-    value_type: DOUBLE
-    kind: GAUGE
-    monitored_resource: gce_instance
   # v2 metrics
   - type: workload.googleapis.com/sqlserver.user.connection.count
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
+    representative: true
   - type: workload.googleapis.com/sqlserver.lock.wait_time.avg
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/sqlserver.lock.wait.rate
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/sqlserver.batch.request.rate
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/sqlserver.batch.sql_compilation.rate
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/sqlserver.batch.sql_recompilation.rate
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/sqlserver.page.buffer_cache.hit_ratio
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/sqlserver.page.life_expectancy
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/sqlserver.page.split.rate
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/sqlserver.page.lazy_write.rate
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/sqlserver.page.checkpoint.flush.rate
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/sqlserver.page.operation.rate
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      type: .*
+      - name: type
+        value_regex: .*
   - type: workload.googleapis.com/sqlserver.transaction_log.growth.count
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database: .*
+      - name: database
+        value_regex: .*
   - type: workload.googleapis.com/sqlserver.transaction_log.shrink.count
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database: .*
+      - name: database
+        value_regex: .*
   - type: workload.googleapis.com/sqlserver.transaction_log.percent_used
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database: .*
+      - name: database
+        value_regex: .*
   - type: workload.googleapis.com/sqlserver.transaction_log.flush.wait.rate
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database: .*
+      - name: database
+        value_regex: .*
   - type: workload.googleapis.com/sqlserver.transaction_log.flush.rate
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database: .*
+      - name: database
+        value_regex: .*
   - type: workload.googleapis.com/sqlserver.transaction_log.flush.data.rate
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database: .*
+      - name: database
+        value_regex: .*
   - type: workload.googleapis.com/sqlserver.transaction.rate
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database: .*
+      - name: database
+        value_regex: .*
   - type: workload.googleapis.com/sqlserver.transaction.write.rate
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database: .*
+      - name: database
+        value_regex: .*
 configuration_options:
   metrics:
     - type: mssql
       fields:
         - name: type
           default: null
-          description: This value must be mssql.
+          description: This value must be `mssql`.
         - name: collection_interval
           default: 60s
-          description: A time.Duration value, such as 30s or 5m.
+          description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
         - name: receiver_version
           default: "1"
-          description: Either 1 or 2. Version 2 has many more metrics available.
+          description: Version of the metrics collected; use `2` to collect v2 metrics.

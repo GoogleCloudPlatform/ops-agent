@@ -1,6 +1,13 @@
-# Configures Ops Agent to collect telemetry from the app and restart Ops Agent.
+# Configures Ops Agent to collect telemetry from the app. You must restart the agent for the configuration to take effect.
 
 set -e
+
+# Check if the file exists
+if [ ! -f /etc/google-cloud-ops-agent/config.yaml ]; then
+  # Create the file if it doesn't exist.
+  sudo mkdir -p /etc/google-cloud-ops-agent
+  sudo touch /etc/google-cloud-ops-agent/config.yaml
+fi
 
 # Create a back up of the existing file so existing configurations are not lost.
 sudo cp /etc/google-cloud-ops-agent/config.yaml /etc/google-cloud-ops-agent/config.yaml.bak
@@ -11,8 +18,10 @@ metrics:
   receivers:
     couchbase:
       type: couchbase
-      username: admin
-      password: password
+      username: admin 
+      password: password 
+      # To use the googlesecretmanager provider to replace plaintext passwords, refer to the example below.
+      # password: ${googlesecretmanager:projects/<project-id>/secrets/<secret-id>/versions/<version-id>}
       collection_interval: 30s
   service:
     pipelines:
@@ -37,6 +46,3 @@ logging:
           - couchbase_goxdcr
 
 EOF
-
-sudo service google-cloud-ops-agent restart
-sleep 30s

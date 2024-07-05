@@ -15,6 +15,7 @@
 app_url: "https://www.oracle.com/database/"
 short_name: Oracle DB
 long_name: Oracle Database
+logo_path: /stackdriver/images/integrations/oracledb.png # supplied by google technical writer
 description: |-
   The Oracle DB integration collects Oracle DB metrics and logs. The metrics are collected by querying
   relevant monitoring views. This integration writes structured trace logs.
@@ -49,277 +50,397 @@ configure_integration: |-
 supported_operating_systems: linux
 # Oracle DB is difficult to install on these platforms.
 platforms_to_skip:
-  - debian-cloud:debian-10
   - debian-cloud:debian-11
-  - debian-cloud:debian-11-arm64
   - debian-cloud:debian-12
   - debian-cloud:debian-12-arm64
   - ml-images:common-gpu-debian-11-py310
+  - rocky-linux-cloud:rocky-linux-8-optimized-gcp-arm64
   - rocky-linux-cloud:rocky-linux-9
+  - rocky-linux-cloud:rocky-linux-9-optimized-gcp
   - rocky-linux-cloud:rocky-linux-9-arm64
+  - rocky-linux-cloud:rocky-linux-9-optimized-gcp-arm64
   - suse-cloud:sles-12
   - suse-cloud:sles-15
   - suse-cloud:sles-15-arm64
-  - ubuntu-os-cloud:ubuntu-2004-lts
-  - ubuntu-os-cloud:ubuntu-2004-lts-arm64
   - ubuntu-os-cloud:ubuntu-2204-lts
   - ubuntu-os-cloud:ubuntu-2204-lts-arm64
-  - ubuntu-os-cloud:ubuntu-2310-amd64
-  - ubuntu-os-cloud:ubuntu-2310-arm64
   - ubuntu-os-cloud:ubuntu-2404-lts-amd64
   - ubuntu-os-cloud:ubuntu-2404-lts-arm64
+  - ubuntu-os-cloud:ubuntu-2410-amd64
+  - ubuntu-os-cloud:ubuntu-minimal-2410-amd64
+  - ubuntu-os-cloud:ubuntu-2410-arm64
+  - ubuntu-os-cloud:ubuntu-minimal-2410-arm64
 supported_app_version: ["12.2", "18c", "19c", "21c"]
 expected_metrics:
   - type: workload.googleapis.com/oracle.backup.latest
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
   - type: workload.googleapis.com/oracle.buffer.cache.ratio
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.cursor.count
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.cursor.current
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.disk.operation.count
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      direction: read|write
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: direction
+        value_regex: read|write
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.disk.operation.size
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      direction: read|write
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: direction
+        value_regex: read|write
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.logon.count
     value_type: INT64
     kind: CUMULATIVE
     representative: true
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.logon.current
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.network.data
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      direction: sent|received
-      global_name: .*
-      instance_id: .*
-      target: dblink|client
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: direction
+        value_regex: sent|received
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
+      - name: target
+        value_regex: dblink|client
   - type: workload.googleapis.com/oracle.process.count
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.process.limit
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.process.pga_memory.size
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
-      program: .*
-      state: free|used
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
+      - name: program
+        value_regex: .*
+      - name: state
+        value_regex: free|used
   - type: workload.googleapis.com/oracle.row.cache.ratio
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.service.response_time
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.session.count
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.session.limit
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.sort.count
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
-      type: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
+      - name: type
+        value_regex: .*
   - type: workload.googleapis.com/oracle.sort.row.count
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.tablespace.count
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      contents: UNDO|PERMANENT|TEMP
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      status: ONLINE|OFFLINE|READONLY
+      - name: contents
+        value_regex: UNDO|PERMANENT|TEMP
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: status
+        value_regex: ONLINE|OFFLINE|READONLY
   - type: workload.googleapis.com/oracle.tablespace.size
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      contents: UNDO|PERMANENT|TEMP
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      state: used|free
-      tablespace_name: .*
+      - name: contents
+        value_regex: UNDO|PERMANENT|TEMP
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: state
+        value_regex: used|free
+      - name: tablespace_name
+        value_regex: .*
   - type: workload.googleapis.com/oracle.user.calls
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.user.commits
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.user.rollbacks
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.wait.count
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
-      type: foreground|background
-      wait_class: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
+      - name: type
+        value_regex: foreground|background
+      - name: wait_class
+        value_regex: .*
   - type: workload.googleapis.com/oracle.wait.time
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
-      type: foreground|background
-      wait_class: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
+      - name: type
+        value_regex: foreground|background
+      - name: wait_class
+        value_regex: .*
   - type: workload.googleapis.com/oracle.wait.timeouts
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
-      type: foreground|background
-      wait_class: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
+      - name: type
+        value_regex: foreground|background
+      - name: wait_class
+        value_regex: .*
 expected_logs:
   - log_name: oracledb_alert
     fields:
@@ -381,13 +502,13 @@ configuration_options:
     - type: oracledb
       fields:
         - default: null
-          description: This value must be oracledb.
+          description: This value must be `oracledb`.
           name: type
         - default: localhost:1521
-          description: The endpoint used to connect to the oracle DB instance. This field supports either host:port or a unix socket path.
+          description: The endpoint used to connect to the oracle DB instance. This field supports either `host:port` or a Unix socket path.
           name: endpoint
         - default: 60s
-          description: A time.Duration value, such as 30s or 5m.
+          description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
           name: collection_interval
         - default: null
           description: The username used to connect to the instance.
@@ -396,61 +517,61 @@ configuration_options:
           description: The password used to connect to the instance.
           name: password
         - default: true
-          description: Sets whether or not to use a secure TLS connection. If set to false, then TLS is enabled.
+          description: Sets whether or not to use a secure TLS connection. If set to `false`, then TLS is enabled.
           name: insecure
         - default: false
-          description: Sets whether or not to skip verifying the certificate. If insecure is set to true, then the insecure_skip_verify value is not used.
+          description: Sets whether or not to skip verifying the certificate. If `insecure` is set to `true`, then the `insecure_skip_verify` value is not used.
           name: insecure_skip_verify
         - default: null
           description: Path to the directory containing the oracle wallet optionally used for authentication and securing connections.
           name: wallet
         - default: null
-          description: The SID of the Oracle database being monitored. Use this _or_ service_name as appropriate.
+          description: The SID of the Oracle database being monitored. Use this field _or_ the `service_name` field as appropriate.
           name: sid
         - default: null
-          description: The Service Name of the Oracle database being monitored. Use this _or_ sid as appropriate.
+          description: The Service Name of the Oracle database being monitored. Use this field _or_ the `sid` field as appropriate.
           name: service_name
   logs:
     - type: oracledb_audit
       fields:
         - name: type
           default: null
-          description: The value must be oracledb_audit.
+          description: This value must be `oracledb_audit`.
         - name: include_paths
           default: null
-          description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths. Cannot be provided with oracle_home.
+          description: A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths. Cannot be provided with the `oracle_home` field.
         - name: oracle_home
           default: null
-          description: Location of the ORACLE_HOME for the environment, when provided it sets the include_paths to `$ORACLE_HOME/admin/*/adump/*.aud`. Cannot be provided with include_paths.
+          description: Location of the `ORACLE_HOME` for the environment, when provided it sets the include_paths to `$ORACLE_HOME/admin/*/adump/*.aud`. Cannot be provided with the `include_paths` field.
         - name: exclude_paths
-          default: '[]'
-          description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+          default: null
+          description: A list of filesystem path patterns to exclude from the set matched by `include_paths`.
         - name: record_log_file_path
           default: false
           description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
         - name: wildcard_refresh_interval
           default: 60s
-          description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+          description: The interval at which wildcard file paths in `include_paths` are refreshed. Given as a [time duration](https://pkg.go.dev/time#ParseDuration), for example `30s` or `2m`. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
     - type: oracledb_alert
       fields:
         - name: type
           default: null
-          description: The value must be oracledb_alert.
+          description: The value must be `oracledb_alert`.
         - name: include_paths
           default: null
-          description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths. Cannot be provided with oracle_home.
+          description: A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths. Cannot be provided with the `oracle_home` field.
         - name: oracle_home
           default: null
-          description: Location of the ORACLE_HOME for the environment, when provided it sets the include_paths to `$ORACLE_HOME/diag/rdbms/*/*/trace/alert_*.log`. Cannot be provided with include_paths.
+          description: Location of the `ORACLE_HOME` for the environment, when provided it sets the `include_paths` to `$ORACLE_HOME/diag/rdbms/*/*/trace/alert_*.log`. Cannot be provided with the `include_paths` field.
         - name: exclude_paths
-          default: '[]'
-          description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+          default: null
+          description: A list of filesystem path patterns to exclude from the set matched by `include_paths`.
         - name: record_log_file_path
           default: false
           description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
         - name: wildcard_refresh_interval
           default: 60s
-          description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+          description: The interval at which wildcard file paths in `include_paths` are refreshed. Given as a [time duration](https://pkg.go.dev/time#ParseDuration), for example `30s` or `2m`. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
 minimum_supported_agent_version:
   metrics: 2.22.0
   logging: 2.22.0

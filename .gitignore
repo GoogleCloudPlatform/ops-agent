@@ -1,6 +1,14 @@
+# Ignore a file actually called Makefile. The presence of this file interferes
+# with our Linux package building processes. To make a local symlink called
+# "Makefile" for development convenience, use this command:
+# make -f tasks.mak makefile_symlink
 Makefile
 
 # Ignore generated credentials from google-github-actions/auth
 gha-creds-*.json
+
+# This is a folder used to hold local builds of fluent-bit and otelopscol
+# when running transformation tests locally.
+dist/
 
 .vscode/launch.json

@@ -49,6 +49,8 @@ func (r MetricsReceiverIis) Pipelines(_ context.Context) ([]otel.ReceiverPipelin
 				otel.TransformationMetrics(
 					otel.FlattenResourceAttribute("iis.site", "site"),
 					otel.FlattenResourceAttribute("iis.application_pool", "app_pool"),
+					otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+					otel.SetScopeVersion("2.0"),
 				),
 				// Drop all resource keys; Must be done in a separate transform,
 				// otherwise the above flatten resource attribute queries will only
@@ -68,7 +70,6 @@ func (r MetricsReceiverIis) Pipelines(_ context.Context) ([]otel.ReceiverPipelin
 					otel.AddPrefix("workload.googleapis.com"),
 				),
 				otel.NormalizeSums(),
-				otel.ModifyInstrumentationScope(r.Type(), "2.0"),
 			}},
 		}}, nil
 	}
@@ -137,7 +138,10 @@ func (r MetricsReceiverIis) Pipelines(_ context.Context) ([]otel.ReceiverPipelin
 				"agent.googleapis.com/iis/request_count",
 			),
 			otel.NormalizeSums(),
-			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+			otel.TransformationMetrics(
+				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+				otel.SetScopeVersion("1.0"),
+			),
 		}},
 	}}, nil
 }
@@ -175,11 +179,11 @@ const (
 	  else
 		record["http_request_requestUrl"] = table.concat({record["cs_uri_stem"], "?", record["cs_uri_query"]})
 	  end
-	  
+
 	  record["cs_uri_query"] = nil
 	  record["cs_uri_stem"] = nil
 	  record["s_port"] = nil
-	  return 2, timestamp, record 
+	  return 2, timestamp, record
 	end
 	`
 )
@@ -249,17 +253,17 @@ func (p *LoggingProcessorIisAccess) Components(ctx context.Context, tag, uid str
 }
 
 type LoggingReceiverIisAccess struct {
-	LoggingProcessorIisAccess               `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	LoggingProcessorIisAccess `yaml:",inline"`
+	ReceiverMixin             confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r LoggingReceiverIisAccess) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
+		r.ReceiverMixin.IncludePaths = []string{
 			`C:\inetpub\logs\LogFiles\W3SVC1\u_ex*`,
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := r.ReceiverMixin.Components(ctx, tag)
 	c = append(c, r.LoggingProcessorIisAccess.Components(ctx, tag, "iis_access")...)
 	return c
 }

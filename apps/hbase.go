@@ -53,7 +53,10 @@ func (r MetricsReceiverHbase) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 						otel.AggregateLabels("max", "state"),
 					),
 				),
-				otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+				otel.TransformationMetrics(
+					otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+					otel.SetScopeVersion("1.0"),
+				),
 			},
 		)
 }
@@ -126,18 +129,18 @@ func (p LoggingProcessorHbaseSystem) Components(ctx context.Context, tag string,
 }
 
 type SystemLoggingReceiverHbase struct {
-	LoggingProcessorHbaseSystem             `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	LoggingProcessorHbaseSystem `yaml:",inline"`
+	ReceiverMixin               confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r SystemLoggingReceiverHbase) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
+		r.ReceiverMixin.IncludePaths = []string{
 			"/opt/hbase/logs/hbase-*-regionserver-*.log",
 			"/opt/hbase/logs/hbase-*-master-*.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := r.ReceiverMixin.Components(ctx, tag)
 	c = append(c, r.LoggingProcessorHbaseSystem.Components(ctx, tag, "hbase_system")...)
 	return c
 }

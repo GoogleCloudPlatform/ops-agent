@@ -20,91 +20,115 @@ description: |-
   The NVIDIA Management Library (or NVML) integration collects GPU utilization
   and GPU used memory metrics from NVIDIA GPUs.
 configure_integration: |-
-  You must install the NVIDIA driver on a host with NVIDIA GPUs. 
+  You must install the NVIDIA driver on a host with NVIDIA GPUs.
 supported_operating_systems: linux
 supported_app_version: ["515.65.01"]
 gpu_platforms:
   - model: a100
     platforms:
-      - ubuntu-os-cloud:ubuntu-2004-lts
+      - ubuntu-os-cloud:ubuntu-2204-lts
   - model: v100
     platforms:
-      - ubuntu-os-cloud:ubuntu-2004-lts
+      - ubuntu-os-cloud:ubuntu-2204-lts
   - model: p4
     platforms:
-      - ubuntu-os-cloud:ubuntu-2004-lts
+      - ubuntu-os-cloud:ubuntu-2204-lts
   - model: t4
     platforms:
-      - ubuntu-os-cloud:ubuntu-2004-lts
+      - ubuntu-os-cloud:ubuntu-2204-lts
       - ml-images:common-gpu-debian-11-py310
   - model: p100
     platforms:
-      - ubuntu-os-cloud:ubuntu-2004-lts
+      - ubuntu-os-cloud:ubuntu-2204-lts
   - model: l4
     platforms:
-      - centos-cloud:centos-7
-      - debian-cloud:debian-10
       - debian-cloud:debian-11
       - ml-images:common-gpu-debian-11-py310
       - rocky-linux-cloud:rocky-linux-8
       - rocky-linux-cloud:rocky-linux-9
       - suse-cloud:sles-15
-      - ubuntu-os-cloud:ubuntu-2004-lts
       - ubuntu-os-cloud:ubuntu-2204-lts
+      - ubuntu-os-cloud:ubuntu-2404-lts-amd64
+  - model: h100
+    platforms:
+      - ubuntu-os-cloud:ubuntu-minimal-2204-lts # due to H100 quota, choose an image from the exhaustive list to skip presubmits
 expected_metrics:
   - type: agent.googleapis.com/gpu/utilization
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      model: .*
-      uuid: .*
-      gpu_number: "[0-9]*"
+      - name: model
+        value_regex: .*
+      - name: uuid
+        value_regex: .*
+      - name: gpu_number
+        value_regex: "[0-9]*"
     representative: true
   - type: agent.googleapis.com/gpu/memory/bytes_used
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      model: .*
-      uuid: .*
-      gpu_number: "[0-9]*"
-      memory_state: free|used
+      - name: model
+        value_regex: .*
+      - name: uuid
+        value_regex: .*
+      - name: gpu_number
+        value_regex: "[0-9]*"
+      - name: memory_state
+        value_regex: free|used
   - type: agent.googleapis.com/gpu/processes/utilization
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      model: .*
-      uuid: .*
-      gpu_number: "[0-9]*"
-      pid: "[0-9]*"
-      process: .*
-      command: .*
-      command_line: .*
-      owner: .*
+      - name: model
+        value_regex: .*
+      - name: uuid
+        value_regex: .*
+      - name: gpu_number
+        value_regex: "[0-9]*"
+      - name: pid
+        value_regex: "[0-9]*"
+      - name: process
+        value_regex: .*
+      - name: command
+        value_regex: .*
+      - name: command_line
+        value_regex: .*
+      - name: owner
+        value_regex: .*
   - type: agent.googleapis.com/gpu/processes/max_bytes_used
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      model: .*
-      uuid: .*
-      gpu_number: "[0-9]*"
-      pid: "[0-9]*"
-      process: .*
-      command: .*
-      command_line: .*
-      owner: .*
+      - name: model
+        value_regex: .*
+      - name: uuid
+        value_regex: .*
+      - name: gpu_number
+        value_regex: "[0-9]*"
+      - name: pid
+        value_regex: "[0-9]*"
+      - name: process
+        value_regex: .*
+      - name: command
+        value_regex: .*
+      - name: command_line
+        value_regex: .*
+      - name: owner
+        value_regex: .*
 configuration_options:
   metrics:
     - type: hostmetrics
       fields:
         - name: type
           default: null
-          description: This value must be hostmetrics.
+          description: This value must be `hostmetrics`.
         - name: collection_interval
           default: 60s
-          description: A time.Duration value, such as 30s or 5m.
+          description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
 minimum_supported_agent_version:
   metrics: 2.38.0

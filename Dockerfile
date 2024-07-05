@@ -16,7 +16,7 @@
 # To re-generate, run from the repository root: go run ./dockerfiles
 
 # Build as DOCKER_BUILDKIT=1 docker build -o /tmp/out .
-# or DOCKER_BUILDKIT=1 docker build -o /tmp/out . --target=buster
+# or DOCKER_BUILDKIT=1 docker build -o /tmp/out . --target=bullseye
 # Generated tarball(s) will end up in /tmp/out
 
 
@@ -24,7 +24,7 @@ ARG CMAKE_VERSION=3.25.2
 ARG OPENJDK_MAJOR_VERSION=17
 ARG OPENJDK_FULL_VERSION=17.0.8
 ARG OPENJDK_VERSION_SUFFIX=7
-ARG GO_VERSION=1.21.5
+ARG GO_VERSION=1.24.3
 
 # Manually prepare a recent enough version of CMake.
 # This should be used on platforms where the default package manager
@@ -73,112 +73,6 @@ RUN set -xe; \
     mkdir -p /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk && \
     tar -xf /tmp/OpenJDK${OPENJDK_MAJOR_VERSION}U.tar.gz -C /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk --strip-components=1
 
-
-# ======================================
-# Build Ops Agent for centos-7
-# ======================================
-
-FROM centos:7 AS centos7-build-base
-ARG OPENJDK_MAJOR_VERSION
-
-RUN set -x; yum -y update && \
-		yum -y install git systemd \
-		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
-		gcc gcc-c++ make bison flex file systemd-devel zlib-devel gtest-devel rpm-build \
-		expect rpm-sign zip
-COPY --from=openjdk-install /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/ /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk
-ENV JAVA_HOME /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/
-COPY --from=cmake-install-recent /cmake.sh /cmake.sh
-RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
-
-
-SHELL ["/bin/bash", "-c"]
-
-# Install golang
-ARG TARGETARCH
-ARG GO_VERSION
-ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
-RUN set -xe; \
-    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
-ENV PATH="${PATH}:/usr/local/go/bin"
-
-
-FROM centos7-build-base AS centos7-build-otel
-WORKDIR /work
-# Download golang deps
-COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
-RUN cd submodules/opentelemetry-operations-collector && go mod download
-
-COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
-# Install gradle. The first invocation of gradlew does this
-RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
-COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
-COPY ./builds/otel.sh .
-RUN \
-    unset OTEL_TRACES_EXPORTER && \
-    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
-    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-    ./otel.sh /work/cache/
-
-FROM centos7-build-base AS centos7-build-fluent-bit
-WORKDIR /work
-COPY ./submodules/fluent-bit submodules/fluent-bit
-COPY ./builds/fluent_bit.sh .
-RUN ./fluent_bit.sh /work/cache/
-
-
-FROM centos7-build-base AS centos7-build-systemd
-WORKDIR /work
-COPY ./systemd systemd
-COPY ./builds/systemd.sh .
-RUN ./systemd.sh /work/cache/
-
-
-FROM centos7-build-base AS centos7-build-golang-base
-WORKDIR /work
-COPY go.mod go.sum ./
-# Fetch dependencies
-RUN go mod download
-COPY confgenerator confgenerator
-COPY apps apps
-COPY internal internal
-
-
-FROM centos7-build-golang-base AS centos7-build-diagnostics
-WORKDIR /work
-COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
-COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
-
-
-FROM centos7-build-golang-base AS centos7-build-wrapper
-WORKDIR /work
-COPY cmd/agent_wrapper cmd/agent_wrapper
-COPY ./builds/agent_wrapper.sh .
-RUN ./agent_wrapper.sh /work/cache/
-
-
-FROM centos7-build-golang-base AS centos7-build
-WORKDIR /work
-COPY . /work
-
-# Run the build script once to build the ops agent engine to a cache
-RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
-WORKDIR /tmp/cache_run/golang
-RUN ./pkg/rpm/build.sh || true &> /dev/null
-WORKDIR /work
-
-COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
-COPY --from=centos7-build-otel /work/cache /work/cache
-COPY --from=centos7-build-fluent-bit /work/cache /work/cache
-COPY --from=centos7-build-systemd /work/cache /work/cache
-COPY --from=centos7-build-diagnostics /work/cache /work/cache
-COPY --from=centos7-build-wrapper /work/cache /work/cache
-RUN ./pkg/rpm/build.sh
-
-FROM scratch AS centos7
-COPY --from=centos7-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-7.tgz
-COPY --from=centos7-build /google-cloud-ops-agent*.rpm /
 
 # ======================================
 # Build Ops Agent for centos-8
@@ -247,13 +141,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM centos8-build-golang-base AS centos8-build-diagnostics
-WORKDIR /work
-COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
-COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
-
-
 FROM centos8-build-golang-base AS centos8-build-wrapper
 WORKDIR /work
 COPY cmd/agent_wrapper cmd/agent_wrapper
@@ -275,13 +162,19 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from=centos8-build-otel /work/cache /work/cache
 COPY --from=centos8-build-fluent-bit /work/cache /work/cache
 COPY --from=centos8-build-systemd /work/cache /work/cache
-COPY --from=centos8-build-diagnostics /work/cache /work/cache
 COPY --from=centos8-build-wrapper /work/cache /work/cache
 RUN ./pkg/rpm/build.sh
+
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache/
+RUN ./pkg/plugin/build.sh /work/cache centos8
+
 
 FROM scratch AS centos8
 COPY --from=centos8-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-8.tgz
 COPY --from=centos8-build /google-cloud-ops-agent*.rpm /
+COPY --from=centos8-build /google-cloud-ops-agent-plugin*.tar.gz /
 
 # ======================================
 # Build Ops Agent for rockylinux-9
@@ -353,13 +246,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM rockylinux9-build-golang-base AS rockylinux9-build-diagnostics
-WORKDIR /work
-COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
-COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
-
-
 FROM rockylinux9-build-golang-base AS rockylinux9-build-wrapper
 WORKDIR /work
 COPY cmd/agent_wrapper cmd/agent_wrapper
@@ -381,13 +267,19 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from=rockylinux9-build-otel /work/cache /work/cache
 COPY --from=rockylinux9-build-fluent-bit /work/cache /work/cache
 COPY --from=rockylinux9-build-systemd /work/cache /work/cache
-COPY --from=rockylinux9-build-diagnostics /work/cache /work/cache
 COPY --from=rockylinux9-build-wrapper /work/cache /work/cache
 RUN ./pkg/rpm/build.sh
+
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache/
+RUN ./pkg/plugin/build.sh /work/cache rockylinux9
+
 
 FROM scratch AS rockylinux9
 COPY --from=rockylinux9-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-rockylinux-9.tgz
 COPY --from=rockylinux9-build /google-cloud-ops-agent*.rpm /
+COPY --from=rockylinux9-build /google-cloud-ops-agent-plugin*.tar.gz /
 
 # ======================================
 # Build Ops Agent for debian-bookworm
@@ -454,13 +346,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM bookworm-build-golang-base AS bookworm-build-diagnostics
-WORKDIR /work
-COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
-COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
-
-
 FROM bookworm-build-golang-base AS bookworm-build-wrapper
 WORKDIR /work
 COPY cmd/agent_wrapper cmd/agent_wrapper
@@ -482,13 +367,19 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from=bookworm-build-otel /work/cache /work/cache
 COPY --from=bookworm-build-fluent-bit /work/cache /work/cache
 COPY --from=bookworm-build-systemd /work/cache /work/cache
-COPY --from=bookworm-build-diagnostics /work/cache /work/cache
 COPY --from=bookworm-build-wrapper /work/cache /work/cache
 RUN ./pkg/deb/build.sh
+
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache/
+RUN ./pkg/plugin/build.sh /work/cache bookworm
+
 
 FROM scratch AS bookworm
 COPY --from=bookworm-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-bookworm.tgz
 COPY --from=bookworm-build /google-cloud-ops-agent*.deb /
+COPY --from=bookworm-build /google-cloud-ops-agent-plugin*.tar.gz /
 
 # ======================================
 # Build Ops Agent for debian-bullseye
@@ -555,13 +446,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM bullseye-build-golang-base AS bullseye-build-diagnostics
-WORKDIR /work
-COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
-COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
-
-
 FROM bullseye-build-golang-base AS bullseye-build-wrapper
 WORKDIR /work
 COPY cmd/agent_wrapper cmd/agent_wrapper
@@ -583,116 +467,19 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from=bullseye-build-otel /work/cache /work/cache
 COPY --from=bullseye-build-fluent-bit /work/cache /work/cache
 COPY --from=bullseye-build-systemd /work/cache /work/cache
-COPY --from=bullseye-build-diagnostics /work/cache /work/cache
 COPY --from=bullseye-build-wrapper /work/cache /work/cache
 RUN ./pkg/deb/build.sh
+
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache/
+RUN ./pkg/plugin/build.sh /work/cache bullseye
+
 
 FROM scratch AS bullseye
 COPY --from=bullseye-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-bullseye.tgz
 COPY --from=bullseye-build /google-cloud-ops-agent*.deb /
-
-# ======================================
-# Build Ops Agent for debian-buster
-# ======================================
-
-FROM debian:buster AS buster-build-base
-ARG OPENJDK_MAJOR_VERSION
-
-RUN set -x; apt-get update && \
-		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config zip
-COPY --from=openjdk-install /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/ /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk
-ENV JAVA_HOME /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/
-
-SHELL ["/bin/bash", "-c"]
-
-# Install golang
-ARG TARGETARCH
-ARG GO_VERSION
-ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
-RUN set -xe; \
-    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
-ENV PATH="${PATH}:/usr/local/go/bin"
-
-
-FROM buster-build-base AS buster-build-otel
-WORKDIR /work
-# Download golang deps
-COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
-RUN cd submodules/opentelemetry-operations-collector && go mod download
-
-COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
-# Install gradle. The first invocation of gradlew does this
-RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
-COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
-COPY ./builds/otel.sh .
-RUN \
-    unset OTEL_TRACES_EXPORTER && \
-    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
-    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-    ./otel.sh /work/cache/
-
-FROM buster-build-base AS buster-build-fluent-bit
-WORKDIR /work
-COPY ./submodules/fluent-bit submodules/fluent-bit
-COPY ./builds/fluent_bit.sh .
-RUN ./fluent_bit.sh /work/cache/
-
-
-FROM buster-build-base AS buster-build-systemd
-WORKDIR /work
-COPY ./systemd systemd
-COPY ./builds/systemd.sh .
-RUN ./systemd.sh /work/cache/
-
-
-FROM buster-build-base AS buster-build-golang-base
-WORKDIR /work
-COPY go.mod go.sum ./
-# Fetch dependencies
-RUN go mod download
-COPY confgenerator confgenerator
-COPY apps apps
-COPY internal internal
-
-
-FROM buster-build-golang-base AS buster-build-diagnostics
-WORKDIR /work
-COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
-COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
-
-
-FROM buster-build-golang-base AS buster-build-wrapper
-WORKDIR /work
-COPY cmd/agent_wrapper cmd/agent_wrapper
-COPY ./builds/agent_wrapper.sh .
-RUN ./agent_wrapper.sh /work/cache/
-
-
-FROM buster-build-golang-base AS buster-build
-WORKDIR /work
-COPY . /work
-
-# Run the build script once to build the ops agent engine to a cache
-RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
-WORKDIR /tmp/cache_run/golang
-RUN ./pkg/deb/build.sh || true &> /dev/null
-WORKDIR /work
-
-COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
-COPY --from=buster-build-otel /work/cache /work/cache
-COPY --from=buster-build-fluent-bit /work/cache /work/cache
-COPY --from=buster-build-systemd /work/cache /work/cache
-COPY --from=buster-build-diagnostics /work/cache /work/cache
-COPY --from=buster-build-wrapper /work/cache /work/cache
-RUN ./pkg/deb/build.sh
-
-FROM scratch AS buster
-COPY --from=buster-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-buster.tgz
-COPY --from=buster-build /google-cloud-ops-agent*.deb /
+COPY --from=bullseye-build /google-cloud-ops-agent-plugin*.tar.gz /
 
 # ======================================
 # Build Ops Agent for sles-12
@@ -778,13 +565,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM sles12-build-golang-base AS sles12-build-diagnostics
-WORKDIR /work
-COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
-COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
-
-
 FROM sles12-build-golang-base AS sles12-build-wrapper
 WORKDIR /work
 COPY cmd/agent_wrapper cmd/agent_wrapper
@@ -806,13 +586,19 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from=sles12-build-otel /work/cache /work/cache
 COPY --from=sles12-build-fluent-bit /work/cache /work/cache
 COPY --from=sles12-build-systemd /work/cache /work/cache
-COPY --from=sles12-build-diagnostics /work/cache /work/cache
 COPY --from=sles12-build-wrapper /work/cache /work/cache
 RUN ./pkg/rpm/build.sh
+
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache/
+RUN ./pkg/plugin/build.sh /work/cache sles12
+
 
 FROM scratch AS sles12
 COPY --from=sles12-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-sles-12.tgz
 COPY --from=sles12-build /google-cloud-ops-agent*.rpm /
+COPY --from=sles12-build /google-cloud-ops-agent-plugin*.tar.gz /
 
 # ======================================
 # Build Ops Agent for sles-15
@@ -884,13 +670,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM sles15-build-golang-base AS sles15-build-diagnostics
-WORKDIR /work
-COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
-COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
-
-
 FROM sles15-build-golang-base AS sles15-build-wrapper
 WORKDIR /work
 COPY cmd/agent_wrapper cmd/agent_wrapper
@@ -912,13 +691,19 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from=sles15-build-otel /work/cache /work/cache
 COPY --from=sles15-build-fluent-bit /work/cache /work/cache
 COPY --from=sles15-build-systemd /work/cache /work/cache
-COPY --from=sles15-build-diagnostics /work/cache /work/cache
 COPY --from=sles15-build-wrapper /work/cache /work/cache
 RUN ./pkg/rpm/build.sh
+
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache/
+RUN ./pkg/plugin/build.sh /work/cache sles15
+
 
 FROM scratch AS sles15
 COPY --from=sles15-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-sles-15.tgz
 COPY --from=sles15-build /google-cloud-ops-agent*.rpm /
+COPY --from=sles15-build /google-cloud-ops-agent-plugin*.tar.gz /
 
 # ======================================
 # Build Ops Agent for ubuntu-focal
@@ -985,13 +770,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM focal-build-golang-base AS focal-build-diagnostics
-WORKDIR /work
-COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
-COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
-
-
 FROM focal-build-golang-base AS focal-build-wrapper
 WORKDIR /work
 COPY cmd/agent_wrapper cmd/agent_wrapper
@@ -1013,13 +791,19 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from=focal-build-otel /work/cache /work/cache
 COPY --from=focal-build-fluent-bit /work/cache /work/cache
 COPY --from=focal-build-systemd /work/cache /work/cache
-COPY --from=focal-build-diagnostics /work/cache /work/cache
 COPY --from=focal-build-wrapper /work/cache /work/cache
 RUN ./pkg/deb/build.sh
+
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache/
+RUN ./pkg/plugin/build.sh /work/cache focal
+
 
 FROM scratch AS focal
 COPY --from=focal-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-focal.tgz
 COPY --from=focal-build /google-cloud-ops-agent*.deb /
+COPY --from=focal-build /google-cloud-ops-agent-plugin*.tar.gz /
 
 # ======================================
 # Build Ops Agent for ubuntu-jammy
@@ -1086,13 +870,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM jammy-build-golang-base AS jammy-build-diagnostics
-WORKDIR /work
-COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
-COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
-
-
 FROM jammy-build-golang-base AS jammy-build-wrapper
 WORKDIR /work
 COPY cmd/agent_wrapper cmd/agent_wrapper
@@ -1114,114 +891,19 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from=jammy-build-otel /work/cache /work/cache
 COPY --from=jammy-build-fluent-bit /work/cache /work/cache
 COPY --from=jammy-build-systemd /work/cache /work/cache
-COPY --from=jammy-build-diagnostics /work/cache /work/cache
 COPY --from=jammy-build-wrapper /work/cache /work/cache
 RUN ./pkg/deb/build.sh
+
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache/
+RUN ./pkg/plugin/build.sh /work/cache jammy
+
 
 FROM scratch AS jammy
 COPY --from=jammy-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-jammy.tgz
 COPY --from=jammy-build /google-cloud-ops-agent*.deb /
-
-# ======================================
-# Build Ops Agent for ubuntu-mantic
-# ======================================
-
-FROM ubuntu:mantic AS mantic-build-base
-ARG OPENJDK_MAJOR_VERSION
-
-RUN set -x; apt-get update && \
-		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip debhelper
-
-SHELL ["/bin/bash", "-c"]
-
-# Install golang
-ARG TARGETARCH
-ARG GO_VERSION
-ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
-RUN set -xe; \
-    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
-ENV PATH="${PATH}:/usr/local/go/bin"
-
-
-FROM mantic-build-base AS mantic-build-otel
-WORKDIR /work
-# Download golang deps
-COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
-RUN cd submodules/opentelemetry-operations-collector && go mod download
-
-COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
-# Install gradle. The first invocation of gradlew does this
-RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
-COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
-COPY ./builds/otel.sh .
-RUN \
-    unset OTEL_TRACES_EXPORTER && \
-    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
-    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-    ./otel.sh /work/cache/
-
-FROM mantic-build-base AS mantic-build-fluent-bit
-WORKDIR /work
-COPY ./submodules/fluent-bit submodules/fluent-bit
-COPY ./builds/fluent_bit.sh .
-RUN ./fluent_bit.sh /work/cache/
-
-
-FROM mantic-build-base AS mantic-build-systemd
-WORKDIR /work
-COPY ./systemd systemd
-COPY ./builds/systemd.sh .
-RUN ./systemd.sh /work/cache/
-
-
-FROM mantic-build-base AS mantic-build-golang-base
-WORKDIR /work
-COPY go.mod go.sum ./
-# Fetch dependencies
-RUN go mod download
-COPY confgenerator confgenerator
-COPY apps apps
-COPY internal internal
-
-
-FROM mantic-build-golang-base AS mantic-build-diagnostics
-WORKDIR /work
-COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
-COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
-
-
-FROM mantic-build-golang-base AS mantic-build-wrapper
-WORKDIR /work
-COPY cmd/agent_wrapper cmd/agent_wrapper
-COPY ./builds/agent_wrapper.sh .
-RUN ./agent_wrapper.sh /work/cache/
-
-
-FROM mantic-build-golang-base AS mantic-build
-WORKDIR /work
-COPY . /work
-
-# Run the build script once to build the ops agent engine to a cache
-RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
-WORKDIR /tmp/cache_run/golang
-RUN ./pkg/deb/build.sh || true &> /dev/null
-WORKDIR /work
-
-COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
-COPY --from=mantic-build-otel /work/cache /work/cache
-COPY --from=mantic-build-fluent-bit /work/cache /work/cache
-COPY --from=mantic-build-systemd /work/cache /work/cache
-COPY --from=mantic-build-diagnostics /work/cache /work/cache
-COPY --from=mantic-build-wrapper /work/cache /work/cache
-RUN ./pkg/deb/build.sh
-
-FROM scratch AS mantic
-COPY --from=mantic-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-mantic.tgz
-COPY --from=mantic-build /google-cloud-ops-agent*.deb /
+COPY --from=jammy-build /google-cloud-ops-agent-plugin*.tar.gz /
 
 # ======================================
 # Build Ops Agent for ubuntu-noble
@@ -1288,13 +970,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM noble-build-golang-base AS noble-build-diagnostics
-WORKDIR /work
-COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
-COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
-
-
 FROM noble-build-golang-base AS noble-build-wrapper
 WORKDIR /work
 COPY cmd/agent_wrapper cmd/agent_wrapper
@@ -1316,24 +991,229 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from=noble-build-otel /work/cache /work/cache
 COPY --from=noble-build-fluent-bit /work/cache /work/cache
 COPY --from=noble-build-systemd /work/cache /work/cache
-COPY --from=noble-build-diagnostics /work/cache /work/cache
 COPY --from=noble-build-wrapper /work/cache /work/cache
 RUN ./pkg/deb/build.sh
+
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache/
+RUN ./pkg/plugin/build.sh /work/cache noble
+
 
 FROM scratch AS noble
 COPY --from=noble-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-noble.tgz
 COPY --from=noble-build /google-cloud-ops-agent*.deb /
+COPY --from=noble-build /google-cloud-ops-agent-plugin*.tar.gz /
+
+# ======================================
+# Build Ops Agent for ubuntu-oracular
+# ======================================
+
+FROM ubuntu:oracular AS oracular-build-base
+ARG OPENJDK_MAJOR_VERSION
+
+RUN set -x; apt-get update && \
+		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
+		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
+		build-essential cmake bison flex file systemd-dev debhelper libsystemd-dev \
+		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip
+
+SHELL ["/bin/bash", "-c"]
+
+# Install golang
+ARG TARGETARCH
+ARG GO_VERSION
+ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
+ENV PATH="${PATH}:/usr/local/go/bin"
+
+
+FROM oracular-build-base AS oracular-build-otel
+WORKDIR /work
+# Download golang deps
+COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
+RUN cd submodules/opentelemetry-operations-collector && go mod download
+
+COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
+# Install gradle. The first invocation of gradlew does this
+RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
+COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
+COPY ./builds/otel.sh .
+RUN \
+    unset OTEL_TRACES_EXPORTER && \
+    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
+    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
+    ./otel.sh /work/cache/
+
+FROM oracular-build-base AS oracular-build-fluent-bit
+WORKDIR /work
+COPY ./submodules/fluent-bit submodules/fluent-bit
+COPY ./builds/fluent_bit.sh .
+RUN ./fluent_bit.sh /work/cache/
+
+
+FROM oracular-build-base AS oracular-build-systemd
+WORKDIR /work
+COPY ./systemd systemd
+COPY ./builds/systemd.sh .
+RUN ./systemd.sh /work/cache/
+
+
+FROM oracular-build-base AS oracular-build-golang-base
+WORKDIR /work
+COPY go.mod go.sum ./
+# Fetch dependencies
+RUN go mod download
+COPY confgenerator confgenerator
+COPY apps apps
+COPY internal internal
+
+
+FROM oracular-build-golang-base AS oracular-build-wrapper
+WORKDIR /work
+COPY cmd/agent_wrapper cmd/agent_wrapper
+COPY ./builds/agent_wrapper.sh .
+RUN ./agent_wrapper.sh /work/cache/
+
+
+FROM oracular-build-golang-base AS oracular-build
+WORKDIR /work
+COPY . /work
+
+# Run the build script once to build the ops agent engine to a cache
+RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
+WORKDIR /tmp/cache_run/golang
+RUN ./pkg/deb/build.sh || true &> /dev/null
+WORKDIR /work
+
+COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
+COPY --from=oracular-build-otel /work/cache /work/cache
+COPY --from=oracular-build-fluent-bit /work/cache /work/cache
+COPY --from=oracular-build-systemd /work/cache /work/cache
+COPY --from=oracular-build-wrapper /work/cache /work/cache
+RUN ./pkg/deb/build.sh
+
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache/
+RUN ./pkg/plugin/build.sh /work/cache oracular
+
+
+FROM scratch AS oracular
+COPY --from=oracular-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-oracular.tgz
+COPY --from=oracular-build /google-cloud-ops-agent*.deb /
+COPY --from=oracular-build /google-cloud-ops-agent-plugin*.tar.gz /
+
+# ======================================
+# Build Ops Agent for ubuntu-plucky
+# ======================================
+
+FROM ubuntu:plucky AS plucky-build-base
+ARG OPENJDK_MAJOR_VERSION
+
+RUN set -x; apt-get update && \
+		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
+		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
+		build-essential cmake bison flex file systemd-dev debhelper libsystemd-dev \
+		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip
+
+SHELL ["/bin/bash", "-c"]
+
+# Install golang
+ARG TARGETARCH
+ARG GO_VERSION
+ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
+ENV PATH="${PATH}:/usr/local/go/bin"
+
+
+FROM plucky-build-base AS plucky-build-otel
+WORKDIR /work
+# Download golang deps
+COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
+RUN cd submodules/opentelemetry-operations-collector && go mod download
+
+COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
+# Install gradle. The first invocation of gradlew does this
+RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
+COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
+COPY ./builds/otel.sh .
+RUN \
+    unset OTEL_TRACES_EXPORTER && \
+    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
+    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
+    ./otel.sh /work/cache/
+
+FROM plucky-build-base AS plucky-build-fluent-bit
+WORKDIR /work
+COPY ./submodules/fluent-bit submodules/fluent-bit
+COPY ./builds/fluent_bit.sh .
+RUN ./fluent_bit.sh /work/cache/
+
+
+FROM plucky-build-base AS plucky-build-systemd
+WORKDIR /work
+COPY ./systemd systemd
+COPY ./builds/systemd.sh .
+RUN ./systemd.sh /work/cache/
+
+
+FROM plucky-build-base AS plucky-build-golang-base
+WORKDIR /work
+COPY go.mod go.sum ./
+# Fetch dependencies
+RUN go mod download
+COPY confgenerator confgenerator
+COPY apps apps
+COPY internal internal
+
+
+FROM plucky-build-golang-base AS plucky-build-wrapper
+WORKDIR /work
+COPY cmd/agent_wrapper cmd/agent_wrapper
+COPY ./builds/agent_wrapper.sh .
+RUN ./agent_wrapper.sh /work/cache/
+
+
+FROM plucky-build-golang-base AS plucky-build
+WORKDIR /work
+COPY . /work
+
+# Run the build script once to build the ops agent engine to a cache
+RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
+WORKDIR /tmp/cache_run/golang
+RUN ./pkg/deb/build.sh || true &> /dev/null
+WORKDIR /work
+
+COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
+COPY --from=plucky-build-otel /work/cache /work/cache
+COPY --from=plucky-build-fluent-bit /work/cache /work/cache
+COPY --from=plucky-build-systemd /work/cache /work/cache
+COPY --from=plucky-build-wrapper /work/cache /work/cache
+RUN ./pkg/deb/build.sh
+
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache/
+RUN ./pkg/plugin/build.sh /work/cache plucky
+
+
+FROM scratch AS plucky
+COPY --from=plucky-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-plucky.tgz
+COPY --from=plucky-build /google-cloud-ops-agent*.deb /
+COPY --from=plucky-build /google-cloud-ops-agent-plugin*.tar.gz /
 
 FROM scratch
-COPY --from=centos7 /* /
 COPY --from=centos8 /* /
 COPY --from=rockylinux9 /* /
 COPY --from=bookworm /* /
 COPY --from=bullseye /* /
-COPY --from=buster /* /
 COPY --from=sles12 /* /
 COPY --from=sles15 /* /
 COPY --from=focal /* /
 COPY --from=jammy /* /
-COPY --from=mantic /* /
 COPY --from=noble /* /
+COPY --from=oracular /* /
+COPY --from=plucky /* /

@@ -34,12 +34,34 @@ func escapeExe(exepath string, args []string) string {
 	return s
 }
 
+func uninstallDiagnosticService(m *mgr.Mgr) error {
+	diagnosticsServiceHandle, err := m.OpenService("google-cloud-ops-agent-diagnostics")
+	// err == nil means the service exists.
+	// If err != nil, the service does not exist, so nothing to delete.
+	if err == nil {
+		defer diagnosticsServiceHandle.Close()
+		if err := stopService(diagnosticsServiceHandle, 30*time.Second); err != nil {
+			return fmt.Errorf("failed to stop the diagnostics Windows service: %w", err)
+		}
+		if err := diagnosticsServiceHandle.Delete(); err != nil {
+			return fmt.Errorf("fails to delete the diagnostics Windows service: %w", err)
+		}
+	}
+	return nil
+}
+
 func install() error {
 	m, err := mgr.Connect()
 	if err != nil {
 		return err
 	}
 	defer m.Disconnect()
+
+	diagnosticError := uninstallDiagnosticService(m)
+	if diagnosticError != nil {
+		return diagnosticError
+	}
+
 	handles := make([]*mgr.Service, len(services))
 	for i, s := range services {
 		// Registering with the event log is required to suppress the "The description for Event ID 1 from source Google Cloud Ops Agent cannot be found" message in the logs.
@@ -90,10 +112,11 @@ func install() error {
 		}, 60)
 		handles[i] = serviceHandle
 	}
+
 	// Automatically (re)start the Ops Agent service.
 	for i := len(services) - 1; i >= 0; i-- {
 		if err := stopService(handles[i], 30*time.Second); err != nil {
-			return err
+			return fmt.Errorf("failed to stop service: %v, error: %v", services[i].name, err)
 		}
 	}
 	return handles[0].Start()
@@ -106,6 +129,7 @@ func uninstall() error {
 	}
 	defer m.Disconnect()
 	var errs error
+
 	// Have to remove the services in reverse order.
 	for i := len(services) - 1; i >= 0; i-- {
 		s := services[i]
@@ -123,6 +147,11 @@ func uninstall() error {
 			// Don't return until all services have been processed.
 			errs = multierror.Append(errs, err)
 		}
+	}
+
+	diagnosticError := uninstallDiagnosticService(m)
+	if diagnosticError != nil {
+		errs = multierror.Append(errs, diagnosticError)
 	}
 	return errs
 }

@@ -146,6 +146,9 @@ fi
 set_image_specs
 set_zones
 
+export_to_sponge_config "TARGET" "${TARGET:-}"
+export_to_sponge_config "ARCH" "${ARCH:-}"
+
 # If a built agent was passed in from Kokoro directly, use that.
 if compgen -G "${KOKORO_GFILE_DIR}/result/google-cloud-ops-agent*" > /dev/null; then
   # Upload the agent packages to GCS.

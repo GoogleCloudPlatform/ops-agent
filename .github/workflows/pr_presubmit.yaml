@@ -23,17 +23,35 @@ jobs:
     runs-on: ${{matrix.os}}
     steps:
     - uses: actions/checkout@v2
+
     - uses: actions/setup-go@v3
       with:
-        go-version: 1.x
+        go-version: 1.24.x
         cache: true
+
     - id: files
       uses: Ana06/get-changed-files@v2.2.0
-    - uses: actions/checkout@v2
+
+    - name: Install workflow tools
+      run: make -f tasks.mak makefile_symlink install_tools
+
+    - name: Run lint
+      run: make lint
+
+    - name: Checkout base ref
+      uses: actions/checkout@v2
       with:
         ref: ${{ github.base_ref }}
         path: base_checkout
       # `steps.get_labels.outputs.*` gives us the names of all labels for the PR
-    - run: echo "labels=$(go run ./ci/get_labels -url=${{ github.event.pull_request.url }})" >> "$GITHUB_OUTPUT"
+
+    - name: Get labels
       id: get_labels
-    - run: go test ./ci -added="${{ steps.files.outputs.added }}" -modified="${{ steps.files.outputs.modified }}" -labels="${{ steps.get_labels.outputs.labels }}" -base-dir="base_checkout" -tags=ci
+      run: echo "labels=$(go run ./ci/get_labels -url=${{ github.event.pull_request.url }})" >> "$GITHUB_OUTPUT"
+
+    - name: Run tests
+      run: go test ./ci -added="$ADDED_FILES" -modified="$MODIFIED_FILES" -labels="$PR_LABELS" -base-dir="base_checkout" -tags=ci
+      env:
+        ADDED_FILES: ${{ steps.files.outputs.added }}
+        MODIFIED_FILES: ${{ steps.files.outputs.modified }}
+        PR_LABELS: ${{ steps.get_labels.outputs.labels }}

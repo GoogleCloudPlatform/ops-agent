@@ -16,6 +16,7 @@ package apps
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"path"
@@ -78,6 +79,9 @@ func (r MetricsReceiverOracleDB) Pipelines(_ context.Context) ([]otel.ReceiverPi
 	auth := url.QueryEscape(r.Username)
 	secretPassword := r.Password.SecretValue()
 	if len(secretPassword) > 0 {
+		if strings.Contains(secretPassword, "${") {
+			return nil, errors.New("using OpenTelemetry providers in OracleDB metric receiver configuration is not supported yet")
+		}
 		auth = fmt.Sprintf("%s:%s", auth, url.QueryEscape(secretPassword))
 	}
 
@@ -115,7 +119,10 @@ func (r MetricsReceiverOracleDB) Pipelines(_ context.Context) ([]otel.ReceiverPi
 					otel.RenameLabel("WAIT_CLASS", "wait_class"),
 				),
 			),
-			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+			otel.TransformationMetrics(
+				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+				otel.SetScopeVersion("1.0"),
+			),
 		}},
 	}}, nil
 }
@@ -144,7 +151,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "by",
 				description:       "The size of tablespaces in the database.",
 				data_type:         "sum",
-				monotonic:         "false",
+				monotonic:         false,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "TABLESPACE_NAME", "CONTENTS"},
 				static_attributes: map[string]string{
@@ -158,7 +165,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "by",
 				description:       "The size of tablespaces in the database.",
 				data_type:         "sum",
-				monotonic:         "false",
+				monotonic:         false,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "TABLESPACE_NAME", "CONTENTS"},
 				static_attributes: map[string]string{
@@ -177,7 +184,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "{tablespaces}",
 				description:       "The number of tablespaces in the database.",
 				data_type:         "sum",
-				monotonic:         "false",
+				monotonic:         false,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "STATUS", "CONTENTS"},
 				static_attributes: map[string]string{
@@ -196,7 +203,7 @@ var oracleQueries = []sqlReceiverQuery{
 	// 			unit:              "s",
 	// 			description:       "The number of seconds the instance has been up.",
 	// 			data_type:         "sum",
-	// 			monotonic:         "true",
+	// 			monotonic:         true,
 	// 			value_type:        "int",
 	// 			attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "INSTANCE_ID", "INSTANCE_ROLE"},
 	// 			static_attributes: map[string]string{
@@ -214,7 +221,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "s",
 				description:       "The number of seconds since the last RMAN backup.",
 				data_type:         "sum",
-				monotonic:         "true",
+				monotonic:         true,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME"},
 				static_attributes: map[string]string{
@@ -246,7 +253,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "{processes}",
 				description:       "The current number of processes.",
 				data_type:         "sum",
-				monotonic:         "false",
+				monotonic:         false,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "INSTANCE_ID"},
 				static_attributes: map[string]string{
@@ -259,7 +266,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "{processes}",
 				description:       "The maximum number of processes allowed.",
 				data_type:         "sum",
-				monotonic:         "false",
+				monotonic:         false,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "INSTANCE_ID"},
 				static_attributes: map[string]string{
@@ -272,7 +279,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "{sessions}",
 				description:       "The current number of sessions.",
 				data_type:         "sum",
-				monotonic:         "false",
+				monotonic:         false,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "INSTANCE_ID"},
 				static_attributes: map[string]string{
@@ -285,7 +292,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "{sessions}",
 				description:       "The maximum number of sessions allowed.",
 				data_type:         "sum",
-				monotonic:         "false",
+				monotonic:         false,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "INSTANCE_ID"},
 				static_attributes: map[string]string{
@@ -303,7 +310,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "by",
 				description:       "The programmable global area memory allocated by process.",
 				data_type:         "sum",
-				monotonic:         "false",
+				monotonic:         false,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "INSTANCE_ID", "PROGRAM"},
 				static_attributes: map[string]string{
@@ -317,7 +324,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "by",
 				description:       "The programmable global area memory allocated by process.",
 				data_type:         "sum",
-				monotonic:         "false",
+				monotonic:         false,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "INSTANCE_ID", "PROGRAM"},
 				static_attributes: map[string]string{
@@ -336,7 +343,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "{events}",
 				description:       "The number of wait events experienced.",
 				data_type:         "sum",
-				monotonic:         "true",
+				monotonic:         true,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "INSTANCE_ID", "WAIT_CLASS"},
 				static_attributes: map[string]string{
@@ -350,7 +357,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "{events}",
 				description:       "The number of wait events experienced.",
 				data_type:         "sum",
-				monotonic:         "true",
+				monotonic:         true,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "INSTANCE_ID", "WAIT_CLASS"},
 				static_attributes: map[string]string{
@@ -364,7 +371,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "cs",
 				description:       "The amount of time waited for wait events.",
 				data_type:         "sum",
-				monotonic:         "true",
+				monotonic:         true,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "INSTANCE_ID", "WAIT_CLASS"},
 				static_attributes: map[string]string{
@@ -378,7 +385,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "cs",
 				description:       "The amount of time waited for wait events.",
 				data_type:         "sum",
-				monotonic:         "true",
+				monotonic:         true,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "INSTANCE_ID", "WAIT_CLASS"},
 				static_attributes: map[string]string{
@@ -392,7 +399,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "{timeouts}",
 				description:       "The number of timeouts for wait events.",
 				data_type:         "sum",
-				monotonic:         "true",
+				monotonic:         true,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "INSTANCE_ID", "WAIT_CLASS"},
 				static_attributes: map[string]string{
@@ -406,7 +413,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "{timeouts}",
 				description:       "The number of timeouts for wait events.",
 				data_type:         "sum",
-				monotonic:         "true",
+				monotonic:         true,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "INSTANCE_ID", "WAIT_CLASS"},
 				static_attributes: map[string]string{
@@ -511,7 +518,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "{cursors}",
 				description:       "The total number of cursors.",
 				data_type:         "sum",
-				monotonic:         "true",
+				monotonic:         true,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "INSTANCE_ID"},
 				static_attributes: map[string]string{
@@ -524,7 +531,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "{cursors}",
 				description:       "The current number of cursors.",
 				data_type:         "sum",
-				monotonic:         "false",
+				monotonic:         false,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "INSTANCE_ID"},
 				static_attributes: map[string]string{
@@ -537,7 +544,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "{logons}",
 				description:       "The total number of logons.",
 				data_type:         "sum",
-				monotonic:         "true",
+				monotonic:         true,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "INSTANCE_ID"},
 				static_attributes: map[string]string{
@@ -550,7 +557,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "{logons}",
 				description:       "The current number of logons.",
 				data_type:         "sum",
-				monotonic:         "false",
+				monotonic:         false,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "INSTANCE_ID"},
 				static_attributes: map[string]string{
@@ -563,7 +570,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "{sorts}",
 				description:       "The total number of sorts.",
 				data_type:         "sum",
-				monotonic:         "true",
+				monotonic:         true,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "INSTANCE_ID"},
 				static_attributes: map[string]string{
@@ -577,7 +584,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "{sorts}",
 				description:       "The total number of sorts.",
 				data_type:         "sum",
-				monotonic:         "true",
+				monotonic:         true,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "INSTANCE_ID"},
 				static_attributes: map[string]string{
@@ -591,7 +598,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "{rows}",
 				description:       "The total number of rows sorted.",
 				data_type:         "sum",
-				monotonic:         "true",
+				monotonic:         true,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "INSTANCE_ID"},
 				static_attributes: map[string]string{
@@ -604,7 +611,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "{operations}",
 				description:       "The number of physical disk operations.",
 				data_type:         "sum",
-				monotonic:         "true",
+				monotonic:         true,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "INSTANCE_ID"},
 				static_attributes: map[string]string{
@@ -618,7 +625,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "by",
 				description:       "The number of bytes affected by physical disk operations.",
 				data_type:         "sum",
-				monotonic:         "true",
+				monotonic:         true,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "INSTANCE_ID"},
 				static_attributes: map[string]string{
@@ -632,7 +639,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "{operations}",
 				description:       "The number of physical disk operations.",
 				data_type:         "sum",
-				monotonic:         "true",
+				monotonic:         true,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "INSTANCE_ID"},
 				static_attributes: map[string]string{
@@ -646,7 +653,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "by",
 				description:       "The number of bytes affected by physical disk operations.",
 				data_type:         "sum",
-				monotonic:         "true",
+				monotonic:         true,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "INSTANCE_ID"},
 				static_attributes: map[string]string{
@@ -660,7 +667,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "by",
 				description:       "The total number of bytes communicated on the network.",
 				data_type:         "sum",
-				monotonic:         "true",
+				monotonic:         true,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "INSTANCE_ID"},
 				static_attributes: map[string]string{
@@ -675,7 +682,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "by",
 				description:       "The total number of bytes communicated on the network.",
 				data_type:         "sum",
-				monotonic:         "true",
+				monotonic:         true,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "INSTANCE_ID"},
 				static_attributes: map[string]string{
@@ -690,7 +697,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "by",
 				description:       "The total number of bytes communicated on the network.",
 				data_type:         "sum",
-				monotonic:         "true",
+				monotonic:         true,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "INSTANCE_ID"},
 				static_attributes: map[string]string{
@@ -705,7 +712,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "by",
 				description:       "The total number of bytes communicated on the network.",
 				data_type:         "sum",
-				monotonic:         "true",
+				monotonic:         true,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "INSTANCE_ID"},
 				static_attributes: map[string]string{
@@ -720,7 +727,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "{calls}",
 				description:       "The total number of user calls such as login, parse, fetch, or execute.",
 				data_type:         "sum",
-				monotonic:         "true",
+				monotonic:         true,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "INSTANCE_ID"},
 				static_attributes: map[string]string{
@@ -733,7 +740,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "{commits}",
 				description:       "The total number of user transaction commits.",
 				data_type:         "sum",
-				monotonic:         "true",
+				monotonic:         true,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "INSTANCE_ID"},
 				static_attributes: map[string]string{
@@ -746,7 +753,7 @@ var oracleQueries = []sqlReceiverQuery{
 				unit:              "{rollbacks}",
 				description:       "The total number of times users manually issue the ROLLBACK statement or an error occurs during a user's transactions",
 				data_type:         "sum",
-				monotonic:         "true",
+				monotonic:         true,
 				value_type:        "int",
 				attribute_columns: []string{"DATABASE_ID", "GLOBAL_NAME", "INSTANCE_ID"},
 				static_attributes: map[string]string{
@@ -812,10 +819,10 @@ func (lr LoggingProcessorOracleDBAlert) Components(ctx context.Context, tag stri
 }
 
 type LoggingReceiverOracleDBAlert struct {
-	LoggingProcessorOracleDBAlert           `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
-	OracleHome                              string   `yaml:"oracle_home,omitempty" validate:"required_without=IncludePaths,excluded_with=IncludePaths"`
-	IncludePaths                            []string `yaml:"include_paths,omitempty" validate:"required_without=OracleHome,excluded_with=OracleHome"`
+	LoggingProcessorOracleDBAlert `yaml:",inline"`
+	ReceiverMixin                 confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	OracleHome                    string                                  `yaml:"oracle_home,omitempty" validate:"required_without=IncludePaths,excluded_with=IncludePaths"`
+	IncludePaths                  []string                                `yaml:"include_paths,omitempty" validate:"required_without=OracleHome,excluded_with=OracleHome"`
 }
 
 func (lr LoggingReceiverOracleDBAlert) Components(ctx context.Context, tag string) []fluentbit.Component {
@@ -825,9 +832,9 @@ func (lr LoggingReceiverOracleDBAlert) Components(ctx context.Context, tag strin
 		}
 	}
 
-	lr.LoggingReceiverFilesMixin.IncludePaths = lr.IncludePaths
+	lr.ReceiverMixin.IncludePaths = lr.IncludePaths
 
-	c := lr.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := lr.ReceiverMixin.Components(ctx, tag)
 	c = append(c, lr.LoggingProcessorOracleDBAlert.Components(ctx, tag, lr.Type())...)
 	return c
 }
@@ -920,10 +927,10 @@ func (lr LoggingProcessorOracleDBAudit) Components(ctx context.Context, tag stri
 }
 
 type LoggingReceiverOracleDBAudit struct {
-	LoggingProcessorOracleDBAudit           `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
-	OracleHome                              string   `yaml:"oracle_home,omitempty" validate:"required_without=IncludePaths,excluded_with=IncludePaths"`
-	IncludePaths                            []string `yaml:"include_paths,omitempty" validate:"required_without=OracleHome,excluded_with=OracleHome"`
+	LoggingProcessorOracleDBAudit `yaml:",inline"`
+	ReceiverMixin                 confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	OracleHome                    string                                  `yaml:"oracle_home,omitempty" validate:"required_without=IncludePaths,excluded_with=IncludePaths"`
+	IncludePaths                  []string                                `yaml:"include_paths,omitempty" validate:"required_without=OracleHome,excluded_with=OracleHome"`
 }
 
 func (lr LoggingReceiverOracleDBAudit) Components(ctx context.Context, tag string) []fluentbit.Component {
@@ -933,9 +940,9 @@ func (lr LoggingReceiverOracleDBAudit) Components(ctx context.Context, tag strin
 		}
 	}
 
-	lr.LoggingReceiverFilesMixin.IncludePaths = lr.IncludePaths
+	lr.ReceiverMixin.IncludePaths = lr.IncludePaths
 
-	c := lr.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := lr.ReceiverMixin.Components(ctx, tag)
 	c = append(c, lr.LoggingProcessorOracleDBAudit.Components(ctx, tag, lr.Type())...)
 	return c
 }

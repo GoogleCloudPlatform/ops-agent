@@ -20,59 +20,100 @@
 # Setup
 ############
 
+.PHONY: makefile_symlink
 makefile_symlink:
 	ln -s tasks.mak Makefile
 
+.PHONY: install_tools
 install_tools:
 	go install github.com/google/yamlfmt/cmd/yamlfmt@latest
 	go install github.com/google/addlicense@master
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 
 ############
 # Build
 ############
 
+.PHONY: build
 build:
 	cd submodules/fluent-bit/build && find . ! -name ".empty" -type f -delete
 	mkdir -p /tmp/google-cloud-ops-agent
 	DOCKER_BUILDKIT=1 docker build -o /tmp/google-cloud-ops-agent . $(ARGS)
 
+.PHONY: rebuild_submodules
+rebuild_submodules: fluent_bit_local otelopscol_local
+
+.PHONY: fluent_bit_local
+fluent_bit_local:
+	bash ./builds/fluent_bit.sh $(PWD)/dist
+
+SKIP_JAVA ?= true
+.PHONY: otelopscol_local
+otelopscol_local:
+	SKIP_OTEL_JAVA=${SKIP_JAVA} bash ./builds/otel.sh $(PWD)/dist
+
 ############
 # Tools
 ############
 
+.PHONY: addlicense
 addlicense:
 	addlicense -ignore "submodules/**" -ignore "**/testdata/**" -ignore "**/built-in-config*" -c "Google LLC" -l apache .
 
+.PHONY: addlicense_check
 addlicense_check:
 	addlicense -check -ignore "submodules/**" -ignore "**/testdata/**" -ignore "**/built-in-config*" -c "Google LLC" -l apache .
 
-# Originally I made the argument to this "PATH" but of course that messes with
-# the PATH environment variable. :D
+.PHONY: addlicense_to
 addlicense_to:
-	addlicense -c "Google LLC" -l apache $(P)
+	addlicense -c "Google LLC" -l apache $(FILE)
 
+.PHONY: yaml_format
 yaml_format:
 	yamlfmt
 
+.PHONY: yaml_lint
 yaml_lint:
 	yamlfmt -lint
 
+.PHONY: compile_dockerfile
 compile_dockerfile:
 	go run ./dockerfiles
+
+# TODO: Enable more linters in the future
+.PHONY: lint
+lint:
+	golangci-lint run --allow-parallel-runners --enable-only=gci --timeout=20m
+
+.PHONY: lint-fix
+lint-fix:
+	golangci-lint run --fix --allow-parallel-runners --enable-only=gci --timeout=20m
 
 ############
 # Unit Tests
 ############
 
+.PHONY: test
 test:
 	go test ./...
 
-test_confgenerator_update:
-	go test ./confgenerator -update
+.PHONY: test_confgenerator
+test_confgenerator:
+	go test ./confgenerator $(if $(UPDATE),-update,)
 
-test_metadata_update:
-	go test ./integration_test/metadata -update
+.PHONY: test_confgenerator_update
+test_confgenerator_update: UPDATE=true
+test_confgenerator_update: test_confgenerator
 
+.PHONY: test_metadata
+test_metadata:
+	go test ./integration_test/metadata $(if $(UPDATE),-update,)
+
+.PHONY: test_metadata_update
+test_metadata_update: UPDATE=true
+test_metadata_update: test_metadata
+
+.PHONY: new_confgenerator_test
 new_confgenerator_test:
 ifndef TEST_NAME
 	$(error "Please provide a TEST_NAME argument")
@@ -80,6 +121,22 @@ endif
 	mkdir -p ./confgenerator/testdata/goldens/$(TEST_NAME)
 	mkdir -p ./confgenerator/testdata/goldens/$(TEST_NAME)/golden
 	touch ./confgenerator/testdata/goldens/$(TEST_NAME)/input.yaml
+
+dist/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit:
+	$(MAKE) fluent_bit_local
+
+dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol:
+	$(MAKE) otelopscol_local
+
+.PHONY: transformation_test
+transformation_test: dist/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol
+	FLB=$(PWD)/dist/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit \
+	OTELOPSCOL=$(PWD)/dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol \
+	go test ./transformation_test $(if $(UPDATE),-update,)
+
+.PHONY: transformation_test_update
+transformation_test_update: UPDATE=true
+transformation_test_update: transformation_test
 
 ############
 # Integration Tests
@@ -96,6 +153,7 @@ endif
 ZONES ?= us-central1-b
 PLATFORMS ?= debian-cloud:debian-11
 
+.PHONY: integration_tests
 integration_tests:
 	ZONES="${ZONES}" \
 	PLATFORMS="${PLATFORMS}" \
@@ -104,6 +162,7 @@ integration_tests:
 	-tags=integration_test \
 	-timeout=4h
 
+.PHONY: third_party_apps_test
 third_party_apps_test:
 	ZONES="${ZONES}" \
 	PLATFORMS="${PLATFORMS}" \
@@ -116,27 +175,33 @@ third_party_apps_test:
 # Precommit
 ############
 
-precommit: addlicense_check test go_vet
+.PHONY: precommit
+precommit: addlicense_check go_vet test transformation_test
 
-precommit_update: addlicense test_confgenerator_update test_metadata_update test go_vet
+.PHONY: precommit_update
+precommit_update: addlicense go_vet test_confgenerator_update test_metadata_update test transformation_test_update
 
 ############
 # Convenience
 ############
 
+.PHONY: reset_submodules
 reset_submodules:
 	git submodule foreach --recursive git clean -xfd
 	git submodule foreach --recursive git reset --hard
 	git submodule update --init --recursive
 
+.PHONY: sync_fork
 sync_fork:
 	git fetch upstream
 	git rebase upstream/main
 	git push -f
 
+.PHONY: update_go_modules
 update_go_modules:
 	go get -t -u ./...
 
+.PHONY: go_vet
 go_vet:
 	go list ./... | grep -v "generated" | grep -v "/vendor/" | xargs go vet
 	GOOS=windows go list ./... | grep -v "generated" | grep -v "/vendor/" | GOOS=windows xargs go vet

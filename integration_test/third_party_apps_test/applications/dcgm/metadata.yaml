@@ -12,103 +12,228 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-app_url: "https://docs.nvidia.com/datacenter/dcgm/latest/user-guide/index.html"
+app_url: "https://developer.nvidia.com/dcgm"
 short_name: NVIDIA DCGM
-long_name: NVIDIA DataCenter GPU Manager (DCGM)
-logo_path: /images/partners/todo.png # supplied by google technical writer
+long_name: NVIDIA Data Center GPU Manager (DCGM)
+logo_path: /stackdriver/images/integrations/nvidia.png # supplied by google technical writer
 description: |-
-  The NVIDIA DataCenter GPU Manager (DCGM) integration collects advanced GPU metrics,
+  The NVIDIA Data Center GPU Manager (DCGM) integration collects advanced GPU metrics,
   including SM block utilization, Pipe utilization, PCIe and NVLink traffic.
 configure_integration: |-
-  You must install DCGM and run the DCGM daemon service. 
+  You must install DCGM and run the DCGM daemon service.
 supported_operating_systems: linux
 supported_app_version: ["3.1"]
 gpu_platforms: # p4, p100 don't emit DCGM profiling metrics
   - model: a100
     platforms:
-      - ubuntu-os-cloud:ubuntu-2004-lts
+      - ubuntu-os-cloud:ubuntu-2204-lts
   - model: v100
     platforms:
-      - ubuntu-os-cloud:ubuntu-2004-lts
+      - ubuntu-os-cloud:ubuntu-2204-lts
   - model: t4
     platforms:
-      - ubuntu-os-cloud:ubuntu-2004-lts
+      - ubuntu-os-cloud:ubuntu-2204-lts
   - model: l4
     platforms:
-      - centos-cloud:centos-7
       - debian-cloud:debian-11
       - ml-images:common-gpu-debian-11-py310
       - rocky-linux-cloud:rocky-linux-8
       - rocky-linux-cloud:rocky-linux-9
       - suse-cloud:sles-15
-      - ubuntu-os-cloud:ubuntu-2004-lts
       - ubuntu-os-cloud:ubuntu-2204-lts
+      - ubuntu-os-cloud:ubuntu-2404-lts-amd64
+  - model: h100
+    platforms:
+      - ubuntu-os-cloud:ubuntu-minimal-2204-lts # due to H100 quota, choose an image from the exhaustive list to skip presubmits
 expected_metrics:
-  - type: workload.googleapis.com/dcgm.gpu.profiling.sm_utilization
+  - type: workload.googleapis.com/gpu.dcgm.utilization
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    description: Ratio of time the graphics engine is active.
+    monitored_resources: [gce_instance]
     labels:
-      model: .*
-      uuid: .*
-      gpu_number: "[0-9]*"
+      - &model_label
+        name: model
+        value_regex: .*
+        description: GPU model name.
+      - &uuid_label
+        name: uuid
+        value_regex: .*
+        description: GPU universally unique identifier.
+      - &gpu_number_label
+        name: gpu_number
+        value_regex: "[0-9]*"
+        description: GPU index starting at 0.
+  - type: workload.googleapis.com/gpu.dcgm.sm.utilization
+    value_type: DOUBLE
+    kind: GAUGE
+    description: Fraction of time at least one warp was active on a multiprocessor, averaged over all multiprocessors.
+    monitored_resources: [gce_instance]
+    labels:
+      - *model_label
+      - *uuid_label
+      - *gpu_number_label
+    notes:
+      - &dcgm_profiling_note Not available on GPU models P100 and P4.
+  - type: workload.googleapis.com/gpu.dcgm.pipe.utilization
+    value_type: DOUBLE
+    kind: GAUGE
+    description: Fraction of cycles the corresponding GPU pipe was active, averaged over time and all multiprocessors.
+    monitored_resources: [gce_instance]
+    labels:
+      - *model_label
+      - *uuid_label
+      - *gpu_number_label
+      - name: pipe
+        value_regex: tensor|fp64|fp32|fp16
+        description: "GPU pipe in use, one of [tensor, fp64, fp32, fp16]."
+        notes:
+          - For L4, the `pipe` value `fp64` is not supported.
+    notes:
+      - *dcgm_profiling_note
+  - type: workload.googleapis.com/gpu.dcgm.codec.encoder.utilization
+    value_type: DOUBLE
+    kind: GAUGE
+    description: Encoder utilization.
+    monitored_resources: [gce_instance]
+    labels:
+      - *model_label
+      - *uuid_label
+      - *gpu_number_label
+  - type: workload.googleapis.com/gpu.dcgm.codec.decoder.utilization
+    value_type: DOUBLE
+    kind: GAUGE
+    description: Decoder utilization.
+    monitored_resources: [gce_instance]
+    labels:
+      - *model_label
+      - *uuid_label
+      - *gpu_number_label
+  - type: workload.googleapis.com/gpu.dcgm.memory.bytes_used
+    value_type: INT64
+    kind: GAUGE
+    description: Current number of GPU memory bytes used by state. Summing the values of all states yields the total GPU memory space.
+    unit: By
+    monitored_resources: [gce_instance]
+    labels:
+      - *model_label
+      - *uuid_label
+      - *gpu_number_label
+      - name: state
+        value_regex: free|used|reserved
+        description: "GPU memory state, one of [free, used, reserved]."
     representative: true
-  - type: workload.googleapis.com/dcgm.gpu.profiling.sm_occupancy
+  - type: workload.googleapis.com/gpu.dcgm.memory.bandwidth_utilization
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    description: Fraction of cycles data was being sent or received from GPU memory.
+    monitored_resources: [gce_instance]
     labels:
-      model: .*
-      uuid: .*
-      gpu_number: "[0-9]*"
-  - type: workload.googleapis.com/dcgm.gpu.profiling.pipe_utilization
-    value_type: DOUBLE
-    kind: GAUGE
-    monitored_resource: gce_instance
-    labels:
-      model: .*
-      uuid: .*
-      gpu_number: "[0-9]*"
-      pipe: tensor|fp64|fp32|fp16
-  - type: workload.googleapis.com/dcgm.gpu.profiling.dram_utilization
-    value_type: DOUBLE
-    kind: GAUGE
-    monitored_resource: gce_instance
-    labels:
-      model: .*
-      uuid: .*
-      gpu_number: "[0-9]*"
-  - type: workload.googleapis.com/dcgm.gpu.profiling.pcie_traffic_rate
+      - *model_label
+      - *uuid_label
+      - *gpu_number_label
+  - type: workload.googleapis.com/gpu.dcgm.pcie.io
     value_type: INT64
-    kind: GAUGE
-    monitored_resource: gce_instance
+    kind: CUMULATIVE
+    description: The number of bytes sent over the PCIe bus, including both protocol headers and data payloads.
+    unit: By
+    monitored_resources: [gce_instance]
     labels:
-      model: .*
-      uuid: .*
-      gpu_number: "[0-9]*"
-      direction: tx|rx
-  - type: workload.googleapis.com/dcgm.gpu.profiling.nvlink_traffic_rate
+      - *model_label
+      - *uuid_label
+      - *gpu_number_label
+      - &direction_label
+        name: direction
+        value_regex: transmit|receive
+        description: "Direction of the link traffic, one of [transmit, receive]."
+    notes:
+      - *dcgm_profiling_note
+  - type: workload.googleapis.com/gpu.dcgm.nvlink.io
     value_type: INT64
-    kind: GAUGE
-    monitored_resource: gce_instance
+    kind: CUMULATIVE
+    description: The number of bytes sent over NVLink, not including protocol headers.
+    unit: By
+    monitored_resources: [gce_instance]
     labels:
-      model: .*
-      uuid: .*
-      gpu_number: "[0-9]*"
-      direction: tx|rx
+      - *model_label
+      - *uuid_label
+      - *gpu_number_label
+      - *direction_label
+    notes:
+      - *dcgm_profiling_note
+  - type: workload.googleapis.com/gpu.dcgm.energy_consumption
+    value_type: DOUBLE
+    kind: CUMULATIVE
+    description: Total energy consumption for the GPU in J since the driver was last reloaded.
+    unit: J
+    monitored_resources: [gce_instance]
+    labels:
+      - *model_label
+      - *uuid_label
+      - *gpu_number_label
+  - type: workload.googleapis.com/gpu.dcgm.temperature
+    value_type: DOUBLE
+    kind: GAUGE
+    description: Current temperature readings for the device, in ˚C.
+    unit: Cel
+    monitored_resources: [gce_instance]
+    labels:
+      - *model_label
+      - *uuid_label
+      - *gpu_number_label
+  - type: workload.googleapis.com/gpu.dcgm.clock.frequency
+    value_type: DOUBLE
+    kind: GAUGE
+    description: Multiprocessor clock frequency.
+    unit: Hz
+    monitored_resources: [gce_instance]
+    labels:
+      - *model_label
+      - *uuid_label
+      - *gpu_number_label
+  - type: workload.googleapis.com/gpu.dcgm.clock.throttle_duration.time
+    value_type: DOUBLE
+    kind: CUMULATIVE
+    description: Clock throttle total duration.
+    unit: s
+    monitored_resources: [gce_instance]
+    labels:
+      - *model_label
+      - *uuid_label
+      - *gpu_number_label
+      - name: violation
+        value_regex: power|thermal|sync_boost|board_limit|low_util|reliability|app_clock|base_clock
+        description: "Reason for throttling, one of [power, thermal, sync_boost, board_limit, low_util, reliability, app_clock, base_clock]."
+        notes:
+          - For P100 and P4, only `violation` values `power`, `thermal`, and `sync_boost` are supported.
+  - type: workload.googleapis.com/gpu.dcgm.ecc_errors
+    value_type: INT64
+    kind: CUMULATIVE
+    description: Data corruption errors.
+    monitored_resources: [gce_instance]
+    labels:
+      - *model_label
+      - *uuid_label
+      - *gpu_number_label
+      - name: error_type
+        value_regex: sbe|dbe
+        description: "The type of error, one of [sbe, dbe]."
 configuration_options:
   metrics:
     - type: dcgm
       fields:
         - name: type
           default: null
-          description: This value must be dcgm.
+          description: This value must be `dcgm`.
         - name: collection_interval
           default: 60s
-          description: A time.Duration value, such as 30s or 5m.
+          description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
+        - name: receiver_version
+          default: "1"
+          description: Either 1 or 2. Version 2 has many more metrics available.
         - name: endpoint
           default: localhost:5555
-          description: The DCGM service endpoint specified as 'hostname:port'
+          description: The DCGM service endpoint specified as `hostname:port`.
 minimum_supported_agent_version:
   metrics: 2.38.0
 public_url: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party-nvidia

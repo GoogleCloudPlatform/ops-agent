@@ -14,22 +14,24 @@ if [[ "${ID}" == opensuse-leap && "${VERSION_ID}" == 15.[01] ]]; then
   sudo zypper -n install mariadb
 else
   mysql_repo_pkg_name=''
-  if [[ "${SUSE_VERSION}" == 12 ]]; then
-    mysql_repo_pkg_name=mysql80-community-release-sles12.rpm
-  elif [[ "${SUSE_VERSION}" == 15 ]]; then
-    mysql_repo_pkg_name=mysql80-community-release-sl15.rpm
+  if [[ "${SUSE_VERSION}" == 15 ]]; then
+    mysql_repo_pkg_name=mysql84-community-release-sl15-1.noarch.rpm
   fi
 
   # Installation followed in: https://dev.mysql.com/doc/mysql-sles-repo-quick-guide/en/
   sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2023
   sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2022
-  sudo zypper -n install https://dev.mysql.com/get/${mysql_repo_pkg_name}
+  wget --output-document mysql-repos.rpm https://dev.mysql.com/get/${mysql_repo_pkg_name}
+  sudo rpm -Uvh mysql-repos.rpm
+  sudo zypper modifyrepo --disable mysql-8.4-lts-community
+  sudo zypper modifyrepo --disable mysql-connectors-community
+  sudo zypper modifyrepo --disable mysql-tools-8.4-lts-community
+  sudo zypper modifyrepo --enable mysql80-community
+  sudo zypper refresh
   sudo zypper -n install mysql-community-server
 fi
 
-if [[ "${SUSE_VERSION}" == 12 ]]; then
-  sudo zypper -n install libmysqlclient18
-elif [[ "${SUSE_VERSION}" == 15 ]]; then
+if [[ "${SUSE_VERSION}" == 15 ]]; then
   sudo zypper -n install libmariadb3
 fi
 

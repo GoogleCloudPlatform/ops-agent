@@ -38,14 +38,14 @@ Configs for the `google-cloud-ops-agent-fluent-bit` service               | [sys
 <details>
 <summary>Build related</summary>
 
-Description                                                        | Link
------------------------------------------------------------------- | ----
-Build container Dockerfile for Linux                               | [Dockerfile](https://github.com/GoogleCloudPlatform/ops-agent/tree/master/Dockerfile)
-Build container Dockerfile for Windows                             | [Dockerfile.windows](https://github.com/GoogleCloudPlatform/ops-agent/tree/master/Dockerfile.windows)
-Build script for a tarball                                         | [build.sh](https://github.com/GoogleCloudPlatform/ops-agent/tree/master/build.sh)
-Build script of the Deb packages for Debian and Ubuntu distros     | [pkg/deb/build.sh](https://github.com/GoogleCloudPlatform/ops-agent/tree/master/pkg/deb/build.sh)
-Build script of the RPM packages for CentOS, RHEL and Sles distros | [pkg/rpm/build.sh](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/pkg/rpm/build.sh)
-Build script of the Windows packages for Windows distros           | [pkg/goo/build.ps1](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/pkg/goo/build.ps1)
+Description                                                              | Link
+------------------------------------------------------------------------ | ----
+Build container Dockerfile for Linux                                     | [Dockerfile](https://github.com/GoogleCloudPlatform/ops-agent/tree/master/Dockerfile)
+Build container Dockerfile for Windows                                   | [Dockerfile.windows](https://github.com/GoogleCloudPlatform/ops-agent/tree/master/Dockerfile.windows)
+Build script for a tarball                                               | [build.sh](https://github.com/GoogleCloudPlatform/ops-agent/tree/master/build.sh)
+Build script of the Deb packages for Debian and Ubuntu distros           | [pkg/deb/build.sh](https://github.com/GoogleCloudPlatform/ops-agent/tree/master/pkg/deb/build.sh)
+Build script of the RPM packages for Rocky Linux, RHEL, and SLES distros | [pkg/rpm/build.sh](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/pkg/rpm/build.sh)
+Build script of the Windows packages for Windows distros                 | [pkg/goo/build.ps1](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/pkg/goo/build.ps1)
 
 </details>
 
@@ -68,12 +68,12 @@ good way to easily see all the files that are changed.
 $ git diff origin/master -- . ':!confgenerator/testdata'
 ```
 
-## Run goimports
+## Linting and formatting
 
-Run `goimports` to keep the codebase format style in sync:
+Setup `make` as described in [makefile.md](./makefile.md), install all required tools with `make install_tools`, then run `make lint-fix` (or just `make lint` to preview fixes) to keep the codebase format style in sync:
 
 ```shell
-ops-agent$ goimports -w .
+ops-agent$ make lint-fix
 ```
 
 ## Test locally
@@ -158,14 +158,14 @@ $ tree $CONFIG_OUT
 ```
 
 *   Sample generated
-    [golden fluent bit main conf](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/confgenerator/testdata/valid/linux/default_config/golden_fluent_bit_main.conf)
+    [golden fluent bit main conf](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/confgenerator/testdata/goldens/builtin/golden/linux/fluent_bit_main.conf)
     at `$CONFIG_OUT/fluent_bit_main.conf`.
 *   Sample generated
-    [golden fluent bit parser conf](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/confgenerator/testdata/valid/linux/default_config/golden_fluent_bit_parser.conf)
+    [golden fluent bit parser conf](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/confgenerator/testdata/goldens/builtin/golden/linux/fluent_bit_parser.conf)
     at `$CONFIG_OUT/fluent_bit_parser.conf`.
 *   Sample generated
-    [golden otel conf](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/confgenerator/testdata/valid/linux/default_config/golden_otel.conf)
-    at `$CONFIG_OUT/otel.conf`.
+    [golden otel yaml](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/confgenerator/testdata/goldens/builtin/golden/linux/otel.yaml)
+    at `$CONFIG_OUT/otel.yaml`.
 
 ## Build and test manually on GCE VMs
 
@@ -208,11 +208,9 @@ total 180116
 -rw-r--r-- 1 421646 89939  2919650 Oct  7 21:18 google-cloud-ops-agent_0.1.0~debian9.13_amd64.deb
 -rw-r--r-- 1 421646 89939  2914160 Oct  7 21:18 google-cloud-ops-agent_0.1.0~ubuntu18.04_amd64.deb
 -rw-r--r-- 1 421646 89939  2944116 Oct  7 21:18 google-cloud-ops-agent_0.1.0~ubuntu20.04_amd64.deb
--rw-r--r-- 1 421646 89939  7561251 Oct  7 21:16 google-cloud-ops-agent-centos-7.tgz
 -rw-r--r-- 1 421646 89939  7726721 Oct  7 21:16 google-cloud-ops-agent-centos-8.tgz
 -rw-r--r-- 1 421646 89939 10560080 Oct  7 21:18 google-cloud-ops-agent-dbgsym_0.1.0~debian10_amd64.deb
 -rw-r--r-- 1 421646 89939  8643334 Oct  7 21:18 google-cloud-ops-agent-dbgsym_0.1.0~debian9.13_amd64.deb
--rw-r--r-- 1 421646 89939 16809738 Oct  7 21:18 google-cloud-ops-agent-debian-buster.tgz
 -rw-r--r-- 1 421646 89939 14837062 Oct  7 21:18 google-cloud-ops-agent-debian-stretch.tgz
 -rw-r--r-- 1 421646 89939  7697140 Oct  7 21:15 google-cloud-ops-agent-sles-12.tgz
 -rw-r--r-- 1 421646 89939  7718344 Oct  7 21:16 google-cloud-ops-agent-sles-15.tgz
@@ -223,7 +221,7 @@ total 180116
 Inspect the tarball to see if there is anything obviously wrong.
 
 ```shell
-$ tar -tvf $PACKAGES_OUT/google-cloud-ops-agent-debian-buster.tgz
+$ tar -tvf $PACKAGES_OUT/google-cloud-ops-agent-debian-bullseye.tgz
 ```
 
 #### Create a VM
@@ -606,7 +604,7 @@ See [Create a GCE Windows test VM](create-gce-windows-test-vm.md).
 
 ## Edit config and apply
 
-Note: editing the configuration file for Ops Agent is optional. If you don't edit the configuration file, the default 
+Note: editing the configuration file for Ops Agent is optional. If you don't edit the configuration file, the default
 configuration will be applied.
 
 Edit the Ops Agent configuration file as needed:
@@ -768,7 +766,7 @@ fetch gce_instance
 1.  To update submodule
 
     Set `$SUBMODULE_NAME` to one of:
-    
+
     - fluent-bit
     - opentelemetry-operations-collector
     - collectd
@@ -777,7 +775,7 @@ fetch gce_instance
     [`fluent bit`](https://github.com/fluent/fluent-bit/tags),
     [`otel collector`](https://github.com/GoogleCloudPlatform/opentelemetry-operations-collector/tags),
     or [`collectd`](https://github.com/Stackdriver/collectd/tags)
-    
+
     Run:
 
     ```shell

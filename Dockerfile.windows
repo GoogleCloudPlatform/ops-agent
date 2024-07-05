@@ -77,10 +77,10 @@ RUN Expand-Archive /local/win_flex_bison.zip -Destination /WinFlexBison; `
 #
 # Install Golang
 #
-ADD https://go.dev/dl/go1.21.5.windows-amd64.msi /local/go1.21.5.windows-amd64.msi
+ADD https://go.dev/dl/go1.24.3.windows-amd64.msi /local/go1.24.3.windows-amd64.msi
 
 RUN Start-Process msiexec.exe `
-    -ArgumentList '/i C:\local\go1.21.5.windows-amd64.msi ', '/quiet ', `
+    -ArgumentList '/i C:\local\go1.24.3.windows-amd64.msi ', '/quiet ', `
     '/norestart ', 'ALLUSERS=1,INSTALLDIR=C:\Go' -NoNewWindow -Wait;
 
 #
@@ -90,7 +90,10 @@ RUN Start-Process msiexec.exe `
 # Run these in a directory with a go.mod file so that "go get" doesn't need
 # a working Git installation.
 WORKDIR /goget
-RUN go install github.com/google/googet/v2/goopack@latest;
+
+# @latest has an issue with path separators, so pin to an older version for now.
+# https://github.com/google/googet/issues/83#issuecomment-2536975624
+RUN go install github.com/google/googet/v2/goopack@v2.18.4;
 
 ###############################################################################
 # Build fluent-bit
@@ -100,7 +103,79 @@ COPY submodules/fluent-bit /work/submodules/fluent-bit
 
 WORKDIR /work/submodules/fluent-bit/build
 
-RUN cmake -G "'Visual Studio 16 2019'" -DCMAKE_BUILD_TYPE=RELWITHDEBINFO -DFLB_OUT_KINESIS_STREAMS=OFF ../;
+RUN cmake -G "'Visual Studio 16 2019'" -DCMAKE_BUILD_TYPE=RELWITHDEBINFO `
+    -DFLB_WINDOWS_DEFAULTS=Off `
+    -DFLB_REGEX=On `
+    -DFLB_BACKTRACE=Off `
+    -DFLB_CONFIG_YAML=Off `
+    -DFLB_LUAJIT=On `
+    -DFLB_EXAMPLES=On `
+    -DFLB_PARSER=On `
+    -DFLB_TLS=On `
+    -DFLB_HTTP_SERVER=On `
+    -DFLB_METRICS=On `
+    -DFLB_WASM=Off `
+    -DFLB_WAMRC=Off `
+    -DFLB_IN_CPU=Off `
+    -DFLB_IN_DISK=Off `
+    -DFLB_IN_EXEC=On `
+    -DFLB_IN_EXEC_WASI=Off `
+    -DFLB_IN_FORWARD=On `
+    -DFLB_IN_HEALTH=Off `
+    -DFLB_IN_HTTP=On `
+    -DFLB_IN_MEM=Off `
+    -DFLB_IN_KAFKA=Off `
+    -DFLB_IN_KMSG=Off `
+    -DFLB_IN_LIB=On `
+    -DFLB_IN_RANDOM=On `
+    -DFLB_IN_SERIAL=Off `
+    -DFLB_IN_STDIN=Off `
+    -DFLB_IN_SYSLOG=On `
+    -DFLB_IN_TAIL=On `
+    -DFLB_IN_TCP=On `
+    -DFLB_IN_MQTT=Off `
+    -DFLB_IN_HEAD=Off `
+    -DFLB_IN_PROC=Off `
+    -DFLB_IN_SYSTEMD=Off `
+    -DFLB_IN_DUMMY=On `
+    -DFLB_IN_NETIF=Off `
+    -DFLB_IN_WINLOG=On `
+    -DFLB_IN_WINSTAT=On `
+    -DFLB_IN_WINEVTLOG=On `
+    -DFLB_IN_COLLECTD=Off `
+    -DFLB_IN_STATSD=On `
+    -DFLB_IN_STORAGE_BACKLOG=On `
+    -DFLB_IN_EMITTER=On `
+    -DFLB_IN_PODMAN_METRICS=Off `
+    -DFLB_OUT_BIGQUERY=Off `
+    -DFLB_OUT_COUNTER=On `
+    -DFLB_OUT_EXIT=Off `
+    -DFLB_OUT_FORWARD=On `
+    -DFLB_OUT_GELF=On `
+    -DFLB_OUT_HTTP=On `
+    -DFLB_OUT_NATS=Off `
+    -DFLB_OUT_PLOT=Off `
+    -DFLB_OUT_FILE=On `
+    -DFLB_OUT_TD=Off `
+    -DFLB_OUT_RETRY=Off `
+    -DFLB_OUT_STACKDRIVER=On `
+    -DFLB_OUT_STDOUT=On `
+    -DFLB_OUT_LIB=On `
+    -DFLB_OUT_NULL=On `
+    -DFLB_OUT_FLOWCOUNTER=On `
+    -DFLB_OUT_KAFKA=Off `
+    -DFLB_OUT_KAFKA_REST=Off `
+    -DFLB_FILTER_GREP=On `
+    -DFLB_FILTER_MODIFY=On `
+    -DFLB_FILTER_STDOUT=On `
+    -DFLB_FILTER_PARSER=On `
+    -DFLB_FILTER_THROTTLE=On `
+    -DFLB_FILTER_THROTTLE_SIZE=On `
+    -DFLB_FILTER_NEST=On `
+    -DFLB_FILTER_LUA=On `
+    -DFLB_FILTER_RECORD_MODIFIER=On `
+    -DFLB_FILTER_REWRITE_TAG=On `
+    -DFLB_FILTER_WASM=Off ../;
 
 RUN cmake --build . --config Release; `
     Copy-Item -Path bin/Release/fluent-bit.exe -Destination /work/out/bin/; `
@@ -131,13 +206,9 @@ RUN ./gradlew --no-daemon :jmx-metrics:build; `
 
 COPY submodules/opentelemetry-operations-collector /work/submodules/opentelemetry-operations-collector
 
-WORKDIR /work/submodules/opentelemetry-operations-collector
+WORKDIR /work/submodules/opentelemetry-operations-collector/otelopscol
 
-RUN $JarHash = (Get-FileHash /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar -Algorithm SHA256 | Select -Expand Hash).toLower(); `
-    go build -o bin/google-cloud-metrics-agent_windows_amd64.exe `
-    -ldflags \"-X github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver.MetricsGathererHash=$JarHash\" `
-     ./cmd/otelopscol; `
-    Copy-Item -Path bin/google-cloud-metrics-agent_windows_amd64.exe -Destination /work/out/bin/;
+RUN & ./build.ps1 -outDir /work/out/bin -jmxHash (Get-FileHash /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar -Algorithm SHA256 | Select -Expand Hash).toLower()
 
 ###############################################################################
 # Config generator/service installer
@@ -153,17 +224,6 @@ RUN Get-Content VERSION | Where-Object length | ForEach-Object { Invoke-Expressi
     go build -o bin/google-cloud-ops-agent.exe -ldflags \"-X github.com/GoogleCloudPlatform/ops-agent/internal/version.BuildDistro=$env:BUILD_DISTRO -X github.com/GoogleCloudPlatform/ops-agent/internal/version.Version=$env:PKG_VERSION\" ./cmd/ops_agent_windows; `
     Copy-Item -Path bin/google-cloud-ops-agent.exe -Destination /work/out/bin/; `
     Copy-Item -Path confgenerator/default-config.yaml -Destination /work/out/config/config.yaml;
- 
-###############################################################################
-# Build diagnostic service
-###############################################################################
-
-WORKDIR /work
-
-COPY . /work
-
-RUN go build -o bin/google-cloud-ops-agent-diagnostics.exe ./cmd/google_cloud_ops_agent_diagnostics; `
-    Copy-Item -Path bin/google-cloud-ops-agent-diagnostics.exe -Destination /work/out/bin/;
 
 ###############################################################################
 # Build agent wrapping tool
@@ -176,12 +236,30 @@ COPY . /work
 RUN go build -o bin/google-cloud-ops-agent-wrapper.exe ./cmd/agent_wrapper; `
     Copy-Item -Path bin/google-cloud-ops-agent-wrapper.exe -Destination /work/out/bin/;
 
+
 ###############################################################################
-# Packaging
+# Build the Ops Agent UAP plugin
 ###############################################################################
 
 WORKDIR /work
 
 COPY . /work
 
-RUN & .\pkg\goo\build.ps1 -DestDir /work/out;
+ARG WINDOWS_VERSION
+ARG BUILD_DISTRO=windows-$WINDOWS_VERSION
+RUN Get-Content VERSION | Where-Object length | ForEach-Object { Invoke-Expression "`$env:$_" }; `
+    go build -o bin/plugin.exe -ldflags \"-X github.com/GoogleCloudPlatform/ops-agent/internal/version.BuildDistro=$env:BUILD_DISTRO -X github.com/GoogleCloudPlatform/ops-agent/internal/version.Version=$env:PKG_VERSION\" ./cmd/ops_agent_uap_plugin; `
+    Copy-Item -Path bin/plugin.exe -Destination /work/out/bin/; `
+    $env:PKG_VERSION | Out-File -FilePath /work/out/bin/OPS_AGENT_VERSION -Encoding UTF8;
+
+###############################################################################
+# Packaging for the Ops Agent Plugin
+###############################################################################
+
+WORKDIR /work
+
+COPY . /work
+
+RUN & .\pkg\plugin\build.ps1 -DestDir /work/out/bin;
+
+

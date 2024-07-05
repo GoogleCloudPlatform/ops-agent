@@ -49,8 +49,17 @@ processors:
         metric_names:
         - otelcol_process_uptime
         - otelcol_process_memory_rss
-        - otelcol_grpc_io_client_completed_rpcs
-        - otelcol_googlecloudmonitoring_point_count
+        - grpc.client.attempt.duration
+        - googlecloudmonitoring/point_count
+  filter/otel_2:
+    metrics:
+      include:
+        match_type: strict
+        metric_names:
+        - otelcol_process_uptime
+        - otelcol_process_memory_rss
+        - grpc.client.attempt.duration_count
+        - googlecloudmonitoring/point_count
   metricstransform/fluentbit_1:
     transforms:
     - action: update
@@ -403,7 +412,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/otel_1:
+  metricstransform/otel_3:
     transforms:
     - action: update
       include: otelcol_process_uptime
@@ -425,19 +434,18 @@ processors:
         aggregation_type: sum
         label_set: []
     - action: update
-      include: otelcol_grpc_io_client_completed_rpcs
+      include: grpc.client.attempt.duration_count
       new_name: agent/api_request_count
       operations:
-      - action: toggle_scalar_data_type
       - action: update_label
-        label: grpc_client_status
+        label: grpc.status
         new_label: state
       - action: aggregate_labels
         aggregation_type: sum
         label_set:
         - state
     - action: update
-      include: otelcol_googlecloudmonitoring_point_count
+      include: googlecloudmonitoring/point_count
       new_name: agent/monitoring/point_count
       operations:
       - action: toggle_scalar_data_type
@@ -452,6 +460,18 @@ processors:
   resourcedetection/_global_0:
     detectors:
     - gcp
+  transform/ops_agent_0:
+    error_mode: ignore
+    metric_statements:
+    - context: datapoint
+      statements:
+      - set(time, Now())
+  transform/otel_1:
+    error_mode: ignore
+    metric_statements:
+    - context: metric
+      statements:
+      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
@@ -464,10 +484,18 @@ receivers:
       network: {}
       paging: {}
       process:
+        mute_process_all_errors: true
+        mute_process_exe_error: true
         mute_process_name_error: true
       processes: {}
   nvml/hostmetrics_1:
     collection_interval: 60s
+  otlpjsonfile/ops_agent:
+    include:
+    - enabled_receivers_otlp.json
+    - feature_tracking_otlp.json
+    poll_interval: 1m0s
+    replay_file: true
   prometheus/fluentbit:
     config:
       scrape_configs:
@@ -516,15 +544,33 @@ service:
       - resourcedetection/_global_0
       receivers:
       - prometheus/fluentbit
+    metrics/ops_agent:
+      exporters:
+      - googlecloud
+      processors:
+      - transform/ops_agent_0
+      - resourcedetection/_global_0
+      receivers:
+      - otlpjsonfile/ops_agent
     metrics/otel:
       exporters:
       - googlecloud
       processors:
       - filter/otel_0
-      - metricstransform/otel_1
+      - transform/otel_1
+      - filter/otel_2
+      - metricstransform/otel_3
       - resourcedetection/_global_0
       receivers:
       - prometheus/otel
   telemetry:
     metrics:
-      address: 0.0.0.0:20201
+      readers:
+      - pull:
+          exporter:
+            prometheus:
+              host: 0.0.0.0
+              port: 20201
+              without_scope_info: true
+              without_type_suffix: true
+              without_units: true

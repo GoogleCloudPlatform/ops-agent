@@ -6,8 +6,8 @@ sudo apt-get install -y \
     gnupg \
     apt-transport-https \
     debian-keyring \
-    debian-archive-keyring 
-    
+    debian-archive-keyring
+
 curl -1sLf "https://github.com/rabbitmq/signing-keys/releases/download/2.0/rabbitmq-release-signing-key.asc" | \
     sudo gpg --dearmor --output /etc/apt/trusted.gpg.d/rabbitmq.gpg
 
@@ -22,6 +22,12 @@ case $VERSION_ID in
     ;;
   22.04)
     echo "deb http://ppa.launchpad.net/rabbitmq/rabbitmq-erlang/ubuntu jammy main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
+    ;;
+  24.04)
+    echo "deb http://ppa.launchpad.net/rabbitmq/rabbitmq-erlang/ubuntu noble main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
+    ;;
+  24.10)
+    echo "deb http://ppa.launchpad.net/rabbitmq/rabbitmq-erlang/ubuntu noble main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
     ;;
   # debian
   10)
@@ -82,6 +88,6 @@ curl -i -u admin:admin \
     -d'{"routing_key":"webq1","arguments":{}}'
 
 sudo rabbitmq-plugins enable rabbitmq_management
-sudo rabbitmqctl add_user "otelu" "otelp"
-sudo rabbitmqctl set_user_tags "otelu" monitoring
-sudo rabbitmqctl set_permissions -p "dev" "otelu" "" "" ".*"
+sudo rabbitmqctl add_user "usr" "pwd"
+sudo rabbitmqctl set_user_tags "usr" monitoring
+sudo rabbitmqctl set_permissions -p "dev" "usr" "" "" ".*"

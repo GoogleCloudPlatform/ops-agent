@@ -92,6 +92,8 @@ func (r MetricsReceiverPostgresql) Pipelines(_ context.Context) ([]otel.Receiver
 				// The two metrics are mutually exclusive so we do not need to worry about overwriting or removing the original wal.lag.
 				otel.ConvertFloatToInt("postgresql.wal.delay"),
 				otel.SetName("postgresql.wal.delay", "postgresql.wal.lag"),
+				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+				otel.SetScopeVersion("1.0"),
 			),
 			otel.MetricsTransform(
 				otel.UpdateMetric("postgresql.bgwriter.duration",
@@ -99,7 +101,6 @@ func (r MetricsReceiverPostgresql) Pipelines(_ context.Context) ([]otel.Receiver
 				),
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
 	}}, nil
 }
@@ -202,13 +203,13 @@ func (p LoggingProcessorPostgresql) Components(ctx context.Context, tag string, 
 }
 
 type LoggingReceiverPostgresql struct {
-	LoggingProcessorPostgresql              `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	LoggingProcessorPostgresql `yaml:",inline"`
+	ReceiverMixin              confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r LoggingReceiverPostgresql) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
+		r.ReceiverMixin.IncludePaths = []string{
 			// Default log paths for Debian / Ubuntu
 			"/var/log/postgresql/postgresql*.log",
 			// Default log paths for SLES
@@ -217,7 +218,7 @@ func (r LoggingReceiverPostgresql) Components(ctx context.Context, tag string) [
 			"/var/lib/pgsql/*/data/log/postgresql*.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := r.ReceiverMixin.Components(ctx, tag)
 	c = append(c, r.LoggingProcessorPostgresql.Components(ctx, tag, "postgresql")...)
 	return c
 }

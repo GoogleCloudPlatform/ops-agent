@@ -59,13 +59,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM {target_name}-build-golang-base AS {target_name}-build-diagnostics
-WORKDIR /work
-COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
-COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
-
-
 FROM {target_name}-build-golang-base AS {target_name}-build-wrapper
 WORKDIR /work
 COPY cmd/agent_wrapper cmd/agent_wrapper
@@ -87,10 +80,16 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from={target_name}-build-otel /work/cache /work/cache
 COPY --from={target_name}-build-fluent-bit /work/cache /work/cache
 COPY --from={target_name}-build-systemd /work/cache /work/cache
-COPY --from={target_name}-build-diagnostics /work/cache /work/cache
 COPY --from={target_name}-build-wrapper /work/cache /work/cache
 {package_build}
+
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache/
+RUN ./pkg/plugin/build.sh /work/cache {target_name}
+
 
 FROM scratch AS {target_name}
 COPY --from={target_name}-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-{tar_distro_name}.tgz
 COPY --from={target_name}-build /google-cloud-ops-agent*.{package_extension} /
+COPY --from={target_name}-build /google-cloud-ops-agent-plugin*.tar.gz /

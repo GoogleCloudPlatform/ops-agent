@@ -40,6 +40,7 @@ var (
 func main() {
 
 	infoLog := logs.NewSimpleLogger()
+
 	if ok, err := svc.IsWindowsService(); ok && err == nil {
 		if err := run(serviceName); err != nil {
 			log.Fatal(err)
@@ -82,6 +83,7 @@ var services []struct {
 
 func init() {
 	if err := initServices(); err != nil {
+
 		log.Fatal(err)
 	}
 }
@@ -108,6 +110,7 @@ func initServices() error {
 	if err := os.MkdirAll(logDirectory, 0644); err != nil {
 		return err
 	}
+
 	// TODO: Write meaningful descriptions for these services
 	services = []struct {
 		name        string
@@ -144,14 +147,6 @@ func initServices() error {
 				"-c", filepath.Join(configOutDir, `fluentbit\fluent_bit_main.conf`),
 				"-R", filepath.Join(configOutDir, `fluentbit\fluent_bit_parser.conf`),
 				"--storage_path", fluentbitStoragePath,
-			},
-		},
-		{
-			fmt.Sprintf("%s-diagnostics", serviceName),
-			fmt.Sprintf("%s - Diagnostics", serviceDisplayName),
-			filepath.Join(base, fmt.Sprintf("%s-diagnostics.exe", serviceName)),
-			[]string{
-				"-config", filepath.Join(base, "../config/config.yaml"),
 			},
 		},
 	}

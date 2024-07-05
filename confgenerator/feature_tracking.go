@@ -15,6 +15,7 @@
 package confgenerator
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -71,42 +72,43 @@ type CustomFeatures interface {
 // ExtractFeatures fields that containing a tracking tag will be tracked.
 // Automatic collection of bool or int fields. Any value that exists on tracking
 // tag will be used instead of value from UnifiedConfig.
-func ExtractFeatures(uc *UnifiedConfig) ([]Feature, error) {
-	allFeatures := getOverriddenDefaultPipelines(uc)
-	allFeatures = append(allFeatures, getSelfLogCollection(uc))
+func ExtractFeatures(ctx context.Context, userUc, mergedUc *UnifiedConfig) ([]Feature, error) {
+	allFeatures := getOverriddenDefaultPipelines(userUc)
+	allFeatures = append(allFeatures, getSelfLogCollection(userUc))
+	allFeatures = append(allFeatures, getOTelLoggingSupportedConfig(ctx, mergedUc))
 
 	var err error
 	var tempTrackedFeatures []Feature
-	if uc.HasMetrics() {
-		tempTrackedFeatures, err = trackedMappedComponents("metrics", "receivers", uc.Metrics.Receivers)
+	if userUc.HasMetrics() {
+		tempTrackedFeatures, err = trackedMappedComponents("metrics", "receivers", userUc.Metrics.Receivers)
 		if err != nil {
 			return nil, err
 		}
 		allFeatures = append(allFeatures, tempTrackedFeatures...)
 
-		tempTrackedFeatures, err = trackedMappedComponents("metrics", "processors", uc.Metrics.Processors)
-		if err != nil {
-			return nil, err
-		}
-		allFeatures = append(allFeatures, tempTrackedFeatures...)
-	}
-
-	if uc.HasLogging() {
-		tempTrackedFeatures, err = trackedMappedComponents("logging", "receivers", uc.Logging.Receivers)
-		if err != nil {
-			return nil, err
-		}
-		allFeatures = append(allFeatures, tempTrackedFeatures...)
-
-		tempTrackedFeatures, err = trackedMappedComponents("logging", "processors", uc.Logging.Processors)
+		tempTrackedFeatures, err = trackedMappedComponents("metrics", "processors", userUc.Metrics.Processors)
 		if err != nil {
 			return nil, err
 		}
 		allFeatures = append(allFeatures, tempTrackedFeatures...)
 	}
 
-	if uc.HasCombined() {
-		tempTrackedFeatures, err = trackedMappedComponents("combined", "receivers", uc.Combined.Receivers)
+	if userUc.HasLogging() {
+		tempTrackedFeatures, err = trackedMappedComponents("logging", "receivers", userUc.Logging.Receivers)
+		if err != nil {
+			return nil, err
+		}
+		allFeatures = append(allFeatures, tempTrackedFeatures...)
+
+		tempTrackedFeatures, err = trackedMappedComponents("logging", "processors", userUc.Logging.Processors)
+		if err != nil {
+			return nil, err
+		}
+		allFeatures = append(allFeatures, tempTrackedFeatures...)
+	}
+
+	if userUc.HasCombined() {
+		tempTrackedFeatures, err = trackedMappedComponents("combined", "receivers", userUc.Combined.Receivers)
 		if err != nil {
 			return nil, err
 		}
@@ -115,7 +117,7 @@ func ExtractFeatures(uc *UnifiedConfig) ([]Feature, error) {
 	return allFeatures, nil
 }
 
-func getSortedKeys[V any](m map[string]V) []string {
+func GetSortedKeys[V any](m map[string]V) []string {
 	keys := make([]string, 0, len(m))
 	for k := range m {
 		keys = append(keys, k)
@@ -129,7 +131,7 @@ func trackedMappedComponents[C Component](module string, kind string, m map[stri
 		return nil, nil
 	}
 	var features []Feature
-	for i, k := range getSortedKeys(m) {
+	for i, k := range GetSortedKeys(m) {
 		c := m[k]
 		feature := Feature{
 			Module: module,
@@ -435,6 +437,23 @@ func getMetadata(field reflect.StructField) metadata {
 		// See this for more details: https://pkg.go.dev/gopkg.in/yaml.v2#Unmarshal
 		yamlTag: yamlTags[0],
 	}
+}
+
+// TODO: b/399354366 - Cleanup when OTel Logging Support is fully released.
+func getOTelLoggingSupportedConfig(ctx context.Context, mergedUc *UnifiedConfig) Feature {
+	feature := Feature{
+		Module: "logging",
+		Kind:   "service",
+		Type:   "otel_logging",
+		Key:    []string{"otel_logging_supported_config"},
+		Value:  "false",
+	}
+
+	if mergedUc.OTelLoggingSupported(ctx) {
+		feature.Value = "true"
+	}
+
+	return feature
 }
 
 func getSelfLogCollection(uc *UnifiedConfig) Feature {

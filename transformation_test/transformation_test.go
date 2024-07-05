@@ -1,3 +1,17 @@
+// Copyright 2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package transformation_test
 
 import (
@@ -19,6 +33,7 @@ import (
 	"time"
 
 	logpb "cloud.google.com/go/logging/apiv2/loggingpb"
+	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -115,7 +130,7 @@ func (transformationConfig transformationTest) runFluentBitTest(t *testing.T, na
 
 	// Start Fluent-bit
 	cmd := exec.Command(
-		fmt.Sprintf("%s", *flbPath),
+		*flbPath,
 		"-v",
 		fmt.Sprintf("--config=%s", filepath.Join(tempPath, flbMainConf)),
 		fmt.Sprintf("--parser=%s", filepath.Join(filepath.Join(tempPath, flbParserConf))))
@@ -280,7 +295,7 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 		if op, ok := p.LoggingProcessor.(confgenerator.OTelProcessor); ok {
 			processors, err := op.Processors(ctx)
 			if err != nil {
-				t.Fatal(err)
+				return "", fmt.Errorf("failed generating OTel processor: %#v, err: %v", p.LoggingProcessor, err)
 			}
 			components = append(components, processors...)
 		} else {
@@ -305,14 +320,14 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 			"input": rp[0],
 		},
 		Pipelines: map[string]otel.Pipeline{
-			"input": otel.Pipeline{
+			"input": {
 				Type:                 "logs",
 				ReceiverPipelineName: "input",
 				Processors:           components,
 			},
 		},
 		Exporters: map[otel.ExporterType]otel.Component{
-			otel.OTel: otel.Component{
+			otel.OTel: {
 				Type: "googlecloud",
 				Config: map[string]any{
 					"project": "my-project",
@@ -408,7 +423,7 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 
 	// Start otelopscol
 	cmd := exec.Command(
-		fmt.Sprintf("%s", *otelopscolPath),
+		*otelopscolPath,
 		"--config=env:OTELOPSCOL_CONFIG",
 	)
 	cmd.Env = append(os.Environ(),
@@ -430,9 +445,24 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 	}
 
 	var errors []any
+	var exitErr error
 
 	// Read from stderr until EOF and put any errors in `errors`.
 	eg.Go(func() error {
+		// Wait for the process to exit.
+		defer eg.Go(func() error {
+			if err := cmd.Wait(); err != nil {
+				if _, ok := err.(*exec.ExitError); ok {
+					exitErr = err
+					t.Logf("process terminated with error: %v", err)
+				} else {
+					return fmt.Errorf("process failed: %w", err)
+				}
+			}
+			cancel()
+			return nil
+		})
+
 		consumingCount := 0
 		r := bufio.NewReader(stderr)
 		d := json.NewDecoder(r)
@@ -484,25 +514,12 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 			}
 		}
 	})
+
 	// Read and sanitize requests.
 	eg.Go(func() error {
 		for r := range requestCh {
 			got = append(got, sanitizeWriteLogEntriesRequest(t, r, testStartTime))
 		}
-		return nil
-	})
-	var exit_error string
-	// Wait for the process to exit.
-	eg.Go(func() error {
-		if err := cmd.Wait(); err != nil {
-			if err, ok := err.(*exec.ExitError); ok {
-				exit_error = err.String()
-				t.Logf("process terminated with error: %v", err)
-			} else {
-				return fmt.Errorf("process failed: %w", err)
-			}
-		}
-		cancel()
 		return nil
 	})
 
@@ -511,8 +528,8 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 	}
 
 	// Package up errors to be included in the golden output.
-	if exit_error != "" {
-		got = append(got, map[string]any{"exit_error": exit_error})
+	if exitErr != nil {
+		got = append(got, map[string]any{"exit_error": exitErr.Error()})
 	}
 	if len(errors) != 0 {
 		got = append(got, map[string]any{"collector_errors": errors})
@@ -554,12 +571,14 @@ func sanitizeWriteLogEntriesRequest(t *testing.T, r *logpb.WriteLogEntriesReques
 func sanitizeStacktrace(t *testing.T, input string) string {
 	// We need to remove non-deterministic information from stacktraces so the goldens don't keep changing.
 	// Remove $GOPATH
-	result := regexp.MustCompile(`(?m)^\t(.*?)pkg/mod/`).ReplaceAllString(input, "\t")
+	result := regexp.MustCompile(`(?m)^\t(.*?)pkg/mod/`).ReplaceAllString(input, "  ")
 	// Remove function arguments
 	result = regexp.MustCompile(`(?m)^(.*)\(.+\)$`).ReplaceAllString(result, "$1(...)")
 	// Remove anything that looks like an address
 	result = regexp.MustCompile(`0x[0-9a-f]+`).ReplaceAllString(result, "0xX")
 	// Remove goroutine numbers
 	result = regexp.MustCompile(`goroutine \d+`).ReplaceAllString(result, "goroutine N")
+
+	result = strings.ReplaceAll(result, "\t", "  ")
 	return result
 }

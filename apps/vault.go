@@ -138,7 +138,13 @@ func (r MetricsReceiverVault) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 			},
 		},
 		Processors: map[string][]otel.Component{"metrics": {
-			otel.TransformationMetrics(queries...),
+			otel.TransformationMetrics(
+				append(
+					queries,
+					otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+					otel.SetScopeVersion("1.0"),
+				)...,
+			),
 			otel.MetricsFilter(
 				"include",
 				"strict",
@@ -172,7 +178,6 @@ func (r MetricsReceiverVault) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
 	}}, nil
 }
@@ -339,15 +344,15 @@ func (p LoggingProcessorVaultJson) Components(ctx context.Context, tag, uid stri
 }
 
 type LoggingReceiverVaultAuditJson struct {
-	LoggingProcessorVaultJson               `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
-	IncludePaths                            []string `yaml:"include_paths,omitempty" validate:"required"`
+	LoggingProcessorVaultJson `yaml:",inline"`
+	ReceiverMixin             confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
+	IncludePaths              []string                                `yaml:"include_paths,omitempty" validate:"required"`
 }
 
 func (r LoggingReceiverVaultAuditJson) Components(ctx context.Context, tag string) []fluentbit.Component {
-	r.LoggingReceiverFilesMixin.IncludePaths = r.IncludePaths
+	r.ReceiverMixin.IncludePaths = r.IncludePaths
 
-	r.MultilineRules = []confgenerator.MultilineRule{
+	r.ReceiverMixin.MultilineRules = []confgenerator.MultilineRule{
 		{
 			StateName: "start_state",
 			NextState: "cont",
@@ -360,7 +365,7 @@ func (r LoggingReceiverVaultAuditJson) Components(ctx context.Context, tag strin
 		},
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := r.ReceiverMixin.Components(ctx, tag)
 	return append(c, r.LoggingProcessorVaultJson.Components(ctx, tag, r.LoggingProcessorVaultJson.Type())...)
 }
 
