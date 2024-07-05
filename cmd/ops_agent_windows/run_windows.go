@@ -59,7 +59,10 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 	defer cancel()
 	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown
 	changes <- svc.Status{State: svc.StartPending}
-	if err := s.parseFlags(args); err != nil {
+
+	allArgs := append([]string{}, os.Args[1:]...)
+	allArgs = append(allArgs, args[1:]...)
+	if err := s.parseFlags(allArgs); err != nil {
 		s.log.Error(EngineEventID, fmt.Sprintf("failed to parse arguments: %v", err))
 		// ERROR_INVALID_ARGUMENT
 		return false, 0x00000057
@@ -104,10 +107,7 @@ func (s *service) parseFlags(args []string) error {
 	var fs flag.FlagSet
 	fs.StringVar(&s.userConf, "in", "", "path to the user specified agent config")
 	fs.StringVar(&s.outDirectory, "out", "", "directory to write generated configuration files to")
-
-	allArgs := append([]string{}, os.Args[1:]...)
-	allArgs = append(allArgs, args[1:]...)
-	return fs.Parse(allArgs)
+	return fs.Parse(args)
 }
 
 func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfig) error {

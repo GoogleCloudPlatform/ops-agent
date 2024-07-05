@@ -72,7 +72,10 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 
 	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown
 	changes <- svc.Status{State: svc.StartPending}
-	if err := s.parseFlags(args); err != nil {
+
+	allArgs := append([]string{}, os.Args[1:]...)
+	allArgs = append(allArgs, args[1:]...)
+	if err := s.parseFlags(allArgs); err != nil {
 		s.log.Error(DiagnosticsEventID, fmt.Sprintf("failed to parse arguments: %v", err))
 		return false, ERROR_INVALID_PARAMETER
 	}
@@ -122,9 +125,5 @@ func (s *service) parseFlags(args []string) error {
 	s.log.Info(DiagnosticsEventID, fmt.Sprintf("args: %#v", args))
 	var fs flag.FlagSet
 	fs.StringVar(&s.userConf, "config", "", "path to the user specified agent config")
-	s.log.Info(DiagnosticsEventID, s.userConf)
-
-	allArgs := append([]string{}, os.Args[1:]...)
-	allArgs = append(allArgs, args[1:]...)
-	return fs.Parse(allArgs)
+	return fs.Parse(args)
 }
