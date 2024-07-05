@@ -5,7 +5,7 @@ SUSE_VERSION="${VERSION_ID%%.*}"
 SERVICE_PACK="${VERSION_ID##*.}"
 
 # SLES 15 SP5 moved Java 8 to a legacy module
-if (( $SERVICE_PACK >= 5 )); then
+if [[ "$SUSE_VERSION" == 15 ]] && (( $SERVICE_PACK >= 5 )); then
   sudo SUSEConnect --product sle-module-legacy/${VERSION_ID}/$(uname -m)
 fi
 
