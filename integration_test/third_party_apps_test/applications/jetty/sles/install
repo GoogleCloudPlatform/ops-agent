@@ -9,7 +9,12 @@ if [[ "$SUSE_VERSION" == 15 ]] && (( $SERVICE_PACK >= 6 )); then
   sudo SUSEConnect --product sle-module-legacy/${VERSION_ID}/$(uname -m)
 fi
 
-sudo zypper install -y wget java-11-openjdk tzdata-java
+sudo zypper install -y wget java-11-openjdk
+if [[ "$SUSE_VERSION" == 15 ]] && (( $SERVICE_PACK <= 5 )); then
+  # This package is necessary on older service packs, but was
+  # removed in SP6.
+  sudo zypper install -y tzdata-java
+fi
 
 # the other available stable versions of jetty
 # wget https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-distribution/9.4.46.v20220331/jetty-distribution-9.4.46.v20220331.tar.gz
