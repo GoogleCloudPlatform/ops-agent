@@ -18,7 +18,8 @@ elif [[ "${SUSE_VERSION}" == 15 ]]; then
   # VERSION_ID is taken from /etc/os-release, and is of the form <SLES version number>.<Service Pack number>.
   if [[ "$VERSION_ID" == "15.6" ]]; then
     # TODO(b/350987619): There is currently no "15.6" repo for PostgreSQL 14. Since the automatic
-    # $releasever variable
+    # $releasever variable will sub in "15.6" on SP6 distros, this sed is necessary to force it
+    # back to the root 15 (not service pack specific) repo.
     sudo sed -i "s/\$releasever/15/g" /etc/zypp/repos.d/pgdg-14.repo
   fi
 
