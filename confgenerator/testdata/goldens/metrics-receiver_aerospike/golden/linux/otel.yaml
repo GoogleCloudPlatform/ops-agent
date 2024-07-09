@@ -464,6 +464,7 @@ receivers:
       network: {}
       paging: {}
       process:
+        mute_process_exe_error: true
         mute_process_name_error: true
       processes: {}
   prometheus/fluentbit:
