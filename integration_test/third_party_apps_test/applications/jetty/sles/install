@@ -1,12 +1,27 @@
 set -e
 
+source /etc/os-release
+SUSE_VERSION="${VERSION_ID%%.*}"
+SERVICE_PACK="${VERSION_ID##*.}"
+
+# SLES 15 SP6 moved Java 11 to a legacy module
+if [[ "$SUSE_VERSION" == 15 ]] && (( $SERVICE_PACK >= 6 )); then
+  sudo SUSEConnect --product sle-module-legacy/${VERSION_ID}/$(uname -m)
+fi
+
+sudo zypper install -y wget java-11-openjdk
+if [[ "$SUSE_VERSION" == 15 ]] && (( $SERVICE_PACK <= 5 )); then
+  # This package is necessary on older service packs, but was
+  # removed in SP6.
+  sudo zypper install -y tzdata-java
+fi
+
 # the other available stable versions of jetty
 # wget https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-distribution/9.4.46.v20220331/jetty-distribution-9.4.46.v20220331.tar.gz
 # wget https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-home/10.0.9/jetty-home-10.0.9.tar.gz
 
 JETTY_VERSION=11.0.15
 
-sudo zypper install -y wget java-11-openjdk tzdata-java
 sudo wget https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-home/"$JETTY_VERSION"/jetty-home-"$JETTY_VERSION".tar.gz
 sudo mkdir -p /opt/jetty
 
