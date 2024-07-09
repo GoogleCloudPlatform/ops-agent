@@ -989,10 +989,9 @@ func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM) error {
 		// --gpg-auto-import-keys is included to fix a rare flake where (due to
 		// a policy being installed already) there is a new key that needs to
 		// be imported.
-		// timezone-java was selected arbitrarily as a package that:
-		// a) can be installed from the default repos, and
-		// b) isn't installed already.
-		_, zypperErr := RunRemotely(ctx, logger, vm, "sudo zypper --non-interactive --gpg-auto-import-keys refresh && sudo zypper --non-interactive install timezone-java")
+		// To fix this, we force install a package. coreutils is arbitrarily
+		// chosen as it's all but guaranteed to be present.
+		_, zypperErr := RunRemotely(ctx, logger, vm, "sudo zypper --non-interactive --gpg-auto-import-keys refresh && sudo zypper --non-interactive install --force coreutils")
 		return zypperErr
 	}, backoffPolicy)
 	if err != nil {
@@ -1586,7 +1585,7 @@ INSTALL_DIR="$(readlink --canonicalize .)"
 	INSTALL_LOG="$(mktemp)"
 	# This command produces a lot of console spam, so we only display that
 	# output if there is a problem.
-	sudo tar -xf ` + gcloudPkg + ` -C ${INSTALL_DIR} 
+	sudo tar -xf ` + gcloudPkg + ` -C ${INSTALL_DIR}
 	sudo --preserve-env ${INSTALL_DIR}/google-cloud-sdk/install.sh -q &>"${INSTALL_LOG}" || \
 		EXIT_CODE=$?
 	if [[ "${EXIT_CODE-}" ]]; then
@@ -1600,7 +1599,7 @@ INSTALL_DIR="$(readlink --canonicalize .)"
 # Upgrade to the latest version
 sudo ${INSTALL_DIR}/google-cloud-sdk/bin/gcloud components update --quiet
 
-sudo ln -s ${INSTALL_DIR}/google-cloud-sdk/bin/gsutil /usr/bin/gsutil 
+sudo ln -s ${INSTALL_DIR}/google-cloud-sdk/bin/gsutil /usr/bin/gsutil
 `
 	// b/308962066: The GCloud CLI ARM Linux tarballs do not have bundled Python
 	// and the GCloud CLI requires Python >= 3.8. Install Python311 for ARM VMs
