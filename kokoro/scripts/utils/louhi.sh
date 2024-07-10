@@ -33,7 +33,7 @@ function populate_env_vars_from_louhi_tag_if_present() {
 
     if [[ "${INSTALL_AGENT_UNDER_TEST:-1}" == "1" ]]; then
       export REPO_SUFFIX="${_LOUHI_EXECUTION_ID}"
-      export ARTIFACT_REGISTRY_PROJECT="${_STAGING_ARTIFACTS_PROJECT_ID}"  # Louhi is responsible for passing this.
+      export ARTIFACT_REGISTRY_PROJECT="${_TESTING_ARTIFACTS_PROJECT_ID}"  # Louhi is responsible for passing this.
 
       EXT=$(yaml project.yaml "['targets']['${TARGET}']['package_extension']")
       if [[ "${EXT}" == "deb" ]]; then
