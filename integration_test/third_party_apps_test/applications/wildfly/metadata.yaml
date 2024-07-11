@@ -46,7 +46,6 @@ supported_operating_systems: linux
 # As wildfly does not have package installers & is installed from tar,
 # we only want to test on one distribution to help reduce integration test size
 platforms_to_skip:
-  - centos-cloud:centos-7
   - rocky-linux-cloud:rocky-linux-8
   - suse-cloud:sles-12
   - suse-cloud:sles-15

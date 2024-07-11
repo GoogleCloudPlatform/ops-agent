@@ -48,7 +48,6 @@ minimum_supported_agent_version:
 supported_operating_systems: linux
 # TODO: Fix errors and enable tests on all platforms.
 platforms_to_skip:
-  - centos-cloud:centos-7 # see https://issues.apache.org/jira/browse/CASSANDRA-18059 for fix.
   - suse-cloud:sles-12 # QueryLog() failed: cassandra_system not found, exhausted retries; QueryLog() failed: cassandra_debug not found, exhausted retries; QueryLog() failed: cassandra_gc not found, exhausted retries
   - suse-cloud:sles-15 # QueryLog() failed: cassandra_system not found, exhausted retries; QueryLog() failed: cassandra_debug not found, exhausted retries; QueryLog() failed: cassandra_gc not found, exhausted retries
   - suse-cloud:sles-15-arm64
@@ -182,7 +181,7 @@ expected_logs:
   - log_name: cassandra_gc
     fields:
       - name: jsonPayload.message
-        value_regex: (?s).*Total time for which application threads were stopped.* # The (?s) part will make the . match with newline as well. See https://github.com/google/re2/blob/main/doc/syntax.txt#L65,L68 
+        value_regex: (?s).*Total time for which application threads were stopped.* # The (?s) part will make the . match with newline as well. See https://github.com/google/re2/blob/main/doc/syntax.txt#L65,L68
         type: string
         description: Log message
       - name: jsonPayload.uptime
