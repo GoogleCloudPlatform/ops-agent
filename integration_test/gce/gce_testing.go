@@ -36,7 +36,7 @@ AGENT_PACKAGES_IN_GCS, for details see README.md.
 
 	PROJECT=dev_project \
 	ZONES=us-central1-b \
-	IMAGE_SPECS=debian-cloud:debian-10,rocky-linux-cloud:rocky-linux-8,rhel-sap-cloud:rhel-8-8-sap-ha,suse-cloud:sles-15,ubuntu-os-cloud:ubuntu-2004-lts,windows-cloud:windows-2016,windows-cloud:windows-2019 \
+	IMAGE_SPECS=debian-cloud:debian-12,rocky-linux-cloud:rocky-linux-8,rhel-sap-cloud:rhel-8-8-sap-ha,suse-cloud:sles-15,ubuntu-os-cloud:ubuntu-2004-lts,windows-cloud:windows-2016,windows-cloud:windows-2019 \
 
 	go test -v ops_agent_test.go \
 	  -test.parallel=1000 \

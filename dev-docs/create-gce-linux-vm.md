@@ -16,7 +16,7 @@ $ gcloud compute images list | grep $IMAGE_SEARCH_KEYWORD
 $ export OS_IMAGE_PROJECT=debian-cloud
 
 # VM image family.
-$ export OS_IMAGE_FAMILY=debian-10
+$ export OS_IMAGE_FAMILY=debian-12
 
 # Your dev GCP project ID.
 $ export VM_PROJECT_ID=${USER}-sandbox

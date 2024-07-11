@@ -248,7 +248,7 @@ a hop. The following is sorted roughly in descending order of usefulness.
 ├── logs
 |   ├── build_and_test.txt
 |   ├── sponge_log.xml
-|   └── TestThirdPartyApps_ops-agent_debian-10_nginx
+|   └── TestThirdPartyApps_ops-agent_debian-12_nginx
 |       ├── main_log.txt
 |       ├── syslog.txt
 |       ├── logging-module.log.txt
@@ -273,7 +273,7 @@ TODO: Document log files for a Windows VM.
 *   `sponge_log.xml`: Structured data about which tests
     passed/failed, but not very human readable.
 *   `main_log.txt`: The main log for the particular test shard (e.g.
-    `TestThirdPartyApps_ops-agent_debian-10_nginx`) that ran. This is the place
+    `TestThirdPartyApps_ops-agent_debian-12_nginx`) that ran. This is the place
     to start if you are wondering what happened to a particular shard.
 *   `syslog.txt`: The system's `/var/log/{syslog,messages}`. Highly useful.
     OTel collector logs can be found here by searching for `otelopscol`.
