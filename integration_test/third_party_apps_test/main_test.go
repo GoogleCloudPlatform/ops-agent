@@ -821,7 +821,7 @@ type test struct {
 }
 
 var defaultPlatforms = map[string]bool{
-	"debian-cloud:debian-12":     true,
+	"debian-cloud:debian-11":     true,
 	"windows-cloud:windows-2019": true,
 }
 
