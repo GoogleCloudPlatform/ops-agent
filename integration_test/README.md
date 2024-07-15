@@ -57,7 +57,7 @@ against a pre-built but unreleased agent, you can use add the
 `AGENT_PACKAGES_IN_GCS` environment variable onto your command like this:
 
 ```
-AGENT_PACKAGES_IN_GCS=gs://ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/build/bullseye/2068/20220926-132259/result \
+AGENT_PACKAGES_IN_GCS=gs://ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/build/bullseye_x86_64/2677/20240711-200228/result \
 ```
 
 You can obtain such a URI by:
@@ -65,7 +65,7 @@ You can obtain such a URI by:
 1.  take a previous Kokoro run with a successful build and go to the
     `Invocation Details` page. Get the value corresponding to the `GCS` key.
     For example:
-    `https://console.cloud.google.com/storage/browser/ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/build/bullseye/2068/20220926-132259`
+    `https://console.cloud.google.com/storage/browser/ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/build/bullseye_x86_64/2677/20240711-200228`
 2.  Replace `https://console.cloud.google.com/storage/browser/` at the beginning
     of the URL with `gs://` and put `/result` on the end and pass that as
     `AGENT_PACKAGES_IN_GCS`.
@@ -259,8 +259,8 @@ a hop. The following is sorted roughly in descending order of usefulness.
 |       ├── fluent_bit_main.conf.txt
 |       └── fluent_bit_parser.conf.txt
 └── agent_packages
-    ├── google-cloud-ops-agent_2.0.5~debian10_amd64.deb
-    └── google-cloud-ops-agent-dbgsym_2.0.5~debian10_amd64.deb
+    ├── google-cloud-ops-agent_2.0.5~debian11_amd64.deb
+    └── google-cloud-ops-agent-dbgsym_2.0.5~debian11_amd64.deb
 ```
 
 Let's go through each of these files and discuss what they are.
