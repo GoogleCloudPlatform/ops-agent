@@ -34,7 +34,7 @@ configure_integration: |-
 
   The `mysql_error` logging receiver collects logs from the default file paths
   shown in the table below. On some platforms, MariaDB logs to `journald` by
-  default instead of a file. Configure MariaDB to log to a file instead by 
+  default instead of a file. Configure MariaDB to log to a file instead by
   setting `log_error` in the MariaDB configuration.
   [Learn more](https://mariadb.com/kb/en/error-log/#writing-the-error-log-to-a-file)
   about configuring `log_error`.
@@ -48,6 +48,7 @@ platforms_to_skip:
   - rocky-linux-cloud:rocky-linux-9-arm64
   - suse-cloud:sles-12
   - suse-cloud:sles-15
+  - suse-cloud:sles-15-sp5
   - suse-cloud:sles-15-arm64
 supported_app_version: ["10.1.X through 10.7.X"]
 expected_metrics:

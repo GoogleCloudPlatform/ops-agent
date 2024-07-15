@@ -64,6 +64,7 @@ expected_metrics:
       - centos-cloud:centos-7
       - suse-cloud:sles-12
       - suse-cloud:sles-15
+      - suse-cloud:sles-15-sp5
       - suse-cloud:sles-15-arm64
   - type: workload.googleapis.com/apache.requests
     value_type: INT64
@@ -174,6 +175,7 @@ expected_logs:
           - centos-cloud:centos-7
           - suse-cloud:sles-12
           - suse-cloud:sles-15
+          - suse-cloud:sles-15-sp5
           - suse-cloud:sles-15-arm64
       - name: severity
         type: string

@@ -50,6 +50,7 @@ platforms_to_skip:
   - rocky-linux-cloud:rocky-linux-8
   - suse-cloud:sles-12
   - suse-cloud:sles-15
+  - suse-cloud:sles-15-sp5
   - ubuntu-os-cloud:ubuntu-2004-lts
 supported_app_version: ["26.x", "25.x"]
 expected_metrics:

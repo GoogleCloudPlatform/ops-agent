@@ -31,6 +31,7 @@ platforms_to_skip:
   # couchdb is not supported on various distros.
   - suse-cloud:sles-12
   - suse-cloud:sles-15
+  - suse-cloud:sles-15-sp5
   - suse-cloud:sles-15-arm64
   - rocky-linux-cloud:rocky-linux-9
   - rocky-linux-cloud:rocky-linux-9-arm64

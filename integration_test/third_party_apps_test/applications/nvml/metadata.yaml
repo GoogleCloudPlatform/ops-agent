@@ -20,7 +20,7 @@ description: |-
   The NVIDIA Management Library (or NVML) integration collects GPU utilization
   and GPU used memory metrics from NVIDIA GPUs.
 configure_integration: |-
-  You must install the NVIDIA driver on a host with NVIDIA GPUs. 
+  You must install the NVIDIA driver on a host with NVIDIA GPUs.
 supported_operating_systems: linux
 supported_app_version: ["515.65.01"]
 gpu_platforms:
@@ -49,6 +49,7 @@ gpu_platforms:
       - rocky-linux-cloud:rocky-linux-8
       - rocky-linux-cloud:rocky-linux-9
       - suse-cloud:sles-15
+      - suse-cloud:sles-15-sp5
       - ubuntu-os-cloud:ubuntu-2004-lts
       - ubuntu-os-cloud:ubuntu-2204-lts
 expected_metrics:
