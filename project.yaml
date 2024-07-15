@@ -141,6 +141,7 @@ targets:
         test_distros:
           representative:
           - suse-cloud:sles-15
+          - suse-cloud:sles-15-sp5
           exhaustive:
           - suse-sap-cloud:sles-15-sp2-sap
           - suse-sap-cloud:sles-15-sp6-sap
