@@ -152,6 +152,7 @@ targets:
         test_distros:
           representative:
           - suse-cloud:sles-15-arm64
+          - suse-cloud:sles-15-sp5-arm64
           exhaustive:
           - opensuse-cloud:opensuse-leap-arm64
           - opensuse-cloud=opensuse-leap-15-5-v20240516-arm64

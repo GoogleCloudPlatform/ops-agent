@@ -33,6 +33,7 @@ platforms_to_skip:
   - suse-cloud:sles-15
   - suse-cloud:sles-15-sp5
   - suse-cloud:sles-15-arm64
+  - suse-cloud:sles-15-sp5-arm64
   - rocky-linux-cloud:rocky-linux-9
   - rocky-linux-cloud:rocky-linux-9-arm64
   - ubuntu-os-cloud:ubuntu-2310-amd64

@@ -34,6 +34,7 @@ platforms_to_skip:
   - suse-cloud:sles-15 # File '/repositories/server:database/SLE_15/server:database.repo' not found
   - suse-cloud:sles-15-sp5
   - suse-cloud:sles-15-arm64
+  - suse-cloud:sles-15-sp5-arm64
 supported_app_version: ["6.2"]
 expected_metrics:
   - type: workload.googleapis.com/redis.clients.blocked
