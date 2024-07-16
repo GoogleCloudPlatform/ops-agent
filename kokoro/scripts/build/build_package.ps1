@@ -98,10 +98,13 @@ if ($env:_LOUHI_TAG_NAME -ne $null) {
   $gcs_bucket="gs://${env:_STAGING_ARTIFACTS_PROJECT_ID}-ops-agent-releases/${ver}/${ref}/${target}/${arch}/"
   gsutil cp "$env:KOKORO_ARTIFACTS_DIR/result/*.goo"  "${gcs_bucket}"
 
+  Write-Host "Compressing start"
   # Required to atomically pass the files needed for signing
   Compress-Archive -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/*.exe", "$env:KOKORO_ARTIFACTS_DIR/out/bin/*.dll" -DestinationPath "$env:KOKORO_ARTIFACTS_DIR/result/unsigned.zip"
+  Write-Host "Compressing end"
 
-  gsutil cp "$env:KOKORO_ARTIFACTS_DIR/result/unsigned.zip" "${gcs_bucket}"
+  gsutil cp "$env:KOKORO_ARTIFACTS_DIR/result/unsigned.zip" "${gcs_bucket}unsigned.zip"
+  Write-Host "Sent unsigned.zip"
 
   # Wait for binaries to be signed.
   $i = 0
@@ -117,9 +120,18 @@ if ($env:_LOUHI_TAG_NAME -ne $null) {
   gsutil -q stat "${gcs_bucket}signed.zip"
   } until ($LastExitCode -eq 0)
 
+  Write-Host "signed zip found"
   gsutil cp "${gcs_bucket}signed.zip" "$env:KOKORO_ARTIFACTS_DIR/result/signed.zip"
+  Write-Host "signed zip pulled"
 
   Expand-Archive -Path "$env:KOKORO_ARTIFACTS_DIR/result/signed.zip" -DestinationPath "$env:KOKORO_ARTIFACTS_DIR/result/signed/"
 
+  Write-Host "Installing goopack"
   go install github.com/google/googet/v2/goopack@latest;
+
+  New-Item out\bin -ItemType Directory
+  Write-Host "Packing start"
+  .\pkg\goo\build.ps1 -DestDir "$env:KOKORO_ARTIFACTS_DIR/result";
+  Write-Host "Packing ended"
 }
+
