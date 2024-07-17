@@ -100,10 +100,10 @@ if ($env:_LOUHI_TAG_NAME -ne $null) {
 
   Write-Host "Compressing start"
   # Required to atomically pass the files needed for signing
-  Compress-Archive -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/*.exe", "$env:KOKORO_ARTIFACTS_DIR/out/bin/*.dll" -DestinationPath "$env:KOKORO_ARTIFACTS_DIR/result/unsigned.zip"
+  Compress-Archive -Path "${env:KOKORO_ARTIFACTS_DIR}/out/bin/*.exe", "${env:KOKORO_ARTIFACTS_DIR}/out/bin/*.dll" -DestinationPath "$env:KOKORO_ARTIFACTS_DIR/result/unsigned.zip"
   Write-Host "Compressing end"
 
-  gsutil cp "$env:KOKORO_ARTIFACTS_DIR/result/unsigned.zip" "${gcs_bucket}unsigned.zip"
+  gsutil cp "${env:KOKORO_ARTIFACTS_DIR}/result/unsigned.zip" "${gcs_bucket}unsigned.zip"
   Write-Host "Sent unsigned.zip"
 
   # Wait for binaries to be signed.
@@ -121,7 +121,7 @@ if ($env:_LOUHI_TAG_NAME -ne $null) {
   } until ($LastExitCode -eq 0)
 
   Write-Host "signed zip found"
-  gsutil cp "${gcs_bucket}signed.zip" "$env:KOKORO_ARTIFACTS_DIR/result/signed.zip"
+  gsutil cp "${gcs_bucket}signed.zip" "${env:KOKORO_ARTIFACTS_DIR}/result/signed.zip"
   Write-Host "signed zip pulled"
 
   Expand-Archive -Path "$env:KOKORO_ARTIFACTS_DIR/result/signed.zip" -DestinationPath "$env:KOKORO_ARTIFACTS_DIR/result/signed/"
