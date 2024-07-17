@@ -246,7 +246,6 @@ a hop. The following is sorted roughly in descending order of usefulness.
 
 ```
 ├── logs
-|   ├── build_and_test.txt
 |   ├── sponge_log.xml
 |   └── TestThirdPartyApps_debian-cloud:debian-11_jetty
 |       ├── VM_initialization.txt
@@ -270,9 +269,6 @@ a hop. The following is sorted roughly in descending order of usefulness.
 |       ├── VM_initialization.txt
 |       ├── fluent_bit_main.conf.txt
 |       └── fluent_bit_parser.conf.txt
-└── agent_packages
-    ├── google-cloud-ops-agent_2.0.5~debian11_amd64.deb
-    └── google-cloud-ops-agent-dbgsym_2.0.5~debian11_amd64.deb
 ```
 
 Let's go through each of these files and discuss what they are.
