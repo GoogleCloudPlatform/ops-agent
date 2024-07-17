@@ -237,7 +237,7 @@ will take you to a publicly-visible GCS bucket that contains various log files.
 It's a little tricky to figure out which one(s) to look at first, so here's a
 guide for that.
 
-TLDR: start in `build_and_test.txt` to see what failed, then drill down to
+TLDR: start in `sponge_log.xml` to see what failed, then drill down to
 the corresponding `main_log.txt` from there.
 
 Here is the full contents uploaded to the GCS bucket for a single test run.
@@ -266,9 +266,6 @@ Let's go through each of these files and discuss what they are.
 
 TODO: Document log files for a Windows VM.
 
-*   `build_and_test.txt`: The top-level log that holds the stdout/stderr for
-    the Kokoro job. Near the bottom is a summary of which tests passed and
-    which ones failed.
 *   `sponge_log.xml`: Structured data about which tests
     passed/failed, but not very human readable.
 *   `main_log.txt`: The main log for the particular test shard (e.g.
@@ -285,9 +282,6 @@ TODO: Document log files for a Windows VM.
     fresh VM properly.
 *   `fluent_bit_main.conf.txt`, `fluent_bit_parser.conf.txt`: Fluent-Bit config
     files.
-
-The `agent_packages` directory contains the package files built from the PR
-and installed on the VM for testing.
 
 # Vendored Dependencies
 
