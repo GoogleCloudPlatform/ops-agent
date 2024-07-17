@@ -260,12 +260,6 @@ The "Details" link takes you directly to the "logs" subdirectory to save you
         ├── otel_metrics.txt
         ├── syslog.txt
         └── systemctl_status_for_ops_agent.txt
-|       ├── journalctl_output.txt
-|       ├── systemctl_status_for_ops_agent.txt
-|       ├── otel.yaml.txt
-|       ├── VM_initialization.txt
-|       ├── fluent_bit_main.conf.txt
-|       └── fluent_bit_parser.conf.txt
 ```
 
 Let's go through each of these files and discuss what they are.
