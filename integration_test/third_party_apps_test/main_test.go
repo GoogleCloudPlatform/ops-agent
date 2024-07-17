@@ -983,6 +983,7 @@ func TestThirdPartyApps(t *testing.T) {
 
 			ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
 			defer cancel()
+			ctx = gce.WithGcloudConfigDir(ctx, t.TempDir())
 
 			var err error
 			for attempt := 1; attempt <= 4; attempt++ {

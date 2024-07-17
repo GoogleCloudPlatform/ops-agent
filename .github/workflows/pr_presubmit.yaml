@@ -36,4 +36,4 @@ jobs:
       # `steps.get_labels.outputs.*` gives us the names of all labels for the PR
     - run: echo "labels=$(go run ./ci/get_labels -url=${{ github.event.pull_request.url }})" >> "$GITHUB_OUTPUT"
       id: get_labels
-    - run: go test ./ci -added="${{ steps.files.outputs.added }}" -modified="${{ steps.files.outputs.modified }}" -labels="${{ steps.get_labels.outputs.labels }}" -base-dir="base_checkout" -tags=ci
+    - run: go test ./ci -added='${{ steps.files.outputs.added }}' -modified='${{ steps.files.outputs.modified }}' -labels='${{ steps.get_labels.outputs.labels }}' -base-dir="base_checkout" -tags=ci
