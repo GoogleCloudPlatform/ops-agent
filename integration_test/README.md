@@ -242,27 +242,24 @@ the corresponding `main_log.txt` from there.
 
 Here is the full contents uploaded to the GCS bucket for a single test run.
 The "Details" link takes you directly to the "logs" subdirectory to save you
-a hop. The following is sorted roughly in descending order of usefulness.
-
-```
-├── logs
-|   ├── sponge_log.xml
-|   └── TestThirdPartyApps_debian-cloud:debian-11_jetty
-|       ├── VM_initialization.txt
-|       ├── config.yaml.txt
-|       ├── fluent_bit_main.conf.txt
-|       ├── fluent_bit_metrics.txt
-|       ├── fluent_bit_parser.conf.txt
-|       ├── health-checks.log.txt
-|       ├── journalctl_output.txt
-|       ├── logging-module.log.txt
-|       ├── main_log.txt
-|       ├── metrics-module.log.txt
-|       ├── nvidia-installer.log.txt
-|       ├── otel.yaml.txt
-|       ├── otel_metrics.txt
-|       ├── syslog.txt
-|       └── systemctl_status_for_ops_agent.txt
+└── logs
+    ├── sponge_log.xml
+    └── TestThirdPartyApps_debian-cloud:debian-11_jetty
+        ├── VM_initialization.txt
+        ├── config.yaml.txt
+        ├── fluent_bit_main.conf.txt
+        ├── fluent_bit_metrics.txt
+        ├── fluent_bit_parser.conf.txt
+        ├── health-checks.log.txt
+        ├── journalctl_output.txt
+        ├── logging-module.log.txt
+        ├── main_log.txt
+        ├── metrics-module.log.txt
+        ├── nvidia-installer.log.txt
+        ├── otel.yaml.txt
+        ├── otel_metrics.txt
+        ├── syslog.txt
+        └── systemctl_status_for_ops_agent.txt
 |       ├── journalctl_output.txt
 |       ├── systemctl_status_for_ops_agent.txt
 |       ├── otel.yaml.txt
