@@ -100,8 +100,8 @@ if ($env:_LOUHI_TAG_NAME -ne $null) {
 
   Write-Host "Compressing start"
   # Required to atomically pass the files needed for signing
-  $filter = "${env:KOKORO_ARTIFACTS_DIR}\out\bin\*.exe", "${env:KOKORO_ARTIFACTS_DIR}\out\bin\*.dll"
-  Compress-Archive -Path $filter -DestinationPath "$env:KOKORO_ARTIFACTS_DIR\result\unsigned.zip"
+  $filter = "${env:KOKORO_ARTIFACTS_DIR}\result\*.exe", "${env:KOKORO_ARTIFACTS_DIR}\result\*.dll"
+  Compress-Archive -Path $filter -DestinationPath "${env:KOKORO_ARTIFACTS_DIR}\result\unsigned.zip"
   if ($LastExitCode -ne 0) {
     Write-Host "Compression failed"
   }
