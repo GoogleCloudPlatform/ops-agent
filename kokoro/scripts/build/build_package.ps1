@@ -82,6 +82,7 @@ Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/*.goo" -Destination "$env:KOKORO_
 # They are not distributed to customers.
 Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/*.pdb" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
 Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/*.dll" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
+Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/*.exe" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
 
 # If Kokoro is being triggered by Louhi, then Louhi needs to be able to
 # reconstruct the path where the artifacts are placed. Louhi does not have
@@ -96,4 +97,46 @@ if ($env:_LOUHI_TAG_NAME -ne $null) {
   $arch=$louhi_tag_components[4]
   $gcs_bucket="gs://${env:_STAGING_ARTIFACTS_PROJECT_ID}-ops-agent-releases/${ver}/${ref}/${target}/${arch}/"
   gsutil cp "$env:KOKORO_ARTIFACTS_DIR/result/*.goo"  "${gcs_bucket}"
+
+  Write-Host "Compressing start"
+  # Required to atomically pass the files needed for signing
+  $filter = "${env:KOKORO_ARTIFACTS_DIR}\result\*.exe", "${env:KOKORO_ARTIFACTS_DIR}\result\*.dll"
+  Compress-Archive -Path $filter -DestinationPath "${env:KOKORO_ARTIFACTS_DIR}\result\unsigned.zip"
+  if ($LastExitCode -ne 0) {
+    Write-Host "Compression failed"
+  }
+  Write-Host "Compressing end"
+  Get-ChildItem "${env:KOKORO_ARTIFACTS_DIR}\result\unsigned.zip"
+
+  gsutil cp "${env:KOKORO_ARTIFACTS_DIR}/result/unsigned.zip" "${gcs_bucket}unsigned.zip"
+  Write-Host "Sent unsigned.zip"
+
+  # Wait for binaries to be signed.
+  $i = 0
+  do {
+    if ($i -ge 300) {
+      throw "Could not get signed binaries"
+    }
+    elseif ($i -gt 0) {
+      # Sleep for 15 seconds before the next attempt to avoid hammering the timestamp server.
+      Start-Sleep -Seconds 1
+    }
+    $i++
+  gsutil -q stat "${gcs_bucket}signed.zip"
+  } until ($LastExitCode -eq 0)
+
+  Write-Host "signed zip found"
+  gsutil cp "${gcs_bucket}signed.zip" "${env:KOKORO_ARTIFACTS_DIR}/result/signed.zip"
+  Write-Host "signed zip pulled"
+
+  Expand-Archive -Path "$env:KOKORO_ARTIFACTS_DIR/result/signed.zip" -DestinationPath "$env:KOKORO_ARTIFACTS_DIR/result/signed/"
+
+  Write-Host "Installing goopack"
+  go install github.com/google/googet/v2/goopack@latest;
+
+  New-Item out\bin -ItemType Directory
+  Write-Host "Packing start"
+  .\pkg\goo\build.ps1 -DestDir "$env:KOKORO_ARTIFACTS_DIR/result";
+  Write-Host "Packing ended"
 }
+
