@@ -2334,10 +2334,8 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 		t.Fatal(err)
 	}
 
-	var agentMetrics struct {
-		ExpectedMetrics []*metadata.ExpectedMetric `yaml:"expected_metrics" validate:"onetrue=Representative,unique=Type,dive"`
-	}
-	err = yaml.UnmarshalStrict(bytes, &agentMetrics)
+	var agentMetrics metadata.ExpectedMetricsContainer
+	err = metadata.UnmarshalAndValidate(bytes, &agentMetrics)
 	if err != nil {
 		t.Fatal(err)
 	}
