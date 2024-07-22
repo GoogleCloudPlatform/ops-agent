@@ -32,242 +32,337 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      host_name: .*
-      resource_type: .*
-      taskmanager_id: .*
+      - name: host_name
+        value_regex: .*
+      - name: resource_type
+        value_regex: .*
+      - name: taskmanager_id
+        value_regex: .*
   - type: workload.googleapis.com/flink.jvm.cpu.time
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      host_name: .*
-      resource_type: .*
-      taskmanager_id: .*
+      - name: host_name
+        value_regex: .*
+      - name: resource_type
+        value_regex: .*
+      - name: taskmanager_id
+        value_regex: .*
   - type: workload.googleapis.com/flink.jvm.memory.heap.used
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      host_name: .*
-      resource_type: .*
-      taskmanager_id: .*
+      - name: host_name
+        value_regex: .*
+      - name: resource_type
+        value_regex: .*
+      - name: taskmanager_id
+        value_regex: .*
     representative: true
   - type: workload.googleapis.com/flink.jvm.memory.heap.committed
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      host_name: .*
-      resource_type: .*
-      taskmanager_id: .*
+      - name: host_name
+        value_regex: .*
+      - name: resource_type
+        value_regex: .*
+      - name: taskmanager_id
+        value_regex: .*
   - type: workload.googleapis.com/flink.jvm.memory.heap.max
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      host_name: .*
-      resource_type: .*
-      taskmanager_id: .*
+      - name: host_name
+        value_regex: .*
+      - name: resource_type
+        value_regex: .*
+      - name: taskmanager_id
+        value_regex: .*
   - type: workload.googleapis.com/flink.jvm.memory.nonheap.used
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      host_name: .*
-      resource_type: .*
-      taskmanager_id: .*
+      - name: host_name
+        value_regex: .*
+      - name: resource_type
+        value_regex: .*
+      - name: taskmanager_id
+        value_regex: .*
   - type: workload.googleapis.com/flink.jvm.memory.nonheap.committed
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      host_name: .*
-      resource_type: .*
-      taskmanager_id: .*
+      - name: host_name
+        value_regex: .*
+      - name: resource_type
+        value_regex: .*
+      - name: taskmanager_id
+        value_regex: .*
   - type: workload.googleapis.com/flink.jvm.memory.nonheap.max
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      host_name: .*
-      resource_type: .*
-      taskmanager_id: .*
+      - name: host_name
+        value_regex: .*
+      - name: resource_type
+        value_regex: .*
+      - name: taskmanager_id
+        value_regex: .*
   - type: workload.googleapis.com/flink.jvm.memory.metaspace.used
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      host_name: .*
-      resource_type: .*
-      taskmanager_id: .*
+      - name: host_name
+        value_regex: .*
+      - name: resource_type
+        value_regex: .*
+      - name: taskmanager_id
+        value_regex: .*
   - type: workload.googleapis.com/flink.jvm.memory.metaspace.committed
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      host_name: .*
-      resource_type: .*
-      taskmanager_id: .*
+      - name: host_name
+        value_regex: .*
+      - name: resource_type
+        value_regex: .*
+      - name: taskmanager_id
+        value_regex: .*
   - type: workload.googleapis.com/flink.jvm.memory.metaspace.max
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      host_name: .*
-      resource_type: .*
-      taskmanager_id: .*
+      - name: host_name
+        value_regex: .*
+      - name: resource_type
+        value_regex: .*
+      - name: taskmanager_id
+        value_regex: .*
   - type: workload.googleapis.com/flink.jvm.memory.direct.used
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      host_name: .*
-      resource_type: .*
-      taskmanager_id: .*
+      - name: host_name
+        value_regex: .*
+      - name: resource_type
+        value_regex: .*
+      - name: taskmanager_id
+        value_regex: .*
   - type: workload.googleapis.com/flink.jvm.memory.direct.total_capacity
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      host_name: .*
-      resource_type: .*
-      taskmanager_id: .*
+      - name: host_name
+        value_regex: .*
+      - name: resource_type
+        value_regex: .*
+      - name: taskmanager_id
+        value_regex: .*
   - type: workload.googleapis.com/flink.jvm.memory.mapped.used
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      host_name: .*
-      resource_type: .*
-      taskmanager_id: .*
+      - name: host_name
+        value_regex: .*
+      - name: resource_type
+        value_regex: .*
+      - name: taskmanager_id
+        value_regex: .*
   - type: workload.googleapis.com/flink.jvm.memory.mapped.total_capacity
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      host_name: .*
-      resource_type: .*
-      taskmanager_id: .*
+      - name: host_name
+        value_regex: .*
+      - name: resource_type
+        value_regex: .*
+      - name: taskmanager_id
+        value_regex: .*
   - type: workload.googleapis.com/flink.memory.managed.used
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      host_name: .*
-      resource_type: .*
-      taskmanager_id: .*
+      - name: host_name
+        value_regex: .*
+      - name: resource_type
+        value_regex: .*
+      - name: taskmanager_id
+        value_regex: .*
   - type: workload.googleapis.com/flink.memory.managed.total
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      host_name: .*
-      resource_type: .*
-      taskmanager_id: .*
+      - name: host_name
+        value_regex: .*
+      - name: resource_type
+        value_regex: .*
+      - name: taskmanager_id
+        value_regex: .*
   - type: workload.googleapis.com/flink.jvm.threads.count
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      host_name: .*
-      resource_type: .*
-      taskmanager_id: .*
+      - name: host_name
+        value_regex: .*
+      - name: resource_type
+        value_regex: .*
+      - name: taskmanager_id
+        value_regex: .*
   - type: workload.googleapis.com/flink.jvm.gc.collections.count
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      host_name: .*
-      resource_type: .*
-      taskmanager_id: .*
-      garbage_collector_name: .*
+      - name: host_name
+        value_regex: .*
+      - name: resource_type
+        value_regex: .*
+      - name: taskmanager_id
+        value_regex: .*
+      - name: garbage_collector_name
+        value_regex: .*
   - type: workload.googleapis.com/flink.jvm.gc.collections.time
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      host_name: .*
-      resource_type: .*
-      taskmanager_id: .*
-      garbage_collector_name: .*
+      - name: host_name
+        value_regex: .*
+      - name: resource_type
+        value_regex: .*
+      - name: taskmanager_id
+        value_regex: .*
+      - name: garbage_collector_name
+        value_regex: .*
   - type: workload.googleapis.com/flink.jvm.class_loader.classes_loaded
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      host_name: .*
-      resource_type: .*
-      taskmanager_id: .*
+      - name: host_name
+        value_regex: .*
+      - name: resource_type
+        value_regex: .*
+      - name: taskmanager_id
+        value_regex: .*
   - type: workload.googleapis.com/flink.job.restart.count
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      host_name: .*
-      job_name: .*
+      - name: host_name
+        value_regex: .*
+      - name: job_name
+        value_regex: .*
   - type: workload.googleapis.com/flink.job.last_checkpoint.time
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      host_name: .*
-      job_name: .*
+      - name: host_name
+        value_regex: .*
+      - name: job_name
+        value_regex: .*
   - type: workload.googleapis.com/flink.job.last_checkpoint.size
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      host_name: .*
-      job_name: .*
+      - name: host_name
+        value_regex: .*
+      - name: job_name
+        value_regex: .*
   - type: workload.googleapis.com/flink.job.checkpoint.count
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      host_name: .*
-      job_name: .*
-      checkpoint: .*
+      - name: host_name
+        value_regex: .*
+      - name: job_name
+        value_regex: .*
+      - name: checkpoint
+        value_regex: .*
   - type: workload.googleapis.com/flink.job.checkpoint.in_progress
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      host_name: .*
-      job_name: .*
+      - name: host_name
+        value_regex: .*
+      - name: job_name
+        value_regex: .*
   - type: workload.googleapis.com/flink.task.record.count
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      host_name: .*
-      taskmanager_id: .*
-      job_name: .*
-      task_name: .*
-      subtask_index: .*
-      record: .*
+      - name: host_name
+        value_regex: .*
+      - name: taskmanager_id
+        value_regex: .*
+      - name: job_name
+        value_regex: .*
+      - name: task_name
+        value_regex: .*
+      - name: subtask_index
+        value_regex: .*
+      - name: record
+        value_regex: .*
   - type: workload.googleapis.com/flink.operator.record.count
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      host_name: .*
-      taskmanager_id: .*
-      job_name: .*
-      operator_name: .*
-      task_name: .*
-      subtask_index: .*
-      record: .*
+      - name: host_name
+        value_regex: .*
+      - name: taskmanager_id
+        value_regex: .*
+      - name: job_name
+        value_regex: .*
+      - name: operator_name
+        value_regex: .*
+      - name: task_name
+        value_regex: .*
+      - name: subtask_index
+        value_regex: .*
+      - name: record
+        value_regex: .*
   - type: workload.googleapis.com/flink.operator.watermark.output
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      host_name: .*
-      job_name: .*
-      operator_name: .*
-      subtask_index: .*
-      task_name: .*
-      taskmanager_id: .*
+      - name: host_name
+        value_regex: .*
+      - name: job_name
+        value_regex: .*
+      - name: operator_name
+        value_regex: .*
+      - name: subtask_index
+        value_regex: .*
+      - name: task_name
+        value_regex: .*
+      - name: taskmanager_id
+        value_regex: .*
 expected_logs:
   - log_name: flink
     fields:
