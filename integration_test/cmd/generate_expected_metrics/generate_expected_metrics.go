@@ -183,11 +183,13 @@ func toExpectedMetric(metric *metric.MetricDescriptor) *metadata.ExpectedMetric 
 		labels[l.Key] = ".*"
 	}
 	return &metadata.ExpectedMetric{
-		Type:              metric.Type,
-		Kind:              metric.MetricKind.String(),
-		ValueType:         metric.ValueType.String(),
-		MonitoredResource: "gce_instance",
-		Labels:            labels,
+		MetricSpec: metadata.MetricSpec{
+			Type:              metric.Type,
+			Kind:              metric.MetricKind.String(),
+			ValueType:         metric.ValueType.String(),
+			MonitoredResource: "gce_instance",
+			Labels:            labels,
+		},
 	}
 }
 

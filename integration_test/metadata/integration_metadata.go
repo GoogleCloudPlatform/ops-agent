@@ -26,9 +26,8 @@ import (
 	"go.uber.org/multierr"
 )
 
-// ExpectedMetric encodes a series of assertions about what data we expect
-// to see in the metrics backend.
-type ExpectedMetric struct {
+// MetricSpec encodes a specification of a metric in the metrics backend.
+type MetricSpec struct {
 	// The metric type, for example workload.googleapis.com/apache.current_connections.
 	Type string `yaml:"type" validate:"required"`
 	// The value type, for example INT64.
@@ -41,6 +40,14 @@ type ExpectedMetric struct {
 	// Mapping of expected label keys to value patterns.
 	// Patterns are RE2 regular expressions.
 	Labels map[string]string `yaml:"labels,omitempty" validate:"omitempty,gt=0"`
+}
+
+// ExpectedMetric encodes a series of assertions about what data we expect
+// to see in the metrics backend.
+type ExpectedMetric struct {
+	// The metric being described.
+	MetricSpec `yaml:",inline"`
+
 	// If Optional is true, the test for this metric will be skipped.
 	Optional bool `yaml:"optional,omitempty" validate:"excluded_with=Representative"`
 	// Exactly one metric in each expected_metrics.yaml must
