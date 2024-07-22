@@ -138,5 +138,5 @@ func unmarshalYamlFromFile(dir string, i interface{}) error {
 	if err != nil {
 		return err
 	}
-	return metadata.UnmarshalAndValidate(bytes, i)
+	return metadata.UnmarshalAndValidate(dir, bytes, i)
 }

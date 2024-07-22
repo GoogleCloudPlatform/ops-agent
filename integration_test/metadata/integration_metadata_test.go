@@ -36,7 +36,7 @@ func getTestFile(t *testing.T, dirName, fileName string) string {
 	filePath := path.Join(testdataDir, dirName, fileName)
 	contents, err := os.ReadFile(filePath)
 	if err != nil {
-		t.Fatal("could not read dirName: " + filePath)
+		t.Fatal("could not read file: " + filePath)
 	}
 	return strings.ReplaceAll(string(contents), "\r\n", "\n")
 }
@@ -63,7 +63,8 @@ func testMetadataValidation(t *testing.T, dir string) {
 	yamlStr := getTestFile(t, dir, inputYamlName)
 
 	var md metadata.IntegrationMetadata
-	actualError := metadata.UnmarshalAndValidate([]byte(yamlStr), &md)
+	// The fullPath will be ignored anyway.
+	actualError := metadata.UnmarshalAndValidate("", []byte(yamlStr), &md)
 
 	actualErrorStr := ""
 	if actualError != nil {

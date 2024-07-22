@@ -2329,13 +2329,14 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 		}
 	}
 
-	bytes, err := os.ReadFile(path.Join("agent_metrics", "metadata.yaml"))
+	agentMetricsMetadata := path.Join("agent_metrics", "metadata.yaml")
+	bytes, err := os.ReadFile(agentMetricsMetadata)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	var agentMetrics metadata.ExpectedMetricsContainer
-	err = metadata.UnmarshalAndValidate(bytes, &agentMetrics)
+	err = metadata.UnmarshalAndValidate(agentMetricsMetadata, bytes, &agentMetrics)
 	if err != nil {
 		t.Fatal(err)
 	}
