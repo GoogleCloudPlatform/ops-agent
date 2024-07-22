@@ -46,7 +46,7 @@ expected_metrics:
   - type: workload.googleapis.com/dcgm.gpu.profiling.sm_utilization
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       model: .*
       uuid: .*
@@ -55,7 +55,7 @@ expected_metrics:
   - type: workload.googleapis.com/dcgm.gpu.profiling.sm_occupancy
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       model: .*
       uuid: .*
@@ -63,7 +63,7 @@ expected_metrics:
   - type: workload.googleapis.com/dcgm.gpu.profiling.pipe_utilization
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       model: .*
       uuid: .*
@@ -72,7 +72,7 @@ expected_metrics:
   - type: workload.googleapis.com/dcgm.gpu.profiling.dram_utilization
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       model: .*
       uuid: .*
@@ -80,7 +80,7 @@ expected_metrics:
   - type: workload.googleapis.com/dcgm.gpu.profiling.pcie_traffic_rate
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       model: .*
       uuid: .*
@@ -89,7 +89,7 @@ expected_metrics:
   - type: workload.googleapis.com/dcgm.gpu.profiling.nvlink_traffic_rate
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       model: .*
       uuid: .*

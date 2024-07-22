@@ -51,36 +51,36 @@ expected_metrics:
   - type: workload.googleapis.com/jetty.select.count
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     representative: true
   - type: workload.googleapis.com/jetty.session.count
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       resource: .*
   - type: workload.googleapis.com/jetty.session.time.total
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       resource: .*
   - type: workload.googleapis.com/jetty.session.time.max
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       resource: .*
   - type: workload.googleapis.com/jetty.thread.count
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       state: .*
   - type: workload.googleapis.com/jetty.thread.queue.count
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
 expected_logs:
   - log_name: jetty_access
     fields:

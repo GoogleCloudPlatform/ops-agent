@@ -71,7 +71,7 @@ expected_metrics:
   - type: workload.googleapis.com/oracle.backup.latest
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       database_id: .*
       db_system: oracle
@@ -79,7 +79,7 @@ expected_metrics:
   - type: workload.googleapis.com/oracle.buffer.cache.ratio
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       database_id: .*
       db_system: oracle
@@ -88,7 +88,7 @@ expected_metrics:
   - type: workload.googleapis.com/oracle.cursor.count
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       database_id: .*
       db_system: oracle
@@ -97,7 +97,7 @@ expected_metrics:
   - type: workload.googleapis.com/oracle.cursor.current
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       database_id: .*
       db_system: oracle
@@ -106,7 +106,7 @@ expected_metrics:
   - type: workload.googleapis.com/oracle.disk.operation.count
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       database_id: .*
       db_system: oracle
@@ -116,7 +116,7 @@ expected_metrics:
   - type: workload.googleapis.com/oracle.disk.operation.size
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       database_id: .*
       db_system: oracle
@@ -127,7 +127,7 @@ expected_metrics:
     value_type: INT64
     kind: CUMULATIVE
     representative: true
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       database_id: .*
       db_system: oracle
@@ -136,7 +136,7 @@ expected_metrics:
   - type: workload.googleapis.com/oracle.logon.current
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       database_id: .*
       db_system: oracle
@@ -145,7 +145,7 @@ expected_metrics:
   - type: workload.googleapis.com/oracle.network.data
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       database_id: .*
       db_system: oracle
@@ -156,7 +156,7 @@ expected_metrics:
   - type: workload.googleapis.com/oracle.process.count
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       database_id: .*
       db_system: oracle
@@ -165,7 +165,7 @@ expected_metrics:
   - type: workload.googleapis.com/oracle.process.limit
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       database_id: .*
       db_system: oracle
@@ -174,7 +174,7 @@ expected_metrics:
   - type: workload.googleapis.com/oracle.process.pga_memory.size
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       database_id: .*
       db_system: oracle
@@ -185,7 +185,7 @@ expected_metrics:
   - type: workload.googleapis.com/oracle.row.cache.ratio
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       database_id: .*
       db_system: oracle
@@ -194,7 +194,7 @@ expected_metrics:
   - type: workload.googleapis.com/oracle.service.response_time
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       database_id: .*
       db_system: oracle
@@ -203,7 +203,7 @@ expected_metrics:
   - type: workload.googleapis.com/oracle.session.count
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       database_id: .*
       db_system: oracle
@@ -212,7 +212,7 @@ expected_metrics:
   - type: workload.googleapis.com/oracle.session.limit
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       database_id: .*
       db_system: oracle
@@ -221,7 +221,7 @@ expected_metrics:
   - type: workload.googleapis.com/oracle.sort.count
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       database_id: .*
       db_system: oracle
@@ -231,7 +231,7 @@ expected_metrics:
   - type: workload.googleapis.com/oracle.sort.row.count
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       database_id: .*
       db_system: oracle
@@ -240,7 +240,7 @@ expected_metrics:
   - type: workload.googleapis.com/oracle.tablespace.count
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       contents: UNDO|PERMANENT|TEMP
       database_id: .*
@@ -250,7 +250,7 @@ expected_metrics:
   - type: workload.googleapis.com/oracle.tablespace.size
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       contents: UNDO|PERMANENT|TEMP
       database_id: .*
@@ -261,7 +261,7 @@ expected_metrics:
   - type: workload.googleapis.com/oracle.user.calls
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       database_id: .*
       db_system: oracle
@@ -270,7 +270,7 @@ expected_metrics:
   - type: workload.googleapis.com/oracle.user.commits
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       database_id: .*
       db_system: oracle
@@ -279,7 +279,7 @@ expected_metrics:
   - type: workload.googleapis.com/oracle.user.rollbacks
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       database_id: .*
       db_system: oracle
@@ -288,7 +288,7 @@ expected_metrics:
   - type: workload.googleapis.com/oracle.wait.count
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       database_id: .*
       db_system: oracle
@@ -299,7 +299,7 @@ expected_metrics:
   - type: workload.googleapis.com/oracle.wait.time
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       database_id: .*
       db_system: oracle
@@ -310,7 +310,7 @@ expected_metrics:
   - type: workload.googleapis.com/oracle.wait.timeouts
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       database_id: .*
       db_system: oracle

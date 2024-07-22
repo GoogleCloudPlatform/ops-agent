@@ -25,7 +25,7 @@ expected_metrics:
   - type: example.googleapis.com/example.example1
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       broker: .*
       destination: .*

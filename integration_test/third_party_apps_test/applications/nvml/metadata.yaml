@@ -53,7 +53,7 @@ expected_metrics:
   - type: agent.googleapis.com/gpu/utilization
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       model: .*
       uuid: .*
@@ -62,7 +62,7 @@ expected_metrics:
   - type: agent.googleapis.com/gpu/memory/bytes_used
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       model: .*
       uuid: .*
@@ -71,7 +71,7 @@ expected_metrics:
   - type: agent.googleapis.com/gpu/processes/utilization
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       model: .*
       uuid: .*
@@ -84,7 +84,7 @@ expected_metrics:
   - type: agent.googleapis.com/gpu/processes/max_bytes_used
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       model: .*
       uuid: .*
