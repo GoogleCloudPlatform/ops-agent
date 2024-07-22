@@ -51,51 +51,60 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      node_name: .*
+      - name: node_name
+        value_regex: .*
   - type: workload.googleapis.com/hadoop.name_node.block.count
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      node_name: .*
+      - name: node_name
+        value_regex: .*
   - type: workload.googleapis.com/hadoop.name_node.block.missing
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      node_name: .*
+      - name: node_name
+        value_regex: .*
   - type: workload.googleapis.com/hadoop.name_node.capacity.limit
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      node_name: .*
+      - name: node_name
+        value_regex: .*
   - type: workload.googleapis.com/hadoop.name_node.capacity.usage
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      node_name: .*
+      - name: node_name
+        value_regex: .*
     representative: true
   - type: workload.googleapis.com/hadoop.name_node.data_node.count
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      node_name: .*
-      state: .*
+      - name: node_name
+        value_regex: .*
+      - name: state
+        value_regex: .*
   - type: workload.googleapis.com/hadoop.name_node.file.load
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      node_name: .*
+      - name: node_name
+        value_regex: .*
   - type: workload.googleapis.com/hadoop.name_node.volume.failed
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      node_name: .*
+      - name: node_name
+        value_regex: .*
 expected_logs:
   - log_name: hadoop
     fields:

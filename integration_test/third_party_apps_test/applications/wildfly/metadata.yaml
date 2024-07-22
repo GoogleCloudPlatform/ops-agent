@@ -50,72 +50,88 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      deployment: .*
+      - name: deployment
+        value_regex: .*
     optional: true
   - type: workload.googleapis.com/wildfly.session.active
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      deployment: .*
+      - name: deployment
+        value_regex: .*
     optional: true
   - type: workload.googleapis.com/wildfly.session.expired
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      deployment: .*
+      - name: deployment
+        value_regex: .*
     optional: true
   - type: workload.googleapis.com/wildfly.session.rejected
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      deployment: .*
+      - name: deployment
+        value_regex: .*
     optional: true
   - type: workload.googleapis.com/wildfly.request.count
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      listener: .*
-      server: .*
+      - name: listener
+        value_regex: .*
+      - name: server
+        value_regex: .*
   - type: workload.googleapis.com/wildfly.request.time
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      listener: .*
-      server: .*
+      - name: listener
+        value_regex: .*
+      - name: server
+        value_regex: .*
   - type: workload.googleapis.com/wildfly.request.server_error
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      listener: .*
-      server: .*
+      - name: listener
+        value_regex: .*
+      - name: server
+        value_regex: .*
   - type: workload.googleapis.com/wildfly.network.io
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      listener: .*
-      server: .*
-      state: .*
+      - name: listener
+        value_regex: .*
+      - name: server
+        value_regex: .*
+      - name: state
+        value_regex: .*
     representative: true
   - type: workload.googleapis.com/wildfly.jdbc.connection.open
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      data_source: .*
-      state: .*
+      - name: data_source
+        value_regex: .*
+      - name: state
+        value_regex: .*
   - type: workload.googleapis.com/wildfly.jdbc.request.wait
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      data_source: .*
+      - name: data_source
+        value_regex: .*
   - type: workload.googleapis.com/wildfly.jdbc.transaction.count
     value_type: INT64
     kind: CUMULATIVE
@@ -125,7 +141,8 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      cause: .*
+      - name: cause
+        value_regex: .*
 expected_logs:
   - log_name: wildfly_system
     fields:

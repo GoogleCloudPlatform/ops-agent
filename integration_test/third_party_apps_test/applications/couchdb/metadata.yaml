@@ -54,7 +54,8 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      operation: .*
+      - name: operation
+        value_regex: .*
   - type: workload.googleapis.com/couchdb.file_descriptor.open
     value_type: INT64
     kind: GAUGE
@@ -68,19 +69,22 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      http_method: .*
+      - name: http_method
+        value_regex: .*
   - type: workload.googleapis.com/couchdb.httpd.responses
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      http_status_code: .*
+      - name: http_status_code
+        value_regex: .*
   - type: workload.googleapis.com/couchdb.httpd.views
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      view: .*
+      - name: view
+        value_regex: .*
 expected_logs:
   - log_name: couchdb
     fields:

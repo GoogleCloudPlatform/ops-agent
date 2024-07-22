@@ -99,55 +99,64 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      type: .*
+      - name: type
+        value_regex: .*
   - type: workload.googleapis.com/sqlserver.transaction_log.growth.count
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      database: .*
+      - name: database
+        value_regex: .*
   - type: workload.googleapis.com/sqlserver.transaction_log.shrink.count
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      database: .*
+      - name: database
+        value_regex: .*
   - type: workload.googleapis.com/sqlserver.transaction_log.percent_used
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      database: .*
+      - name: database
+        value_regex: .*
   - type: workload.googleapis.com/sqlserver.transaction_log.flush.wait.rate
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      database: .*
+      - name: database
+        value_regex: .*
   - type: workload.googleapis.com/sqlserver.transaction_log.flush.rate
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      database: .*
+      - name: database
+        value_regex: .*
   - type: workload.googleapis.com/sqlserver.transaction_log.flush.data.rate
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      database: .*
+      - name: database
+        value_regex: .*
   - type: workload.googleapis.com/sqlserver.transaction.rate
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      database: .*
+      - name: database
+        value_regex: .*
   - type: workload.googleapis.com/sqlserver.transaction.write.rate
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      database: .*
+      - name: database
+        value_regex: .*
 configuration_options:
   metrics:
     - type: mssql

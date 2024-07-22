@@ -54,13 +54,15 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      name: .*
+      - name: name
+        value_regex: .*
   - type: workload.googleapis.com/jvm.gc.collections.elapsed
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      name: .*
+      - name: name
+        value_regex: .*
   - type: workload.googleapis.com/jvm.memory.heap.committed
     value_type: INT64
     kind: GAUGE
@@ -99,25 +101,29 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      name: .*
+      - name: name
+        value_regex: .*
   - type: workload.googleapis.com/jvm.memory.pool.init
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      name: .*
+      - name: name
+        value_regex: .*
   - type: workload.googleapis.com/jvm.memory.pool.max
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      name: .*
+      - name: name
+        value_regex: .*
   - type: workload.googleapis.com/jvm.memory.pool.used
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      name: .*
+      - name: name
+        value_regex: .*
   - type: workload.googleapis.com/jvm.threads.count
     value_type: INT64
     kind: GAUGE

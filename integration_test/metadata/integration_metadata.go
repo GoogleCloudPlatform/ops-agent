@@ -26,6 +26,14 @@ import (
 	"go.uber.org/multierr"
 )
 
+// MetricLabel encodes a specification of a metric label in the metrics backend.
+type MetricLabel struct {
+	// The label name, for example state.
+	Name string `yaml:"name" validate:"required"`
+	// The label value pattern, as an RE2 regular expression.
+	ValueRegex string `yaml:"value_regex" validate:"required"`
+}
+
 // MetricSpec encodes a specification of a metric in the metrics backend.
 type MetricSpec struct {
 	// The metric type, for example workload.googleapis.com/apache.current_connections.
@@ -37,9 +45,8 @@ type MetricSpec struct {
 	// The monitored resource, for example gce_instance.
 	// Currently we only test with gce_instance.
 	MonitoredResources []string `yaml:"monitored_resources,flow" validate:"required,gt=0,dive,oneof=gce_instance"`
-	// Mapping of expected label keys to value patterns.
-	// Patterns are RE2 regular expressions.
-	Labels map[string]string `yaml:"labels,omitempty" validate:"omitempty,gt=0"`
+	// Mapping of expected label keys to label specs.
+	Labels []*MetricLabel `yaml:"labels,omitempty" validate:"omitempty,gt=0,unique=Name,dive"`
 }
 
 // ExpectedMetric encodes a series of assertions about what data we expect
@@ -216,31 +223,35 @@ func AssertMetric(metric *ExpectedMetric, series *monitoringpb.TimeSeries) error
 }
 
 func assertMetricLabels(metric *ExpectedMetric, series *monitoringpb.TimeSeries) error {
-	// Only expected labels must be present
 	var err error
+	// Only expected labels must be present
+	expectedLabels := make(map[string]bool)
+	for _, expectedLabel := range metric.Labels {
+		expectedLabels[expectedLabel.Name] = true
+	}
 	for actualLabel, actualValue := range series.Metric.Labels {
-		if _, ok := metric.Labels[actualLabel]; !ok {
+		if _, ok := expectedLabels[actualLabel]; !ok {
 			err = multierr.Append(err, fmt.Errorf("got unexpected label %q with value %q", actualLabel, actualValue))
 		}
 	}
 	// All expected labels must be present and match the given pattern
-	for expectedLabel, expectedPattern := range metric.Labels {
-		actualValue, ok := series.Metric.Labels[expectedLabel]
+	for _, expectedLabel := range metric.Labels {
+		actualValue, ok := series.Metric.Labels[expectedLabel.Name]
 		if !ok {
 			err = multierr.Append(err, fmt.Errorf("expected label not found: %s", expectedLabel))
 			continue
 		}
-		match, matchErr := regexp.MatchString(fmt.Sprintf("^(?:%s)$", expectedPattern), actualValue)
+		match, matchErr := regexp.MatchString(fmt.Sprintf("^(?:%s)$", expectedLabel.ValueRegex), actualValue)
 		if matchErr != nil {
 			err = multierr.Append(err, fmt.Errorf("error parsing pattern. label=%s, pattern=%s, err=%v",
-				expectedLabel,
-				expectedPattern,
+				expectedLabel.Name,
+				expectedLabel.ValueRegex,
 				matchErr,
 			))
 		} else if !match {
 			err = multierr.Append(err, fmt.Errorf("error: label value does not match pattern. label=%s, pattern=%s, value=%s",
-				expectedLabel,
-				expectedPattern,
+				expectedLabel.Name,
+				expectedLabel.ValueRegex,
 				actualValue,
 			))
 		}

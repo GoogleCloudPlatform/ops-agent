@@ -38,7 +38,8 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      command: .*
+      - name: command
+        value_regex: .*
   - type: workload.googleapis.com/memcached.connections.current
     value_type: INT64
     kind: GAUGE
@@ -52,7 +53,8 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      state: .*
+      - name: state
+        value_regex: .*
   - type: workload.googleapis.com/memcached.current_items
     value_type: INT64
     kind: GAUGE
@@ -66,14 +68,17 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      direction: .*
+      - name: direction
+        value_regex: .*
   - type: workload.googleapis.com/memcached.operations
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      operation: .*
-      type: .*
+      - name: operation
+        value_regex: .*
+      - name: type
+        value_regex: .*
   - type: workload.googleapis.com/memcached.threads
     value_type: INT64
     kind: GAUGE

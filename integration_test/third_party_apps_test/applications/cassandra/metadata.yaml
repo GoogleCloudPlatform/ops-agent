@@ -61,15 +61,18 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      operation: .*
+      - name: operation
+        value_regex: .*
     representative: true
   - type: workload.googleapis.com/cassandra.client.request.error.count
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      operation: .*
-      status: .*
+      - name: operation
+        value_regex: .*
+      - name: status
+        value_regex: .*
   - type: workload.googleapis.com/cassandra.client.request.range_slice.latency.50p
     value_type: DOUBLE
     kind: GAUGE
