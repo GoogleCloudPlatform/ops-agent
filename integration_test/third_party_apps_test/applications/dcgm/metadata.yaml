@@ -46,7 +46,7 @@ expected_metrics:
   - type: workload.googleapis.com/gpu.dcgm.utilization
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       model: .*
       uuid: .*
@@ -54,7 +54,7 @@ expected_metrics:
   - type: workload.googleapis.com/gpu.dcgm.sm.utilization
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       model: .*
       uuid: .*
@@ -62,7 +62,7 @@ expected_metrics:
   - type: workload.googleapis.com/gpu.dcgm.pipe.utilization
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       model: .*
       uuid: .*
@@ -71,7 +71,7 @@ expected_metrics:
   - type: workload.googleapis.com/gpu.dcgm.codec.encoder.utilization
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       model: .*
       uuid: .*
@@ -79,7 +79,7 @@ expected_metrics:
   - type: workload.googleapis.com/gpu.dcgm.codec.decoder.utilization
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       model: .*
       uuid: .*
@@ -87,7 +87,7 @@ expected_metrics:
   - type: workload.googleapis.com/gpu.dcgm.memory.bytes_used
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       model: .*
       uuid: .*
@@ -97,7 +97,7 @@ expected_metrics:
   - type: workload.googleapis.com/gpu.dcgm.memory.bandwidth_utilization
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       model: .*
       uuid: .*
@@ -105,7 +105,7 @@ expected_metrics:
   - type: workload.googleapis.com/gpu.dcgm.pcie.io
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       model: .*
       uuid: .*
@@ -114,7 +114,7 @@ expected_metrics:
   - type: workload.googleapis.com/gpu.dcgm.nvlink.io
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       model: .*
       uuid: .*
@@ -123,7 +123,7 @@ expected_metrics:
   - type: workload.googleapis.com/gpu.dcgm.energy_consumption
     value_type: DOUBLE
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       model: .*
       uuid: .*
@@ -131,7 +131,7 @@ expected_metrics:
   - type: workload.googleapis.com/gpu.dcgm.temperature
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       model: .*
       uuid: .*
@@ -139,7 +139,7 @@ expected_metrics:
   - type: workload.googleapis.com/gpu.dcgm.clock.frequency
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       model: .*
       uuid: .*
@@ -147,7 +147,7 @@ expected_metrics:
   - type: workload.googleapis.com/gpu.dcgm.clock.throttle_duration.time
     value_type: DOUBLE
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       model: .*
       uuid: .*
@@ -156,7 +156,7 @@ expected_metrics:
   - type: workload.googleapis.com/gpu.dcgm.ecc_errors
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
       model: .*
       uuid: .*

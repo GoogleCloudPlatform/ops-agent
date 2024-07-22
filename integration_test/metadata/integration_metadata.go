@@ -36,7 +36,7 @@ type MetricSpec struct {
 	Kind string `yaml:"kind" validate:"required,oneof=GAUGE DELTA CUMULATIVE"`
 	// The monitored resource, for example gce_instance.
 	// Currently we only test with gce_instance.
-	MonitoredResource string `yaml:"monitored_resource" validate:"required,oneof=gce_instance"`
+	MonitoredResources []string `yaml:"monitored_resources,flow" validate:"required,gt=0,dive,oneof=gce_instance"`
 	// Mapping of expected label keys to value patterns.
 	// Patterns are RE2 regular expressions.
 	Labels map[string]string `yaml:"labels,omitempty" validate:"omitempty,gt=0"`
@@ -205,8 +205,8 @@ func AssertMetric(metric *ExpectedMetric, series *monitoringpb.TimeSeries) error
 	if series.MetricKind.String() != metric.Kind {
 		err = multierr.Append(err, fmt.Errorf("kind: expected %s but got %s", metric.Kind, series.MetricKind.String()))
 	}
-	if series.Resource.Type != metric.MonitoredResource {
-		err = multierr.Append(err, fmt.Errorf("monitored_resource: expected %s but got %s", metric.MonitoredResource, series.Resource.Type))
+	if !SliceContains(metric.MonitoredResources, series.Resource.Type) {
+		err = multierr.Append(err, fmt.Errorf("unexpected monitored_resource: expected %v but got %s", metric.MonitoredResources, series.Resource.Type))
 	}
 	err = multierr.Append(err, assertMetricLabels(metric, series))
 	if err != nil {

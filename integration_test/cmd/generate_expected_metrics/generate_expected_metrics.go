@@ -184,11 +184,11 @@ func toExpectedMetric(metric *metric.MetricDescriptor) *metadata.ExpectedMetric 
 	}
 	return &metadata.ExpectedMetric{
 		MetricSpec: metadata.MetricSpec{
-			Type:              metric.Type,
-			Kind:              metric.MetricKind.String(),
-			ValueType:         metric.ValueType.String(),
-			MonitoredResource: "gce_instance",
-			Labels:            labels,
+			Type:               metric.Type,
+			Kind:               metric.MetricKind.String(),
+			ValueType:          metric.ValueType.String(),
+			MonitoredResources: []string{"gce_instance"},
+			Labels:             labels,
 		},
 	}
 }
@@ -267,7 +267,7 @@ func updateMetric(toUpdate *metadata.ExpectedMetric, withValuesFrom *metadata.Ex
 	result := toUpdate
 	result.Kind = withValuesFrom.Kind
 	result.ValueType = withValuesFrom.ValueType
-	result.MonitoredResource = withValuesFrom.MonitoredResource
+	result.MonitoredResources = withValuesFrom.MonitoredResources
 	result.Labels = make(map[string]string)
 
 	// TODO: Refactor to a simple map copy once we improve listMetrics to fetch
