@@ -51,7 +51,8 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      operation: .*
+      - name: operation
+        value_regex: .*
   - type: workload.googleapis.com/kafka.message.count
     value_type: INT64
     kind: CUMULATIVE
@@ -62,7 +63,8 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      state: .*
+      - name: state
+        value_regex: .*
   - type: workload.googleapis.com/kafka.partition.count
     value_type: INT64
     kind: GAUGE
@@ -80,25 +82,29 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      type: .*
+      - name: type
+        value_regex: .*
   - type: workload.googleapis.com/kafka.request.count
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      type: .*
+      - name: type
+        value_regex: .*
   - type: workload.googleapis.com/kafka.request.failed
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      type: .*
+      - name: type
+        value_regex: .*
   - type: workload.googleapis.com/kafka.request.time.total
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      type: .*
+      - name: type
+        value_regex: .*
 expected_logs:
   - log_name: kafka
     fields:

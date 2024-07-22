@@ -39,7 +39,8 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      kind: .*
+      - name: kind
+        value_regex: .*
     representative: true
   - type: workload.googleapis.com/varnish.backend.request.count
     value_type: INT64
@@ -50,19 +51,22 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      operation: .*
+      - name: operation
+        value_regex: .*
   - type: workload.googleapis.com/varnish.client.request.count
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      state: .*
+      - name: state
+        value_regex: .*
   - type: workload.googleapis.com/varnish.client.request.error.count
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      status_code: .*
+      - name: status_code
+        value_regex: .*
   - type: workload.googleapis.com/varnish.object.count
     value_type: INT64
     kind: GAUGE
@@ -84,13 +88,15 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      kind: .*
+      - name: kind
+        value_regex: .*
   - type: workload.googleapis.com/varnish.thread.operation.count
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      operation: .*
+      - name: operation
+        value_regex: .*
 configuration_options:
   logs:
     - type: varnish

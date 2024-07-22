@@ -48,53 +48,74 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      model: .*
-      uuid: .*
-      gpu_number: "[0-9]*"
+      - name: model
+        value_regex: .*
+      - name: uuid
+        value_regex: .*
+      - name: gpu_number
+        value_regex: "[0-9]*"
     representative: true
   - type: workload.googleapis.com/dcgm.gpu.profiling.sm_occupancy
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      model: .*
-      uuid: .*
-      gpu_number: "[0-9]*"
+      - name: model
+        value_regex: .*
+      - name: uuid
+        value_regex: .*
+      - name: gpu_number
+        value_regex: "[0-9]*"
   - type: workload.googleapis.com/dcgm.gpu.profiling.pipe_utilization
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      model: .*
-      uuid: .*
-      gpu_number: "[0-9]*"
-      pipe: tensor|fp64|fp32|fp16
+      - name: model
+        value_regex: .*
+      - name: uuid
+        value_regex: .*
+      - name: gpu_number
+        value_regex: "[0-9]*"
+      - name: pipe
+        value_regex: tensor|fp64|fp32|fp16
   - type: workload.googleapis.com/dcgm.gpu.profiling.dram_utilization
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      model: .*
-      uuid: .*
-      gpu_number: "[0-9]*"
+      - name: model
+        value_regex: .*
+      - name: uuid
+        value_regex: .*
+      - name: gpu_number
+        value_regex: "[0-9]*"
   - type: workload.googleapis.com/dcgm.gpu.profiling.pcie_traffic_rate
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      model: .*
-      uuid: .*
-      gpu_number: "[0-9]*"
-      direction: tx|rx
+      - name: model
+        value_regex: .*
+      - name: uuid
+        value_regex: .*
+      - name: gpu_number
+        value_regex: "[0-9]*"
+      - name: direction
+        value_regex: tx|rx
   - type: workload.googleapis.com/dcgm.gpu.profiling.nvlink_traffic_rate
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      model: .*
-      uuid: .*
-      gpu_number: "[0-9]*"
-      direction: tx|rx
+      - name: model
+        value_regex: .*
+      - name: uuid
+        value_regex: .*
+      - name: gpu_number
+        value_regex: "[0-9]*"
+      - name: direction
+        value_regex: tx|rx
 configuration_options:
   metrics:
     - type: dcgm

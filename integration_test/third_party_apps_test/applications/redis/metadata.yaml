@@ -68,7 +68,8 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      state: .*
+      - name: state
+        value_regex: .*
   - type: workload.googleapis.com/redis.keys.evicted
     value_type: INT64
     kind: CUMULATIVE

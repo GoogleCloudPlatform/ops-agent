@@ -72,7 +72,8 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      direction: .*
+      - name: direction
+        value_regex: .*
   - type: workload.googleapis.com/zookeeper.request.active
     value_type: INT64
     kind: GAUGE

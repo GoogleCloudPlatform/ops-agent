@@ -18,19 +18,22 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      state: OK|CANCELLED|UNKNOWN|INVALID_ARGUMENT|DEADLINE_EXCEEDED|NOT_FOUND|ALREADY_EXISTS|PERMISSION_DENIED|RESOURCE_EXHAUSTED|FAILED_PRECONDITION|ABORTED|OUT_OF_RANGE|UNIMPLEMENTED|INTERNAL|UNAVAILABLE|DATA_LOSS|UNAUTHENTICATED|CODE_\d+
+      - name: state
+        value_regex: OK|CANCELLED|UNKNOWN|INVALID_ARGUMENT|DEADLINE_EXCEEDED|NOT_FOUND|ALREADY_EXISTS|PERMISSION_DENIED|RESOURCE_EXHAUSTED|FAILED_PRECONDITION|ABORTED|OUT_OF_RANGE|UNIMPLEMENTED|INTERNAL|UNAVAILABLE|DATA_LOSS|UNAUTHENTICATED|CODE_\d+
   - type: agent.googleapis.com/agent/log_entry_count
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      response_code: \d+
+      - name: response_code
+        value_regex: \d+
   - type: agent.googleapis.com/agent/log_entry_retry_count
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-     response_code: \d+
+      - name: response_code
+        value_regex: \d+
     optional: true
   - type: agent.googleapis.com/agent/memory_usage
     value_type: DOUBLE
@@ -41,27 +44,32 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      status: OK|CANCELLED|UNKNOWN|INVALID_ARGUMENT|DEADLINE_EXCEEDED|NOT_FOUND|ALREADY_EXISTS|PERMISSION_DENIED|RESOURCE_EXHAUSTED|FAILED_PRECONDITION|ABORTED|OUT_OF_RANGE|UNIMPLEMENTED|INTERNAL|UNAVAILABLE|DATA_LOSS|UNAUTHENTICATED|CODE_\d+
+      - name: status
+        value_regex: OK|CANCELLED|UNKNOWN|INVALID_ARGUMENT|DEADLINE_EXCEEDED|NOT_FOUND|ALREADY_EXISTS|PERMISSION_DENIED|RESOURCE_EXHAUSTED|FAILED_PRECONDITION|ABORTED|OUT_OF_RANGE|UNIMPLEMENTED|INTERNAL|UNAVAILABLE|DATA_LOSS|UNAUTHENTICATED|CODE_\d+
   - type: agent.googleapis.com/agent/request_count
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      response_code: \d+
+      - name: response_code
+        value_regex: \d+
   - type: agent.googleapis.com/agent/uptime
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      version: google-cloud-ops-agent-(metrics|logging)/\d+[.]\d+[.]\d+.*
+      - name: version
+        value_regex: google-cloud-ops-agent-(metrics|logging)/\d+[.]\d+[.]\d+.*
     representative: true
   - type: agent.googleapis.com/agent/ops_agent/enabled_receivers
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      receiver_type: .*
-      telemetry_type: logs|metrics
+      - name: receiver_type
+        value_regex: .*
+      - name: telemetry_type
+        value_regex: logs|metrics
   - type: agent.googleapis.com/cpu/load_15m
     value_type: DOUBLE
     kind: GAUGE
@@ -79,168 +87,215 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      cpu_number: \d*
-      cpu_state: idle|interrupt|nice|softirq|steal|system|used|user|wait
+      - name: cpu_number
+        value_regex: \d*
+      - name: cpu_state
+        value_regex: idle|interrupt|nice|softirq|steal|system|used|user|wait
     optional: true
   - type: agent.googleapis.com/cpu/utilization
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      cpu_number: \d*
-      cpu_state: idle|interrupt|nice|softirq|steal|system|used|user|wait
+      - name: cpu_number
+        value_regex: \d*
+      - name: cpu_state
+        value_regex: idle|interrupt|nice|softirq|steal|system|used|user|wait
   - type: agent.googleapis.com/disk/bytes_used
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      device: .*
-      state: free|reserved|used
+      - name: device
+        value_regex: .*
+      - name: state
+        value_regex: free|reserved|used
   - type: agent.googleapis.com/disk/io_time
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      device: .*
+      - name: device
+        value_regex: .*
   - type: agent.googleapis.com/disk/merged_operations
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      device: .*
-      direction: read|write
+      - name: device
+        value_regex: .*
+      - name: direction
+        value_regex: read|write
     platform: linux
   - type: agent.googleapis.com/disk/operation_count
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      device: .*
-      direction: read|write
+      - name: device
+        value_regex: .*
+      - name: direction
+        value_regex: read|write
   - type: agent.googleapis.com/disk/operation_time
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      device: .*
-      direction: read|write
+      - name: device
+        value_regex: .*
+      - name: direction
+        value_regex: read|write
   - type: agent.googleapis.com/disk/pending_operations
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      device: .*
+      - name: device
+        value_regex: .*
   - type: agent.googleapis.com/disk/percent_used
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      device: .*
-      state: free|reserved|used
+      - name: device
+        value_regex: .*
+      - name: state
+        value_regex: free|reserved|used
   - type: agent.googleapis.com/disk/read_bytes_count
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      device: .*
+      - name: device
+        value_regex: .*
   - type: agent.googleapis.com/disk/weighted_io_time
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      device: .*
+      - name: device
+        value_regex: .*
     platform: linux
   - type: agent.googleapis.com/disk/write_bytes_count
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      device: .*
+      - name: device
+        value_regex: .*
   - type: agent.googleapis.com/interface/errors
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      device: .*
-      direction: tx|rx
+      - name: device
+        value_regex: .*
+      - name: direction
+        value_regex: tx|rx
   - type: agent.googleapis.com/interface/packets
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      device: .*
-      direction: tx|rx
+      - name: device
+        value_regex: .*
+      - name: direction
+        value_regex: tx|rx
   - type: agent.googleapis.com/interface/traffic
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      device: .*
-      direction: tx|rx
+      - name: device
+        value_regex: .*
+      - name: direction
+        value_regex: tx|rx
   - type: agent.googleapis.com/memory/bytes_used
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      state: buffered|cached|free|slab|used
+      - name: state
+        value_regex: buffered|cached|free|slab|used
   - type: agent.googleapis.com/memory/percent_used
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      state: buffered|cached|free|slab|used
+      - name: state
+        value_regex: buffered|cached|free|slab|used
   - type: agent.googleapis.com/network/tcp_connections
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      port: all
-      tcp_state: CLOSE|CLOSED|CLOSE_WAIT|CLOSING|DELETE|ESTABLISHED|FIN_WAIT_1|FIN_WAIT1|FIN_WAIT_2|FIN_WAIT2|LAST_ACK|LISTEN|SYN_RECEIVED|SYN_RECV|SYN_SENT|TIME_WAIT
+      - name: port
+        value_regex: all
+      - name: tcp_state
+        value_regex: CLOSE|CLOSED|CLOSE_WAIT|CLOSING|DELETE|ESTABLISHED|FIN_WAIT_1|FIN_WAIT1|FIN_WAIT_2|FIN_WAIT2|LAST_ACK|LISTEN|SYN_RECEIVED|SYN_RECV|SYN_SENT|TIME_WAIT
   - type: agent.googleapis.com/pagefile/percent_used
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      state: free|used
+      - name: state
+        value_regex: free|used
     platform: windows
   - type: agent.googleapis.com/processes/count_by_state
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      state: blocked|daemon|detached|idle|locked|orphan|paging|running|sleeping|stopped|system|unknown|zombies
+      - name: state
+        value_regex: blocked|daemon|detached|idle|locked|orphan|paging|running|sleeping|stopped|system|unknown|zombies
     platform: linux
   - type: agent.googleapis.com/processes/cpu_time
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      command: .*
-      command_line: .*
-      owner: .*
-      pid: \d+
-      process: all
-      user_or_syst: user|syst
+      - name: command
+        value_regex: .*
+      - name: command_line
+        value_regex: .*
+      - name: owner
+        value_regex: .*
+      - name: pid
+        value_regex: \d+
+      - name: process
+        value_regex: all
+      - name: user_or_syst
+        value_regex: user|syst
   - type: agent.googleapis.com/processes/disk/read_bytes_count
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      command: .*
-      command_line: .*
-      owner: .*
-      pid: \d+
-      process: all
+      - name: command
+        value_regex: .*
+      - name: command_line
+        value_regex: .*
+      - name: owner
+        value_regex: .*
+      - name: pid
+        value_regex: \d+
+      - name: process
+        value_regex: all
   - type: agent.googleapis.com/processes/disk/write_bytes_count
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      command: .*
-      command_line: .*
-      owner: .*
-      pid: \d+
-      process: all
+      - name: command
+        value_regex: .*
+      - name: command_line
+        value_regex: .*
+      - name: owner
+        value_regex: .*
+      - name: pid
+        value_regex: \d+
+      - name: process
+        value_regex: all
   - type: agent.googleapis.com/processes/fork_count
     value_type: INT64
     kind: CUMULATIVE
@@ -251,49 +306,69 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      command: .*
-      command_line: .*
-      owner: .*
-      pid: \d+
-      process: all
+      - name: command
+        value_regex: .*
+      - name: command_line
+        value_regex: .*
+      - name: owner
+        value_regex: .*
+      - name: pid
+        value_regex: \d+
+      - name: process
+        value_regex: all
   - type: agent.googleapis.com/processes/vm_usage
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      command: .*
-      command_line: .*
-      owner: .*
-      pid: \d+
-      process: all
+      - name: command
+        value_regex: .*
+      - name: command_line
+        value_regex: .*
+      - name: owner
+        value_regex: .*
+      - name: pid
+        value_regex: \d+
+      - name: process
+        value_regex: all
   - type: agent.googleapis.com/processes/windows/handles
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     platform: windows
     labels:
-      command: .*
-      command_line: .*
-      owner: .*
-      pid: \d+
-      process: all
+      - name: command
+        value_regex: .*
+      - name: command_line
+        value_regex: .*
+      - name: owner
+        value_regex: .*
+      - name: pid
+        value_regex: \d+
+      - name: process
+        value_regex: all
   - type: agent.googleapis.com/swap/bytes_used
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      device: .*
-      state: cached|free|used
+      - name: device
+        value_regex: .*
+      - name: state
+        value_regex: cached|free|used
   - type: agent.googleapis.com/swap/io
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      direction: in|out
+      - name: direction
+        value_regex: in|out
   - type: agent.googleapis.com/swap/percent_used
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      device: .*
-      state: cached|free|reserved|used
+      - name: device
+        value_regex: .*
+      - name: state
+        value_regex: cached|free|reserved|used

@@ -58,25 +58,29 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      resource: .*
+      - name: resource
+        value_regex: .*
   - type: workload.googleapis.com/jetty.session.time.total
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      resource: .*
+      - name: resource
+        value_regex: .*
   - type: workload.googleapis.com/jetty.session.time.max
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      resource: .*
+      - name: resource
+        value_regex: .*
   - type: workload.googleapis.com/jetty.thread.count
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      state: .*
+      - name: state
+        value_regex: .*
   - type: workload.googleapis.com/jetty.thread.queue.count
     value_type: INT64
     kind: GAUGE

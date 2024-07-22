@@ -42,7 +42,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      status: .*
+      - name: status
+        value_regex: .*
   - type: workload.googleapis.com/elasticsearch.cluster.nodes
     value_type: INT64
     kind: GAUGE
@@ -52,19 +53,22 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      state: .*
+      - name: state
+        value_regex: .*
   - type: workload.googleapis.com/elasticsearch.node.cache.evictions
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      cache_name: .*
+      - name: cache_name
+        value_regex: .*
   - type: workload.googleapis.com/elasticsearch.node.cache.memory.usage
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      cache_name: .*
+      - name: cache_name
+        value_regex: .*
   - type: workload.googleapis.com/elasticsearch.node.cluster.connections
     value_type: INT64
     kind: GAUGE
@@ -74,13 +78,15 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      direction: .*
+      - name: direction
+        value_regex: .*
   - type: workload.googleapis.com/elasticsearch.node.documents
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      state: .*
+      - name: state
+        value_regex: .*
   - type: workload.googleapis.com/elasticsearch.node.fs.disk.available
     value_type: INT64
     kind: GAUGE
@@ -99,13 +105,15 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      operation: .*
+      - name: operation
+        value_regex: .*
   - type: workload.googleapis.com/elasticsearch.node.operations.time
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      operation: .*
+      - name: operation
+        value_regex: .*
   - type: workload.googleapis.com/elasticsearch.node.shards.size
     value_type: INT64
     kind: GAUGE
@@ -115,45 +123,54 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      state: .*
-      thread_pool_name: .*
+      - name: state
+        value_regex: .*
+      - name: thread_pool_name
+        value_regex: .*
   - type: workload.googleapis.com/elasticsearch.node.thread_pool.tasks.queued
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      thread_pool_name: .*
+      - name: thread_pool_name
+        value_regex: .*
   - type: workload.googleapis.com/elasticsearch.node.thread_pool.threads
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      state: .*
-      thread_pool_name: .*
+      - name: state
+        value_regex: .*
+      - name: thread_pool_name
+        value_regex: .*
   - type: workload.googleapis.com/elasticsearch.breaker.memory.estimated
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      name: .*
+      - name: name
+        value_regex: .*
   - type: workload.googleapis.com/elasticsearch.breaker.memory.limit
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      name: .*
+      - name: name
+        value_regex: .*
   - type: workload.googleapis.com/elasticsearch.breaker.tripped
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      name: .*
+      - name: name
+        value_regex: .*
   - type: workload.googleapis.com/elasticsearch.cluster.published_states.differences
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      state: incompatible|compatible
+      - name: state
+        value_regex: incompatible|compatible
   - type: workload.googleapis.com/elasticsearch.cluster.published_states.full
     value_type: INT64
     kind: GAUGE
@@ -163,20 +180,24 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      state: pending|committed
+      - name: state
+        value_regex: pending|committed
   - type: workload.googleapis.com/elasticsearch.cluster.state_update.count
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      state: .*
+      - name: state
+        value_regex: .*
   - type: workload.googleapis.com/elasticsearch.cluster.state_update.time
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      state: .*
-      type: computation|context_construction|commit|completion|master_apply|notification
+      - name: state
+        value_regex: .*
+      - name: type
+        value_regex: computation|context_construction|commit|completion|master_apply|notification
   - type: workload.googleapis.com/elasticsearch.indexing_pressure.memory.limit
     value_type: INT64
     kind: GAUGE
@@ -194,7 +215,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      stage: coordinating|primary|replica
+      - name: stage
+        value_regex: coordinating|primary|replica
   - type: workload.googleapis.com/elasticsearch.node.disk.io.read
     value_type: INT64
     kind: GAUGE
@@ -220,19 +242,22 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      name: .*
+      - name: name
+        value_regex: .*
   - type: workload.googleapis.com/elasticsearch.node.pipeline.ingest.documents.preprocessed
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      name: .*
+      - name: name
+        value_regex: .*
   - type: workload.googleapis.com/elasticsearch.node.pipeline.ingest.operations.failed
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      name: .*
+      - name: name
+        value_regex: .*
   - type: workload.googleapis.com/elasticsearch.node.script.cache_evictions
     value_type: INT64
     kind: CUMULATIVE
@@ -286,7 +311,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      state: free|used
+      - name: state
+        value_regex: free|used
   - type: workload.googleapis.com/elasticsearch.cluster.in_flight_fetch
     value_type: INT64
     kind: GAUGE
@@ -300,7 +326,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      type: hit|miss
+      - name: type
+        value_regex: hit|miss
   - type: workload.googleapis.com/elasticsearch.node.fs.disk.free
     value_type: INT64
     kind: GAUGE

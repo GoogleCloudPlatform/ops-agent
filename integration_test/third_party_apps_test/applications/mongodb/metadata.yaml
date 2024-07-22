@@ -46,26 +46,31 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      type: .*
+      - name: type
+        value_regex: .*
   - type: workload.googleapis.com/mongodb.collection.count
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      database: .*
+      - name: database
+        value_regex: .*
   - type: workload.googleapis.com/mongodb.connection.count
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      database: .*
-      type: .*
+      - name: database
+        value_regex: .*
+      - name: type
+        value_regex: .*
   - type: workload.googleapis.com/mongodb.data.size
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      database: .*
+      - name: database
+        value_regex: .*
   - type: workload.googleapis.com/mongodb.global_lock.time
     value_type: INT64
     kind: CUMULATIVE
@@ -75,39 +80,46 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      database: .*
+      - name: database
+        value_regex: .*
   - type: workload.googleapis.com/mongodb.index.size
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      database: .*
+      - name: database
+        value_regex: .*
   - type: workload.googleapis.com/mongodb.memory.usage
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      database: .*
-      type: .*
+      - name: database
+        value_regex: .*
+      - name: type
+        value_regex: .*
     representative: true
   - type: workload.googleapis.com/mongodb.object.count
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      database: .*
+      - name: database
+        value_regex: .*
   - type: workload.googleapis.com/mongodb.operation.count
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      operation: .*
+      - name: operation
+        value_regex: .*
   - type: workload.googleapis.com/mongodb.storage.size
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      database: .*
+      - name: database
+        value_regex: .*
   - type: workload.googleapis.com/mongodb.database.count
     value_type: INT64
     kind: GAUGE
@@ -117,15 +129,19 @@ expected_metrics:
     monitored_resources: [gce_instance]
     kind: GAUGE
     labels:
-      collection: .*
-      database: .*
+      - name: collection
+        value_regex: .*
+      - name: database
+        value_regex: .*
   - type: workload.googleapis.com/mongodb.document.operation.count
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      database: .*
-      operation: .*
+      - name: database
+        value_regex: .*
+      - name: operation
+        value_regex: .*
   - type: workload.googleapis.com/mongodb.network.io.receive
     value_type: INT64
     kind: GAUGE
@@ -143,7 +159,8 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      operation: insert|query|update|delete|getmore|command
+      - name: operation
+        value_regex: insert|query|update|delete|getmore|command
   - type: workload.googleapis.com/mongodb.session.count
     value_type: INT64
     kind: GAUGE

@@ -130,7 +130,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      state: .*
+      - name: state
+        value_regex: .*
   - type: workload.googleapis.com/nginx.connections_handled
     value_type: INT64
     kind: CUMULATIVE

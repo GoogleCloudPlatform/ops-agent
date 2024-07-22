@@ -123,27 +123,34 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      bucket_name: .*
-      op: .*
+      - name: bucket_name
+        value_regex: .*
+      - name: op
+        value_regex: .*
   - type: workload.googleapis.com/couchbase.bucket.item.count
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      bucket_name: .*
-      state: .*
+      - name: bucket_name
+        value_regex: .*
+      - name: state
+        value_regex: .*
   - type: workload.googleapis.com/couchbase.bucket.vbucket.count
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      bucket_name: .*
-      state: .*
+      - name: bucket_name
+        value_regex: .*
+      - name: state
+        value_regex: .*
   - type: workload.googleapis.com/couchbase.bucket.memory.usage
     value_type: DOUBLE
     kind: GAUGE
     labels:
-      bucket_name: .*
+      - name: bucket_name
+        value_regex: .*
     monitored_resources: [gce_instance]
     representative: true
   - type: workload.googleapis.com/couchbase.bucket.item.ejection.count
@@ -151,25 +158,30 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      bucket_name: .*
+      - name: bucket_name
+        value_regex: .*
   - type: workload.googleapis.com/couchbase.bucket.error.oom.count
     value_type: INT64
     kind: CUMULATIVE
     labels:
-      bucket_name: .*
-      error_type: .*
+      - name: bucket_name
+        value_regex: .*
+      - name: error_type
+        value_regex: .*
     monitored_resources: [gce_instance]
   - type: workload.googleapis.com/couchbase.bucket.memory.high_water_mark.limit
     value_type: DOUBLE
     kind: GAUGE
     labels:
-      bucket_name: .*
+      - name: bucket_name
+        value_regex: .*
     monitored_resources: [gce_instance]
   - type: workload.googleapis.com/couchbase.bucket.memory.low_water_mark.limit
     value_type: DOUBLE
     kind: GAUGE
     labels:
-      bucket_name: .*
+      - name: bucket_name
+        value_regex: .*
     monitored_resources: [gce_instance]
 configuration_options:
   metrics:

@@ -40,7 +40,8 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      direction: .*
+      - name: direction
+        value_regex: .*
   - type: agent.googleapis.com/iis/new_connection_count
     value_type: INT64
     kind: CUMULATIVE
@@ -50,7 +51,8 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      http_method: .*
+      - name: http_method
+        value_regex: .*
     representative: true
   # v2 metrics
   - type: workload.googleapis.com/iis.request.count
@@ -58,7 +60,8 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      request: .*
+      - name: request
+        value_regex: .*
       # representative: true
   - type: workload.googleapis.com/iis.request.rejected
     value_type: INT64
@@ -78,7 +81,8 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      direction: .*
+      - name: direction
+        value_regex: .*
   - type: workload.googleapis.com/iis.network.blocked
     value_type: INT64
     kind: CUMULATIVE
@@ -88,7 +92,8 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      direction: .*
+      - name: direction
+        value_regex: .*
   - type: workload.googleapis.com/iis.connection.attempt.count
     value_type: INT64
     kind: CUMULATIVE

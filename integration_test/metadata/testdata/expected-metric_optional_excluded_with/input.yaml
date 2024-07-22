@@ -32,8 +32,10 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      broker: .*
-      destination: .*
+      - name: broker
+        value_regex: .*
+      - name: destination
+        value_regex: .*
     optional: true
     representative: true
 expected_logs:

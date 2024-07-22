@@ -59,7 +59,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      status: dirty|clean
+      - name: status
+        value_regex: dirty|clean
   - type: workload.googleapis.com/mysql.buffer_pool_limit
     value_type: INT64
     kind: GAUGE
@@ -69,7 +70,8 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      operation: read_ahead|read_ahead_evicted|read_ahead_rnd|read_requests|reads|wait_free|write_requests
+      - name: operation
+        value_regex: read_ahead|read_ahead_evicted|read_ahead_rnd|read_requests|reads|wait_free|write_requests
   - type: workload.googleapis.com/mysql.buffer_pool_page_flushes
     value_type: INT64
     kind: CUMULATIVE
@@ -79,55 +81,64 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      kind: data|free|misc
+      - name: kind
+        value_regex: data|free|misc
   - type: workload.googleapis.com/mysql.buffer_pool_size
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      kind: clean|dirty
+      - name: kind
+        value_regex: clean|dirty
   - type: workload.googleapis.com/mysql.commands
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      command: delete|insert|select|update
+      - name: command
+        value_regex: delete|insert|select|update
   - type: workload.googleapis.com/mysql.double_writes
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      kind: writes|pages_written
+      - name: kind
+        value_regex: writes|pages_written
   - type: workload.googleapis.com/mysql.handlers
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      kind: commit|delete|discover|lock|mrr_init|prepare|read_first|read_key|read_last|read_next|read_prev|read_rnd|read_rnd_next|rollback|savepoint|savepoint_rollback|update|write
+      - name: kind
+        value_regex: commit|delete|discover|lock|mrr_init|prepare|read_first|read_key|read_last|read_next|read_prev|read_rnd|read_rnd_next|rollback|savepoint|savepoint_rollback|update|write
   - type: workload.googleapis.com/mysql.locks
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      kind: immediate|waited
+      - name: kind
+        value_regex: immediate|waited
   - type: workload.googleapis.com/mysql.log_operations
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      operation: requests|waits|writes
+      - name: operation
+        value_regex: requests|waits|writes
   - type: workload.googleapis.com/mysql.operations
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      operation: fsyncs|reads|writes
+      - name: operation
+        value_regex: fsyncs|reads|writes
   - type: workload.googleapis.com/mysql.page_operations
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      operation: created|read|written
+      - name: operation
+        value_regex: created|read|written
   - type: workload.googleapis.com/mysql.replica.time_behind_source
     value_type: INT64
     kind: GAUGE
@@ -141,13 +152,15 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      kind: time|waits
+      - name: kind
+        value_regex: time|waits
   - type: workload.googleapis.com/mysql.row_operations
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      operation: deleted|inserted|read|updated
+      - name: operation
+        value_regex: deleted|inserted|read|updated
     unavailable_on:
       - ubuntu-os-cloud:ubuntu-2404-lts-amd64
       - ubuntu-os-cloud:ubuntu-2404-lts-arm64
@@ -157,13 +170,15 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
-      kind: merge_passes|range|rows|scan
+      - name: kind
+        value_regex: merge_passes|range|rows|scan
   - type: workload.googleapis.com/mysql.threads
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
-      kind: cached|connected|created|running
+      - name: kind
+        value_regex: cached|connected|created|running
     representative: true
 expected_logs:
   - log_name: mysql_error
