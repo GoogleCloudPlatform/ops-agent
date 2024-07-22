@@ -38,7 +38,7 @@ func TestValidateMetadataOfThirdPartyApps(t *testing.T) {
 		app := path.Base(path.Dir(fullPath))
 		t.Run(app, func(t *testing.T) {
 			t.Parallel()
-			err := metadata.UnmarshalAndValidate(contents, &metadata.IntegrationMetadata{})
+			err := metadata.UnmarshalAndValidate(fullPath, contents, &metadata.IntegrationMetadata{})
 			if err != nil {
 				t.Error(err)
 			}
@@ -74,7 +74,7 @@ func TestThirdPartyPublicUrls(t *testing.T) {
 		t.Run(app, func(t *testing.T) {
 			t.Parallel()
 			integrationMetadata := &metadata.IntegrationMetadata{}
-			err := metadata.UnmarshalAndValidate(contents, integrationMetadata)
+			err := metadata.UnmarshalAndValidate(fullPath, contents, integrationMetadata)
 			if integrationMetadata.PublicUrl == "" {
 				// The public doc isn't available yet.
 				return
@@ -114,7 +114,7 @@ func walkThirdPartyApps(fn func(app string, contents []byte) error) error {
 
 func TestValidateMetadataOfAgentMetric(t *testing.T) {
 
-	err := metadata.UnmarshalAndValidate(agentMetricsMetadata, &metadata.ExpectedMetricsContainer{})
+	err := metadata.UnmarshalAndValidate("ops_agent_test/agent_metrics/metadata.yaml", agentMetricsMetadata, &metadata.ExpectedMetricsContainer{})
 	if err != nil {
 		t.Error(err)
 	}

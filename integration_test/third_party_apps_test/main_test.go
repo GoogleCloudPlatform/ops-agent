@@ -681,11 +681,12 @@ func fetchAppsAndMetadata(t *testing.T) map[string]metadata.IntegrationMetadata 
 	for _, file := range files {
 		app := file.Name()
 		var integrationMetadata metadata.IntegrationMetadata
-		testCaseBytes, err := scriptsDir.ReadFile(path.Join("applications", app, "metadata.yaml"))
+		applicationMetadata := path.Join("applications", app, "metadata.yaml")
+		testCaseBytes, err := scriptsDir.ReadFile(applicationMetadata)
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = metadata.UnmarshalAndValidate(testCaseBytes, &integrationMetadata)
+		err = metadata.UnmarshalAndValidate(applicationMetadata, testCaseBytes, &integrationMetadata)
 		if err != nil {
 			t.Fatalf("could not validate contents of applications/%v/metadata.yaml: %v", app, err)
 		}

@@ -121,13 +121,16 @@ type IntegrationMetadata struct {
 	ExpectedMetricsContainer `yaml:",inline"`
 }
 
-func UnmarshalAndValidate(data []byte, i interface{}) error {
+func UnmarshalAndValidate(fullPath string, data []byte, i interface{}) error {
 	data = bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n"))
 
 	v := NewIntegrationMetadataValidator()
 	// Note: Unmarshaler does not protect when only the key being declared.
 	// https://github.com/goccy/go-yaml/issues/313
-	return yaml.UnmarshalWithOptions(data, i, yaml.DisallowUnknownField(), yaml.Validator(v))
+	if err := yaml.UnmarshalWithOptions(data, i, yaml.DisallowUnknownField(), yaml.Validator(v)); err != nil {
+		return fmt.Errorf("%s%w", fullPath, err)
+	}
+	return nil
 }
 
 func SliceContains(slice []string, toFind string) bool {
