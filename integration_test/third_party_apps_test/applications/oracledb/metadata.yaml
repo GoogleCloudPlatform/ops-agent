@@ -15,6 +15,7 @@
 app_url: "https://www.oracle.com/database/"
 short_name: Oracle DB
 long_name: Oracle Database
+logo_path: /stackdriver/images/integrations/oracledb.png # supplied by google technical writer
 description: |-
   The Oracle DB integration collects Oracle DB metrics and logs. The metrics are collected by querying
   relevant monitoring views. This integration writes structured trace logs.
@@ -378,13 +379,13 @@ configuration_options:
     - type: oracledb
       fields:
         - default: null
-          description: This value must be oracledb.
+          description: This value must be `oracledb`.
           name: type
         - default: localhost:1521
-          description: The endpoint used to connect to the oracle DB instance. This field supports either host:port or a unix socket path.
+          description: The endpoint used to connect to the oracle DB instance. This field supports either `host:port` or a Unix socket path.
           name: endpoint
         - default: 60s
-          description: A time.Duration value, such as 30s or 5m.
+          description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
           name: collection_interval
         - default: null
           description: The username used to connect to the instance.
@@ -393,61 +394,61 @@ configuration_options:
           description: The password used to connect to the instance.
           name: password
         - default: true
-          description: Sets whether or not to use a secure TLS connection. If set to false, then TLS is enabled.
+          description: Sets whether or not to use a secure TLS connection. If set to `false`, then TLS is enabled.
           name: insecure
         - default: false
-          description: Sets whether or not to skip verifying the certificate. If insecure is set to true, then the insecure_skip_verify value is not used.
+          description: Sets whether or not to skip verifying the certificate. If `insecure` is set to `true`, then the `insecure_skip_verify` value is not used.
           name: insecure_skip_verify
         - default: null
           description: Path to the directory containing the oracle wallet optionally used for authentication and securing connections.
           name: wallet
         - default: null
-          description: The SID of the Oracle database being monitored. Use this _or_ service_name as appropriate.
+          description: The SID of the Oracle database being monitored. Use this field _or_ the `service_name` field as appropriate.
           name: sid
         - default: null
-          description: The Service Name of the Oracle database being monitored. Use this _or_ sid as appropriate.
+          description: The Service Name of the Oracle database being monitored. Use this field _or_ the `sid` field as appropriate.
           name: service_name
   logs:
     - type: oracledb_audit
       fields:
         - name: type
           default: null
-          description: The value must be oracledb_audit.
+          description: This value must be `oracledb_audit`.
         - name: include_paths
           default: null
-          description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths. Cannot be provided with oracle_home.
+          description: A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths. Cannot be provided with the `oracle_home` field.
         - name: oracle_home
           default: null
-          description: Location of the ORACLE_HOME for the environment, when provided it sets the include_paths to `$ORACLE_HOME/admin/*/adump/*.aud`. Cannot be provided with include_paths.
+          description: Location of the `ORACLE_HOME` for the environment, when provided it sets the include_paths to `$ORACLE_HOME/admin/*/adump/*.aud`. Cannot be provided with the `include_paths` field.
         - name: exclude_paths
-          default: '[]'
-          description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+          default: null
+          description: A list of filesystem path patterns to exclude from the set matched by `include_paths`.
         - name: record_log_file_path
           default: false
           description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
         - name: wildcard_refresh_interval
           default: 60s
-          description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+          description: The interval at which wildcard file paths in `include_paths` are refreshed. Given as a [time duration](https://pkg.go.dev/time#ParseDuration), for example `30s` or `2m`. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
     - type: oracledb_alert
       fields:
         - name: type
           default: null
-          description: The value must be oracledb_alert.
+          description: The value must be `oracledb_alert`.
         - name: include_paths
           default: null
-          description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths. Cannot be provided with oracle_home.
+          description: A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths. Cannot be provided with the `oracle_home` field.
         - name: oracle_home
           default: null
-          description: Location of the ORACLE_HOME for the environment, when provided it sets the include_paths to `$ORACLE_HOME/diag/rdbms/*/*/trace/alert_*.log`. Cannot be provided with include_paths.
+          description: Location of the `ORACLE_HOME` for the environment, when provided it sets the `include_paths` to `$ORACLE_HOME/diag/rdbms/*/*/trace/alert_*.log`. Cannot be provided with the `include_paths` field.
         - name: exclude_paths
-          default: '[]'
-          description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+          default: null
+          description: A list of filesystem path patterns to exclude from the set matched by `include_paths`.
         - name: record_log_file_path
           default: false
           description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
         - name: wildcard_refresh_interval
           default: 60s
-          description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+          description: The interval at which wildcard file paths in `include_paths` are refreshed. Given as a [time duration](https://pkg.go.dev/time#ParseDuration), for example `30s` or `2m`. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
 minimum_supported_agent_version:
   metrics: 2.22.0
   logging: 2.22.0

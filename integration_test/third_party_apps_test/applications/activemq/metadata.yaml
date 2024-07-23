@@ -18,9 +18,10 @@ short_name: ActiveMQ
 long_name: Apache ActiveMQ
 logo_path: /stackdriver/images/activemq.png # supplied by google technical writer
 description: |-
-  The Apache ActiveMQ integration collects storage usage and message metrics.
-  Storage metrics include memory and disk usage. Message metrics include number of
-  waiting messages, average wait time, and expired messages.
+  The Apache ActiveMQ integration writes logs and collects storage usage and
+  message metrics. Storage metrics include memory and disk usage.
+  Message metrics include number of waiting messages, average wait time,
+  and expired messages.
 minimum_supported_agent_version:
   metrics: 2.11.0
   logging: 2.15.0
@@ -102,14 +103,14 @@ expected_logs:
       - name: jsonPayload.message
         value_regex: '(activemq\[[0-9]+\]|activemq):'
         type: string
-        description: null
+        description: ''
 configuration_options:
   metrics:
     - type: activemq
       fields:
         - name: type
           default: null
-          description: This value must be activemq.
+          description: This value must be `activemq`.
         - name: endpoint
           default: http://localhost:1099
           description: The URL of the node to monitor.
@@ -121,4 +122,4 @@ configuration_options:
           description: The configured password if JMX is configured to require authentication.
         - name: collection_interval
           default: 60s
-          description: A time.Duration value, such as 30s or 5m.
+          description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.

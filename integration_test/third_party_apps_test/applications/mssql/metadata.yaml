@@ -17,7 +17,19 @@ app_url: "https://docs.microsoft.com/en-us/sql/sql-server"
 short_name: SQL Server
 long_name: Microsoft SQL Server
 logo_path: /stackdriver/images/mssql.png # supplied by google technical writer
-description: "The v1 Microsoft SQL Server integration collects metrics from your SQL Server\ninstances. The metrics provide transaction-rate information and also data on\nopen connections.\n\nThe v2 Microsoft SQL Server integration collects metrics from your SQL Server\ninstances and databases. Page, batch, lock, and user connection count information\nis provided at the instance level. Transaction and transaction log information\nis provided at the database level. \n\nFor more information on SQL Server, see the\n[SQL Server](https://docs.microsoft.com/en-us/sql/sql-server)\ndocumentation."
+description: |-
+  The v1 Microsoft SQL Server integration collects metrics from your SQL Server
+  instances. The metrics provide transaction-rate information and also data on
+  open connections.
+
+  The v2 Microsoft SQL Server integration collects metrics from your SQL Server
+  instances and databases. Page, batch, lock, and user connection count information
+  is provided at the instance level. Transaction and transaction log information
+  is provided at the database level.
+
+  For more information on SQL Server, see the
+  [SQL Server](https://docs.microsoft.com/en-us/sql/sql-server){: .external}
+  documentation.
 minimum_supported_agent_version:
   metrics: 2.15.0
 supported_operating_systems: windows
@@ -142,10 +154,10 @@ configuration_options:
       fields:
         - name: type
           default: null
-          description: This value must be mssql.
+          description: This value must be `mssql`.
         - name: collection_interval
           default: 60s
-          description: A time.Duration value, such as 30s or 5m.
+          description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
         - name: receiver_version
           default: "1"
           description: Either 1 or 2. Version 2 has many more metrics available.

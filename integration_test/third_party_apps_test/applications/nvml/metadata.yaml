@@ -100,9 +100,9 @@ configuration_options:
       fields:
         - name: type
           default: null
-          description: This value must be hostmetrics.
+          description: This value must be `hostmetrics`.
         - name: collection_interval
           default: 60s
-          description: A time.Duration value, such as 30s or 5m.
+          description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
 minimum_supported_agent_version:
   metrics: 2.38.0

@@ -128,10 +128,10 @@ configuration_options:
       fields:
         - name: type
           default: null
-          description: This value must be jvm.
+          description: This value must be `jvm`.
         - name: endpoint
           default: localhost:9999
-          description: The JMX Service URL or host and port used to construct the service URL. This value must be in the form of service:jmx:<protocol>:<sap> or host:port. Values in host:port form are used to create a service URL of service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi.
+          description: The JMX Service URL or host and port used to construct the service URL. This value must be in the form of `service:jmx:<protocol>:<sap>` or `host:port`. Values in `host:port` form are used to create a service URL of `service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi`.
         - name: username
           default: null
           description: The configured username if JMX is configured to require authentication.
@@ -140,4 +140,4 @@ configuration_options:
           description: The configured password if JMX is configured to require authentication.
         - name: collection_interval
           default: 60s
-          description: A time.Duration value, such as 30s or 5m.
+          description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.

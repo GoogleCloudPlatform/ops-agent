@@ -25,8 +25,7 @@ description: |-
 configure_integration: |-
   To collect telemetry from your Apache Web Server, you must configure the
   server's `httpd.conf` file to enable the
-  [`mod_status` plugin](https://httpd.apache.org/docs/2.4/mod/mod_status.html)
-  {: .external}.
+  [`mod_status` plugin](https://httpd.apache.org/docs/2.4/mod/mod_status.html){: .external}.
 
   Many Apache installations enable this plugin by default. To see if the
   plugin is enabled on your VM instance, run:
@@ -151,7 +150,7 @@ expected_logs:
       - name: jsonPayload.module
         value_regex: core
         type: string
-        description: apache module where the log originated
+        description: Apache module where the log originated
       - name: jsonPayload.message
         value_regex: .*file permissions deny server access.*
         type: string
@@ -159,7 +158,7 @@ expected_logs:
       - name: jsonPayload.errorCode
         value_regex: .*Permission denied.*
         type: string
-        description: apache error code
+        description: Apache error code
       - name: jsonPayload.pid
         type: string
         description: Process ID
@@ -182,45 +181,45 @@ configuration_options:
       fields:
         - name: type
           default: null
-          description: This value must be apache_access.
+          description: This value must be `apache_access`.
         - name: include_paths
           default: '[/var/log/apache2/access.log,/var/log/apache2/access_log,/var/log/httpd/access_log]'
-          description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/apache*/*.log.
+          description: A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `/var/log/apache*/*.log`.
         - name: exclude_paths
           default: null
-          description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+          description: A list of filesystem path patterns to exclude from the set matched by `include_paths`.
         - name: record_log_file_path
           default: false
           description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
         - name: wildcard_refresh_interval
           default: 60s
-          description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+          description: The interval at which wildcard file paths in `include_paths` are refreshed. Given as a [time duration](https://pkg.go.dev/time#ParseDuration), for example `30s` or `2m`. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
     - type: apache_error
       fields:
         - name: type
           default: null
-          description: This value must be apache_error.
+          description: This value must be `apache_error`.
         - name: include_paths
           default: '[/var/log/apache2/error.log,/var/log/apache2/error_log,/var/log/httpd/error_log]'
-          description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/apache*/*.log.
+          description: A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `/var/log/apache*/*.log`.
         - name: exclude_paths
           default: null
-          description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+          description: A list of filesystem path patterns to exclude from the set matched by `include_paths`.
         - name: record_log_file_path
           default: false
           description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
         - name: wildcard_refresh_interval
           default: 60s
-          description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+          description: The interval at which wildcard file paths in `include_paths` are refreshed. Given as a [time duration](https://pkg.go.dev/time#ParseDuration), for example `30s` or `2m`. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
   metrics:
     - type: apache
       fields:
         - name: type
           default: null
-          description: This value must be apache.
+          description: This value must be `apache`.
         - name: server_status_url
           default: http://localhost:80/server-status?auto
-          description: The URL exposed by the mod_status module.
+          description: The URL exposed by the `mod_status` module.
         - name: collection_interval
           default: 60s
-          description: A time.Duration value, such as 30s or 5m.
+          description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
