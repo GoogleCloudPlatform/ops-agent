@@ -91,10 +91,10 @@ configuration_options:
       fields:
         - name: type
           default: null
-          description: memcached.
+          description: This value must be `memcached`.
         - name: endpoint
           default: localhost:3306
           description: The URL, or Unix socket file path, for your Memcached server.
         - name: collection_interval
           default: 60s
-          description: A time.Duration value, such as 30s or 5m.
+          description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.

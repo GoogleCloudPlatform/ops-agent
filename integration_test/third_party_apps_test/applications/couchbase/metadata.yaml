@@ -13,8 +13,9 @@
 # limitations under the License.
 
 app_url: "https://www.couchbase.com/"
-short_name: couchbase
+short_name: Couchbase
 long_name: Couchbase
+logo_path: /stackdriver/images/integrations/couchbase.png # supplied by google technical writer
 description: |-
   The Couchbase integration collects bucket metrics such as operations, memory usage, and ejections. The integration collects metrics from the Prometheus server exposed on a node.
 supported_app_version: ["6.5", "6.6", "7.0"]
@@ -190,9 +191,9 @@ configuration_options:
           default: 60s
           description: A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
         - name: username
-          description: The username used to connect to the couchbase server.
+          description: The username used to connect to the Couchbase server.
         - name: password
-          description: The password used to connect to the couchbase server.
+          description: The password used to connect to the Couchbase server.
 minimum_supported_agent_version:
   metrics: 2.18.2
   logging: 2.18.2
