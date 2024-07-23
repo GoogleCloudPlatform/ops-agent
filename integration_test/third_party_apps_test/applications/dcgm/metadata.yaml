@@ -51,7 +51,6 @@ expected_metrics:
       model: .*
       uuid: .*
       gpu_number: "[0-9]*"
-      instrumentation_source: agent.googleapis.com/dcgm
   - type: workload.googleapis.com/gpu.dcgm.sm.utilization
     value_type: DOUBLE
     kind: GAUGE
@@ -60,7 +59,6 @@ expected_metrics:
       model: .*
       uuid: .*
       gpu_number: "[0-9]*"
-      instrumentation_source: agent.googleapis.com/dcgm
   - type: workload.googleapis.com/gpu.dcgm.pipe.utilization
     value_type: DOUBLE
     kind: GAUGE
@@ -70,7 +68,6 @@ expected_metrics:
       uuid: .*
       gpu_number: "[0-9]*"
       pipe: tensor|fp64|fp32|fp16
-      instrumentation_source: agent.googleapis.com/dcgm
   - type: workload.googleapis.com/gpu.dcgm.codec.encoder.utilization
     value_type: DOUBLE
     kind: GAUGE
@@ -79,7 +76,6 @@ expected_metrics:
       model: .*
       uuid: .*
       gpu_number: "[0-9]*"
-      instrumentation_source: agent.googleapis.com/dcgm
   - type: workload.googleapis.com/gpu.dcgm.codec.decoder.utilization
     value_type: DOUBLE
     kind: GAUGE
@@ -88,7 +84,6 @@ expected_metrics:
       model: .*
       uuid: .*
       gpu_number: "[0-9]*"
-      instrumentation_source: agent.googleapis.com/dcgm
   - type: workload.googleapis.com/gpu.dcgm.memory.bytes_used
     value_type: INT64
     kind: GAUGE
@@ -98,7 +93,6 @@ expected_metrics:
       uuid: .*
       gpu_number: "[0-9]*"
       state: free|used|reserved
-      instrumentation_source: agent.googleapis.com/dcgm
     representative: true
   - type: workload.googleapis.com/gpu.dcgm.memory.bandwidth_utilization
     value_type: DOUBLE
@@ -108,7 +102,6 @@ expected_metrics:
       model: .*
       uuid: .*
       gpu_number: "[0-9]*"
-      instrumentation_source: agent.googleapis.com/dcgm
   - type: workload.googleapis.com/gpu.dcgm.pcie.io
     value_type: INT64
     kind: CUMULATIVE
@@ -118,7 +111,6 @@ expected_metrics:
       uuid: .*
       gpu_number: "[0-9]*"
       direction: transmit|receive
-      instrumentation_source: agent.googleapis.com/dcgm
   - type: workload.googleapis.com/gpu.dcgm.nvlink.io
     value_type: INT64
     kind: CUMULATIVE
@@ -128,7 +120,6 @@ expected_metrics:
       uuid: .*
       gpu_number: "[0-9]*"
       direction: transmit|receive
-      instrumentation_source: agent.googleapis.com/dcgm
   - type: workload.googleapis.com/gpu.dcgm.energy_consumption
     value_type: DOUBLE
     kind: CUMULATIVE
@@ -137,7 +128,6 @@ expected_metrics:
       model: .*
       uuid: .*
       gpu_number: "[0-9]*"
-      instrumentation_source: agent.googleapis.com/dcgm
   - type: workload.googleapis.com/gpu.dcgm.temperature
     value_type: DOUBLE
     kind: GAUGE
@@ -146,7 +136,6 @@ expected_metrics:
       model: .*
       uuid: .*
       gpu_number: "[0-9]*"
-      instrumentation_source: agent.googleapis.com/dcgm
   - type: workload.googleapis.com/gpu.dcgm.clock.frequency
     value_type: DOUBLE
     kind: GAUGE
@@ -155,7 +144,6 @@ expected_metrics:
       model: .*
       uuid: .*
       gpu_number: "[0-9]*"
-      instrumentation_source: agent.googleapis.com/dcgm
   - type: workload.googleapis.com/gpu.dcgm.clock.throttle_duration.time
     value_type: DOUBLE
     kind: CUMULATIVE
@@ -165,7 +153,6 @@ expected_metrics:
       uuid: .*
       gpu_number: "[0-9]*"
       violation: power|thermal|sync_boost|board_limit|low_util|reliability|app_clock|base_clock
-      instrumentation_source: agent.googleapis.com/dcgm
   - type: workload.googleapis.com/gpu.dcgm.ecc_errors
     value_type: INT64
     kind: CUMULATIVE
@@ -175,7 +162,6 @@ expected_metrics:
       uuid: .*
       gpu_number: "[0-9]*"
       error_type: sbe|dbe
-      instrumentation_source: agent.googleapis.com/dcgm
 configuration_options:
   metrics:
     - type: dcgm
