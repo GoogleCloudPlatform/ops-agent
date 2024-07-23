@@ -54,7 +54,7 @@ type ExpectedMetric struct {
 	UnavailableOn []string `yaml:"unavailable_on,omitempty" validate:"excluded_with=Representative"`
 }
 
-type LogFields struct {
+type LogField struct {
 	Name        string `yaml:"name" validate:"required"`
 	ValueRegex  string `yaml:"value_regex"`
 	Type        string `yaml:"type" validate:"required"`
@@ -66,8 +66,8 @@ type LogFields struct {
 }
 
 type ExpectedLog struct {
-	LogName string       `yaml:"log_name" validate:"required"`
-	Fields  []*LogFields `yaml:"fields" validate:"required,dive"`
+	LogName string      `yaml:"log_name" validate:"required"`
+	Fields  []*LogField `yaml:"fields" validate:"required,dive"`
 }
 
 type MinimumSupportedAgentVersion struct {
