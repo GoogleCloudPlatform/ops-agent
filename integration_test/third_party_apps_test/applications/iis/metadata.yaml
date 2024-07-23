@@ -145,10 +145,6 @@ expected_logs:
         type: string
         description: "Contents of the `Referer` header"
         optional: true
-      - name: httpRequest.userAgent
-        type: string
-        description: ""
-        optional: true
       - name: jsonPayload.sc_substatus
         type: string
         description: "The server's IP and port that was requested"
