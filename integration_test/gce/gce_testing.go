@@ -36,7 +36,7 @@ AGENT_PACKAGES_IN_GCS, for details see README.md.
 
 	PROJECT=dev_project \
 	ZONES=us-central1-b \
-	IMAGE_SPECS=debian-cloud:debian-10,rocky-linux-cloud:rocky-linux-8,rhel-sap-cloud:rhel-8-8-sap-ha,suse-cloud:sles-15,ubuntu-os-cloud:ubuntu-2004-lts,windows-cloud:windows-2016,windows-cloud:windows-2019 \
+	IMAGE_SPECS=debian-cloud:debian-12,rocky-linux-cloud:rocky-linux-8,rhel-sap-cloud:rhel-8-8-sap-ha,suse-cloud:sles-15,ubuntu-os-cloud:ubuntu-2004-lts,windows-cloud:windows-2016,windows-cloud:windows-2019 \
 
 	go test -v ops_agent_test.go \
 	  -test.parallel=1000 \
@@ -1311,13 +1311,6 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		if _, err := RunRemotely(ctx,
 			logger, vm, `sudo yum -y --disablerepo=rhui-rhel*-7-* install yum-utils && sudo yum-config-manager --disable "rhui-rhel*-7-*"`); err != nil {
 			return nil, fmt.Errorf("disabling flaky repos failed : %w", err)
-		}
-	}
-
-	// See b/334918531.
-	if strings.Contains(vm.ImageSpec, "debian-10") {
-		if _, err := RunRemotely(ctx, logger, vm, "sudo sed -i 's#https://deb.debian.org/debian buster-backports#https://archive.debian.org/debian buster-backports#' /etc/apt/sources.list"); err != nil {
-			return nil, fmt.Errorf("attemptCreateInstance() failed to reconfigure buster-backports: %v", err)
 		}
 	}
 
