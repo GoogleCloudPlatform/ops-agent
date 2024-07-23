@@ -324,10 +324,6 @@ expected_logs:
         type: string
         description: This is the display name set by the auth method role or explicitly at secret creation time.
         optional: true
-      - name: jsonPayload.response.data.display_name
-        type: string
-        description: This is the display name set by the auth method role or explicitly at secret creation time.
-        optional: true
       - name: jsonPayload.response.data.entity_id
         type: string
         description: This is a token entity identifier.
