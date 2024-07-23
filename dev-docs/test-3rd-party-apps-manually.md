@@ -3,7 +3,7 @@
 ### 1. Create a VM and SSH into it
 
 ```
-gcloud compute instances create --zone us-central1-a --image-project debian-cloud --image-family debian-10 test-app
+gcloud compute instances create --zone us-central1-a --image-project debian-cloud --image-family debian-11 test-app
 gcloud compute ssh test-app
 ```
 

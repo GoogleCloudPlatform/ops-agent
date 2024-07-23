@@ -212,7 +212,6 @@ total 180116
 -rw-r--r-- 1 421646 89939  7726721 Oct  7 21:16 google-cloud-ops-agent-centos-8.tgz
 -rw-r--r-- 1 421646 89939 10560080 Oct  7 21:18 google-cloud-ops-agent-dbgsym_0.1.0~debian10_amd64.deb
 -rw-r--r-- 1 421646 89939  8643334 Oct  7 21:18 google-cloud-ops-agent-dbgsym_0.1.0~debian9.13_amd64.deb
--rw-r--r-- 1 421646 89939 16809738 Oct  7 21:18 google-cloud-ops-agent-debian-buster.tgz
 -rw-r--r-- 1 421646 89939 14837062 Oct  7 21:18 google-cloud-ops-agent-debian-stretch.tgz
 -rw-r--r-- 1 421646 89939  7697140 Oct  7 21:15 google-cloud-ops-agent-sles-12.tgz
 -rw-r--r-- 1 421646 89939  7718344 Oct  7 21:16 google-cloud-ops-agent-sles-15.tgz
@@ -223,7 +222,7 @@ total 180116
 Inspect the tarball to see if there is anything obviously wrong.
 
 ```shell
-$ tar -tvf $PACKAGES_OUT/google-cloud-ops-agent-debian-buster.tgz
+$ tar -tvf $PACKAGES_OUT/google-cloud-ops-agent-debian-bullseye.tgz
 ```
 
 #### Create a VM
@@ -606,7 +605,7 @@ See [Create a GCE Windows test VM](create-gce-windows-test-vm.md).
 
 ## Edit config and apply
 
-Note: editing the configuration file for Ops Agent is optional. If you don't edit the configuration file, the default 
+Note: editing the configuration file for Ops Agent is optional. If you don't edit the configuration file, the default
 configuration will be applied.
 
 Edit the Ops Agent configuration file as needed:
@@ -768,7 +767,7 @@ fetch gce_instance
 1.  To update submodule
 
     Set `$SUBMODULE_NAME` to one of:
-    
+
     - fluent-bit
     - opentelemetry-operations-collector
     - collectd
@@ -777,7 +776,7 @@ fetch gce_instance
     [`fluent bit`](https://github.com/fluent/fluent-bit/tags),
     [`otel collector`](https://github.com/GoogleCloudPlatform/opentelemetry-operations-collector/tags),
     or [`collectd`](https://github.com/Stackdriver/collectd/tags)
-    
+
     Run:
 
     ```shell

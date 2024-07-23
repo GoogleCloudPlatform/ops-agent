@@ -16,7 +16,7 @@
 # To re-generate, run from the repository root: go run ./dockerfiles
 
 # Build as DOCKER_BUILDKIT=1 docker build -o /tmp/out .
-# or DOCKER_BUILDKIT=1 docker build -o /tmp/out . --target=buster
+# or DOCKER_BUILDKIT=1 docker build -o /tmp/out . --target=bullseye
 # Generated tarball(s) will end up in /tmp/out
 
 
