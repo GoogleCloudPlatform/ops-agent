@@ -242,7 +242,7 @@ the corresponding `main_log.txt` from there.
 
 Here is the full contents uploaded to the GCS bucket for a single test run.
 The "Details" link takes you directly to the "logs" subdirectory to save you
-a hop. The following is sorted roughly in descending order of usefulness.
+a hop.
 ```
 └── logs
     ├── sponge_log.xml
@@ -263,6 +263,7 @@ a hop. The following is sorted roughly in descending order of usefulness.
         ├── syslog.txt
         └── systemctl_status_for_ops_agent.txt
 ```
+
 Let's go through each of these files and discuss what they are.
 
 TODO: Document log files for a Windows VM.
