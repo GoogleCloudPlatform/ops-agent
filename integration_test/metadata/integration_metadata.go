@@ -32,6 +32,8 @@ type MetricLabel struct {
 	Name string `yaml:"name" validate:"required"`
 	// The label value pattern, as an RE2 regular expression.
 	ValueRegex string `yaml:"value_regex" validate:"required"`
+	// The description of the label.
+	Description string `yaml:"description" validate:"excludesall=‘’“”"`
 }
 
 // MetricSpec encodes a specification of a metric in the metrics backend.
@@ -42,6 +44,10 @@ type MetricSpec struct {
 	ValueType string `yaml:"value_type" validate:"required,oneof=BOOL INT64 DOUBLE STRING DISTRIBUTION"`
 	// The kind, for example GAUGE.
 	Kind string `yaml:"kind" validate:"required,oneof=GAUGE DELTA CUMULATIVE"`
+	// The unit of the metric.
+	Unit string `yaml:"unit"`
+	// The description of the metric.
+	Description string `yaml:"description" validate:"excludesall=‘’“”"`
 	// The monitored resource, for example gce_instance.
 	// Currently we only test with gce_instance.
 	MonitoredResources []string `yaml:"monitored_resources,flow" validate:"required,gt=0,dive,oneof=gce_instance"`
