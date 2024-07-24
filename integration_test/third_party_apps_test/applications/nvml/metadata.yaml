@@ -42,7 +42,6 @@ gpu_platforms:
       - ubuntu-os-cloud:ubuntu-2004-lts
   - model: l4
     platforms:
-      - centos-cloud:centos-7
       - debian-cloud:debian-11
       - ml-images:common-gpu-debian-11-py310
       - rocky-linux-cloud:rocky-linux-8

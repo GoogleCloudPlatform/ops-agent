@@ -75,112 +75,6 @@ RUN set -xe; \
 
 
 # ======================================
-# Build Ops Agent for centos-7
-# ======================================
-
-FROM centos:7 AS centos7-build-base
-ARG OPENJDK_MAJOR_VERSION
-
-RUN set -x; yum -y update && \
-		yum -y install git systemd \
-		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
-		gcc gcc-c++ make bison flex file systemd-devel zlib-devel gtest-devel rpm-build \
-		expect rpm-sign zip
-COPY --from=openjdk-install /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/ /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk
-ENV JAVA_HOME /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/
-COPY --from=cmake-install-recent /cmake.sh /cmake.sh
-RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
-
-
-SHELL ["/bin/bash", "-c"]
-
-# Install golang
-ARG TARGETARCH
-ARG GO_VERSION
-ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
-RUN set -xe; \
-    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
-ENV PATH="${PATH}:/usr/local/go/bin"
-
-
-FROM centos7-build-base AS centos7-build-otel
-WORKDIR /work
-# Download golang deps
-COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
-RUN cd submodules/opentelemetry-operations-collector && go mod download
-
-COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
-# Install gradle. The first invocation of gradlew does this
-RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
-COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
-COPY ./builds/otel.sh .
-RUN \
-    unset OTEL_TRACES_EXPORTER && \
-    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
-    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-    ./otel.sh /work/cache/
-
-FROM centos7-build-base AS centos7-build-fluent-bit
-WORKDIR /work
-COPY ./submodules/fluent-bit submodules/fluent-bit
-COPY ./builds/fluent_bit.sh .
-RUN ./fluent_bit.sh /work/cache/
-
-
-FROM centos7-build-base AS centos7-build-systemd
-WORKDIR /work
-COPY ./systemd systemd
-COPY ./builds/systemd.sh .
-RUN ./systemd.sh /work/cache/
-
-
-FROM centos7-build-base AS centos7-build-golang-base
-WORKDIR /work
-COPY go.mod go.sum ./
-# Fetch dependencies
-RUN go mod download
-COPY confgenerator confgenerator
-COPY apps apps
-COPY internal internal
-
-
-FROM centos7-build-golang-base AS centos7-build-diagnostics
-WORKDIR /work
-COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
-COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
-
-
-FROM centos7-build-golang-base AS centos7-build-wrapper
-WORKDIR /work
-COPY cmd/agent_wrapper cmd/agent_wrapper
-COPY ./builds/agent_wrapper.sh .
-RUN ./agent_wrapper.sh /work/cache/
-
-
-FROM centos7-build-golang-base AS centos7-build
-WORKDIR /work
-COPY . /work
-
-# Run the build script once to build the ops agent engine to a cache
-RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
-WORKDIR /tmp/cache_run/golang
-RUN ./pkg/rpm/build.sh || true &> /dev/null
-WORKDIR /work
-
-COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
-COPY --from=centos7-build-otel /work/cache /work/cache
-COPY --from=centos7-build-fluent-bit /work/cache /work/cache
-COPY --from=centos7-build-systemd /work/cache /work/cache
-COPY --from=centos7-build-diagnostics /work/cache /work/cache
-COPY --from=centos7-build-wrapper /work/cache /work/cache
-RUN ./pkg/rpm/build.sh
-
-FROM scratch AS centos7
-COPY --from=centos7-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-7.tgz
-COPY --from=centos7-build /google-cloud-ops-agent*.rpm /
-
-# ======================================
 # Build Ops Agent for centos-8
 # ======================================
 
@@ -1222,7 +1116,6 @@ COPY --from=noble-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-
 COPY --from=noble-build /google-cloud-ops-agent*.deb /
 
 FROM scratch
-COPY --from=centos7 /* /
 COPY --from=centos8 /* /
 COPY --from=rockylinux9 /* /
 COPY --from=bookworm /* /

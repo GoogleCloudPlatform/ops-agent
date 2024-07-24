@@ -71,18 +71,6 @@ ENV JAVA_HOME /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/`
 
 var dockerfileArguments = []templateArguments{
 	{
-		from_image:  "centos:7",
-		target_name: "centos7",
-		install_packages: `RUN set -x; yum -y update && \
-		yum -y install git systemd \
-		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
-		gcc gcc-c++ make bison flex file systemd-devel zlib-devel gtest-devel rpm-build \
-		expect rpm-sign zip` + installJava + installCMake,
-		package_build:     "RUN ./pkg/rpm/build.sh",
-		tar_distro_name:   "centos-7",
-		package_extension: "rpm",
-	},
-	{
 		from_image:  "rockylinux:8",
 		target_name: "centos8",
 		install_packages: `RUN set -x; yum -y update && \

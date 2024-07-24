@@ -242,6 +242,8 @@ the corresponding `main_log.txt` from there.
 
 Here is the full contents uploaded to the GCS bucket for a single test run.
 The "Details" link takes you directly to the "logs" subdirectory to save you
+a hop.
+```
 └── logs
     ├── sponge_log.xml
     └── TestThirdPartyApps_debian-cloud:debian-11_jetty
