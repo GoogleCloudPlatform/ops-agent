@@ -35,7 +35,6 @@ gpu_platforms: # p4, p100 don't emit DCGM profiling metrics
       - ubuntu-os-cloud:ubuntu-2004-lts
   - model: l4
     platforms:
-      - centos-cloud:centos-7
       - debian-cloud:debian-11
       - rocky-linux-cloud:rocky-linux-8
       - rocky-linux-cloud:rocky-linux-9

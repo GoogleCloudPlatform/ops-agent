@@ -38,14 +38,14 @@ Configs for the `google-cloud-ops-agent-fluent-bit` service               | [sys
 <details>
 <summary>Build related</summary>
 
-Description                                                        | Link
------------------------------------------------------------------- | ----
-Build container Dockerfile for Linux                               | [Dockerfile](https://github.com/GoogleCloudPlatform/ops-agent/tree/master/Dockerfile)
-Build container Dockerfile for Windows                             | [Dockerfile.windows](https://github.com/GoogleCloudPlatform/ops-agent/tree/master/Dockerfile.windows)
-Build script for a tarball                                         | [build.sh](https://github.com/GoogleCloudPlatform/ops-agent/tree/master/build.sh)
-Build script of the Deb packages for Debian and Ubuntu distros     | [pkg/deb/build.sh](https://github.com/GoogleCloudPlatform/ops-agent/tree/master/pkg/deb/build.sh)
-Build script of the RPM packages for CentOS, RHEL and Sles distros | [pkg/rpm/build.sh](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/pkg/rpm/build.sh)
-Build script of the Windows packages for Windows distros           | [pkg/goo/build.ps1](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/pkg/goo/build.ps1)
+Description                                                              | Link
+------------------------------------------------------------------------ | ----
+Build container Dockerfile for Linux                                     | [Dockerfile](https://github.com/GoogleCloudPlatform/ops-agent/tree/master/Dockerfile)
+Build container Dockerfile for Windows                                   | [Dockerfile.windows](https://github.com/GoogleCloudPlatform/ops-agent/tree/master/Dockerfile.windows)
+Build script for a tarball                                               | [build.sh](https://github.com/GoogleCloudPlatform/ops-agent/tree/master/build.sh)
+Build script of the Deb packages for Debian and Ubuntu distros           | [pkg/deb/build.sh](https://github.com/GoogleCloudPlatform/ops-agent/tree/master/pkg/deb/build.sh)
+Build script of the RPM packages for Rocky Linux, RHEL, and SLES distros | [pkg/rpm/build.sh](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/pkg/rpm/build.sh)
+Build script of the Windows packages for Windows distros                 | [pkg/goo/build.ps1](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/pkg/goo/build.ps1)
 
 </details>
 
@@ -208,7 +208,6 @@ total 180116
 -rw-r--r-- 1 421646 89939  2919650 Oct  7 21:18 google-cloud-ops-agent_0.1.0~debian9.13_amd64.deb
 -rw-r--r-- 1 421646 89939  2914160 Oct  7 21:18 google-cloud-ops-agent_0.1.0~ubuntu18.04_amd64.deb
 -rw-r--r-- 1 421646 89939  2944116 Oct  7 21:18 google-cloud-ops-agent_0.1.0~ubuntu20.04_amd64.deb
--rw-r--r-- 1 421646 89939  7561251 Oct  7 21:16 google-cloud-ops-agent-centos-7.tgz
 -rw-r--r-- 1 421646 89939  7726721 Oct  7 21:16 google-cloud-ops-agent-centos-8.tgz
 -rw-r--r-- 1 421646 89939 10560080 Oct  7 21:18 google-cloud-ops-agent-dbgsym_0.1.0~debian10_amd64.deb
 -rw-r--r-- 1 421646 89939  8643334 Oct  7 21:18 google-cloud-ops-agent-dbgsym_0.1.0~debian9.13_amd64.deb
