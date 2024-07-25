@@ -739,6 +739,95 @@ func runCommand(ctx context.Context, logger *log.Logger, stdin io.Reader, args [
 	return output, err
 }
 
+// getGcloudConfigDir returns the current gcloud configuration directory.
+func getGcloudConfigDir(ctx context.Context) (string, error) {
+	null, err := os.Open(os.DevNull)
+	if err != nil {
+		panic(fmt.Sprintf("unable to open os.DevNull: %v", err))
+	}
+	out, err := RunGcloud(ctx, log.New(null, "", 0), "", []string{"info", "--format=value[terminator=''](config.paths.global_config_dir)"})
+	if err != nil {
+		return "", fmt.Errorf("error running gcloud info: %w", err)
+	}
+	return out.Stdout, nil
+}
+
+// copyFile copies the contents of source into target.
+func copyFile(source string, target string) error {
+	in, err := os.Open(source)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+	out, err := os.Create(target)
+	if err != nil {
+		return err
+	}
+	_, copyErr := io.Copy(out, in)
+	syncErr := out.Sync()
+	closeErr := out.Close()
+	return multierr.Combine(copyErr, syncErr, closeErr)
+}
+
+// SetupGcloudConfigDir sets up a new gcloud configuration directory.
+// This copies the "configurations" subdirectory of the context-specified
+// configuration directory into the new directory.
+func SetupGcloudConfigDir(ctx context.Context, directory string) error {
+	relevantFiles := []string{
+		"active_config",
+		"access_tokens.db",
+		"credentials.db",
+		"default_configs.db",
+	}
+	currentConfigDir, err := getGcloudConfigDir(ctx)
+	if err != nil {
+		return err
+	}
+	sfi, err := os.Stat(currentConfigDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("unexpected error accessing source directory %s: %w", currentConfigDir, err)
+	}
+	if !sfi.IsDir() {
+		return fmt.Errorf("source %s is not a directory: %s", currentConfigDir, sfi.Mode().Type())
+	}
+	dfi, err := os.Stat(directory)
+	if err != nil {
+		return fmt.Errorf("unexpected error accessing destination directory %s: %w", directory, err)
+	}
+	if !dfi.IsDir() {
+		return fmt.Errorf("target %s is not a directory: %s", directory, dfi.Mode().Type())
+	}
+	if os.SameFile(sfi, dfi) {
+		return nil
+	}
+	srcDirPath := filepath.Join(currentConfigDir, "configurations")
+	files, err := os.ReadDir(srcDirPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("error listing the source configuration subdirectory: %w", err)
+	}
+	tgtDirPath := filepath.Join(directory, "configurations")
+	if err := os.MkdirAll(tgtDirPath, 0700); err != nil {
+		return fmt.Errorf("error creating the target configuration subdirectory: %w", err)
+	}
+	for _, file := range files {
+		if err = copyFile(filepath.Join(srcDirPath, file.Name()), filepath.Join(tgtDirPath, file.Name())); err != nil {
+			return fmt.Errorf("error copying %s: %w", filepath.Join("configurations", file.Name()), err)
+		}
+	}
+	for _, name := range relevantFiles {
+		if err = copyFile(filepath.Join(currentConfigDir, name), filepath.Join(directory, name)); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("error copying %s: %w", name, err)
+		}
+	}
+	return nil
+}
+
 const (
 	gcloudConfigDirKey = "__gcloud_config_dir__"
 )
