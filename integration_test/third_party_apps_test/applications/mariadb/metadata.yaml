@@ -34,7 +34,7 @@ configure_integration: |-
 
   The `mysql_error` logging receiver collects logs from the default file paths
   shown in the table below. On some platforms, MariaDB logs to `journald` by
-  default instead of a file. Configure MariaDB to log to a file instead by 
+  default instead of a file. Configure MariaDB to log to a file instead by
   setting `log_error` in the MariaDB configuration.
   [Learn more](https://mariadb.com/kb/en/error-log/#writing-the-error-log-to-a-file)
   about configuring `log_error`.
@@ -146,8 +146,6 @@ expected_metrics:
     labels:
       operation: deleted|inserted|read|updated
     unavailable_on:
-      - ubuntu-os-cloud:ubuntu-2310-amd64
-      - ubuntu-os-cloud:ubuntu-2310-arm64
       - ubuntu-os-cloud:ubuntu-2404-lts-amd64
       - ubuntu-os-cloud:ubuntu-2404-lts-arm64
       - debian-cloud:debian-12-arm64
