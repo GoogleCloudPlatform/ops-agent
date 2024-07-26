@@ -15,3 +15,4 @@ ExtendedStatus on
 EOF
 
 sudo service httpd start
+curl http://localhost:80/server-status?auto
