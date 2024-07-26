@@ -1,6 +1,18 @@
 set -e
 
 sudo yum -y install httpd
-(cd /etc/httpd/conf.d/ && sudo curl -O https://raw.githubusercontent.com/Stackdriver/stackdriver-agent-service-configs/master/etc/httpd/conf.d/status.conf)
+sudo mkdir -p /etc/httpd/conf.d/
+sudo tee /etc/httpd/conf.d/status.conf >/dev/null <<EOF
+ExtendedStatus on
+<VirtualHost 127.0.0.1:80>
+    ServerName local-stackdriver-agent.stackdriver.com
+    <Location /server-status>
+        SetHandler server-status
+        Order deny,allow
+        Deny from all
+        Allow from 127.0.0.1
+    </Location>
+</VirtualHost>
+EOF
 
 sudo service httpd start
