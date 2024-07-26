@@ -5,7 +5,6 @@ sudo mkdir -p /etc/httpd/conf.d/
 sudo tee /etc/httpd/conf.d/status.conf >/dev/null <<EOF
 ExtendedStatus on
 <VirtualHost 127.0.0.1:80>
-    ServerName local-stackdriver-agent.stackdriver.com
     <Location /server-status>
         SetHandler server-status
         Order deny,allow
