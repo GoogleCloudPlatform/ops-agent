@@ -127,7 +127,7 @@ func UnmarshalAndValidate(fullPath string, data []byte, i interface{}) error {
 	v := NewIntegrationMetadataValidator()
 	// Note: Unmarshaler does not protect when only the key being declared.
 	// https://github.com/goccy/go-yaml/issues/313
-	if err := yaml.UnmarshalWithOptions(data, i, yaml.DisallowUnknownField(), yaml.Validator(v)); err != nil {
+	if err := yaml.UnmarshalWithOptions(data, i, yaml.DisallowUnknownField(), yaml.DisallowDuplicateKey(), yaml.Validator(v)); err != nil {
 		return fmt.Errorf("%s%w", fullPath, err)
 	}
 	return nil
