@@ -95,62 +95,46 @@ func (r MetricsReceiverDcgm) Pipelines(_ context.Context) ([]otel.ReceiverPipeli
 		}}, nil
 	}
 
+	disabledV1Metrics := []string{
+		"gpu.dcgm.utilization",
+		"gpu.dcgm.codec.encoder.utilization",
+		"gpu.dcgm.codec.decoder.utilization",
+		"gpu.dcgm.memory.bytes_used",
+		"gpu.dcgm.energy_consumption",
+		"gpu.dcgm.temperature",
+		"gpu.dcgm.clock.frequency",
+		"gpu.dcgm.clock.throttle_duration.time",
+		"gpu.dcgm.ecc_errors",
+		"gpu.dcgm.xid_errors",
+	}
+	enabledV1Metrics := []string{
+		"gpu.dcgm.sm.utilization",
+		"gpu.dcgm.sm.occupancy",
+		"gpu.dcgm.pipe.utilization",
+		"gpu.dcgm.memory.bandwidth_utilization",
+		"gpu.dcgm.pcie.io",
+		"gpu.dcgm.nvlink.io",
+	}
+
+	metricsConfig := make(map[string]interface{})
+	for _, m := range disabledV1Metrics {
+		metricsConfig[m] = map[string]bool{
+			"enabled": false,
+		}
+	}
+	for _, m := range enabledV1Metrics {
+		metricsConfig[m] = map[string]bool{
+			"enabled": true,
+		}
+	}
+
 	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "dcgm",
 			Config: map[string]interface{}{
 				"collection_interval": r.CollectionIntervalString(),
 				"endpoint":            r.Endpoint,
-				"metrics": map[string]interface{}{
-					"gpu.dcgm.utilization": map[string]bool{
-						"enabled": false,
-					},
-					"gpu.dcgm.sm.utilization": map[string]bool{
-						"enabled": true,
-					},
-					"gpu.dcgm.sm.occupancy": map[string]bool{
-						"enabled": true,
-					},
-					"gpu.dcgm.pipe.utilization": map[string]bool{
-						"enabled": true,
-					},
-					"gpu.dcgm.codec.encoder.utilization": map[string]bool{
-						"enabled": false,
-					},
-					"gpu.dcgm.codec.decoder.utilization": map[string]bool{
-						"enabled": false,
-					},
-					"gpu.dcgm.memory.bytes_used": map[string]bool{
-						"enabled": false,
-					},
-					"gpu.dcgm.memory.bandwidth_utilization": map[string]bool{
-						"enabled": true,
-					},
-					"gpu.dcgm.pcie.io": map[string]bool{
-						"enabled": true,
-					},
-					"gpu.dcgm.nvlink.io": map[string]bool{
-						"enabled": true,
-					},
-					"gpu.dcgm.energy_consumption": map[string]bool{
-						"enabled": false,
-					},
-					"gpu.dcgm.temperature": map[string]bool{
-						"enabled": false,
-					},
-					"gpu.dcgm.clock.frequency": map[string]bool{
-						"enabled": false,
-					},
-					"gpu.dcgm.clock.throttle_duration.time": map[string]bool{
-						"enabled": false,
-					},
-					"gpu.dcgm.ecc_errors": map[string]bool{
-						"enabled": false,
-					},
-					"gpu.dcgm.xid_errors": map[string]bool{
-						"enabled": false,
-					},
-				},
+				"metrics": metricsConfig,
 			},
 		},
 		Processors: map[string][]otel.Component{"metrics": {
