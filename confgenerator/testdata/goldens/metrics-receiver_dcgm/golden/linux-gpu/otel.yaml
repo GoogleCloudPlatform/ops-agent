@@ -19,7 +19,11 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  deltatorate/dcgm_1:
+  cumulativetodelta/dcgm_1:
+    metrics:
+    - dcgm.gpu.profiling.nvlink_traffic_rate
+    - dcgm.gpu.profiling.pcie_traffic_rate
+  deltatorate/dcgm_2:
     metrics:
     - dcgm.gpu.profiling.nvlink_traffic_rate
     - dcgm.gpu.profiling.pcie_traffic_rate
@@ -107,7 +111,7 @@ processors:
     - action: update
       include: gpu.dcgm.sm.utilization
       new_name: dcgm.gpu.profiling.sm_utilization
-  metricstransform/dcgm_2:
+  metricstransform/dcgm_3:
     transforms:
     - action: update
       include: dcgm.gpu.profiling.nvlink_traffic_rate
@@ -117,7 +121,7 @@ processors:
       include: dcgm.gpu.profiling.pcie_traffic_rate
       operations:
       - action: toggle_scalar_data_type
-  metricstransform/dcgm_3:
+  metricstransform/dcgm_4:
     transforms:
     - action: update
       include: ^(.*)$$
@@ -521,13 +525,13 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  modifyscope/dcgm_5:
+  modifyscope/dcgm_6:
     override_scope_name: agent.googleapis.com/dcgm
     override_scope_version: "1.0"
   resourcedetection/_global_0:
     detectors:
     - gcp
-  transform/dcgm_4:
+  transform/dcgm_5:
     metric_statements:
       context: datapoint
       statements:
@@ -610,11 +614,12 @@ service:
       - googlecloud/otel
       processors:
       - metricstransform/dcgm_0
-      - deltatorate/dcgm_1
-      - metricstransform/dcgm_2
+      - cumulativetodelta/dcgm_1
+      - deltatorate/dcgm_2
       - metricstransform/dcgm_3
-      - transform/dcgm_4
-      - modifyscope/dcgm_5
+      - metricstransform/dcgm_4
+      - transform/dcgm_5
+      - modifyscope/dcgm_6
       - resourcedetection/_global_0
       receivers:
       - dcgm/dcgm

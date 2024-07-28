@@ -92,6 +92,16 @@ func CastToSum(metrics ...string) Component {
 	}
 }
 
+// CumulativeToDelta returns a Component that converts each cumulative metric to delta.
+func CumulativeToDelta(metrics ...string) Component {
+	return Component{
+		Type: "cumulativetodelta",
+		Config: map[string]interface{}{
+			"metrics": metrics,
+		},
+	}
+}
+
 // DeltaToRate returns a Component that converts each delta metric to a gauge rate.
 func DeltaToRate(metrics ...string) Component {
 	return Component{

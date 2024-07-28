@@ -191,6 +191,10 @@ func (r MetricsReceiverDcgm) Pipelines(_ context.Context) ([]otel.ReceiverPipeli
 					"dcgm.gpu.profiling.sm_utilization",
 				),
 			),
+			otel.CumulativeToDelta(
+				"dcgm.gpu.profiling.nvlink_traffic_rate",
+				"dcgm.gpu.profiling.pcie_traffic_rate",
+			),
 			otel.DeltaToRate(
 				"dcgm.gpu.profiling.nvlink_traffic_rate",
 				"dcgm.gpu.profiling.pcie_traffic_rate",
