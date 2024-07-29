@@ -16,4 +16,3 @@ ExtendedStatus on
 EOF
 
 sudo service apache2 start
-curl http://localhost:80/server-status?auto
