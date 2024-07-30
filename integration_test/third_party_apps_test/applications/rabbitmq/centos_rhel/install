@@ -11,7 +11,7 @@ sudo yum install -y curl epel-release
 
 # until there is a rabbitmq-server package for rhel 9, use the el8 package
 case "$VERSION_ID" in
-    9*) 
+    9*)
         if [[ "$(uname -m)" == aarch64 ]]; then
           # until the packagecloud.io erlang package has an option for aarch64
           curl -sfL -O https://github.com/rabbitmq/erlang-rpm/releases/download/v26.0.2/erlang-26.0.2-1.el8.aarch64.rpm
@@ -69,6 +69,6 @@ curl -i -u admin:admin \
     -d'{"routing_key":"webq1","arguments":{}}'
 
 sudo rabbitmq-plugins enable rabbitmq_management
-sudo rabbitmqctl add_user "otelu" "otelp"
-sudo rabbitmqctl set_user_tags "otelu" monitoring
-sudo rabbitmqctl set_permissions -p "dev" "otelu" "" "" ".*"
+sudo rabbitmqctl add_user "usr" "pwd"
+sudo rabbitmqctl set_user_tags "usr" monitoring
+sudo rabbitmqctl set_permissions -p "dev" "usr" "" "" ".*"

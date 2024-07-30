@@ -49,6 +49,6 @@ curl -i -u admin:admin \
     -d'{"routing_key":"webq1","arguments":{}}'
 
 sudo rabbitmq-plugins enable rabbitmq_management
-sudo rabbitmqctl add_user "otelu" "otelp"
-sudo rabbitmqctl set_user_tags "otelu" monitoring
-sudo rabbitmqctl set_permissions -p "dev" "otelu" "" "" ".*"
+sudo rabbitmqctl add_user "usr" "pwd"
+sudo rabbitmqctl set_user_tags "usr" monitoring
+sudo rabbitmqctl set_permissions -p "dev" "usr" "" "" ".*"
