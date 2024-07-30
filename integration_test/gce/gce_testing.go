@@ -741,11 +741,7 @@ func runCommand(ctx context.Context, logger *log.Logger, stdin io.Reader, args [
 
 // getGcloudConfigDir returns the current gcloud configuration directory.
 func getGcloudConfigDir(ctx context.Context) (string, error) {
-	null, err := os.Open(os.DevNull)
-	if err != nil {
-		panic(fmt.Sprintf("unable to open os.DevNull: %v", err))
-	}
-	out, err := RunGcloud(ctx, log.New(null, "", 0), "", []string{"info", "--format=value[terminator=''](config.paths.global_config_dir)"})
+	out, err := RunGcloud(ctx, log.New(io.Discard, "", 0), "", []string{"info", "--format=value[terminator=''](config.paths.global_config_dir)"})
 	if err != nil {
 		return "", fmt.Errorf("error running gcloud info: %w", err)
 	}
