@@ -105,15 +105,15 @@ expected_logs:
       - name: jsonPayload.message
         value_regex: .*Waiting until connected.*
         type: string
-        description: ''
+        description: 'Log message, including detailed stacktrace where provided'
       - name: jsonPayload.source
         value_regex: ZooKeeperClient Kafka server
         type: string
-        description: ''
+        description: 'Module and/or thread where the log originated.'
       - name: jsonPayload.logger
         value_regex: kafka.zookeeper.ZooKeeperClient
         type: string
-        description: ''
+        description: 'Name of the logger where the log originated.'
       - name: jsonPayload.level
         type: string
         description: Log entry level
@@ -123,7 +123,7 @@ expected_logs:
         description: ''
       - name: timestamp
         type: string
-        description: ''
+        description: 'Time that the request was received.'
 configuration_options:
   logs:
     - type: kafka
