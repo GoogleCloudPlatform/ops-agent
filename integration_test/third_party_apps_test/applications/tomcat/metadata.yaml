@@ -203,7 +203,7 @@ configuration_options:
           description: This value must be `tomcat`.
         - name: endpoint
           default: localhost:8050
-          description: The JMX Service URL or host and port used to construct the service URL. This value must be in the form of `service:jmx:<protocol>:<sap>` or `host:port`. Values in `host:port` form are used to create a service URL of `service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi`.
+          description: The [JMX Service URL](https://docs.oracle.com/javase/8/docs/api/javax/management/remote/JMXServiceURL.html) or host and port used to construct the service URL. This value must be in the form of `service:jmx:<protocol>:<sap>` or `host:port`. Values in `host:port` form are used to create a service URL of `service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi`.
         - name: collect_jvm_metrics
           default: true
           description: Configures the receiver to also collect the supported JVM metrics.
