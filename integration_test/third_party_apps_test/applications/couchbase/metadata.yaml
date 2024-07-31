@@ -17,7 +17,10 @@ short_name: Couchbase
 long_name: Couchbase
 logo_path: /stackdriver/images/integrations/couchbase.png # supplied by google technical writer
 description: |-
-  The Couchbase integration collects bucket metrics such as operations, memory usage, and ejections. The integration collects metrics from the Prometheus server exposed on a node.
+  The Couchbase integration collects bucket metrics such as operations,
+  memory usage, and ejections. The integration collects metrics from the
+  Prometheus server exposed on a node. The integration also collects Couchbase
+  general, HTTP access, and cross-datacenter ("goxdcr") logs.
 supported_app_version: ["6.5", "6.6", "7.0"]
 expected_logs:
   - log_name: couchbase_general
