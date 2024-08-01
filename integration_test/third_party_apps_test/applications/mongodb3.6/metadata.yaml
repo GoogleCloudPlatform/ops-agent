@@ -22,6 +22,12 @@ description: |-
   of operations and objects, as well as resource usage. The integration also
   collects logs and parses them into a JSON payload. The result includes fields
   for context, component, level, and message.
+
+  Note: Metrics for MongoDB are collected on a per-collection level.
+  A _collection_ is a group of documents and is analogous to a table in
+  a relational database. A MongoDB integration with a high number of
+  collections will produce a high volume of metrics, which can have cost
+  implications.
 minimum_supported_agent_version:
   metrics: 2.19.0
   logging: 2.10.0
