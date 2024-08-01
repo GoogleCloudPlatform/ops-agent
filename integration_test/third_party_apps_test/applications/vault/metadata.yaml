@@ -17,7 +17,9 @@ short_name: Vault
 long_name: Hashicorp Vault
 logo_path: /stackdriver/images/integrations/vault.png # supplied by google technical writer
 description: |-
-  Vault is an identity-based secrets and encryption management system. This integration collects Vault's audit logs. The integration also collects token, memory, and storage metrics.
+  Vault is an identity-based secrets and encryption management system.
+  This integration collects Vault's audit logs. The integration also collects
+  token, memory, and storage metrics.
 configure_integration: |-
   To collect telemetry from your Vault instance, you must set the
   `prometheus_retention_time` field to a non-zero value in your HCL or
@@ -39,7 +41,7 @@ configure_integration: |-
 
   If you are initializing Vault for the first time, then you can use the
   following script to generate a root token. Otherwise, see [Generate Root Tokens
-  Using Unseal Keys](https://developer.hashicorp.com/vault/tutorials/operations/generate-root){: .external} for information about generating a root token.
+  Using Unseal Keys](https://developer.hashicorp.com/vault/tutorials/operations/generate-root) for information about generating a root token.
 
   ```bash
   export VAULT_ADDR=http://localhost:8200
