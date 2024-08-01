@@ -10,7 +10,7 @@ metrics:
   receivers:
     dcgm:
       type: dcgm
-      receiver_version: 2
+      receiver_version: 1
   service:
     pipelines:
       dcgm:
