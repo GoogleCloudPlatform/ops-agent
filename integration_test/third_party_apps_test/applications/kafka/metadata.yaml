@@ -121,9 +121,6 @@ expected_logs:
       - name: severity
         type: string
         description: ''
-      - name: timestamp
-        type: string
-        description: 'Time that the request was received.'
 configuration_options:
   logs:
     - type: kafka

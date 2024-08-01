@@ -330,9 +330,6 @@ expected_logs:
         type: string
         description: This is a token entity identifier.
         optional: true
-      - name: timestamp
-        type: string ([`Timestamp`](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp))
-        description: Time the request was received
       - name: severity
         type: string
         description: ''
