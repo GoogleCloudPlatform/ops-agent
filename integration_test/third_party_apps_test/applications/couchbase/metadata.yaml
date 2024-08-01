@@ -38,11 +38,11 @@ expected_logs:
         optional: true
       - name: jsonPayload.source
         type: string
-        description: ''
+        description: Source where the log originated
         optional: true
       - name: jsonPayload.type
         type: string
-        description: ''
+        description: The type of log
         optional: true
       - name: jsonPayload.level
         type: string
@@ -114,7 +114,7 @@ expected_logs:
         description: "Log message"
       - name: jsonPayload.log_type
         type: string
-        description: ''
+        description: The name of the component that is issuing the cross-datacenter log
         optional: true
       - name: jsonPayload.level
         type: string

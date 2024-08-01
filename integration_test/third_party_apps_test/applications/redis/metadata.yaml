@@ -143,7 +143,7 @@ expected_logs:
       - name: jsonPayload.message
         value_regex: Ready to accept connections
         type: string
-        description: ''
+        description: Log message, including detailed stacktrace where provided
       - name: jsonPayload.roleChar
         value_regex: M
         type: string

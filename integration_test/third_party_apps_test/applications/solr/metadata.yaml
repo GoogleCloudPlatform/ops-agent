@@ -148,7 +148,7 @@ expected_logs:
         optional: true
       - name: jsonPayload.level
         type: string
-        description: ''
+        description: Log entry level
         optional: true
       - name: jsonPayload.shard
         type: string
@@ -199,7 +199,7 @@ configuration_options:
           description: The [JMX Service URL](https://docs.oracle.com/javase/8/docs/api/javax/management/remote/JMXServiceURL.html) or host and port used to construct the Service URL. Must be in the form of `host:port`. Values in `host:port` form will be used to create a Service URL of `service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi`.
         - name: username
           default: null
-          description: The configured username if JMX is configured to require authentication..
+          description: The configured username if JMX is configured to require authentication.
         - name: password
           default: null
           description: The configured password if JMX is configured to require authentication.
