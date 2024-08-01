@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-app_url: "https://docs.nvidia.com/datacenter/dcgm/latest/user-guide/index.html"
+app_url: "https://developer.nvidia.com/dcgm"
 short_name: NVIDIA DCGM
 long_name: NVIDIA Data Center GPU Manager (DCGM)
 logo_path: /stackdriver/images/integrations/nvidia.png # supplied by google technical writer
