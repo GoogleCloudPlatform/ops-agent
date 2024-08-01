@@ -38,7 +38,7 @@ platforms_to_skip:
   - ubuntu-os-cloud:ubuntu-2404-lts-arm64
   - debian-cloud:debian-12
   - debian-cloud:debian-12-arm64
-supported_app_version: ["2.3+", "3.1+"]
+supported_app_version: ["2.3.x", "3.1 and higher"]
 expected_metrics:
   - type: workload.googleapis.com/couchdb.average_request_time
     value_type: DOUBLE

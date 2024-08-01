@@ -39,7 +39,7 @@ platforms_to_skip:
   - debian-cloud:debian-12
   - debian-cloud:debian-12-arm64
   - suse-cloud:sles-15-arm64
-supported_app_version: ["2.6", "3.0+", "4.0+", "5.0", "6.0"]
+supported_app_version: ["2.6", "3.x", "4.x", "5.0", "6.0"]
 expected_metrics:
   - type: workload.googleapis.com/mongodb.cache.operations
     value_type: INT64
