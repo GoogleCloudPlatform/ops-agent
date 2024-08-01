@@ -51,9 +51,6 @@ expected_logs:
       - name: severity
         type: string
         description: ''
-      - name: timestamp
-        type: string
-        description: ''
   - log_name: couchbase_http_access
     fields:
       - name: httpRequest.remoteIp
@@ -104,9 +101,6 @@ expected_logs:
       - name: severity
         type: string
         description: ''
-      - name: timestamp
-        type: string
-        description: ''
   - log_name: couchbase_goxdcr
     fields:
       - name: jsonPayload.message
@@ -121,9 +115,6 @@ expected_logs:
         description: Log entry severity for the couchbase log
         optional: true
       - name: severity
-        type: string
-        description: ''
-      - name: timestamp
         type: string
         description: ''
 expected_metrics:
