@@ -34,9 +34,6 @@ platforms_to_skip:
   - rocky-linux-cloud:rocky-linux-9
   - rocky-linux-cloud:rocky-linux-9-arm64
   - suse-cloud:sles-15-arm64
-  # mantic not yet supported, but should revisit this in the future
-  - ubuntu-os-cloud:ubuntu-2310-amd64
-  - ubuntu-os-cloud:ubuntu-2310-arm64
 supported_app_version: ["10.18+"]
 expected_metrics:
   - kind: GAUGE

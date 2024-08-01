@@ -190,18 +190,6 @@ RUN ln -fs /usr/lib/systemd /lib/systemd` + installJava + installCMake,
 		package_extension: "deb",
 	},
 	{
-		from_image:  "ubuntu:mantic",
-		target_name: "mantic",
-		install_packages: `RUN set -x; apt-get update && \
-		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip debhelper`,
-		package_build:     "RUN ./pkg/deb/build.sh",
-		tar_distro_name:   "ubuntu-mantic",
-		package_extension: "deb",
-	},
-	{
 		from_image:  "ubuntu:noble",
 		target_name: "noble",
 		install_packages: `RUN set -x; apt-get update && \

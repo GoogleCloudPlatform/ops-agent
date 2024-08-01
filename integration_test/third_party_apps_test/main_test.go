@@ -21,7 +21,7 @@ For instructions, see the top of gce_testing.go.
 This test needs the following environment variables to be defined, in addition
 to the ones mentioned at the top of gce_testing.go:
 
-IMAGE_SPECS: a comma-separated list of image specs to test, e.g. "suse-cloud:sles-12,ubuntu-os-cloud:ubuntu-2310-amd64".
+IMAGE_SPECS: a comma-separated list of image specs to test, e.g. "suse-cloud:sles-12,ubuntu-os-cloud:ubuntu-2404-amd64".
 
 The following variables are optional:
 
