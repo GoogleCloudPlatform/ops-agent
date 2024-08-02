@@ -61,6 +61,9 @@ expected_metrics:
         name: gpu_number
         value_regex: "[0-9]*"
         description: GPU index starting at 0.
+    notes:
+      - &dcgm_profiling_note
+        Not available on GPU models P100 and P4.
     representative: true
   - type: workload.googleapis.com/dcgm.gpu.profiling.sm_occupancy
     value_type: DOUBLE
@@ -71,6 +74,8 @@ expected_metrics:
       - *model_label
       - *uuid_label
       - *gpu_number_label
+    notes:
+      - *dcgm_profiling_note
   - type: workload.googleapis.com/dcgm.gpu.profiling.pipe_utilization
     value_type: DOUBLE
     kind: GAUGE
@@ -83,6 +88,10 @@ expected_metrics:
       - name: pipe
         value_regex: tensor|fp64|fp32|fp16
         description: "GPU pipe in use, one of [tensor, fp64, fp32, fp16]."
+        notes:
+          - For L4, the `pipe` value `fp64` is not supported.
+    notes:
+      - *dcgm_profiling_note
   - type: workload.googleapis.com/dcgm.gpu.profiling.dram_utilization
     value_type: DOUBLE
     kind: GAUGE
@@ -92,6 +101,8 @@ expected_metrics:
       - *model_label
       - *uuid_label
       - *gpu_number_label
+    notes:
+      - *dcgm_profiling_note
   - type: workload.googleapis.com/dcgm.gpu.profiling.pcie_traffic_rate
     value_type: INT64
     kind: GAUGE
@@ -106,6 +117,8 @@ expected_metrics:
         name: direction
         value_regex: transmit|receive
         description: "Direction of the link traffic, one of [transmit, receive]."
+    notes:
+      - *dcgm_profiling_note
   - type: workload.googleapis.com/dcgm.gpu.profiling.nvlink_traffic_rate
     value_type: INT64
     kind: GAUGE
@@ -117,6 +130,8 @@ expected_metrics:
       - *uuid_label
       - *gpu_number_label
       - *direction_label
+    notes:
+      - *dcgm_profiling_note
 configuration_options:
   metrics:
     - type: dcgm
