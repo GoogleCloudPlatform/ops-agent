@@ -25,8 +25,8 @@ description: |-
   When using the Ops Agent on a Microsoft Windows VM, the agent automatically
   collects IIS metrics. No additional configuration is required.
 minimum_supported_agent_version:
-  metrics: 2.10.0
-  logging: 2.10.0
+  metrics: 2.15.0
+  logging: 2.14.0
 supported_operating_systems: windows
 supported_app_version: ["8.5", "10.0"]
 expected_metrics:
@@ -147,10 +147,10 @@ expected_logs:
         optional: true
       - name: jsonPayload.sc_substatus
         type: string
-        description: "The server's IP and port that was requested"
+        description: "The substatus error code"
       - name: jsonPayload.sc_win32_status
         type: string
-        description: "The server's IP and port that was requested"
+        description: "The Windows status code"
       - name: jsonPayload.time_taken
         type: string
         description: "The length of time that the action took, in milliseconds"
@@ -169,7 +169,7 @@ configuration_options:
           default: null
           description: This value must be `iis_access`.
         - name: include_paths
-          default: "['C:\\inetpub\\logs\\LogFiles\\W3SVC1\\u_ex*]"
+          default: "['C:\\inetpub\\logs\\LogFiles\\W3SVC1\\u_ex*']"
           description: A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `C:\inetpub\logs\LogFiles\W3SVC1\u_ex*`.
         - name: exclude_paths
           default: null
@@ -191,4 +191,4 @@ configuration_options:
           description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
         - name: receiver_version
           default: null
-          description: Establishes the version of the metric collection implementation.
+          description: Version of the metrics collected; use `2` to collect v2 metrics.

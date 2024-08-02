@@ -160,4 +160,4 @@ configuration_options:
           description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
         - name: receiver_version
           default: "1"
-          description: Either 1 or 2. Version 2 has many more metrics available.
+          description: Version of the metrics collected; use `2` to collect v2 metrics.
