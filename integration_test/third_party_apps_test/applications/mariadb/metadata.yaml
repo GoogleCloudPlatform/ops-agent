@@ -38,6 +38,9 @@ configure_integration: |-
   setting `log_error` in the MariaDB configuration.
   [Learn more](https://mariadb.com/kb/en/error-log/#writing-the-error-log-to-a-file){: .external}
   about configuring `log_error`.
+minimum_supported_agent_version:
+  metrics: 2.37.0
+  logging: 2.37.0
 supported_operating_systems: linux
 platforms_to_skip:
   # TODO: Enable MariaDB testing on all supported platforms.
@@ -49,7 +52,7 @@ platforms_to_skip:
   - suse-cloud:sles-12
   - suse-cloud:sles-15
   - suse-cloud:sles-15-arm64
-supported_app_version: ["10.1.X through 10.7.X"]
+supported_app_version: ["10.1.X through 10.7.X", ""] # Indicate multiple versions.
 expected_metrics:
   - type: workload.googleapis.com/mysql.buffer_pool_data_pages
     value_type: INT64
@@ -360,6 +363,3 @@ configuration_options:
         - name: collection_interval
           default: 60s
           description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
-minimum_supported_agent_version:
-  metrics: 2.37.0
-  logging: 2.37.0
