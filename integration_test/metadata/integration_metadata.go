@@ -34,6 +34,8 @@ type MetricLabel struct {
 	ValueRegex string `yaml:"value_regex" validate:"required"`
 	// The description of the label.
 	Description string `yaml:"description" validate:"excludesall=‘’“”"`
+	// Annotations/footnotes about the metric.
+	Notes []string `yaml:"notes,omitempty" validate:"omitempty,unique"`
 }
 
 // MetricSpec encodes a specification of a metric in the metrics backend.
@@ -53,6 +55,8 @@ type MetricSpec struct {
 	MonitoredResources []string `yaml:"monitored_resources,flow" validate:"required,gt=0,dive,oneof=gce_instance"`
 	// Mapping of expected label keys to label specs.
 	Labels []*MetricLabel `yaml:"labels,omitempty" validate:"omitempty,gt=0,unique=Name,dive"`
+	// Annotations/footnotes about the metric.
+	Notes []string `yaml:"notes,omitempty" validate:"omitempty,unique"`
 }
 
 // ExpectedMetric encodes a series of assertions about what data we expect
