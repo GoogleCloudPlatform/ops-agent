@@ -71,7 +71,7 @@ expected_metrics:
       - *gpu_number_label
     notes:
       - &dcgm_profiling_note
-        All models except P100 and P4
+        Not available on GPU models P100 and P4.
   - type: workload.googleapis.com/gpu.dcgm.pipe.utilization
     value_type: DOUBLE
     kind: GAUGE
