@@ -25,8 +25,8 @@ description: |-
 supported_app_version: ["6.x", "7.0.x"]
 configure_integration: |-
   The Varnish logging processor processes logs using
-  [varnishncsa](https://varnish-cache.org/docs/6.0/reference/varnishncsa.html){: .external}.
-  Varnish can enable varnishncsa logging by following this [guide](https://docs.varnish-software.com/tutorials/enabling-logging-with-varnishncsa/){: .external},
+  [varnishncsa](https://varnish-cache.org/docs/6.0/reference/varnishncsa.html).
+  Varnish can enable varnishncsa logging by following this [guide](https://docs.varnish-software.com/tutorials/enabling-logging-with-varnishncsa/),
   depending on the operating system.
 
   By default, logs are written to `/var/log/varnish/varnishncsa.log`. If you

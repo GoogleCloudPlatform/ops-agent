@@ -19,14 +19,14 @@ long_name: Elasticsearch
 logo_path: /stackdriver/images/elasticsearch.png # supplied by google technical writer
 description: |-
   Elasticsearch is an open-source search server, based on the
-  [Lucene](https://lucene.apache.org/){: .external} search library. It runs in a Java virtual
+  [Lucene](https://lucene.apache.org/) search library. It runs in a Java virtual
   machine on top of a number of operating systems. The `elasticsearch` receiver
   collects node- and cluster-level telemetry from your Elasticsearch instances.
 configure_integration: |-
   If you enable [Elasticsearch security
-  features](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/secure-cluster.html){: .external},
+  features](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/secure-cluster.html),
   you must configure a user with the `monitor` or `manage` [cluster
-  privilege](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/security-privileges.html#privileges-list-cluster){: .external}.
+  privilege](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/security-privileges.html#privileges-list-cluster).
 minimum_supported_agent_version:
   metrics: 2.21.0
   logging: 2.9.0

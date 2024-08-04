@@ -23,7 +23,7 @@ description: |-
   into a JSON payload focused on request details.
 configure_integration: |-
   To collect metrics from this integration, you must expose a
-  [Java Management Extensions (JMX)](https://www.oracle.com/java/technologies/javase/javamanagement.html){:class="external"}
+  [Java Management Extensions (JMX)](https://www.oracle.com/java/technologies/javase/javamanagement.html)
   endpoint.
 
   To expose a JMX endpoint, you must set the `com.sun.management.jmxremote.port`

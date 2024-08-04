@@ -24,7 +24,7 @@ description: |-
   and expired messages.
 configure_integration: |-
   You must enable JMX support in the ActiveMQ [broker
-  configuration](https://activemq.apache.org/jmx){:class="external"}.
+  configuration](https://activemq.apache.org/jmx).
 minimum_supported_agent_version:
   metrics: 2.11.0
   logging: 2.15.0

@@ -25,7 +25,7 @@ description: |-
 configure_integration: |-
   To collect telemetry from your Apache Web Server, you must configure the
   server's `httpd.conf` file to enable the
-  [`mod_status` plugin](https://httpd.apache.org/docs/2.4/mod/mod_status.html){: .external}.
+  [`mod_status` plugin](https://httpd.apache.org/docs/2.4/mod/mod_status.html).
 
   Many Apache installations enable this plugin by default. To see if the
   plugin is enabled on your VM instance, run:
