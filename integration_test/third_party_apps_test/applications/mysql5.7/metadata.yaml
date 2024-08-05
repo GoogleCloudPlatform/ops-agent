@@ -48,8 +48,6 @@ platforms_to_skip:
   - ubuntu-os-cloud:ubuntu-2004-lts-arm64
   - ubuntu-os-cloud:ubuntu-2204-lts
   - ubuntu-os-cloud:ubuntu-2204-lts-arm64
-  - ubuntu-os-cloud:ubuntu-2310-amd64
-  - ubuntu-os-cloud:ubuntu-2310-arm64
   - ubuntu-os-cloud:ubuntu-2404-lts-amd64
   - ubuntu-os-cloud:ubuntu-2404-lts-arm64
 supported_app_version: ["8.0", "5.7"]
