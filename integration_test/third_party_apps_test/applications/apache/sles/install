@@ -14,8 +14,8 @@ sudo zypper -n refresh
 
 sudo zypper -n install apache2
 
-sudo mkdir -p /etc/httpd/conf.d/
-sudo tee /etc/httpd/conf.d/status.conf >/dev/null <<EOF
+sudo mkdir -p /etc/apache2/conf.d/
+sudo tee /etc/apache2/conf.d/status.conf >/dev/null <<EOF
 ExtendedStatus on
 <VirtualHost 127.0.0.1:80>
     <Location /server-status>
