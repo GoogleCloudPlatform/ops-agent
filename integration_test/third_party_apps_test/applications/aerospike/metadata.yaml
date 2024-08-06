@@ -109,7 +109,7 @@ configuration_options:
           description: This value must be `aerospike`.
         - name: collection_interval
           default: 60s
-          description: A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
+          description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
         - name: endpoint
           default: localhost:3000
           description: Address of the Aerospike system, formatted as host:port.
@@ -124,7 +124,7 @@ configuration_options:
           description: The configured password if Aerospike is configured to require authentication.
         - name: timeout
           default: 20s
-          description: Timeout for requests to the Aerospike system, a [time.Duration](https://pkg.go.dev/time#ParseDuration) value such as `30s` or `5m`.
+          description: Timeout for requests to the Aerospike system, a [time duration](https://pkg.go.dev/time#ParseDuration) value such as `30s` or `5m`.
 minimum_supported_agent_version:
   metrics: 2.18.2
   logging: 2.23.0

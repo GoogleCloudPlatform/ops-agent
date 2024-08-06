@@ -15,9 +15,11 @@
 app_url: "https://flink.apache.org/"
 short_name: Flink
 long_name: Apache Flink
+logo_path: /stackdriver/images/integrations/flink.png # supplied by google technical writer
 description: |-
-  The Apache Flink integration collects client, jobmanager and taskmanager logs and parses them into a JSON payload.
-  The result includes fields for source, level, and message.
+  The Apache Flink integration collects client, jobmanager and taskmanager logs
+  and parses them into a JSON payload.  The result includes fields for source,
+  level, and message.
 platforms_to_skip:
   # Flink only supports Java 11, which has no installation candidate for Debian 12
   - debian-cloud:debian-12
@@ -271,11 +273,11 @@ expected_logs:
     fields:
       - name: jsonPayload.message
         type: string
-        description: ''
+        description: Log message, including detailed stacktrace where provided
       - name: jsonPayload.source
         value_regex: org.apache.flink.runtime.entrypoint.ClusterEntrypoint
         type: string
-        description: ''
+        description: The source Java class of the log entry
       - name: jsonPayload.level
         type: string
         description: Log entry level
@@ -289,31 +291,31 @@ configuration_options:
       fields:
         - name: type
           default: null
-          description: The value must be flink.
+          description: This value must be `flink`.
         - name: include_paths
           default: '[/opt/flink/log/flink-*-standalonesession-*.log, /opt/flink/log/flink-*-taskexecutor-*.log, /opt/flink/log/flink-*-client-*.log]'
-          description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
+          description: A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths.
         - name: exclude_paths
           default: null
-          description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+          description: A list of filesystem path patterns to exclude from the set matched by `include_paths`.
         - name: record_log_file_path
           default: false
           description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
         - name: wildcard_refresh_interval
           default: 60s
-          description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+          description: The interval at which wildcard file paths in `include_paths` are refreshed. Given as a [time duration](https://pkg.go.dev/time#ParseDuration), for example `30s` or `2m`. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
   metrics:
     - type: flink
       fields:
         - name: type
           default: null
-          description: The value must be flink.
+          description: This value must be `flink`.
         - name: endpoint
           default: http://localhost:8081
-          description: The URL exposed by flink.
+          description: The URL exposed by Flink.
         - name: collection_interval
           default: 60s
-          description: A time.Duration value, such as 30s or 5m.
+          description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
 minimum_supported_agent_version:
   logging: 2.17.0
   metrics: 2.18.1

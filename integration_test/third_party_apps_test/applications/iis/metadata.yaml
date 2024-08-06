@@ -25,8 +25,8 @@ description: |-
   When using the Ops Agent on a Microsoft Windows VM, the agent automatically
   collects IIS metrics. No additional configuration is required.
 minimum_supported_agent_version:
-  metrics: 2.10.0
-  logging: 2.10.0
+  metrics: 2.15.0
+  logging: 2.14.0
 supported_operating_systems: windows
 supported_app_version: ["8.5", "10.0"]
 expected_metrics:
@@ -145,16 +145,12 @@ expected_logs:
         type: string
         description: "Contents of the `Referer` header"
         optional: true
-      - name: httpRequest.userAgent
-        type: string
-        description: ""
-        optional: true
       - name: jsonPayload.sc_substatus
         type: string
-        description: "The server's IP and port that was requested"
+        description: "The substatus error code"
       - name: jsonPayload.sc_win32_status
         type: string
-        description: "The server's IP and port that was requested"
+        description: "The Windows status code"
       - name: jsonPayload.time_taken
         type: string
         description: "The length of time that the action took, in milliseconds"
@@ -171,28 +167,28 @@ configuration_options:
       fields:
         - name: type
           default: null
-          description: This value must be iis_access.
+          description: This value must be `iis_access`.
         - name: include_paths
-          default: "['C:\\inetpub\\logs\\LogFiles\\W3SVC1\\u_ex*]"
+          default: "['C:\\inetpub\\logs\\LogFiles\\W3SVC1\\u_ex*']"
           description: A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `C:\inetpub\logs\LogFiles\W3SVC1\u_ex*`.
         - name: exclude_paths
           default: null
-          description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+          description: A list of filesystem path patterns to exclude from the set matched by `include_paths`.
         - name: record_log_file_path
           default: false
           description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
         - name: wildcard_refresh_interval
           default: 60s
-          description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+          description: The interval at which wildcard file paths in `include_paths` are refreshed. Given as a [time duration](https://pkg.go.dev/time#ParseDuration), for example `30s` or `2m`. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
   metrics:
     - type: iis
       fields:
         - name: type
           default: null
-          description: This value must be iis.
+          description: This value must be `iis`.
         - name: collection_interval
           default: 60s
-          description: A time.Duration value, such as 30s or 5m.
+          description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
         - name: receiver_version
           default: null
-          description: Establishes the version of the metric collection implementation.
+          description: Version of the metrics collected; use `2` to collect v2 metrics.
