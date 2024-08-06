@@ -201,6 +201,8 @@ expected_metrics:
       - name: violation
         value_regex: power|thermal|sync_boost|board_limit|low_util|reliability|app_clock|base_clock
         description: "Reason for throttling, one of [power, thermal, sync_boost, board_limit, low_util, reliability, app_clock, base_clock]."
+        notes:
+          - For P100 and P4, only `violation` values `power`, `thermal`, and `sync_boost` are supported.
   - type: workload.googleapis.com/gpu.dcgm.ecc_errors
     value_type: INT64
     kind: CUMULATIVE
