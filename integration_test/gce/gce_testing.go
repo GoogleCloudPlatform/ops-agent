@@ -749,8 +749,8 @@ func getGcloudConfigDir(ctx context.Context) (string, error) {
 }
 
 // SetupGcloudConfigDir sets up a new gcloud configuration directory.
-// This copies the "configurations" subdirectory of the context-specified
-// configuration directory into the new directory.
+// This copies the contents of the context-specified configuration directory
+// into the new directory.
 // This only works on Linux.
 func SetupGcloudConfigDir(ctx context.Context, directory string) error {
 	currentConfigDir, err := getGcloudConfigDir(ctx)
@@ -758,8 +758,8 @@ func SetupGcloudConfigDir(ctx context.Context, directory string) error {
 		return err
 	}
 	// TODO: Replace with os.CopyFS() once available.
-	if out, err := runCommand(ctx, log.New(io.Discard, "", 0), nil, []string{"cp", "-r", filepath.Join(currentConfigDir, "."), filepath.Join(directory, ".")}, nil); err != nil {
-		return fmt.Errorf("error copying directory contents: %s (%w)", out.Stderr, err)
+	if _, err := runCommand(ctx, log.New(io.Discard, "", 0), nil, []string{"cp", "-r", filepath.Join(currentConfigDir, "."), filepath.Join(directory, ".")}, nil); err != nil {
+		return err
 	}
 	return nil
 }
