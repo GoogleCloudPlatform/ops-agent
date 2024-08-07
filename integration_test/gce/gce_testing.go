@@ -748,86 +748,18 @@ func getGcloudConfigDir(ctx context.Context) (string, error) {
 	return out.Stdout, nil
 }
 
-// copyFile copies the contents of source into target.
-func copyFile(source string, target string) error {
-	in, err := os.Open(source)
-	if err != nil {
-		return err
-	}
-	defer in.Close()
-	out, err := os.Create(target)
-	if err != nil {
-		return err
-	}
-	_, copyErr := io.Copy(out, in)
-	syncErr := out.Sync()
-	closeErr := out.Close()
-	return multierr.Combine(copyErr, syncErr, closeErr)
-}
-
-// copyDirectory copies the contents of the source directory into target.
-func copyDirectory(source string, target string) error {
-	files, err := os.ReadDir(source)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil
-		}
-		return err
-	}
-	if err := os.MkdirAll(target, 0700); err != nil {
-		return err
-	}
-	for _, file := range files {
-		s := filepath.Join(source, file.Name())
-		d := filepath.Join(target, file.Name())
-		sfi, err := os.Stat(s)
-		if err != nil {
-			return err
-		}
-		if sfi.IsDir() {
-			if err := copyDirectory(s, d); err != nil {
-				return err
-			}
-		} else {
-			if err := copyFile(s, d); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
 // SetupGcloudConfigDir sets up a new gcloud configuration directory.
 // This copies the "configurations" subdirectory of the context-specified
 // configuration directory into the new directory.
+// This only works on Linux.
 func SetupGcloudConfigDir(ctx context.Context, directory string) error {
 	currentConfigDir, err := getGcloudConfigDir(ctx)
 	if err != nil {
 		return err
 	}
-	sfi, err := os.Stat(currentConfigDir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil
-		}
-		return fmt.Errorf("unexpected error accessing source directory %s: %w", currentConfigDir, err)
-	}
-	if !sfi.IsDir() {
-		return fmt.Errorf("source %s is not a directory: %s", currentConfigDir, sfi.Mode().Type())
-	}
-	dfi, err := os.Stat(directory)
-	if err != nil {
-		return fmt.Errorf("unexpected error accessing destination directory %s: %w", directory, err)
-	}
-	if !dfi.IsDir() {
-		return fmt.Errorf("target %s is not a directory: %s", directory, dfi.Mode().Type())
-	}
-	if os.SameFile(sfi, dfi) {
-		return nil
-	}
 	// TODO: Replace with os.CopyFS() once available.
-	if err = copyDirectory(currentConfigDir, directory); err != nil {
-		return fmt.Errorf("error copying directory contents: %w", err)
+	if out, err := runCommand(ctx, log.New(io.Discard, "", 0), nil, []string{"cp", "-r", filepath.Join(currentConfigDir, "."), filepath.Join(directory, ".")}, nil); err != nil {
+		return fmt.Errorf("error copying directory contents: %s (%w)", out.Stderr, err)
 	}
 	return nil
 }
