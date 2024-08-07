@@ -115,8 +115,8 @@ expected_metrics:
       - *gpu_number_label
       - &direction_label
         name: direction
-        value_regex: transmit|receive
-        description: "Direction of the link traffic, one of [transmit, receive]."
+        value_regex: tx|rx
+        description: "Direction of the link traffic, one of [tx, rx]."
     notes:
       - *dcgm_profiling_note
   - type: workload.googleapis.com/dcgm.gpu.profiling.nvlink_traffic_rate
