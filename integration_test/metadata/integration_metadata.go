@@ -240,7 +240,7 @@ func assertMetricLabels(metric *ExpectedMetric, series *monitoringpb.TimeSeries)
 		expectedLabels[expectedLabel.Name] = true
 	}
 	for actualLabel, actualValue := range series.Metric.Labels {
-		if _, ok := expectedLabels[actualLabel]; !ok {
+		if !expectedLabels[actualLabel] {
 			err = multierr.Append(err, fmt.Errorf("got unexpected label %q with value %q", actualLabel, actualValue))
 		}
 	}
