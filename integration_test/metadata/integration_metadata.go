@@ -54,7 +54,7 @@ type ExpectedMetric struct {
 	UnavailableOn []string `yaml:"unavailable_on,omitempty" validate:"excluded_with=Representative"`
 }
 
-type LogFields struct {
+type LogField struct {
 	Name        string `yaml:"name" validate:"required"`
 	ValueRegex  string `yaml:"value_regex"`
 	Type        string `yaml:"type" validate:"required"`
@@ -66,8 +66,8 @@ type LogFields struct {
 }
 
 type ExpectedLog struct {
-	LogName string       `yaml:"log_name" validate:"required"`
-	Fields  []*LogFields `yaml:"fields" validate:"required,dive"`
+	LogName string      `yaml:"log_name" validate:"required"`
+	Fields  []*LogField `yaml:"fields" validate:"required,unique=Name,dive"`
 }
 
 type MinimumSupportedAgentVersion struct {
@@ -121,13 +121,16 @@ type IntegrationMetadata struct {
 	ExpectedMetricsContainer `yaml:",inline"`
 }
 
-func UnmarshalAndValidate(data []byte, i interface{}) error {
+func UnmarshalAndValidate(fullPath string, data []byte, i interface{}) error {
 	data = bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n"))
 
 	v := NewIntegrationMetadataValidator()
 	// Note: Unmarshaler does not protect when only the key being declared.
 	// https://github.com/goccy/go-yaml/issues/313
-	return yaml.UnmarshalWithOptions(data, i, yaml.DisallowUnknownField(), yaml.Validator(v))
+	if err := yaml.UnmarshalWithOptions(data, i, yaml.DisallowUnknownField(), yaml.DisallowDuplicateKey(), yaml.Validator(v)); err != nil {
+		return fmt.Errorf("%s%w", fullPath, err)
+	}
+	return nil
 }
 
 func SliceContains(slice []string, toFind string) bool {
