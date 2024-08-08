@@ -518,7 +518,7 @@ func runMetricsTestCases(ctx context.Context, logger *log.Logger, vm *gce.VM, me
 		err = multierr.Append(err, <-c)
 	}
 
-	if fc == nil {
+	if fc == nil || len(fc.Features) == 0 {
 		logger.Printf("skipping feature tracking integration tests")
 		return err
 	}
