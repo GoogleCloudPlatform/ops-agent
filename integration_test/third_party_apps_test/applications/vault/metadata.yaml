@@ -182,6 +182,7 @@ expected_logs:
       - name: jsonPayload.auth
         type: struct
         description: ''
+        optional: true
       - name: jsonPayload.request
         type: struct
         description: ''
