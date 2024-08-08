@@ -1,0 +1,5 @@
+$ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue'
+Install-WindowsFeature -name Web-Server
+
+Start-WebSite -Name "Default Web Site"
