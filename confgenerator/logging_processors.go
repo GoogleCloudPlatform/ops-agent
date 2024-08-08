@@ -254,8 +254,7 @@ func (p LoggingProcessorParseJson) Processors(ctx context.Context) ([]otel.Compo
 	statements = statements.Append(p.FluentBitSpecialFieldsStatements(ctx))
 
 	return []otel.Component{otel.Transform(
-		"log", "log",
-		statements,
+		"log", ottl.ContextStatements{Context: "log", Statements: statements},
 	)}, nil
 }
 

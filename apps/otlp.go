@@ -22,6 +22,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
@@ -58,24 +59,26 @@ func (ReceiverOTLP) gmpResourceProcessors(ctx context.Context) []otel.Component 
 		processor,
 		{
 			Type: "transform",
-			Config: map[string]interface{}{
+			Config: map[string]any{
 				"error_mode": "ignore",
-				"metric_statements": []map[string]interface{}{{
-					"context": "datapoint",
-					"statements": []string{
-						// GCE
-						// location = cloud.availability_zone
-						stmt(`attributes["location"]`, `resource.attributes["cloud.availability_zone"]`, "gcp_compute_engine"),
-						// namespace = host.id
-						stmt(`attributes["namespace"]`, `Concat([resource.attributes["host.id"], resource.attributes["host.name"]], "/")`, "gcp_compute_engine"),
-						// cluster = "__gce__"
-						stmt(`attributes["cluster"]`, `"__gce__"`, "gcp_compute_engine"),
-						// instance_name = host.name
-						stmt(`attributes["instance_name"]`, `resource.attributes["host.name"]`, "gcp_compute_engine"),
-						// machine_type = host.type
-						stmt(`attributes["machine_type"]`, `resource.attributes["host.type"]`, "gcp_compute_engine"),
+				"metric_statements": []ottl.ContextStatements{
+					ottl.ContextStatements{
+						Context: "datapoint",
+						Statements: []ottl.Statement{
+							// GCE
+							// location = cloud.availability_zone
+							ottl.Statement(stmt(`attributes["location"]`, `resource.attributes["cloud.availability_zone"]`, "gcp_compute_engine")),
+							// namespace = host.id
+							ottl.Statement(stmt(`attributes["namespace"]`, `Concat([resource.attributes["host.id"], resource.attributes["host.name"]], "/")`, "gcp_compute_engine")),
+							// cluster = "__gce__"
+							ottl.Statement(stmt(`attributes["cluster"]`, `"__gce__"`, "gcp_compute_engine")),
+							// instance_name = host.name
+							ottl.Statement(stmt(`attributes["instance_name"]`, `resource.attributes["host.name"]`, "gcp_compute_engine")),
+							// machine_type = host.type
+							ottl.Statement(stmt(`attributes["machine_type"]`, `resource.attributes["host.type"]`, "gcp_compute_engine")),
+						},
 					},
-				}},
+				},
 			},
 		},
 		// TODO: Can we just set resource.attributes instead of setting metric attributes and then grouping?

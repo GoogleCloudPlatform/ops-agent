@@ -476,7 +476,7 @@ processors:
     - gcp
   transform/apache_3:
     metric_statements:
-      context: datapoint
+    - context: datapoint
       statements:
       - set(attributes["server_name"], resource.attributes["apache.server.name"])
 receivers:

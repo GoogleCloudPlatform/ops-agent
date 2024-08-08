@@ -20,6 +20,11 @@ import (
 	"strings"
 )
 
+type ContextStatements struct {
+	Context    string
+	Statements Statements
+}
+
 type Statements []Statement
 
 type Statement string

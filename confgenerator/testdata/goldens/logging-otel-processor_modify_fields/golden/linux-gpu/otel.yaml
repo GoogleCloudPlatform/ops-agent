@@ -461,7 +461,7 @@ processors:
   transform/logs_p1_sample__logs_0:
     error_mode: ignore
     log_statements:
-      context: log
+    - context: log
       statements:
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
       - set(cache["__field_0"], body["source"]) where (body != nil and body["source"] != nil)
@@ -550,7 +550,7 @@ processors:
   transform/sample__logs_0:
     error_mode: ignore
     log_statements:
-      context: log
+    - context: log
       statements:
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
       - set(cache["__field_0"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
@@ -567,7 +567,7 @@ processors:
   transform/syslog_0:
     error_mode: ignore
     log_statements:
-      context: log
+    - context: log
       statements:
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
       - set(cache["__field_0"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
