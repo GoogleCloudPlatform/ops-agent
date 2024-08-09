@@ -55,9 +55,10 @@ expected_metrics:
   - type: workload.googleapis.com/apache.current_connections
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      server_name: .*
+      - name: server_name
+        value_regex: .*
     unavailable_on:
       # https://github.com/GoogleCloudPlatform/ops-agent/issues/1173
       - suse-cloud:sles-12
@@ -66,30 +67,36 @@ expected_metrics:
   - type: workload.googleapis.com/apache.requests
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      server_name: .*
+      - name: server_name
+        value_regex: .*
     representative: true
   - type: workload.googleapis.com/apache.scoreboard
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      server_name: .*
-      state: .*
+      - name: server_name
+        value_regex: .*
+      - name: state
+        value_regex: .*
   - type: workload.googleapis.com/apache.traffic
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      server_name: .*
+      - name: server_name
+        value_regex: .*
   - type: workload.googleapis.com/apache.workers
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      server_name: .*
-      state: .*
+      - name: server_name
+        value_regex: .*
+      - name: state
+        value_regex: .*
 expected_logs:
   - log_name: apache_access
     fields:
