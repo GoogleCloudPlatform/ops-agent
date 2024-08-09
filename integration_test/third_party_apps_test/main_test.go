@@ -173,7 +173,11 @@ func constructQuery(logName string, fields []*metadata.LogField) string {
 	var parts []string
 	for _, field := range fields {
 		if field.ValueRegex != "" {
-			parts = append(parts, fmt.Sprintf(`%s=~"%s"`, field.Name, field.ValueRegex))
+			guard := ""
+			if field.Optional {
+				guard = fmt.Sprintf(`NOT %s:* OR `, field.Name)
+			}
+			parts = append(parts, fmt.Sprintf(`(%s%s=~"%s")`, guard, field.Name, field.ValueRegex))
 		}
 	}
 
