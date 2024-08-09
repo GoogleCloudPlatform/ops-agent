@@ -851,7 +851,11 @@ func CommonSetupWithExtraCreateArgumentsAndMetadata(t *testing.T, imageSpec stri
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
 	t.Cleanup(cancel)
-	ctx = gce.WithGcloudConfigDir(ctx, t.TempDir())
+	gcloudConfigDir := t.TempDir()
+	if err := gce.SetupGcloudConfigDir(ctx, gcloudConfigDir); err != nil {
+		t.Fatalf("Unable to set up a gcloud config directory: %v", err)
+	}
+	ctx = gce.WithGcloudConfigDir(ctx, gcloudConfigDir)
 
 	logger := gce.SetupLogger(t)
 	logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
