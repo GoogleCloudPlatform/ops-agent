@@ -33,9 +33,9 @@ configure_integration: |-
   server using a Unix socket and Unix authentication as the `root` user.
 
   The `mysql_error` logging receiver collects logs from the default file paths
-  shown in the following table. On some platforms, MariaDB logs to `journald` by
-  default instead of a file. To configure MariaDB to log to a file instead,
-  set the `log_error` in the MariaDB configuration. For more information
+  shown in the following table. On some platforms, MariaDB logs to `journald`
+  by default instead of to file. To configure MariaDB to log to a file instead,
+  set the `log_error` option in the MariaDB configuration. For more information
   about `log_error` configuration, see [Writing the Error Log to a
   File](https://mariadb.com/kb/en/error-log/#writing-the-error-log-to-a-file).
 minimum_supported_agent_version:
