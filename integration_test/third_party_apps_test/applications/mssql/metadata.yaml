@@ -13,7 +13,7 @@
 # limitations under the License.
 
 public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/mssql"
-app_url: "https://docs.microsoft.com/en-us/sql/sql-server"
+app_url: "https://docs.microsoft.com/sql/sql-server/"
 short_name: SQL Server
 long_name: Microsoft SQL Server
 logo_path: /stackdriver/images/mssql.png # supplied by google technical writer
@@ -27,33 +27,22 @@ description: |-
   is provided at the instance level. Transaction and transaction log information
   is provided at the database level.
 
-  For more information on SQL Server, see the
-  [SQL Server](https://docs.microsoft.com/en-us/sql/sql-server)
-  documentation.
+  This integration doesn't support SQL Server named instances.
 minimum_supported_agent_version:
   metrics: 2.15.0
 supported_operating_systems: windows
+platforms_to_skip:
+  # Skip non-sql images.
+  - windows-cloud:windows-2016-core
+  - windows-cloud:windows-2022
 supported_app_version: ["11.x", "12.x", "13.x", "14.x", "15.x"]
 expected_metrics:
-  # v1 metrics
-  - type: agent.googleapis.com/mssql/connections/user
-    value_type: DOUBLE
-    kind: GAUGE
-    monitored_resource: gce_instance
-    representative: true
-  - type: agent.googleapis.com/mssql/transaction_rate
-    value_type: DOUBLE
-    kind: GAUGE
-    monitored_resource: gce_instance
-  - type: agent.googleapis.com/mssql/write_transaction_rate
-    value_type: DOUBLE
-    kind: GAUGE
-    monitored_resource: gce_instance
   # v2 metrics
   - type: workload.googleapis.com/sqlserver.user.connection.count
     value_type: INT64
     kind: GAUGE
     monitored_resource: gce_instance
+    representative: true
   - type: workload.googleapis.com/sqlserver.lock.wait_time.avg
     value_type: DOUBLE
     kind: GAUGE

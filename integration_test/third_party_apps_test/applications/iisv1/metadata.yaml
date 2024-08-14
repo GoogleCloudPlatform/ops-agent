@@ -22,69 +22,37 @@ description: |-
   your IIS web servers. The metrics provide connection information
   and also data on transferred bytes. The integration also collects information
   from access logs.
+
+  When using the Ops Agent on a Microsoft Windows VM, the agent automatically
+  collects IIS metrics. No additional configuration is required.
 minimum_supported_agent_version:
-  metrics: 2.15.0
+  metrics: 1.0.0
   logging: 2.14.0
 supported_operating_systems: windows
 supported_app_version: ["8.5", "10.0"]
 expected_metrics:
-  # v2 metrics
-  - type: workload.googleapis.com/iis.request.count
+  # v1 metrics
+  - type: agent.googleapis.com/iis/current_connections
+    value_type: DOUBLE
+    kind: GAUGE
+    monitored_resource: gce_instance
+  - type: agent.googleapis.com/iis/network/transferred_bytes_count
     value_type: INT64
     kind: CUMULATIVE
     monitored_resource: gce_instance
     labels:
-      request: .*
+      direction: .*
+  - type: agent.googleapis.com/iis/new_connection_count
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+  - type: agent.googleapis.com/iis/request_count
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resource: gce_instance
+    labels:
+      http_method: .*
     representative: true
-  - type: workload.googleapis.com/iis.request.rejected
-    value_type: INT64
-    kind: CUMULATIVE
-    monitored_resource: gce_instance
-  - type: workload.googleapis.com/iis.request.queue.count
-    value_type: INT64
-    kind: GAUGE
-    monitored_resource: gce_instance
-  - type: workload.googleapis.com/iis.request.queue.age.max
-    value_type: INT64
-    kind: GAUGE
-    monitored_resource: gce_instance
-    optional: true
-  - type: workload.googleapis.com/iis.network.file.count
-    value_type: INT64
-    kind: CUMULATIVE
-    monitored_resource: gce_instance
-    labels:
-      direction: .*
-  - type: workload.googleapis.com/iis.network.blocked
-    value_type: INT64
-    kind: CUMULATIVE
-    monitored_resource: gce_instance
-  - type: workload.googleapis.com/iis.network.io
-    value_type: INT64
-    kind: CUMULATIVE
-    monitored_resource: gce_instance
-    labels:
-      direction: .*
-  - type: workload.googleapis.com/iis.connection.attempt.count
-    value_type: INT64
-    kind: CUMULATIVE
-    monitored_resource: gce_instance
-  - type: workload.googleapis.com/iis.connection.active
-    value_type: INT64
-    kind: GAUGE
-    monitored_resource: gce_instance
-  - type: workload.googleapis.com/iis.connection.anonymous
-    value_type: INT64
-    kind: CUMULATIVE
-    monitored_resource: gce_instance
-  - type: workload.googleapis.com/iis.thread.active
-    value_type: INT64
-    kind: GAUGE
-    monitored_resource: gce_instance
-  - type: workload.googleapis.com/iis.uptime
-    value_type: INT64
-    kind: GAUGE
-    monitored_resource: gce_instance
 expected_logs:
   - log_name: iis_access
     fields:

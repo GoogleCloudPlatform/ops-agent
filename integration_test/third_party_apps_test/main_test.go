@@ -518,7 +518,7 @@ func runMetricsTestCases(ctx context.Context, logger *log.Logger, vm *gce.VM, me
 		err = multierr.Append(err, <-c)
 	}
 
-	if fc == nil {
+	if fc == nil || len(fc.Features) == 0 {
 		logger.Printf("skipping feature tracking integration tests")
 		return err
 	}
@@ -922,22 +922,27 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool) {
 		}
 		if metadata.SliceContains(test.metadata.PlatformsToSkip, test.imageSpec) {
 			tests[i].skipReason = "Skipping test due to 'platforms_to_skip' entry in metadata.yaml"
+			continue
 		}
 		for _, gpuPlatform := range test.metadata.GpuPlatforms {
 			if test.gpu != nil && test.gpu.model == gpuPlatform.Model && !metadata.SliceContains(gpuPlatform.Platforms, test.imageSpec) {
 				tests[i].skipReason = "Skipping test due to 'gpu_platforms.platforms' entry in metadata.yaml"
+				continue
 			}
 		}
 		if reason := incompatibleOperatingSystem(test); reason != "" {
 			tests[i].skipReason = reason
+			continue
 		}
-		if test.app == "mssql" && strings.HasPrefix(test.imageSpec, "windows-cloud") {
+		if strings.HasPrefix(test.app, "mssql") && strings.HasPrefix(test.imageSpec, "windows-cloud") {
 			tests[i].skipReason = "Skipping MSSQL test because this version of Windows doesn't have MSSQL"
+			continue
 		}
 		isSAPHANAImageSpec := test.imageSpec == SAPHANAImageSpec
 		isSAPHANAApp := test.app == SAPHANAApp
 		if isSAPHANAImageSpec != isSAPHANAApp {
 			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, SAPHANAApp, SAPHANAImageSpec)
+			continue
 		}
 	}
 }
