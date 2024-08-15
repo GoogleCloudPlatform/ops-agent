@@ -242,60 +242,99 @@ expected_logs:
       - name: jsonPayload.errorNumber
         type: number
         description: 'The statement error number, or 0 if no error occurred'
+        notes:
+          - &log_slow_extra_note
+            These fields are only provided if the `log_slow_extra` system variable is set to `'ON'`. This variable is available as of MySQL 8.0.14.
       - name: jsonPayload.killed
         type: number
         description: 'If the statement was terminated, the error number indicating why, or 0 if the statement terminated normally'
+        notes:
+          - *log_slow_extra_note
       - name: jsonPayload.bytesReceived
         type: number
         description: 'The number of bytes received from all clients'
+        notes:
+          - *log_slow_extra_note
       - name: jsonPayload.bytesSent
         type: number
         description: 'The number of bytes sent to all clients'
+        notes:
+          - *log_slow_extra_note
       - name: jsonPayload.readFirst
         type: number
         description: 'The number of times the first entry in an index was read'
+        notes:
+          - *log_slow_extra_note
       - name: jsonPayload.readLast
         type: number
         description: 'The number of requests to read the last key in an index'
+        notes:
+          - *log_slow_extra_note
       - name: jsonPayload.readKey
         type: number
         description: 'The number of requests to read a row based on a key'
+        notes:
+          - *log_slow_extra_note
       - name: jsonPayload.readNext
         type: number
         description: 'The number of requests to read the next row in key order'
+        notes:
+          - *log_slow_extra_note
       - name: jsonPayload.readPrev
         type: number
         description: 'The number of requests to read the previous row in key order'
+        notes:
+          - *log_slow_extra_note
       - name: jsonPayload.readRnd
         type: number
         description: 'The number of requests to read a row based on a fixed position'
+        notes:
+          - *log_slow_extra_note
       - name: jsonPayload.readRndNext
         type: number
         description: 'The number of requests to read the next row in the data file'
+        notes:
+          - *log_slow_extra_note
       - name: jsonPayload.sortMergePasses
         type: number
         description: 'The number of merge passes that the sort algorithm has had to do'
+        notes:
+          - *log_slow_extra_note
       - name: jsonPayload.sortRangeCount
         type: number
         description: 'The number of sorts that were done using ranges'
+        notes:
+          - *log_slow_extra_note
       - name: jsonPayload.sortRows
         type: number
         description: 'The number of sorted rows'
+        notes:
+          - *log_slow_extra_note
       - name: jsonPayload.sortScanCount
         type: number
         description: 'The number of sorts that were done by scanning the table'
+        notes:
+          - *log_slow_extra_note
       - name: jsonPayload.createdTmpDiskTables
         type: number
         description: 'The number of internal on-disk temporary tables created by the server'
+        notes:
+          - *log_slow_extra_note
       - name: jsonPayload.createdTmpTables
         type: number
         description: 'The number of internal temporary tables created by the server'
+        notes:
+          - *log_slow_extra_note
       - name: jsonPayload.startTime
         type: string
         description: 'The statement execution start time'
+        notes:
+          - *log_slow_extra_note
       - name: jsonPayload.endTime
         type: string
         description: 'The statement execution end time'
+        notes:
+          - *log_slow_extra_note
       - name: severity
         type: string
         description: ''

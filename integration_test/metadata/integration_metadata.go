@@ -34,7 +34,7 @@ type MetricLabel struct {
 	ValueRegex string `yaml:"value_regex" validate:"required"`
 	// The description of the label.
 	Description string `yaml:"description" validate:"excludesall=‘’“”"`
-	// Annotations/footnotes about the metric.
+	// Annotations/footnotes about the label.
 	Notes []string `yaml:"notes,omitempty" validate:"omitempty,unique"`
 }
 
@@ -87,6 +87,8 @@ type LogField struct {
 	// A list of platforms that this field is not available on.
 	// Examples: debian-11.
 	UnavailableOn []string `yaml:"unavailable_on,omitempty"`
+	// Annotations/footnotes about the field.
+	Notes []string `yaml:"notes,omitempty" validate:"omitempty,unique"`
 }
 
 type ExpectedLog struct {
