@@ -94,6 +94,8 @@ type LogField struct {
 type ExpectedLog struct {
 	LogName string      `yaml:"log_name" validate:"required"`
 	Fields  []*LogField `yaml:"fields" validate:"required,unique=Name,dive"`
+	// Annotations/footnotes about the log.
+	Notes []string `yaml:"notes,omitempty" validate:"omitempty,unique"`
 }
 
 type MinimumSupportedAgentVersion struct {
