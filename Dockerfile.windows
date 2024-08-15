@@ -61,7 +61,7 @@ RUN $files = (iwr -UseBasicParsing https://raw.githubusercontent.com/slproweb/op
     iwr -UseBasicParsing -Uri \"$($installer.url)\" -OutFile /local/openssl.msi; `
     $ActualHash = $(Get-FileHash /local/openssl.msi -Algorithm SHA256).Hash.ToLower(); `
     if ($ActualHash -ne \"$($installer.sha256)\") { `
-      throw \"OpenSSL hash mismatch. Expected: $($installer.sha256), Actual: $ActualHash\" `
+    throw \"OpenSSL hash mismatch. Expected: $($installer.sha256), Actual: $ActualHash\" `
     }; `
     Start-Process msiexec.exe -Wait -ArgumentList \"/i C:\local\openssl.msi /quiet\";
 
@@ -100,7 +100,7 @@ COPY submodules/fluent-bit /work/submodules/fluent-bit
 
 WORKDIR /work/submodules/fluent-bit/build
 
-RUN cmake -G "'Visual Studio 16 2019'" -DCMAKE_BUILD_TYPE=RELWITHDEBINFO -DFLB_OUT_KINESIS_STREAMS=OFF ../;
+RUN cmake -G "'Visual Studio 16 2019'" -DCMAKE_BUILD_TYPE=RELWITHDEBINFO -DFLB_OUT_KINESIS_STREAMS=OFF -DFLB_IN_KAFKA=OFF -DFLB_OUT_KAFKA=OFF -DFLB_OUT_KAFKA_REST=OFF ../;
 
 RUN cmake --build . --config Release; `
     Copy-Item -Path bin/Release/fluent-bit.exe -Destination /work/out/bin/; `
@@ -136,7 +136,7 @@ WORKDIR /work/submodules/opentelemetry-operations-collector
 RUN $JarHash = (Get-FileHash /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar -Algorithm SHA256 | Select -Expand Hash).toLower(); `
     go build -o bin/google-cloud-metrics-agent_windows_amd64.exe `
     -ldflags \"-X github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver.MetricsGathererHash=$JarHash\" `
-     ./cmd/otelopscol; `
+    ./cmd/otelopscol; `
     Copy-Item -Path bin/google-cloud-metrics-agent_windows_amd64.exe -Destination /work/out/bin/;
 
 ###############################################################################
@@ -153,7 +153,7 @@ RUN Get-Content VERSION | Where-Object length | ForEach-Object { Invoke-Expressi
     go build -o bin/google-cloud-ops-agent.exe -ldflags \"-X github.com/GoogleCloudPlatform/ops-agent/internal/version.BuildDistro=$env:BUILD_DISTRO -X github.com/GoogleCloudPlatform/ops-agent/internal/version.Version=$env:PKG_VERSION\" ./cmd/ops_agent_windows; `
     Copy-Item -Path bin/google-cloud-ops-agent.exe -Destination /work/out/bin/; `
     Copy-Item -Path confgenerator/default-config.yaml -Destination /work/out/config/config.yaml;
- 
+
 ###############################################################################
 # Build diagnostic service
 ###############################################################################
