@@ -20,9 +20,11 @@ processors:
     blank_label_metrics:
     - system.cpu.utilization
   cumulativetodelta/dcgm_1:
-    metrics:
-    - dcgm.gpu.profiling.nvlink_traffic_rate
-    - dcgm.gpu.profiling.pcie_traffic_rate
+    include:
+      match_type: strict
+      metrics:
+      - dcgm.gpu.profiling.nvlink_traffic_rate
+      - dcgm.gpu.profiling.pcie_traffic_rate
   deltatorate/dcgm_2:
     metrics:
     - dcgm.gpu.profiling.nvlink_traffic_rate

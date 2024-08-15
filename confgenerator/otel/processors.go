@@ -97,7 +97,10 @@ func CumulativeToDelta(metrics ...string) Component {
 	return Component{
 		Type: "cumulativetodelta",
 		Config: map[string]interface{}{
-			"metrics": metrics,
+			"include": map[string]interface{}{
+				"metrics": metrics,
+				"match_type": "strict",
+			},
 		},
 	}
 }
