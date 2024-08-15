@@ -36,7 +36,7 @@ AGENT_PACKAGES_IN_GCS, for details see README.md.
 
 	PROJECT=dev_project \
 	ZONES=us-central1-b \
-	IMAGE_SPECS=debian-cloud:debian-10,rocky-linux-cloud:rocky-linux-8,rhel-sap-cloud:rhel-8-8-sap-ha,suse-cloud:sles-15,ubuntu-os-cloud:ubuntu-2004-lts,windows-cloud:windows-2016,windows-cloud:windows-2019 \
+	IMAGE_SPECS=debian-cloud:debian-12,rocky-linux-cloud:rocky-linux-8,rhel-sap-cloud:rhel-8-8-sap-ha,suse-cloud:sles-15,ubuntu-os-cloud:ubuntu-2004-lts,windows-cloud:windows-2016,windows-cloud:windows-2019 \
 
 	go test -v ops_agent_test.go \
 	  -test.parallel=1000 \
@@ -220,7 +220,7 @@ func init() {
 		log.Fatalf("init() failed to make a temporary directory for ssh keys: %v", err)
 	}
 	privateKeyFile = filepath.Join(keysDir, "gce_testing_key")
-	if _, err := runCommand(ctx, log.Default(), nil, []string{"ssh-keygen", "-t", "rsa", "-f", privateKeyFile, "-C", sshUserName, "-N", ""}); err != nil {
+	if _, err := runCommand(ctx, log.Default(), nil, []string{"ssh-keygen", "-t", "rsa", "-f", privateKeyFile, "-C", sshUserName, "-N", ""}, nil); err != nil {
 		log.Fatalf("init() failed to generate new public+private key pair: %v", err)
 	}
 	publicKeyFile = privateKeyFile + ".pub"
@@ -699,7 +699,8 @@ func (writer *ThreadSafeWriter) Write(p []byte) (int, error) {
 // and stderr, and an error if the binary had a nonzero exit code.
 // args is a slice containing the binary to invoke along with all its arguments,
 // e.g. {"echo", "hello"}.
-func runCommand(ctx context.Context, logger *log.Logger, stdin io.Reader, args []string) (CommandOutput, error) {
+// env is a map containing environment variables to set for the command.
+func runCommand(ctx context.Context, logger *log.Logger, stdin io.Reader, args []string, env map[string]string) (CommandOutput, error) {
 	var output CommandOutput
 	if len(args) < 1 {
 		return output, fmt.Errorf("runCommand() needs a nonempty argument slice, got %v", args)
@@ -715,6 +716,13 @@ func runCommand(ctx context.Context, logger *log.Logger, stdin io.Reader, args [
 	interleavedWriter := &ThreadSafeWriter{guarded: &interleavedBuilder}
 	cmd.Stdout = io.MultiWriter(&stdoutBuilder, interleavedWriter)
 	cmd.Stderr = io.MultiWriter(&stderrBuilder, interleavedWriter)
+	if len(env) > 0 {
+		environment := []string{}
+		for k, v := range env {
+			environment = append(environment, fmt.Sprintf("%s=%s", k, v))
+		}
+		cmd.Env = environment
+	}
 
 	err := cmd.Run()
 
@@ -731,6 +739,17 @@ func runCommand(ctx context.Context, logger *log.Logger, stdin io.Reader, args [
 	return output, err
 }
 
+const (
+	gcloudConfigDirKey = "__gcloud_config_dir__"
+)
+
+// WithGcloudConfigDir returns a context that records the desired value of the
+// gcloud configuration directory. Invoking RunGcloud with that context will
+// set the configuration directory for the gcloud command to that value.
+func WithGcloudConfigDir(ctx context.Context, directory string) context.Context {
+	return context.WithValue(ctx, gcloudConfigDirKey, directory)
+}
+
 // RunGcloud invokes a gcloud binary from runfiles and waits until it finishes.
 // Returns the stdout and stderr and an error if the binary had a nonzero exit
 // code. args is a slice containing the arguments to pass to gcloud.
@@ -741,7 +760,11 @@ func runCommand(ctx context.Context, logger *log.Logger, stdin io.Reader, args [
 // http://go/sdi-gcloud-vs-api
 func RunGcloud(ctx context.Context, logger *log.Logger, stdin string, args []string) (CommandOutput, error) {
 	logger.Printf("Running command: gcloud %v", args)
-	return runCommand(ctx, logger, strings.NewReader(stdin), append([]string{gcloudPath}, args...))
+	env := make(map[string]string)
+	if configDir := ctx.Value(gcloudConfigDirKey); configDir != nil {
+		env["CLOUDSDK_CONFIG"] = configDir.(string)
+	}
+	return runCommand(ctx, logger, strings.NewReader(stdin), append([]string{gcloudPath}, args...), env)
 }
 
 var (
@@ -816,7 +839,7 @@ func RunRemotelyStdin(ctx context.Context, logger *log.Logger, vm *VM, stdin io.
 	args = append(args, "-oIdentityFile="+privateKeyFile)
 	args = append(args, sshOptions...)
 	args = append(args, wrappedCommand)
-	return runCommand(ctx, logger, stdin, args)
+	return runCommand(ctx, logger, stdin, args, nil)
 }
 
 // UploadContent takes an io.Reader and uploads its contents as a file to a
@@ -989,10 +1012,9 @@ func prepareSLES(ctx context.Context, logger *log.Logger, vm *VM) error {
 		// --gpg-auto-import-keys is included to fix a rare flake where (due to
 		// a policy being installed already) there is a new key that needs to
 		// be imported.
-		// timezone-java was selected arbitrarily as a package that:
-		// a) can be installed from the default repos, and
-		// b) isn't installed already.
-		_, zypperErr := RunRemotely(ctx, logger, vm, "sudo zypper --non-interactive --gpg-auto-import-keys refresh && sudo zypper --non-interactive install timezone-java")
+		// To fix this, we force install a package. coreutils is arbitrarily
+		// chosen as it's all but guaranteed to be present.
+		_, zypperErr := RunRemotely(ctx, logger, vm, "sudo zypper --non-interactive --gpg-auto-import-keys refresh && sudo zypper --non-interactive install --force coreutils")
 		return zypperErr
 	}, backoffPolicy)
 	if err != nil {
@@ -1292,13 +1314,6 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		}
 	}
 
-	// See b/334918531.
-	if strings.Contains(vm.ImageSpec, "debian-10") {
-		if _, err := RunRemotely(ctx, logger, vm, "sudo sed -i 's#https://deb.debian.org/debian buster-backports#https://archive.debian.org/debian buster-backports#' /etc/apt/sources.list"); err != nil {
-			return nil, fmt.Errorf("attemptCreateInstance() failed to reconfigure buster-backports: %v", err)
-		}
-	}
-
 	// Pre-installed jupyter services on DLVM images cause port conflicts for third-party apps.
 	// See b/347107292.
 	if IsDLVMImage(vm.ImageSpec) {
@@ -1586,7 +1601,7 @@ INSTALL_DIR="$(readlink --canonicalize .)"
 	INSTALL_LOG="$(mktemp)"
 	# This command produces a lot of console spam, so we only display that
 	# output if there is a problem.
-	sudo tar -xf ` + gcloudPkg + ` -C ${INSTALL_DIR} 
+	sudo tar -xf ` + gcloudPkg + ` -C ${INSTALL_DIR}
 	sudo --preserve-env ${INSTALL_DIR}/google-cloud-sdk/install.sh -q &>"${INSTALL_LOG}" || \
 		EXIT_CODE=$?
 	if [[ "${EXIT_CODE-}" ]]; then
@@ -1600,7 +1615,7 @@ INSTALL_DIR="$(readlink --canonicalize .)"
 # Upgrade to the latest version
 sudo ${INSTALL_DIR}/google-cloud-sdk/bin/gcloud components update --quiet
 
-sudo ln -s ${INSTALL_DIR}/google-cloud-sdk/bin/gsutil /usr/bin/gsutil 
+sudo ln -s ${INSTALL_DIR}/google-cloud-sdk/bin/gsutil /usr/bin/gsutil
 `
 	// b/308962066: The GCloud CLI ARM Linux tarballs do not have bundled Python
 	// and the GCloud CLI requires Python >= 3.8. Install Python311 for ARM VMs

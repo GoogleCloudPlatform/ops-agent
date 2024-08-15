@@ -18,8 +18,8 @@ long_name: Active Directory Domain Services (AD DS)
 supported_app_version: ["windows-server-2016", "windows-server-2019"]
 logo_path: /stackdriver/images/active_directory_ds.png # supplied by google technical writer
 description: |-
-  Active Directory Domain Services stores information about objects on the network so that administrators and users
-  can easily access this information.
+  Active Directory Domain Services (AD DS) stores information about objects on the
+  network so that administrators and users can easily access this information.
 configure_integration: |-
   By default, Active Directory Windows event logs and performance counters are enabled.
 restart_after_install: true
@@ -29,21 +29,21 @@ configuration_options:
       fields:
         - name: type
           default: null
-          description: The value must be active_directory_ds.
+          description: The value must be `active_directory_ds`.
   metrics:
     - type: active_directory_ds
       fields:
         - name: type
           default: null
-          description: The value must be active_directory_ds.
+          description: The value must be `active_directory_ds`.
         - name: collection_interval
           default: 60s
-          description: A time.Duration value, such as 30s or 5m.
+          description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
 expected_logs:
   - log_name: active_directory_ds
     fields:
       - name: jsonPayload.Message
-        value_regex: (?s)^Microsoft Active Directory Domain Services startup complete.* # The (?s) part will make the . match with newline as well. See https://github.com/google/re2/blob/main/doc/syntax.txt#L65,L68 
+        value_regex: (?s)^Microsoft Active Directory Domain Services startup complete.* # The (?s) part will make the . match with newline as well. See https://github.com/google/re2/blob/main/doc/syntax.txt#L65,L68
         type: string
         description: "The log message."
       - name: jsonPayload.RecordNumber

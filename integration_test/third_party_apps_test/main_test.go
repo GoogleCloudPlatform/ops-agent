@@ -21,7 +21,7 @@ For instructions, see the top of gce_testing.go.
 This test needs the following environment variables to be defined, in addition
 to the ones mentioned at the top of gce_testing.go:
 
-IMAGE_SPECS: a comma-separated list of image specs to test, e.g. "suse-cloud:sles-12,ubuntu-os-cloud:ubuntu-2310-amd64".
+IMAGE_SPECS: a comma-separated list of image specs to test, e.g. "suse-cloud:sles-12,ubuntu-os-cloud:ubuntu-2404-amd64".
 
 The following variables are optional:
 
@@ -169,11 +169,15 @@ func updateSSHKeysForActiveDirectory(ctx context.Context, logger *log.Logger, vm
 //	field name => field value regex
 //
 // into a query filter to pass to the logging API.
-func constructQuery(logName string, fields []*metadata.LogFields) string {
+func constructQuery(logName string, fields []*metadata.LogField) string {
 	var parts []string
 	for _, field := range fields {
 		if field.ValueRegex != "" {
-			parts = append(parts, fmt.Sprintf(`%s=~"%s"`, field.Name, field.ValueRegex))
+			guard := ""
+			if field.Optional {
+				guard = fmt.Sprintf(`NOT %s:* OR `, field.Name)
+			}
+			parts = append(parts, fmt.Sprintf(`(%s%s=~"%s")`, guard, field.Name, field.ValueRegex))
 		}
 	}
 
@@ -188,12 +192,12 @@ func constructQuery(logName string, fields []*metadata.LogFields) string {
 
 // logFieldsMapWithPrefix returns a field name => LogField mapping where all the fieldnames have the provided prefix.
 // Note that the map will omit the prefix in the returned map.
-func logFieldsMapWithPrefix(log *metadata.ExpectedLog, prefix string) map[string]*metadata.LogFields {
+func logFieldsMapWithPrefix(log *metadata.ExpectedLog, prefix string) map[string]*metadata.LogField {
 	if log == nil {
 		return nil
 	}
 
-	fieldsMap := make(map[string]*metadata.LogFields)
+	fieldsMap := make(map[string]*metadata.LogField)
 	for _, entry := range log.Fields {
 		if strings.HasPrefix(entry.Name, prefix) {
 			fieldsMap[strings.TrimPrefix(entry.Name, prefix)] = entry
@@ -204,7 +208,7 @@ func logFieldsMapWithPrefix(log *metadata.ExpectedLog, prefix string) map[string
 }
 
 // verifyLogField verifies that the actual field retrieved from Cloud Logging is as expected.
-func verifyLogField(fieldName, actualField string, expectedFields map[string]*metadata.LogFields) error {
+func verifyLogField(fieldName, actualField string, expectedFields map[string]*metadata.LogField) error {
 	expectedField, ok := expectedFields[fieldName]
 	if !ok {
 		// Not expecting this field. It could however be populated with some default zero-values when we
@@ -247,7 +251,7 @@ func verifyLogField(fieldName, actualField string, expectedFields map[string]*me
 //	and then verifying the fields against the expected fields.
 //
 // This should be added if some of the integrations expect to create nested fields.
-func verifyJsonPayload(actualPayload interface{}, expectedPayload map[string]*metadata.LogFields) error {
+func verifyJsonPayload(actualPayload interface{}, expectedPayload map[string]*metadata.LogField) error {
 	var multiErr error
 	actualPayloadFields := actualPayload.(*structpb.Struct).GetFields()
 	for expectedKey, expectedValue := range expectedPayload {
@@ -407,8 +411,8 @@ func verifyLog(actualLog *cloudlogging.Entry, expectedLog *metadata.ExpectedLog)
 
 // stripUnavailableFields removes the fields that are listed as unavailable_on
 // the current image spec.
-func stripUnavailableFields(fields []*metadata.LogFields, imageSpec string) []*metadata.LogFields {
-	var result []*metadata.LogFields
+func stripUnavailableFields(fields []*metadata.LogField, imageSpec string) []*metadata.LogField {
+	var result []*metadata.LogField
 	for _, field := range fields {
 		if !metadata.SliceContains(field.UnavailableOn, imageSpec) {
 			result = append(result, field)
@@ -514,7 +518,7 @@ func runMetricsTestCases(ctx context.Context, logger *log.Logger, vm *gce.VM, me
 		err = multierr.Append(err, <-c)
 	}
 
-	if fc == nil {
+	if fc == nil || len(fc.Features) == 0 {
 		logger.Printf("skipping feature tracking integration tests")
 		return err
 	}
@@ -681,11 +685,12 @@ func fetchAppsAndMetadata(t *testing.T) map[string]metadata.IntegrationMetadata 
 	for _, file := range files {
 		app := file.Name()
 		var integrationMetadata metadata.IntegrationMetadata
-		testCaseBytes, err := scriptsDir.ReadFile(path.Join("applications", app, "metadata.yaml"))
+		applicationMetadata := path.Join("applications", app, "metadata.yaml")
+		testCaseBytes, err := scriptsDir.ReadFile(applicationMetadata)
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = metadata.UnmarshalAndValidate(testCaseBytes, &integrationMetadata)
+		err = metadata.UnmarshalAndValidate(applicationMetadata, testCaseBytes, &integrationMetadata)
 		if err != nil {
 			t.Fatalf("could not validate contents of applications/%v/metadata.yaml: %v", app, err)
 		}
@@ -821,7 +826,7 @@ type test struct {
 }
 
 var defaultPlatforms = map[string]bool{
-	"debian-cloud:debian-10":     true,
+	"debian-cloud:debian-11":     true,
 	"windows-cloud:windows-2019": true,
 }
 
@@ -917,22 +922,27 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool) {
 		}
 		if metadata.SliceContains(test.metadata.PlatformsToSkip, test.imageSpec) {
 			tests[i].skipReason = "Skipping test due to 'platforms_to_skip' entry in metadata.yaml"
+			continue
 		}
 		for _, gpuPlatform := range test.metadata.GpuPlatforms {
 			if test.gpu != nil && test.gpu.model == gpuPlatform.Model && !metadata.SliceContains(gpuPlatform.Platforms, test.imageSpec) {
 				tests[i].skipReason = "Skipping test due to 'gpu_platforms.platforms' entry in metadata.yaml"
+				continue
 			}
 		}
 		if reason := incompatibleOperatingSystem(test); reason != "" {
 			tests[i].skipReason = reason
+			continue
 		}
-		if test.app == "mssql" && strings.HasPrefix(test.imageSpec, "windows-cloud") {
+		if strings.HasPrefix(test.app, "mssql") && strings.HasPrefix(test.imageSpec, "windows-cloud") {
 			tests[i].skipReason = "Skipping MSSQL test because this version of Windows doesn't have MSSQL"
+			continue
 		}
 		isSAPHANAImageSpec := test.imageSpec == SAPHANAImageSpec
 		isSAPHANAApp := test.app == SAPHANAApp
 		if isSAPHANAImageSpec != isSAPHANAApp {
 			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, SAPHANAApp, SAPHANAImageSpec)
+			continue
 		}
 	}
 }
@@ -983,6 +993,7 @@ func TestThirdPartyApps(t *testing.T) {
 
 			ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
 			defer cancel()
+			ctx = gce.WithGcloudConfigDir(ctx, t.TempDir())
 
 			var err error
 			for attempt := 1; attempt <= 4; attempt++ {

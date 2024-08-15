@@ -56,6 +56,7 @@ func SetupLoggerAndVM(t *testing.T, platform string) (context.Context, *logging.
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
 	t.Cleanup(cancel)
+	ctx = gce.WithGcloudConfigDir(ctx, t.TempDir())
 
 	logger := gce.SetupLogger(t)
 	options := gce.VMOptions{

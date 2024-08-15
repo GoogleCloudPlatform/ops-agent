@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-app_url: "https://docs.nvidia.com/datacenter/dcgm/latest/user-guide/index.html"
+app_url: "https://developer.nvidia.com/dcgm"
 short_name: NVIDIA DCGM
-long_name: NVIDIA DataCenter GPU Manager (DCGM)
-logo_path: /images/partners/todo.png # supplied by google technical writer
+long_name: NVIDIA Data Center GPU Manager (DCGM)
+logo_path: /stackdriver/images/integrations/nvidia.png # supplied by google technical writer
 description: |-
-  The NVIDIA DataCenter GPU Manager (DCGM) integration collects advanced GPU metrics,
+  The NVIDIA Data Center GPU Manager (DCGM) integration collects advanced GPU metrics,
   including SM block utilization, Pipe utilization, PCIe and NVLink traffic.
 configure_integration: |-
   You must install DCGM and run the DCGM daemon service.
@@ -35,7 +35,6 @@ gpu_platforms: # p4, p100 don't emit DCGM profiling metrics
       - ubuntu-os-cloud:ubuntu-2004-lts
   - model: l4
     platforms:
-      - centos-cloud:centos-7
       - debian-cloud:debian-11
       - ml-images:common-gpu-debian-11-py310
       - rocky-linux-cloud:rocky-linux-8
@@ -108,16 +107,16 @@ configuration_options:
       fields:
         - name: type
           default: null
-          description: This value must be dcgm.
+          description: This value must be `dcgm`.
         - name: collection_interval
           default: 60s
-          description: A time.Duration value, such as 30s or 5m.
+          description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
         - name: receiver_version
           default: "1"
           description: Either 1 or 2. Version 2 has many more metrics available.
         - name: endpoint
           default: localhost:5555
-          description: The DCGM service endpoint specified as 'hostname:port'
+          description: The DCGM service endpoint specified as `hostname:port`.
 minimum_supported_agent_version:
   metrics: 2.38.0
 public_url: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party-nvidia

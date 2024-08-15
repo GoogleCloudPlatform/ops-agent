@@ -13,10 +13,14 @@
 # limitations under the License.
 
 app_url: "https://www.couchbase.com/"
-short_name: couchbase
+short_name: Couchbase
 long_name: Couchbase
+logo_path: /stackdriver/images/integrations/couchbase.png # supplied by google technical writer
 description: |-
-  The Couchbase integration collects bucket metrics such as operations, memory usage, and ejections. The integration collects metrics from the Prometheus server exposed on a node.
+  The Couchbase integration collects bucket metrics such as operations,
+  memory usage, and ejections. The integration collects metrics from the
+  Prometheus server exposed on a node. The integration also collects Couchbase
+  general, HTTP access, and cross-datacenter ("goxdcr") logs.
 supported_app_version: ["6.5", "6.6", "7.0"]
 expected_logs:
   - log_name: couchbase_general
@@ -34,20 +38,17 @@ expected_logs:
         optional: true
       - name: jsonPayload.source
         type: string
-        description: ''
+        description: Source where the log originated
         optional: true
       - name: jsonPayload.type
         type: string
-        description: ''
+        description: The type of log
         optional: true
       - name: jsonPayload.level
         type: string
         description: Log entry severity for the couchbase log
         optional: true
       - name: severity
-        type: string
-        description: ''
-      - name: timestamp
         type: string
         description: ''
   - log_name: couchbase_http_access
@@ -100,9 +101,6 @@ expected_logs:
       - name: severity
         type: string
         description: ''
-      - name: timestamp
-        type: string
-        description: ''
   - log_name: couchbase_goxdcr
     fields:
       - name: jsonPayload.message
@@ -110,16 +108,13 @@ expected_logs:
         description: "Log message"
       - name: jsonPayload.log_type
         type: string
-        description: ''
+        description: The name of the component that is issuing the cross-datacenter log
         optional: true
       - name: jsonPayload.level
         type: string
         description: Log entry severity for the couchbase log
         optional: true
       - name: severity
-        type: string
-        description: ''
-      - name: timestamp
         type: string
         description: ''
 expected_metrics:
@@ -190,9 +185,9 @@ configuration_options:
           default: 60s
           description: A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
         - name: username
-          description: The username used to connect to the couchbase server.
+          description: The username used to connect to the Couchbase server.
         - name: password
-          description: The password used to connect to the couchbase server.
+          description: The password used to connect to the Couchbase server.
 minimum_supported_agent_version:
   metrics: 2.18.2
   logging: 2.18.2
@@ -203,6 +198,4 @@ platforms_to_skip:
   - rocky-linux-cloud:rocky-linux-9
   - debian-cloud:debian-11-arm64
   - debian-cloud:debian-12
-  - ubuntu-os-cloud:ubuntu-2310-amd64
-  - ubuntu-os-cloud:ubuntu-2310-arm64
 public_url: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/couchbase

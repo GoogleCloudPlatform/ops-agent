@@ -24,8 +24,9 @@ description: |-
   fields mapped to request, client, server, and message.
 configure_integration: |-
   You must enable the `stub_status` module in the nginx configuration file to set
-  up a locally reachable URL, for example, `http://www.example.com/status` for the
-  status page. To enable the `stub_status` module, complete the following steps:
+  up a locally reachable URL, for example, `http://www.example.com/nginx_status`
+  for the status page. To enable the `stub_status` module, complete the following
+  steps:
 
   1. Edit the `status.conf` file, or create the file if it doesn't exist. You can
      find this file in the nginx configuration directory, typically found at
@@ -34,7 +35,7 @@ configure_integration: |-
   1. Add the following lines to the `server` section:
 
      ```none
-     location /status {
+     location /nginx_status {
          stub_status on;
          access_log off;
          allow 127.0.0.1;
@@ -48,7 +49,7 @@ configure_integration: |-
      server {
          listen 80;
          server_name 127.0.0.1;
-         location /status {
+         location /nginx_status {
              stub_status on;
              access_log off;
              allow 127.0.0.1;
@@ -76,7 +77,7 @@ configure_integration: |-
   server {
       listen 80;
       server_name 127.0.0.1;
-      location /status {
+      location /nginx_status {
           stub_status on;
           access_log off;
           allow 127.0.0.1;
@@ -88,7 +89,7 @@ configure_integration: |-
   }
   EOF
   sudo service nginx reload
-  curl http://127.0.0.1:80/status
+  curl http://127.0.0.1:80/nginx_status
   ```
 
   The sample output is:
@@ -102,7 +103,7 @@ configure_integration: |-
 
   Note: `127.0.0.1` can be replaced with the real server name, for example,
   `server_name mynginx.domain.com`. The curl command to verify would be
-  `curl http://mynginx.domain.com:80/status`.
+  `curl http://mynginx.domain.com:80/nginx_status`.
 
   Alternately, instead of using a separate `status.conf` file, you can also
   directly embed the lines to the main `nginx.conf` file, which
@@ -209,10 +210,10 @@ expected_logs:
         description: Original HTTP request (optional)
       - name: jsonPayload.pid
         type: number
-        description: Process ID
+        description: The process ID issuing the log
       - name: jsonPayload.tid
         type: number
-        description: Thread ID
+        description: Thread ID where the log originated
       - name: jsonPayload.connection
         type: number
         description: Connection ID
@@ -245,48 +246,48 @@ configuration_options:
       fields:
         - name: type
           default: null
-          description: The value must be nginx_access.
+          description: This value must be `nginx_access`.
         - name: include_paths
           default: '[/var/log/nginx/access.log]'
-          description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
+          description: A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths.
         - name: exclude_paths
           default: null
-          description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+          description: A list of filesystem path patterns to exclude from the set matched by `include_paths`.
         - name: record_log_file_path
           default: false
           description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
         - name: wildcard_refresh_interval
           default: 60s
-          description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+          description: The interval at which wildcard file paths in `include_paths` are refreshed. Given as a [time duration](https://pkg.go.dev/time#ParseDuration), for example `30s` or `2m`. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
     - type: "nginx_error"
       fields:
         - name: type
           default: null
-          description: The value must be nginx_error.
+          description: This value must be `nginx_error`.
         - name: include_paths
           default: '[/var/log/nginx/error.log]'
-          description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
+          description: A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths.
         - name: exclude_paths
           default: null
-          description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+          description: A list of filesystem path patterns to exclude from the set matched by `include_paths`.
         - name: record_log_file_path
           default: false
           description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
         - name: wildcard_refresh_interval
           default: 60s
-          description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+          description: The interval at which wildcard file paths in `include_paths` are refreshed. Given as a [time duration](https://pkg.go.dev/time#ParseDuration), for example `30s` or `2m`. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
   metrics:
     - type: nginx
       fields:
         - name: type
           default: null
-          description: This value must be nginx.
+          description: This value must be `nginx`.
         - name: server_status_url
           default: http://localhost/status
           description: The URL exposed by the nginx stub status module.
         - name: collection_interval
           default: 60s
-          description: A time.Duration value, such as 30s or 5m.
+          description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
 troubleshoot: |-
   On most distributions, nginx comes with `ngx_http_stub_status_module` enabled.
   You can check if the module is enabled by running the following command:

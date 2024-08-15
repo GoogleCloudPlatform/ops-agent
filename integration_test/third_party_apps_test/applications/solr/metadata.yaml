@@ -148,7 +148,7 @@ expected_logs:
         optional: true
       - name: jsonPayload.level
         type: string
-        description: ''
+        description: Log entry level
         optional: true
       - name: jsonPayload.shard
         type: string
@@ -175,34 +175,34 @@ configuration_options:
       fields:
         - name: type
           default: null
-          description: The value must be solr_system.
+          description: This value must be `solr_system`.
         - name: include_paths
           default: '[/var/solr/logs/solr.log]'
-          description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths.
+          description: A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths.
         - name: exclude_paths
           default: null
-          description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+          description: A list of filesystem path patterns to exclude from the set matched by `include_paths`.
         - name: record_log_file_path
           default: false
           description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
         - name: wildcard_refresh_interval
           default: 60s
-          description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+          description: The interval at which wildcard file paths in `include_paths` are refreshed. Given as a [time duration](https://pkg.go.dev/time#ParseDuration), for example `30s` or `2m`. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
   metrics:
     - type: solr
       fields:
         - name: type
           default: null
-          description: This value must be solr.
+          description: This value must be `solr`.
         - name: endpoint
           default: localhost:18983
-          description: The JMX Service URL or host and port used to construct the Service URL. Must be in the form of host:port. Values in host:port form will be used to create a Service URL of service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi.
+          description: The [JMX Service URL](https://docs.oracle.com/javase/8/docs/api/javax/management/remote/JMXServiceURL.html) or host and port used to construct the Service URL. Must be in the form of `host:port`. Values in `host:port` form will be used to create a Service URL of `service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi`.
         - name: username
           default: null
-          description: The configured username if JMX is configured to require authentication..
+          description: The configured username if JMX is configured to require authentication.
         - name: password
           default: null
           description: The configured password if JMX is configured to require authentication.
         - name: collection_interval
           default: 60s
-          description: A time.Duration value, such as 30s or 5m.
+          description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
