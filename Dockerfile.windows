@@ -61,7 +61,7 @@ RUN $files = (iwr -UseBasicParsing https://raw.githubusercontent.com/slproweb/op
     iwr -UseBasicParsing -Uri \"$($installer.url)\" -OutFile /local/openssl.msi; `
     $ActualHash = $(Get-FileHash /local/openssl.msi -Algorithm SHA256).Hash.ToLower(); `
     if ($ActualHash -ne \"$($installer.sha256)\") { `
-    throw \"OpenSSL hash mismatch. Expected: $($installer.sha256), Actual: $ActualHash\" `
+      throw \"OpenSSL hash mismatch. Expected: $($installer.sha256), Actual: $ActualHash\" `
     }; `
     Start-Process msiexec.exe -Wait -ArgumentList \"/i C:\local\openssl.msi /quiet\";
 
