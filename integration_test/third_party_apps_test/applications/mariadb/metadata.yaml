@@ -277,30 +277,49 @@ expected_logs:
       - name: jsonPayload.sortMergePasses
         type: number
         description: 'The number of merge passes that the sort algorithm has had to do'
+        notes:
+          - &log_slow_verbosity_note
+            These fields are only provided if the `log_slow_verbosity` system variable contains `'query_plan'`.
       - name: jsonPayload.createdTmpTables
         type: number
         description: 'The number of internal temporary tables created by the server'
+        notes:
+          - *log_slow_verbosity_note
       - name: jsonPayload.createdTmpDiskTables
         type: number
         description: 'The number of internal on-disk temporary tables created by the server'
+        notes:
+          - *log_slow_verbosity_note
       - name: jsonPayload.createdTmpTableSizes
         type: number
         description: 'The number of bytes used by internal temporary tables created by the server'
+        notes:
+          - *log_slow_verbosity_note
       - name: jsonPayload.fullScan
         type: boolean
         description: 'The statement used a full table scan'
+        notes:
+          - *log_slow_verbosity_note
       - name: jsonPayload.fullJoin
         type: boolean
         description: "The statement didn't use an index to join tables"
+        notes:
+          - *log_slow_verbosity_note
       - name: jsonPayload.filesort
         type: boolean
         description: 'The statement used filesort'
+        notes:
+          - *log_slow_verbosity_note
       - name: jsonPayload.filesortOnDisk
         type: boolean
         description: 'The statement used filesort that needed temporary tables on disk'
+        notes:
+          - *log_slow_verbosity_note
       - name: jsonPayload.priorityQueue
         type: boolean
         description: 'The statement used a priority queue filesort'
+        notes:
+          - *log_slow_verbosity_note
       - name: severity
         type: string
         description: ''
