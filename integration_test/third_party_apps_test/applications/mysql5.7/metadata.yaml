@@ -365,10 +365,10 @@ configuration_options:
           default: null
           description: This value must be `mysql`.
         - name: endpoint
-          default: localhost:3306
-          description: The url exposed by MySQL.
+          default: /var/run/mysqld/mysqld.sock
+          description: The `hostname:port` or Unix socket path starting with `/` used to connect to the MySQL server.
         - name: username
-          default: null
+          default: root
           description: The username used to connect to the server.
         - name: password
           default: null
