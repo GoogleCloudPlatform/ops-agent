@@ -384,7 +384,7 @@ configuration_options:
           description: This value must be `mysql`.
         - name: endpoint
           default: /var/run/mysqld/mysqld.sock
-          description: The `hostname:port` or Unix socket path starting with `/` used to connect to the MySQL server.
+          description: The `hostname:port` or Unix socket path starting with `/` used to connect to the MariaDB server.
         - name: username
           default: root
           description: The username used to connect to the server.
