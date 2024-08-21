@@ -748,6 +748,14 @@ func getGcloudConfigDir(ctx context.Context) (string, error) {
 	return out.Stdout, nil
 }
 
+// getDirectoryWithTrailingDot returns the given directory with
+// a trailing '/.'.
+func getDirectoryWithTrailingDot(directory string) string {
+	// Can't just use filepath.Join(directory, "."), because it eats dot path
+	// segments. See https://stackoverflow.com/questions/51669486/filepath-join-removes-dot/51670536#51670536
+	return filepath.Clean(directory) + string(filepath.Separator) + "."
+}
+
 // SetupGcloudConfigDir sets up a new gcloud configuration directory.
 // This copies the contents of the context-specified configuration directory
 // into the new directory.
@@ -758,7 +766,9 @@ func SetupGcloudConfigDir(ctx context.Context, directory string) error {
 		return err
 	}
 	// TODO: Replace with os.CopyFS() once available.
-	if _, err := runCommand(ctx, log.New(io.Discard, "", 0), nil, []string{"cp", "-r", filepath.Join(currentConfigDir, "."), filepath.Join(directory, ".")}, nil); err != nil {
+	from := getDirectoryWithTrailingDot(currentConfigDir)
+	to := getDirectoryWithTrailingDot(directory)
+	if _, err := runCommand(ctx, log.New(io.Discard, "", 0), nil, []string{"cp", "-r", from, to}, nil); err != nil {
 		return err
 	}
 	return nil
