@@ -752,7 +752,7 @@ func getGcloudConfigDir(ctx context.Context) (string, error) {
 // a trailing '/.'.
 func getDirectoryWithTrailingDot(directory string) string {
 	// Can't just use filepath.Join(directory, "."), because it eats dot path
-	// segments. See https://stackoverflow.com/questions/51669486/filepath-join-removes-dot/51670536#51670536
+	// segments. See https://stackoverflow.com/a/51670536.
 	return filepath.Clean(directory) + string(filepath.Separator) + "."
 }
 
