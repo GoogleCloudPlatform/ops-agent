@@ -58,132 +58,166 @@ expected_metrics:
   - type: workload.googleapis.com/mysql.buffer_pool_data_pages
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      status: dirty|clean
-      instrumentation_source: agent.googleapis.com/mysql
+      - name: status
+        value_regex: dirty|clean
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.buffer_pool_limit
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      instrumentation_source: agent.googleapis.com/mysql
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.buffer_pool_operations
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      operation: read_ahead|read_ahead_evicted|read_ahead_rnd|read_requests|reads|wait_free|write_requests
-      instrumentation_source: agent.googleapis.com/mysql
+      - name: operation
+        value_regex: read_ahead|read_ahead_evicted|read_ahead_rnd|read_requests|reads|wait_free|write_requests
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.buffer_pool_page_flushes
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      instrumentation_source: agent.googleapis.com/mysql
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.buffer_pool_pages
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      kind: data|free|misc
-      instrumentation_source: agent.googleapis.com/mysql
+      - name: kind
+        value_regex: data|free|misc
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.buffer_pool_size
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      kind: clean|dirty
-      instrumentation_source: agent.googleapis.com/mysql
+      - name: kind
+        value_regex: clean|dirty
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.commands
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      command: delete|insert|select|update
-      instrumentation_source: agent.googleapis.com/mysql
+      - name: command
+        value_regex: delete|insert|select|update
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.double_writes
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      kind: writes|pages_written
-      instrumentation_source: agent.googleapis.com/mysql
+      - name: kind
+        value_regex: writes|pages_written
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.handlers
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      kind: commit|delete|discover|lock|mrr_init|prepare|read_first|read_key|read_last|read_next|read_prev|read_rnd|read_rnd_next|rollback|savepoint|savepoint_rollback|update|write
-      instrumentation_source: agent.googleapis.com/mysql
+      - name: kind
+        value_regex: commit|delete|discover|lock|mrr_init|prepare|read_first|read_key|read_last|read_next|read_prev|read_rnd|read_rnd_next|rollback|savepoint|savepoint_rollback|update|write
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.locks
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      kind: immediate|waited
-      instrumentation_source: agent.googleapis.com/mysql
+      - name: kind
+        value_regex: immediate|waited
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.log_operations
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      operation: requests|waits|writes
-      instrumentation_source: agent.googleapis.com/mysql
+      - name: operation
+        value_regex: requests|waits|writes
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.operations
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      operation: fsyncs|reads|writes
-      instrumentation_source: agent.googleapis.com/mysql
+      - name: operation
+        value_regex: fsyncs|reads|writes
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.page_operations
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      operation: created|read|written
-      instrumentation_source: agent.googleapis.com/mysql
+      - name: operation
+        value_regex: created|read|written
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.replica.time_behind_source
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      instrumentation_source: agent.googleapis.com/mysql
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.replica.sql_delay
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      instrumentation_source: agent.googleapis.com/mysql
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.row_locks
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      kind: time|waits
-      instrumentation_source: agent.googleapis.com/mysql
+      - name: kind
+        value_regex: time|waits
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.row_operations
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      operation: deleted|inserted|read|updated
-      instrumentation_source: agent.googleapis.com/mysql
+      - name: operation
+        value_regex: deleted|inserted|read|updated
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.sorts
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      kind: merge_passes|range|rows|scan
-      instrumentation_source: agent.googleapis.com/mysql
+      - name: kind
+        value_regex: merge_passes|range|rows|scan
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.threads
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      kind: cached|connected|created|running
-      instrumentation_source: agent.googleapis.com/mysql
+      - name: kind
+        value_regex: cached|connected|created|running
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
     representative: true
 expected_logs:
   # Mysql 5.7 error logs go to syslog by default
@@ -331,17 +365,14 @@ configuration_options:
           default: null
           description: This value must be `mysql`.
         - name: endpoint
-          default: localhost:3306
-          description: The url exposed by MySQL.
+          default: /var/run/mysqld/mysqld.sock
+          description: The `hostname:port` or Unix socket path starting with `/` used to connect to the MySQL server.
         - name: username
-          default: null
+          default: root
           description: The username used to connect to the server.
         - name: password
           default: null
           description: The password used to connect to the server.
-        - name: application_version
-          default: null
-          description: The version of mysql (major.minor) being monitored. Replication metrics are supported for version 5.7 by setting this to the value `5.7`.
         - name: collection_interval
           default: 60s
           description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.

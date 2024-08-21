@@ -43,44 +43,48 @@ expected_metrics:
   - type: workload.googleapis.com/couchdb.average_request_time
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/couchdb.database.open
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     representative: true
   - type: workload.googleapis.com/couchdb.database.operations
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      operation: .*
+      - name: operation
+        value_regex: .*
   - type: workload.googleapis.com/couchdb.file_descriptor.open
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/couchdb.httpd.bulk_requests
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/couchdb.httpd.requests
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      http_method: .*
+      - name: http_method
+        value_regex: .*
   - type: workload.googleapis.com/couchdb.httpd.responses
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      http_status_code: .*
+      - name: http_status_code
+        value_regex: .*
   - type: workload.googleapis.com/couchdb.httpd.views
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      view: .*
+      - name: view
+        value_regex: .*
 expected_logs:
   - log_name: couchdb
     fields:

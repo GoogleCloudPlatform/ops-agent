@@ -518,7 +518,7 @@ func runMetricsTestCases(ctx context.Context, logger *log.Logger, vm *gce.VM, me
 		err = multierr.Append(err, <-c)
 	}
 
-	if fc == nil {
+	if fc == nil || len(fc.Features) == 0 {
 		logger.Printf("skipping feature tracking integration tests")
 		return err
 	}
@@ -547,7 +547,7 @@ func assertMetric(ctx context.Context, logger *log.Logger, vm *gce.VM, metric *m
 // and ensures that the agent uploads data from the app.
 // Returns an error (nil on success), and a boolean indicating whether the error
 // is retryable.
-func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, app string, metadata metadata.IntegrationMetadata) (retry bool, err error) {
+func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM, app string, integrationMetadata metadata.IntegrationMetadata) (retry bool, err error) {
 	folder, err := distroFolder(vm)
 	if err != nil {
 		return nonRetryable, err
@@ -575,7 +575,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		}
 	}
 
-	if metadata.RestartAfterInstall {
+	if integrationMetadata.RestartAfterInstall {
 		logger.ToMainLog().Printf("Restarting VM instance...")
 		restartLogger := logger.ToFile("VM_restart.txt")
 		err := gce.RestartInstance(ctx, restartLogger, vm)
@@ -609,17 +609,17 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		}
 	}
 
-	if metadata.ExpectedLogs != nil {
+	if integrationMetadata.ExpectedLogs != nil {
 		logger.ToMainLog().Println("found expectedLogs, running logging test cases...")
 		// TODO(b/254325217): bad bad bad, remove this horrible hack once we fix Aerospike on SLES
 		if app == AerospikeApp && folder == "sles" {
 			logger.ToMainLog().Printf("skipping aerospike logging tests (b/254325217)")
-		} else if err = runLoggingTestCases(ctx, logger.ToMainLog(), vm, metadata.ExpectedLogs); err != nil {
+		} else if err = runLoggingTestCases(ctx, logger.ToMainLog(), vm, integrationMetadata.ExpectedLogs); err != nil {
 			return nonRetryable, err
 		}
 	}
 
-	if metadata.ExpectedMetrics != nil {
+	if integrationMetadata.ExpectedMetrics != nil {
 		logger.ToMainLog().Println("found expectedMetrics, running metrics test cases...")
 
 		// All integrations are expected to set the instrumentation_* labels.
@@ -628,26 +628,41 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		if app == "mariadb" {
 			instrumentedApp = "mysql"
 		}
-		for _, m := range metadata.ExpectedMetrics {
+		for _, m := range integrationMetadata.ExpectedMetrics {
 			// The windows metrics that do not target workload.googleapis.com cannot set
 			// the instrumentation_* labels
 			if strings.HasPrefix(m.Type, "agent.googleapis.com") {
 				continue
 			}
 			if m.Labels == nil {
-				m.Labels = map[string]string{}
+				m.Labels = []*metadata.MetricLabel{}
 			}
-			if _, ok := m.Labels["instrumentation_source"]; !ok {
-				m.Labels["instrumentation_source"] = regexp.QuoteMeta(fmt.Sprintf("agent.googleapis.com/%s", instrumentedApp))
+			foundInstrumentationSource := false
+			foundInstrumentationVersion := false
+			for _, l := range m.Labels {
+				if l.Name == "instrumentation_source" {
+					foundInstrumentationSource = true
+				} else if l.Name == "instrumentation_version" {
+					foundInstrumentationVersion = true
+				}
 			}
-			if _, ok := m.Labels["instrumentation_version"]; !ok {
-				m.Labels["instrumentation_version"] = `.*`
+			if !foundInstrumentationSource {
+				m.Labels = append(m.Labels, &metadata.MetricLabel{
+					Name:       "instrumentation_source",
+					ValueRegex: regexp.QuoteMeta(fmt.Sprintf("agent.googleapis.com/%s", instrumentedApp)),
+				})
+			}
+			if !foundInstrumentationVersion {
+				m.Labels = append(m.Labels, &metadata.MetricLabel{
+					Name:       "instrumentation_version",
+					ValueRegex: `.*`,
+				})
 			}
 		}
 
 		fc, err := getExpectedFeatures(app)
 
-		if err = runMetricsTestCases(ctx, logger.ToMainLog(), vm, metadata.ExpectedMetrics, fc); err != nil {
+		if err = runMetricsTestCases(ctx, logger.ToMainLog(), vm, integrationMetadata.ExpectedMetrics, fc); err != nil {
 			return nonRetryable, err
 		}
 	}
@@ -922,22 +937,27 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool) {
 		}
 		if metadata.SliceContains(test.metadata.PlatformsToSkip, test.imageSpec) {
 			tests[i].skipReason = "Skipping test due to 'platforms_to_skip' entry in metadata.yaml"
+			continue
 		}
 		for _, gpuPlatform := range test.metadata.GpuPlatforms {
 			if test.gpu != nil && test.gpu.model == gpuPlatform.Model && !metadata.SliceContains(gpuPlatform.Platforms, test.imageSpec) {
 				tests[i].skipReason = "Skipping test due to 'gpu_platforms.platforms' entry in metadata.yaml"
+				continue
 			}
 		}
 		if reason := incompatibleOperatingSystem(test); reason != "" {
 			tests[i].skipReason = reason
+			continue
 		}
-		if test.app == "mssql" && strings.HasPrefix(test.imageSpec, "windows-cloud") {
+		if strings.HasPrefix(test.app, "mssql") && strings.HasPrefix(test.imageSpec, "windows-cloud") {
 			tests[i].skipReason = "Skipping MSSQL test because this version of Windows doesn't have MSSQL"
+			continue
 		}
 		isSAPHANAImageSpec := test.imageSpec == SAPHANAImageSpec
 		isSAPHANAApp := test.app == SAPHANAApp
 		if isSAPHANAImageSpec != isSAPHANAApp {
 			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, SAPHANAApp, SAPHANAImageSpec)
+			continue
 		}
 	}
 }
