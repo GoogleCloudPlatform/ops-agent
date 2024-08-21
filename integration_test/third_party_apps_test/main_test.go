@@ -1008,7 +1008,11 @@ func TestThirdPartyApps(t *testing.T) {
 
 			ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
 			defer cancel()
-			ctx = gce.WithGcloudConfigDir(ctx, t.TempDir())
+			gcloudConfigDir := t.TempDir()
+			if err := gce.SetupGcloudConfigDir(ctx, gcloudConfigDir); err != nil {
+				t.Fatalf("Unable to set up a gcloud config directory: %v", err)
+			}
+			ctx = gce.WithGcloudConfigDir(ctx, gcloudConfigDir)
 
 			var err error
 			for attempt := 1; attempt <= 4; attempt++ {
