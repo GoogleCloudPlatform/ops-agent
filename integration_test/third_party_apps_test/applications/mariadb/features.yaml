@@ -7,15 +7,11 @@ features:
   module: logging
   key: "[0].enabled"
   value: true
-- feature: receivers:mysql_error
+- feature: receivers:mysql_general
   module: logging
   key: "[1].enabled"
   value: true
-- feature: receivers:mysql_general
-  module: logging
-  key: "[2].enabled"
-  value: true
 - feature: receivers:mysql_slow
   module: logging
-  key: "[3].enabled"
+  key: "[2].enabled"
   value: true

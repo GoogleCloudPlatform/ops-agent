@@ -35,23 +35,25 @@ expected_metrics:
   - type: agent.googleapis.com/iis/current_connections
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: agent.googleapis.com/iis/network/transferred_bytes_count
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      direction: .*
+      - name: direction
+        value_regex: .*
   - type: agent.googleapis.com/iis/new_connection_count
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: agent.googleapis.com/iis/request_count
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      http_method: .*
+      - name: http_method
+        value_regex: .*
     representative: true
 expected_logs:
   - log_name: iis_access

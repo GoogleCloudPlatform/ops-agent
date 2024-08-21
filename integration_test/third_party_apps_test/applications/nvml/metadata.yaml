@@ -53,47 +53,70 @@ expected_metrics:
   - type: agent.googleapis.com/gpu/utilization
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      model: .*
-      uuid: .*
-      gpu_number: "[0-9]*"
+      - name: model
+        value_regex: .*
+      - name: uuid
+        value_regex: .*
+      - name: gpu_number
+        value_regex: "[0-9]*"
     representative: true
   - type: agent.googleapis.com/gpu/memory/bytes_used
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      model: .*
-      uuid: .*
-      gpu_number: "[0-9]*"
-      memory_state: free|used
+      - name: model
+        value_regex: .*
+      - name: uuid
+        value_regex: .*
+      - name: gpu_number
+        value_regex: "[0-9]*"
+      - name: memory_state
+        value_regex: free|used
   - type: agent.googleapis.com/gpu/processes/utilization
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      model: .*
-      uuid: .*
-      gpu_number: "[0-9]*"
-      pid: "[0-9]*"
-      process: .*
-      command: .*
-      command_line: .*
-      owner: .*
+      - name: model
+        value_regex: .*
+      - name: uuid
+        value_regex: .*
+      - name: gpu_number
+        value_regex: "[0-9]*"
+      - name: pid
+        value_regex: "[0-9]*"
+      - name: process
+        value_regex: .*
+      - name: command
+        value_regex: .*
+      - name: command_line
+        value_regex: .*
+      - name: owner
+        value_regex: .*
   - type: agent.googleapis.com/gpu/processes/max_bytes_used
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      model: .*
-      uuid: .*
-      gpu_number: "[0-9]*"
-      pid: "[0-9]*"
-      process: .*
-      command: .*
-      command_line: .*
-      owner: .*
+      - name: model
+        value_regex: .*
+      - name: uuid
+        value_regex: .*
+      - name: gpu_number
+        value_regex: "[0-9]*"
+      - name: pid
+        value_regex: "[0-9]*"
+      - name: process
+        value_regex: .*
+      - name: command
+        value_regex: .*
+      - name: command_line
+        value_regex: .*
+      - name: owner
+        value_regex: .*
 configuration_options:
   metrics:
     - type: hostmetrics
