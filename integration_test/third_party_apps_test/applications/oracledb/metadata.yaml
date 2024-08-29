@@ -51,7 +51,6 @@ supported_operating_systems: linux
 # Oracle DB is difficult to install on these platforms.
 platforms_to_skip:
   - debian-cloud:debian-11
-  - debian-cloud:debian-11-arm64
   - debian-cloud:debian-12
   - debian-cloud:debian-12-arm64
   - ml-images:common-gpu-debian-11-py310
