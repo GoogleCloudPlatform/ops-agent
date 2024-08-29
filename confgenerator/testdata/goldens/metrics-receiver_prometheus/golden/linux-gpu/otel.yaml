@@ -503,14 +503,26 @@ receivers:
       global:
         scrape_interval: 1m
         scrape_timeout: 10s
+        scrape_protocols:
+        - OpenMetricsText1.0.0
+        - OpenMetricsText0.0.1
+        - PrometheusText0.0.4
         evaluation_interval: 1m
+      runtime:
+        gogc: 75
       scrape_configs:
       - job_name: node
         honor_timestamps: true
+        track_timestamps_staleness: false
         scrape_interval: 10s
         scrape_timeout: 10s
+        scrape_protocols:
+        - OpenMetricsText1.0.0
+        - OpenMetricsText0.0.1
+        - PrometheusText0.0.4
         metrics_path: /metrics
         scheme: http
+        enable_compression: true
         follow_redirects: true
         enable_http2: true
         relabel_configs:
