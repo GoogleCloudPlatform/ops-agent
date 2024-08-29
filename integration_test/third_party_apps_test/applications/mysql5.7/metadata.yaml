@@ -43,7 +43,6 @@ platforms_to_skip:
   - rocky-linux-cloud:rocky-linux-9
   - rocky-linux-cloud:rocky-linux-9-arm64
   - debian-cloud:debian-11
-  - debian-cloud:debian-11-arm64
   - debian-cloud:debian-12
   - debian-cloud:debian-12-arm64
   - ml-images:common-gpu-debian-11-py310

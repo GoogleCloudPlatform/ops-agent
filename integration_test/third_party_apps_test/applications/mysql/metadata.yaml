@@ -33,7 +33,6 @@ minimum_supported_agent_version:
 supported_operating_systems: linux
 platforms_to_skip:
   # MySQL is not currently supported on various distros.
-  - debian-cloud:debian-11-arm64
   - debian-cloud:debian-12
   - debian-cloud:debian-12-arm64
   - suse-cloud:sles-15-arm64
