@@ -22,7 +22,7 @@ require (
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/prometheus/common v0.55.0
-	github.com/prometheus/prometheus v0.54.1
+	github.com/prometheus/prometheus v0.51.2-0.20240405174432-b4a973753c6e
 	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/smallnest/weighted v0.0.0-20230419055410-36b780e40a7a
 	go.opentelemetry.io/contrib/detectors/gcp v1.29.0

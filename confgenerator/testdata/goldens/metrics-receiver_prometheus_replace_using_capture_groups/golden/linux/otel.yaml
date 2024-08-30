@@ -477,8 +477,6 @@ receivers:
         - OpenMetricsText0.0.1
         - PrometheusText0.0.4
         evaluation_interval: 1m
-      runtime:
-        gogc: 75
       scrape_configs:
       - job_name: test
         honor_timestamps: true
