@@ -40,6 +40,7 @@ supported_operating_systems: linux
 # we only want to test on one distribution to help reduce integration test size
 platforms_to_skip:
   - rocky-linux-cloud:rocky-linux-8
+  - rocky-linux-cloud:rocky-linux-8-optimized-gcp
   - suse-cloud:sles-12
   - suse-cloud:sles-15
   - ubuntu-os-cloud:ubuntu-2004-lts
