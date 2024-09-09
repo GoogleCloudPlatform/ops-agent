@@ -19,20 +19,13 @@ sudo service mysql start
 
 password="$(sudo grep -oP '(?<=temporary password is generated for root@localhost: ).*$' /var/log/mysql/mysqld.log)"
 
-expect -c "
-spawn mysql_config_editor set --host=localhost --user=root --password
-expect -nocase \"Enter password:\" {send \"$password\r\"; interact}
-"
-  
-password="$(sudo grep -oP '(?<=temporary password is generated for root@localhost: ).*$' /var/log/mysql/mysqld.log)"
-
 cat <<EOF >config-user
 [client]
 user=root
 password='$password'
 EOF
 
-mysql -u root --skip-password -Bse "ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY 'Ss123%321'; FLUSH PRIVILEGES;" --connect-expired-password
+mysql --defaults-extra-file=config-user -Bse "ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY 'Ss123%321'; FLUSH PRIVILEGES;" --connect-expired-password
 
 # default socket path is different from originally set default (from debian/ubuntu), so we need to create a symlink
 sudo mkdir /var/run/mysqld/
