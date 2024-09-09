@@ -18,44 +18,25 @@ short_name: MySQL
 long_name: MySQL
 logo_path: /images/launcher/logos/mysql.png # supplied by google technical writer
 description: |-
-  The MySQL/MariaDB integration collects performance metrics related to
+  The MySQL integration collects performance metrics related to
   InnoDB, the buffer pool, and various other operations. It also collects general,
   error, and slow-query logs and parses them into a JSON payload. Error logs are
   parsed for their error code and subsystem. Slow-query logs are parsed into
   key-value pairs that describe the performance of a query, including query time
   and rows examined.
 configure_integration: |-
-  MariaDB is a community-developed, commercially supported fork of the MySQL
-  relational database management system (RDBMS). To collect logs and metrics for
-  MariaDB, use the `mysql` receivers.
-
-  The `mysql` receiver connects by default to a local MySQL/MariaDB
+  The `mysql` receiver connects by default to a local MySQL
   server using a Unix socket and Unix authentication as the `root` user.
 minimum_supported_agent_version:
-  metrics: 2.33.0
-  logging: 2.33.0
+  metrics: 2.32.0
+  logging: 2.5.0
 supported_operating_systems: linux
 platforms_to_skip:
-  # MySQL5.7 is not supported on various distros.
-  - suse-cloud:sles-15
-  - suse-cloud:sles-15-arm64
-  - rocky-linux-cloud:rocky-linux-8
-  - rocky-linux-cloud:rocky-linux-8-optimized-gcp
-  - rocky-linux-cloud:rocky-linux-8-optimized-gcp-arm64
-  - rocky-linux-cloud:rocky-linux-9
-  - rocky-linux-cloud:rocky-linux-9-optimized-gcp
-  - rocky-linux-cloud:rocky-linux-9-arm64
-  - rocky-linux-cloud:rocky-linux-9-optimized-gcp-arm64
-  - debian-cloud:debian-11
+  # MySQL8.0 is not currently supported on various distros.
   - debian-cloud:debian-12
   - debian-cloud:debian-12-arm64
-  - ml-images:common-gpu-debian-11-py310
-  - ubuntu-os-cloud:ubuntu-2004-lts
-  - ubuntu-os-cloud:ubuntu-2004-lts-arm64
-  - ubuntu-os-cloud:ubuntu-2204-lts
-  - ubuntu-os-cloud:ubuntu-2204-lts-arm64
-  - ubuntu-os-cloud:ubuntu-2404-lts-amd64
-  - ubuntu-os-cloud:ubuntu-2404-lts-arm64
+  - suse-cloud:sles-15
+  - suse-cloud:sles-15-arm64
 supported_app_version: ["5.7", "8.0", "8.4"]
 expected_metrics:
   - type: workload.googleapis.com/mysql.buffer_pool_data_pages
@@ -65,15 +46,10 @@ expected_metrics:
     labels:
       - name: status
         value_regex: dirty|clean
-      - name: instrumentation_source
-        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.buffer_pool_limit
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
-    labels:
-      - name: instrumentation_source
-        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.buffer_pool_operations
     value_type: INT64
     kind: CUMULATIVE
@@ -81,15 +57,10 @@ expected_metrics:
     labels:
       - name: operation
         value_regex: read_ahead|read_ahead_evicted|read_ahead_rnd|read_requests|reads|wait_free|write_requests
-      - name: instrumentation_source
-        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.buffer_pool_page_flushes
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
-    labels:
-      - name: instrumentation_source
-        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.buffer_pool_pages
     value_type: DOUBLE
     kind: GAUGE
@@ -97,8 +68,6 @@ expected_metrics:
     labels:
       - name: kind
         value_regex: data|free|misc
-      - name: instrumentation_source
-        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.buffer_pool_size
     value_type: DOUBLE
     kind: GAUGE
@@ -106,8 +75,6 @@ expected_metrics:
     labels:
       - name: kind
         value_regex: clean|dirty
-      - name: instrumentation_source
-        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.commands
     value_type: INT64
     kind: CUMULATIVE
@@ -115,8 +82,6 @@ expected_metrics:
     labels:
       - name: command
         value_regex: delete|insert|select|update
-      - name: instrumentation_source
-        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.double_writes
     value_type: INT64
     kind: CUMULATIVE
@@ -124,8 +89,6 @@ expected_metrics:
     labels:
       - name: kind
         value_regex: writes|pages_written
-      - name: instrumentation_source
-        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.handlers
     value_type: INT64
     kind: CUMULATIVE
@@ -133,8 +96,6 @@ expected_metrics:
     labels:
       - name: kind
         value_regex: commit|delete|discover|lock|mrr_init|prepare|read_first|read_key|read_last|read_next|read_prev|read_rnd|read_rnd_next|rollback|savepoint|savepoint_rollback|update|write
-      - name: instrumentation_source
-        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.locks
     value_type: INT64
     kind: CUMULATIVE
@@ -142,8 +103,6 @@ expected_metrics:
     labels:
       - name: kind
         value_regex: immediate|waited
-      - name: instrumentation_source
-        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.log_operations
     value_type: INT64
     kind: CUMULATIVE
@@ -151,8 +110,6 @@ expected_metrics:
     labels:
       - name: operation
         value_regex: requests|waits|writes
-      - name: instrumentation_source
-        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.operations
     value_type: INT64
     kind: CUMULATIVE
@@ -160,8 +117,6 @@ expected_metrics:
     labels:
       - name: operation
         value_regex: fsyncs|reads|writes
-      - name: instrumentation_source
-        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.page_operations
     value_type: INT64
     kind: CUMULATIVE
@@ -169,22 +124,14 @@ expected_metrics:
     labels:
       - name: operation
         value_regex: created|read|written
-      - name: instrumentation_source
-        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.replica.time_behind_source
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
-    labels:
-      - name: instrumentation_source
-        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.replica.sql_delay
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
-    labels:
-      - name: instrumentation_source
-        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.row_locks
     value_type: INT64
     kind: CUMULATIVE
@@ -192,8 +139,6 @@ expected_metrics:
     labels:
       - name: kind
         value_regex: time|waits
-      - name: instrumentation_source
-        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.row_operations
     value_type: INT64
     kind: CUMULATIVE
@@ -201,8 +146,6 @@ expected_metrics:
     labels:
       - name: operation
         value_regex: deleted|inserted|read|updated
-      - name: instrumentation_source
-        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.sorts
     value_type: INT64
     kind: CUMULATIVE
@@ -210,8 +153,6 @@ expected_metrics:
     labels:
       - name: kind
         value_regex: merge_passes|range|rows|scan
-      - name: instrumentation_source
-        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.threads
     value_type: DOUBLE
     kind: GAUGE
@@ -219,35 +160,32 @@ expected_metrics:
     labels:
       - name: kind
         value_regex: cached|connected|created|running
-      - name: instrumentation_source
-        value_regex: agent.googleapis.com/mysql
     representative: true
 expected_logs:
-  # Mysql 5.7 error logs go to syslog by default
-  # - log_name: mysql_error
-  #   fields:
-  #     - name: jsonPayload.level
-  #       value_regex: System
-  #       type: string
-  #       description: 'Log entry level'
-  #       optional: true
-  #     - name: jsonPayload.message
-  #       value_regex: .*InnoDB initialization has started.*
-  #       type: string
-  #       description: 'Log message'
-  #     - name: jsonPayload.subsystem
-  #       value_regex: InnoDB
-  #       type: string
-  #       description: 'MySQL subsystem where the log originated'
-  #     - name: jsonPayload.tid
-  #       type: number
-  #       description: 'Thread ID where the log originated'
-  #     - name: jsonPayload.errorCode
-  #       type: string
-  #       description: 'MySQL error code associated with the log'
-  #     - name: severity
-  #       type: string
-  #       description: ''
+  - log_name: mysql_error
+    fields:
+      - name: jsonPayload.level
+        value_regex: System
+        type: string
+        description: 'Log entry level'
+        optional: true
+      - name: jsonPayload.message
+        value_regex: .*InnoDB initialization has started.*
+        type: string
+        description: 'Log message'
+      - name: jsonPayload.subsystem
+        value_regex: InnoDB
+        type: string
+        description: 'MySQL subsystem where the log originated'
+      - name: jsonPayload.tid
+        type: number
+        description: 'Thread ID where the log originated'
+      - name: jsonPayload.errorCode
+        type: string
+        description: 'MySQL error code associated with the log'
+      - name: severity
+        type: string
+        description: ''
   - log_name: mysql_general
     fields:
       - name: jsonPayload.message
@@ -301,6 +239,102 @@ expected_logs:
       - name: jsonPayload.rowsExamined
         type: number
         description: 'The number of rows examined by the server layer'
+      - name: jsonPayload.errorNumber
+        type: number
+        description: 'The statement error number, or 0 if no error occurred'
+        notes:
+          - &log_slow_extra_note
+            These fields are only provided if the `log_slow_extra` system variable is set to `'ON'`. This variable is available as of MySQL 8.0.14.
+      - name: jsonPayload.killed
+        type: number
+        description: 'If the statement was terminated, the error number indicating why, or 0 if the statement terminated normally'
+        notes:
+          - *log_slow_extra_note
+      - name: jsonPayload.bytesReceived
+        type: number
+        description: 'The number of bytes received from all clients'
+        notes:
+          - *log_slow_extra_note
+      - name: jsonPayload.bytesSent
+        type: number
+        description: 'The number of bytes sent to all clients'
+        notes:
+          - *log_slow_extra_note
+      - name: jsonPayload.readFirst
+        type: number
+        description: 'The number of times the first entry in an index was read'
+        notes:
+          - *log_slow_extra_note
+      - name: jsonPayload.readLast
+        type: number
+        description: 'The number of requests to read the last key in an index'
+        notes:
+          - *log_slow_extra_note
+      - name: jsonPayload.readKey
+        type: number
+        description: 'The number of requests to read a row based on a key'
+        notes:
+          - *log_slow_extra_note
+      - name: jsonPayload.readNext
+        type: number
+        description: 'The number of requests to read the next row in key order'
+        notes:
+          - *log_slow_extra_note
+      - name: jsonPayload.readPrev
+        type: number
+        description: 'The number of requests to read the previous row in key order'
+        notes:
+          - *log_slow_extra_note
+      - name: jsonPayload.readRnd
+        type: number
+        description: 'The number of requests to read a row based on a fixed position'
+        notes:
+          - *log_slow_extra_note
+      - name: jsonPayload.readRndNext
+        type: number
+        description: 'The number of requests to read the next row in the data file'
+        notes:
+          - *log_slow_extra_note
+      - name: jsonPayload.sortMergePasses
+        type: number
+        description: 'The number of merge passes that the sort algorithm has had to do'
+        notes:
+          - *log_slow_extra_note
+      - name: jsonPayload.sortRangeCount
+        type: number
+        description: 'The number of sorts that were done using ranges'
+        notes:
+          - *log_slow_extra_note
+      - name: jsonPayload.sortRows
+        type: number
+        description: 'The number of sorted rows'
+        notes:
+          - *log_slow_extra_note
+      - name: jsonPayload.sortScanCount
+        type: number
+        description: 'The number of sorts that were done by scanning the table'
+        notes:
+          - *log_slow_extra_note
+      - name: jsonPayload.createdTmpDiskTables
+        type: number
+        description: 'The number of internal on-disk temporary tables created by the server'
+        notes:
+          - *log_slow_extra_note
+      - name: jsonPayload.createdTmpTables
+        type: number
+        description: 'The number of internal temporary tables created by the server'
+        notes:
+          - *log_slow_extra_note
+      - name: jsonPayload.startTime
+        type: string
+        description: 'The statement execution start time'
+        notes:
+          - *log_slow_extra_note
+      - name: jsonPayload.endTime
+        type: string
+        description: 'The statement execution end time'
+        notes:
+          - *log_slow_extra_note
       - name: severity
         type: string
         description: ''
@@ -308,6 +342,8 @@ expected_logs:
         type: string
         description: Log entry level
         optional: true
+    notes:
+      - For information about these fields, refer to the [MySQL documentation](https://dev.mysql.com/doc/refman/8.0/en/slow-query-log.html).
 configuration_options:
   logs:
     - type: mysql_error
