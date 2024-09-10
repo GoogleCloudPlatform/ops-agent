@@ -184,6 +184,9 @@ var mysqlLegacyReplicationQueries = []sqlReceiverQuery{
 			},
 		},
 	},
+	// SHOW SLAVE STATUS is deprecated in MySQL 8.0.23, so we need to also somehow query SHOW REPLICA STATUS instead for later version support.
+	// The downside of this approach is now the receiver always has to make a query that will fail, which is not ideal.
+	// We should be open to other suggestions if there is an alternative to get this data.
 	{
 		query: `SHOW REPLICA STATUS`,
 		metrics: []sqlReceiverMetric{
