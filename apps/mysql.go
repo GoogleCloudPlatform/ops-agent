@@ -202,7 +202,7 @@ var mysqlLegacyReplicationQueries = []sqlReceiverQuery{
 				metric_name:       "mysql.replica.time_behind_source",
 				value_column:      "Seconds_Behind_Source",
 				unit:              "s",
-				description:       "This field is an indication of how "late" the replica is.",
+				description:       "This field is an indication of how late the replica is.",
 				data_type:         "sum",
 				monotonic:         "false",
 				value_type:        "int",
