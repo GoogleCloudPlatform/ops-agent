@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/mysql"
 app_url: "http://www.mysql.com/"
 short_name: MySQL
@@ -46,10 +45,15 @@ expected_metrics:
     labels:
       - name: status
         value_regex: dirty|clean
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.buffer_pool_limit
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.buffer_pool_operations
     value_type: INT64
     kind: CUMULATIVE
@@ -57,6 +61,8 @@ expected_metrics:
     labels:
       - name: operation
         value_regex: read_ahead|read_ahead_evicted|read_ahead_rnd|read_requests|reads|wait_free|write_requests
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.buffer_pool_page_flushes
     value_type: INT64
     kind: CUMULATIVE
@@ -68,6 +74,8 @@ expected_metrics:
     labels:
       - name: kind
         value_regex: data|free|misc
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.buffer_pool_size
     value_type: DOUBLE
     kind: GAUGE
@@ -75,6 +83,8 @@ expected_metrics:
     labels:
       - name: kind
         value_regex: clean|dirty
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.commands
     value_type: INT64
     kind: CUMULATIVE
@@ -82,6 +92,8 @@ expected_metrics:
     labels:
       - name: command
         value_regex: delete|insert|select|update
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.double_writes
     value_type: INT64
     kind: CUMULATIVE
@@ -89,6 +101,8 @@ expected_metrics:
     labels:
       - name: kind
         value_regex: writes|pages_written
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.handlers
     value_type: INT64
     kind: CUMULATIVE
@@ -96,6 +110,8 @@ expected_metrics:
     labels:
       - name: kind
         value_regex: commit|delete|discover|lock|mrr_init|prepare|read_first|read_key|read_last|read_next|read_prev|read_rnd|read_rnd_next|rollback|savepoint|savepoint_rollback|update|write
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.locks
     value_type: INT64
     kind: CUMULATIVE
@@ -103,6 +119,8 @@ expected_metrics:
     labels:
       - name: kind
         value_regex: immediate|waited
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.log_operations
     value_type: INT64
     kind: CUMULATIVE
@@ -110,6 +128,8 @@ expected_metrics:
     labels:
       - name: operation
         value_regex: requests|waits|writes
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.operations
     value_type: INT64
     kind: CUMULATIVE
@@ -117,6 +137,8 @@ expected_metrics:
     labels:
       - name: operation
         value_regex: fsyncs|reads|writes
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.page_operations
     value_type: INT64
     kind: CUMULATIVE
@@ -124,6 +146,8 @@ expected_metrics:
     labels:
       - name: operation
         value_regex: created|read|written
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.replica.time_behind_source
     value_type: INT64
     kind: GAUGE
@@ -132,6 +156,9 @@ expected_metrics:
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.row_locks
     value_type: INT64
     kind: CUMULATIVE
@@ -139,6 +166,8 @@ expected_metrics:
     labels:
       - name: kind
         value_regex: time|waits
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.row_operations
     value_type: INT64
     kind: CUMULATIVE
@@ -146,6 +175,8 @@ expected_metrics:
     labels:
       - name: operation
         value_regex: deleted|inserted|read|updated
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.sorts
     value_type: INT64
     kind: CUMULATIVE
@@ -153,6 +184,8 @@ expected_metrics:
     labels:
       - name: kind
         value_regex: merge_passes|range|rows|scan
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.threads
     value_type: DOUBLE
     kind: GAUGE
@@ -160,6 +193,8 @@ expected_metrics:
     labels:
       - name: kind
         value_regex: cached|connected|created|running
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
     representative: true
 expected_logs:
   - log_name: mysql_error
