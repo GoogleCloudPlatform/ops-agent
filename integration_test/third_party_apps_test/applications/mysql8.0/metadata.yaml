@@ -67,6 +67,9 @@ expected_metrics:
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.buffer_pool_pages
     value_type: DOUBLE
     kind: GAUGE
@@ -152,6 +155,9 @@ expected_metrics:
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.replica.sql_delay
     value_type: INT64
     kind: GAUGE
