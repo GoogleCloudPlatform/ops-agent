@@ -20,6 +20,10 @@ targets:
           representative:
           - debian-cloud:debian-11
           - ml-images:common-gpu-debian-11-py310
+      aarch64:
+        test_distros:
+          representative:
+          - rocky-linux-cloud:rocky-linux-8-optimized-gcp-arm64
   centos8:
     package_extension:
       rpm
