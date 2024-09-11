@@ -20,10 +20,6 @@ targets:
           representative:
           - debian-cloud:debian-11
           - ml-images:common-gpu-debian-11-py310
-      aarch64:
-        test_distros:
-          representative:
-          - rocky-linux-cloud:rocky-linux-8-optimized-gcp-arm64
   centos8:
     package_extension:
       rpm
@@ -98,7 +94,7 @@ targets:
     package_extension:
       rpm
     repo_name:
-      el9
+      el8
     architectures:
       x86_64:
         test_distros:
@@ -110,7 +106,7 @@ targets:
       aarch64:
         test_distros:
           representative:
-          - rocky-linux-cloud:rocky-linux-9-arm64
+          - rocky-linux-cloud:rocky-linux-8-optimized-gcp-arm64
           exhaustive:
           - rhel-cloud:rhel-9-arm64
           - rocky-linux-cloud:rocky-linux-9-optimized-gcp-arm64
