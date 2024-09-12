@@ -17,13 +17,17 @@ else
   if [[ "${SUSE_VERSION}" == 12 ]]; then
     mysql_repo_pkg_name=mysql80-community-release-sles12.rpm
   elif [[ "${SUSE_VERSION}" == 15 ]]; then
-    mysql_repo_pkg_name=mysql80-community-release-sl15.rpm
+    mysql_repo_pkg_name=mysql84-community-release-sl15.rpm
   fi
 
   # Installation followed in: https://dev.mysql.com/doc/mysql-sles-repo-quick-guide/en/
   sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2023
   sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2022
   sudo zypper -n install https://dev.mysql.com/get/${mysql_repo_pkg_name}
+  if [[ "${SUSE_VERSION}" == 15 ]]; then
+    sudo zypper modifyrepo -d mysql-8.4-lts-community
+    sudo zypper modifyrepo -e mysql80-community
+  fi
   sudo zypper -n install mysql-community-server
 fi
 
