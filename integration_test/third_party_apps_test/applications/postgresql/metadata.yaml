@@ -32,144 +32,176 @@ supported_operating_systems: linux
 platforms_to_skip:
   # postgres is not supported on various distros.
   - rocky-linux-cloud:rocky-linux-9
+  - rocky-linux-cloud:rocky-linux-9-optimized-gcp
   - rocky-linux-cloud:rocky-linux-9-arm64
+  - rocky-linux-cloud:rocky-linux-9-optimized-gcp-arm64
   - suse-cloud:sles-15-arm64
 supported_app_version: ["10.18+"]
 expected_metrics:
   - kind: GAUGE
     labels:
-      database: .*
-    monitored_resource: gce_instance
+      - name: database
+        value_regex: .*
+    monitored_resources: [gce_instance]
     type: workload.googleapis.com/postgresql.backends
     value_type: INT64
     representative: true
   - kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     type: workload.googleapis.com/postgresql.bgwriter.buffers.allocated
     value_type: INT64
   - kind: CUMULATIVE
     labels:
-      source: backend|backend_fsync|checkpoints|bgwriter
-    monitored_resource: gce_instance
+      - name: source
+        value_regex: backend|backend_fsync|checkpoints|bgwriter
+    monitored_resources: [gce_instance]
     type: workload.googleapis.com/postgresql.bgwriter.buffers.writes
     value_type: INT64
   - kind: CUMULATIVE
     labels:
-      type: requested|scheduled
-    monitored_resource: gce_instance
+      - name: type
+        value_regex: requested|scheduled
+    monitored_resources: [gce_instance]
     type: workload.googleapis.com/postgresql.bgwriter.checkpoint.count
     value_type: INT64
   - kind: CUMULATIVE
     labels:
-      type: sync|write
-    monitored_resource: gce_instance
+      - name: type
+        value_regex: sync|write
+    monitored_resources: [gce_instance]
     type: workload.googleapis.com/postgresql.bgwriter.duration
     value_type: INT64
   - kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     type: workload.googleapis.com/postgresql.bgwriter.maxwritten
     value_type: INT64
   - kind: CUMULATIVE
     labels:
-      database: .*
-      table: .*
-      source: heap_read|heap_hit|idx_read|idx_hit|toast_read|toast_hit|tidx_read|tidx_hit
-    monitored_resource: gce_instance
+      - name: database
+        value_regex: .*
+      - name: table
+        value_regex: .*
+      - name: source
+        value_regex: heap_read|heap_hit|idx_read|idx_hit|toast_read|toast_hit|tidx_read|tidx_hit
+    monitored_resources: [gce_instance]
     type: workload.googleapis.com/postgresql.blocks_read
     value_type: INT64
   - kind: CUMULATIVE
     labels:
-      database: .*
-    monitored_resource: gce_instance
+      - name: database
+        value_regex: .*
+    monitored_resources: [gce_instance]
     type: workload.googleapis.com/postgresql.commits
     value_type: INT64
   - kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     type: workload.googleapis.com/postgresql.connection.max
     value_type: INT64
   - kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     type: workload.googleapis.com/postgresql.database.count
     value_type: INT64
   - kind: GAUGE
     labels:
-      database: .*
-    monitored_resource: gce_instance
+      - name: database
+        value_regex: .*
+    monitored_resources: [gce_instance]
     type: workload.googleapis.com/postgresql.db_size
     value_type: INT64
   - kind: CUMULATIVE
     labels:
-      database: .*
-      table: .*
-      index: .*
-    monitored_resource: gce_instance
+      - name: database
+        value_regex: .*
+      - name: table
+        value_regex: .*
+      - name: index
+        value_regex: .*
+    monitored_resources: [gce_instance]
     type: workload.googleapis.com/postgresql.index.scans
     value_type: INT64
   - kind: GAUGE
     labels:
-      database: .*
-      table: .*
-      index: .*
-    monitored_resource: gce_instance
+      - name: database
+        value_regex: .*
+      - name: table
+        value_regex: .*
+      - name: index
+        value_regex: .*
+    monitored_resources: [gce_instance]
     type: workload.googleapis.com/postgresql.index.size
     value_type: INT64
   - kind: CUMULATIVE
     labels:
-      database: .*
-      table: .*
-      operation: ins|upd|del|hot_upd
-    monitored_resource: gce_instance
+      - name: database
+        value_regex: .*
+      - name: table
+        value_regex: .*
+      - name: operation
+        value_regex: ins|upd|del|hot_upd
+    monitored_resources: [gce_instance]
     type: workload.googleapis.com/postgresql.operations
     value_type: INT64
   - kind: GAUGE
     labels:
-      replication_client: .*
-    monitored_resource: gce_instance
+      - name: replication_client
+        value_regex: .*
+    monitored_resources: [gce_instance]
     type: workload.googleapis.com/postgresql.replication.data_delay
     value_type: INT64
   - kind: CUMULATIVE
     labels:
-      database: .*
-    monitored_resource: gce_instance
+      - name: database
+        value_regex: .*
+    monitored_resources: [gce_instance]
     type: workload.googleapis.com/postgresql.rollbacks
     value_type: INT64
   - kind: GAUGE
     labels:
-      database: .*
-      state: dead|live
-      table: .*
-    monitored_resource: gce_instance
+      - name: database
+        value_regex: .*
+      - name: state
+        value_regex: dead|live
+      - name: table
+        value_regex: .*
+    monitored_resources: [gce_instance]
     type: workload.googleapis.com/postgresql.rows
     value_type: INT64
   - kind: GAUGE
     labels:
-      database: .*
-    monitored_resource: gce_instance
+      - name: database
+        value_regex: .*
+    monitored_resources: [gce_instance]
     type: workload.googleapis.com/postgresql.table.count
     value_type: INT64
   - kind: GAUGE
     labels:
-      database: .*
-      table: .*
-    monitored_resource: gce_instance
+      - name: database
+        value_regex: .*
+      - name: table
+        value_regex: .*
+    monitored_resources: [gce_instance]
     type: workload.googleapis.com/postgresql.table.size
     value_type: INT64
   - kind: CUMULATIVE
     labels:
-      database: .*
-      table: .*
-    monitored_resource: gce_instance
+      - name: database
+        value_regex: .*
+      - name: table
+        value_regex: .*
+    monitored_resources: [gce_instance]
     type: workload.googleapis.com/postgresql.table.vacuum.count
     value_type: INT64
   - kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     type: workload.googleapis.com/postgresql.wal.age
     value_type: INT64
   - kind: GAUGE
     labels:
-      operation: flush|replay|write
-      replication_client: .*
-    monitored_resource: gce_instance
+      - name: operation
+        value_regex: flush|replay|write
+      - name: replication_client
+        value_regex: .*
+    monitored_resources: [gce_instance]
     type: workload.googleapis.com/postgresql.wal.lag
     value_type: INT64
 expected_logs:

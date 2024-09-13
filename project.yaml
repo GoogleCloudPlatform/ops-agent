@@ -20,10 +20,6 @@ targets:
           representative:
           - debian-cloud:debian-11
           - ml-images:common-gpu-debian-11-py310
-      aarch64:
-        test_distros:
-          representative:
-          - debian-cloud:debian-11-arm64
   centos8:
     package_extension:
       rpm
@@ -39,6 +35,7 @@ targets:
           - rhel-sap-cloud:rhel-8-4-sap-ha
           - rhel-sap-cloud:rhel-8-6-sap-ha
           - rhel-sap-cloud:rhel-8-8-sap-ha
+          - rocky-linux-cloud:rocky-linux-8-optimized-gcp
   focal:
     package_extension:
       deb
@@ -101,12 +98,14 @@ targets:
           - rocky-linux-cloud:rocky-linux-9
           exhaustive:
           - rhel-cloud:rhel-9
+          - rocky-linux-cloud:rocky-linux-9-optimized-gcp
       aarch64:
         test_distros:
           representative:
           - rocky-linux-cloud:rocky-linux-9-arm64
           exhaustive:
           - rhel-cloud:rhel-9-arm64
+          - rocky-linux-cloud:rocky-linux-9-optimized-gcp-arm64
   sles12:
     package_extension:
       rpm

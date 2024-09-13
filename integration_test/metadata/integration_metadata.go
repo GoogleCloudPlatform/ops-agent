@@ -26,21 +26,45 @@ import (
 	"go.uber.org/multierr"
 )
 
-// ExpectedMetric encodes a series of assertions about what data we expect
-// to see in the metrics backend.
-type ExpectedMetric struct {
+// MetricLabel encodes a specification of a metric label in the metrics backend.
+type MetricLabel struct {
+	// The label name, for example state.
+	Name string `yaml:"name" validate:"required"`
+	// The label value pattern, as an RE2 regular expression.
+	ValueRegex string `yaml:"value_regex" validate:"required"`
+	// The description of the label.
+	Description string `yaml:"description" validate:"excludesall=‘’“”"`
+	// Annotations/footnotes about the label.
+	Notes []string `yaml:"notes,omitempty" validate:"omitempty,unique"`
+}
+
+// MetricSpec encodes a specification of a metric in the metrics backend.
+type MetricSpec struct {
 	// The metric type, for example workload.googleapis.com/apache.current_connections.
 	Type string `yaml:"type" validate:"required"`
 	// The value type, for example INT64.
 	ValueType string `yaml:"value_type" validate:"required,oneof=BOOL INT64 DOUBLE STRING DISTRIBUTION"`
 	// The kind, for example GAUGE.
 	Kind string `yaml:"kind" validate:"required,oneof=GAUGE DELTA CUMULATIVE"`
+	// The unit of the metric.
+	Unit string `yaml:"unit"`
+	// The description of the metric.
+	Description string `yaml:"description" validate:"excludesall=‘’“”"`
 	// The monitored resource, for example gce_instance.
 	// Currently we only test with gce_instance.
-	MonitoredResource string `yaml:"monitored_resource" validate:"required,oneof=gce_instance"`
-	// Mapping of expected label keys to value patterns.
-	// Patterns are RE2 regular expressions.
-	Labels map[string]string `yaml:"labels,omitempty" validate:"omitempty,gt=0"`
+	MonitoredResources []string `yaml:"monitored_resources,flow" validate:"required,gt=0,dive,oneof=gce_instance"`
+	// Mapping of expected label keys to label specs.
+	Labels []*MetricLabel `yaml:"labels,omitempty" validate:"omitempty,gt=0,unique=Name,dive"`
+	// Annotations/footnotes about the metric.
+	Notes []string `yaml:"notes,omitempty" validate:"omitempty,unique"`
+}
+
+// ExpectedMetric encodes a series of assertions about what data we expect
+// to see in the metrics backend.
+type ExpectedMetric struct {
+	// The metric being described.
+	MetricSpec `yaml:",inline"`
+
 	// If Optional is true, the test for this metric will be skipped.
 	Optional bool `yaml:"optional,omitempty" validate:"excluded_with=Representative"`
 	// Exactly one metric in each expected_metrics.yaml must
@@ -63,11 +87,15 @@ type LogField struct {
 	// A list of platforms that this field is not available on.
 	// Examples: debian-11.
 	UnavailableOn []string `yaml:"unavailable_on,omitempty"`
+	// Annotations/footnotes about the field.
+	Notes []string `yaml:"notes,omitempty" validate:"omitempty,unique"`
 }
 
 type ExpectedLog struct {
 	LogName string      `yaml:"log_name" validate:"required"`
 	Fields  []*LogField `yaml:"fields" validate:"required,unique=Name,dive"`
+	// Annotations/footnotes about the log.
+	Notes []string `yaml:"notes,omitempty" validate:"omitempty,unique"`
 }
 
 type MinimumSupportedAgentVersion struct {
@@ -109,7 +137,7 @@ type IntegrationMetadata struct {
 	Description                  string                        `yaml:"description" validate:"required,excludesall=‘’“”"`
 	ConfigurationOptions         *ConfigurationOptions         `yaml:"configuration_options" validate:"required"`
 	ConfigureIntegration         string                        `yaml:"configure_integration"`
-	ExpectedLogs                 []*ExpectedLog                `yaml:"expected_logs" validate:"dive"`
+	ExpectedLogs                 []*ExpectedLog                `yaml:"expected_logs" validate:"unique=LogName,dive"`
 	MinimumSupportedAgentVersion *MinimumSupportedAgentVersion `yaml:"minimum_supported_agent_version"`
 	SupportedAppVersion          []string                      `yaml:"supported_app_version" validate:"required,unique,min=1"`
 	SupportedOperatingSystems    string                        `yaml:"supported_operating_systems" validate:"required,oneof=linux windows linux_and_windows"`
@@ -198,8 +226,8 @@ func AssertMetric(metric *ExpectedMetric, series *monitoringpb.TimeSeries) error
 	if series.MetricKind.String() != metric.Kind {
 		err = multierr.Append(err, fmt.Errorf("kind: expected %s but got %s", metric.Kind, series.MetricKind.String()))
 	}
-	if series.Resource.Type != metric.MonitoredResource {
-		err = multierr.Append(err, fmt.Errorf("monitored_resource: expected %s but got %s", metric.MonitoredResource, series.Resource.Type))
+	if !SliceContains(metric.MonitoredResources, series.Resource.Type) {
+		err = multierr.Append(err, fmt.Errorf("unexpected monitored_resource: expected %v but got %s", metric.MonitoredResources, series.Resource.Type))
 	}
 	err = multierr.Append(err, assertMetricLabels(metric, series))
 	if err != nil {
@@ -209,31 +237,35 @@ func AssertMetric(metric *ExpectedMetric, series *monitoringpb.TimeSeries) error
 }
 
 func assertMetricLabels(metric *ExpectedMetric, series *monitoringpb.TimeSeries) error {
-	// Only expected labels must be present
 	var err error
+	// Only expected labels must be present
+	expectedLabels := make(map[string]bool)
+	for _, expectedLabel := range metric.Labels {
+		expectedLabels[expectedLabel.Name] = true
+	}
 	for actualLabel, actualValue := range series.Metric.Labels {
-		if _, ok := metric.Labels[actualLabel]; !ok {
+		if !expectedLabels[actualLabel] {
 			err = multierr.Append(err, fmt.Errorf("got unexpected label %q with value %q", actualLabel, actualValue))
 		}
 	}
 	// All expected labels must be present and match the given pattern
-	for expectedLabel, expectedPattern := range metric.Labels {
-		actualValue, ok := series.Metric.Labels[expectedLabel]
+	for _, expectedLabel := range metric.Labels {
+		actualValue, ok := series.Metric.Labels[expectedLabel.Name]
 		if !ok {
 			err = multierr.Append(err, fmt.Errorf("expected label not found: %s", expectedLabel))
 			continue
 		}
-		match, matchErr := regexp.MatchString(fmt.Sprintf("^(?:%s)$", expectedPattern), actualValue)
+		match, matchErr := regexp.MatchString(fmt.Sprintf("^(?:%s)$", expectedLabel.ValueRegex), actualValue)
 		if matchErr != nil {
 			err = multierr.Append(err, fmt.Errorf("error parsing pattern. label=%s, pattern=%s, err=%v",
-				expectedLabel,
-				expectedPattern,
+				expectedLabel.Name,
+				expectedLabel.ValueRegex,
 				matchErr,
 			))
 		} else if !match {
 			err = multierr.Append(err, fmt.Errorf("error: label value does not match pattern. label=%s, pattern=%s, value=%s",
-				expectedLabel,
-				expectedPattern,
+				expectedLabel.Name,
+				expectedLabel.ValueRegex,
 				actualValue,
 			))
 		}

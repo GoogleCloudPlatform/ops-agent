@@ -51,12 +51,13 @@ supported_operating_systems: linux
 # Oracle DB is difficult to install on these platforms.
 platforms_to_skip:
   - debian-cloud:debian-11
-  - debian-cloud:debian-11-arm64
   - debian-cloud:debian-12
   - debian-cloud:debian-12-arm64
   - ml-images:common-gpu-debian-11-py310
   - rocky-linux-cloud:rocky-linux-9
+  - rocky-linux-cloud:rocky-linux-9-optimized-gcp
   - rocky-linux-cloud:rocky-linux-9-arm64
+  - rocky-linux-cloud:rocky-linux-9-optimized-gcp-arm64
   - suse-cloud:sles-12
   - suse-cloud:sles-15
   - suse-cloud:sles-15-arm64
@@ -71,253 +72,372 @@ expected_metrics:
   - type: workload.googleapis.com/oracle.backup.latest
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
   - type: workload.googleapis.com/oracle.buffer.cache.ratio
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.cursor.count
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.cursor.current
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.disk.operation.count
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      direction: read|write
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: direction
+        value_regex: read|write
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.disk.operation.size
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      direction: read|write
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: direction
+        value_regex: read|write
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.logon.count
     value_type: INT64
     kind: CUMULATIVE
     representative: true
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.logon.current
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.network.data
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      direction: sent|received
-      global_name: .*
-      instance_id: .*
-      target: dblink|client
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: direction
+        value_regex: sent|received
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
+      - name: target
+        value_regex: dblink|client
   - type: workload.googleapis.com/oracle.process.count
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.process.limit
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.process.pga_memory.size
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
-      program: .*
-      state: free|used
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
+      - name: program
+        value_regex: .*
+      - name: state
+        value_regex: free|used
   - type: workload.googleapis.com/oracle.row.cache.ratio
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.service.response_time
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.session.count
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.session.limit
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.sort.count
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
-      type: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
+      - name: type
+        value_regex: .*
   - type: workload.googleapis.com/oracle.sort.row.count
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.tablespace.count
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      contents: UNDO|PERMANENT|TEMP
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      status: ONLINE|OFFLINE|READONLY
+      - name: contents
+        value_regex: UNDO|PERMANENT|TEMP
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: status
+        value_regex: ONLINE|OFFLINE|READONLY
   - type: workload.googleapis.com/oracle.tablespace.size
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      contents: UNDO|PERMANENT|TEMP
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      state: used|free
-      tablespace_name: .*
+      - name: contents
+        value_regex: UNDO|PERMANENT|TEMP
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: state
+        value_regex: used|free
+      - name: tablespace_name
+        value_regex: .*
   - type: workload.googleapis.com/oracle.user.calls
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.user.commits
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.user.rollbacks
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
   - type: workload.googleapis.com/oracle.wait.count
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
-      type: foreground|background
-      wait_class: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
+      - name: type
+        value_regex: foreground|background
+      - name: wait_class
+        value_regex: .*
   - type: workload.googleapis.com/oracle.wait.time
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
-      type: foreground|background
-      wait_class: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
+      - name: type
+        value_regex: foreground|background
+      - name: wait_class
+        value_regex: .*
   - type: workload.googleapis.com/oracle.wait.timeouts
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      database_id: .*
-      db_system: oracle
-      global_name: .*
-      instance_id: .*
-      type: foreground|background
-      wait_class: .*
+      - name: database_id
+        value_regex: .*
+      - name: db_system
+        value_regex: oracle
+      - name: global_name
+        value_regex: .*
+      - name: instance_id
+        value_regex: .*
+      - name: type
+        value_regex: foreground|background
+      - name: wait_class
+        value_regex: .*
 expected_logs:
   - log_name: oracledb_alert
     fields:

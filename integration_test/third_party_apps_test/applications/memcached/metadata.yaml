@@ -31,53 +31,58 @@ expected_metrics:
   - type: workload.googleapis.com/memcached.bytes
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     representative: true
   - type: workload.googleapis.com/memcached.commands
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      command: .*
+      - name: command
+        value_regex: .*
   - type: workload.googleapis.com/memcached.connections.current
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/memcached.connections.total
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/memcached.cpu.usage
     value_type: DOUBLE
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      state: .*
+      - name: state
+        value_regex: .*
   - type: workload.googleapis.com/memcached.current_items
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/memcached.evictions
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/memcached.network
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      direction: .*
+      - name: direction
+        value_regex: .*
   - type: workload.googleapis.com/memcached.operations
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      operation: .*
-      type: .*
+      - name: operation
+        value_regex: .*
+      - name: type
+        value_regex: .*
   - type: workload.googleapis.com/memcached.threads
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
 expected_logs:
   - log_name: syslog
     fields:

@@ -75,107 +75,118 @@ supported_app_version: ["1.6+"]
 expected_metrics:
   - type: workload.googleapis.com/vault.core.request.count
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     value_type: INT64
     labels:
-      cluster: .*
+      - name: cluster
+        value_regex: .*
   - type: workload.googleapis.com/vault.core.leader.duration
     optional: true
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     value_type: DOUBLE
   - type: workload.googleapis.com/vault.token.lease.count
     optional: true
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     value_type: INT64
   - type: workload.googleapis.com/vault.token.count
     optional: true
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     value_type: INT64
     labels:
-      namespace: .*
-      cluster: .*
+      - name: namespace
+        value_regex: .*
+      - name: cluster
+        value_regex: .*
   - type: workload.googleapis.com/vault.token.revoke.time
     optional: true
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     value_type: INT64
   - type: workload.googleapis.com/vault.token.renew.time
     optional: true
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     value_type: INT64
   - type: workload.googleapis.com/vault.audit.request.failed
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     value_type: INT64
   - type: workload.googleapis.com/vault.audit.response.failed
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     value_type: INT64
   - type: workload.googleapis.com/vault.memory.usage
     representative: true
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     value_type: DOUBLE
   - type: workload.googleapis.com/vault.storage.operation.put.time
     optional: true
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     value_type: DOUBLE
     labels:
-      storage: .*
+      - name: storage
+        value_regex: .*
   - type: workload.googleapis.com/vault.storage.operation.delete.time
     optional: true
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     value_type: DOUBLE
     labels:
-      storage: .*
+      - name: storage
+        value_regex: .*
   - type: workload.googleapis.com/vault.storage.operation.list.time
     optional: true
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     value_type: DOUBLE
     labels:
-      storage: .*
+      - name: storage
+        value_regex: .*
   - type: workload.googleapis.com/vault.storage.operation.get.time
     optional: true
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     value_type: DOUBLE
     labels:
-      storage: .*
+      - name: storage
+        value_regex: .*
   - type: workload.googleapis.com/vault.storage.operation.put.count
     optional: true
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     value_type: INT64
     labels:
-      storage: .*
+      - name: storage
+        value_regex: .*
   - type: workload.googleapis.com/vault.storage.operation.delete.count
     optional: true
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     value_type: INT64
     labels:
-      storage: .*
+      - name: storage
+        value_regex: .*
   - type: workload.googleapis.com/vault.storage.operation.list.count
     optional: true
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     value_type: INT64
     labels:
-      storage: .*
+      - name: storage
+        value_regex: .*
   - type: workload.googleapis.com/vault.storage.operation.get.count
     optional: true
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     value_type: INT64
     labels:
-      storage: .*
+      - name: storage
+        value_regex: .*
 expected_logs:
   - log_name: vault_audit
     fields:

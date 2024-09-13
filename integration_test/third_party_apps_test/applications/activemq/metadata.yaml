@@ -34,72 +34,88 @@ expected_metrics:
   - type: workload.googleapis.com/activemq.connection.count
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/activemq.consumer.count
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      broker: .*
-      destination: .*
+      - name: broker
+        value_regex: .*
+      - name: destination
+        value_regex: .*
     representative: true
   - type: workload.googleapis.com/activemq.disk.store_usage
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/activemq.disk.temp_usage
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/activemq.memory.usage
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      broker: .*
-      destination: .*
+      - name: broker
+        value_regex: .*
+      - name: destination
+        value_regex: .*
   - type: workload.googleapis.com/activemq.message.current
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      broker: .*
-      destination: .*
+      - name: broker
+        value_regex: .*
+      - name: destination
+        value_regex: .*
   - type: workload.googleapis.com/activemq.message.dequeued
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      broker: .*
-      destination: .*
+      - name: broker
+        value_regex: .*
+      - name: destination
+        value_regex: .*
   - type: workload.googleapis.com/activemq.message.enqueued
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      broker: .*
-      destination: .*
+      - name: broker
+        value_regex: .*
+      - name: destination
+        value_regex: .*
   - type: workload.googleapis.com/activemq.message.expired
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      broker: .*
-      destination: .*
+      - name: broker
+        value_regex: .*
+      - name: destination
+        value_regex: .*
   - type: workload.googleapis.com/activemq.message.wait_time.avg
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      broker: .*
-      destination: .*
+      - name: broker
+        value_regex: .*
+      - name: destination
+        value_regex: .*
   - type: workload.googleapis.com/activemq.producer.count
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      broker: .*
-      destination: .*
+      - name: broker
+        value_regex: .*
+      - name: destination
+        value_regex: .*
 expected_logs:
   - log_name: syslog
     fields:

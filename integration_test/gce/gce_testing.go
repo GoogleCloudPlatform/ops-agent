@@ -739,6 +739,41 @@ func runCommand(ctx context.Context, logger *log.Logger, stdin io.Reader, args [
 	return output, err
 }
 
+// getGcloudConfigDir returns the current gcloud configuration directory.
+func getGcloudConfigDir(ctx context.Context) (string, error) {
+	out, err := RunGcloud(ctx, log.New(io.Discard, "", 0), "", []string{"info", "--format=value[terminator=''](config.paths.global_config_dir)"})
+	if err != nil {
+		return "", err
+	}
+	return out.Stdout, nil
+}
+
+// getDirectoryWithTrailingDot returns the given directory with
+// a trailing '/.'.
+func getDirectoryWithTrailingDot(directory string) string {
+	// Can't just use filepath.Join(directory, "."), because it eats dot path
+	// segments. See https://stackoverflow.com/a/51670536.
+	return filepath.Clean(directory) + string(filepath.Separator) + "."
+}
+
+// SetupGcloudConfigDir sets up a new gcloud configuration directory.
+// This copies the contents of the context-specified configuration directory
+// into the new directory.
+// This only works on Linux.
+func SetupGcloudConfigDir(ctx context.Context, directory string) error {
+	currentConfigDir, err := getGcloudConfigDir(ctx)
+	if err != nil {
+		return err
+	}
+	// TODO: Replace with os.CopyFS() once available.
+	from := getDirectoryWithTrailingDot(currentConfigDir)
+	to := getDirectoryWithTrailingDot(directory)
+	if _, err := runCommand(ctx, log.New(io.Discard, "", 0), nil, []string{"cp", "-r", from, to}, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
 const (
 	gcloudConfigDirKey = "__gcloud_config_dir__"
 )

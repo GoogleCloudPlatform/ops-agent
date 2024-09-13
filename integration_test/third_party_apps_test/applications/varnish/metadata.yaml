@@ -37,60 +37,66 @@ expected_metrics:
   - type: workload.googleapis.com/varnish.backend.connection.count
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      kind: .*
+      - name: kind
+        value_regex: .*
     representative: true
   - type: workload.googleapis.com/varnish.backend.request.count
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/varnish.cache.operation.count
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      operation: .*
+      - name: operation
+        value_regex: .*
   - type: workload.googleapis.com/varnish.client.request.count
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      state: .*
+      - name: state
+        value_regex: .*
   - type: workload.googleapis.com/varnish.client.request.error.count
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      status_code: .*
+      - name: status_code
+        value_regex: .*
   - type: workload.googleapis.com/varnish.object.count
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/varnish.object.expired
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/varnish.object.moved
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/varnish.object.nuked
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/varnish.session.count
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      kind: .*
+      - name: kind
+        value_regex: .*
   - type: workload.googleapis.com/varnish.thread.operation.count
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      operation: .*
+      - name: operation
+        value_regex: .*
 configuration_options:
   logs:
     - type: varnish

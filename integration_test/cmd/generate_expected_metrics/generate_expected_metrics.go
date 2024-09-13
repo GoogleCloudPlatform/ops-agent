@@ -178,16 +178,21 @@ func getAppName(metricType string) string {
 
 // toExpectedMetric converts from metric.MetricDescriptor to ExpectedMetric.
 func toExpectedMetric(metric *metric.MetricDescriptor) *metadata.ExpectedMetric {
-	labels := make(map[string]string)
+	labels := make([]*metadata.MetricLabel, len(metric.Labels))
 	for _, l := range metric.Labels {
-		labels[l.Key] = ".*"
+		labels = append(labels, &metadata.MetricLabel{
+			Name: l.Key,
+			ValueRegex: ".*",
+		})
 	}
 	return &metadata.ExpectedMetric{
-		Type:              metric.Type,
-		Kind:              metric.MetricKind.String(),
-		ValueType:         metric.ValueType.String(),
-		MonitoredResource: "gce_instance",
-		Labels:            labels,
+		MetricSpec: metadata.MetricSpec{
+			Type:               metric.Type,
+			Kind:               metric.MetricKind.String(),
+			ValueType:          metric.ValueType.String(),
+			MonitoredResources: []string{"gce_instance"},
+			Labels:             labels,
+		},
 	}
 }
 
@@ -265,20 +270,25 @@ func updateMetric(toUpdate *metadata.ExpectedMetric, withValuesFrom *metadata.Ex
 	result := toUpdate
 	result.Kind = withValuesFrom.Kind
 	result.ValueType = withValuesFrom.ValueType
-	result.MonitoredResource = withValuesFrom.MonitoredResource
-	result.Labels = make(map[string]string)
+	result.MonitoredResources = withValuesFrom.MonitoredResources
+	result.Labels = make([]*metadata.MetricLabel, len(withValuesFrom.Labels))
 
 	// TODO: Refactor to a simple map copy once we improve listMetrics to fetch
 	// label patterns automatically.
 
 	// The keys of result.Labels should be the same as withValuesFrom.Labels,
 	// except that existing values/patterns are preserved.
-	for k, v := range withValuesFrom.Labels {
-		existingPattern, ok := toUpdate.Labels[k]
+	existingLabels := make(map[string]*metadata.MetricLabel)
+	for _, l := range toUpdate.Labels {
+		existingLabels[l.Name] = l
+	}
+	for _, l := range withValuesFrom.Labels {
+		existingLabel, ok := existingLabels[l.Name]
 		if ok {
-			result.Labels[k] = existingPattern
+			// TODO: Merge the label specs.
+			result.Labels = append(result.Labels, existingLabel)
 		} else {
-			result.Labels[k] = v
+			result.Labels = append(result.Labels, l)
 		}
 	}
 
