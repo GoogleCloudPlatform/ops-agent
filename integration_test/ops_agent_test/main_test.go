@@ -2329,15 +2329,14 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 		}
 	}
 
-	bytes, err := os.ReadFile(path.Join("agent_metrics", "metadata.yaml"))
+	agentMetricsMetadata := path.Join("agent_metrics", "metadata.yaml")
+	bytes, err := os.ReadFile(agentMetricsMetadata)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	var agentMetrics struct {
-		ExpectedMetrics []*metadata.ExpectedMetric `yaml:"expected_metrics" validate:"onetrue=Representative,unique=Type,dive"`
-	}
-	err = yaml.UnmarshalStrict(bytes, &agentMetrics)
+	var agentMetrics metadata.ExpectedMetricsContainer
+	err = metadata.UnmarshalAndValidate(agentMetricsMetadata, bytes, &agentMetrics)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -4112,10 +4111,10 @@ func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 		return err
 	}
 
-	// To update this, first run `mirror_content.sh` in this directory. Example:
+	// To update this, first run `mirror_content.sh` under `integration_test`. Example:
 	//   ./mirror_content.sh https://go.dev/dl/go1.21.4.linux-{amd64,arm64}.tar.gz
 	// Then update this version.
-	goVersion := "1.21.4"
+	goVersion := "1.22.7"
 
 	goArch := "amd64"
 	if gce.IsARM(vm.ImageSpec) {

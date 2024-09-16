@@ -1,0 +1,66 @@
+# Copyright 2022 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/mssql"
+app_url: "https://docs.microsoft.com/sql/sql-server/"
+short_name: SQL Server
+long_name: Microsoft SQL Server
+logo_path: /stackdriver/images/mssql.png # supplied by google technical writer
+description: |-
+  The v1 Microsoft SQL Server integration collects metrics from your SQL Server
+  instances. The metrics provide transaction-rate information and also data on
+  open connections.
+
+  The v2 Microsoft SQL Server integration collects metrics from your SQL Server
+  instances and databases. Page, batch, lock, and user connection count information
+  is provided at the instance level. Transaction and transaction log information
+  is provided at the database level.
+
+  This integration doesn't support SQL Server named instances.
+minimum_supported_agent_version:
+  metrics: 1.0.0
+supported_operating_systems: windows
+platforms_to_skip:
+  # Skip non-sql images.
+  - windows-cloud:windows-2016-core
+  - windows-cloud:windows-2022
+supported_app_version: ["11.x", "12.x", "13.x", "14.x", "15.x"]
+expected_metrics:
+  # v1 metrics
+  - type: agent.googleapis.com/mssql/connections/user
+    value_type: DOUBLE
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    representative: true
+  - type: agent.googleapis.com/mssql/transaction_rate
+    value_type: DOUBLE
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+  - type: agent.googleapis.com/mssql/write_transaction_rate
+    value_type: DOUBLE
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+configuration_options:
+  metrics:
+    - type: mssql
+      fields:
+        - name: type
+          default: null
+          description: This value must be `mssql`.
+        - name: collection_interval
+          default: 60s
+          description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
+        - name: receiver_version
+          default: "1"
+          description: Version of the metrics collected; use `2` to collect v2 metrics.

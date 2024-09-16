@@ -727,10 +727,10 @@ func windowsEnvironment(environment map[string]string) string {
 // about PackageLocation, see the documentation for the PackageLocation struct.
 func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, location PackageLocation) error {
 	if location.packagesInGCS != "" && location.repoSuffix != "" {
-		return fmt.Errorf("invalid PackageLocation: cannot provide both location.packagesInGCS and location.repoSuffix. location=%#v")
+		return fmt.Errorf("invalid PackageLocation: cannot provide both location.packagesInGCS and location.repoSuffix. location=%#v", location)
 	}
 	if location.artifactRegistryRegion != "" && location.repoSuffix == "" {
-		return fmt.Errorf("invalid PackageLocation: location.artifactRegistryRegion was nonempty yet location.repoSuffix was empty. location=%#v")
+		return fmt.Errorf("invalid PackageLocation: location.artifactRegistryRegion was nonempty yet location.repoSuffix was empty. location=%#v", location)
 	}
 
 	if location.packagesInGCS != "" {
@@ -851,6 +851,11 @@ func CommonSetupWithExtraCreateArgumentsAndMetadata(t *testing.T, imageSpec stri
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
 	t.Cleanup(cancel)
+	gcloudConfigDir := t.TempDir()
+	if err := gce.SetupGcloudConfigDir(ctx, gcloudConfigDir); err != nil {
+		t.Fatalf("Unable to set up a gcloud config directory: %v", err)
+	}
+	ctx = gce.WithGcloudConfigDir(ctx, gcloudConfigDir)
 
 	logger := gce.SetupLogger(t)
 	logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")

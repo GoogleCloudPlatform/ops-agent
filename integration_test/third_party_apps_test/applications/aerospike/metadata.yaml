@@ -31,66 +31,87 @@ configure_integration: |-
 expected_metrics:
   - kind: CUMULATIVE
     labels:
-      result: error|filtered_out|not_found|success|timeout
-      type: delete|read|udf|write
-      node_name: .*
-      namespace_name: .*
-    monitored_resource: gce_instance
+      - name: result
+        value_regex: error|filtered_out|not_found|success|timeout
+      - name: type
+        value_regex: delete|read|udf|write
+      - name: node_name
+        value_regex: .*
+      - name: namespace_name
+        value_regex: .*
+    monitored_resources: [gce_instance]
     type: workload.googleapis.com/aerospike.namespace.transaction.count
     value_type: INT64
   - kind: GAUGE
     labels:
-      node_name: .*
-      namespace_name: .*
-    monitored_resource: gce_instance
+      - name: node_name
+        value_regex: .*
+      - name: namespace_name
+        value_regex: .*
+    monitored_resources: [gce_instance]
     type: workload.googleapis.com/aerospike.namespace.disk.available
     optional: true
     value_type: INT64
   - kind: GAUGE
     labels:
-      node_name: .*
-      namespace_name: .*
-    monitored_resource: gce_instance
+      - name: node_name
+        value_regex: .*
+      - name: namespace_name
+        value_regex: .*
+    monitored_resources: [gce_instance]
     type: workload.googleapis.com/aerospike.namespace.memory.free
     value_type: INT64
   - kind: GAUGE
     labels:
-      component: data|index|set_index|secondary_index
-      node_name: .*
-      namespace_name: .*
-    monitored_resource: gce_instance
+      - name: component
+        value_regex: data|index|set_index|secondary_index
+      - name: node_name
+        value_regex: .*
+      - name: namespace_name
+        value_regex: .*
+    monitored_resources: [gce_instance]
     type: workload.googleapis.com/aerospike.namespace.memory.usage
     value_type: INT64
   - kind: CUMULATIVE
     labels:
-      result: abort|complete|error
-      type: aggregation|basic|ops_background|udf_background
-      node_name: .*
-      namespace_name: .*
-    monitored_resource: gce_instance
+      - name: result
+        value_regex: abort|complete|error
+      - name: type
+        value_regex: aggregation|basic|ops_background|udf_background
+      - name: node_name
+        value_regex: .*
+      - name: namespace_name
+        value_regex: .*
+    monitored_resources: [gce_instance]
     type: workload.googleapis.com/aerospike.namespace.scan.count
     optional: true # This aerospike metric is broken for aerospike 6.X - see issue raised https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21834
     value_type: INT64
   - kind: CUMULATIVE
     labels:
-      operation: close|open
-      type: client|fabric|heartbeat
-      node_name: .*
-    monitored_resource: gce_instance
+      - name: operation
+        value_regex: close|open
+      - name: type
+        value_regex: client|fabric|heartbeat
+      - name: node_name
+        value_regex: .*
+    monitored_resources: [gce_instance]
     type: workload.googleapis.com/aerospike.node.connection.count
     value_type: INT64
   - kind: GAUGE
     labels:
-      type: client|fabric|heartbeat
-      node_name: .*
-    monitored_resource: gce_instance
+      - name: type
+        value_regex: client|fabric|heartbeat
+      - name: node_name
+        value_regex: .*
+    monitored_resources: [gce_instance]
     type: workload.googleapis.com/aerospike.node.connection.open
     value_type: INT64
     representative: true
   - kind: GAUGE
     labels:
-      node_name: .*
-    monitored_resource: gce_instance
+      - name: node_name
+        value_regex: .*
+    monitored_resources: [gce_instance]
     type: workload.googleapis.com/aerospike.node.memory.free
     value_type: INT64
 expected_logs:
@@ -109,7 +130,7 @@ configuration_options:
           description: This value must be `aerospike`.
         - name: collection_interval
           default: 60s
-          description: A [time.Duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
+          description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
         - name: endpoint
           default: localhost:3000
           description: Address of the Aerospike system, formatted as host:port.
@@ -124,7 +145,7 @@ configuration_options:
           description: The configured password if Aerospike is configured to require authentication.
         - name: timeout
           default: 20s
-          description: Timeout for requests to the Aerospike system, a [time.Duration](https://pkg.go.dev/time#ParseDuration) value such as `30s` or `5m`.
+          description: Timeout for requests to the Aerospike system, a [time duration](https://pkg.go.dev/time#ParseDuration) value such as `30s` or `5m`.
 minimum_supported_agent_version:
   metrics: 2.18.2
   logging: 2.23.0
@@ -135,9 +156,9 @@ platforms_to_skip:
   - debian-cloud:debian-12-arm64
   - suse-cloud:sles-12
   - rocky-linux-cloud:rocky-linux-9
+  - rocky-linux-cloud:rocky-linux-9-optimized-gcp
   - rocky-linux-cloud:rocky-linux-9-arm64
-  - ubuntu-os-cloud:ubuntu-2310-amd64
-  - ubuntu-os-cloud:ubuntu-2310-arm64
+  - rocky-linux-cloud:rocky-linux-9-optimized-gcp-arm64
   - ubuntu-os-cloud:ubuntu-2404-lts-amd64
   - ubuntu-os-cloud:ubuntu-2404-lts-arm64
 public_url: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/aerospike

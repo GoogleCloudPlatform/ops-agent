@@ -29,7 +29,6 @@ minimum_supported_agent_version:
 supported_operating_systems: linux
 # TODO: Fix errors and enable tests on all platforms.
 platforms_to_skip:
-  - centos-cloud:centos-7 # QueryLog() failed: redis not found, exhausted retries
   - suse-cloud:sles-12 # File '/repositories/server:/monitoring/SLE_12/server:monitoring.repo' not found
   - suse-cloud:sles-15 # File '/repositories/server:database/SLE_15/server:database.repo' not found
   - suse-cloud:sles-15-arm64
@@ -38,102 +37,103 @@ expected_metrics:
   - type: workload.googleapis.com/redis.clients.blocked
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/redis.clients.connected
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/redis.clients.max_input_buffer
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     representative: true
   - type: workload.googleapis.com/redis.clients.max_output_buffer
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/redis.commands.processed
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/redis.connections.received
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/redis.connections.rejected
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/redis.cpu.time
     value_type: DOUBLE
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      state: .*
+      - name: state
+        value_regex: .*
   - type: workload.googleapis.com/redis.keys.evicted
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/redis.keys.expired
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/redis.keyspace.hits
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/redis.keyspace.misses
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/redis.latest_fork
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/redis.memory.fragmentation_ratio
     value_type: DOUBLE
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/redis.memory.lua
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/redis.memory.peak
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/redis.memory.rss
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/redis.memory.used
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/redis.net.input
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/redis.net.output
     value_type: INT64
     kind: CUMULATIVE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/redis.rdb.changes_since_last_save
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/redis.replication.backlog_first_byte_offset
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/redis.replication.offset
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
   - type: workload.googleapis.com/redis.slaves.connected
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
 expected_logs:
   - log_name: redis
     fields:
@@ -144,18 +144,18 @@ expected_logs:
       - name: jsonPayload.message
         value_regex: Ready to accept connections
         type: string
-        description: ''
+        description: Log message, including detailed stacktrace where provided
       - name: jsonPayload.roleChar
         value_regex: M
         type: string
-        description: redis role character (X, C, S, M)
+        description: Redis role character (X, C, S, M)
       - name: jsonPayload.role
         value_regex: master
         type: string
-        description: translated from redis role character (sentinel, RDB/AOF_writing_child, slave, master)
+        description: Translated from redis role character (sentinel, RDB/AOF_writing_child, slave, master)
       - name: jsonPayload.pid
         type: number
-        description: Process ID
+        description: The process ID issuing the log
       - name: severity
         type: string
         description: ''
@@ -165,40 +165,40 @@ configuration_options:
       fields:
         - name: type
           default: null
-          description: This value must be redis.
+          description: This value must be `redis`.
         - name: include_paths
           default: '[/var/log/redis/redis-server.log, /var/log/redis_6379.log, /var/log/redis/redis.log, /var/log/redis/default.log, /var/log/redis/redis_6379.log]'
-          description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/redis/*.log.
+          description: A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `/var/log/redis/*.log`.
         - name: exclude_paths
           default: null
-          description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+          description: A list of filesystem path patterns to exclude from the set matched by `include_paths`.
         - name: record_log_file_path
           default: false
           description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
         - name: wildcard_refresh_interval
           default: 60s
-          description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+          description: The interval at which wildcard file paths in `include_paths` are refreshed. Given as a [time duration](https://pkg.go.dev/time#ParseDuration), for example `30s` or `2m`. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
   metrics:
     - type: redis
       fields:
         - name: type
           default: null
-          description: This value must be redis.
+          description: This value must be `redis`.
         - name: address
           default: localhost:6379
           description: The URL exposed by Redis.
         - name: collection_interval
           default: 60s
-          description: A time.Duration value, such as 30s or 5m.
+          description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
         - name: password
           default: null
           description: The password used to connect to the server.
         - name: insecure
           default: true
-          description: Sets whether or not to use a secure TLS connection. If set to false, then TLS is enabled.
+          description: Sets whether or not to use a secure TLS connection. If set to `false`, then TLS is enabled.
         - name: insecure_skip_verify
           default: false
-          description: Sets whether or not to skip verifying the certificate. If insecure is set to true, then the insecure_skip_verify value is not used.
+          description: Sets whether or not to skip verifying the certificate. If `insecure` is set to `true`, then the `insecure_skip_verify` value is not used.
         - name: cert_file
           default: null
           description: Path to the TLS certificate to use for mTLS-required connections.
