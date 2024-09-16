@@ -4111,10 +4111,10 @@ func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 		return err
 	}
 
-	// To update this, first run `mirror_content.sh` under `integration_test`. Example:
+	// To update this, first run `mirror_content.sh` in this directory. Example:
 	//   ./mirror_content.sh https://go.dev/dl/go1.21.4.linux-{amd64,arm64}.tar.gz
 	// Then update this version.
-	goVersion := "1.22.7"
+	goVersion := "1.21.4"
 
 	goArch := "amd64"
 	if gce.IsARM(vm.ImageSpec) {
