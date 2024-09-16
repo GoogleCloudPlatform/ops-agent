@@ -51,7 +51,7 @@ gpu_platforms:
       - ubuntu-os-cloud:ubuntu-2204-lts
   - model: h100
     platforms:
-      - debian-cloud:debian-11
+      - ubuntu-os-cloud:ubuntu-minimal-2004-lts # due to H100 quota, choose a image from the exhaustive list to skip presubmits
 expected_metrics:
   - type: agent.googleapis.com/gpu/utilization
     value_type: DOUBLE
