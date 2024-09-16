@@ -826,11 +826,10 @@ func determineImpactedApps(modifiedFiles []string, allApps map[string]metadata.I
 }
 
 type accelerator struct {
-	model            string
-	fullName         string
-	machineType      string
-	availableZone    string
-	acceleratorCount int
+	model         string
+	fullName      string
+	machineType   string
+	availableZone string
 }
 
 type test struct {
@@ -858,53 +857,46 @@ var defaultApps = map[string]bool{
 var gpuModels = map[string]accelerator{
 	// This is the A100 40G model; A100 80G is similar so skipping
 	"a100": {
-		model:            "a100",
-		fullName:         "nvidia-tesla-a100",
-		machineType:      "a2-highgpu-1g",
-		availableZone:    "us-central1-a",
-		acceleratorCount: 1,
+		model:         "a100",
+		fullName:      "nvidia-tesla-a100",
+		machineType:   "a2-highgpu-1g",
+		availableZone: "us-central1-a",
 	},
 	"v100": {
-		model:            "v100",
-		fullName:         "nvidia-tesla-v100",
-		machineType:      "n1-standard-2",
-		availableZone:    "us-central1-a",
-		acceleratorCount: 1,
+		model:         "v100",
+		fullName:      "nvidia-tesla-v100",
+		machineType:   "n1-standard-2",
+		availableZone: "us-central1-a",
 	},
 	"t4": {
-		model:            "t4",
-		fullName:         "nvidia-tesla-t4",
-		machineType:      "n1-standard-2",
-		availableZone:    "us-central1-a",
-		acceleratorCount: 1,
+		model:         "t4",
+		fullName:      "nvidia-tesla-t4",
+		machineType:   "n1-standard-2",
+		availableZone: "us-central1-a",
 	},
 	"p4": {
-		model:            "p4",
-		fullName:         "nvidia-tesla-p4",
-		machineType:      "n1-standard-2",
-		availableZone:    "us-central1-a",
-		acceleratorCount: 1,
+		model:         "p4",
+		fullName:      "nvidia-tesla-p4",
+		machineType:   "n1-standard-2",
+		availableZone: "us-central1-a",
 	},
 	"p100": {
-		model:            "p100",
-		fullName:         "nvidia-tesla-p100",
-		machineType:      "n1-standard-2",
-		availableZone:    "us-central1-c",
-		acceleratorCount: 1,
+		model:         "p100",
+		fullName:      "nvidia-tesla-p100",
+		machineType:   "n1-standard-2",
+		availableZone: "us-central1-c",
 	},
 	"l4": {
-		model:            "l4",
-		fullName:         "nvidia-l4",
-		machineType:      "g2-standard-4",
-		availableZone:    "us-central1-a",
-		acceleratorCount: 1,
+		model:         "l4",
+		fullName:      "nvidia-l4",
+		machineType:   "g2-standard-4",
+		availableZone: "us-central1-a",
 	},
 	"h100": {
-		model:            "h100",
-		fullName:         "nvidia-h100-80gb",
-		machineType:      "a3-highgpu-8g",
-		availableZone:    "us-west1-a",
-		acceleratorCount: 8,
+		model:         "h100",
+		fullName:      "nvidia-h100-80gb",
+		machineType:   "a3-highgpu-8g",
+		availableZone: "us-west1-a",
 	},
 }
 
@@ -927,6 +919,19 @@ func incompatibleOperatingSystem(testCase test) string {
 		return fmt.Sprintf("Skipping test for image spec %v because app %v only supports %v.", testCase.imageSpec, testCase.app, supported)
 	}
 	return "" // We are testing on a supported image for this app.
+}
+
+// getAcceleratorCount parses the machine type string and get the accelerator
+// count for that machine type. For machine types that support multiple GPU
+// configurations (n1-standard-2 can have 1, 2, 4 or 8 V100 attached), use 1
+// as the default accelerator count
+// https://cloud.google.com/compute/docs/gpus
+func getAcceleratorCount(machineType string) string {
+	matches := regexp.MustCompile(`^\w*-\w*-(\d)g$`).FindStringSubmatch(machineType)
+	if len(matches) != 2 {
+		return "1"
+	}
+	return matches[1]
 }
 
 // When in `-short` test mode, mark some tests for skipping, based on
@@ -1041,7 +1046,7 @@ func TestThirdPartyApps(t *testing.T) {
 				if tc.gpu != nil {
 					options.ExtraCreateArguments = append(
 						options.ExtraCreateArguments,
-						fmt.Sprintf("--accelerator=count=%d,type=%s", tc.gpu.acceleratorCount, tc.gpu.fullName),
+						fmt.Sprintf("--accelerator=count=%s,type=%s", getAcceleratorCount(tc.gpu.machineType), tc.gpu.fullName),
 						"--maintenance-policy=TERMINATE")
 					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-size=100GB")
 					options.MachineType = tc.gpu.machineType
