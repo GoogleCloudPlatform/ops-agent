@@ -107,8 +107,6 @@ expected_metrics:
       - *uuid_label
       - *gpu_number_label
       - *instrumentation_source_label
-    notes:
-      - *dcgm_profiling_note
   - type: workload.googleapis.com/dcgm.gpu.profiling.pcie_traffic_rate
     value_type: INT64
     kind: GAUGE

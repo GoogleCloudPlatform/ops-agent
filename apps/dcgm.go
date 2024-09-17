@@ -43,7 +43,6 @@ func (r MetricsReceiverDcgm) Pipelines(_ context.Context) ([]otel.ReceiverPipeli
 
 	if r.ReceiverVersion == "2" {
 		return []otel.ReceiverPipeline{{
-			// TODO
 			Receiver: otel.Component{
 				Type: "dcgm",
 				Config: map[string]interface{}{
