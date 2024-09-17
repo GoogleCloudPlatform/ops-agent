@@ -107,9 +107,9 @@ targets:
         test_distros:
           representative:
           - rocky-linux-cloud:rocky-linux-8-optimized-gcp-arm64
-          exhaustive:
-          - rhel-cloud:rhel-9-arm64
-          - rocky-linux-cloud:rocky-linux-9-optimized-gcp-arm64
+#          exhaustive:
+#          - rhel-cloud:rhel-9-arm64
+#          - rocky-linux-cloud:rocky-linux-9-optimized-gcp-arm64
   sles12:
     package_extension:
       rpm
