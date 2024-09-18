@@ -44,7 +44,7 @@ gpu_platforms: # p4, p100 don't emit DCGM profiling metrics
       - ubuntu-os-cloud:ubuntu-2204-lts
   - model: h100
     platforms:
-      - ubuntu-os-cloud:ubuntu-minimal-2004-lts # due to H100 quota, choose a image from the exhaustive list to skip presubmits
+      - ubuntu-os-cloud:ubuntu-minimal-2004-lts # due to H100 quota, choose an image from the exhaustive list to skip presubmits
 expected_metrics:
   - type: workload.googleapis.com/dcgm.gpu.profiling.sm_utilization
     value_type: DOUBLE

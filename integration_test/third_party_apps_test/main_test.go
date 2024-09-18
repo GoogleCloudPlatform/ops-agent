@@ -921,11 +921,10 @@ func incompatibleOperatingSystem(testCase test) string {
 	return "" // We are testing on a supported image for this app.
 }
 
-// getAcceleratorCount parses the machine type string and get the accelerator
-// count for that machine type. For machine types that support multiple GPU
-// configurations (n1-standard-2 can have 1, 2, 4 or 8 V100 attached), use 1
-// as the default accelerator count
-// https://cloud.google.com/compute/docs/gpus
+// getAcceleratorCount extracts the accelerator count from the machine type
+// string (https://cloud.google.com/compute/docs/gpus). For machine types that
+// support multiple GPU configurations (n1-standard-2 can have 1, 2, 4 or 8
+// V100 attached), use 1 as the default accelerator count.
 func getAcceleratorCount(machineType string) string {
 	matches := regexp.MustCompile(`^\w*-\w*-(\d)g$`).FindStringSubmatch(machineType)
 	if len(matches) != 2 {
