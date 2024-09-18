@@ -892,6 +892,12 @@ var gpuModels = map[string]accelerator{
 		machineType:   "g2-standard-4",
 		availableZone: "us-central1-a",
 	},
+	"h100": {
+		model:         "h100",
+		fullName:      "nvidia-h100-80gb",
+		machineType:   "a3-highgpu-8g",
+		availableZone: "us-west1-a",
+	},
 }
 
 const (
@@ -913,6 +919,18 @@ func incompatibleOperatingSystem(testCase test) string {
 		return fmt.Sprintf("Skipping test for image spec %v because app %v only supports %v.", testCase.imageSpec, testCase.app, supported)
 	}
 	return "" // We are testing on a supported image for this app.
+}
+
+// getAcceleratorCount extracts the accelerator count from the machine type
+// string (https://cloud.google.com/compute/docs/gpus). For machine types that
+// support multiple GPU configurations (n1-standard-2 can have 1, 2, 4 or 8
+// V100 attached), use 1 as the default accelerator count.
+func getAcceleratorCount(machineType string) string {
+	matches := regexp.MustCompile(`^\w*-\w*-(\d)g$`).FindStringSubmatch(machineType)
+	if len(matches) != 2 {
+		return "1"
+	}
+	return matches[1]
 }
 
 // When in `-short` test mode, mark some tests for skipping, based on
@@ -1027,7 +1045,7 @@ func TestThirdPartyApps(t *testing.T) {
 				if tc.gpu != nil {
 					options.ExtraCreateArguments = append(
 						options.ExtraCreateArguments,
-						fmt.Sprintf("--accelerator=count=1,type=%s", tc.gpu.fullName),
+						fmt.Sprintf("--accelerator=count=%s,type=%s", getAcceleratorCount(tc.gpu.machineType), tc.gpu.fullName),
 						"--maintenance-policy=TERMINATE")
 					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-size=100GB")
 					options.MachineType = tc.gpu.machineType
