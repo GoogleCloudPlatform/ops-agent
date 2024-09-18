@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	metricapi "go.opentelemetry.io/otel/metric"
 	metricsdk "go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/sdk/metric/aggregation"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"google.golang.org/grpc/codes"
@@ -143,7 +142,7 @@ func CreateFeatureTrackingMeterProvider(exporter metricsdk.Exporter, res *resour
 				},
 				metricsdk.Stream{
 					Name:        "agent/internal/ops/feature_tracking",
-					Aggregation: aggregation.Default{},
+					Aggregation: metricsdk.AggregationDefault{},
 				},
 			)),
 		metricsdk.WithResource(res),
@@ -166,7 +165,7 @@ func CreateEnabledReceiversMeterProvider(exporter metricsdk.Exporter, res *resou
 				},
 				metricsdk.Stream{
 					Name:        "agent/ops_agent/enabled_receivers",
-					Aggregation: aggregation.Default{},
+					Aggregation: metricsdk.AggregationDefault{},
 				},
 			)),
 		metricsdk.WithResource(res),
