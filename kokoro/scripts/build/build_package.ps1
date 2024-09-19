@@ -47,7 +47,7 @@ PACKAGE_VERSION,$env:PKG_VERSION
 "@ |
   Out-File -FilePath "$env:KOKORO_ARTIFACTS_DIR/custom_sponge_config.csv" -Encoding ascii
 
-Invoke-Program git submodule update --init
+Invoke-Program git submodule update --init --recursive --remote
 $artifact_registry='us-docker.pkg.dev'
 Invoke-Program docker-credential-gcr configure-docker --registries="$artifact_registry"
 $arch = Invoke-Program docker info --format '{{.Architecture}}'

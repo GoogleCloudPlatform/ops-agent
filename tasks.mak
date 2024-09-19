@@ -127,7 +127,7 @@ precommit_update: addlicense test_confgenerator_update test_metadata_update test
 reset_submodules:
 	git submodule foreach --recursive git clean -xfd
 	git submodule foreach --recursive git reset --hard
-	git submodule update --init --recursive
+	git submodule update --init --recursive --remote
 
 sync_fork:
 	git fetch upstream
