@@ -129,15 +129,12 @@ func RegexpRename(regexp string, rename string, operations ...map[string]interfa
 }
 
 // Transform returns a transform processor object that executes statements on statementType data.
-func Transform(statementType, context string, statements ottl.Statements) Component {
+func Transform(statementType string, contextStatements ottl.ContextStatements) Component {
 	return Component{
 		Type: "transform",
 		Config: map[string]any{
 			"error_mode": "ignore",
-			fmt.Sprintf("%s_statements", statementType): map[string]any{
-				"context":    context,
-				"statements": statements,
-			},
+			fmt.Sprintf("%s_statements", statementType): []ottl.ContextStatements{contextStatements},
 		},
 	}
 }
@@ -161,16 +158,18 @@ func Filter(dataType, context string, expressions []ottl.Value) Component {
 
 // TransformationMetrics returns a transform processor object that contains all the queries passed into it.
 func TransformationMetrics(queries ...TransformQuery) Component {
-	queryStrings := []string{}
+	statements := []ottl.Statement{}
 	for _, q := range queries {
-		queryStrings = append(queryStrings, string(q))
+		statements = append(statements, ottl.Statement(q))
 	}
 	return Component{
 		Type: "transform",
-		Config: map[string]map[string]interface{}{
-			"metric_statements": {
-				"context":    "datapoint",
-				"statements": queryStrings,
+		Config: map[string]any{
+			"metric_statements": []ottl.ContextStatements{
+				{
+					Context:    "datapoint",
+					Statements: statements,
+				},
 			},
 		},
 	}

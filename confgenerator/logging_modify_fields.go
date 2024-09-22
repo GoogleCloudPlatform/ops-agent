@@ -246,8 +246,7 @@ func (p LoggingProcessorModifyFields) Processors(ctx context.Context) ([]otel.Co
 		return nil, err
 	}
 	return []otel.Component{otel.Transform(
-		"log", "log",
-		out,
+		"log", ottl.ContextStatements{Context: "log", Statements: out},
 	)}, nil
 }
 
