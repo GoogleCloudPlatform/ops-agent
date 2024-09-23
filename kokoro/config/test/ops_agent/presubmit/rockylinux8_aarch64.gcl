@@ -3,8 +3,6 @@ import 'common.gcl' as common
 config build = common.ops_agent_test {
   params {
     environment {
-      // centos8 actually resolves to "rockylinux:8" in the Dockerfile:
-      // https://github.com/GoogleCloudPlatform/ops-agent/blob/72488e91d2f5dbd5ba5dc8c30f493deb7802dc09/Dockerfile#L163
       TARGET = 'centos8'
       ARCH = 'aarch64'
     }
