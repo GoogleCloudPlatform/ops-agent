@@ -5,10 +5,10 @@ sudo apt update
 KERNEL_VERSION=`uname -r`
 sudo apt install -y linux-headers-${KERNEL_VERSION} software-properties-common pciutils gcc make dkms wget
 
-# Install CUDA and driver together, since the `exercise` script needs to run a 
+# Install CUDA and driver together, since the `exercise` script needs to run a
 # CUDA sample app to generating GPU process metrics
 # Prefer to install from the package manager since it is normally faster and has
-# less errors on installation; fallback to the runfile method if the package 
+# less errors on installation; fallback to the runfile method if the package
 # manager's package is not working or not compitible with the GPU model
 DISTRIBUTION=$(echo $ID$VERSION_ID | sed -e 's/\.//g')
 echo "Installing latest version of NVIDIA CUDA and driver"
@@ -20,7 +20,7 @@ fi
 sudo apt update
 
 # TODO(b/357944360): confirm if the older GPUs can use >= 560 driver (CUDA 12.6
-# or newer) and then remove this case statement 
+# or newer) and then remove this case statement
 # In https://docs.nvidia.com/datacenter/tesla/index.html once the 560 doc is up,
 # check supported GPU section https://screenshot.googleplex.com/9hzxLLvaWVZHu9E
 DEVICE_CODE=$(lspci -n | grep -Po '10de:[\w\d]{4}')
@@ -30,7 +30,7 @@ case $DEVICE_CODE in
     10de:1db1|10de:1bb3|10de:15f8)
         # For GPUs older than Turing (Volta: V100, Pascal: P4, P100), ping the
         # version to CUDA 12.5 (driver 555)
-        sudo apt -y install cuda-12-5 
+        sudo apt -y install cuda-12-5
         ;;
     *)
         # For newer GPUs, install the latest version
