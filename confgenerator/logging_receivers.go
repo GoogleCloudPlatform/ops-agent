@@ -18,8 +18,10 @@ import (
 	"context"
 	"fmt"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
@@ -56,6 +58,7 @@ func (r LoggingReceiverFiles) mixin() LoggingReceiverFilesMixin {
 		ExcludePaths:            r.ExcludePaths,
 		WildcardRefreshInterval: r.WildcardRefreshInterval,
 		RecordLogFilePath:       r.RecordLogFilePath,
+		syscallStatfs:           syscall.Statfs,
 	}
 }
 
@@ -67,6 +70,8 @@ func (r LoggingReceiverFiles) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 	return r.mixin().Pipelines(ctx)
 }
 
+type statfsFunc func(path string, buf *syscall.Statfs_t) error
+
 type LoggingReceiverFilesMixin struct {
 	IncludePaths            []string        `yaml:"include_paths,omitempty"`
 	ExcludePaths            []string        `yaml:"exclude_paths,omitempty"`
@@ -74,6 +79,9 @@ type LoggingReceiverFilesMixin struct {
 	MultilineRules          []MultilineRule `yaml:"-"`
 	BufferInMemory          bool            `yaml:"-"`
 	RecordLogFilePath       *bool           `yaml:"record_log_file_path,omitempty"`
+
+	// For mocking the statfs syscall
+	syscallStatfs statfsFunc
 }
 
 func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
@@ -114,6 +122,10 @@ func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) [
 		// When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
 		// as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
 		"Mem_Buf_Limit": "10M",
+	}
+	// If trying to read
+	if platform.FromContext(ctx).Type == platform.Linux && r.detectNFSPaths() {
+		config["Inotify_Watcher"] = "false"
 	}
 	if len(r.ExcludePaths) > 0 {
 		// TODO: Escaping?
@@ -167,6 +179,42 @@ func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) [
 	})
 
 	return c
+}
+
+// See https://man7.org/linux/man-pages/man2/statfs.2.html for details.
+const NFS_SUPER_MAGIC = 0x6969
+
+func (r LoggingReceiverFilesMixin) detectNFSPaths() bool {
+	for _, path := range r.IncludePaths {
+		statPath, err := filepath.Abs(path)
+		if err != nil {
+			// This happens if os.Getwd fails in trying to get
+			// absolute path. In this scenario there is no way
+			// we can even try to detect an NFS path.
+			break
+		}
+
+		for strings.Contains(statPath, "*") {
+			// The statfs syscall doesn't work with wildcards in the path.
+			// Trim pieces away from the path until there are no wildcards.
+			filename := filepath.Base(statPath)
+			statPath = strings.TrimSuffix(statPath, filename)
+			// The clean is necessary because there will be a path separator on the
+			// end after the trim.
+			statPath = filepath.Clean(statPath)
+		}
+
+		var sfs syscall.Statfs_t
+		err = r.syscallStatfs(statPath, &sfs)
+		if err != nil {
+			// TODO print the error here?
+			continue
+		}
+		if sfs.Type == NFS_SUPER_MAGIC {
+			return true
+		}
+	}
+	return false
 }
 
 func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
