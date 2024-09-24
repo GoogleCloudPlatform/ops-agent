@@ -506,7 +506,7 @@ processors:
     - gcp
   transform/dcgm_5:
     metric_statements:
-      context: datapoint
+    - context: datapoint
       statements:
       - set(attributes["model"], resource.attributes["gpu.model"])
       - set(attributes["gpu_number"], resource.attributes["gpu.number"])

@@ -513,7 +513,7 @@ processors:
     - gcp
   transform/rabbitmq_2:
     metric_statements:
-      context: datapoint
+    - context: datapoint
       statements:
       - set(attributes["queue_name"], resource.attributes["rabbitmq.queue.name"])
       - set(attributes["node_name"], resource.attributes["rabbitmq.node.name"])
