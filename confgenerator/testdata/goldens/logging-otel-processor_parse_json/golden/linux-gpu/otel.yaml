@@ -461,7 +461,7 @@ processors:
   transform/log__source__id1_0:
     error_mode: ignore
     log_statements:
-      context: log
+    - context: log
       statements:
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
       - set(cache["__field_0"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
@@ -478,7 +478,7 @@ processors:
   transform/logs_pipeline1_log__source__id1_0:
     error_mode: ignore
     log_statements:
-      context: log
+    - context: log
       statements:
       - set(cache["__parsed_json"], ParseJSON(body["key_1"])) where (body != nil and body["key_1"] != nil)
       - delete_key(body, "key_1") where ((body != nil and body["key_1"] != nil) and (cache != nil and cache["__parsed_json"] != nil))
@@ -533,7 +533,7 @@ processors:
   transform/syslog_0:
     error_mode: ignore
     log_statements:
-      context: log
+    - context: log
       statements:
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
       - set(cache["__field_0"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)

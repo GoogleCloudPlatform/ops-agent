@@ -98,7 +98,7 @@ func CumulativeToDelta(metrics ...string) Component {
 		Type: "cumulativetodelta",
 		Config: map[string]interface{}{
 			"include": map[string]interface{}{
-				"metrics": metrics,
+				"metrics":    metrics,
 				"match_type": "strict",
 			},
 		},
@@ -157,9 +157,11 @@ func Transform(statementType, context string, statements ottl.Statements) Compon
 		Type: "transform",
 		Config: map[string]any{
 			"error_mode": "ignore",
-			fmt.Sprintf("%s_statements", statementType): map[string]any{
-				"context":    context,
-				"statements": statements,
+			fmt.Sprintf("%s_statements", statementType): []map[string]any{
+				{
+					"context":    context,
+					"statements": statements,
+				},
 			},
 		},
 	}
@@ -190,10 +192,12 @@ func TransformationMetrics(queries ...TransformQuery) Component {
 	}
 	return Component{
 		Type: "transform",
-		Config: map[string]map[string]interface{}{
-			"metric_statements": {
-				"context":    "datapoint",
-				"statements": queryStrings,
+		Config: map[string]any{
+			"metric_statements": []map[string]any{
+				{
+					"context":    "datapoint",
+					"statements": queryStrings,
+				},
 			},
 		},
 	}
