@@ -19,17 +19,12 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  cumulativetodelta/dcgm_1:
-    include:
-      match_type: strict
-      metrics:
-      - dcgm.gpu.profiling.nvlink_traffic_rate
-      - dcgm.gpu.profiling.pcie_traffic_rate
-  deltatorate/dcgm_2:
-    metrics:
-    - dcgm.gpu.profiling.nvlink_traffic_rate
-    - dcgm.gpu.profiling.pcie_traffic_rate
   filter/default__pipeline_hostmetrics_0:
+    metrics:
+      exclude:
+        match_type: regexp
+        metric_names: []
+  filter/default__pipeline_hostmetrics_1_0:
     metrics:
       exclude:
         match_type: regexp
@@ -65,60 +60,48 @@ processors:
   metricstransform/dcgm_0:
     transforms:
     - action: update
-      include: gpu.dcgm.memory.bandwidth_utilization
-      new_name: dcgm.gpu.profiling.dram_utilization
-    - action: update
-      include: gpu.dcgm.nvlink.io
-      new_name: dcgm.gpu.profiling.nvlink_traffic_rate
-      operations:
-      - action: update_label
-        label: network.io.direction
-        new_label: direction
-      - action: update_label
-        label: direction
-        value_actions:
-        - new_value: rx
-          value: receive
-        - new_value: tx
-          value: transmit
-    - action: update
-      include: gpu.dcgm.pcie.io
-      new_name: dcgm.gpu.profiling.pcie_traffic_rate
-      operations:
-      - action: update_label
-        label: network.io.direction
-        new_label: direction
-      - action: update_label
-        label: direction
-        value_actions:
-        - new_value: rx
-          value: receive
-        - new_value: tx
-          value: transmit
-    - action: update
       include: gpu.dcgm.pipe.utilization
-      new_name: dcgm.gpu.profiling.pipe_utilization
       operations:
       - action: update_label
         label: gpu.pipe
         new_label: pipe
     - action: update
-      include: gpu.dcgm.sm.occupancy
-      new_name: dcgm.gpu.profiling.sm_occupancy
-    - action: update
-      include: gpu.dcgm.sm.utilization
-      new_name: dcgm.gpu.profiling.sm_utilization
-  metricstransform/dcgm_3:
-    transforms:
-    - action: update
-      include: dcgm.gpu.profiling.nvlink_traffic_rate
+      include: gpu.dcgm.memory.bytes_used
       operations:
-      - action: toggle_scalar_data_type
+      - action: update_label
+        label: gpu.memory.state
+        new_label: state
     - action: update
-      include: dcgm.gpu.profiling.pcie_traffic_rate
+      include: gpu.dcgm.nvlink.io
       operations:
-      - action: toggle_scalar_data_type
-  metricstransform/dcgm_4:
+      - action: update_label
+        label: network.io.direction
+        new_label: direction
+    - action: update
+      include: gpu.dcgm.pcie.io
+      operations:
+      - action: update_label
+        label: network.io.direction
+        new_label: direction
+    - action: update
+      include: gpu.dcgm.clock.throttle_duration.time
+      operations:
+      - action: update_label
+        label: gpu.clock.violation
+        new_label: violation
+    - action: update
+      include: gpu.dcgm.ecc_errors
+      operations:
+      - action: update_label
+        label: gpu.error.type
+        new_label: error_type
+    - action: update
+      include: gpu.dcgm.xid_errors
+      operations:
+      - action: update_label
+        label: gpu.error.xid
+        new_label: xid
+  metricstransform/dcgm_1:
     transforms:
     - action: update
       include: ^(.*)$$
@@ -174,6 +157,30 @@ processors:
         aggregation_type: sum
         label_set:
         - response_code
+    - action: update
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: agent.googleapis.com/$${1}
+  metricstransform/hostmetrics_1_0:
+    transforms:
+    - action: update
+      include: nvml.gpu.utilization
+      new_name: gpu/utilization
+      operations:
+      - action: experimental_scale_value
+        experimental_scale: 100.0
+    - action: update
+      include: nvml.gpu.memory.bytes_used
+      new_name: gpu/memory/bytes_used
+    - action: update
+      include: nvml.gpu.processes.utilization
+      new_name: gpu/processes/utilization
+      operations:
+      - action: experimental_scale_value
+        experimental_scale: 100.0
+    - action: update
+      include: nvml.gpu.processes.max_bytes_used
+      new_name: gpu/processes/max_bytes_used
     - action: update
       include: ^(.*)$$
       match_type: regexp
@@ -498,13 +505,13 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  modifyscope/dcgm_6:
+  modifyscope/dcgm_3:
     override_scope_name: agent.googleapis.com/dcgm
-    override_scope_version: "1.0"
+    override_scope_version: "2.0"
   resourcedetection/_global_0:
     detectors:
     - gcp
-  transform/dcgm_5:
+  transform/dcgm_2:
     metric_statements:
       context: datapoint
       statements:
@@ -515,39 +522,6 @@ receivers:
   dcgm/dcgm:
     collection_interval: 60s
     endpoint: localhost:5555
-    metrics:
-      gpu.dcgm.clock.frequency:
-        enabled: false
-      gpu.dcgm.clock.throttle_duration.time:
-        enabled: false
-      gpu.dcgm.codec.decoder.utilization:
-        enabled: false
-      gpu.dcgm.codec.encoder.utilization:
-        enabled: false
-      gpu.dcgm.ecc_errors:
-        enabled: false
-      gpu.dcgm.energy_consumption:
-        enabled: false
-      gpu.dcgm.memory.bandwidth_utilization:
-        enabled: true
-      gpu.dcgm.memory.bytes_used:
-        enabled: false
-      gpu.dcgm.nvlink.io:
-        enabled: true
-      gpu.dcgm.pcie.io:
-        enabled: true
-      gpu.dcgm.pipe.utilization:
-        enabled: true
-      gpu.dcgm.sm.occupancy:
-        enabled: true
-      gpu.dcgm.sm.utilization:
-        enabled: true
-      gpu.dcgm.temperature:
-        enabled: false
-      gpu.dcgm.utilization:
-        enabled: false
-      gpu.dcgm.xid_errors:
-        enabled: false
   hostmetrics/hostmetrics:
     collection_interval: 60s
     scrapers:
@@ -562,6 +536,8 @@ receivers:
         mute_process_exe_error: true
         mute_process_name_error: true
       processes: {}
+  nvml/hostmetrics_1:
+    collection_interval: 60s
   prometheus/fluentbit:
     config:
       scrape_configs:
@@ -586,12 +562,9 @@ service:
       - googlecloud/otel
       processors:
       - metricstransform/dcgm_0
-      - cumulativetodelta/dcgm_1
-      - deltatorate/dcgm_2
-      - metricstransform/dcgm_3
-      - metricstransform/dcgm_4
-      - transform/dcgm_5
-      - modifyscope/dcgm_6
+      - metricstransform/dcgm_1
+      - transform/dcgm_2
+      - modifyscope/dcgm_3
       - resourcedetection/_global_0
       receivers:
       - dcgm/dcgm
@@ -606,6 +579,15 @@ service:
       - resourcedetection/_global_0
       receivers:
       - hostmetrics/hostmetrics
+    metrics/default__pipeline_hostmetrics_1:
+      exporters:
+      - googlecloud
+      processors:
+      - metricstransform/hostmetrics_1_0
+      - filter/default__pipeline_hostmetrics_1_0
+      - resourcedetection/_global_0
+      receivers:
+      - nvml/hostmetrics_1
     metrics/fluentbit:
       exporters:
       - googlecloud
