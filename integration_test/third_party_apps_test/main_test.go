@@ -901,7 +901,7 @@ var gpuModels = map[string]accelerator{
 }
 
 const (
-	SAPHANAImageSpec = "stackdriver-test-143416:sles-15-sp4-sap-saphana"
+	SAPHANAImageSpec = "stackdriver-test-143416:sles-15-sp6-sap-saphana"
 	SAPHANAApp       = "saphana"
 
 	OracleDBApp  = "oracledb"
