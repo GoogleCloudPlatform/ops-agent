@@ -92,6 +92,29 @@ func CastToSum(metrics ...string) Component {
 	}
 }
 
+// CumulativeToDelta returns a Component that converts each cumulative metric to delta.
+func CumulativeToDelta(metrics ...string) Component {
+	return Component{
+		Type: "cumulativetodelta",
+		Config: map[string]interface{}{
+			"include": map[string]interface{}{
+				"metrics": metrics,
+				"match_type": "strict",
+			},
+		},
+	}
+}
+
+// DeltaToRate returns a Component that converts each delta metric to a gauge rate.
+func DeltaToRate(metrics ...string) Component {
+	return Component{
+		Type: "deltatorate",
+		Config: map[string]interface{}{
+			"metrics": metrics,
+		},
+	}
+}
+
 // AddPrefix returns a config snippet that adds a domain prefix to all metrics.
 func AddPrefix(prefix string, operations ...map[string]interface{}) map[string]interface{} {
 	return RegexpRename(

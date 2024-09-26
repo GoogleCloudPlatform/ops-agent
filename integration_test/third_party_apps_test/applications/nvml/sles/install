@@ -2,10 +2,10 @@ set -e
 
 sudo zypper --non-interactive install -y kernel-default-devel=$(uname -r | sed 's/\-default//') pciutils gcc make wget
 
-# Install CUDA and driver together, since the `exercise` script needs to run a 
+# Install CUDA and driver together, since the `exercise` script needs to run a
 # CUDA sample app to generating GPU process metrics
 # Prefer to install from the package manager since it is normally faster and has
-# less errors on installation; fallback to the runfile method if the package 
+# less errors on installation; fallback to the runfile method if the package
 # manager's package is not working or not compitible with the GPU model
 DISTRIBUTION=$(. /etc/os-release;echo $ID$VERSION_ID | sed -e 's/\.[0-9]//')
 echo "Installing latest version of NVIDIA CUDA and driver"

@@ -36,6 +36,10 @@ targets:
           - rhel-sap-cloud:rhel-8-6-sap-ha
           - rhel-sap-cloud:rhel-8-8-sap-ha
           - rocky-linux-cloud:rocky-linux-8-optimized-gcp
+      aarch64:
+        test_distros:
+          representative:
+          - rocky-linux-cloud:rocky-linux-8-optimized-gcp-arm64
   focal:
     package_extension:
       deb
