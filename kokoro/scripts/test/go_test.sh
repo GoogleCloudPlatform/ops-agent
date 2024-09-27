@@ -100,6 +100,8 @@ function set_image_specs() {
   export IMAGE_SPECS
 }
 
+track_target_and_arch
+
 # Note: if we ever need to change regions, we will need to set up a new
 # Cloud Router and Cloud NAT gateway for that region. This is because
 # we use --no-address on Kokoro, because of b/169084857.

@@ -66,3 +66,9 @@ function track_flakiness()
   export_to_sponge_config "ng3_test_type" "INTEGRATION"
   export_to_sponge_config "ng3_sponge_url" "https://fusion2.corp.google.com/invocations/${KOKORO_BUILD_ID}"
 }
+
+function track_target_and_arch()
+{
+  export_to_sponge_config "target" "${target}"
+  export_to_sponge_config "arch" "${arch}"
+}
