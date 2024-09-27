@@ -35,7 +35,7 @@ platforms_to_skip:
   # Skip non-sql images.
   - windows-cloud:windows-2016-core
   - windows-cloud:windows-2022
-supported_app_version: ["11.x", "12.x", "13.x", "14.x", "15.x"]
+supported_app_version: ["11.x", "12.x", "13.x", "14.x", "15.x", "16.x"]
 expected_metrics:
   # v2 metrics
   - type: workload.googleapis.com/sqlserver.user.connection.count
