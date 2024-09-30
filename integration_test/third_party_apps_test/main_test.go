@@ -890,7 +890,7 @@ var gpuModels = map[string]accelerator{
 		model:         "l4",
 		fullName:      "nvidia-l4",
 		machineType:   "g2-standard-4",
-		availableZone: "us-central1-a",
+		availableZone: "us-east1-d",
 	},
 	"h100": {
 		model:         "h100",
@@ -901,7 +901,7 @@ var gpuModels = map[string]accelerator{
 }
 
 const (
-	SAPHANAImageSpec = "stackdriver-test-143416:sles-15-sp4-sap-saphana"
+	SAPHANAImageSpec = "stackdriver-test-143416:sles-15-sp6-sap-saphana"
 	SAPHANAApp       = "saphana"
 
 	OracleDBApp  = "oracledb"

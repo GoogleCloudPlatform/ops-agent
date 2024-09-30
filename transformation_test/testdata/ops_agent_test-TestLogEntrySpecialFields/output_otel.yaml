@@ -1,22 +1,22 @@
 - collector_errors:
-  - caller: exporterhelper/common.go:312
+  - caller: internal/base_exporter.go:140
     error: "could not process attribute gcp.source_location: json: cannot unmarshal string into Go struct field LogEntrySourceLocation.line of type int64"
     level: error
     msg: Exporting failed. Rejecting data. Try enabling sending_queue to survive temporary failures.
     rejected_items: 1.0
     stacktrace: |-
-      go.opentelemetry.io/collector/exporter/exporterhelper.(*baseExporter).send
-      	go.opentelemetry.io/collector/exporter@v0.110.0/exporterhelper/common.go:312
+      go.opentelemetry.io/collector/exporter/exporterhelper/internal.(*BaseExporter).Send
+      	go.opentelemetry.io/collector/exporter@v0.110.0/exporterhelper/internal/base_exporter.go:140
       go.opentelemetry.io/collector/exporter/exporterhelper.NewLogsRequestExporter.func1
-      	go.opentelemetry.io/collector/exporter@v0.110.0/exporterhelper/logs.go:134
+      	go.opentelemetry.io/collector/exporter@v0.110.0/exporterhelper/logs.go:136
       go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
       	go.opentelemetry.io/collector/consumer@v0.110.0/logs.go:26
       go.opentelemetry.io/collector/processor/processorhelper.NewLogsProcessor.func1
-      	go.opentelemetry.io/collector/processor@v0.110.0/processorhelper/logs.go:67
+      	go.opentelemetry.io/collector/processor@v0.110.0/processorhelper/logs.go:69
       go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
       	go.opentelemetry.io/collector/consumer@v0.110.0/logs.go:26
       go.opentelemetry.io/collector/processor/processorhelper.NewLogsProcessor.func1
-      	go.opentelemetry.io/collector/processor@v0.110.0/processorhelper/logs.go:67
+      	go.opentelemetry.io/collector/processor@v0.110.0/processorhelper/logs.go:69
       go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
       	go.opentelemetry.io/collector/consumer@v0.110.0/logs.go:26
       go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
