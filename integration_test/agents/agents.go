@@ -738,10 +738,10 @@ func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, locati
 	}
 
 	preservedEnvironment := map[string]string{
-		"REPO_SUFFIX":              location.repoSuffix,
-		"REPO_CODENAME":            location.repoCodename,
-		"ARTIFACT_REGISTRY_PROJECT":             location.artifactRegistryProject,
-		"ARTIFACT_REGISTRY_REGION": location.artifactRegistryRegion,
+		"REPO_SUFFIX":               location.repoSuffix,
+		"REPO_CODENAME":             location.repoCodename,
+		"ARTIFACT_REGISTRY_PROJECT": location.artifactRegistryProject,
+		"ARTIFACT_REGISTRY_REGION":  location.artifactRegistryRegion,
 	}
 
 	if gce.IsWindows(vm.ImageSpec) {
@@ -910,7 +910,7 @@ func InstallPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, 
 	// 1. install stable package from Rapture
 	// 2. install just-built package from GCS
 	// Nor do I know why apt considers that sequence to be a downgrade.
-	if _, err := gce.RunRemotely(ctx, logger, vm, "sudo apt install --allow-downgrades --yes --verbose-versions /tmp/agentUpload/*"); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "sudo apt-get install --allow-downgrades --yes --verbose-versions /tmp/agentUpload/*"); err != nil {
 		return fmt.Errorf("error installing agent from .deb file: %v", err)
 	}
 	return nil
