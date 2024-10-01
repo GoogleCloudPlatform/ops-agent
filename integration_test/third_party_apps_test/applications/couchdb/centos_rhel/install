@@ -28,7 +28,10 @@ EOF
     ;;
 esac
 
-sudo yum install -y couchdb
+# TODO(b/370026125): the logging receiver doesn't work on RPM-based
+# distros without manually configuring couchdb to log to a file.
+# This took effect in 3.4.0, so pin to 3.3.3 for the tests.
+sudo yum install -y couchdb-3.3.3
 
 cat << EOF > local.ini
 [couchdb]
