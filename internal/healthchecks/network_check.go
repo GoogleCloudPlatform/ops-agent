@@ -48,16 +48,18 @@ var (
 			successMessage:   "Request to the Monitoring API was successful.",
 			healthCheckError: MonApiConnErr,
 		},
-		// TODO(b/321220138): restore this once there's a more reliable endpoint.
-		// {
-		// 	name:             "Packages API",
-		// 	url:              "https://packages.cloud.google.com",
-		// 	successMessage:   "Request to packages.cloud.google.com was successful.",
-		// 	healthCheckError: PacApiConnErr,
-		// },
+		{
+			name: "Packages API",
+			// We don't really care that the thing being fetched is an RPM key, just
+			// that we *can* fetch it at all, regardless of what distro we're running
+			// under.
+			url:              "https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg",
+			successMessage:   "Request to packages.cloud.google.com was successful.",
+			healthCheckError: PacApiConnErr,
+		},
 		{
 			name:             "dl.google.com",
-			url:              "https://dl.google.com",
+			url:              "https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh",
 			successMessage:   "Request to dl.google.com was successful.",
 			healthCheckError: DLApiConnErr,
 		},
