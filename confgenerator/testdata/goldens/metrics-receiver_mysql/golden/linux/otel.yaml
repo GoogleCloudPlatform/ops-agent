@@ -540,7 +540,7 @@ receivers:
         data_type: sum
         description: The number of seconds that the replica must lag the source.
         metric_name: mysql.replica.sql_delay
-        monotonic: "false"
+        monotonic: false
         static_attributes: {}
         unit: s
         value_column: SQL_Delay
@@ -549,7 +549,7 @@ receivers:
         data_type: sum
         description: This field is an indication of how late the replica is.
         metric_name: mysql.replica.time_behind_source
-        monotonic: "false"
+        monotonic: false
         static_attributes: {}
         unit: s
         value_column: Seconds_Behind_Master
@@ -560,7 +560,7 @@ receivers:
         data_type: sum
         description: The number of seconds that the replica must lag the source.
         metric_name: mysql.replica.sql_delay
-        monotonic: "false"
+        monotonic: false
         static_attributes: {}
         unit: s
         value_column: SQL_Delay
@@ -569,7 +569,7 @@ receivers:
         data_type: sum
         description: This field is an indication of how late the replica is.
         metric_name: mysql.replica.time_behind_source
-        monotonic: "false"
+        monotonic: false
         static_attributes: {}
         unit: s
         value_column: Seconds_Behind_Source
