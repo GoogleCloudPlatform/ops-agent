@@ -531,14 +531,17 @@ processors:
     - gcp
   transform/couchbase_3:
     metric_statements:
+    - context: metric
+      statements:
+      - convert_gauge_to_sum("cumulative", true) where name == "workload.googleapis.com/couchbase.bucket.error.oom.count"
+      - convert_gauge_to_sum("cumulative", true) where name == "workload.googleapis.com/couchbase.bucket.item.ejection.count"
+      - convert_gauge_to_sum("cumulative", true) where name == "workload.googleapis.com/couchbase.bucket.operation.count"
     - context: datapoint
       statements:
-      - convert_gauge_to_sum("cumulative", true) where metric.name == "workload.googleapis.com/couchbase.bucket.error.oom.count"
       - set(metric.description, "Number of out of memory errors.") where metric.name == "workload.googleapis.com/couchbase.bucket.error.oom.count"
       - set(metric.unit, "{errors}") where metric.name == "workload.googleapis.com/couchbase.bucket.error.oom.count"
       - set(metric.description, "Number of items that belong to the bucket.") where metric.name == "workload.googleapis.com/couchbase.bucket.item.count"
       - set(metric.unit, "{items}") where metric.name == "workload.googleapis.com/couchbase.bucket.item.count"
-      - convert_gauge_to_sum("cumulative", true) where metric.name == "workload.googleapis.com/couchbase.bucket.item.ejection.count"
       - set(metric.description, "Number of item value ejections from memory to disk.") where metric.name == "workload.googleapis.com/couchbase.bucket.item.ejection.count"
       - set(metric.unit, "{ejections}") where metric.name == "workload.googleapis.com/couchbase.bucket.item.ejection.count"
       - set(metric.description, "The memory usage at which items will be ejected.") where metric.name == "workload.googleapis.com/couchbase.bucket.memory.high_water_mark.limit"
@@ -547,7 +550,6 @@ processors:
       - set(metric.unit, "By") where metric.name == "workload.googleapis.com/couchbase.bucket.memory.low_water_mark.limit"
       - set(metric.description, "Usage of total memory available to the bucket.") where metric.name == "workload.googleapis.com/couchbase.bucket.memory.usage"
       - set(metric.unit, "By") where metric.name == "workload.googleapis.com/couchbase.bucket.memory.usage"
-      - convert_gauge_to_sum("cumulative", true) where metric.name == "workload.googleapis.com/couchbase.bucket.operation.count"
       - set(metric.description, "Number of operations on the bucket.") where metric.name == "workload.googleapis.com/couchbase.bucket.operation.count"
       - set(metric.unit, "{operations}") where metric.name == "workload.googleapis.com/couchbase.bucket.operation.count"
       - set(metric.description, "Number of non-resident vBuckets.") where metric.name == "workload.googleapis.com/couchbase.bucket.vbucket.count"
