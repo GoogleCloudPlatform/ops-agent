@@ -40,5 +40,25 @@ sudo chown couchdb:couchdb /opt/couchdb/etc/local.ini
 sudo chmod 0755 /opt/couchdb/etc/local.ini
 
 sudo systemctl enable couchdb
-
 sudo systemctl restart couchdb
+
+timeout 60s bash <<EOF
+wait_for_couchdb() {
+    until curl http://admin:otelp@localhost:5984 > /dev/null 2>&1
+    do
+        echo "Waiting for couchdb to start. . ."
+        sleep "1"
+    done
+}
+
+wait_for_couchdb
+
+sleep 5
+
+echo "couchdb started"
+EOF
+
+# https://docs.couchdb.org/en/stable/setup/single-node.html
+curl -X PUT http://admin:otelp@localhost:5984/_users
+curl -X PUT http://admin:otelp@localhost:5984/_replicator
+curl -X PUT http://admin:otelp@localhost:5984/_global_changes
