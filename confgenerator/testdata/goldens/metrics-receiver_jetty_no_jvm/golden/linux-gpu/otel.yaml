@@ -435,7 +435,8 @@ processors:
       operations:
       - action: aggregate_labels
         aggregation_type: sum
-        label_set: []
+        label_set:
+        - no_op_label
     - action: update
       include: otelcol_grpc_io_client_completed_rpcs
       new_name: agent/api_request_count

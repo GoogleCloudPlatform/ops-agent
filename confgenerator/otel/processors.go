@@ -458,6 +458,11 @@ func ScaleValue(factor float64) map[string]interface{} {
 
 // AggregateLabels removes all labels except those in the passed list, aggregating values using aggregationType.
 func AggregateLabels(aggregationType string, labels ...string) map[string]interface{} {
+	// Temporary fix until https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34430
+	// is resolved.
+	if len(labels) == 0 {
+		labels = append(labels, "no_op_label")
+	}
 	return map[string]interface{}{
 		"action":           "aggregate_labels",
 		"label_set":        labels,
