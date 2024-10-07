@@ -22,8 +22,6 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 )
 
 var (
@@ -35,6 +33,7 @@ var (
 	healthChecks = flag.Bool("healthchecks", false, "run health checks and exit")
 )
 
+/* bradleyhc (oct7): removed for Python Notebook purposes as it is not needed
 func runHealthChecks() {
 	logger := healthchecks.CreateHealthChecksLogger(*logsDir)
 
@@ -42,7 +41,7 @@ func runHealthChecks() {
 
 	healthCheckResults := healthchecks.HealthCheckRegistryFactory().RunAllHealthChecks(logger)
 	healthchecks.LogHealthCheckResults(healthCheckResults, defaultLogger)
-}
+}*/
 
 func main() {
 	flag.Parse()
@@ -64,7 +63,7 @@ func run() error {
 	// running.
 	log.Printf("Built-in config:\n%s", apps.BuiltInConfStructs["linux"])
 	log.Printf("Merged config:\n%s", uc)
-
+	/* bradleyhc (oct7): removed for Python Notebook purposes as it is not needed
 	if *service == "" {
 		runHealthChecks()
 		log.Println("Startup checks finished")
@@ -73,5 +72,6 @@ func run() error {
 			return nil
 		}
 	}
+	*/
 	return uc.GenerateFilesFromConfig(ctx, *service, *logsDir, *stateDir, *outDir)
 }
