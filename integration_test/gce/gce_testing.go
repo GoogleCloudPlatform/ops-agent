@@ -313,7 +313,7 @@ type VM struct {
 // SyslogLocation returns a filesystem path to the system log. This function
 // assumes the image spec is some kind of Linux.
 func SyslogLocation(imageSpec string) string {
-	if strings.Contains(imageSpec, "debian") || strings.Contains(imageSpec, "ubuntu") {
+	if IsDebianBased(imageSpec) {
 		return "/var/log/syslog"
 	}
 	return "/var/log/messages"
@@ -1345,7 +1345,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	if isRHEL7SAPHA(vm.ImageSpec) {
 		if _, err := RunRemotely(ctx,
 			logger, vm, `sudo yum -y --disablerepo=rhui-rhel*-7-* install yum-utils && sudo yum-config-manager --disable "rhui-rhel*-7-*"`); err != nil {
-			return nil, fmt.Errorf("disabling flaky repos failed : %w", err)
+			return nil, fmt.Errorf("disabling flaky repos failed: %w", err)
 		}
 	}
 
@@ -1354,6 +1354,14 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	if IsDLVMImage(vm.ImageSpec) {
 		if _, err := RunRemotely(ctx, logger, vm, "sudo service jupyter stop || true"); err != nil {
 			return nil, fmt.Errorf("attemptCreateInstance() failed to stop pre-installed jupyter service: %v", err)
+		}
+	}
+
+	// TODO(b/369656678): We see frequent errors like "Waiting for cache lock:
+	//   Could not get lock /var/lib/dpkg/lock-frontend", so add a generous timeout.
+	if IsDebianBased(vm.ImageSpec) {
+		if _, err := RunRemotely(ctx, logger, vm, "echo 'DPkg::Lock::Timeout=300' | sudo tee /etc/dpkg/dpkg.cfg.d/cache-lock-timeout.cfg"); err != nil {
+			return nil, fmt.Errorf("setting increased dpkg cache lock timeout failed: %w", err)
 		}
 	}
 
@@ -1392,6 +1400,10 @@ func IsARM(imageSpec string) bool {
 	// At the time of writing, all ARM images and image families on GCE
 	// contain "arm64" (and none contain "aarch" nor "arm" without the "64").
 	return strings.Contains(imageSpec, "arm64")
+}
+
+func IsDebianBased(imageSpec string) bool {
+	return strings.Contains(imageSpec, "debian") || strings.Contains(imageSpec, "ubuntu")
 }
 
 // CreateInstance launches a new VM instance based on the given options.

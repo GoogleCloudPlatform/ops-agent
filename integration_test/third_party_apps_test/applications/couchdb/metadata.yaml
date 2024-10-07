@@ -23,6 +23,35 @@ description: |-
   database metrics, such as how many are open and the number of operations. The
   integration collects general CouchDB and access logs and parses them into a JSON
   payload. The result includes fields for user, host, level, and message.
+configure_integration: |-
+  This integration does not require any additional configuration with
+  CouchDB versions prior to 3.4.0, or on Debian-based distributions.
+
+  As of version 3.4.0, CouchDB behaves differently on RPM-based
+  distributions (like RHEL or Rocky Linux). To make CouchDB work with
+  this logging receiver's default configuration on such systems, you must
+  configure Apache CouchDB to write to `/var/log/couchdb/couchdb.log`
+  instead of journald.
+
+  To write logs to `/var/log/couchdb/couchdb.log`, complete the
+  following steps:
+
+  1. Create the file `/opt/couchdb/etc/local.d/ops-agent-filelog.ini`.
+
+  1. Add the following lines to the file:
+
+     ```none
+     [log]
+     writer = file
+     file = /var/log/couchdb/couchdb.log
+     level = info
+     ```
+
+  1. Restart Apache CouchDB:
+
+     ```
+     sudo systemctl restart couchdb
+     ```
 minimum_supported_agent_version:
   metrics: 2.10.0
   logging: 2.11.0
@@ -32,6 +61,7 @@ platforms_to_skip:
   - suse-cloud:sles-12
   - suse-cloud:sles-15
   - suse-cloud:sles-15-arm64
+  - rocky-linux-cloud:rocky-linux-8-optimized-gcp-arm64
   - rocky-linux-cloud:rocky-linux-9
   - rocky-linux-cloud:rocky-linux-9-optimized-gcp
   - rocky-linux-cloud:rocky-linux-9-arm64

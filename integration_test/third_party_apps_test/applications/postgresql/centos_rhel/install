@@ -1,16 +1,17 @@
 set -e
 
 source /etc/os-release
+ARCH=$(uname -m)
 case "${VERSION_ID}" in
   7)
-    sudo yum -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+    sudo yum -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-"${ARCH}"/pgdg-redhat-repo-latest.noarch.rpm
     ;;
   8|8.*)
-    sudo yum -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+    sudo yum -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-"${ARCH}"/pgdg-redhat-repo-latest.noarch.rpm
     sudo yum -qy module disable postgresql
     ;;
   9|9.*)
-    sudo yum -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+    sudo yum -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-"${ARCH}"/pgdg-redhat-repo-latest.noarch.rpm
     ;;
   *)
     echo -n "unknown version"
