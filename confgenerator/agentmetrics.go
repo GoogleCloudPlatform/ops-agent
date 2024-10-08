@@ -54,8 +54,8 @@ func (r AgentSelfMetrics) MetricsSubmodulePipeline() otel.ReceiverPipeline {
 				"strict",
 				"otelcol_process_uptime",
 				"otelcol_process_memory_rss",
-				"otelcol_grpc_io_client_completed_rpcs",
-				"otelcol_googlecloudmonitoring_point_count",
+				"grpc_client_attempt_duration_count",
+				"googlecloudmonitoring_point_count",
 			),
 			otel.MetricsTransform(
 				otel.RenameMetric("otelcol_process_uptime", "agent/uptime",
@@ -69,7 +69,7 @@ func (r AgentSelfMetrics) MetricsSubmodulePipeline() otel.ReceiverPipeline {
 					// remove service.version label
 					otel.AggregateLabels("sum"),
 				),
-				otel.RenameMetric("otelcol_grpc_io_client_completed_rpcs", "agent/api_request_count",
+				otel.RenameMetric("grpc_client_attempt_duration_count", "agent/api_request_count",
 					// change data type from double -> int64
 					otel.ToggleScalarDataType,
 					// TODO: below is proposed new configuration for the metrics transform processor
@@ -81,7 +81,7 @@ func (r AgentSelfMetrics) MetricsSubmodulePipeline() otel.ReceiverPipeline {
 					// delete grpc_client_method dimension & service.version label, retaining only state
 					otel.AggregateLabels("sum", "state"),
 				),
-				otel.RenameMetric("otelcol_googlecloudmonitoring_point_count", "agent/monitoring/point_count",
+				otel.RenameMetric("googlecloudmonitoring_point_count", "agent/monitoring/point_count",
 					// change data type from double -> int64
 					otel.ToggleScalarDataType,
 					// Remove service.version label

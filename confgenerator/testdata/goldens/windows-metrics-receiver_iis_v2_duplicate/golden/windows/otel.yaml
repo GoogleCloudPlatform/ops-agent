@@ -65,8 +65,8 @@ processors:
         metric_names:
         - otelcol_process_uptime
         - otelcol_process_memory_rss
-        - otelcol_grpc_io_client_completed_rpcs
-        - otelcol_googlecloudmonitoring_point_count
+        - grpc_client_attempt_duration_count
+        - googlecloudmonitoring_point_count
   groupbyattrs/iis__v2_2: {}
   metricstransform/fluentbit_1:
     transforms:
@@ -484,7 +484,7 @@ processors:
         label_set:
         - no_op_label
     - action: update
-      include: otelcol_grpc_io_client_completed_rpcs
+      include: grpc_client_attempt_duration_count
       new_name: agent/api_request_count
       operations:
       - action: toggle_scalar_data_type
@@ -496,7 +496,7 @@ processors:
         label_set:
         - state
     - action: update
-      include: otelcol_googlecloudmonitoring_point_count
+      include: googlecloudmonitoring_point_count
       new_name: agent/monitoring/point_count
       operations:
       - action: toggle_scalar_data_type

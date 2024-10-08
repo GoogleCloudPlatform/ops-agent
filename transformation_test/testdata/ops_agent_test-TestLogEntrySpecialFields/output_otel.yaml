@@ -1,28 +1,30 @@
 - collector_errors:
-  - caller: internal/base_exporter.go:153
+  - caller: internal/base_exporter.go:143
     error: "could not process attribute gcp.source_location: json: cannot unmarshal string into Go struct field LogEntrySourceLocation.line of type int64"
     level: error
     msg: Exporting failed. Rejecting data. Try enabling sending_queue to survive temporary failures.
     rejected_items: 1.0
     stacktrace: |-
       go.opentelemetry.io/collector/exporter/exporterhelper/internal.(*BaseExporter).Send
-      	go.opentelemetry.io/collector/exporter@v0.111.0/exporterhelper/internal/base_exporter.go:153
+      	go.opentelemetry.io/collector/exporter@v0.111.1-0.20241008154146-ea48c09c31ae/exporterhelper/internal/base_exporter.go:143
       go.opentelemetry.io/collector/exporter/exporterhelper.NewLogsRequestExporter.func1
-      	go.opentelemetry.io/collector/exporter@v0.111.0/exporterhelper/logs.go:136
+      	go.opentelemetry.io/collector/exporter@v0.111.1-0.20241008154146-ea48c09c31ae/exporterhelper/logs.go:136
       go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
-      	go.opentelemetry.io/collector/consumer@v0.111.0/logs.go:26
-      go.opentelemetry.io/collector/processor/processorhelper.NewLogs.func1
-      	go.opentelemetry.io/collector/processor@v0.111.0/processorhelper/logs.go:65
-      go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
-      	go.opentelemetry.io/collector/consumer@v0.111.0/logs.go:26
-      go.opentelemetry.io/collector/processor/processorhelper.NewLogs.func1
-      	go.opentelemetry.io/collector/processor@v0.111.0/processorhelper/logs.go:65
-      go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
-      	go.opentelemetry.io/collector/consumer@v0.111.0/logs.go:26
-      go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
-      	go.opentelemetry.io/collector/consumer@v0.111.0/logs.go:26
+      	go.opentelemetry.io/collector/consumer@v0.111.1-0.20241008154146-ea48c09c31ae/logs.go:26
       go.opentelemetry.io/collector/internal/fanoutconsumer.(*logsConsumer).ConsumeLogs
-      	go.opentelemetry.io/collector@v0.111.0/internal/fanoutconsumer/logs.go:62
+      	go.opentelemetry.io/collector@v0.111.1-0.20241008154146-ea48c09c31ae/internal/fanoutconsumer/logs.go:62
+      go.opentelemetry.io/collector/processor/processorhelper.NewLogs.func1
+      	go.opentelemetry.io/collector/processor@v0.111.1-0.20241008154146-ea48c09c31ae/processorhelper/logs.go:66
+      go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
+      	go.opentelemetry.io/collector/consumer@v0.111.1-0.20241008154146-ea48c09c31ae/logs.go:26
+      go.opentelemetry.io/collector/processor/processorhelper.NewLogs.func1
+      	go.opentelemetry.io/collector/processor@v0.111.1-0.20241008154146-ea48c09c31ae/processorhelper/logs.go:66
+      go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
+      	go.opentelemetry.io/collector/consumer@v0.111.1-0.20241008154146-ea48c09c31ae/logs.go:26
+      go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
+      	go.opentelemetry.io/collector/consumer@v0.111.1-0.20241008154146-ea48c09c31ae/logs.go:26
+      go.opentelemetry.io/collector/internal/fanoutconsumer.(*logsConsumer).ConsumeLogs
+      	go.opentelemetry.io/collector@v0.111.1-0.20241008154146-ea48c09c31ae/internal/fanoutconsumer/logs.go:62
       github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry.(*logsConsumer).ConsumeLogs
       	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.111.0/consumerretry/logs.go:37
       github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.(*receiver).consumerLoop
