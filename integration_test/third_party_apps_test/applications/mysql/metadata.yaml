@@ -242,8 +242,7 @@ expected_logs:
         type: number
         description: 'The statement error number, or 0 if no error occurred'
         notes:
-          - &log_slow_extra_note
-            These fields are only provided if the `log_slow_extra` system variable is set to `'ON'`. This variable is available as of MySQL 8.0.14.
+          - &log_slow_extra_note These fields are only provided if the `log_slow_extra` system variable is set to `'ON'`. This variable is available as of MySQL 8.0.14.
       - name: jsonPayload.killed
         type: number
         description: 'If the statement was terminated, the error number indicating why, or 0 if the statement terminated normally'

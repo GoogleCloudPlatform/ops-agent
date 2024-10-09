@@ -282,8 +282,7 @@ expected_logs:
         type: number
         description: 'The number of merge passes that the sort algorithm has had to do'
         notes:
-          - &log_slow_verbosity_note
-            These fields are only provided if the `log_slow_verbosity` system variable contains `'query_plan'`.
+          - &log_slow_verbosity_note These fields are only provided if the `log_slow_verbosity` system variable contains `'query_plan'`.
       - name: jsonPayload.createdTmpTables
         type: number
         description: 'The number of internal temporary tables created by the server'
