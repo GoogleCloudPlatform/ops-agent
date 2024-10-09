@@ -1,4 +1,14 @@
 targets:
+  rockylinux8:
+    package_extension:
+      rpm
+    repo_name:
+      el8
+    architectures:
+      aarch64:
+        test_distros:
+          representative:
+          - rocky-linux-cloud:rocky-linux-8-optimized-gcp-arm64
   bookworm:
     package_extension:
       deb
