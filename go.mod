@@ -185,3 +185,9 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
+
+replace github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.48.2 => github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.48.3-0.20241010165122-5cd127bed904
+
+replace github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.24.2 => github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.24.3-0.20241010165122-5cd127bed904
+
+replace github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.48.2 => github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.48.3-0.20241010165122-5cd127bed904
