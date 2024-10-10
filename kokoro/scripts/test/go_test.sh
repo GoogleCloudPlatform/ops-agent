@@ -100,6 +100,9 @@ function set_image_specs() {
   export IMAGE_SPECS
 }
 
+export_to_sponge_config "TARGET" "${TARGET:-}"
+export_to_sponge_config "ARCH" "${ARCH:-}"
+
 # Note: if we ever need to change regions, we will need to set up a new
 # Cloud Router and Cloud NAT gateway for that region. This is because
 # we use --no-address on Kokoro, because of b/169084857.
