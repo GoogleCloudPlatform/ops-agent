@@ -68,8 +68,7 @@ expected_metrics:
         name: instrumentation_source
         value_regex: agent.googleapis.com/dcgm
     notes:
-      - &dcgm_profiling_note
-        Not available on GPU models P100 and P4.
+      - &dcgm_profiling_note Not available on GPU models P100 and P4.
     representative: true
   - type: workload.googleapis.com/dcgm.gpu.profiling.sm_occupancy
     value_type: DOUBLE
