@@ -80,9 +80,9 @@ Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/*.goo" -Destination "$env:KOKORO_
 # Copy the .pdb and .dll files from $env:KOKORO_ARTIFACTS_DIR/out/bin to $env:KOKORO_ARTIFACTS_DIR/result.
 # The .pdb and .dll files are saved so the team can use them in the event that we have to debug this Ops Agent build. 
 # They are not distributed to customers.
-Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/*.pdb" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
-Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/*.dll" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
-Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/*.exe" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
+Copy-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/*.pdb" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
+Copy-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/*.dll" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
+Copy-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/*.exe" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
 
 # If Kokoro is being triggered by Louhi, then Louhi needs to be able to
 # reconstruct the path where the artifacts are placed. Louhi does not have
@@ -100,7 +100,7 @@ if ($env:_LOUHI_TAG_NAME -ne $null) {
 
   Write-Host "Compressing start"
   # Required to atomically pass the files needed for signing
-  $filter = "${env:KOKORO_ARTIFACTS_DIR}\result\*.exe", "${env:KOKORO_ARTIFACTS_DIR}\result\*.dll"
+  $filter = "${env:KOKORO_ARTIFACTS_DIR}\out"
   Compress-Archive -Path $filter -DestinationPath "${env:KOKORO_ARTIFACTS_DIR}\result\unsigned.zip"
   if ($LastExitCode -ne 0) {
     Write-Host "Compression failed"
