@@ -421,12 +421,6 @@ processors:
   metricstransform/mysqlmetrics_1:
     transforms:
     - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: workload.googleapis.com/$${1}
-  metricstransform/mysqlmetrics_1_1:
-    transforms:
-    - action: update
       include: "^mysql\\.buffer_pool\\.(.*)$$"
       match_type: regexp
       new_name: mysql.buffer_pool_$${1}
@@ -496,14 +490,10 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  modifyscope/mysqlmetrics_1_2:
-    override_scope_name: agent.googleapis.com/mysql
-    override_scope_version: "1.0"
   modifyscope/mysqlmetrics_2:
     override_scope_name: agent.googleapis.com/mysql
     override_scope_version: "1.0"
   normalizesums/mysqlmetrics_0: {}
-  normalizesums/mysqlmetrics_1_0: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
@@ -528,7 +518,7 @@ receivers:
         mute_process_exe_error: true
         mute_process_name_error: true
       processes: {}
-  mysql/mysqlmetrics_1:
+  mysql/mysqlmetrics:
     collection_interval: 30s
     endpoint: /var/run/mysqld/mysqld.sock
     metrics:
@@ -545,9 +535,9 @@ receivers:
       mysql.prepared_statements:
         enabled: false
       mysql.replica.sql_delay:
-        enabled: false
+        enabled: true
       mysql.replica.time_behind_source:
-        enabled: false
+        enabled: true
       mysql.table.io.wait.count:
         enabled: false
       mysql.table.io.wait.time:
@@ -576,51 +566,6 @@ receivers:
         static_configs:
         - targets:
           - 0.0.0.0:20201
-  sqlquery/mysqlmetrics:
-    collection_interval: 30s
-    datasource: usr:pwd@unix(/var/run/mysqld/mysqld.sock)/?checkConnLiveness=false&maxAllowedPacket=0
-    driver: mysql
-    queries:
-    - metrics:
-      - attribute_columns: []
-        data_type: sum
-        description: The number of seconds that the replica must lag the source.
-        metric_name: mysql.replica.sql_delay
-        monotonic: false
-        static_attributes: {}
-        unit: s
-        value_column: SQL_Delay
-        value_type: int
-      - attribute_columns: []
-        data_type: sum
-        description: This field is an indication of how late the replica is.
-        metric_name: mysql.replica.time_behind_source
-        monotonic: false
-        static_attributes: {}
-        unit: s
-        value_column: Seconds_Behind_Master
-        value_type: int
-      sql: SHOW SLAVE STATUS
-    - metrics:
-      - attribute_columns: []
-        data_type: sum
-        description: The number of seconds that the replica must lag the source.
-        metric_name: mysql.replica.sql_delay
-        monotonic: false
-        static_attributes: {}
-        unit: s
-        value_column: SQL_Delay
-        value_type: int
-      - attribute_columns: []
-        data_type: sum
-        description: This field is an indication of how late the replica is.
-        metric_name: mysql.replica.time_behind_source
-        monotonic: false
-        static_attributes: {}
-        unit: s
-        value_column: Seconds_Behind_Source
-        value_type: int
-      sql: SHOW REPLICA STATUS
 service:
   pipelines:
     metrics/default__pipeline_hostmetrics:
@@ -661,17 +606,7 @@ service:
       - modifyscope/mysqlmetrics_2
       - resourcedetection/_global_0
       receivers:
-      - sqlquery/mysqlmetrics
-    metrics/mysqlpipeline_mysqlmetrics_1:
-      exporters:
-      - googlecloud/otel
-      processors:
-      - normalizesums/mysqlmetrics_1_0
-      - metricstransform/mysqlmetrics_1_1
-      - modifyscope/mysqlmetrics_1_2
-      - resourcedetection/_global_0
-      receivers:
-      - mysql/mysqlmetrics_1
+      - mysql/mysqlmetrics
     metrics/otel:
       exporters:
       - googlecloud
