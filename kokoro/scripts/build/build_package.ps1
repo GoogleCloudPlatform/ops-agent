@@ -131,13 +131,16 @@ if ($env:_LOUHI_TAG_NAME -ne $null) {
   Write-Host "signed zip pulled"
 
   Expand-Archive -Path "$env:KOKORO_ARTIFACTS_DIR/result/signed.zip" -DestinationPath "$env:KOKORO_ARTIFACTS_DIR/result/signed/"
+  Set-Location -Path "$env:KOKORO_ARTIFACTS_DIR/result/signed/"
 
   Write-Host "Installing goopack"
   go install github.com/google/googet/v2/goopack@latest;
 
-  New-Item out\bin -ItemType Directory
   Write-Host "Packing start"
   .\pkg\goo\build.ps1 -DestDir "$env:KOKORO_ARTIFACTS_DIR/result";
   Write-Host "Packing ended"
+  gsutil rm "${gcs_bucket}*.zip"
+  gsutil rm "${gcs_bucket}*.goo"
+  gsutil cp "$env:KOKORO_ARTIFACTS_DIR/result/*.goo"  "${gcs_bucket}"
 }
 
