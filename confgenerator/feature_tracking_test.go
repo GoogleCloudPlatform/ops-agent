@@ -858,7 +858,7 @@ func TestGolden(t *testing.T) {
 	s := strings.Split(bufStr, "\n")
 	sort.Strings(s)
 	// Add title after re-ordering
-	title := []string{"App,Field,Override,"}
+	title := []string{"App,Field,Override"}
 	s = append(title, s...)
 	// Add newline back
 	actual := fmt.Sprintf("%s\n", strings.Join(s, "\n"))

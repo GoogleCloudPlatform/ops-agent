@@ -1,4 +1,4 @@
-App,Field,Override,
+App,Field,Override
 *apps.AccessSystemLoggingReceiverTomcat,apps.LoggingProcessorTomcatAccess.confgenerator.ConfigComponent.Type,
 *apps.AccessSystemLoggingReceiverTomcat,confgenerator.LoggingReceiverFilesMixin.BufferInMemory,
 *apps.AccessSystemLoggingReceiverTomcat,confgenerator.LoggingReceiverFilesMixin.RecordLogFilePath,
