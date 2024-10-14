@@ -22,7 +22,7 @@
     timestamp: now
   partialSuccess: true
 - collector_errors:
-  - caller: ottl@v0.102.0/parser.go:273
+  - caller: ottl@v0.111.0/parser.go:292
     error: "parsing time \"unparsable time\" as \"2006-01-02T15:04\": cannot parse \"unparsable time\" as \"2006\""
     level: warn
     msg: failed to execute statement

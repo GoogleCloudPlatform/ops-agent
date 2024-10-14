@@ -202,6 +202,17 @@ func IsNotNil(a Value) Value {
 	return valuef(`%s != nil`, a)
 }
 
+// ExtractCountMetric creates a new metric based on the count value of a Histogram metric
+func ExtractCountMetric(monotonic bool, metricName string) Statements {
+	monotonicStr := "false"
+	if monotonic {
+		monotonicStr = "true"
+	}
+	return Statements{
+		statementf(`extract_count_metric(%s) where name == "%s"`, monotonicStr, metricName),
+	}
+}
+
 func (a LValue) SetToBool(b Value) Statements {
 	// https://github.com/fluent/fluent-bit/blob/fd402681ad0ca0427395b07bb8a37c7c1c846cca/src/flb_parser.c#L1261
 	// "true" = true, "false" = false, else error
