@@ -48,4 +48,4 @@ $file_filter | ForEach-Object {
 }
 
 gsutil rm "${GcsBucketUrl}*.goo"
-gsutil rm -r "${GcsBucketUrl}*"
+
