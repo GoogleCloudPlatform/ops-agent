@@ -26,6 +26,8 @@ $file_filter | ForEach-Object {
 # Sent to indicate all binaries have been sent to be signed
 New-Item ./UNSIGNED_READY.txt -type file
 
+gsutil cp ./UNSIGNED_READY.txt "${GcsBucketUrl}UNSIGNED_READY.txt"
+
 Write-Host "Sent all unsigned binaries"
 
 # Wait for binaries to be signed.
