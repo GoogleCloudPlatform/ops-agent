@@ -177,11 +177,14 @@ RUN go build -o bin/google-cloud-ops-agent-wrapper.exe ./cmd/agent_wrapper; `
     Copy-Item -Path bin/google-cloud-ops-agent-wrapper.exe -Destination /work/out/bin/;
 
 ###############################################################################
-# Packaging
+# Packaging & Signing
 ###############################################################################
+ARG GCS_BUCKET_URL
 
 WORKDIR /work
 
 COPY . /work
+
+RUN .\kokoro\scripts\build\signing\sign.ps1 -GcsBucketUrl $GCS_BUCKET_URL;
 
 RUN & .\pkg\goo\build.ps1 -DestDir /work/out;
