@@ -1,4 +1,4 @@
-param (
+Param (
   [parameter(HelpMessage="Enter a GCS URL that needs to end in a '/'")]
   [ValidatePattern("^$|^gs://.*/.*/$")]
   [string]$GcsBucketUrl
