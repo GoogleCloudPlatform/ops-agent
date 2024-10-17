@@ -3,7 +3,7 @@ Param (
   [ValidatePattern("^$|^gs://.*/.*/$")]
   [string]$GcsBucketUrl
 )
-if ([string]::IsNullOrEmpty($GcsBucketUrl)) { {
+if ([string]::IsNullOrEmpty($GcsBucketUrl)) {
  Write-Host ('No Signing Bucket URL, skipping signing')
  exit 0
 }
