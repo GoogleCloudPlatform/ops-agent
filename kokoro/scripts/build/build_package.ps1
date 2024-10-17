@@ -76,7 +76,7 @@ if ($env:_LOUHI_TAG_NAME -ne $null) {
 
 $cache_location="${artifact_registry}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:windows-${arch}${suffix}"
 Invoke-Program docker pull $cache_location
-Invoke-Program docker build --cache-from="${cache_location}" -t $tag -f './Dockerfile.windows' .
+Invoke-Program docker build --cache-from="${cache_location}" --build-arg GCS_BUCKET_URL=$gcs_bucket -t $tag -f './Dockerfile.windows' .
 Invoke-Program docker create --name $name $tag
 Invoke-Program docker cp "${name}:/work/out" $env:KOKORO_ARTIFACTS_DIR
 

@@ -187,8 +187,6 @@ COPY . /work
 
 COPY kokoro\scripts\build\signing\sign.ps1 /work/sign.ps1
 
-RUN tree
-
 RUN & \work\sign.ps1 -GcsBucketUrl $GCS_BUCKET_URL;
 
 RUN & .\pkg\goo\build.ps1 -DestDir /work/out;
