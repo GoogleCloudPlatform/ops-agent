@@ -4,7 +4,7 @@ Param (
   [string]$GcsBucketUrl
 )
 
-Write-Host 'sign ps1 ${GcsBucketUrl}'
+Write-Host "sign ps1 ${GcsBucketUrl}"
 if ([string]::IsNullOrEmpty($GcsBucketUrl)) {
  Write-Host ('No Signing Bucket URL, skipping signing')
  exit 0
