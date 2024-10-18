@@ -179,7 +179,6 @@ RUN go build -o bin/google-cloud-ops-agent-wrapper.exe ./cmd/agent_wrapper; `
 ###############################################################################
 # Packaging & Signing
 ###############################################################################
-ARG GCS_BUCKET_URL
 
 WORKDIR /work
 
@@ -187,10 +186,7 @@ COPY . /work
 
 COPY kokoro\scripts\build\signing\sign.ps1 /work/sign.ps1
 
-RUN echo $GCS_BUCKET_URL
-
-RUN Write-Host "dockerfile.window ${GCS_BUCKET_URL}"
-
-RUN & \work\sign.ps1 -GcsBucketUrl $GCS_BUCKET_URL;
+ARG GCS_BUCKET_URL
+RUN & \work\sign.ps1 -GcsBucketUrl "${GCS_BUCKET_URL}";
 
 RUN & .\pkg\goo\build.ps1 -DestDir /work/out;

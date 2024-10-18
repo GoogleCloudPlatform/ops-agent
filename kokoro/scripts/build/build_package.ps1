@@ -71,9 +71,7 @@ if ($env:_LOUHI_TAG_NAME -ne $null) {
   $target=$louhi_tag_components[3]
   $arch=$louhi_tag_components[4]
   $gcs_bucket="gs://${env:_STAGING_ARTIFACTS_PROJECT_ID}-ops-agent-releases/${ver}/${ref}/${target}/${arch}/"
-  Write-Host "gcs_bucket set"
 }
-Write-Host "tag_name: ${env:_LOUHI_TAG_NAME}"
 Write-Host "gcs_bucket: ${gcs_bucket}"
 
 $cache_location="${artifact_registry}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:windows-${arch}${suffix}"
