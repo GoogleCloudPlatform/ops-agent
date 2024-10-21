@@ -547,7 +547,7 @@ receivers:
         value_type: int
       - attribute_columns: []
         data_type: sum
-        description: This field is an indication of how “late” the replica is.
+        description: This field is an indication of how late the replica is.
         metric_name: mysql.replica.time_behind_source
         monotonic: "false"
         static_attributes: {}
@@ -555,6 +555,26 @@ receivers:
         value_column: Seconds_Behind_Master
         value_type: int
       sql: SHOW SLAVE STATUS
+    - metrics:
+      - attribute_columns: []
+        data_type: sum
+        description: The number of seconds that the replica must lag the source.
+        metric_name: mysql.replica.sql_delay
+        monotonic: "false"
+        static_attributes: {}
+        unit: s
+        value_column: SQL_Delay
+        value_type: int
+      - attribute_columns: []
+        data_type: sum
+        description: This field is an indication of how late the replica is.
+        metric_name: mysql.replica.time_behind_source
+        monotonic: "false"
+        static_attributes: {}
+        unit: s
+        value_column: Seconds_Behind_Source
+        value_type: int
+      sql: SHOW REPLICA STATUS
 service:
   pipelines:
     metrics/default__pipeline_hostmetrics:
