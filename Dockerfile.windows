@@ -184,6 +184,17 @@ WORKDIR /work
 
 COPY . /work
 
+RUN New-Item gcloud -type directory
+RUN New-Item tmp -type directory
+
+ADD https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-497.0.0-windows-x86_64-bundled-python.zip C:/python.zip
+RUN Expand-Archive -Path C:/python.zip -DestinationPath C:/work/tmp
+RUN $env:CLOUDSDK_CORE_DISABLE_PROMPTS='1'; Start-Process -FilePath C:\work\tmp\google-cloud-sdk\install.bat -ArgumentList '-q' -NoNewWindow -Wait;
+
+RUN setx /M PATH \"$Env:PATH;C:\work\tmp\google-cloud-sdk\bin\"
+RUN Remove-Item -LiteralPath "${env:APPDATA}\gcloud" -Force -Recurse
+RUN cmd.exe /c 'gcloud --version'
+
 COPY kokoro\scripts\build\signing\sign.ps1 /work/sign.ps1
 
 ARG GCS_BUCKET_URL
