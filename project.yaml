@@ -129,7 +129,6 @@ targets:
           representative:
           - suse-cloud:sles-15
           exhaustive:
-          - suse-sap-cloud:sles-15-sp2-sap
           - suse-sap-cloud:sles-15-sp6-sap
           - opensuse-cloud:opensuse-leap
           - opensuse-cloud=opensuse-leap-15-5-v20240516-x86-64
