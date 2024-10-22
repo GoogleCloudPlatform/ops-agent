@@ -65,8 +65,17 @@ processors:
         metric_names:
         - otelcol_process_uptime
         - otelcol_process_memory_rss
-        - otelcol_grpc_io_client_completed_rpcs
-        - otelcol_googlecloudmonitoring_point_count
+        - grpc_client_attempt_duration
+        - googlecloudmonitoring_point_count
+  filter/otel_2:
+    metrics:
+      include:
+        match_type: strict
+        metric_names:
+        - otelcol_process_uptime
+        - otelcol_process_memory_rss
+        - grpc_client_attempt_duration_count
+        - googlecloudmonitoring_point_count
   metricstransform/fluentbit_1:
     transforms:
     - action: update
@@ -445,7 +454,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/otel_1:
+  metricstransform/otel_3:
     transforms:
     - action: update
       include: otelcol_process_uptime
@@ -467,19 +476,18 @@ processors:
         aggregation_type: sum
         label_set: []
     - action: update
-      include: otelcol_grpc_io_client_completed_rpcs
+      include: grpc_client_attempt_duration_count
       new_name: agent/api_request_count
       operations:
-      - action: toggle_scalar_data_type
       - action: update_label
-        label: grpc_client_status
+        label: grpc_status
         new_label: state
       - action: aggregate_labels
         aggregation_type: sum
         label_set:
         - state
     - action: update
-      include: otelcol_googlecloudmonitoring_point_count
+      include: googlecloudmonitoring_point_count
       new_name: agent/monitoring/point_count
       operations:
       - action: toggle_scalar_data_type
@@ -504,7 +512,7 @@ processors:
   transform/log__source__id1_0:
     error_mode: ignore
     log_statements:
-      context: log
+    - context: log
       statements:
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
       - set(cache["__field_0"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
@@ -518,10 +526,16 @@ processors:
       - set(cache["value"], cache["__field_1"])
       - set(cache["value"], "log_source_id1") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+  transform/otel_1:
+    error_mode: ignore
+    metric_statements:
+    - context: metric
+      statements:
+      - extract_count_metric(true) where name == "grpc_client_attempt_duration"
   transform/windows__event__log_0:
     error_mode: ignore
     log_statements:
-      context: log
+    - context: log
       statements:
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
       - set(cache["__field_0"], body["channel"]) where (body != nil and body["channel"] != nil)
@@ -597,7 +611,7 @@ processors:
   transform/windows__event__log_1:
     error_mode: ignore
     log_statements:
-      context: log
+    - context: log
       statements:
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
       - set(cache["__field_0"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
@@ -614,7 +628,7 @@ processors:
   transform/windows__event__log_1_0:
     error_mode: ignore
     log_statements:
-      context: log
+    - context: log
       statements:
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
       - set(cache["__field_0"], body["channel"]) where (body != nil and body["channel"] != nil)
@@ -690,7 +704,7 @@ processors:
   transform/windows__event__log_1_1:
     error_mode: ignore
     log_statements:
-      context: log
+    - context: log
       statements:
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
       - set(cache["__field_0"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
@@ -707,7 +721,7 @@ processors:
   transform/windows__event__log_2_0:
     error_mode: ignore
     log_statements:
-      context: log
+    - context: log
       statements:
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
       - set(cache["__field_0"], body["channel"]) where (body != nil and body["channel"] != nil)
@@ -783,7 +797,7 @@ processors:
   transform/windows__event__log_2_1:
     error_mode: ignore
     log_statements:
-      context: log
+    - context: log
       statements:
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
       - set(cache["__field_0"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
@@ -972,7 +986,9 @@ service:
       - googlecloud
       processors:
       - filter/otel_0
-      - metricstransform/otel_1
+      - transform/otel_1
+      - filter/otel_2
+      - metricstransform/otel_3
       - resourcedetection/_global_0
       receivers:
       - prometheus/otel
