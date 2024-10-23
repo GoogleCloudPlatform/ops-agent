@@ -427,7 +427,7 @@ processors:
     - gcp
   transform/prometheus_0:
     metric_statements:
-      context: datapoint
+    - context: datapoint
       statements:
       - set(resource.attributes["location"], attributes["location"])
       - set(resource.attributes["cluster"], attributes["cluster"])
