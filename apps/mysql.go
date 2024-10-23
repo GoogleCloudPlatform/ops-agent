@@ -23,8 +23,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
-
-	"github.com/go-sql-driver/mysql"
 )
 
 type MetricsReceiverMySql struct {
@@ -57,35 +55,7 @@ func (r MetricsReceiverMySql) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 		r.Username = "root"
 	}
 
-	// MySQL replication metrics are implemented separate to the main metrics pipeline so that 5.7 and 8.0 are both supported
-	sqlReceiverDriverConfig := mysql.Config{
-		User:   r.Username,
-		Passwd: r.Password.SecretValue(),
-		Net:    transport,
-		Addr:   r.Endpoint,
-		// This defaults to true in the mysql receiver, but we need to set it explicitly here
-		AllowNativePasswords: true,
-	}
-
 	return []otel.ReceiverPipeline{
-		{
-			Receiver: otel.Component{
-				Type: "sqlquery",
-				Config: map[string]interface{}{
-					"collection_interval": r.CollectionIntervalString(),
-					"driver":              "mysql",
-					"datasource":          sqlReceiverDriverConfig.FormatDSN(),
-					"queries":             sqlReceiverQueriesConfig(mysqlLegacyReplicationQueries),
-				},
-			},
-			Processors: map[string][]otel.Component{"metrics": {
-				otel.NormalizeSums(),
-				otel.MetricsTransform(
-					otel.AddPrefix("workload.googleapis.com"),
-				),
-				otel.ModifyInstrumentationScope(r.Type(), "1.0"),
-			}},
-		},
 		{
 			Receiver: otel.Component{
 				Type: "mysql",
@@ -124,10 +94,10 @@ func (r MetricsReceiverMySql) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 							"enabled": false,
 						},
 						"mysql.replica.sql_delay": map[string]interface{}{
-							"enabled": false,
+							"enabled": true,
 						},
 						"mysql.replica.time_behind_source": map[string]interface{}{
-							"enabled": false,
+							"enabled": true,
 						},
 					},
 				},
@@ -154,36 +124,6 @@ func (r MetricsReceiverMySql) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 			}},
 		},
 	}, nil
-}
-
-var mysqlLegacyReplicationQueries = []sqlReceiverQuery{
-	{
-		query: `SHOW SLAVE STATUS`,
-		metrics: []sqlReceiverMetric{
-			{
-				metric_name:       "mysql.replica.sql_delay",
-				value_column:      "SQL_Delay",
-				unit:              "s",
-				description:       "The number of seconds that the replica must lag the source.",
-				data_type:         "sum",
-				monotonic:         "false",
-				value_type:        "int",
-				attribute_columns: []string{},
-				static_attributes: map[string]string{},
-			},
-			{
-				metric_name:       "mysql.replica.time_behind_source",
-				value_column:      "Seconds_Behind_Master",
-				unit:              "s",
-				description:       "This field is an indication of how “late” the replica is.",
-				data_type:         "sum",
-				monotonic:         "false",
-				value_type:        "int",
-				attribute_columns: []string{},
-				static_attributes: map[string]string{},
-			},
-		},
-	},
 }
 
 func init() {
