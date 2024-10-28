@@ -65,15 +65,11 @@ targets:
       x86_64:
         test_distros:
           representative:
-          - ubuntu-2410-oracular-amd64
-          exhaustive:
-          - ubuntu-minimal-2410-oracular-amd64
+          - ubuntu-os-cloud:ubuntu-2410-amd64
       aarch64:
         test_distros:
           representative:
-          - ubuntu-2410-oracular-arm64
-          exhaustive:
-          - ubuntu-minimal-2410-oracular-arm64
+          - ubuntu-os-cloud:ubuntu-2410-arm64
   jammy:
     package_extension:
       deb
