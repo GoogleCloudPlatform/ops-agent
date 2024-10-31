@@ -41,14 +41,21 @@ manifest as runtime errors that won't show up until tests are run.
     your new distro. For example, in
     [kokoro/config/build/presubmit/bullseye_x86_64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/build/presubmit/bullseye_x86_64.gcl)
     or [kokoro/config/build/presubmit/bullseye_aarch64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/build/presubmit/bullseye_aarch64.gcl),
-    replace `bullseye` with `$DISTRO_SHORT` and change `deb` to `rpm` if
-    needed. Then in
+
     [kokoro/config/test/ops_agent/presubmit/bullseye_x86_64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/ops_agent/presubmit/bullseye_x86_64.gcl)
     or [kokoro/config/test/ops_agent/presubmit/bullseye_aarch64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/ops_agent/presubmit/bullseye_aarch64.gcl),
-    replace `image_lists.bullseye_x86_64.presubmit` with
-    `$DISTRO_FAMILY` (in a single-element list, like `['suse-cloud:sles-15']`).
-    This will cause the bullseye Kokoro build to build and test your
-    distro instead.
+   
+    [kokoro/config/test/third_party_apps/presubmit/bullseye_x86_64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/third_party_apps/presubmit/bullseye_x86_64.gcl)
+    or [kokoro/config/test/third_party_apps/presubmit/bullseye_aarch64.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/third_party_apps/presubmit/bullseye_aarch64.gcl)
+
+    replace `bullseye` with `$DISTRO_SHORT` and change `deb` to `rpm` if
+    needed.
+
+    Example PR: https://github.com/GoogleCloudPlatform/ops-agent/pull/1705/files
+
+1. Include a entry for the new distro in [project.yaml](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/project.yaml).
+
+   Example PR: https://github.com/GoogleCloudPlatform/ops-agent/pull/1705/files#diff-d18ef7c38e4b3b4766026d7a2334c5e47e635d0a62638653186c2faabb105a46
 
 1.  Make a PR at this point if you haven't already. GitHub will kick off
     unit tests and integration tests for your PR. **Ignore any
