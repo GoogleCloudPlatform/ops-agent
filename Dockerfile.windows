@@ -197,7 +197,9 @@ RUN cmd.exe /c 'gcloud --version'
 
 COPY kokoro\scripts\build\signing\sign.ps1 /work/sign.ps1
 
-ARG GCS_BUCKET_URL
-RUN & \work\sign.ps1 -GcsBucketUrl $env:GCS_BUCKET_URL;
+ENTRYPOINT ["powershell.exe"]
+CMD ["./sign.ps1"]
 
-RUN & .\pkg\goo\build.ps1 -DestDir /work/out;
+# RUN & \work\sign.ps1 -GcsBucketUrl $env:GCS_BUCKET_URL;
+
+# RUN & .\pkg\goo\build.ps1 -DestDir /work/out;
