@@ -33,10 +33,22 @@ minimum_supported_agent_version:
 supported_operating_systems: linux
 platforms_to_skip:
   # MySQL is not currently supported on various distros.
+  - ml-images:common-gpu-debian-11-py310
+  - debian-cloud:debian-11
   - debian-cloud:debian-12
   - debian-cloud:debian-12-arm64
+  - rocky-linux-cloud:rocky-linux-8
+  - rocky-linux-cloud:rocky-linux-9
+  - rocky-linux-cloud:rocky-linux-9-arm64
+  - ubuntu-os-cloud:ubuntu-2004-lts
+  - ubuntu-os-cloud:ubuntu-2004-lts-arm64
+  - ubuntu-os-cloud:ubuntu-2204-lts
+  - ubuntu-os-cloud:ubuntu-2204-lts-arm64
+  - ubuntu-os-cloud:ubuntu-2404-lts-amd64
+  - ubuntu-os-cloud:ubuntu-2404-lts-arm64
+  - suse-cloud:sles-12
   - suse-cloud:sles-15-arm64
-supported_app_version: ["5.7", "8.0"]
+supported_app_version: ["5.7", "8.0", "8.4"]
 expected_metrics:
   - type: workload.googleapis.com/mysql.buffer_pool_data_pages
     value_type: INT64
