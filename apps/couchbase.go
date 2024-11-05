@@ -211,7 +211,7 @@ var metrics = map[string]couchbaseMetric{
 }
 
 func (r MetricsReceiverCouchbase) transformMetrics() []otel.TransformQuery {
-	operations := []otel.TransformQuery{}
+	queries := []otel.TransformQuery{}
 
 	// persisting order so config generation is non-random
 	keys := []string{}
@@ -223,11 +223,11 @@ func (r MetricsReceiverCouchbase) transformMetrics() []otel.TransformQuery {
 	for _, metricName := range keys {
 		m := metrics[metricName]
 		if m.castToSum {
-			operations = append(operations, otel.ConvertGaugeToSum(metricName))
+			queries = append(queries, otel.ConvertGaugeToSum(metricName))
 		}
-		operations = append(operations, otel.SetDescription(metricName, m.description), otel.SetUnit(metricName, m.unit))
+		queries = append(queries, otel.SetDescription(metricName, m.description), otel.SetUnit(metricName, m.unit))
 	}
-	return operations
+	return queries
 }
 
 func init() {

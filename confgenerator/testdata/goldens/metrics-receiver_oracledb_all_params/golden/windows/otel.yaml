@@ -65,8 +65,17 @@ processors:
         metric_names:
         - otelcol_process_uptime
         - otelcol_process_memory_rss
-        - otelcol_grpc_io_client_completed_rpcs
-        - otelcol_googlecloudmonitoring_point_count
+        - grpc_client_attempt_duration
+        - googlecloudmonitoring_point_count
+  filter/otel_2:
+    metrics:
+      include:
+        match_type: strict
+        metric_names:
+        - otelcol_process_uptime
+        - otelcol_process_memory_rss
+        - grpc_client_attempt_duration_count
+        - googlecloudmonitoring_point_count
   metricstransform/fluentbit_1:
     transforms:
     - action: update
@@ -476,7 +485,7 @@ processors:
       - action: update_label
         label: WAIT_CLASS
         new_label: wait_class
-  metricstransform/otel_1:
+  metricstransform/otel_3:
     transforms:
     - action: update
       include: otelcol_process_uptime
@@ -498,19 +507,18 @@ processors:
         aggregation_type: sum
         label_set: []
     - action: update
-      include: otelcol_grpc_io_client_completed_rpcs
+      include: grpc_client_attempt_duration_count
       new_name: agent/api_request_count
       operations:
-      - action: toggle_scalar_data_type
       - action: update_label
-        label: grpc_client_status
+        label: grpc_status
         new_label: state
       - action: aggregate_labels
         aggregation_type: sum
         label_set:
         - state
     - action: update
-      include: otelcol_googlecloudmonitoring_point_count
+      include: googlecloudmonitoring_point_count
       new_name: agent/monitoring/point_count
       operations:
       - action: toggle_scalar_data_type
@@ -536,6 +544,12 @@ processors:
   resourcedetection/_global_0:
     detectors:
     - gcp
+  transform/otel_1:
+    error_mode: ignore
+    metric_statements:
+    - context: metric
+      statements:
+      - extract_count_metric(true) where name == "grpc_client_attempt_duration"
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
@@ -585,7 +599,7 @@ receivers:
         data_type: sum
         description: The size of tablespaces in the database.
         metric_name: oracle.tablespace.size
-        monotonic: "false"
+        monotonic: false
         static_attributes:
           db.system: oracle
           state: free
@@ -600,7 +614,7 @@ receivers:
         data_type: sum
         description: The size of tablespaces in the database.
         metric_name: oracle.tablespace.size
-        monotonic: "false"
+        monotonic: false
         static_attributes:
           db.system: oracle
           state: used
@@ -617,7 +631,7 @@ receivers:
         data_type: sum
         description: The number of tablespaces in the database.
         metric_name: oracle.tablespace.count
-        monotonic: "false"
+        monotonic: false
         static_attributes:
           db.system: oracle
         unit: "{tablespaces}"
@@ -631,7 +645,7 @@ receivers:
         data_type: sum
         description: The number of seconds since the last RMAN backup.
         metric_name: oracle.backup.latest
-        monotonic: "true"
+        monotonic: true
         static_attributes:
           db.system: oracle
         unit: s
@@ -646,7 +660,7 @@ receivers:
         data_type: sum
         description: The current number of processes.
         metric_name: oracle.process.count
-        monotonic: "false"
+        monotonic: false
         static_attributes:
           db.system: oracle
         unit: "{processes}"
@@ -659,7 +673,7 @@ receivers:
         data_type: sum
         description: The maximum number of processes allowed.
         metric_name: oracle.process.limit
-        monotonic: "false"
+        monotonic: false
         static_attributes:
           db.system: oracle
         unit: "{processes}"
@@ -672,7 +686,7 @@ receivers:
         data_type: sum
         description: The current number of sessions.
         metric_name: oracle.session.count
-        monotonic: "false"
+        monotonic: false
         static_attributes:
           db.system: oracle
         unit: "{sessions}"
@@ -685,7 +699,7 @@ receivers:
         data_type: sum
         description: The maximum number of sessions allowed.
         metric_name: oracle.session.limit
-        monotonic: "false"
+        monotonic: false
         static_attributes:
           db.system: oracle
         unit: "{sessions}"
@@ -716,7 +730,7 @@ receivers:
         data_type: sum
         description: The programmable global area memory allocated by process.
         metric_name: oracle.process.pga_memory.size
-        monotonic: "false"
+        monotonic: false
         static_attributes:
           db.system: oracle
           state: used
@@ -731,7 +745,7 @@ receivers:
         data_type: sum
         description: The programmable global area memory allocated by process.
         metric_name: oracle.process.pga_memory.size
-        monotonic: "false"
+        monotonic: false
         static_attributes:
           db.system: oracle
           state: free
@@ -748,7 +762,7 @@ receivers:
         data_type: sum
         description: The number of wait events experienced.
         metric_name: oracle.wait.count
-        monotonic: "true"
+        monotonic: true
         static_attributes:
           db.system: oracle
           type: foreground
@@ -763,7 +777,7 @@ receivers:
         data_type: sum
         description: The number of wait events experienced.
         metric_name: oracle.wait.count
-        monotonic: "true"
+        monotonic: true
         static_attributes:
           db.system: oracle
           type: background
@@ -778,7 +792,7 @@ receivers:
         data_type: sum
         description: The amount of time waited for wait events.
         metric_name: oracle.wait.time
-        monotonic: "true"
+        monotonic: true
         static_attributes:
           db.system: oracle
           type: foreground
@@ -793,7 +807,7 @@ receivers:
         data_type: sum
         description: The amount of time waited for wait events.
         metric_name: oracle.wait.time
-        monotonic: "true"
+        monotonic: true
         static_attributes:
           db.system: oracle
           type: background
@@ -808,7 +822,7 @@ receivers:
         data_type: sum
         description: The number of timeouts for wait events.
         metric_name: oracle.wait.timeouts
-        monotonic: "true"
+        monotonic: true
         static_attributes:
           db.system: oracle
           type: foreground
@@ -823,7 +837,7 @@ receivers:
         data_type: sum
         description: The number of timeouts for wait events.
         metric_name: oracle.wait.timeouts
-        monotonic: "true"
+        monotonic: true
         static_attributes:
           db.system: oracle
           type: background
@@ -893,7 +907,7 @@ receivers:
         data_type: sum
         description: The total number of cursors.
         metric_name: oracle.cursor.count
-        monotonic: "true"
+        monotonic: true
         static_attributes:
           db.system: oracle
         unit: "{cursors}"
@@ -906,7 +920,7 @@ receivers:
         data_type: sum
         description: The current number of cursors.
         metric_name: oracle.cursor.current
-        monotonic: "false"
+        monotonic: false
         static_attributes:
           db.system: oracle
         unit: "{cursors}"
@@ -919,7 +933,7 @@ receivers:
         data_type: sum
         description: The total number of logons.
         metric_name: oracle.logon.count
-        monotonic: "true"
+        monotonic: true
         static_attributes:
           db.system: oracle
         unit: "{logons}"
@@ -932,7 +946,7 @@ receivers:
         data_type: sum
         description: The current number of logons.
         metric_name: oracle.logon.current
-        monotonic: "false"
+        monotonic: false
         static_attributes:
           db.system: oracle
         unit: "{logons}"
@@ -945,7 +959,7 @@ receivers:
         data_type: sum
         description: The total number of sorts.
         metric_name: oracle.sort.count
-        monotonic: "true"
+        monotonic: true
         static_attributes:
           db.system: oracle
           type: memory
@@ -959,7 +973,7 @@ receivers:
         data_type: sum
         description: The total number of sorts.
         metric_name: oracle.sort.count
-        monotonic: "true"
+        monotonic: true
         static_attributes:
           db.system: oracle
           type: disk
@@ -973,7 +987,7 @@ receivers:
         data_type: sum
         description: The total number of rows sorted.
         metric_name: oracle.sort.row.count
-        monotonic: "true"
+        monotonic: true
         static_attributes:
           db.system: oracle
         unit: "{rows}"
@@ -986,7 +1000,7 @@ receivers:
         data_type: sum
         description: The number of physical disk operations.
         metric_name: oracle.disk.operation.count
-        monotonic: "true"
+        monotonic: true
         static_attributes:
           db.system: oracle
           direction: read
@@ -1000,7 +1014,7 @@ receivers:
         data_type: sum
         description: The number of bytes affected by physical disk operations.
         metric_name: oracle.disk.operation.size
-        monotonic: "true"
+        monotonic: true
         static_attributes:
           db.system: oracle
           direction: read
@@ -1014,7 +1028,7 @@ receivers:
         data_type: sum
         description: The number of physical disk operations.
         metric_name: oracle.disk.operation.count
-        monotonic: "true"
+        monotonic: true
         static_attributes:
           db.system: oracle
           direction: write
@@ -1028,7 +1042,7 @@ receivers:
         data_type: sum
         description: The number of bytes affected by physical disk operations.
         metric_name: oracle.disk.operation.size
-        monotonic: "true"
+        monotonic: true
         static_attributes:
           db.system: oracle
           direction: write
@@ -1042,7 +1056,7 @@ receivers:
         data_type: sum
         description: The total number of bytes communicated on the network.
         metric_name: oracle.network.data
-        monotonic: "true"
+        monotonic: true
         static_attributes:
           db.system: oracle
           direction: received
@@ -1057,7 +1071,7 @@ receivers:
         data_type: sum
         description: The total number of bytes communicated on the network.
         metric_name: oracle.network.data
-        monotonic: "true"
+        monotonic: true
         static_attributes:
           db.system: oracle
           direction: sent
@@ -1072,7 +1086,7 @@ receivers:
         data_type: sum
         description: The total number of bytes communicated on the network.
         metric_name: oracle.network.data
-        monotonic: "true"
+        monotonic: true
         static_attributes:
           db.system: oracle
           direction: received
@@ -1087,7 +1101,7 @@ receivers:
         data_type: sum
         description: The total number of bytes communicated on the network.
         metric_name: oracle.network.data
-        monotonic: "true"
+        monotonic: true
         static_attributes:
           db.system: oracle
           direction: sent
@@ -1102,7 +1116,7 @@ receivers:
         data_type: sum
         description: The total number of user calls such as login, parse, fetch, or execute.
         metric_name: oracle.user.calls
-        monotonic: "true"
+        monotonic: true
         static_attributes:
           db.system: oracle
         unit: "{calls}"
@@ -1115,7 +1129,7 @@ receivers:
         data_type: sum
         description: The total number of user transaction commits.
         metric_name: oracle.user.commits
-        monotonic: "true"
+        monotonic: true
         static_attributes:
           db.system: oracle
         unit: "{commits}"
@@ -1128,7 +1142,7 @@ receivers:
         data_type: sum
         description: The total number of times users manually issue the ROLLBACK statement or an error occurs during a user's transactions
         metric_name: oracle.user.rollbacks
-        monotonic: "true"
+        monotonic: true
         static_attributes:
           db.system: oracle
         unit: "{rollbacks}"
@@ -1257,7 +1271,9 @@ service:
       - googlecloud
       processors:
       - filter/otel_0
-      - metricstransform/otel_1
+      - transform/otel_1
+      - filter/otel_2
+      - metricstransform/otel_3
       - resourcedetection/_global_0
       receivers:
       - prometheus/otel
