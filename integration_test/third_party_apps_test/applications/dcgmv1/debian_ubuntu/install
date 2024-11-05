@@ -11,8 +11,8 @@ sudo apt install -y linux-headers-${KERNEL_VERSION} software-properties-common p
 # manager's package is not working or not compitible with the GPU model
 DISTRIBUTION=$(echo $ID$VERSION_ID | sed -e 's/\.//g')
 # Need to add the keyring for installing CUDA and DCGM
-wget --no-verbose https://developer.download.nvidia.com/compute/cuda/repos/${DISTRIBUTION}/x86_64/cuda-keyring_1.0-1_all.deb
-sudo dpkg -i cuda-keyring_1.0-1_all.deb
+wget --no-verbose https://developer.download.nvidia.com/compute/cuda/repos/${DISTRIBUTION}/x86_64/cuda-keyring_1.1-1_all.deb
+sudo dpkg -i cuda-keyring_1.1-1_all.deb
 echo "Installing latest version of NVIDIA CUDA and driver"
 if [[ $ID == debian ]]; then
     sudo add-apt-repository contrib
@@ -34,7 +34,7 @@ case $DEVICE_CODE in
         ;;
     *)
         # For newer GPUs, install the latest version
-        sudo apt -y install cuda
+        sudo apt -y install cuda-12-6
         ;;
 esac
 

@@ -51,7 +51,7 @@ setup_repo() {
 install_cuda_from_package_manager() {
     setup_repo
     install_driver_package
-    sudo yum -y install cuda
+    sudo yum -y install cuda-toolkit cuda-demo*
     verify_driver
 }
 
