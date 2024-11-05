@@ -18,7 +18,7 @@ install_cuda_from_runfile() {
     # Remove existing installation before using the runfile
     remove_cuda_package
     remove_driver_package
-    sudo yum install -y kernel-devel-$(uname -r) pciutils gcc make wget yum-utils 
+    sudo yum install -y kernel-devel-$(uname -r) pciutils gcc make wget yum-utils
 
     # Installing latest version of NVIDIA CUDA and driver
     # Data Center/Tesla drivers and CUDA are released on different schedules;
@@ -51,6 +51,7 @@ setup_repo() {
 install_cuda_from_package_manager() {
     setup_repo
     install_driver_package
+    # TODO(b/377558109): remove the temporary fix once the repo is updated
     sudo yum -y install cuda-toolkit cuda-demo*
     verify_driver
 }

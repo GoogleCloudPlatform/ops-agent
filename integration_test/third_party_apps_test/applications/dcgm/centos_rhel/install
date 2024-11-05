@@ -51,6 +51,7 @@ setup_repo() {
 install_cuda_from_package_manager() {
     setup_repo
     install_driver_package
+    # TODO(b/377558109): remove the temporary fix once the repo is updated
     sudo yum -y install cuda-toolkit cuda-demo* 
     verify_driver
 }
