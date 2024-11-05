@@ -18,7 +18,7 @@ install_cuda_from_runfile() {
     # Remove existing installation before using the runfile
     remove_cuda_package
     remove_driver_package
-    sudo yum install -y kernel-devel-$(uname -r) pciutils gcc make wget yum-utils
+    sudo yum install -y kernel-devel-$(uname -r) pciutils gcc make wget yum-utils git
 
     # Installing latest version of NVIDIA CUDA and driver
     # Data Center/Tesla drivers and CUDA are released on different schedules;
@@ -42,7 +42,7 @@ install_cuda_from_runfile() {
 setup_repo() {
     # Enable EPEL (Extra Packages for Enterprise Linux) for packages such as DKMS
     # Ref: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/#prepare-rhel-9-rocky-9
-    sudo yum install -y yum-utils epel-release
+    sudo yum install -y yum-utils epel-release git
     sudo yum-config-manager \
         --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel$VERSION_ID/x86_64/cuda-rhel$VERSION_ID.repo
     sudo yum clean all
@@ -51,7 +51,7 @@ setup_repo() {
 install_cuda_from_package_manager() {
     setup_repo
     install_driver_package
-    sudo yum -y install cuda
+    sudo yum -y install cuda-toolkit cuda-demo*
     verify_driver
 }
 
