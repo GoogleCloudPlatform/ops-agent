@@ -1,6 +1,6 @@
 set -e
 
-install_previous() {
+install_5() {
     # download, extract, install, and start aerospike community edition
     wget -O aerospike.tgz "https://download.aerospike.com/artifacts/aerospike-server-community/5.7.0.23/aerospike-server-community-5.7.0.23-$os_version.tgz"
     tar -xvf aerospike.tgz
@@ -11,11 +11,18 @@ install_previous() {
     (cd aerospike-tools-7.1.1-*/ && sudo ./asinstall)
 }
 
-install_current() {
+install_6() {
     # download, extract, install, and start aerospike community edition
     wget -O aerospike.tgz "https://download.aerospike.com/artifacts/aerospike-server-community/6.3.0.2/aerospike-server-community_6.3.0.2_tools-8.3.0_${os_version}_$(uname -m).tgz"
     tar -xvf aerospike.tgz
     (cd aerospike-server-community_6.3.0.2*/ && sudo ./asinstall)
+}
+
+install_7() {
+    # download, extract, install, and start aerospike community edition
+    wget -O aerospike.tgz "https://download.aerospike.com/artifacts/aerospike-server-community/7.2.0/aerospike-server-community_7.2.0.3_tools-11.1.0_${os_version}_$(uname -m).tgz"
+    tar -xvf aerospike.tgz
+    (cd aerospike-server-community_7.2.0.3*/ && sudo ./asinstall)
 }
 
 sudo apt-get update
@@ -38,6 +45,7 @@ case $ID in
             18*) ubuntu_version="ubuntu18.04";;
             20*) ubuntu_version="ubuntu20.04";;
             22*) ubuntu_version="ubuntu22.04";;
+            24*) ubuntu_version="ubuntu24.04";;
             *) echo "Found version: $VERSION_ID, supported versions are 18/20/22"
         esac
         os_version=$ubuntu_version
@@ -46,9 +54,11 @@ esac
 
 case $os_version in
     debian9|ubuntu18.04)
-        install_previous;;
+        install_5;;
     debian10|debian11|ubuntu20.04|ubuntu22.04)
-        install_current;;
+        install_6;;
+    ubuntu24.04)
+        install_7;;
     *)  echo "Found os_version: $os_version, not in supported list";;
 esac
 
