@@ -87,36 +87,14 @@ try_install() {
     return 1
 }
 
-handle_rhel7() {
-    install_driver_package() {
-        # Ref: https://docs.nvidia.com/datacenter/tesla/tesla-installation-notes/index.html#centos7
-        # For Centos - we can expect the repo to have the matching version of
-        # kernel packages, and the driver package needs those kernel packages
-        sudo yum install -y kernel-devel-$(uname -r) kernel-headers-$(uname -r)
-        sudo yum -y install nvidia-driver-latest-dkms
-    }
-
-    remove_driver_package() {
-        # Ref: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#removing-cuda-toolkit-and-driver
-        sudo yum -y remove "*nvidia*"
-    }
+install_driver_package() {
+    # Ref: https://developer.nvidia.com/cuda-12-2-2-download-archive?target_os=Linux&target_arch=x86_64&Distribution=RHEL&target_version=8&target_type=rpm_network
+    sudo yum -y module install nvidia-driver
 }
 
-handle_common() {
-    install_driver_package() {
-        # Ref: https://developer.nvidia.com/cuda-12-2-2-download-archive?target_os=Linux&target_arch=x86_64&Distribution=RHEL&target_version=8&target_type=rpm_network
-        sudo yum -y module install nvidia-driver
-    }
-
-    remove_driver_package() {
-        # Ref: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#removing-cuda-toolkit-and-driver
-        sudo yum -y module remove --all nvidia-driver
-    }
-
+remove_driver_package() {
+    # Ref: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#removing-cuda-toolkit-and-driver
+    sudo yum -y module remove --all nvidia-driver
 }
 
-case "$MAJOR_VERSION_ID" in
-    7) handle_rhel7;;
-    *) handle_common;;
-esac
 try_install install_cuda_from_package_manager install_cuda_from_runfile
