@@ -1360,7 +1360,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	// TODO(b/369656678): We see frequent errors like "Waiting for cache lock:
 	//   Could not get lock /var/lib/dpkg/lock-frontend", so add a generous timeout.
 	if IsDebianBased(vm.ImageSpec) {
-		if _, err := RunRemotely(ctx, logger, vm, "echo 'DPkg::Lock::Timeout=300' | sudo tee /etc/dpkg/dpkg.cfg.d/cache-lock-timeout.cfg"); err != nil {
+		if _, err := RunRemotely(ctx, logger, vm, "echo 'DPkg::Lock::Timeout=400' | sudo tee /etc/dpkg/dpkg.cfg.d/cache-lock-timeout.cfg"); err != nil {
 			return nil, fmt.Errorf("setting increased dpkg cache lock timeout failed: %w", err)
 		}
 	}
