@@ -7,6 +7,7 @@ sudo apt-get update
 sudo apt-get install -y varnish nginx curl
 sudo systemctl enable --now varnish
 sudo systemctl enable --now nginx
+sudo systemctl enable --now varnishncsa
 
 # point varnish to nginx on port 80
 sudo tee /etc/varnish/default.vcl > /dev/null <<-EOF
