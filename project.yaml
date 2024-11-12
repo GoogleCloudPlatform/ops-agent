@@ -1,4 +1,20 @@
 targets:
+  oracular:
+    package_extension:
+      deb
+    architectures:
+      x86_64:
+        test_distros:
+          representative:
+          - ubuntu-os-cloud:ubuntu-2410-amd64
+          exhaustive:
+          - ubuntu-os-cloud:ubuntu-minimal-2410-amd64
+      aarch64:
+        test_distros:
+          representative:
+          - ubuntu-os-cloud:ubuntu-2410-arm64
+          exhaustive:
+          - ubuntu-os-cloud:ubuntu-minimal-2410-arm64
   bookworm:
     package_extension:
       deb
