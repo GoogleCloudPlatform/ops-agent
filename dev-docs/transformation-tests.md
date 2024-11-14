@@ -27,7 +27,7 @@ The transformation tests take paths to Fluent Bit and otelopscol binaries to exe
 sh ./builds/fluent_bit.sh $(pwd)/dist
 SKIP_OTEL_JAVA=true sh ./builds/otel.sh $(pwd)/dist
 ```
-After running each script, you will have a `dist` folder that contains both agents within the full install directory. (Note that these instructions will not build OTel Java, if that is needed do not pass `SKIP_OTEL_JAVA`).
+After running each script, you will have a `dist` folder that contains both agents within the full install directory. (Note that these instructions will not build OTel Java; if that is needed, do not pass `SKIP_OTEL_JAVA`).
 
 The paths to each can passed into the test using environment variables or flags.
 ```bash
@@ -42,10 +42,10 @@ OTELOPSCOL=${PWD}/dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collec
 go test ./transformation_test
 ```
 
-If you have updated the Fluent Bit or otelopscol submodules and need to update the golden testdata, you can add the `-update` flag to the test.
+If you have updated the fluent-bit or otelopscol submodules and need to update the golden testdata, you can add the `-update` flag to the test.
 ```bash
 FLB=${PWD}/dist/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit \
 OTELOPSCOL=${PWD}/dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol \
 go test ./transformation_test -update
 ```
-(Note: the`-update` flag belongs to the test, not to `go test`. The flag must go after the specified package, not before.)
+(Note: the `-update` flag belongs to the test, not to `go test`. The flag must go after the specified package, not before.)
