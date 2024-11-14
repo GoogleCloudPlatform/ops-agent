@@ -1,0 +1,16 @@
+function setup_nfs_share {
+    NFS_SERVER_SERVICE_NAME=$1
+    NFS_SERVE_DIR=/mnt/nfssrv
+    NFS_MOUNT_DIR=/var/nfsmnt
+    sudo mkdir -p $NFS_SERVE_DIR
+    sudo chown nobody:nogroup $NFS_SERVE_DIR
+    sudo chmod 777 $NFS_SERVE_DIR
+    echo "$NFS_SERVE_DIR localhost(rw,sync,no_subtree_check)"
+    sudo exportfs -a
+    sudo systemctl restart $NFS_SERVER_SERVICE_NAME
+    sudo mkdir -p $NFS_MOUNT_DIR
+    sudo mount -t nfs localhost:$NFS_SERVE_DIR $NFS_MOUNT_DIR
+}
+
+sudo zypper install nfs-kernel-server
+setup_nfs_share nfs-kernel-server
