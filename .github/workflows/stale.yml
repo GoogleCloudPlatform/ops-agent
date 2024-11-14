@@ -1,0 +1,22 @@
+name: "Close stale pull requests"
+on:
+  schedule:
+    - cron: "0 3 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  stale:
+    permissions:
+      issues: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v9
+        with:
+          stale-pr-message: 'This PR was marked stale due to lack of activity. It will be closed in 14 days.'
+          close-pr-message: 'Closed as inactive. Feel free to reopen if this PR is still being worked on.'
+          stale-issue-message: 'This issue was marked stale due to lack of activity. It will be closed in 14 days.'
+          close-issue-message: 'Closed as inacive. Feel free to reopen if this issue is still relevant.'
+          days-before-close: 14

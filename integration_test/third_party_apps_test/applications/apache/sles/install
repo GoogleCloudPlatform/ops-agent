@@ -14,8 +14,21 @@ sudo zypper -n refresh
 
 sudo zypper -n install apache2
 
-(cd /etc/apache2/conf.d/ && sudo curl -O https://raw.githubusercontent.com/Stackdriver/stackdriver-agent-service-configs/master/etc/httpd/conf.d/status.conf)
+sudo mkdir -p /etc/apache2/conf.d/
+sudo tee /etc/apache2/conf.d/status.conf >/dev/null <<EOF
+ExtendedStatus on
+<VirtualHost 127.0.0.1:80>
+    <Location /server-status>
+        SetHandler server-status
+        Order deny,allow
+        Deny from all
+        Allow from 127.0.0.1
+    </Location>
+</VirtualHost>
+EOF
 sudo a2enmod mod_status
 sudo a2enmod mod_access_compat
 
 sudo service apache2 start
+sleep 2
+curl http://localhost:80/server-status?auto

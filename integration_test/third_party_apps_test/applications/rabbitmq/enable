@@ -11,8 +11,8 @@ metrics:
   receivers:
     rabbitmq:
       type: rabbitmq
-      username: otelu
-      password: otelp
+      username: usr
+      password: pwd
   service:
     pipelines:
       rabbitmq:

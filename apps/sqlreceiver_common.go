@@ -20,7 +20,7 @@ type sqlReceiverMetric struct {
 	unit              string
 	description       string
 	data_type         string
-	monotonic         string
+	monotonic         bool
 	value_type        string
 	attribute_columns []string
 	static_attributes map[string]string

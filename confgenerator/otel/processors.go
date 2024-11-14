@@ -92,6 +92,29 @@ func CastToSum(metrics ...string) Component {
 	}
 }
 
+// CumulativeToDelta returns a Component that converts each cumulative metric to delta.
+func CumulativeToDelta(metrics ...string) Component {
+	return Component{
+		Type: "cumulativetodelta",
+		Config: map[string]interface{}{
+			"include": map[string]interface{}{
+				"metrics":    metrics,
+				"match_type": "strict",
+			},
+		},
+	}
+}
+
+// DeltaToRate returns a Component that converts each delta metric to a gauge rate.
+func DeltaToRate(metrics ...string) Component {
+	return Component{
+		Type: "deltatorate",
+		Config: map[string]interface{}{
+			"metrics": metrics,
+		},
+	}
+}
+
 // AddPrefix returns a config snippet that adds a domain prefix to all metrics.
 func AddPrefix(prefix string, operations ...map[string]interface{}) map[string]interface{} {
 	return RegexpRename(
@@ -134,9 +157,11 @@ func Transform(statementType, context string, statements ottl.Statements) Compon
 		Type: "transform",
 		Config: map[string]any{
 			"error_mode": "ignore",
-			fmt.Sprintf("%s_statements", statementType): map[string]any{
-				"context":    context,
-				"statements": statements,
+			fmt.Sprintf("%s_statements", statementType): []map[string]any{
+				{
+					"context":    context,
+					"statements": statements,
+				},
 			},
 		},
 	}
@@ -161,73 +186,150 @@ func Filter(dataType, context string, expressions []ottl.Value) Component {
 
 // TransformationMetrics returns a transform processor object that contains all the queries passed into it.
 func TransformationMetrics(queries ...TransformQuery) Component {
-	queryStrings := []string{}
+	metricQueryStrings := []string{}
+	datapointQueryStrings := []string{}
 	for _, q := range queries {
-		queryStrings = append(queryStrings, string(q))
+		switch q.Context {
+		case Metric:
+			metricQueryStrings = append(metricQueryStrings, string(q.Statement))
+		default:
+			datapointQueryStrings = append(datapointQueryStrings, string(q.Statement))
+		}
+	}
+
+	// Only add metricStatement type if any queuries to go with it
+	metricStatements := []map[string]any{}
+	if len(metricQueryStrings) != 0 {
+		metricMetricStatement := map[string]any{
+			"context":    "metric",
+			"statements": metricQueryStrings,
+		}
+		metricStatements = append(metricStatements, metricMetricStatement)
+	}
+	if len(datapointQueryStrings) != 0 {
+		datapointMetricStatement := map[string]any{
+			"context":    "datapoint",
+			"statements": datapointQueryStrings,
+		}
+		metricStatements = append(metricStatements, datapointMetricStatement)
 	}
 	return Component{
 		Type: "transform",
-		Config: map[string]map[string]interface{}{
-			"metric_statements": {
-				"context":    "datapoint",
-				"statements": queryStrings,
-			},
+		Config: map[string]any{
+			"metric_statements": metricStatements,
 		},
 	}
 }
 
+// TransformQueryContext is a type wrapper for the context of a query expression within the transoform processor
+type TransformQueryContext string
+
+const (
+	Metric    TransformQueryContext = "metric"
+	Datapoint TransformQueryContext = "datapoint"
+)
+
 // TransformQuery is a type wrapper for query expressions supported by the transform
 // processor found here: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor
-type TransformQuery string
+type TransformQuery struct {
+	Context   TransformQueryContext
+	Statement string
+}
 
 // FlattenResourceAttribute returns an expression that brings down a resource attribute to a
 // metric attribute.
 func FlattenResourceAttribute(resourceAttribute, metricAttribute string) TransformQuery {
-	return TransformQuery(fmt.Sprintf(`set(attributes["%s"], resource.attributes["%s"])`, metricAttribute, resourceAttribute))
+	return TransformQuery{
+		Context:   Datapoint,
+		Statement: fmt.Sprintf(`set(attributes["%s"], resource.attributes["%s"])`, metricAttribute, resourceAttribute),
+	}
+}
+
+// GroupByAttribute returns an expression that makes a metric attribute into a resource attribute.
+func GroupByAttribute(attribute string) TransformQuery {
+	return TransformQuery{
+		Context:   Datapoint,
+		Statement: fmt.Sprintf(`set(resource.attributes["%s"], attributes["%s"])`, attribute, attribute),
+	}
+}
+
+// DeleteMetricAttribute returns an expression that removes the metric attribute specified.
+func DeleteMetricAttribute(metricAttribute string) TransformQuery {
+	return TransformQuery{
+		Context:   Datapoint,
+		Statement: fmt.Sprintf(`delete_key(attributes, "%s")`, metricAttribute),
+	}
 }
 
 // ConvertGaugeToSum returns an expression where a gauge metric can be converted into a sum
 func ConvertGaugeToSum(metricName string) TransformQuery {
-	return TransformQuery(fmt.Sprintf(`convert_gauge_to_sum("cumulative", true) where metric.name == "%s"`, metricName))
+	return TransformQuery{
+		Context:   Metric,
+		Statement: fmt.Sprintf(`convert_gauge_to_sum("cumulative", true) where name == "%s"`, metricName),
+	}
 }
 
 // ConvertFloatToInt returns an expression where a float-valued metric can be converted to an int
 func ConvertFloatToInt(metricName string) TransformQuery {
-	return TransformQuery(fmt.Sprintf(`set(value_int, Int(value_double)) where metric.name == "%s"`, metricName))
+	return TransformQuery{
+		Context:   Datapoint,
+		Statement: fmt.Sprintf(`set(value_int, Int(value_double)) where metric.name == "%s"`, metricName),
+	}
 }
 
 // SetDescription returns a metrics transform expression where the metrics description will be set to what is provided
 func SetDescription(metricName, metricDescription string) TransformQuery {
-	return TransformQuery(fmt.Sprintf(`set(metric.description, "%s") where metric.name == "%s"`, metricDescription, metricName))
+	return TransformQuery{
+		Context:   Datapoint,
+		Statement: fmt.Sprintf(`set(metric.description, "%s") where metric.name == "%s"`, metricDescription, metricName),
+	}
 }
 
 // SetUnit returns a metrics transform expression where the metric unit is set to provided value
 func SetUnit(metricName, unit string) TransformQuery {
-	return TransformQuery(fmt.Sprintf(`set(metric.unit, "%s") where metric.name == "%s"`, unit, metricName))
+	return TransformQuery{
+		Context:   Datapoint,
+		Statement: fmt.Sprintf(`set(metric.unit, "%s") where metric.name == "%s"`, unit, metricName),
+	}
 }
 
 // SetName returns a metrics transform expression where the metric name is set to provided value
 func SetName(oldName, newName string) TransformQuery {
-	return TransformQuery(fmt.Sprintf(`set(metric.name, "%s") where metric.name == "%s"`, newName, oldName))
+	return TransformQuery{
+		Context:   Datapoint,
+		Statement: fmt.Sprintf(`set(metric.name, "%s") where metric.name == "%s"`, newName, oldName),
+	}
 }
 
 func SetAttribute(metricName, attributeKey, attributeValue string) TransformQuery {
-	return TransformQuery(fmt.Sprintf(`set(attributes["%s"], "%s") where metric.name == "%s"`, attributeKey, attributeValue, metricName))
+	return TransformQuery{
+		Context:   Datapoint,
+		Statement: fmt.Sprintf(`set(attributes["%s"], "%s") where metric.name == "%s"`, attributeKey, attributeValue, metricName),
+	}
 }
 
 // SummarySumValToSum creates a new Sum metric out of a summary metric's sum value. The new metric has a name of "<Old Name>_sum".
 func SummarySumValToSum(metricName, aggregation string, isMonotonic bool) TransformQuery {
-	return TransformQuery(fmt.Sprintf(`convert_summary_sum_val_to_sum("%s",  %t) where metric.name == "%s"`, aggregation, isMonotonic, metricName))
+	return TransformQuery{
+		Context:   Datapoint,
+		Statement: fmt.Sprintf(`convert_summary_sum_val_to_sum("%s",  %t) where metric.name == "%s"`, aggregation, isMonotonic, metricName),
+	}
 }
 
 // SummaryCountValToSum creates a new Sum metric out of a summary metric's count value. The new metric has a name of "<Old Name>_count".
 func SummaryCountValToSum(metricName, aggregation string, isMonotonic bool) TransformQuery {
-	return TransformQuery(fmt.Sprintf(`convert_summary_count_val_to_sum("%s",  %t) where metric.name == "%s"`, aggregation, isMonotonic, metricName))
+	return TransformQuery{
+		Context:   Datapoint,
+		Statement: fmt.Sprintf(`convert_summary_count_val_to_sum("%s",  %t) where metric.name == "%s"`, aggregation, isMonotonic, metricName),
+	}
 }
 
 // RetainResource retains the resource attributes provided, and drops all other attributes.
 func RetainResource(resourceAttributeKeys ...string) TransformQuery {
-	return TransformQuery(fmt.Sprintf(`keep_keys(resource.attributes, [%s])`, strings.Join(resourceAttributeKeys[:], ",")))
+	return TransformQuery{
+		Context:   Datapoint,
+		Statement: fmt.Sprintf(`keep_keys(resource.attributes, [%s])`, strings.Join(resourceAttributeKeys[:], ",")),
+	}
 }
 
 // RenameMetric returns a config snippet that renames old to new, applying zero or more transformations.
@@ -408,6 +510,24 @@ func GroupByGMPAttrs() Component {
 			"keys": []string{"namespace", "cluster", "location"},
 		},
 	}
+}
+
+// GroupByGMPAttrs_OTTL moves the "namespace", "cluster", and "location"
+// metric attributes to resource attributes similar to GroupByGMPAttrs.
+// The difference here is it uses OTTL instead of the groupbyattrs processor
+// since that processor discards certain metadata from the metrics that are
+// important to preserve prometheus untyped metrics.
+//
+// See more detail in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33419.
+func GroupByGMPAttrs_OTTL() Component {
+	return TransformationMetrics(
+		GroupByAttribute("location"),
+		GroupByAttribute("cluster"),
+		GroupByAttribute("namespace"),
+		DeleteMetricAttribute("location"),
+		DeleteMetricAttribute("cluster"),
+		DeleteMetricAttribute("namespace"),
+	)
 }
 
 // GCPResourceDetector returns a resourcedetection processor configured for only GCP.

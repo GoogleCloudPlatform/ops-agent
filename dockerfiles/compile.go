@@ -71,18 +71,6 @@ ENV JAVA_HOME /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/`
 
 var dockerfileArguments = []templateArguments{
 	{
-		from_image:  "centos:7",
-		target_name: "centos7",
-		install_packages: `RUN set -x; yum -y update && \
-		yum -y install git systemd \
-		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
-		gcc gcc-c++ make bison flex file systemd-devel zlib-devel gtest-devel rpm-build \
-		expect rpm-sign zip` + installJava + installCMake,
-		package_build:     "RUN ./pkg/rpm/build.sh",
-		tar_distro_name:   "centos-7",
-		package_extension: "rpm",
-	},
-	{
 		from_image:  "rockylinux:8",
 		target_name: "centos8",
 		install_packages: `RUN set -x; yum -y update && \
@@ -107,7 +95,7 @@ var dockerfileArguments = []templateArguments{
 		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel yajl-devel \
 		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros java-${OPENJDK_MAJOR_VERSION}-openjdk-devel \
 		expect rpm-sign zip tzdata-java
-	
+
 		ENV JAVA_HOME /usr/lib/jvm/java-${OPENJDK_MAJOR_VERSION}-openjdk/`,
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "rockylinux-9",
@@ -138,18 +126,6 @@ var dockerfileArguments = []templateArguments{
 		package_extension: "deb",
 	},
 	{
-		from_image:  "debian:buster",
-		target_name: "buster",
-		install_packages: `RUN set -x; apt-get update && \
-		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config zip` + installJava,
-		package_build:     "RUN ./pkg/deb/build.sh",
-		tar_distro_name:   "debian-buster",
-		package_extension: "deb",
-	},
-	{
 		// Use OpenSUSE Leap 42.3 to emulate SLES 12:
 		//https://en.opensuse.org/openSUSE:Build_Service_cross_distribution_howto#Detect_a_distribution_flavor_for_special_code
 		from_image:  "opensuse/archive:42.3",
@@ -159,7 +135,7 @@ ADD https://download.opensuse.org/repositories/home:/odassau/SLE_12_SP4/home:oda
 RUN set -x; \
 		# The 'OSS Update' repo signature is no longer valid, so verify the checksum instead.
 		zypper --no-gpg-check refresh 'OSS Update' && \
-		(echo 'b889b4bba03074cd66ef9c0184768f4816d4ccb1fa9ec2721c5583304c5f23d0  /var/cache/zypp/raw/OSS Update/repodata/repomd.xml' | sha256sum --check) && \
+		(echo '6dd0b89202b19dae873434c5f2ba01164205071581fc02365712be801e304b3b /var/cache/zypp/raw/OSS Update/repodata/repomd.xml' | sha256sum --check) && \
 		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip && \
 		# Remove expired root certificate.
 		mv /var/lib/ca-certificates/pem/DST_Root_CA_X3.pem /etc/pki/trust/blacklist/ && \
@@ -214,18 +190,6 @@ RUN ln -fs /usr/lib/systemd /lib/systemd` + installJava + installCMake,
 		package_extension: "deb",
 	},
 	{
-		from_image:  "ubuntu:mantic",
-		target_name: "mantic",
-		install_packages: `RUN set -x; apt-get update && \
-		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip debhelper`,
-		package_build:     "RUN ./pkg/deb/build.sh",
-		tar_distro_name:   "ubuntu-mantic",
-		package_extension: "deb",
-	},
-	{
 		from_image:  "ubuntu:noble",
 		target_name: "noble",
 		install_packages: `RUN set -x; apt-get update && \
@@ -235,6 +199,18 @@ RUN ln -fs /usr/lib/systemd /lib/systemd` + installJava + installCMake,
 		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip debhelper`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "ubuntu-noble",
+		package_extension: "deb",
+	},
+	{
+		from_image:  "ubuntu:oracular",
+		target_name: "oracular",
+		install_packages: `RUN set -x; apt-get update && \
+		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
+		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
+		build-essential cmake bison flex file systemd-dev debhelper libsystemd-dev \
+		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip`,
+		package_build:     "RUN ./pkg/deb/build.sh",
+		tar_distro_name:   "ubuntu-oracular",
 		package_extension: "deb",
 	},
 }

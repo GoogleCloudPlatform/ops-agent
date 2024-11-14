@@ -22,6 +22,13 @@ description: |-
   delivered, published, and dropped messages. The integration also collects
   RabbitMQ logs and parses them into a JSON payload. The result includes process
   ID, level, and message.
+configure_integration: |-
+  You must enable the RabbitMQ management plugin by following the [Getting
+  started](https://www.rabbitmq.com/management.html#getting-started)
+  instructions.
+
+  You must configure a user with the [`monitoring`
+  tag](https://www.rabbitmq.com/management.html#permissions).
 minimum_supported_agent_version:
   metrics: 2.29.0
   logging: 2.12.0
@@ -29,29 +36,36 @@ supported_operating_systems: linux
 platforms_to_skip:
   # RabbitMQ is not supported on various distros.
   - suse-cloud:sles-12
-  - ubuntu-os-cloud:ubuntu-2310-amd64
-  - ubuntu-os-cloud:ubuntu-2310-arm64
-  - ubuntu-os-cloud:ubuntu-2404-lts-amd64
-  - ubuntu-os-cloud:ubuntu-2404-lts-arm64
+  - ubuntu-os-cloud:ubuntu-2410-amd64 # Possible support in the future
+  - ubuntu-os-cloud:ubuntu-minimal-2410-amd64 # Possible support in the future
+  - ubuntu-os-cloud:ubuntu-2410-arm64 # Possible support in the future
+  - ubuntu-os-cloud:ubuntu-minimal-2410-arm64 # Possible support in the future
 supported_app_version: ["3.8", "3.9"]
 expected_metrics:
   - type: workload.googleapis.com/rabbitmq.consumer.count
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      node_name: .*
-      queue_name: .*
-      vhost_name: .*
+      - name: node_name
+        value_regex: .*
+      - name: queue_name
+        value_regex: .*
+      - name: vhost_name
+        value_regex: .*
   - type: workload.googleapis.com/rabbitmq.message.current
     value_type: INT64
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      state: .*
-      node_name: .*
-      queue_name: .*
-      vhost_name: .*
+      - name: state
+        value_regex: .*
+      - name: node_name
+        value_regex: .*
+      - name: queue_name
+        value_regex: .*
+      - name: vhost_name
+        value_regex: .*
     representative: true
 expected_logs:
   - log_name: rabbitmq
@@ -62,7 +76,7 @@ expected_logs:
         optional: true
       - name: jsonPayload.message
         type: string
-        description: Log message
+        description: Log message, including detailed stacktrace where provided
       - name: jsonPayload.severity
         type: string
         description: Log entry level
@@ -76,31 +90,31 @@ configuration_options:
       fields:
         - name: type
           default: null
-          description: This value must be rabbitmq.
+          description: This value must be `rabbitmq`.
         - name: include_paths
           default: '[var/log/rabbitmq/rabbit*.log]'
-          description: A list of filesystem paths to read by tailing each file. A wild card (*) can be used in the paths; for example, /var/log/rabbitmq/*.log.
+          description: A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths; for example, `/var/log/rabbitmq/*.log`.
         - name: exclude_paths
           default: null
-          description: A list of filesystem path patterns to exclude from the set matched by include_paths.
+          description: A list of filesystem path patterns to exclude from the set matched by `include_paths`.
         - name: record_log_file_path
           default: false
           description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
         - name: wildcard_refresh_interval
           default: 60s
-          description: The interval at which wildcard file paths in include_paths are refreshed. Given as a time duration, for example 30s or 2m. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+          description: The interval at which wildcard file paths in `include_paths` are refreshed. Given as a [time duration](https://pkg.go.dev/time#ParseDuration), for example `30s` or `2m`. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
   metrics:
     - type: rabbitmq
       fields:
         - name: type
           default: null
-          description: This value must be rabbbitmq.
+          description: This value must be `rabbbitmq`.
         - name: endpoint
           default: http://localhost:15672
           description: The URL of the node to monitor.
         - name: collection_interval
           default: 60s
-          description: A time.Duration value, such as 30s or 5m.
+          description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
         - name: username
           default: null
           description: The username used to connect to the server.
@@ -109,10 +123,10 @@ configuration_options:
           description: The password used to connect to the server.
         - name: insecure
           default: true
-          description: Sets whether or not to use a secure TLS connection. If set to false, then TLS is enabled.
+          description: Sets whether or not to use a secure TLS connection. If set to `false`, then TLS is enabled.
         - name: insecure_skip_verify
           default: false
-          description: Sets whether or not to skip verifying the certificate. If insecure is set to true, then the insecure_skip_verify value is not used.
+          description: Sets whether or not to skip verifying the certificate. If `insecure` is set to `true`, then the `insecure_skip_verify` value is not used.
         - name: cert_file
           default: null
           description: Path to the TLS certificate to use for mTLS-required connections.

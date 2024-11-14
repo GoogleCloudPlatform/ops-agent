@@ -14,7 +14,7 @@ a firewall that allows connections over port 22 for ssh. It is recommended for
 Googlers to use our prebuilt testing project. Ask a teammate (e.g. martijnvs@)
 for the project ID.
 
-You will also need a GCS bucket that is used to transfer files onto the 
+You will also need a GCS bucket that is used to transfer files onto the
 testing VMs. This is referred to as `${TRANSFERS_BUCKET}`. For Googlers,
 `stackdriver-test-143416-untrusted-file-transfers` is recommended.
 
@@ -46,18 +46,18 @@ When the setup steps are complete, you can run ops_agent_test from the
 ```
 make integration_tests PROJECT=${PROJECT} TRANSFERS_BUCKET=${TRANSFERS_BUCKET}
 ```
-Alternatively, you can export `PROJECT` and `TRANSFERS_BUCKET` in your 
-environment and simply call the target.  
-You can also specify the `ZONES` and `PLATFORMS` variables if you would like
+Alternatively, you can export `PROJECT` and `TRANSFERS_BUCKET` in your
+environment and simply call the target.
+You can also specify the `ZONES` and `IMAGE_SPECS` variables if you would like
 to run the tests on something other than the defaults (`us-central1-b` for
-ZONES and `debian-cloud:debian-11` for `PLATFORMS`).
+ZONES and `debian-cloud:debian-11` for `IMAGE_SPECS`).
 
 The above command will run the tests against the stable Ops Agent. To test
 against a pre-built but unreleased agent, you can use add the
-AGENT_PACKAGES_IN_GCS environment variable onto your command like this:
+`AGENT_PACKAGES_IN_GCS` environment variable onto your command like this:
 
 ```
-AGENT_PACKAGES_IN_GCS=gs://ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/build/buster/2068/20220926-132259/result \
+AGENT_PACKAGES_IN_GCS=gs://ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/build/bullseye_x86_64/2677/20240711-200228/result \
 ```
 
 You can obtain such a URI by:
@@ -65,7 +65,7 @@ You can obtain such a URI by:
 1.  take a previous Kokoro run with a successful build and go to the
     `Invocation Details` page. Get the value corresponding to the `GCS` key.
     For example:
-    `https://console.cloud.google.com/storage/browser/ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/build/buster/2068/20220926-132259`
+    `https://console.cloud.google.com/storage/browser/ops-agents-public-buckets-test-logs/prod/stackdriver_agents/testing/consumer/ops_agent/build/bullseye_x86_64/2677/20240711-200228`
 2.  Replace `https://console.cloud.google.com/storage/browser/` at the beginning
     of the URL with `gs://` and put `/result` on the end and pass that as
     `AGENT_PACKAGES_IN_GCS`.
@@ -99,7 +99,7 @@ go test -v ./integration_test \
     -test.run="TestThirdPartyApps/.*/(nvml|dcgm)"
 ```
 
-Make sure the platform you specify is included in the PLATFORMS environment
+Make sure the platform you specify is included in the `IMAGE_SPECS` environment
 variable.
 
 ### Testing Flow
@@ -129,6 +129,10 @@ The test is designed so that simply modifying files in the
 `third_party_apps_data` directory is sufficient to get the test runner to do the
 right thing. But we do expect that we will need to make big changes to both the
 data directory and the test runner before it is really meeting our needs.
+
+By default, the test will skip any applications that were not
+impacted by the currently modified set of files. However, if the modified files
+are unrelated to any apps, it assumes that all apps are impacted.
 
 ### Adding a new third-party application
 
@@ -233,43 +237,41 @@ will take you to a publicly-visible GCS bucket that contains various log files.
 It's a little tricky to figure out which one(s) to look at first, so here's a
 guide for that.
 
-TLDR: start in `build_and_test.txt` to see what failed, then drill down to
+TLDR: start in `sponge_log.xml` to see what failed, then drill down to
 the corresponding `main_log.txt` from there.
 
 Here is the full contents uploaded to the GCS bucket for a single test run.
 The "Details" link takes you directly to the "logs" subdirectory to save you
-a hop. The following is sorted roughly in descending order of usefulness.
-
+a hop.
 ```
-├── logs
-|   ├── build_and_test.txt
-|   ├── sponge_log.xml
-|   └── TestThirdPartyApps_ops-agent_debian-10_nginx
-|       ├── main_log.txt
-|       ├── syslog.txt
-|       ├── logging-module.log.txt
-|       ├── journalctl_output.txt
-|       ├── systemctl_status_for_ops_agent.txt
-|       ├── otel.yaml.txt
-|       ├── VM_initialization.txt
-|       ├── fluent_bit_main.conf.txt
-|       └── fluent_bit_parser.conf.txt
-└── agent_packages
-    ├── google-cloud-ops-agent_2.0.5~debian10_amd64.deb
-    └── google-cloud-ops-agent-dbgsym_2.0.5~debian10_amd64.deb
+└── logs
+    ├── sponge_log.xml
+    └── TestThirdPartyApps_debian-cloud:debian-11_jetty
+        ├── VM_initialization.txt
+        ├── config.yaml.txt
+        ├── fluent_bit_main.conf.txt
+        ├── fluent_bit_metrics.txt
+        ├── fluent_bit_parser.conf.txt
+        ├── health-checks.log.txt
+        ├── journalctl_output.txt
+        ├── logging-module.log.txt
+        ├── main_log.txt
+        ├── metrics-module.log.txt
+        ├── nvidia-installer.log.txt
+        ├── otel.yaml.txt
+        ├── otel_metrics.txt
+        ├── syslog.txt
+        └── systemctl_status_for_ops_agent.txt
 ```
 
 Let's go through each of these files and discuss what they are.
 
 TODO: Document log files for a Windows VM.
 
-*   `build_and_test.txt`: The top-level log that holds the stdout/stderr for
-    the Kokoro job. Near the bottom is a summary of which tests passed and
-    which ones failed.
 *   `sponge_log.xml`: Structured data about which tests
     passed/failed, but not very human readable.
 *   `main_log.txt`: The main log for the particular test shard (e.g.
-    `TestThirdPartyApps_ops-agent_debian-10_nginx`) that ran. This is the place
+    `TestThirdPartyApps_debian-cloud:debian-11_jetty`) that ran. This is the place
     to start if you are wondering what happened to a particular shard.
 *   `syslog.txt`: The system's `/var/log/{syslog,messages}`. Highly useful.
     OTel collector logs can be found here by searching for `otelopscol`.
@@ -282,9 +284,6 @@ TODO: Document log files for a Windows VM.
     fresh VM properly.
 *   `fluent_bit_main.conf.txt`, `fluent_bit_parser.conf.txt`: Fluent-Bit config
     files.
-
-The `agent_packages` directory contains the package files built from the PR
-and installed on the VM for testing.
 
 # Vendored Dependencies
 

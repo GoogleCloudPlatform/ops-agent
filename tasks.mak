@@ -35,6 +35,7 @@ install_tools:
 
 .PHONY: build
 build:
+	cd submodules/fluent-bit/build && find . ! -name ".empty" -type f -delete
 	mkdir -p /tmp/google-cloud-ops-agent
 	DOCKER_BUILDKIT=1 docker build -o /tmp/google-cloud-ops-agent . $(ARGS)
 
@@ -96,7 +97,7 @@ test_metadata:
 	go test ./integration_test/metadata $(if $(UPDATE),-update,)
 
 .PHONY: test_metadata_update
-test_metadata_update: UPDATE=true 
+test_metadata_update: UPDATE=true
 test_metadata_update: test_metadata
 
 .PHONY: new_confgenerator_test
@@ -121,7 +122,7 @@ transformation_test: dist/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fl
 	go test ./transformation_test $(if $(UPDATE),-update,)
 
 .PHONY: transformation_test_update
-transformation_test_update: UPDATE=true 
+transformation_test_update: UPDATE=true
 transformation_test_update: transformation_test
 
 ############
@@ -143,7 +144,7 @@ PLATFORMS ?= debian-cloud:debian-11
 integration_tests:
 	ZONES="${ZONES}" \
 	PLATFORMS="${PLATFORMS}" \
-	go test -v ./integration_test/ops_agent_test.go \
+	go test -v ./integration_test/ops_agent_test/main_test.go \
 	-test.parallel=1000 \
 	-tags=integration_test \
 	-timeout=4h

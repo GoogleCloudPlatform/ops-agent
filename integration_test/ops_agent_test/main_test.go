@@ -2329,15 +2329,14 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 		}
 	}
 
-	bytes, err := os.ReadFile(path.Join("agent_metrics", "metadata.yaml"))
+	agentMetricsMetadata := path.Join("agent_metrics", "metadata.yaml")
+	bytes, err := os.ReadFile(agentMetricsMetadata)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	var agentMetrics struct {
-		ExpectedMetrics []*metadata.ExpectedMetric `yaml:"expected_metrics" validate:"onetrue=Representative,unique=Type,dive"`
-	}
-	err = yaml.UnmarshalStrict(bytes, &agentMetrics)
+	var agentMetrics metadata.ExpectedMetricsContainer
+	err = metadata.UnmarshalAndValidate(agentMetricsMetadata, bytes, &agentMetrics)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -3051,7 +3050,7 @@ func TestPrometheusUntypedMetricsReset(t *testing.T) {
 				{"prometheus.googleapis.com/untyped_metric/unknown", nil,
 					metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 10.0},
 				{"prometheus.googleapis.com/untyped_metric/unknown:counter", nil,
-					metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 10.0},
+					metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 0.0},
 			}
 
 			var multiErr error
@@ -3074,7 +3073,7 @@ func TestPrometheusUntypedMetricsReset(t *testing.T) {
 				{"prometheus.googleapis.com/untyped_metric/unknown", nil,
 					metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 1000.0},
 				{"prometheus.googleapis.com/untyped_metric/unknown:counter", nil,
-					metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 1000.0},
+					metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 990.0},
 			}
 
 			var multiErr error
@@ -4087,14 +4086,35 @@ func unmarshalResource(in string) (*resourcedetector.GCEResource, error) {
 	return &resource, err
 }
 
-// installGolang downloads and sets up go on the given VM.  The caller is still
+// uninstallGolang removes the go installation on the VM.
+func uninstallGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	var cmd string
+	if gce.IsWindows(vm.ImageSpec) {
+		// There is currently no need for this support.
+		return nil
+	} else {
+		cmd = `sudo rm -rf /usr/local/go`
+	}
+	_, err := gce.RunRemotely(ctx, logger, vm, cmd)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// installGolang downloads and sets up go on the given VM. The caller is still
 // responsible for updating PATH to point to the installed binaries, see
-// `goPathCommandForImage`.
+// `goPathCommandForImage`. If go is already installed, uninstall it first.
 func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
-	// To update this, first run `mirror_content.sh` in this directory. Example:
+	err := uninstallGolang(ctx, logger, vm)
+	if err != nil {
+		return err
+	}
+
+	// To update this, first run `mirror_content.sh` under `integration_test`. Example:
 	//   ./mirror_content.sh https://go.dev/dl/go1.21.4.linux-{amd64,arm64}.tar.gz
 	// Then update this version.
-	goVersion := "1.21.4"
+	goVersion := "1.22.7"
 
 	goArch := "amd64"
 	if gce.IsARM(vm.ImageSpec) {
@@ -4114,7 +4134,7 @@ func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 				"gs://ops-agents-public-buckets-vendored-deps/mirrored-content/go.dev/dl/go%s.linux-%s.tar.gz" - | \
 				sudo tar --directory /usr/local -xzf /dev/stdin`, goVersion, goArch)
 	}
-	_, err := gce.RunRemotely(ctx, logger, vm, installCmd)
+	_, err = gce.RunRemotely(ctx, logger, vm, installCmd)
 	return err
 }
 

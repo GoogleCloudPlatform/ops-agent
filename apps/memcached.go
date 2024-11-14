@@ -46,6 +46,7 @@ func (r MetricsReceiverMemcached) Pipelines(_ context.Context) ([]otel.ReceiverP
 			Config: map[string]interface{}{
 				"collection_interval": r.CollectionIntervalString(),
 				"endpoint":            r.Endpoint,
+				"transport":           "tcp",
 			},
 		},
 		Processors: map[string][]otel.Component{"metrics": {

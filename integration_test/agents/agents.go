@@ -727,10 +727,10 @@ func windowsEnvironment(environment map[string]string) string {
 // about PackageLocation, see the documentation for the PackageLocation struct.
 func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, location PackageLocation) error {
 	if location.packagesInGCS != "" && location.repoSuffix != "" {
-		return fmt.Errorf("invalid PackageLocation: cannot provide both location.packagesInGCS and location.repoSuffix. location=%#v")
+		return fmt.Errorf("invalid PackageLocation: cannot provide both location.packagesInGCS and location.repoSuffix. location=%#v", location)
 	}
 	if location.artifactRegistryRegion != "" && location.repoSuffix == "" {
-		return fmt.Errorf("invalid PackageLocation: location.artifactRegistryRegion was nonempty yet location.repoSuffix was empty. location=%#v")
+		return fmt.Errorf("invalid PackageLocation: location.artifactRegistryRegion was nonempty yet location.repoSuffix was empty. location=%#v", location)
 	}
 
 	if location.packagesInGCS != "" {
@@ -738,10 +738,10 @@ func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, locati
 	}
 
 	preservedEnvironment := map[string]string{
-		"REPO_SUFFIX":              location.repoSuffix,
-		"REPO_CODENAME":            location.repoCodename,
-		"ARTIFACT_REGISTRY_PROJECT":             location.artifactRegistryProject,
-		"ARTIFACT_REGISTRY_REGION": location.artifactRegistryRegion,
+		"REPO_SUFFIX":               location.repoSuffix,
+		"REPO_CODENAME":             location.repoCodename,
+		"ARTIFACT_REGISTRY_PROJECT": location.artifactRegistryProject,
+		"ARTIFACT_REGISTRY_REGION":  location.artifactRegistryRegion,
 	}
 
 	if gce.IsWindows(vm.ImageSpec) {
@@ -851,6 +851,11 @@ func CommonSetupWithExtraCreateArgumentsAndMetadata(t *testing.T, imageSpec stri
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
 	t.Cleanup(cancel)
+	gcloudConfigDir := t.TempDir()
+	if err := gce.SetupGcloudConfigDir(ctx, gcloudConfigDir); err != nil {
+		t.Fatalf("Unable to set up a gcloud config directory: %v", err)
+	}
+	ctx = gce.WithGcloudConfigDir(ctx, gcloudConfigDir)
 
 	logger := gce.SetupLogger(t)
 	logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
@@ -905,7 +910,7 @@ func InstallPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, 
 	// 1. install stable package from Rapture
 	// 2. install just-built package from GCS
 	// Nor do I know why apt considers that sequence to be a downgrade.
-	if _, err := gce.RunRemotely(ctx, logger, vm, "sudo apt install --allow-downgrades --yes --verbose-versions /tmp/agentUpload/*"); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "sudo apt-get install --allow-downgrades --yes --verbose-versions /tmp/agentUpload/*"); err != nil {
 		return fmt.Errorf("error installing agent from .deb file: %v", err)
 	}
 	return nil

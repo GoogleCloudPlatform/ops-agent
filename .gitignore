@@ -10,3 +10,5 @@ gha-creds-*.json
 # This is a folder used to hold local builds of fluent-bit and otelopscol
 # when running transformation tests locally.
 dist/
+
+.vscode/launch.json

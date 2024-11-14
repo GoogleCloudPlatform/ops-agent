@@ -10,9 +10,6 @@ exporters:
   googlemanagedprometheus:
     metric:
       add_metric_suffixes: false
-    retry_on_failure:
-      enabled: false
-    untyped_double_export: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
 processors:
   agentmetrics/hostmetrics_0:
@@ -49,13 +46,17 @@ processors:
         metric_names:
         - otelcol_process_uptime
         - otelcol_process_memory_rss
-        - otelcol_grpc_io_client_completed_rpcs
-        - otelcol_googlecloudmonitoring_point_count
-  groupbyattrs/prometheus_0:
-    keys:
-    - namespace
-    - cluster
-    - location
+        - grpc_client_attempt_duration
+        - googlecloudmonitoring_point_count
+  filter/otel_2:
+    metrics:
+      include:
+        match_type: strict
+        metric_names:
+        - otelcol_process_uptime
+        - otelcol_process_memory_rss
+        - grpc_client_attempt_duration_count
+        - googlecloudmonitoring_point_count
   metricstransform/fluentbit_1:
     transforms:
     - action: update
@@ -384,7 +385,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/otel_1:
+  metricstransform/otel_3:
     transforms:
     - action: update
       include: otelcol_process_uptime
@@ -406,19 +407,18 @@ processors:
         aggregation_type: sum
         label_set: []
     - action: update
-      include: otelcol_grpc_io_client_completed_rpcs
+      include: grpc_client_attempt_duration_count
       new_name: agent/api_request_count
       operations:
-      - action: toggle_scalar_data_type
       - action: update_label
-        label: grpc_client_status
+        label: grpc_status
         new_label: state
       - action: aggregate_labels
         aggregation_type: sum
         label_set:
         - state
     - action: update
-      include: otelcol_googlecloudmonitoring_point_count
+      include: googlecloudmonitoring_point_count
       new_name: agent/monitoring/point_count
       operations:
       - action: toggle_scalar_data_type
@@ -433,6 +433,22 @@ processors:
   resourcedetection/_global_0:
     detectors:
     - gcp
+  transform/otel_1:
+    error_mode: ignore
+    metric_statements:
+    - context: metric
+      statements:
+      - extract_count_metric(true) where name == "grpc_client_attempt_duration"
+  transform/prometheus_0:
+    metric_statements:
+    - context: datapoint
+      statements:
+      - set(resource.attributes["location"], attributes["location"])
+      - set(resource.attributes["cluster"], attributes["cluster"])
+      - set(resource.attributes["namespace"], attributes["namespace"])
+      - delete_key(attributes, "location")
+      - delete_key(attributes, "cluster")
+      - delete_key(attributes, "namespace")
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
@@ -445,6 +461,7 @@ receivers:
       network: {}
       paging: {}
       process:
+        mute_process_exe_error: true
         mute_process_name_error: true
       processes: {}
   prometheus/fluentbit:
@@ -469,14 +486,24 @@ receivers:
       global:
         scrape_interval: 1m
         scrape_timeout: 10s
+        scrape_protocols:
+        - OpenMetricsText1.0.0
+        - OpenMetricsText0.0.1
+        - PrometheusText0.0.4
         evaluation_interval: 1m
       scrape_configs:
       - job_name: prometheus
         honor_timestamps: true
+        track_timestamps_staleness: false
         scrape_interval: 10s
         scrape_timeout: 10s
+        scrape_protocols:
+        - OpenMetricsText1.0.0
+        - OpenMetricsText0.0.1
+        - PrometheusText0.0.4
         metrics_path: /metrics
         scheme: http
+        enable_compression: true
         follow_redirects: true
         enable_http2: true
         static_configs:
@@ -501,7 +528,6 @@ receivers:
             location: test-zone
             machine_type: test-machine-type
             namespace: test-instance-id/test-instance-name
-    preserve_untyped: true
 service:
   pipelines:
     metrics/default__pipeline_hostmetrics:
@@ -529,7 +555,9 @@ service:
       - googlecloud
       processors:
       - filter/otel_0
-      - metricstransform/otel_1
+      - transform/otel_1
+      - filter/otel_2
+      - metricstransform/otel_3
       - resourcedetection/_global_0
       receivers:
       - prometheus/otel
@@ -537,7 +565,7 @@ service:
       exporters:
       - googlemanagedprometheus
       processors:
-      - groupbyattrs/prometheus_0
+      - transform/prometheus_0
       receivers:
       - prometheus/prometheus
   telemetry:

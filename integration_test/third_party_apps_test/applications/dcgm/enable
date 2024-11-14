@@ -1,5 +1,5 @@
 # Configures Ops Agent to collect telemetry from the app and restart Ops Agent.
-set -e 
+set -e
 
 # Create a back up of the existing file so existing configurations are not lost.
 sudo cp /etc/google-cloud-ops-agent/config.yaml /etc/google-cloud-ops-agent/config.yaml.bak
@@ -10,6 +10,7 @@ metrics:
   receivers:
     dcgm:
       type: dcgm
+      receiver_version: 2
   service:
     pipelines:
       dcgm:

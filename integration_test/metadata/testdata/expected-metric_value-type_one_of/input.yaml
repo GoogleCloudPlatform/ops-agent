@@ -26,10 +26,12 @@ expected_metrics:
   - type: example.googleapis.com/example.example1
     value_type: FOO
     kind: GAUGE
-    monitored_resource: gce_instance
+    monitored_resources: [gce_instance]
     labels:
-      broker: .*
-      destination: .*
+      - name: broker
+        value_regex: .*
+      - name: destination
+        value_regex: .*
     representative: true
 expected_logs:
   - log_name: examplelog
