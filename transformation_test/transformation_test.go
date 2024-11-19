@@ -569,7 +569,7 @@ func sanitizeWriteLogEntriesRequest(t *testing.T, r *logpb.WriteLogEntriesReques
 func sanitizeStacktrace(t *testing.T, input string) string {
 	// We need to remove non-deterministic information from stacktraces so the goldens don't keep changing.
 	// Remove $GOPATH
-	result := regexp.MustCompile(`(?m)^\t(.*?)pkg/mod/`).ReplaceAllString(input, "\t")
+	result := regexp.MustCompile(`(?m)^\t(.*?)pkg/mod/`).ReplaceAllString(input, "  ")
 	// Remove function arguments
 	result = regexp.MustCompile(`(?m)^(.*)\(.+\)$`).ReplaceAllString(result, "$1(...)")
 	// Remove anything that looks like an address

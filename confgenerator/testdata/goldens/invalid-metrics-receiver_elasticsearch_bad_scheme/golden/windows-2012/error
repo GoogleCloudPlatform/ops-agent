@@ -4,6 +4,6 @@
   19 |       collection_interval: 60s
 > 20 |       endpoint: tcp://localhost:8080
                        ^
-  22 |       
-  23 |   service:
-  24 |     pipelines:
+  22 |   service:
+  23 |     pipelines:
+  24 |       elasticsearch:
