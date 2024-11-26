@@ -1,0 +1,119 @@
+//  Copyright 2024 Google LLC
+
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+
+//     https://www.apache.org/licenses/LICENSE-2.0
+
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+
+syntax = "proto3";
+
+package plugin_comm;
+
+import "google/protobuf/any.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/struct.proto";
+
+option go_package = "google_guest_agent/plugin";
+
+// GuestAgentPlugin service allows Guest Agent to communicate with plugins
+// and manage their lifecycle. Each Guest Agent plugin must implement this
+// gRPC interface.
+service GuestAgentPlugin {
+  // Start command - request to start the plugin.
+  rpc Start(StartRequest) returns (StartResponse) {}
+  // Stop command - request to stop and exit the plugin process.
+  rpc Stop(StopRequest) returns (StopResponse) {}
+  // Status command - request to get current plugin status.
+  rpc GetStatus(GetStatusRequest) returns (Status) {}
+  // Apply command - request to apply config or some work received for plugin.
+  rpc Apply(ApplyRequest) returns (ApplyResponse) {}
+}
+
+// Request sent to plugins to start.
+message StartRequest {
+  // Config is Guest Agent managed config that is passed to the every plugin on
+  // startup.
+  message Config {
+    // Path to the state directory where plugins are allowed to store any state
+    // that they want to persist across revisions.
+    string state_directory_path = 1;
+  }
+  // Any config like the state directory path can be passed here on startup.
+  Config config = 1;
+  // Data is any additional Guest Agent agnostic payload handed off to the
+  // plugin on every start request. Payload is optional and defined by the
+  // service and plugin itself.
+  oneof service_config {
+    // String configuration. Any string payload that the plugin understands.
+    string string_config = 2;
+    // Struct configuration. Usually used for reading file based configuration
+    // like JSON or yaml.
+    google.protobuf.Struct struct_config = 3;
+  }
+}
+
+// Guest Agent does not expect any response from plugins for start request, it
+// will poll for status with health check requests later. In case of any error
+// plugins should throw RPC error.
+// https://pkg.go.dev/google.golang.org/grpc/status#ErrorProto
+message StartResponse {}
+
+// Guest Agent agnostic request from services forwarded to the plugins.
+message ApplyRequest {
+  // Apply data is Guest Agent agnostic, it's a data payload handed off to the
+  // plugin, the actual contract is established between the service and the
+  // plugin itself.
+  google.protobuf.Any data = 1;
+}
+
+// Response from plugins for apply request.
+message ApplyResponse {}
+
+// Guest Agent sends requests to get current status.
+message GetStatusRequest {
+  // This data payload is optionally supplied to the plugin. It's empty for
+  // regular periodic health checks and contains context on what request is for
+  // (like task ID) in specialized requests.
+  // General periodic health check is the request that agent makes to verify
+  // plugins are healthy and running. Plugins can report any ongoing
+  // status which will be sent back to the service.
+  // Specialized status request is something that plugin owners can
+  // define on each plugin similar to apply request. This can be used to
+  // request specific status. For e.g. if Apply() request was made to make run
+  // some task, this type can be used to check status for it.
+  optional string data = 2;
+}
+
+// Response from plugins for status request.
+message Status {
+  // Non-zero code would mean plugin is unhealthy for health check.
+  // For specialized request contract can be defined between service and plugin
+  // itself, Guest Agent will make no interpretation and simply report as is.
+  int32 code = 1;
+  // Human readable summary on current status describing the status code.
+  // Can include one or more error logs or details describing the issue.
+  repeated string results = 2;
+}
+
+// Request sent to plugins to stop and exit the process.
+// Plugins processes are killed immediately after this request returns.
+message StopRequest {
+  // Cleanup is set to true to notify plugins to remove any state stored on
+  // disk. Stop request can be sent as part of plugin restart which does not
+  // require cleanup whereas plugin remove does require.
+  bool cleanup = 1;
+  // Guest Agent will wait for this deadline, if the plugin gracefully
+  // exits, guest agent will do nothing. If the plugin process is still
+  // running, then it is killed.
+  google.protobuf.Duration deadline = 2;
+}
+
+// Response from plugins for stop request.
+message StopResponse {}
