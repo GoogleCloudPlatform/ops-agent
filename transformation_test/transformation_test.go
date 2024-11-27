@@ -444,9 +444,24 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 	}
 
 	var errors []any
+	var exitErr error
 
 	// Read from stderr until EOF and put any errors in `errors`.
 	eg.Go(func() error {
+		// Wait for the process to exit.
+		defer eg.Go(func() error {
+			if err := cmd.Wait(); err != nil {
+				if _, ok := err.(*exec.ExitError); ok {
+					exitErr = err
+					t.Logf("process terminated with error: %v", err)
+				} else {
+					return fmt.Errorf("process failed: %w", err)
+				}
+			}
+			cancel()
+			return nil
+		})
+
 		consumingCount := 0
 		r := bufio.NewReader(stderr)
 		d := json.NewDecoder(r)
@@ -498,26 +513,12 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 			}
 		}
 	})
+
 	// Read and sanitize requests.
 	eg.Go(func() error {
 		for r := range requestCh {
 			got = append(got, sanitizeWriteLogEntriesRequest(t, r, testStartTime))
 		}
-		return nil
-	})
-
-	var exitErr error
-	// Wait for the process to exit.
-	eg.Go(func() error {
-		if err := cmd.Wait(); err != nil {
-			if _, ok := err.(*exec.ExitError); ok {
-				exitErr = err
-				t.Logf("process terminated with error: %v", err)
-			} else {
-				return fmt.Errorf("process failed: %w", err)
-			}
-		}
-		cancel()
 		return nil
 	})
 
