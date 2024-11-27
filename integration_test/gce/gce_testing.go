@@ -1101,6 +1101,25 @@ func addFrameworkMetadata(imageSpec string, inputMetadata map[string]string) (ma
 		if _, ok := metadataCopy["startup-script"]; ok {
 			return nil, errors.New("the 'startup-script' metadata key is reserved for future use. Instead, wait for the instance to be ready and then run things with RunRemotely() or RunScriptRemotely()")
 		}
+		// TODO(b/380470389): we actually *can't* do RunRemotely() on DLVM images due to a bug.
+		// The workaround for the bug is to deploy a fix in-VM via startup scripts.
+		if strings.Contains(imageSpec, "common-gpu-debian-11-py310") {
+			metadataCopy["startup-script"] = fmt.Sprintf(`
+#!/bin/bash
+# Give time for the guest agent and jupyter stuff to finish modifying
+# /etc/passwd and test_user home directory
+sleep 120
+HOMEDIR=/home/%[1]s
+SSHFILE=$HOMEDIR/.ssh/authorized_keys
+if [ ! -f "$SSHFILE" ]; then
+  sudo mkdir -p "$HOMEDIR/.ssh"
+  sudo touch "$SSHFILE"
+fi
+sudo chown -R %[1]s:%[1]s "$HOMEDIR"
+sudo chmod 600 "$SSHFILE"`,
+				sshUserName,
+			)
+		}
 	}
 	return metadataCopy, nil
 }
