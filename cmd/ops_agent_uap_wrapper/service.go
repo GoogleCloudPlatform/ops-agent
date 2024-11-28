@@ -30,7 +30,8 @@ type OpsAgentPluginServer struct {
 	pb.UnimplementedGuestAgentPluginServer
 	server *grpc.Server
 	// cancel is the cancel function to be called when core plugin is stopped.
-	cancel context.CancelFunc
+	cancel       context.CancelFunc
+	startContext context.Context
 }
 
 // Apply applies the config sent or performs the work defined in the message.
@@ -136,8 +137,13 @@ func (ps *OpsAgentPluginServer) runAgent(ctx context.Context) {
 // Until plugin receives Start request plugin is expected to be not functioning
 // and just listening on the address handed off waiting for the request.
 func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest) (*pb.StartResponse, error) {
+	if ps.startContext != nil && ps.startContext.Err() == nil {
+		log.Print("Ops Agent plugin is started already, skipping the current Start() request")
+		return &pb.StartResponse{}, nil
+	}
 	pCtx, cancel := context.WithCancel(context.Background())
 	ps.cancel = cancel
+	ps.startContext = pCtx
 
 	go ps.runAgent(pCtx)
 	return &pb.StartResponse{}, nil
@@ -148,6 +154,11 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 // For e.g. if plugins want to stop some task it was performing or remove some
 // state before exiting it can be done on this request.
 func (ps *OpsAgentPluginServer) Stop(ctx context.Context, msg *pb.StopRequest) (*pb.StopResponse, error) {
+	if ps.cancel == nil || ps.startContext == nil || ps.startContext.Err() != nil {
+		log.Print("Ops Agent plugin is already stoppped, skipping the current Stop() request")
+		return &pb.StopResponse{}, nil
+
+	}
 	log.Printf("Handling stop request %+v, stopping core plugin...", msg)
 	ps.cancel()
 	return &pb.StopResponse{}, nil
@@ -159,6 +170,10 @@ func (ps *OpsAgentPluginServer) Stop(ctx context.Context, msg *pb.StopRequest) (
 // plugins detect some non-fatal errors causing it unable to offer some features
 // it can reported in status which is sent back to the service by agent.
 func (ps *OpsAgentPluginServer) GetStatus(ctx context.Context, msg *pb.GetStatusRequest) (*pb.Status, error) {
+	if err := ps.startContext.Err(); err != nil {
+		// The context started by the Start() call has been cancelled(), which implies Stop() has been triggerred.
+		return &pb.Status{Code: 1, Results: []string{"Plugin is not running ok"}}, nil
+	}
 	return &pb.Status{Code: 0, Results: []string{"Plugin is running ok"}}, nil
 }
 
