@@ -4,8 +4,10 @@ import (
 	"context"
 	"flag"
 	"log"
+	"time"
 
 	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_wrapper/google_guest_agent/plugin"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"google.golang.org/grpc"
 )
 
@@ -47,7 +49,7 @@ func main() {
 	server := grpc.NewServer()
 	defer server.GracefulStop()
 
-	ps := &OpsAgentPluginServer{server: server}
+	ps := &OpsAgentPluginServer{server: server, logger: logs.Default()}
 	// Successfully registering the server and starting to listen on the address
 	// offered mean Guest Agent was successful in installing/launching the plugin
 	// & will manage the lifecycle (start, stop, or revision change) here onwards.
@@ -60,9 +62,8 @@ func main() {
 	ctx := context.Background()
 	ps.Start(ctx, &pb.StartRequest{})
 	log.Print(ps.GetStatus(ctx, &pb.GetStatusRequest{}))
-	ps.Start(ctx, &pb.StartRequest{})
+	time.Sleep(1 * time.Minute)
 	log.Print(ps.GetStatus(ctx, &pb.GetStatusRequest{}))
 	ps.Stop(ctx, &pb.StopRequest{})
 	log.Print(ps.GetStatus(ctx, &pb.GetStatusRequest{}))
-	ps.Stop(ctx, &pb.StopRequest{})
 }
