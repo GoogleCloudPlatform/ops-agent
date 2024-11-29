@@ -1,10 +1,11 @@
-# Copyright 2022 Google LLC
+#!/bin/bash
+# Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     https://www.apache.org/licenses/LICENSE-2.0
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,17 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-[Unit]
-Description=Google Cloud Ops Agent - Diagnostics
-PartOf=google-cloud-ops-agent.service
-Requires=network-online.target
-After=network-online.target
-
-[Service]
-Type=simple
-# Run diagnostics
-ExecStart=@PREFIX@/libexec/wrong-path -config @SYSCONFDIR@/google-cloud-ops-agent/config.yaml
-Restart=no
-
-[Install]
-WantedBy=multi-user.target
+set -x -e
+DESTDIR=$1
+mkdir -p "$DESTDIR/opt/google-cloud-ops-agent/libexec"
+go build -buildvcs=false -o "$DESTDIR/opt/google-cloud-ops-agent/libexec/google_cloud_ops_agent_uap_plugin" \
+  github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_wrapper

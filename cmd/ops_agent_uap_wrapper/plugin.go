@@ -60,10 +60,15 @@ func main() {
 	// }
 
 	ctx := context.Background()
+	log.Println("Starting Ops Agent UAP Plugin")
 	ps.Start(ctx, &pb.StartRequest{})
-	log.Print(ps.GetStatus(ctx, &pb.GetStatusRequest{}))
-	time.Sleep(1 * time.Minute)
-	log.Print(ps.GetStatus(ctx, &pb.GetStatusRequest{}))
-	ps.Stop(ctx, &pb.StopRequest{})
-	log.Print(ps.GetStatus(ctx, &pb.GetStatusRequest{}))
+	for {
+		status, _ := ps.GetStatus(ctx, &pb.GetStatusRequest{})
+		log.Print(status)
+		if status.Code != 0 {
+			break
+		}
+		time.Sleep(30 * time.Second)
+
+	}
 }
