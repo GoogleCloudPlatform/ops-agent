@@ -21,8 +21,8 @@ After=network-online.target
 [Service]
 Type=simple
 # Run diagnostics
-ExecStart=@PREFIX@/libexec/wrong-path -config @SYSCONFDIR@/google-cloud-ops-agent/config.yaml
-Restart=no
+ExecStart=@PREFIX@/libexec/google_cloud_ops_agent_diagnostics -config @SYSCONFDIR@/google-cloud-ops-agent/config.yaml
+Restart=always
 
 [Install]
 WantedBy=multi-user.target
