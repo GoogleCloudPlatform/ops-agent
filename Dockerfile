@@ -160,7 +160,6 @@ COPY cmd/ops_agent_uap_wrapper cmd/ops_agent_uap_wrapper
 COPY ./builds/ops_agent_plugin.sh .
 RUN ./ops_agent_plugin.sh /work/cache/
 
-
 FROM centos8-build-golang-base AS centos8-build
 WORKDIR /work
 COPY . /work
@@ -480,7 +479,6 @@ WORKDIR /work
 COPY cmd/agent_wrapper cmd/agent_wrapper
 COPY ./builds/agent_wrapper.sh .
 RUN ./agent_wrapper.sh /work/cache/
-
 
 FROM bullseye-build-golang-base AS bullseye-build-ops-agent-uap-plugin
 WORKDIR /work
