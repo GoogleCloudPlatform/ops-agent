@@ -157,7 +157,10 @@ func (ps *OpsAgentPluginServer) runAgent(ctx context.Context) {
 // and just listening on the address handed off waiting for the request.
 func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest) (*pb.StartResponse, error) {
 	logDir := msg.Config.GetStateDirectoryPath()
-	ps.logger = CreateOpsAgentUapPluginLogger(logDir)
+	if (logDir == "") {ps.logger = logs.Default()} else {
+		ps.logger = CreateOpsAgentUapPluginLogger(logDir)
+	}
+	
 	if ps.startContext != nil && ps.startContext.Err() == nil {
 		ps.logger.Infof("Ops Agent plugin is started already, skipping the current Start() request")
 		return &pb.StartResponse{}, nil
