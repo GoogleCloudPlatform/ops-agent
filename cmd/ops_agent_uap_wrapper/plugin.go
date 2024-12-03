@@ -61,6 +61,7 @@ func main() {
 
 	ctx := context.Background()
 	log.Println("Starting Ops Agent UAP Plugin")
+	//ps.Start(ctx, &pb.StartRequest{Config: &pb.StartRequest_Config{StateDirectoryPath: "/var/log/google-cloud-ops-agent"}})
 	ps.Start(ctx, &pb.StartRequest{})
 	for {
 		status, _ := ps.GetStatus(ctx, &pb.GetStatusRequest{})
