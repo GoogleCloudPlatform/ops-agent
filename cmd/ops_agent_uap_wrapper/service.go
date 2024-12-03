@@ -57,7 +57,7 @@ func (ps *OpsAgentPluginServer) Cancel() {
 // interface notification of the "exiting" state.
 func sigHandler(ctx context.Context, cancel func(sig os.Signal)) {
 	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGHUP, syscall.SIGKILL)
+	signal.Notify(sigChan, syscall.SIGTERM)
 	go func() {
 		select {
 		case sig := <-sigChan:
@@ -119,7 +119,6 @@ func (ps *OpsAgentPluginServer) runAgent(ctx context.Context) {
 	}
 
 	var wg sync.WaitGroup
-
 	// Starting Diagnostics Service
 	execDiagnosticsCmd := exec.CommandContext(ctx,
 		Prefix+"/libexec/google_cloud_ops_agent_diagnostics",
@@ -168,7 +167,6 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	pCtx, cancel := context.WithCancel(context.Background())
 	ps.cancel = cancel
 	ps.startContext = pCtx
-
 	go ps.runAgent(pCtx)
 	return &pb.StartResponse{}, nil
 }
@@ -220,7 +218,7 @@ func runCommand(cmd *exec.Cmd, logger logs.StructuredLogger) error {
 	return nil
 }
 
-func restartCommand(ctx context.Context, wg *sync.WaitGroup, logger logs.StructuredLogger, cmd *exec.Cmd) {
+func restartCommand(ctx context.Context, wg *sync.WaitGroup, logger logs.StructuredLogger, cmd *exec.Cmd ) {
 	defer wg.Done()
 	if cmd == nil {
 		return
@@ -255,7 +253,7 @@ func restartCommand(ctx context.Context, wg *sync.WaitGroup, logger logs.Structu
 	}
 	// Sleep 10 seconds before retarting the task
 	time.Sleep(5 * time.Second)
-	cmdToRestart := exec.CommandContext(ctx, cmd.Path, cmd.Args...)
+	cmdToRestart := exec.CommandContext(ctx, cmd.Path, cmd.Args[1:]...)
 	wg.Add(1)
 	go restartCommand(ctx, wg, logger, cmdToRestart)
 }
