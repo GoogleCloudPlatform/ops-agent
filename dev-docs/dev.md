@@ -158,14 +158,14 @@ $ tree $CONFIG_OUT
 ```
 
 *   Sample generated
-    [golden fluent bit main conf](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/confgenerator/testdata/valid/linux/default_config/golden_fluent_bit_main.conf)
+    [golden fluent bit main conf](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/confgenerator/testdata/goldens/builtin/golden/linux/fluent_bit_main.conf)
     at `$CONFIG_OUT/fluent_bit_main.conf`.
 *   Sample generated
-    [golden fluent bit parser conf](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/confgenerator/testdata/valid/linux/default_config/golden_fluent_bit_parser.conf)
+    [golden fluent bit parser conf](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/confgenerator/testdata/goldens/builtin/golden/linux/fluent_bit_parser.conf)
     at `$CONFIG_OUT/fluent_bit_parser.conf`.
 *   Sample generated
-    [golden otel conf](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/confgenerator/testdata/valid/linux/default_config/golden_otel.conf)
-    at `$CONFIG_OUT/otel.conf`.
+    [golden otel yaml](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/confgenerator/testdata/goldens/builtin/golden/linux/otel.yaml)
+    at `$CONFIG_OUT/otel.yaml`.
 
 ## Build and test manually on GCE VMs
 
