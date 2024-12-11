@@ -228,6 +228,17 @@ func restartCommand(ctx context.Context, wg *sync.WaitGroup, logger logs.Structu
 		logger.Warnf("Context has been cancelled, exiting")
 		return
 	}
+
+	childCtx, ctxCancel := context.WithCancel(ctx)
+	defer childCtx.Done()
+	sigHandler(childCtx, func(_ os.Signal) {
+		// We're handling some external signal here, set cleanup to [false].
+		// If this was Guest Agent trying to stop it would call [Stop] RPC directly
+		// or do a [SIGKILL] which anyways cannot be intercepted.
+		ctxCancel()
+	})
+	cmd = exec.CommandContext(childCtx, cmd.Path, cmd.Args[1:]...)
+
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Pdeathsig: syscall.SIGKILL,
 		Setpgid:   true,
@@ -253,9 +264,8 @@ func restartCommand(ctx context.Context, wg *sync.WaitGroup, logger logs.Structu
 	}
 	// Sleep 10 seconds before retarting the task
 	time.Sleep(5 * time.Second)
-	cmdToRestart := exec.CommandContext(ctx, cmd.Path, cmd.Args[1:]...)
 	wg.Add(1)
-	go restartCommand(ctx, wg, logger, cmdToRestart)
+	go restartCommand(childCtx, wg, logger, cmd)
 }
 
 func CreateOpsAgentUapPluginLogger(logDir string) logs.StructuredLogger {
