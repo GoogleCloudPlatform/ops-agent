@@ -187,6 +187,7 @@ targets:
           exhaustive:
           - windows-cloud:windows-2016
           - windows-cloud:windows-2019
+          - windows-cloud:windows-2022
           - windows-cloud:windows-2019-core
           - windows-cloud:windows-2022-core
           - windows-cloud:windows-2025-core
