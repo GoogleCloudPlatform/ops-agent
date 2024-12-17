@@ -28,6 +28,7 @@ const LogsDirectory = "/var/log/google-cloud-ops-agent"
 const FluentBitStateDiectory = "/var/lib/google-cloud-ops-agent/fluent-bit"
 const FluentBitRuntimeDirectory = "/run/google-cloud-ops-agent-fluent-bit"
 const OtelRuntimeDirectory = "/run/google-cloud-ops-agent-opentelemetry-collector"
+const restartLimit = 3 // if a command crashes more than `restartLimit`` times consecutively, the command will no longer be restarted.
 
 // PluginServer implements the plugin RPC server interface.
 type OpsAgentPluginServer struct {
@@ -130,15 +131,15 @@ func (ps *OpsAgentPluginServer) runAgent(ctx context.Context) {
 		"-config", Sysconfdir+"/google-cloud-ops-agent/config.yaml",
 	)
 	wg.Add(1)
-	go restartCommand(ctx, &wg, ps.logger, runDiagnosticsCmd)
+	go restartCommand(ctx, &wg, ps.logger, runDiagnosticsCmd, restartLimit, restartLimit)
 
 	// Starting Otel
 	execOtelCmd := exec.CommandContext(ctx,
-		Prefix+"/subagents/opentelemetry-collector/otelopscol",
+		Prefix+"/subagents/opentelemetry-collector",
 		"--config", OtelRuntimeDirectory+"/otel.yaml",
 	)
 	wg.Add(1)
-	go restartCommand(ctx, &wg, ps.logger, execOtelCmd)
+	go restartCommand(ctx, &wg, ps.logger, execOtelCmd, restartLimit, restartLimit)
 
 	// Starting FluentBit
 	execFluentBitCmd := exec.CommandContext(ctx,
@@ -151,7 +152,7 @@ func (ps *OpsAgentPluginServer) runAgent(ctx context.Context) {
 		"--storage_path", FluentBitStateDiectory+"/buffers",
 	)
 	wg.Add(1)
-	go restartCommand(ctx, &wg, ps.logger, execFluentBitCmd)
+	go restartCommand(ctx, &wg, ps.logger, execFluentBitCmd, restartLimit, restartLimit)
 	wg.Wait()
 	msg := "wait group has exited"
 	ps.logger.Infof(msg)
@@ -234,7 +235,7 @@ func runCommand(cmd *exec.Cmd, logger logs.StructuredLogger) error {
 	return nil
 }
 
-func restartCommand(ctx context.Context, wg *sync.WaitGroup, logger logs.StructuredLogger, cmd *exec.Cmd) {
+func restartCommand(ctx context.Context, wg *sync.WaitGroup, logger logs.StructuredLogger, cmd *exec.Cmd, remainingRetry int, totalRetry int) {
 	defer wg.Done()
 	if cmd == nil {
 		return
@@ -242,6 +243,12 @@ func restartCommand(ctx context.Context, wg *sync.WaitGroup, logger logs.Structu
 	if ctx.Err() != nil {
 		// context has been cancelled
 		msg := fmt.Sprintf("%s Context has been cancelled, exiting", OpsAgentPluginSelfLogTag)
+		journal.Print(journal.PriWarning, msg)
+		logger.Warnf(msg)
+		return
+	}
+	if remainingRetry == 0 {
+		msg := fmt.Sprintf("%s exhaused all retry attempts, not restarting cmd", OpsAgentPluginSelfLogTag)
 		journal.Print(journal.PriWarning, msg)
 		logger.Warnf(msg)
 		return
@@ -268,6 +275,7 @@ func restartCommand(ctx context.Context, wg *sync.WaitGroup, logger logs.Structu
 	logger.Infof(msg)
 	journal.Print(journal.PriInfo, msg)
 	err := cmd.Run()
+	retryCount := remainingRetry
 	if err != nil {
 		// https://pkg.go.dev/os#ProcessState.ExitCode Don't restart if the command was terminated by signals.
 		fullError := fmt.Sprintf("%s failed to execute cmd: %s with arguments %s, \ncommand output: %s\n error: %s %s", OpsAgentPluginSelfLogTag, cmd.Path, cmd.Args, outb.String(), errb.String(), err)
@@ -280,14 +288,16 @@ func restartCommand(ctx context.Context, wg *sync.WaitGroup, logger logs.Structu
 		}
 		logger.Errorf(fullError)
 		journal.Print(journal.PriErr, fullError)
+		retryCount -= 1
 
 	} else {
 		msg := fmt.Sprintf("%s command: %s, with arguments: %s completed successfully", OpsAgentPluginSelfLogTag, cmd.Path, cmd.Args)
 		logger.Infof(msg)
 		journal.Print(journal.PriInfo, msg)
+		retryCount = totalRetry
 	}
 	// Sleep 10 seconds before retarting the task
 	time.Sleep(5 * time.Second)
 	wg.Add(1)
-	go restartCommand(childCtx, wg, logger, cmd)
+	go restartCommand(childCtx, wg, logger, cmd, retryCount, totalRetry)
 }
