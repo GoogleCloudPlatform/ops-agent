@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/coreos/go-systemd/journal"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
 
@@ -76,9 +77,10 @@ func (ps *OpsAgentPluginServer) configGeneration(ctx context.Context) error {
 		"-in", Sysconfdir+"/google-cloud-ops-agent/config.yaml",
 	)
 	if err := runCommand(configValidationCmd, ps.logger); err != nil {
-		errorWithDetails := fmt.Errorf("failed to validate Ops Agent default config.yaml: %s", err)
+		errorWithDetails := fmt.Sprintf("%s failed to validate Ops Agent default config.yaml: %s", OpsAgentPluginSelfLogTag, err)
+		journal.Print(journal.PriErr, errorWithDetails)
 		ps.logger.Errorf("%s", errorWithDetails)
-		return errorWithDetails
+		return fmt.Errorf("%s", errorWithDetails)
 	}
 
 	otelConfigGenerationCmd := exec.CommandContext(ctx,
@@ -89,9 +91,10 @@ func (ps *OpsAgentPluginServer) configGeneration(ctx context.Context) error {
 		"-logs", LogsDirectory)
 
 	if err := runCommand(otelConfigGenerationCmd, ps.logger); err != nil {
-		errorWithDetails := fmt.Errorf("failed to generate config yaml for Otel: %s", err)
-		ps.logger.Errorf("%s", errorWithDetails)
-		return errorWithDetails
+		errorWithDetails := fmt.Sprintf("%s failed to generate config yaml for Otel: %s", OpsAgentPluginSelfLogTag, err)
+		journal.Print(journal.PriErr, errorWithDetails)
+		ps.logger.Errorf(errorWithDetails)
+		return fmt.Errorf("%s", errorWithDetails)
 	}
 
 	fluentBitConfigGenerationCmd := exec.CommandContext(ctx,
@@ -102,9 +105,10 @@ func (ps *OpsAgentPluginServer) configGeneration(ctx context.Context) error {
 		"-logs", LogsDirectory, "-state", FluentBitStateDiectory)
 
 	if err := runCommand(fluentBitConfigGenerationCmd, ps.logger); err != nil {
-		errorWithDetails := fmt.Errorf("failed to generate config yaml for FluentBit: %s", err)
+		errorWithDetails := fmt.Sprintf("failed to generate config yaml for FluentBit: %s", err)
 		ps.logger.Errorf("%s", errorWithDetails)
-		return errorWithDetails
+		journal.Print(journal.PriErr, errorWithDetails)
+		return fmt.Errorf("%s", errorWithDetails)
 	}
 	return nil
 }
@@ -149,7 +153,9 @@ func (ps *OpsAgentPluginServer) runAgent(ctx context.Context) {
 	wg.Add(1)
 	go restartCommand(ctx, &wg, ps.logger, execFluentBitCmd)
 	wg.Wait()
-	ps.logger.Infof("wait group has exited")
+	msg := "wait group has exited"
+	ps.logger.Infof(msg)
+	journal.Print(journal.PriInfo, msg)
 }
 
 // Start starts the plugin and initiates the plugin functionality.
@@ -157,7 +163,9 @@ func (ps *OpsAgentPluginServer) runAgent(ctx context.Context) {
 // and just listening on the address handed off waiting for the request.
 func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest) (*pb.StartResponse, error) {
 	if ps.startContext != nil && ps.startContext.Err() == nil {
-		ps.logger.Infof("Ops Agent plugin is started already, skipping the current Start() request")
+		skipMsg := fmt.Sprintf("%s Ops Agent plugin is started already, skipping the current Start() request", OpsAgentPluginSelfLogTag)
+		journal.Print(journal.PriInfo, skipMsg)
+		ps.logger.Infof(skipMsg)
 		return &pb.StartResponse{}, nil
 	}
 
@@ -179,11 +187,15 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 // state before exiting it can be done on this request.
 func (ps *OpsAgentPluginServer) Stop(ctx context.Context, msg *pb.StopRequest) (*pb.StopResponse, error) {
 	if ps.cancel == nil || ps.startContext == nil || ps.startContext.Err() != nil {
-		ps.logger.Warnf("Ops Agent plugin is already stoppped, skipping the current Stop() request")
+		warningMsg := fmt.Sprintf("%s Ops Agent plugin is already stoppped, skipping the current Stop() request", OpsAgentPluginSelfLogTag)
+		journal.Print(journal.PriWarning, warningMsg)
+		ps.logger.Warnf(warningMsg)
 		return &pb.StopResponse{}, nil
 
 	}
-	ps.logger.Infof("Handling stop request %+v, stopping core plugin...", msg)
+	infoMsg := fmt.Sprintf("%s Handling stop request %+v, stopping core plugin...", OpsAgentPluginSelfLogTag, msg)
+	journal.Print(journal.PriInfo, infoMsg)
+	ps.logger.Infof(infoMsg)
 	ps.cancel()
 	return &pb.StopResponse{}, nil
 }
@@ -212,7 +224,9 @@ func runCommand(cmd *exec.Cmd, logger logs.StructuredLogger) error {
 	var outb, errb bytes.Buffer
 	cmd.Stderr = &errb
 	cmd.Stdout = &outb
-	logger.Infof("Running command: %s, with arguments: %s", cmd.Path, cmd.Args)
+	msg := fmt.Sprintf("%s Running command: %s, with arguments: %s", OpsAgentPluginSelfLogTag, cmd.Path, cmd.Args)
+	logger.Infof(msg)
+	journal.Print(journal.PriInfo, msg)
 	if err := cmd.Run(); err != nil {
 		fullError := fmt.Errorf("failed to execute cmd: %s with arguments %s, \ncommand output: %s\n error: %s %s", cmd.Path, cmd.Args, outb.String(), errb.String(), err)
 		return fullError
@@ -227,7 +241,9 @@ func restartCommand(ctx context.Context, wg *sync.WaitGroup, logger logs.Structu
 	}
 	if ctx.Err() != nil {
 		// context has been cancelled
-		logger.Warnf("Context has been cancelled, exiting")
+		msg := fmt.Sprintf("%s Context has been cancelled, exiting", OpsAgentPluginSelfLogTag)
+		journal.Print(journal.PriWarning, msg)
+		logger.Warnf(msg)
 		return
 	}
 
@@ -248,21 +264,27 @@ func restartCommand(ctx context.Context, wg *sync.WaitGroup, logger logs.Structu
 	var outb, errb bytes.Buffer
 	cmd.Stderr = &errb
 	cmd.Stdout = &outb
-	logger.Infof("Restarting command: %s, with arguments: %s", cmd.Path, cmd.Args)
+	msg := fmt.Sprintf("%s Restarting command: %s, with arguments: %s", OpsAgentPluginSelfLogTag, cmd.Path, cmd.Args)
+	logger.Infof(msg)
+	journal.Print(journal.PriInfo, msg)
 	err := cmd.Run()
 	if err != nil {
 		// https://pkg.go.dev/os#ProcessState.ExitCode Don't restart if the command was terminated by signals.
-		fullError := fmt.Errorf("failed to execute cmd: %s with arguments %s, \ncommand output: %s\n error: %s %s", cmd.Path, cmd.Args, outb.String(), errb.String(), err)
+		fullError := fmt.Sprintf("%s failed to execute cmd: %s with arguments %s, \ncommand output: %s\n error: %s %s", OpsAgentPluginSelfLogTag, cmd.Path, cmd.Args, outb.String(), errb.String(), err)
 
 		if exiterr, ok := err.(*exec.ExitError); ok && exiterr.ProcessState.ExitCode() == -1 {
-			notRestartedError := fmt.Errorf("command terminated by signals, not restarting\n%s", fullError)
-			logger.Errorf("%s", notRestartedError)
+			notRestartedError := fmt.Sprintf("%s command terminated by signals, not restarting\n%s", OpsAgentPluginSelfLogTag, fullError)
+			logger.Errorf(notRestartedError)
+			journal.Print(journal.PriErr, notRestartedError)
 			return
 		}
-		logger.Errorf("%s", fullError)
+		logger.Errorf(fullError)
+		journal.Print(journal.PriErr, fullError)
 
 	} else {
-		logger.Infof("command: %s, with arguments: %s completed successfully", cmd.Path, cmd.Args)
+		msg := fmt.Sprintf("%s command: %s, with arguments: %s completed successfully", OpsAgentPluginSelfLogTag, cmd.Path, cmd.Args)
+		logger.Infof(msg)
+		journal.Print(journal.PriInfo, msg)
 	}
 	// Sleep 10 seconds before retarting the task
 	time.Sleep(5 * time.Second)
