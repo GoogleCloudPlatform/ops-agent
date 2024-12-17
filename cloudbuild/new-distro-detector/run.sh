@@ -54,7 +54,7 @@ gsutil -q cp "${LAST_KNOWN_LIST}" - \
   | tee known_families.txt
 
 # If there is a difference, print the diff, and...
-if ! diff known_families.txt current_families.txt; then
+if ! diff --ignore-all-space --ignore-blank-lines known_families.txt current_families.txt; then
   # Print instructions for handling the error.
   # Set +x temporarily so that the banner is only printed once.
   set +x
