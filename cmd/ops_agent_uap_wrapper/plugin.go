@@ -3,19 +3,21 @@ package main
 import (
 	"context"
 	"flag"
-	"log"
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
 
 	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_wrapper/google_guest_agent/plugin"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
+	"github.com/coreos/go-systemd/journal"
 	"google.golang.org/grpc"
 )
 
 // We are able to compute UAP Plugin State Directory in advance, instead of receiving it through Start().
 const OpsAgentUapPluginLog = "ops-agent-uap-plugin.log"
 const UapPluginStateDir = "/var/log/google-cloud-ops-agent"
+const OpsAgentPluginSelfLogTag = "[Ops Agent Plugin Log]"
 
 var (
 	// protocol is the protocol to use tcp/uds.
@@ -66,11 +68,12 @@ func main() {
 	// }
 
 	ctx := context.Background()
-	log.Println("Starting Ops Agent UAP Plugin")
+	msg := fmt.Sprintf("%s Starting Ops Agent UAP Plugin", OpsAgentPluginSelfLogTag)
+	journal.Print(journal.PriInfo, msg)
 	ps.Start(ctx, &pb.StartRequest{Config: &pb.StartRequest_Config{StateDirectoryPath: "/var/log/google-cloud-ops-agent"}})
 	for {
 		status, _ := ps.GetStatus(ctx, &pb.GetStatusRequest{})
-		log.Print(status)
+		journal.Print(journal.PriInfo, fmt.Sprintf("%s", status))
 		if status.Code != 0 {
 			break
 		}
@@ -84,7 +87,8 @@ func CreateOpsAgentUapPluginLogger(logDir string, fileName string) logs.Structur
 		// Directory does not exist, create it
 		err := os.Mkdir(logDir, 0755) // 0755 sets permissions (read/write/execute for owner, read/execute for group and others)
 		if err != nil {
-			log.Printf("failed to create directory for %q: %v", logDir, err)
+			msg := fmt.Sprintf("%s failed to create directory for %q: %v", OpsAgentPluginSelfLogTag, logDir, err)
+			journal.Print(journal.PriErr, msg)
 			logDir = ""
 		}
 	}
@@ -93,7 +97,8 @@ func CreateOpsAgentUapPluginLogger(logDir string, fileName string) logs.Structur
 	path := filepath.Join(logDir, fileName)
 	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		log.Printf("failed to open health checks log file %q: %v", path, err)
+		msg := fmt.Sprintf("%s failed to open ops agent plugin log file %q: %v", OpsAgentPluginSelfLogTag, path, err)
+		journal.Print(journal.PriErr, msg)
 		return logs.Default()
 	}
 	file.Close()
