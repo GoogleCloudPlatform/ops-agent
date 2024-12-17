@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"path/filepath"
 	"sync"
 
 	"bytes"
@@ -15,6 +14,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/status"
 
 	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_wrapper/google_guest_agent/plugin"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
@@ -27,7 +27,6 @@ const LogsDirectory = "/var/log/google-cloud-ops-agent"
 const FluentBitStateDiectory = "/var/lib/google-cloud-ops-agent/fluent-bit"
 const FluentBitRuntimeDirectory = "/run/google-cloud-ops-agent-fluent-bit"
 const OtelRuntimeDirectory = "/run/google-cloud-ops-agent-opentelemetry-collector"
-const OpsAgentUapPluginLog = "ops-agent-uap-plugin.log"
 
 // PluginServer implements the plugin RPC server interface.
 type OpsAgentPluginServer struct {
@@ -52,7 +51,7 @@ func (ps *OpsAgentPluginServer) Cancel() {
 	}
 }
 
-// sigHandler handles SIGTERM, SIGINT etc signals. The function provided in the
+// sigHandler only handles SIGTERM signal. The function provided in the
 // cancel argument handles internal framework termination and the plugin
 // interface notification of the "exiting" state.
 func sigHandler(ctx context.Context, cancel func(sig os.Signal)) {
@@ -70,6 +69,46 @@ func sigHandler(ctx context.Context, cancel func(sig os.Signal)) {
 	}()
 }
 
+func (ps *OpsAgentPluginServer) configGeneration(ctx context.Context) error {
+	// Config Generation Tasks
+	configValidationCmd := exec.CommandContext(ctx,
+		Prefix+"/libexec/google_cloud_ops_agent_engine",
+		"-in", Sysconfdir+"/google-cloud-ops-agent/config.yaml",
+	)
+	if err := runCommand(configValidationCmd, ps.logger); err != nil {
+		errorWithDetails := fmt.Errorf("failed to validate Ops Agent default config.yaml: %s", err)
+		ps.logger.Errorf("%s", errorWithDetails)
+		return errorWithDetails
+	}
+
+	otelConfigGenerationCmd := exec.CommandContext(ctx,
+		Prefix+"/libexec/google_cloud_ops_agent_engine",
+		"-service", "otel",
+		"-in", Sysconfdir+"/google-cloud-ops-agent/config.yaml",
+		"-out", OtelRuntimeDirectory,
+		"-logs", LogsDirectory)
+
+	if err := runCommand(otelConfigGenerationCmd, ps.logger); err != nil {
+		errorWithDetails := fmt.Errorf("failed to generate config yaml for Otel: %s", err)
+		ps.logger.Errorf("%s", errorWithDetails)
+		return errorWithDetails
+	}
+
+	fluentBitConfigGenerationCmd := exec.CommandContext(ctx,
+		Prefix+"/libexec/google_cloud_ops_agent_engine",
+		"-service", "fluentbit",
+		"-in", Sysconfdir+"/google-cloud-ops-agent/config.yaml",
+		"-out", FluentBitRuntimeDirectory,
+		"-logs", LogsDirectory, "-state", FluentBitStateDiectory)
+
+	if err := runCommand(fluentBitConfigGenerationCmd, ps.logger); err != nil {
+		errorWithDetails := fmt.Errorf("failed to generate config yaml for FluentBit: %s", err)
+		ps.logger.Errorf("%s", errorWithDetails)
+		return errorWithDetails
+	}
+	return nil
+}
+
 func (ps *OpsAgentPluginServer) runAgent(ctx context.Context) {
 	// Register signal handler and implements its callback.
 	sigHandler(ctx, func(_ os.Signal) {
@@ -79,53 +118,15 @@ func (ps *OpsAgentPluginServer) runAgent(ctx context.Context) {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 	})
 
-	defer func() {
-		ps.logger.Infof("Stopping Ops Agent plugin...")
-		ps.cancel()
-	}()
-
-	// Starting ExecStartPre commands
-	execStartPreConfigValidationCmd := exec.CommandContext(ctx,
-		Prefix+"/libexec/google_cloud_ops_agent_engine",
-		"-in", Sysconfdir+"/google-cloud-ops-agent/config.yaml",
-	)
-	if err := runCommand(execStartPreConfigValidationCmd, ps.logger); err != nil {
-		ps.logger.Errorf("failed to validate Ops Agent default config.yaml: %s", err)
-		return
-	}
-
-	execStartPreOtelCmd := exec.CommandContext(ctx,
-		Prefix+"/libexec/google_cloud_ops_agent_engine",
-		"-service", "otel",
-		"-in", Sysconfdir+"/google-cloud-ops-agent/config.yaml",
-		"-out", OtelRuntimeDirectory,
-		"-logs", LogsDirectory)
-
-	if err := runCommand(execStartPreOtelCmd, ps.logger); err != nil {
-		ps.logger.Errorf("failed to generate config yaml for Otel: %s", err)
-		return // context is cancelled on Return, and Start() can be triggerred again to start up ops Agent plugin again.
-	}
-
-	execStartPreFluentBitCmd := exec.CommandContext(ctx,
-		Prefix+"/libexec/google_cloud_ops_agent_engine",
-		"-service", "fluentbit",
-		"-in", Sysconfdir+"/google-cloud-ops-agent/config.yaml",
-		"-out", FluentBitRuntimeDirectory,
-		"-logs", LogsDirectory, "-state", FluentBitStateDiectory)
-
-	if err := runCommand(execStartPreFluentBitCmd, ps.logger); err != nil {
-		ps.logger.Errorf("failed to generate config yaml for FluentBit: %s", err)
-		return
-	}
-
+	// Starting the Diagnostics service, and subagents.
 	var wg sync.WaitGroup
 	// Starting Diagnostics Service
-	execDiagnosticsCmd := exec.CommandContext(ctx,
+	runDiagnosticsCmd := exec.CommandContext(ctx,
 		Prefix+"/libexec/google_cloud_ops_agent_diagnostics",
 		"-config", Sysconfdir+"/google-cloud-ops-agent/config.yaml",
 	)
 	wg.Add(1)
-	go restartCommand(ctx, &wg, ps.logger, execDiagnosticsCmd)
+	go restartCommand(ctx, &wg, ps.logger, runDiagnosticsCmd)
 
 	// Starting Otel
 	execOtelCmd := exec.CommandContext(ctx,
@@ -155,18 +156,19 @@ func (ps *OpsAgentPluginServer) runAgent(ctx context.Context) {
 // Until plugin receives Start request plugin is expected to be not functioning
 // and just listening on the address handed off waiting for the request.
 func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest) (*pb.StartResponse, error) {
-	logDir := msg.Config.GetStateDirectoryPath()
-	if (logDir == "") {ps.logger = logs.Default()} else {
-		ps.logger = CreateOpsAgentUapPluginLogger(logDir)
-	}
-	
 	if ps.startContext != nil && ps.startContext.Err() == nil {
 		ps.logger.Infof("Ops Agent plugin is started already, skipping the current Start() request")
 		return &pb.StartResponse{}, nil
 	}
+
 	pCtx, cancel := context.WithCancel(context.Background())
 	ps.cancel = cancel
 	ps.startContext = pCtx
+	if err := ps.configGeneration(pCtx); err != nil {
+		cancel()
+		return nil, status.Errorf(1, "%s", err)
+	}
+
 	go ps.runAgent(pCtx)
 	return &pb.StartResponse{}, nil
 }
@@ -218,7 +220,7 @@ func runCommand(cmd *exec.Cmd, logger logs.StructuredLogger) error {
 	return nil
 }
 
-func restartCommand(ctx context.Context, wg *sync.WaitGroup, logger logs.StructuredLogger, cmd *exec.Cmd ) {
+func restartCommand(ctx context.Context, wg *sync.WaitGroup, logger logs.StructuredLogger, cmd *exec.Cmd) {
 	defer wg.Done()
 	if cmd == nil {
 		return
@@ -266,27 +268,4 @@ func restartCommand(ctx context.Context, wg *sync.WaitGroup, logger logs.Structu
 	time.Sleep(5 * time.Second)
 	wg.Add(1)
 	go restartCommand(childCtx, wg, logger, cmd)
-}
-
-func CreateOpsAgentUapPluginLogger(logDir string) logs.StructuredLogger {
-	// Check if the directory already exists
-	if _, err := os.Stat(logDir); os.IsNotExist(err) {
-		// Directory does not exist, create it
-		err := os.Mkdir(logDir, 0755) // 0755 sets permissions (read/write/execute for owner, read/execute for group and others)
-		if err != nil {
-			log.Printf("failed to create directory for %q: %v", logDir, err)
-			logDir = ""
-		}
-	}
-
-	// Create the log file under the directory
-	path := filepath.Join(logDir, OpsAgentUapPluginLog)
-	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		log.Printf("failed to open health checks log file %q: %v", path, err)
-		return logs.Default()
-	}
-	file.Close()
-
-	return logs.New(path)
 }
