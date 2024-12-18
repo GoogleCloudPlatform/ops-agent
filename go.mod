@@ -45,6 +45,7 @@ require (
 
 require (
 	golang.org/x/sync v0.10.0
+	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf
 	google.golang.org/genproto/googleapis/api v0.0.0-20240827150818-7e3bb234dfed
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -72,7 +73,6 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20240423153145-555b57ec207b // indirect
-	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/digitalocean/godo v1.118.0 // indirect
 	github.com/distribution/reference v0.5.0 // indirect
