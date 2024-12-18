@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"strings"
 	"sync"
 
 	"bytes"
@@ -71,13 +72,30 @@ func sigHandler(ctx context.Context, cancel func(sig os.Signal)) {
 	}()
 }
 
-func (ps *OpsAgentPluginServer) configGeneration(ctx context.Context) error {
+func (ps *OpsAgentPluginServer) findPreExistentAgent(ctx context.Context, serviceName string) (bool, error) {
+	findOpsAgentCmd := exec.CommandContext(ctx,
+		"systemctl", "status", serviceName,
+	)
+	output, err := runCommand(findOpsAgentCmd, ps.logger)
+	if err != nil && strings.Contains(err.Error(), fmt.Sprintf("Unit %s could not be found.", serviceName)) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("unable to verify the existing installation of %s. Error: %s", serviceName, err)
+	}
+	if strings.Contains(output, "Loaded:") {
+		return true, nil
+	}
+	return false, nil
+}
+
+func (ps *OpsAgentPluginServer) generateConfig(ctx context.Context) error {
 	// Config Generation Tasks
 	configValidationCmd := exec.CommandContext(ctx,
 		Prefix+"/libexec/google_cloud_ops_agent_engine",
 		"-in", Sysconfdir+"/google-cloud-ops-agent/config.yaml",
 	)
-	if err := runCommand(configValidationCmd, ps.logger); err != nil {
+	if _, err := runCommand(configValidationCmd, ps.logger); err != nil {
 		errorWithDetails := fmt.Sprintf("%s failed to validate Ops Agent default config.yaml: %s", OpsAgentPluginSelfLogTag, err)
 		journal.Print(journal.PriErr, errorWithDetails)
 		ps.logger.Errorf("%s", errorWithDetails)
@@ -91,7 +109,7 @@ func (ps *OpsAgentPluginServer) configGeneration(ctx context.Context) error {
 		"-out", OtelRuntimeDirectory,
 		"-logs", LogsDirectory)
 
-	if err := runCommand(otelConfigGenerationCmd, ps.logger); err != nil {
+	if _, err := runCommand(otelConfigGenerationCmd, ps.logger); err != nil {
 		errorWithDetails := fmt.Sprintf("%s failed to generate config yaml for Otel: %s", OpsAgentPluginSelfLogTag, err)
 		journal.Print(journal.PriErr, errorWithDetails)
 		ps.logger.Errorf(errorWithDetails)
@@ -105,7 +123,7 @@ func (ps *OpsAgentPluginServer) configGeneration(ctx context.Context) error {
 		"-out", FluentBitRuntimeDirectory,
 		"-logs", LogsDirectory, "-state", FluentBitStateDiectory)
 
-	if err := runCommand(fluentBitConfigGenerationCmd, ps.logger); err != nil {
+	if _, err := runCommand(fluentBitConfigGenerationCmd, ps.logger); err != nil {
 		errorWithDetails := fmt.Sprintf("failed to generate config yaml for FluentBit: %s", err)
 		ps.logger.Errorf("%s", errorWithDetails)
 		journal.Print(journal.PriErr, errorWithDetails)
@@ -173,9 +191,56 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	pCtx, cancel := context.WithCancel(context.Background())
 	ps.cancel = cancel
 	ps.startContext = pCtx
-	if err := ps.configGeneration(pCtx); err != nil {
+	// Find pre-existent ops agent installation, and conflicting legacy agent installation.
+	// foundOpsAgent, err := ps.findPreExistentAgent(pCtx, "google-cloud-ops-agent.service")
+	// if err != nil {
+	// 	cancel()
+	// 	journal.Print(journal.PriWarning, err.Error())
+	// 	ps.logger.Warnf(err.Error())
+	// 	return nil, status.Error(1, err.Error())
+	// }
+	// if foundOpsAgent {
+	// 	cancel()
+	// 	msg := "The Ops Agent is already installed; stopping the current installation."
+	// 	journal.Print(journal.PriWarning, msg)
+	// 	ps.logger.Warnf(msg)
+	// 	return nil, status.Errorf(1, msg)
+	// }
+	foundLegacyMonitoringAgent, err := ps.findPreExistentAgent(pCtx, "stackdriver-agent.service")
+	if err != nil {
 		cancel()
-		return nil, status.Errorf(1, "%s", err)
+		journal.Print(journal.PriWarning, err.Error())
+		ps.logger.Warnf(err.Error())
+		return nil, status.Error(1, fmt.Sprintf("%s", err))
+	}
+	if foundLegacyMonitoringAgent {
+		cancel()
+		msg := "The legacy monitoring agent is installed on the VM; stopping the current Ops Agent installation."
+		journal.Print(journal.PriWarning, msg)
+		ps.logger.Warnf(msg)
+		return nil, status.Errorf(1, msg)
+	}
+	foundLegacyLoggingAgent, err := ps.findPreExistentAgent(pCtx, "google-fluentd.service")
+	if err != nil {
+		cancel()
+		journal.Print(journal.PriWarning, err.Error())
+		ps.logger.Warnf(err.Error())
+		return nil, status.Error(1, fmt.Sprintf("%s", err))
+	}
+	if foundLegacyLoggingAgent {
+		cancel()
+		msg := "The legacy logging agent is installed on the VM; stopping the current Ops Agent installation."
+		journal.Print(journal.PriWarning, msg)
+		ps.logger.Warnf(msg)
+		return nil, status.Errorf(1, msg)
+	}
+
+	// No pre-existent installations identified; start the new Ops Agent installation with config validation and config generation.
+	if err := ps.generateConfig(pCtx); err != nil {
+		cancel()
+		journal.Print(journal.PriWarning, err.Error())
+		ps.logger.Warnf(err.Error())
+		return nil, status.Errorf(1, fmt.Sprintf("%s", err))
 	}
 
 	go ps.runAgent(pCtx)
@@ -214,9 +279,9 @@ func (ps *OpsAgentPluginServer) GetStatus(ctx context.Context, msg *pb.GetStatus
 	return &pb.Status{Code: 0, Results: []string{"Plugin is running ok"}}, nil
 }
 
-func runCommand(cmd *exec.Cmd, logger logs.StructuredLogger) error {
+func runCommand(cmd *exec.Cmd, logger logs.StructuredLogger) (string, error) {
 	if cmd == nil {
-		return nil
+		return "", nil
 	}
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Pdeathsig: syscall.SIGKILL,
@@ -230,9 +295,9 @@ func runCommand(cmd *exec.Cmd, logger logs.StructuredLogger) error {
 	journal.Print(journal.PriInfo, msg)
 	if err := cmd.Run(); err != nil {
 		fullError := fmt.Errorf("failed to execute cmd: %s with arguments %s, \ncommand output: %s\n error: %s %s", cmd.Path, cmd.Args, outb.String(), errb.String(), err)
-		return fullError
+		return "", fullError
 	}
-	return nil
+	return outb.String(), nil
 }
 
 func restartCommand(ctx context.Context, wg *sync.WaitGroup, logger logs.StructuredLogger, cmd *exec.Cmd, remainingRetry int, totalRetry int) {
