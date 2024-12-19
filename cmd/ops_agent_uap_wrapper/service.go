@@ -296,8 +296,13 @@ func runCommand(cmd *exec.Cmd, logger logs.StructuredLogger) (string, error) {
 	journal.Print(journal.PriInfo, "%s", msg)
 	if err := cmd.Run(); err != nil {
 		fullError := fmt.Errorf("failed to execute cmd: %s with arguments %s, \ncommand output: %s\n error: %s %s", cmd.Path, cmd.Args, outb.String(), errb.String(), err)
+		logger.Errorf(fullError.Error())
+		journal.Print(journal.PriErr, "%s", fullError)
 		return fmt.Sprintf("%s %s", outb.String(), errb.String()), fullError
 	}
+	msg = fmt.Sprintf("output: %s, err: %s", outb.String(), errb.String())
+	logger.Infof(msg)
+	journal.Print(journal.PriInfo, "%s", msg)
 	return fmt.Sprintf("%s %s", outb.String(), errb.String()), nil
 }
 
