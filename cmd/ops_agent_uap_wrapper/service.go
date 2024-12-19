@@ -77,7 +77,7 @@ func (ps *OpsAgentPluginServer) findPreExistentAgent(ctx context.Context, servic
 		"systemctl", "status", serviceName,
 	)
 	output, err := runCommand(findOpsAgentCmd, ps.logger)
-	if strings.Contains(output, fmt.Sprintf("Unit %s could not be found.", serviceName)) {
+	if strings.Contains(output, fmt.Sprintf("Unit %s could not be found.", serviceName)) || strings.Contains(output, "Loaded: not-found") {
 		return false, nil
 	}
 	if strings.Contains(output, "Loaded:") {
