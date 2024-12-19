@@ -77,14 +77,15 @@ func (ps *OpsAgentPluginServer) findPreExistentAgent(ctx context.Context, servic
 		"systemctl", "status", serviceName,
 	)
 	output, err := runCommand(findOpsAgentCmd, ps.logger)
-	if err != nil && strings.Contains(err.Error(), fmt.Sprintf("Unit %s could not be found.", serviceName)) {
+	if strings.Contains(output, fmt.Sprintf("Unit %s could not be found.", serviceName)) {
 		return false, nil
-	}
-	if err != nil {
-		return false, fmt.Errorf("unable to verify the existing installation of %s. Error: %s", serviceName, err)
 	}
 	if strings.Contains(output, "Loaded:") {
 		return true, nil
+	}
+
+	if err != nil {
+		return false, fmt.Errorf("unable to verify the existing installation of %s. Error: %s", serviceName, err)
 	}
 	return false, nil
 }
@@ -153,7 +154,7 @@ func (ps *OpsAgentPluginServer) runAgent(ctx context.Context) {
 
 	// Starting Otel
 	execOtelCmd := exec.CommandContext(ctx,
-		Prefix+"/subagents/opentelemetry-collector",
+		Prefix+"/subagents/opentelemetry-collector/otelopscol",
 		"--config", OtelRuntimeDirectory+"/otel.yaml",
 	)
 	wg.Add(1)
@@ -292,12 +293,12 @@ func runCommand(cmd *exec.Cmd, logger logs.StructuredLogger) (string, error) {
 	cmd.Stdout = &outb
 	msg := fmt.Sprintf("%s Running command: %s, with arguments: %s", OpsAgentPluginSelfLogTag, cmd.Path, cmd.Args)
 	logger.Infof(msg)
-	journal.Print(journal.PriInfo, msg)
+	journal.Print(journal.PriInfo, "%s", msg)
 	if err := cmd.Run(); err != nil {
 		fullError := fmt.Errorf("failed to execute cmd: %s with arguments %s, \ncommand output: %s\n error: %s %s", cmd.Path, cmd.Args, outb.String(), errb.String(), err)
-		return "", fullError
+		return fmt.Sprintf("%s %s", outb.String(), errb.String()), fullError
 	}
-	return outb.String(), nil
+	return fmt.Sprintf("%s %s", outb.String(), errb.String()), nil
 }
 
 func restartCommand(ctx context.Context, wg *sync.WaitGroup, logger logs.StructuredLogger, cmd *exec.Cmd, remainingRetry int, totalRetry int) {
@@ -338,7 +339,7 @@ func restartCommand(ctx context.Context, wg *sync.WaitGroup, logger logs.Structu
 	cmd.Stdout = &outb
 	msg := fmt.Sprintf("%s Restarting command: %s, with arguments: %s", OpsAgentPluginSelfLogTag, cmd.Path, cmd.Args)
 	logger.Infof(msg)
-	journal.Print(journal.PriInfo, msg)
+	journal.Print(journal.PriInfo, "%s", msg)
 	err := cmd.Run()
 	retryCount := remainingRetry
 	if err != nil {
@@ -348,11 +349,11 @@ func restartCommand(ctx context.Context, wg *sync.WaitGroup, logger logs.Structu
 		if exiterr, ok := err.(*exec.ExitError); ok && exiterr.ProcessState.ExitCode() == -1 {
 			notRestartedError := fmt.Sprintf("%s command terminated by signals, not restarting\n%s", OpsAgentPluginSelfLogTag, fullError)
 			logger.Errorf(notRestartedError)
-			journal.Print(journal.PriErr, notRestartedError)
+			journal.Print(journal.PriErr, "%s", notRestartedError)
 			return
 		}
 		logger.Errorf(fullError)
-		journal.Print(journal.PriErr, fullError)
+		journal.Print(journal.PriErr, "%s", fullError)
 		retryCount -= 1
 
 	} else {
