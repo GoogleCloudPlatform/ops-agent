@@ -184,6 +184,11 @@ func (r GCEResource) PrometheusStyleMetadata() map[string]string {
 	return metaLabels
 }
 
+func (r GCEResource) ExtraLogLabels() map[string]string {
+	// FIXME
+	return nil
+}
+
 type GCEResourceBuilderInterface interface {
 	GetResource() (Resource, error)
 }
