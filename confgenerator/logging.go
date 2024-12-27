@@ -28,38 +28,47 @@ import (
 const InstrumentationSourceLabel = `labels."logging.googleapis.com/instrumentation_source"`
 const HttpRequestKey = "logging.googleapis.com/httpRequest"
 
-// setLogNameComponents generates a series of components that rewrites the tag on log entries tagged `tag` to be `logName`.
-func setLogNameComponents(ctx context.Context, tag, logName, receiverType string, hostName string) []fluentbit.Component {
-	return LoggingProcessorModifyFields{
-		Fields: map[string]*ModifyField{
-			"logName": {
-				DefaultValue: &logName,
-			},
-			`labels."compute.googleapis.com/resource_name"`: {
-				DefaultValue: &hostName,
-			},
-			`labels."agent.googleapis.com/log_file_path"`: {
-				MoveFrom: `jsonPayload."agent.googleapis.com/log_file_path"`,
-			},
-			// `labels."agent.googleapis.com/receiver_type"`: {
-			// 	StaticValue: &receiverType,
-			// },
+func setLogNameProcessor(ctx context.Context, logName string) LoggingProcessorModifyFields {
+	p := platform.FromContext(ctx)
+	hostName := p.Hostname()
+	fields := map[string]*ModifyField{
+		"logName": {
+			DefaultValue: &logName,
 		},
-	}.Components(ctx, tag, "setlogname")
+		`labels."compute.googleapis.com/resource_name"`: {
+			DefaultValue: &hostName,
+		},
+	}
+	r, err := p.GetResource()
+	if err == nil {
+		for k, v := range r.ExtraLogLabels() {
+			v := v
+			fields[fmt.Sprintf("labels.%q", k)] = &ModifyField{
+				DefaultValue: &v,
+			}
+		}
+	}
+	return LoggingProcessorModifyFields{
+		Fields: fields,
+	}
 }
 
-func otelSetLogNameComponents(ctx context.Context, logName, hostName string) []otel.Component {
-	components, err := LoggingProcessorModifyFields{
-		Fields: map[string]*ModifyField{
-			// TODO: Prepend `receiver_id.` if it already exists, like the `fluent_forward` receiver?
-			"logName": {
-				DefaultValue: &logName,
-			},
-			`labels."compute.googleapis.com/resource_name"`: {
-				DefaultValue: &hostName,
-			},
-		},
-	}.Processors(ctx)
+// setLogNameComponents generates a series of components that rewrites the tag on log entries tagged `tag` to be `logName`.
+func setLogNameComponents(ctx context.Context, tag, logName, receiverType string) []fluentbit.Component {
+	p := setLogNameProcessor(ctx, logName)
+	p.Fields[`labels."agent.googleapis.com/log_file_path"`] = &ModifyField{
+		MoveFrom: `jsonPayload."agent.googleapis.com/log_file_path"`,
+	}
+	// p.Fields[`labels."agent.googleapis.com/receiver_type"`] = &ModifyField{
+	// 	StaticValue: &receiverType,
+	// }
+	return p.Components(ctx, tag, "setlogname")
+}
+
+func otelSetLogNameComponents(ctx context.Context, logName string) []otel.Component {
+	// TODO: Prepend `receiver_id.` if it already exists, like the `fluent_forward` receiver?
+	p := setLogNameProcessor(ctx, logName)
+	components, err := p.Processors(ctx)
 	if err != nil {
 		// We're generating a hard-coded config, so this should never fail.
 		panic(err)

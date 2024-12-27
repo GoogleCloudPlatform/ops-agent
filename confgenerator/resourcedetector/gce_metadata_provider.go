@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	gcp_metadata "cloud.google.com/go/compute/metadata"
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
 )
 
 const notAvailable = "NOT AVAILABLE"
@@ -131,4 +132,8 @@ func (gmp *GCEMetadataProvider) getInterfaceIPv4s() (map[string]string, error) {
 		interfaces[name] = ip
 	}
 	return interfaces, err
+}
+
+func (gmp *GCEMetadataProvider) getMIG() (gcp.ManagedInstanceGroup, error) {
+	return gcp.NewDetector().GCEManagedInstanceGroup()
 }
