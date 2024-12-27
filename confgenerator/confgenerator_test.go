@@ -24,6 +24,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
@@ -72,6 +73,11 @@ var (
 		Metadata:      map[string]string{"test-key": "test-value", "test-escape": "$foo", "test-escape-parentheses": "${foo:bar}"},
 		Label:         map[string]string{"test-label-key": "test-label-value"},
 		InterfaceIPv4: map[string]string{"test-interface": "test-interface-ipv4"},
+		ManagedInstanceGroup: gcp.ManagedInstanceGroup{
+			Name:     "test-mig",
+			Type:     gcp.Zone,
+			Location: "test-zone",
+		},
 	}
 	linuxTestPlatform = platformConfig{
 		name:            "linux",

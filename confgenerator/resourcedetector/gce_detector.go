@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
 	"github.com/prometheus/prometheus/util/strutil"
 	"google.golang.org/genproto/googleapis/api/monitoredres"
 )
@@ -65,6 +66,7 @@ type gceDataProvider interface {
 	getLabels() (map[string]string, error)
 	getMetadata() (map[string]string, error)
 	getInterfaceIPv4s() (map[string]string, error)
+	getMIG() (gcp.ManagedInstanceGroup, error)
 }
 
 // List of single-valued attributes (non-nested)
@@ -95,20 +97,21 @@ var nestedAttributeSpec = map[gceAttribute]func(gceDataProvider) (map[string]str
 
 // GCEResource implements the Resource interface and provide attributes of the VM when on GCE
 type GCEResource struct {
-	Project       string
-	Zone          string
-	Network       string
-	Subnetwork    string
-	PublicIP      string
-	PrivateIP     string
-	InstanceID    string
-	InstanceName  string
-	Tags          string
-	MachineType   string
-	DefaultScopes []string
-	Metadata      map[string]string
-	Label         map[string]string
-	InterfaceIPv4 map[string]string
+	Project              string
+	Zone                 string
+	Network              string
+	Subnetwork           string
+	PublicIP             string
+	PrivateIP            string
+	InstanceID           string
+	InstanceName         string
+	Tags                 string
+	MachineType          string
+	DefaultScopes        []string
+	Metadata             map[string]string
+	Label                map[string]string
+	InterfaceIPv4        map[string]string
+	ManagedInstanceGroup gcp.ManagedInstanceGroup
 }
 
 func (r GCEResource) ProjectName() string {
@@ -185,8 +188,17 @@ func (r GCEResource) PrometheusStyleMetadata() map[string]string {
 }
 
 func (r GCEResource) ExtraLogLabels() map[string]string {
-	// FIXME
-	return nil
+	l := make(map[string]string)
+	if r.ManagedInstanceGroup.Name != "" {
+		l[`compute.googleapis.com/instance_group_manager/name`] = r.ManagedInstanceGroup.Name
+	}
+	switch r.ManagedInstanceGroup.Type {
+	case gcp.Zone:
+		l[`compute.googleapis.com/instance_group_manager/zone`] = r.ManagedInstanceGroup.Location
+	case gcp.Region:
+		l[`compute.googleapis.com/instance_group_manager/region`] = r.ManagedInstanceGroup.Location
+	}
+	return l
 }
 
 type GCEResourceBuilderInterface interface {
@@ -225,21 +237,27 @@ func (gd *GCEResourceBuilder) GetResource() (Resource, error) {
 		nestedAttributes[attrName] = attr
 	}
 
+	mig, err := gd.provider.getMIG()
+	if err != nil {
+		return nil, err
+	}
+
 	res := GCEResource{
-		Project:       singleAttributes[project],
-		Zone:          singleAttributes[zone],
-		Network:       singleAttributes[network],
-		Subnetwork:    singleAttributes[subnetwork],
-		PublicIP:      singleAttributes[publicIP],
-		PrivateIP:     singleAttributes[privateIP],
-		InstanceID:    singleAttributes[instanceID],
-		InstanceName:  singleAttributes[instanceName],
-		Tags:          singleAttributes[tags],
-		MachineType:   singleAttributes[machineType],
-		DefaultScopes: multiAttributes[defaultScopes],
-		Metadata:      nestedAttributes[metadata],
-		Label:         nestedAttributes[label],
-		InterfaceIPv4: nestedAttributes[interfaceIPv4],
+		Project:              singleAttributes[project],
+		Zone:                 singleAttributes[zone],
+		Network:              singleAttributes[network],
+		Subnetwork:           singleAttributes[subnetwork],
+		PublicIP:             singleAttributes[publicIP],
+		PrivateIP:            singleAttributes[privateIP],
+		InstanceID:           singleAttributes[instanceID],
+		InstanceName:         singleAttributes[instanceName],
+		Tags:                 singleAttributes[tags],
+		MachineType:          singleAttributes[machineType],
+		DefaultScopes:        multiAttributes[defaultScopes],
+		Metadata:             nestedAttributes[metadata],
+		Label:                nestedAttributes[label],
+		InterfaceIPv4:        nestedAttributes[interfaceIPv4],
+		ManagedInstanceGroup: mig,
 	}
 	return res, nil
 }

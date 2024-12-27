@@ -17,6 +17,8 @@ package resourcedetector
 import (
 	"fmt"
 	"testing"
+
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
 )
 
 func TestGettingResourceWithoutError(t *testing.T) {
@@ -139,4 +141,8 @@ func (fp *FakeProvider) getLabels() (map[string]string, error) {
 
 func (fp *FakeProvider) getInterfaceIPv4s() (map[string]string, error) {
 	return fp.getMap()
+}
+
+func (fp *FakeProvider) getMIG() (gcp.ManagedInstanceGroup, error) {
+	return gcp.ManagedInstanceGroup{}, nil
 }
