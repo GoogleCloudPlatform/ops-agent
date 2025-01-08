@@ -157,7 +157,7 @@ targets:
       x86_64:
         test_distros:
           representative:
-          - suse-cloud:sles-15
+          - opensuse-cloud=opensuse-leap-15-6-v20250105-x86-64
           exhaustive:
           - suse-sap-cloud:sles-15-sp6-sap
           - opensuse-cloud:opensuse-leap
@@ -166,7 +166,7 @@ targets:
       aarch64:
         test_distros:
           representative:
-          - suse-cloud:sles-15-arm64
+          - opensuse-cloud=opensuse-leap-15-6-v20250105-arm64
           exhaustive:
           - opensuse-cloud:opensuse-leap-arm64
           - opensuse-cloud=opensuse-leap-15-5-v20240516-arm64
