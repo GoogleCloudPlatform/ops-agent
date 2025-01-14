@@ -4435,7 +4435,7 @@ func getRecentServiceOutputForImage(imageSpec string) string {
 		}, ";")
 		return cmd
 	}
-	return "sudo systemctl status google-cloud-ops-agent"
+	return "sudo cat /var/log/google-cloud-ops-agent/health-checks.log && sudo systemctl status google-cloud-ops-agent"
 }
 
 func listenToPortForImage(vm *gce.VM) string {
