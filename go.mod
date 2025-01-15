@@ -45,7 +45,6 @@ require (
 
 require (
 	golang.org/x/sync v0.10.0
-	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf
 	google.golang.org/genproto/googleapis/api v0.0.0-20240827150818-7e3bb234dfed
 	gopkg.in/yaml.v3 v3.0.1
 )
