@@ -53,6 +53,7 @@ func main() {
 	// offered mean Guest Agent was successful in installing/launching the plugin
 	// & will manage the lifecycle (start, stop, or revision change) here onwards.
 	pb.RegisterGuestAgentPluginServer(server, ps)
+
 	if err := server.Serve(listener); err != nil {
 		fmt.Fprintf(os.Stderr, "Exiting, cannot continue serving: %v\n", err)
 		os.Exit(1)
