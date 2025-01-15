@@ -3050,7 +3050,7 @@ func TestPrometheusUntypedMetricsReset(t *testing.T) {
 				{"prometheus.googleapis.com/untyped_metric/unknown", nil,
 					metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 10.0},
 				{"prometheus.googleapis.com/untyped_metric/unknown:counter", nil,
-					metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 0.0},
+					metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 10.0},
 			}
 
 			var multiErr error
@@ -3073,7 +3073,7 @@ func TestPrometheusUntypedMetricsReset(t *testing.T) {
 				{"prometheus.googleapis.com/untyped_metric/unknown", nil,
 					metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 1000.0},
 				{"prometheus.googleapis.com/untyped_metric/unknown:counter", nil,
-					metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 990.0},
+					metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 1000.0},
 			}
 
 			var multiErr error
@@ -4435,7 +4435,7 @@ func getRecentServiceOutputForImage(imageSpec string) string {
 		}, ";")
 		return cmd
 	}
-	return "sudo cat /var/log/google-cloud-ops-agent/health-checks.log && sudo systemctl status google-cloud-ops-agent"
+	return "sudo systemctl status google-cloud-ops-agent"
 }
 
 func listenToPortForImage(vm *gce.VM) string {

@@ -72,11 +72,6 @@ COPY cmd/agent_wrapper cmd/agent_wrapper
 COPY ./builds/agent_wrapper.sh .
 RUN ./agent_wrapper.sh /work/cache/
 
-FROM {target_name}-build-golang-base AS {target_name}-build-ops-agent-uap-plugin
-WORKDIR /work
-COPY cmd/ops_agent_uap_wrapper cmd/ops_agent_uap_wrapper
-COPY ./builds/ops_agent_plugin.sh .
-RUN ./ops_agent_plugin.sh /work/cache/
 
 FROM {target_name}-build-golang-base AS {target_name}-build
 WORKDIR /work
@@ -94,7 +89,6 @@ COPY --from={target_name}-build-fluent-bit /work/cache /work/cache
 COPY --from={target_name}-build-systemd /work/cache /work/cache
 COPY --from={target_name}-build-diagnostics /work/cache /work/cache
 COPY --from={target_name}-build-wrapper /work/cache /work/cache
-COPY --from={target_name}-build-ops-agent-uap-plugin /work/cache /work/cache
 {package_build}
 
 FROM scratch AS {target_name}
