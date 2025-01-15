@@ -6,7 +6,7 @@ import (
 	"net"
 	"os"
 
-	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_wrapper/google_guest_agent/plugin"
+	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
 	"google.golang.org/grpc"
 )
 
