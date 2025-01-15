@@ -13,14 +13,16 @@
 # limitations under the License.
 
 [Unit]
-Description=Google Cloud Ops Agent UAP Plugin
-Wants=network-online.target
+Description=Google Cloud Ops Agent
+Wants=google-cloud-ops-agent-fluent-bit.service google-cloud-ops-agent-opentelemetry-collector.service google-cloud-ops-agent-diagnostics.service network-online.target
 After=network-online.target
 
 [Service]
-Type=simple
+Type=oneshot
 # Validate the config.
-ExecStart=/opt/google-cloud-ops-agent/libexec/google_cloud_ops_agent_uap_plugin -address 0.0.0.0 -errorlogfile errorlog.txt -protocol tcp
+ExecStartPre=@PREFIX@/libexec/google_cloud_ops_agent_engine -in @SYSCONFDIR@/google-cloud-ops-agent/config.yaml
+ExecStart=/bin/true
+RemainAfterExit=yes
 
 [Install]
 WantedBy=multi-user.target

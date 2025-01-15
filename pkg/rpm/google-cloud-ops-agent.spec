@@ -50,7 +50,6 @@ BUILD_DISTRO=${build_distro#.} DESTDIR="%{buildroot}" ./build.sh
 %{_prefix}/libexec/google_cloud_ops_agent_engine
 %{_prefix}/libexec/google_cloud_ops_agent_diagnostics
 %{_prefix}/libexec/google_cloud_ops_agent_wrapper
-%{_prefix}/libexec/google_cloud_ops_agent_uap_plugin
 %{_unitdir}/%{name}*
 %{_unitdir}-preset/*-%{name}*
 
