@@ -1,15 +1,12 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"net"
 	"os"
-	"time"
 
 	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_wrapper/google_guest_agent/plugin"
-	"github.com/coreos/go-systemd/journal"
 	"google.golang.org/grpc"
 )
 
@@ -56,17 +53,6 @@ func main() {
 	// offered mean Guest Agent was successful in installing/launching the plugin
 	// & will manage the lifecycle (start, stop, or revision change) here onwards.
 	pb.RegisterGuestAgentPluginServer(server, ps)
-
-	ctx := context.Background()
-	ps.Start(ctx, &pb.StartRequest{Config: &pb.StartRequest_Config{StateDirectoryPath: "/var/log/google-cloud-ops-agent"}})
-	for {
-		status, _ := ps.GetStatus(ctx, &pb.GetStatusRequest{})
-		journal.Print(journal.PriInfo, fmt.Sprintf("%s", status))
-		if status.Code != 0 {
-			break
-		}
-		time.Sleep(30 * time.Second)
-	}
 
 	if err := server.Serve(listener); err != nil {
 		fmt.Fprintf(os.Stderr, "Exiting, cannot continue serving: %v\n", err)
