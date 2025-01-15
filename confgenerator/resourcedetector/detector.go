@@ -26,6 +26,7 @@ type Resource interface {
 	MonitoredResource() *monitoredres.MonitoredResource
 	OTelResourceAttributes() map[string]string
 	PrometheusStyleMetadata() map[string]string
+	ExtraLogLabels() map[string]string
 }
 
 type resourceCache struct {
@@ -78,6 +79,10 @@ func (UnrecognizedPlatformResource) OTelResourceAttributes() map[string]string {
 }
 
 func (UnrecognizedPlatformResource) PrometheusStyleMetadata() map[string]string {
+	return nil
+}
+
+func (UnrecognizedPlatformResource) ExtraLogLabels() map[string]string {
 	return nil
 }
 

@@ -180,7 +180,7 @@ func (p pipelineInstance) fluentBitComponents(ctx context.Context) (fbSource, er
 		}
 		components = append(components, processorComponents...)
 	}
-	components = append(components, setLogNameComponents(ctx, tag, p.rID, receiver.Type(), platform.FromContext(ctx).Hostname())...)
+	components = append(components, setLogNameComponents(ctx, tag, p.rID, receiver.Type())...)
 
 	// Logs ingested using the fluent_forward receiver must add the existing_tag
 	// on the record to the LogName. This is done with a Lua filter.
@@ -220,7 +220,7 @@ func (p pipelineInstance) otelComponents(ctx context.Context) (map[string]otel.R
 		if processors, ok := receiverPipeline.Processors["logs"]; ok {
 			receiverPipeline.Processors["logs"] = append(
 				processors,
-				otelSetLogNameComponents(ctx, p.rID, platform.FromContext(ctx).Hostname())...,
+				otelSetLogNameComponents(ctx, p.rID)...,
 			)
 		}
 
