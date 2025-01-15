@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
@@ -30,8 +31,10 @@ func (ps *OpsAgentPluginServer) Apply(ctx context.Context, msg *pb.ApplyRequest)
 // and just listening on the address handed off waiting for the request.
 func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest) (*pb.StartResponse, error) {
 	if ps.cancel != nil {
+		log.Printf("The Ops Agent plugin is started already, skipping the current request")
 		return nil, status.Errorf(1, "Ops Agent Plugin is started already")
 	}
+	log.Printf("Received a Start request: %s. Starting the Ops Agent", msg)
 
 	_, cancel := context.WithCancel(context.Background())
 	ps.cancel = cancel
@@ -44,8 +47,10 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 // state before exiting it can be done on this request.
 func (ps *OpsAgentPluginServer) Stop(ctx context.Context, msg *pb.StopRequest) (*pb.StopResponse, error) {
 	if ps.cancel == nil {
+		log.Printf("The Ops Agent plugin is stopped already, skipping the current request")
 		return nil, status.Errorf(1, "Ops Agent Plugin is stopped already")
 	}
+	log.Printf("Received a Stop request: %s. Stopping the Ops Agent", msg)
 	ps.cancel()
 	ps.cancel = nil
 	return &pb.StopResponse{}, nil
@@ -57,8 +62,11 @@ func (ps *OpsAgentPluginServer) Stop(ctx context.Context, msg *pb.StopRequest) (
 // plugins detect some non-fatal errors causing it unable to offer some features
 // it can reported in status which is sent back to the service by agent.
 func (ps *OpsAgentPluginServer) GetStatus(ctx context.Context, msg *pb.GetStatusRequest) (*pb.Status, error) {
+	log.Println("Received a GetStatus request")
 	if ps.cancel == nil {
+		log.Println("The Ops Agent plugin is not running")
 		return &pb.Status{Code: 1, Results: []string{"The Ops Agent Plugin is not running."}}, nil
 	}
+	log.Println("The Ops Agent plugin is running")
 	return &pb.Status{Code: 0, Results: []string{"The Ops Agent Plugin is running ok."}}, nil
 }
