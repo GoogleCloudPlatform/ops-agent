@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"net"
@@ -54,14 +55,14 @@ func main() {
 	// & will manage the lifecycle (start, stop, or revision change) here onwards.
 	pb.RegisterGuestAgentPluginServer(server, ps)
 
-	// ctx := context.Background()
-	// ps.GetStatus(ctx, &pb.GetStatusRequest{})
-	// ps.Start(ctx, &pb.StartRequest{})
-	// ps.Start(ctx, &pb.StartRequest{})
-	// ps.GetStatus(ctx, &pb.GetStatusRequest{})
-	// ps.Stop(ctx, &pb.StopRequest{})
-	// ps.GetStatus(ctx, &pb.GetStatusRequest{})
-	// ps.Stop(ctx, &pb.StopRequest{})
+	ctx := context.Background()
+	ps.GetStatus(ctx, &pb.GetStatusRequest{})
+	ps.Start(ctx, &pb.StartRequest{})
+	ps.Start(ctx, &pb.StartRequest{})
+	ps.GetStatus(ctx, &pb.GetStatusRequest{})
+	ps.Stop(ctx, &pb.StopRequest{})
+	ps.GetStatus(ctx, &pb.GetStatusRequest{})
+	ps.Stop(ctx, &pb.StopRequest{})
 	if err := server.Serve(listener); err != nil {
 		fmt.Fprintf(os.Stderr, "Exiting, cannot continue serving: %v\n", err)
 		os.Exit(1)

@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/status"
 
 	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
 )
@@ -32,7 +31,7 @@ func (ps *OpsAgentPluginServer) Apply(ctx context.Context, msg *pb.ApplyRequest)
 func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest) (*pb.StartResponse, error) {
 	if ps.cancel != nil {
 		log.Printf("The Ops Agent plugin is started already, skipping the current request")
-		return nil, status.Errorf(1, "Ops Agent Plugin is started already")
+		return &pb.StartResponse{}, nil
 	}
 	log.Printf("Received a Start request: %s. Starting the Ops Agent", msg)
 
@@ -48,7 +47,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 func (ps *OpsAgentPluginServer) Stop(ctx context.Context, msg *pb.StopRequest) (*pb.StopResponse, error) {
 	if ps.cancel == nil {
 		log.Printf("The Ops Agent plugin is stopped already, skipping the current request")
-		return nil, status.Errorf(1, "Ops Agent Plugin is stopped already")
+		return &pb.StopResponse{}, nil
 	}
 	log.Printf("Received a Stop request: %s. Stopping the Ops Agent", msg)
 	ps.cancel()
