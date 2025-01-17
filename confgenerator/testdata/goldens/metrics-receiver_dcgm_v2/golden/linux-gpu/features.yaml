@@ -10,6 +10,10 @@
   feature: default:self_log
   key: default_self_log_file_collection
   value: "true"
+- module: logging
+  feature: service:otel_logging
+  key: otel_logging_support
+  value: "true"
 - module: metrics
   feature: receivers:dcgm
   key: "[0].enabled"
