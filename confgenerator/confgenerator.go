@@ -23,7 +23,6 @@ import (
 	"log"
 	"maps"
 	"path"
-	"reflect"
 	"regexp"
 	"sort"
 	"strconv"
@@ -197,7 +196,6 @@ func (p pipelineInstance) fluentBitComponents(ctx context.Context) (fbSource, er
 func (p pipelineInstance) otelComponents(ctx context.Context) (map[string]otel.ReceiverPipeline, map[string]otel.Pipeline, error) {
 	outR := make(map[string]otel.ReceiverPipeline)
 	outP := make(map[string]otel.Pipeline)
-	fmt.Println("p.receiver = ", p.receiver, "typeof = ", reflect.TypeOf(p.receiver))
 	receiver, ok := p.receiver.(OTelReceiver)
 	if !ok {
 		return nil, nil, fmt.Errorf("%q is not an otel receiver", p.rID)
@@ -240,7 +238,6 @@ func (p pipelineInstance) otelComponents(ctx context.Context) (map[string]otel.R
 			}
 		}
 		for _, processorItem := range p.processors {
-			fmt.Println("processorItem = ", processorItem, "typeof = ", reflect.TypeOf(processorItem))
 			processor, ok := processorItem.Component.(OTelProcessor)
 			if !ok {
 				return nil, nil, fmt.Errorf("processor %q not supported in pipeline %q", processorItem.id, p.pID)
