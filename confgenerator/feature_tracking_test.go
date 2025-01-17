@@ -61,6 +61,13 @@ var expectedFeatureBase = []confgenerator.Feature{
 		Key:    []string{"default_self_log_file_collection"},
 		Value:  "true",
 	},
+	{
+		Module: "logging",
+		Kind:   "service",
+		Type:   "otel_logging",
+		Key:    []string{"otel_logging_support"},
+		Value:  "true",
+	},
 }
 
 var expectedMetricsPipelineOverriden = []confgenerator.Feature{
@@ -85,6 +92,13 @@ var expectedMetricsPipelineOverriden = []confgenerator.Feature{
 		Key:    []string{"default_self_log_file_collection"},
 		Value:  "true",
 	},
+	{
+		Module: "logging",
+		Kind:   "service",
+		Type:   "otel_logging",
+		Key:    []string{"otel_logging_support"},
+		Value:  "true",
+	},
 }
 
 var expectedTestFeatureBase = []confgenerator.Feature{
@@ -107,6 +121,13 @@ var expectedTestFeatureBase = []confgenerator.Feature{
 		Kind:   "default",
 		Type:   "self_log",
 		Key:    []string{"default_self_log_file_collection"},
+		Value:  "true",
+	},
+	{
+		Module: "logging",
+		Kind:   "service",
+		Type:   "otel_logging",
+		Key:    []string{"otel_logging_support"},
 		Value:  "true",
 	},
 	{
