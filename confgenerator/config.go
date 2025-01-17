@@ -1125,6 +1125,18 @@ func (uc *UnifiedConfig) LoggingReceivers(ctx context.Context) (map[string]Compo
 	return out, nil
 }
 
+// LoggingProcessors returns a map of potential logging receivers.
+// Each Component may or may not be usable in fluent-bit or otel.
+func (uc *UnifiedConfig) LoggingProcessors(ctx context.Context) (map[string]Component, error) {
+	out := map[string]Component{}
+	if uc.Logging != nil {
+		for k, v := range uc.Logging.Processors {
+			out[k] = v
+		}
+	}
+	return out, nil
+}
+
 func (uc *UnifiedConfig) OTelLoggingReceivers(ctx context.Context) (map[string]OTelReceiver, error) {
 	receivers, err := uc.LoggingReceivers(ctx)
 	if err != nil {
@@ -1137,6 +1149,46 @@ func (uc *UnifiedConfig) OTelLoggingReceivers(ctx context.Context) (map[string]O
 		}
 	}
 	return validReceivers, nil
+}
+
+func (uc *UnifiedConfig) OTelLoggingProcessors(ctx context.Context) (map[string]OTelProcessor, error) {
+	processors, err := uc.LoggingProcessors(ctx)
+	if err != nil {
+		return nil, err
+	}
+	validProcessors := map[string]OTelProcessor{}
+	for k, v := range processors {
+		if v, ok := v.(OTelProcessor); ok {
+			validProcessors[k] = v
+		}
+	}
+	return validProcessors, nil
+}
+
+func (uc *UnifiedConfig) ValidateOTelLoggingPipeline(ctx context.Context) error {
+	validLoggingReceivers, err := uc.LoggingReceivers(ctx)
+	if err != nil {
+		return err
+	}
+	validOTelLoggingReceivers, err := uc.OTelLoggingReceivers(ctx)
+	if err != nil {
+		return err
+	}
+	if len(validOTelLoggingReceivers) < len(validLoggingReceivers) {
+		return fmt.Errorf("Some defined logging receivers are not supported by otel logging")
+	}
+	validLoggingProcessors, err := uc.LoggingProcessors(ctx)
+	if err != nil {
+		return err
+	}
+	validOTelLoggingProcessors, err := uc.OTelLoggingProcessors(ctx)
+	if err != nil {
+		return err
+	}
+	if len(validOTelLoggingProcessors) < len(validLoggingProcessors) {
+		return fmt.Errorf("Some defined logging processors are not supported by otel logging")
+	}
+	return nil
 }
 
 func (uc *UnifiedConfig) ValidateMetrics(ctx context.Context) error {
