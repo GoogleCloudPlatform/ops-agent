@@ -2,11 +2,25 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"os/exec"
+	"syscall"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/status"
 
 	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
+)
+
+const (
+	OpsAgentConfigLocationLinux = "/etc/google-cloud-ops-agent/config.yaml"
+	ConfGeneratorBinary         = "libexec/google_cloud_ops_agent_engine"
+	LogsDirectory               = "log/google-cloud-ops-agent"
+	FluentBitStateDiectory      = "state/fluent-bit"
+	FluentBitRuntimeDirectory   = "run/google-cloud-ops-agent-fluent-bit"
+	OtelRuntimeDirectory        = "run/google-cloud-ops-agent-opentelemetry-collector"
+	DefaultPluginStateDirectory = "/var/lib/google-guest-agent/plugins/ops-agent-plugin"
 )
 
 // PluginServer implements the plugin RPC server interface.
@@ -35,8 +49,24 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	}
 	log.Printf("Received a Start request: %s. Starting the Ops Agent", msg)
 
-	_, cancel := context.WithCancel(context.Background())
+	pContext, cancel := context.WithCancel(context.Background())
 	ps.cancel = cancel
+
+	pluginStateDir := msg.GetConfig().GetStateDirectoryPath()
+	if pluginStateDir == "" {
+		pluginStateDir = DefaultPluginStateDirectory
+	}
+	// Ops Agent config validation
+	if err := validateOpsAgentConfig(pContext, pluginStateDir); err != nil {
+		log.Printf("failed to validate Ops Agent config: %s", err)
+		return nil, status.Errorf(1, "failed to validate Ops Agent config: %s", err)
+	}
+	// Subagent config generation
+	if err := generateSubagentConfigs(pContext, pluginStateDir); err != nil {
+		log.Printf("failed to generate subagent configs: %s", err)
+		return nil, status.Errorf(1, "failed to generate subagent configs: %s", err)
+	}
+
 	return &pb.StartResponse{}, nil
 }
 
@@ -68,4 +98,54 @@ func (ps *OpsAgentPluginServer) GetStatus(ctx context.Context, msg *pb.GetStatus
 	}
 	log.Println("The Ops Agent plugin is running")
 	return &pb.Status{Code: 0, Results: []string{"The Ops Agent Plugin is running ok."}}, nil
+}
+
+func runCommand(cmd *exec.Cmd) error {
+	if cmd == nil {
+		return nil
+	}
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Pdeathsig: syscall.SIGKILL,
+	}
+	log.Printf("Running command: %s, with arguments: %s", cmd.Path, cmd.Args)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to execute cmd: %s with arguments %s, \ncommand output: %s\ncommand error: %s", cmd.Path, cmd.Args, out, err)
+	}
+	return nil
+}
+
+func validateOpsAgentConfig(ctx context.Context, pluginBaseLocation string) error {
+	configValidationCmd := exec.CommandContext(ctx,
+		pluginBaseLocation+"/"+ConfGeneratorBinary,
+		"-in", OpsAgentConfigLocationLinux,
+	)
+	if err := runCommand(configValidationCmd); err != nil {
+		return fmt.Errorf("failed to validate the Ops Agent config: %s", err)
+	}
+	return nil
+}
+
+func generateSubagentConfigs(ctx context.Context, pluginBaseLocation string) error {
+	otelConfigGenerationCmd := exec.CommandContext(ctx,
+		pluginBaseLocation+"/"+ConfGeneratorBinary,
+		"-service", "otel",
+		"-in", OpsAgentConfigLocationLinux,
+		"-out", pluginBaseLocation+"/"+OtelRuntimeDirectory,
+		"-logs", pluginBaseLocation+"/"+LogsDirectory)
+
+	if err := runCommand(otelConfigGenerationCmd); err != nil {
+		return fmt.Errorf("failed to generate Otel config: %s", err)
+	}
+
+	fluentBitConfigGenerationCmd := exec.CommandContext(ctx,
+		pluginBaseLocation+"/libexec/google_cloud_ops_agent_engine",
+		"-service", "fluentbit",
+		"-in", OpsAgentConfigLocationLinux,
+		"-out", pluginBaseLocation+"/"+FluentBitRuntimeDirectory,
+		"-logs", pluginBaseLocation+"/"+LogsDirectory, "-state", pluginBaseLocation+"/"+FluentBitStateDiectory)
+
+	if err := runCommand(fluentBitConfigGenerationCmd); err != nil {
+		return fmt.Errorf("failed to generate Fluntbit config: %s", err)
+	}
+	return nil
 }
