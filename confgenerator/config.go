@@ -1139,6 +1139,38 @@ func (uc *UnifiedConfig) OTelLoggingReceivers(ctx context.Context) (map[string]O
 	return validReceivers, nil
 }
 
+func (uc *UnifiedConfig) OTelLoggingProcessors(ctx context.Context) (map[string]OTelProcessor, error) {
+	validProcessors := map[string]OTelProcessor{}
+	for k, v := range uc.Logging.Processors {
+		if v, ok := v.(OTelProcessor); ok {
+			validProcessors[k] = v
+		}
+	}
+	return validProcessors, nil
+}
+
+func (uc *UnifiedConfig) ValidateOTelLoggingPipeline(ctx context.Context) error {
+	validLoggingReceivers, err := uc.LoggingReceivers(ctx)
+	if err != nil {
+		return err
+	}
+	validOTelLoggingReceivers, err := uc.OTelLoggingReceivers(ctx)
+	if err != nil {
+		return err
+	}
+	if len(validOTelLoggingReceivers) < len(validLoggingReceivers) {
+		return fmt.Errorf("Some defined logging receivers are not supported by otel logging")
+	}
+	validOTelLoggingProcessors, err := uc.OTelLoggingProcessors(ctx)
+	if err != nil {
+		return err
+	}
+	if len(validOTelLoggingProcessors) < len(uc.Logging.Processors) {
+		return fmt.Errorf("Some defined logging processors are not supported by otel logging")
+	}
+	return nil
+}
+
 func (uc *UnifiedConfig) ValidateMetrics(ctx context.Context) error {
 	m := uc.Metrics
 	subagent := "metrics"

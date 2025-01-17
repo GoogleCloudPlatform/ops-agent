@@ -15,6 +15,7 @@
 package confgenerator
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -74,6 +75,7 @@ type CustomFeatures interface {
 func ExtractFeatures(uc *UnifiedConfig) ([]Feature, error) {
 	allFeatures := getOverriddenDefaultPipelines(uc)
 	allFeatures = append(allFeatures, getSelfLogCollection(uc))
+	allFeatures = append(allFeatures, getOTelLoggingSupport(uc))
 
 	var err error
 	var tempTrackedFeatures []Feature
@@ -435,6 +437,23 @@ func getMetadata(field reflect.StructField) metadata {
 		// See this for more details: https://pkg.go.dev/gopkg.in/yaml.v2#Unmarshal
 		yamlTag: yamlTags[0],
 	}
+}
+
+func getOTelLoggingSupport(uc *UnifiedConfig) Feature {
+	feature := Feature{
+		Module: "logging",
+		Kind:   "service",
+		Type:   "otel_logging",
+		Key:    []string{"otel_logging_support"},
+		Value:  "true",
+	}
+
+	ctx := context.Background()
+	if uc.ValidateOTelLoggingPipeline(ctx) != nil {
+		feature.Value = "false"
+	}
+
+	return feature
 }
 
 func getSelfLogCollection(uc *UnifiedConfig) Feature {
