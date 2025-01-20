@@ -1,3 +1,19 @@
+// Copyright 2025 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+//go:build !windows
+
 package main
 
 import (
@@ -5,6 +21,7 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
+	"strings"
 	"syscall"
 
 	"google.golang.org/grpc"
@@ -23,12 +40,18 @@ const (
 	DefaultPluginStateDirectory = "/var/lib/google-guest-agent/plugins/ops-agent-plugin"
 )
 
+// RunCommandFunc defines a function type that takes an exec.Cmd and returns
+// its output and error. This abstraction is introduced
+// primarily to facilitate testing by allowing the injection of mock
+// implementations.
+type RunCommandFunc func(cmd *exec.Cmd) (string, error)
+
 // PluginServer implements the plugin RPC server interface.
 type OpsAgentPluginServer struct {
 	pb.UnimplementedGuestAgentPluginServer
-	server *grpc.Server
-	// cancel is the cancel function to be called when core plugin is stopped.
-	cancel context.CancelFunc
+	server     *grpc.Server
+	cancel     context.CancelFunc
+	runCommand RunCommandFunc
 }
 
 // Apply applies the config sent or performs the work defined in the message.
@@ -56,14 +79,47 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	if pluginStateDir == "" {
 		pluginStateDir = DefaultPluginStateDirectory
 	}
+
+	// Find pre-existent ops agent installation, and conflicting legacy agent installation.
+	foundOpsAgent, err := findPreExistentAgent(pContext, ps.runCommand, "google-cloud-ops-agent.service")
+	if err != nil || foundOpsAgent {
+		ps.cancel()
+		ps.cancel = nil
+		errMsg := fmt.Sprintf("found pre-existent Ops Agent: %v, err: %v", foundOpsAgent, err)
+		log.Printf("Start() failed: %s ", errMsg)
+		return nil, status.Error(1, errMsg)
+	}
+
+	foundLegacyMonitoringAgent, err := findPreExistentAgent(pContext, ps.runCommand, "stackdriver-agent.service")
+	if err != nil || foundLegacyMonitoringAgent {
+		ps.cancel()
+		ps.cancel = nil
+		errMsg := fmt.Sprintf("found pre-existent Legacy Monitoring Agent: %v, err: %v", foundLegacyMonitoringAgent, err)
+		log.Printf("Start() failed: %s ", errMsg)
+		return nil, status.Error(1, errMsg)
+	}
+
+	foundLegacyLoggingAgent, err := findPreExistentAgent(pContext, ps.runCommand, "google-fluentd.service")
+	if err != nil || foundLegacyLoggingAgent {
+		ps.cancel()
+		ps.cancel = nil
+		errMsg := fmt.Sprintf("found pre-existent Legacy Logging Agent: %v, err: %v", foundLegacyLoggingAgent, err)
+		log.Printf("Start() failed: %s", errMsg)
+		return nil, status.Error(1, errMsg)
+	}
+
 	// Ops Agent config validation
-	if err := validateOpsAgentConfig(pContext, pluginStateDir); err != nil {
-		log.Printf("failed to validate Ops Agent config: %s", err)
+	if err := validateOpsAgentConfig(pContext, ps.runCommand, pluginStateDir); err != nil {
+		log.Printf("Start() failed: %s", err)
+		ps.cancel()
+		ps.cancel = nil
 		return nil, status.Errorf(1, "failed to validate Ops Agent config: %s", err)
 	}
 	// Subagent config generation
-	if err := generateSubagentConfigs(pContext, pluginStateDir); err != nil {
-		log.Printf("failed to generate subagent configs: %s", err)
+	if err := generateSubagentConfigs(pContext, ps.runCommand, pluginStateDir); err != nil {
+		log.Printf("Start() failed: %s", err)
+		ps.cancel()
+		ps.cancel = nil
 		return nil, status.Errorf(1, "failed to generate subagent configs: %s", err)
 	}
 
@@ -100,32 +156,33 @@ func (ps *OpsAgentPluginServer) GetStatus(ctx context.Context, msg *pb.GetStatus
 	return &pb.Status{Code: 0, Results: []string{"The Ops Agent Plugin is running ok."}}, nil
 }
 
-func runCommand(cmd *exec.Cmd) error {
+func runCommand(cmd *exec.Cmd) (string, error) {
 	if cmd == nil {
-		return nil
+		return "", nil
 	}
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Pdeathsig: syscall.SIGKILL,
 	}
-	log.Printf("Running command: %s, with arguments: %s", cmd.Path, cmd.Args)
+	log.Printf("Running command: %s", cmd.Args)
 	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("failed to execute cmd: %s with arguments %s, \ncommand output: %s\ncommand error: %s", cmd.Path, cmd.Args, out, err)
+		log.Printf("Command %s failed, \ncommand output: %s\ncommand error: %s", cmd.Args, string(out), err)
+		return string(out), err
 	}
-	return nil
+	return "", nil
 }
 
-func validateOpsAgentConfig(ctx context.Context, pluginBaseLocation string) error {
+func validateOpsAgentConfig(ctx context.Context, runCommand RunCommandFunc, pluginBaseLocation string) error {
 	configValidationCmd := exec.CommandContext(ctx,
 		pluginBaseLocation+"/"+ConfGeneratorBinary,
 		"-in", OpsAgentConfigLocationLinux,
 	)
-	if err := runCommand(configValidationCmd); err != nil {
-		return fmt.Errorf("failed to validate the Ops Agent config: %s", err)
+	if output, err := runCommand(configValidationCmd); err != nil {
+		return fmt.Errorf("failed to validate the Ops Agent config:\ncommand output: %s\ncommand error: %s", output, err)
 	}
 	return nil
 }
 
-func generateSubagentConfigs(ctx context.Context, pluginBaseLocation string) error {
+func generateSubagentConfigs(ctx context.Context, runCommand RunCommandFunc, pluginBaseLocation string) error {
 	otelConfigGenerationCmd := exec.CommandContext(ctx,
 		pluginBaseLocation+"/"+ConfGeneratorBinary,
 		"-service", "otel",
@@ -133,7 +190,7 @@ func generateSubagentConfigs(ctx context.Context, pluginBaseLocation string) err
 		"-out", pluginBaseLocation+"/"+OtelRuntimeDirectory,
 		"-logs", pluginBaseLocation+"/"+LogsDirectory)
 
-	if err := runCommand(otelConfigGenerationCmd); err != nil {
+	if _, err := runCommand(otelConfigGenerationCmd); err != nil {
 		return fmt.Errorf("failed to generate Otel config: %s", err)
 	}
 
@@ -144,8 +201,26 @@ func generateSubagentConfigs(ctx context.Context, pluginBaseLocation string) err
 		"-out", pluginBaseLocation+"/"+FluentBitRuntimeDirectory,
 		"-logs", pluginBaseLocation+"/"+LogsDirectory, "-state", pluginBaseLocation+"/"+FluentBitStateDiectory)
 
-	if err := runCommand(fluentBitConfigGenerationCmd); err != nil {
-		return fmt.Errorf("failed to generate Fluntbit config: %s", err)
+	if output, err := runCommand(fluentBitConfigGenerationCmd); err != nil {
+		return fmt.Errorf("failed to generate Fluntbit config:\ncommand output: %s\ncommand error: %s", output, err)
 	}
 	return nil
+}
+
+func findPreExistentAgent(ctx context.Context, runCommand RunCommandFunc, serviceName string) (bool, error) {
+	findOpsAgentCmd := exec.CommandContext(ctx,
+		"systemctl", "status", serviceName,
+	)
+	output, err := runCommand(findOpsAgentCmd)
+	if strings.Contains(output, fmt.Sprintf("Unit %s could not be found.", serviceName)) || strings.Contains(output, "Loaded: not-found") {
+		return false, nil
+	}
+	if strings.Contains(output, "Loaded:") {
+		return true, nil
+	}
+
+	if err != nil {
+		return false, fmt.Errorf("unable to verify the existing installation of %s. Error: %s", serviceName, err)
+	}
+	return false, nil
 }
