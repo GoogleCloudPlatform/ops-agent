@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
+	"path"
+	"regexp"
 	"strings"
 	"syscall"
 
@@ -37,6 +39,11 @@ const (
 	FluentBitRuntimeDirectory   = "run/google-cloud-ops-agent-fluent-bit"
 	OtelRuntimeDirectory        = "run/google-cloud-ops-agent-opentelemetry-collector"
 	DefaultPluginStateDirectory = "/var/lib/google-guest-agent/plugins/ops-agent-plugin"
+)
+
+var (
+	AgentServiceNameRegex    = regexp.MustCompile(`[\w-]+\.service`)
+	AgentSystemdServiceNames = []string{"google-cloud-ops-agent.service", "stackdriver-agent.service", "google-fluentd.service"}
 )
 
 // Apply applies the config sent or performs the work defined in the message.
@@ -66,31 +73,12 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	}
 
 	// Find pre-existent ops agent installation, and conflicting legacy agent installation.
-	foundOpsAgent, err := findPreExistentAgent(pContext, ps.runCommand, "google-cloud-ops-agent.service")
-	if err != nil || foundOpsAgent {
+	foundConflictingInstallations, err := findPreExistentAgents(pContext, ps.runCommand, AgentSystemdServiceNames)
+	if foundConflictingInstallations || err != nil {
 		ps.cancel()
 		ps.cancel = nil
-		errMsg := fmt.Sprintf("found pre-existent Ops Agent: %v, err: %v", foundOpsAgent, err)
-		log.Printf("Start() failed: %s ", errMsg)
-		return nil, status.Error(1, errMsg)
-	}
-
-	foundLegacyMonitoringAgent, err := findPreExistentAgent(pContext, ps.runCommand, "stackdriver-agent.service")
-	if err != nil || foundLegacyMonitoringAgent {
-		ps.cancel()
-		ps.cancel = nil
-		errMsg := fmt.Sprintf("found pre-existent Legacy Monitoring Agent: %v, err: %v", foundLegacyMonitoringAgent, err)
-		log.Printf("Start() failed: %s ", errMsg)
-		return nil, status.Error(1, errMsg)
-	}
-
-	foundLegacyLoggingAgent, err := findPreExistentAgent(pContext, ps.runCommand, "google-fluentd.service")
-	if err != nil || foundLegacyLoggingAgent {
-		ps.cancel()
-		ps.cancel = nil
-		errMsg := fmt.Sprintf("found pre-existent Legacy Logging Agent: %v, err: %v", foundLegacyLoggingAgent, err)
-		log.Printf("Start() failed: %s", errMsg)
-		return nil, status.Error(1, errMsg)
+		log.Printf("Start() failed: %s", err)
+		return nil, status.Error(1, err.Error())
 	}
 
 	// Ops Agent config validation
@@ -108,6 +96,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 		return nil, status.Errorf(1, "failed to generate subagent configs: %s", err)
 	}
 
+	// Sub-agent startup functionality is not yet implemented and will be added.
 	return &pb.StartResponse{}, nil
 }
 
@@ -149,11 +138,12 @@ func runCommand(cmd *exec.Cmd) (string, error) {
 		Pdeathsig: syscall.SIGKILL,
 	}
 	log.Printf("Running command: %s", cmd.Args)
-	if out, err := cmd.CombinedOutput(); err != nil {
+	out, err := cmd.CombinedOutput()
+	if err != nil {
 		log.Printf("Command %s failed, \ncommand output: %s\ncommand error: %s", cmd.Args, string(out), err)
 		return string(out), err
 	}
-	return "", nil
+	return string(out), nil
 }
 
 func validateOpsAgentConfig(ctx context.Context, runCommand RunCommandFunc, pluginBaseLocation string) error {
@@ -168,23 +158,24 @@ func validateOpsAgentConfig(ctx context.Context, runCommand RunCommandFunc, plug
 }
 
 func generateSubagentConfigs(ctx context.Context, runCommand RunCommandFunc, pluginBaseLocation string) error {
+	confGeneratorBinaryFullPath := path.Join(pluginBaseLocation, ConfGeneratorBinary)
 	otelConfigGenerationCmd := exec.CommandContext(ctx,
-		pluginBaseLocation+"/"+ConfGeneratorBinary,
+		confGeneratorBinaryFullPath,
 		"-service", "otel",
 		"-in", OpsAgentConfigLocationLinux,
-		"-out", pluginBaseLocation+"/"+OtelRuntimeDirectory,
-		"-logs", pluginBaseLocation+"/"+LogsDirectory)
+		"-out", path.Join(pluginBaseLocation, OtelRuntimeDirectory),
+		"-logs", path.Join(pluginBaseLocation, LogsDirectory))
 
-	if _, err := runCommand(otelConfigGenerationCmd); err != nil {
-		return fmt.Errorf("failed to generate Otel config: %s", err)
+	if output, err := runCommand(otelConfigGenerationCmd); err != nil {
+		return fmt.Errorf("failed to generate Otel config:\ncommand output: %s\ncommand error: %s", output, err)
 	}
 
 	fluentBitConfigGenerationCmd := exec.CommandContext(ctx,
-		pluginBaseLocation+"/libexec/google_cloud_ops_agent_engine",
+		confGeneratorBinaryFullPath,
 		"-service", "fluentbit",
 		"-in", OpsAgentConfigLocationLinux,
-		"-out", pluginBaseLocation+"/"+FluentBitRuntimeDirectory,
-		"-logs", pluginBaseLocation+"/"+LogsDirectory, "-state", pluginBaseLocation+"/"+FluentBitStateDiectory)
+		"-out", path.Join(pluginBaseLocation, FluentBitRuntimeDirectory),
+		"-logs", path.Join(pluginBaseLocation, LogsDirectory), "-state", path.Join(pluginBaseLocation, FluentBitStateDiectory))
 
 	if output, err := runCommand(fluentBitConfigGenerationCmd); err != nil {
 		return fmt.Errorf("failed to generate Fluntbit config:\ncommand output: %s\ncommand error: %s", output, err)
@@ -192,20 +183,23 @@ func generateSubagentConfigs(ctx context.Context, runCommand RunCommandFunc, plu
 	return nil
 }
 
-func findPreExistentAgent(ctx context.Context, runCommand RunCommandFunc, serviceName string) (bool, error) {
+func findPreExistentAgents(ctx context.Context, runCommand RunCommandFunc, agentSystemdServiceNames []string) (bool, error) {
+	cmdArgs := []string{"systemctl", "list-unit-files"}
+	cmdArgs = append(cmdArgs, agentSystemdServiceNames...)
 	findOpsAgentCmd := exec.CommandContext(ctx,
-		"systemctl", "status", serviceName,
+		cmdArgs[0], cmdArgs[1:]...,
 	)
 	output, err := runCommand(findOpsAgentCmd)
-	if strings.Contains(output, fmt.Sprintf("Unit %s could not be found.", serviceName)) || strings.Contains(output, "Loaded: not-found") {
+	if strings.Contains(output, "0 unit files listed.") {
 		return false, nil
 	}
-	if strings.Contains(output, "Loaded:") {
-		return true, nil
-	}
-
 	if err != nil {
-		return false, fmt.Errorf("unable to verify the existing installation of %s. Error: %s", serviceName, err)
+		return false, fmt.Errorf("unable to verify the existing Ops Agent and legacy agent installations, error: %s", err)
 	}
-	return false, nil
+	alreadyInstalledAgents := AgentServiceNameRegex.FindAllString(output, -1)
+	if len(alreadyInstalledAgents) == 0 {
+		return false, nil
+	}
+	log.Printf("The following systemd services are already installed on the VM: %v", alreadyInstalledAgents)
+	return true, fmt.Errorf("conflicting installations identified: %v", alreadyInstalledAgents)
 }

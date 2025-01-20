@@ -42,53 +42,40 @@ func Test_runCommandFailure(t *testing.T) {
 	}
 }
 
-func Test_findPreExistentAgent(t *testing.T) {
+func Test_findPreExistentAgents(t *testing.T) {
 	cases := []struct {
 		name               string
 		mockRunCommandFunc RunCommandFunc
 		wantExist          bool
-		serviceName        string
 	}{
 		{
-			name: "Found conflicting Ops Agent installation",
+			name: "Found conflicting agent installations",
 			mockRunCommandFunc: func(cmd *exec.Cmd) (string, error) {
-				return "Loaded: loaded (/lib/systemd/system/google-cloud-ops-agent.service; enabled; preset: enabled)", nil
+				return `UNIT FILE                     STATE    PRESET 
+						google-cloud-ops-agent.service disabled enabled
+						stackdriver-agent.service      masked   enabled
+						
+						2 unit files listed.`, nil
 			},
-			wantExist:   true,
-			serviceName: "google-cloud-ops-agent.service",
+			wantExist: true,
 		},
 		{
-			name: "Pre-existent Ops Agent not found",
+			name: "Pre-existent agent installation not found",
 			mockRunCommandFunc: func(cmd *exec.Cmd) (string, error) {
-				return "", fmt.Errorf("google-cloud-ops-agent.service could not be found.")
+				return `UNIT FILE STATE PRESET
+
+						0 unit files listed.`, fmt.Errorf("exit status 1")
 			},
-			wantExist:   false,
-			serviceName: "google-cloud-ops-agent.service",
-		},
-		{
-			name: "Pre-existent Legacy Monitoring Agent not found",
-			mockRunCommandFunc: func(cmd *exec.Cmd) (string, error) {
-				return "", fmt.Errorf("stackdriver-agent.service could not be found.")
-			},
-			wantExist:   false,
-			serviceName: "stackdriver-agent.service",
-		},
-		{
-			name: "Pre-existent Legacy Logging Agent not found",
-			mockRunCommandFunc: func(cmd *exec.Cmd) (string, error) {
-				return "", fmt.Errorf("google-fluentd.service could not be found.")
-			},
-			wantExist:   false,
-			serviceName: "google-fluentd.service",
+			wantExist: false,
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			gotExist, _ := findPreExistentAgent(context.Background(), tc.mockRunCommandFunc, tc.serviceName)
+			gotExist, err := findPreExistentAgents(context.Background(), tc.mockRunCommandFunc, AgentSystemdServiceNames)
 
 			if gotExist != tc.wantExist {
-				t.Errorf("%v: findPreExistentAgent(%v) failed to verify if the service exists: gotExist: %v, wantExist %v", tc.name, tc.serviceName, gotExist, tc.wantExist)
+				t.Errorf("%v: findPreExistentAgents() failed to verify conflicting agent installations: gotExist: %v, wantExist %v, err: %v", tc.name, gotExist, tc.wantExist, err)
 			}
 		})
 	}

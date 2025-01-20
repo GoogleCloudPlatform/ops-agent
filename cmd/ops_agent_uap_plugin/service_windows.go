@@ -36,8 +36,7 @@ func (ps *OpsAgentPluginServer) Apply(ctx context.Context, msg *pb.ApplyRequest)
 // Until plugin receives Start request plugin is expected to be not functioning
 // and just listening on the address handed off waiting for the request.
 func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest) (*pb.StartResponse, error) {
-	// Unimplemented
-	return &pb.StartResponse{}, nil
+	panic("Start method is not implemented on Windows yet")
 }
 
 // Stop is the stop hook and implements any cleanup if required.
@@ -45,8 +44,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 // For e.g. if plugins want to stop some task it was performing or remove some
 // state before exiting it can be done on this request.
 func (ps *OpsAgentPluginServer) Stop(ctx context.Context, msg *pb.StopRequest) (*pb.StopResponse, error) {
-	// Unimplemented
-	return &pb.StopResponse{}, nil
+	panic("Stop method is not implemented on Windows yet")
 }
 
 // GetStatus is the health check agent would perform to make sure plugin process
@@ -55,11 +53,9 @@ func (ps *OpsAgentPluginServer) Stop(ctx context.Context, msg *pb.StopRequest) (
 // plugins detect some non-fatal errors causing it unable to offer some features
 // it can reported in status which is sent back to the service by agent.
 func (ps *OpsAgentPluginServer) GetStatus(ctx context.Context, msg *pb.GetStatusRequest) (*pb.Status, error) {
-	// Unimplemented
-	return &pb.Status{Code: 0, Results: []string{"The Ops Agent Plugin is running ok."}}, nil
+	panic("GetStatus method is not implemented on Windows yet")
 }
 
 func runCommand(cmd *exec.Cmd) (string, error) {
-	// Unimplemented
-	return "", nil
+	panic("runCommand method is not implemented on Windows yet")
 }
