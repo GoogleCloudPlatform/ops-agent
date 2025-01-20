@@ -24,7 +24,6 @@ import (
 	"strings"
 	"syscall"
 
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
 
 	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
@@ -39,20 +38,6 @@ const (
 	OtelRuntimeDirectory        = "run/google-cloud-ops-agent-opentelemetry-collector"
 	DefaultPluginStateDirectory = "/var/lib/google-guest-agent/plugins/ops-agent-plugin"
 )
-
-// RunCommandFunc defines a function type that takes an exec.Cmd and returns
-// its output and error. This abstraction is introduced
-// primarily to facilitate testing by allowing the injection of mock
-// implementations.
-type RunCommandFunc func(cmd *exec.Cmd) (string, error)
-
-// PluginServer implements the plugin RPC server interface.
-type OpsAgentPluginServer struct {
-	pb.UnimplementedGuestAgentPluginServer
-	server     *grpc.Server
-	cancel     context.CancelFunc
-	runCommand RunCommandFunc
-}
 
 // Apply applies the config sent or performs the work defined in the message.
 // ApplyRequest is opaque to the agent and is expected to be well known contract

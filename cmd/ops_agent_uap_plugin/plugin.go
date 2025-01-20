@@ -20,9 +20,11 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"os/exec"
+
+	"google.golang.org/grpc"
 
 	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
-	"google.golang.org/grpc"
 )
 
 var (
@@ -33,6 +35,20 @@ var (
 	// logfile is the path to the log file to capture error logs.
 	logfile string
 )
+
+// RunCommandFunc defines a function type that takes an exec.Cmd and returns
+// its output and error. This abstraction is introduced
+// primarily to facilitate testing by allowing the injection of mock
+// implementations.
+type RunCommandFunc func(cmd *exec.Cmd) (string, error)
+
+// PluginServer implements the plugin RPC server interface.
+type OpsAgentPluginServer struct {
+	pb.UnimplementedGuestAgentPluginServer
+	server     *grpc.Server
+	cancel     context.CancelFunc
+	runCommand RunCommandFunc
+}
 
 func init() {
 	flag.StringVar(&protocol, "protocol", "", "protocol to use uds/tcp")
@@ -77,5 +93,4 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Exiting, cannot continue serving: %v\n", err)
 		os.Exit(1)
 	}
-
 }
