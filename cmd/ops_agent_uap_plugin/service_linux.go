@@ -20,11 +20,15 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
+	"os/signal"
 	"path"
 	"regexp"
 	"strings"
+	"sync"
 	"syscall"
+	"time"
 
 	"google.golang.org/grpc/status"
 
@@ -39,6 +43,7 @@ const (
 	FluentBitRuntimeDirectory   = "run/google-cloud-ops-agent-fluent-bit"
 	OtelRuntimeDirectory        = "run/google-cloud-ops-agent-opentelemetry-collector"
 	DefaultPluginStateDirectory = "/var/lib/google-guest-agent/plugins/ops-agent-plugin"
+	RestartLimit                = 3 // if a command crashes more than `restartLimit` times consecutively, the command will no longer be restarted.
 )
 
 var (
@@ -130,6 +135,96 @@ func (ps *OpsAgentPluginServer) GetStatus(ctx context.Context, msg *pb.GetStatus
 	return &pb.Status{Code: 0, Results: []string{"The Ops Agent Plugin is running ok."}}, nil
 }
 
+func (ps *OpsAgentPluginServer) runAgent(ctx context.Context, pluginBaseLocation string) {
+	// Register signal handler and implements its callback.
+	sigHandler(ctx, func(_ os.Signal) {
+		// We're handling some external signal here, set cleanup to [false].
+		// If this was Guest Agent trying to stop it would call [Stop] RPC directly
+		// or do a [SIGKILL] which anyways cannot be intercepted.
+		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
+	})
+
+	// Starting the Diagnostics service, and subagents.
+	var wg sync.WaitGroup
+	// Starting Diagnostics Service
+	runDiagnosticsCmd := exec.CommandContext(ctx,
+		pluginBaseLocation+"/libexec/google_cloud_ops_agent_diagnostics",
+		"-config", OpsAgentConfigLocationLinux,
+	)
+	wg.Add(1)
+	go restartCommand(ctx, &wg, runDiagnosticsCmd, RestartLimit, RestartLimit)
+
+	// Starting Otel
+	execOtelCmd := exec.CommandContext(ctx,
+		pluginBaseLocation+"/subagents/opentelemetry-collector/otelopscol",
+		"--config", pluginBaseLocation+"/"+OtelRuntimeDirectory+"/otel.yaml",
+	)
+	wg.Add(1)
+	go restartCommand(ctx, &wg, execOtelCmd, RestartLimit, RestartLimit)
+
+	// Starting FluentBit
+	execFluentBitCmd := exec.CommandContext(ctx,
+		pluginBaseLocation+"/libexec/google_cloud_ops_agent_wrapper",
+		"-config_path", OpsAgentConfigLocationLinux,
+		"-log_path", LogsDirectory+"/subagents/logging-module.log",
+		pluginBaseLocation+"/subagents/fluent-bit/bin/fluent-bit",
+		"--config", pluginBaseLocation+"/"+FluentBitRuntimeDirectory+"/fluent_bit_main.conf",
+		"--parser", pluginBaseLocation+"/"+FluentBitRuntimeDirectory+"/fluent_bit_parser.conf",
+		"--storage_path", pluginBaseLocation+"/"+FluentBitStateDiectory+"/buffers",
+	)
+	wg.Add(1)
+	go restartCommand(ctx, &wg, execFluentBitCmd, RestartLimit, RestartLimit)
+	wg.Wait()
+}
+
+func restartCommand(ctx context.Context, wg *sync.WaitGroup, cmd *exec.Cmd, remainingRetry int, totalRetry int) {
+	defer wg.Done()
+	if cmd == nil {
+		return
+	}
+	if ctx.Err() != nil {
+		// context has been cancelled
+		log.Printf("cannot execute command: %s, because the context has been cancelled", cmd.Args)
+		return
+	}
+	if remainingRetry == 0 {
+		log.Printf("out of retries, command: %s not restarted", cmd.Args)
+		return
+	}
+
+	childCtx, ctxCancel := context.WithCancel(ctx)
+	sigHandler(childCtx, func(_ os.Signal) {
+		// We're handling some external signal here, set cleanup to [false].
+		// If this was Guest Agent trying to stop it would call [Stop] RPC directly
+		// or do a [SIGKILL] which anyways cannot be intercepted.
+		ctxCancel()
+	})
+	cmd = exec.CommandContext(childCtx, cmd.Path, cmd.Args[1:]...)
+
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Pdeathsig: syscall.SIGKILL,
+		Setpgid:   true,
+	}
+	output, err := cmd.CombinedOutput()
+	retryCount := remainingRetry
+	if err != nil {
+		// https://pkg.go.dev/os#ProcessState.ExitCode Don't restart if the command was terminated by signals.
+		if exiterr, ok := err.(*exec.ExitError); ok && exiterr.ProcessState.ExitCode() == -1 {
+			log.Printf("command: %s terminated by signals, not restarting.\nCommand output: %s\n Command error:%s", cmd.Args, string(output), err)
+			return
+		}
+		retryCount -= 1
+
+	} else {
+		log.Printf("command: %s exited successfully.\nCommand output: %s", cmd.Args, string(output))
+		retryCount = totalRetry
+	}
+	// Sleep 5 seconds before retarting the task
+	time.Sleep(5 * time.Second)
+	wg.Add(1)
+	go restartCommand(childCtx, wg, cmd, retryCount, totalRetry)
+}
+
 func runCommand(cmd *exec.Cmd) (string, error) {
 	if cmd == nil {
 		return "", nil
@@ -202,4 +297,22 @@ func findPreExistentAgents(ctx context.Context, runCommand RunCommandFunc, agent
 	}
 	log.Printf("The following systemd services are already installed on the VM: %v\n command output: %v\ncommand error: %v", alreadyInstalledAgents, output, err)
 	return true, fmt.Errorf("conflicting installations identified: %v", alreadyInstalledAgents)
+}
+
+// sigHandler only handles SIGTERM signal. The function provided in the
+// cancel argument handles internal framework termination and the plugin
+// interface notification of the "exiting" state.
+func sigHandler(ctx context.Context, cancel func(sig os.Signal)) {
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGTERM)
+	go func() {
+		select {
+		case sig := <-sigChan:
+			log.Printf("Got signal: %d, leaving...", sig)
+			close(sigChan)
+			cancel(sig)
+		case <-ctx.Done():
+			break
+		}
+	}()
 }
