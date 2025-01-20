@@ -63,9 +63,9 @@ var expectedFeatureBase = []confgenerator.Feature{
 	},
 	{
 		Module: "logging",
-		Kind:   "service",
+		Kind:   "compatibility",
 		Type:   "otel_logging",
-		Key:    []string{"otel_logging_support"},
+		Key:    []string{"otel_logging_compatible_config"},
 		Value:  "true",
 	},
 }
@@ -94,9 +94,9 @@ var expectedMetricsPipelineOverriden = []confgenerator.Feature{
 	},
 	{
 		Module: "logging",
-		Kind:   "service",
+		Kind:   "compatibility",
 		Type:   "otel_logging",
-		Key:    []string{"otel_logging_support"},
+		Key:    []string{"otel_logging_compatible_config"},
 		Value:  "true",
 	},
 }
@@ -125,9 +125,9 @@ var expectedTestFeatureBase = []confgenerator.Feature{
 	},
 	{
 		Module: "logging",
-		Kind:   "service",
+		Kind:   "compatibility",
 		Type:   "otel_logging",
-		Key:    []string{"otel_logging_support"},
+		Key:    []string{"otel_logging_compatible_config"},
 		Value:  "true",
 	},
 	{

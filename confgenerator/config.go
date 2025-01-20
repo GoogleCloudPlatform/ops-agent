@@ -1125,7 +1125,7 @@ func (uc *UnifiedConfig) LoggingReceivers(ctx context.Context) (map[string]Compo
 	return out, nil
 }
 
-// LoggingProcessors returns a map of potential logging receivers.
+// LoggingProcessors returns a map of potential logging processors.
 // Each Component may or may not be usable in fluent-bit or otel.
 func (uc *UnifiedConfig) LoggingProcessors(ctx context.Context) (map[string]Component, error) {
 	out := map[string]Component{}
