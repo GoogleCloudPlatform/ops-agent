@@ -200,6 +200,6 @@ func findPreExistentAgents(ctx context.Context, runCommand RunCommandFunc, agent
 	if len(alreadyInstalledAgents) == 0 {
 		return false, nil
 	}
-	log.Printf("The following systemd services are already installed on the VM: %v", alreadyInstalledAgents)
+	log.Printf("The following systemd services are already installed on the VM: %v\n command output: %v\ncommand error: %v", alreadyInstalledAgents, output, err)
 	return true, fmt.Errorf("conflicting installations identified: %v", alreadyInstalledAgents)
 }
