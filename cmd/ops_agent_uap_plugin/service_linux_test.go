@@ -21,7 +21,10 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"sync"
+	"syscall"
 	"testing"
+	"time"
 
 	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
 )
@@ -281,6 +284,42 @@ func TestGetStatus(t *testing.T) {
 	}
 }
 
+func Test_restartCommand_cancelContextWhenNoAttemptsLeft(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cmd := exec.Command(os.Args[0], "-test.run=TestHelperProcess")
+	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
+	var wg sync.WaitGroup
+	wg.Add(1)
+	mockRunCommandFunc := func(cmd *exec.Cmd) (string, error) {
+		return "", nil
+	}
+	restartCommand(ctx, cancel, cmd, mockRunCommandFunc, 0, 0, &wg)
+	if ctx.Err() == nil {
+		t.Error("restartCommand() did not cancel context")
+	}
+}
+
+func Test_restartCommand_terminatesOnSignals(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cmd := exec.Command(os.Args[0], "-test.run=TestHelperProcess")
+	cmd.Env = []string{"GO_HELPER_KILL_BY_SIGNALS=1"}
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	mockRunCommandFunc := func(cmd *exec.Cmd) (string, error) {
+		if err := cmd.Start(); err != nil {
+			t.Errorf("the command %s did not start successfully", cmd.Args)
+		}
+		cmd.Process.Signal(syscall.SIGABRT)
+		err := cmd.Wait()
+		return "", err
+	}
+	restartCommand(ctx, cancel, cmd, mockRunCommandFunc, 1, 1, &wg)
+	if ctx.Err() != nil {
+		t.Error("restartCommand() canceled context")
+	}
+}
+
 // TestHelperProcess isn't a real test. It's used as a helper process to mock
 // command executions.
 func TestHelperProcess(t *testing.T) {
@@ -292,6 +331,8 @@ func TestHelperProcess(t *testing.T) {
 	switch {
 	case os.Getenv("GO_HELPER_FAILURE") == "1":
 		os.Exit(1)
+	case os.Getenv("GO_HELPER_KILL_BY_SIGNALS") == "1":
+		time.Sleep(1 * time.Minute)
 	default:
 		// A "successful" mock execution exits with a successful (zero) exit code.
 		os.Exit(0)

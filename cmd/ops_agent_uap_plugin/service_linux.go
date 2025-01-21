@@ -38,6 +38,11 @@ import (
 const (
 	OpsAgentConfigLocationLinux = "/etc/google-cloud-ops-agent/config.yaml"
 	ConfGeneratorBinary         = "libexec/google_cloud_ops_agent_engine"
+	DiagnosticsBinary           = "libexec/google_cloud_ops_agent_diagnostics"
+	AgentWrapperBinary          = "libexec/google_cloud_ops_agent_wrapper"
+	FluentbitBinary             = "subagents/fluent-bit/bin/fluent-bit"
+	OtelBinary                  = "subagents/opentelemetry-collector/otelopscol"
+
 	LogsDirectory               = "log/google-cloud-ops-agent"
 	FluentBitStateDiectory      = "state/fluent-bit"
 	FluentBitRuntimeDirectory   = "run/google-cloud-ops-agent-fluent-bit"
@@ -77,7 +82,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 		pluginStateDir = DefaultPluginStateDirectory
 	}
 
-	// Find pre-existent ops agent installation, and conflicting legacy agent installation.
+	// Find existing ops agent installation, and conflicting legacy agent installation.
 	foundConflictingInstallations, err := findPreExistentAgents(pContext, ps.runCommand, AgentSystemdServiceNames)
 	if foundConflictingInstallations || err != nil {
 		ps.cancel()
@@ -101,7 +106,8 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 		return nil, status.Errorf(1, "failed to generate subagent configs: %s", err)
 	}
 
-	// Sub-agent startup functionality is not yet implemented and will be added.
+	// Trigger subagent startups
+	go runSubagents(pContext, cancel, pluginStateDir, ps.runCommand)
 	return &pb.StartResponse{}, nil
 }
 
@@ -135,49 +141,49 @@ func (ps *OpsAgentPluginServer) GetStatus(ctx context.Context, msg *pb.GetStatus
 	return &pb.Status{Code: 0, Results: []string{"The Ops Agent Plugin is running ok."}}, nil
 }
 
-func (ps *OpsAgentPluginServer) runAgent(ctx context.Context, pluginBaseLocation string) {
+func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginBaseLocation string, runCommand RunCommandFunc) {
 	// Register signal handler and implements its callback.
 	sigHandler(ctx, func(_ os.Signal) {
 		// We're handling some external signal here, set cleanup to [false].
 		// If this was Guest Agent trying to stop it would call [Stop] RPC directly
 		// or do a [SIGKILL] which anyways cannot be intercepted.
-		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
+		cancel()
 	})
 
-	// Starting the Diagnostics service, and subagents.
 	var wg sync.WaitGroup
-	// Starting Diagnostics Service
+	// Starting the diagnostics service
 	runDiagnosticsCmd := exec.CommandContext(ctx,
-		pluginBaseLocation+"/libexec/google_cloud_ops_agent_diagnostics",
+		path.Join(pluginBaseLocation, DiagnosticsBinary),
 		"-config", OpsAgentConfigLocationLinux,
 	)
 	wg.Add(1)
-	go restartCommand(ctx, &wg, runDiagnosticsCmd, RestartLimit, RestartLimit)
+	go restartCommand(ctx, cancel, runDiagnosticsCmd, runCommand, RestartLimit, RestartLimit, &wg)
 
 	// Starting Otel
-	execOtelCmd := exec.CommandContext(ctx,
-		pluginBaseLocation+"/subagents/opentelemetry-collector/otelopscol",
-		"--config", pluginBaseLocation+"/"+OtelRuntimeDirectory+"/otel.yaml",
+	runOtelCmd := exec.CommandContext(ctx,
+		path.Join(pluginBaseLocation, OtelBinary),
+		"--config", path.Join(pluginBaseLocation, OtelRuntimeDirectory, "otel.yaml"),
 	)
 	wg.Add(1)
-	go restartCommand(ctx, &wg, execOtelCmd, RestartLimit, RestartLimit)
+	go restartCommand(ctx, cancel, runOtelCmd, runCommand, RestartLimit, RestartLimit, &wg)
 
 	// Starting FluentBit
-	execFluentBitCmd := exec.CommandContext(ctx,
-		pluginBaseLocation+"/libexec/google_cloud_ops_agent_wrapper",
+	runFluentBitCmd := exec.CommandContext(ctx,
+		path.Join(pluginBaseLocation, AgentWrapperBinary),
 		"-config_path", OpsAgentConfigLocationLinux,
-		"-log_path", LogsDirectory+"/subagents/logging-module.log",
-		pluginBaseLocation+"/subagents/fluent-bit/bin/fluent-bit",
-		"--config", pluginBaseLocation+"/"+FluentBitRuntimeDirectory+"/fluent_bit_main.conf",
-		"--parser", pluginBaseLocation+"/"+FluentBitRuntimeDirectory+"/fluent_bit_parser.conf",
-		"--storage_path", pluginBaseLocation+"/"+FluentBitStateDiectory+"/buffers",
+		"-log_path", path.Join(pluginBaseLocation, LogsDirectory, "subagents/logging-module.log"),
+		path.Join(pluginBaseLocation, FluentbitBinary),
+		"--config", path.Join(pluginBaseLocation, FluentBitRuntimeDirectory, "fluent_bit_main.conf"),
+		"--parser", path.Join(pluginBaseLocation, FluentBitRuntimeDirectory, "fluent_bit_parser.conf"),
+		"--storage_path", path.Join(pluginBaseLocation, FluentBitStateDiectory, "buffers"),
 	)
 	wg.Add(1)
-	go restartCommand(ctx, &wg, execFluentBitCmd, RestartLimit, RestartLimit)
+	go restartCommand(ctx, cancel, runFluentBitCmd, runCommand, RestartLimit, RestartLimit, &wg)
+
 	wg.Wait()
 }
 
-func restartCommand(ctx context.Context, wg *sync.WaitGroup, cmd *exec.Cmd, remainingRetry int, totalRetry int) {
+func restartCommand(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFunc, remainingRetry int, totalRetry int, wg *sync.WaitGroup) {
 	defer wg.Done()
 	if cmd == nil {
 		return
@@ -188,25 +194,16 @@ func restartCommand(ctx context.Context, wg *sync.WaitGroup, cmd *exec.Cmd, rema
 		return
 	}
 	if remainingRetry == 0 {
-		log.Printf("out of retries, command: %s not restarted", cmd.Args)
+		log.Printf("out of retries, command: %s is not restarted", cmd.Args)
+		cancel()
 		return
 	}
 
-	childCtx, ctxCancel := context.WithCancel(ctx)
-	sigHandler(childCtx, func(_ os.Signal) {
-		// We're handling some external signal here, set cleanup to [false].
-		// If this was Guest Agent trying to stop it would call [Stop] RPC directly
-		// or do a [SIGKILL] which anyways cannot be intercepted.
-		ctxCancel()
-	})
-	cmd = exec.CommandContext(childCtx, cmd.Path, cmd.Args[1:]...)
-
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Pdeathsig: syscall.SIGKILL,
-		Setpgid:   true,
-	}
-	output, err := cmd.CombinedOutput()
+	childCtx, childCtxCancel := context.WithCancel(ctx)
+	defer childCtxCancel()
 	retryCount := remainingRetry
+	cmd = exec.CommandContext(childCtx, cmd.Path, cmd.Args[1:]...)
+	output, err := runCommand(cmd)
 	if err != nil {
 		// https://pkg.go.dev/os#ProcessState.ExitCode Don't restart if the command was terminated by signals.
 		if exiterr, ok := err.(*exec.ExitError); ok && exiterr.ProcessState.ExitCode() == -1 {
@@ -222,7 +219,25 @@ func restartCommand(ctx context.Context, wg *sync.WaitGroup, cmd *exec.Cmd, rema
 	// Sleep 5 seconds before retarting the task
 	time.Sleep(5 * time.Second)
 	wg.Add(1)
-	go restartCommand(childCtx, wg, cmd, retryCount, totalRetry)
+	go restartCommand(ctx, cancel, cmd, runCommand, retryCount, totalRetry, wg)
+}
+
+// sigHandler handles SIGTERM, SIGINT etc signals. The function provided in the
+// cancel argument handles internal framework termination and the plugin
+// interface notification of the "exiting" state.
+func sigHandler(ctx context.Context, cancel func(sig os.Signal)) {
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGHUP)
+	go func() {
+		select {
+		case sig := <-sigChan:
+			log.Printf("Got signal: %d, leaving...", sig)
+			close(sigChan)
+			cancel(sig)
+		case <-ctx.Done():
+			break
+		}
+	}()
 }
 
 func runCommand(cmd *exec.Cmd) (string, error) {
@@ -297,22 +312,4 @@ func findPreExistentAgents(ctx context.Context, runCommand RunCommandFunc, agent
 	}
 	log.Printf("The following systemd services are already installed on the VM: %v\n command output: %v\ncommand error: %v", alreadyInstalledAgents, output, err)
 	return true, fmt.Errorf("conflicting installations identified: %v", alreadyInstalledAgents)
-}
-
-// sigHandler only handles SIGTERM signal. The function provided in the
-// cancel argument handles internal framework termination and the plugin
-// interface notification of the "exiting" state.
-func sigHandler(ctx context.Context, cancel func(sig os.Signal)) {
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGTERM)
-	go func() {
-		select {
-		case sig := <-sigChan:
-			log.Printf("Got signal: %d, leaving...", sig)
-			close(sigChan)
-			cancel(sig)
-		case <-ctx.Done():
-			break
-		}
-	}()
 }
