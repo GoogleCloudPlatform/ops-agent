@@ -148,7 +148,7 @@ func runCommand(cmd *exec.Cmd) (string, error) {
 
 func validateOpsAgentConfig(ctx context.Context, runCommand RunCommandFunc, pluginBaseLocation string) error {
 	configValidationCmd := exec.CommandContext(ctx,
-		pluginBaseLocation+"/"+ConfGeneratorBinary,
+		path.Join(pluginBaseLocation, ConfGeneratorBinary),
 		"-in", OpsAgentConfigLocationLinux,
 	)
 	if output, err := runCommand(configValidationCmd); err != nil {
