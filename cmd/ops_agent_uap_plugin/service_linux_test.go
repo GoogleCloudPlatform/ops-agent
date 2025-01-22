@@ -284,7 +284,7 @@ func TestGetStatus(t *testing.T) {
 	}
 }
 
-func Test_restartCommand_cancelContextWhenNoAttemptsLeft(t *testing.T) {
+func Test_restartCommand_CancelContextWhenNoAttemptLeft(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cmd := exec.Command(os.Args[0], "-test.run=TestHelperProcess")
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
@@ -293,16 +293,16 @@ func Test_restartCommand_cancelContextWhenNoAttemptsLeft(t *testing.T) {
 	mockRunCommandFunc := func(cmd *exec.Cmd) (string, error) {
 		return "", nil
 	}
-	restartCommand(ctx, cancel, cmd, mockRunCommandFunc, 0, 0, &wg)
+	restartCommand(ctx, cancel, cmd, mockRunCommandFunc, 0, 10, &wg)
 	if ctx.Err() == nil {
 		t.Error("restartCommand() did not cancel context")
 	}
 }
 
-func Test_restartCommand_terminatesOnSignals(t *testing.T) {
+func Test_restartCommand_DoNotCancelContextWhenCmdTerminatedBySignals(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cmd := exec.Command(os.Args[0], "-test.run=TestHelperProcess")
-	cmd.Env = []string{"GO_HELPER_KILL_BY_SIGNALS=1"}
+	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", "GO_HELPER_KILL_BY_SIGNALS=1"}
 	var wg sync.WaitGroup
 	wg.Add(1)
 
@@ -314,10 +314,27 @@ func Test_restartCommand_terminatesOnSignals(t *testing.T) {
 		err := cmd.Wait()
 		return "", err
 	}
-	restartCommand(ctx, cancel, cmd, mockRunCommandFunc, 1, 1, &wg)
+	restartCommand(ctx, cancel, cmd, mockRunCommandFunc, 1, 10, &wg)
 	if ctx.Err() != nil {
 		t.Error("restartCommand() canceled context")
 	}
+}
+
+func Test_runSubagents_terminatesWhenSpawnedGoRoutinesReturn(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	mockCmd := exec.Command(os.Args[0], "-test.run=TestHelperProcess")
+	mockCmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
+
+	mockRunCommandFunc := func(cmd *exec.Cmd) (string, error) {
+		output, err := cmd.CombinedOutput()
+		t.Logf("%s %s", output, err)
+		return string(output), err
+	}
+	mockRestartCommandFunc := func(ctx context.Context, cancel context.CancelFunc, _ *exec.Cmd, runCommand RunCommandFunc, _ int, totalRetry int, wg *sync.WaitGroup) {
+		restartCommand(ctx, cancel, mockCmd, runCommand, 0, totalRetry, wg)
+	}
+	// the test fails if runSubagents never returns
+	runSubagents(ctx, cancel, "", mockRestartCommandFunc, mockRunCommandFunc)
 }
 
 // TestHelperProcess isn't a real test. It's used as a helper process to mock

@@ -56,6 +56,11 @@ var (
 	AgentSystemdServiceNames = []string{"google-cloud-ops-agent.service", "stackdriver-agent.service", "google-fluentd.service"}
 )
 
+// RestartCommandFunc defines a function type that always restarts a command until the command is terminated by signals or the retry is exhausted. This abstraction is introduced
+// primarily to facilitate testing by allowing the injection of mock
+// implementations.
+type RestartCommandFunc func(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFunc, remainingRetry int, totalRetry int, wg *sync.WaitGroup)
+
 // Apply applies the config sent or performs the work defined in the message.
 // ApplyRequest is opaque to the agent and is expected to be well known contract
 // between Plugin and the server itself. For e.g. service might want to update
@@ -107,7 +112,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	}
 
 	// Trigger subagent startups
-	go runSubagents(pContext, cancel, pluginStateDir, ps.runCommand)
+	go runSubagents(pContext, cancel, pluginStateDir, restartCommand, ps.runCommand)
 	return &pb.StartResponse{}, nil
 }
 
@@ -141,7 +146,18 @@ func (ps *OpsAgentPluginServer) GetStatus(ctx context.Context, msg *pb.GetStatus
 	return &pb.Status{Code: 0, Results: []string{"The Ops Agent Plugin is running ok."}}, nil
 }
 
-func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginBaseLocation string, runCommand RunCommandFunc) {
+// runSubagents starts up the diagnostics service, otel, and fluent bit subagents in separate goroutines.
+// All child goroutines create a new context derived from the same parent context.
+// This ensures that crashes in one goroutine don't affect other goroutines.
+// However, when one goroutine stops restarting because its retry limit is exhausted, all other goroutines are also terminated.
+// This is done by canceling the parent context.
+// This makes sure that GetStatus() returns a non-healthy status, notifying UAP to Start() the plugin again.
+//
+// ctx: the parent context that all child goroutines share.
+//
+// cancel: the cancel function for the parent context. By calling this function, the parent context is canceled,
+// and GetStatus() returns a non-healthy status, signaling UAP to re-trigger Start().
+func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginBaseLocation string, restartCommand RestartCommandFunc, runCommand RunCommandFunc) {
 	// Register signal handler and implements its callback.
 	sigHandler(ctx, func(_ os.Signal) {
 		// We're handling some external signal here, set cleanup to [false].
@@ -216,7 +232,7 @@ func restartCommand(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cm
 		log.Printf("command: %s exited successfully.\nCommand output: %s", cmd.Args, string(output))
 		retryCount = totalRetry
 	}
-	// Sleep 5 seconds before retarting the task
+	// leep 5 seconds before retarting the task
 	time.Sleep(5 * time.Second)
 	wg.Add(1)
 	go restartCommand(ctx, cancel, cmd, runCommand, retryCount, totalRetry, wg)
