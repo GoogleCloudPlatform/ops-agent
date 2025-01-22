@@ -1,13 +1,30 @@
+// Copyright 2025 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"net"
 	"os"
+	"os/exec"
+
+	"google.golang.org/grpc"
 
 	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
-	"google.golang.org/grpc"
 )
 
 var (
@@ -18,6 +35,20 @@ var (
 	// logfile is the path to the log file to capture error logs.
 	logfile string
 )
+
+// RunCommandFunc defines a function type that takes an exec.Cmd and returns
+// its output and error. This abstraction is introduced
+// primarily to facilitate testing by allowing the injection of mock
+// implementations.
+type RunCommandFunc func(cmd *exec.Cmd) (string, error)
+
+// PluginServer implements the plugin RPC server interface.
+type OpsAgentPluginServer struct {
+	pb.UnimplementedGuestAgentPluginServer
+	server     *grpc.Server
+	cancel     context.CancelFunc
+	runCommand RunCommandFunc
+}
 
 func init() {
 	flag.StringVar(&protocol, "protocol", "", "protocol to use uds/tcp")
@@ -48,14 +79,18 @@ func main() {
 	server := grpc.NewServer()
 	defer server.GracefulStop()
 
-	ps := &OpsAgentPluginServer{server: server}
+	ps := &OpsAgentPluginServer{server: server, runCommand: runCommand}
 	// Successfully registering the server and starting to listen on the address
 	// offered mean Guest Agent was successful in installing/launching the plugin
 	// & will manage the lifecycle (start, stop, or revision change) here onwards.
 	pb.RegisterGuestAgentPluginServer(server, ps)
+
+	ctx := context.Background()
+	ps.GetStatus(ctx, &pb.GetStatusRequest{})
+	ps.Start(ctx, &pb.StartRequest{})
+
 	if err := server.Serve(listener); err != nil {
 		fmt.Fprintf(os.Stderr, "Exiting, cannot continue serving: %v\n", err)
 		os.Exit(1)
 	}
-
 }
