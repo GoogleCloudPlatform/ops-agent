@@ -47,7 +47,6 @@ const (
 	FluentBitRuntimeDirectory   = "run/google-cloud-ops-agent-fluent-bit"
 	OtelRuntimeDirectory        = "run/google-cloud-ops-agent-opentelemetry-collector"
 	DefaultPluginStateDirectory = "/var/lib/google-guest-agent/plugins/ops-agent-plugin"
-	RestartLimit                = 10 // if a command crashes more than restartLimit times consecutively, the command will no longer be restarted.
 )
 
 var (
@@ -55,10 +54,10 @@ var (
 	AgentSystemdServiceNames = []string{"google-cloud-ops-agent.service", "stackdriver-agent.service", "google-fluentd.service"}
 )
 
-// RestartCommandFunc defines a function type that always restarts a command until the command is terminated by signals or the retry is exhausted. This abstraction is introduced
+// RestartCommandFunc defines a function type that always restarts a command until the command is exited with errors. This abstraction is introduced
 // primarily to facilitate testing by allowing the injection of mock
 // implementations.
-type RestartCommandFunc func(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFunc, remainingRetry int, totalRetry int, wg *sync.WaitGroup)
+type RestartCommandFunc func(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup)
 
 // Apply applies the config sent or performs the work defined in the message.
 // ApplyRequest is opaque to the agent and is expected to be well known contract
@@ -148,7 +147,7 @@ func (ps *OpsAgentPluginServer) GetStatus(ctx context.Context, msg *pb.GetStatus
 // runSubagents starts up the diagnostics service, otel, and fluent bit subagents in separate goroutines.
 // All child goroutines create a new context derived from the same parent context.
 // This ensures that crashes in one goroutine don't affect other goroutines.
-// However, when one goroutine stops restarting because its retry limit is exhausted, all other goroutines are also terminated.
+// However, when one goroutine exits with errors, it won't be restarted, and all other goroutines are also terminated.
 // This is done by canceling the parent context.
 // This makes sure that GetStatus() returns a non-healthy status, signaling UAP to Start() the plugin again.
 //
@@ -169,7 +168,7 @@ func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginBaseLoca
 		"-config", OpsAgentConfigLocationLinux,
 	)
 	wg.Add(1)
-	go restartCommand(ctx, cancel, runDiagnosticsCmd, runCommand, RestartLimit, RestartLimit, &wg)
+	go restartCommand(ctx, cancel, runDiagnosticsCmd, runCommand, &wg)
 
 	// Starting Otel
 	runOtelCmd := exec.CommandContext(ctx,
@@ -177,7 +176,7 @@ func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginBaseLoca
 		"--config", path.Join(pluginBaseLocation, OtelRuntimeDirectory, "otel.yaml"),
 	)
 	wg.Add(1)
-	go restartCommand(ctx, cancel, runOtelCmd, runCommand, RestartLimit, RestartLimit, &wg)
+	go restartCommand(ctx, cancel, runOtelCmd, runCommand, &wg)
 
 	// Starting FluentBit
 	runFluentBitCmd := exec.CommandContext(ctx,
@@ -190,12 +189,12 @@ func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginBaseLoca
 		"--storage_path", path.Join(pluginBaseLocation, FluentBitStateDiectory, "buffers"),
 	)
 	wg.Add(1)
-	go restartCommand(ctx, cancel, runFluentBitCmd, runCommand, RestartLimit, RestartLimit, &wg)
+	go restartCommand(ctx, cancel, runFluentBitCmd, runCommand, &wg)
 
 	wg.Wait()
 }
 
-func restartCommand(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFunc, remainingRetry int, totalRetry int, wg *sync.WaitGroup) {
+func restartCommand(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup) {
 	defer wg.Done()
 	if cmd == nil {
 		return
@@ -205,33 +204,23 @@ func restartCommand(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cm
 		log.Printf("cannot execute command: %s, because the context has been cancelled", cmd.Args)
 		return
 	}
-	if remainingRetry == 0 {
-		log.Printf("out of retries, command: %s is not restarted", cmd.Args)
-		cancel()
-		return
-	}
 
 	childCtx, childCtxCancel := context.WithCancel(ctx)
 	defer childCtxCancel()
 
-	retryCount := remainingRetry
-	cmd = exec.CommandContext(childCtx, cmd.Path, cmd.Args[1:]...)
-	output, err := runCommand(cmd)
+	cmdCopy := exec.CommandContext(childCtx, cmd.Path, cmd.Args[1:]...)
+	cmdCopy.Env = cmd.Env
+	output, err := runCommand(cmdCopy)
 	if err != nil {
-		// https://pkg.go.dev/os#ProcessState.ExitCode Don't restart if the command was terminated by signals.
-		if exiterr, ok := err.(*exec.ExitError); ok && exiterr.ProcessState.ExitCode() == -1 {
-			log.Printf("command: %s terminated by signals, not restarting.\nCommand output: %s\n Command error:%s", cmd.Args, string(output), err)
-			return
-		}
-		retryCount -= 1
-
+		log.Printf("command: %s exited with errors, not restarting.\nCommand output: %s\n Command error:%s", cmd.Args, string(output), err)
+		cancel() // cancels the parent context which also stops other Ops Agent sub-binaries from running.
+		return
 	} else {
-		log.Printf("command: %s exited successfully.\nCommand output: %s", cmd.Args, string(output))
-		retryCount = totalRetry
+		log.Printf("command: %s %s exited successfully.\nCommand output: %s", cmd.Path, cmd.Args, string(output))
 	}
 
 	wg.Add(1)
-	go restartCommand(ctx, cancel, cmd, runCommand, retryCount, totalRetry, wg)
+	go restartCommand(ctx, cancel, cmd, runCommand, wg)
 }
 
 // sigHandler handles SIGTERM, SIGINT etc signals. The function provided in the
@@ -263,9 +252,8 @@ func runCommand(cmd *exec.Cmd) (string, error) {
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Printf("Command %s failed, \ncommand output: %s\ncommand error: %s", cmd.Args, string(out), err)
-		return string(out), err
 	}
-	return string(out), nil
+	return string(out), err
 }
 
 func validateOpsAgentConfig(ctx context.Context, runCommand RunCommandFunc, pluginBaseLocation string) error {
