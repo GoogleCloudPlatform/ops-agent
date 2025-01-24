@@ -1127,18 +1127,6 @@ func (uc *UnifiedConfig) LoggingReceivers(ctx context.Context) (map[string]Compo
 	return out, nil
 }
 
-// LoggingProcessors returns a map of potential logging processors.
-// Each Component may or may not be usable in fluent-bit or otel.
-func (uc *UnifiedConfig) LoggingProcessors(ctx context.Context) (map[string]Component, error) {
-	out := map[string]Component{}
-	if uc.Logging != nil {
-		for k, v := range uc.Logging.Processors {
-			out[k] = v
-		}
-	}
-	return out, nil
-}
-
 func (uc *UnifiedConfig) OTelLoggingReceivers(ctx context.Context) (map[string]OTelReceiver, error) {
 	receivers, err := uc.LoggingReceivers(ctx)
 	if err != nil {
@@ -1151,20 +1139,6 @@ func (uc *UnifiedConfig) OTelLoggingReceivers(ctx context.Context) (map[string]O
 		}
 	}
 	return validReceivers, nil
-}
-
-func (uc *UnifiedConfig) OTelLoggingProcessors(ctx context.Context) (map[string]OTelProcessor, error) {
-	processors, err := uc.LoggingProcessors(ctx)
-	if err != nil {
-		return nil, err
-	}
-	validProcessors := map[string]OTelProcessor{}
-	for k, v := range processors {
-		if v, ok := v.(OTelProcessor); ok {
-			validProcessors[k] = v
-		}
-	}
-	return validProcessors, nil
 }
 
 func (uc *UnifiedConfig) OTelLoggingSupported(ctx context.Context) bool {
