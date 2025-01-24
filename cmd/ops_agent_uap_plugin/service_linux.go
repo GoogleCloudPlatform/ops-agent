@@ -24,6 +24,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -46,7 +47,7 @@ const (
 	FluentBitStateDiectory      = "state/fluent-bit"
 	FluentBitRuntimeDirectory   = "run/google-cloud-ops-agent-fluent-bit"
 	OtelRuntimeDirectory        = "run/google-cloud-ops-agent-opentelemetry-collector"
-	DefaultPluginStateDirectory = "/var/lib/google-guest-agent/plugins/ops-agent-plugin"
+	DefaultPluginStateDirectory = "/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin"
 )
 
 var (
@@ -80,6 +81,18 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	pContext, cancel := context.WithCancel(context.Background())
 	ps.cancel = cancel
 
+	pluginInstallaPath, err := os.Executable()
+	if err != nil {
+		log.Printf("Start() failed, because it cannot determine the plugin install location: %s", err)
+		return nil, status.Error(1, err.Error())
+	}
+	pluginInstallaPath, err = filepath.EvalSymlinks(pluginInstallaPath)
+	if err != nil {
+		log.Printf("Start() failed, because it cannot determine the plugin install location: %s", err)
+		status.Error(1, err.Error())
+	}
+	pluginInstallDir := filepath.Dir(pluginInstallaPath)
+
 	pluginStateDir := msg.GetConfig().GetStateDirectoryPath()
 	if pluginStateDir == "" {
 		pluginStateDir = DefaultPluginStateDirectory
@@ -95,14 +108,14 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	}
 
 	// Ops Agent config validation
-	if err := validateOpsAgentConfig(pContext, ps.runCommand, pluginStateDir); err != nil {
+	if err := validateOpsAgentConfig(pContext, pluginInstallDir, ps.runCommand); err != nil {
 		log.Printf("Start() failed: %s", err)
 		ps.cancel()
 		ps.cancel = nil
 		return nil, status.Errorf(1, "failed to validate Ops Agent config: %s", err)
 	}
 	// Subagent config generation
-	if err := generateSubagentConfigs(pContext, ps.runCommand, pluginStateDir); err != nil {
+	if err := generateSubagentConfigs(pContext, ps.runCommand, pluginInstallDir, pluginStateDir); err != nil {
 		log.Printf("Start() failed: %s", err)
 		ps.cancel()
 		ps.cancel = nil
@@ -110,7 +123,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	}
 
 	// the diagnostics service and subagent startups
-	go runSubagents(pContext, cancel, pluginStateDir, restartCommand, ps.runCommand)
+	go runSubagents(pContext, cancel, pluginInstallDir, pluginStateDir, restartCommand, ps.runCommand)
 	return &pb.StartResponse{}, nil
 }
 
@@ -155,7 +168,7 @@ func (ps *OpsAgentPluginServer) GetStatus(ctx context.Context, msg *pb.GetStatus
 //
 // cancel: the cancel function for the parent context. By calling this function, the parent context is canceled,
 // and GetStatus() returns a non-healthy status, signaling UAP to re-trigger Start().
-func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginBaseLocation string, restartCommand RestartCommandFunc, runCommand RunCommandFunc) {
+func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallDirectory string, pluginStateDirectory string, restartCommand RestartCommandFunc, runCommand RunCommandFunc) {
 	// Register signal handler and implements its callback.
 	sigHandler(ctx, func(_ os.Signal) {
 		cancel()
@@ -164,7 +177,7 @@ func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginBaseLoca
 	var wg sync.WaitGroup
 	// Starting the diagnostics service
 	runDiagnosticsCmd := exec.CommandContext(ctx,
-		path.Join(pluginBaseLocation, DiagnosticsBinary),
+		path.Join(pluginInstallDirectory, DiagnosticsBinary),
 		"-config", OpsAgentConfigLocationLinux,
 	)
 	wg.Add(1)
@@ -172,21 +185,21 @@ func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginBaseLoca
 
 	// Starting Otel
 	runOtelCmd := exec.CommandContext(ctx,
-		path.Join(pluginBaseLocation, OtelBinary),
-		"--config", path.Join(pluginBaseLocation, OtelRuntimeDirectory, "otel.yaml"),
+		path.Join(pluginInstallDirectory, OtelBinary),
+		"--config", path.Join(pluginStateDirectory, OtelRuntimeDirectory, "otel.yaml"),
 	)
 	wg.Add(1)
 	go restartCommand(ctx, cancel, runOtelCmd, runCommand, &wg)
 
 	// Starting FluentBit
 	runFluentBitCmd := exec.CommandContext(ctx,
-		path.Join(pluginBaseLocation, AgentWrapperBinary),
+		path.Join(pluginInstallDirectory, AgentWrapperBinary),
 		"-config_path", OpsAgentConfigLocationLinux,
-		"-log_path", path.Join(pluginBaseLocation, LogsDirectory, "subagents/logging-module.log"),
-		path.Join(pluginBaseLocation, FluentbitBinary),
-		"--config", path.Join(pluginBaseLocation, FluentBitRuntimeDirectory, "fluent_bit_main.conf"),
-		"--parser", path.Join(pluginBaseLocation, FluentBitRuntimeDirectory, "fluent_bit_parser.conf"),
-		"--storage_path", path.Join(pluginBaseLocation, FluentBitStateDiectory, "buffers"),
+		"-log_path", path.Join(pluginStateDirectory, LogsDirectory, "subagents/logging-module.log"),
+		path.Join(pluginInstallDirectory, FluentbitBinary),
+		"--config", path.Join(pluginStateDirectory, FluentBitRuntimeDirectory, "fluent_bit_main.conf"),
+		"--parser", path.Join(pluginStateDirectory, FluentBitRuntimeDirectory, "fluent_bit_parser.conf"),
+		"--storage_path", path.Join(pluginStateDirectory, FluentBitStateDiectory, "buffers"),
 	)
 	wg.Add(1)
 	go restartCommand(ctx, cancel, runFluentBitCmd, runCommand, &wg)
@@ -256,9 +269,9 @@ func runCommand(cmd *exec.Cmd) (string, error) {
 	return string(out), err
 }
 
-func validateOpsAgentConfig(ctx context.Context, runCommand RunCommandFunc, pluginBaseLocation string) error {
+func validateOpsAgentConfig(ctx context.Context, pluginInstallDirectory string, runCommand RunCommandFunc) error {
 	configValidationCmd := exec.CommandContext(ctx,
-		path.Join(pluginBaseLocation, ConfGeneratorBinary),
+		path.Join(pluginInstallDirectory, ConfGeneratorBinary),
 		"-in", OpsAgentConfigLocationLinux,
 	)
 	if output, err := runCommand(configValidationCmd); err != nil {
@@ -267,14 +280,14 @@ func validateOpsAgentConfig(ctx context.Context, runCommand RunCommandFunc, plug
 	return nil
 }
 
-func generateSubagentConfigs(ctx context.Context, runCommand RunCommandFunc, pluginBaseLocation string) error {
-	confGeneratorBinaryFullPath := path.Join(pluginBaseLocation, ConfGeneratorBinary)
+func generateSubagentConfigs(ctx context.Context, runCommand RunCommandFunc, pluginInstallDirectory string, pluginStateDirectory string) error {
+	confGeneratorBinaryFullPath := path.Join(pluginInstallDirectory, ConfGeneratorBinary)
 	otelConfigGenerationCmd := exec.CommandContext(ctx,
 		confGeneratorBinaryFullPath,
 		"-service", "otel",
 		"-in", OpsAgentConfigLocationLinux,
-		"-out", path.Join(pluginBaseLocation, OtelRuntimeDirectory),
-		"-logs", path.Join(pluginBaseLocation, LogsDirectory))
+		"-out", path.Join(pluginStateDirectory, OtelRuntimeDirectory),
+		"-logs", path.Join(pluginStateDirectory, LogsDirectory))
 
 	if output, err := runCommand(otelConfigGenerationCmd); err != nil {
 		return fmt.Errorf("failed to generate Otel config:\ncommand output: %s\ncommand error: %s", output, err)
@@ -284,8 +297,8 @@ func generateSubagentConfigs(ctx context.Context, runCommand RunCommandFunc, plu
 		confGeneratorBinaryFullPath,
 		"-service", "fluentbit",
 		"-in", OpsAgentConfigLocationLinux,
-		"-out", path.Join(pluginBaseLocation, FluentBitRuntimeDirectory),
-		"-logs", path.Join(pluginBaseLocation, LogsDirectory), "-state", path.Join(pluginBaseLocation, FluentBitStateDiectory))
+		"-out", path.Join(pluginStateDirectory, FluentBitRuntimeDirectory),
+		"-logs", path.Join(pluginStateDirectory, LogsDirectory), "-state", path.Join(pluginStateDirectory, FluentBitStateDiectory))
 
 	if output, err := runCommand(fluentBitConfigGenerationCmd); err != nil {
 		return fmt.Errorf("failed to generate Fluntbit config:\ncommand output: %s\ncommand error: %s", output, err)

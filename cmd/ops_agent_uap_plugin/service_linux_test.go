@@ -115,7 +115,7 @@ func Test_validateOpsAgentConfig(t *testing.T) {
 			}
 
 			ctx := context.Background()
-			err := validateOpsAgentConfig(ctx, mockRunCommand, "")
+			err := validateOpsAgentConfig(ctx, "", mockRunCommand)
 			gotSuccess := (err == nil)
 			if gotSuccess != tc.wantSuccess {
 				t.Errorf("%s: validateOpsAgentConfig() failed to valide Ops Agent config: %v, want successful config validation: %v, error:%v", tc.name, gotSuccess, tc.wantSuccess, err)
@@ -153,7 +153,7 @@ func Test_generateSubagentConfigs(t *testing.T) {
 			}
 
 			ctx := context.Background()
-			err := generateSubagentConfigs(ctx, mockRunCommand, "")
+			err := generateSubagentConfigs(ctx, mockRunCommand, "", "")
 			gotSuccess := (err == nil)
 			if gotSuccess != tc.wantSuccess {
 				t.Errorf("%s: generateSubagentConfigs() failed to generate subagents configs: %v, want successful config validation: %v, error:%v", tc.name, gotSuccess, tc.wantSuccess, err)
@@ -329,7 +329,7 @@ func Test_runSubagents_TerminatesWhenSpawnedGoRoutinesReturn(t *testing.T) {
 	}
 	cancel() // child go routines return immediately, because the parent context has been cancelled.
 	// the test times out and fails if runSubagents does not returns
-	runSubagents(ctx, cancel, "", mockRestartCommandFunc, runCommand)
+	runSubagents(ctx, cancel, "", "", mockRestartCommandFunc, runCommand)
 }
 
 // TestHelperProcess isn't a real test. It's used as a helper process to mock
