@@ -21,7 +21,13 @@ else
   # Installation followed in: https://dev.mysql.com/doc/mysql-sles-repo-quick-guide/en/
   sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2023
   sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2022
-  sudo zypper -n install https://dev.mysql.com/get/${mysql_repo_pkg_name}
+  wget --output-document mysql-repos.rpm https://dev.mysql.com/get/${mysql_repo_pkg_name}
+  sudo rpm -Uvh mysql-repos.rpm
+  sudo zypper modifyrepo --disable mysql-8.4-lts-community
+  sudo zypper modifyrepo --disable mysql-connectors-community
+  sudo zypper modifyrepo --disable mysql-tools-8.4-lts-community
+  sudo zypper modifyrepo --enable mysql80-community
+  sudo zypper refresh
   sudo zypper -n install mysql-community-server
 fi
 
