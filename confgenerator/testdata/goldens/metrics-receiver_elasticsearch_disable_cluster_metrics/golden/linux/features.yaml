@@ -13,7 +13,7 @@
 - module: logging
   feature: service:otel_logging
   key: otel_logging_supported_config
-  value: "false"
+  value: "true"
 - module: metrics
   feature: receivers:elasticsearch
   key: "[0].enabled"

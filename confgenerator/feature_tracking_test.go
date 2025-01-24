@@ -70,37 +70,6 @@ var expectedFeatureBase = []confgenerator.Feature{
 	},
 }
 
-var expectedInvalidConfigFeatureBase = []confgenerator.Feature{
-	{
-		Module: "logging",
-		Kind:   "service",
-		Type:   "pipelines",
-		Key:    []string{"default_pipeline_overridden"},
-		Value:  "false",
-	},
-	{
-		Module: "metrics",
-		Kind:   "service",
-		Type:   "pipelines",
-		Key:    []string{"default_pipeline_overridden"},
-		Value:  "false",
-	},
-	{
-		Module: "global",
-		Kind:   "default",
-		Type:   "self_log",
-		Key:    []string{"default_self_log_file_collection"},
-		Value:  "true",
-	},
-	{
-		Module: "logging",
-		Kind:   "service",
-		Type:   "otel_logging",
-		Key:    []string{"otel_logging_supported_config"},
-		Value:  "false",
-	},
-}
-
 var expectedMetricsPipelineOverriden = []confgenerator.Feature{
 	{
 		Module: "logging",
@@ -159,7 +128,7 @@ var expectedTestFeatureBase = []confgenerator.Feature{
 		Kind:   "service",
 		Type:   "otel_logging",
 		Key:    []string{"otel_logging_supported_config"},
-		Value:  "false",
+		Value:  "true",
 	},
 	{
 		Module: confgenerator.MetricsReceiverTypes.Subagent,
@@ -1024,7 +993,7 @@ func TestNestedStructs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expected := expectedInvalidConfigFeatureBase
+	expected := expectedFeatureBase
 	expected = append(expected, confgenerator.Feature{
 		Module: confgenerator.MetricsReceiverTypes.Subagent,
 		Kind:   "receivers",

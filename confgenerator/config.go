@@ -1142,19 +1142,20 @@ func (uc *UnifiedConfig) OTelLoggingReceivers(ctx context.Context) (map[string]O
 }
 
 func (uc *UnifiedConfig) OTelLoggingSupported(ctx context.Context) bool {
-	ucCopy, err := uc.DeepCopy(ctx)
+	ucLogging := UnifiedConfig{Logging: uc.Logging}
+	ucLoggingCopy, err := ucLogging.DeepCopy(ctx)
 	if err != nil {
 		return false
 	}
-	if ucCopy.Logging == nil {
+	if ucLoggingCopy.Logging == nil {
 		return true
 	}
-	if ucCopy.Logging.Service == nil {
-		ucCopy.Logging.Service = &LoggingService{}
+	if ucLoggingCopy.Logging.Service == nil {
+		ucLoggingCopy.Logging.Service = &LoggingService{}
 	}
-	ucCopy.Metrics = nil
-	ucCopy.Logging.Service.OTelLogging = true
-	_, err = ucCopy.GenerateOtelConfig(ctx)
+	ucLoggingCopy.Metrics = nil
+	ucLoggingCopy.Logging.Service.OTelLogging = true
+	_, err = ucLoggingCopy.GenerateOtelConfig(ctx)
 	return err == nil
 }
 
