@@ -1153,7 +1153,6 @@ func (uc *UnifiedConfig) OTelLoggingSupported(ctx context.Context) bool {
 	if ucLoggingCopy.Logging.Service == nil {
 		ucLoggingCopy.Logging.Service = &LoggingService{}
 	}
-	ucLoggingCopy.Metrics = nil
 	ucLoggingCopy.Logging.Service.OTelLogging = true
 	_, err = ucLoggingCopy.GenerateOtelConfig(ctx)
 	return err == nil
