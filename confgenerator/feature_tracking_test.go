@@ -63,10 +63,41 @@ var expectedFeatureBase = []confgenerator.Feature{
 	},
 	{
 		Module: "logging",
-		Kind:   "compatibility",
+		Kind:   "service",
 		Type:   "otel_logging",
-		Key:    []string{"otel_logging_compatible_config"},
+		Key:    []string{"otel_logging_supported_config"},
 		Value:  "true",
+	},
+}
+
+var expectedInvalidConfigFeatureBase = []confgenerator.Feature{
+	{
+		Module: "logging",
+		Kind:   "service",
+		Type:   "pipelines",
+		Key:    []string{"default_pipeline_overridden"},
+		Value:  "false",
+	},
+	{
+		Module: "metrics",
+		Kind:   "service",
+		Type:   "pipelines",
+		Key:    []string{"default_pipeline_overridden"},
+		Value:  "false",
+	},
+	{
+		Module: "global",
+		Kind:   "default",
+		Type:   "self_log",
+		Key:    []string{"default_self_log_file_collection"},
+		Value:  "true",
+	},
+	{
+		Module: "logging",
+		Kind:   "service",
+		Type:   "otel_logging",
+		Key:    []string{"otel_logging_supported_config"},
+		Value:  "false",
 	},
 }
 
@@ -94,9 +125,9 @@ var expectedMetricsPipelineOverriden = []confgenerator.Feature{
 	},
 	{
 		Module: "logging",
-		Kind:   "compatibility",
+		Kind:   "service",
 		Type:   "otel_logging",
-		Key:    []string{"otel_logging_compatible_config"},
+		Key:    []string{"otel_logging_supported_config"},
 		Value:  "true",
 	},
 }
@@ -125,10 +156,10 @@ var expectedTestFeatureBase = []confgenerator.Feature{
 	},
 	{
 		Module: "logging",
-		Kind:   "compatibility",
+		Kind:   "service",
 		Type:   "otel_logging",
-		Key:    []string{"otel_logging_compatible_config"},
-		Value:  "true",
+		Key:    []string{"otel_logging_supported_config"},
+		Value:  "false",
 	},
 	{
 		Module: confgenerator.MetricsReceiverTypes.Subagent,
@@ -614,7 +645,7 @@ func TestBed(t *testing.T) {
 	for _, test := range tests {
 		test := test
 		t.Run(test.Name, func(t *testing.T) {
-			t.Parallel()
+			//t.Parallel()
 			actual, err := confgenerator.ExtractFeatures(test.Config)
 
 			if test.ExpectedError != nil {
@@ -993,7 +1024,7 @@ func TestNestedStructs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expected := expectedFeatureBase
+	expected := expectedInvalidConfigFeatureBase
 	expected = append(expected, confgenerator.Feature{
 		Module: confgenerator.MetricsReceiverTypes.Subagent,
 		Kind:   "receivers",

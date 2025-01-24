@@ -11,8 +11,8 @@
   key: default_self_log_file_collection
   value: "true"
 - module: logging
-  feature: compatibility:otel_logging
-  key: otel_logging_compatible_config
+  feature: service:otel_logging
+  key: otel_logging_supported_config
   value: "false"
 - module: logging
   feature: receivers:syslog

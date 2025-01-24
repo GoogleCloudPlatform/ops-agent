@@ -365,7 +365,9 @@ func UnmarshalYamlToUnifiedConfig(ctx context.Context, input []byte) (*UnifiedCo
 		ctx: ctx,
 		v:   newValidator(),
 	}
+	//fmt.Println(string(input))
 	if err := yaml.UnmarshalContext(ctx, input, &config, yaml.Strict(), yaml.Validator(v)); err != nil {
+		//fmt.Println(err)
 		return nil, err
 	}
 
@@ -907,15 +909,17 @@ func (uc *UnifiedConfig) ValidateCombined() error {
 
 func (uc *UnifiedConfig) MetricsReceivers() (map[string]MetricsReceiver, error) {
 	validReceivers := map[string]MetricsReceiver{}
-	if uc.Metrics != nil {
+	if uc.Metrics != nil && uc.Metrics.Receivers != nil {
 		for k, v := range uc.Metrics.Receivers {
 			validReceivers[k] = v
 		}
 	}
 	if uc.Combined != nil {
 		for k, v := range uc.Combined.Receivers {
-			if _, ok := uc.Metrics.Receivers[k]; ok {
-				return nil, fmt.Errorf("metrics receiver %q has the same name as combined receiver %q", k, k)
+			if uc.Metrics != nil && uc.Metrics.Receivers != nil {
+				if _, ok := uc.Metrics.Receivers[k]; ok {
+					return nil, fmt.Errorf("metrics receiver %q has the same name as combined receiver %q", k, k)
+				}
 			}
 			if v, ok := v.(MetricsReceiver); ok {
 				validReceivers[k] = v
@@ -1165,30 +1169,21 @@ func (uc *UnifiedConfig) OTelLoggingProcessors(ctx context.Context) (map[string]
 	return validProcessors, nil
 }
 
-func (uc *UnifiedConfig) ValidateOTelLoggingPipeline(ctx context.Context) error {
-	validLoggingReceivers, err := uc.LoggingReceivers(ctx)
+func (uc *UnifiedConfig) OTelLoggingSupported(ctx context.Context) bool {
+	ucCopy, err := uc.DeepCopy(ctx)
 	if err != nil {
-		return err
+		return false
 	}
-	validOTelLoggingReceivers, err := uc.OTelLoggingReceivers(ctx)
-	if err != nil {
-		return err
+	if ucCopy.Logging == nil {
+		return true
 	}
-	if len(validOTelLoggingReceivers) < len(validLoggingReceivers) {
-		return fmt.Errorf("Some defined logging receivers are not supported by otel logging")
+	if ucCopy.Logging.Service == nil {
+		ucCopy.Logging.Service = &LoggingService{}
 	}
-	validLoggingProcessors, err := uc.LoggingProcessors(ctx)
-	if err != nil {
-		return err
-	}
-	validOTelLoggingProcessors, err := uc.OTelLoggingProcessors(ctx)
-	if err != nil {
-		return err
-	}
-	if len(validOTelLoggingProcessors) < len(validLoggingProcessors) {
-		return fmt.Errorf("Some defined logging processors are not supported by otel logging")
-	}
-	return nil
+	ucCopy.Metrics = nil
+	ucCopy.Logging.Service.OTelLogging = true
+	_, err = ucCopy.GenerateOtelConfig(ctx)
+	return err == nil
 }
 
 func (uc *UnifiedConfig) ValidateMetrics(ctx context.Context) error {

@@ -72,6 +72,17 @@ func googleManagedPrometheusExporter(userAgent string) otel.Component {
 	}
 }
 
+func (uc *UnifiedConfig) getOTelLogLevel() string {
+	logLevel := "info"
+	if uc.Metrics != nil && uc.Metrics.Service != nil && uc.Metrics.Service.LogLevel != "" {
+		logLevel = uc.Metrics.Service.LogLevel
+	}
+	if uc.Logging != nil && uc.Logging.Service != nil && uc.Logging.Service.LogLevel != "" && uc.Logging.Service.OTelLogging {
+		logLevel = uc.Logging.Service.LogLevel
+	}
+	return logLevel
+}
+
 func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context) (string, error) {
 	p := platform.FromContext(ctx)
 	userAgent, _ := p.UserAgent("Google-Cloud-Ops-Agent-Metrics")
@@ -101,11 +112,8 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context) (string, error)
 		ReceiverPipelineName: "fluentbit",
 	}
 
-	if uc.Metrics.Service.LogLevel == "" {
-		uc.Metrics.Service.LogLevel = "info"
-	}
 	otelConfig, err := otel.ModularConfig{
-		LogLevel:          uc.Metrics.Service.LogLevel,
+		LogLevel:          uc.getOTelLogLevel(),
 		ReceiverPipelines: receiverPipelines,
 		Pipelines:         pipelines,
 		Exporters: map[otel.ExporterType]otel.Component{

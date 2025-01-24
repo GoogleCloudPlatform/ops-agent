@@ -75,7 +75,7 @@ type CustomFeatures interface {
 func ExtractFeatures(uc *UnifiedConfig) ([]Feature, error) {
 	allFeatures := getOverriddenDefaultPipelines(uc)
 	allFeatures = append(allFeatures, getSelfLogCollection(uc))
-	allFeatures = append(allFeatures, getOTelLoggingCompatible(uc))
+	allFeatures = append(allFeatures, getOTelLoggingSupported(uc))
 
 	var err error
 	var tempTrackedFeatures []Feature
@@ -439,18 +439,18 @@ func getMetadata(field reflect.StructField) metadata {
 	}
 }
 
-func getOTelLoggingCompatible(uc *UnifiedConfig) Feature {
+func getOTelLoggingSupported(uc *UnifiedConfig) Feature {
 	feature := Feature{
 		Module: "logging",
-		Kind:   "compatibility",
+		Kind:   "service",
 		Type:   "otel_logging",
-		Key:    []string{"otel_logging_compatible_config"},
-		Value:  "true",
+		Key:    []string{"otel_logging_supported_config"},
+		Value:  "false",
 	}
 
 	ctx := context.Background()
-	if uc.ValidateOTelLoggingPipeline(ctx) != nil {
-		feature.Value = "false"
+	if uc.OTelLoggingSupported(ctx) {
+		feature.Value = "true"
 	}
 
 	return feature
