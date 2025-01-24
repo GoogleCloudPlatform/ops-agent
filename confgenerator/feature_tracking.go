@@ -75,7 +75,7 @@ type CustomFeatures interface {
 func ExtractFeatures(uc *UnifiedConfig) ([]Feature, error) {
 	allFeatures := getOverriddenDefaultPipelines(uc)
 	allFeatures = append(allFeatures, getSelfLogCollection(uc))
-	allFeatures = append(allFeatures, getOTelLoggingSupported(uc))
+	allFeatures = append(allFeatures, getOTelLoggingSupportedConfig(uc))
 
 	var err error
 	var tempTrackedFeatures []Feature
@@ -439,7 +439,7 @@ func getMetadata(field reflect.StructField) metadata {
 	}
 }
 
-func getOTelLoggingSupported(uc *UnifiedConfig) Feature {
+func getOTelLoggingSupportedConfig(uc *UnifiedConfig) Feature {
 	feature := Feature{
 		Module: "logging",
 		Kind:   "service",
