@@ -77,9 +77,6 @@ func (uc *UnifiedConfig) getOTelLogLevel() string {
 	if uc.Metrics != nil && uc.Metrics.Service != nil && uc.Metrics.Service.LogLevel != "" {
 		logLevel = uc.Metrics.Service.LogLevel
 	}
-	if uc.Logging != nil && uc.Logging.Service != nil && uc.Logging.Service.LogLevel != "" && uc.Logging.Service.OTelLogging {
-		logLevel = uc.Logging.Service.LogLevel
-	}
 	return logLevel
 }
 

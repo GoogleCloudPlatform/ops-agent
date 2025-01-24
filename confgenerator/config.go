@@ -907,14 +907,14 @@ func (uc *UnifiedConfig) ValidateCombined() error {
 
 func (uc *UnifiedConfig) MetricsReceivers() (map[string]MetricsReceiver, error) {
 	validReceivers := map[string]MetricsReceiver{}
-	if uc.Metrics != nil && uc.Metrics.Receivers != nil {
+	if uc.Metrics != nil {
 		for k, v := range uc.Metrics.Receivers {
 			validReceivers[k] = v
 		}
 	}
 	if uc.Combined != nil {
 		for k, v := range uc.Combined.Receivers {
-			if uc.Metrics != nil && uc.Metrics.Receivers != nil {
+			if uc.Metrics != nil {
 				if _, ok := uc.Metrics.Receivers[k]; ok {
 					return nil, fmt.Errorf("metrics receiver %q has the same name as combined receiver %q", k, k)
 				}
