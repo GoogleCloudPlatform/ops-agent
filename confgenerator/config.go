@@ -365,9 +365,7 @@ func UnmarshalYamlToUnifiedConfig(ctx context.Context, input []byte) (*UnifiedCo
 		ctx: ctx,
 		v:   newValidator(),
 	}
-	//fmt.Println(string(input))
 	if err := yaml.UnmarshalContext(ctx, input, &config, yaml.Strict(), yaml.Validator(v)); err != nil {
-		//fmt.Println(err)
 		return nil, err
 	}
 
