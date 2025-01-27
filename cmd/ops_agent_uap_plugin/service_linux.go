@@ -81,17 +81,17 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	pContext, cancel := context.WithCancel(context.Background())
 	ps.cancel = cancel
 
-	pluginInstallaPath, err := os.Executable()
+	pluginInstallPath, err := os.Executable()
 	if err != nil {
 		log.Printf("Start() failed, because it cannot determine the plugin install location: %s", err)
 		return nil, status.Error(1, err.Error())
 	}
-	pluginInstallaPath, err = filepath.EvalSymlinks(pluginInstallaPath)
+	pluginInstallPath, err = filepath.EvalSymlinks(pluginInstallPath)
 	if err != nil {
 		log.Printf("Start() failed, because it cannot determine the plugin install location: %s", err)
 		status.Error(1, err.Error())
 	}
-	pluginInstallDir := filepath.Dir(pluginInstallaPath)
+	pluginInstallDir := filepath.Dir(pluginInstallPath)
 
 	pluginStateDir := msg.GetConfig().GetStateDirectoryPath()
 	if pluginStateDir == "" {
