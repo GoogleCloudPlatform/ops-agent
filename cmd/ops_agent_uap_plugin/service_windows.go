@@ -29,7 +29,7 @@ import (
 // between Plugin and the server itself. For e.g. service might want to update
 // plugin config to enable/disable feature here plugins can react to such requests.
 func (ps *OpsAgentPluginServer) Apply(ctx context.Context, msg *pb.ApplyRequest) (*pb.ApplyResponse, error) {
-	return &pb.ApplyResponse{}, nil
+	panic("Apply method is not implemented on Windows yet")
 }
 
 // Start starts the plugin and initiates the plugin functionality.

@@ -23,6 +23,7 @@ import (
 	"os/exec"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 
 	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
 )
@@ -84,11 +85,7 @@ func main() {
 	// offered mean Guest Agent was successful in installing/launching the plugin
 	// & will manage the lifecycle (start, stop, or revision change) here onwards.
 	pb.RegisterGuestAgentPluginServer(server, ps)
-
-	ctx := context.Background()
-	ps.GetStatus(ctx, &pb.GetStatusRequest{})
-	ps.Start(ctx, &pb.StartRequest{})
-
+	reflection.Register(server)
 	if err := server.Serve(listener); err != nil {
 		fmt.Fprintf(os.Stderr, "Exiting, cannot continue serving: %v\n", err)
 		os.Exit(1)
