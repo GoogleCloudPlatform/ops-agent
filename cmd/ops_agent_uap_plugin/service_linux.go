@@ -55,10 +55,10 @@ var (
 	AgentSystemdServiceNames = []string{"google-cloud-ops-agent.service", "stackdriver-agent.service", "google-fluentd.service"}
 )
 
-// RestartCommandFunc defines a function type that always restarts a command until the command is exited with errors. This abstraction is introduced
+// RunSubAgentCommandFunc defines a function type that starts a subagent. If one subagent execution exited, other sugagents are also terminated via context cancellation. This abstraction is introduced
 // primarily to facilitate testing by allowing the injection of mock
 // implementations.
-type RestartCommandFunc func(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup)
+type RunSubAgentCommandFunc func(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup)
 
 // Apply applies the config sent or performs the work defined in the message.
 // ApplyRequest is opaque to the agent and is expected to be well known contract
@@ -123,7 +123,10 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	}
 
 	// the diagnostics service and subagent startups
-	go runSubagents(pContext, cancel, pluginInstallDir, pluginStateDir, restartCommand, ps.runCommand)
+	cancelFunc := func() {
+		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
+	}
+	go runSubagents(pContext, cancelFunc, pluginInstallDir, pluginStateDir, runSubAgentCommand, ps.runCommand)
 	return &pb.StartResponse{}, nil
 }
 
@@ -168,7 +171,7 @@ func (ps *OpsAgentPluginServer) GetStatus(ctx context.Context, msg *pb.GetStatus
 //
 // cancel: the cancel function for the parent context. By calling this function, the parent context is canceled,
 // and GetStatus() returns a non-healthy status, signaling UAP to re-trigger Start().
-func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallDirectory string, pluginStateDirectory string, restartCommand RestartCommandFunc, runCommand RunCommandFunc) {
+func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallDirectory string, pluginStateDirectory string, runSubAgentCommand RunSubAgentCommandFunc, runCommand RunCommandFunc) {
 	// Register signal handler and implements its callback.
 	sigHandler(ctx, func(_ os.Signal) {
 		cancel()
@@ -181,7 +184,7 @@ func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallD
 		"-config", OpsAgentConfigLocationLinux,
 	)
 	wg.Add(1)
-	go restartCommand(ctx, cancel, runDiagnosticsCmd, runCommand, &wg)
+	go runSubAgentCommand(ctx, cancel, runDiagnosticsCmd, runCommand, &wg)
 
 	// Starting Otel
 	runOtelCmd := exec.CommandContext(ctx,
@@ -189,7 +192,7 @@ func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallD
 		"--config", path.Join(pluginStateDirectory, OtelRuntimeDirectory, "otel.yaml"),
 	)
 	wg.Add(1)
-	go restartCommand(ctx, cancel, runOtelCmd, runCommand, &wg)
+	go runSubAgentCommand(ctx, cancel, runOtelCmd, runCommand, &wg)
 
 	// Starting FluentBit
 	runFluentBitCmd := exec.CommandContext(ctx,
@@ -202,12 +205,12 @@ func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallD
 		"--storage_path", path.Join(pluginStateDirectory, FluentBitStateDiectory, "buffers"),
 	)
 	wg.Add(1)
-	go restartCommand(ctx, cancel, runFluentBitCmd, runCommand, &wg)
+	go runSubAgentCommand(ctx, cancel, runFluentBitCmd, runCommand, &wg)
 
 	wg.Wait()
 }
 
-func restartCommand(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup) {
+func runSubAgentCommand(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup) {
 	defer wg.Done()
 	if cmd == nil {
 		return
@@ -218,22 +221,14 @@ func restartCommand(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cm
 		return
 	}
 
-	childCtx, childCtxCancel := context.WithCancel(ctx)
-	defer childCtxCancel()
-
-	cmdCopy := exec.CommandContext(childCtx, cmd.Path, cmd.Args[1:]...)
-	cmdCopy.Env = cmd.Env
-	output, err := runCommand(cmdCopy)
+	output, err := runCommand(cmd)
 	if err != nil {
 		log.Printf("command: %s exited with errors, not restarting.\nCommand output: %s\n Command error:%s", cmd.Args, string(output), err)
-		cancel() // cancels the parent context which also stops other Ops Agent sub-binaries from running.
-		return
 	} else {
 		log.Printf("command: %s %s exited successfully.\nCommand output: %s", cmd.Path, cmd.Args, string(output))
 	}
-
-	wg.Add(1)
-	go restartCommand(ctx, cancel, cmd, runCommand, wg)
+	cancel() // cancels the parent context which also stops other Ops Agent sub-binaries from running.
+	return
 }
 
 // sigHandler handles SIGTERM, SIGINT etc signals. The function provided in the

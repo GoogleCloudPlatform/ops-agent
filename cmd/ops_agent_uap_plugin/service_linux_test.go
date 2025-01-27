@@ -286,19 +286,31 @@ func TestGetStatus(t *testing.T) {
 	}
 }
 
-func Test_restartCommand_CancelContextWhenCmdExitsWithErrors(t *testing.T) {
+func Test_runSubAgentCommand_CancelContextWhenCmdExitsWithErrors(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", "GO_HELPER_FAILURE=1"}
 	var wg sync.WaitGroup
 	wg.Add(1)
-	restartCommand(ctx, cancel, cmd, runCommand, &wg)
+	runSubAgentCommand(ctx, cancel, cmd, runCommand, &wg)
 	if ctx.Err() == nil {
-		t.Error("restartCommand() did not cancel context but should")
+		t.Error("runSubAgentCommand() did not cancel context but should")
 	}
 }
 
-func Test_restartCommand_CancelContextWhenCmdTerminatedBySignals(t *testing.T) {
+func Test_runSubAgentCommand_CancelContextWhenCmdExitsSuccessfully(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
+	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
+	var wg sync.WaitGroup
+	wg.Add(1)
+	runSubAgentCommand(ctx, cancel, cmd, runCommand, &wg)
+	if ctx.Err() == nil {
+		t.Error("runSubAgentCommand() did not cancel context but should")
+	}
+}
+
+func Test_runSubAgentCommand_CancelContextWhenCmdTerminatedBySignals(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", "GO_HELPER_KILL_BY_SIGNALS=1"}
@@ -313,9 +325,9 @@ func Test_restartCommand_CancelContextWhenCmdTerminatedBySignals(t *testing.T) {
 		err := cmd.Wait()
 		return "", err
 	}
-	restartCommand(ctx, cancel, cmd, mockRunCommandFunc, &wg)
+	runSubAgentCommand(ctx, cancel, cmd, mockRunCommandFunc, &wg)
 	if ctx.Err() == nil {
-		t.Error("restartCommand() didn't cancel the context but should")
+		t.Error("runSubAgentCommand() didn't cancel the context but should")
 	}
 }
 
@@ -325,7 +337,7 @@ func Test_runSubagents_TerminatesWhenSpawnedGoRoutinesReturn(t *testing.T) {
 	mockCmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", "GO_HELPER_FAILURE=1"}
 
 	mockRestartCommandFunc := func(ctx context.Context, cancel context.CancelFunc, _ *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup) {
-		restartCommand(ctx, cancel, mockCmd, runCommand, wg)
+		runSubAgentCommand(ctx, cancel, mockCmd, runCommand, wg)
 	}
 	cancel() // child go routines return immediately, because the parent context has been cancelled.
 	// the test times out and fails if runSubagents does not returns
