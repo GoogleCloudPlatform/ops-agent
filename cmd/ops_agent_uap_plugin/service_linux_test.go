@@ -21,13 +21,17 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"sync"
+	"syscall"
 	"testing"
+	"time"
 
 	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
 )
 
 func Test_runCommand(t *testing.T) {
-	cmd := exec.Command(os.Args[0], "-test.run=TestHelperProcess")
+	ctx := context.Background()
+	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
 	_, err := runCommand(cmd)
 	if err != nil {
@@ -35,7 +39,8 @@ func Test_runCommand(t *testing.T) {
 	}
 }
 func Test_runCommandFailure(t *testing.T) {
-	cmd := exec.Command(os.Args[0], "-test.run=TestHelperProcess")
+	ctx := context.Background()
+	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", "GO_HELPER_FAILURE=1"}
 	if _, err := runCommand(cmd); err == nil {
 		t.Error("runCommand got nil error, want exec failure")
@@ -110,7 +115,7 @@ func Test_validateOpsAgentConfig(t *testing.T) {
 			}
 
 			ctx := context.Background()
-			err := validateOpsAgentConfig(ctx, mockRunCommand, "")
+			err := validateOpsAgentConfig(ctx, "", mockRunCommand)
 			gotSuccess := (err == nil)
 			if gotSuccess != tc.wantSuccess {
 				t.Errorf("%s: validateOpsAgentConfig() failed to valide Ops Agent config: %v, want successful config validation: %v, error:%v", tc.name, gotSuccess, tc.wantSuccess, err)
@@ -148,7 +153,7 @@ func Test_generateSubagentConfigs(t *testing.T) {
 			}
 
 			ctx := context.Background()
-			err := generateSubagentConfigs(ctx, mockRunCommand, "")
+			err := generateSubagentConfigs(ctx, mockRunCommand, "", "")
 			gotSuccess := (err == nil)
 			if gotSuccess != tc.wantSuccess {
 				t.Errorf("%s: generateSubagentConfigs() failed to generate subagents configs: %v, want successful config validation: %v, error:%v", tc.name, gotSuccess, tc.wantSuccess, err)
@@ -281,6 +286,64 @@ func TestGetStatus(t *testing.T) {
 	}
 }
 
+func Test_runSubAgentCommand_CancelContextWhenCmdExitsWithErrors(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
+	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", "GO_HELPER_FAILURE=1"}
+	var wg sync.WaitGroup
+	wg.Add(1)
+	runSubAgentCommand(ctx, cancel, cmd, runCommand, &wg)
+	if ctx.Err() == nil {
+		t.Error("runSubAgentCommand() did not cancel context but should")
+	}
+}
+
+func Test_runSubAgentCommand_CancelContextWhenCmdExitsSuccessfully(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
+	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
+	var wg sync.WaitGroup
+	wg.Add(1)
+	runSubAgentCommand(ctx, cancel, cmd, runCommand, &wg)
+	if ctx.Err() == nil {
+		t.Error("runSubAgentCommand() did not cancel context but should")
+	}
+}
+
+func Test_runSubAgentCommand_CancelContextWhenCmdTerminatedBySignals(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
+	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", "GO_HELPER_KILL_BY_SIGNALS=1"}
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	mockRunCommandFunc := func(cmd *exec.Cmd) (string, error) {
+		if err := cmd.Start(); err != nil {
+			t.Errorf("the command %s did not start successfully", cmd.Args)
+		}
+		cmd.Process.Signal(syscall.SIGABRT)
+		err := cmd.Wait()
+		return "", err
+	}
+	runSubAgentCommand(ctx, cancel, cmd, mockRunCommandFunc, &wg)
+	if ctx.Err() == nil {
+		t.Error("runSubAgentCommand() didn't cancel the context but should")
+	}
+}
+
+func Test_runSubagents_TerminatesWhenSpawnedGoRoutinesReturn(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	mockCmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
+	mockCmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", "GO_HELPER_FAILURE=1"}
+
+	mockRestartCommandFunc := func(ctx context.Context, cancel context.CancelFunc, _ *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup) {
+		runSubAgentCommand(ctx, cancel, mockCmd, runCommand, wg)
+	}
+	cancel() // child go routines return immediately, because the parent context has been cancelled.
+	// the test times out and fails if runSubagents does not returns
+	runSubagents(ctx, cancel, "", "", mockRestartCommandFunc, runCommand)
+}
+
 // TestHelperProcess isn't a real test. It's used as a helper process to mock
 // command executions.
 func TestHelperProcess(t *testing.T) {
@@ -292,6 +355,8 @@ func TestHelperProcess(t *testing.T) {
 	switch {
 	case os.Getenv("GO_HELPER_FAILURE") == "1":
 		os.Exit(1)
+	case os.Getenv("GO_HELPER_KILL_BY_SIGNALS") == "1":
+		time.Sleep(1 * time.Minute)
 	default:
 		// A "successful" mock execution exits with a successful (zero) exit code.
 		os.Exit(0)

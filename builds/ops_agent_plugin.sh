@@ -15,6 +15,6 @@
 
 set -x -e
 DESTDIR=$1
-mkdir -p "$DESTDIR/opt/google-cloud-ops-agent/libexec"
-go build -buildvcs=false -ldflags "-s -w" -o "$DESTDIR/opt/google-cloud-ops-agent/libexec/google_cloud_ops_agent_uap_plugin" \
+mkdir -p "$DESTDIR/opt/google-cloud-ops-agent"
+go build -buildvcs=false -ldflags "-s -w" -o "$DESTDIR/opt/google-cloud-ops-agent/plugin" \
   github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin
