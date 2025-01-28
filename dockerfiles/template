@@ -33,7 +33,7 @@ RUN \
     unset OTEL_TRACES_EXPORTER && \
     unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
     unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-    ./otel.sh /work/cache/
+    ./otel.sh /work/cache
 
 FROM {target_name}-build-base AS {target_name}-build-fluent-bit
 WORKDIR /work
@@ -63,15 +63,26 @@ FROM {target_name}-build-golang-base AS {target_name}-build-diagnostics
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
 COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
+RUN ./ops_agent_diagnostics.sh /work/cache
 
 
 FROM {target_name}-build-golang-base AS {target_name}-build-wrapper
 WORKDIR /work
 COPY cmd/agent_wrapper cmd/agent_wrapper
 COPY ./builds/agent_wrapper.sh .
-RUN ./agent_wrapper.sh /work/cache/
+RUN ./agent_wrapper.sh /work/cache
 
+FROM {target_name}-build-golang-base AS {target_name}-build-ops-agent-conf-generator
+WORKDIR /work
+COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
+COPY ./builds/conf_generator.sh .
+RUN ./conf_generator.sh /work/cache
+
+FROM {target_name}-build-golang-base AS {target_name}-build-ops-agent-uap-plugin
+WORKDIR /work
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache
 
 FROM {target_name}-build-golang-base AS {target_name}-build
 WORKDIR /work
@@ -89,6 +100,27 @@ COPY --from={target_name}-build-fluent-bit /work/cache /work/cache
 COPY --from={target_name}-build-systemd /work/cache /work/cache
 COPY --from={target_name}-build-diagnostics /work/cache /work/cache
 COPY --from={target_name}-build-wrapper /work/cache /work/cache
+COPY --from={target_name}-build-ops-agent-uap-plugin /work/cache /work/cache
+
+RUN mkdir -p /tmp/ops-agent-uap-plugin
+RUN mkdir -p /tmp/ops-agent-uap-plugin/THIRD_PARTY_LICENSES
+RUN mkdir -p /tmp/ops-agent-uap-plugin/subagents/opentelemetry-collector
+RUN mkdir -p /tmp/ops-agent-uap-plugin/subagents/fluent-bit/bin
+RUN mkdir -p /tmp/ops-agent-uap-plugin/libexec
+
+COPY --from={target_name}-build-diagnostics /work/cache/opt/google-cloud-ops-agent/libexec/google_cloud_ops_agent_diagnostics /tmp/ops-agent-uap-plugin/libexec
+COPY --from={target_name}-build-wrapper /work/cache/opt/google-cloud-ops-agent/libexec/google_cloud_ops_agent_wrapper /tmp/ops-agent-uap-plugin/libexec
+COPY --from={target_name}-build-ops-agent-conf-generator /work/cache/opt/google-cloud-ops-agent/libexec/google_cloud_ops_agent_engine /tmp/ops-agent-uap-plugin/libexec
+COPY --from={target_name}-build-ops-agent-uap-plugin /work/cache/opt/google-cloud-ops-agent/plugin /tmp/ops-agent-uap-plugin
+COPY --from={target_name}-build-otel /work/cache/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol /tmp/ops-agent-uap-plugin/subagents/opentelemetry-collector
+COPY --from={target_name}-build-fluent-bit /work/cache/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit /tmp/ops-agent-uap-plugin/subagents/fluent-bit/bin
+
+RUN touch /tmp/ops-agent-uap-plugin/THIRD_PARTY_LICENSES/text1.txt
+RUN echo "non empty license file" > /tmp/ops-agent-uap-plugin/THIRD_PARTY_LICENSES/text1.txt
+WORKDIR /tmp/ops-agent-uap-plugin
+RUN tar -cvzf ops-agent-plugin.tar.gz *
+WORKDIR /work
+
 {package_build}
 
 
