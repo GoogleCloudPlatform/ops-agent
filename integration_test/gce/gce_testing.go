@@ -1637,6 +1637,43 @@ func RestartInstance(ctx context.Context, logger *log.Logger, vm *VM) error {
 	return StartInstance(ctx, logger, vm)
 }
 
+func InstallGrpcurlIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) error {
+	if IsWindows(vm.ImageSpec) {
+		return nil
+	}
+
+	if _, err := RunRemotely(ctx, logger, vm, "which grpcurl"); err == nil {
+		return nil
+	}
+
+	logger.Printf("grpcurl not found, installing it...")
+
+	installCmd := ""
+
+	arch := "x86_64"
+	if IsARM(vm.ImageSpec) {
+		arch = "arm64"
+	}
+
+	switch arch {
+	case "x86_64":
+		installCmd = `
+sudo curl -sSL "https://github.com/fullstorydev/grpcurl/releases/download/v1.8.6/grpcurl_1.8.6_linux_x86_64.tar.gz" | sudo tar -xz -C /usr/local/bin
+`
+	case "arm64":
+		installCmd = `
+sudo curl -sSL "https://github.com/fullstorydev/grpcurl/releases/download/v1.8.6/grpcurl_1.8.6_linux_arm64.tar.gz" | sudo tar -xz -C /usr/local/bin
+`
+	default:
+		return fmt.Errorf("failed to install grpcurl, architecture %s not supported for pre-compiled grpcurl", arch)
+	}
+
+	installCmd = `set -ex
+` + installCmd
+	_, err := RunRemotely(ctx, logger, vm, installCmd)
+	return err
+}
+
 // InstallGsutilIfNeeded installs gsutil on instances that don't already have
 // it installed. This is only currently the case for some old versions of SUSE.
 func InstallGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) error {
