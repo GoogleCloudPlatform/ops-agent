@@ -664,6 +664,10 @@ func InstallStandaloneWindowsMonitoringAgent(ctx context.Context, logger *log.Lo
 }
 
 func getRestartOpsAgentCmd(imageSpec string) string {
+	location := LocationFromEnvVars()
+	if location.uapPluginPackageInGCS != "" {
+		return "sudo grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Stop && grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Start"
+	}
 	if gce.IsWindows(imageSpec) {
 		return "Restart-Service google-cloud-ops-agent -Force"
 	}
@@ -674,6 +678,10 @@ func getRestartOpsAgentCmd(imageSpec string) string {
 // PackageLocation describes a location where packages
 // (currently, only the Ops Agent packages) live.
 type PackageLocation struct {
+	// If provided, a URL for a file in GCS containing a .tar.gz file
+	// to install on the testing VMs.
+	// This setting is mutually exclusive with repoSuffix.
+	uapPluginPackageInGCS string
 	// If provided, a URL for a directory in GCS containing .deb/.rpm/.goo files
 	// to install on the testing VMs.
 	// This setting is mutually exclusive with repoSuffix.
@@ -696,6 +704,7 @@ type PackageLocation struct {
 // LocationFromEnvVars assembles a PackageLocation from environment variables.
 func LocationFromEnvVars() PackageLocation {
 	return PackageLocation{
+		uapPluginPackageInGCS:   "gs://ops-agent-uap-plugin/debian12-bookworm/ops-agent-plugin.tar.gz",
 		packagesInGCS:           os.Getenv("AGENT_PACKAGES_IN_GCS"),
 		repoSuffix:              os.Getenv("REPO_SUFFIX"),
 		repoCodename:            os.Getenv("REPO_CODENAME"),
@@ -729,10 +738,16 @@ func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, locati
 	if location.packagesInGCS != "" && location.repoSuffix != "" {
 		return fmt.Errorf("invalid PackageLocation: cannot provide both location.packagesInGCS and location.repoSuffix. location=%#v", location)
 	}
+	if location.uapPluginPackageInGCS != "" && location.repoSuffix != "" {
+		return fmt.Errorf("invalid PackageLocation: cannot provide both location.uapPluginPackageInGCS and location.repoSuffix. location=%#v", location)
+	}
+
 	if location.artifactRegistryRegion != "" && location.repoSuffix == "" {
 		return fmt.Errorf("invalid PackageLocation: location.artifactRegistryRegion was nonempty yet location.repoSuffix was empty. location=%#v", location)
 	}
-
+	if location.uapPluginPackageInGCS != "" {
+		return InstallOpsAgentUAPPluginFromGCS(ctx, logger, vm, location.uapPluginPackageInGCS)
+	}
 	if location.packagesInGCS != "" {
 		return InstallPackageFromGCS(ctx, logger, vm, location.packagesInGCS)
 	}
@@ -795,6 +810,25 @@ func restartOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM) error 
 	// is 5 seconds, so we should probably give it at least that long.
 	time.Sleep(10 * time.Second)
 	return nil
+}
+
+func getStartOpsAgentPluginCmd(imageSpec string, port string) string {
+	if gce.IsWindows(imageSpec) {
+		return ""
+	}
+	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
+	return fmt.Sprintf("sudo /tmp/agentUpload/plugin --address=localhost:%s --errorlogfile=errorlog.txt --protocol=tcp", port)
+}
+
+func startOpsAgentPlugin(ctx context.Context, logger *log.Logger, vm *gce.VM, port string) error {
+	if _, err := gce.RunRemotely(ctx, logger, vm, getStartOpsAgentPluginCmd(vm.ImageSpec, port)); err != nil {
+		return fmt.Errorf("startOpsAgentPlugin() failed to start the ops agent plugin: %v", err)
+	}
+	// Give agents time to shut down. Fluent-Bit's default shutdown grace period
+	// is 5 seconds, so we should probably give it at least that long.
+	time.Sleep(10 * time.Second)
+	return nil
+
 }
 
 // SetupOpsAgentFrom is an overload of setupOpsAgent that allows the callsite to
@@ -872,6 +906,41 @@ func CommonSetupWithExtraCreateArgumentsAndMetadata(t *testing.T, imageSpec stri
 		RunOpsAgentDiagnostics(ctx, logger, vm)
 	})
 	return ctx, logger, vm
+}
+
+// InstallOpsAgentUAPPluginFromGCS installs the agent package from GCS onto the given Linux VM.
+//
+// gcsPath must point to a GCS Path that contains .deb/.rpm/.goo files to install on the testing VMs.
+// Packages with "dbgsym" in their name are skipped because customers don't
+// generally install those, so our tests shouldn't either.
+func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, gcsPath string) error {
+	if gce.IsWindows(vm.ImageSpec) {
+		return installWindowsPackageFromGCS(ctx, logger, vm, gcsPath)
+	}
+	if _, err := gce.RunRemotely(ctx, logger, vm, "mkdir -p /tmp/agentUpload"); err != nil {
+		return err
+	}
+	if err := gce.InstallGsutilIfNeeded(ctx, logger, vm); err != nil {
+		return err
+	}
+	if err := gce.InstallGrpcurlIfNeeded(ctx, logger, vm); err != nil {
+		return err
+	}
+	if _, err := gce.RunRemotely(ctx, logger, vm, "sudo gsutil cp "+gcsPath+" /tmp/agentUpload"); err != nil {
+		return fmt.Errorf("error copying down agent package from GCS: %v", err)
+	}
+	// Print the contents of /tmp/agentUpload into the logs.
+	if _, err := gce.RunRemotely(ctx, logger, vm, "ls /tmp/agentUpload"); err != nil {
+		return err
+	}
+	if _, err := gce.RunRemotely(ctx, logger, vm, "sudo tar -xzf /tmp/agentUpload/ops-agent-plugin.tar.gz -C /tmp/agentUpload"); err != nil {
+		return err
+	}
+	// Print the contents of /tmp/agentUpload into the logs.
+	if _, err := gce.RunRemotely(ctx, logger, vm, "ls /tmp/agentUpload"); err != nil {
+		return err
+	}
+	return startOpsAgentPlugin(ctx, logger, vm, "1234")
 }
 
 // InstallPackageFromGCS installs the agent package from GCS onto the given Linux VM.
