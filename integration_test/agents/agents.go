@@ -185,8 +185,13 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 	defer cancel()
 	gce.RunRemotely(metricsCtx, logger.ToFile("fluent_bit_metrics.txt"), vm, "sudo curl -s localhost:20202/metrics")
 	gce.RunRemotely(metricsCtx, logger.ToFile("otel_metrics.txt"), vm, "sudo curl -s localhost:20201/metrics")
+	location := LocationFromEnvVars()
 
-	gce.RunRemotely(ctx, logger.ToFile("systemctl_status_for_ops_agent.txt"), vm, "sudo systemctl status google-cloud-ops-agent*")
+	if location.uapPluginPackageInGCS != "" {
+		gce.RunRemotely(ctx, logger.ToFile("systemctl_status_for_ops_agent.txt"), vm, "sudo grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/GetStatus")
+	} else {
+		gce.RunRemotely(ctx, logger.ToFile("systemctl_status_for_ops_agent.txt"), vm, "sudo systemctl status google-cloud-ops-agent*")
+	}
 
 	gce.RunRemotely(ctx, logger.ToFile("journalctl_output.txt"), vm, "sudo journalctl -xe")
 
@@ -817,7 +822,7 @@ func getStartOpsAgentPluginCmd(imageSpec string, port string) string {
 		return ""
 	}
 	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
-	return fmt.Sprintf("sudo /tmp/agentUpload/plugin --address=localhost:%s --errorlogfile=errorlog.txt --protocol=tcp", port)
+	return fmt.Sprintf("sudo /tmp/agentUpload/plugin --address=localhost:%s --errorlogfile=errorlog.txt --protocol=tcp &", port)
 }
 
 func startOpsAgentPlugin(ctx context.Context, logger *log.Logger, vm *gce.VM, port string) error {
