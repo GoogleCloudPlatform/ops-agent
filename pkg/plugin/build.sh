@@ -19,6 +19,7 @@ set -ex
 . VERSION
 
 echo 'Creating plugin'
+ls .
 PLUGIN_DIR=$1/plugin_dir/var/lib/google-guest-agent/plugins/ops-agent-plugin_$PKG_VERSION
 mkdir -p ${PLUGIN_DIR}
 mkdir -p ${PLUGIN_DIR}/subagents/opentelemetry-collector
@@ -28,15 +29,10 @@ mkdir -p ${PLUGIN_DIR}/THIRD_PARTY_LICENSES
 
 cp $1/opt/google-cloud-ops-agent/plugin ${PLUGIN_DIR}/plugin
 cp $1/opt/google-cloud-ops-agent/libexec/google_cloud_ops_agent_wrapper ${PLUGIN_DIR}/libexec/google_cloud_ops_agent_wrapper
-# cp $1/opt/google-cloud-ops-agent/libexec/google_cloud_ops_agent_engine ${PLUGIN_DIR}/libexec/google_cloud_ops_agent_engine
 cp $1/opt/google-cloud-ops-agent/libexec/google_cloud_ops_agent_diagnostics ${PLUGIN_DIR}/libexec/google_cloud_ops_agent_diagnostics
 
 cp $1/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol ${PLUGIN_DIR}/subagents/opentelemetry-collector/otelopscol
 cp $1/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit ${PLUGIN_DIR}/subagents/fluent-bit/bin/fluent-bit
 
-# ls -alh /work/cache/plugin_dir
-# ls -alh $PLUGIN_DIR
-# ls -alh /work/cache/*/*
-# ls -alh /work/cache/*/*/*
-
 tar -cvzf /google-cloud-ops-agent-plugin_${PKG_VERSION}.tar.gz -C $1/plugin_dir/ .
+echo 'DONE creating plugin'
