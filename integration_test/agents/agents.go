@@ -822,7 +822,7 @@ func getStartOpsAgentPluginCmd(imageSpec string, port string) string {
 		return ""
 	}
 	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
-	return fmt.Sprintf("sudo /tmp/agentUpload/plugin --address=localhost:%s --errorlogfile=errorlog.txt --protocol=tcp &", port)
+	return fmt.Sprintf("screen -d -m sudo /tmp/agentUpload/plugin --address=localhost:%s --errorlogfile=errorlog.txt --protocol=tcp &", port)
 }
 
 func startOpsAgentPlugin(ctx context.Context, logger *log.Logger, vm *gce.VM, port string) error {
