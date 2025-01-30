@@ -810,10 +810,10 @@ func SetupOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, config s
 	return SetupOpsAgentFrom(ctx, logger, vm, config, LocationFromEnvVars())
 }
 
-// restartOpsAgent restarts the Ops Agent and waits for it to become available.
-func restartOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+// RestartOpsAgent restarts the Ops Agent and waits for it to become available.
+func RestartOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	if _, err := gce.RunRemotely(ctx, logger, vm, getRestartOpsAgentCmd(vm.ImageSpec)); err != nil {
-		return fmt.Errorf("restartOpsAgent() failed to restart ops agent: %v", err)
+		return fmt.Errorf("RestartOpsAgent() failed to restart ops agent: %v", err)
 	}
 	// Give agents time to shut down. Fluent-Bit's default shutdown grace period
 	// is 5 seconds, so we should probably give it at least that long.
@@ -845,6 +845,7 @@ func SetupOpsAgentFrom(ctx context.Context, logger *log.Logger, vm *gce.VM, conf
 	if err := InstallOpsAgent(ctx, logger, vm, location); err != nil {
 		return err
 	}
+	isUAPPluin := LocationFromEnvVars().uapPluginPackageInGCS != ""
 	startupDelay := 20 * time.Second
 	if len(config) > 0 {
 		if gce.IsWindows(vm.ImageSpec) {
@@ -855,9 +856,11 @@ func SetupOpsAgentFrom(ctx context.Context, logger *log.Logger, vm *gce.VM, conf
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(config), util.GetConfigPath(vm.ImageSpec)); err != nil {
 			return fmt.Errorf("SetupOpsAgentFrom() failed to upload config file: %v", err)
 		}
-		if err := restartOpsAgent(ctx, logger, vm); err != nil {
+		if err := RestartOpsAgent(ctx, logger, vm); err != nil {
 			return err
 		}
+	} else if isUAPPluin {
+		return RestartOpsAgent(ctx, logger, vm)
 	}
 	// Give agents time to start up.
 	time.Sleep(startupDelay)
@@ -1066,4 +1069,22 @@ func StopCommandForImage(imageSpec string) string {
 
 	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
 	return "sudo service google-cloud-ops-agent stop || sudo systemctl stop google-cloud-ops-agent"
+}
+
+func GetOtelConfigPath(imageSpec string) string {
+	isUAPPlugin := LocationFromEnvVars().uapPluginPackageInGCS != ""
+
+	if gce.IsWindows(imageSpec) && isUAPPlugin {
+		return ""
+	}
+
+	if gce.IsWindows(imageSpec) && !isUAPPlugin {
+		return `C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\otel\otel.yaml`
+	}
+
+	if !gce.IsWindows(imageSpec) && isUAPPlugin {
+		return "/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml"
+	}
+
+	return "/var/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml"
 }
