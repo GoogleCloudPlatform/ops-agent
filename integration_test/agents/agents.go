@@ -186,7 +186,7 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 	gce.RunRemotely(metricsCtx, logger.ToFile("fluent_bit_metrics.txt"), vm, "sudo curl -s localhost:20202/metrics")
 	gce.RunRemotely(metricsCtx, logger.ToFile("otel_metrics.txt"), vm, "sudo curl -s localhost:20201/metrics")
 
-	isUAPPlugin := LocationFromEnvVars().uapPluginPackageInGCS != ""
+	isUAPPlugin := IsOpsAgentUAPPlugin()
 	if isUAPPlugin {
 		gce.RunRemotely(ctx, logger.ToFile("systemctl_status_for_ops_agent.txt"), vm, "sudo grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/GetStatus")
 	} else {
@@ -229,7 +229,7 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 }
 
 func runOpsAgentDiagnosticsWindows(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) {
-	isUAPPlugin := LocationFromEnvVars().uapPluginPackageInGCS != ""
+	isUAPPlugin := IsOpsAgentUAPPlugin()
 	if isUAPPlugin {
 		return
 	}
@@ -690,7 +690,7 @@ func InstallStandaloneWindowsMonitoringAgent(ctx context.Context, logger *log.Lo
 }
 
 func getRestartOpsAgentCmd(imageSpec string) string {
-	isUAPPlugin := LocationFromEnvVars().uapPluginPackageInGCS != ""
+	isUAPPlugin := IsOpsAgentUAPPlugin()
 	if gce.IsWindows(imageSpec) && isUAPPlugin {
 		return ""
 	}
@@ -845,9 +845,9 @@ func getStartOpsAgentPluginCmd(imageSpec string, port string) string {
 	return fmt.Sprintf("screen -d -m sudo /tmp/agentUpload/plugin --address=localhost:%s --errorlogfile=errorlog.txt --protocol=tcp &", port)
 }
 
-func startOpsAgentPlugin(ctx context.Context, logger *log.Logger, vm *gce.VM, port string) error {
+func StartOpsAgentPlugin(ctx context.Context, logger *log.Logger, vm *gce.VM, port string) error {
 	if _, err := gce.RunRemotely(ctx, logger, vm, getStartOpsAgentPluginCmd(vm.ImageSpec, port)); err != nil {
-		return fmt.Errorf("startOpsAgentPlugin() failed to start the ops agent plugin: %v", err)
+		return fmt.Errorf("StartOpsAgentPlugin() failed to start the ops agent plugin: %v", err)
 	}
 	// Give agents time to shut down. Fluent-Bit's default shutdown grace period
 	// is 5 seconds, so we should probably give it at least that long.
@@ -862,7 +862,7 @@ func SetupOpsAgentFrom(ctx context.Context, logger *log.Logger, vm *gce.VM, conf
 	if err := InstallOpsAgent(ctx, logger, vm, location); err != nil {
 		return err
 	}
-	isUAPPluin := LocationFromEnvVars().uapPluginPackageInGCS != ""
+	isUAPPluin := IsOpsAgentUAPPlugin()
 	startupDelay := 20 * time.Second
 	if len(config) > 0 {
 		if gce.IsWindows(vm.ImageSpec) {
@@ -968,7 +968,7 @@ func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm
 	if _, err := gce.RunRemotely(ctx, logger, vm, "ls /tmp/agentUpload"); err != nil {
 		return err
 	}
-	return startOpsAgentPlugin(ctx, logger, vm, "1234")
+	return StartOpsAgentPlugin(ctx, logger, vm, "1234")
 }
 
 // InstallPackageFromGCS installs the agent package from GCS onto the given Linux VM.
@@ -1028,7 +1028,7 @@ func installWindowsPackageFromGCS(ctx context.Context, logger *log.Logger, vm *g
 }
 
 func GetRecentServiceOutputForImage(imageSpec string) string {
-	isUAPPlugin := LocationFromEnvVars().uapPluginPackageInGCS != ""
+	isUAPPlugin := IsOpsAgentUAPPlugin()
 
 	if gce.IsWindows(imageSpec) && isUAPPlugin {
 		return ""
@@ -1051,7 +1051,7 @@ func GetRecentServiceOutputForImage(imageSpec string) string {
 }
 
 func StartCommandForImage(imageSpec string) string {
-	isUAPPlugin := LocationFromEnvVars().uapPluginPackageInGCS != ""
+	isUAPPlugin := IsOpsAgentUAPPlugin()
 
 	if gce.IsWindows(imageSpec) && isUAPPlugin {
 		return ""
@@ -1070,7 +1070,7 @@ func StartCommandForImage(imageSpec string) string {
 }
 
 func StopCommandForImage(imageSpec string) string {
-	isUAPPlugin := LocationFromEnvVars().uapPluginPackageInGCS != ""
+	isUAPPlugin := IsOpsAgentUAPPlugin()
 
 	if gce.IsWindows(imageSpec) && isUAPPlugin {
 		return ""
@@ -1089,7 +1089,7 @@ func StopCommandForImage(imageSpec string) string {
 }
 
 func GetOtelConfigPath(imageSpec string) string {
-	isUAPPlugin := LocationFromEnvVars().uapPluginPackageInGCS != ""
+	isUAPPlugin := IsOpsAgentUAPPlugin()
 
 	if gce.IsWindows(imageSpec) && isUAPPlugin {
 		return ""
@@ -1104,4 +1104,8 @@ func GetOtelConfigPath(imageSpec string) string {
 	}
 
 	return "/var/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml"
+}
+
+func IsOpsAgentUAPPlugin() bool {
+	return LocationFromEnvVars().uapPluginPackageInGCS != ""
 }

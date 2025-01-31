@@ -1722,6 +1722,20 @@ EOF
 		parserConfig,
 		// Escape record accessor dollar-signs
 		strings.ReplaceAll(fluentBitArgs, "$", `\$`))
+
+	if agents.IsOpsAgentUAPPlugin() {
+		command = fmt.Sprintf(`
+		sudo touch %s
+		sudo tee %s > /dev/null <<EOF
+%s
+EOF
+		sudo nohup /tmp/agentUpload/subagents/fluent-bit/bin/fluent-bit %s 1>/dev/null 2>/dev/null &`,
+			remoteFile,
+			parserFile,
+			parserConfig,
+			// Escape record accessor dollar-signs
+			strings.ReplaceAll(fluentBitArgs, "$", `\$`))
+	}
 	if gce.IsWindows(imageSpec) {
 		command = fmt.Sprintf(`
 			New-Item %s
@@ -4797,25 +4811,46 @@ func TestRestartVM(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		isUAPPlugin := agents.IsOpsAgentUAPPlugin()
+		if isUAPPlugin {
+			if !strings.Contains(cmdOut.Stdout, "is running ok") {
+				t.Error("expected the plugin to be running, but is not running")
+			}
 
-		// Ensure sure all healthchecks pass before the restart
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
+		} else {
+			// Ensure sure all healthchecks pass before the restart
+			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
+			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
+			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
+		}
 
 		logger.Printf(`Restarting instance. For details, see "VM_restart.txt".`)
 		if err := gce.RestartInstance(ctx, dirLog.ToFile("VM_restart.txt"), vm); err != nil {
 			t.Fatal(err)
+		}
+		if isUAPPlugin {
+			if err := agents.StartOpsAgentPlugin(ctx, logger, vm, "1234"); err != nil {
+				t.Fatal(err)
+			}
+			if err := agents.RestartOpsAgent(ctx, logger, vm); err != nil {
+				t.Fatal(err)
+			}
 		}
 
 		cmdOut, err = gce.RunRemotely(ctx, logger, vm, agents.GetRecentServiceOutputForImage(vm.ImageSpec))
 		if err != nil {
 			t.Fatal(err)
 		}
+		if isUAPPlugin {
+			if !strings.Contains(cmdOut.Stdout, "is running ok") {
+				t.Error("expected the plugin to be running after the VM restart, but is not running")
+			}
+		} else {
+			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
+			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
+			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
+		}
 
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
 	})
 }
 
