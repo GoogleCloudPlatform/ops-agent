@@ -1729,7 +1729,7 @@ EOF
 		sudo tee %s > /dev/null <<EOF
 %s
 EOF
-		sudo nohup /tmp/agentUpload/subagents/fluent-bit/bin/fluent-bit %s 1>/dev/null 2>/dev/null &`,
+		sudo nohup ~/subagents/fluent-bit/bin/fluent-bit %s 1>/dev/null 2>/dev/null &`,
 			remoteFile,
 			parserFile,
 			parserConfig,
