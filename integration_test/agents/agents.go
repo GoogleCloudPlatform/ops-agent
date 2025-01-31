@@ -842,7 +842,7 @@ func getStartOpsAgentPluginCmd(imageSpec string, port string) string {
 	if gce.IsWindows(imageSpec) {
 		return ""
 	}
-	return fmt.Sprintf("screen -d -m sudo /tmp/agentUpload/plugin --address=localhost:%s --errorlogfile=errorlog.txt --protocol=tcp &", port)
+	return fmt.Sprintf("screen -d -m sudo ~/plugin --address=localhost:%s --errorlogfile=errorlog.txt --protocol=tcp &", port)
 }
 
 func StartOpsAgentPlugin(ctx context.Context, logger *log.Logger, vm *gce.VM, port string) error {
@@ -961,11 +961,11 @@ func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm
 	if _, err := gce.RunRemotely(ctx, logger, vm, "ls /tmp/agentUpload"); err != nil {
 		return err
 	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, "sudo tar -xzf /tmp/agentUpload/ops-agent-plugin.tar.gz -C /tmp/agentUpload"); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "sudo tar -xzf /tmp/agentUpload/ops-agent-plugin.tar.gz -C ~/"); err != nil {
 		return err
 	}
 	// Print the contents of /tmp/agentUpload into the logs.
-	if _, err := gce.RunRemotely(ctx, logger, vm, "ls /tmp/agentUpload"); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "ls ~/"); err != nil {
 		return err
 	}
 	return StartOpsAgentPlugin(ctx, logger, vm, "1234")
