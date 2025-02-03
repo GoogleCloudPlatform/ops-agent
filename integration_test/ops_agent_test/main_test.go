@@ -94,6 +94,44 @@ func workDirForImage(imageSpec string) string {
 	return "/tmp/work"
 }
 
+func startCommandForImage(imageSpec string) string {
+	isUAPPlugin := agents.IsOpsAgentUAPPlugin()
+
+	if gce.IsWindows(imageSpec) && isUAPPlugin {
+		return ""
+	}
+
+	if gce.IsWindows(imageSpec) && !isUAPPlugin {
+		return "Start-Service google-cloud-ops-agent"
+	}
+
+	if !gce.IsWindows(imageSpec) && isUAPPlugin {
+		return "sudo grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Start"
+	}
+
+	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
+	return "sudo service google-cloud-ops-agent start || sudo systemctl start google-cloud-ops-agent"
+}
+
+func stopCommandForImage(imageSpec string) string {
+	isUAPPlugin := agents.IsOpsAgentUAPPlugin()
+
+	if gce.IsWindows(imageSpec) && isUAPPlugin {
+		return ""
+	}
+
+	if gce.IsWindows(imageSpec) && !isUAPPlugin {
+		return "Stop-Service google-cloud-ops-agent -Force"
+	}
+
+	if !gce.IsWindows(imageSpec) && isUAPPlugin {
+		return "sudo grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Stop"
+	}
+
+	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
+	return "sudo service google-cloud-ops-agent stop || sudo systemctl stop google-cloud-ops-agent"
+}
+
 func systemLogTagForImage(imageSpec string) string {
 	if gce.IsWindows(imageSpec) {
 		return "windows_event_log"
@@ -3814,7 +3852,6 @@ func TestLoggingSelfLogs(t *testing.T) {
 		}
 
 		queryHealthCheck := fmt.Sprintf(`severity="INFO" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
-		queryHealthCheck = ""
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, queryHealthCheck); err != nil {
 			t.Error(err)
 		}
@@ -3823,7 +3860,6 @@ func TestLoggingSelfLogs(t *testing.T) {
 		// "LogPingOpsAgent" to show. We can remove wait when feature b/319102785 is complete.
 		time.Sleep(10*time.Minute - time.Now().Sub(start))
 		queryPing := fmt.Sprintf(`severity="DEBUG" AND jsonPayload.code="LogPingOpsAgent" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
-		queryPing = ""
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "ops-agent-health", time.Hour, queryPing); err != nil {
 			t.Error(err)
 		}
@@ -4425,6 +4461,29 @@ func checkExpectedHealthCheckResult(t *testing.T, output string, name string, ex
 	}
 }
 
+func getRecentServiceOutputForImage(imageSpec string) string {
+	isUAPPlugin := agents.IsOpsAgentUAPPlugin()
+
+	if gce.IsWindows(imageSpec) && isUAPPlugin {
+		return ""
+	}
+
+	if gce.IsWindows(imageSpec) && !isUAPPlugin {
+		cmd := strings.Join([]string{
+			"$ServiceStart = (Get-EventLog -LogName 'System' -Source 'Service Control Manager' -EntryType 'Information' -Message '*Google Cloud Ops Agent service entered the running state*' -Newest 1).TimeGenerated",
+			"$QueryStart = $ServiceStart - (New-TimeSpan -Seconds 30)",
+			"Get-WinEvent -MaxEvents 10 -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent'; StartTime=$QueryStart } | select -ExpandProperty Message",
+		}, ";")
+		return cmd
+	}
+
+	if !gce.IsWindows(imageSpec) && isUAPPlugin {
+		return "sudo grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/GetStatus"
+	}
+
+	return "sudo systemctl status google-cloud-ops-agent"
+}
+
 func listenToPortForImage(vm *gce.VM) string {
 	if gce.IsWindows(vm.ImageSpec) {
 		cmd := strings.Join([]string{
@@ -4478,7 +4537,7 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cmdOut, err := gce.RunRemotely(ctx, logger, vm, agents.GetRecentServiceOutputForImage(vm.ImageSpec))
+		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -4508,7 +4567,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cmdOut, err := gce.RunRemotely(ctx, logger, vm, agents.GetRecentServiceOutputForImage(vm.ImageSpec))
+		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -4517,7 +4576,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StopCommandForImage(vm.ImageSpec)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, stopCommandForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)
 		}
 
@@ -4527,11 +4586,11 @@ func TestNetworkHealthCheck(t *testing.T) {
 		}
 		time.Sleep(time.Minute)
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartCommandForImage(vm.ImageSpec)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, startCommandForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)
 		}
 
-		cmdOut, err = gce.RunRemotely(ctx, logger, vm, agents.GetRecentServiceOutputForImage(vm.ImageSpec))
+		cmdOut, err = gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -4629,13 +4688,13 @@ func TestDisableSelfLogCollection(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, agents.StopCommandForImage(vm.ImageSpec)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, stopCommandForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)
 		}
 
 		time.Sleep(2 * time.Minute)
 
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, agents.StartCommandForImage(vm.ImageSpec)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, startCommandForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)
 		}
 
@@ -4809,7 +4868,7 @@ func TestRestartVM(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cmdOut, err := gce.RunRemotely(ctx, logger, vm, agents.GetRecentServiceOutputForImage(vm.ImageSpec))
+		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -4839,7 +4898,7 @@ func TestRestartVM(t *testing.T) {
 			}
 		}
 
-		cmdOut, err = gce.RunRemotely(ctx, logger, vm, agents.GetRecentServiceOutputForImage(vm.ImageSpec))
+		cmdOut, err = gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
 		if err != nil {
 			t.Fatal(err)
 		}

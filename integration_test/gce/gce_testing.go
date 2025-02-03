@@ -1637,9 +1637,11 @@ func RestartInstance(ctx context.Context, logger *log.Logger, vm *VM) error {
 	return StartInstance(ctx, logger, vm)
 }
 
+// InstallGrpcurlIfNeeded installs grpcurl on instances that don't already have
+// it installed.
 func InstallGrpcurlIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) error {
 	if IsWindows(vm.ImageSpec) {
-		return nil
+		return fmt.Errorf("installing grpcurl on Windows is not yet supported")
 	}
 
 	if _, err := RunRemotely(ctx, logger, vm, "which grpcurl"); err == nil {
