@@ -590,21 +590,20 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		// InstallOpsAgent does its own retries.
 		return nonRetryable, fmt.Errorf("error installing agent: %v", err)
 	}
+
+	if _, err = runScriptFromScriptsDir(ctx, logger.ToMainLog(), vm, path.Join("applications", app, "enable"), nil); err != nil {
+		return nonRetryable, fmt.Errorf("error enabling %s: %v", app, err)
+	}
+
 	if agents.IsOpsAgentUAPPlugin() {
 		if err := agents.RestartOpsAgent(ctx, logger.ToMainLog(), vm); err != nil {
 			return nonRetryable, fmt.Errorf("error restarting agent: %v", err)
 		}
 	}
 
-	if _, err = runScriptFromScriptsDir(ctx, logger.ToMainLog(), vm, path.Join("applications", app, "enable"), nil); err != nil {
-		return nonRetryable, fmt.Errorf("error enabling %s: %v", app, err)
-	}
-
 	backupConfigFilePath := util.GetConfigPath(vm.ImageSpec) + ".bak"
 	if err = assertFilePresence(ctx, logger.ToMainLog(), vm, backupConfigFilePath); err != nil {
-		if !agents.IsOpsAgentUAPPlugin() {
-			return nonRetryable, fmt.Errorf("error when fetching back up config file %s: %v", backupConfigFilePath, err)
-		}
+		return nonRetryable, fmt.Errorf("error when fetching back up config file %s: %v", backupConfigFilePath, err)
 	}
 
 	// Check if the exercise script exists, and run it if it does.
