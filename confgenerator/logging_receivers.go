@@ -682,6 +682,24 @@ func (r LoggingReceiverSystemd) Components(ctx context.Context, tag string) []fl
 	return input
 }
 
+func (r LoggingReceiverSystemd) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
+	operators := []map[string]any{}
+	receiver_config := map[string]any{}
+	receiver_config["operators"] = operators
+	return []otel.ReceiverPipeline{{
+		Receiver: otel.Component{
+			Type:   "journaldreceiver",
+			Config: receiver_config,
+		},
+		Processors: map[string][]otel.Component{
+			"logs": nil,
+		},
+		ExporterTypes: map[string]otel.ExporterType{
+			"logs": otel.OTel,
+		},
+	}}, nil
+}
+
 func init() {
 	LoggingReceiverTypes.RegisterType(func() LoggingReceiver { return &LoggingReceiverSystemd{} }, platform.Linux)
 }
