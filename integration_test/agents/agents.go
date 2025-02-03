@@ -843,7 +843,7 @@ func getStartOpsAgentPluginCmd(imageSpec string, port string) string {
 	if gce.IsWindows(imageSpec) {
 		return ""
 	}
-	return fmt.Sprintf("screen -d -m sudo ~/plugin --address=localhost:%s --errorlogfile=errorlog.txt --protocol=tcp &", port)
+	return fmt.Sprintf("sudo nohup ~/plugin --address=localhost:%s --errorlogfile=errorlog.txt --protocol=tcp 1>/dev/null 2>/dev/null &", port)
 }
 
 // StartOpsAgentPlugin starts the Ops Agent Plugin gRPC server on the testing VM in the background.
