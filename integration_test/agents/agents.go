@@ -49,6 +49,9 @@ import (
 // for uptime metrics.
 const TrailingQueryWindow = 2 * time.Minute
 
+// OpsAgentPluginServerPort defines the port on which the Ops Agent UAP Plugin gRPC server runs.
+const OpsAgentPluginServerPort = "1234"
+
 // AgentPackage represents a thing that we ask OS Config to install for us.
 // One agentPackage can expand out and result in multiple AgentServices
 // being installed on the VM.
@@ -188,7 +191,7 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 
 	isUAPPlugin := IsOpsAgentUAPPlugin()
 	if isUAPPlugin {
-		gce.RunRemotely(ctx, logger.ToFile("systemctl_status_for_ops_agent.txt"), vm, "sudo grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/GetStatus")
+		gce.RunRemotely(ctx, logger.ToFile("systemctl_status_for_ops_agent.txt"), vm, fmt.Sprintf("sudo grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/GetStatus", OpsAgentPluginServerPort))
 	} else {
 		gce.RunRemotely(ctx, logger.ToFile("systemctl_status_for_ops_agent.txt"), vm, "sudo systemctl status google-cloud-ops-agent*")
 	}
@@ -698,7 +701,7 @@ func getRestartOpsAgentCmd(imageSpec string) string {
 		return "Restart-Service google-cloud-ops-agent -Force"
 	}
 	if !gce.IsWindows(imageSpec) && isUAPPlugin {
-		return "sudo grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Stop && grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Start"
+		return fmt.Sprintf("sudo grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Stop && grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Start", OpsAgentPluginServerPort, OpsAgentPluginServerPort)
 	}
 	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
 	return "sudo service google-cloud-ops-agent restart || sudo systemctl restart google-cloud-ops-agent"
@@ -709,7 +712,6 @@ func getRestartOpsAgentCmd(imageSpec string) string {
 type PackageLocation struct {
 	// If provided, a URL for a file in GCS containing a .tar.gz file
 	// to install on the testing VMs.
-	// This setting is mutually exclusive with repoSuffix.
 	uapPluginPackageInGCS string
 	// If provided, a URL for a directory in GCS containing .deb/.rpm/.goo files
 	// to install on the testing VMs.
@@ -767,12 +769,11 @@ func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, locati
 	if location.packagesInGCS != "" && location.repoSuffix != "" {
 		return fmt.Errorf("invalid PackageLocation: cannot provide both location.packagesInGCS and location.repoSuffix. location=%#v", location)
 	}
-
-	if location.artifactRegistryRegion != "" && location.repoSuffix == "" {
-		return fmt.Errorf("invalid PackageLocation: location.artifactRegistryRegion was nonempty yet location.repoSuffix was empty. location=%#v", location)
-	}
 	if location.uapPluginPackageInGCS != "" {
 		return InstallOpsAgentUAPPluginFromGCS(ctx, logger, vm, location.uapPluginPackageInGCS)
+	}
+	if location.artifactRegistryRegion != "" && location.repoSuffix == "" {
+		return fmt.Errorf("invalid PackageLocation: location.artifactRegistryRegion was nonempty yet location.repoSuffix was empty. location=%#v", location)
 	}
 	if location.packagesInGCS != "" {
 		return InstallPackageFromGCS(ctx, logger, vm, location.packagesInGCS)
@@ -845,6 +846,7 @@ func getStartOpsAgentPluginCmd(imageSpec string, port string) string {
 	return fmt.Sprintf("screen -d -m sudo ~/plugin --address=localhost:%s --errorlogfile=errorlog.txt --protocol=tcp &", port)
 }
 
+// StartOpsAgentPlugin starts the Ops Agent Plugin gRPC server on the testing VM in the background.
 func StartOpsAgentPlugin(ctx context.Context, logger *log.Logger, vm *gce.VM, port string) error {
 	if _, err := gce.RunRemotely(ctx, logger, vm, getStartOpsAgentPluginCmd(vm.ImageSpec, port)); err != nil {
 		return fmt.Errorf("StartOpsAgentPlugin() failed to start the ops agent plugin: %v", err)
@@ -936,11 +938,9 @@ func CommonSetupWithExtraCreateArgumentsAndMetadata(t *testing.T, imageSpec stri
 	return ctx, logger, vm
 }
 
-// InstallOpsAgentUAPPluginFromGCS installs the agent package from GCS onto the given Linux VM.
+// InstallOpsAgentUAPPluginFromGCS installs the Ops Agent plugin tarball from GCS onto the given Linux VM.
 //
-// gcsPath must point to a GCS Path that contains .deb/.rpm/.goo files to install on the testing VMs.
-// Packages with "dbgsym" in their name are skipped because customers don't
-// generally install those, so our tests shouldn't either.
+// gcsPath must point to a GCS Path to a .tar.gz file to install on the testing VMs.
 func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, gcsPath string) error {
 	if gce.IsWindows(vm.ImageSpec) {
 		return fmt.Errorf("Ops Agent UAP Plugin does not support Windows yet")
@@ -968,7 +968,7 @@ func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm
 	if _, err := gce.RunRemotely(ctx, logger, vm, "ls ~/"); err != nil {
 		return err
 	}
-	return StartOpsAgentPlugin(ctx, logger, vm, "1234")
+	return StartOpsAgentPlugin(ctx, logger, vm, OpsAgentPluginServerPort)
 }
 
 // InstallPackageFromGCS installs the agent package from GCS onto the given Linux VM.
@@ -1025,67 +1025,6 @@ func installWindowsPackageFromGCS(ctx context.Context, logger *log.Logger, vm *g
 		return fmt.Errorf("error installing agent from .goo file: %v", err)
 	}
 	return nil
-}
-
-func GetRecentServiceOutputForImage(imageSpec string) string {
-	isUAPPlugin := IsOpsAgentUAPPlugin()
-
-	if gce.IsWindows(imageSpec) && isUAPPlugin {
-		return ""
-	}
-
-	if gce.IsWindows(imageSpec) && !isUAPPlugin {
-		cmd := strings.Join([]string{
-			"$ServiceStart = (Get-EventLog -LogName 'System' -Source 'Service Control Manager' -EntryType 'Information' -Message '*Google Cloud Ops Agent service entered the running state*' -Newest 1).TimeGenerated",
-			"$QueryStart = $ServiceStart - (New-TimeSpan -Seconds 30)",
-			"Get-WinEvent -MaxEvents 10 -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent'; StartTime=$QueryStart } | select -ExpandProperty Message",
-		}, ";")
-		return cmd
-	}
-
-	if !gce.IsWindows(imageSpec) && isUAPPlugin {
-		return "sudo grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/GetStatus"
-	}
-
-	return "sudo systemctl status google-cloud-ops-agent"
-}
-
-func StartCommandForImage(imageSpec string) string {
-	isUAPPlugin := IsOpsAgentUAPPlugin()
-
-	if gce.IsWindows(imageSpec) && isUAPPlugin {
-		return ""
-	}
-
-	if gce.IsWindows(imageSpec) && !isUAPPlugin {
-		return "Start-Service google-cloud-ops-agent"
-	}
-
-	if !gce.IsWindows(imageSpec) && isUAPPlugin {
-		return "sudo grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Start"
-	}
-
-	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
-	return "sudo service google-cloud-ops-agent start || sudo systemctl start google-cloud-ops-agent"
-}
-
-func StopCommandForImage(imageSpec string) string {
-	isUAPPlugin := IsOpsAgentUAPPlugin()
-
-	if gce.IsWindows(imageSpec) && isUAPPlugin {
-		return ""
-	}
-
-	if gce.IsWindows(imageSpec) && !isUAPPlugin {
-		return "Stop-Service google-cloud-ops-agent -Force"
-	}
-
-	if !gce.IsWindows(imageSpec) && isUAPPlugin {
-		return "sudo grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Stop"
-	}
-
-	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
-	return "sudo service google-cloud-ops-agent stop || sudo systemctl stop google-cloud-ops-agent"
 }
 
 func GetOtelConfigPath(imageSpec string) string {
