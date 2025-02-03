@@ -2371,6 +2371,16 @@ func TestWindowsEventLogWithNonDefaultTimeZone(t *testing.T) {
 
 func TestSystemdLog(t *testing.T) {
 	t.Parallel()
+	t.Run("fluent-bit", func(t *testing.T) {
+		testSystemdLog(t, false)
+	})
+	t.Run("otel", func(t *testing.T) {
+		testSystemdLog(t, true)
+	})
+}
+
+func testSystemdLog(t *testing.T, otel bool) {
+	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		if gce.IsWindows(imageSpec) {
@@ -2378,15 +2388,16 @@ func TestSystemdLog(t *testing.T) {
 		}
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
-		config := `logging:
+		config := fmt.Sprintf(`logging:
   receivers:
     systemd_logs:
       type: systemd_journald
   service:
+    experimental_otel_logging: %v
     pipelines:
       systemd_pipeline:
         receivers: [systemd_logs]
-`
+`, otel)
 
 		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
