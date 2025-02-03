@@ -4,7 +4,8 @@ set -e
 
 # Check if the file exists
 if [ ! -f /etc/google-cloud-ops-agent/config.yaml ]; then
-  # Create the file if it doesn't exist. 
+  # Create the file if it doesn't exist.
+  sudo mkdir -p /etc/google-cloud-ops-agent
   sudo touch /etc/google-cloud-ops-agent/config.yaml
 fi
 
