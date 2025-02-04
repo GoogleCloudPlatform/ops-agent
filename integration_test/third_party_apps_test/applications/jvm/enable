@@ -26,4 +26,4 @@ metrics:
 EOF
 
 sudo systemctl restart google-cloud-ops-agent.service
-sleep 60
+

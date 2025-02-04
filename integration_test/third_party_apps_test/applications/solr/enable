@@ -36,4 +36,4 @@ logging:
           - solr_system
 EOF
 
-sudo service google-cloud-ops-agent restart
+

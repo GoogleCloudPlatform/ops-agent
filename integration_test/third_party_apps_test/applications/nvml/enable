@@ -12,4 +12,3 @@ fi
 sudo cp /etc/google-cloud-ops-agent/config.yaml /etc/google-cloud-ops-agent/config.yaml.bak
 
 # Sleep to wait for agent to fully start before running "exercise" script
-sleep 60
