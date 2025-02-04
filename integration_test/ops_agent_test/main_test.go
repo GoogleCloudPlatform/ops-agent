@@ -3811,6 +3811,10 @@ func TestMetricsAgentCrashRestart(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
+		if agents.IsOpsAgentUAPPlugin() {
+			// Ops Agent Plugin does not restart subagents on termination.
+			t.SkipNow()
+		}
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
 		testAgentCrashRestart(ctx, t, logger, vm, metricsAgentProcessNamesForImage(vm.ImageSpec), metricsLivenessChecker)
@@ -3830,6 +3834,10 @@ func TestLoggingAgentCrashRestart(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
+		if agents.IsOpsAgentUAPPlugin() {
+			// Ops Agent Plugin does not restart subagents on termination.
+			t.SkipNow()
+		}
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
 		testAgentCrashRestart(ctx, t, logger, vm, []string{"fluent-bit"}, loggingLivenessChecker)
@@ -3906,6 +3914,10 @@ func TestDiagnosticsCrashRestart(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
+		if agents.IsOpsAgentUAPPlugin() {
+			// Ops Agent Plugin does not restart the diagnostics service on termination.
+			t.SkipNow()
+		}
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
 		testAgentCrashRestart(ctx, t, logger, vm, diagnosticsProcessNamesForImage(vm.ImageSpec), diagnosticsLivenessChecker)
@@ -3966,7 +3978,10 @@ func TestUpgradeOpsAgent(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-
+		if agents.IsOpsAgentUAPPlugin() {
+			// Ops Agent plugin version upgrade is handled by UAP.
+			t.SkipNow()
+		}
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
 		// This will install the stable Ops Agent (REPO_SUFFIX="").
