@@ -25,5 +25,3 @@ metrics:
           - jvm
 EOF
 
-sudo systemctl restart google-cloud-ops-agent.service
-
