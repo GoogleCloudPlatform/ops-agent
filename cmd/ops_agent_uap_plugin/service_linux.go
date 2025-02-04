@@ -72,6 +72,7 @@ func (ps *OpsAgentPluginServer) Apply(ctx context.Context, msg *pb.ApplyRequest)
 // Until plugin receives Start request plugin is expected to be not functioning
 // and just listening on the address handed off waiting for the request.
 func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest) (*pb.StartResponse, error) {
+	// test!
 	if ps.cancel != nil {
 		log.Printf("The Ops Agent plugin is started already, skipping the current request")
 		return &pb.StartResponse{}, nil
