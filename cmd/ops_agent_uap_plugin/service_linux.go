@@ -72,15 +72,18 @@ func (ps *OpsAgentPluginServer) Apply(ctx context.Context, msg *pb.ApplyRequest)
 // Until plugin receives Start request plugin is expected to be not functioning
 // and just listening on the address handed off waiting for the request.
 func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest) (*pb.StartResponse, error) {
-	// test!
+	ps.mu.Lock()
+  // test!
 	if ps.cancel != nil {
 		log.Printf("The Ops Agent plugin is started already, skipping the current request")
+		ps.mu.Unlock()
 		return &pb.StartResponse{}, nil
 	}
 	log.Printf("Received a Start request: %s. Starting the Ops Agent", msg)
 
 	pContext, cancel := context.WithCancel(context.Background())
 	ps.cancel = cancel
+	ps.mu.Unlock()
 
 	pluginInstallPath, err := os.Executable()
 	if err != nil {
@@ -102,8 +105,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	// Find existing ops agent installation, and conflicting legacy agent installation.
 	foundConflictingInstallations, err := findPreExistentAgents(pContext, ps.runCommand, AgentSystemdServiceNames)
 	if foundConflictingInstallations || err != nil {
-		ps.cancel()
-		ps.cancel = nil
+		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		log.Printf("Start() failed: %s", err)
 		return nil, status.Error(1, err.Error())
 	}
@@ -111,15 +113,13 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	// Ops Agent config validation
 	if err := validateOpsAgentConfig(pContext, pluginInstallDir, ps.runCommand); err != nil {
 		log.Printf("Start() failed: %s", err)
-		ps.cancel()
-		ps.cancel = nil
+		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		return nil, status.Errorf(1, "failed to validate Ops Agent config: %s", err)
 	}
 	// Subagent config generation
 	if err := generateSubagentConfigs(pContext, ps.runCommand, pluginInstallDir, pluginStateDir); err != nil {
 		log.Printf("Start() failed: %s", err)
-		ps.cancel()
-		ps.cancel = nil
+		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		return nil, status.Errorf(1, "failed to generate subagent configs: %s", err)
 	}
 
@@ -136,6 +136,8 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 // For e.g. if plugins want to stop some task it was performing or remove some
 // state before exiting it can be done on this request.
 func (ps *OpsAgentPluginServer) Stop(ctx context.Context, msg *pb.StopRequest) (*pb.StopResponse, error) {
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
 	if ps.cancel == nil {
 		log.Printf("The Ops Agent plugin is stopped already, skipping the current request")
 		return &pb.StopResponse{}, nil
@@ -153,6 +155,8 @@ func (ps *OpsAgentPluginServer) Stop(ctx context.Context, msg *pb.StopRequest) (
 // it can reported in status which is sent back to the service by agent.
 func (ps *OpsAgentPluginServer) GetStatus(ctx context.Context, msg *pb.GetStatusRequest) (*pb.Status, error) {
 	log.Println("Received a GetStatus request")
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
 	if ps.cancel == nil {
 		log.Println("The Ops Agent plugin is not running")
 		return &pb.Status{Code: 1, Results: []string{"The Ops Agent Plugin is not running."}}, nil
