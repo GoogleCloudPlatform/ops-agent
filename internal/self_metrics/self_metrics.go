@@ -99,7 +99,7 @@ func InstrumentEnabledReceiversMetric(ctx context.Context, uc *confgenerator.Uni
 }
 
 func InstrumentFeatureTrackingMetric(ctx context.Context, uc *confgenerator.UnifiedConfig, meter metricapi.Meter) error {
-	features, err := confgenerator.ExtractFeatures(context.Background(), uc)
+	features, err := confgenerator.ExtractFeatures(ctx, uc)
 	if err != nil {
 		return err
 	}
