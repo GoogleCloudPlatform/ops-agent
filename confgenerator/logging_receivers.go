@@ -688,7 +688,7 @@ func (r LoggingReceiverSystemd) Pipelines(ctx context.Context) ([]otel.ReceiverP
 	receiver_config["operators"] = operators
 	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
-			Type:   "journaldreceiver",
+			Type:   "journald",
 			Config: receiver_config,
 		},
 		Processors: map[string][]otel.Component{
