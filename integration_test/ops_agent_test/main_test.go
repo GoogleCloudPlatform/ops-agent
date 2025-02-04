@@ -4438,6 +4438,10 @@ metrics:
   service:
     pipelines:
 `
+		if err := installGolang(ctx, logger, vm); err != nil {
+			t.Fatal(err)
+		}
+
 		if err := agents.SetupOpsAgent(ctx, logger, vm, otlpConfig); err != nil {
 			t.Fatal(err)
 		}
@@ -4448,9 +4452,7 @@ metrics:
 			t.Fatal(err)
 		}
 		defer traceFile.Close()
-		if err := installGolang(ctx, logger, vm); err != nil {
-			t.Fatal(err)
-		}
+
 		if err = runGoCode(ctx, logger, vm, traceFile); err != nil {
 			t.Fatal(err)
 		}
