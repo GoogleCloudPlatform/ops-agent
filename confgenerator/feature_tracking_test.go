@@ -614,7 +614,7 @@ func TestBed(t *testing.T) {
 	for _, test := range tests {
 		test := test
 		t.Run(test.Name, func(t *testing.T) {
-			//t.Parallel()
+			t.Parallel()
 			actual, err := confgenerator.ExtractFeatures(context.Background(), test.Config)
 
 			if test.ExpectedError != nil {

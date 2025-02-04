@@ -98,7 +98,7 @@ func InstrumentEnabledReceiversMetric(ctx context.Context, uc *confgenerator.Uni
 	return nil
 }
 
-func InstrumentFeatureTrackingMetric(uc *confgenerator.UnifiedConfig, meter metricapi.Meter) error {
+func InstrumentFeatureTrackingMetric(ctx context.Context, uc *confgenerator.UnifiedConfig, meter metricapi.Meter) error {
 	features, err := confgenerator.ExtractFeatures(context.Background(), uc)
 	if err != nil {
 		return err
@@ -194,7 +194,7 @@ func CollectOpsAgentSelfMetrics(ctx context.Context, userUc, mergedUc *confgener
 	}
 
 	featureTrackingProvider := CreateFeatureTrackingMeterProvider(exporter, res)
-	err = InstrumentFeatureTrackingMetric(userUc, featureTrackingProvider.Meter("ops_agent/feature_tracking"))
+	err = InstrumentFeatureTrackingMetric(ctx, userUc, featureTrackingProvider.Meter("ops_agent/feature_tracking"))
 	if err != nil {
 		return fmt.Errorf("failed to instrument feature tracking: %w", err)
 	}
