@@ -595,11 +595,10 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		return nonRetryable, fmt.Errorf("error enabling %s: %v", app, err)
 	}
 
-	if agents.IsOpsAgentUAPPlugin() {
-		if err := agents.RestartOpsAgent(ctx, logger.ToMainLog(), vm); err != nil {
-			return nonRetryable, fmt.Errorf("error restarting agent: %v", err)
-		}
+	if err := agents.RestartOpsAgent(ctx, logger.ToMainLog(), vm); err != nil {
+		return nonRetryable, fmt.Errorf("error restarting agent: %v", err)
 	}
+	time.Sleep(60 * time.Second)
 
 	backupConfigFilePath := util.GetConfigPath(vm.ImageSpec) + ".bak"
 	if err = assertFilePresence(ctx, logger.ToMainLog(), vm, backupConfigFilePath); err != nil {

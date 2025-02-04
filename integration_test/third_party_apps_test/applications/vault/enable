@@ -42,4 +42,3 @@ logging:
           - vault_audit
 EOF
 
-sudo service google-cloud-ops-agent restart

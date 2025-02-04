@@ -35,4 +35,4 @@ logging:
           - jetty_access
 EOF
 
-sudo service google-cloud-ops-agent restart
+
