@@ -735,7 +735,7 @@ type PackageLocation struct {
 // LocationFromEnvVars assembles a PackageLocation from environment variables.
 func LocationFromEnvVars() PackageLocation {
 	return PackageLocation{
-		uapPluginPackageInGCS:   "gs://ops-agent-uap-plugin/debian12-bookworm/google-cloud-ops-agent-plugin_2.54.0-bookworm-amd64.tar.gz",
+		uapPluginPackageInGCS:   os.Getenv("UAP_PLUGIN_PACKAGE_IN_GCS"),
 		packagesInGCS:           os.Getenv("AGENT_PACKAGES_IN_GCS"),
 		repoSuffix:              os.Getenv("REPO_SUFFIX"),
 		repoCodename:            os.Getenv("REPO_CODENAME"),
