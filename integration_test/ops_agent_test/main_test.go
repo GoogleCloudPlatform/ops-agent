@@ -4208,9 +4208,9 @@ func runGoCode(ctx context.Context, logger *log.Logger, vm *gce.VM, content io.R
 	goInitAndRun := fmt.Sprintf(`
 		%s
 		cd %s
-		go mod init main
-		go get ./...
-		go run main.go`, goPathCommandForImage(vm.ImageSpec), workDir)
+		sudo /usr/local/go/bin/go mod init main
+		sudo /usr/local/go/bin/go get ./...
+		sudo /usr/local/go/bin/go run main.go`, goPathCommandForImage(vm.ImageSpec), workDir)
 	_, err := gce.RunRemotely(ctx, logger, vm, goInitAndRun)
 	return err
 }
