@@ -4180,9 +4180,7 @@ func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	} else {
 		installCmd = fmt.Sprintf(`
 			set -o pipefail
-			ls -la 
-			sudo ls -la 
-			sudo gsutil cp \
+			gsutil cp \
 				"gs://ops-agents-public-buckets-vendored-deps/mirrored-content/go.dev/dl/go%s.linux-%s.tar.gz" - | \
 				sudo tar --directory /usr/local -xzf /dev/stdin`, goVersion, goArch)
 	}
@@ -4208,9 +4206,9 @@ func runGoCode(ctx context.Context, logger *log.Logger, vm *gce.VM, content io.R
 	goInitAndRun := fmt.Sprintf(`
 		%s
 		cd %s
-		sudo /usr/local/go/bin/go mod init main
-		sudo /usr/local/go/bin/go get ./...
-		sudo /usr/local/go/bin/go run main.go`, goPathCommandForImage(vm.ImageSpec), workDir)
+		go mod init main
+		go get ./...
+		go run main.go`, goPathCommandForImage(vm.ImageSpec), workDir)
 	_, err := gce.RunRemotely(ctx, logger, vm, goInitAndRun)
 	return err
 }
@@ -4451,7 +4449,6 @@ metrics:
 		if err := installGolang(ctx, logger, vm); err != nil {
 			t.Fatal(err)
 		}
-
 		if err = runGoCode(ctx, logger, vm, traceFile); err != nil {
 			t.Fatal(err)
 		}

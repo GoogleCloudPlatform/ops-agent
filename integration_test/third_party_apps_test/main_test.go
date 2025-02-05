@@ -586,13 +586,13 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 		}
 	}
 
-	if _, err = runScriptFromScriptsDir(ctx, logger.ToMainLog(), vm, path.Join("applications", app, "enable"), nil); err != nil {
-		return nonRetryable, fmt.Errorf("error enabling %s: %v", app, err)
-	}
-
 	if err := agents.InstallOpsAgent(ctx, logger.ToMainLog(), vm, agents.LocationFromEnvVars()); err != nil {
 		// InstallOpsAgent does its own retries.
 		return nonRetryable, fmt.Errorf("error installing agent: %v", err)
+	}
+
+	if _, err = runScriptFromScriptsDir(ctx, logger.ToMainLog(), vm, path.Join("applications", app, "enable"), nil); err != nil {
+		return nonRetryable, fmt.Errorf("error enabling %s: %v", app, err)
 	}
 
 	if err := agents.RestartOpsAgent(ctx, logger.ToMainLog(), vm); err != nil {
