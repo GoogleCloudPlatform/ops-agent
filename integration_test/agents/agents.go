@@ -735,7 +735,7 @@ type PackageLocation struct {
 // LocationFromEnvVars assembles a PackageLocation from environment variables.
 func LocationFromEnvVars() PackageLocation {
 	return PackageLocation{
-		uapPluginPackageInGCS:   os.Getenv("UAP_PLUGIN_PACKAGE_IN_GCS"),
+		uapPluginPackageInGCS:   "gs://ops-agent-uap-plugin/debian12-bookworm/google-cloud-ops-agent-plugin_2.54.0-bookworm-amd64.tar.gz",
 		packagesInGCS:           os.Getenv("AGENT_PACKAGES_IN_GCS"),
 		repoSuffix:              os.Getenv("REPO_SUFFIX"),
 		repoCodename:            os.Getenv("REPO_CODENAME"),
@@ -961,7 +961,7 @@ func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm
 	if _, err := gce.RunRemotely(ctx, logger, vm, "ls -la /tmp/agentUpload"); err != nil {
 		return err
 	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, "sudo tar -xzf /tmp/agentUpload/google-cloud-ops-agent-plugin_2.54.0-bookworm-amd64.tar.gz -C ~/ && ls -la && sudo chown -R test_user:test_user . && ls -la"); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "sudo tar -xzf /tmp/agentUpload/google-cloud-ops-agent-plugin_2.54.0-bookworm-amd64.tar.gz --no-overwrite-dir -C ~/ && ls -la"); err != nil {
 		return err
 	}
 	// Print the contents of /tmp/agentUpload into the logs.
