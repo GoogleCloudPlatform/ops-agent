@@ -4182,7 +4182,7 @@ func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 			set -o pipefail
 			ls -la 
 			sudo ls -la 
-			gsutil cp \
+			sudo gsutil cp \
 				"gs://ops-agents-public-buckets-vendored-deps/mirrored-content/go.dev/dl/go%s.linux-%s.tar.gz" - | \
 				sudo tar --directory /usr/local -xzf /dev/stdin`, goVersion, goArch)
 	}
