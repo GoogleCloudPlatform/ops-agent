@@ -36,6 +36,7 @@ cp $WS/opt/google-cloud-ops-agent/libexec/google_cloud_ops_agent_wrapper ${PLUGI
 cp $WS/opt/google-cloud-ops-agent/libexec/google_cloud_ops_agent_diagnostics ${PLUGIN_DIR}/libexec/google_cloud_ops_agent_diagnostics
 
 cp $WS/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol ${PLUGIN_DIR}/subagents/opentelemetry-collector/otelopscol
+cp $WS/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar ${PLUGIN_DIR}/subagents/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar
 cp $WS/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit ${PLUGIN_DIR}/subagents/fluent-bit/bin/fluent-bit
 
 tar -cvzf /google-cloud-ops-agent-plugin_${PKG_VERSION}-${TARGET_NAME}-$TARGETARCH.tar.gz -C $PLUGIN_DIR/ .
