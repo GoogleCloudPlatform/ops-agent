@@ -18,6 +18,7 @@
 # script.
 set -x -e
 prefix=/opt/google-cloud-ops-agent
+foo=bar
 
 . VERSION
 if [ -z "$BUILD_DISTRO" ]; then
