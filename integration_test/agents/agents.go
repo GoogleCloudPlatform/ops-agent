@@ -843,7 +843,7 @@ func getStartOpsAgentPluginCmd(imageSpec string, port string) string {
 	if gce.IsWindows(imageSpec) {
 		return ""
 	}
-	return fmt.Sprintf("nohup ~/plugin --address=localhost:%s --errorlogfile=errorlog.txt --protocol=tcp 1>/dev/null 2>/dev/null &", port)
+	return fmt.Sprintf("sudo nohup ~/plugin --address=localhost:%s --errorlogfile=errorlog.txt --protocol=tcp 1>/dev/null 2>/dev/null &", port)
 }
 
 // StartOpsAgentPlugin starts the Ops Agent Plugin gRPC server on the testing VM in the background.
@@ -961,7 +961,7 @@ func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm
 	if _, err := gce.RunRemotely(ctx, logger, vm, "ls -la && ls /tmp/agentUpload"); err != nil {
 		return err
 	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, "sudo tar -xzf /tmp/agentUpload/google-cloud-ops-agent-plugin_2.54.0-bookworm-amd64.tar.gz -C ~/ && ls -la"); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "sudo tar -xzf /tmp/agentUpload/google-cloud-ops-agent-plugin_2.54.0-bookworm-amd64.tar.gz -C ~/ && ls -la && sudo chown -R test_user:test_user . && ls -la"); err != nil {
 		return err
 	}
 	// Print the contents of /tmp/agentUpload into the logs.
