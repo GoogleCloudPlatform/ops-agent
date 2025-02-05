@@ -958,7 +958,7 @@ func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm
 		return fmt.Errorf("error copying down agent package from GCS: %v", err)
 	}
 	// Print the contents of /tmp/agentUpload into the logs.
-	if _, err := gce.RunRemotely(ctx, logger, vm, "ls -la && ls /tmp/agentUpload"); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "ls -la /tmp/agentUpload"); err != nil {
 		return err
 	}
 	if _, err := gce.RunRemotely(ctx, logger, vm, "sudo tar -xzf /tmp/agentUpload/google-cloud-ops-agent-plugin_2.54.0-bookworm-amd64.tar.gz -C ~/ && ls -la && sudo chown -R test_user:test_user . && ls -la"); err != nil {
