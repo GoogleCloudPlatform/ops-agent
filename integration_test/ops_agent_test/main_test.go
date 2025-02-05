@@ -1657,6 +1657,9 @@ func TestResourceNameLabel(t *testing.T) {
 
 func TestLogFilePathLabel(t *testing.T) {
 	t.Parallel()
+	if agents.IsOpsAgentUAPPlugin() {
+		t.SkipNow()
+	}
 	t.Run("fluent-bit", func(t *testing.T) {
 		testLogFilePathLabel(t, false)
 	})
