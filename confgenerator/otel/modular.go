@@ -135,7 +135,7 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 	extensions := map[string]interface{}{
 		// "file_storage": nil,
 		"file_storage/all_settings": map[string]interface{}{
-			"directory":        "/var/lib/google-cloud-ops-agent/otel/buffers/",
+			"directory":        "/tmp/otel/buffers",
 			"create_directory": true,
 			"timeout":          "1s",
 			"compaction": map[string]interface{}{
