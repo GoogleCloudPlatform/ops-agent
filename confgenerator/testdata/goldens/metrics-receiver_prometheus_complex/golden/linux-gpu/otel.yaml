@@ -11,6 +11,17 @@ exporters:
     metric:
       add_metric_suffixes: false
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
+extensions:
+  file_storage: null
+  file_storage/all_settings:
+    compaction:
+      directory: /tmp/
+      max_transaction_size: 65536
+      on_start: true
+    create_directory: true
+    directory: /var/lib/google-cloud-ops-agent/otel/buffers/
+    fsync: false
+    timeout: 1s
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
@@ -626,6 +637,9 @@ receivers:
             machine_type: test-machine-type
             namespace: test-instance-id/test-instance-name
 service:
+  extensions:
+  - file_storage
+  - file_storage/all_settings
   pipelines:
     metrics/default__pipeline_hostmetrics:
       exporters:

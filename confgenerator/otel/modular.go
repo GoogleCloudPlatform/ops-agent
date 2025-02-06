@@ -132,22 +132,28 @@ type ModularConfig struct {
 //	exporters: [googlecloud]
 func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 	pl := platform.FromContext(ctx)
+	extensions := map[string]interface{}{
+		"file_storage": nil,
+		"file_storage/all_settings": map[string]interface{}{
+			"directory":        "/var/lib/google-cloud-ops-agent/otel/buffers/",
+			"create_directory": true,
+			"timeout":          "1s",
+			"compaction": map[string]interface{}{
+				"on_start":             true,
+				"directory":            "/tmp/",
+				"max_transaction_size": 65536,
+			},
+			"fsync": false,
+		},
+	}
 	receivers := map[string]interface{}{}
 	processors := map[string]interface{}{}
 	exporters := map[string]interface{}{}
 	exporterNames := map[ExporterType]string{}
 	pipelines := map[string]interface{}{}
-	service := map[string]map[string]interface{}{
-		"pipelines": pipelines,
-		"telemetry": map[string]interface{}{
-			"metrics": map[string]interface{}{
-				// TODO: switch to metrics.readers so we can stop binding a port
-				"address": fmt.Sprintf("0.0.0.0:%d", MetricsPort),
-			},
-		},
-	}
+	telemetry := map[string]interface{}{}
 	if c.DisableMetrics {
-		service["telemetry"]["metrics"] = map[string]interface{}{
+		telemetry["metrics"] = map[string]interface{}{
 			"level": "none",
 		}
 	}
@@ -159,10 +165,21 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 		logs["encoding"] = "json"
 	}
 	if len(logs) > 0 {
-		service["telemetry"]["logs"] = logs
+		telemetry["logs"] = logs
+	}
+	service := map[string]interface{}{
+		"extensions": []string{"file_storage", "file_storage/all_settings"},
+		"pipelines":  pipelines,
+		"telemetry": map[string]interface{}{
+			"metrics": map[string]interface{}{
+				// TODO: switch to metrics.readers so we can stop binding a port
+				"address": fmt.Sprintf("0.0.0.0:%d", MetricsPort),
+			},
+		},
 	}
 
 	configMap := map[string]interface{}{
+		"extensions": extensions,
 		"receivers":  receivers,
 		"processors": processors,
 		"exporters":  exporters,
