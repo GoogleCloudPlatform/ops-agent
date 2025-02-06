@@ -79,8 +79,6 @@ docker run \
   build_image \
   bash <<EOF
     cp /google-cloud-ops-agent*.${PKGFORMAT} /artifacts
-    ls -l /
-    ls  -l *
     cp /google-cloud-ops-agent-plugin*.tar.gz /artifacts
 
     if [[ "${PKGFORMAT}" == "rpm" && "${SKIP_SIGNING}" != "true" ]]; then
