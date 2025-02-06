@@ -64,7 +64,8 @@ docker buildx build . \
   -t build_image \
   --load \
   "${build_params[@]}"
-
+echo "Current dir: "
+pwd
 SIGNING_DIR="$(pwd)/kokoro/scripts/build/signing"
 if [[ "${PKGFORMAT}" == "rpm" && "${SKIP_SIGNING}" != "true" ]]; then
   RPM_SIGNING_KEY="${KOKORO_KEYSTORE_DIR}/71565_rpm-signing-key"
@@ -78,6 +79,8 @@ docker run \
   build_image \
   bash <<EOF
     cp /google-cloud-ops-agent*.${PKGFORMAT} /artifacts
+    ls -l /
+    ls  -l *
     cp /google-cloud-ops-agent-plugin*.tar.gz /artifacts
 
     if [[ "${PKGFORMAT}" == "rpm" && "${SKIP_SIGNING}" != "true" ]]; then
