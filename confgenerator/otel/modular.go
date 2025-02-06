@@ -133,7 +133,7 @@ type ModularConfig struct {
 func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 	pl := platform.FromContext(ctx)
 	extensions := map[string]interface{}{
-		"file_storage": nil,
+		// "file_storage": nil,
 		"file_storage/all_settings": map[string]interface{}{
 			"directory":        "/var/lib/google-cloud-ops-agent/otel/buffers/",
 			"create_directory": true,
@@ -168,7 +168,7 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 		telemetry["logs"] = logs
 	}
 	service := map[string]interface{}{
-		"extensions": []string{"file_storage", "file_storage/all_settings"},
+		"extensions": []string{"file_storage/all_settings"},
 		"pipelines":  pipelines,
 		"telemetry": map[string]interface{}{
 			"metrics": map[string]interface{}{
