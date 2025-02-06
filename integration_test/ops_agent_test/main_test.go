@@ -777,6 +777,85 @@ func TestCustomLogFile(t *testing.T) {
 	})
 }
 
+func TestPluginGetStatusReturnsHealthyStatusOnSuccessfulOpsAgentStart(t *testing.T) {
+	t.Parallel()
+	if !agents.IsOpsAgentUAPPlugin() {
+		t.SkipNow()
+	}
+
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if !strings.Contains(cmdOut.Stdout, "The Ops Agent Plugin is running ok.") {
+			t.Error("expected the plugin to report that the Ops Agent is running")
+		}
+	})
+
+}
+
+func TestPluginGetStatusReturnsUnhealthyStatusOnSubAgentTermination(t *testing.T) {
+	t.Parallel()
+	if !agents.IsOpsAgentUAPPlugin() {
+		t.SkipNow()
+	}
+
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if !strings.Contains(cmdOut.Stdout, "The Ops Agent Plugin is running ok.") {
+			t.Error("expected the plugin to report that the Ops Agent is running")
+		}
+
+		_, processName, err := fetchPIDAndProcessName(ctx, logger, vm, []string{"fluent-bit"})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		logger.Printf("TestPluginGetStatusReturnsUnhealthyStatusOnSubAgentTermination: Found %s", processName)
+
+		// Simulate a subagent termination.
+		if err := terminateProcess(ctx, logger, vm, processName); err != nil {
+			t.Fatal(err)
+		}
+
+		cmdOut, err = gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// A subagent termination should terminate the entire Ops Agent. In this case, the plugin is expected to return a non-healthy status for the Ops Agent.
+		if !strings.Contains(cmdOut.Stdout, "\"code\": 1") {
+			t.Error("expected the plugin to report that the Ops Agent is not running")
+		}
+
+		pid, err := fetchPID(ctx, logger, vm, "otel")
+		if pid != "" {
+			t.Error("expected the plugin to terminate the other subagent when one crashes")
+		}
+	})
+
+}
+
 func TestCustomLogFormat(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
