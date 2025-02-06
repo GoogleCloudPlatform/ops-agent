@@ -883,7 +883,7 @@ func InstallPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, 
 	if gce.IsWindows(vm.ImageSpec) {
 		return installWindowsPackageFromGCS(ctx, logger, vm, gcsPath)
 	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, "mkdir -p /tmp/agentUpload"); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "mkdir -p /tmp/agentUpload /tmp/agentPlugin"); err != nil {
 		return err
 	}
 	if err := gce.InstallGsutilIfNeeded(ctx, logger, vm); err != nil {
@@ -897,6 +897,9 @@ func InstallPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, 
 		return err
 	}
 	if _, err := gce.RunRemotely(ctx, logger, vm, "rm /tmp/agentUpload/*dbgsym* || echo nothing to delete"); err != nil {
+		return err
+	}
+	if _, err := gce.RunRemotely(ctx, logger, vm, "mv /tmp/agentUpload/*.tar.gz /tmp/agentPlugin || echo nothing to move"); err != nil {
 		return err
 	}
 	if IsRPMBased(vm.ImageSpec) {
