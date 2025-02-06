@@ -4701,7 +4701,7 @@ func testBufferLimitSizeOpsAgent(t *testing.T, otel bool) {
       - /var/log/messages
       - /var/log/syslog
   service:
-	experimental_otel_logging: %v
+    experimental_otel_logging: %v
     pipelines:
       default_pipeline:
         receivers: [log_syslog]
