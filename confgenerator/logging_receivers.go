@@ -720,7 +720,7 @@ func (r LoggingReceiverSystemd) Pipelines(ctx context.Context) ([]otel.ReceiverP
 	})
 	receiver_config := map[string]any{
 		"start_at":  "beginning",
-		"priority":  []string{"debug", "info", "notice", "warning", "error", "critical", "alert", "emergency"},
+		"priority":  "",
 		"operators": operators,
 	}
 	return []otel.ReceiverPipeline{{
