@@ -4665,7 +4665,7 @@ func TestDisableSelfLogCollection(t *testing.T) {
 
 func bufferDirPathForLoggingBacked(otel bool) string {
 	if otel {
-		return "/tmp/otel/buffers"
+		return "/tmp/otelcol"
 	}
 	return "/var/lib/google-cloud-ops-agent/fluent-bit/buffers/tail.1/"
 }

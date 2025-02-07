@@ -6,6 +6,13 @@ exporters:
       resource_filters: []
       service_resource_labels: false
       skip_create_descriptor: true
+    retry_on_failure:
+      enabled: true
+      initial_interval: 1s
+      max_elapsed_time: 120s
+      max_interval: 300s
+    sending_queue:
+      storage: file_storage/all_settings
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
   googlecloud/otel:
     metric:
@@ -14,6 +21,13 @@ exporters:
       resource_filters: []
       service_resource_labels: false
       skip_create_descriptor: true
+    retry_on_failure:
+      enabled: true
+      initial_interval: 1s
+      max_elapsed_time: 120s
+      max_interval: 300s
+    sending_queue:
+      storage: file_storage/all_settings
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
   googlemanagedprometheus:
     metric:
@@ -21,7 +35,8 @@ exporters:
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
 extensions:
   file_storage/all_settings:
-    directory: /var/lib/google-cloud-ops-agent/opentelemetry-collector
+    create_directory: true
+    directory: /tmp/otelcol
     timeout: 1s
 processors:
   agentmetrics/hostmetrics_0:
@@ -610,13 +625,6 @@ service:
       - resourcedetection/_global_1
       receivers:
       - otlp/otlp
-  retry_on_failure:
-    enabled: true
-    initial_interval: 1s
-    max_elapsed_time: 120s
-    max_interval: 300s
-  sending_queue:
-    storage: file_storage/all_settings
   telemetry:
     metrics:
       address: 0.0.0.0:20201
