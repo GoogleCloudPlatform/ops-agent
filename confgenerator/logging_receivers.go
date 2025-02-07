@@ -684,8 +684,45 @@ func (r LoggingReceiverSystemd) Components(ctx context.Context, tag string) []fl
 
 func (r LoggingReceiverSystemd) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	operators := []map[string]any{}
-	receiver_config := map[string]any{}
-	receiver_config["operators"] = operators
+	operators = append(operators, map[string]any{
+		"type":       "severity_parser",
+		"parse_from": "body.PRIORITY",
+		"mapping": map[string]string{
+			"DEBUG":     "7",
+			"INFO":      "6",
+			"NOTICE":    "5",
+			"WARNING":   "4",
+			"ERROR":     "3",
+			"CRITICAL":  "2",
+			"ALERT":     "1",
+			"EMERGENCY": "0",
+		},
+	})
+	operators = append(operators, map[string]any{
+		"type": "move",
+		"from": "body.severity",
+		"to":   `body."logging.googleapis.com/severity"`,
+	})
+	operators = append(operators, map[string]any{
+		"type": "copy",
+		"from": "body.CODE_FILE",
+		"to":   `body."logging.googleapis.com/sourceLocation/file"`,
+	})
+	operators = append(operators, map[string]any{
+		"type": "copy",
+		"from": "body.CODE_FUNC",
+		"to":   `body."logging.googleapis.com/sourceLocation/func"`,
+	})
+	operators = append(operators, map[string]any{
+		"type": "copy",
+		"from": "body.CODE_LINE",
+		"to":   `body."logging.googleapis.com/sourceLocation/line"`,
+	})
+	receiver_config := map[string]any{
+		"start_at":  "beginning",
+		"priority":  []string{"debug", "info", "notice", "warning", "error", "critical", "alert", "emergency"},
+		"operators": operators,
+	}
 	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type:   "journald",
