@@ -16,15 +16,8 @@ exporters:
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
 extensions:
-  file_storage: null
   file_storage/all_settings:
-    compaction:
-      directory: /tmp/
-      max_transaction_size: 65536
-      on_start: true
-    create_directory: true
-    directory: /var/lib/google-cloud-ops-agent/otel/buffers/
-    fsync: false
+    directory: /var/lib/google-cloud-ops-agent/opentelemetry-collector
     timeout: 1s
 processors:
   agentmetrics/hostmetrics_0:
@@ -532,7 +525,6 @@ receivers:
     endpoint: localhost:2181
 service:
   extensions:
-  - file_storage
   - file_storage/all_settings
   pipelines:
     metrics/default__pipeline_hostmetrics:
@@ -585,6 +577,13 @@ service:
       - resourcedetection/_global_0
       receivers:
       - zookeeper/zookeeper
+  retry_on_failure:
+    enabled: true
+    initial_interval: 1s
+    max_elapsed_time: 120s
+    max_interval: 300s
+  sending_queue:
+    storage: file_storage/all_settings
   telemetry:
     metrics:
       address: 0.0.0.0:20201

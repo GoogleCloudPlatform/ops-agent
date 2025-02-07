@@ -135,15 +135,9 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 	extensions := map[string]interface{}{
 		// "file_storage": nil,
 		"file_storage/all_settings": map[string]interface{}{
-			"directory":        "/tmp/otel/buffers",
-			"create_directory": true,
-			"timeout":          "1s",
-			"compaction": map[string]interface{}{
-				"on_start":             true,
-				"directory":            "/tmp/",
-				"max_transaction_size": 65536,
-			},
-			"fsync": false,
+			"directory": "/var/lib/google-cloud-ops-agent/opentelemetry-collector",
+			//"create_directory": true,
+			"timeout": "1s",
 		},
 	}
 	receivers := map[string]interface{}{}
@@ -175,6 +169,15 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 				// TODO: switch to metrics.readers so we can stop binding a port
 				"address": fmt.Sprintf("0.0.0.0:%d", MetricsPort),
 			},
+		},
+		"retry_on_failure": map[string]interface{}{
+			"enabled":          true,
+			"initial_interval": "1s",
+			"max_interval":     "300s",
+			"max_elapsed_time": "120s",
+		},
+		"sending_queue": map[string]any{
+			"storage": "file_storage/all_settings",
 		},
 	}
 
