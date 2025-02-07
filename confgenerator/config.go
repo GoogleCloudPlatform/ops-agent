@@ -914,8 +914,10 @@ func (uc *UnifiedConfig) MetricsReceivers() (map[string]MetricsReceiver, error) 
 	}
 	if uc.Combined != nil {
 		for k, v := range uc.Combined.Receivers {
-			if _, ok := uc.Metrics.Receivers[k]; ok {
-				return nil, fmt.Errorf("metrics receiver %q has the same name as combined receiver %q", k, k)
+			if uc.Metrics != nil {
+				if _, ok := uc.Metrics.Receivers[k]; ok {
+					return nil, fmt.Errorf("metrics receiver %q has the same name as combined receiver %q", k, k)
+				}
 			}
 			if v, ok := v.(MetricsReceiver); ok {
 				validReceivers[k] = v
@@ -1137,6 +1139,23 @@ func (uc *UnifiedConfig) OTelLoggingReceivers(ctx context.Context) (map[string]O
 		}
 	}
 	return validReceivers, nil
+}
+
+func (uc *UnifiedConfig) OTelLoggingSupported(ctx context.Context) bool {
+	ucLogging := UnifiedConfig{Logging: uc.Logging}
+	ucLoggingCopy, err := ucLogging.DeepCopy(ctx)
+	if err != nil {
+		return false
+	}
+	if ucLoggingCopy.Logging == nil {
+		return true
+	}
+	if ucLoggingCopy.Logging.Service == nil {
+		ucLoggingCopy.Logging.Service = &LoggingService{}
+	}
+	ucLoggingCopy.Logging.Service.OTelLogging = true
+	_, err = ucLoggingCopy.GenerateOtelConfig(ctx)
+	return err == nil
 }
 
 func (uc *UnifiedConfig) ValidateMetrics(ctx context.Context) error {
