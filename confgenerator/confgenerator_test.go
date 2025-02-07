@@ -286,7 +286,7 @@ func generateConfigs(pc platformConfig, testDir string) (got map[string]string, 
 	}
 
 	// Feature Tracking
-	extractedFeatures, err := confgenerator.ExtractFeatures(userConf)
+	extractedFeatures, err := confgenerator.ExtractFeatures(ctx, userConf)
 	if err != nil {
 		return
 	}
