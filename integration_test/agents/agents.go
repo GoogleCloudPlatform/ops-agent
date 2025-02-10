@@ -710,9 +710,6 @@ func getRestartOpsAgentCmd(imageSpec string) string {
 // PackageLocation describes a location where packages
 // (currently, only the Ops Agent packages) live.
 type PackageLocation struct {
-	// If provided, a URL for a file in GCS containing a .tar.gz file
-	// to install on the testing VMs.
-	uapPluginPackageInGCS string
 	// If provided, a URL for a directory in GCS containing .deb/.rpm/.goo files
 	// to install on the testing VMs.
 	// This setting is mutually exclusive with repoSuffix.
@@ -735,7 +732,6 @@ type PackageLocation struct {
 // LocationFromEnvVars assembles a PackageLocation from environment variables.
 func LocationFromEnvVars() PackageLocation {
 	return PackageLocation{
-		uapPluginPackageInGCS:   "gs://ops-agent-uap-plugin/debian12-bookworm/google-cloud-ops-agent-plugin_2.54.0-bookworm-amd64.tar.gz",
 		packagesInGCS:           os.Getenv("AGENT_PACKAGES_IN_GCS"),
 		repoSuffix:              os.Getenv("REPO_SUFFIX"),
 		repoCodename:            os.Getenv("REPO_CODENAME"),
@@ -769,13 +765,14 @@ func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, locati
 	if location.packagesInGCS != "" && location.repoSuffix != "" {
 		return fmt.Errorf("invalid PackageLocation: cannot provide both location.packagesInGCS and location.repoSuffix. location=%#v", location)
 	}
-	if location.uapPluginPackageInGCS != "" {
-		return InstallOpsAgentUAPPluginFromGCS(ctx, logger, vm, location.uapPluginPackageInGCS)
-	}
+
 	if location.artifactRegistryRegion != "" && location.repoSuffix == "" {
 		return fmt.Errorf("invalid PackageLocation: location.artifactRegistryRegion was nonempty yet location.repoSuffix was empty. location=%#v", location)
 	}
 	if location.packagesInGCS != "" {
+		if IsOpsAgentUAPPlugin() {
+			return InstallOpsAgentUAPPluginFromGCS(ctx, logger, vm, location.packagesInGCS)
+		}
 		return InstallPackageFromGCS(ctx, logger, vm, location.packagesInGCS)
 	}
 
@@ -945,7 +942,7 @@ func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm
 	if gce.IsWindows(vm.ImageSpec) {
 		return fmt.Errorf("Ops Agent UAP Plugin does not support Windows yet")
 	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, "mkdir -p /tmp/agentUpload"); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "mkdir -p /tmp/agentUpload /tmp/agentPlugin"); err != nil {
 		return err
 	}
 	if err := gce.InstallGsutilIfNeeded(ctx, logger, vm); err != nil {
@@ -954,17 +951,21 @@ func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm
 	if err := gce.InstallGrpcurlIfNeeded(ctx, logger, vm); err != nil {
 		return err
 	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, "gsutil cp "+gcsPath+" /tmp/agentUpload"); err != nil {
+
+	if _, err := gce.RunRemotely(ctx, logger, vm, "sudo gsutil cp -r "+gcsPath+"/* /tmp/agentUpload"); err != nil {
 		return fmt.Errorf("error copying down agent package from GCS: %v", err)
 	}
-	// Print the contents of /tmp/agentUpload into the logs.
-	if _, err := gce.RunRemotely(ctx, logger, vm, "ls -la /tmp/agentUpload"); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "mv /tmp/agentUpload/*.tar.gz /tmp/agentPlugin || echo nothing to move"); err != nil {
 		return err
 	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, "sudo tar -xzf /tmp/agentUpload/google-cloud-ops-agent-plugin_2.54.0-bookworm-amd64.tar.gz --no-overwrite-dir -C ~/ && ls -la"); err != nil {
+	// Print the contents of /tmp/agentPlugin into the logs.
+	if _, err := gce.RunRemotely(ctx, logger, vm, "ls -la /tmp/agentPlugin"); err != nil {
 		return err
 	}
-	// Print the contents of /tmp/agentUpload into the logs.
+	if _, err := gce.RunRemotely(ctx, logger, vm, "sudo find /tmp/agentPlugin -maxdepth 1 -name \"google-cloud-ops-agent-plugin*.tar.gz\" -print0 | xargs -0 -I {} sudo tar -xzf {} --no-overwrite-dir -C ~/ && ls -la"); err != nil {
+		return err
+	}
+	// Print the contents of the home dir into the logs.
 	if _, err := gce.RunRemotely(ctx, logger, vm, "ls -la ~/"); err != nil {
 		return err
 	}
@@ -1049,5 +1050,7 @@ func GetOtelConfigPath(imageSpec string) string {
 }
 
 func IsOpsAgentUAPPlugin() bool {
-	return LocationFromEnvVars().uapPluginPackageInGCS != ""
+	// ok is true when the env variable is preset in the environment.
+	_, ok := os.LookupEnv("IS_OPS_AGENT_UAP_PLUGIN")
+	return ok
 }

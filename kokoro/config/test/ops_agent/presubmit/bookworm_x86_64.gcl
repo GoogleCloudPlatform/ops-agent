@@ -5,6 +5,7 @@ config build = common.ops_agent_test {
     environment {
       TARGET = 'bookworm'
       ARCH = 'x86_64'
+      IS_OPS_AGENT_UAP_PLUGIN = 'true'
     }
   }
 }
