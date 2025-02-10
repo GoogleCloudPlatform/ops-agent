@@ -249,7 +249,7 @@ func generateConfigs(pc platformConfig, testDir string) (got map[string]string, 
 		}
 	}()
 
-	uc, err := confgenerator.MergeConfFiles(
+	mergedUc, err := confgenerator.MergeConfFiles(
 		ctx,
 		filepath.Join("testdata", testDir, inputFileName),
 		apps.BuiltInConfStructs,
@@ -260,7 +260,7 @@ func generateConfigs(pc platformConfig, testDir string) (got map[string]string, 
 	got[builtinConfigFileName] = apps.BuiltInConfStructs[pc.platform.Name()].String()
 
 	// Fluent Bit configs
-	flbGeneratedConfigs, err := uc.GenerateFluentBitConfigs(ctx,
+	flbGeneratedConfigs, err := mergedUc.GenerateFluentBitConfigs(ctx,
 		pc.defaultLogsDir,
 		pc.defaultStateDir,
 	)
@@ -272,7 +272,7 @@ func generateConfigs(pc platformConfig, testDir string) (got map[string]string, 
 	}
 
 	// Otel configs
-	otelGeneratedConfig, err := uc.GenerateOtelConfig(ctx)
+	otelGeneratedConfig, err := mergedUc.GenerateOtelConfig(ctx)
 	if err != nil {
 		return
 	}
@@ -280,13 +280,13 @@ func generateConfigs(pc platformConfig, testDir string) (got map[string]string, 
 
 	inputBytes, err := os.ReadFile(filepath.Join("testdata", testDir, inputFileName))
 
-	userConf, err := confgenerator.UnmarshalYamlToUnifiedConfig(ctx, inputBytes)
+	userUc, err := confgenerator.UnmarshalYamlToUnifiedConfig(ctx, inputBytes)
 	if err != nil {
 		return
 	}
 
 	// Feature Tracking
-	extractedFeatures, err := confgenerator.ExtractFeatures(ctx, userConf)
+	extractedFeatures, err := confgenerator.ExtractFeatures(ctx, userUc, mergedUc)
 	if err != nil {
 		return
 	}

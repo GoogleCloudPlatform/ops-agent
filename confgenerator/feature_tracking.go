@@ -72,43 +72,43 @@ type CustomFeatures interface {
 // ExtractFeatures fields that containing a tracking tag will be tracked.
 // Automatic collection of bool or int fields. Any value that exists on tracking
 // tag will be used instead of value from UnifiedConfig.
-func ExtractFeatures(ctx context.Context, uc *UnifiedConfig) ([]Feature, error) {
-	allFeatures := getOverriddenDefaultPipelines(uc)
-	allFeatures = append(allFeatures, getSelfLogCollection(uc))
-	allFeatures = append(allFeatures, getOTelLoggingSupportedConfig(ctx, uc))
+func ExtractFeatures(ctx context.Context, userUc, mergedUc *UnifiedConfig) ([]Feature, error) {
+	allFeatures := getOverriddenDefaultPipelines(userUc)
+	allFeatures = append(allFeatures, getSelfLogCollection(userUc))
+	allFeatures = append(allFeatures, getOTelLoggingSupportedConfig(ctx, mergedUc))
 
 	var err error
 	var tempTrackedFeatures []Feature
-	if uc.HasMetrics() {
-		tempTrackedFeatures, err = trackedMappedComponents("metrics", "receivers", uc.Metrics.Receivers)
+	if userUc.HasMetrics() {
+		tempTrackedFeatures, err = trackedMappedComponents("metrics", "receivers", userUc.Metrics.Receivers)
 		if err != nil {
 			return nil, err
 		}
 		allFeatures = append(allFeatures, tempTrackedFeatures...)
 
-		tempTrackedFeatures, err = trackedMappedComponents("metrics", "processors", uc.Metrics.Processors)
-		if err != nil {
-			return nil, err
-		}
-		allFeatures = append(allFeatures, tempTrackedFeatures...)
-	}
-
-	if uc.HasLogging() {
-		tempTrackedFeatures, err = trackedMappedComponents("logging", "receivers", uc.Logging.Receivers)
-		if err != nil {
-			return nil, err
-		}
-		allFeatures = append(allFeatures, tempTrackedFeatures...)
-
-		tempTrackedFeatures, err = trackedMappedComponents("logging", "processors", uc.Logging.Processors)
+		tempTrackedFeatures, err = trackedMappedComponents("metrics", "processors", userUc.Metrics.Processors)
 		if err != nil {
 			return nil, err
 		}
 		allFeatures = append(allFeatures, tempTrackedFeatures...)
 	}
 
-	if uc.HasCombined() {
-		tempTrackedFeatures, err = trackedMappedComponents("combined", "receivers", uc.Combined.Receivers)
+	if userUc.HasLogging() {
+		tempTrackedFeatures, err = trackedMappedComponents("logging", "receivers", userUc.Logging.Receivers)
+		if err != nil {
+			return nil, err
+		}
+		allFeatures = append(allFeatures, tempTrackedFeatures...)
+
+		tempTrackedFeatures, err = trackedMappedComponents("logging", "processors", userUc.Logging.Processors)
+		if err != nil {
+			return nil, err
+		}
+		allFeatures = append(allFeatures, tempTrackedFeatures...)
+	}
+
+	if userUc.HasCombined() {
+		tempTrackedFeatures, err = trackedMappedComponents("combined", "receivers", userUc.Combined.Receivers)
 		if err != nil {
 			return nil, err
 		}
