@@ -71,6 +71,10 @@ func (LoggingProcessorZookeeperGeneral) Type() string {
 	return "zookeeper_general"
 }
 
+func (p LoggingProcessorZookeeperGeneral) Processors(ctx context.Context) ([]otel.Component, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogProcessorError()
+}
+
 func (p LoggingProcessorZookeeperGeneral) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	c := []fluentbit.Component{}
 
@@ -131,6 +135,10 @@ func (p LoggingProcessorZookeeperGeneral) Components(ctx context.Context, tag, u
 type LoggingReceiverZookeeperGeneral struct {
 	LoggingProcessorZookeeperGeneral        `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
+}
+
+func (r LoggingReceiverZookeeperGeneral) Pipelines(context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogReceiverError()
 }
 
 func (r LoggingReceiverZookeeperGeneral) Components(ctx context.Context, tag string) []fluentbit.Component {

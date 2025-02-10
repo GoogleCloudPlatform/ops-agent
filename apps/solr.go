@@ -63,6 +63,10 @@ func (LoggingProcessorSolrSystem) Type() string {
 	return "solr_system"
 }
 
+func (p LoggingProcessorSolrSystem) Processors(ctx context.Context) ([]otel.Component, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogProcessorError()
+}
+
 func (p LoggingProcessorSolrSystem) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
@@ -117,6 +121,10 @@ func (p LoggingProcessorSolrSystem) Components(ctx context.Context, tag string, 
 type LoggingReceiverSolrSystem struct {
 	LoggingProcessorSolrSystem              `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+}
+
+func (r LoggingReceiverSolrSystem) Pipelines(context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogReceiverError()
 }
 
 func (r LoggingReceiverSolrSystem) Components(ctx context.Context, tag string) []fluentbit.Component {

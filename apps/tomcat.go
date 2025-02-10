@@ -65,6 +65,10 @@ func (LoggingProcessorTomcatSystem) Type() string {
 	return "tomcat_system"
 }
 
+func (p LoggingProcessorTomcatSystem) Processors(ctx context.Context) ([]otel.Component, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogProcessorError()
+}
+
 func (p LoggingProcessorTomcatSystem) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
@@ -130,6 +134,10 @@ type SystemLoggingReceiverTomcat struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
+func (r SystemLoggingReceiverTomcat) Pipelines(context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogReceiverError()
+}
+
 func (r SystemLoggingReceiverTomcat) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
@@ -147,6 +155,10 @@ type LoggingProcessorTomcatAccess struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 }
 
+func (p LoggingProcessorTomcatAccess) Processors(ctx context.Context) ([]otel.Component, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogProcessorError()
+}
+
 func (p LoggingProcessorTomcatAccess) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	return genericAccessLogParser(ctx, p.Type(), tag, uid)
 }
@@ -158,6 +170,10 @@ func (LoggingProcessorTomcatAccess) Type() string {
 type AccessSystemLoggingReceiverTomcat struct {
 	LoggingProcessorTomcatAccess            `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+}
+
+func (r AccessSystemLoggingReceiverTomcat) Pipelines(context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogReceiverError()
 }
 
 func (r AccessSystemLoggingReceiverTomcat) Components(ctx context.Context, tag string) []fluentbit.Component {

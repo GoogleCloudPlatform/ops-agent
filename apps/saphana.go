@@ -31,6 +31,10 @@ func (LoggingProcessorSapHanaTrace) Type() string {
 	return "saphana"
 }
 
+func (p LoggingProcessorSapHanaTrace) Processors(ctx context.Context) ([]otel.Component, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogProcessorError()
+}
+
 func (p LoggingProcessorSapHanaTrace) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegex{
 		// Undocumented Format: [thread_id]{connection_id}[transaction_id/update_transaction_id] timestamp severity_flag component source_file : message
@@ -98,6 +102,10 @@ func (p LoggingProcessorSapHanaTrace) Components(ctx context.Context, tag string
 type LoggingReceiverSapHanaTrace struct {
 	LoggingProcessorSapHanaTrace            `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+}
+
+func (r LoggingReceiverSapHanaTrace) Pipelines(context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogReceiverError()
 }
 
 func (r LoggingReceiverSapHanaTrace) Components(ctx context.Context, tag string) []fluentbit.Component {

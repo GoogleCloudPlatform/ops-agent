@@ -72,6 +72,14 @@ func googleManagedPrometheusExporter(userAgent string) otel.Component {
 	}
 }
 
+func GetUnsupportedOtelLogReceiverError() error {
+	return fmt.Errorf("This receiver is not supported by otel logging.")
+}
+
+func GetUnsupportedOtelLogProcessorError() error {
+	return fmt.Errorf("This processor is not supported by otel logging.")
+}
+
 func (uc *UnifiedConfig) getOTelLogLevel() string {
 	logLevel := "info"
 	if uc.Metrics != nil && uc.Metrics.Service != nil && uc.Metrics.Service.LogLevel != "" {

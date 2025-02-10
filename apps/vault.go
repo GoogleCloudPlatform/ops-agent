@@ -315,6 +315,10 @@ func (LoggingProcessorVaultJson) Type() string {
 	return "vault_audit"
 }
 
+func (p LoggingProcessorVaultJson) Processors(ctx context.Context) ([]otel.Component, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogProcessorError()
+}
+
 func (p LoggingProcessorVaultJson) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	c := []fluentbit.Component{}
 
@@ -342,6 +346,10 @@ type LoggingReceiverVaultAuditJson struct {
 	LoggingProcessorVaultJson               `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
 	IncludePaths                            []string `yaml:"include_paths,omitempty" validate:"required"`
+}
+
+func (r LoggingReceiverVaultAuditJson) Pipelines(context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogReceiverError()
 }
 
 func (r LoggingReceiverVaultAuditJson) Components(ctx context.Context, tag string) []fluentbit.Component {

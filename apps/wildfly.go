@@ -69,6 +69,10 @@ func (LoggingProcessorWildflySystem) Type() string {
 	return "wildfly_system"
 }
 
+func (p LoggingProcessorWildflySystem) Processors(ctx context.Context) ([]otel.Component, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogProcessorError()
+}
+
 func (p LoggingProcessorWildflySystem) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegex{
 		// Logging documentation: https://docs.wildfly.org/26/Admin_Guide.html#Logging
@@ -114,6 +118,10 @@ func (p LoggingProcessorWildflySystem) Components(ctx context.Context, tag strin
 type LoggingReceiverWildflySystem struct {
 	LoggingProcessorWildflySystem           `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+}
+
+func (r LoggingReceiverWildflySystem) Pipelines(context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogReceiverError()
 }
 
 func (r LoggingReceiverWildflySystem) Components(ctx context.Context, tag string) []fluentbit.Component {

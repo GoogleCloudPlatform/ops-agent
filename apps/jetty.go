@@ -63,6 +63,10 @@ type LoggingProcessorJettyAccess struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 }
 
+func (p LoggingProcessorJettyAccess) Processors(ctx context.Context) ([]otel.Component, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogProcessorError()
+}
+
 func (p LoggingProcessorJettyAccess) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	return genericAccessLogParser(ctx, p.Type(), tag, uid)
 }
@@ -74,6 +78,10 @@ func (LoggingProcessorJettyAccess) Type() string {
 type LoggingReceiverJettyAccess struct {
 	LoggingProcessorJettyAccess             `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+}
+
+func (r LoggingReceiverJettyAccess) Pipelines(context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogReceiverError()
 }
 
 func (r LoggingReceiverJettyAccess) Components(ctx context.Context, tag string) []fluentbit.Component {

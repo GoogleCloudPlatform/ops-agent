@@ -70,6 +70,10 @@ func (LoggingProcessorNginxAccess) Type() string {
 	return "nginx_access"
 }
 
+func (p LoggingProcessorNginxAccess) Processors(ctx context.Context) ([]otel.Component, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogProcessorError()
+}
+
 func (p LoggingProcessorNginxAccess) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	return genericAccessLogParser(ctx, p.Type(), tag, uid)
 }
@@ -80,6 +84,10 @@ type LoggingProcessorNginxError struct {
 
 func (LoggingProcessorNginxError) Type() string {
 	return "nginx_error"
+}
+
+func (p LoggingProcessorNginxError) Processors(ctx context.Context) ([]otel.Component, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogProcessorError()
 }
 
 func (p LoggingProcessorNginxError) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
@@ -130,6 +138,10 @@ type LoggingReceiverNginxAccess struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
+func (r LoggingReceiverNginxAccess) Pipelines(context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogReceiverError()
+}
+
 func (r LoggingReceiverNginxAccess) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{"/var/log/nginx/access.log"}
@@ -142,6 +154,10 @@ func (r LoggingReceiverNginxAccess) Components(ctx context.Context, tag string) 
 type LoggingReceiverNginxError struct {
 	LoggingProcessorNginxError              `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+}
+
+func (r LoggingReceiverNginxError) Pipelines(context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogReceiverError()
 }
 
 func (r LoggingReceiverNginxError) Components(ctx context.Context, tag string) []fluentbit.Component {

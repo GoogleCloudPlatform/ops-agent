@@ -76,6 +76,10 @@ func (LoggingProcessorCouchdb) Type() string {
 	return "couchdb"
 }
 
+func (p LoggingProcessorCouchdb) Processors(ctx context.Context) ([]otel.Component, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogProcessorError()
+}
+
 func (p LoggingProcessorCouchdb) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
@@ -156,6 +160,10 @@ func (p LoggingProcessorCouchdb) Components(ctx context.Context, tag string, uid
 type LoggingReceiverCouchdb struct {
 	LoggingProcessorCouchdb                 `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+}
+
+func (r LoggingReceiverCouchdb) Pipelines(context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogReceiverError()
 }
 
 func (r LoggingReceiverCouchdb) Components(ctx context.Context, tag string) []fluentbit.Component {

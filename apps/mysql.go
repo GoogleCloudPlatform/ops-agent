@@ -150,6 +150,10 @@ func (LoggingProcessorMysqlError) Type() string {
 	return "mysql_error"
 }
 
+func (p LoggingProcessorMysqlError) Processors(ctx context.Context) ([]otel.Component, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogProcessorError()
+}
+
 func (p LoggingProcessorMysqlError) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegexComplex{
 		Parsers: []confgenerator.RegexParser{
@@ -233,6 +237,10 @@ func (LoggingProcessorMysqlGeneral) Type() string {
 	return "mysql_general"
 }
 
+func (p LoggingProcessorMysqlGeneral) Processors(ctx context.Context) ([]otel.Component, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogProcessorError()
+}
+
 func (p LoggingProcessorMysqlGeneral) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
@@ -312,6 +320,10 @@ type LoggingProcessorMysqlSlow struct {
 
 func (LoggingProcessorMysqlSlow) Type() string {
 	return "mysql_slow"
+}
+
+func (p LoggingProcessorMysqlSlow) Processors(ctx context.Context) ([]otel.Component, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogProcessorError()
 }
 
 func (p LoggingProcessorMysqlSlow) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
@@ -572,6 +584,10 @@ type LoggingReceiverMysqlGeneral struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
+func (r LoggingReceiverMysqlGeneral) Pipelines(context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogReceiverError()
+}
+
 func (r LoggingReceiverMysqlGeneral) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
@@ -589,6 +605,10 @@ type LoggingReceiverMysqlSlow struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
+func (r LoggingReceiverMysqlSlow) Pipelines(context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogReceiverError()
+}
+
 func (r LoggingReceiverMysqlSlow) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
@@ -604,6 +624,10 @@ func (r LoggingReceiverMysqlSlow) Components(ctx context.Context, tag string) []
 type LoggingReceiverMysqlError struct {
 	LoggingProcessorMysqlError              `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+}
+
+func (r LoggingReceiverMysqlError) Pipelines(context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogReceiverError()
 }
 
 func (r LoggingReceiverMysqlError) Components(ctx context.Context, tag string) []fluentbit.Component {

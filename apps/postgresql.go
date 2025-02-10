@@ -116,6 +116,10 @@ func (LoggingProcessorPostgresql) Type() string {
 	return "postgresql_general"
 }
 
+func (p LoggingProcessorPostgresql) Processors(ctx context.Context) ([]otel.Component, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogProcessorError()
+}
+
 func (p LoggingProcessorPostgresql) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
@@ -204,6 +208,10 @@ func (p LoggingProcessorPostgresql) Components(ctx context.Context, tag string, 
 type LoggingReceiverPostgresql struct {
 	LoggingProcessorPostgresql              `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+}
+
+func (r LoggingReceiverPostgresql) Pipelines(context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogReceiverError()
 }
 
 func (r LoggingReceiverPostgresql) Components(ctx context.Context, tag string) []fluentbit.Component {

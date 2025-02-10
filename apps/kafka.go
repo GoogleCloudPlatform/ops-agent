@@ -80,6 +80,10 @@ func (LoggingProcessorKafka) Type() string {
 	return "kafka"
 }
 
+func (p LoggingProcessorKafka) Processors(ctx context.Context) ([]otel.Component, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogProcessorError()
+}
+
 func (p LoggingProcessorKafka) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
@@ -146,6 +150,10 @@ func (p LoggingProcessorKafka) Components(ctx context.Context, tag string, uid s
 type LoggingReceiverKafka struct {
 	LoggingProcessorKafka                   `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+}
+
+func (r LoggingReceiverKafka) Pipelines(context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogReceiverError()
 }
 
 func (r LoggingReceiverKafka) Components(ctx context.Context, tag string) []fluentbit.Component {

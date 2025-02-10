@@ -78,6 +78,10 @@ func (LoggingProcessorApacheError) Type() string {
 	return "apache_error"
 }
 
+func (p LoggingProcessorApacheError) Processors(ctx context.Context) ([]otel.Component, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogProcessorError()
+}
+
 func (p LoggingProcessorApacheError) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegex{
 		// Documentation: https://httpd.apache.org/docs/current/logs.html#errorlog
@@ -135,6 +139,10 @@ type LoggingProcessorApacheAccess struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 }
 
+func (p LoggingProcessorApacheAccess) Processors(ctx context.Context) ([]otel.Component, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogProcessorError()
+}
+
 func (p LoggingProcessorApacheAccess) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	return genericAccessLogParser(ctx, p.Type(), tag, uid)
 }
@@ -146,6 +154,10 @@ func (LoggingProcessorApacheAccess) Type() string {
 type LoggingReceiverApacheAccess struct {
 	LoggingProcessorApacheAccess            `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+}
+
+func (r LoggingReceiverApacheAccess) Pipelines(context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogReceiverError()
 }
 
 func (r LoggingReceiverApacheAccess) Components(ctx context.Context, tag string) []fluentbit.Component {
@@ -167,6 +179,10 @@ func (r LoggingReceiverApacheAccess) Components(ctx context.Context, tag string)
 type LoggingReceiverApacheError struct {
 	LoggingProcessorApacheError             `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+}
+
+func (r LoggingReceiverApacheError) Pipelines(context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogReceiverError()
 }
 
 func (r LoggingReceiverApacheError) Components(ctx context.Context, tag string) []fluentbit.Component {

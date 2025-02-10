@@ -70,6 +70,10 @@ func (LoggingProcessorHbaseSystem) Type() string {
 	return "hbase_system"
 }
 
+func (p LoggingProcessorHbaseSystem) Processors(ctx context.Context) ([]otel.Component, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogProcessorError()
+}
+
 func (p LoggingProcessorHbaseSystem) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
@@ -128,6 +132,10 @@ func (p LoggingProcessorHbaseSystem) Components(ctx context.Context, tag string,
 type SystemLoggingReceiverHbase struct {
 	LoggingProcessorHbaseSystem             `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+}
+
+func (r SystemLoggingReceiverHbase) Pipelines(context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogReceiverError()
 }
 
 func (r SystemLoggingReceiverHbase) Components(ctx context.Context, tag string) []fluentbit.Component {

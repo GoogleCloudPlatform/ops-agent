@@ -67,6 +67,10 @@ func (LoggingProcessorHadoop) Type() string {
 	return "hadoop"
 }
 
+func (p LoggingProcessorHadoop) Processors(ctx context.Context) ([]otel.Component, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogProcessorError()
+}
+
 func (p LoggingProcessorHadoop) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	// Sample log line:
 	// 2022-02-01 18:09:47,136 INFO org.apache.hadoop.hdfs.server.namenode.FSEditLog: Edit logging is async:true
@@ -108,6 +112,10 @@ func (p LoggingProcessorHadoop) Components(ctx context.Context, tag, uid string)
 type LoggingReceiverHadoop struct {
 	LoggingProcessorHadoop                  `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
+}
+
+func (r LoggingReceiverHadoop) Pipelines(context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogReceiverError()
 }
 
 func (r LoggingReceiverHadoop) Components(ctx context.Context, tag string) []fluentbit.Component {

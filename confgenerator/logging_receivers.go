@@ -235,6 +235,10 @@ func (r LoggingReceiverSyslog) GetListenPort() uint16 {
 	return r.ListenPort
 }
 
+func (r LoggingReceiverSyslog) Pipelines(context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, GetUnsupportedOtelLogReceiverError()
+}
+
 func (r LoggingReceiverSyslog) Components(ctx context.Context, tag string) []fluentbit.Component {
 	return []fluentbit.Component{{
 		Kind: "INPUT",
@@ -292,6 +296,10 @@ func (r LoggingReceiverTCP) GetListenPort() uint16 {
 	return r.ListenPort
 }
 
+func (r LoggingReceiverTCP) Pipelines(context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, GetUnsupportedOtelLogReceiverError()
+}
+
 func (r LoggingReceiverTCP) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if r.ListenHost == "" {
 		r.ListenHost = "127.0.0.1"
@@ -345,6 +353,10 @@ func (r LoggingReceiverFluentForward) GetListenPort() uint16 {
 		r.ListenPort = 24224
 	}
 	return r.ListenPort
+}
+
+func (r LoggingReceiverFluentForward) Pipelines(context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, GetUnsupportedOtelLogReceiverError()
 }
 
 func (r LoggingReceiverFluentForward) Components(ctx context.Context, tag string) []fluentbit.Component {
@@ -617,6 +629,10 @@ type LoggingReceiverSystemd struct {
 
 func (r LoggingReceiverSystemd) Type() string {
 	return "systemd_journald"
+}
+
+func (r LoggingReceiverSystemd) Pipelines(context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, GetUnsupportedOtelLogReceiverError()
 }
 
 func (r LoggingReceiverSystemd) Components(ctx context.Context, tag string) []fluentbit.Component {

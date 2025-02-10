@@ -154,6 +154,10 @@ func (LoggingProcessorElasticsearchJson) Type() string {
 	return "elasticsearch_json"
 }
 
+func (p LoggingProcessorElasticsearchJson) Processors(ctx context.Context) ([]otel.Component, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogProcessorError()
+}
+
 func (p LoggingProcessorElasticsearchJson) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	c := []fluentbit.Component{}
 
@@ -241,6 +245,10 @@ func (LoggingProcessorElasticsearchGC) Type() string {
 	return "elasticsearch_gc"
 }
 
+func (p LoggingProcessorElasticsearchGC) Processors(ctx context.Context) ([]otel.Component, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogProcessorError()
+}
+
 func (p LoggingProcessorElasticsearchGC) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	c := []fluentbit.Component{}
 
@@ -271,6 +279,10 @@ func (p LoggingProcessorElasticsearchGC) Components(ctx context.Context, tag, ui
 type LoggingReceiverElasticsearchJson struct {
 	LoggingProcessorElasticsearchJson       `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
+}
+
+func (r LoggingReceiverElasticsearchJson) Pipelines(context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogReceiverError()
 }
 
 func (r LoggingReceiverElasticsearchJson) Components(ctx context.Context, tag string) []fluentbit.Component {
@@ -314,6 +326,10 @@ func (r LoggingReceiverElasticsearchJson) Components(ctx context.Context, tag st
 type LoggingReceiverElasticsearchGC struct {
 	LoggingProcessorElasticsearchGC         `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
+}
+
+func (r LoggingReceiverElasticsearchGC) Pipelines(context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogReceiverError()
 }
 
 func (r LoggingReceiverElasticsearchGC) Components(ctx context.Context, tag string) []fluentbit.Component {

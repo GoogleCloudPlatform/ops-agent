@@ -80,6 +80,10 @@ func (LoggingProcessorFlink) Type() string {
 	return "flink"
 }
 
+func (p LoggingProcessorFlink) Processors(ctx context.Context) ([]otel.Component, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogProcessorError()
+}
+
 func (p LoggingProcessorFlink) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
@@ -144,6 +148,10 @@ func (p LoggingProcessorFlink) Components(ctx context.Context, tag string, uid s
 type LoggingReceiverFlink struct {
 	LoggingProcessorFlink                   `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+}
+
+func (r LoggingReceiverFlink) Pipelines(context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogReceiverError()
 }
 
 func (r LoggingReceiverFlink) Components(ctx context.Context, tag string) []fluentbit.Component {

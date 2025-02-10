@@ -62,6 +62,10 @@ func (r LoggingReceiverActiveDirectoryDS) Type() string {
 	return "active_directory_ds"
 }
 
+func (r LoggingReceiverActiveDirectoryDS) Pipelines(context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogReceiverError()
+}
+
 func (r LoggingReceiverActiveDirectoryDS) Components(ctx context.Context, tag string) []fluentbit.Component {
 	l := confgenerator.LoggingReceiverWindowsEventLog{
 		Channels: []string{"Directory Service", "Active Directory Web Services"},

@@ -70,6 +70,10 @@ var multilineRulesLanguageMap = map[string][]string{
 		`"go_frame_2" "/^\s/" "go_frame_1"`},
 }
 
+func (p ParseMultiline) Processors(ctx context.Context) ([]otel.Component, error) {
+	return nil, GetUnsupportedOtelLogProcessorError()
+}
+
 func (p ParseMultiline) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	var components []fluentbit.Component
 	// Fluent Bit multiline parser currently can't export using `message` as key.
@@ -278,6 +282,10 @@ func (r LoggingProcessorParseRegex) Type() string {
 	return "parse_regex"
 }
 
+func (p LoggingProcessorParseRegex) Processors(ctx context.Context) ([]otel.Component, error) {
+	return nil, GetUnsupportedOtelLogProcessorError()
+}
+
 func (p LoggingProcessorParseRegex) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	parser, parserName := p.ParserShared.Component(tag, uid)
 	parser.Config["Format"] = "regex"
@@ -298,6 +306,10 @@ type RegexParser struct {
 type LoggingProcessorParseRegexComplex struct {
 	Field   string
 	Parsers []RegexParser
+}
+
+func (p LoggingProcessorParseRegexComplex) Processors(ctx context.Context) ([]otel.Component, error) {
+	return nil, GetUnsupportedOtelLogProcessorError()
 }
 
 func (p LoggingProcessorParseRegexComplex) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
@@ -347,6 +359,10 @@ type LoggingProcessorParseMultilineRegex struct {
 	Rules []MultilineRule
 }
 
+func (p LoggingProcessorParseMultilineRegex) Processors(ctx context.Context) ([]otel.Component, error) {
+	return nil, GetUnsupportedOtelLogProcessorError()
+}
+
 func (p LoggingProcessorParseMultilineRegex) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	multilineParserName := fmt.Sprintf("%s.%s.multiline", tag, uid)
 	rules := [][2]string{}
@@ -388,6 +404,10 @@ type LoggingProcessorNestWildcard struct {
 	Wildcard     string
 	NestUnder    string
 	RemovePrefix string
+}
+
+func (p LoggingProcessorNestWildcard) Processors(ctx context.Context) ([]otel.Component, error) {
+	return nil, GetUnsupportedOtelLogProcessorError()
 }
 
 func (p LoggingProcessorNestWildcard) Components(ctx context.Context, tag, uid string) []fluentbit.Component {

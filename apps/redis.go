@@ -91,6 +91,10 @@ func (LoggingProcessorRedis) Type() string {
 	return "redis"
 }
 
+func (p LoggingProcessorRedis) Processors(ctx context.Context) ([]otel.Component, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogProcessorError()
+}
+
 func (p LoggingProcessorRedis) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegex{
 		// Documentation: https://github.com/redis/redis/blob/6.2/src/server.c#L1122
@@ -142,6 +146,10 @@ func (p LoggingProcessorRedis) Components(ctx context.Context, tag string, uid s
 type LoggingReceiverRedis struct {
 	LoggingProcessorRedis                   `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+}
+
+func (r LoggingReceiverRedis) Pipelines(context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogReceiverError()
 }
 
 func (r LoggingReceiverRedis) Components(ctx context.Context, tag string) []fluentbit.Component {

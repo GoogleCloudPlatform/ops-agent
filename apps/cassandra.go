@@ -65,6 +65,10 @@ func (LoggingProcessorCassandraSystem) Type() string {
 	return "cassandra_system"
 }
 
+func (p LoggingProcessorCassandraSystem) Processors(ctx context.Context) ([]otel.Component, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogProcessorError()
+}
+
 func (p LoggingProcessorCassandraSystem) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	return javaLogParsingComponents(ctx, p.Type(), tag, uid)
 }
@@ -75,6 +79,10 @@ type LoggingProcessorCassandraDebug struct {
 
 func (LoggingProcessorCassandraDebug) Type() string {
 	return "cassandra_debug"
+}
+
+func (p LoggingProcessorCassandraDebug) Processors(ctx context.Context) ([]otel.Component, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogProcessorError()
 }
 
 func (p LoggingProcessorCassandraDebug) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
@@ -149,6 +157,10 @@ type LoggingProcessorCassandraGC struct {
 
 func (LoggingProcessorCassandraGC) Type() string {
 	return "cassandra_gc"
+}
+
+func (p LoggingProcessorCassandraGC) Processors(ctx context.Context) ([]otel.Component, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogProcessorError()
 }
 
 func (p LoggingProcessorCassandraGC) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
@@ -239,6 +251,10 @@ type LoggingReceiverCassandraSystem struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
+func (r LoggingReceiverCassandraSystem) Pipelines(context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogReceiverError()
+}
+
 func (r LoggingReceiverCassandraSystem) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
@@ -257,6 +273,10 @@ type LoggingReceiverCassandraDebug struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
+func (r LoggingReceiverCassandraDebug) Pipelines(context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogReceiverError()
+}
+
 func (r LoggingReceiverCassandraDebug) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
@@ -273,6 +293,10 @@ func (r LoggingReceiverCassandraDebug) Components(ctx context.Context, tag strin
 type LoggingReceiverCassandraGC struct {
 	LoggingProcessorCassandraGC             `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+}
+
+func (r LoggingReceiverCassandraGC) Pipelines(context.Context) ([]otel.ReceiverPipeline, error) {
+	return nil, confgenerator.GetUnsupportedOtelLogReceiverError()
 }
 
 func (r LoggingReceiverCassandraGC) Components(ctx context.Context, tag string) []fluentbit.Component {
