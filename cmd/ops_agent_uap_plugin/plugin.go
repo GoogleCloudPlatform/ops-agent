@@ -21,6 +21,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"sync"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -46,8 +47,12 @@ type RunCommandFunc func(cmd *exec.Cmd) (string, error)
 // PluginServer implements the plugin RPC server interface.
 type OpsAgentPluginServer struct {
 	pb.UnimplementedGuestAgentPluginServer
-	server     *grpc.Server
-	cancel     context.CancelFunc
+	server *grpc.Server
+
+	// mu protects the cancel field.
+	mu     sync.Mutex
+	cancel context.CancelFunc
+
 	runCommand RunCommandFunc
 }
 

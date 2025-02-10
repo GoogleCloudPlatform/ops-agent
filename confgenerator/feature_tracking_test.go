@@ -61,6 +61,13 @@ var expectedFeatureBase = []confgenerator.Feature{
 		Key:    []string{"default_self_log_file_collection"},
 		Value:  "true",
 	},
+	{
+		Module: "logging",
+		Kind:   "service",
+		Type:   "otel_logging",
+		Key:    []string{"otel_logging_supported_config"},
+		Value:  "true",
+	},
 }
 
 var expectedMetricsPipelineOverriden = []confgenerator.Feature{
@@ -83,6 +90,13 @@ var expectedMetricsPipelineOverriden = []confgenerator.Feature{
 		Kind:   "default",
 		Type:   "self_log",
 		Key:    []string{"default_self_log_file_collection"},
+		Value:  "true",
+	},
+	{
+		Module: "logging",
+		Kind:   "service",
+		Type:   "otel_logging",
+		Key:    []string{"otel_logging_supported_config"},
 		Value:  "true",
 	},
 }
@@ -110,6 +124,13 @@ var expectedTestFeatureBase = []confgenerator.Feature{
 		Value:  "true",
 	},
 	{
+		Module: "logging",
+		Kind:   "service",
+		Type:   "otel_logging",
+		Key:    []string{"otel_logging_supported_config"},
+		Value:  "true",
+	},
+	{
 		Module: confgenerator.MetricsReceiverTypes.Subagent,
 		Kind:   "receivers",
 		Type:   "metricsReceiverFoo",
@@ -119,7 +140,7 @@ var expectedTestFeatureBase = []confgenerator.Feature{
 }
 
 func TestEmptyConfig(t *testing.T) {
-	features, err := confgenerator.ExtractFeatures(&emptyUc)
+	features, err := confgenerator.ExtractFeatures(context.Background(), &emptyUc)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -594,7 +615,7 @@ func TestBed(t *testing.T) {
 		test := test
 		t.Run(test.Name, func(t *testing.T) {
 			t.Parallel()
-			actual, err := confgenerator.ExtractFeatures(test.Config)
+			actual, err := confgenerator.ExtractFeatures(context.Background(), test.Config)
 
 			if test.ExpectedError != nil {
 				if test.Expected != nil {
@@ -675,7 +696,7 @@ func TestOverrideDefaultPipeline(t *testing.T) {
 		},
 	}
 
-	features, err := confgenerator.ExtractFeatures(&uc)
+	features, err := confgenerator.ExtractFeatures(context.Background(), &uc)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -749,7 +770,7 @@ func TestPrometheusFeatureMetrics(t *testing.T) {
 		Receivers: receivers,
 	}
 
-	features, err := confgenerator.ExtractFeatures(&uc)
+	features, err := confgenerator.ExtractFeatures(context.Background(), &uc)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -968,7 +989,7 @@ func TestNestedStructs(t *testing.T) {
 	uc.Metrics = &confgenerator.Metrics{
 		Receivers: receivers,
 	}
-	features, err := confgenerator.ExtractFeatures(&uc)
+	features, err := confgenerator.ExtractFeatures(context.Background(), &uc)
 	if err != nil {
 		t.Fatal(err)
 	}

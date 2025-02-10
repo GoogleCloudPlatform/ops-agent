@@ -173,9 +173,16 @@ COPY --from=centos8-build-diagnostics /work/cache /work/cache
 COPY --from=centos8-build-wrapper /work/cache /work/cache
 RUN ./pkg/rpm/build.sh
 
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache/
+RUN ./pkg/plugin/build.sh /work/cache centos8
+
+
 FROM scratch AS centos8
 COPY --from=centos8-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-centos-8.tgz
 COPY --from=centos8-build /google-cloud-ops-agent*.rpm /
+COPY --from=centos8-build /google-cloud-ops-agent-plugin*.tar.gz /
 
 # ======================================
 # Build Ops Agent for rockylinux-9
@@ -279,9 +286,16 @@ COPY --from=rockylinux9-build-diagnostics /work/cache /work/cache
 COPY --from=rockylinux9-build-wrapper /work/cache /work/cache
 RUN ./pkg/rpm/build.sh
 
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache/
+RUN ./pkg/plugin/build.sh /work/cache rockylinux9
+
+
 FROM scratch AS rockylinux9
 COPY --from=rockylinux9-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-rockylinux-9.tgz
 COPY --from=rockylinux9-build /google-cloud-ops-agent*.rpm /
+COPY --from=rockylinux9-build /google-cloud-ops-agent-plugin*.tar.gz /
 
 # ======================================
 # Build Ops Agent for debian-bookworm
@@ -380,9 +394,16 @@ COPY --from=bookworm-build-diagnostics /work/cache /work/cache
 COPY --from=bookworm-build-wrapper /work/cache /work/cache
 RUN ./pkg/deb/build.sh
 
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache/
+RUN ./pkg/plugin/build.sh /work/cache bookworm
+
+
 FROM scratch AS bookworm
 COPY --from=bookworm-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-bookworm.tgz
 COPY --from=bookworm-build /google-cloud-ops-agent*.deb /
+COPY --from=bookworm-build /google-cloud-ops-agent-plugin*.tar.gz /
 
 # ======================================
 # Build Ops Agent for debian-bullseye
@@ -481,9 +502,16 @@ COPY --from=bullseye-build-diagnostics /work/cache /work/cache
 COPY --from=bullseye-build-wrapper /work/cache /work/cache
 RUN ./pkg/deb/build.sh
 
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache/
+RUN ./pkg/plugin/build.sh /work/cache bullseye
+
+
 FROM scratch AS bullseye
 COPY --from=bullseye-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-bullseye.tgz
 COPY --from=bullseye-build /google-cloud-ops-agent*.deb /
+COPY --from=bullseye-build /google-cloud-ops-agent-plugin*.tar.gz /
 
 # ======================================
 # Build Ops Agent for sles-12
@@ -601,9 +629,16 @@ COPY --from=sles12-build-diagnostics /work/cache /work/cache
 COPY --from=sles12-build-wrapper /work/cache /work/cache
 RUN ./pkg/rpm/build.sh
 
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache/
+RUN ./pkg/plugin/build.sh /work/cache sles12
+
+
 FROM scratch AS sles12
 COPY --from=sles12-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-sles-12.tgz
 COPY --from=sles12-build /google-cloud-ops-agent*.rpm /
+COPY --from=sles12-build /google-cloud-ops-agent-plugin*.tar.gz /
 
 # ======================================
 # Build Ops Agent for sles-15
@@ -707,9 +742,16 @@ COPY --from=sles15-build-diagnostics /work/cache /work/cache
 COPY --from=sles15-build-wrapper /work/cache /work/cache
 RUN ./pkg/rpm/build.sh
 
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache/
+RUN ./pkg/plugin/build.sh /work/cache sles15
+
+
 FROM scratch AS sles15
 COPY --from=sles15-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-sles-15.tgz
 COPY --from=sles15-build /google-cloud-ops-agent*.rpm /
+COPY --from=sles15-build /google-cloud-ops-agent-plugin*.tar.gz /
 
 # ======================================
 # Build Ops Agent for ubuntu-focal
@@ -808,9 +850,16 @@ COPY --from=focal-build-diagnostics /work/cache /work/cache
 COPY --from=focal-build-wrapper /work/cache /work/cache
 RUN ./pkg/deb/build.sh
 
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache/
+RUN ./pkg/plugin/build.sh /work/cache focal
+
+
 FROM scratch AS focal
 COPY --from=focal-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-focal.tgz
 COPY --from=focal-build /google-cloud-ops-agent*.deb /
+COPY --from=focal-build /google-cloud-ops-agent-plugin*.tar.gz /
 
 # ======================================
 # Build Ops Agent for ubuntu-jammy
@@ -909,9 +958,16 @@ COPY --from=jammy-build-diagnostics /work/cache /work/cache
 COPY --from=jammy-build-wrapper /work/cache /work/cache
 RUN ./pkg/deb/build.sh
 
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache/
+RUN ./pkg/plugin/build.sh /work/cache jammy
+
+
 FROM scratch AS jammy
 COPY --from=jammy-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-jammy.tgz
 COPY --from=jammy-build /google-cloud-ops-agent*.deb /
+COPY --from=jammy-build /google-cloud-ops-agent-plugin*.tar.gz /
 
 # ======================================
 # Build Ops Agent for ubuntu-noble
@@ -1010,9 +1066,16 @@ COPY --from=noble-build-diagnostics /work/cache /work/cache
 COPY --from=noble-build-wrapper /work/cache /work/cache
 RUN ./pkg/deb/build.sh
 
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache/
+RUN ./pkg/plugin/build.sh /work/cache noble
+
+
 FROM scratch AS noble
 COPY --from=noble-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-noble.tgz
 COPY --from=noble-build /google-cloud-ops-agent*.deb /
+COPY --from=noble-build /google-cloud-ops-agent-plugin*.tar.gz /
 
 # ======================================
 # Build Ops Agent for ubuntu-oracular
@@ -1111,9 +1174,16 @@ COPY --from=oracular-build-diagnostics /work/cache /work/cache
 COPY --from=oracular-build-wrapper /work/cache /work/cache
 RUN ./pkg/deb/build.sh
 
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache/
+RUN ./pkg/plugin/build.sh /work/cache oracular
+
+
 FROM scratch AS oracular
 COPY --from=oracular-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-oracular.tgz
 COPY --from=oracular-build /google-cloud-ops-agent*.deb /
+COPY --from=oracular-build /google-cloud-ops-agent-plugin*.tar.gz /
 
 FROM scratch
 COPY --from=centos8 /* /
