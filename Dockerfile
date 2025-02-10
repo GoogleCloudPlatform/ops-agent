@@ -115,7 +115,7 @@ RUN \
     unset OTEL_TRACES_EXPORTER && \
     unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
     unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-    ./otel.sh /work/cache/
+    ./otel.sh /work/cache
 
 FROM centos8-build-base AS centos8-build-fluent-bit
 WORKDIR /work
@@ -145,15 +145,26 @@ FROM centos8-build-golang-base AS centos8-build-diagnostics
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
 COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
+RUN ./ops_agent_diagnostics.sh /work/cache
 
 
 FROM centos8-build-golang-base AS centos8-build-wrapper
 WORKDIR /work
 COPY cmd/agent_wrapper cmd/agent_wrapper
 COPY ./builds/agent_wrapper.sh .
-RUN ./agent_wrapper.sh /work/cache/
+RUN ./agent_wrapper.sh /work/cache
 
+FROM centos8-build-golang-base AS centos8-build-ops-agent-conf-generator
+WORKDIR /work
+COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
+COPY ./builds/conf_generator.sh .
+RUN ./conf_generator.sh /work/cache
+
+FROM centos8-build-golang-base AS centos8-build-ops-agent-uap-plugin
+WORKDIR /work
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache
 
 FROM centos8-build-golang-base AS centos8-build
 WORKDIR /work
@@ -228,7 +239,7 @@ RUN \
     unset OTEL_TRACES_EXPORTER && \
     unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
     unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-    ./otel.sh /work/cache/
+    ./otel.sh /work/cache
 
 FROM rockylinux9-build-base AS rockylinux9-build-fluent-bit
 WORKDIR /work
@@ -258,15 +269,26 @@ FROM rockylinux9-build-golang-base AS rockylinux9-build-diagnostics
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
 COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
+RUN ./ops_agent_diagnostics.sh /work/cache
 
 
 FROM rockylinux9-build-golang-base AS rockylinux9-build-wrapper
 WORKDIR /work
 COPY cmd/agent_wrapper cmd/agent_wrapper
 COPY ./builds/agent_wrapper.sh .
-RUN ./agent_wrapper.sh /work/cache/
+RUN ./agent_wrapper.sh /work/cache
 
+FROM rockylinux9-build-golang-base AS rockylinux9-build-ops-agent-conf-generator
+WORKDIR /work
+COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
+COPY ./builds/conf_generator.sh .
+RUN ./conf_generator.sh /work/cache
+
+FROM rockylinux9-build-golang-base AS rockylinux9-build-ops-agent-uap-plugin
+WORKDIR /work
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache
 
 FROM rockylinux9-build-golang-base AS rockylinux9-build
 WORKDIR /work
@@ -336,7 +358,7 @@ RUN \
     unset OTEL_TRACES_EXPORTER && \
     unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
     unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-    ./otel.sh /work/cache/
+    ./otel.sh /work/cache
 
 FROM bookworm-build-base AS bookworm-build-fluent-bit
 WORKDIR /work
@@ -366,15 +388,26 @@ FROM bookworm-build-golang-base AS bookworm-build-diagnostics
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
 COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
+RUN ./ops_agent_diagnostics.sh /work/cache
 
 
 FROM bookworm-build-golang-base AS bookworm-build-wrapper
 WORKDIR /work
 COPY cmd/agent_wrapper cmd/agent_wrapper
 COPY ./builds/agent_wrapper.sh .
-RUN ./agent_wrapper.sh /work/cache/
+RUN ./agent_wrapper.sh /work/cache
 
+FROM bookworm-build-golang-base AS bookworm-build-ops-agent-conf-generator
+WORKDIR /work
+COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
+COPY ./builds/conf_generator.sh .
+RUN ./conf_generator.sh /work/cache
+
+FROM bookworm-build-golang-base AS bookworm-build-ops-agent-uap-plugin
+WORKDIR /work
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache
 
 FROM bookworm-build-golang-base AS bookworm-build
 WORKDIR /work
@@ -444,7 +477,7 @@ RUN \
     unset OTEL_TRACES_EXPORTER && \
     unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
     unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-    ./otel.sh /work/cache/
+    ./otel.sh /work/cache
 
 FROM bullseye-build-base AS bullseye-build-fluent-bit
 WORKDIR /work
@@ -474,15 +507,26 @@ FROM bullseye-build-golang-base AS bullseye-build-diagnostics
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
 COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
+RUN ./ops_agent_diagnostics.sh /work/cache
 
 
 FROM bullseye-build-golang-base AS bullseye-build-wrapper
 WORKDIR /work
 COPY cmd/agent_wrapper cmd/agent_wrapper
 COPY ./builds/agent_wrapper.sh .
-RUN ./agent_wrapper.sh /work/cache/
+RUN ./agent_wrapper.sh /work/cache
 
+FROM bullseye-build-golang-base AS bullseye-build-ops-agent-conf-generator
+WORKDIR /work
+COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
+COPY ./builds/conf_generator.sh .
+RUN ./conf_generator.sh /work/cache
+
+FROM bullseye-build-golang-base AS bullseye-build-ops-agent-uap-plugin
+WORKDIR /work
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache
 
 FROM bullseye-build-golang-base AS bullseye-build
 WORKDIR /work
@@ -571,7 +615,7 @@ RUN \
     unset OTEL_TRACES_EXPORTER && \
     unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
     unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-    ./otel.sh /work/cache/
+    ./otel.sh /work/cache
 
 FROM sles12-build-base AS sles12-build-fluent-bit
 WORKDIR /work
@@ -601,15 +645,26 @@ FROM sles12-build-golang-base AS sles12-build-diagnostics
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
 COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
+RUN ./ops_agent_diagnostics.sh /work/cache
 
 
 FROM sles12-build-golang-base AS sles12-build-wrapper
 WORKDIR /work
 COPY cmd/agent_wrapper cmd/agent_wrapper
 COPY ./builds/agent_wrapper.sh .
-RUN ./agent_wrapper.sh /work/cache/
+RUN ./agent_wrapper.sh /work/cache
 
+FROM sles12-build-golang-base AS sles12-build-ops-agent-conf-generator
+WORKDIR /work
+COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
+COPY ./builds/conf_generator.sh .
+RUN ./conf_generator.sh /work/cache
+
+FROM sles12-build-golang-base AS sles12-build-ops-agent-uap-plugin
+WORKDIR /work
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache
 
 FROM sles12-build-golang-base AS sles12-build
 WORKDIR /work
@@ -684,7 +739,7 @@ RUN \
     unset OTEL_TRACES_EXPORTER && \
     unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
     unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-    ./otel.sh /work/cache/
+    ./otel.sh /work/cache
 
 FROM sles15-build-base AS sles15-build-fluent-bit
 WORKDIR /work
@@ -714,15 +769,26 @@ FROM sles15-build-golang-base AS sles15-build-diagnostics
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
 COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
+RUN ./ops_agent_diagnostics.sh /work/cache
 
 
 FROM sles15-build-golang-base AS sles15-build-wrapper
 WORKDIR /work
 COPY cmd/agent_wrapper cmd/agent_wrapper
 COPY ./builds/agent_wrapper.sh .
-RUN ./agent_wrapper.sh /work/cache/
+RUN ./agent_wrapper.sh /work/cache
 
+FROM sles15-build-golang-base AS sles15-build-ops-agent-conf-generator
+WORKDIR /work
+COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
+COPY ./builds/conf_generator.sh .
+RUN ./conf_generator.sh /work/cache
+
+FROM sles15-build-golang-base AS sles15-build-ops-agent-uap-plugin
+WORKDIR /work
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache
 
 FROM sles15-build-golang-base AS sles15-build
 WORKDIR /work
@@ -792,7 +858,7 @@ RUN \
     unset OTEL_TRACES_EXPORTER && \
     unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
     unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-    ./otel.sh /work/cache/
+    ./otel.sh /work/cache
 
 FROM focal-build-base AS focal-build-fluent-bit
 WORKDIR /work
@@ -822,15 +888,26 @@ FROM focal-build-golang-base AS focal-build-diagnostics
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
 COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
+RUN ./ops_agent_diagnostics.sh /work/cache
 
 
 FROM focal-build-golang-base AS focal-build-wrapper
 WORKDIR /work
 COPY cmd/agent_wrapper cmd/agent_wrapper
 COPY ./builds/agent_wrapper.sh .
-RUN ./agent_wrapper.sh /work/cache/
+RUN ./agent_wrapper.sh /work/cache
 
+FROM focal-build-golang-base AS focal-build-ops-agent-conf-generator
+WORKDIR /work
+COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
+COPY ./builds/conf_generator.sh .
+RUN ./conf_generator.sh /work/cache
+
+FROM focal-build-golang-base AS focal-build-ops-agent-uap-plugin
+WORKDIR /work
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache
 
 FROM focal-build-golang-base AS focal-build
 WORKDIR /work
@@ -900,7 +977,7 @@ RUN \
     unset OTEL_TRACES_EXPORTER && \
     unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
     unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-    ./otel.sh /work/cache/
+    ./otel.sh /work/cache
 
 FROM jammy-build-base AS jammy-build-fluent-bit
 WORKDIR /work
@@ -930,15 +1007,26 @@ FROM jammy-build-golang-base AS jammy-build-diagnostics
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
 COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
+RUN ./ops_agent_diagnostics.sh /work/cache
 
 
 FROM jammy-build-golang-base AS jammy-build-wrapper
 WORKDIR /work
 COPY cmd/agent_wrapper cmd/agent_wrapper
 COPY ./builds/agent_wrapper.sh .
-RUN ./agent_wrapper.sh /work/cache/
+RUN ./agent_wrapper.sh /work/cache
 
+FROM jammy-build-golang-base AS jammy-build-ops-agent-conf-generator
+WORKDIR /work
+COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
+COPY ./builds/conf_generator.sh .
+RUN ./conf_generator.sh /work/cache
+
+FROM jammy-build-golang-base AS jammy-build-ops-agent-uap-plugin
+WORKDIR /work
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache
 
 FROM jammy-build-golang-base AS jammy-build
 WORKDIR /work
@@ -1008,7 +1096,7 @@ RUN \
     unset OTEL_TRACES_EXPORTER && \
     unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
     unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-    ./otel.sh /work/cache/
+    ./otel.sh /work/cache
 
 FROM noble-build-base AS noble-build-fluent-bit
 WORKDIR /work
@@ -1038,15 +1126,26 @@ FROM noble-build-golang-base AS noble-build-diagnostics
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
 COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
+RUN ./ops_agent_diagnostics.sh /work/cache
 
 
 FROM noble-build-golang-base AS noble-build-wrapper
 WORKDIR /work
 COPY cmd/agent_wrapper cmd/agent_wrapper
 COPY ./builds/agent_wrapper.sh .
-RUN ./agent_wrapper.sh /work/cache/
+RUN ./agent_wrapper.sh /work/cache
 
+FROM noble-build-golang-base AS noble-build-ops-agent-conf-generator
+WORKDIR /work
+COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
+COPY ./builds/conf_generator.sh .
+RUN ./conf_generator.sh /work/cache
+
+FROM noble-build-golang-base AS noble-build-ops-agent-uap-plugin
+WORKDIR /work
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache
 
 FROM noble-build-golang-base AS noble-build
 WORKDIR /work
@@ -1116,7 +1215,7 @@ RUN \
     unset OTEL_TRACES_EXPORTER && \
     unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
     unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
-    ./otel.sh /work/cache/
+    ./otel.sh /work/cache
 
 FROM oracular-build-base AS oracular-build-fluent-bit
 WORKDIR /work
@@ -1146,15 +1245,26 @@ FROM oracular-build-golang-base AS oracular-build-diagnostics
 WORKDIR /work
 COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
 COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
+RUN ./ops_agent_diagnostics.sh /work/cache
 
 
 FROM oracular-build-golang-base AS oracular-build-wrapper
 WORKDIR /work
 COPY cmd/agent_wrapper cmd/agent_wrapper
 COPY ./builds/agent_wrapper.sh .
-RUN ./agent_wrapper.sh /work/cache/
+RUN ./agent_wrapper.sh /work/cache
 
+FROM oracular-build-golang-base AS oracular-build-ops-agent-conf-generator
+WORKDIR /work
+COPY cmd/google_cloud_ops_agent_engine cmd/google_cloud_ops_agent_engine
+COPY ./builds/conf_generator.sh .
+RUN ./conf_generator.sh /work/cache
+
+FROM oracular-build-golang-base AS oracular-build-ops-agent-uap-plugin
+WORKDIR /work
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache
 
 FROM oracular-build-golang-base AS oracular-build
 WORKDIR /work
