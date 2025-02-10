@@ -110,7 +110,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	}
 
 	// Ops Agent config validation
-	if err := validateOpsAgentConfig(pContext, pluginInstallDir, ps.runCommand); err != nil {
+	if err := validateOpsAgentConfig(pContext, pluginInstallDir, pluginStateDir, ps.runCommand); err != nil {
 		log.Printf("Start() failed: %s", err)
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		return nil, status.Errorf(1, "failed to validate Ops Agent config: %s", err)
@@ -268,10 +268,11 @@ func runCommand(cmd *exec.Cmd) (string, error) {
 	return string(out), err
 }
 
-func validateOpsAgentConfig(ctx context.Context, pluginInstallDirectory string, runCommand RunCommandFunc) error {
+func validateOpsAgentConfig(ctx context.Context, pluginInstallDirectory string, pluginStateDirectory string, runCommand RunCommandFunc) error {
 	configValidationCmd := exec.CommandContext(ctx,
 		path.Join(pluginInstallDirectory, ConfGeneratorBinary),
 		"-in", OpsAgentConfigLocationLinux,
+		"-logs", path.Join(pluginStateDirectory, LogsDirectory),
 	)
 	if output, err := runCommand(configValidationCmd); err != nil {
 		return fmt.Errorf("failed to validate the Ops Agent config:\ncommand output: %s\ncommand error: %s", output, err)
