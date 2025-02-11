@@ -75,52 +75,50 @@ func init() {
 }
 
 type LoggingProcessorFlink struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
 }
 
 func (LoggingProcessorFlink) Type() string {
 	return "flink"
 }
 
-func (p LoggingProcessorFlink) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseMultilineRegex{
-		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
-			Parsers: []confgenerator.RegexParser{
-				{
-					// Standalone session example
-					// Sample line: 2022-04-22 11:51:35,718 INFO  org.apache.flink.runtime.jobmaster.JobMaster                 [] - Close ResourceManager connection 668abb5d496646a153262b5896fd935d: Stopping JobMaster for job 'Streaming WordCount' (2538c8dff66c8cf6ec58ad32b149e23f).
+func (p LoggingProcessorFlink) Processors(ctx context.Context) []LoggingProcessorMixin {
+	return []LoggingProcessorMixin{
+		confgenerator.LoggingProcessorParseMultilineRegex{
+			LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
+				Parsers: []confgenerator.RegexParser{
+					{
+						// Standalone session example
+						// Sample line: 2022-04-22 11:51:35,718 INFO  org.apache.flink.runtime.jobmaster.JobMaster                 [] - Close ResourceManager connection 668abb5d496646a153262b5896fd935d: Stopping JobMaster for job 'Streaming WordCount' (2538c8dff66c8cf6ec58ad32b149e23f).
 
-					// Taskexecutor example
-					// 2022-04-23 16:13:05,459 INFO  org.apache.flink.runtime.taskexecutor.TaskExecutor           [] - Could not resolve ResourceManager address akka.tcp://flink@localhost:6123/user/rpc/resourcemanager_*, retrying in 10000 ms: Could not connect to rpc endpoint under address akka.tcp://flink@localhost:6123/user/rpc/resourcemanager_*.
+						// Taskexecutor example
+						// 2022-04-23 16:13:05,459 INFO  org.apache.flink.runtime.taskexecutor.TaskExecutor           [] - Could not resolve ResourceManager address akka.tcp://flink@localhost:6123/user/rpc/resourcemanager_*, retrying in 10000 ms: Could not connect to rpc endpoint under address akka.tcp://flink@localhost:6123/user/rpc/resourcemanager_*.
 
-					// Client example
-					// Sample line: 2022-04-22 11:51:32,901 INFO  org.apache.flink.client.program.rest.RestClusterClient       [] - Submitting job 'Streaming WordCount' (2538c8dff66c8cf6ec58ad32b149e23f).
+						// Client example
+						// Sample line: 2022-04-22 11:51:32,901 INFO  org.apache.flink.client.program.rest.RestClusterClient       [] - Submitting job 'Streaming WordCount' (2538c8dff66c8cf6ec58ad32b149e23f).
 
-					Regex: `^(?<time>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+)\s+(?<level>[A-Z]+)\s+(?<source>[^ ]*)(?<message>[\s\S]*)`,
-					Parser: confgenerator.ParserShared{
-						TimeKey:    "time",
-						TimeFormat: "%Y-%m-%d %H:%M:%S,%L",
+						Regex: `^(?<time>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+)\s+(?<level>[A-Z]+)\s+(?<source>[^ ]*)(?<message>[\s\S]*)`,
+						Parser: confgenerator.ParserShared{
+							TimeKey:    "time",
+							TimeFormat: "%Y-%m-%d %H:%M:%S,%L",
+						},
 					},
 				},
 			},
-		},
-		Rules: []confgenerator.MultilineRule{
-			{
-				StateName: "start_state",
-				NextState: "cont",
-				Regex:     `^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+`,
+			Rules: []confgenerator.MultilineRule{
+				{
+					StateName: "start_state",
+					NextState: "cont",
+					Regex:     `^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+`,
+				},
+				{
+					StateName: "cont",
+					NextState: "cont",
+					Regex:     `^(?!\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+)`,
+				},
 			},
-			{
-				StateName: "cont",
-				NextState: "cont",
-				Regex:     `^(?!\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+)`,
-			},
 		},
-	}.Components(ctx, tag, uid)
-
-	// Log levels are just log4j log levels
-	// https://logging.apache.org/log4j/2.x/log4j-api/apidocs/org/apache/logging/log4j/Level.html
-	c = append(c,
+		// Log levels are just log4j log levels
+		// https://logging.apache.org/log4j/2.x/log4j-api/apidocs/org/apache/logging/log4j/Level.html
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				"severity": {
@@ -137,30 +135,59 @@ func (p LoggingProcessorFlink) Components(ctx context.Context, tag string, uid s
 				},
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(ctx, tag, uid)...,
-	)
-
-	return c
+		},
+	}
 }
 
-type LoggingReceiverFlink struct {
-	LoggingProcessorFlink                   `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
-}
-
-func (r LoggingReceiverFlink) Components(ctx context.Context, tag string) []fluentbit.Component {
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorFlink.Components(ctx, tag, "flink")...)
-	return c
+type LoggingProcessorMixin interface {
+	Components(ctx context.Context, tag string, uid string) []fluentbit.Component
 }
 
 type LoggingReceiverProcessor interface {
 	Type() string
-	Processors(ctx context.Context) []confgenerator.LoggingProcessor
+	Processors(ctx context.Context) []LoggingProcessorMixin
 }
 
 type LoggingReceiverMixin interface {
 	Components(ctx context.Context, tag string) []fluentbit.Component
+}
+
+type LoggingReceiverProcessorProcessor[P LoggingReceiverProcessor] struct {
+	confgenerator.ConfigComponent `yaml:",inline"`
+	ProcessorMixin                P `yaml:",inline"`
+}
+
+func (rpp *LoggingReceiverProcessorProcessor[P]) Type() string {
+	return rpp.ProcessorMixin.Type()
+}
+
+func (rpp *LoggingReceiverProcessorProcessor[P]) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
+	processors := rpp.ProcessorMixin.Processors(ctx)
+	if len(processors) == 1 {
+		return processors[0].Components(ctx, tag, uid)
+	}
+	var c []fluentbit.Component
+	for i, p := range processors {
+		c = append(c, p.Components(ctx, tag, fmt.Sprintf("%s.%i", uid, i))...)
+	}
+	return c
+}
+
+func (rpp *LoggingReceiverProcessorProcessor[P]) Processors(ctx context.Context) ([]otel.Component, error) {
+	var cs []otel.Component
+	processors := rpp.ProcessorMixin.Processors(ctx)
+	for _, p := range processors {
+		if p, ok := p.(confgenerator.OTelProcessor); ok {
+			c, err := p.Processors(ctx)
+			if err != nil {
+				return nil, err
+			}
+			cs = append(cs, c...)
+		} else {
+			return nil, errors.New("unimplemented")
+		}
+	}
+	return cs, nil
 }
 
 type LoggingReceiverProcessorReceiver[R LoggingReceiverMixin, P LoggingReceiverProcessor] struct {
@@ -174,13 +201,10 @@ func (rpr *LoggingReceiverProcessorReceiver[R, P]) Type() string {
 }
 
 func (rpr *LoggingReceiverProcessorReceiver[R, P]) Components(ctx context.Context, tag string) []fluentbit.Component {
+	c := rpr.ReceiverMixin.Components(ctx, tag)
 	processors := rpr.ProcessorMixin.Processors(ctx)
-	if len(processors) == 1 {
-		return processors[0].Components(ctx, tag, rpr.Type())
-	}
-	var c []fluentbit.Component
 	for i, p := range processors {
-		c = append(c, p.Components(ctx, tag, fmt.Sprintf("%s.%i", rpr.Type(), i))...)
+		c = append(c, p.Components(ctx, tag, fmt.Sprintf("%s.%d", rpr.Type(), i))...)
 	}
 	return c
 }
@@ -211,10 +235,12 @@ func (rpr *LoggingReceiverProcessorReceiver[R, P]) Pipelines(ctx context.Context
 }
 
 func init() {
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorFlink{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor {
+		return &LoggingReceiverProcessorProcessor[LoggingProcessorFlink]{}
+	})
 	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
-		return &LoggingReceiverFlink{
-			LoggingReceiverFilesMixin: confgenerator.LoggingReceiverFilesMixin{
+		return &LoggingReceiverProcessorReceiver[confgenerator.LoggingReceiverFilesMixin, LoggingProcessorFlink]{
+			ReceiverMixin: confgenerator.LoggingReceiverFilesMixin{
 				IncludePaths: []string{
 					"/opt/flink/log/flink-*-standalonesession-*.log",
 					"/opt/flink/log/flink-*-taskexecutor-*.log",
