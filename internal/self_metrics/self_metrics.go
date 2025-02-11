@@ -39,8 +39,8 @@ const (
 	agentMetricNamespace             string = "agent.googleapis.com"
 	enabledReceiversMetricName       string = "agent/ops_agent/enabled_receivers"
 	featureTrackingMetricName        string = "agent/internal/ops/feature_tracking"
-	enabledReceiversOTLPJSONFilePath string = "/tmp/featureTrackingOTLP.json"
-	featureTrackingOTLPJSONFilePath  string = "/tmp/featureTrackingOTLP.json"
+	enabledReceiversOTLPJSONFilePath string = "/var/run/google-cloud-ops-agent-opentelemetry-collector/enabledReceiversOTLP.json"
+	featureTrackingOTLPJSONFilePath  string = "/var/run/google-cloud-ops-agent-opentelemetry-collector/featureTrackingOTLP.json"
 )
 
 func getFullAgentMetricName(metricName string) string {
