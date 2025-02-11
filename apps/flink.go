@@ -16,6 +16,8 @@ package apps
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
@@ -147,19 +149,78 @@ type LoggingReceiverFlink struct {
 }
 
 func (r LoggingReceiverFlink) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{
-			"/opt/flink/log/flink-*-standalonesession-*.log",
-			"/opt/flink/log/flink-*-taskexecutor-*.log",
-			"/opt/flink/log/flink-*-client-*.log",
-		}
-	}
 	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
 	c = append(c, r.LoggingProcessorFlink.Components(ctx, tag, "flink")...)
 	return c
 }
 
+type LoggingReceiverProcessor interface {
+	Type() string
+	Processors(ctx context.Context) []confgenerator.LoggingProcessor
+}
+
+type LoggingReceiverMixin interface {
+	Components(ctx context.Context, tag string) []fluentbit.Component
+}
+
+type LoggingReceiverProcessorReceiver[R LoggingReceiverMixin, P LoggingReceiverProcessor] struct {
+	confgenerator.ConfigComponent `yaml:",inline"`
+	ReceiverMixin                 R `yaml:",inline"`
+	ProcessorMixin                P `yaml:",inline"`
+}
+
+func (rpr *LoggingReceiverProcessorReceiver[R, P]) Type() string {
+	return rpr.ProcessorMixin.Type()
+}
+
+func (rpr *LoggingReceiverProcessorReceiver[R, P]) Components(ctx context.Context, tag string) []fluentbit.Component {
+	processors := rpr.ProcessorMixin.Processors(ctx)
+	if len(processors) == 1 {
+		return processors[0].Components(ctx, tag, rpr.Type())
+	}
+	var c []fluentbit.Component
+	for i, p := range processors {
+		c = append(c, p.Components(ctx, tag, fmt.Sprintf("%s.%i", rpr.Type(), i))...)
+	}
+	return c
+}
+
+func (rpr *LoggingReceiverProcessorReceiver[R, P]) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
+	if r, ok := any(rpr.ReceiverMixin).(confgenerator.OTelReceiver); ok {
+		rps, err := r.Pipelines(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, pipeline := range rps {
+			processors := rpr.ProcessorMixin.Processors(ctx)
+			for _, p := range processors {
+				if p, ok := p.(confgenerator.OTelProcessor); ok {
+					c, err := p.Processors(ctx)
+					if err != nil {
+						return nil, err
+					}
+					pipeline.Processors["logs"] = append(pipeline.Processors["logs"], c...)
+				} else {
+					return nil, errors.New("unimplemented")
+				}
+			}
+		}
+		return rps, nil
+	}
+	return nil, errors.New("unimplemented")
+}
+
 func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorFlink{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverFlink{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &LoggingReceiverFlink{
+			LoggingReceiverFilesMixin: confgenerator.LoggingReceiverFilesMixin{
+				IncludePaths: []string{
+					"/opt/flink/log/flink-*-standalonesession-*.log",
+					"/opt/flink/log/flink-*-taskexecutor-*.log",
+					"/opt/flink/log/flink-*-client-*.log",
+				},
+			},
+		}
+	})
 }
