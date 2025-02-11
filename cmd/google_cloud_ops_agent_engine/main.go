@@ -60,7 +60,7 @@ func run() error {
 		return err
 	}
 
-	err = self_metrics.CollectOpsAgentSelfMetrics(ctx, uc, uc)
+	err = self_metrics.CollectOpsAgentSelfMetricsToOTLPJSON(ctx, uc, uc)
 	if err != nil {
 		return err
 	}
