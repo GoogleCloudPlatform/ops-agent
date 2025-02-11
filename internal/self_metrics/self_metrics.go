@@ -43,12 +43,12 @@ const (
 	featureTrackingOTLPJSONFilePath  string = "/tmp/featureTrackingOTLP.json"
 )
 
-func getFullMetricName(metricNamespace, metricName string) string {
+func getFullAgentMetricName(metricName string) string {
 	return fmt.Sprintf("%s/%s", agentMetricNamespace, metricName)
 }
 
 func agentMetricsPrefixFormatter(d metricdata.Metrics) string {
-	return fmt.Sprintf("%s/%s", agentMetricNamespace, d.Name)
+	return getFullAgentMetricName(d.Name)
 }
 
 type EnabledReceivers struct {
@@ -84,7 +84,7 @@ func InstrumentEnabledReceiversMetric(ctx context.Context, uc *confgenerator.Uni
 	}
 
 	_, err = meter.Int64ObservableGauge(
-		"agent/ops_agent/enabled_receivers",
+		enabledReceiversMetricName,
 		metricapi.WithInt64Callback(
 			func(ctx context.Context, observer metricapi.Int64Observer) error {
 				for rType, count := range eR.MetricsReceiverCountsByType {
@@ -118,7 +118,7 @@ func InstrumentFeatureTrackingMetric(ctx context.Context, uc *confgenerator.Unif
 		return err
 	}
 	_, err = meter.Int64ObservableGauge(
-		"agent/internal/ops/feature_tracking",
+		featureTrackingMetricName,
 		metricapi.WithInt64Callback(
 			func(ctx context.Context, observer metricapi.Int64Observer) error {
 				for _, f := range features {
@@ -151,11 +151,11 @@ func CreateFeatureTrackingMeterProvider(exporter metricsdk.Exporter, res *resour
 		metricsdk.WithView(
 			metricsdk.NewView(
 				metricsdk.Instrument{
-					Name: "agent/internal/ops/feature_tracking",
+					Name: featureTrackingMetricName,
 					Kind: metricsdk.InstrumentKindObservableGauge,
 				},
 				metricsdk.Stream{
-					Name:        "agent/internal/ops/feature_tracking",
+					Name:        featureTrackingMetricName,
 					Aggregation: metricsdk.AggregationDefault{},
 				},
 			)),
@@ -174,11 +174,11 @@ func CreateEnabledReceiversMeterProvider(exporter metricsdk.Exporter, res *resou
 		metricsdk.WithView(
 			metricsdk.NewView(
 				metricsdk.Instrument{
-					Name: "agent/ops_agent/enabled_receivers",
+					Name: enabledReceiversMetricName,
 					Kind: metricsdk.InstrumentKindObservableGauge,
 				},
 				metricsdk.Stream{
-					Name:        "agent/ops_agent/enabled_receivers",
+					Name:        enabledReceiversMetricName,
 					Aggregation: metricsdk.AggregationDefault{},
 				},
 			)),
@@ -265,7 +265,7 @@ func CollectEnabledReceiversMetricToOLTPJSON(ctx context.Context, uc *confgenera
 
 	metrics := pmetric.NewMetrics()
 	gaugeMetric := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-	gaugeMetric.SetName(getFullMetricName(agentMetricNamespace, enabledReceiversMetricName))
+	gaugeMetric.SetName(getFullAgentMetricName(enabledReceiversMetricName))
 	dataPoints := gaugeMetric.SetEmptyGauge().DataPoints()
 
 	for rType, count := range eR.MetricsReceiverCountsByType {
@@ -306,7 +306,7 @@ func CollectFeatureTrackingMetricToOTLPJSON(ctx context.Context, uc *confgenerat
 
 	metrics := pmetric.NewMetrics()
 	gaugeMetric := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-	gaugeMetric.SetName(getFullMetricName(agentMetricNamespace, featureTrackingMetricName))
+	gaugeMetric.SetName(getFullAgentMetricName(featureTrackingMetricName))
 	dataPoints := gaugeMetric.SetEmptyGauge().DataPoints()
 
 	for _, f := range features {
