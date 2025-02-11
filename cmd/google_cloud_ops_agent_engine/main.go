@@ -24,6 +24,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 )
 
 var (
@@ -55,6 +56,11 @@ func run() error {
 	ctx := context.Background()
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
 	uc, err := confgenerator.MergeConfFiles(ctx, *input, apps.BuiltInConfStructs)
+	if err != nil {
+		return err
+	}
+
+	err = self_metrics.CollectOpsAgentSelfMetricsToOTLPJSON(ctx, uc, uc)
 	if err != nil {
 		return err
 	}
