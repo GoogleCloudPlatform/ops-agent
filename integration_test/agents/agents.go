@@ -232,8 +232,7 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 }
 
 func runOpsAgentDiagnosticsWindows(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) {
-	isUAPPlugin := IsOpsAgentUAPPlugin()
-	if isUAPPlugin {
+	if IsOpsAgentUAPPlugin() {
 		return
 	}
 	gce.RunRemotely(ctx, logger.ToFile("windows_System_log.txt"), vm, "Get-WinEvent -LogName System | Format-Table -AutoSize -Wrap")
@@ -693,15 +692,15 @@ func InstallStandaloneWindowsMonitoringAgent(ctx context.Context, logger *log.Lo
 }
 
 func getRestartOpsAgentCmd(imageSpec string) string {
-	isUAPPlugin := IsOpsAgentUAPPlugin()
-	if gce.IsWindows(imageSpec) && isUAPPlugin {
-		return ""
-	}
-	if gce.IsWindows(imageSpec) && !isUAPPlugin {
-		return "Restart-Service google-cloud-ops-agent -Force"
-	}
-	if !gce.IsWindows(imageSpec) && isUAPPlugin {
+	if IsOpsAgentUAPPlugin() {
+		if gce.IsWindows(imageSpec) {
+			return ""
+		}
 		return fmt.Sprintf("grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Stop && grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Start", OpsAgentPluginServerPort, OpsAgentPluginServerPort)
+	}
+
+	if gce.IsWindows(imageSpec) {
+		return "Restart-Service google-cloud-ops-agent -Force"
 	}
 	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
 	return "sudo service google-cloud-ops-agent restart || sudo systemctl restart google-cloud-ops-agent"
@@ -848,9 +847,7 @@ func StartOpsAgentPlugin(ctx context.Context, logger *log.Logger, vm *gce.VM, po
 	if _, err := gce.RunRemotely(ctx, logger, vm, getStartOpsAgentPluginCmd(vm.ImageSpec, port)); err != nil {
 		return fmt.Errorf("StartOpsAgentPlugin() failed to start the ops agent plugin: %v", err)
 	}
-	// Give agents time to shut down. Fluent-Bit's default shutdown grace period
-	// is 5 seconds, so we should probably give it at least that long.
-	time.Sleep(10 * time.Second)
+
 	return nil
 
 }
@@ -861,7 +858,6 @@ func SetupOpsAgentFrom(ctx context.Context, logger *log.Logger, vm *gce.VM, conf
 	if err := InstallOpsAgent(ctx, logger, vm, location); err != nil {
 		return err
 	}
-	isUAPPluin := IsOpsAgentUAPPlugin()
 	startupDelay := 20 * time.Second
 	if len(config) > 0 {
 		if gce.IsWindows(vm.ImageSpec) {
@@ -875,7 +871,7 @@ func SetupOpsAgentFrom(ctx context.Context, logger *log.Logger, vm *gce.VM, conf
 		if err := RestartOpsAgent(ctx, logger, vm); err != nil {
 			return err
 		}
-	} else if isUAPPluin {
+	} else if IsOpsAgentUAPPlugin() {
 		return RestartOpsAgent(ctx, logger, vm)
 	}
 	// Give agents time to start up.
@@ -1032,20 +1028,16 @@ func installWindowsPackageFromGCS(ctx context.Context, logger *log.Logger, vm *g
 }
 
 func GetOtelConfigPath(imageSpec string) string {
-	isUAPPlugin := IsOpsAgentUAPPlugin()
-
-	if gce.IsWindows(imageSpec) && isUAPPlugin {
-		return ""
-	}
-
-	if gce.IsWindows(imageSpec) && !isUAPPlugin {
-		return `C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\otel\otel.yaml`
-	}
-
-	if !gce.IsWindows(imageSpec) && isUAPPlugin {
+	if IsOpsAgentUAPPlugin() {
+		if gce.IsWindows(imageSpec) {
+			return ""
+		}
 		return "/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml"
 	}
 
+	if gce.IsWindows(imageSpec) {
+		return `C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\otel\otel.yaml`
+	}
 	return "/var/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml"
 }
 

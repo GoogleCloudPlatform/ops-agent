@@ -1,6 +1,5 @@
 # The built-in Ops Agent already includes the nvml receiver in the default pipeline.
 
-# A back up of the existing file is required as part of the test framework check.
 # Check if the file exists
 if [ ! -f /etc/google-cloud-ops-agent/config.yaml ]; then
   # Create the file if it doesn't exist.

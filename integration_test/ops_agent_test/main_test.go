@@ -95,39 +95,31 @@ func workDirForImage(imageSpec string) string {
 }
 
 func startCommandForImage(imageSpec string) string {
-	isUAPPlugin := agents.IsOpsAgentUAPPlugin()
-
-	if gce.IsWindows(imageSpec) && isUAPPlugin {
-		return ""
-	}
-
-	if gce.IsWindows(imageSpec) && !isUAPPlugin {
-		return "Start-Service google-cloud-ops-agent"
-	}
-
-	if !gce.IsWindows(imageSpec) && isUAPPlugin {
+	if agents.IsOpsAgentUAPPlugin() {
+		if gce.IsWindows(imageSpec) {
+			return ""
+		}
 		return "grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Start"
 	}
 
+	if gce.IsWindows(imageSpec) {
+		return "Start-Service google-cloud-ops-agent"
+	}
 	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
 	return "sudo service google-cloud-ops-agent start || sudo systemctl start google-cloud-ops-agent"
 }
 
 func stopCommandForImage(imageSpec string) string {
-	isUAPPlugin := agents.IsOpsAgentUAPPlugin()
-
-	if gce.IsWindows(imageSpec) && isUAPPlugin {
-		return ""
-	}
-
-	if gce.IsWindows(imageSpec) && !isUAPPlugin {
-		return "Stop-Service google-cloud-ops-agent -Force"
-	}
-
-	if !gce.IsWindows(imageSpec) && isUAPPlugin {
+	if agents.IsOpsAgentUAPPlugin() {
+		if gce.IsWindows(imageSpec) {
+			return ""
+		}
 		return "grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Stop"
 	}
 
+	if gce.IsWindows(imageSpec) {
+		return "Stop-Service google-cloud-ops-agent -Force"
+	}
 	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
 	return "sudo service google-cloud-ops-agent stop || sudo systemctl stop google-cloud-ops-agent"
 }
@@ -4561,13 +4553,14 @@ func checkExpectedHealthCheckResult(t *testing.T, output string, name string, ex
 }
 
 func getRecentServiceOutputForImage(imageSpec string) string {
-	isUAPPlugin := agents.IsOpsAgentUAPPlugin()
-
-	if gce.IsWindows(imageSpec) && isUAPPlugin {
-		return ""
+	if agents.IsOpsAgentUAPPlugin() {
+		if gce.IsWindows(imageSpec) {
+			return ""
+		}
+		return "grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/GetStatus"
 	}
 
-	if gce.IsWindows(imageSpec) && !isUAPPlugin {
+	if gce.IsWindows(imageSpec) {
 		cmd := strings.Join([]string{
 			"$ServiceStart = (Get-EventLog -LogName 'System' -Source 'Service Control Manager' -EntryType 'Information' -Message '*Google Cloud Ops Agent service entered the running state*' -Newest 1).TimeGenerated",
 			"$QueryStart = $ServiceStart - (New-TimeSpan -Seconds 30)",
@@ -4575,11 +4568,6 @@ func getRecentServiceOutputForImage(imageSpec string) string {
 		}, ";")
 		return cmd
 	}
-
-	if !gce.IsWindows(imageSpec) && isUAPPlugin {
-		return "grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/GetStatus"
-	}
-
 	return "sudo systemctl status google-cloud-ops-agent"
 }
 

@@ -2,7 +2,6 @@
 
 set -e
 
-# Create a back up of the existing file so existing configurations are not lost.
 # Check if the file exists
 if [ ! -f /etc/google-cloud-ops-agent/config.yaml ]; then
   # Create the file if it doesn't exist.
@@ -36,6 +35,4 @@ logging:
           - zookeeper_general
 
 EOF
-
-
 

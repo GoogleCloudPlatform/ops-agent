@@ -1,7 +1,6 @@
 # Configures Ops Agent to collect telemetry from the app and restart Ops Agent.
 set -e
 
-# Create a back up of the existing file so existing configurations are not lost.
 # Check if the file exists
 if [ ! -f /etc/google-cloud-ops-agent/config.yaml ]; then
   # Create the file if it doesn't exist.
@@ -25,6 +24,4 @@ metrics:
         receivers:
           - dcgm
 EOF
-
-
 

@@ -40,4 +40,3 @@ logging:
           - cassandra_debug
           - cassandra_gc
 EOF
-
