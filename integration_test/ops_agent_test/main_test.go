@@ -106,7 +106,7 @@ func startCommandForImage(imageSpec string) string {
 	}
 
 	if !gce.IsWindows(imageSpec) && isUAPPlugin {
-		return "sudo grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Start"
+		return "grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Start"
 	}
 
 	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
@@ -125,7 +125,7 @@ func stopCommandForImage(imageSpec string) string {
 	}
 
 	if !gce.IsWindows(imageSpec) && isUAPPlugin {
-		return "sudo grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Stop"
+		return "grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Stop"
 	}
 
 	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
@@ -4575,7 +4575,7 @@ func getRecentServiceOutputForImage(imageSpec string) string {
 	}
 
 	if !gce.IsWindows(imageSpec) && isUAPPlugin {
-		return "sudo grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/GetStatus"
+		return "grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/GetStatus"
 	}
 
 	return "sudo systemctl status google-cloud-ops-agent"
