@@ -1650,25 +1650,14 @@ func InstallGrpcurlIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) err
 
 	logger.Printf("grpcurl not found, installing it...")
 
-	installCmd := ""
-
 	arch := "x86_64"
 	if IsARM(vm.ImageSpec) {
 		arch = "arm64"
 	}
-
-	switch arch {
-	case "x86_64":
-		installCmd = `
-sudo curl -sSL "https://github.com/fullstorydev/grpcurl/releases/download/v1.8.6/grpcurl_1.8.6_linux_x86_64.tar.gz" | sudo tar -xz -C /usr/local/bin
-`
-	case "arm64":
-		installCmd = `
-sudo curl -sSL "https://github.com/fullstorydev/grpcurl/releases/download/v1.8.6/grpcurl_1.8.6_linux_arm64.tar.gz" | sudo tar -xz -C /usr/local/bin
-`
-	default:
+	if arch != "x86_64" && arch != "arm64" {
 		return fmt.Errorf("failed to install grpcurl, architecture %s not supported for pre-compiled grpcurl", arch)
 	}
+	installCmd := fmt.Sprintf("sudo curl -sSL \"https://github.com/fullstorydev/grpcurl/releases/download/v1.8.6/grpcurl_1.8.6_linux_%s.tar.gz\" | sudo tar -xz -C /usr/local/bin", arch)
 
 	installCmd = `set -ex
 ` + installCmd

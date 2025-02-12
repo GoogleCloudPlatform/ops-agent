@@ -951,7 +951,7 @@ func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm
 	if _, err := gce.RunRemotely(ctx, logger, vm, "sudo gsutil cp -r "+gcsPath+"/* /tmp/agentUpload"); err != nil {
 		return fmt.Errorf("error copying down agent package from GCS: %v", err)
 	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, "mv /tmp/agentUpload/*.tar.gz /tmp/agentPlugin || echo nothing to move"); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "mv /tmp/agentUpload/*.tar.gz /tmp/agentPlugin"); err != nil {
 		return err
 	}
 	// Print the contents of /tmp/agentPlugin into the logs.
