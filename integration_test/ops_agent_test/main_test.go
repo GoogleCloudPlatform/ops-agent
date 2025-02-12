@@ -838,6 +838,8 @@ func TestPluginGetStatusReturnsUnhealthyStatusOnSubAgentTermination(t *testing.T
 			t.Fatal(err)
 		}
 
+		time.Sleep(10 * time.Second)
+
 		cmdOut, err = gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
 		if err != nil {
 			t.Fatal(err)
