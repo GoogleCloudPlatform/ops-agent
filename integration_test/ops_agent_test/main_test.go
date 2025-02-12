@@ -4581,6 +4581,14 @@ func getRecentServiceOutputForImage(imageSpec string) string {
 	return "sudo systemctl status google-cloud-ops-agent"
 }
 
+func getHealthCheckLogsForUAPPluginByImage(imageSpec string) string {
+	if gce.IsWindows(imageSpec) {
+		return ""
+	}
+
+	return "sudo cat /var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/health-checks.log"
+}
+
 func listenToPortForImage(vm *gce.VM) string {
 	if gce.IsWindows(vm.ImageSpec) {
 		cmd := strings.Join([]string{
@@ -4634,9 +4642,19 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
-		if err != nil {
-			t.Fatal(err)
+		var cmdOut gce.CommandOutput
+		var err error
+		if agents.IsOpsAgentUAPPlugin() {
+			cmdOut, err = gce.RunRemotely(ctx, logger, vm, getHealthCheckLogsForUAPPluginByImage(vm.ImageSpec))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+		} else {
+			cmdOut, err = gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
+			if err != nil {
+				t.Fatal(err)
+			}
 		}
 
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
@@ -4663,10 +4681,19 @@ func TestNetworkHealthCheck(t *testing.T) {
 		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal(err)
 		}
+		var cmdOut gce.CommandOutput
+		var err error
+		if agents.IsOpsAgentUAPPlugin() {
+			cmdOut, err = gce.RunRemotely(ctx, logger, vm, getHealthCheckLogsForUAPPluginByImage(vm.ImageSpec))
+			if err != nil {
+				t.Fatal(err)
+			}
 
-		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
-		if err != nil {
-			t.Fatal(err)
+		} else {
+			cmdOut, err = gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
+			if err != nil {
+				t.Fatal(err)
+			}
 		}
 
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
@@ -4687,9 +4714,17 @@ func TestNetworkHealthCheck(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cmdOut, err = gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
-		if err != nil {
-			t.Fatal(err)
+		if agents.IsOpsAgentUAPPlugin() {
+			cmdOut, err = gce.RunRemotely(ctx, logger, vm, getHealthCheckLogsForUAPPluginByImage(vm.ImageSpec))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+		} else {
+			cmdOut, err = gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
+			if err != nil {
+				t.Fatal(err)
+			}
 		}
 
 		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "FAIL", "LogApiConnErr")
