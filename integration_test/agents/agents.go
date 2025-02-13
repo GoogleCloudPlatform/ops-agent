@@ -939,7 +939,7 @@ func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm
 	if gce.IsWindows(vm.ImageSpec) {
 		return fmt.Errorf("Ops Agent UAP Plugin does not support Windows yet")
 	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, "mkdir -p /tmp/agentUpload /tmp/agentPlugin"); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "mkdir -p /tmp/agentPlugin"); err != nil {
 		return err
 	}
 	if err := gce.InstallGsutilIfNeeded(ctx, logger, vm); err != nil {
@@ -949,12 +949,10 @@ func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm
 		return err
 	}
 
-	if _, err := gce.RunRemotely(ctx, logger, vm, "sudo gsutil cp -r "+gcsPath+"/* /tmp/agentUpload"); err != nil {
-		return fmt.Errorf("error copying down agent package from GCS: %v", err)
+	if _, err := gce.RunRemotely(ctx, logger, vm, "sudo gsutil cp "+gcsPath+"/google-cloud-ops-agent-plugin*.tar.gz /tmp/agentPlugin"); err != nil {
+		return fmt.Errorf("error copying down the agent uap plugin tarball from GCS: %v", err)
 	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, "mv /tmp/agentUpload/*.tar.gz /tmp/agentPlugin"); err != nil {
-		return err
-	}
+
 	// Print the contents of /tmp/agentPlugin into the logs.
 	if _, err := gce.RunRemotely(ctx, logger, vm, "ls -la /tmp/agentPlugin"); err != nil {
 		return err
