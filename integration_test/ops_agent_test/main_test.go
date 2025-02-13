@@ -823,8 +823,6 @@ func TestPluginGetStatusReturnsUnhealthyStatusOnSubAgentTermination(t *testing.T
 			t.Fatal(err)
 		}
 
-		logger.Printf("TestPluginGetStatusReturnsUnhealthyStatusOnSubAgentTermination: Found %s", processName)
-
 		// Simulate a subagent termination.
 		if err := terminateProcess(ctx, logger, vm, processName); err != nil {
 			t.Fatal(err)
@@ -5000,6 +4998,7 @@ func TestRestartVM(t *testing.T) {
 		if err := gce.RestartInstance(ctx, dirLog.ToFile("VM_restart.txt"), vm); err != nil {
 			t.Fatal(err)
 		}
+
 		if isUAPPlugin {
 			if err := agents.StartOpsAgentPlugin(ctx, logger, vm, "1234"); err != nil {
 				t.Fatal(err)
@@ -5007,9 +5006,7 @@ func TestRestartVM(t *testing.T) {
 			if err := agents.RestartOpsAgent(ctx, logger, vm); err != nil {
 				t.Fatal(err)
 			}
-		}
 
-		if isUAPPlugin {
 			cmdOut, err := gce.RunRemotely(ctx, logger, vm, getUAPPluginStatusForImage(vm.ImageSpec))
 			if err != nil {
 				t.Fatal(err)
@@ -5026,7 +5023,6 @@ func TestRestartVM(t *testing.T) {
 			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
 			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
 		}
-
 	})
 }
 
