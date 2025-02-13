@@ -4571,6 +4571,16 @@ func getRecentServiceOutputForImage(imageSpec string) string {
 	return "sudo systemctl status google-cloud-ops-agent"
 }
 
+func getHealthCheckResultsForImage(ctx context.Context, logger *log.Logger, vm *gce.VM) (string, error) {
+	if agents.IsOpsAgentUAPPlugin() {
+		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getHealthCheckLogsForUAPPluginByImage(vm.ImageSpec))
+		return cmdOut.Stdout, err
+
+	}
+	cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
+	return cmdOut.Stdout, err
+}
+
 func getHealthCheckLogsForUAPPluginByImage(imageSpec string) string {
 	if gce.IsWindows(imageSpec) {
 		return ""
@@ -4632,24 +4642,14 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		var cmdOut gce.CommandOutput
-		var err error
-		if agents.IsOpsAgentUAPPlugin() {
-			cmdOut, err = gce.RunRemotely(ctx, logger, vm, getHealthCheckLogsForUAPPluginByImage(vm.ImageSpec))
-			if err != nil {
-				t.Fatal(err)
-			}
-
-		} else {
-			cmdOut, err = gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
-			if err != nil {
-				t.Fatal(err)
-			}
+		cmdOut, err := getHealthCheckResultsForImage(ctx, logger, vm)
+		if err != nil {
+			t.Fatal(err)
 		}
 
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "FAIL", "OtelMetricsPortErr")
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "FAIL", "MonApiScopeErr")
+		checkExpectedHealthCheckResult(t, cmdOut, "Network", "PASS", "")
+		checkExpectedHealthCheckResult(t, cmdOut, "Ports", "FAIL", "OtelMetricsPortErr")
+		checkExpectedHealthCheckResult(t, cmdOut, "API", "FAIL", "MonApiScopeErr")
 
 		query := fmt.Sprintf(`severity="ERROR" AND jsonPayload.code="MonApiScopeErr" AND labels."agent.googleapis.com/health/agentKind"="ops-agent" AND labels."agent.googleapis.com/health/agentVersion"=~"^\d+\.\d+\.\d+.*$" AND labels."agent.googleapis.com/health/schemaVersion"="v1"`)
 		if err := gce.WaitForLog(ctx, logger, vm, "ops-agent-health", time.Hour, query); err != nil {
@@ -4671,24 +4671,15 @@ func TestNetworkHealthCheck(t *testing.T) {
 		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal(err)
 		}
-		var cmdOut gce.CommandOutput
-		var err error
-		if agents.IsOpsAgentUAPPlugin() {
-			cmdOut, err = gce.RunRemotely(ctx, logger, vm, getHealthCheckLogsForUAPPluginByImage(vm.ImageSpec))
-			if err != nil {
-				t.Fatal(err)
-			}
 
-		} else {
-			cmdOut, err = gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
-			if err != nil {
-				t.Fatal(err)
-			}
+		cmdOut, err := getHealthCheckResultsForImage(ctx, logger, vm)
+		if err != nil {
+			t.Fatal(err)
 		}
 
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
+		checkExpectedHealthCheckResult(t, cmdOut, "Network", "PASS", "")
+		checkExpectedHealthCheckResult(t, cmdOut, "Ports", "PASS", "")
+		checkExpectedHealthCheckResult(t, cmdOut, "API", "PASS", "")
 
 		if _, err := gce.RunRemotely(ctx, logger, vm, stopCommandForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)
@@ -4704,27 +4695,19 @@ func TestNetworkHealthCheck(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if agents.IsOpsAgentUAPPlugin() {
-			cmdOut, err = gce.RunRemotely(ctx, logger, vm, getHealthCheckLogsForUAPPluginByImage(vm.ImageSpec))
-			if err != nil {
-				t.Fatal(err)
-			}
-
-		} else {
-			cmdOut, err = gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
-			if err != nil {
-				t.Fatal(err)
-			}
+		cmdOut, err = getHealthCheckResultsForImage(ctx, logger, vm)
+		if err != nil {
+			t.Fatal(err)
 		}
 
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "FAIL", "LogApiConnErr")
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "FAIL", "MonApiConnErr")
+		checkExpectedHealthCheckResult(t, cmdOut, "Network", "FAIL", "LogApiConnErr")
+		checkExpectedHealthCheckResult(t, cmdOut, "Network", "FAIL", "MonApiConnErr")
 		// TODO(b/321220138): restore this once there's a more reliable endpoint.
 		// checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "WARNING", "PacApiConnErr")
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "WARNING", "DLApiConnErr")
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "FAIL", "MonApiConnErr")
-		checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "FAIL", "LogApiConnErr")
+		checkExpectedHealthCheckResult(t, cmdOut, "Network", "WARNING", "DLApiConnErr")
+		checkExpectedHealthCheckResult(t, cmdOut, "Ports", "PASS", "")
+		checkExpectedHealthCheckResult(t, cmdOut, "API", "FAIL", "MonApiConnErr")
+		checkExpectedHealthCheckResult(t, cmdOut, "API", "FAIL", "LogApiConnErr")
 	})
 }
 

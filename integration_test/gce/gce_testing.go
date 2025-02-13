@@ -1654,9 +1654,7 @@ func InstallGrpcurlIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) err
 	if IsARM(vm.ImageSpec) {
 		arch = "arm64"
 	}
-	if arch != "x86_64" && arch != "arm64" {
-		return fmt.Errorf("failed to install grpcurl, architecture %s not supported for pre-compiled grpcurl", arch)
-	}
+
 	installCmd := fmt.Sprintf("sudo curl -sSL \"https://github.com/fullstorydev/grpcurl/releases/download/v1.8.6/grpcurl_1.8.6_linux_%s.tar.gz\" | sudo tar -xz -C /usr/local/bin", arch)
 
 	installCmd = `set -ex
