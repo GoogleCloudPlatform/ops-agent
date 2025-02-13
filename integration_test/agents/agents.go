@@ -191,15 +191,24 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 
 	isUAPPlugin := IsOpsAgentUAPPlugin()
 	if isUAPPlugin {
-		gce.RunRemotely(ctx, logger.ToFile("systemctl_status_for_ops_agent.txt"), vm, fmt.Sprintf("grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/GetStatus", OpsAgentPluginServerPort))
+		gce.RunRemotely(ctx, logger.ToFile("status_for_ops_agent_uap_plugin.txt"), vm, fmt.Sprintf("grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/GetStatus", OpsAgentPluginServerPort))
 	} else {
 		gce.RunRemotely(ctx, logger.ToFile("systemctl_status_for_ops_agent.txt"), vm, "sudo systemctl status google-cloud-ops-agent*")
 	}
 
 	gce.RunRemotely(ctx, logger.ToFile("journalctl_output.txt"), vm, "sudo journalctl -xe")
-	if isUAPPlugin {
-		for _, log := range []string{
-			gce.SyslogLocation(vm.ImageSpec),
+
+	fileList := getOpsAgentLogFilesList(vm.ImageSpec)
+	for _, log := range fileList {
+		_, basename := path.Split(log)
+		gce.RunRemotely(ctx, logger.ToFile(basename+txtSuffix), vm, "sudo cat "+log)
+	}
+}
+
+func getOpsAgentLogFilesList(imageSpec string) []string {
+	if IsOpsAgentUAPPlugin() {
+		return []string{
+			gce.SyslogLocation(imageSpec),
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/health-checks.log",
 			"/etc/google-cloud-ops-agent/config.yaml",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/subagents/logging-module.log",
@@ -208,26 +217,18 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/run/google-cloud-ops-agent-fluent-bit/fluent_bit_main.conf",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/run/google-cloud-ops-agent-fluent-bit/fluent_bit_parser.conf",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml",
-		} {
-			_, basename := path.Split(log)
-			gce.RunRemotely(ctx, logger.ToFile(basename+txtSuffix), vm, "sudo cat "+log)
 		}
-
-	} else {
-		for _, log := range []string{
-			gce.SyslogLocation(vm.ImageSpec),
-			"/var/log/google-cloud-ops-agent/health-checks.log",
-			"/etc/google-cloud-ops-agent/config.yaml",
-			"/var/log/google-cloud-ops-agent/subagents/logging-module.log",
-			"/var/log/google-cloud-ops-agent/subagents/metrics-module.log",
-			"/var/log/nvidia-installer.log",
-			"/run/google-cloud-ops-agent-fluent-bit/fluent_bit_main.conf",
-			"/run/google-cloud-ops-agent-fluent-bit/fluent_bit_parser.conf",
-			"/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml",
-		} {
-			_, basename := path.Split(log)
-			gce.RunRemotely(ctx, logger.ToFile(basename+txtSuffix), vm, "sudo cat "+log)
-		}
+	}
+	return []string{
+		gce.SyslogLocation(imageSpec),
+		"/var/log/google-cloud-ops-agent/health-checks.log",
+		"/etc/google-cloud-ops-agent/config.yaml",
+		"/var/log/google-cloud-ops-agent/subagents/logging-module.log",
+		"/var/log/google-cloud-ops-agent/subagents/metrics-module.log",
+		"/var/log/nvidia-installer.log",
+		"/run/google-cloud-ops-agent-fluent-bit/fluent_bit_main.conf",
+		"/run/google-cloud-ops-agent-fluent-bit/fluent_bit_parser.conf",
+		"/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml",
 	}
 }
 
