@@ -53,7 +53,7 @@ const TrailingQueryWindow = 2 * time.Minute
 // OpsAgentPluginServerPort defines the port on which the Ops Agent UAP Plugin gRPC server runs.
 const OpsAgentPluginServerPort = "1234"
 
-//go:embed cmd/uap_plugin
+//go:embed cmd
 var uapPluginCmdDir embed.FS
 
 // AgentPackage represents a thing that we ask OS Config to install for us.
@@ -846,7 +846,7 @@ func StopOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 		if gce.IsWindows(vm.ImageSpec) {
 			return fmt.Errorf("Ops Agent UAP Plugin does not support Windows yet")
 		}
-		if _, err := runScriptFromScriptsDir(ctx, logger, vm, path.Join("uap_plugin", "stop_ops_agent"), nil); err != nil {
+		if _, err := runScriptFromScriptsDir(ctx, logger, vm, path.Join("cmd", "uap_plugin", "stop_ops_agent"), nil); err != nil {
 			return err
 		}
 		return nil
@@ -870,7 +870,7 @@ func StartOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 		if gce.IsWindows(vm.ImageSpec) {
 			return fmt.Errorf("Ops Agent UAP Plugin does not support Windows yet")
 		}
-		if _, err := runScriptFromScriptsDir(ctx, logger, vm, path.Join("uap_plugin", "start_ops_agent"), nil); err != nil {
+		if _, err := runScriptFromScriptsDir(ctx, logger, vm, path.Join("cmd", "uap_plugin", "start_ops_agent"), nil); err != nil {
 			return err
 		}
 		return nil
@@ -909,15 +909,13 @@ func RestartOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM) error 
 		if gce.IsWindows(vm.ImageSpec) {
 			return fmt.Errorf("Ops Agent UAP Plugin does not support Windows yet")
 		}
-		if _, err := runScriptFromScriptsDir(ctx, logger, vm, path.Join("uap_plugin", "restart_ops_agent"), nil); err != nil {
+		if _, err := runScriptFromScriptsDir(ctx, logger, vm, path.Join("cmd", "uap_plugin", "restart_ops_agent"), nil); err != nil {
 			return fmt.Errorf("RestartOpsAgent() failed to restart ops agent: %v", err)
 		}
-		time.Sleep(10 * time.Second)
-		return nil
-	}
-
-	if _, err := gce.RunRemotely(ctx, logger, vm, getRestartOpsAgentCmd(vm.ImageSpec)); err != nil {
-		return fmt.Errorf("RestartOpsAgent() failed to restart ops agent: %v", err)
+	} else {
+		if _, err := gce.RunRemotely(ctx, logger, vm, getRestartOpsAgentCmd(vm.ImageSpec)); err != nil {
+			return fmt.Errorf("RestartOpsAgent() failed to restart ops agent: %v", err)
+		}
 	}
 	// Give agents time to shut down. Fluent-Bit's default shutdown grace period
 	// is 5 seconds, so we should probably give it at least that long.
@@ -938,7 +936,7 @@ func GetOpsAgentStatus(ctx context.Context, logger *log.Logger, vm *gce.VM) (gce
 		if gce.IsWindows(vm.ImageSpec) {
 			return gce.CommandOutput{}, fmt.Errorf("Ops Agent UAP Plugin does not support Windows yet")
 		}
-		return runScriptFromScriptsDir(ctx, logger, vm, path.Join("uap_plugin", "get_ops_agent_status"), nil)
+		return runScriptFromScriptsDir(ctx, logger, vm, path.Join("cmd", "uap_plugin", "get_ops_agent_status"), nil)
 	}
 	return gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
 
