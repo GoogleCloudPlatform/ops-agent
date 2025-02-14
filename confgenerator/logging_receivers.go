@@ -683,54 +683,51 @@ func (r LoggingReceiverSystemd) Components(ctx context.Context, tag string) []fl
 }
 
 func (r LoggingReceiverSystemd) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
-	operators := []map[string]any{}
-	operators = append(operators, map[string]any{
-		"type":       "severity_parser",
-		"parse_from": "body.PRIORITY",
-		"mapping": map[string]string{
-			"DEBUG":     "7",
-			"INFO":      "6",
-			"NOTICE":    "5",
-			"WARNING":   "4",
-			"ERROR":     "3",
-			"CRITICAL":  "2",
-			"ALERT":     "1",
-			"EMERGENCY": "0",
-		},
-	})
-	operators = append(operators, map[string]any{
-		"type": "move",
-		"from": "body.severity",
-		"to":   `body."logging.googleapis.com/severity"`,
-	})
-	operators = append(operators, map[string]any{
-		"type": "copy",
-		"from": "body.CODE_FILE",
-		"to":   `body."logging.googleapis.com/sourceLocation/file"`,
-	})
-	operators = append(operators, map[string]any{
-		"type": "copy",
-		"from": "body.CODE_FUNC",
-		"to":   `body."logging.googleapis.com/sourceLocation/func"`,
-	})
-	operators = append(operators, map[string]any{
-		"type": "copy",
-		"from": "body.CODE_LINE",
-		"to":   `body."logging.googleapis.com/sourceLocation/line"`,
-	})
 	receiver_config := map[string]any{
-		"start_at":  "beginning",
-		"priority":  "",
-		"operators": operators,
+		"start_at": "beginning",
 	}
+
+	modify_fields_processors, err := LoggingProcessorModifyFields{
+		Fields: map[string]*ModifyField{
+			"severity": {
+				CopyFrom: "jsonPayload.PRIORITY",
+				MapValues: map[string]string{
+					"7": "DEBUG",
+					"6": "INFO",
+					"5": "NOTICE",
+					"4": "WARNING",
+					"3": "ERROR",
+					"2": "CRITICAL",
+					"1": "ALERT",
+					"0": "EMERGENCY",
+				},
+				MapValuesExclusive: true,
+			},
+			`sourceLocation.file`: {
+				MoveFrom: "jsonPayload.CODE_FILE",
+			},
+			`sourceLocation.func`: {
+				MoveFrom: "jsonPayload.CODE_FUNC",
+			},
+			`sourceLocation.line`: {
+				MoveFrom: "jsonPayload.CODE_LINE",
+			},
+		},
+	}.Processors(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
 	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type:   "journald",
 			Config: receiver_config,
 		},
 		Processors: map[string][]otel.Component{
-			"logs": nil,
+			"logs": modify_fields_processors,
 		},
+
 		ExporterTypes: map[string]otel.ExporterType{
 			"logs": otel.OTel,
 		},
