@@ -689,7 +689,7 @@ func (r LoggingReceiverSystemd) Pipelines(ctx context.Context) ([]otel.ReceiverP
 
 	modify_fields_processors, err := LoggingProcessorModifyFields{
 		Fields: map[string]*ModifyField{
-			"severity": {
+			`severity`: {
 				CopyFrom: "jsonPayload.PRIORITY",
 				MapValues: map[string]string{
 					"7": "DEBUG",
@@ -711,6 +711,7 @@ func (r LoggingReceiverSystemd) Pipelines(ctx context.Context) ([]otel.ReceiverP
 			},
 			`sourceLocation.line`: {
 				CopyFrom: "jsonPayload.CODE_LINE",
+				Type:     "integer",
 			},
 		},
 	}.Processors(ctx)
