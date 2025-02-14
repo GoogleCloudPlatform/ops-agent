@@ -95,13 +95,6 @@ func workDirForImage(imageSpec string) string {
 }
 
 func startCommandForImage(imageSpec string) string {
-	if agents.IsOpsAgentUAPPlugin() {
-		if gce.IsWindows(imageSpec) {
-			return ""
-		}
-		return "grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Start"
-	}
-
 	if gce.IsWindows(imageSpec) {
 		return "Start-Service google-cloud-ops-agent"
 	}
@@ -776,7 +769,7 @@ func TestPluginGetStatusReturnsHealthyStatusOnSuccessfulOpsAgentStart(t *testing
 			t.Fatal(err)
 		}
 
-		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getUAPPluginStatusForImage(vm.ImageSpec))
+		cmdOut, err := getUAPPluginStatus(ctx, logger, vm)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -802,7 +795,7 @@ func TestPluginGetStatusReturnsUnhealthyStatusOnSubAgentTermination(t *testing.T
 			t.Fatal(err)
 		}
 
-		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getUAPPluginStatusForImage(vm.ImageSpec))
+		cmdOut, err := getUAPPluginStatus(ctx, logger, vm)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -823,13 +816,13 @@ func TestPluginGetStatusReturnsUnhealthyStatusOnSubAgentTermination(t *testing.T
 
 		time.Sleep(10 * time.Second)
 
-		cmdOut, err = gce.RunRemotely(ctx, logger, vm, getUAPPluginStatusForImage(vm.ImageSpec))
+		cmdOut, err = getUAPPluginStatus(ctx, logger, vm)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		// A subagent termination should terminate the entire Ops Agent. In this case, the plugin is expected to return a non-healthy status for the Ops Agent.
-		if !strings.Contains(cmdOut.Stdout, "\"code\": 1") {
+		if !strings.Contains(cmdOut.Stdout, "The Ops Agent Plugin is not running.") {
 			t.Error("expected the plugin to report that the Ops Agent is not running")
 		}
 
@@ -4551,6 +4544,14 @@ func getUAPPluginStatusForImage(imageSpec string) string {
 
 }
 
+func getUAPPluginStatus(ctx context.Context, logger *log.Logger, vm *gce.VM) (gce.CommandOutput, error) {
+	if gce.IsWindows(vm.ImageSpec) {
+		return gce.CommandOutput{}, fmt.Errorf("UAP Ops Agent Plugin does not support Windows")
+	}
+
+	return runScriptFromScriptsDir(ctx, logger, vm, path.Join("testdata", "uap_plugin", "get_ops_agent_status"), nil)
+}
+
 func getRecentServiceOutputForImage(imageSpec string) string {
 	if gce.IsWindows(imageSpec) {
 		cmd := strings.Join([]string{
@@ -4683,7 +4684,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 		}
 		time.Sleep(time.Minute)
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, startCommandForImage(vm.ImageSpec)); err != nil {
+		if err := startOpsAgentForImage(ctx, logger, vm); err != nil {
 			t.Fatal(err)
 		}
 
@@ -4799,6 +4800,19 @@ func stopOpsAgentForImage(ctx context.Context, logger *log.Logger, vm *gce.VM) e
 	return nil
 }
 
+func startOpsAgentForImage(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	if agents.IsOpsAgentUAPPlugin() {
+		if _, err := runScriptFromScriptsDir(ctx, logger, vm, path.Join("testdata", "uap_plugin", "start_ops_agent"), nil); err != nil {
+			return err
+		}
+		return nil
+	}
+	if _, err := gce.RunRemotely(ctx, logger, vm, startCommandForImage(vm.ImageSpec)); err != nil {
+		return err
+	}
+	return nil
+}
+
 func TestDisableSelfLogCollection(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
@@ -4818,7 +4832,7 @@ func TestDisableSelfLogCollection(t *testing.T) {
 
 		time.Sleep(2 * time.Minute)
 
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, startCommandForImage(vm.ImageSpec)); err != nil {
+		if err := startOpsAgentForImage(ctx, logger.ToMainLog(), vm); err != nil {
 			t.Fatal(err)
 		}
 
