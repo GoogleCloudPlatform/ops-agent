@@ -685,7 +685,7 @@ func (r LoggingReceiverSystemd) Components(ctx context.Context, tag string) []fl
 func (r LoggingReceiverSystemd) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	receiver_config := map[string]any{
 		"start_at": "beginning",
-		"priority": `"emerg".."debug"`,
+		"priority": "debug",
 	}
 
 	modify_fields_processors, err := LoggingProcessorModifyFields{
