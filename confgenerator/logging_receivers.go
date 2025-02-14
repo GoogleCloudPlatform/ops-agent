@@ -704,13 +704,13 @@ func (r LoggingReceiverSystemd) Pipelines(ctx context.Context) ([]otel.ReceiverP
 				MapValuesExclusive: true,
 			},
 			`sourceLocation.file`: {
-				MoveFrom: "jsonPayload.CODE_FILE",
+				CopyFrom: "jsonPayload.CODE_FILE",
 			},
 			`sourceLocation.func`: {
-				MoveFrom: "jsonPayload.CODE_FUNC",
+				CopyFrom: "jsonPayload.CODE_FUNC",
 			},
 			`sourceLocation.line`: {
-				MoveFrom: "jsonPayload.CODE_LINE",
+				CopyFrom: "jsonPayload.CODE_LINE",
 			},
 		},
 	}.Processors(ctx)
