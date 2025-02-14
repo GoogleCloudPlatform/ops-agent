@@ -541,7 +541,7 @@ receivers:
         mute_process_name_error: true
       processes: {}
   journald/systemd__logs:
-    priority: "\"emerg\"..\"debug\""
+    priority: debug
     start_at: beginning
   prometheus/fluentbit:
     config:
