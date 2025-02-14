@@ -2430,6 +2430,15 @@ func testSystemdLog(t *testing.T, otel bool) {
 		if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdErrorLog); err != nil {
 			t.Error(err)
 		}
+
+		if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_notice_log_message' | systemd-cat --priority=notice"); err != nil {
+			t.Fatalf("Error writing dummy Systemd log line: %v", err)
+		}
+
+		querySystemdNoticeLog := fmt.Sprintf(`severity="NOTICE" AND jsonPayload.MESSAGE="my_systemd_notice_log_message" AND jsonPayload.PRIORITY="5"`)
+		if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdNoticeLog); err != nil {
+			t.Error(err)
+		}
 	})
 }
 
