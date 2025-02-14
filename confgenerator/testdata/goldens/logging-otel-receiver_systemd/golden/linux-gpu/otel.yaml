@@ -523,6 +523,7 @@ processors:
       - set(attributes["gcp.source_location"]["func"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_3"])
+      - set(cache["value"], Int(cache["value"]))
       - set(attributes["gcp.source_location"]["line"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/systemd__logs_1:
     error_mode: ignore
