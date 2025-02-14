@@ -1637,6 +1637,32 @@ func RestartInstance(ctx context.Context, logger *log.Logger, vm *VM) error {
 	return StartInstance(ctx, logger, vm)
 }
 
+// InstallGrpcurlIfNeeded installs grpcurl on instances that don't already have
+// it installed.
+func InstallGrpcurlIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) error {
+	if IsWindows(vm.ImageSpec) {
+		return fmt.Errorf("installing grpcurl on Windows is not yet supported")
+	}
+
+	if _, err := RunRemotely(ctx, logger, vm, "which grpcurl"); err == nil {
+		return nil
+	}
+
+	logger.Printf("grpcurl not found, installing it...")
+
+	arch := "x86_64"
+	if IsARM(vm.ImageSpec) {
+		arch = "arm64"
+	}
+
+	installCmd := fmt.Sprintf("sudo curl -sSL \"https://github.com/fullstorydev/grpcurl/releases/download/v1.8.6/grpcurl_1.8.6_linux_%s.tar.gz\" | sudo tar -xz -C /usr/local/bin", arch)
+
+	installCmd = `set -ex
+` + installCmd
+	_, err := RunRemotely(ctx, logger, vm, installCmd)
+	return err
+}
+
 // InstallGsutilIfNeeded installs gsutil on instances that don't already have
 // it installed. This is only currently the case for some old versions of SUSE.
 func InstallGsutilIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) error {

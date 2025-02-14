@@ -115,7 +115,7 @@ func Test_validateOpsAgentConfig(t *testing.T) {
 			}
 
 			ctx := context.Background()
-			err := validateOpsAgentConfig(ctx, "", mockRunCommand)
+			err := validateOpsAgentConfig(ctx, "", "", mockRunCommand)
 			gotSuccess := (err == nil)
 			if gotSuccess != tc.wantSuccess {
 				t.Errorf("%s: validateOpsAgentConfig() failed to valide Ops Agent config: %v, want successful config validation: %v, error:%v", tc.name, gotSuccess, tc.wantSuccess, err)

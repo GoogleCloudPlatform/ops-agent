@@ -49,6 +49,9 @@ import (
 // for uptime metrics.
 const TrailingQueryWindow = 2 * time.Minute
 
+// OpsAgentPluginServerPort defines the port on which the Ops Agent UAP Plugin gRPC server runs.
+const OpsAgentPluginServerPort = "1234"
+
 // AgentPackage represents a thing that we ask OS Config to install for us.
 // One agentPackage can expand out and result in multiple AgentServices
 // being installed on the VM.
@@ -186,12 +189,38 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 	gce.RunRemotely(metricsCtx, logger.ToFile("fluent_bit_metrics.txt"), vm, "sudo curl -s localhost:20202/metrics")
 	gce.RunRemotely(metricsCtx, logger.ToFile("otel_metrics.txt"), vm, "sudo curl -s localhost:20201/metrics")
 
-	gce.RunRemotely(ctx, logger.ToFile("systemctl_status_for_ops_agent.txt"), vm, "sudo systemctl status google-cloud-ops-agent*")
+	isUAPPlugin := IsOpsAgentUAPPlugin()
+	if isUAPPlugin {
+		gce.RunRemotely(ctx, logger.ToFile("status_for_ops_agent_uap_plugin.txt"), vm, fmt.Sprintf("grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/GetStatus", OpsAgentPluginServerPort))
+	} else {
+		gce.RunRemotely(ctx, logger.ToFile("systemctl_status_for_ops_agent.txt"), vm, "sudo systemctl status google-cloud-ops-agent*")
+	}
 
 	gce.RunRemotely(ctx, logger.ToFile("journalctl_output.txt"), vm, "sudo journalctl -xe")
 
-	for _, log := range []string{
-		gce.SyslogLocation(vm.ImageSpec),
+	fileList := getOpsAgentLogFilesList(vm.ImageSpec)
+	for _, log := range fileList {
+		_, basename := path.Split(log)
+		gce.RunRemotely(ctx, logger.ToFile(basename+txtSuffix), vm, "sudo cat "+log)
+	}
+}
+
+func getOpsAgentLogFilesList(imageSpec string) []string {
+	if IsOpsAgentUAPPlugin() {
+		return []string{
+			gce.SyslogLocation(imageSpec),
+			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/health-checks.log",
+			"/etc/google-cloud-ops-agent/config.yaml",
+			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/subagents/logging-module.log",
+			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/subagents/metrics-module.log",
+			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/nvidia-installer.log",
+			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/run/google-cloud-ops-agent-fluent-bit/fluent_bit_main.conf",
+			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/run/google-cloud-ops-agent-fluent-bit/fluent_bit_parser.conf",
+			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml",
+		}
+	}
+	return []string{
+		gce.SyslogLocation(imageSpec),
 		"/var/log/google-cloud-ops-agent/health-checks.log",
 		"/etc/google-cloud-ops-agent/config.yaml",
 		"/var/log/google-cloud-ops-agent/subagents/logging-module.log",
@@ -200,13 +229,13 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 		"/run/google-cloud-ops-agent-fluent-bit/fluent_bit_main.conf",
 		"/run/google-cloud-ops-agent-fluent-bit/fluent_bit_parser.conf",
 		"/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml",
-	} {
-		_, basename := path.Split(log)
-		gce.RunRemotely(ctx, logger.ToFile(basename+txtSuffix), vm, "sudo cat "+log)
 	}
 }
 
 func runOpsAgentDiagnosticsWindows(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) {
+	if IsOpsAgentUAPPlugin() {
+		return
+	}
 	gce.RunRemotely(ctx, logger.ToFile("windows_System_log.txt"), vm, "Get-WinEvent -LogName System | Format-Table -AutoSize -Wrap")
 
 	gce.RunRemotely(ctx, logger.ToFile("Get-Service_output.txt"), vm, "Get-Service google-cloud-ops-agent* | Format-Table -AutoSize -Wrap")
@@ -664,6 +693,13 @@ func InstallStandaloneWindowsMonitoringAgent(ctx context.Context, logger *log.Lo
 }
 
 func getRestartOpsAgentCmd(imageSpec string) string {
+	if IsOpsAgentUAPPlugin() {
+		if gce.IsWindows(imageSpec) {
+			return ""
+		}
+		return fmt.Sprintf("grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Stop && grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Start", OpsAgentPluginServerPort, OpsAgentPluginServerPort)
+	}
+
 	if gce.IsWindows(imageSpec) {
 		return "Restart-Service google-cloud-ops-agent -Force"
 	}
@@ -729,11 +765,14 @@ func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, locati
 	if location.packagesInGCS != "" && location.repoSuffix != "" {
 		return fmt.Errorf("invalid PackageLocation: cannot provide both location.packagesInGCS and location.repoSuffix. location=%#v", location)
 	}
+
 	if location.artifactRegistryRegion != "" && location.repoSuffix == "" {
 		return fmt.Errorf("invalid PackageLocation: location.artifactRegistryRegion was nonempty yet location.repoSuffix was empty. location=%#v", location)
 	}
-
 	if location.packagesInGCS != "" {
+		if IsOpsAgentUAPPlugin() {
+			return InstallOpsAgentUAPPluginFromGCS(ctx, logger, vm, location.packagesInGCS)
+		}
 		return InstallPackageFromGCS(ctx, logger, vm, location.packagesInGCS)
 	}
 
@@ -786,15 +825,32 @@ func SetupOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, config s
 	return SetupOpsAgentFrom(ctx, logger, vm, config, LocationFromEnvVars())
 }
 
-// restartOpsAgent restarts the Ops Agent and waits for it to become available.
-func restartOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+// RestartOpsAgent restarts the Ops Agent and waits for it to become available.
+func RestartOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	if _, err := gce.RunRemotely(ctx, logger, vm, getRestartOpsAgentCmd(vm.ImageSpec)); err != nil {
-		return fmt.Errorf("restartOpsAgent() failed to restart ops agent: %v", err)
+		return fmt.Errorf("RestartOpsAgent() failed to restart ops agent: %v", err)
 	}
 	// Give agents time to shut down. Fluent-Bit's default shutdown grace period
 	// is 5 seconds, so we should probably give it at least that long.
 	time.Sleep(10 * time.Second)
 	return nil
+}
+
+func getStartOpsAgentPluginCmd(imageSpec string, port string) string {
+	if gce.IsWindows(imageSpec) {
+		return ""
+	}
+	return fmt.Sprintf("sudo nohup ~/plugin --address=localhost:%s --errorlogfile=errorlog.txt --protocol=tcp 1>/dev/null 2>/dev/null &", port)
+}
+
+// StartOpsAgentPlugin starts the Ops Agent Plugin gRPC server on the testing VM in the background.
+func StartOpsAgentPlugin(ctx context.Context, logger *log.Logger, vm *gce.VM, port string) error {
+	if _, err := gce.RunRemotely(ctx, logger, vm, getStartOpsAgentPluginCmd(vm.ImageSpec, port)); err != nil {
+		return fmt.Errorf("StartOpsAgentPlugin() failed to start the ops agent plugin: %v", err)
+	}
+
+	return nil
+
 }
 
 // SetupOpsAgentFrom is an overload of setupOpsAgent that allows the callsite to
@@ -813,9 +869,11 @@ func SetupOpsAgentFrom(ctx context.Context, logger *log.Logger, vm *gce.VM, conf
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(config), util.GetConfigPath(vm.ImageSpec)); err != nil {
 			return fmt.Errorf("SetupOpsAgentFrom() failed to upload config file: %v", err)
 		}
-		if err := restartOpsAgent(ctx, logger, vm); err != nil {
+		if err := RestartOpsAgent(ctx, logger, vm); err != nil {
 			return err
 		}
+	} else if IsOpsAgentUAPPlugin() {
+		return RestartOpsAgent(ctx, logger, vm)
 	}
 	// Give agents time to start up.
 	time.Sleep(startupDelay)
@@ -872,6 +930,41 @@ func CommonSetupWithExtraCreateArgumentsAndMetadata(t *testing.T, imageSpec stri
 		RunOpsAgentDiagnostics(ctx, logger, vm)
 	})
 	return ctx, logger, vm
+}
+
+// InstallOpsAgentUAPPluginFromGCS installs the Ops Agent plugin tarball from GCS onto the given Linux VM.
+//
+// gcsPath must point to a GCS Path to a .tar.gz file to install on the testing VMs.
+func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, gcsPath string) error {
+	if gce.IsWindows(vm.ImageSpec) {
+		return fmt.Errorf("Ops Agent UAP Plugin does not support Windows yet")
+	}
+	if _, err := gce.RunRemotely(ctx, logger, vm, "mkdir -p /tmp/agentPlugin"); err != nil {
+		return err
+	}
+	if err := gce.InstallGsutilIfNeeded(ctx, logger, vm); err != nil {
+		return err
+	}
+	if err := gce.InstallGrpcurlIfNeeded(ctx, logger, vm); err != nil {
+		return err
+	}
+
+	if _, err := gce.RunRemotely(ctx, logger, vm, "sudo gsutil cp "+gcsPath+"/google-cloud-ops-agent-plugin*.tar.gz /tmp/agentPlugin"); err != nil {
+		return fmt.Errorf("error copying down the agent uap plugin tarball from GCS: %v", err)
+	}
+
+	// Print the contents of /tmp/agentPlugin into the logs.
+	if _, err := gce.RunRemotely(ctx, logger, vm, "ls -la /tmp/agentPlugin"); err != nil {
+		return err
+	}
+	if _, err := gce.RunRemotely(ctx, logger, vm, "sudo find /tmp/agentPlugin -maxdepth 1 -name \"google-cloud-ops-agent-plugin*.tar.gz\" -print0 | xargs -0 -I {} sudo tar -xzf {} --no-overwrite-dir -C ~/ && ls -la"); err != nil {
+		return err
+	}
+	// Print the contents of the home dir into the logs.
+	if _, err := gce.RunRemotely(ctx, logger, vm, "ls -la ~/"); err != nil {
+		return err
+	}
+	return StartOpsAgentPlugin(ctx, logger, vm, OpsAgentPluginServerPort)
 }
 
 // InstallPackageFromGCS installs the agent package from GCS onto the given Linux VM.
@@ -931,4 +1024,24 @@ func installWindowsPackageFromGCS(ctx context.Context, logger *log.Logger, vm *g
 		return fmt.Errorf("error installing agent from .goo file: %v", err)
 	}
 	return nil
+}
+
+func GetOtelConfigPath(imageSpec string) string {
+	if IsOpsAgentUAPPlugin() {
+		if gce.IsWindows(imageSpec) {
+			return ""
+		}
+		return "/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml"
+	}
+
+	if gce.IsWindows(imageSpec) {
+		return `C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\otel\otel.yaml`
+	}
+	return "/var/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml"
+}
+
+func IsOpsAgentUAPPlugin() bool {
+	// ok is true when the env variable is preset in the environment.
+	_, ok := os.LookupEnv("IS_OPS_AGENT_UAP_PLUGIN")
+	return ok
 }
