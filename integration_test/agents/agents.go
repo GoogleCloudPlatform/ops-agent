@@ -1042,6 +1042,6 @@ func GetOtelConfigPath(imageSpec string) string {
 
 func IsOpsAgentUAPPlugin() bool {
 	// ok is true when the env variable is preset in the environment.
-	_, ok := os.LookupEnv("IS_OPS_AGENT_UAP_PLUGIN")
-	return ok
+	value, ok := os.LookupEnv("IS_OPS_AGENT_UAP_PLUGIN")
+	return ok && value != ""
 }
