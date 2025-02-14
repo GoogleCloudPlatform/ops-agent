@@ -37,7 +37,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
@@ -196,9 +195,9 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 
 	isUAPPlugin := IsOpsAgentUAPPlugin()
 	if isUAPPlugin {
-		agents.GetOpsAgentStatus(ctx, logger.ToFile("status_for_ops_agent_uap_plugin.txt"), vm)
+		GetOpsAgentStatus(ctx, logger.ToFile("status_for_ops_agent_uap_plugin.txt"), vm)
 	} else {
-		agents.GetOpsAgentStatus(ctx, logger.ToFile("systemctl_status_for_ops_agent.txt"), vm)
+		GetOpsAgentStatus(ctx, logger.ToFile("systemctl_status_for_ops_agent.txt"), vm)
 	}
 
 	gce.RunRemotely(ctx, logger.ToFile("journalctl_output.txt"), vm, "sudo journalctl -xe")
