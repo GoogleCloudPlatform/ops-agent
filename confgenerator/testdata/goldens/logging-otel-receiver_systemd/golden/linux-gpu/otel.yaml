@@ -570,6 +570,7 @@ receivers:
         mute_process_name_error: true
       processes: {}
   journald/systemd__logs:
+    priority: "\"emerg\"..\"debug\""
     start_at: beginning
   nvml/hostmetrics_1:
     collection_interval: 60s
