@@ -2410,11 +2410,21 @@ func testSystemdLog(t *testing.T, otel bool) {
 			t.Fatal(err)
 		}
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_log_message' | systemd-cat"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_info_log_message' | systemd-cat --priority=info"); err != nil {
 			t.Fatalf("Error writing dummy Systemd log line: %v", err)
 		}
 
-		if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, "my_systemd_log_message"); err != nil {
+		querySystemdInfoLog := fmt.Sprintf(`severity="INFO" AND jsonPayload.MESSAGE="my_systemd_info_log_message" AND jsonPayload.PRIORITY="6"`)
+		if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdInfoLog); err != nil {
+			t.Error(err)
+		}
+
+		if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_error_log_message' | systemd-cat --priority=err"); err != nil {
+			t.Fatalf("Error writing dummy Systemd log line: %v", err)
+		}
+
+		querySystemdErrorLog := fmt.Sprintf(`severity="ERROR" AND jsonPayload.MESSAGE="my_systemd_error_log_message" AND jsonPayload.PRIORITY="3"`)
+		if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdErrorLog); err != nil {
 			t.Error(err)
 		}
 	})
