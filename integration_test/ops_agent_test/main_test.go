@@ -110,13 +110,6 @@ func startCommandForImage(imageSpec string) string {
 }
 
 func stopCommandForImage(imageSpec string) string {
-	if agents.IsOpsAgentUAPPlugin() {
-		if gce.IsWindows(imageSpec) {
-			return ""
-		}
-		return "grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Stop"
-	}
-
 	if gce.IsWindows(imageSpec) {
 		return "Stop-Service google-cloud-ops-agent -Force"
 	}
@@ -4680,7 +4673,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 		checkExpectedHealthCheckResult(t, cmdOut, "Ports", "PASS", "")
 		checkExpectedHealthCheckResult(t, cmdOut, "API", "PASS", "")
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, stopCommandForImage(vm.ImageSpec)); err != nil {
+		if err := stopOpsAgentForImage(ctx, logger, vm); err != nil {
 			t.Fatal(err)
 		}
 
@@ -4779,6 +4772,33 @@ func TestNoFluentBitDebugSelfLogs(t *testing.T) {
 	})
 }
 
+// runScriptFromScriptsDir runs a script on the given VM.
+// The scriptPath should be relative to SCRIPTS_DIR.
+// The script should be a shell script for a Linux VM and powershell for a Windows VM.
+// env is a map containing environment variables to provide to the script as it runs.
+func runScriptFromScriptsDir(ctx context.Context, logger *log.Logger, vm *gce.VM, scriptPath string, env map[string]string) (gce.CommandOutput, error) {
+	logger.Printf("Running script with path %s", scriptPath)
+
+	scriptContents, err := testdataDir.ReadFile(scriptPath)
+	if err != nil {
+		return gce.CommandOutput{}, err
+	}
+	return gce.RunScriptRemotely(ctx, logger, vm, string(scriptContents), nil, env)
+}
+
+func stopOpsAgentForImage(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	if agents.IsOpsAgentUAPPlugin() {
+		if _, err := runScriptFromScriptsDir(ctx, logger, vm, path.Join("testdata", "uap_plugin", "stop_ops_agent"), nil); err != nil {
+			return err
+		}
+		return nil
+	}
+	if _, err := gce.RunRemotely(ctx, logger, vm, stopCommandForImage(vm.ImageSpec)); err != nil {
+		return err
+	}
+	return nil
+}
+
 func TestDisableSelfLogCollection(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
@@ -4792,7 +4812,7 @@ func TestDisableSelfLogCollection(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, stopCommandForImage(vm.ImageSpec)); err != nil {
+		if err := stopOpsAgentForImage(ctx, logger.ToMainLog(), vm); err != nil {
 			t.Fatal(err)
 		}
 

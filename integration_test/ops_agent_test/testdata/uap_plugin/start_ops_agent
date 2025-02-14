@@ -1,0 +1,5 @@
+# A curl command that sends a Start gRPC request to the Ops Agent UAP Plugin gRPC server
+
+set -e
+
+printf '\x00\x00\x00\x00\x00' | curl --http2-prior-knowledge  -H 'Content-Type: application/grpc' --output start_response --data-binary @- localhost:1234/plugin_comm.GuestAgentPlugin/Start
