@@ -94,36 +94,6 @@ func workDirForImage(imageSpec string) string {
 	return "/tmp/work"
 }
 
-func startCommandForImage(imageSpec string) string {
-	if agents.IsOpsAgentUAPPlugin() {
-		if gce.IsWindows(imageSpec) {
-			return ""
-		}
-		return "grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Start"
-	}
-
-	if gce.IsWindows(imageSpec) {
-		return "Start-Service google-cloud-ops-agent"
-	}
-	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
-	return "sudo service google-cloud-ops-agent start || sudo systemctl start google-cloud-ops-agent"
-}
-
-func stopCommandForImage(imageSpec string) string {
-	if agents.IsOpsAgentUAPPlugin() {
-		if gce.IsWindows(imageSpec) {
-			return ""
-		}
-		return "grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Stop"
-	}
-
-	if gce.IsWindows(imageSpec) {
-		return "Stop-Service google-cloud-ops-agent -Force"
-	}
-	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
-	return "sudo service google-cloud-ops-agent stop || sudo systemctl stop google-cloud-ops-agent"
-}
-
 func systemLogTagForImage(imageSpec string) string {
 	if gce.IsWindows(imageSpec) {
 		return "windows_event_log"
@@ -783,7 +753,7 @@ func TestPluginGetStatusReturnsHealthyStatusOnSuccessfulOpsAgentStart(t *testing
 			t.Fatal(err)
 		}
 
-		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getUAPPluginStatusForImage(vm.ImageSpec))
+		cmdOut, err := agents.GetOpsAgentStatus(ctx, logger, vm)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -809,7 +779,7 @@ func TestPluginGetStatusReturnsUnhealthyStatusOnSubAgentTermination(t *testing.T
 			t.Fatal(err)
 		}
 
-		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getUAPPluginStatusForImage(vm.ImageSpec))
+		cmdOut, err := agents.GetOpsAgentStatus(ctx, logger, vm)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -830,13 +800,13 @@ func TestPluginGetStatusReturnsUnhealthyStatusOnSubAgentTermination(t *testing.T
 
 		time.Sleep(10 * time.Second)
 
-		cmdOut, err = gce.RunRemotely(ctx, logger, vm, getUAPPluginStatusForImage(vm.ImageSpec))
+		cmdOut, err = agents.GetOpsAgentStatus(ctx, logger, vm)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		// A subagent termination should terminate the entire Ops Agent. In this case, the plugin is expected to return a non-healthy status for the Ops Agent.
-		if !strings.Contains(cmdOut.Stdout, "\"code\": 1") {
+		if !strings.Contains(cmdOut.Stdout, "The Ops Agent Plugin is not running.") {
 			t.Error("expected the plugin to report that the Ops Agent is not running")
 		}
 
@@ -4550,44 +4520,6 @@ func checkExpectedHealthCheckResult(t *testing.T, output string, name string, ex
 	}
 }
 
-func getUAPPluginStatusForImage(imageSpec string) string {
-	if gce.IsWindows(imageSpec) {
-		return ""
-	}
-	return "grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/GetStatus"
-
-}
-
-func getRecentServiceOutputForImage(imageSpec string) string {
-	if gce.IsWindows(imageSpec) {
-		cmd := strings.Join([]string{
-			"$ServiceStart = (Get-EventLog -LogName 'System' -Source 'Service Control Manager' -EntryType 'Information' -Message '*Google Cloud Ops Agent service entered the running state*' -Newest 1).TimeGenerated",
-			"$QueryStart = $ServiceStart - (New-TimeSpan -Seconds 30)",
-			"Get-WinEvent -MaxEvents 10 -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent'; StartTime=$QueryStart } | select -ExpandProperty Message",
-		}, ";")
-		return cmd
-	}
-	return "sudo systemctl status google-cloud-ops-agent"
-}
-
-func getHealthCheckResultsForImage(ctx context.Context, logger *log.Logger, vm *gce.VM) (string, error) {
-	if agents.IsOpsAgentUAPPlugin() {
-		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getHealthCheckLogsForUAPPluginByImage(vm.ImageSpec))
-		return cmdOut.Stdout, err
-
-	}
-	cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
-	return cmdOut.Stdout, err
-}
-
-func getHealthCheckLogsForUAPPluginByImage(imageSpec string) string {
-	if gce.IsWindows(imageSpec) {
-		return ""
-	}
-
-	return "sudo cat /var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/health-checks.log"
-}
-
 func listenToPortForImage(vm *gce.VM) string {
 	if gce.IsWindows(vm.ImageSpec) {
 		cmd := strings.Join([]string{
@@ -4641,7 +4573,7 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cmdOut, err := getHealthCheckResultsForImage(ctx, logger, vm)
+		cmdOut, err := agents.GetOpsAgentHealthCheckResults(ctx, logger, vm)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -4671,7 +4603,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cmdOut, err := getHealthCheckResultsForImage(ctx, logger, vm)
+		cmdOut, err := agents.GetOpsAgentHealthCheckResults(ctx, logger, vm)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -4680,7 +4612,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 		checkExpectedHealthCheckResult(t, cmdOut, "Ports", "PASS", "")
 		checkExpectedHealthCheckResult(t, cmdOut, "API", "PASS", "")
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, stopCommandForImage(vm.ImageSpec)); err != nil {
+		if err := agents.StopOpsAgent(ctx, logger, vm); err != nil {
 			t.Fatal(err)
 		}
 
@@ -4690,11 +4622,11 @@ func TestNetworkHealthCheck(t *testing.T) {
 		}
 		time.Sleep(time.Minute)
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, startCommandForImage(vm.ImageSpec)); err != nil {
+		if err := agents.StartOpsAgent(ctx, logger, vm); err != nil {
 			t.Fatal(err)
 		}
 
-		cmdOut, err = getHealthCheckResultsForImage(ctx, logger, vm)
+		cmdOut, err = agents.GetOpsAgentHealthCheckResults(ctx, logger, vm)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -4792,13 +4724,13 @@ func TestDisableSelfLogCollection(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, stopCommandForImage(vm.ImageSpec)); err != nil {
+		if err := agents.StopOpsAgent(ctx, logger.ToMainLog(), vm); err != nil {
 			t.Fatal(err)
 		}
 
 		time.Sleep(2 * time.Minute)
 
-		if _, err := gce.RunRemotely(ctx, logger.ToMainLog(), vm, startCommandForImage(vm.ImageSpec)); err != nil {
+		if err := agents.StartOpsAgent(ctx, logger.ToMainLog(), vm); err != nil {
 			t.Fatal(err)
 		}
 
@@ -4972,22 +4904,18 @@ func TestRestartVM(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		cmdOut, err := agents.GetOpsAgentStatus(ctx, logger, vm)
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		isUAPPlugin := agents.IsOpsAgentUAPPlugin()
 		if isUAPPlugin {
-			cmdOut, err := gce.RunRemotely(ctx, logger, vm, getUAPPluginStatusForImage(vm.ImageSpec))
-			if err != nil {
-				t.Fatal(err)
-			}
-
 			if !strings.Contains(cmdOut.Stdout, "is running ok") {
 				t.Error("expected the plugin to be running, but is not running")
 			}
 
 		} else {
-			cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
-			if err != nil {
-				t.Fatal(err)
-			}
 			// Ensure sure all healthchecks pass before the restart
 			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
 			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
@@ -5006,19 +4934,18 @@ func TestRestartVM(t *testing.T) {
 			if err := agents.RestartOpsAgent(ctx, logger, vm); err != nil {
 				t.Fatal(err)
 			}
+		}
 
-			cmdOut, err := gce.RunRemotely(ctx, logger, vm, getUAPPluginStatusForImage(vm.ImageSpec))
-			if err != nil {
-				t.Fatal(err)
-			}
+		cmdOut, err = agents.GetOpsAgentStatus(ctx, logger, vm)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if isUAPPlugin {
 			if !strings.Contains(cmdOut.Stdout, "is running ok") {
 				t.Error("expected the plugin to be running after the VM restart, but is not running")
 			}
 		} else {
-			cmdOut, err := gce.RunRemotely(ctx, logger, vm, getRecentServiceOutputForImage(vm.ImageSpec))
-			if err != nil {
-				t.Fatal(err)
-			}
 			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Network", "PASS", "")
 			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "Ports", "PASS", "")
 			checkExpectedHealthCheckResult(t, cmdOut.Stdout, "API", "PASS", "")
