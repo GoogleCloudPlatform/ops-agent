@@ -54,6 +54,15 @@ func googleCloudExporter(userAgent string, instrumentationLabels bool) otel.Comp
 				"service_resource_labels": false,
 				"resource_filters":        []map[string]interface{}{},
 			},
+			"retry_on_failure": map[string]interface{}{
+				"enabled":          true,
+				"initial_interval": "1s",
+				"max_interval":     "300s",
+				"max_elapsed_time": "120s",
+			},
+			"sending_queue": map[string]any{
+				"storage": "file_storage/all_settings",
+			},
 		},
 	}
 }

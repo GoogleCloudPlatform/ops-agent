@@ -4813,7 +4813,24 @@ func TestDisableSelfLogCollection(t *testing.T) {
 	})
 }
 
+func bufferDirPathForLoggingBacked(otel bool) string {
+	if otel {
+		return "/tmp/otelcol"
+	}
+	return "/var/lib/google-cloud-ops-agent/fluent-bit/buffers/tail.1/"
+}
+
 func TestBufferLimitSizeOpsAgent(t *testing.T) {
+	t.Parallel()
+	t.Run("fluent-bit", func(t *testing.T) {
+		testBufferLimitSizeOpsAgent(t, false)
+	})
+	t.Run("otel", func(t *testing.T) {
+		testBufferLimitSizeOpsAgent(t, true)
+	})
+}
+
+func testBufferLimitSizeOpsAgent(t *testing.T, otel bool) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
@@ -4834,15 +4851,23 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
       - /var/log/messages
       - /var/log/syslog
   service:
+    experimental_otel_logging: %v
     pipelines:
       default_pipeline:
         receivers: [log_syslog]
-        processors: []`, logPath)
+        processors: []`, logPath, otel)
+
+		if otel {
+			// Turn on the otel feature gate.
+			if err := gce.SetEnvironmentVariables(ctx, logger, vm, map[string]string{"EXPERIMENTAL_FEATURES": "otel_logging"}); err != nil {
+				t.Fatal(err)
+			}
+		}
 
 		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
-		var bufferDir string
+
 		generateLogPerSecondFile := fmt.Sprintf(`
         x=1
         while [ $x -le %d ]
@@ -4855,8 +4880,6 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		bufferDir = "/var/lib/google-cloud-ops-agent/fluent-bit/buffers/tail.1/"
-
 		generateLogsScript := fmt.Sprintf(`
 			mkdir -p %s
 			x=1
@@ -4867,7 +4890,7 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
 
 			  sleep 1
 			done
-			du -c %s | cut -f 1 | tail -n 1`, logPath, logsPerSecond, logPath, bufferDir)
+			du -c %s | cut -f 1 | tail -n 1`, logPath, logsPerSecond, logPath, bufferDirPathForLoggingBacked(otel))
 
 		if _, err := gce.AddTagToVm(ctx, dirLog.ToFile("firewall_setup.txt"), vm, []string{gce.DenyEgressTrafficTag}); err != nil {
 			t.Fatal(err)
