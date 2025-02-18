@@ -769,10 +769,12 @@ func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, locati
 	if location.artifactRegistryRegion != "" && location.repoSuffix == "" {
 		return fmt.Errorf("invalid PackageLocation: location.artifactRegistryRegion was nonempty yet location.repoSuffix was empty. location=%#v", location)
 	}
+
+	if IsOpsAgentUAPPlugin() {
+		return InstallOpsAgentUAPPlugin(ctx, logger, vm, location)
+	}
+
 	if location.packagesInGCS != "" {
-		if IsOpsAgentUAPPlugin() {
-			return InstallOpsAgentUAPPluginFromGCS(ctx, logger, vm, location.packagesInGCS)
-		}
 		return InstallPackageFromGCS(ctx, logger, vm, location.packagesInGCS)
 	}
 
@@ -930,6 +932,17 @@ func CommonSetupWithExtraCreateArgumentsAndMetadata(t *testing.T, imageSpec stri
 		RunOpsAgentDiagnostics(ctx, logger, vm)
 	})
 	return ctx, logger, vm
+}
+
+func InstallOpsAgentUAPPlugin(ctx context.Context, logger *log.Logger, vm *gce.VM, location PackageLocation) error {
+		// Used for manual testing or pre-submits
+		if location.packagesInGCS != "" {
+				return InstallOpsAgentUAPPluginFromGCS(ctx, logger, vm, location.packagesInGCS)
+		}
+
+		// Used for nightly builds
+		artifactBucket := fmt.Sprintf("gs://%s-ops-agent-releases/%s", location.artifactRegistryProject, location.repoSuffix)
+		return InstallOpsAgentUAPPluginFromGCS(ctx, logger, vm, artifactBucket)
 }
 
 // InstallOpsAgentUAPPluginFromGCS installs the Ops Agent plugin tarball from GCS onto the given Linux VM.
