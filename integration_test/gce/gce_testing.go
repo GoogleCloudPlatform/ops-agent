@@ -1655,7 +1655,7 @@ func InstallGrpcurlIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) err
 		arch = "arm64"
 	}
 
-	installCmd := fmt.Sprintf("sudo curl -sSL \"https://github.com/fullstorydev/grpcurl/releases/download/v1.8.6/grpcurl_1.8.6_linux_%s.tar.gz\" | sudo tar -xz -C /usr/local/bin", arch)
+	installCmd := fmt.Sprintf("sudo gsutil cp gs://ops-agents-public-buckets-vendored-deps/mirrored-content/grpcurl/v1.8.6/grpcurl_1.8.6_linux_%s.tar.gz /tmp/agentPlugin && sudo tar -xzf /tmp/agentPlugin/grpcurl_1.8.6_linux_%s.tar.gz --no-overwrite-dir -C /usr/local/bin", arch, arch)
 
 	installCmd = `set -ex
 ` + installCmd
