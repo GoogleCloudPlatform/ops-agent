@@ -697,7 +697,7 @@ func getRestartOpsAgentCmd(imageSpec string) string {
 		if gce.IsWindows(imageSpec) {
 			return ""
 		}
-		return fmt.Sprintf("grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Stop && grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Start", OpsAgentPluginServerPort, OpsAgentPluginServerPort)
+		return fmt.Sprintf("grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Stop && sleep 5 && grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Start", OpsAgentPluginServerPort, OpsAgentPluginServerPort)
 	}
 
 	if gce.IsWindows(imageSpec) {
@@ -769,10 +769,12 @@ func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, locati
 	if location.artifactRegistryRegion != "" && location.repoSuffix == "" {
 		return fmt.Errorf("invalid PackageLocation: location.artifactRegistryRegion was nonempty yet location.repoSuffix was empty. location=%#v", location)
 	}
+
+	if IsOpsAgentUAPPlugin() {
+		return InstallOpsAgentUAPPlugin(ctx, logger, vm, location)
+	}
+
 	if location.packagesInGCS != "" {
-		if IsOpsAgentUAPPlugin() {
-			return InstallOpsAgentUAPPluginFromGCS(ctx, logger, vm, location.packagesInGCS)
-		}
 		return InstallPackageFromGCS(ctx, logger, vm, location.packagesInGCS)
 	}
 
@@ -930,6 +932,17 @@ func CommonSetupWithExtraCreateArgumentsAndMetadata(t *testing.T, imageSpec stri
 		RunOpsAgentDiagnostics(ctx, logger, vm)
 	})
 	return ctx, logger, vm
+}
+
+func InstallOpsAgentUAPPlugin(ctx context.Context, logger *log.Logger, vm *gce.VM, location PackageLocation) error {
+		// Used for manual testing or pre-submits
+		if location.packagesInGCS != "" {
+				return InstallOpsAgentUAPPluginFromGCS(ctx, logger, vm, location.packagesInGCS)
+		}
+
+		// Used for nightly builds
+		artifactBucket := fmt.Sprintf("gs://%s-ops-agent-releases/%s", location.artifactRegistryProject, location.repoSuffix)
+		return InstallOpsAgentUAPPluginFromGCS(ctx, logger, vm, artifactBucket)
 }
 
 // InstallOpsAgentUAPPluginFromGCS installs the Ops Agent plugin tarball from GCS onto the given Linux VM.
