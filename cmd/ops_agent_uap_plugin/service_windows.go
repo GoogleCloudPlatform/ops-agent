@@ -19,12 +19,18 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os/exec"
 
+	"golang.org/x/sys/windows/svc/mgr"
 	"google.golang.org/grpc/status"
 
 	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
+)
+
+var (
+	AgentWindowsServiceName = []string{"StackdriverLogging", "StackdriverMonitoring", "google-cloud-ops-agent"}
 )
 
 // Apply applies the config sent or performs the work defined in the message.
@@ -39,7 +45,26 @@ func (ps *OpsAgentPluginServer) Apply(ctx context.Context, msg *pb.ApplyRequest)
 // Until plugin receives Start request plugin is expected to be not functioning
 // and just listening on the address handed off waiting for the request.
 func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest) (*pb.StartResponse, error) {
-	return nil, status.Errorf(1, "not implemented on Windows yet")
+	ps.mu.Lock()
+	if ps.cancel != nil {
+		log.Printf("The Ops Agent plugin is started already, skipping the current request")
+		ps.mu.Unlock()
+		return &pb.StartResponse{}, nil
+	}
+	log.Printf("Received a Start request: %s. Starting the Ops Agent", msg)
+
+	_, cancel := context.WithCancel(context.Background())
+	ps.cancel = cancel
+	ps.mu.Unlock()
+
+	foundConflictingInstallations, err := findPreExistentAgents(AgentWindowsServiceName)
+	if foundConflictingInstallations || err != nil {
+		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
+		log.Printf("Start() failed: %s", err)
+		return nil, status.Error(1, err.Error())
+	}
+
+	return &pb.StartResponse{}, nil
 }
 
 // Stop is the stop hook and implements any cleanup if required.
@@ -78,4 +103,37 @@ func (ps *OpsAgentPluginServer) GetStatus(ctx context.Context, msg *pb.GetStatus
 
 func runCommand(cmd *exec.Cmd) (string, error) {
 	panic("runCommand method is not implemented on Windows yet")
+}
+
+func findPreExistentAgents(agentWindowsServiceNames []string) (bool, error) {
+	mgr, err := mgr.Connect()
+	if err != nil {
+		return false, fmt.Errorf("failed to connect to service manager: %s", err)
+	}
+	defer mgr.Disconnect()
+
+	installedServices, err := mgr.ListServices()
+	if err != nil {
+		return false, fmt.Errorf("failed to list installed Windows services: %s", err)
+	}
+
+	installedServicesSet := make(map[string]bool)
+	for _, s := range installedServices {
+		installedServicesSet[s] = true
+	}
+
+	agentAlreadyInstalled := false
+	alreadyInstalledAgentServiceName := ""
+	for _, s := range agentWindowsServiceNames {
+		if installedServicesSet[s] {
+			agentAlreadyInstalled = true
+			alreadyInstalledAgentServiceName = s
+			break
+		}
+	}
+
+	if agentAlreadyInstalled {
+		return true, fmt.Errorf("conflicting installations identified: %v", alreadyInstalledAgentServiceName)
+	}
+	return false, nil
 }
