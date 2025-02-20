@@ -21,16 +21,23 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
+	"path/filepath"
 
 	"golang.org/x/sys/windows/svc/mgr"
 	"google.golang.org/grpc/status"
 
+	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/kardianos/osext"
 )
 
 var (
-	AgentWindowsServiceName = []string{"StackdriverLogging", "StackdriverMonitoring", "google-cloud-ops-agent"}
+	AgentWindowsServiceName       = []string{"StackdriverLogging", "StackdriverMonitoring", "google-cloud-ops-agent"}
+	DefaultPluginStateDirectory   = filepath.Join(os.Getenv("PROGRAMDATA"), "Google/Compute Engine/google-guest-agent/agent_state/plugins/ops-agent-plugin")
+	OpsAgentConfigLocationWindows = filepath.Join(os.Getenv("PROGRAMDATA"), "Google/Cloud Operations/Ops Agent/config/config.yaml")
 )
 
 // Apply applies the config sent or performs the work defined in the message.
@@ -57,6 +64,19 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	ps.cancel = cancel
 	ps.mu.Unlock()
 
+	pluginInstallDir, err := osext.ExecutableFolder()
+	if err != nil {
+		log.Printf("Start() failed, because it cannot determine the plugin install location: %s", err)
+		return nil, status.Error(1, err.Error())
+	}
+
+	pluginStateDir := msg.GetConfig().GetStateDirectoryPath()
+	if pluginStateDir == "" {
+		pluginStateDir = DefaultPluginStateDirectory
+	}
+	log.Printf("Determined pluginInstallDir: %v, and pluginStateDir: %v", pluginInstallDir, pluginStateDir)
+
+	// Detect conflicting installations
 	foundConflictingInstallations, err := findPreExistentAgents(AgentWindowsServiceName)
 	if foundConflictingInstallations || err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
@@ -103,6 +123,37 @@ func (ps *OpsAgentPluginServer) GetStatus(ctx context.Context, msg *pb.GetStatus
 
 func runCommand(cmd *exec.Cmd) (string, error) {
 	panic("runCommand method is not implemented on Windows yet")
+}
+
+func generateSubagentConfigs(ctx context.Context) error {
+	// TODO(lingshi) Move this to a shared place across Linux and Windows.
+	uc, err := confgenerator.MergeConfFiles(ctx, s.userConf, apps.BuiltInConfStructs)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("Built-in config:\n%s", apps.BuiltInConfStructs["windows"])
+	log.Printf("Merged config:\n%s", uc)
+
+	// TODO: Add flag for passing in log/run path?
+	for _, subagent := range []string{
+		"otel",
+		"fluentbit",
+	} {
+		if err := uc.GenerateFilesFromConfig(
+			ctx,
+			subagent,
+			filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log"),
+			filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "run"),
+			filepath.Join(s.outDirectory, subagent)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func runHealthChecks() error {
+	return nil
 }
 
 func findPreExistentAgents(agentWindowsServiceNames []string) (bool, error) {
