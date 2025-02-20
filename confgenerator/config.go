@@ -514,6 +514,10 @@ type LoggingReceiver interface {
 	Components(ctx context.Context, tag string) []fluentbit.Component
 }
 
+type LoggingReceiverMixin interface {
+	Components(ctx context.Context, tag string) []fluentbit.Component
+}
+
 var LoggingReceiverTypes = &componentTypeRegistry[LoggingReceiver, loggingReceiverMap]{
 	Subagent: "logging", Kind: "receiver",
 }
@@ -543,6 +547,10 @@ type LoggingProcessor interface {
 	Component
 	// Components returns fluentbit components that implement this processor.
 	// tag is the log tag that should be matched by those components, and uid is a string which should be used when needed to generate unique names.
+	Components(ctx context.Context, tag string, uid string) []fluentbit.Component
+}
+
+type LoggingProcessorMixin interface {
 	Components(ctx context.Context, tag string, uid string) []fluentbit.Component
 }
 
