@@ -59,6 +59,7 @@ func setLogNameComponents(ctx context.Context, tag, logName, receiverType string
 	p.Fields[`labels."agent.googleapis.com/log_file_path"`] = &ModifyField{
 		MoveFrom: `jsonPayload."agent.googleapis.com/log_file_path"`,
 	}
+	// TODO: b/397957994 - Cleanup "receiver_type" logic if no future intended use.
 	// p.Fields[`labels."agent.googleapis.com/receiver_type"`] = &ModifyField{
 	// 	StaticValue: &receiverType,
 	// }
