@@ -523,3 +523,25 @@ func (p LoggingProcessorExcludeLogs) Processors(ctx context.Context) ([]otel.Com
 func init() {
 	LoggingProcessorTypes.RegisterType(func() LoggingProcessor { return &LoggingProcessorExcludeLogs{} })
 }
+
+type LoggingMultiProcessorMixin interface {
+	Type() string
+	Processors(ctx context.Context) []LoggingProcessorMixin
+}
+
+type LoggingMultiProcessor[P LoggingMultiProcessorMixin] struct {
+	ConfigComponent     `yaml:",inline"`
+	MultiProcessorMixin P `yaml:",inline"`
+}
+
+func (cp *LoggingMultiProcessor[P]) Type() string {
+	return cp.MultiProcessorMixin.Type()
+}
+
+func (cp *LoggingMultiProcessor[P]) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
+	var c []fluentbit.Component
+	for _, p := range cp.MultiProcessorMixin.Processors(ctx) {
+		c = append(c, p.Components(ctx, tag, uid)...)
+	}
+	return c
+}
