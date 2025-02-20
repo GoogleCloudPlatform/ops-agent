@@ -31,11 +31,19 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/kardianos/osext"
+	"golang.org/x/sys/windows/svc/debug"
+	"golang.org/x/sys/windows/svc/eventlog"
 )
 
 const (
-	generatedConfigsOutDir = "generated_configs"
+	generatedConfigsOutDir           = "generated_configs"
+	LogsDirectory                    = "log"
+	RuntimeDirectory                 = "run"
+	OpsAgentUAPPluginEventID  uint32 = 8
+	WindowsEventLogIdentifier        = "google-cloud-ops-agent-uap-plugin"
 )
 
 var (
@@ -68,11 +76,18 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	ps.cancel = cancel
 	ps.mu.Unlock()
 
+	windowsEventLogger, err := createWindowsEventLogger()
+	if err != nil {
+		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
+		log.Printf("Start() failed, because it failed to create Windows event logger: %s", err)
+		return nil, status.Error(1, err.Error())
+	}
+
 	// Calculate plugin install and state dirs
 	pluginInstallDir, err := osext.ExecutableFolder()
 	if err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
-		log.Printf("Start() failed, because it cannot determine the plugin install location: %s", err)
+		windowsEventLogger.Error(OpsAgentUAPPluginEventID, fmt.Sprintf("Start() failed, because it cannot determine the plugin install location: %s", err))
 		return nil, status.Error(1, err.Error())
 	}
 
@@ -85,7 +100,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	// Subagents config validation and generation
 	if err := generateSubAgentConfigs(ctx, pluginStateDir); err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
-		log.Printf("Start() failed: %s", err)
+		windowsEventLogger.Error(OpsAgentUAPPluginEventID, fmt.Sprintf("Start() failed at the subagent config validation and generation step: %s", err))
 		return nil, status.Error(1, err.Error())
 	}
 
@@ -93,9 +108,13 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	foundConflictingInstallations, err := findPreExistentAgents(AgentWindowsServiceName)
 	if foundConflictingInstallations || err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
-		log.Printf("Start() failed: %s", err)
+		windowsEventLogger.Error(OpsAgentUAPPluginEventID, fmt.Sprintf("Start() failed because it detected conflicting installations: %s", err))
 		return nil, status.Error(1, err.Error())
 	}
+
+	// Trigger Healthchecks
+	runHealthChecks(pluginStateDir, windowsEventLogger)
+	windowsEventLogger.Info(OpsAgentUAPPluginEventID, "Health checks completed")
 
 	return &pb.StartResponse{}, nil
 }
@@ -155,8 +174,8 @@ func generateSubAgentConfigs(ctx context.Context, pluginStateDir string) error {
 		if err := uc.GenerateFilesFromConfig(
 			ctx,
 			subagent,
-			filepath.Join(pluginStateDir, "log"),
-			filepath.Join(pluginStateDir, "run"),
+			filepath.Join(pluginStateDir, LogsDirectory),
+			filepath.Join(pluginStateDir, RuntimeDirectory),
 			filepath.Join(pluginStateDir, generatedConfigsOutDir, subagent)); err != nil {
 			return err
 		}
@@ -164,8 +183,24 @@ func generateSubAgentConfigs(ctx context.Context, pluginStateDir string) error {
 	return nil
 }
 
-func runHealthChecks() error {
-	return nil
+func runHealthChecks(pluginStateDir string, windowsEventLogger debug.Log) {
+	logsDir := filepath.Join(pluginStateDir, LogsDirectory)
+	gceHealthChecks := healthchecks.HealthCheckRegistryFactory()
+	healthCheckFileLogger := healthchecks.CreateHealthChecksLogger(logsDir)
+	// Log health check results to health-checks.log log file.
+	healthCheckResults := gceHealthChecks.RunAllHealthChecks(healthCheckFileLogger)
+
+	// Log health check results to windows event log too.
+	healthCheckWindowsEventLogger := logs.WindowsServiceLogger{EventID: OpsAgentUAPPluginEventID, Logger: windowsEventLogger}
+	healthchecks.LogHealthCheckResults(healthCheckResults, healthCheckWindowsEventLogger)
+}
+
+func createWindowsEventLogger() (debug.Log, error) {
+	elog, err := eventlog.Open(WindowsEventLogIdentifier)
+	if err != nil {
+		return nil, err
+	}
+	return elog, nil
 }
 
 func findPreExistentAgents(agentWindowsServiceNames []string) (bool, error) {
