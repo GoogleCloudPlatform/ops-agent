@@ -42,6 +42,12 @@ const (
 	defaultScopes
 )
 
+const (
+	ManagedInstanceGroupNameLabel   = `compute.googleapis.com/instance_group_manager/name`
+	ManagedInstanceGroupZoneLabel   = `compute.googleapis.com/instance_group_manager/zone`
+	ManagedInstanceGroupRegionLabel = `compute.googleapis.com/instance_group_manager/region`
+)
+
 func GetGCEResource() (Resource, error) {
 	provider := NewGCEMetadataProvider()
 	dt := GCEResourceBuilder{provider: provider}
@@ -190,13 +196,13 @@ func (r GCEResource) PrometheusStyleMetadata() map[string]string {
 func (r GCEResource) ExtraLogLabels() map[string]string {
 	l := make(map[string]string)
 	if r.ManagedInstanceGroup.Name != "" {
-		l[`compute.googleapis.com/instance_group_manager/name`] = r.ManagedInstanceGroup.Name
+		l[ManagedInstanceGroupNameLabel] = r.ManagedInstanceGroup.Name
 	}
 	switch r.ManagedInstanceGroup.Type {
 	case gcp.Zone:
-		l[`compute.googleapis.com/instance_group_manager/zone`] = r.ManagedInstanceGroup.Location
+		l[ManagedInstanceGroupZoneLabel] = r.ManagedInstanceGroup.Location
 	case gcp.Region:
-		l[`compute.googleapis.com/instance_group_manager/region`] = r.ManagedInstanceGroup.Location
+		l[ManagedInstanceGroupRegionLabel] = r.ManagedInstanceGroup.Location
 	}
 	return l
 }
