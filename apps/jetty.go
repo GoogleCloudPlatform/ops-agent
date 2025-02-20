@@ -71,23 +71,21 @@ func (LoggingProcessorJettyAccess) Type() string {
 	return "jetty_access"
 }
 
-type LoggingReceiverJettyAccess struct {
-	LoggingProcessorJettyAccess             `yaml:",inline"`
+type LoggingReceiverJettyAccessMixin struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverJettyAccess) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (r LoggingReceiverJettyAccessMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			"/opt/logs/*.request.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorJettyAccess.Components(ctx, tag, "jetty_access")...)
-	return c
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
 func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorJettyAccess{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverJettyAccess{} })
+	LoggingReceiverJettyAccess := confgenerator.LoggingCompositeReceiver[LoggingReceiverJettyAccessMixin, LoggingProcessorJettyAccess]{}
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverJettyAccess })
 }

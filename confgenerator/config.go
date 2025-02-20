@@ -514,6 +514,10 @@ type LoggingReceiver interface {
 	Components(ctx context.Context, tag string) []fluentbit.Component
 }
 
+type LoggingReceiverMixin interface {
+	Components(ctx context.Context, tag string) []fluentbit.Component
+}
+
 var LoggingReceiverTypes = &componentTypeRegistry[LoggingReceiver, loggingReceiverMap]{
 	Subagent: "logging", Kind: "receiver",
 }

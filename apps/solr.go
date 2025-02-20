@@ -114,23 +114,21 @@ func (p LoggingProcessorSolrSystem) Components(ctx context.Context, tag string, 
 	return c
 }
 
-type LoggingReceiverSolrSystem struct {
-	LoggingProcessorSolrSystem              `yaml:",inline"`
+type LoggingReceiverSolrSystemMixin struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverSolrSystem) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (r LoggingReceiverSolrSystemMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			"/var/solr/logs/solr.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorSolrSystem.Components(ctx, tag, "solr_system")...)
-	return c
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
 func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorSolrSystem{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverSolrSystem{} })
+	LoggingReceiverSolrSystem := confgenerator.LoggingCompositeReceiver[LoggingReceiverSolrSystemMixin, LoggingProcessorSolrSystem]{}
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverSolrSystem })
 }

@@ -811,14 +811,13 @@ func (lr LoggingProcessorOracleDBAlert) Components(ctx context.Context, tag stri
 	return components
 }
 
-type LoggingReceiverOracleDBAlert struct {
-	LoggingProcessorOracleDBAlert           `yaml:",inline"`
+type LoggingReceiverOracleDBAlertMixin struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 	OracleHome                              string   `yaml:"oracle_home,omitempty" validate:"required_without=IncludePaths,excluded_with=IncludePaths"`
 	IncludePaths                            []string `yaml:"include_paths,omitempty" validate:"required_without=OracleHome,excluded_with=OracleHome"`
 }
 
-func (lr LoggingReceiverOracleDBAlert) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (lr LoggingReceiverOracleDBAlertMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(lr.OracleHome) > 0 {
 		lr.IncludePaths = []string{
 			path.Join(lr.OracleHome, "/diag/rdbms/*/*/trace/alert_*.log"),
@@ -827,9 +826,7 @@ func (lr LoggingReceiverOracleDBAlert) Components(ctx context.Context, tag strin
 
 	lr.LoggingReceiverFilesMixin.IncludePaths = lr.IncludePaths
 
-	c := lr.LoggingReceiverFilesMixin.Components(ctx, tag)
-	c = append(c, lr.LoggingProcessorOracleDBAlert.Components(ctx, tag, lr.Type())...)
-	return c
+	return lr.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
 type LoggingProcessorOracleDBAudit struct {
@@ -919,14 +916,13 @@ func (lr LoggingProcessorOracleDBAudit) Components(ctx context.Context, tag stri
 	return components
 }
 
-type LoggingReceiverOracleDBAudit struct {
-	LoggingProcessorOracleDBAudit           `yaml:",inline"`
+type LoggingReceiverOracleDBAuditMixin struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 	OracleHome                              string   `yaml:"oracle_home,omitempty" validate:"required_without=IncludePaths,excluded_with=IncludePaths"`
 	IncludePaths                            []string `yaml:"include_paths,omitempty" validate:"required_without=OracleHome,excluded_with=OracleHome"`
 }
 
-func (lr LoggingReceiverOracleDBAudit) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (lr LoggingReceiverOracleDBAuditMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(lr.OracleHome) > 0 {
 		lr.IncludePaths = []string{
 			path.Join(lr.OracleHome, "/admin/*/adump/*.aud"),
@@ -935,14 +931,14 @@ func (lr LoggingReceiverOracleDBAudit) Components(ctx context.Context, tag strin
 
 	lr.LoggingReceiverFilesMixin.IncludePaths = lr.IncludePaths
 
-	c := lr.LoggingReceiverFilesMixin.Components(ctx, tag)
-	c = append(c, lr.LoggingProcessorOracleDBAudit.Components(ctx, tag, lr.Type())...)
-	return c
+	return lr.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverOracleDBAlert{} })
+	LoggingReceiverOracleDBAlert := confgenerator.LoggingCompositeReceiver[LoggingReceiverOracleDBAlertMixin, LoggingProcessorOracleDBAlert]{}
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverOracleDBAlert })
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorOracleDBAlert{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverOracleDBAudit{} })
+	LoggingReceiverOracleDBAudit := confgenerator.LoggingCompositeReceiver[LoggingReceiverOracleDBAuditMixin, LoggingProcessorOracleDBAudit]{}
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverOracleDBAudit })
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorOracleDBAudit{} })
 }

@@ -141,12 +141,11 @@ func (p LoggingProcessorFlink) Components(ctx context.Context, tag string, uid s
 	return c
 }
 
-type LoggingReceiverFlink struct {
-	LoggingProcessorFlink                   `yaml:",inline"`
+type LoggingReceiverFlinkMixin struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverFlink) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (r LoggingReceiverFlinkMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			"/opt/flink/log/flink-*-standalonesession-*.log",
@@ -154,12 +153,11 @@ func (r LoggingReceiverFlink) Components(ctx context.Context, tag string) []flue
 			"/opt/flink/log/flink-*-client-*.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorFlink.Components(ctx, tag, "flink")...)
-	return c
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
 func init() {
+	LoggingReceiverFlink := confgenerator.LoggingCompositeReceiver[LoggingReceiverFlinkMixin, LoggingProcessorFlink]{}
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverFlink })
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorFlink{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverFlink{} })
 }

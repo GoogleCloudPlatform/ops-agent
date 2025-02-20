@@ -111,12 +111,11 @@ func (p LoggingProcessorWildflySystem) Components(ctx context.Context, tag strin
 	return c
 }
 
-type LoggingReceiverWildflySystem struct {
-	LoggingProcessorWildflySystem           `yaml:",inline"`
+type LoggingReceiverWildflySystemMixin struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverWildflySystem) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (r LoggingReceiverWildflySystemMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// no package installers, default installation usually provides the following
@@ -142,12 +141,11 @@ func (r LoggingReceiverWildflySystem) Components(ctx context.Context, tag string
 		},
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorWildflySystem.Components(ctx, tag, "wildfly_system")...)
-	return c
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
 func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorWildflySystem{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverWildflySystem{} })
+	LoggingReceiverWildflySystem := confgenerator.LoggingCompositeReceiver[LoggingReceiverWildflySystemMixin, LoggingProcessorWildflySystem]{}
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverWildflySystem })
 }

@@ -143,12 +143,11 @@ func (p LoggingProcessorKafka) Components(ctx context.Context, tag string, uid s
 	return c
 }
 
-type LoggingReceiverKafka struct {
-	LoggingProcessorKafka                   `yaml:",inline"`
+type LoggingReceiverKafkaMixin struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverKafka) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (r LoggingReceiverKafkaMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// No default package installers, these are common log paths from installs online
@@ -157,12 +156,11 @@ func (r LoggingReceiverKafka) Components(ctx context.Context, tag string) []flue
 			"/opt/kafka/logs/controller.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorKafka.Components(ctx, tag, "kafka")...)
-	return c
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
 func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorKafka{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverKafka{} })
+	LoggingReceiverKafka := confgenerator.LoggingCompositeReceiver[LoggingReceiverKafkaMixin, LoggingProcessorKafka]{}
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverKafka })
 }

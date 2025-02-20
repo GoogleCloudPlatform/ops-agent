@@ -16,6 +16,7 @@ package confgenerator
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path"
 	"strconv"
@@ -684,4 +685,39 @@ func (r LoggingReceiverSystemd) Components(ctx context.Context, tag string) []fl
 
 func init() {
 	LoggingReceiverTypes.RegisterType(func() LoggingReceiver { return &LoggingReceiverSystemd{} }, platform.Linux)
+}
+
+type LoggingCompositeReceiver[R LoggingReceiverMixin, P LoggingProcessor] struct {
+	ReceiverMixin  R `yaml:",inline"`
+	ProcessorMixin P `yaml:",inline"`
+}
+
+func (cr *LoggingCompositeReceiver[R, P]) Type() string {
+	return cr.ProcessorMixin.Type()
+}
+
+func (cr *LoggingCompositeReceiver[R, P]) Components(ctx context.Context, tag string) []fluentbit.Component {
+	c := cr.ReceiverMixin.Components(ctx, tag)
+	c = append(c, cr.ProcessorMixin.Components(ctx, tag, cr.ProcessorMixin.Type())...)
+	return c
+}
+
+func (cr *LoggingCompositeReceiver[R, P]) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
+	if r, ok := any(cr.ReceiverMixin).(OTelReceiver); ok {
+		receiverPipelines, err := r.Pipelines(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p, ok := any(cr.ProcessorMixin).(OTelProcessor); ok {
+			processors, err := p.Processors(ctx)
+			if err != nil {
+				return nil, err
+			}
+			for _, pipeline := range receiverPipelines {
+				pipeline.Processors["logs"] = append(pipeline.Processors["logs"], processors...)
+			}
+			return receiverPipelines, nil
+		}
+	}
+	return nil, errors.New("unimplemented")
 }

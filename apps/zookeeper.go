@@ -128,12 +128,11 @@ func (p LoggingProcessorZookeeperGeneral) Components(ctx context.Context, tag, u
 	return c
 }
 
-type LoggingReceiverZookeeperGeneral struct {
-	LoggingProcessorZookeeperGeneral        `yaml:",inline"`
+type LoggingReceiverZookeeperGeneralMixin struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
 }
 
-func (r LoggingReceiverZookeeperGeneral) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (r LoggingReceiverZookeeperGeneralMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		// Default log for Zookeeper.
 		r.IncludePaths = []string{
@@ -155,8 +154,7 @@ func (r LoggingReceiverZookeeperGeneral) Components(ctx context.Context, tag str
 		},
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
-	return append(c, r.LoggingProcessorZookeeperGeneral.Components(ctx, tag, "zookeeper_general")...)
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
 func severityParser(ctx context.Context, processorType, tag, uid string) []fluentbit.Component {
@@ -181,5 +179,6 @@ func severityParser(ctx context.Context, processorType, tag, uid string) []fluen
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverZookeeperGeneral{} })
+	LoggingReceiverZookeeperGeneral := confgenerator.LoggingCompositeReceiver[LoggingReceiverZookeeperGeneralMixin, LoggingProcessorZookeeperGeneral]{}
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverZookeeperGeneral })
 }

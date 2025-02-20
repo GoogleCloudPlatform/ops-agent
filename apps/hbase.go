@@ -125,24 +125,23 @@ func (p LoggingProcessorHbaseSystem) Components(ctx context.Context, tag string,
 	return c
 }
 
-type SystemLoggingReceiverHbase struct {
+type SystemLoggingReceiverHbaseMixin struct {
 	LoggingProcessorHbaseSystem             `yaml:",inline"`
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r SystemLoggingReceiverHbase) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (r SystemLoggingReceiverHbaseMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			"/opt/hbase/logs/hbase-*-regionserver-*.log",
 			"/opt/hbase/logs/hbase-*-master-*.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorHbaseSystem.Components(ctx, tag, "hbase_system")...)
-	return c
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
 func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorHbaseSystem{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &SystemLoggingReceiverHbase{} })
+	SystemLoggingReceiverHbase := confgenerator.LoggingCompositeReceiver[SystemLoggingReceiverHbaseMixin, LoggingProcessorHbaseSystem]{}
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &SystemLoggingReceiverHbase })
 }

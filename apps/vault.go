@@ -338,13 +338,12 @@ func (p LoggingProcessorVaultJson) Components(ctx context.Context, tag, uid stri
 	return c
 }
 
-type LoggingReceiverVaultAuditJson struct {
-	LoggingProcessorVaultJson               `yaml:",inline"`
+type LoggingReceiverVaultAuditJsonMixin struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
 	IncludePaths                            []string `yaml:"include_paths,omitempty" validate:"required"`
 }
 
-func (r LoggingReceiverVaultAuditJson) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (r LoggingReceiverVaultAuditJsonMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	r.LoggingReceiverFilesMixin.IncludePaths = r.IncludePaths
 
 	r.MultilineRules = []confgenerator.MultilineRule{
@@ -360,10 +359,11 @@ func (r LoggingReceiverVaultAuditJson) Components(ctx context.Context, tag strin
 		},
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
-	return append(c, r.LoggingProcessorVaultJson.Components(ctx, tag, r.LoggingProcessorVaultJson.Type())...)
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
+
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverVaultAuditJson{} })
+	LoggingReceiverVaultAuditJson := confgenerator.LoggingCompositeReceiver[LoggingReceiverVaultAuditJsonMixin, LoggingProcessorVaultJson]{}
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverVaultAuditJson })
 }

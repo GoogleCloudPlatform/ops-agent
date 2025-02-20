@@ -153,12 +153,11 @@ func (p LoggingProcessorCouchdb) Components(ctx context.Context, tag string, uid
 	return c
 }
 
-type LoggingReceiverCouchdb struct {
-	LoggingProcessorCouchdb                 `yaml:",inline"`
+type LoggingReceiverCouchdbMixin struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverCouchdb) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (r LoggingReceiverCouchdbMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log file
@@ -178,12 +177,11 @@ func (r LoggingReceiverCouchdb) Components(ctx context.Context, tag string) []fl
 		},
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorCouchdb.Components(ctx, tag, "couchdb")...)
-	return c
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
 func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorCouchdb{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverCouchdb{} })
+	LoggingReceiverCouchdb := confgenerator.LoggingCompositeReceiver[LoggingReceiverCouchdbMixin, LoggingProcessorCouchdb]{}
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverCouchdb })
 }

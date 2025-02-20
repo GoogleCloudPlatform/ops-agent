@@ -139,12 +139,11 @@ func (p LoggingProcessorRedis) Components(ctx context.Context, tag string, uid s
 	return c
 }
 
-type LoggingReceiverRedis struct {
-	LoggingProcessorRedis                   `yaml:",inline"`
+type LoggingReceiverRedisMixin struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverRedis) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (r LoggingReceiverRedisMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log path on Ubuntu / Debian
@@ -159,12 +158,11 @@ func (r LoggingReceiverRedis) Components(ctx context.Context, tag string) []flue
 			"/var/log/redis/redis_6379.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorRedis.Components(ctx, tag, "redis")...)
-	return c
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
 func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorRedis{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverRedis{} })
+	LoggingReceiverRedis := confgenerator.LoggingCompositeReceiver[LoggingReceiverRedisMixin, LoggingProcessorRedis]{}
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverRedis })
 }

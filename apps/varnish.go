@@ -71,22 +71,20 @@ func (p LoggingProcessorVarnish) Components(ctx context.Context, tag string, uid
 	return genericAccessLogParser(ctx, p.Type(), tag, uid)
 }
 
-type LoggingReceiverVarnish struct {
-	LoggingProcessorVarnish                 `yaml:",inline"`
+type LoggingReceiverVarnishMixin struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverVarnish) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (r LoggingReceiverVarnishMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{"/var/log/varnish/varnishncsa.log"}
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorVarnish.Components(ctx, tag, "varnish")...)
-	return c
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
 func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorVarnish{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverVarnish{} })
+	LoggingReceiverVarnish := confgenerator.LoggingCompositeReceiver[LoggingReceiverVarnishMixin, LoggingProcessorVarnish]{}
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverVarnish })
 }

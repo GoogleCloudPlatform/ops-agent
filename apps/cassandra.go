@@ -234,12 +234,11 @@ func (p LoggingProcessorCassandraGC) Components(ctx context.Context, tag string,
 	return c
 }
 
-type LoggingReceiverCassandraSystem struct {
-	LoggingProcessorCassandraSystem         `yaml:",inline"`
+type LoggingReceiverCassandraSystemMixin struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverCassandraSystem) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (r LoggingReceiverCassandraSystemMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log file path on Debian / Ubuntu / RHEL / CentOS
@@ -247,17 +246,14 @@ func (r LoggingReceiverCassandraSystem) Components(ctx context.Context, tag stri
 			// No default install position / log path for SLES
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorCassandraSystem.Components(ctx, tag, "cassandra_system")...)
-	return c
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
-type LoggingReceiverCassandraDebug struct {
-	LoggingProcessorCassandraDebug          `yaml:",inline"`
+type LoggingReceiverCassandraDebugMixin struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverCassandraDebug) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (r LoggingReceiverCassandraDebugMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log file path on Debian / Ubuntu / RHEL / CentOS
@@ -265,17 +261,14 @@ func (r LoggingReceiverCassandraDebug) Components(ctx context.Context, tag strin
 			// No default install position / log path for SLES
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorCassandraDebug.Components(ctx, tag, "cassandra_debug")...)
-	return c
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
-type LoggingReceiverCassandraGC struct {
-	LoggingProcessorCassandraGC             `yaml:",inline"`
+type LoggingReceiverCassandraGCMixin struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverCassandraGC) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (r LoggingReceiverCassandraGCMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log file path on Debian / Ubuntu / RHEL / CentOS for JDK 8
@@ -285,16 +278,17 @@ func (r LoggingReceiverCassandraGC) Components(ctx context.Context, tag string) 
 			// No default install position / log path for SLES
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorCassandraGC.Components(ctx, tag, "cassandra_gc")...)
-	return c
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
 func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorCassandraSystem{} })
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorCassandraDebug{} })
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorCassandraGC{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverCassandraSystem{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverCassandraDebug{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverCassandraGC{} })
+	LoggingReceiverCassandraSystem := confgenerator.LoggingCompositeReceiver[LoggingReceiverCassandraSystemMixin, LoggingProcessorCassandraSystem]{}
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverCassandraSystem })
+	LoggingReceiverCassandraDebug := confgenerator.LoggingCompositeReceiver[LoggingReceiverCassandraDebugMixin, LoggingProcessorCassandraDebug]{}
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverCassandraDebug })
+	LoggingReceiverCassandraGC := confgenerator.LoggingCompositeReceiver[LoggingReceiverCassandraGCMixin, LoggingProcessorCassandraGC]{}
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverCassandraGC })
 }

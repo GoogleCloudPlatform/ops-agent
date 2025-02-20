@@ -27,11 +27,11 @@ type LoggingProcessorRabbitmq struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 }
 
-func (*LoggingProcessorRabbitmq) Type() string {
+func (LoggingProcessorRabbitmq) Type() string {
 	return "rabbitmq"
 }
 
-func (p *LoggingProcessorRabbitmq) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorRabbitmq) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegexComplex{
 		Parsers: []confgenerator.RegexParser{
 			{
@@ -78,12 +78,11 @@ func (p *LoggingProcessorRabbitmq) Components(ctx context.Context, tag, uid stri
 	return c
 }
 
-type LoggingReceiverRabbitmq struct {
-	LoggingProcessorRabbitmq                `yaml:",inline"`
+type LoggingReceiverRabbitmqMixin struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverRabbitmq) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (r LoggingReceiverRabbitmqMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			"/var/log/rabbitmq/rabbit*.log",
@@ -108,13 +107,12 @@ func (r LoggingReceiverRabbitmq) Components(ctx context.Context, tag string) []f
 			Regex:     `^(?!\d+-\d+-\d+ \d+:\d+:\d+\.\d+\+\d+:\d+)`,
 		},
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorRabbitmq.Components(ctx, tag, "rabbitmq")...)
-	return c
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverRabbitmq{} })
+	LoggingReceiverRabbitmq := confgenerator.LoggingCompositeReceiver[LoggingReceiverRabbitmqMixin, LoggingProcessorRabbitmq]{}
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverRabbitmq })
 }
 
 type MetricsReceiverRabbitmq struct {

@@ -105,12 +105,11 @@ func (p LoggingProcessorHadoop) Components(ctx context.Context, tag, uid string)
 	return c
 }
 
-type LoggingReceiverHadoop struct {
-	LoggingProcessorHadoop                  `yaml:",inline"`
+type LoggingReceiverHadoopMixin struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
 }
 
-func (r LoggingReceiverHadoop) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (r LoggingReceiverHadoopMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		// Default logs for hadoop
 		r.IncludePaths = []string{
@@ -132,11 +131,10 @@ func (r LoggingReceiverHadoop) Components(ctx context.Context, tag string) []flu
 		},
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
-
-	return append(c, r.LoggingProcessorHadoop.Components(ctx, tag, "hadoop")...)
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverHadoop{} })
+	LoggingReceiverHadoop := confgenerator.LoggingCompositeReceiver[LoggingReceiverHadoopMixin, LoggingProcessorHadoop]{}
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverHadoop })
 }

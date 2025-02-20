@@ -567,46 +567,39 @@ func (p LoggingProcessorMysqlSlow) Components(ctx context.Context, tag string, u
 	return c
 }
 
-type LoggingReceiverMysqlGeneral struct {
-	LoggingProcessorMysqlGeneral            `yaml:",inline"`
+type LoggingReceiverMysqlGeneralMixin struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverMysqlGeneral) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (r LoggingReceiverMysqlGeneralMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log path for CentOS / RHEL / SLES / Debain / Ubuntu
 			"/var/lib/mysql/${HOSTNAME}.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorMysqlGeneral.Components(ctx, tag, "mysql_general")...)
-	return c
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
-type LoggingReceiverMysqlSlow struct {
-	LoggingProcessorMysqlSlow               `yaml:",inline"`
+type LoggingReceiverMysqlSlowMixin struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverMysqlSlow) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (r LoggingReceiverMysqlSlowMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log path for CentOS / RHEL / SLES / Debain / Ubuntu
 			"/var/lib/mysql/${HOSTNAME}-slow.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorMysqlSlow.Components(ctx, tag, "mysql_slow")...)
-	return c
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
-type LoggingReceiverMysqlError struct {
-	LoggingProcessorMysqlError              `yaml:",inline"`
+type LoggingReceiverMysqlErrorMixin struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverMysqlError) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (r LoggingReceiverMysqlErrorMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log path for CentOS / RHEL
@@ -622,16 +615,17 @@ func (r LoggingReceiverMysqlError) Components(ctx context.Context, tag string) [
 			"/var/lib/mysql/${HOSTNAME}.err",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorMysqlError.Components(ctx, tag, "mysql_error")...)
-	return c
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
 func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorMysqlError{} })
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorMysqlGeneral{} })
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorMysqlSlow{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverMysqlError{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverMysqlGeneral{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverMysqlSlow{} })
+	LoggingReceiverMysqlError := confgenerator.LoggingCompositeReceiver[LoggingReceiverMysqlErrorMixin, LoggingProcessorMysqlError]{}
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverMysqlError })
+	LoggingReceiverMysqlGeneral := confgenerator.LoggingCompositeReceiver[LoggingReceiverMysqlGeneralMixin, LoggingProcessorMysqlGeneral]{}
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverMysqlGeneral })
+	LoggingReceiverMysqlSlow := confgenerator.LoggingCompositeReceiver[LoggingReceiverMysqlSlowMixin, LoggingProcessorMysqlSlow]{}
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverMysqlSlow })
 }

@@ -201,12 +201,11 @@ func (p LoggingProcessorPostgresql) Components(ctx context.Context, tag string, 
 	return c
 }
 
-type LoggingReceiverPostgresql struct {
-	LoggingProcessorPostgresql              `yaml:",inline"`
+type LoggingReceiverPostgresqlMixin struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverPostgresql) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (r LoggingReceiverPostgresqlMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log paths for Debian / Ubuntu
@@ -217,12 +216,11 @@ func (r LoggingReceiverPostgresql) Components(ctx context.Context, tag string) [
 			"/var/lib/pgsql/*/data/log/postgresql*.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorPostgresql.Components(ctx, tag, "postgresql")...)
-	return c
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
 func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorPostgresql{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverPostgresql{} })
+	LoggingReceiverPostgresql := confgenerator.LoggingCompositeReceiver[LoggingReceiverPostgresqlMixin, LoggingProcessorPostgresql]{}
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverPostgresql })
 }

@@ -268,12 +268,11 @@ func (p LoggingProcessorElasticsearchGC) Components(ctx context.Context, tag, ui
 	return c
 }
 
-type LoggingReceiverElasticsearchJson struct {
-	LoggingProcessorElasticsearchJson       `yaml:",inline"`
+type LoggingReceiverElasticsearchJsonMixin struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
 }
 
-func (r LoggingReceiverElasticsearchJson) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (r LoggingReceiverElasticsearchJsonMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		// Default JSON logs for Elasticsearch
 		r.IncludePaths = []string{
@@ -307,16 +306,14 @@ func (r LoggingReceiverElasticsearchJson) Components(ctx context.Context, tag st
 		},
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
-	return append(c, r.LoggingProcessorElasticsearchJson.Components(ctx, tag, "elasticsearch_json")...)
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
-type LoggingReceiverElasticsearchGC struct {
-	LoggingProcessorElasticsearchGC         `yaml:",inline"`
+type LoggingReceiverElasticsearchGCMixin struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
 }
 
-func (r LoggingReceiverElasticsearchGC) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (r LoggingReceiverElasticsearchGCMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		// Default GC log for Elasticsearch
 		r.IncludePaths = []string{
@@ -324,11 +321,12 @@ func (r LoggingReceiverElasticsearchGC) Components(ctx context.Context, tag stri
 		}
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
-	return append(c, r.LoggingProcessorElasticsearchGC.Components(ctx, tag, "elasticsearch_gc")...)
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverElasticsearchJson{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverElasticsearchGC{} })
+	LoggingReceiverElasticsearchJson := confgenerator.LoggingCompositeReceiver[LoggingReceiverElasticsearchJsonMixin, LoggingProcessorElasticsearchJson]{}
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverElasticsearchJson })
+	LoggingReceiverElasticsearchGC := confgenerator.LoggingCompositeReceiver[LoggingReceiverElasticsearchGCMixin, LoggingProcessorElasticsearchGC]{}
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverElasticsearchGC })
 }

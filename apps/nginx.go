@@ -125,37 +125,33 @@ func (p LoggingProcessorNginxError) Components(ctx context.Context, tag string, 
 	return c
 }
 
-type LoggingReceiverNginxAccess struct {
-	LoggingProcessorNginxAccess             `yaml:",inline"`
+type LoggingReceiverNginxAccessMixin struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverNginxAccess) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (r LoggingReceiverNginxAccessMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{"/var/log/nginx/access.log"}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorNginxAccess.Components(ctx, tag, "nginx_access")...)
-	return c
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
-type LoggingReceiverNginxError struct {
-	LoggingProcessorNginxError              `yaml:",inline"`
+type LoggingReceiverNginxErrorMixin struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverNginxError) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (r LoggingReceiverNginxErrorMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{"/var/log/nginx/error.log"}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorNginxError.Components(ctx, tag, "nginx_error")...)
-	return c
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
 func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorNginxAccess{} })
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorNginxError{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverNginxAccess{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverNginxError{} })
+	LoggingReceiverNginxAccess := confgenerator.LoggingCompositeReceiver[LoggingReceiverNginxAccessMixin, LoggingProcessorNginxAccess]{}
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverNginxAccess })
+	LoggingReceiverNginxError := confgenerator.LoggingCompositeReceiver[LoggingReceiverNginxErrorMixin, LoggingProcessorNginxError]{}
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverNginxError })
 }

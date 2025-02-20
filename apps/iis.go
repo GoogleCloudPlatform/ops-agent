@@ -150,7 +150,7 @@ type LoggingProcessorIisAccess struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 }
 
-func (*LoggingProcessorIisAccess) Type() string {
+func (LoggingProcessorIisAccess) Type() string {
 	return "iis_access"
 }
 
@@ -184,7 +184,7 @@ const (
 	`
 )
 
-func (p *LoggingProcessorIisAccess) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorIisAccess) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegex{
 		// Documentation:
 		// https://docs.microsoft.com/en-us/windows/win32/http/w3c-logging
@@ -248,23 +248,21 @@ func (p *LoggingProcessorIisAccess) Components(ctx context.Context, tag, uid str
 	return c
 }
 
-type LoggingReceiverIisAccess struct {
-	LoggingProcessorIisAccess               `yaml:",inline"`
+type LoggingReceiverIisAccessMixin struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverIisAccess) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (r LoggingReceiverIisAccessMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			`C:\inetpub\logs\LogFiles\W3SVC1\u_ex*`,
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorIisAccess.Components(ctx, tag, "iis_access")...)
-	return c
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverIisAccess{} }, platform.Windows)
+	LoggingReceiverIisAccess := confgenerator.LoggingCompositeReceiver[LoggingReceiverIisAccessMixin, LoggingProcessorIisAccess]{}
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverIisAccess })
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorIisAccess{} }, platform.Windows)
 }

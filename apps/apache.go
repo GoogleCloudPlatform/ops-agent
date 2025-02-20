@@ -143,12 +143,11 @@ func (LoggingProcessorApacheAccess) Type() string {
 	return "apache_access"
 }
 
-type LoggingReceiverApacheAccess struct {
-	LoggingProcessorApacheAccess            `yaml:",inline"`
+type LoggingReceiverApacheAccessMixin struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverApacheAccess) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (r LoggingReceiverApacheAccessMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log file path on Debian / Ubuntu
@@ -159,17 +158,14 @@ func (r LoggingReceiverApacheAccess) Components(ctx context.Context, tag string)
 			"/var/log/httpd/access_log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorApacheAccess.Components(ctx, tag, "apache_access")...)
-	return c
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
-type LoggingReceiverApacheError struct {
-	LoggingProcessorApacheError             `yaml:",inline"`
+type LoggingReceiverApacheErrorMixin struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverApacheError) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (r LoggingReceiverApacheErrorMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			// Default log file path on Debian / Ubuntu
@@ -180,14 +176,14 @@ func (r LoggingReceiverApacheError) Components(ctx context.Context, tag string) 
 			"/var/log/httpd/error_log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorApacheError.Components(ctx, tag, "apache_error")...)
-	return c
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
 func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorApacheAccess{} })
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorApacheError{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverApacheAccess{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverApacheError{} })
+	LoggingReceiverApacheAccess := confgenerator.LoggingCompositeReceiver[LoggingReceiverApacheAccessMixin, LoggingProcessorApacheAccess]{}
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverApacheAccess })
+	LoggingReceiverApacheError := confgenerator.LoggingCompositeReceiver[LoggingReceiverApacheErrorMixin, LoggingProcessorApacheError]{}
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverApacheError })
 }
