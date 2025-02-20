@@ -57,16 +57,15 @@ func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverTomcat{} })
 }
 
-type LoggingProcessorTomcatSystem struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
+type LoggingMultiProcessorMixinTomcatSystem struct {
 }
 
-func (LoggingProcessorTomcatSystem) Type() string {
+func (LoggingMultiProcessorMixinTomcatSystem) Type() string {
 	return "tomcat_system"
 }
 
-func (p LoggingProcessorTomcatSystem) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseMultilineRegex{
+func (p LoggingMultiProcessorMixinTomcatSystem) Processors(ctx context.Context) []confgenerator.LoggingProcessorMixin {
+	parseMultilineRegex := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
 				{
@@ -100,81 +99,83 @@ func (p LoggingProcessorTomcatSystem) Components(ctx context.Context, tag string
 				Regex:     `^(?!\d{2}-[A-Z]{1}[a-z]{2}-\d{4}\s\d{2}:\d{2}:\d{2}.\d{3})`,
 			},
 		},
-	}.Components(ctx, tag, uid)
+	}
 
 	// https://tomcat.apache.org/tomcat-10.0-doc/logging.html
-	c = append(c,
-		confgenerator.LoggingProcessorModifyFields{
-			Fields: map[string]*confgenerator.ModifyField{
-				"severity": {
-					CopyFrom: "jsonPayload.level",
-					MapValues: map[string]string{
-						"FINEST":  "DEBUG",
-						"FINER":   "DEBUG",
-						"FINE":    "DEBUG",
-						"INFO":    "INFO",
-						"WARNING": "WARNING",
-						"SEVERE":  "CRITICAL",
-					},
-					MapValuesExclusive: true,
+	modifyFields := confgenerator.LoggingProcessorModifyFields{
+		Fields: map[string]*confgenerator.ModifyField{
+			"severity": {
+				CopyFrom: "jsonPayload.level",
+				MapValues: map[string]string{
+					"FINEST":  "DEBUG",
+					"FINER":   "DEBUG",
+					"FINE":    "DEBUG",
+					"INFO":    "INFO",
+					"WARNING": "WARNING",
+					"SEVERE":  "CRITICAL",
 				},
-				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+				MapValuesExclusive: true,
 			},
-		}.Components(ctx, tag, uid)...,
-	)
-	return c
+			InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+		},
+	}
+	return []confgenerator.LoggingProcessorMixin{
+		parseMultilineRegex,
+		modifyFields,
+	}
 }
 
-type SystemLoggingReceiverTomcat struct {
-	LoggingProcessorTomcatSystem `yaml:",inline"`
-	ReceiverMixin                confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+type SystemLoggingReceiverMixinTomcat struct {
+	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r SystemLoggingReceiverTomcat) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.ReceiverMixin.IncludePaths) == 0 {
-		r.ReceiverMixin.IncludePaths = []string{
+func (r SystemLoggingReceiverMixinTomcat) Components(ctx context.Context, tag string) []fluentbit.Component {
+	if len(r.IncludePaths) == 0 {
+		r.IncludePaths = []string{
 			"/opt/tomcat/logs/catalina.out",
 			"/var/log/tomcat*/catalina.out",
 			"/var/log/tomcat*/catalina.*.log",
 		}
 	}
-	c := r.ReceiverMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorTomcatSystem.Components(ctx, tag, "tomcat_system")...)
-	return c
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
-type LoggingProcessorTomcatAccess struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
+type LoggingMultiProcessorMixinTomcatAccess struct {
 }
 
-func (p LoggingProcessorTomcatAccess) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
-	return genericAccessLogParser(ctx, p.Type(), tag, uid)
+func (p LoggingMultiProcessorMixinTomcatAccess) Processors(ctx context.Context) []confgenerator.LoggingProcessorMixin {
+	return genericAccessLogParser(ctx, p.Type())
 }
 
-func (LoggingProcessorTomcatAccess) Type() string {
+func (LoggingMultiProcessorMixinTomcatAccess) Type() string {
 	return "tomcat_access"
 }
 
-type AccessSystemLoggingReceiverTomcat struct {
-	LoggingProcessorTomcatAccess `yaml:",inline"`
-	ReceiverMixin                confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+type AccessSystemLoggingReceiverMixinTomcat struct {
+	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r AccessSystemLoggingReceiverTomcat) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.ReceiverMixin.IncludePaths) == 0 {
-		r.ReceiverMixin.IncludePaths = []string{
+func (r AccessSystemLoggingReceiverMixinTomcat) Components(ctx context.Context, tag string) []fluentbit.Component {
+	if len(r.IncludePaths) == 0 {
+		r.IncludePaths = []string{
 			"/opt/tomcat/logs/localhost_access_log*.txt",
 			"/var/log/tomcat*/localhost_access_log*.txt",
 		}
 	}
-	c := r.ReceiverMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorTomcatAccess.Components(ctx, tag, "tomcat_access")...)
-	return c
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
 func init() {
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorTomcatAccess{} })
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorTomcatSystem{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &AccessSystemLoggingReceiverTomcat{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &SystemLoggingReceiverTomcat{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor {
+		return &confgenerator.LoggingMultiProcessor[LoggingMultiProcessorMixinTomcatAccess]{}
+	})
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor {
+		return &confgenerator.LoggingMultiProcessor[LoggingMultiProcessorMixinTomcatSystem]{}
+	})
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[AccessSystemLoggingReceiverMixinTomcat, LoggingMultiProcessorMixinTomcatAccess]{}
+	})
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[SystemLoggingReceiverMixinTomcat, LoggingMultiProcessorMixinTomcatSystem]{}
+	})
 }

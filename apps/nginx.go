@@ -62,28 +62,26 @@ func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverNginx{} })
 }
 
-type LoggingProcessorNginxAccess struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
+type LoggingMultiProcessorMixinNginxAccess struct {
 }
 
-func (LoggingProcessorNginxAccess) Type() string {
+func (LoggingMultiProcessorMixinNginxAccess) Type() string {
 	return "nginx_access"
 }
 
-func (p LoggingProcessorNginxAccess) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
-	return genericAccessLogParser(ctx, p.Type(), tag, uid)
+func (p LoggingMultiProcessorMixinNginxAccess) Processors(ctx context.Context) []confgenerator.LoggingProcessorMixin {
+	return genericAccessLogParser(ctx, p.Type())
 }
 
-type LoggingProcessorNginxError struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
+type LoggingMultiProcessorMixinNginxError struct {
 }
 
-func (LoggingProcessorNginxError) Type() string {
+func (LoggingMultiProcessorMixinNginxError) Type() string {
 	return "nginx_error"
 }
 
-func (p LoggingProcessorNginxError) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseRegex{
+func (p LoggingMultiProcessorMixinNginxError) Processors(ctx context.Context) []confgenerator.LoggingProcessorMixin {
+	parseRegex := confgenerator.LoggingProcessorParseRegex{
 		// Format is not documented, sadly.
 		// Basic fields: https://github.com/nginx/nginx/blob/c231640eba9e26e963460c83f2907ac6f9abf3fc/src/core/ngx_log.c#L102
 		// Request fields: https://github.com/nginx/nginx/blob/7bcb50c0610a18bf43bef0062b2d2dc550823b53/src/http/ngx_http_request.c#L3836
@@ -98,64 +96,64 @@ func (p LoggingProcessorNginxError) Components(ctx context.Context, tag string, 
 				"connection": "integer",
 			},
 		},
-	}.Components(ctx, tag, uid)
-
+	}
 	// Log levels documented: https://github.com/nginx/nginx/blob/master/src/core/ngx_syslog.c#L31
-	c = append(c,
-		confgenerator.LoggingProcessorModifyFields{
-			Fields: map[string]*confgenerator.ModifyField{
-				"severity": {
-					CopyFrom: "jsonPayload.level",
-					MapValues: map[string]string{
-						"emerg":  "EMERGENCY",
-						"alert":  "ALERT",
-						"crit":   "CRITICAL",
-						"error":  "ERROR",
-						"warn":   "WARNING",
-						"notice": "NOTICE",
-						"info":   "INFO",
-						"debug":  "DEBUG",
-					},
-					MapValuesExclusive: true,
+	modifyFields := confgenerator.LoggingProcessorModifyFields{
+		Fields: map[string]*confgenerator.ModifyField{
+			"severity": {
+				CopyFrom: "jsonPayload.level",
+				MapValues: map[string]string{
+					"emerg":  "EMERGENCY",
+					"alert":  "ALERT",
+					"crit":   "CRITICAL",
+					"error":  "ERROR",
+					"warn":   "WARNING",
+					"notice": "NOTICE",
+					"info":   "INFO",
+					"debug":  "DEBUG",
 				},
-				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+				MapValuesExclusive: true,
 			},
-		}.Components(ctx, tag, uid)...,
-	)
-	return c
-}
-
-type LoggingReceiverNginxAccess struct {
-	LoggingProcessorNginxAccess `yaml:",inline"`
-	ReceiverMixin               confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
-}
-
-func (r LoggingReceiverNginxAccess) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.ReceiverMixin.IncludePaths) == 0 {
-		r.ReceiverMixin.IncludePaths = []string{"/var/log/nginx/access.log"}
+			InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+		},
 	}
-	c := r.ReceiverMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorNginxAccess.Components(ctx, tag, "nginx_access")...)
-	return c
+	return []confgenerator.LoggingProcessorMixin{parseRegex, modifyFields}
 }
 
-type LoggingReceiverNginxError struct {
-	LoggingProcessorNginxError `yaml:",inline"`
-	ReceiverMixin              confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+type LoggingReceiverMixinNginxAccess struct {
+	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverNginxError) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.ReceiverMixin.IncludePaths) == 0 {
-		r.ReceiverMixin.IncludePaths = []string{"/var/log/nginx/error.log"}
+func (r LoggingReceiverMixinNginxAccess) Components(ctx context.Context, tag string) []fluentbit.Component {
+	if len(r.IncludePaths) == 0 {
+		r.IncludePaths = []string{"/var/log/nginx/access.log"}
 	}
-	c := r.ReceiverMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorNginxError.Components(ctx, tag, "nginx_error")...)
-	return c
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
+}
+
+type LoggingReceiverMixinNginxError struct {
+	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+}
+
+func (r LoggingReceiverMixinNginxError) Components(ctx context.Context, tag string) []fluentbit.Component {
+	if len(r.IncludePaths) == 0 {
+		r.IncludePaths = []string{"/var/log/nginx/error.log"}
+	}
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
 func init() {
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorNginxAccess{} })
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorNginxError{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverNginxAccess{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverNginxError{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor {
+		return &confgenerator.LoggingMultiProcessor[LoggingMultiProcessorMixinNginxAccess]{}
+	})
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor {
+		return &confgenerator.LoggingMultiProcessor[LoggingMultiProcessorMixinNginxError]{}
+	})
+
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverMixinNginxAccess, LoggingMultiProcessorMixinNginxAccess]{}
+	})
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverMixinNginxError, LoggingMultiProcessorMixinNginxError]{}
+	})
 }
