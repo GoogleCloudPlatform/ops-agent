@@ -77,6 +77,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	ps.mu.Unlock()
 
 	windowsEventLogger, err := createWindowsEventLogger()
+	defer windowsEventLogger.Close()
 	if err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		log.Printf("Start() failed, because it failed to create Windows event logger: %s", err)
@@ -158,7 +159,6 @@ func runCommand(cmd *exec.Cmd) (string, error) {
 }
 
 func generateSubAgentConfigs(ctx context.Context, pluginStateDir string) error {
-	// TODO(lingshi) Move this to a shared place across Linux and Windows.
 	uc, err := confgenerator.MergeConfFiles(ctx, OpsAgentConfigLocationWindows, apps.BuiltInConfStructs)
 	if err != nil {
 		return err
@@ -196,6 +196,7 @@ func runHealthChecks(pluginStateDir string, windowsEventLogger debug.Log) {
 }
 
 func createWindowsEventLogger() (debug.Log, error) {
+	eventlog.InstallAsEventCreate(WindowsEventLogIdentifier, eventlog.Error|eventlog.Warning|eventlog.Info)
 	elog, err := eventlog.Open(WindowsEventLogIdentifier)
 	if err != nil {
 		return nil, err
