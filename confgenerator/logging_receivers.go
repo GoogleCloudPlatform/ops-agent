@@ -687,7 +687,7 @@ func init() {
 	LoggingReceiverTypes.RegisterType(func() LoggingReceiver { return &LoggingReceiverSystemd{} }, platform.Linux)
 }
 
-type LoggingCompositeReceiver[R LoggingReceiverMixin, P LoggingProcessor] struct {
+type LoggingCompositeReceiver[R LoggingReceiverMixin, P LoggingProcessorMixin] struct {
 	ProcessorMixin P `yaml:",inline"`
 	ReceiverMixin  R `yaml:",inline"`
 }

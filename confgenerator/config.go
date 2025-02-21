@@ -550,6 +550,11 @@ type LoggingProcessor interface {
 	Components(ctx context.Context, tag string, uid string) []fluentbit.Component
 }
 
+type LoggingProcessorMixin interface {
+	Type() string
+	Components(ctx context.Context, tag string, uid string) []fluentbit.Component
+}
+
 var LoggingProcessorTypes = &componentTypeRegistry[LoggingProcessor, loggingProcessorMap]{
 	Subagent: "logging", Kind: "processor",
 }
