@@ -13,7 +13,7 @@
 - module: logging
   feature: service:otel_logging
   key: otel_logging_supported_config
-  value: "true"
+  value: "false"
 - module: logging
   feature: receivers:oracledb_alert
   key: "[0].enabled"

@@ -95,12 +95,11 @@ func (p LoggingProcessorSapHanaTrace) Components(ctx context.Context, tag string
 	return c
 }
 
-type LoggingReceiverSapHanaTrace struct {
-	LoggingProcessorSapHanaTrace            `yaml:",inline"`
+type LoggingReceiverSapHanaTraceMixin struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverSapHanaTrace) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (r LoggingReceiverSapHanaTraceMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			"/usr/sap/*/HDB*/${HOSTNAME}/trace/*.trc",
@@ -127,14 +126,15 @@ func (r LoggingReceiverSapHanaTrace) Components(ctx context.Context, tag string)
 		},
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorSapHanaTrace.Components(ctx, tag, r.Type())...)
-	return c
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
+
 }
 
 func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorSapHanaTrace{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverSapHanaTrace{} })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverSapHanaTraceMixin, LoggingProcessorSapHanaTrace]{}
+	})
 }
 
 type MetricsReceiverSapHana struct {
