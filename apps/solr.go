@@ -129,6 +129,7 @@ func (r LoggingReceiverSolrSystemMixin) Components(ctx context.Context, tag stri
 
 func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorSolrSystem{} })
-	LoggingReceiverSolrSystem := confgenerator.LoggingCompositeReceiver[LoggingReceiverSolrSystemMixin, LoggingProcessorSolrSystem]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverSolrSystem })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverSolrSystemMixin, LoggingProcessorSolrSystem]{}
+	})
 }

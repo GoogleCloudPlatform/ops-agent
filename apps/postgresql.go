@@ -221,6 +221,7 @@ func (r LoggingReceiverPostgresqlMixin) Components(ctx context.Context, tag stri
 
 func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorPostgresql{} })
-	LoggingReceiverPostgresql := confgenerator.LoggingCompositeReceiver[LoggingReceiverPostgresqlMixin, LoggingProcessorPostgresql]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverPostgresql })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverPostgresqlMixin, LoggingProcessorPostgresql]{}
+	})
 }

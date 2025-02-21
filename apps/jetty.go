@@ -86,6 +86,7 @@ func (r LoggingReceiverJettyAccessMixin) Components(ctx context.Context, tag str
 
 func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorJettyAccess{} })
-	LoggingReceiverJettyAccess := confgenerator.LoggingCompositeReceiver[LoggingReceiverJettyAccessMixin, LoggingProcessorJettyAccess]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverJettyAccess })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverJettyAccessMixin, LoggingProcessorJettyAccess]{}
+	})
 }

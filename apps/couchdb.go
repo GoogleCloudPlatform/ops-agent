@@ -182,6 +182,7 @@ func (r LoggingReceiverCouchdbMixin) Components(ctx context.Context, tag string)
 
 func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorCouchdb{} })
-	LoggingReceiverCouchdb := confgenerator.LoggingCompositeReceiver[LoggingReceiverCouchdbMixin, LoggingProcessorCouchdb]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverCouchdb })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverCouchdbMixin, LoggingProcessorCouchdb]{}
+	})
 }

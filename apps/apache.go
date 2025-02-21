@@ -182,8 +182,10 @@ func (r LoggingReceiverApacheErrorMixin) Components(ctx context.Context, tag str
 func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorApacheAccess{} })
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorApacheError{} })
-	LoggingReceiverApacheAccess := confgenerator.LoggingCompositeReceiver[LoggingReceiverApacheAccessMixin, LoggingProcessorApacheAccess]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverApacheAccess })
-	LoggingReceiverApacheError := confgenerator.LoggingCompositeReceiver[LoggingReceiverApacheErrorMixin, LoggingProcessorApacheError]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverApacheError })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverApacheAccessMixin, LoggingProcessorApacheAccess]{}
+	})
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverApacheErrorMixin, LoggingProcessorApacheError]{}
+	})
 }

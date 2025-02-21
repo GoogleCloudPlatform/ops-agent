@@ -622,10 +622,13 @@ func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorMysqlError{} })
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorMysqlGeneral{} })
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorMysqlSlow{} })
-	LoggingReceiverMysqlError := confgenerator.LoggingCompositeReceiver[LoggingReceiverMysqlErrorMixin, LoggingProcessorMysqlError]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverMysqlError })
-	LoggingReceiverMysqlGeneral := confgenerator.LoggingCompositeReceiver[LoggingReceiverMysqlGeneralMixin, LoggingProcessorMysqlGeneral]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverMysqlGeneral })
-	LoggingReceiverMysqlSlow := confgenerator.LoggingCompositeReceiver[LoggingReceiverMysqlSlowMixin, LoggingProcessorMysqlSlow]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverMysqlSlow })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverMysqlErrorMixin, LoggingProcessorMysqlError]{}
+	})
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverMysqlGeneralMixin, LoggingProcessorMysqlGeneral]{}
+	})
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverMysqlSlowMixin, LoggingProcessorMysqlSlow]{}
+	})
 }

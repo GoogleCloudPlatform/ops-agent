@@ -285,10 +285,13 @@ func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorCassandraSystem{} })
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorCassandraDebug{} })
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorCassandraGC{} })
-	LoggingReceiverCassandraSystem := confgenerator.LoggingCompositeReceiver[LoggingReceiverCassandraSystemMixin, LoggingProcessorCassandraSystem]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverCassandraSystem })
-	LoggingReceiverCassandraDebug := confgenerator.LoggingCompositeReceiver[LoggingReceiverCassandraDebugMixin, LoggingProcessorCassandraDebug]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverCassandraDebug })
-	LoggingReceiverCassandraGC := confgenerator.LoggingCompositeReceiver[LoggingReceiverCassandraGCMixin, LoggingProcessorCassandraGC]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverCassandraGC })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverCassandraSystemMixin, LoggingProcessorCassandraSystem]{}
+	})
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverCassandraDebugMixin, LoggingProcessorCassandraDebug]{}
+	})
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverCassandraGCMixin, LoggingProcessorCassandraGC]{}
+	})
 }

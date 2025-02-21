@@ -132,8 +132,9 @@ func (r LoggingReceiverSapHanaTraceMixin) Components(ctx context.Context, tag st
 
 func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorSapHanaTrace{} })
-	LoggingReceiverSapHanaTrace := confgenerator.LoggingCompositeReceiver[LoggingReceiverSapHanaTraceMixin, LoggingProcessorSapHanaTrace]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverSapHanaTrace })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverSapHanaTraceMixin, LoggingProcessorSapHanaTrace]{}
+	})
 }
 
 type MetricsReceiverSapHana struct {

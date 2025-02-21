@@ -263,6 +263,6 @@ func (r LoggingReceiverIisAccessMixin) Components(ctx context.Context, tag strin
 
 func init() {
 	LoggingReceiverIisAccess := confgenerator.LoggingCompositeReceiver[LoggingReceiverIisAccessMixin, LoggingProcessorIisAccess]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverIisAccess })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverIisAccess }, platform.Windows)
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorIisAccess{} }, platform.Windows)
 }

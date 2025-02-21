@@ -163,6 +163,7 @@ func (r LoggingReceiverRedisMixin) Components(ctx context.Context, tag string) [
 
 func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorRedis{} })
-	LoggingReceiverRedis := confgenerator.LoggingCompositeReceiver[LoggingReceiverRedisMixin, LoggingProcessorRedis]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverRedis })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverRedisMixin, LoggingProcessorRedis]{}
+	})
 }

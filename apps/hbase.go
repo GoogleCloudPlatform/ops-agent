@@ -142,6 +142,7 @@ func (r SystemLoggingReceiverHbaseMixin) Components(ctx context.Context, tag str
 
 func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorHbaseSystem{} })
-	SystemLoggingReceiverHbase := confgenerator.LoggingCompositeReceiver[SystemLoggingReceiverHbaseMixin, LoggingProcessorHbaseSystem]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &SystemLoggingReceiverHbase })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[SystemLoggingReceiverHbaseMixin, LoggingProcessorHbaseSystem]{}
+	})
 }

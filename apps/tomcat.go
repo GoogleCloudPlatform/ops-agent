@@ -169,8 +169,10 @@ func (r AccessSystemLoggingReceiverTomcatMixin) Components(ctx context.Context, 
 func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorTomcatAccess{} })
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorTomcatSystem{} })
-	AccessSystemLoggingReceiverTomcat := confgenerator.LoggingCompositeReceiver[AccessSystemLoggingReceiverTomcatMixin, LoggingProcessorTomcatAccess]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &AccessSystemLoggingReceiverTomcat })
-	SystemLoggingReceiverTomcat := confgenerator.LoggingCompositeReceiver[SystemLoggingReceiverTomcatMixin, LoggingProcessorTomcatSystem]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &SystemLoggingReceiverTomcat })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[AccessSystemLoggingReceiverTomcatMixin, LoggingProcessorTomcatAccess]{}
+	})
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[SystemLoggingReceiverTomcatMixin, LoggingProcessorTomcatSystem]{}
+	})
 }

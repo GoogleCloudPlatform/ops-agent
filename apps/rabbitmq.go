@@ -111,8 +111,9 @@ func (r LoggingReceiverRabbitmqMixin) Components(ctx context.Context, tag string
 }
 
 func init() {
-	LoggingReceiverRabbitmq := confgenerator.LoggingCompositeReceiver[LoggingReceiverRabbitmqMixin, LoggingProcessorRabbitmq]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverRabbitmq })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverRabbitmqMixin, LoggingProcessorRabbitmq]{}
+	})
 }
 
 type MetricsReceiverRabbitmq struct {

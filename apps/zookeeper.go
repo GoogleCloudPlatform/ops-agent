@@ -129,7 +129,7 @@ func (p LoggingProcessorZookeeperGeneral) Components(ctx context.Context, tag, u
 }
 
 type LoggingReceiverZookeeperGeneralMixin struct {
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
+	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r LoggingReceiverZookeeperGeneralMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
@@ -179,6 +179,7 @@ func severityParser(ctx context.Context, processorType, tag, uid string) []fluen
 }
 
 func init() {
-	LoggingReceiverZookeeperGeneral := confgenerator.LoggingCompositeReceiver[LoggingReceiverZookeeperGeneralMixin, LoggingProcessorZookeeperGeneral]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverZookeeperGeneral })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverZookeeperGeneralMixin, LoggingProcessorZookeeperGeneral]{}
+	})
 }

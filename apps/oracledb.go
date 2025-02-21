@@ -935,10 +935,12 @@ func (lr LoggingReceiverOracleDBAuditMixin) Components(ctx context.Context, tag 
 }
 
 func init() {
-	LoggingReceiverOracleDBAlert := confgenerator.LoggingCompositeReceiver[LoggingReceiverOracleDBAlertMixin, LoggingProcessorOracleDBAlert]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverOracleDBAlert })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverOracleDBAlertMixin, LoggingProcessorOracleDBAlert]{}
+	})
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorOracleDBAlert{} })
-	LoggingReceiverOracleDBAudit := confgenerator.LoggingCompositeReceiver[LoggingReceiverOracleDBAuditMixin, LoggingProcessorOracleDBAudit]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverOracleDBAudit })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverOracleDBAuditMixin, LoggingProcessorOracleDBAudit]{}
+	})
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorOracleDBAudit{} })
 }

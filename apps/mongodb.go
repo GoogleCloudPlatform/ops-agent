@@ -334,6 +334,7 @@ func (r LoggingReceiverMongodbMixin) Components(ctx context.Context, tag string)
 }
 
 func init() {
-	LoggingReceiverMongodb := confgenerator.LoggingCompositeReceiver[LoggingReceiverMongodbMixin, LoggingProcessorMongodb]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverMongodb })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverMongodbMixin, LoggingProcessorMongodb]{}
+	})
 }

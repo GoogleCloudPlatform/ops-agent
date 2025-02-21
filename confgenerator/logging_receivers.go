@@ -688,8 +688,8 @@ func init() {
 }
 
 type LoggingCompositeReceiver[R LoggingReceiverMixin, P LoggingProcessor] struct {
-	ReceiverMixin  R `yaml:",inline"`
 	ProcessorMixin P `yaml:",inline"`
+	ReceiverMixin  R `yaml:",inline"`
 }
 
 func (cr *LoggingCompositeReceiver[R, P]) Type() string {

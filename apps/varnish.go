@@ -85,6 +85,7 @@ func (r LoggingReceiverVarnishMixin) Components(ctx context.Context, tag string)
 
 func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorVarnish{} })
-	LoggingReceiverVarnish := confgenerator.LoggingCompositeReceiver[LoggingReceiverVarnishMixin, LoggingProcessorVarnish]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverVarnish })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverVarnishMixin, LoggingProcessorVarnish]{}
+	})
 }

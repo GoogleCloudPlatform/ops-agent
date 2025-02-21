@@ -146,6 +146,7 @@ func (r LoggingReceiverWildflySystemMixin) Components(ctx context.Context, tag s
 
 func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorWildflySystem{} })
-	LoggingReceiverWildflySystem := confgenerator.LoggingCompositeReceiver[LoggingReceiverWildflySystemMixin, LoggingProcessorWildflySystem]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverWildflySystem })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverWildflySystemMixin, LoggingProcessorWildflySystem]{}
+	})
 }

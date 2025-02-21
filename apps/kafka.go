@@ -161,6 +161,7 @@ func (r LoggingReceiverKafkaMixin) Components(ctx context.Context, tag string) [
 
 func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorKafka{} })
-	LoggingReceiverKafka := confgenerator.LoggingCompositeReceiver[LoggingReceiverKafkaMixin, LoggingProcessorKafka]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverKafka })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverKafkaMixin, LoggingProcessorKafka]{}
+	})
 }

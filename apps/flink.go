@@ -157,7 +157,8 @@ func (r LoggingReceiverFlinkMixin) Components(ctx context.Context, tag string) [
 }
 
 func init() {
-	LoggingReceiverFlink := confgenerator.LoggingCompositeReceiver[LoggingReceiverFlinkMixin, LoggingProcessorFlink]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverFlink })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverFlinkMixin, LoggingProcessorFlink]{}
+	})
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorFlink{} })
 }

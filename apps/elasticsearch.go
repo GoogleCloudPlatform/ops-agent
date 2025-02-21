@@ -325,8 +325,10 @@ func (r LoggingReceiverElasticsearchGCMixin) Components(ctx context.Context, tag
 }
 
 func init() {
-	LoggingReceiverElasticsearchJson := confgenerator.LoggingCompositeReceiver[LoggingReceiverElasticsearchJsonMixin, LoggingProcessorElasticsearchJson]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverElasticsearchJson })
-	LoggingReceiverElasticsearchGC := confgenerator.LoggingCompositeReceiver[LoggingReceiverElasticsearchGCMixin, LoggingProcessorElasticsearchGC]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverElasticsearchGC })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverElasticsearchJsonMixin, LoggingProcessorElasticsearchJson]{}
+	})
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverElasticsearchGCMixin, LoggingProcessorElasticsearchGC]{}
+	})
 }

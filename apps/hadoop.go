@@ -135,6 +135,7 @@ func (r LoggingReceiverHadoopMixin) Components(ctx context.Context, tag string) 
 }
 
 func init() {
-	LoggingReceiverHadoop := confgenerator.LoggingCompositeReceiver[LoggingReceiverHadoopMixin, LoggingProcessorHadoop]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverHadoop })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverHadoopMixin, LoggingProcessorHadoop]{}
+	})
 }

@@ -364,6 +364,7 @@ func (r LoggingReceiverVaultAuditJsonMixin) Components(ctx context.Context, tag 
 }
 
 func init() {
-	LoggingReceiverVaultAuditJson := confgenerator.LoggingCompositeReceiver[LoggingReceiverVaultAuditJsonMixin, LoggingProcessorVaultJson]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverVaultAuditJson })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverVaultAuditJsonMixin, LoggingProcessorVaultJson]{}
+	})
 }

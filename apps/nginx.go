@@ -150,8 +150,10 @@ func (r LoggingReceiverNginxErrorMixin) Components(ctx context.Context, tag stri
 func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorNginxAccess{} })
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorNginxError{} })
-	LoggingReceiverNginxAccess := confgenerator.LoggingCompositeReceiver[LoggingReceiverNginxAccessMixin, LoggingProcessorNginxAccess]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverNginxAccess })
-	LoggingReceiverNginxError := confgenerator.LoggingCompositeReceiver[LoggingReceiverNginxErrorMixin, LoggingProcessorNginxError]{}
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverNginxError })
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverNginxAccessMixin, LoggingProcessorNginxAccess]{}
+	})
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverNginxErrorMixin, LoggingProcessorNginxError]{}
+	})
 }
