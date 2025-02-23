@@ -2918,7 +2918,7 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
             module: [default]
           static_configs:
             - targets:
-              - http://localhost:8000/data.json 
+              - http://localhost:8000/data.json
           relabel_configs:
             - source_labels: [__address__]
               target_label: __param_target
@@ -2927,7 +2927,7 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
               target_label: instance
               replacement: '$1'
             - target_label: __address__
-              replacement: localhost:7979 
+              replacement: localhost:7979
   service:
     pipelines:
       prom_pipeline:
