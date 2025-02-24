@@ -2075,7 +2075,7 @@ func RunForEachImage(t *testing.T, testBody func(t *testing.T, imageSpec string)
 	for _, imageSpec := range imageSpecs {
 		imageSpec := imageSpec // https://golang.org/doc/faq#closures_and_goroutines
 		// FIXME(b/398862433): Re-enable tests when writing windows implementation
-		if IsOpsAgentUAPPlugin() && strings.Contains(imageSpec, "windows")  {
+		if IsOpsAgentUAPPlugin() && IsWindows(imageSpec) {
 			continue
 		}
 		t.Run(imageSpec, func(t *testing.T) {
