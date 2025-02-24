@@ -984,7 +984,7 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool) {
 			continue
 		}
 		// FIXME(b/398862433): Re-enable tests when writing windows implementation
-		if agents.IsOpsAgentUAPPlugin() && strings.Contains(test.imageSpec, "windows")  {
+		if gce.IsOpsAgentUAPPlugin() && strings.Contains(test.imageSpec, "windows")  {
 			tests[i].skipReason = "Skipping test due to windows not being implemented on UAP"
 		}
 	}

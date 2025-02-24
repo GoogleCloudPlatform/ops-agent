@@ -1391,6 +1391,10 @@ func IsSLESVM(vm *VM) bool {
 	return vm.OS.ID == "sles" || vm.OS.ID == "sles_sap"
 }
 
+func IsSLESVM(vm *VM) bool {
+	return vm.OS.ID == "sles" || vm.OS.ID == "sles_sap"
+}
+
 func IsSUSEVM(vm *VM) bool {
 	return vm.OS.ID == "opensuse" || vm.OS.ID == "opensuse-leap" || IsSLESVM(vm)
 }
@@ -1423,6 +1427,12 @@ func IsARM(imageSpec string) bool {
 
 func IsDebianBased(imageSpec string) bool {
 	return strings.Contains(imageSpec, "debian") || strings.Contains(imageSpec, "ubuntu")
+}
+
+func IsOpsAgentUAPPlugin() bool {
+	// ok is true when the env variable is preset in the environment.
+	value, ok := os.LookupEnv("IS_OPS_AGENT_UAP_PLUGIN")
+	return ok && value != ""
 }
 
 // CreateInstance launches a new VM instance based on the given options.
@@ -2059,12 +2069,6 @@ func SetupVM(ctx context.Context, t *testing.T, logger *log.Logger, options VMOp
 	return vm
 }
 
-func isOpsAgentUAPPlugin() bool {
-	// ok is true when the env variable is preset in the environment.
-	value, ok := os.LookupEnv("IS_OPS_AGENT_UAP_PLUGIN")
-	return ok && value != ""
-}
-
 // RunForEachImage runs a subtest for each image defined in IMAGE_SPECS.
 func RunForEachImage(t *testing.T, testBody func(t *testing.T, imageSpec string)) {
 	imageSpecsEnv := os.Getenv("IMAGE_SPECS")
@@ -2075,7 +2079,7 @@ func RunForEachImage(t *testing.T, testBody func(t *testing.T, imageSpec string)
 	for _, imageSpec := range imageSpecs {
 		imageSpec := imageSpec // https://golang.org/doc/faq#closures_and_goroutines
 		// FIXME(b/398862433): Re-enable tests when writing windows implementation
-		if isOpsAgentUAPPlugin() && strings.Contains(imageSpec, "windows")  {
+		if IsOpsAgentUAPPlugin() && strings.Contains(imageSpec, "windows")  {
 			continue
 		}
 		t.Run(imageSpec, func(t *testing.T) {
