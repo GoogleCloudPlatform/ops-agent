@@ -1391,10 +1391,6 @@ func IsSLESVM(vm *VM) bool {
 	return vm.OS.ID == "sles" || vm.OS.ID == "sles_sap"
 }
 
-func IsSLESVM(vm *VM) bool {
-	return vm.OS.ID == "sles" || vm.OS.ID == "sles_sap"
-}
-
 func IsSUSEVM(vm *VM) bool {
 	return vm.OS.ID == "opensuse" || vm.OS.ID == "opensuse-leap" || IsSLESVM(vm)
 }
