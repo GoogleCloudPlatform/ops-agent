@@ -126,19 +126,19 @@ func (p LoggingProcessorTomcatSystem) Components(ctx context.Context, tag string
 }
 
 type SystemLoggingReceiverTomcat struct {
-	LoggingProcessorTomcatSystem            `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	LoggingProcessorTomcatSystem `yaml:",inline"`
+	ReceiverMixin                confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r SystemLoggingReceiverTomcat) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
+		r.ReceiverMixin.IncludePaths = []string{
 			"/opt/tomcat/logs/catalina.out",
 			"/var/log/tomcat*/catalina.out",
 			"/var/log/tomcat*/catalina.*.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := r.ReceiverMixin.Components(ctx, tag)
 	c = append(c, r.LoggingProcessorTomcatSystem.Components(ctx, tag, "tomcat_system")...)
 	return c
 }
@@ -156,18 +156,18 @@ func (LoggingProcessorTomcatAccess) Type() string {
 }
 
 type AccessSystemLoggingReceiverTomcat struct {
-	LoggingProcessorTomcatAccess            `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	LoggingProcessorTomcatAccess `yaml:",inline"`
+	ReceiverMixin                confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r AccessSystemLoggingReceiverTomcat) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
+		r.ReceiverMixin.IncludePaths = []string{
 			"/opt/tomcat/logs/localhost_access_log*.txt",
 			"/var/log/tomcat*/localhost_access_log*.txt",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := r.ReceiverMixin.Components(ctx, tag)
 	c = append(c, r.LoggingProcessorTomcatAccess.Components(ctx, tag, "tomcat_access")...)
 	return c
 }

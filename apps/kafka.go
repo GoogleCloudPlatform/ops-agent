@@ -144,20 +144,20 @@ func (p LoggingProcessorKafka) Components(ctx context.Context, tag string, uid s
 }
 
 type LoggingReceiverKafka struct {
-	LoggingProcessorKafka                   `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	LoggingProcessorKafka `yaml:",inline"`
+	ReceiverMixin         confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r LoggingReceiverKafka) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
+		r.ReceiverMixin.IncludePaths = []string{
 			// No default package installers, these are common log paths from installs online
 			"/var/log/kafka/*.log",
 			"/opt/kafka/logs/server.log",
 			"/opt/kafka/logs/controller.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := r.ReceiverMixin.Components(ctx, tag)
 	c = append(c, r.LoggingProcessorKafka.Components(ctx, tag, "kafka")...)
 	return c
 }

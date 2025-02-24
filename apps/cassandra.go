@@ -235,49 +235,49 @@ func (p LoggingProcessorCassandraGC) Components(ctx context.Context, tag string,
 }
 
 type LoggingReceiverCassandraSystem struct {
-	LoggingProcessorCassandraSystem         `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	LoggingProcessorCassandraSystem `yaml:",inline"`
+	ReceiverMixin                   confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r LoggingReceiverCassandraSystem) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
+		r.ReceiverMixin.IncludePaths = []string{
 			// Default log file path on Debian / Ubuntu / RHEL / CentOS
 			"/var/log/cassandra/system*.log",
 			// No default install position / log path for SLES
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := r.ReceiverMixin.Components(ctx, tag)
 	c = append(c, r.LoggingProcessorCassandraSystem.Components(ctx, tag, "cassandra_system")...)
 	return c
 }
 
 type LoggingReceiverCassandraDebug struct {
-	LoggingProcessorCassandraDebug          `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	LoggingProcessorCassandraDebug `yaml:",inline"`
+	ReceiverMixin                  confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r LoggingReceiverCassandraDebug) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
+		r.ReceiverMixin.IncludePaths = []string{
 			// Default log file path on Debian / Ubuntu / RHEL / CentOS
 			"/var/log/cassandra/debug*.log",
 			// No default install position / log path for SLES
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := r.ReceiverMixin.Components(ctx, tag)
 	c = append(c, r.LoggingProcessorCassandraDebug.Components(ctx, tag, "cassandra_debug")...)
 	return c
 }
 
 type LoggingReceiverCassandraGC struct {
-	LoggingProcessorCassandraGC             `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	LoggingProcessorCassandraGC `yaml:",inline"`
+	ReceiverMixin               confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r LoggingReceiverCassandraGC) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
+		r.ReceiverMixin.IncludePaths = []string{
 			// Default log file path on Debian / Ubuntu / RHEL / CentOS for JDK 8
 			"/var/log/cassandra/gc.log.*.current",
 			// Default log file path on Debian / Ubuntu / RHEL / CentOS for JDK 11
@@ -285,7 +285,7 @@ func (r LoggingReceiverCassandraGC) Components(ctx context.Context, tag string) 
 			// No default install position / log path for SLES
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := r.ReceiverMixin.Components(ctx, tag)
 	c = append(c, r.LoggingProcessorCassandraGC.Components(ctx, tag, "cassandra_gc")...)
 	return c
 }

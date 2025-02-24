@@ -812,10 +812,10 @@ func (lr LoggingProcessorOracleDBAlert) Components(ctx context.Context, tag stri
 }
 
 type LoggingReceiverOracleDBAlert struct {
-	LoggingProcessorOracleDBAlert           `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
-	OracleHome                              string   `yaml:"oracle_home,omitempty" validate:"required_without=IncludePaths,excluded_with=IncludePaths"`
-	IncludePaths                            []string `yaml:"include_paths,omitempty" validate:"required_without=OracleHome,excluded_with=OracleHome"`
+	LoggingProcessorOracleDBAlert `yaml:",inline"`
+	ReceiverMixin                 confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	OracleHome                    string                                  `yaml:"oracle_home,omitempty" validate:"required_without=IncludePaths,excluded_with=IncludePaths"`
+	IncludePaths                  []string                                `yaml:"include_paths,omitempty" validate:"required_without=OracleHome,excluded_with=OracleHome"`
 }
 
 func (lr LoggingReceiverOracleDBAlert) Components(ctx context.Context, tag string) []fluentbit.Component {
@@ -825,9 +825,9 @@ func (lr LoggingReceiverOracleDBAlert) Components(ctx context.Context, tag strin
 		}
 	}
 
-	lr.LoggingReceiverFilesMixin.IncludePaths = lr.IncludePaths
+	lr.ReceiverMixin.IncludePaths = lr.IncludePaths
 
-	c := lr.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := lr.ReceiverMixin.Components(ctx, tag)
 	c = append(c, lr.LoggingProcessorOracleDBAlert.Components(ctx, tag, lr.Type())...)
 	return c
 }
@@ -920,10 +920,10 @@ func (lr LoggingProcessorOracleDBAudit) Components(ctx context.Context, tag stri
 }
 
 type LoggingReceiverOracleDBAudit struct {
-	LoggingProcessorOracleDBAudit           `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
-	OracleHome                              string   `yaml:"oracle_home,omitempty" validate:"required_without=IncludePaths,excluded_with=IncludePaths"`
-	IncludePaths                            []string `yaml:"include_paths,omitempty" validate:"required_without=OracleHome,excluded_with=OracleHome"`
+	LoggingProcessorOracleDBAudit `yaml:",inline"`
+	ReceiverMixin                 confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	OracleHome                    string                                  `yaml:"oracle_home,omitempty" validate:"required_without=IncludePaths,excluded_with=IncludePaths"`
+	IncludePaths                  []string                                `yaml:"include_paths,omitempty" validate:"required_without=OracleHome,excluded_with=OracleHome"`
 }
 
 func (lr LoggingReceiverOracleDBAudit) Components(ctx context.Context, tag string) []fluentbit.Component {
@@ -933,9 +933,9 @@ func (lr LoggingReceiverOracleDBAudit) Components(ctx context.Context, tag strin
 		}
 	}
 
-	lr.LoggingReceiverFilesMixin.IncludePaths = lr.IncludePaths
+	lr.ReceiverMixin.IncludePaths = lr.IncludePaths
 
-	c := lr.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := lr.ReceiverMixin.Components(ctx, tag)
 	c = append(c, lr.LoggingProcessorOracleDBAudit.Components(ctx, tag, lr.Type())...)
 	return c
 }
