@@ -97,6 +97,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 
 	cloudlogging "cloud.google.com/go/logging"
@@ -2068,6 +2069,10 @@ func RunForEachImage(t *testing.T, testBody func(t *testing.T, imageSpec string)
 	imageSpecs := strings.Split(imageSpecsEnv, ",")
 	for _, imageSpec := range imageSpecs {
 		imageSpec := imageSpec // https://golang.org/doc/faq#closures_and_goroutines
+		// FIXME(b/398862433): Re-enable tests when writing windows implementation
+		if agents.IsOpsAgentUAPPlugin() && strings.Contains(imageSpec, "windows")  {
+			continue
+		}
 		t.Run(imageSpec, func(t *testing.T) {
 			testBody(t, imageSpec)
 		})

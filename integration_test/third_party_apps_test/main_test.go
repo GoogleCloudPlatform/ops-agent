@@ -949,6 +949,7 @@ func getAcceleratorCount(machineType string) string {
 // Also, restrict `SAPHANAImageSpec` to only test `SAPHANAApp` and skip that
 // app on all other images too.
 func determineTestsToSkip(tests []test, impactedApps map[string]bool) {
+
 	for i, test := range tests {
 		if testing.Short() {
 			_, testApp := impactedApps[test.app]
@@ -981,6 +982,10 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool) {
 		if isSAPHANAImageSpec != isSAPHANAApp {
 			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, SAPHANAApp, SAPHANAImageSpec)
 			continue
+		}
+		// FIXME(b/398862433): Re-enable tests when writing windows implementation
+		if agents.IsOpsAgentUAPPlugin() && strings.Contains(test.imageSpec, "windows")  {
+			tests[i].skipReason = "Skipping test due to windows not being implemented on UAP"
 		}
 	}
 }
