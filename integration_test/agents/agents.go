@@ -189,7 +189,7 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 	gce.RunRemotely(metricsCtx, logger.ToFile("fluent_bit_metrics.txt"), vm, "sudo curl -s localhost:20202/metrics")
 	gce.RunRemotely(metricsCtx, logger.ToFile("otel_metrics.txt"), vm, "sudo curl -s localhost:20201/metrics")
 
-	isUAPPlugin := util.IsOpsAgentUAPPlugin()
+	isUAPPlugin := IsOpsAgentUAPPlugin()
 	if isUAPPlugin {
 		gce.RunRemotely(ctx, logger.ToFile("status_for_ops_agent_uap_plugin.txt"), vm, fmt.Sprintf("grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/GetStatus", OpsAgentPluginServerPort))
 	} else {
@@ -206,7 +206,7 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 }
 
 func getOpsAgentLogFilesList(imageSpec string) []string {
-	if util.IsOpsAgentUAPPlugin() {
+	if IsOpsAgentUAPPlugin() {
 		return []string{
 			gce.SyslogLocation(imageSpec),
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/health-checks.log",
@@ -233,7 +233,7 @@ func getOpsAgentLogFilesList(imageSpec string) []string {
 }
 
 func runOpsAgentDiagnosticsWindows(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) {
-	if util.IsOpsAgentUAPPlugin() {
+	if IsOpsAgentUAPPlugin() {
 		return
 	}
 	gce.RunRemotely(ctx, logger.ToFile("windows_System_log.txt"), vm, "Get-WinEvent -LogName System | Format-Table -AutoSize -Wrap")
@@ -693,7 +693,7 @@ func InstallStandaloneWindowsMonitoringAgent(ctx context.Context, logger *log.Lo
 }
 
 func getRestartOpsAgentCmd(imageSpec string) string {
-	if util.IsOpsAgentUAPPlugin() {
+	if IsOpsAgentUAPPlugin() {
 		if gce.IsWindows(imageSpec) {
 			return ""
 		}
@@ -770,7 +770,7 @@ func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, locati
 		return fmt.Errorf("invalid PackageLocation: location.artifactRegistryRegion was nonempty yet location.repoSuffix was empty. location=%#v", location)
 	}
 
-	if util.IsOpsAgentUAPPlugin() {
+	if IsOpsAgentUAPPlugin() {
 		return InstallOpsAgentUAPPlugin(ctx, logger, vm, location)
 	}
 
@@ -874,7 +874,7 @@ func SetupOpsAgentFrom(ctx context.Context, logger *log.Logger, vm *gce.VM, conf
 		if err := RestartOpsAgent(ctx, logger, vm); err != nil {
 			return err
 		}
-	} else if util.IsOpsAgentUAPPlugin() {
+	} else if IsOpsAgentUAPPlugin() {
 		return RestartOpsAgent(ctx, logger, vm)
 	}
 	// Give agents time to start up.
@@ -1040,7 +1040,7 @@ func installWindowsPackageFromGCS(ctx context.Context, logger *log.Logger, vm *g
 }
 
 func GetOtelConfigPath(imageSpec string) string {
-	if util.IsOpsAgentUAPPlugin() {
+	if IsOpsAgentUAPPlugin() {
 		if gce.IsWindows(imageSpec) {
 			return ""
 		}
@@ -1051,4 +1051,10 @@ func GetOtelConfigPath(imageSpec string) string {
 		return `C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\otel\otel.yaml`
 	}
 	return "/var/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml"
+}
+
+func IsOpsAgentUAPPlugin() bool {
+	// ok is true when the env variable is preset in the environment.
+	value, ok := os.LookupEnv("IS_OPS_AGENT_UAP_PLUGIN")
+	return ok && value != ""
 }
