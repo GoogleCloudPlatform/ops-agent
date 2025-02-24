@@ -1425,6 +1425,12 @@ func IsDebianBased(imageSpec string) bool {
 	return strings.Contains(imageSpec, "debian") || strings.Contains(imageSpec, "ubuntu")
 }
 
+func IsOpsAgentUAPPlugin() bool {
+	// ok is true when the env variable is preset in the environment.
+	value, ok := os.LookupEnv("IS_OPS_AGENT_UAP_PLUGIN")
+	return ok && value != ""
+}
+
 // CreateInstance launches a new VM instance based on the given options.
 // Also waits for the instance to be reachable over ssh.
 // Returns a VM object or an error (never both). The caller is responsible for
@@ -2068,6 +2074,10 @@ func RunForEachImage(t *testing.T, testBody func(t *testing.T, imageSpec string)
 	imageSpecs := strings.Split(imageSpecsEnv, ",")
 	for _, imageSpec := range imageSpecs {
 		imageSpec := imageSpec // https://golang.org/doc/faq#closures_and_goroutines
+		// FIXME(b/398862433): Re-enable tests when writing windows implementation
+		if IsOpsAgentUAPPlugin() && IsWindows(imageSpec) {
+			continue
+		}
 		t.Run(imageSpec, func(t *testing.T) {
 			testBody(t, imageSpec)
 		})
