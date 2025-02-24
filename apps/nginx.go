@@ -126,29 +126,29 @@ func (p LoggingProcessorNginxError) Components(ctx context.Context, tag string, 
 }
 
 type LoggingReceiverNginxAccess struct {
-	LoggingProcessorNginxAccess             `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	LoggingProcessorNginxAccess `yaml:",inline"`
+	ReceiverMixin               confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r LoggingReceiverNginxAccess) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{"/var/log/nginx/access.log"}
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
+		r.ReceiverMixin.IncludePaths = []string{"/var/log/nginx/access.log"}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := r.ReceiverMixin.Components(ctx, tag)
 	c = append(c, r.LoggingProcessorNginxAccess.Components(ctx, tag, "nginx_access")...)
 	return c
 }
 
 type LoggingReceiverNginxError struct {
-	LoggingProcessorNginxError              `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	LoggingProcessorNginxError `yaml:",inline"`
+	ReceiverMixin              confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r LoggingReceiverNginxError) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{"/var/log/nginx/error.log"}
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
+		r.ReceiverMixin.IncludePaths = []string{"/var/log/nginx/error.log"}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := r.ReceiverMixin.Components(ctx, tag)
 	c = append(c, r.LoggingProcessorNginxError.Components(ctx, tag, "nginx_error")...)
 	return c
 }

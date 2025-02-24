@@ -339,15 +339,15 @@ func (p LoggingProcessorVaultJson) Components(ctx context.Context, tag, uid stri
 }
 
 type LoggingReceiverVaultAuditJson struct {
-	LoggingProcessorVaultJson               `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
-	IncludePaths                            []string `yaml:"include_paths,omitempty" validate:"required"`
+	LoggingProcessorVaultJson `yaml:",inline"`
+	ReceiverMixin             confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
+	IncludePaths              []string                                `yaml:"include_paths,omitempty" validate:"required"`
 }
 
 func (r LoggingReceiverVaultAuditJson) Components(ctx context.Context, tag string) []fluentbit.Component {
-	r.LoggingReceiverFilesMixin.IncludePaths = r.IncludePaths
+	r.ReceiverMixin.IncludePaths = r.IncludePaths
 
-	r.MultilineRules = []confgenerator.MultilineRule{
+	r.ReceiverMixin.MultilineRules = []confgenerator.MultilineRule{
 		{
 			StateName: "start_state",
 			NextState: "cont",
@@ -360,7 +360,7 @@ func (r LoggingReceiverVaultAuditJson) Components(ctx context.Context, tag strin
 		},
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := r.ReceiverMixin.Components(ctx, tag)
 	return append(c, r.LoggingProcessorVaultJson.Components(ctx, tag, r.LoggingProcessorVaultJson.Type())...)
 }
 

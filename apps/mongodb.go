@@ -320,18 +320,18 @@ func (p *LoggingProcessorMongodb) RegexLogComponents(tag, uid string) []fluentbi
 }
 
 type LoggingReceiverMongodb struct {
-	LoggingProcessorMongodb                 `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	LoggingProcessorMongodb `yaml:",inline"`
+	ReceiverMixin           confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r *LoggingReceiverMongodb) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
+		r.ReceiverMixin.IncludePaths = []string{
 			// default logging location
 			"/var/log/mongodb/mongod.log*",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := r.ReceiverMixin.Components(ctx, tag)
 	c = append(c, r.LoggingProcessorMongodb.Components(ctx, tag, "mongodb")...)
 	return c
 }

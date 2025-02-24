@@ -129,20 +129,20 @@ func (p LoggingProcessorZookeeperGeneral) Components(ctx context.Context, tag, u
 }
 
 type LoggingReceiverZookeeperGeneral struct {
-	LoggingProcessorZookeeperGeneral        `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
+	LoggingProcessorZookeeperGeneral `yaml:",inline"`
+	ReceiverMixin                    confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
 }
 
 func (r LoggingReceiverZookeeperGeneral) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.IncludePaths) == 0 {
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
 		// Default log for Zookeeper.
-		r.IncludePaths = []string{
+		r.ReceiverMixin.IncludePaths = []string{
 			"/opt/zookeeper/logs/zookeeper-*.out",
 			"/var/log/zookeeper/zookeeper.log",
 		}
 	}
 
-	r.MultilineRules = []confgenerator.MultilineRule{
+	r.ReceiverMixin.MultilineRules = []confgenerator.MultilineRule{
 		{
 			StateName: "start_state",
 			NextState: "cont",
@@ -155,7 +155,7 @@ func (r LoggingReceiverZookeeperGeneral) Components(ctx context.Context, tag str
 		},
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := r.ReceiverMixin.Components(ctx, tag)
 	return append(c, r.LoggingProcessorZookeeperGeneral.Components(ctx, tag, "zookeeper_general")...)
 }
 

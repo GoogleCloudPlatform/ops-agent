@@ -115,17 +115,17 @@ func (p LoggingProcessorSolrSystem) Components(ctx context.Context, tag string, 
 }
 
 type LoggingReceiverSolrSystem struct {
-	LoggingProcessorSolrSystem              `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	LoggingProcessorSolrSystem `yaml:",inline"`
+	ReceiverMixin              confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r LoggingReceiverSolrSystem) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
+		r.ReceiverMixin.IncludePaths = []string{
 			"/var/solr/logs/solr.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := r.ReceiverMixin.Components(ctx, tag)
 	c = append(c, r.LoggingProcessorSolrSystem.Components(ctx, tag, "solr_system")...)
 	return c
 }

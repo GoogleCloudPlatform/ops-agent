@@ -236,8 +236,8 @@ func init() {
 
 // LoggingReceiverCouchbase is a struct used for generating the fluentbit component for couchbase logs
 type LoggingReceiverCouchbase struct {
-	confgenerator.ConfigComponent           `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	confgenerator.ConfigComponent `yaml:",inline"`
+	ReceiverMixin                 confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 // Type returns the string identifier for the general couchbase logs
@@ -247,8 +247,8 @@ func (lr LoggingReceiverCouchbase) Type() string {
 
 // Components returns the logging components of the couchbase access logs
 func (lr LoggingReceiverCouchbase) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(lr.IncludePaths) == 0 {
-		lr.IncludePaths = []string{
+	if len(lr.ReceiverMixin.IncludePaths) == 0 {
+		lr.ReceiverMixin.IncludePaths = []string{
 			"/opt/couchbase/var/lib/couchbase/logs/couchdb.log",
 			"/opt/couchbase/var/lib/couchbase/logs/info.log",
 			"/opt/couchbase/var/lib/couchbase/logs/debug.log",
@@ -256,7 +256,7 @@ func (lr LoggingReceiverCouchbase) Components(ctx context.Context, tag string) [
 			"/opt/couchbase/var/lib/couchbase/logs/babysitter.log",
 		}
 	}
-	components := lr.LoggingReceiverFilesMixin.Components(ctx, tag)
+	components := lr.ReceiverMixin.Components(ctx, tag)
 	components = append(components, confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
@@ -304,8 +304,8 @@ func (lr LoggingReceiverCouchbase) Components(ctx context.Context, tag string) [
 
 // LoggingProcessorCouchbaseHTTPAccess is a struct that will generate the fluentbit components for the http access logs
 type LoggingProcessorCouchbaseHTTPAccess struct {
-	confgenerator.ConfigComponent           `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	confgenerator.ConfigComponent `yaml:",inline"`
+	ReceiverMixin                 confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 // Type returns the string for the couchbase http access logs
@@ -315,13 +315,13 @@ func (lp LoggingProcessorCouchbaseHTTPAccess) Type() string {
 
 // Components returns the fluentbit components for the http access logs of couchbase
 func (lp LoggingProcessorCouchbaseHTTPAccess) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(lp.IncludePaths) == 0 {
-		lp.IncludePaths = []string{
+	if len(lp.ReceiverMixin.IncludePaths) == 0 {
+		lp.ReceiverMixin.IncludePaths = []string{
 			"/opt/couchbase/var/lib/couchbase/logs/http_access.log",
 			"/opt/couchbase/var/lib/couchbase/logs/http_access_internal.log",
 		}
 	}
-	c := lp.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := lp.ReceiverMixin.Components(ctx, tag)
 	// TODO: Harden the genericAccessLogParser so it can be used. It didn't work here since there are some minor differences with the
 	// referer fields and there are additional fields after the user agent here but not in the other apps.
 	c = append(c,
@@ -368,8 +368,8 @@ func (lp LoggingProcessorCouchbaseHTTPAccess) Components(ctx context.Context, ta
 
 // LoggingProcessorCouchbaseGOXDCR is a struct that iwll generate the fluentbit components for the goxdcr logs
 type LoggingProcessorCouchbaseGOXDCR struct {
-	confgenerator.ConfigComponent           `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	confgenerator.ConfigComponent `yaml:",inline"`
+	ReceiverMixin                 confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 // Type returns the type string for the cross datacenter logs of couchbase
@@ -379,13 +379,13 @@ func (lg LoggingProcessorCouchbaseGOXDCR) Type() string {
 
 // Components returns the fluentbit components for the couchbase goxdcr logs
 func (lg LoggingProcessorCouchbaseGOXDCR) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(lg.IncludePaths) == 0 {
-		lg.IncludePaths = []string{
+	if len(lg.ReceiverMixin.IncludePaths) == 0 {
+		lg.ReceiverMixin.IncludePaths = []string{
 			"/opt/couchbase/var/lib/couchbase/logs/goxdcr.log",
 		}
 	}
 
-	c := lg.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := lg.ReceiverMixin.Components(ctx, tag)
 	c = append(c, confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{

@@ -154,18 +154,18 @@ func (p LoggingProcessorCouchdb) Components(ctx context.Context, tag string, uid
 }
 
 type LoggingReceiverCouchdb struct {
-	LoggingProcessorCouchdb                 `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	LoggingProcessorCouchdb `yaml:",inline"`
+	ReceiverMixin           confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r LoggingReceiverCouchdb) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
+		r.ReceiverMixin.IncludePaths = []string{
 			// Default log file
 			"/var/log/couchdb/couchdb.log",
 		}
 	}
-	r.MultilineRules = []confgenerator.MultilineRule{
+	r.ReceiverMixin.MultilineRules = []confgenerator.MultilineRule{
 		{
 			StateName: "start_state",
 			NextState: "cont",
@@ -178,7 +178,7 @@ func (r LoggingReceiverCouchdb) Components(ctx context.Context, tag string) []fl
 		},
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := r.ReceiverMixin.Components(ctx, tag)
 	c = append(c, r.LoggingProcessorCouchdb.Components(ctx, tag, "couchdb")...)
 	return c
 }
