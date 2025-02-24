@@ -67,6 +67,7 @@ import (
 	feature_tracking_metadata "github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
 	"github.com/google/uuid"
 	"go.uber.org/multierr"
 	"golang.org/x/exp/slices"
@@ -95,7 +96,7 @@ func workDirForImage(imageSpec string) string {
 }
 
 func startCommandForImage(imageSpec string) string {
-	if agents.IsOpsAgentUAPPlugin() {
+	if util.IsOpsAgentUAPPlugin() {
 		if gce.IsWindows(imageSpec) {
 			return ""
 		}
@@ -110,7 +111,7 @@ func startCommandForImage(imageSpec string) string {
 }
 
 func stopCommandForImage(imageSpec string) string {
-	if agents.IsOpsAgentUAPPlugin() {
+	if util.IsOpsAgentUAPPlugin() {
 		if gce.IsWindows(imageSpec) {
 			return ""
 		}
@@ -771,7 +772,7 @@ func TestCustomLogFile(t *testing.T) {
 
 func TestPluginGetStatusReturnsHealthyStatusOnSuccessfulOpsAgentStart(t *testing.T) {
 	t.Parallel()
-	if !agents.IsOpsAgentUAPPlugin() {
+	if !util.IsOpsAgentUAPPlugin() {
 		t.SkipNow()
 	}
 
@@ -797,7 +798,7 @@ func TestPluginGetStatusReturnsHealthyStatusOnSuccessfulOpsAgentStart(t *testing
 
 func TestPluginGetStatusReturnsUnhealthyStatusOnSubAgentTermination(t *testing.T) {
 	t.Parallel()
-	if !agents.IsOpsAgentUAPPlugin() {
+	if !util.IsOpsAgentUAPPlugin() {
 		t.SkipNow()
 	}
 
@@ -1728,7 +1729,7 @@ func TestResourceNameLabel(t *testing.T) {
 
 func TestLogFilePathLabel(t *testing.T) {
 	t.Parallel()
-	if agents.IsOpsAgentUAPPlugin() {
+	if util.IsOpsAgentUAPPlugin() {
 		t.SkipNow()
 	}
 	t.Run("fluent-bit", func(t *testing.T) {
@@ -1835,7 +1836,7 @@ EOF
 		// Escape record accessor dollar-signs
 		strings.ReplaceAll(fluentBitArgs, "$", `\$`))
 
-	if agents.IsOpsAgentUAPPlugin() {
+	if util.IsOpsAgentUAPPlugin() {
 		command = fmt.Sprintf(`
 		sudo touch %s
 		sudo tee %s > /dev/null <<EOF
@@ -2918,7 +2919,7 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
             module: [default]
           static_configs:
             - targets:
-              - http://localhost:8000/data.json 
+              - http://localhost:8000/data.json
           relabel_configs:
             - source_labels: [__address__]
               target_label: __param_target
@@ -2927,7 +2928,7 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
               target_label: instance
               replacement: '$1'
             - target_label: __address__
-              replacement: localhost:7979 
+              replacement: localhost:7979
   service:
     pipelines:
       prom_pipeline:
@@ -3885,7 +3886,7 @@ func TestMetricsAgentCrashRestart(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		if agents.IsOpsAgentUAPPlugin() {
+		if util.IsOpsAgentUAPPlugin() {
 			// Ops Agent Plugin does not restart subagents on termination.
 			t.SkipNow()
 		}
@@ -3908,7 +3909,7 @@ func TestLoggingAgentCrashRestart(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		if agents.IsOpsAgentUAPPlugin() {
+		if util.IsOpsAgentUAPPlugin() {
 			// Ops Agent Plugin does not restart subagents on termination.
 			t.SkipNow()
 		}
@@ -3988,7 +3989,7 @@ func TestDiagnosticsCrashRestart(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		if agents.IsOpsAgentUAPPlugin() {
+		if util.IsOpsAgentUAPPlugin() {
 			// Ops Agent Plugin does not restart the diagnostics service on termination.
 			t.SkipNow()
 		}
@@ -4052,7 +4053,7 @@ func TestUpgradeOpsAgent(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		if agents.IsOpsAgentUAPPlugin() {
+		if util.IsOpsAgentUAPPlugin() {
 			// Ops Agent plugin version upgrade is handled by UAP.
 			t.SkipNow()
 		}
@@ -4571,7 +4572,7 @@ func getRecentServiceOutputForImage(imageSpec string) string {
 }
 
 func getHealthCheckResultsForImage(ctx context.Context, logger *log.Logger, vm *gce.VM) (string, error) {
-	if agents.IsOpsAgentUAPPlugin() {
+	if util.IsOpsAgentUAPPlugin() {
 		cmdOut, err := gce.RunRemotely(ctx, logger, vm, getHealthCheckLogsForUAPPluginByImage(vm.ImageSpec))
 		return cmdOut.Stdout, err
 
@@ -4972,7 +4973,7 @@ func TestRestartVM(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		isUAPPlugin := agents.IsOpsAgentUAPPlugin()
+		isUAPPlugin := util.IsOpsAgentUAPPlugin()
 		if isUAPPlugin {
 			cmdOut, err := gce.RunRemotely(ctx, logger, vm, getUAPPluginStatusForImage(vm.ImageSpec))
 			if err != nil {

@@ -18,6 +18,7 @@ package util
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 )
@@ -42,4 +43,10 @@ func DumpPointerArray[T any](array []*T, format string) string {
 	}
 	s += "]"
 	return s
+}
+
+func IsOpsAgentUAPPlugin() bool {
+	// ok is true when the env variable is preset in the environment.
+	value, ok := os.LookupEnv("IS_OPS_AGENT_UAP_PLUGIN")
+	return ok && value != ""
 }
