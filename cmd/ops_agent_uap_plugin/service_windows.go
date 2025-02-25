@@ -23,11 +23,9 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"os/signal"
 	"path"
 	"path/filepath"
 	"sync"
-	"syscall"
 
 	"golang.org/x/sys/windows/svc/mgr"
 	"google.golang.org/grpc/status"
@@ -169,7 +167,16 @@ func (ps *OpsAgentPluginServer) GetStatus(ctx context.Context, msg *pb.GetStatus
 }
 
 func runCommand(cmd *exec.Cmd) (string, error) {
-	panic("runCommand method is not implemented on Windows yet")
+	if cmd == nil {
+		return "", nil
+	}
+
+	log.Printf("Running command: %s", cmd.Args)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("Command %s failed, \ncommand output: %s\ncommand error: %s", cmd.Args, string(out), err)
+	}
+	return string(out), err
 }
 
 func runSubAgentCommand(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup) {
@@ -284,10 +291,6 @@ func findPreExistentAgents(agentWindowsServiceNames []string) (bool, error) {
 // cancel: the cancel function for the parent context. By calling this function, the parent context is canceled,
 // and GetStatus() returns a non-healthy status, signaling UAP to re-trigger Start().
 func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallDirectory string, _ string, runSubAgentCommand RunSubAgentCommandFunc, runCommand RunCommandFunc) {
-	// Register signal handler and implements its callback.
-	sigHandler(ctx, func(_ os.Signal) {
-		cancel()
-	})
 
 	var wg sync.WaitGroup
 	// Starting the diagnostics service
@@ -299,22 +302,4 @@ func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallD
 	go runSubAgentCommand(ctx, cancel, runDiagnosticsCmd, runCommand, &wg)
 
 	wg.Wait()
-}
-
-// sigHandler handles SIGTERM, SIGINT etc signals. The function provided in the
-// cancel argument handles internal framework termination and the plugin
-// interface notification of the "exiting" state.
-func sigHandler(ctx context.Context, cancel func(sig os.Signal)) {
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGHUP)
-	go func() {
-		select {
-		case sig := <-sigChan:
-			log.Printf("Got signal: %d, leaving...", sig)
-			close(sigChan)
-			cancel(sig)
-		case <-ctx.Done():
-			break
-		}
-	}()
 }
