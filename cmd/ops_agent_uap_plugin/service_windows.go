@@ -23,7 +23,11 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"os/signal"
+	"path"
 	"path/filepath"
+	"sync"
+	"syscall"
 
 	"golang.org/x/sys/windows/svc/mgr"
 	"google.golang.org/grpc/status"
@@ -44,6 +48,10 @@ const (
 	RuntimeDirectory                 = "run"
 	OpsAgentUAPPluginEventID  uint32 = 8
 	WindowsEventLogIdentifier        = "google-cloud-ops-agent-uap-plugin"
+	AgentWrapperBinary               = "google-cloud-ops-agent-wrapper.exe"
+	DiagnosticsBinary                = "google-cloud-ops-agent-diagnostics.exe"
+	FluentbitBinary                  = "fluent-bit.exe"
+	OtelBinary                       = "google-cloud-metrics-agent_windows_amd64.exe"
 )
 
 var (
@@ -72,7 +80,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	}
 	log.Printf("Received a Start request: %s. Starting the Ops Agent", msg)
 
-	_, cancel := context.WithCancel(context.Background())
+	pContext, cancel := context.WithCancel(context.Background())
 	ps.cancel = cancel
 	ps.mu.Unlock()
 
@@ -117,6 +125,12 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	runHealthChecks(pluginStateDir, windowsEventLogger)
 	windowsEventLogger.Info(OpsAgentUAPPluginEventID, "Health checks completed")
 
+	// the diagnostics service and subagent startups
+	cancelFunc := func() {
+		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
+	}
+	go runSubagents(pContext, cancelFunc, pluginInstallDir, pluginStateDir, runSubAgentCommand, ps.runCommand)
+
 	return &pb.StartResponse{}, nil
 }
 
@@ -156,6 +170,27 @@ func (ps *OpsAgentPluginServer) GetStatus(ctx context.Context, msg *pb.GetStatus
 
 func runCommand(cmd *exec.Cmd) (string, error) {
 	panic("runCommand method is not implemented on Windows yet")
+}
+
+func runSubAgentCommand(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup) {
+	defer wg.Done()
+	if cmd == nil {
+		return
+	}
+	if ctx.Err() != nil {
+		// context has been cancelled
+		log.Printf("cannot execute command: %s, because the context has been cancelled", cmd.Args)
+		return
+	}
+
+	output, err := runCommand(cmd)
+	if err != nil {
+		log.Printf("command: %s exited with errors, not restarting.\nCommand output: %s\n Command error:%s", cmd.Args, string(output), err)
+	} else {
+		log.Printf("command: %s %s exited successfully.\nCommand output: %s", cmd.Path, cmd.Args, string(output))
+	}
+	cancel() // cancels the parent context which also stops other Ops Agent sub-binaries from running.
+	return
 }
 
 func generateSubAgentConfigs(ctx context.Context, pluginStateDir string) error {
@@ -235,4 +270,51 @@ func findPreExistentAgents(agentWindowsServiceNames []string) (bool, error) {
 		return true, fmt.Errorf("conflicting installations identified: %v", alreadyInstalledAgentServiceName)
 	}
 	return false, nil
+}
+
+// runSubagents starts up the diagnostics service, otel, and fluent bit subagents in separate goroutines.
+// All child goroutines create a new context derived from the same parent context.
+// This ensures that crashes in one goroutine don't affect other goroutines.
+// However, when one goroutine exits with errors, it won't be restarted, and all other goroutines are also terminated.
+// This is done by canceling the parent context.
+// This makes sure that GetStatus() returns a non-healthy status, signaling UAP to Start() the plugin again.
+//
+// ctx: the parent context that all child goroutines share.
+//
+// cancel: the cancel function for the parent context. By calling this function, the parent context is canceled,
+// and GetStatus() returns a non-healthy status, signaling UAP to re-trigger Start().
+func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallDirectory string, _ string, runSubAgentCommand RunSubAgentCommandFunc, runCommand RunCommandFunc) {
+	// Register signal handler and implements its callback.
+	sigHandler(ctx, func(_ os.Signal) {
+		cancel()
+	})
+
+	var wg sync.WaitGroup
+	// Starting the diagnostics service
+	runDiagnosticsCmd := exec.CommandContext(ctx,
+		path.Join(pluginInstallDirectory, DiagnosticsBinary),
+		"-config", OpsAgentConfigLocationWindows,
+	)
+	wg.Add(1)
+	go runSubAgentCommand(ctx, cancel, runDiagnosticsCmd, runCommand, &wg)
+
+	wg.Wait()
+}
+
+// sigHandler handles SIGTERM, SIGINT etc signals. The function provided in the
+// cancel argument handles internal framework termination and the plugin
+// interface notification of the "exiting" state.
+func sigHandler(ctx context.Context, cancel func(sig os.Signal)) {
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGHUP)
+	go func() {
+		select {
+		case sig := <-sigChan:
+			log.Printf("Got signal: %d, leaving...", sig)
+			close(sigChan)
+			cancel(sig)
+		case <-ctx.Done():
+			break
+		}
+	}()
 }
