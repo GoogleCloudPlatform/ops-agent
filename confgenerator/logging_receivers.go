@@ -692,15 +692,18 @@ func (r LoggingReceiverSystemd) Pipelines(ctx context.Context) ([]otel.ReceiverP
 		Fields: map[string]*ModifyField{
 			`severity`: {
 				CopyFrom: "jsonPayload.PRIORITY",
+				// This mapping sets SeverityText in otel logs data model which naming differs from Cloud Logging model.
+				// The following mapping is used to transform the values to Google Cloud Logging LogSeverity.
+				// https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/blob/v0.48.3/exporter/collector/logs.go#L66-L127
 				MapValues: map[string]string{
-					"7": "DEBUG",
-					"6": "INFO",
-					"5": "NOTICE",
-					"4": "WARNING",
-					"3": "ERROR",
-					"2": "CRITICAL",
-					"1": "ALERT",
-					"0": "EMERGENCY",
+					"7": "debug",  // -> LogSeverity : DEBUG
+					"6": "info",   // -> LogSeverity : INFO
+					"5": "info3",  // -> LogSeverity : NOTICE
+					"4": "warn",   // -> LogSeverity : WARNING
+					"3": "error",  // -> LogSeverity : ERROR
+					"2": "fatal",  // -> LogSeverity : CRITICAL
+					"1": "fatal3", // -> LogSeverity : ALERT
+					"0": "fatal4", // -> LogSeverity : EMERGENCY
 				},
 				MapValuesExclusive: true,
 			},
