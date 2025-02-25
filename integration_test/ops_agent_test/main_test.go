@@ -2371,7 +2371,7 @@ func TestWindowsEventLogWithNonDefaultTimeZone(t *testing.T) {
 
 func TestSystemdLog(t *testing.T) {
 	t.Parallel()
-	if agents.IsOpsAgentUAPPlugin() {
+	if gce.IsOpsAgentUAPPlugin() {
 		t.SkipNow()
 	}
 	t.Run("fluent-bit", func(t *testing.T) {
