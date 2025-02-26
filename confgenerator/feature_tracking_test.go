@@ -26,7 +26,7 @@ import (
 	"testing"
 	"time"
 
-	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
+	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/google/go-cmp/cmp"
@@ -38,6 +38,7 @@ import (
 )
 
 var emptyUc = confgenerator.UnifiedConfig{}
+var builtInConfLinux = apps.BuiltInConfStructs["linux"]
 
 var expectedFeatureBase = []confgenerator.Feature{
 	{
@@ -140,7 +141,7 @@ var expectedTestFeatureBase = []confgenerator.Feature{
 }
 
 func TestEmptyConfig(t *testing.T) {
-	features, err := confgenerator.ExtractFeatures(context.Background(), &emptyUc)
+	features, err := confgenerator.ExtractFeatures(context.Background(), &emptyUc, builtInConfLinux)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -151,7 +152,8 @@ func TestEmptyConfig(t *testing.T) {
 
 type Test struct {
 	Name          string
-	Config        *confgenerator.UnifiedConfig
+	UserConfig    *confgenerator.UnifiedConfig
+	MergedConfig  *confgenerator.UnifiedConfig
 	Expected      []confgenerator.Feature
 	ExpectedError error
 }
@@ -162,7 +164,7 @@ func TestBed(t *testing.T) {
 	tests := []Test{
 		{
 			Name: "StringWithTracking",
-			Config: &confgenerator.UnifiedConfig{
+			UserConfig: &confgenerator.UnifiedConfig{
 				Metrics: &confgenerator.Metrics{
 					Receivers: map[string]confgenerator.MetricsReceiver{
 						"metricsReceiverFoo": &MetricsReceiverFoo{
@@ -176,6 +178,7 @@ func TestBed(t *testing.T) {
 					},
 				},
 			},
+			MergedConfig: &emptyUc,
 			Expected: append(
 				expectedTestFeatureBase,
 				confgenerator.Feature{
@@ -189,7 +192,7 @@ func TestBed(t *testing.T) {
 		},
 		{
 			Name: "StringWithoutTracking",
-			Config: &confgenerator.UnifiedConfig{
+			UserConfig: &confgenerator.UnifiedConfig{
 				Metrics: &confgenerator.Metrics{
 					Receivers: map[string]confgenerator.MetricsReceiver{
 						"metricsReceiverFoo": &MetricsReceiverFoo{
@@ -203,11 +206,12 @@ func TestBed(t *testing.T) {
 					},
 				},
 			},
-			Expected: expectedTestFeatureBase,
+			MergedConfig: &emptyUc,
+			Expected:     expectedTestFeatureBase,
 		},
 		{
 			Name: "BoolWithAutoTracking",
-			Config: &confgenerator.UnifiedConfig{
+			UserConfig: &confgenerator.UnifiedConfig{
 				Metrics: &confgenerator.Metrics{
 					Receivers: map[string]confgenerator.MetricsReceiver{
 						"metricsReceiverFoo": &MetricsReceiverFoo{
@@ -221,6 +225,7 @@ func TestBed(t *testing.T) {
 					},
 				},
 			},
+			MergedConfig: &emptyUc,
 			Expected: append(
 				expectedTestFeatureBase,
 				confgenerator.Feature{
@@ -234,7 +239,7 @@ func TestBed(t *testing.T) {
 		},
 		{
 			Name: "UnexportedBool",
-			Config: &confgenerator.UnifiedConfig{
+			UserConfig: &confgenerator.UnifiedConfig{
 				Metrics: &confgenerator.Metrics{
 					Receivers: map[string]confgenerator.MetricsReceiver{
 						"metricsReceiverFoo": &MetricsReceiverFoo{
@@ -248,11 +253,12 @@ func TestBed(t *testing.T) {
 					},
 				},
 			},
-			Expected: expectedTestFeatureBase,
+			MergedConfig: &emptyUc,
+			Expected:     expectedTestFeatureBase,
 		},
 		{
 			Name: "PointerBool",
-			Config: &confgenerator.UnifiedConfig{
+			UserConfig: &confgenerator.UnifiedConfig{
 				Metrics: &confgenerator.Metrics{
 					Receivers: map[string]confgenerator.MetricsReceiver{
 						"metricsReceiverFoo": &MetricsReceiverFoo{
@@ -266,6 +272,7 @@ func TestBed(t *testing.T) {
 					},
 				},
 			},
+			MergedConfig: &emptyUc,
 			Expected: append(
 				expectedTestFeatureBase,
 				confgenerator.Feature{
@@ -279,7 +286,7 @@ func TestBed(t *testing.T) {
 		},
 		{
 			Name: "EmptyStruct",
-			Config: &confgenerator.UnifiedConfig{
+			UserConfig: &confgenerator.UnifiedConfig{
 				Metrics: &confgenerator.Metrics{
 					Receivers: map[string]confgenerator.MetricsReceiver{
 						"metricsReceiverFoo": &MetricsReceiverFoo{
@@ -293,11 +300,12 @@ func TestBed(t *testing.T) {
 					},
 				},
 			},
-			Expected: expectedTestFeatureBase,
+			MergedConfig: &emptyUc,
+			Expected:     expectedTestFeatureBase,
 		},
 		{
 			Name: "Struct",
-			Config: &confgenerator.UnifiedConfig{
+			UserConfig: &confgenerator.UnifiedConfig{
 				Metrics: &confgenerator.Metrics{
 					Receivers: map[string]confgenerator.MetricsReceiver{
 						"metricsReceiverFoo": &MetricsReceiverFoo{
@@ -313,6 +321,7 @@ func TestBed(t *testing.T) {
 					},
 				},
 			},
+			MergedConfig: &emptyUc,
 			Expected: append(
 				expectedTestFeatureBase,
 				confgenerator.Feature{
@@ -333,7 +342,7 @@ func TestBed(t *testing.T) {
 		},
 		{
 			Name: "MapLength",
-			Config: &confgenerator.UnifiedConfig{
+			UserConfig: &confgenerator.UnifiedConfig{
 				Metrics: &confgenerator.Metrics{
 					Receivers: map[string]confgenerator.MetricsReceiver{
 						"metricsReceiverFoo": &MetricsReceiverFoo{
@@ -352,6 +361,7 @@ func TestBed(t *testing.T) {
 					},
 				},
 			},
+			MergedConfig: &emptyUc,
 			Expected: append(
 				expectedTestFeatureBase,
 				confgenerator.Feature{
@@ -365,7 +375,7 @@ func TestBed(t *testing.T) {
 		},
 		{
 			Name: "MapStringWithTracking",
-			Config: &confgenerator.UnifiedConfig{
+			UserConfig: &confgenerator.UnifiedConfig{
 				Metrics: &confgenerator.Metrics{
 					Receivers: map[string]confgenerator.MetricsReceiver{
 						"metricsReceiverFoo": &MetricsReceiverFoo{
@@ -382,6 +392,7 @@ func TestBed(t *testing.T) {
 					},
 				},
 			},
+			MergedConfig: &emptyUc,
 			Expected: append(
 				expectedTestFeatureBase,
 				confgenerator.Feature{
@@ -409,7 +420,7 @@ func TestBed(t *testing.T) {
 		},
 		{
 			Name: "MapStringKeyGeneration",
-			Config: &confgenerator.UnifiedConfig{
+			UserConfig: &confgenerator.UnifiedConfig{
 				Metrics: &confgenerator.Metrics{
 					Receivers: map[string]confgenerator.MetricsReceiver{
 						"metricsReceiverFoo": &MetricsReceiverFoo{
@@ -425,6 +436,7 @@ func TestBed(t *testing.T) {
 					},
 				},
 			},
+			MergedConfig: &emptyUc,
 			Expected: append(
 				expectedTestFeatureBase,
 				confgenerator.Feature{
@@ -452,7 +464,7 @@ func TestBed(t *testing.T) {
 		},
 		{
 			Name: "InvalidStruct",
-			Config: &confgenerator.UnifiedConfig{
+			UserConfig: &confgenerator.UnifiedConfig{
 				Metrics: &confgenerator.Metrics{
 					Receivers: map[string]confgenerator.MetricsReceiver{
 						"metricsReceiverFoo": &MetricsReceiverFoo{
@@ -466,11 +478,12 @@ func TestBed(t *testing.T) {
 					},
 				},
 			},
+			MergedConfig:  &emptyUc,
 			ExpectedError: confgenerator.ErrTrackingInlineStruct,
 		},
 		{
 			Name: "SliceInt",
-			Config: &confgenerator.UnifiedConfig{
+			UserConfig: &confgenerator.UnifiedConfig{
 				Metrics: &confgenerator.Metrics{
 					Receivers: map[string]confgenerator.MetricsReceiver{
 						"metricsReceiverFoo": &MetricsReceiverFoo{
@@ -484,6 +497,7 @@ func TestBed(t *testing.T) {
 					},
 				},
 			},
+			MergedConfig: &emptyUc,
 			Expected: append(
 				expectedTestFeatureBase,
 				confgenerator.Feature{
@@ -518,7 +532,7 @@ func TestBed(t *testing.T) {
 		},
 		{
 			Name: "SliceString",
-			Config: &confgenerator.UnifiedConfig{
+			UserConfig: &confgenerator.UnifiedConfig{
 				Metrics: &confgenerator.Metrics{
 					Receivers: map[string]confgenerator.MetricsReceiver{
 						"metricsReceiverFoo": &MetricsReceiverFoo{
@@ -532,6 +546,7 @@ func TestBed(t *testing.T) {
 					},
 				},
 			},
+			MergedConfig: &emptyUc,
 			Expected: append(
 				expectedTestFeatureBase,
 				confgenerator.Feature{
@@ -566,7 +581,7 @@ func TestBed(t *testing.T) {
 		},
 		{
 			Name: "SliceEmpty",
-			Config: &confgenerator.UnifiedConfig{
+			UserConfig: &confgenerator.UnifiedConfig{
 				Metrics: &confgenerator.Metrics{
 					Receivers: map[string]confgenerator.MetricsReceiver{
 						"metricsReceiverFoo": &MetricsReceiverFoo{
@@ -580,6 +595,7 @@ func TestBed(t *testing.T) {
 					},
 				},
 			},
+			MergedConfig: &emptyUc,
 			Expected: append(
 				expectedTestFeatureBase,
 				confgenerator.Feature{
@@ -593,7 +609,7 @@ func TestBed(t *testing.T) {
 		},
 		{
 			Name: "SliceNil",
-			Config: &confgenerator.UnifiedConfig{
+			UserConfig: &confgenerator.UnifiedConfig{
 				Metrics: &confgenerator.Metrics{
 					Receivers: map[string]confgenerator.MetricsReceiver{
 						"metricsReceiverFoo": &MetricsReceiverFoo{
@@ -607,7 +623,8 @@ func TestBed(t *testing.T) {
 					},
 				},
 			},
-			Expected: expectedTestFeatureBase,
+			MergedConfig: &emptyUc,
+			Expected:     expectedTestFeatureBase,
 		},
 	}
 
@@ -615,8 +632,7 @@ func TestBed(t *testing.T) {
 		test := test
 		t.Run(test.Name, func(t *testing.T) {
 			t.Parallel()
-			actual, err := confgenerator.ExtractFeatures(context.Background(), test.Config)
-
+			actual, err := confgenerator.ExtractFeatures(context.Background(), test.UserConfig, test.MergedConfig)
 			if test.ExpectedError != nil {
 				if test.Expected != nil {
 					t.Fatalf("invalid test: %v", test.Name)
@@ -684,6 +700,19 @@ type MetricsReceiverInnerPointer struct {
 	Foo *bool `yaml:"foo" tracking:""`
 }
 
+func TestOtelLoggingSupported(t *testing.T) {
+	userUc := emptyUc
+
+	features, err := confgenerator.ExtractFeatures(context.Background(), &userUc, builtInConfLinux)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !cmp.Equal(features, expectedFeatureBase) {
+		t.Fatalf("expected: %v, actual: %v", expectedFeatureBase, features)
+	}
+}
+
 func TestOverrideDefaultPipeline(t *testing.T) {
 	uc := emptyUc
 	uc.Metrics = &confgenerator.Metrics{
@@ -696,7 +725,7 @@ func TestOverrideDefaultPipeline(t *testing.T) {
 		},
 	}
 
-	features, err := confgenerator.ExtractFeatures(context.Background(), &uc)
+	features, err := confgenerator.ExtractFeatures(context.Background(), &uc, &emptyUc)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -770,7 +799,7 @@ func TestPrometheusFeatureMetrics(t *testing.T) {
 		Receivers: receivers,
 	}
 
-	features, err := confgenerator.ExtractFeatures(context.Background(), &uc)
+	features, err := confgenerator.ExtractFeatures(context.Background(), &uc, &emptyUc)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -989,7 +1018,7 @@ func TestNestedStructs(t *testing.T) {
 	uc.Metrics = &confgenerator.Metrics{
 		Receivers: receivers,
 	}
-	features, err := confgenerator.ExtractFeatures(context.Background(), &uc)
+	features, err := confgenerator.ExtractFeatures(context.Background(), &uc, &emptyUc)
 	if err != nil {
 		t.Fatal(err)
 	}
