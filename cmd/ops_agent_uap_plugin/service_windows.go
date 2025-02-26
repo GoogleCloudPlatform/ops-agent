@@ -334,9 +334,10 @@ func runDiagnosticsService(ctx context.Context, windowsEventLogger debug.Log, ca
 		return
 	}
 
-	h := &otelErrorHandler{windowsEventLogger: windowsEventLogger, windowsEventId: DiagnosticsEventID}
+	h := &otelErrorHandler{windowsEventLogger: windowsEventLogger, windowsEventId: OpsAgentUAPPluginEventID}
 	// Set otel error handler
 	otel.SetErrorHandler(h)
+	log.Printf("trying to send a fake error to otel error handler")
 	otel.Handle(fmt.Errorf("fake error for testing"))
 
 	err = self_metrics.CollectOpsAgentSelfMetrics(ctx, userUc, mergedUc)
