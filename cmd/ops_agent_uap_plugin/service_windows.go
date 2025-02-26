@@ -27,6 +27,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"go.opentelemetry.io/otel"
 	"golang.org/x/sys/windows/svc/mgr"
 	"google.golang.org/grpc/status"
 
@@ -35,6 +36,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"github.com/kardianos/osext"
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
@@ -45,6 +47,7 @@ const (
 	LogsDirectory                    = "log"
 	RuntimeDirectory                 = "run"
 	OpsAgentUAPPluginEventID  uint32 = 8
+	DiagnosticsEventID        uint32 = 2
 	WindowsEventLogIdentifier        = "google-cloud-ops-agent-uap-plugin"
 	AgentWrapperBinary               = "google-cloud-ops-agent-wrapper.exe"
 	DiagnosticsBinary                = "google-cloud-ops-agent-diagnostics.exe"
@@ -127,7 +130,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	cancelFunc := func() {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 	}
-	go runSubagents(pContext, cancelFunc, pluginInstallDir, pluginStateDir, runSubAgentCommand, ps.runCommand)
+	go runSubagents(pContext, cancelFunc, pluginInstallDir, pluginStateDir, runSubAgentCommand, ps.runCommand, windowsEventLogger)
 
 	return &pb.StartResponse{}, nil
 }
@@ -290,16 +293,12 @@ func findPreExistentAgents(agentWindowsServiceNames []string) (bool, error) {
 //
 // cancel: the cancel function for the parent context. By calling this function, the parent context is canceled,
 // and GetStatus() returns a non-healthy status, signaling UAP to re-trigger Start().
-func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallDirectory string, pluginStateDirectory string, runSubAgentCommand RunSubAgentCommandFunc, runCommand RunCommandFunc) {
+func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallDirectory string, pluginStateDirectory string, runSubAgentCommand RunSubAgentCommandFunc, runCommand RunCommandFunc, windowsEventLogger debug.Log) {
 
 	var wg sync.WaitGroup
 	// Starting the diagnostics service
-	runDiagnosticsCmd := exec.CommandContext(ctx,
-		path.Join(pluginInstallDirectory, DiagnosticsBinary),
-		"-config", OpsAgentConfigLocationWindows,
-	)
 	wg.Add(1)
-	go runSubAgentCommand(ctx, cancel, runDiagnosticsCmd, runCommand, &wg)
+	go runDiagnosticsService(ctx, windowsEventLogger, cancel, &wg)
 
 	// Starting Otel
 	runOtelCmd := exec.CommandContext(ctx,
@@ -323,4 +322,53 @@ func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallD
 	go runSubAgentCommand(ctx, cancel, runFluentBitCmd, runCommand, &wg)
 
 	wg.Wait()
+}
+
+func runDiagnosticsService(ctx context.Context, windowsEventLogger debug.Log, cancel context.CancelFunc, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	userUc, mergedUc, err := getUserAndMergedConfigs(ctx, OpsAgentConfigLocationWindows)
+	if err != nil {
+		log.Printf("Failed to run the diagnostics service: %v", err)
+		cancel()
+		return
+	}
+
+	h := &otelErrorHandler{windowsEventLogger: windowsEventLogger, windowsEventId: DiagnosticsEventID}
+	// Set otel error handler
+	otel.SetErrorHandler(h)
+
+	err = self_metrics.CollectOpsAgentSelfMetrics(ctx, userUc, mergedUc)
+	if err != nil {
+		log.Printf("Failed to run the diagnostics service: %v", err)
+		cancel()
+		return
+	}
+
+}
+
+func getUserAndMergedConfigs(ctx context.Context, userConfPath string) (*confgenerator.UnifiedConfig, *confgenerator.UnifiedConfig, error) {
+	userUc, err := confgenerator.ReadUnifiedConfigFromFile(ctx, userConfPath)
+	if err != nil {
+		return nil, nil, err
+	}
+	if userUc == nil {
+		userUc = &confgenerator.UnifiedConfig{}
+	}
+
+	mergedUc, err := confgenerator.MergeConfFiles(ctx, userConfPath, apps.BuiltInConfStructs)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return userUc, mergedUc, nil
+}
+
+type otelErrorHandler struct {
+	windowsEventLogger debug.Log
+	windowsEventId     uint32
+}
+
+func (h *otelErrorHandler) Handle(err error) {
+	h.windowsEventLogger.Error(h.windowsEventId, fmt.Sprintf("error collecting metrics: %v", err))
 }
