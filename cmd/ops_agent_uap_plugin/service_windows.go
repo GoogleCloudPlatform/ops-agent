@@ -337,6 +337,7 @@ func runDiagnosticsService(ctx context.Context, windowsEventLogger debug.Log, ca
 	h := &otelErrorHandler{windowsEventLogger: windowsEventLogger, windowsEventId: DiagnosticsEventID}
 	// Set otel error handler
 	otel.SetErrorHandler(h)
+	otel.Handle(fmt.Errorf("fake error for testing"))
 
 	err = self_metrics.CollectOpsAgentSelfMetrics(ctx, userUc, mergedUc)
 	if err != nil {
@@ -344,7 +345,6 @@ func runDiagnosticsService(ctx context.Context, windowsEventLogger debug.Log, ca
 		cancel()
 		return
 	}
-
 }
 
 func getUserAndMergedConfigs(ctx context.Context, userConfPath string) (*confgenerator.UnifiedConfig, *confgenerator.UnifiedConfig, error) {
