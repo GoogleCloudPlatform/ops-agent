@@ -309,5 +309,19 @@ func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallD
 	)
 	wg.Add(1)
 	go runSubAgentCommand(ctx, cancel, runOtelCmd, runCommand, &wg)
+
+	// Starting Fluentbit
+	runFluentBitCmd := exec.CommandContext(ctx,
+		path.Join(pluginInstallDirectory, AgentWrapperBinary),
+		"-config_path", OpsAgentConfigLocationWindows,
+		"-log_path", path.Join(pluginStateDirectory, LogsDirectory, "logging-module.log"),
+		path.Join(pluginInstallDirectory, FluentbitBinary),
+		"-c", path.Join(pluginStateDirectory, GeneratedConfigsOutDir, "fluentbit/fluent_bit_main.conf"),
+		"-R", path.Join(pluginStateDirectory, GeneratedConfigsOutDir, "fluentbit/fluent_bit_parser.conf"),
+		"--storage_path", path.Join(pluginStateDirectory, "run/buffers"),
+	)
+	wg.Add(1)
+	go runSubAgentCommand(ctx, cancel, runFluentBitCmd, runCommand, &wg)
+
 	wg.Wait()
 }
