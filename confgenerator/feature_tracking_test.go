@@ -28,6 +28,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/google/go-cmp/cmp"
 	"github.com/prometheus/common/model"
@@ -137,6 +138,37 @@ var expectedTestFeatureBase = []confgenerator.Feature{
 		Type:   "metricsReceiverFoo",
 		Key:    []string{"[0]", "enabled"},
 		Value:  "true",
+	},
+}
+
+var expectedOtelLoggingNotSupported = []confgenerator.Feature{
+	{
+		Module: "logging",
+		Kind:   "service",
+		Type:   "pipelines",
+		Key:    []string{"default_pipeline_overridden"},
+		Value:  "false",
+	},
+	{
+		Module: "metrics",
+		Kind:   "service",
+		Type:   "pipelines",
+		Key:    []string{"default_pipeline_overridden"},
+		Value:  "false",
+	},
+	{
+		Module: "global",
+		Kind:   "default",
+		Type:   "self_log",
+		Key:    []string{"default_self_log_file_collection"},
+		Value:  "true",
+	},
+	{
+		Module: "logging",
+		Kind:   "service",
+		Type:   "otel_logging",
+		Key:    []string{"otel_logging_supported_config"},
+		Value:  "false",
 	},
 }
 
@@ -710,6 +742,52 @@ func TestOtelLoggingSupported(t *testing.T) {
 
 	if !cmp.Equal(features, expectedFeatureBase) {
 		t.Fatalf("expected: %v, actual: %v", expectedFeatureBase, features)
+	}
+}
+
+type LoggingReceiverNoOtelSupport struct {
+	confgenerator.ConfigComponent `yaml:",inline"`
+}
+
+func (l LoggingReceiverNoOtelSupport) Type() string {
+	return "no_otel_support"
+}
+
+func (l LoggingReceiverNoOtelSupport) Components(ctx context.Context, tag string) []fluentbit.Component {
+	return nil
+}
+
+func TestOtelLoggingNotSupported(t *testing.T) {
+	NoOtelLoggingSupportPipeline := &confgenerator.Logging{
+		Receivers: map[string]confgenerator.LoggingReceiver{
+			"no_otel_support_receiver": &LoggingReceiverNoOtelSupport{},
+		},
+		Service: &confgenerator.LoggingService{
+			Pipelines: map[string]*confgenerator.Pipeline{
+				"no_otel_support_pipeline": {
+					ProcessorIDs: []string{"no_otel_support_receiver"},
+				},
+			},
+		},
+	}
+
+	userUc := confgenerator.UnifiedConfig{
+		Logging: NoOtelLoggingSupportPipeline,
+	}
+	mergedUc := &confgenerator.UnifiedConfig{
+		Logging: NoOtelLoggingSupportPipeline,
+		Metrics: builtInConfLinux.Metrics,
+	}
+
+	features, err := confgenerator.ExtractFeatures(context.Background(), &userUc, mergedUc)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fmt.Println(features)
+
+	if !cmp.Equal(features, expectedOtelLoggingNotSupported) {
+		t.Fatalf("expected: %v, actual: %v", expectedOtelLoggingNotSupported, features)
 	}
 }
 
