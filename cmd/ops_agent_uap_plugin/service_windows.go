@@ -371,5 +371,6 @@ type otelErrorHandler struct {
 }
 
 func (h *otelErrorHandler) Handle(err error) {
+	log.Printf("handling otel error")
 	h.windowsEventLogger.Error(h.windowsEventId, fmt.Sprintf("error collecting metrics: %v", err))
 }
