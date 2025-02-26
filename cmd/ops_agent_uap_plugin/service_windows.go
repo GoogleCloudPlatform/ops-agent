@@ -41,7 +41,7 @@ import (
 )
 
 const (
-	generatedConfigsOutDir           = "generated_configs"
+	GeneratedConfigsOutDir           = "generated_configs"
 	LogsDirectory                    = "log"
 	RuntimeDirectory                 = "run"
 	OpsAgentUAPPluginEventID  uint32 = 8
@@ -218,7 +218,7 @@ func generateSubAgentConfigs(ctx context.Context, pluginStateDir string) error {
 			subagent,
 			filepath.Join(pluginStateDir, LogsDirectory),
 			filepath.Join(pluginStateDir, RuntimeDirectory),
-			filepath.Join(pluginStateDir, generatedConfigsOutDir, subagent)); err != nil {
+			filepath.Join(pluginStateDir, GeneratedConfigsOutDir, subagent)); err != nil {
 			return err
 		}
 	}
@@ -290,16 +290,24 @@ func findPreExistentAgents(agentWindowsServiceNames []string) (bool, error) {
 //
 // cancel: the cancel function for the parent context. By calling this function, the parent context is canceled,
 // and GetStatus() returns a non-healthy status, signaling UAP to re-trigger Start().
-func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallDirectory string, _ string, runSubAgentCommand RunSubAgentCommandFunc, runCommand RunCommandFunc) {
+func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallDirectory string, pluginStateDirectory string, runSubAgentCommand RunSubAgentCommandFunc, runCommand RunCommandFunc) {
 
 	var wg sync.WaitGroup
 	// Starting the diagnostics service
-	runDiagnosticsCmd := exec.CommandContext(ctx,
-		path.Join(pluginInstallDirectory, DiagnosticsBinary),
-		"-config", OpsAgentConfigLocationWindows,
+	// runDiagnosticsCmd := exec.CommandContext(ctx,
+	// 	path.Join(pluginInstallDirectory, DiagnosticsBinary),
+	// 	"-config", OpsAgentConfigLocationWindows,
+	// )
+	// wg.Add(1)
+	// go runSubAgentCommand(ctx, cancel, runDiagnosticsCmd, runCommand, &wg)
+
+	// Start Otel
+	// Starting Otel
+	runOtelCmd := exec.CommandContext(ctx,
+		path.Join(pluginInstallDirectory, OtelBinary),
+		"--config", path.Join(pluginStateDirectory, GeneratedConfigsOutDir, "otel/otel.yaml"),
 	)
 	wg.Add(1)
-	go runSubAgentCommand(ctx, cancel, runDiagnosticsCmd, runCommand, &wg)
-
+	go runSubAgentCommand(ctx, cancel, runOtelCmd, runCommand, &wg)
 	wg.Wait()
 }
