@@ -439,6 +439,7 @@ func getMetadata(field reflect.StructField) metadata {
 	}
 }
 
+// TODO: b/399354366 - Cleanup when OTel Logging Support is fully released.
 func getOTelLoggingSupportedConfig(ctx context.Context, mergedUc *UnifiedConfig) Feature {
 	feature := Feature{
 		Module: "logging",
