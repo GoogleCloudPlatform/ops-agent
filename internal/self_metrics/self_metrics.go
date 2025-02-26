@@ -1,4 +1,4 @@
-// Copyright 2022 Google LLC
+// Copyright 2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,11 +18,13 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"time"
 
 	mexporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/contrib/detectors/gcp"
 	"go.opentelemetry.io/otel/attribute"
 	metricapi "go.opentelemetry.io/otel/metric"
@@ -33,8 +35,20 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+const (
+	agentMetricNamespace             string = "agent.googleapis.com"
+	enabledReceiversMetricName       string = "agent/ops_agent/enabled_receivers"
+	featureTrackingMetricName        string = "agent/internal/ops/feature_tracking"
+	enabledReceiversOTLPJSONFilePath string = "/var/run/google-cloud-ops-agent-opentelemetry-collector/enabledReceiversOTLP.json"
+	featureTrackingOTLPJSONFilePath  string = "/var/run/google-cloud-ops-agent-opentelemetry-collector/featureTrackingOTLP.json"
+)
+
+func getFullAgentMetricName(metricName string) string {
+	return fmt.Sprintf("%s/%s", agentMetricNamespace, metricName)
+}
+
 func agentMetricsPrefixFormatter(d metricdata.Metrics) string {
-	return fmt.Sprintf("agent.googleapis.com/%s", d.Name)
+	return getFullAgentMetricName(d.Name)
 }
 
 type EnabledReceivers struct {
@@ -70,7 +84,7 @@ func InstrumentEnabledReceiversMetric(ctx context.Context, uc *confgenerator.Uni
 	}
 
 	_, err = meter.Int64ObservableGauge(
-		"agent/ops_agent/enabled_receivers",
+		enabledReceiversMetricName,
 		metricapi.WithInt64Callback(
 			func(ctx context.Context, observer metricapi.Int64Observer) error {
 				for rType, count := range eR.MetricsReceiverCountsByType {
@@ -104,7 +118,7 @@ func InstrumentFeatureTrackingMetric(ctx context.Context, userUc, mergedUc *conf
 		return err
 	}
 	_, err = meter.Int64ObservableGauge(
-		"agent/internal/ops/feature_tracking",
+		featureTrackingMetricName,
 		metricapi.WithInt64Callback(
 			func(ctx context.Context, observer metricapi.Int64Observer) error {
 				for _, f := range features {
@@ -137,11 +151,11 @@ func CreateFeatureTrackingMeterProvider(exporter metricsdk.Exporter, res *resour
 		metricsdk.WithView(
 			metricsdk.NewView(
 				metricsdk.Instrument{
-					Name: "agent/internal/ops/feature_tracking",
+					Name: featureTrackingMetricName,
 					Kind: metricsdk.InstrumentKindObservableGauge,
 				},
 				metricsdk.Stream{
-					Name:        "agent/internal/ops/feature_tracking",
+					Name:        featureTrackingMetricName,
 					Aggregation: metricsdk.AggregationDefault{},
 				},
 			)),
@@ -160,11 +174,11 @@ func CreateEnabledReceiversMeterProvider(exporter metricsdk.Exporter, res *resou
 		metricsdk.WithView(
 			metricsdk.NewView(
 				metricsdk.Instrument{
-					Name: "agent/ops_agent/enabled_receivers",
+					Name: enabledReceiversMetricName,
 					Kind: metricsdk.InstrumentKindObservableGauge,
 				},
 				metricsdk.Stream{
-					Name:        "agent/ops_agent/enabled_receivers",
+					Name:        enabledReceiversMetricName,
 					Aggregation: metricsdk.AggregationDefault{},
 				},
 			)),
@@ -241,4 +255,93 @@ func CollectOpsAgentSelfMetrics(ctx context.Context, userUc, mergedUc *confgener
 			return nil
 		}
 	}
+}
+
+func CollectEnabledReceiversMetricToOLTPJSON(ctx context.Context, uc *confgenerator.UnifiedConfig) error {
+	eR, err := CountEnabledReceivers(ctx, uc)
+	if err != nil {
+		return err
+	}
+
+	metrics := pmetric.NewMetrics()
+	gaugeMetric := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	gaugeMetric.SetName(getFullAgentMetricName(enabledReceiversMetricName))
+	dataPoints := gaugeMetric.SetEmptyGauge().DataPoints()
+
+	for rType, count := range eR.MetricsReceiverCountsByType {
+		point := dataPoints.AppendEmpty()
+		point.SetIntValue(int64(count))
+		attributes := point.Attributes()
+		attributes.PutStr("telemetry_type", "metrics")
+		attributes.PutStr("receiver_type", rType)
+	}
+
+	for rType, count := range eR.LogsReceiverCountsByType {
+		point := dataPoints.AppendEmpty()
+		point.SetIntValue(int64(count))
+		attributes := point.Attributes()
+		attributes.PutStr("telemetry_type", "logs")
+		attributes.PutStr("receiver_type", rType)
+	}
+
+	jsonMarshaler := &pmetric.JSONMarshaler{}
+	json, err := jsonMarshaler.MarshalMetrics(metrics)
+	if err != nil {
+		return err
+	}
+
+	err = os.WriteFile(enabledReceiversOTLPJSONFilePath, json, 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func CollectFeatureTrackingMetricToOTLPJSON(ctx context.Context, uc *confgenerator.UnifiedConfig) error {
+	features, err := confgenerator.ExtractFeatures(ctx, uc)
+	if err != nil {
+		return err
+	}
+
+	metrics := pmetric.NewMetrics()
+	gaugeMetric := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	gaugeMetric.SetName(getFullAgentMetricName(featureTrackingMetricName))
+	dataPoints := gaugeMetric.SetEmptyGauge().DataPoints()
+
+	for _, f := range features {
+		point := dataPoints.AppendEmpty()
+		point.SetIntValue(int64(1))
+		attributes := point.Attributes()
+		attributes.PutStr("module", f.Module)
+		attributes.PutStr("feature", fmt.Sprintf("%s:%s", f.Kind, f.Type))
+		attributes.PutStr("key", strings.Join(f.Key, "."))
+		attributes.PutStr("value", f.Value)
+	}
+
+	jsonMarshaler := &pmetric.JSONMarshaler{}
+	json, err := jsonMarshaler.MarshalMetrics(metrics)
+	if err != nil {
+		return err
+	}
+
+	err = os.WriteFile(featureTrackingOTLPJSONFilePath, json, 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func CollectOpsAgentSelfMetricsToOTLPJSON(ctx context.Context, userUc, mergedUc *confgenerator.UnifiedConfig) (err error) {
+	err = CollectFeatureTrackingMetricToOTLPJSON(ctx, userUc)
+	if err != nil {
+		return fmt.Errorf("failed to collect feature tracking metric to otlp json: %w", err)
+	}
+
+	err = CollectEnabledReceiversMetricToOLTPJSON(ctx, mergedUc)
+	if err != nil {
+		return fmt.Errorf("failed to collect enabled receivers metric to otlp json: %w", err)
+	}
+	return nil
 }
