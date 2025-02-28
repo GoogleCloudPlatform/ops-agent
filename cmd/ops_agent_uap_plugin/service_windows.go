@@ -47,7 +47,6 @@ const (
 	LogsDirectory                    = "log"
 	RuntimeDirectory                 = "run"
 	OpsAgentUAPPluginEventID  uint32 = 8
-	DiagnosticsEventID        uint32 = 2
 	WindowsEventLogIdentifier        = "google-cloud-ops-agent-uap-plugin"
 	AgentWrapperBinary               = "google-cloud-ops-agent-wrapper.exe"
 	DiagnosticsBinary                = "google-cloud-ops-agent-diagnostics.exe"
@@ -73,6 +72,14 @@ func (ps *OpsAgentPluginServer) Apply(ctx context.Context, msg *pb.ApplyRequest)
 // Until plugin receives Start request plugin is expected to be not functioning
 // and just listening on the address handed off waiting for the request.
 func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest) (*pb.StartResponse, error) {
+	// Create a Windows Event logger. Redirect stdout to the windows event log.
+	windowsEventLogger, err := createWindowsEventLogger()
+	defer windowsEventLogger.Close()
+	if err != nil {
+		log.Printf("Failed to create Windows event logger: %s", err)
+		return nil, status.Error(1, err.Error())
+	}
+
 	ps.mu.Lock()
 	if ps.cancel != nil {
 		log.Printf("The Ops Agent plugin is started already, skipping the current request")
@@ -85,8 +92,6 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	ps.cancel = cancel
 	ps.mu.Unlock()
 
-	windowsEventLogger, err := createWindowsEventLogger()
-	defer windowsEventLogger.Close()
 	if err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		log.Printf("Start() failed, because it failed to create Windows event logger: %s", err)
@@ -124,7 +129,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 
 	// Trigger Healthchecks
 	runHealthChecks(pluginStateDir, windowsEventLogger)
-	windowsEventLogger.Info(OpsAgentUAPPluginEventID, "Health checks completed")
+	log.Print("Health checks completed")
 
 	// the diagnostics service and subagent startups
 	cancelFunc := func() {
@@ -246,6 +251,11 @@ func createWindowsEventLogger() (debug.Log, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Redirect stdout to the event log to capture internal messages
+	log.SetOutput(&eventLogWriter{
+		EventID:  OpsAgentUAPPluginEventID,
+		EventLog: elog,
+	})
 	return elog, nil
 }
 
@@ -337,8 +347,6 @@ func runDiagnosticsService(ctx context.Context, windowsEventLogger debug.Log, ca
 	h := &otelErrorHandler{windowsEventLogger: windowsEventLogger, windowsEventId: OpsAgentUAPPluginEventID}
 	// Set otel error handler
 	otel.SetErrorHandler(h)
-	log.Printf("trying to send a fake error to otel error handler")
-	otel.Handle(fmt.Errorf("fake error for testing"))
 
 	err = self_metrics.CollectOpsAgentSelfMetrics(ctx, userUc, mergedUc)
 	if err != nil {
@@ -373,4 +381,17 @@ type otelErrorHandler struct {
 func (h *otelErrorHandler) Handle(err error) {
 	log.Printf("handling otel error")
 	h.windowsEventLogger.Error(h.windowsEventId, fmt.Sprintf("error collecting metrics: %v", err))
+}
+
+type eventLogWriter struct {
+	EventID  uint32
+	EventLog *eventlog.Log
+}
+
+func (w *eventLogWriter) Write(p []byte) (int, error) {
+	err := w.EventLog.Info(w.EventID, string(p))
+	if err != nil {
+		return 0, err
+	}
+	return len(p), nil
 }
