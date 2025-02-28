@@ -302,6 +302,9 @@ func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallD
 
 	// Starting Otel
 	runOtelCmd := exec.CommandContext(ctx,
+		path.Join(pluginInstallDirectory, AgentWrapperBinary),
+		"-config_path", OpsAgentConfigLocationWindows,
+		"-log_path", path.Join(pluginStateDirectory, LogsDirectory, "otel-module.log"),
 		path.Join(pluginInstallDirectory, OtelBinary),
 		"--config", path.Join(pluginStateDirectory, GeneratedConfigsOutDir, "otel/otel.yaml"),
 	)
