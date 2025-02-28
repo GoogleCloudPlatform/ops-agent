@@ -44,6 +44,11 @@ var (
 // implementations.
 type RunCommandFunc func(cmd *exec.Cmd) (string, error)
 
+// RunSubAgentCommandFunc defines a function type that starts a subagent. If one subagent execution exited, other sugagents are also terminated via context cancellation. This abstraction is introduced
+// primarily to facilitate testing by allowing the injection of mock
+// implementations.
+type RunSubAgentCommandFunc func(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup)
+
 // PluginServer implements the plugin RPC server interface.
 type OpsAgentPluginServer struct {
 	pb.UnimplementedGuestAgentPluginServer
