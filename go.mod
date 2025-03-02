@@ -44,6 +44,7 @@ require (
 )
 
 require (
+	go.opentelemetry.io/collector/pdata v1.4.0
 	golang.org/x/sync v0.10.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20240827150818-7e3bb234dfed
 	gopkg.in/yaml.v3 v3.0.1
