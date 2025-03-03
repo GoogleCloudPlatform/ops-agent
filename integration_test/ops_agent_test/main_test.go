@@ -2431,7 +2431,7 @@ func testSystemdLog(t *testing.T, otel bool) {
 			t.Error(err)
 		}
 
-		// TODO: b/400435104 - Re-enable when the `googlecloudexporter` supports all LogSeverity format.
+		// TODO: b/400435104 - Re-enable when the `googlecloudexporter` supports all LogSeverity levels.
 		// if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_notice_log_message' | systemd-cat --priority=notice"); err != nil {
 		// 	t.Fatalf("Error writing dummy Systemd log line: %v", err)
 		// }
