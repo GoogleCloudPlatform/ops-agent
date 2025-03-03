@@ -18,6 +18,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"log"
@@ -26,8 +27,10 @@ import (
 	"path"
 	"path/filepath"
 	"sync"
+	"unsafe"
 
 	"go.opentelemetry.io/otel"
+	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/svc/mgr"
 	"google.golang.org/grpc/status"
 
@@ -61,6 +64,13 @@ var (
 	OpsAgentConfigLocationWindows = filepath.Join(os.Getenv("PROGRAMDATA"), "Google/Cloud Operations/Ops Agent/config/config.yaml")
 )
 
+// RunSubAgentCommandFunc defines a function type that starts a subagent. If one subagent execution exited, other sugagents are also terminated via context cancellation. This abstraction is introduced
+// primarily to facilitate testing by allowing the injection of mock
+// implementations.
+type RunSubAgentCommandFunc func(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFuncWindows, wg *sync.WaitGroup, jobHandle windows.Handle)
+
+type RunCommandFuncWindows func(cmd *exec.Cmd, jobHandle windows.Handle) (string, error)
+
 // Apply applies the config sent or performs the work defined in the message.
 // ApplyRequest is opaque to the agent and is expected to be well known contract
 // between Plugin and the server itself. For e.g. service might want to update
@@ -85,19 +95,11 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	ps.cancel = cancel
 	ps.mu.Unlock()
 
-	windowsEventLogger, err := createWindowsEventLogger()
-	defer windowsEventLogger.Close()
-	if err != nil {
-		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
-		log.Printf("Start() failed, because it failed to create Windows event logger: %s", err)
-		return nil, status.Error(1, err.Error())
-	}
-
-	// Calculate plugin install and state dirs
+	// Calculate plugin install and state dirs.
 	pluginInstallDir, err := osext.ExecutableFolder()
 	if err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
-		windowsEventLogger.Error(OpsAgentUAPPluginEventID, fmt.Sprintf("Start() failed, because it cannot determine the plugin install location: %s", err))
+		log.Printf("Start() failed, because it cannot determine the plugin install location: %s", err)
 		return nil, status.Error(1, err.Error())
 	}
 
@@ -107,30 +109,47 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	}
 	log.Printf("Determined pluginInstallDir: %v, and pluginStateDir: %v", pluginInstallDir, pluginStateDir)
 
-	// Subagents config validation and generation
-	if err := generateSubAgentConfigs(ctx, pluginStateDir); err != nil {
+	// Create a windows Event logger. This is used to log generated subagent configs, and health check results.
+	windowsEventLogger, err := createWindowsEventLogger()
+	defer windowsEventLogger.Close()
+	if err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
-		windowsEventLogger.Error(OpsAgentUAPPluginEventID, fmt.Sprintf("Start() failed at the subagent config validation and generation step: %s", err))
+		log.Printf("Start() failed, because it failed to create Windows event logger: %s", err)
 		return nil, status.Error(1, err.Error())
 	}
 
-	// Detect conflicting installations
+	// Subagents config validation and generation.
+	if err := generateSubAgentConfigs(ctx, pluginStateDir, windowsEventLogger); err != nil {
+		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
+		log.Printf("Start() failed at the subagent config validation and generation step: %s", err)
+		return nil, status.Error(1, err.Error())
+	}
+
+	// Detect conflicting installations.
 	foundConflictingInstallations, err := findPreExistentAgents(AgentWindowsServiceName)
 	if foundConflictingInstallations || err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
-		windowsEventLogger.Error(OpsAgentUAPPluginEventID, fmt.Sprintf("Start() failed because it detected conflicting installations: %s", err))
+		log.Printf("Start() failed because it detected conflicting installations: %s", err)
 		return nil, status.Error(1, err.Error())
 	}
 
 	// Trigger Healthchecks
 	runHealthChecks(pluginStateDir, windowsEventLogger)
-	windowsEventLogger.Info(OpsAgentUAPPluginEventID, "Health checks completed")
 
-	// the diagnostics service and subagent startups
+	// Create Windows Job object, to ensure that all child processes are killed when the parent process exits.
+	jobHandle, err := createWindowsJobHandle()
+	if err != nil {
+		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
+		log.Printf("Start() failed, because it failed to create a Windows Job object: %s", err)
+		return nil, status.Error(1, err.Error())
+	}
+
 	cancelFunc := func() {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
+		windows.CloseHandle(jobHandle)
 	}
-	go runSubagents(pContext, cancelFunc, pluginInstallDir, pluginStateDir, runSubAgentCommand, ps.runCommand, windowsEventLogger)
+
+	go runSubagents(pContext, cancelFunc, pluginInstallDir, pluginStateDir, runSubAgentCommand, runCommandWindows, windowsEventLogger, jobHandle)
 
 	return &pb.StartResponse{}, nil
 }
@@ -169,20 +188,76 @@ func (ps *OpsAgentPluginServer) GetStatus(ctx context.Context, msg *pb.GetStatus
 	return &pb.Status{Code: 0, Results: []string{"The Ops Agent Plugin is running ok."}}, nil
 }
 
+func createWindowsJobHandle() (windows.Handle, error) {
+	jobHandle, err := windows.CreateJobObject(nil, nil)
+	if err != nil {
+		return 0, err
+	}
+
+	info := windows.JOBOBJECT_EXTENDED_LIMIT_INFORMATION{
+		BasicLimitInformation: windows.JOBOBJECT_BASIC_LIMIT_INFORMATION{
+			LimitFlags: windows.JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
+		},
+	}
+	_, err = windows.SetInformationJobObject(
+		jobHandle,
+		windows.JobObjectExtendedLimitInformation,
+		uintptr(unsafe.Pointer(&info)),
+		uint32(unsafe.Sizeof(info)))
+	if err != nil {
+		windows.CloseHandle(jobHandle)
+		return 0, err
+	}
+
+	return jobHandle, nil
+}
+
 func runCommand(cmd *exec.Cmd) (string, error) {
+	return "", fmt.Errorf("this function is not implemented on Windows")
+}
+
+func runCommandWindows(cmd *exec.Cmd, jobHandle windows.Handle) (string, error) {
 	if cmd == nil {
 		return "", nil
 	}
 
+	var stdoutBuf, stderrBuf bytes.Buffer
+	cmd.Stdout = &stdoutBuf
+	cmd.Stderr = &stderrBuf
+
 	log.Printf("Running command: %s", cmd.Args)
-	out, err := cmd.CombinedOutput()
+	err := cmd.Start()
 	if err != nil {
-		log.Printf("Command %s failed, \ncommand output: %s\ncommand error: %s", cmd.Args, string(out), err)
+		log.Printf("Command %s failed, \ncommand error: %s", cmd.Args, err)
+		return "", err
 	}
-	return string(out), err
+
+	childProcessHandle, err := windows.OpenProcess(
+		windows.PROCESS_ALL_ACCESS, // Or specific access rights
+		false,                      // Inherit handle
+		uint32(cmd.Process.Pid),
+	)
+	if err != nil {
+		log.Printf("Command %s failed, because it encountered error while opening a child process Job Handle: %s", cmd.Args, err)
+		return "", err
+	}
+	defer windows.CloseHandle(childProcessHandle)
+
+	err = windows.AssignProcessToJobObject(jobHandle, windows.Handle(childProcessHandle))
+	if err != nil {
+		fmt.Println("Error assigning process to Job Object:", err)
+		return "", err
+	}
+
+	err = cmd.Wait()
+	if err != nil {
+		log.Printf("Command %s failed, \ncommand error: %s", cmd.Args, err)
+		return "", err
+	}
+	return fmt.Sprintf("stdout: %s\n stderr: %s", stdoutBuf.String(), stderrBuf.String()), nil
 }
 
-func runSubAgentCommand(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup) {
+func runSubAgentCommand(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFuncWindows, wg *sync.WaitGroup, jobHandle windows.Handle) {
 	defer wg.Done()
 	if cmd == nil {
 		return
@@ -193,7 +268,7 @@ func runSubAgentCommand(ctx context.Context, cancel context.CancelFunc, cmd *exe
 		return
 	}
 
-	output, err := runCommand(cmd)
+	output, err := runCommand(cmd, jobHandle)
 	if err != nil {
 		log.Printf("command: %s exited with errors, not restarting.\nCommand output: %s\n Command error:%s", cmd.Args, string(output), err)
 	} else {
@@ -203,14 +278,14 @@ func runSubAgentCommand(ctx context.Context, cancel context.CancelFunc, cmd *exe
 	return
 }
 
-func generateSubAgentConfigs(ctx context.Context, pluginStateDir string) error {
+func generateSubAgentConfigs(ctx context.Context, pluginStateDir string, windowsEventLogger debug.Log) error {
 	uc, err := confgenerator.MergeConfFiles(ctx, OpsAgentConfigLocationWindows, apps.BuiltInConfStructs)
 	if err != nil {
 		return err
 	}
 
-	log.Printf("Built-in config:\n%s\n", apps.BuiltInConfStructs["windows"])
-	log.Printf("Merged config:\n%s\n", uc)
+	windowsEventLogger.Info(OpsAgentUAPPluginEventID, fmt.Sprintf("Built-in config:\n%s\n", apps.BuiltInConfStructs["windows"]))
+	windowsEventLogger.Info(OpsAgentUAPPluginEventID, fmt.Sprintf("Merged config:\n%s\n", uc))
 
 	for _, subagent := range []string{
 		"otel",
@@ -238,6 +313,7 @@ func runHealthChecks(pluginStateDir string, windowsEventLogger debug.Log) {
 	// Log health check results to windows event log too.
 	healthCheckWindowsEventLogger := logs.WindowsServiceLogger{EventID: OpsAgentUAPPluginEventID, Logger: windowsEventLogger}
 	healthchecks.LogHealthCheckResults(healthCheckResults, healthCheckWindowsEventLogger)
+	windowsEventLogger.Info(OpsAgentUAPPluginEventID, "Health checks completed")
 }
 
 func createWindowsEventLogger() (debug.Log, error) {
@@ -293,7 +369,7 @@ func findPreExistentAgents(agentWindowsServiceNames []string) (bool, error) {
 //
 // cancel: the cancel function for the parent context. By calling this function, the parent context is canceled,
 // and GetStatus() returns a non-healthy status, signaling UAP to re-trigger Start().
-func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallDirectory string, pluginStateDirectory string, runSubAgentCommand RunSubAgentCommandFunc, runCommand RunCommandFunc, windowsEventLogger debug.Log) {
+func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallDirectory string, pluginStateDirectory string, runSubAgentCommand RunSubAgentCommandFunc, runCommand RunCommandFuncWindows, windowsEventLogger debug.Log, jobHandle windows.Handle) {
 
 	var wg sync.WaitGroup
 	// Starting the diagnostics service
@@ -309,7 +385,7 @@ func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallD
 		"--config", path.Join(pluginStateDirectory, GeneratedConfigsOutDir, "otel/otel.yaml"),
 	)
 	wg.Add(1)
-	go runSubAgentCommand(ctx, cancel, runOtelCmd, runCommand, &wg)
+	go runSubAgentCommand(ctx, cancel, runOtelCmd, runCommand, &wg, jobHandle)
 
 	// Starting Fluentbit
 	runFluentBitCmd := exec.CommandContext(ctx,
@@ -322,7 +398,7 @@ func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallD
 		"--storage_path", path.Join(pluginStateDirectory, "run/buffers"),
 	)
 	wg.Add(1)
-	go runSubAgentCommand(ctx, cancel, runFluentBitCmd, runCommand, &wg)
+	go runSubAgentCommand(ctx, cancel, runFluentBitCmd, runCommand, &wg, jobHandle)
 
 	wg.Wait()
 }
