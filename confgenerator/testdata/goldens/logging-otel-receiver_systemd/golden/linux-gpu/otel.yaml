@@ -517,14 +517,14 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_0"])
       - delete_key(cache, "mapped_value") where (cache != nil and cache["mapped_value"] != nil)
-      - set(cache["mapped_value"], "fatal4") where cache["value"] == "0"
-      - set(cache["mapped_value"], "fatal3") where cache["value"] == "1"
-      - set(cache["mapped_value"], "fatal") where cache["value"] == "2"
-      - set(cache["mapped_value"], "error") where cache["value"] == "3"
-      - set(cache["mapped_value"], "warn") where cache["value"] == "4"
-      - set(cache["mapped_value"], "info3") where cache["value"] == "5"
-      - set(cache["mapped_value"], "info") where cache["value"] == "6"
-      - set(cache["mapped_value"], "debug") where cache["value"] == "7"
+      - set(cache["mapped_value"], "EMERGENCY") where cache["value"] == "0"
+      - set(cache["mapped_value"], "ALERT") where cache["value"] == "1"
+      - set(cache["mapped_value"], "CRITICAL") where cache["value"] == "2"
+      - set(cache["mapped_value"], "ERROR") where cache["value"] == "3"
+      - set(cache["mapped_value"], "WARNING") where cache["value"] == "4"
+      - set(cache["mapped_value"], "NOTICE") where cache["value"] == "5"
+      - set(cache["mapped_value"], "INFO") where cache["value"] == "6"
+      - set(cache["mapped_value"], "DEBUG") where cache["value"] == "7"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
