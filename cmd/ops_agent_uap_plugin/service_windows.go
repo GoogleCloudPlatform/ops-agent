@@ -111,7 +111,6 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 
 	// Create a windows Event logger. This is used to log generated subagent configs, and health check results.
 	windowsEventLogger, err := createWindowsEventLogger()
-	defer windowsEventLogger.Close()
 	if err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		log.Printf("Start() failed, because it failed to create Windows event logger: %s", err)
@@ -121,6 +120,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	// Subagents config validation and generation.
 	if err := generateSubAgentConfigs(ctx, pluginStateDir, windowsEventLogger); err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
+		windowsEventLogger.Close()
 		log.Printf("Start() failed at the subagent config validation and generation step: %s", err)
 		return nil, status.Error(1, err.Error())
 	}
@@ -129,17 +129,19 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	foundConflictingInstallations, err := findPreExistentAgents(AgentWindowsServiceName)
 	if foundConflictingInstallations || err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
+		windowsEventLogger.Close()
 		log.Printf("Start() failed because it detected conflicting installations: %s", err)
 		return nil, status.Error(1, err.Error())
 	}
 
-	// Trigger Healthchecks
+	// Trigger Healthchecks.
 	runHealthChecks(pluginStateDir, windowsEventLogger)
 
 	// Create Windows Job object, to ensure that all child processes are killed when the parent process exits.
 	jobHandle, err := createWindowsJobHandle()
 	if err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
+		windowsEventLogger.Close()
 		log.Printf("Start() failed, because it failed to create a Windows Job object: %s", err)
 		return nil, status.Error(1, err.Error())
 	}
@@ -147,6 +149,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	cancelFunc := func() {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		windows.CloseHandle(jobHandle)
+		windowsEventLogger.Close()
 	}
 
 	go runSubagents(pContext, cancelFunc, pluginInstallDir, pluginStateDir, runSubAgentCommand, runCommandWindows, windowsEventLogger, jobHandle)
@@ -416,8 +419,6 @@ func runDiagnosticsService(ctx context.Context, windowsEventLogger debug.Log, ca
 	h := &otelErrorHandler{windowsEventLogger: windowsEventLogger, windowsEventId: OpsAgentUAPPluginEventID}
 	// Set otel error handler
 	otel.SetErrorHandler(h)
-	log.Printf("trying to send a fake error to otel error handler")
-	otel.Handle(fmt.Errorf("fake error for testing"))
 
 	err = self_metrics.CollectOpsAgentSelfMetrics(ctx, userUc, mergedUc)
 	if err != nil {
