@@ -21,16 +21,39 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
+	"path/filepath"
 
 	"golang.org/x/sys/windows/svc/mgr"
 	"google.golang.org/grpc/status"
 
+	"github.com/GoogleCloudPlatform/ops-agent/apps"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/kardianos/osext"
+	"golang.org/x/sys/windows/svc/debug"
+	"golang.org/x/sys/windows/svc/eventlog"
+
 	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
 )
 
+const (
+	GeneratedConfigsOutDir           = "generated_configs"
+	LogsDirectory                    = "log"
+	RuntimeDirectory                 = "run"
+	OpsAgentUAPPluginEventID  uint32 = 8
+	DiagnosticsEventID        uint32 = 2
+	WindowsEventLogIdentifier        = "google-cloud-ops-agent-uap-plugin"
+	AgentWrapperBinary               = "google-cloud-ops-agent-wrapper.exe"
+	DiagnosticsBinary                = "google-cloud-ops-agent-diagnostics.exe"
+	FluentbitBinary                  = "fluent-bit.exe"
+	OtelBinary                       = "google-cloud-metrics-agent_windows_amd64.exe"
+)
+
 var (
-	AgentWindowsServiceName = []string{"StackdriverLogging", "StackdriverMonitoring", "google-cloud-ops-agent"}
+	AgentWindowsServiceName       = []string{"StackdriverLogging", "StackdriverMonitoring", "google-cloud-ops-agent"}
+	DefaultPluginStateDirectory   = filepath.Join(os.Getenv("PROGRAMDATA"), "Google/Compute Engine/google-guest-agent/agent_state/plugins/ops-agent-plugin")
+	OpsAgentConfigLocationWindows = filepath.Join(os.Getenv("PROGRAMDATA"), "Google/Cloud Operations/Ops Agent/config/config.yaml")
 )
 
 // Apply applies the config sent or performs the work defined in the message.
@@ -64,6 +87,37 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 		log.Printf("Start() failed: %s", err)
 		return nil, status.Error(1, err.Error())
 	}
+
+	// Calculate plugin install and state dirs.
+	pluginInstallDir, err := osext.ExecutableFolder()
+	if err != nil {
+		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
+		log.Printf("Start() failed, because it cannot determine the plugin install location: %s", err)
+		return nil, status.Error(1, err.Error())
+	}
+
+	pluginStateDir := msg.GetConfig().GetStateDirectoryPath()
+	if pluginStateDir == "" {
+		pluginStateDir = DefaultPluginStateDirectory
+	}
+	log.Printf("Determined pluginInstallDir: %v, and pluginStateDir: %v", pluginInstallDir, pluginStateDir)
+
+	// Create a windows Event logger. This is used to log generated subagent configs, and health check results.
+	windowsEventLogger, err := createWindowsEventLogger()
+	if err != nil {
+		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
+		log.Printf("Start() failed, because it failed to create Windows event logger: %s", err)
+		return nil, status.Error(1, err.Error())
+	}
+
+	// Subagents config validation and generation.
+	if err := generateSubAgentConfigs(ctx, pluginStateDir, OpsAgentConfigLocationWindows, windowsEventLogger); err != nil {
+		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
+		windowsEventLogger.Close()
+		log.Printf("Start() failed at the subagent config validation and generation step: %s", err)
+		return nil, status.Error(1, err.Error())
+	}
+
 	return &pb.StartResponse{}, nil
 }
 
@@ -170,4 +224,38 @@ func findPreExistentAgents(mgr serviceManager, agentWindowsServiceNames []string
 		return true, fmt.Errorf("conflicting installations identified: %v", alreadyInstalledAgentServiceName)
 	}
 	return false, nil
+}
+
+func createWindowsEventLogger() (debug.Log, error) {
+	eventlog.InstallAsEventCreate(WindowsEventLogIdentifier, eventlog.Error|eventlog.Warning|eventlog.Info)
+	elog, err := eventlog.Open(WindowsEventLogIdentifier)
+	if err != nil {
+		return nil, err
+	}
+	return elog, nil
+}
+
+func generateSubAgentConfigs(ctx context.Context, userConfigPath string, pluginStateDir string, windowsEventLogger debug.Log) error {
+	uc, err := confgenerator.MergeConfFiles(ctx, userConfigPath, apps.BuiltInConfStructs)
+	if err != nil {
+		return err
+	}
+
+	windowsEventLogger.Info(OpsAgentUAPPluginEventID, fmt.Sprintf("Built-in config:\n%s\n", apps.BuiltInConfStructs["windows"]))
+	windowsEventLogger.Info(OpsAgentUAPPluginEventID, fmt.Sprintf("Merged config:\n%s\n", uc))
+
+	for _, subagent := range []string{
+		"otel",
+		"fluentbit",
+	} {
+		if err := uc.GenerateFilesFromConfig(
+			ctx,
+			subagent,
+			filepath.Join(pluginStateDir, LogsDirectory),
+			filepath.Join(pluginStateDir, RuntimeDirectory),
+			filepath.Join(pluginStateDir, GeneratedConfigsOutDir, subagent)); err != nil {
+			return err
+		}
+	}
+	return nil
 }

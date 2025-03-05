@@ -20,6 +20,7 @@ package main
 import (
 	"context"
 	"errors"
+	"os"
 	"testing"
 
 	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
@@ -96,6 +97,66 @@ func TestFindPreExistentAgents(t *testing.T) {
 			if gotFoundConflicts != tc.wantFoundConflicts {
 				t.Errorf("%s: findPreExistentAgents() found conflicting installations:%v, want %v", tc.name, gotFoundConflicts, tc.wantFoundConflicts)
 			}
+		})
+	}
+}
+
+// mockWindowsEventLogger is a mock implementation of the debug.Log interface.
+type mockWindowsEventLogger struct{}
+
+func (m *mockWindowsEventLogger) Info(eid uint32, msg string) error {
+	return nil
+}
+func (m *mockWindowsEventLogger) Warning(eid uint32, msg string) error {
+	return nil
+}
+func (m *mockWindowsEventLogger) Error(eid uint32, msg string) error {
+	return nil
+}
+func (m *mockWindowsEventLogger) Close() error {
+	return nil
+}
+
+func TestGenerateSubAgentConfigs(t *testing.T) {
+	ctx := context.Background()
+	tests := []struct {
+		name              string
+		userConfigContent string // Content for the user config file
+		pluginStateDir    string // Directory for the plugin state
+		wantError         bool
+	}{
+		{
+			name:              "happy path: successfully generate sub-agent configs",
+			userConfigContent: "",
+			pluginStateDir:    t.TempDir(),
+		},
+		{
+			name:              "invalid user config",
+			userConfigContent: "invalid content",
+			pluginStateDir:    t.TempDir(),
+			wantError:         true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			userConfigFile, err := os.CreateTemp(t.TempDir(), "config.yaml")
+			if err != nil {
+				t.Fatalf("Failed to create temporary user config file: %v", err)
+			}
+			defer os.Remove(userConfigFile.Name())
+
+			if _, err := userConfigFile.Write([]byte(tc.userConfigContent)); err != nil {
+				t.Fatalf("Failed to write user config content: %v", err)
+			}
+			userConfigFile.Close()
+			logger := &mockWindowsEventLogger{}
+
+			err = generateSubAgentConfigs(ctx, userConfigFile.Name(), tc.pluginStateDir, logger)
+			if (err != nil) != tc.wantError {
+				t.Errorf("generateSubAgentConfigs() returned error: %v, want error: %v", err, tc.wantError)
+			}
+
 		})
 	}
 }
