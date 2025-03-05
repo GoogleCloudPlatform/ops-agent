@@ -111,7 +111,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	}
 
 	// Subagents config validation and generation.
-	if err := generateSubAgentConfigs(ctx, pluginStateDir, OpsAgentConfigLocationWindows, windowsEventLogger); err != nil {
+	if err := generateSubAgentConfigs(ctx, OpsAgentConfigLocationWindows, pluginStateDir, windowsEventLogger); err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		windowsEventLogger.Close()
 		log.Printf("Start() failed at the subagent config validation and generation step: %s", err)
