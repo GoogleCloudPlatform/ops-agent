@@ -47,5 +47,6 @@ if [ "$SKIP_OTEL_JAVA" != "true" ]; then
     cd ../..
 fi
 
-cd submodules/opentelemetry-operations-collector
-go build -tags=gpu -buildvcs=false -o "$DESTDIR/otelopscol" -ldflags "$LDFLAGS -s -w" ./cmd/otelopscol
+cd submodules/opentelemetry-operations-collector/otelopscol
+make build COLLECTOR_LD_FLAGS="$LDFLAGS -s -w"
+cp ./otelopscol ./cmd/otelopscol
