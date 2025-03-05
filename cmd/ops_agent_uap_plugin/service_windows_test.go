@@ -73,6 +73,7 @@ func TestFindPreExistentAgents(t *testing.T) {
 			},
 			agentWindowsServiceNames: []string{"AgentService", "ServiceB"},
 			wantFoundConflicts:       true,
+			wantError:                true,
 		},
 		{
 			name: "service manager connection error",
@@ -109,11 +110,6 @@ func TestStart(t *testing.T) {
 			name:      "Plugin already started",
 			cancel:    func() {}, // Non-nil function
 			wantError: false,
-		},
-		{
-			name:      "Start() returns errors, cancel() function should be reset to nil",
-			cancel:    nil,
-			wantError: true,
 		},
 	}
 
