@@ -162,6 +162,7 @@ func (m *mockHealthCheckLogger) Println(v ...interface{}) {
 }
 
 func Test_runHealthChecks_LogFileNonEmpty(t *testing.T) {
+	t.Parallel()
 	// Create a temporary directory for plugin state
 	pluginStateDir := t.TempDir()
 	healthCheckLogFile, err := os.CreateTemp(pluginStateDir, "health-checks.log")
@@ -337,6 +338,7 @@ func runCommandWindowsSuccessfully(_ *exec.Cmd, _ windows.Handle) (string, error
 	return "success", nil
 }
 func Test_runSubAgentCommand_CancelContextWhenCmdExitsSuccessfully(t *testing.T) {
+	t.Parallel()
 	ctx, cancel := context.WithCancel(context.Background())
 	cmd := exec.CommandContext(ctx, "fake-command")
 
@@ -352,6 +354,7 @@ func runCommandWindowsAndFailed(_ *exec.Cmd, _ windows.Handle) (string, error) {
 	return "failure", errors.New("command failed")
 }
 func Test_runSubAgentCommand_CancelContextWhenCmdExitsWithErrors(t *testing.T) {
+	t.Parallel()
 	ctx, cancel := context.WithCancel(context.Background())
 	cmd := exec.CommandContext(ctx, "fake-command")
 
@@ -364,6 +367,7 @@ func Test_runSubAgentCommand_CancelContextWhenCmdExitsWithErrors(t *testing.T) {
 }
 
 func Test_runCommandWindows(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
@@ -380,6 +384,7 @@ func Test_runCommandWindows(t *testing.T) {
 	}
 }
 func Test_runCommandWindowsFailure(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", "GO_HELPER_FAILURE=1"}

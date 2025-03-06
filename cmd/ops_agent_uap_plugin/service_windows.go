@@ -68,7 +68,7 @@ var (
 
 // RunSubAgentCommandFunc defines a function type that starts a subagent. If one subagent execution exited, other sugagents are also terminated via context cancellation. This abstraction is introduced
 // primarily to facilitate testing by allowing the injection of mock
-// implementations.
+// implementations. The jobHandle is a Windows Job object handle. This is used to ensure that all child processes are killed when the parent process exits.
 type RunSubAgentCommandFunc func(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandWindowsFunc, wg *sync.WaitGroup, jobHandle windows.Handle)
 
 // Apply applies the config sent or performs the work defined in the message.
@@ -79,6 +79,7 @@ func (ps *OpsAgentPluginServer) Apply(ctx context.Context, msg *pb.ApplyRequest)
 	panic("Apply method is not implemented on Windows yet")
 }
 
+// otelErrorHandler is an implementation of otel.ErrorHandler that is used in the diagnostics service to log otel errors to the Windows event log.
 type otelErrorHandler struct {
 	windowsEventLogger debug.Log
 	windowsEventId     uint32
@@ -146,7 +147,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	healthCheckFileLogger := healthchecks.CreateHealthChecksLogger(filepath.Join(pluginStateDir, LogsDirectory))
 	runHealthChecks(healthCheckFileLogger, windowsEventLogger)
 
-	// Create Windows Job object, to ensure that all child processes are killed when the parent process exits.
+	// Create a Windows Job object and stores its handle, to ensure that all child processes are killed when the parent process exits.
 	jobHandle, err := createWindowsJobHandle()
 	if err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
@@ -348,6 +349,7 @@ func createWindowsJobHandle() (windows.Handle, error) {
 //
 // cancel: the cancel function for the parent context. By calling this function, the parent context is canceled,
 // and GetStatus() returns a non-healthy status, signaling UAP to re-trigger Start().
+// jobHandle: a Windows Job object handle. This is used to ensure that all child processes are killed when the parent process exits.
 func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallDirectory string, pluginStateDirectory string, runSubAgentCommand RunSubAgentCommandFunc, runCommand RunCommandWindowsFunc, otelErrorHandler otel.ErrorHandler, jobHandle windows.Handle) {
 
 	var wg sync.WaitGroup
