@@ -23,6 +23,7 @@ import (
 	"os/exec"
 	"sync"
 
+	"golang.org/x/sys/windows"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
@@ -44,6 +45,12 @@ var (
 // implementations.
 type RunCommandFunc func(cmd *exec.Cmd) (string, error)
 
+// RunCommandWindowsFunc defines a function type that takes an exec.Cmd and
+// a job handle and returns its output and error. This abstraction is introduced
+// primarily to facilitate testing by allowing the injection of mock
+// implementations.
+type RunCommandWindowsFunc func(cmd *exec.Cmd, jobHandle windows.Handle) (string, error)
+
 // PluginServer implements the plugin RPC server interface.
 type OpsAgentPluginServer struct {
 	pb.UnimplementedGuestAgentPluginServer
@@ -53,7 +60,8 @@ type OpsAgentPluginServer struct {
 	mu     sync.Mutex
 	cancel context.CancelFunc
 
-	runCommand RunCommandFunc
+	runCommand        RunCommandFunc
+	runCommandWindows RunCommandWindowsFunc
 }
 
 func init() {
@@ -85,7 +93,7 @@ func main() {
 	server := grpc.NewServer()
 	defer server.GracefulStop()
 
-	ps := &OpsAgentPluginServer{server: server, runCommand: runCommand}
+	ps := &OpsAgentPluginServer{server: server, runCommand: runCommand, runCommandWindows: runCommandWindows}
 	// Successfully registering the server and starting to listen on the address
 	// offered mean Guest Agent was successful in installing/launching the plugin
 	// & will manage the lifecycle (start, stop, or revision change) here onwards.

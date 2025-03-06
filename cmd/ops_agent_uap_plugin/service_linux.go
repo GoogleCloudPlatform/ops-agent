@@ -30,6 +30,7 @@ import (
 	"sync"
 	"syscall"
 
+	"golang.org/x/sys/windows"
 	"google.golang.org/grpc/status"
 
 	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
@@ -266,6 +267,10 @@ func runCommand(cmd *exec.Cmd) (string, error) {
 		log.Printf("Command %s failed, \ncommand output: %s\ncommand error: %s", cmd.Args, string(out), err)
 	}
 	return string(out), err
+}
+
+func runCommandWindows(cmd *exec.Cmd, jobHandle windows.Handle) (string, error) {
+	panic("runCommandWindows method is not implemented on Linux, please use runCommand instead")
 }
 
 func validateOpsAgentConfig(ctx context.Context, pluginInstallDirectory string, pluginStateDirectory string, runCommand RunCommandFunc) error {

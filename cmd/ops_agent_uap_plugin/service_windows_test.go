@@ -21,9 +21,13 @@ import (
 	"context"
 	"errors"
 	"os"
+	"os/exec"
+	"sync"
 	"testing"
+	"time"
 
 	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
+	"golang.org/x/sys/windows"
 )
 
 // serviceManager is a mock implementation of the serviceManager interface. This is used to test the findPreExistentAgents function.
@@ -52,7 +56,7 @@ func (m *mockServiceManagerConnection) Disconnect() error {
 	return nil
 }
 
-func TestFindPreExistentAgents(t *testing.T) {
+func Test_findPreExistentAgents(t *testing.T) {
 	testCases := []struct {
 		name                     string
 		mockMgr                  *mockServiceManager
@@ -157,7 +161,7 @@ func (m *mockHealthCheckLogger) Println(v ...interface{}) {
 	writeStringToFile(m.logFile, "println")
 }
 
-func TestRunHealthChecks_LogFileNonEmpty(t *testing.T) {
+func Test_runHealthChecks_LogFileNonEmpty(t *testing.T) {
 	// Create a temporary directory for plugin state
 	pluginStateDir := t.TempDir()
 	healthCheckLogFile, err := os.CreateTemp(pluginStateDir, "health-checks.log")
@@ -181,7 +185,7 @@ func TestRunHealthChecks_LogFileNonEmpty(t *testing.T) {
 	healthCheckLogFile.Close()
 }
 
-func TestGenerateSubAgentConfigs(t *testing.T) {
+func Test_generateSubAgentConfigs(t *testing.T) {
 	ctx := context.Background()
 	tests := []struct {
 		name              string
@@ -326,5 +330,72 @@ func TestGetStatus(t *testing.T) {
 			}
 
 		})
+	}
+}
+
+func runCommandWindowsSuccessfully(_ *exec.Cmd, _ windows.Handle) (string, error) {
+	return "success", nil
+}
+func Test_runSubAgentCommand_CancelContextWhenCmdExitsSuccessfully(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cmd := exec.CommandContext(ctx, "fake-command")
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	runSubAgentCommand(ctx, cancel, cmd, runCommandWindowsSuccessfully, &wg, 0)
+	if ctx.Err() == nil {
+		t.Error("runSubAgentCommand() did not cancel context but should")
+	}
+}
+
+func runCommandWindowsAndFailed(_ *exec.Cmd, _ windows.Handle) (string, error) {
+	return "failure", errors.New("command failed")
+}
+func Test_runSubAgentCommand_CancelContextWhenCmdExitsWithErrors(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cmd := exec.CommandContext(ctx, "fake-command")
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	runSubAgentCommand(ctx, cancel, cmd, runCommandWindowsAndFailed, &wg, 0)
+	if ctx.Err() == nil {
+		t.Error("runSubAgentCommand() did not cancel context but should")
+	}
+}
+
+func Test_runCommandWindows(t *testing.T) {
+	ctx := context.Background()
+	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
+	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
+	_, err := runCommandWindows(cmd, 1)
+	if err != nil {
+		t.Errorf("runCommandWindows got unexpected error: %v", err)
+	}
+}
+func Test_runCommandWindowsFailure(t *testing.T) {
+	ctx := context.Background()
+	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
+	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", "GO_HELPER_FAILURE=1"}
+	if _, err := runCommandWindows(cmd, 1); err == nil {
+		t.Error("runCommandWindows got nil error, want exec failure")
+	}
+}
+
+// TestHelperProcess isn't a real test. It's used as a helper process to mock
+// command executions.
+func TestHelperProcess(t *testing.T) {
+	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
+		// Skip this test if it's not invoked explicitly as a helper
+		// process. return allows the next tests to continue running.
+		return
+	}
+	switch {
+	case os.Getenv("GO_HELPER_FAILURE") == "1":
+		os.Exit(1)
+	case os.Getenv("GO_HELPER_KILL_BY_SIGNALS") == "1":
+		time.Sleep(1 * time.Minute)
+	default:
+		// A "successful" mock execution exits with a successful (zero) exit code.
+		os.Exit(0)
 	}
 }

@@ -69,9 +69,7 @@ var (
 // RunSubAgentCommandFunc defines a function type that starts a subagent. If one subagent execution exited, other sugagents are also terminated via context cancellation. This abstraction is introduced
 // primarily to facilitate testing by allowing the injection of mock
 // implementations.
-type RunSubAgentCommandFunc func(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFuncWindows, wg *sync.WaitGroup, jobHandle windows.Handle)
-
-type RunCommandFuncWindows func(cmd *exec.Cmd, jobHandle windows.Handle) (string, error)
+type RunSubAgentCommandFunc func(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandWindowsFunc, wg *sync.WaitGroup, jobHandle windows.Handle)
 
 // Apply applies the config sent or performs the work defined in the message.
 // ApplyRequest is opaque to the agent and is expected to be well known contract
@@ -200,10 +198,6 @@ func (ps *OpsAgentPluginServer) GetStatus(ctx context.Context, msg *pb.GetStatus
 	}
 	log.Println("The Ops Agent plugin is running")
 	return &pb.Status{Code: 0, Results: []string{"The Ops Agent Plugin is running ok."}}, nil
-}
-
-func runCommand(cmd *exec.Cmd) (string, error) {
-	panic("runCommand method is not implemented on Windows yet")
 }
 
 // serviceManager is an interface to abstract the Windows service manager. This is used to facilitate testing.
@@ -354,7 +348,7 @@ func createWindowsJobHandle() (windows.Handle, error) {
 //
 // cancel: the cancel function for the parent context. By calling this function, the parent context is canceled,
 // and GetStatus() returns a non-healthy status, signaling UAP to re-trigger Start().
-func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallDirectory string, pluginStateDirectory string, runSubAgentCommand RunSubAgentCommandFunc, runCommand RunCommandFuncWindows, otelErrorHandler otel.ErrorHandler, jobHandle windows.Handle) {
+func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallDirectory string, pluginStateDirectory string, runSubAgentCommand RunSubAgentCommandFunc, runCommand RunCommandWindowsFunc, otelErrorHandler otel.ErrorHandler, jobHandle windows.Handle) {
 
 	var wg sync.WaitGroup
 	// Starting the diagnostics service
@@ -451,7 +445,11 @@ func runCommandWindows(cmd *exec.Cmd, jobHandle windows.Handle) (string, error) 
 	return fmt.Sprintf("stdout: %s\n stderr: %s", stdoutBuf.String(), stderrBuf.String()), nil
 }
 
-func runSubAgentCommand(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFuncWindows, wg *sync.WaitGroup, jobHandle windows.Handle) {
+func runCommand(cmd *exec.Cmd) (string, error) {
+	panic("runCommand method is not implemented on Windows, please use runCommandWindows instead")
+}
+
+func runSubAgentCommand(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandWindowsFunc, wg *sync.WaitGroup, jobHandle windows.Handle) {
 	defer wg.Done()
 	if cmd == nil {
 		return
