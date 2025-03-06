@@ -367,7 +367,14 @@ func Test_runCommandWindows(t *testing.T) {
 	ctx := context.Background()
 	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
-	_, err := runCommandWindows(cmd, windows.Handle(1))
+
+	jobHandle, err := windows.CreateJobObject(nil, nil)
+	if err != nil {
+		t.Fatalf("Failed to create a Windows Job Handle object: %v", err)
+	}
+	defer windows.CloseHandle(jobHandle)
+
+	_, err = runCommandWindows(cmd, jobHandle)
 	if err != nil {
 		t.Errorf("runCommandWindows got unexpected error: %v", err)
 	}
@@ -376,7 +383,13 @@ func Test_runCommandWindowsFailure(t *testing.T) {
 	ctx := context.Background()
 	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", "GO_HELPER_FAILURE=1"}
-	if _, err := runCommandWindows(cmd, windows.Handle(1)); err == nil {
+
+	jobHandle, err := windows.CreateJobObject(nil, nil)
+	if err != nil {
+		t.Fatalf("Failed to create a Windows Job Handle object: %v", err)
+	}
+
+	if _, err := runCommandWindows(cmd, jobHandle); err == nil {
 		t.Error("runCommandWindows got nil error, want exec failure")
 	}
 }
