@@ -431,7 +431,7 @@ func runCommandWindows(cmd *exec.Cmd, jobHandle windows.Handle) (string, error) 
 	}
 	defer windows.CloseHandle(childProcessHandle)
 
-	err = windows.AssignProcessToJobObject(jobHandle, windows.Handle(childProcessHandle))
+	err = windows.AssignProcessToJobObject(jobHandle, childProcessHandle)
 	if err != nil {
 		fmt.Println("Error assigning process to Job Object:", err)
 		return "", err
