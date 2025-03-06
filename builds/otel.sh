@@ -49,4 +49,5 @@ fi
 
 cd submodules/opentelemetry-operations-collector/otelopscol
 make build COLLECTOR_LD_FLAGS="$LDFLAGS -s -w"
+mkdir cmd
 cp ./otelopscol ./cmd/otelopscol
