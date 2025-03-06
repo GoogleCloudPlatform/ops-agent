@@ -21,7 +21,6 @@ import (
 	"context"
 	"errors"
 	"os"
-	"path/filepath"
 	"testing"
 
 	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
@@ -126,33 +125,59 @@ func (m *mockWindowsEventLogger) Close() error {
 	return nil
 }
 
-func TestRunHealthChecks_LogFileCreated(t *testing.T) {
+// mockHealthCheckLogger is a mock implementation of the logs.StructuredLogger interface.
+type mockHealthCheckLogger struct {
+	logFile *os.File
+}
+
+func writeStringToFile(file *os.File, content string) {
+	file.Write([]byte(content))
+}
+func (m *mockHealthCheckLogger) Infof(format string, v ...interface{}) {
+	writeStringToFile(m.logFile, format)
+}
+func (m *mockHealthCheckLogger) Warnf(format string, v ...interface{}) {
+	writeStringToFile(m.logFile, format)
+}
+func (m *mockHealthCheckLogger) Errorf(format string, v ...interface{}) {
+	writeStringToFile(m.logFile, format)
+}
+func (m *mockHealthCheckLogger) Infow(msg string, keysAndValues ...interface{}) {
+	writeStringToFile(m.logFile, msg)
+}
+func (m *mockHealthCheckLogger) Warnw(msg string, keysAndValues ...interface{}) {
+	writeStringToFile(m.logFile, msg)
+}
+func (m *mockHealthCheckLogger) Errorw(msg string, keysAndValues ...interface{}) {
+	writeStringToFile(m.logFile, msg)
+}
+func (m *mockHealthCheckLogger) Println(v ...interface{}) {
+	writeStringToFile(m.logFile, "println")
+}
+
+func TestRunHealthChecks_LogFileNonEmpty(t *testing.T) {
 	// Create a temporary directory for plugin state
 	pluginStateDir := t.TempDir()
-	// Mock Windows Event Logger
+	healthCheckLogFile, err := os.CreateTemp(pluginStateDir, "health-checks.log")
+	if err != nil {
+		t.Fatalf("Failed to create health-checks.log: %v", err)
+	}
+	defer os.Remove(healthCheckLogFile.Name())
 	mockLogger := &mockWindowsEventLogger{}
+	mockHealthCheckLogger := &mockHealthCheckLogger{}
 
 	// Run the health checks
-	runHealthChecks(pluginStateDir, mockLogger)
-
-	// Construct the expected log file path
-	logsDir := filepath.Join(pluginStateDir, LogsDirectory)
-	logFilePath := filepath.Join(logsDir, "health-checks.log")
-
-	// Verify if the health-checks.log is created.
-	if _, err := os.Stat(logFilePath); os.IsNotExist(err) {
-		t.Errorf("health-checks.log not created: %v", err)
-	}
+	runHealthChecks(mockHealthCheckLogger, mockLogger)
 
 	// Check if the log file has content
-	fileInfo, err := os.Stat(logFilePath)
+	fileInfo, err := os.Stat(healthCheckLogFile.Name())
 	if err != nil {
 		t.Fatalf("Failed to get file info: %v", err)
 	}
 	if fileInfo.Size() == 0 {
 		t.Errorf("health-checks.log is empty, wanted non-empty")
 	}
-	os.Remove(logFilePath)
+	healthCheckLogFile.Close()
 }
 
 func TestGenerateSubAgentConfigs(t *testing.T) {

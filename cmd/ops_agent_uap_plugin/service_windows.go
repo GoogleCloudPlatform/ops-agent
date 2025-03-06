@@ -121,7 +121,8 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	}
 
 	// Trigger Healthchecks.
-	runHealthChecks(pluginStateDir, windowsEventLogger)
+	healthCheckFileLogger := healthchecks.CreateHealthChecksLogger(filepath.Join(pluginStateDir, LogsDirectory))
+	runHealthChecks(healthCheckFileLogger, windowsEventLogger)
 
 	return &pb.StartResponse{}, nil
 }
@@ -265,10 +266,9 @@ func generateSubAgentConfigs(ctx context.Context, userConfigPath string, pluginS
 	return nil
 }
 
-func runHealthChecks(pluginStateDir string, windowsEventLogger debug.Log) {
-	logsDir := filepath.Join(pluginStateDir, LogsDirectory)
+func runHealthChecks(healthCheckFileLogger logs.StructuredLogger, windowsEventLogger debug.Log) {
 	gceHealthChecks := healthchecks.HealthCheckRegistryFactory()
-	healthCheckFileLogger := healthchecks.CreateHealthChecksLogger(logsDir)
+
 	// Log health check results to health-checks.log log file.
 	healthCheckResults := gceHealthChecks.RunAllHealthChecks(healthCheckFileLogger)
 
