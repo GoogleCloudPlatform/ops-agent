@@ -21,6 +21,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"path/filepath"
 	"testing"
 
 	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
@@ -123,6 +124,35 @@ func (m *mockWindowsEventLogger) Error(eid uint32, msg string) error {
 }
 func (m *mockWindowsEventLogger) Close() error {
 	return nil
+}
+
+func TestRunHealthChecks_LogFileCreated(t *testing.T) {
+	// Create a temporary directory for plugin state
+	pluginStateDir := t.TempDir()
+	// Mock Windows Event Logger
+	mockLogger := &mockWindowsEventLogger{}
+
+	// Run the health checks
+	runHealthChecks(pluginStateDir, mockLogger)
+
+	// Construct the expected log file path
+	logsDir := filepath.Join(pluginStateDir, LogsDirectory)
+	logFilePath := filepath.Join(logsDir, "health-checks.log")
+
+	// Verify if the health-checks.log is created.
+	if _, err := os.Stat(logFilePath); os.IsNotExist(err) {
+		t.Errorf("health-checks.log not created: %v", err)
+	}
+
+	// Check if the log file has content
+	fileInfo, err := os.Stat(logFilePath)
+	if err != nil {
+		t.Fatalf("Failed to get file info: %v", err)
+	}
+	if fileInfo.Size() == 0 {
+		t.Errorf("health-checks.log is empty, wanted non-empty")
+	}
+	os.Remove(logFilePath)
 }
 
 func TestGenerateSubAgentConfigs(t *testing.T) {

@@ -30,6 +30,8 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/kardianos/osext"
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
@@ -117,6 +119,9 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 		log.Printf("Start() failed at the subagent config validation and generation step: %s", err)
 		return nil, status.Error(1, err.Error())
 	}
+
+	// Trigger Healthchecks.
+	runHealthChecks(pluginStateDir, windowsEventLogger)
 
 	return &pb.StartResponse{}, nil
 }
@@ -258,4 +263,17 @@ func generateSubAgentConfigs(ctx context.Context, userConfigPath string, pluginS
 		}
 	}
 	return nil
+}
+
+func runHealthChecks(pluginStateDir string, windowsEventLogger debug.Log) {
+	logsDir := filepath.Join(pluginStateDir, LogsDirectory)
+	gceHealthChecks := healthchecks.HealthCheckRegistryFactory()
+	healthCheckFileLogger := healthchecks.CreateHealthChecksLogger(logsDir)
+	// Log health check results to health-checks.log log file.
+	healthCheckResults := gceHealthChecks.RunAllHealthChecks(healthCheckFileLogger)
+
+	// Log health check results to windows event log too.
+	healthCheckWindowsEventLogger := logs.WindowsServiceLogger{EventID: OpsAgentUAPPluginEventID, Logger: windowsEventLogger}
+	healthchecks.LogHealthCheckResults(healthCheckResults, healthCheckWindowsEventLogger)
+	windowsEventLogger.Info(OpsAgentUAPPluginEventID, "Health checks completed")
 }
