@@ -934,15 +934,43 @@ func CommonSetupWithExtraCreateArgumentsAndMetadata(t *testing.T, imageSpec stri
 	return ctx, logger, vm
 }
 
-func InstallOpsAgentUAPPlugin(ctx context.Context, logger *log.Logger, vm *gce.VM, location PackageLocation) error {
-		// Used for manual testing or pre-submits
-		if location.packagesInGCS != "" {
-				return InstallOpsAgentUAPPluginFromGCS(ctx, logger, vm, location.packagesInGCS)
-		}
+// CommonSetupWithExtraCreateArgumentsAndMetadata sets up the VM for testing with extra creation arguments for the `gcloud compute instances create` command and additional metadata.
+func ManagedInstanceGroupSetup(t *testing.T, imageSpec string, extraCreateArguments []string, additionalMetadata map[string]string) (context.Context, *logging.DirectoryLogger, *gce.VM) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
+	t.Cleanup(cancel)
+	gcloudConfigDir := t.TempDir()
+	if err := gce.SetupGcloudConfigDir(ctx, gcloudConfigDir); err != nil {
+		t.Fatalf("Unable to set up a gcloud config directory: %v", err)
+	}
+	ctx = gce.WithGcloudConfigDir(ctx, gcloudConfigDir)
 
-		// Used for nightly builds
-		artifactBucket := fmt.Sprintf("gs://%s-ops-agent-releases/%s", location.artifactRegistryProject, location.repoSuffix)
-		return InstallOpsAgentUAPPluginFromGCS(ctx, logger, vm, artifactBucket)
+	logger := gce.SetupLogger(t)
+	logger.ToMainLog().Println("Calling SetupManagedInstanceGroupVM(). For details, see VM_initialization.txt.")
+	options := gce.VMOptions{
+		ImageSpec:            imageSpec,
+		TimeToLive:           "3h",
+		MachineType:          RecommendedMachineType(imageSpec),
+		ExtraCreateArguments: extraCreateArguments,
+		Metadata:             additionalMetadata,
+	}
+	vm := gce.SetupManagedInstanceGroupVM(ctx, t, logger.ToFile("VM_initialization.txt"), options)
+	logger.ToMainLog().Printf("VM is ready: %#v", vm)
+	t.Cleanup(func() {
+		RunOpsAgentDiagnostics(ctx, logger, vm)
+	})
+	return ctx, logger, vm
+}
+
+func InstallOpsAgentUAPPlugin(ctx context.Context, logger *log.Logger, vm *gce.VM, location PackageLocation) error {
+	// Used for manual testing or pre-submits
+	if location.packagesInGCS != "" {
+		return InstallOpsAgentUAPPluginFromGCS(ctx, logger, vm, location.packagesInGCS)
+	}
+
+	// Used for nightly builds
+	artifactBucket := fmt.Sprintf("gs://%s-ops-agent-releases/%s", location.artifactRegistryProject, location.repoSuffix)
+	return InstallOpsAgentUAPPluginFromGCS(ctx, logger, vm, artifactBucket)
 }
 
 // InstallOpsAgentUAPPluginFromGCS installs the Ops Agent plugin tarball from GCS onto the given Linux VM.
