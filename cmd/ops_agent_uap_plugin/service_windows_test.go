@@ -131,7 +131,9 @@ type mockHealthCheckLogger struct {
 }
 
 func writeStringToFile(file *os.File, content string) {
-	file.Write([]byte(content))
+	if _, err := file.Write([]byte(content)); err != nil {
+		panic(err)
+	}
 }
 func (m *mockHealthCheckLogger) Infof(format string, v ...interface{}) {
 	writeStringToFile(m.logFile, format)
