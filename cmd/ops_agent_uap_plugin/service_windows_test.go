@@ -168,7 +168,6 @@ func TestRunHealthChecks_LogFileNonEmpty(t *testing.T) {
 	mockLogger := &mockWindowsEventLogger{}
 	mockHealthCheckLogger := &mockHealthCheckLogger{logFile: healthCheckLogFile}
 
-	// Run the health checks
 	runHealthChecks(mockHealthCheckLogger, mockLogger)
 
 	// Check if the log file has content

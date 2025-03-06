@@ -23,6 +23,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/GoogleCloudPlatform/ops-agent/cmd/google_cloud_ops_agent_diagnostics/utils"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 )
 
@@ -31,7 +32,7 @@ var (
 )
 
 func run(ctx context.Context) error {
-	userUc, mergedUc, err := getUserAndMergedConfigs(ctx, *config)
+	userUc, mergedUc, err := utils.GetUserAndMergedConfigs(ctx, *config)
 	if err != nil {
 		return err
 	}
