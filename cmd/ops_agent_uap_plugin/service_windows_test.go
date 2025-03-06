@@ -166,7 +166,7 @@ func TestRunHealthChecks_LogFileNonEmpty(t *testing.T) {
 	}
 	defer os.Remove(healthCheckLogFile.Name())
 	mockLogger := &mockWindowsEventLogger{}
-	mockHealthCheckLogger := &mockHealthCheckLogger{}
+	mockHealthCheckLogger := &mockHealthCheckLogger{logFile: healthCheckLogFile}
 
 	// Run the health checks
 	runHealthChecks(mockHealthCheckLogger, mockLogger)
