@@ -1387,6 +1387,282 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	return vm, nil
 }
 
+// attemptCreateManagedInstanceGroupInstance creates a VM instance and waits for it to be ready.
+// Returns a VM object or an error (never both). The caller is responsible for
+// deleting the VM if (and only if) the returned error is nil.
+func attemptCreateManagedInstanceGroupInstance(ctx context.Context, logger *log.Logger, options VMOptions) (vmToReturn *VM, errToReturn error) {
+	vm := &VM{
+		Project:   options.Project,
+		ImageSpec: options.ImageSpec,
+		Name:      options.Name,
+		Network:   os.Getenv("NETWORK_NAME"),
+		Zone:      options.Zone,
+	}
+	if vm.Name == "" {
+		// The VM name needs to adhere to these restrictions:
+		// https://cloud.google.com/compute/docs/naming-resources#resource-name-format
+		vm.Name = fmt.Sprintf("%s-%s", sandboxPrefix, uuid.New())
+	}
+	if vm.Project == "" {
+		vm.Project = os.Getenv("PROJECT")
+	}
+	if vm.Network == "" {
+		vm.Network = "default"
+	}
+	if vm.Zone == "" {
+		// Chooses the next zone from ZONES.
+		vm.Zone = zonePicker.Next()
+	}
+
+	// Note: INSTANCE_SIZE takes precedence over options.MachineType.
+	vm.MachineType = os.Getenv("INSTANCE_SIZE")
+	if vm.MachineType == "" {
+		vm.MachineType = options.MachineType
+	}
+	if vm.MachineType == "" {
+		vm.MachineType = "e2-standard-4"
+		if IsARM(vm.ImageSpec) {
+			vm.MachineType = "t2a-standard-4"
+		}
+	}
+
+	newMetadata, err := addFrameworkMetadata(vm.ImageSpec, options.Metadata)
+	if err != nil {
+		return nil, fmt.Errorf("attemptCreateManagedInstanceGroupInstance() could not construct valid metadata: %v", err)
+	}
+	newLabels, err := addFrameworkLabels(options.Labels)
+	if err != nil {
+		return nil, fmt.Errorf("attemptCreateManagedInstanceGroupInstance() could not construct valid labels: %v", err)
+	}
+
+	imageFamilyScope := options.ImageFamilyScope
+
+	if imageFamilyScope == "" {
+		imageFamilyScope = "global"
+	}
+
+	createTemplateArgs := []string{
+		"compute", "instance-templates", "create", vm.Name + "-temp",
+		"--project=" + vm.Project,
+		"--machine-type=" + vm.MachineType,
+		"--network=" + vm.Network,
+		"--format=json",
+	}
+	image_flags, err := gcloudFlagsFromImageSpec(vm.ImageSpec)
+	if err != nil {
+		return nil, err
+	}
+	createTemplateArgs = append(createTemplateArgs, image_flags...)
+	if len(newMetadata) > 0 {
+		// The --metadata flag can't be empty, so we have to have a special case
+		// to omit the flag completely when the newMetadata map is empty.
+		createTemplateArgs = append(createTemplateArgs, "--metadata="+MapToCommaSeparatedList(newMetadata))
+	}
+	if len(newLabels) > 0 {
+		createTemplateArgs = append(createTemplateArgs, "--labels="+MapToCommaSeparatedList(newLabels))
+	}
+	if email := os.Getenv("SERVICE_EMAIL"); email != "" {
+		createTemplateArgs = append(createTemplateArgs, "--service-account="+email)
+	}
+	if internalIP := os.Getenv("USE_INTERNAL_IP"); internalIP == "true" {
+		// Don't assign an external IP address. This is to avoid using up
+		// a very limited budget of external IPv4 addresses. The instances
+		// will talk to the external internet by routing through a Cloud NAT
+		// gateway that is configured in our testing project.
+		createTemplateArgs = append(createTemplateArgs, "--no-address")
+	}
+	if options.TimeToLive != "" {
+		createTemplateArgs = append(createTemplateArgs, "--max-run-duration="+options.TimeToLive, "--instance-termination-action=DELETE", "--provisioning-model=STANDARD")
+	}
+	createTemplateArgs = append(createTemplateArgs, options.ExtraCreateArguments...)
+
+	output, err := RunGcloud(ctx, logger, "", createTemplateArgs)
+	if err != nil {
+		// Note: we don't try and delete the VM in this case because there is
+		// nothing to delete.
+		return nil, err
+	}
+
+	createMIGArgs := []string{
+		"compute", "instance-groups", "managed", "create", vm.Name + "-mig",
+		"--project=" + vm.Project,
+		"--zone=" + vm.Zone,
+		"--size=0",
+		"--template=" + vm.Name + "-temp",
+		"--stateful-internal-ip=enabled",
+		"--format=json",
+	}
+
+	output, err = RunGcloud(ctx, logger, "", createMIGArgs)
+	if err != nil {
+		// Note: we don't try and delete the VM in this case because there is
+		// nothing to delete.
+		return nil, err
+	}
+
+	vmRegion := vm.Zone[:len(vm.Zone)-2]
+	discoverMIGWorkloadArgs := []string{
+		"apphub", "discovered-workloads", "list",
+		"--project=" + vm.Project,
+		"--location=" + vmRegion,
+		"--filter=workloadReference.uri ~ " + vm.Name + "-mig",
+		"--uri",
+	}
+
+	output, err = RunGcloud(ctx, logger, "", discoverMIGWorkloadArgs)
+	if err != nil {
+		// Note: we don't try and delete the VM in this case because there is
+		// nothing to delete.
+		return nil, err
+	}
+
+	logger.Println("found uri : ", output.Stdout)
+	migResourceString := output.Stdout[33:]
+	registerAppHubWorkloadArgs := []string{
+		"apphub", "applications", "workloads", "create", vm.Name + "-wl",
+		"--application=ops-agent-app-hub-integration-test-app",
+		"--project=" + vm.Project,
+		"--location=global",
+		"--discovered-workload=" + migResourceString,
+		"--format=json",
+	}
+
+	output, err = RunGcloud(ctx, logger, "", registerAppHubWorkloadArgs)
+	if err != nil {
+		// Note: we don't try and delete the VM in this case because there is
+		// nothing to delete.
+		return nil, err
+	}
+
+	createVMArgs := []string{
+		"compute", "instance-groups", "managed", "create-instance", vm.Name + "-mig",
+		"--instance=" + vm.Name,
+		"--project=" + vm.Project,
+		"--zone=" + vm.Zone,
+		"--format=json",
+	}
+
+	output, err = RunGcloud(ctx, logger, "", createVMArgs)
+	if err != nil {
+		// Note: we don't try and delete the VM in this case because there is
+		// nothing to delete.
+		return nil, err
+	}
+
+	time.Sleep(time.Second * 10)
+
+	listVMArgs := []string{
+		"compute", "instances", "list",
+		"--filter=name=( '" + vm.Name + "' ... )",
+		"--project=" + vm.Project,
+		"--zones=" + vm.Zone,
+		"--format=json",
+	}
+
+	output, err = RunGcloud(ctx, logger, "", listVMArgs)
+	if err != nil {
+		// Note: we don't try and delete the VM in this case because there is
+		// nothing to delete.
+		return nil, err
+	}
+
+	defer func() {
+		if errToReturn != nil {
+			// This function is responsible for deleting the VM in all error cases.
+			errToReturn = multierr.Append(errToReturn, DeleteManagedInstanceGroupInstance(logger, vm))
+			// Make sure to never return both a valid VM object and an error.
+			vmToReturn = nil
+		}
+		if errToReturn == nil && vm == nil {
+			errToReturn = errors.New("programming error: attemptCreateManagedInstanceGroupInstance() returned nil VM and nil error")
+		}
+	}()
+
+	// Pull the instance ID and external IP address out of the output.
+	id, err := extractID(output.Stdout)
+	if err != nil {
+		return nil, err
+	}
+	vm.ID = id
+
+	logger.Printf("Instance Log: %v", instanceLogURL(vm))
+
+	ipAddress, err := extractIPAddress(output.Stdout)
+	if err != nil {
+		return nil, err
+	}
+	vm.IPAddress = ipAddress
+
+	// RunGcloud will log the output of the command, so we don't need to.
+	if _, err = RunGcloud(ctx, logger, "", []string{
+		"compute", "disks", "describe", vm.Name,
+		"--project=" + vm.Project,
+		"--zone=" + vm.Zone,
+		"--format=json",
+	}); err != nil {
+		// This is just informational, so it's ok if it fails. Just warn and proceed.
+		logger.Printf("Unable to retrieve information about the VM's boot disk: %v", err)
+	}
+
+	if err := waitForStart(ctx, logger, vm); err != nil {
+		return nil, err
+	}
+
+	if os, err := getOS(ctx, logger, vm); err != nil {
+		return nil, err
+	} else {
+		vm.OS = *os
+	}
+
+	if IsSUSEVM(vm) {
+		// Set download.max_silent_tries to 5 (by default, it is commented out in
+		// the config file). This should help with issues like b/211003972.
+		if _, err := RunRemotely(ctx, logger, vm, "sudo sed -i -E 's/.*download.max_silent_tries.*/download.max_silent_tries = 5/g' /etc/zypp/zypp.conf"); err != nil {
+			return nil, fmt.Errorf("attemptCreateManagedInstanceGroupInstance() failed to configure retries in zypp.conf: %v", err)
+		}
+	}
+
+	if IsSLESVM(vm) {
+		if err := prepareSLES(ctx, logger, vm); err != nil {
+			return nil, fmt.Errorf("%s: %v", prepareSLESMessage, err)
+		}
+	}
+
+	if IsSUSEVM(vm) {
+		// Set ZYPP_LOCK_TIMEOUT so tests that use zypper don't randomly fail
+		// because some background process happened to be using zypper at the same time.
+		if _, err := RunRemotely(ctx, logger, vm, `echo 'ZYPP_LOCK_TIMEOUT=300' | sudo tee -a /etc/environment`); err != nil {
+			return nil, err
+		}
+	}
+
+	// Removing flaky rhel-7 repositories due to b/265341502
+	if isRHEL7SAPHA(vm.ImageSpec) {
+		if _, err := RunRemotely(ctx,
+			logger, vm, `sudo yum -y --disablerepo=rhui-rhel*-7-* install yum-utils && sudo yum-config-manager --disable "rhui-rhel*-7-*"`); err != nil {
+			return nil, fmt.Errorf("disabling flaky repos failed: %w", err)
+		}
+	}
+
+	// Pre-installed jupyter services on DLVM images cause port conflicts for third-party apps.
+	// See b/347107292.
+	if IsDLVMImage(vm.ImageSpec) {
+		if _, err := RunRemotely(ctx, logger, vm, "sudo service jupyter stop || true"); err != nil {
+			return nil, fmt.Errorf("attemptCreateManagedInstanceGroupInstance() failed to stop pre-installed jupyter service: %v", err)
+		}
+	}
+
+	// TODO(b/369656678): We see frequent errors like "Waiting for cache lock:
+	//   Could not get lock /var/lib/dpkg/lock-frontend", so add a generous timeout.
+	if IsDebianBased(vm.ImageSpec) {
+		if _, err := RunRemotely(ctx, logger, vm, "echo 'DPkg::Lock::Timeout=300' | sudo tee /etc/dpkg/dpkg.cfg.d/cache-lock-timeout.cfg"); err != nil {
+			return nil, fmt.Errorf("setting increased dpkg cache lock timeout failed: %w", err)
+		}
+	}
+
+	return vm, nil
+}
+
 func IsSLESVM(vm *VM) bool {
 	return vm.OS.ID == "sles" || vm.OS.ID == "sles_sap"
 }
@@ -1469,6 +1745,59 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 
 		var err error
 		vm, err = attemptCreateInstance(attemptCtx, logger, options)
+
+		if err != nil && !shouldRetry(err) {
+			err = backoff.Permanent(err)
+		}
+		// Returning a non-permanent error triggers retries.
+		return err
+	}
+	backoffPolicy := backoff.WithContext(backoff.NewConstantBackOff(time.Minute), ctx)
+	if err := backoff.Retry(createFunc, backoffPolicy); err != nil {
+		return nil, err
+	}
+	logger.Printf("VM is ready: %#v", vm)
+	return vm, nil
+}
+
+// CreateManagedInstanceGroupInstance launches a new VM instance based on the given options.
+// Also waits for the instance to be reachable over ssh.
+// Returns a VM object or an error (never both). The caller is responsible for
+// deleting the VM if (and only if) the returned error is nil.
+func CreateManagedInstanceGroupInstance(origCtx context.Context, logger *log.Logger, options VMOptions) (*VM, error) {
+	// Give enough time for at least 3 consecutive attempts to start a VM.
+	// If an attempt returns a non-retriable error, it will be returned
+	// immediately.
+	// If retriable errors happen quickly, there will be more than 3 attempts.
+	// If retriable errors happen slowly, there will still be at least 3 attempts.
+	ctx, cancel := context.WithTimeout(origCtx, 3*vmInitTimeout)
+	defer cancel()
+
+	shouldRetry := func(err error) bool {
+		// VM creation can hit quota, especially when re-running presubmits,
+		// or when multple people are running tests.
+		return strings.Contains(err.Error(), "Quota") ||
+			// Rarely, instance creation fails due to internal errors in the compute API.
+			strings.Contains(err.Error(), "Internal error") ||
+			// Instance creation can also fail due to service unavailability.
+			strings.Contains(err.Error(), "currently unavailable") ||
+			// This error is a consequence of running gcloud concurrently, which is actually
+			// unsupported. In the absence of a better fix, just retry such errors.
+			strings.Contains(err.Error(), "database is locked") ||
+			// windows-*-core instances sometimes fail to be ssh-able: b/305721001
+			(IsWindowsCore(options.ImageSpec) && strings.Contains(err.Error(), windowsStartupFailedMessage)) ||
+			// SLES instances sometimes fail to be ssh-able: b/186426190
+			(IsSUSEImageSpec(options.ImageSpec) && strings.Contains(err.Error(), startupFailedMessage)) ||
+			strings.Contains(err.Error(), prepareSLESMessage)
+	}
+
+	var vm *VM
+	createFunc := func() error {
+		attemptCtx, cancel := context.WithTimeout(ctx, vmInitTimeout)
+		defer cancel()
+
+		var err error
+		vm, err = attemptCreateManagedInstanceGroupInstance(attemptCtx, logger, options)
 
 		if err != nil && !shouldRetry(err) {
 			err = backoff.Permanent(err)
@@ -1579,6 +1908,86 @@ func DeleteInstance(logger *log.Logger, vm *VM) error {
 	if err == nil {
 		vm.AlreadyDeleted = true
 	}
+	return err
+}
+
+// DeleteManagedInstanceGroupInstance deletes the given VM instance synchronously.
+// Does nothing if the VM was already deleted.
+// Doesn't take a Context argument because even if the test has timed out or is
+// cancelled, we still want to delete the VMs.
+func DeleteManagedInstanceGroupInstance(logger *log.Logger, vm *VM) error {
+	if vm.AlreadyDeleted {
+		logger.Printf("Managed Instance Group %v was already deleted, skipping delete.", vm.Name)
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+	backoffPolicy := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(30*time.Second), 10), ctx)
+	attempt := 0
+	tryDeleteMIG := func() error {
+		attempt++
+		_, err := RunGcloud(ctx, logger, "",
+			[]string{
+				"compute", "instance-groups", "managed", "delete", vm.Name + "-mig",
+				"--project=" + vm.Project,
+				"--zone=" + vm.Zone,
+			})
+		if err == nil {
+			return nil
+		}
+		// GCE sometimes responds with 502 or 503 errors. Retry these errors
+		// (and other 50x errors for good measure), by returning them directly.
+		if strings.Contains(err.Error(), "Error 50") {
+			return err
+		}
+		// "not found" can happen when a previous attempt actually did delete
+		// the VM but there was some communication problem along the way.
+		// Consider that a successful deletion. Only do this when there has
+		// been a previous attempt.
+		if strings.Contains(err.Error(), "not found") && attempt > 1 {
+			return nil
+		}
+
+		// Wrap other errors in backoff.Permanent() to avoid retrying those.
+		return backoff.Permanent(err)
+	}
+	err := backoff.Retry(tryDeleteMIG, backoffPolicy)
+	if err == nil {
+		vm.AlreadyDeleted = true
+	}
+
+	attempt = 0
+	tryDeleteTemplate := func() error {
+		attempt++
+		_, err = RunGcloud(ctx, logger, "",
+			[]string{
+				"compute", "instance-templates", "delete", vm.Name + "-temp",
+				"--project=" + vm.Project,
+			})
+		if err == nil {
+			return nil
+		}
+		// GCE sometimes responds with 502 or 503 errors. Retry these errors
+		// (and other 50x errors for good measure), by returning them directly.
+		if strings.Contains(err.Error(), "Error 50") {
+			return err
+		}
+		// "not found" can happen when a previous attempt actually did delete
+		// the VM but there was some communication problem along the way.
+		// Consider that a successful deletion. Only do this when there has
+		// been a previous attempt.
+		if strings.Contains(err.Error(), "not found") && attempt > 1 {
+			return nil
+		}
+
+		// Wrap other errors in backoff.Permanent() to avoid retrying those.
+		return backoff.Permanent(err)
+	}
+	err = backoff.Retry(tryDeleteTemplate, backoffPolicy)
+	if err == nil {
+		vm.AlreadyDeleted = true
+	}
+
 	return err
 }
 
@@ -2058,6 +2467,26 @@ func SetupVM(ctx context.Context, t *testing.T, logger *log.Logger, options VMOp
 	t.Cleanup(func() {
 		if err := DeleteInstance(logger, vm); err != nil {
 			t.Errorf("SetupVM() error deleting instance: %v", err)
+		}
+	})
+
+	t.Logf("Instance Log: %v", instanceLogURL(vm))
+	return vm
+}
+
+// SetupManagedInstanceGroupVM creates a new VM according to the given options.
+// If VM creation fails, it will abort the test.
+// At the end of the test, the VM will be cleaned up.
+func SetupManagedInstanceGroupVM(ctx context.Context, t *testing.T, logger *log.Logger, options VMOptions) *VM {
+	t.Helper()
+
+	vm, err := CreateManagedInstanceGroupInstance(ctx, logger, options)
+	if err != nil {
+		t.Fatalf("SetupManagedInstanceGroupVM() error creating instance: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := DeleteManagedInstanceGroupInstance(logger, vm); err != nil {
+			t.Errorf("SetupManagedInstanceGroupVM() error deleting instance: %v", err)
 		}
 	})
 

@@ -206,6 +206,18 @@ func setupMainLogAndVM(t *testing.T, imageSpec string) (context.Context, *log.Lo
 	return ctx, dirLog.ToMainLog(), vm
 }
 
+// setupMainLogAndManagedInstaceGroup sets up a VM for testing and returns it, along with a logger
+// that writes to a file called main_log.txt.
+// This function is just a wrapper for agents.CommonSetup that returns a "plain"
+// log.Logger instead so that the callsite doesn't need to write
+// logger.ToMainLog() throughout.
+// If you need to write to something besides the main log, just call
+// agents.CommonSetup instead.
+func setupMainLogAndManagedInstaceGroup(t *testing.T, imageSpec string) (context.Context, *log.Logger, *gce.VM) {
+	ctx, dirLog, vm := agents.ManagedInstanceGroupSetup(t, imageSpec, nil, nil)
+	return ctx, dirLog.ToMainLog(), vm
+}
+
 // writeToSystemLog writes the given payload to the VM's normal log location.
 // On Linux this is /var/log/syslog or /var/log/messages, depending on the
 // distro.
@@ -5097,6 +5109,31 @@ func TestLogCompression(t *testing.T) {
 
 		// Expect to see the log with the modifications applied
 		if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, `jsonPayload.message="google"`); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
+func TestAppHubLogLabels(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+		ctx, logger, vm := setupMainLogAndManagedInstaceGroup(t, imageSpec)
+
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := writeToSystemLog(ctx, logger, vm, "123456789"); err != nil {
+			t.Fatal(err)
+		}
+
+		tag := systemLogTagForImage(vm.ImageSpec)
+		query := logMessageQueryForImage(vm.ImageSpec, "123456789")
+		query += ` AND labels."compute.googleapis.com/instance_group_manager/name"=~".*" AND labels."compute.googleapis.com/instance_group_manager/zone"=~".*"`
+		query += ` AND apphub.application.id=~".*" AND apphub.workload.id=~".*"`
+
+		if err := gce.WaitForLog(ctx, logger, vm, tag, time.Hour, query); err != nil {
 			t.Error(err)
 		}
 	})
