@@ -1442,7 +1442,7 @@ func attemptCreateManagedInstanceGroupInstance(ctx context.Context, logger *log.
 	}
 
 	createTemplateArgs := []string{
-		"compute", "instance-templates", "create", vm.Name + "-temp",
+		"beta", "compute", "instance-templates", "create", vm.Name + "-temp",
 		"--project=" + vm.Project,
 		"--machine-type=" + vm.MachineType,
 		"--network=" + vm.Network,
