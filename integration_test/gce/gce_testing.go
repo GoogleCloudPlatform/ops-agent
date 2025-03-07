@@ -1442,7 +1442,7 @@ func attemptCreateManagedInstanceGroupInstance(ctx context.Context, logger *log.
 	}
 
 	createTemplateArgs := []string{
-		"beta", "compute", "instance-templates", "create", vm.Name + "-temp",
+		"beta", "compute", "instance-templates", "create", vm.Name + "-t",
 		"--project=" + vm.Project,
 		"--machine-type=" + vm.MachineType,
 		"--network=" + vm.Network,
@@ -1488,7 +1488,7 @@ func attemptCreateManagedInstanceGroupInstance(ctx context.Context, logger *log.
 		"--project=" + vm.Project,
 		"--zone=" + vm.Zone,
 		"--size=0",
-		"--template=" + vm.Name + "-temp",
+		"--template=" + vm.Name + "-t",
 		"--stateful-internal-ip=enabled",
 		"--format=json",
 	}
@@ -1961,7 +1961,7 @@ func DeleteManagedInstanceGroupInstance(logger *log.Logger, vm *VM) error {
 		attempt++
 		_, err = RunGcloud(ctx, logger, "",
 			[]string{
-				"compute", "instance-templates", "delete", vm.Name + "-temp",
+				"compute", "instance-templates", "delete", vm.Name + "-t",
 				"--project=" + vm.Project,
 			})
 		if err == nil {
