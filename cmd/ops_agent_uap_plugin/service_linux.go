@@ -30,7 +30,6 @@ import (
 	"sync"
 	"syscall"
 
-	"golang.org/x/sys/windows"
 	"google.golang.org/grpc/status"
 
 	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
@@ -87,13 +86,15 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 
 	pluginInstallPath, err := os.Executable()
 	if err != nil {
+		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		log.Printf("Start() failed, because it cannot determine the plugin install location: %s", err)
 		return nil, status.Error(1, err.Error())
 	}
 	pluginInstallPath, err = filepath.EvalSymlinks(pluginInstallPath)
 	if err != nil {
+		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		log.Printf("Start() failed, because it cannot determine the plugin install location: %s", err)
-		status.Error(1, err.Error())
+		return nil, status.Error(1, err.Error())
 	}
 	pluginInstallDir := filepath.Dir(pluginInstallPath)
 
@@ -110,12 +111,6 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 		return nil, status.Error(1, err.Error())
 	}
 
-	// Ops Agent config validation
-	if err := validateOpsAgentConfig(pContext, pluginInstallDir, pluginStateDir, ps.runCommand); err != nil {
-		log.Printf("Start() failed: %s", err)
-		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
-		return nil, status.Errorf(1, "failed to validate Ops Agent config: %s", err)
-	}
 	// Subagent config generation
 	if err := generateSubagentConfigs(pContext, ps.runCommand, pluginInstallDir, pluginStateDir); err != nil {
 		log.Printf("Start() failed: %s", err)
@@ -267,22 +262,6 @@ func runCommand(cmd *exec.Cmd) (string, error) {
 		log.Printf("Command %s failed, \ncommand output: %s\ncommand error: %s", cmd.Args, string(out), err)
 	}
 	return string(out), err
-}
-
-func runCommandWindows(cmd *exec.Cmd, jobHandle windows.Handle) (string, error) {
-	panic("runCommandWindows method is not implemented on Linux, please use runCommand instead")
-}
-
-func validateOpsAgentConfig(ctx context.Context, pluginInstallDirectory string, pluginStateDirectory string, runCommand RunCommandFunc) error {
-	configValidationCmd := exec.CommandContext(ctx,
-		path.Join(pluginInstallDirectory, ConfGeneratorBinary),
-		"-in", OpsAgentConfigLocationLinux,
-		"-logs", path.Join(pluginStateDirectory, LogsDirectory),
-	)
-	if output, err := runCommand(configValidationCmd); err != nil {
-		return fmt.Errorf("failed to validate the Ops Agent config:\ncommand output: %s\ncommand error: %s", output, err)
-	}
-	return nil
 }
 
 func generateSubagentConfigs(ctx context.Context, runCommand RunCommandFunc, pluginInstallDirectory string, pluginStateDirectory string) error {
