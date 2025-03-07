@@ -29,11 +29,6 @@ import (
 	"sync"
 	"unsafe"
 
-	"go.opentelemetry.io/otel"
-	"golang.org/x/sys/windows"
-	"golang.org/x/sys/windows/svc/mgr"
-	"google.golang.org/grpc/status"
-
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/cmd/google_cloud_ops_agent_diagnostics/utils"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
@@ -41,8 +36,12 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"github.com/kardianos/osext"
+	"go.opentelemetry.io/otel"
+	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
+	"golang.org/x/sys/windows/svc/mgr"
+	"google.golang.org/grpc/status"
 
 	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
 )
@@ -68,8 +67,8 @@ var (
 
 // RunSubAgentCommandFunc defines a function type that starts a subagent. If one subagent execution exited, other sugagents are also terminated via context cancellation. This abstraction is introduced
 // primarily to facilitate testing by allowing the injection of mock
-// implementations. The jobHandle is a Windows Job object handle. This is used to ensure that all child processes are killed when the parent process exits.
-type RunSubAgentCommandFunc func(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandWindowsFunc, wg *sync.WaitGroup, jobHandle windows.Handle)
+// implementations. The jobHandle is a Windows Job object handle. This is used to ensure that all child processes are killed when the parent plugin grpc server process exits.
+type RunSubAgentCommandFunc func(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup, jobHandle windows.Handle)
 
 // Apply applies the config sent or performs the work defined in the message.
 // ApplyRequest is opaque to the agent and is expected to be well known contract
@@ -162,7 +161,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	}
 
 	otelErrorHandler := &otelErrorHandler{windowsEventLogger: windowsEventLogger, windowsEventId: OpsAgentUAPPluginEventID}
-	go runSubagents(pContext, cancelFunc, pluginInstallDir, pluginStateDir, runSubAgentCommand, runCommandWindows, otelErrorHandler, jobHandle)
+	go runSubagents(pContext, cancelFunc, pluginInstallDir, pluginStateDir, runSubAgentCommand, runCommand, otelErrorHandler, jobHandle)
 
 	return &pb.StartResponse{}, nil
 }
@@ -349,8 +348,11 @@ func createWindowsJobHandle() (windows.Handle, error) {
 //
 // cancel: the cancel function for the parent context. By calling this function, the parent context is canceled,
 // and GetStatus() returns a non-healthy status, signaling UAP to re-trigger Start().
-// jobHandle: a Windows Job object handle. This is used to ensure that all child processes are killed when the parent process exits.
-func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallDirectory string, pluginStateDirectory string, runSubAgentCommand RunSubAgentCommandFunc, runCommand RunCommandWindowsFunc, otelErrorHandler otel.ErrorHandler, jobHandle windows.Handle) {
+//
+// otelErrorHandler: an implementation of otel.ErrorHandler that is used in the diagnostics service to log otel errors to the Windows event log.
+//
+// jobHandle: a Windows Job object handle. This is used to ensure that all child processes are killed when the parent plugin grpc server process exits.
+func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallDirectory string, pluginStateDirectory string, runSubAgentCommand RunSubAgentCommandFunc, runCommand RunCommandFunc, otelErrorHandler otel.ErrorHandler, jobHandle windows.Handle) {
 
 	var wg sync.WaitGroup
 	// Starting the diagnostics service
@@ -359,9 +361,6 @@ func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallD
 
 	// Starting Otel
 	runOtelCmd := exec.CommandContext(ctx,
-		path.Join(pluginInstallDirectory, AgentWrapperBinary),
-		"-config_path", OpsAgentConfigLocationWindows,
-		"-log_path", path.Join(pluginStateDirectory, LogsDirectory, "otel-module.log"),
 		path.Join(pluginInstallDirectory, OtelBinary),
 		"--config", path.Join(pluginStateDirectory, GeneratedConfigsOutDir, "otel/otel.yaml"),
 	)
@@ -406,7 +405,7 @@ func runDiagnosticsService(ctx context.Context, cancel context.CancelFunc, otelE
 	}
 }
 
-func runCommandWindows(cmd *exec.Cmd, jobHandle windows.Handle) (string, error) {
+func runCommand(cmd *exec.Cmd, jobHandle windows.Handle) (string, error) {
 	if cmd == nil {
 		return "", nil
 	}
@@ -423,8 +422,8 @@ func runCommandWindows(cmd *exec.Cmd, jobHandle windows.Handle) (string, error) 
 	}
 
 	childProcessHandle, err := windows.OpenProcess(
-		windows.PROCESS_ALL_ACCESS, // Or specific access rights
-		false,                      // Inherit handle
+		windows.PROCESS_ALL_ACCESS,
+		false, // Inherit handle
 		uint32(cmd.Process.Pid),
 	)
 	if err != nil {
@@ -447,11 +446,15 @@ func runCommandWindows(cmd *exec.Cmd, jobHandle windows.Handle) (string, error) 
 	return fmt.Sprintf("stdout: %s\n stderr: %s", stdoutBuf.String(), stderrBuf.String()), nil
 }
 
+<<<<<<< HEAD
 func runCommand(cmd *exec.Cmd) (string, error) {
 	panic("runCommand method is not implemented on Windows, please use runCommandWindows instead")
 }
 
 func runSubAgentCommand(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandWindowsFunc, wg *sync.WaitGroup, jobHandle windows.Handle) {
+=======
+func runSubAgentCommand(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup, jobHandle windows.Handle) {
+>>>>>>> 3b9d2ea01 (renamed runCommandWindows)
 	defer wg.Done()
 	if cmd == nil {
 		return
