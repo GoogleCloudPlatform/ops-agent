@@ -86,6 +86,44 @@ func Test_findPreExistentAgents(t *testing.T) {
 	}
 }
 
+func Test_validateOpsAgentConfig(t *testing.T) {
+	cases := []struct {
+		name          string
+		mockCmdOutput string
+		mockCmdErr    error
+		wantSuccess   bool
+	}{
+		{
+			name:          "config validation successful",
+			mockCmdOutput: "",
+			mockCmdErr:    nil,
+			wantSuccess:   true,
+		},
+		{
+			name:          "config validation failed",
+			mockCmdOutput: "",
+			mockCmdErr:    fmt.Errorf("error"),
+			wantSuccess:   false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create a mock RunCommand function
+			mockRunCommand := func(cmd *exec.Cmd) (string, error) {
+				return tc.mockCmdOutput, tc.mockCmdErr
+			}
+
+			ctx := context.Background()
+			err := validateOpsAgentConfig(ctx, "", "", mockRunCommand)
+			gotSuccess := (err == nil)
+			if gotSuccess != tc.wantSuccess {
+				t.Errorf("%s: validateOpsAgentConfig() failed to valide Ops Agent config: %v, want successful config validation: %v, error:%v", tc.name, gotSuccess, tc.wantSuccess, err)
+			}
+		})
+	}
+}
+
 func Test_generateSubagentConfigs(t *testing.T) {
 	cases := []struct {
 		name          string
