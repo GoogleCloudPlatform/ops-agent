@@ -310,6 +310,14 @@ type VM struct {
 	AlreadyDeleted bool
 }
 
+// ManagedInstanceGroupVM represents an individual VM in a Managed Instace Group.
+type ManagedInstanceGroupVM struct {
+	VM
+	ManagedInstanceGroupName string
+	InstanceTemplateName     string
+	AppHubWorkloadName       string
+}
+
 // SyslogLocation returns a filesystem path to the system log. This function
 // assumes the image spec is some kind of Linux.
 func SyslogLocation(imageSpec string) string {
@@ -1191,10 +1199,7 @@ func getOS(ctx context.Context, logger *log.Logger, vm *VM) (*OS, error) {
 	}, nil
 }
 
-// attemptCreateInstance creates a VM instance and waits for it to be ready.
-// Returns a VM object or an error (never both). The caller is responsible for
-// deleting the VM if (and only if) the returned error is nil.
-func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOptions) (vmToReturn *VM, errToReturn error) {
+func createVMFromVMOptions(ctx context.Context, logger *log.Logger, options VMOptions) (vmToReturn *VM, errToReturn error) {
 	vm := &VM{
 		Project:   options.Project,
 		ImageSpec: options.ImageSpec,
@@ -1205,7 +1210,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	if vm.Name == "" {
 		// The VM name needs to adhere to these restrictions:
 		// https://cloud.google.com/compute/docs/naming-resources#resource-name-format
-		vm.Name = fmt.Sprintf("%s-%s", sandboxPrefix, uuid.New())
+		vm.Name = fmt.Sprintf("%s-%s", sandboxPrefix, uuid.NewString()[:32])
 	}
 	if vm.Project == "" {
 		vm.Project = os.Getenv("PROJECT")
@@ -1229,6 +1234,74 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 			vm.MachineType = "t2a-standard-4"
 		}
 	}
+	return vm, nil
+}
+
+func verifyVMCreation(ctx context.Context, logger *log.Logger, vm *VM) (vmToReturn *VM, errToReturn error) {
+	if err := waitForStart(ctx, logger, vm); err != nil {
+		return nil, err
+	}
+
+	if os, err := getOS(ctx, logger, vm); err != nil {
+		return nil, err
+	} else {
+		vm.OS = *os
+	}
+
+	if IsSUSEVM(vm) {
+		// Set download.max_silent_tries to 5 (by default, it is commented out in
+		// the config file). This should help with issues like b/211003972.
+		if _, err := RunRemotely(ctx, logger, vm, "sudo sed -i -E 's/.*download.max_silent_tries.*/download.max_silent_tries = 5/g' /etc/zypp/zypp.conf"); err != nil {
+			return nil, fmt.Errorf("attemptCreateInstance() failed to configure retries in zypp.conf: %v", err)
+		}
+	}
+
+	if IsSLESVM(vm) {
+		if err := prepareSLES(ctx, logger, vm); err != nil {
+			return nil, fmt.Errorf("%s: %v", prepareSLESMessage, err)
+		}
+	}
+
+	if IsSUSEVM(vm) {
+		// Set ZYPP_LOCK_TIMEOUT so tests that use zypper don't randomly fail
+		// because some background process happened to be using zypper at the same time.
+		if _, err := RunRemotely(ctx, logger, vm, `echo 'ZYPP_LOCK_TIMEOUT=300' | sudo tee -a /etc/environment`); err != nil {
+			return nil, err
+		}
+	}
+
+	// Removing flaky rhel-7 repositories due to b/265341502
+	if isRHEL7SAPHA(vm.ImageSpec) {
+		if _, err := RunRemotely(ctx,
+			logger, vm, `sudo yum -y --disablerepo=rhui-rhel*-7-* install yum-utils && sudo yum-config-manager --disable "rhui-rhel*-7-*"`); err != nil {
+			return nil, fmt.Errorf("disabling flaky repos failed: %w", err)
+		}
+	}
+
+	// Pre-installed jupyter services on DLVM images cause port conflicts for third-party apps.
+	// See b/347107292.
+	if IsDLVMImage(vm.ImageSpec) {
+		if _, err := RunRemotely(ctx, logger, vm, "sudo service jupyter stop || true"); err != nil {
+			return nil, fmt.Errorf("attemptCreateInstance() failed to stop pre-installed jupyter service: %v", err)
+		}
+	}
+
+	// TODO(b/369656678): We see frequent errors like "Waiting for cache lock:
+	//   Could not get lock /var/lib/dpkg/lock-frontend", so add a generous timeout.
+	if IsDebianBased(vm.ImageSpec) {
+		if _, err := RunRemotely(ctx, logger, vm, "echo 'DPkg::Lock::Timeout=300' | sudo tee /etc/dpkg/dpkg.cfg.d/cache-lock-timeout.cfg"); err != nil {
+			return nil, fmt.Errorf("setting increased dpkg cache lock timeout failed: %w", err)
+		}
+	}
+
+	return vm, nil
+}
+
+// attemptCreateInstance creates a VM instance and waits for it to be ready.
+// Returns a VM object or an error (never both). The caller is responsible for
+// deleting the VM if (and only if) the returned error is nil.
+func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOptions) (vmToReturn *VM, errToReturn error) {
+	vm, err := createVMFromVMOptions(ctx, logger, options)
 
 	newMetadata, err := addFrameworkMetadata(vm.ImageSpec, options.Metadata)
 	if err != nil {
@@ -1328,103 +1401,14 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		logger.Printf("Unable to retrieve information about the VM's boot disk: %v", err)
 	}
 
-	if err := waitForStart(ctx, logger, vm); err != nil {
-		return nil, err
-	}
-
-	if os, err := getOS(ctx, logger, vm); err != nil {
-		return nil, err
-	} else {
-		vm.OS = *os
-	}
-
-	if IsSUSEVM(vm) {
-		// Set download.max_silent_tries to 5 (by default, it is commented out in
-		// the config file). This should help with issues like b/211003972.
-		if _, err := RunRemotely(ctx, logger, vm, "sudo sed -i -E 's/.*download.max_silent_tries.*/download.max_silent_tries = 5/g' /etc/zypp/zypp.conf"); err != nil {
-			return nil, fmt.Errorf("attemptCreateInstance() failed to configure retries in zypp.conf: %v", err)
-		}
-	}
-
-	if IsSLESVM(vm) {
-		if err := prepareSLES(ctx, logger, vm); err != nil {
-			return nil, fmt.Errorf("%s: %v", prepareSLESMessage, err)
-		}
-	}
-
-	if IsSUSEVM(vm) {
-		// Set ZYPP_LOCK_TIMEOUT so tests that use zypper don't randomly fail
-		// because some background process happened to be using zypper at the same time.
-		if _, err := RunRemotely(ctx, logger, vm, `echo 'ZYPP_LOCK_TIMEOUT=300' | sudo tee -a /etc/environment`); err != nil {
-			return nil, err
-		}
-	}
-
-	// Removing flaky rhel-7 repositories due to b/265341502
-	if isRHEL7SAPHA(vm.ImageSpec) {
-		if _, err := RunRemotely(ctx,
-			logger, vm, `sudo yum -y --disablerepo=rhui-rhel*-7-* install yum-utils && sudo yum-config-manager --disable "rhui-rhel*-7-*"`); err != nil {
-			return nil, fmt.Errorf("disabling flaky repos failed: %w", err)
-		}
-	}
-
-	// Pre-installed jupyter services on DLVM images cause port conflicts for third-party apps.
-	// See b/347107292.
-	if IsDLVMImage(vm.ImageSpec) {
-		if _, err := RunRemotely(ctx, logger, vm, "sudo service jupyter stop || true"); err != nil {
-			return nil, fmt.Errorf("attemptCreateInstance() failed to stop pre-installed jupyter service: %v", err)
-		}
-	}
-
-	// TODO(b/369656678): We see frequent errors like "Waiting for cache lock:
-	//   Could not get lock /var/lib/dpkg/lock-frontend", so add a generous timeout.
-	if IsDebianBased(vm.ImageSpec) {
-		if _, err := RunRemotely(ctx, logger, vm, "echo 'DPkg::Lock::Timeout=300' | sudo tee /etc/dpkg/dpkg.cfg.d/cache-lock-timeout.cfg"); err != nil {
-			return nil, fmt.Errorf("setting increased dpkg cache lock timeout failed: %w", err)
-		}
-	}
-
-	return vm, nil
+	return verifyVMCreation(ctx, logger, vm)
 }
 
 // attemptCreateManagedInstanceGroupInstance creates a VM instance and waits for it to be ready.
 // Returns a VM object or an error (never both). The caller is responsible for
 // deleting the VM if (and only if) the returned error is nil.
 func attemptCreateManagedInstanceGroupInstance(ctx context.Context, logger *log.Logger, options VMOptions) (vmToReturn *VM, errToReturn error) {
-	vm := &VM{
-		Project:   options.Project,
-		ImageSpec: options.ImageSpec,
-		Name:      options.Name,
-		Network:   os.Getenv("NETWORK_NAME"),
-		Zone:      options.Zone,
-	}
-	if vm.Name == "" {
-		// The VM name needs to adhere to these restrictions:
-		// https://cloud.google.com/compute/docs/naming-resources#resource-name-format
-		vm.Name = fmt.Sprintf("%s-%s", sandboxPrefix, uuid.New())
-	}
-	if vm.Project == "" {
-		vm.Project = os.Getenv("PROJECT")
-	}
-	if vm.Network == "" {
-		vm.Network = "default"
-	}
-	if vm.Zone == "" {
-		// Chooses the next zone from ZONES.
-		vm.Zone = zonePicker.Next()
-	}
-
-	// Note: INSTANCE_SIZE takes precedence over options.MachineType.
-	vm.MachineType = os.Getenv("INSTANCE_SIZE")
-	if vm.MachineType == "" {
-		vm.MachineType = options.MachineType
-	}
-	if vm.MachineType == "" {
-		vm.MachineType = "e2-standard-4"
-		if IsARM(vm.ImageSpec) {
-			vm.MachineType = "t2a-standard-4"
-		}
-	}
+	vm, err := createVMFromVMOptions(ctx, logger, options)
 
 	newMetadata, err := addFrameworkMetadata(vm.ImageSpec, options.Metadata)
 	if err != nil {
@@ -1604,63 +1588,7 @@ func attemptCreateManagedInstanceGroupInstance(ctx context.Context, logger *log.
 		logger.Printf("Unable to retrieve information about the VM's boot disk: %v", err)
 	}
 
-	if err := waitForStart(ctx, logger, vm); err != nil {
-		return nil, err
-	}
-
-	if os, err := getOS(ctx, logger, vm); err != nil {
-		return nil, err
-	} else {
-		vm.OS = *os
-	}
-
-	if IsSUSEVM(vm) {
-		// Set download.max_silent_tries to 5 (by default, it is commented out in
-		// the config file). This should help with issues like b/211003972.
-		if _, err := RunRemotely(ctx, logger, vm, "sudo sed -i -E 's/.*download.max_silent_tries.*/download.max_silent_tries = 5/g' /etc/zypp/zypp.conf"); err != nil {
-			return nil, fmt.Errorf("attemptCreateManagedInstanceGroupInstance() failed to configure retries in zypp.conf: %v", err)
-		}
-	}
-
-	if IsSLESVM(vm) {
-		if err := prepareSLES(ctx, logger, vm); err != nil {
-			return nil, fmt.Errorf("%s: %v", prepareSLESMessage, err)
-		}
-	}
-
-	if IsSUSEVM(vm) {
-		// Set ZYPP_LOCK_TIMEOUT so tests that use zypper don't randomly fail
-		// because some background process happened to be using zypper at the same time.
-		if _, err := RunRemotely(ctx, logger, vm, `echo 'ZYPP_LOCK_TIMEOUT=300' | sudo tee -a /etc/environment`); err != nil {
-			return nil, err
-		}
-	}
-
-	// Removing flaky rhel-7 repositories due to b/265341502
-	if isRHEL7SAPHA(vm.ImageSpec) {
-		if _, err := RunRemotely(ctx,
-			logger, vm, `sudo yum -y --disablerepo=rhui-rhel*-7-* install yum-utils && sudo yum-config-manager --disable "rhui-rhel*-7-*"`); err != nil {
-			return nil, fmt.Errorf("disabling flaky repos failed: %w", err)
-		}
-	}
-
-	// Pre-installed jupyter services on DLVM images cause port conflicts for third-party apps.
-	// See b/347107292.
-	if IsDLVMImage(vm.ImageSpec) {
-		if _, err := RunRemotely(ctx, logger, vm, "sudo service jupyter stop || true"); err != nil {
-			return nil, fmt.Errorf("attemptCreateManagedInstanceGroupInstance() failed to stop pre-installed jupyter service: %v", err)
-		}
-	}
-
-	// TODO(b/369656678): We see frequent errors like "Waiting for cache lock:
-	//   Could not get lock /var/lib/dpkg/lock-frontend", so add a generous timeout.
-	if IsDebianBased(vm.ImageSpec) {
-		if _, err := RunRemotely(ctx, logger, vm, "echo 'DPkg::Lock::Timeout=300' | sudo tee /etc/dpkg/dpkg.cfg.d/cache-lock-timeout.cfg"); err != nil {
-			return nil, fmt.Errorf("setting increased dpkg cache lock timeout failed: %w", err)
-		}
-	}
-
-	return vm, nil
+	return verifyVMCreation(ctx, logger, vm)
 }
 
 func IsSLESVM(vm *VM) bool {
