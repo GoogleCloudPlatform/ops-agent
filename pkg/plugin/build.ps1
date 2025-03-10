@@ -48,6 +48,6 @@ $FilesToInclude = @(
 )
 
 # Create the tar archive
-& tar -czf "$DestDir\$TarFileName" -C "$DestDir" $FilesToInclude
+& tar -cvzf "$DestDir\$TarFileName" -C "$DestDir" $FilesToInclude
 
 Write-Host "Tar archive created: $($DestDir)\$TarFileName"
