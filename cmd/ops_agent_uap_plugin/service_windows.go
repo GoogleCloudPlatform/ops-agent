@@ -386,7 +386,6 @@ func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallD
 	go runSubAgentCommand(ctx, cancel, runFluentBitCmd, runCommand, &wg)
 
 	wg.Wait()
-	windows.CloseHandle(jobHandle)
 }
 
 func runDiagnosticsService(ctx context.Context, cancel context.CancelFunc, otelErrorHandler otel.ErrorHandler, wg *sync.WaitGroup) {
