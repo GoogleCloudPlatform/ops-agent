@@ -18,7 +18,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"log"
@@ -53,6 +52,7 @@ const (
 	OpsAgentUAPPluginEventID  uint32 = 8
 	DiagnosticsEventID        uint32 = 2
 	WindowsEventLogIdentifier        = "google-cloud-ops-agent-uap-plugin"
+	WindowJobHandleIdentifier        = "google-cloud-ops-agent-uap-plugin-job-handle"
 	AgentWrapperBinary               = "google-cloud-ops-agent-wrapper.exe"
 	DiagnosticsBinary                = "google-cloud-ops-agent-diagnostics.exe"
 	FluentbitBinary                  = "fluent-bit.exe"
@@ -109,7 +109,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	if foundConflictingInstallations || err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		log.Printf("Start() failed: %s", err)
-		return nil, status.Error(1, err.Error())
+		return nil, status.Error(9, err.Error()) // FailedPrecondition
 	}
 
 	// Calculate plugin install and state dirs.
@@ -117,7 +117,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	if err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		log.Printf("Start() failed, because it cannot determine the plugin install location: %s", err)
-		return nil, status.Error(1, err.Error())
+		return nil, status.Error(13, err.Error()) // Internal
 	}
 
 	pluginStateDir := msg.GetConfig().GetStateDirectoryPath()
@@ -131,7 +131,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	if err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		log.Printf("Start() failed, because it failed to create Windows event logger: %s", err)
-		return nil, status.Error(1, err.Error())
+		return nil, status.Error(13, err.Error()) // Internal
 	}
 
 	// Subagents config validation and generation.
@@ -139,7 +139,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		windowsEventLogger.Close()
 		log.Printf("Start() failed at the subagent config validation and generation step: %s", err)
-		return nil, status.Error(1, err.Error())
+		return nil, status.Error(9, err.Error()) // FailedPrecondition
 	}
 
 	// Trigger Healthchecks.
@@ -152,7 +152,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		windowsEventLogger.Close()
 		log.Printf("Start() failed, because it failed to create a Windows Job object: %s", err)
-		return nil, status.Error(1, err.Error())
+		return nil, status.Error(13, err.Error()) // Internal
 	}
 
 	cancelFunc := func() {
@@ -334,6 +334,13 @@ func createWindowsJobHandle() (windows.Handle, error) {
 		return 0, err
 	}
 
+	err = windows.AssignProcessToJobObject(jobHandle, windows.CurrentProcess())
+
+	if err != nil {
+		windows.CloseHandle(jobHandle)
+		return 0, err
+	}
+
 	return jobHandle, nil
 }
 
@@ -405,45 +412,54 @@ func runDiagnosticsService(ctx context.Context, cancel context.CancelFunc, otelE
 	}
 }
 
-func runCommand(cmd *exec.Cmd, jobHandle windows.Handle) (string, error) {
+func runCommand(cmd *exec.Cmd, _ windows.Handle) (string, error) {
+	// if cmd == nil {
+	// 	return "", nil
+	// }
+
+	// var stdoutBuf, stderrBuf bytes.Buffer
+	// cmd.Stdout = &stdoutBuf
+	// cmd.Stderr = &stderrBuf
+
+	// log.Printf("Running command: %s", cmd.Args)
+	// err := cmd.Start()
+	// if err != nil {
+	// 	log.Printf("Command %s failed, \ncommand error: %s", cmd.Args, err)
+	// 	return "", err
+	// }
+
+	// childProcessHandle, err := windows.OpenProcess(
+	// 	windows.PROCESS_ALL_ACCESS,
+	// 	false, // Inherit handle
+	// 	uint32(cmd.Process.Pid),
+	// )
+	// if err != nil {
+	// 	log.Printf("Command %s failed, because it encountered error while opening a child process Job Handle: %s", cmd.Args, err)
+	// 	return "", err
+	// }
+	// defer windows.CloseHandle(childProcessHandle)
+
+	// err = windows.AssignProcessToJobObject(jobHandle, childProcessHandle)
+	// if err != nil {
+	// 	fmt.Println("Error assigning process to Job Object:", err)
+	// 	return "", err
+	// }
+
+	// err = cmd.Wait()
+	// if err != nil {
+	// 	log.Printf("Command %s failed, \ncommand error: %s", cmd.Args, err)
+	// 	return "", err
+	// }
+	// return fmt.Sprintf("stdout: %s\n stderr: %s", stdoutBuf.String(), stderrBuf.String()), nil
 	if cmd == nil {
 		return "", nil
 	}
-
-	var stdoutBuf, stderrBuf bytes.Buffer
-	cmd.Stdout = &stdoutBuf
-	cmd.Stderr = &stderrBuf
-
 	log.Printf("Running command: %s", cmd.Args)
-	err := cmd.Start()
+	out, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Printf("Command %s failed, \ncommand error: %s", cmd.Args, err)
-		return "", err
+		log.Printf("Command %s failed, \ncommand output: %s\ncommand error: %s", cmd.Args, string(out), err)
 	}
-
-	childProcessHandle, err := windows.OpenProcess(
-		windows.PROCESS_ALL_ACCESS,
-		false, // Inherit handle
-		uint32(cmd.Process.Pid),
-	)
-	if err != nil {
-		log.Printf("Command %s failed, because it encountered error while opening a child process Job Handle: %s", cmd.Args, err)
-		return "", err
-	}
-	defer windows.CloseHandle(childProcessHandle)
-
-	err = windows.AssignProcessToJobObject(jobHandle, childProcessHandle)
-	if err != nil {
-		fmt.Println("Error assigning process to Job Object:", err)
-		return "", err
-	}
-
-	err = cmd.Wait()
-	if err != nil {
-		log.Printf("Command %s failed, \ncommand error: %s", cmd.Args, err)
-		return "", err
-	}
-	return fmt.Sprintf("stdout: %s\n stderr: %s", stdoutBuf.String(), stderrBuf.String()), nil
+	return string(out), err
 }
 
 <<<<<<< HEAD
