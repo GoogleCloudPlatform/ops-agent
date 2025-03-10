@@ -312,10 +312,19 @@ type VM struct {
 
 // ManagedInstanceGroupVM represents an individual VM in a Managed Instace Group.
 type ManagedInstanceGroupVM struct {
-	VM
-	ManagedInstanceGroupName string
-	InstanceTemplateName     string
-	AppHubWorkloadName       string
+	*VM
+}
+
+func (migVM ManagedInstanceGroupVM) ManagedInstanceGroupName() string {
+	return migVM.Name + "-mig"
+}
+
+func (migVM ManagedInstanceGroupVM) InstanceTemplateName() string {
+	return migVM.Name + "-temp"
+}
+
+func (migVM ManagedInstanceGroupVM) AppHubWorkloadName() string {
+	return migVM.Name + "-wl"
 }
 
 // SyslogLocation returns a filesystem path to the system log. This function
@@ -1210,7 +1219,7 @@ func createVMFromVMOptions(ctx context.Context, logger *log.Logger, options VMOp
 	if vm.Name == "" {
 		// The VM name needs to adhere to these restrictions:
 		// https://cloud.google.com/compute/docs/naming-resources#resource-name-format
-		vm.Name = fmt.Sprintf("%s-%s", sandboxPrefix, uuid.NewString()[:32])
+		vm.Name = fmt.Sprintf("%s-%s", sandboxPrefix, uuid.New())
 	}
 	if vm.Project == "" {
 		vm.Project = os.Getenv("PROJECT")
@@ -1237,13 +1246,13 @@ func createVMFromVMOptions(ctx context.Context, logger *log.Logger, options VMOp
 	return vm, nil
 }
 
-func verifyVMCreation(ctx context.Context, logger *log.Logger, vm *VM) (vmToReturn *VM, errToReturn error) {
+func verifyVMCreation(ctx context.Context, logger *log.Logger, vm *VM) error {
 	if err := waitForStart(ctx, logger, vm); err != nil {
-		return nil, err
+		return err
 	}
 
 	if os, err := getOS(ctx, logger, vm); err != nil {
-		return nil, err
+		return err
 	} else {
 		vm.OS = *os
 	}
@@ -1252,13 +1261,13 @@ func verifyVMCreation(ctx context.Context, logger *log.Logger, vm *VM) (vmToRetu
 		// Set download.max_silent_tries to 5 (by default, it is commented out in
 		// the config file). This should help with issues like b/211003972.
 		if _, err := RunRemotely(ctx, logger, vm, "sudo sed -i -E 's/.*download.max_silent_tries.*/download.max_silent_tries = 5/g' /etc/zypp/zypp.conf"); err != nil {
-			return nil, fmt.Errorf("attemptCreateInstance() failed to configure retries in zypp.conf: %v", err)
+			return fmt.Errorf("attemptCreateInstance() failed to configure retries in zypp.conf: %v", err)
 		}
 	}
 
 	if IsSLESVM(vm) {
 		if err := prepareSLES(ctx, logger, vm); err != nil {
-			return nil, fmt.Errorf("%s: %v", prepareSLESMessage, err)
+			return fmt.Errorf("%s: %v", prepareSLESMessage, err)
 		}
 	}
 
@@ -1266,7 +1275,7 @@ func verifyVMCreation(ctx context.Context, logger *log.Logger, vm *VM) (vmToRetu
 		// Set ZYPP_LOCK_TIMEOUT so tests that use zypper don't randomly fail
 		// because some background process happened to be using zypper at the same time.
 		if _, err := RunRemotely(ctx, logger, vm, `echo 'ZYPP_LOCK_TIMEOUT=300' | sudo tee -a /etc/environment`); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
@@ -1274,7 +1283,7 @@ func verifyVMCreation(ctx context.Context, logger *log.Logger, vm *VM) (vmToRetu
 	if isRHEL7SAPHA(vm.ImageSpec) {
 		if _, err := RunRemotely(ctx,
 			logger, vm, `sudo yum -y --disablerepo=rhui-rhel*-7-* install yum-utils && sudo yum-config-manager --disable "rhui-rhel*-7-*"`); err != nil {
-			return nil, fmt.Errorf("disabling flaky repos failed: %w", err)
+			return fmt.Errorf("disabling flaky repos failed: %w", err)
 		}
 	}
 
@@ -1282,7 +1291,7 @@ func verifyVMCreation(ctx context.Context, logger *log.Logger, vm *VM) (vmToRetu
 	// See b/347107292.
 	if IsDLVMImage(vm.ImageSpec) {
 		if _, err := RunRemotely(ctx, logger, vm, "sudo service jupyter stop || true"); err != nil {
-			return nil, fmt.Errorf("attemptCreateInstance() failed to stop pre-installed jupyter service: %v", err)
+			return fmt.Errorf("attemptCreateInstance() failed to stop pre-installed jupyter service: %v", err)
 		}
 	}
 
@@ -1290,44 +1299,24 @@ func verifyVMCreation(ctx context.Context, logger *log.Logger, vm *VM) (vmToRetu
 	//   Could not get lock /var/lib/dpkg/lock-frontend", so add a generous timeout.
 	if IsDebianBased(vm.ImageSpec) {
 		if _, err := RunRemotely(ctx, logger, vm, "echo 'DPkg::Lock::Timeout=300' | sudo tee /etc/dpkg/dpkg.cfg.d/cache-lock-timeout.cfg"); err != nil {
-			return nil, fmt.Errorf("setting increased dpkg cache lock timeout failed: %w", err)
+			return fmt.Errorf("setting increased dpkg cache lock timeout failed: %w", err)
 		}
 	}
 
-	return vm, nil
+	return nil
 }
 
-// attemptCreateInstance creates a VM instance and waits for it to be ready.
-// Returns a VM object or an error (never both). The caller is responsible for
-// deleting the VM if (and only if) the returned error is nil.
-func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOptions) (vmToReturn *VM, errToReturn error) {
-	vm, err := createVMFromVMOptions(ctx, logger, options)
-
+func addditionalParametersToCreateInstaceCommand(ctx context.Context, logger *log.Logger, options VMOptions, vm *VM) ([]string, error) {
+	args := []string{}
 	newMetadata, err := addFrameworkMetadata(vm.ImageSpec, options.Metadata)
 	if err != nil {
-		return nil, fmt.Errorf("attemptCreateInstance() could not construct valid metadata: %v", err)
+		return nil, fmt.Errorf("appendParametersToCreateInstaceCommand() could not construct valid metadata: %v", err)
 	}
 	newLabels, err := addFrameworkLabels(options.Labels)
 	if err != nil {
-		return nil, fmt.Errorf("attemptCreateInstance() could not construct valid labels: %v", err)
+		return nil, fmt.Errorf("appendParametersToCreateInstaceCommand() could not construct valid labels: %v", err)
 	}
 
-	imageFamilyScope := options.ImageFamilyScope
-
-	if imageFamilyScope == "" {
-		imageFamilyScope = "global"
-	}
-
-	args := []string{
-		// "beta" is needed for --max-run-duration below.
-		"beta", "compute", "instances", "create", vm.Name,
-		"--project=" + vm.Project,
-		"--zone=" + vm.Zone,
-		"--machine-type=" + vm.MachineType,
-		"--image-family-scope=" + imageFamilyScope,
-		"--network=" + vm.Network,
-		"--format=json",
-	}
 	image_flags, err := gcloudFlagsFromImageSpec(vm.ImageSpec)
 	if err != nil {
 		return nil, err
@@ -1355,6 +1344,38 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		args = append(args, "--max-run-duration="+options.TimeToLive, "--instance-termination-action=DELETE", "--provisioning-model=STANDARD")
 	}
 	args = append(args, options.ExtraCreateArguments...)
+
+	return args, nil
+}
+
+// attemptCreateInstance creates a VM instance and waits for it to be ready.
+// Returns a VM object or an error (never both). The caller is responsible for
+// deleting the VM if (and only if) the returned error is nil.
+func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOptions) (vmToReturn *VM, errToReturn error) {
+	vm, err := createVMFromVMOptions(ctx, logger, options)
+
+	imageFamilyScope := options.ImageFamilyScope
+
+	if imageFamilyScope == "" {
+		imageFamilyScope = "global"
+	}
+
+	args := []string{
+		// "beta" is needed for --max-run-duration below.
+		"beta", "compute", "instances", "create", vm.Name,
+		"--project=" + vm.Project,
+		"--zone=" + vm.Zone,
+		"--machine-type=" + vm.MachineType,
+		"--image-family-scope=" + imageFamilyScope,
+		"--network=" + vm.Network,
+		"--format=json",
+	}
+
+	additionalArgs, err := addditionalParametersToCreateInstaceCommand(ctx, logger, options, vm)
+	if err != nil {
+		return nil, err
+	}
+	args = append(args, additionalArgs...)
 
 	output, err := RunGcloud(ctx, logger, "", args)
 	if err != nil {
@@ -1401,64 +1422,40 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		logger.Printf("Unable to retrieve information about the VM's boot disk: %v", err)
 	}
 
-	return verifyVMCreation(ctx, logger, vm)
+	if err := verifyVMCreation(ctx, logger, vm); err != nil {
+		return nil, err
+	}
+
+	return vm, nil
 }
 
 // attemptCreateManagedInstanceGroupInstance creates a VM instance and waits for it to be ready.
 // Returns a VM object or an error (never both). The caller is responsible for
 // deleting the VM if (and only if) the returned error is nil.
-func attemptCreateManagedInstanceGroupInstance(ctx context.Context, logger *log.Logger, options VMOptions) (vmToReturn *VM, errToReturn error) {
+func attemptCreateManagedInstanceGroupInstance(ctx context.Context, logger *log.Logger, options VMOptions) (vmToReturn *ManagedInstanceGroupVM, errToReturn error) {
+	// We need a shorter uuid here to add suffixes and not go over the 63 character limit.
+	options.Name = fmt.Sprintf("%s-%s", sandboxPrefix, uuid.NewString()[:30])
 	vm, err := createVMFromVMOptions(ctx, logger, options)
-
-	newMetadata, err := addFrameworkMetadata(vm.ImageSpec, options.Metadata)
-	if err != nil {
-		return nil, fmt.Errorf("attemptCreateManagedInstanceGroupInstance() could not construct valid metadata: %v", err)
-	}
-	newLabels, err := addFrameworkLabels(options.Labels)
-	if err != nil {
-		return nil, fmt.Errorf("attemptCreateManagedInstanceGroupInstance() could not construct valid labels: %v", err)
-	}
-
-	imageFamilyScope := options.ImageFamilyScope
-
-	if imageFamilyScope == "" {
-		imageFamilyScope = "global"
-	}
-
-	createTemplateArgs := []string{
-		"beta", "compute", "instance-templates", "create", vm.Name + "-t",
-		"--project=" + vm.Project,
-		"--machine-type=" + vm.MachineType,
-		"--network=" + vm.Network,
-		"--format=json",
-	}
-	image_flags, err := gcloudFlagsFromImageSpec(vm.ImageSpec)
 	if err != nil {
 		return nil, err
 	}
-	createTemplateArgs = append(createTemplateArgs, image_flags...)
-	if len(newMetadata) > 0 {
-		// The --metadata flag can't be empty, so we have to have a special case
-		// to omit the flag completely when the newMetadata map is empty.
-		createTemplateArgs = append(createTemplateArgs, "--metadata="+MapToCommaSeparatedList(newMetadata))
+
+	migVM := ManagedInstanceGroupVM{
+		VM: vm,
 	}
-	if len(newLabels) > 0 {
-		createTemplateArgs = append(createTemplateArgs, "--labels="+MapToCommaSeparatedList(newLabels))
+
+	createTemplateArgs := []string{
+		"beta", "compute", "instance-templates", "create", migVM.InstanceTemplateName(),
+		"--project=" + migVM.Project,
+		"--machine-type=" + migVM.MachineType,
+		"--network=" + migVM.Network,
+		"--format=json",
 	}
-	if email := os.Getenv("SERVICE_EMAIL"); email != "" {
-		createTemplateArgs = append(createTemplateArgs, "--service-account="+email)
+	additionalArgs, err := addditionalParametersToCreateInstaceCommand(ctx, logger, options, vm)
+	if err != nil {
+		return nil, err
 	}
-	if internalIP := os.Getenv("USE_INTERNAL_IP"); internalIP == "true" {
-		// Don't assign an external IP address. This is to avoid using up
-		// a very limited budget of external IPv4 addresses. The instances
-		// will talk to the external internet by routing through a Cloud NAT
-		// gateway that is configured in our testing project.
-		createTemplateArgs = append(createTemplateArgs, "--no-address")
-	}
-	if options.TimeToLive != "" {
-		createTemplateArgs = append(createTemplateArgs, "--max-run-duration="+options.TimeToLive, "--instance-termination-action=DELETE", "--provisioning-model=STANDARD")
-	}
-	createTemplateArgs = append(createTemplateArgs, options.ExtraCreateArguments...)
+	createTemplateArgs = append(createTemplateArgs, additionalArgs...)
 
 	output, err := RunGcloud(ctx, logger, "", createTemplateArgs)
 	if err != nil {
@@ -1468,44 +1465,40 @@ func attemptCreateManagedInstanceGroupInstance(ctx context.Context, logger *log.
 	}
 
 	createMIGArgs := []string{
-		"compute", "instance-groups", "managed", "create", vm.Name + "-mig",
-		"--project=" + vm.Project,
-		"--zone=" + vm.Zone,
+		"compute", "instance-groups", "managed", "create", migVM.ManagedInstanceGroupName(),
+		"--project=" + migVM.Project,
+		"--zone=" + migVM.Zone,
 		"--size=0",
-		"--template=" + vm.Name + "-t",
+		"--template=" + migVM.InstanceTemplateName(),
 		"--stateful-internal-ip=enabled",
 		"--format=json",
 	}
 
 	output, err = RunGcloud(ctx, logger, "", createMIGArgs)
 	if err != nil {
-		// Note: we don't try and delete the VM in this case because there is
-		// nothing to delete.
 		return nil, err
 	}
 
-	vmRegion := vm.Zone[:len(vm.Zone)-2]
+	vmRegion := migVM.Zone[:len(migVM.Zone)-2]
 	discoverMIGWorkloadArgs := []string{
 		"apphub", "discovered-workloads", "list",
-		"--project=" + vm.Project,
+		"--project=" + migVM.Project,
 		"--location=" + vmRegion,
-		"--filter=workloadReference.uri ~ " + vm.Name + "-mig",
+		"--filter=workloadReference.uri ~ " + migVM.ManagedInstanceGroupName(),
 		"--uri",
 	}
 
 	output, err = RunGcloud(ctx, logger, "", discoverMIGWorkloadArgs)
 	if err != nil {
-		// Note: we don't try and delete the VM in this case because there is
-		// nothing to delete.
 		return nil, err
 	}
 
 	logger.Println("found uri : ", output.Stdout)
 	migResourceString := output.Stdout[33:]
 	registerAppHubWorkloadArgs := []string{
-		"apphub", "applications", "workloads", "create", vm.Name + "-wl",
+		"apphub", "applications", "workloads", "create", migVM.AppHubWorkloadName(),
 		"--application=ops-agent-app-hub-integration-test-app",
-		"--project=" + vm.Project,
+		"--project=" + migVM.Project,
 		"--location=global",
 		"--discovered-workload=" + migResourceString,
 		"--format=json",
@@ -1513,23 +1506,19 @@ func attemptCreateManagedInstanceGroupInstance(ctx context.Context, logger *log.
 
 	output, err = RunGcloud(ctx, logger, "", registerAppHubWorkloadArgs)
 	if err != nil {
-		// Note: we don't try and delete the VM in this case because there is
-		// nothing to delete.
 		return nil, err
 	}
 
 	createVMArgs := []string{
-		"compute", "instance-groups", "managed", "create-instance", vm.Name + "-mig",
-		"--instance=" + vm.Name,
-		"--project=" + vm.Project,
-		"--zone=" + vm.Zone,
+		"compute", "instance-groups", "managed", "create-instance", migVM.Name,
+		"--instance=" + migVM.Name,
+		"--project=" + migVM.Project,
+		"--zone=" + migVM.Zone,
 		"--format=json",
 	}
 
 	output, err = RunGcloud(ctx, logger, "", createVMArgs)
 	if err != nil {
-		// Note: we don't try and delete the VM in this case because there is
-		// nothing to delete.
 		return nil, err
 	}
 
@@ -1537,23 +1526,21 @@ func attemptCreateManagedInstanceGroupInstance(ctx context.Context, logger *log.
 
 	listVMArgs := []string{
 		"compute", "instances", "list",
-		"--filter=name=( '" + vm.Name + "' ... )",
-		"--project=" + vm.Project,
-		"--zones=" + vm.Zone,
+		"--filter=name=( '" + migVM.Name + "' ... )",
+		"--project=" + migVM.Project,
+		"--zones=" + migVM.Zone,
 		"--format=json",
 	}
 
 	output, err = RunGcloud(ctx, logger, "", listVMArgs)
 	if err != nil {
-		// Note: we don't try and delete the VM in this case because there is
-		// nothing to delete.
 		return nil, err
 	}
 
 	defer func() {
 		if errToReturn != nil {
 			// This function is responsible for deleting the VM in all error cases.
-			errToReturn = multierr.Append(errToReturn, DeleteManagedInstanceGroupInstance(logger, vm))
+			errToReturn = multierr.Append(errToReturn, DeleteManagedInstanceGroupInstance(logger, &migVM))
 			// Make sure to never return both a valid VM object and an error.
 			vmToReturn = nil
 		}
@@ -1567,7 +1554,7 @@ func attemptCreateManagedInstanceGroupInstance(ctx context.Context, logger *log.
 	if err != nil {
 		return nil, err
 	}
-	vm.ID = id
+	migVM.ID = id
 
 	logger.Printf("Instance Log: %v", instanceLogURL(vm))
 
@@ -1575,20 +1562,24 @@ func attemptCreateManagedInstanceGroupInstance(ctx context.Context, logger *log.
 	if err != nil {
 		return nil, err
 	}
-	vm.IPAddress = ipAddress
+	migVM.IPAddress = ipAddress
 
 	// RunGcloud will log the output of the command, so we don't need to.
 	if _, err = RunGcloud(ctx, logger, "", []string{
-		"compute", "disks", "describe", vm.Name,
-		"--project=" + vm.Project,
-		"--zone=" + vm.Zone,
+		"compute", "disks", "describe", migVM.Name,
+		"--project=" + migVM.Project,
+		"--zone=" + migVM.Zone,
 		"--format=json",
 	}); err != nil {
 		// This is just informational, so it's ok if it fails. Just warn and proceed.
 		logger.Printf("Unable to retrieve information about the VM's boot disk: %v", err)
 	}
 
-	return verifyVMCreation(ctx, logger, vm)
+	if err := verifyVMCreation(ctx, logger, migVM.VM); err != nil {
+		return nil, err
+	}
+
+	return &migVM, nil
 }
 
 func IsSLESVM(vm *VM) bool {
@@ -1692,7 +1683,7 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 // Also waits for the instance to be reachable over ssh.
 // Returns a VM object or an error (never both). The caller is responsible for
 // deleting the VM if (and only if) the returned error is nil.
-func CreateManagedInstanceGroupInstance(origCtx context.Context, logger *log.Logger, options VMOptions) (*VM, error) {
+func CreateManagedInstanceGroupInstance(origCtx context.Context, logger *log.Logger, options VMOptions) (*ManagedInstanceGroupVM, error) {
 	// Give enough time for at least 3 consecutive attempts to start a VM.
 	// If an attempt returns a non-retriable error, it will be returned
 	// immediately.
@@ -1719,13 +1710,13 @@ func CreateManagedInstanceGroupInstance(origCtx context.Context, logger *log.Log
 			strings.Contains(err.Error(), prepareSLESMessage)
 	}
 
-	var vm *VM
+	var migVM *ManagedInstanceGroupVM
 	createFunc := func() error {
 		attemptCtx, cancel := context.WithTimeout(ctx, vmInitTimeout)
 		defer cancel()
 
 		var err error
-		vm, err = attemptCreateManagedInstanceGroupInstance(attemptCtx, logger, options)
+		migVM, err = attemptCreateManagedInstanceGroupInstance(attemptCtx, logger, options)
 
 		if err != nil && !shouldRetry(err) {
 			err = backoff.Permanent(err)
@@ -1737,8 +1728,8 @@ func CreateManagedInstanceGroupInstance(origCtx context.Context, logger *log.Log
 	if err := backoff.Retry(createFunc, backoffPolicy); err != nil {
 		return nil, err
 	}
-	logger.Printf("VM is ready: %#v", vm)
-	return vm, nil
+	logger.Printf("Managed Instance Group VM is ready: %#v", migVM)
+	return migVM, nil
 }
 
 // RemoveExternalIP deletes the external ip for an instance.
@@ -1843,9 +1834,9 @@ func DeleteInstance(logger *log.Logger, vm *VM) error {
 // Does nothing if the VM was already deleted.
 // Doesn't take a Context argument because even if the test has timed out or is
 // cancelled, we still want to delete the VMs.
-func DeleteManagedInstanceGroupInstance(logger *log.Logger, vm *VM) error {
-	if vm.AlreadyDeleted {
-		logger.Printf("Managed Instance Group %v was already deleted, skipping delete.", vm.Name)
+func DeleteManagedInstanceGroupInstance(logger *log.Logger, migVM *ManagedInstanceGroupVM) error {
+	if migVM.AlreadyDeleted {
+		logger.Printf("Managed Instance Group %v was already deleted, skipping delete.", migVM.Name)
 		return nil
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -1856,9 +1847,9 @@ func DeleteManagedInstanceGroupInstance(logger *log.Logger, vm *VM) error {
 		attempt++
 		_, err := RunGcloud(ctx, logger, "",
 			[]string{
-				"compute", "instance-groups", "managed", "delete", vm.Name + "-mig",
-				"--project=" + vm.Project,
-				"--zone=" + vm.Zone,
+				"compute", "instance-groups", "managed", "delete", migVM.ManagedInstanceGroupName(),
+				"--project=" + migVM.Project,
+				"--zone=" + migVM.Zone,
 			})
 		if err == nil {
 			return nil
@@ -1881,7 +1872,7 @@ func DeleteManagedInstanceGroupInstance(logger *log.Logger, vm *VM) error {
 	}
 	err := backoff.Retry(tryDeleteMIG, backoffPolicy)
 	if err == nil {
-		vm.AlreadyDeleted = true
+		migVM.AlreadyDeleted = true
 	}
 
 	attempt = 0
@@ -1889,8 +1880,8 @@ func DeleteManagedInstanceGroupInstance(logger *log.Logger, vm *VM) error {
 		attempt++
 		_, err = RunGcloud(ctx, logger, "",
 			[]string{
-				"compute", "instance-templates", "delete", vm.Name + "-t",
-				"--project=" + vm.Project,
+				"compute", "instance-templates", "delete", migVM.InstanceTemplateName(),
+				"--project=" + migVM.Project,
 			})
 		if err == nil {
 			return nil
@@ -1913,7 +1904,7 @@ func DeleteManagedInstanceGroupInstance(logger *log.Logger, vm *VM) error {
 	}
 	err = backoff.Retry(tryDeleteTemplate, backoffPolicy)
 	if err == nil {
-		vm.AlreadyDeleted = true
+		migVM.AlreadyDeleted = true
 	}
 
 	return err
@@ -2408,18 +2399,18 @@ func SetupVM(ctx context.Context, t *testing.T, logger *log.Logger, options VMOp
 func SetupManagedInstanceGroupVM(ctx context.Context, t *testing.T, logger *log.Logger, options VMOptions) *VM {
 	t.Helper()
 
-	vm, err := CreateManagedInstanceGroupInstance(ctx, logger, options)
+	migVM, err := CreateManagedInstanceGroupInstance(ctx, logger, options)
 	if err != nil {
 		t.Fatalf("SetupManagedInstanceGroupVM() error creating instance: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := DeleteManagedInstanceGroupInstance(logger, vm); err != nil {
+		if err := DeleteManagedInstanceGroupInstance(logger, migVM); err != nil {
 			t.Errorf("SetupManagedInstanceGroupVM() error deleting instance: %v", err)
 		}
 	})
 
-	t.Logf("Instance Log: %v", instanceLogURL(vm))
-	return vm
+	t.Logf("Instance Log: %v", instanceLogURL(migVM.VM))
+	return migVM.VM
 }
 
 // RunForEachImage runs a subtest for each image defined in IMAGE_SPECS.
