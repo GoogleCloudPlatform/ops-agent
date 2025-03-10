@@ -161,7 +161,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	}
 
 	otelErrorHandler := &otelErrorHandler{windowsEventLogger: windowsEventLogger, windowsEventId: OpsAgentUAPPluginEventID}
-	go runSubagents(pContext, cancelFunc, pluginInstallDir, pluginStateDir, runSubAgentCommand, runCommand, otelErrorHandler, jobHandle)
+	go runSubagents(pContext, cancelFunc, pluginInstallDir, pluginStateDir, runSubAgentCommand, ps.runCommand, otelErrorHandler, jobHandle)
 
 	return &pb.StartResponse{}, nil
 }
@@ -425,19 +425,8 @@ func runCommand(cmd *exec.Cmd) (string, error) {
 	return string(out), err
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-func runCommand(cmd *exec.Cmd) (string, error) {
-	panic("runCommand method is not implemented on Windows, please use runCommandWindows instead")
-}
-
-func runSubAgentCommand(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandWindowsFunc, wg *sync.WaitGroup, jobHandle windows.Handle) {
-=======
-func runSubAgentCommand(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup, jobHandle windows.Handle) {
->>>>>>> 3b9d2ea01 (renamed runCommandWindows)
-=======
 func runSubAgentCommand(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup) {
->>>>>>> dcf4b8657 (confirmed: If the parent process is linked to the windows job object, the job object will also  auto include the child parent processes)
+
 	defer wg.Done()
 	if cmd == nil {
 		return

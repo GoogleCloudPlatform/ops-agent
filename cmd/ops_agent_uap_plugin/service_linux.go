@@ -112,7 +112,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	}
 
 	// Ops Agent config validation
-	if err := validateOpsAgentConfig(pContext, pluginInstallDir, pluginStateDir, runCommand); err != nil {
+	if err := validateOpsAgentConfig(pContext, pluginInstallDir, pluginStateDir, ps.runCommand); err != nil {
 		log.Printf("Start() failed: %s", err)
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		return nil, status.Errorf(1, "failed to validate Ops Agent config: %s", err)

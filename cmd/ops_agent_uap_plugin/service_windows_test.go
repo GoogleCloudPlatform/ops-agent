@@ -20,6 +20,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"sync"
@@ -232,14 +233,36 @@ func Test_generateSubAgentConfigs(t *testing.T) {
 }
 
 func TestStart(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
-		name      string
-		cancel    context.CancelFunc
-		wantError bool
+		name               string
+		cancel             context.CancelFunc
+		mockRunCommandFunc RunCommandFunc
+		wantError          bool
+		wantCancelNil      bool
 	}{
+		{
+			name:   "Happy path: plugin not already started, Start() exits successfully",
+			cancel: nil,
+			mockRunCommandFunc: func(cmd *exec.Cmd) (string, error) {
+				return "", nil
+			},
+		},
 		{
 			name:   "Plugin already started",
 			cancel: func() {}, // Non-nil function
+			mockRunCommandFunc: func(cmd *exec.Cmd) (string, error) {
+				return "", nil
+			},
+		},
+		{
+			name:   "Start() returns errors, cancel() function should be reset to nil",
+			cancel: nil,
+			mockRunCommandFunc: func(cmd *exec.Cmd) (string, error) {
+				return "", fmt.Errorf("error")
+			},
+			wantError:     true,
+			wantCancelNil: true,
 		},
 	}
 
@@ -247,14 +270,14 @@ func TestStart(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			ps := &OpsAgentPluginServer{cancel: tc.cancel}
+			ps := &OpsAgentPluginServer{cancel: tc.cancel, runCommand: tc.mockRunCommandFunc}
 			_, err := ps.Start(context.Background(), &pb.StartRequest{})
 			gotError := (err != nil)
 			if gotError != tc.wantError {
 				t.Errorf("%v: Start() got error: %v, err msg: %v, want error:%v", tc.name, gotError, err, tc.wantError)
 			}
-			if ps.cancel == nil {
-				t.Errorf("%v: got nil cancel function after calling Start(), want non-nil", tc.name)
+			if (ps.cancel == nil) != tc.wantCancelNil {
+				t.Errorf("%v: Start() got cancel function: %v, want cancel function to be reset to nil: %v", tc.name, ps.cancel, tc.wantCancelNil)
 			}
 		})
 	}
