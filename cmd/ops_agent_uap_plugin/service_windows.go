@@ -334,12 +334,12 @@ func createWindowsJobHandle() (windows.Handle, error) {
 		return 0, err
 	}
 
-	err = windows.AssignProcessToJobObject(jobHandle, windows.CurrentProcess())
+	// err = windows.AssignProcessToJobObject(jobHandle, windows.CurrentProcess())
 
-	if err != nil {
-		windows.CloseHandle(jobHandle)
-		return 0, err
-	}
+	// if err != nil {
+	// 	windows.CloseHandle(jobHandle)
+	// 	return 0, err
+	// }
 
 	return jobHandle, nil
 }
