@@ -168,11 +168,8 @@ func TestStart(t *testing.T) {
 			if gotError != tc.wantError {
 				t.Errorf("%v: Start() got error: %v, err msg: %v, want error:%v", tc.name, gotError, err, tc.wantError)
 			}
-			if tc.wantError && ps.cancel != nil {
-				t.Errorf("%v: Start() did not reset the cancel function to nil", tc.name)
-			}
-			if !tc.wantError && ps.cancel == nil {
-				t.Errorf("%v: Start() reset cancel function to nil but shouldn't", tc.name)
+			if ps.cancel == nil {
+				t.Error("got nil cancel function after calling Start(), want non-nil")
 			}
 		})
 	}
