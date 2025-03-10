@@ -105,8 +105,8 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	ps.mu.Unlock()
 
 	// Detect conflicting installations.
-	foundConflictingInstallations, err := findPreExistentAgents(&windowsServiceManager{}, AgentWindowsServiceName)
-	if foundConflictingInstallations || err != nil {
+	preInstalledAgents, err := findPreExistentAgents(&windowsServiceManager{}, AgentWindowsServiceName)
+	if len(preInstalledAgents) != 0 || err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		log.Printf("Start() failed: %s", err)
 		return nil, status.Error(9, err.Error()) // FailedPrecondition
@@ -234,16 +234,16 @@ func (c *windowsServiceManagerConn) Disconnect() error {
 }
 
 // findPreExistentAgents checks if any of the Ops Agent and legacy agents are already installed as Window Services.
-func findPreExistentAgents(mgr serviceManager, agentWindowsServiceNames []string) (bool, error) {
+func findPreExistentAgents(mgr serviceManager, agentWindowsServiceNames []string) ([]string, error) {
 	conn, err := mgr.Connect()
 	if err != nil {
-		return false, fmt.Errorf("failed to connect to service manager: %s", err)
+		return nil, fmt.Errorf("failed to connect to service manager: %s", err)
 	}
 	defer conn.Disconnect()
 
 	installedServices, err := conn.ListServices()
 	if err != nil {
-		return false, fmt.Errorf("failed to list installed Windows services: %s", err)
+		return nil, fmt.Errorf("failed to list installed Windows services: %s", err)
 	}
 
 	installedServicesSet := make(map[string]bool)
@@ -251,20 +251,17 @@ func findPreExistentAgents(mgr serviceManager, agentWindowsServiceNames []string
 		installedServicesSet[s] = true
 	}
 
-	agentAlreadyInstalled := false
-	alreadyInstalledAgentServiceName := ""
+	alreadyInstalledAgentServiceNames := []string{}
 	for _, s := range agentWindowsServiceNames {
 		if installedServicesSet[s] {
-			agentAlreadyInstalled = true
-			alreadyInstalledAgentServiceName = s
-			break
+			alreadyInstalledAgentServiceNames = append(alreadyInstalledAgentServiceNames, s)
 		}
 	}
 
-	if agentAlreadyInstalled {
-		return true, fmt.Errorf("conflicting installations identified: %v", alreadyInstalledAgentServiceName)
+	if len(alreadyInstalledAgentServiceNames) != 0 {
+		return alreadyInstalledAgentServiceNames, fmt.Errorf("conflicting installations identified: %v", alreadyInstalledAgentServiceNames)
 	}
-	return false, nil
+	return alreadyInstalledAgentServiceNames, nil
 }
 
 func createWindowsEventLogger() (debug.Log, error) {

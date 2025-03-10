@@ -58,11 +58,11 @@ func (m *mockServiceManagerConnection) Disconnect() error {
 
 func Test_findPreExistentAgents(t *testing.T) {
 	testCases := []struct {
-		name                     string
-		mockMgr                  *mockServiceManager
-		agentWindowsServiceNames []string
-		wantFoundConflicts       bool
-		wantError                bool
+		name                         string
+		mockMgr                      *mockServiceManager
+		agentWindowsServiceNames     []string
+		conflictingInstallationCount int
+		wantError                    bool
 	}{
 		{
 			name: "No conflicts",
@@ -76,9 +76,9 @@ func Test_findPreExistentAgents(t *testing.T) {
 			mockMgr: &mockServiceManager{
 				listServices: []string{"ServiceA", "AgentService"},
 			},
-			agentWindowsServiceNames: []string{"AgentService", "ServiceB"},
-			wantFoundConflicts:       true,
-			wantError:                true,
+			agentWindowsServiceNames:     []string{"AgentService", "ServiceB"},
+			conflictingInstallationCount: 1,
+			wantError:                    true,
 		},
 		{
 			name: "service manager connection error",
@@ -102,12 +102,12 @@ func Test_findPreExistentAgents(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			gotFoundConflicts, gotError := findPreExistentAgents(tc.mockMgr, tc.agentWindowsServiceNames)
+			preinstalledAgents, gotError := findPreExistentAgents(tc.mockMgr, tc.agentWindowsServiceNames)
 			if (gotError != nil) != tc.wantError {
 				t.Errorf("%s: findPreExistentAgents() returned error: %v, want error: %v", tc.name, gotError, tc.wantError)
 			}
-			if gotFoundConflicts != tc.wantFoundConflicts {
-				t.Errorf("%s: findPreExistentAgents() found conflicting installations:%v, want %v", tc.name, gotFoundConflicts, tc.wantFoundConflicts)
+			if len(preinstalledAgents) != tc.conflictingInstallationCount {
+				t.Errorf("%s: findPreExistentAgents() found %v conflicting installations:%v, want %v identified", tc.name, len(preinstalledAgents), preinstalledAgents, tc.conflictingInstallationCount)
 			}
 		})
 	}
