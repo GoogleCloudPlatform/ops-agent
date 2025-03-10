@@ -8,7 +8,7 @@ if (!$DestDir) {
 }
 
 # Read PKG_VERSION from VERSION file.
-#$PkgVersion = Select-String -Path "VERSION" -Pattern '^PKG_VERSION="(.*)"$' | %{$_.Matches.Groups[1].Value}
+$PkgVersion = Select-String -Path "VERSION" -Pattern '^PKG_VERSION="(.*)"$' | %{$_.Matches.Groups[1].Value}
 
 # If ARCH is not supplied, set default value based on user's system.
 if (!$Arch) {
@@ -32,7 +32,7 @@ New-Item -ItemType Directory -Path $Subfolder -Force | Out-Null
 "license to be added" | Out-File "$LicenseDir\text1.txt"
 "license to be added" | Out-File "$Subfolder\text2.txt"
 
-$TarFileName = "google-cloud-ops-agent-plugin-windows-$Arch.tar.gz" # Define tar file name
+$TarFileName = "google-cloud-ops-agent-plugin-$PkgVersion-windows-$Arch.tar.gz" # Define tar file name
 
 $FilesToInclude = @(
     "msvcp140.dll",
