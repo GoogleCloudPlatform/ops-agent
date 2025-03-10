@@ -26,8 +26,6 @@ import (
 	"testing"
 	"time"
 
-	"golang.org/x/sys/windows"
-
 	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
 )
 
@@ -331,7 +329,7 @@ func TestGetStatus(t *testing.T) {
 	}
 }
 
-func runCommandSuccessfully(_ *exec.Cmd, _ windows.Handle) (string, error) {
+func runCommandSuccessfully(_ *exec.Cmd) (string, error) {
 	return "success", nil
 }
 func Test_runSubAgentCommand_CancelContextWhenCmdExitsSuccessfully(t *testing.T) {
@@ -341,13 +339,13 @@ func Test_runSubAgentCommand_CancelContextWhenCmdExitsSuccessfully(t *testing.T)
 
 	var wg sync.WaitGroup
 	wg.Add(1)
-	runSubAgentCommand(ctx, cancel, cmd, runCommandSuccessfully, &wg, 0)
+	runSubAgentCommand(ctx, cancel, cmd, runCommandSuccessfully, &wg)
 	if ctx.Err() == nil {
 		t.Error("runSubAgentCommand() did not cancel context but should")
 	}
 }
 
-func runCommandAndFailed(_ *exec.Cmd, _ windows.Handle) (string, error) {
+func runCommandAndFailed(_ *exec.Cmd) (string, error) {
 	return "failure", errors.New("command failed")
 }
 func Test_runSubAgentCommand_CancelContextWhenCmdExitsWithErrors(t *testing.T) {
@@ -357,7 +355,7 @@ func Test_runSubAgentCommand_CancelContextWhenCmdExitsWithErrors(t *testing.T) {
 
 	var wg sync.WaitGroup
 	wg.Add(1)
-	runSubAgentCommand(ctx, cancel, cmd, runCommandAndFailed, &wg, 0)
+	runSubAgentCommand(ctx, cancel, cmd, runCommandAndFailed, &wg)
 	if ctx.Err() == nil {
 		t.Error("runSubAgentCommand() did not cancel context but should")
 	}
@@ -368,30 +366,19 @@ func Test_runCommand(t *testing.T) {
 	ctx := context.Background()
 	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
-
-	jobHandle, err := windows.CreateJobObject(nil, nil)
-	if err != nil {
-		t.Fatalf("Failed to create a Windows Job Handle object: %v", err)
-	}
-	defer windows.CloseHandle(jobHandle)
-
-	_, err = runCommand(cmd, jobHandle)
+	_, err := runCommand(cmd)
 	if err != nil {
 		t.Errorf("runCommand got unexpected error: %v", err)
 	}
 }
+
 func Test_runCommandFailure(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", "GO_HELPER_FAILURE=1"}
 
-	jobHandle, err := windows.CreateJobObject(nil, nil)
-	if err != nil {
-		t.Fatalf("Failed to create a Windows Job Handle object: %v", err)
-	}
-
-	if _, err := runCommand(cmd, jobHandle); err == nil {
+	if _, err := runCommand(cmd); err == nil {
 		t.Error("runCommand got nil error, want exec failure")
 	}
 }

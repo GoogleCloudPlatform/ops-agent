@@ -67,8 +67,8 @@ var (
 
 // RunSubAgentCommandFunc defines a function type that starts a subagent. If one subagent execution exited, other sugagents are also terminated via context cancellation. This abstraction is introduced
 // primarily to facilitate testing by allowing the injection of mock
-// implementations. The jobHandle is a Windows Job object handle. This is used to ensure that all child processes are killed when the parent plugin grpc server process exits.
-type RunSubAgentCommandFunc func(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup, jobHandle windows.Handle)
+// implementations.
+type RunSubAgentCommandFunc func(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup)
 
 // Apply applies the config sent or performs the work defined in the message.
 // ApplyRequest is opaque to the agent and is expected to be well known contract
@@ -334,12 +334,13 @@ func createWindowsJobHandle() (windows.Handle, error) {
 		return 0, err
 	}
 
-	// err = windows.AssignProcessToJobObject(jobHandle, windows.CurrentProcess())
+	// Assign the current process to the job object. This ensures that all child processes are automatically assigned to the same Job object.
+	err = windows.AssignProcessToJobObject(jobHandle, windows.CurrentProcess())
 
-	// if err != nil {
-	// 	windows.CloseHandle(jobHandle)
-	// 	return 0, err
-	// }
+	if err != nil {
+		windows.CloseHandle(jobHandle)
+		return 0, err
+	}
 
 	return jobHandle, nil
 }
@@ -372,7 +373,7 @@ func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallD
 		"--config", path.Join(pluginStateDirectory, GeneratedConfigsOutDir, "otel/otel.yaml"),
 	)
 	wg.Add(1)
-	go runSubAgentCommand(ctx, cancel, runOtelCmd, runCommand, &wg, jobHandle)
+	go runSubAgentCommand(ctx, cancel, runOtelCmd, runCommand, &wg)
 
 	// Starting Fluentbit
 	runFluentBitCmd := exec.CommandContext(ctx,
@@ -385,7 +386,7 @@ func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallD
 		"--storage_path", path.Join(pluginStateDirectory, "run/buffers"),
 	)
 	wg.Add(1)
-	go runSubAgentCommand(ctx, cancel, runFluentBitCmd, runCommand, &wg, jobHandle)
+	go runSubAgentCommand(ctx, cancel, runFluentBitCmd, runCommand, &wg)
 
 	wg.Wait()
 	windows.CloseHandle(jobHandle)
@@ -412,45 +413,7 @@ func runDiagnosticsService(ctx context.Context, cancel context.CancelFunc, otelE
 	}
 }
 
-func runCommand(cmd *exec.Cmd, _ windows.Handle) (string, error) {
-	// if cmd == nil {
-	// 	return "", nil
-	// }
-
-	// var stdoutBuf, stderrBuf bytes.Buffer
-	// cmd.Stdout = &stdoutBuf
-	// cmd.Stderr = &stderrBuf
-
-	// log.Printf("Running command: %s", cmd.Args)
-	// err := cmd.Start()
-	// if err != nil {
-	// 	log.Printf("Command %s failed, \ncommand error: %s", cmd.Args, err)
-	// 	return "", err
-	// }
-
-	// childProcessHandle, err := windows.OpenProcess(
-	// 	windows.PROCESS_ALL_ACCESS,
-	// 	false, // Inherit handle
-	// 	uint32(cmd.Process.Pid),
-	// )
-	// if err != nil {
-	// 	log.Printf("Command %s failed, because it encountered error while opening a child process Job Handle: %s", cmd.Args, err)
-	// 	return "", err
-	// }
-	// defer windows.CloseHandle(childProcessHandle)
-
-	// err = windows.AssignProcessToJobObject(jobHandle, childProcessHandle)
-	// if err != nil {
-	// 	fmt.Println("Error assigning process to Job Object:", err)
-	// 	return "", err
-	// }
-
-	// err = cmd.Wait()
-	// if err != nil {
-	// 	log.Printf("Command %s failed, \ncommand error: %s", cmd.Args, err)
-	// 	return "", err
-	// }
-	// return fmt.Sprintf("stdout: %s\n stderr: %s", stdoutBuf.String(), stderrBuf.String()), nil
+func runCommand(cmd *exec.Cmd) (string, error) {
 	if cmd == nil {
 		return "", nil
 	}
@@ -463,6 +426,7 @@ func runCommand(cmd *exec.Cmd, _ windows.Handle) (string, error) {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 func runCommand(cmd *exec.Cmd) (string, error) {
 	panic("runCommand method is not implemented on Windows, please use runCommandWindows instead")
 }
@@ -471,6 +435,9 @@ func runSubAgentCommand(ctx context.Context, cancel context.CancelFunc, cmd *exe
 =======
 func runSubAgentCommand(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup, jobHandle windows.Handle) {
 >>>>>>> 3b9d2ea01 (renamed runCommandWindows)
+=======
+func runSubAgentCommand(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup) {
+>>>>>>> dcf4b8657 (confirmed: If the parent process is linked to the windows job object, the job object will also  auto include the child parent processes)
 	defer wg.Done()
 	if cmd == nil {
 		return
@@ -481,7 +448,7 @@ func runSubAgentCommand(ctx context.Context, cancel context.CancelFunc, cmd *exe
 		return
 	}
 
-	output, err := runCommand(cmd, jobHandle)
+	output, err := runCommand(cmd)
 	if err != nil {
 		log.Printf("command: %s exited with errors, not restarting.\nCommand output: %s\n Command error:%s", cmd.Args, string(output), err)
 	} else {
