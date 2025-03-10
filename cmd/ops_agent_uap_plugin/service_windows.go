@@ -157,6 +157,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 
 	cancelFunc := func() {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
+		log.Print("cancel function is triggerred")
 		windowsEventLogger.Close()
 	}
 
