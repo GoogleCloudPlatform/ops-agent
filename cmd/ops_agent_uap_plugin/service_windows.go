@@ -147,7 +147,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	runHealthChecks(healthCheckFileLogger, windowsEventLogger)
 
 	// Create a Windows Job object and stores its handle, to ensure that all child processes are killed when the parent process exits.
-	jobHandle, err := createWindowsJobHandle()
+	_, err = createWindowsJobHandle()
 	if err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		windowsEventLogger.Close()
@@ -162,7 +162,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	}
 
 	otelErrorHandler := &otelErrorHandler{windowsEventLogger: windowsEventLogger, windowsEventId: OpsAgentUAPPluginEventID}
-	go runSubagents(pContext, cancelFunc, pluginInstallDir, pluginStateDir, runSubAgentCommand, ps.runCommand, otelErrorHandler, jobHandle)
+	go runSubagents(pContext, cancelFunc, pluginInstallDir, pluginStateDir, runSubAgentCommand, ps.runCommand, otelErrorHandler)
 
 	return &pb.StartResponse{}, nil
 }
@@ -356,9 +356,7 @@ func createWindowsJobHandle() (windows.Handle, error) {
 // and GetStatus() returns a non-healthy status, signaling UAP to re-trigger Start().
 //
 // otelErrorHandler: an implementation of otel.ErrorHandler that is used in the diagnostics service to log otel errors to the Windows event log.
-//
-// jobHandle: a Windows Job object handle. This is used to ensure that all child processes are killed when the parent plugin grpc server process exits.
-func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallDirectory string, pluginStateDirectory string, runSubAgentCommand RunSubAgentCommandFunc, runCommand RunCommandFunc, otelErrorHandler otel.ErrorHandler, jobHandle windows.Handle) {
+func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallDirectory string, pluginStateDirectory string, runSubAgentCommand RunSubAgentCommandFunc, runCommand RunCommandFunc, otelErrorHandler otel.ErrorHandler) {
 
 	var wg sync.WaitGroup
 	// Starting the diagnostics service

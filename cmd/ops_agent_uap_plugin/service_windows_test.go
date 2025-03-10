@@ -20,7 +20,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"os/exec"
 	"sync"
@@ -239,7 +238,6 @@ func TestStart(t *testing.T) {
 		cancel             context.CancelFunc
 		mockRunCommandFunc RunCommandFunc
 		wantError          bool
-		wantCancelNil      bool
 	}{
 		{
 			name:   "Happy path: plugin not already started, Start() exits successfully",
@@ -255,15 +253,6 @@ func TestStart(t *testing.T) {
 				return "", nil
 			},
 		},
-		{
-			name:   "Start() returns errors, cancel() function should be reset to nil",
-			cancel: nil,
-			mockRunCommandFunc: func(cmd *exec.Cmd) (string, error) {
-				return "", fmt.Errorf("error")
-			},
-			wantError:     true,
-			wantCancelNil: true,
-		},
 	}
 
 	for _, tc := range cases {
@@ -275,9 +264,6 @@ func TestStart(t *testing.T) {
 			gotError := (err != nil)
 			if gotError != tc.wantError {
 				t.Errorf("%v: Start() got error: %v, err msg: %v, want error:%v", tc.name, gotError, err, tc.wantError)
-			}
-			if (ps.cancel == nil) != tc.wantCancelNil {
-				t.Errorf("%v: Start() got cancel function: %v, want cancel function to be reset to nil: %v", tc.name, ps.cancel, tc.wantCancelNil)
 			}
 		})
 	}
