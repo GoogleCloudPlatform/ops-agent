@@ -272,3 +272,15 @@ WORKDIR /work
 COPY . /work
 
 RUN & .\pkg\goo\build.ps1 -DestDir /work/out;
+
+###############################################################################
+# Packaging for the Ops Agent Plugin
+###############################################################################
+
+WORKDIR /work
+
+COPY . /work
+
+RUN & .\pkg\plugin\build.ps1 -DestDir /work/out/bin;
+
+
