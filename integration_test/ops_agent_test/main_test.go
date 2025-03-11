@@ -214,7 +214,7 @@ func setupMainLogAndVM(t *testing.T, imageSpec string) (context.Context, *log.Lo
 // If you need to write to something besides the main log, just call
 // agents.CommonSetup instead.
 func setupMainLogAndManagedInstaceGroupVM(t *testing.T, imageSpec string) (context.Context, *log.Logger, *gce.ManagedInstanceGroupVM) {
-	ctx, dirLog, migVM := agents.ManagedInstanceGroupSetup(t, imageSpec, nil, nil)
+	ctx, dirLog, migVM := agents.ManagedInstanceGroupVMSetup(t, imageSpec, nil, nil)
 	return ctx, dirLog.ToMainLog(), migVM
 }
 
