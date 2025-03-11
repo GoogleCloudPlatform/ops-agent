@@ -940,8 +940,8 @@ func CommonSetupWithExtraCreateArgumentsAndMetadata(t *testing.T, imageSpec stri
 	return ctx, logger, vm
 }
 
-// CommonSetupWithExtraCreateArgumentsAndMetadata sets up the VM for testing with extra creation arguments for the `gcloud compute instances create` command and additional metadata.
-func ManagedInstanceGroupSetup(t *testing.T, imageSpec string, extraCreateArguments []string, additionalMetadata map[string]string) (context.Context, *logging.DirectoryLogger, *gce.ManagedInstanceGroupVM) {
+// ManagedInstanceGroupVMSetup sets up a Managed Instance Group VM for testing with extra creation arguments for the `gcloud compute instances create` command and additional metadata.
+func ManagedInstanceGroupVMSetup(t *testing.T, imageSpec string, extraCreateArguments []string, additionalMetadata map[string]string) (context.Context, *logging.DirectoryLogger, *gce.ManagedInstanceGroupVM) {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
 	t.Cleanup(cancel)
