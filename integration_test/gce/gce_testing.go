@@ -180,6 +180,8 @@ const (
 
 	DenyEgressTrafficTag = "test-ops-agent-deny-egress-traffic-tag"
 
+	AppHubIntegrationTestApp = "ops-agent-app-hub-integration-test-app"
+
 	TraceQueryMaxAttempts = QueryMaxAttempts / traceQueryDerate
 )
 
@@ -683,7 +685,7 @@ func AssertLogMissing(ctx context.Context, logger *log.Logger, vm *VM, logNameRe
 			return nil
 		}
 		logger.Printf("Query returned found=%v, err=%v, attempt=%d", found, err, attempt)
-		if err != nil && !strings.Contains(err.Error(), "Internal error encountered") {
+		if !strings.Contains(err.Error(), "Internal error encountered") {
 			// A non-retryable error.
 			return fmt.Errorf("AssertLogMissing() failed: %v", err)
 		}
@@ -1208,7 +1210,7 @@ func getOS(ctx context.Context, logger *log.Logger, vm *VM) (*OS, error) {
 	}, nil
 }
 
-func createVMFromVMOptions(ctx context.Context, logger *log.Logger, options VMOptions) (vmToReturn *VM, errToReturn error) {
+func createVMFromVMOptions(options VMOptions) *VM {
 	vm := &VM{
 		Project:   options.Project,
 		ImageSpec: options.ImageSpec,
@@ -1243,7 +1245,7 @@ func createVMFromVMOptions(ctx context.Context, logger *log.Logger, options VMOp
 			vm.MachineType = "t2a-standard-4"
 		}
 	}
-	return vm, nil
+	return vm
 }
 
 func verifyVMCreation(ctx context.Context, logger *log.Logger, vm *VM) error {
@@ -1306,15 +1308,15 @@ func verifyVMCreation(ctx context.Context, logger *log.Logger, vm *VM) error {
 	return nil
 }
 
-func addditionalParametersToCreateInstaceCommand(ctx context.Context, logger *log.Logger, options VMOptions, vm *VM) ([]string, error) {
+func addditionalCreateInstaceArgs(options VMOptions, vm *VM) ([]string, error) {
 	args := []string{}
 	newMetadata, err := addFrameworkMetadata(vm.ImageSpec, options.Metadata)
 	if err != nil {
-		return nil, fmt.Errorf("appendParametersToCreateInstaceCommand() could not construct valid metadata: %v", err)
+		return nil, fmt.Errorf("addditionalCreateInstaceArgs() could not construct valid metadata: %v", err)
 	}
 	newLabels, err := addFrameworkLabels(options.Labels)
 	if err != nil {
-		return nil, fmt.Errorf("appendParametersToCreateInstaceCommand() could not construct valid labels: %v", err)
+		return nil, fmt.Errorf("addditionalCreateInstaceArgs() could not construct valid labels: %v", err)
 	}
 
 	image_flags, err := gcloudFlagsFromImageSpec(vm.ImageSpec)
@@ -1352,7 +1354,7 @@ func addditionalParametersToCreateInstaceCommand(ctx context.Context, logger *lo
 // Returns a VM object or an error (never both). The caller is responsible for
 // deleting the VM if (and only if) the returned error is nil.
 func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOptions) (vmToReturn *VM, errToReturn error) {
-	vm, err := createVMFromVMOptions(ctx, logger, options)
+	vm := createVMFromVMOptions(options)
 
 	imageFamilyScope := options.ImageFamilyScope
 
@@ -1371,7 +1373,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		"--format=json",
 	}
 
-	additionalArgs, err := addditionalParametersToCreateInstaceCommand(ctx, logger, options, vm)
+	additionalArgs, err := addditionalCreateInstaceArgs(options, vm)
 	if err != nil {
 		return nil, err
 	}
@@ -1429,21 +1431,19 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	return vm, nil
 }
 
-// attemptCreateManagedInstanceGroupInstance creates a VM instance and waits for it to be ready.
+// attemptCreateManagedInstanceGroupVM creates a VM instance and waits for it to be ready.
 // Returns a VM object or an error (never both). The caller is responsible for
 // deleting the VM if (and only if) the returned error is nil.
-func attemptCreateManagedInstanceGroupInstance(ctx context.Context, logger *log.Logger, options VMOptions) (vmToReturn *ManagedInstanceGroupVM, errToReturn error) {
-	// We need a shorter uuid here to add suffixes and not go over the 63 character limit.
+func attemptCreateManagedInstanceGroupVM(ctx context.Context, logger *log.Logger, options VMOptions) (vmToReturn *ManagedInstanceGroupVM, errToReturn error) {
+	// We need a shorter uuid here to add suffixes and not go over the 63 character limit
+	// for resource names.
 	options.Name = fmt.Sprintf("%s-%s", sandboxPrefix, uuid.NewString()[:30])
-	vm, err := createVMFromVMOptions(ctx, logger, options)
-	if err != nil {
-		return nil, err
+
+	migVM := &ManagedInstanceGroupVM{
+		VM: createVMFromVMOptions(options),
 	}
 
-	migVM := ManagedInstanceGroupVM{
-		VM: vm,
-	}
-
+	// Step #1 : Create vm instance template
 	createTemplateArgs := []string{
 		"beta", "compute", "instance-templates", "create", migVM.InstanceTemplateName(),
 		"--project=" + migVM.Project,
@@ -1451,7 +1451,7 @@ func attemptCreateManagedInstanceGroupInstance(ctx context.Context, logger *log.
 		"--network=" + migVM.Network,
 		"--format=json",
 	}
-	additionalArgs, err := addditionalParametersToCreateInstaceCommand(ctx, logger, options, vm)
+	additionalArgs, err := addditionalCreateInstaceArgs(options, migVM.VM)
 	if err != nil {
 		return nil, err
 	}
@@ -1459,11 +1459,24 @@ func attemptCreateManagedInstanceGroupInstance(ctx context.Context, logger *log.
 
 	output, err := RunGcloud(ctx, logger, "", createTemplateArgs)
 	if err != nil {
-		// Note: we don't try and delete the VM in this case because there is
+		// Note: we don't try and delete the instance template in this case because there is
 		// nothing to delete.
 		return nil, err
 	}
 
+	defer func() {
+		if errToReturn != nil {
+			// This function is responsible for deleting the VM in all error cases.
+			errToReturn = multierr.Append(errToReturn, DeleteManagedInstanceGroupVM(logger, migVM))
+			// Make sure to never return both a valid VM object and an error.
+			vmToReturn = nil
+		}
+		if errToReturn == nil && migVM.VM == nil {
+			errToReturn = errors.New("programming error: attemptCreateManagedInstanceGroupVM() returned nil VM and nil error")
+		}
+	}()
+
+	// Step #2 : Create empty Managed Instance Group using template.
 	createMIGArgs := []string{
 		"compute", "instance-groups", "managed", "create", migVM.ManagedInstanceGroupName(),
 		"--project=" + migVM.Project,
@@ -1479,36 +1492,7 @@ func attemptCreateManagedInstanceGroupInstance(ctx context.Context, logger *log.
 		return nil, err
 	}
 
-	vmRegion := migVM.Zone[:len(migVM.Zone)-2]
-	discoverMIGWorkloadArgs := []string{
-		"apphub", "discovered-workloads", "list",
-		"--project=" + migVM.Project,
-		"--location=" + vmRegion,
-		"--filter=workloadReference.uri ~ " + migVM.ManagedInstanceGroupName(),
-		"--uri",
-	}
-
-	output, err = RunGcloud(ctx, logger, "", discoverMIGWorkloadArgs)
-	if err != nil {
-		return nil, err
-	}
-
-	logger.Println("found uri : ", output.Stdout)
-	migResourceString := output.Stdout[33:]
-	registerAppHubWorkloadArgs := []string{
-		"apphub", "applications", "workloads", "create", migVM.AppHubWorkloadName(),
-		"--application=ops-agent-app-hub-integration-test-app",
-		"--project=" + migVM.Project,
-		"--location=global",
-		"--discovered-workload=" + migResourceString,
-		"--format=json",
-	}
-
-	output, err = RunGcloud(ctx, logger, "", registerAppHubWorkloadArgs)
-	if err != nil {
-		return nil, err
-	}
-
+	// Step #3 : Create test VM in Managed Instance Group.
 	createVMArgs := []string{
 		"compute", "instance-groups", "managed", "create-instance", migVM.Name,
 		"--instance=" + migVM.Name,
@@ -1522,8 +1506,7 @@ func attemptCreateManagedInstanceGroupInstance(ctx context.Context, logger *log.
 		return nil, err
 	}
 
-	time.Sleep(time.Second * 10)
-
+	// Step #4 : Query newly created VM metadata.
 	listVMArgs := []string{
 		"compute", "instances", "list",
 		"--filter=name=( '" + migVM.Name + "' ... )",
@@ -1537,18 +1520,6 @@ func attemptCreateManagedInstanceGroupInstance(ctx context.Context, logger *log.
 		return nil, err
 	}
 
-	defer func() {
-		if errToReturn != nil {
-			// This function is responsible for deleting the VM in all error cases.
-			errToReturn = multierr.Append(errToReturn, DeleteManagedInstanceGroupInstance(logger, &migVM))
-			// Make sure to never return both a valid VM object and an error.
-			vmToReturn = nil
-		}
-		if errToReturn == nil && vm == nil {
-			errToReturn = errors.New("programming error: attemptCreateManagedInstanceGroupInstance() returned nil VM and nil error")
-		}
-	}()
-
 	// Pull the instance ID and external IP address out of the output.
 	id, err := extractID(output.Stdout)
 	if err != nil {
@@ -1556,7 +1527,7 @@ func attemptCreateManagedInstanceGroupInstance(ctx context.Context, logger *log.
 	}
 	migVM.ID = id
 
-	logger.Printf("Instance Log: %v", instanceLogURL(vm))
+	logger.Printf("Instance Log: %v", instanceLogURL(migVM.VM))
 
 	ipAddress, err := extractIPAddress(output.Stdout)
 	if err != nil {
@@ -1579,7 +1550,7 @@ func attemptCreateManagedInstanceGroupInstance(ctx context.Context, logger *log.
 		return nil, err
 	}
 
-	return &migVM, nil
+	return migVM, nil
 }
 
 func IsSLESVM(vm *VM) bool {
@@ -1679,11 +1650,11 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 	return vm, nil
 }
 
-// CreateManagedInstanceGroupInstance launches a new VM instance based on the given options.
+// CreateManagedInstanceGroupVM launches a new VM instance based on the given options.
 // Also waits for the instance to be reachable over ssh.
 // Returns a VM object or an error (never both). The caller is responsible for
 // deleting the VM if (and only if) the returned error is nil.
-func CreateManagedInstanceGroupInstance(origCtx context.Context, logger *log.Logger, options VMOptions) (*ManagedInstanceGroupVM, error) {
+func CreateManagedInstanceGroupVM(origCtx context.Context, logger *log.Logger, options VMOptions) (*ManagedInstanceGroupVM, error) {
 	// Give enough time for at least 3 consecutive attempts to start a VM.
 	// If an attempt returns a non-retriable error, it will be returned
 	// immediately.
@@ -1716,7 +1687,7 @@ func CreateManagedInstanceGroupInstance(origCtx context.Context, logger *log.Log
 		defer cancel()
 
 		var err error
-		migVM, err = attemptCreateManagedInstanceGroupInstance(attemptCtx, logger, options)
+		migVM, err = attemptCreateManagedInstanceGroupVM(attemptCtx, logger, options)
 
 		if err != nil && !shouldRetry(err) {
 			err = backoff.Permanent(err)
@@ -1830,11 +1801,11 @@ func DeleteInstance(logger *log.Logger, vm *VM) error {
 	return err
 }
 
-// DeleteManagedInstanceGroupInstance deletes the given VM instance synchronously.
+// DeleteManagedInstanceGroupVM deletes the given VM instance synchronously.
 // Does nothing if the VM was already deleted.
 // Doesn't take a Context argument because even if the test has timed out or is
 // cancelled, we still want to delete the VMs.
-func DeleteManagedInstanceGroupInstance(logger *log.Logger, migVM *ManagedInstanceGroupVM) error {
+func DeleteManagedInstanceGroupVM(logger *log.Logger, migVM *ManagedInstanceGroupVM) error {
 	if migVM.AlreadyDeleted {
 		logger.Printf("Managed Instance Group %v was already deleted, skipping delete.", migVM.Name)
 		return nil
@@ -2396,21 +2367,21 @@ func SetupVM(ctx context.Context, t *testing.T, logger *log.Logger, options VMOp
 // SetupManagedInstanceGroupVM creates a new VM according to the given options.
 // If VM creation fails, it will abort the test.
 // At the end of the test, the VM will be cleaned up.
-func SetupManagedInstanceGroupVM(ctx context.Context, t *testing.T, logger *log.Logger, options VMOptions) *VM {
+func SetupManagedInstanceGroupVM(ctx context.Context, t *testing.T, logger *log.Logger, options VMOptions) *ManagedInstanceGroupVM {
 	t.Helper()
 
-	migVM, err := CreateManagedInstanceGroupInstance(ctx, logger, options)
+	migVM, err := CreateManagedInstanceGroupVM(ctx, logger, options)
 	if err != nil {
 		t.Fatalf("SetupManagedInstanceGroupVM() error creating instance: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := DeleteManagedInstanceGroupInstance(logger, migVM); err != nil {
+		if err := DeleteManagedInstanceGroupVM(logger, migVM); err != nil {
 			t.Errorf("SetupManagedInstanceGroupVM() error deleting instance: %v", err)
 		}
 	})
 
 	t.Logf("Instance Log: %v", instanceLogURL(migVM.VM))
-	return migVM.VM
+	return migVM
 }
 
 // RunForEachImage runs a subtest for each image defined in IMAGE_SPECS.
