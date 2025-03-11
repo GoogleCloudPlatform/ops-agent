@@ -1494,7 +1494,7 @@ func attemptCreateManagedInstanceGroupVM(ctx context.Context, logger *log.Logger
 
 	// Step #3 : Create test VM in Managed Instance Group.
 	createVMArgs := []string{
-		"compute", "instance-groups", "managed", "create-instance", migVM.Name,
+		"compute", "instance-groups", "managed", "create-instance", migVM.ManagedInstanceGroupName(),
 		"--instance=" + migVM.Name,
 		"--project=" + migVM.Project,
 		"--zone=" + migVM.Zone,
@@ -1506,7 +1506,21 @@ func attemptCreateManagedInstanceGroupVM(ctx context.Context, logger *log.Logger
 		return nil, err
 	}
 
-	// Step #4 : Query newly created VM metadata.
+	// Step #4 : Wait until Managed Instance Group is stable.
+	waitUntilStableArgs := []string{
+		"compute", "instance-groups", "managed", "wait-until", migVM.ManagedInstanceGroupName(),
+		"--stable",
+		"--project=" + migVM.Project,
+		"--zone=" + migVM.Zone,
+		"--format=json",
+	}
+
+	output, err = RunGcloud(ctx, logger, "", waitUntilStableArgs)
+	if err != nil {
+		return nil, err
+	}
+
+	// Step #5 : Query newly created VM metadata.
 	listVMArgs := []string{
 		"compute", "instances", "list",
 		"--filter=name=( '" + migVM.Name + "' ... )",
