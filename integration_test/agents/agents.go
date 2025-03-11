@@ -941,7 +941,7 @@ func CommonSetupWithExtraCreateArgumentsAndMetadata(t *testing.T, imageSpec stri
 }
 
 // CommonSetupWithExtraCreateArgumentsAndMetadata sets up the VM for testing with extra creation arguments for the `gcloud compute instances create` command and additional metadata.
-func ManagedInstanceGroupSetup(t *testing.T, imageSpec string, extraCreateArguments []string, additionalMetadata map[string]string) (context.Context, *logging.DirectoryLogger, *gce.VM) {
+func ManagedInstanceGroupSetup(t *testing.T, imageSpec string, extraCreateArguments []string, additionalMetadata map[string]string) (context.Context, *logging.DirectoryLogger, *gce.ManagedInstanceGroupVM) {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
 	t.Cleanup(cancel)
@@ -960,12 +960,12 @@ func ManagedInstanceGroupSetup(t *testing.T, imageSpec string, extraCreateArgume
 		ExtraCreateArguments: extraCreateArguments,
 		Metadata:             additionalMetadata,
 	}
-	vm := gce.SetupManagedInstanceGroupVM(ctx, t, logger.ToFile("VM_initialization.txt"), options)
-	logger.ToMainLog().Printf("VM is ready: %#v", vm)
+	migVM := gce.SetupManagedInstanceGroupVM(ctx, t, logger.ToFile("VM_initialization.txt"), options)
+	logger.ToMainLog().Printf("VM is ready: %#v", migVM.VM)
 	t.Cleanup(func() {
-		RunOpsAgentDiagnostics(ctx, logger, vm)
+		RunOpsAgentDiagnostics(ctx, logger, migVM.VM)
 	})
-	return ctx, logger, vm
+	return ctx, logger, migVM
 }
 
 func InstallOpsAgentUAPPlugin(ctx context.Context, logger *log.Logger, vm *gce.VM, location PackageLocation) error {

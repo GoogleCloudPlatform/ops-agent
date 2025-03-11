@@ -206,16 +206,16 @@ func setupMainLogAndVM(t *testing.T, imageSpec string) (context.Context, *log.Lo
 	return ctx, dirLog.ToMainLog(), vm
 }
 
-// setupMainLogAndManagedInstaceGroup sets up a VM for testing and returns it, along with a logger
+// setupMainLogAndManagedInstaceGroupVM sets up a VM for testing and returns it, along with a logger
 // that writes to a file called main_log.txt.
 // This function is just a wrapper for agents.CommonSetup that returns a "plain"
 // log.Logger instead so that the callsite doesn't need to write
 // logger.ToMainLog() throughout.
 // If you need to write to something besides the main log, just call
 // agents.CommonSetup instead.
-func setupMainLogAndManagedInstaceGroup(t *testing.T, imageSpec string) (context.Context, *log.Logger, *gce.VM) {
-	ctx, dirLog, vm := agents.ManagedInstanceGroupSetup(t, imageSpec, nil, nil)
-	return ctx, dirLog.ToMainLog(), vm
+func setupMainLogAndManagedInstaceGroupVM(t *testing.T, imageSpec string) (context.Context, *log.Logger, *gce.ManagedInstanceGroupVM) {
+	ctx, dirLog, migVM := agents.ManagedInstanceGroupSetup(t, imageSpec, nil, nil)
+	return ctx, dirLog.ToMainLog(), migVM
 }
 
 // writeToSystemLog writes the given payload to the VM's normal log location.
@@ -5118,22 +5118,55 @@ func TestAppHubLogLabels(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		ctx, logger, vm := setupMainLogAndManagedInstaceGroup(t, imageSpec)
 
-		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
+		ctx, logger, migVM := setupMainLogAndManagedInstaceGroupVM(t, imageSpec)
+
+		// Discover Managed Instance Group resource from AppHub API.
+		vmRegion := migVM.Zone[:len(migVM.Zone)-2]
+		discoverMIGWorkloadArgs := []string{
+			"apphub", "discovered-workloads", "list",
+			"--project=" + migVM.Project,
+			"--location=" + vmRegion,
+			"--filter=workloadReference.uri ~ " + migVM.ManagedInstanceGroupName(),
+			"--uri",
+		}
+
+		output, err := gce.RunGcloud(ctx, logger, "", discoverMIGWorkloadArgs)
+		if err != nil {
 			t.Fatal(err)
 		}
 
-		if err := writeToSystemLog(ctx, logger, vm, "123456789"); err != nil {
+		// Step #4 : Register Managed Instance Group as AppHub workload.
+		logger.Println("found uri : ", output.Stdout)
+		migResourceString := output.Stdout[33:]
+		registerAppHubWorkloadArgs := []string{
+			"apphub", "applications", "workloads", "create", migVM.AppHubWorkloadName(),
+			"--application=" + gce.AppHubIntegrationTestApp,
+			"--project=" + migVM.Project,
+			"--location=global",
+			"--discovered-workload=" + migResourceString,
+			"--format=json",
+		}
+
+		output, err = gce.RunGcloud(ctx, logger, "", registerAppHubWorkloadArgs)
+		if err != nil {
 			t.Fatal(err)
 		}
 
-		tag := systemLogTagForImage(vm.ImageSpec)
-		query := logMessageQueryForImage(vm.ImageSpec, "123456789")
+		if err := agents.SetupOpsAgent(ctx, logger, migVM.VM, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := writeToSystemLog(ctx, logger, migVM.VM, "123456789"); err != nil {
+			t.Fatal(err)
+		}
+
+		tag := systemLogTagForImage(migVM.ImageSpec)
+		query := logMessageQueryForImage(migVM.ImageSpec, "123456789")
 		query += ` AND labels."compute.googleapis.com/instance_group_manager/name"=~".*" AND labels."compute.googleapis.com/instance_group_manager/zone"=~".*"`
 		query += ` AND apphub.application.id=~".*" AND apphub.workload.id=~".*"`
 
-		if err := gce.WaitForLog(ctx, logger, vm, tag, time.Hour, query); err != nil {
+		if err := gce.WaitForLog(ctx, logger, migVM.VM, tag, time.Hour, query); err != nil {
 			t.Error(err)
 		}
 	})
