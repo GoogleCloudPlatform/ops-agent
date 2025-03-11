@@ -298,8 +298,8 @@ func CollectEnabledReceiversMetricToOLTPJSON(ctx context.Context, uc *confgenera
 	return nil
 }
 
-func CollectFeatureTrackingMetricToOTLPJSON(ctx context.Context, uc *confgenerator.UnifiedConfig) error {
-	features, err := confgenerator.ExtractFeatures(ctx, uc)
+func CollectFeatureTrackingMetricToOTLPJSON(ctx context.Context, userUc, mergedUc *confgenerator.UnifiedConfig) error {
+	features, err := confgenerator.ExtractFeatures(ctx, userUc, mergedUc)
 	if err != nil {
 		return err
 	}
@@ -334,7 +334,7 @@ func CollectFeatureTrackingMetricToOTLPJSON(ctx context.Context, uc *confgenerat
 }
 
 func CollectOpsAgentSelfMetricsToOTLPJSON(ctx context.Context, userUc, mergedUc *confgenerator.UnifiedConfig) (err error) {
-	err = CollectFeatureTrackingMetricToOTLPJSON(ctx, userUc)
+	err = CollectFeatureTrackingMetricToOTLPJSON(ctx, userUc, mergedUc)
 	if err != nil {
 		return fmt.Errorf("failed to collect feature tracking metric to otlp json: %w", err)
 	}
