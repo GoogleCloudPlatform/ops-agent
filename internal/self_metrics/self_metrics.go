@@ -267,6 +267,7 @@ func CollectEnabledReceiversMetricToOLTPJSON(ctx context.Context, uc *confgenera
 	gaugeMetric.SetName(getFullAgentMetricName(enabledReceiversMetricName))
 	dataPoints := gaugeMetric.SetEmptyGauge().DataPoints()
 
+	// Sort map keys to always generate the same json output.
 	for _, k := range confgenerator.GetSortedKeys(eR.MetricsReceiverCountsByType) {
 		rType := k
 		count := eR.MetricsReceiverCountsByType[k]
