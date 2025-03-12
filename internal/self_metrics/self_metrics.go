@@ -267,7 +267,9 @@ func CollectEnabledReceiversMetricToOLTPJSON(ctx context.Context, uc *confgenera
 	gaugeMetric.SetName(getFullAgentMetricName(enabledReceiversMetricName))
 	dataPoints := gaugeMetric.SetEmptyGauge().DataPoints()
 
-	for rType, count := range eR.MetricsReceiverCountsByType {
+	for _, k := range confgenerator.GetSortedKeys(eR.MetricsReceiverCountsByType) {
+		rType := k
+		count := eR.MetricsReceiverCountsByType[k]
 		point := dataPoints.AppendEmpty()
 		point.SetIntValue(int64(count))
 		attributes := point.Attributes()
@@ -275,7 +277,9 @@ func CollectEnabledReceiversMetricToOLTPJSON(ctx context.Context, uc *confgenera
 		attributes.PutStr("receiver_type", rType)
 	}
 
-	for rType, count := range eR.LogsReceiverCountsByType {
+	for _, k := range confgenerator.GetSortedKeys(eR.LogsReceiverCountsByType) {
+		rType := k
+		count := eR.LogsReceiverCountsByType[k]
 		point := dataPoints.AppendEmpty()
 		point.SetIntValue(int64(count))
 		attributes := point.Attributes()
