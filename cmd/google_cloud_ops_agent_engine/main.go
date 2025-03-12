@@ -60,23 +60,24 @@ func run() error {
 		return err
 	}
 
-	err = self_metrics.CollectOpsAgentSelfMetricsToOTLPJSON(ctx, uc, uc)
-	if err != nil {
-		return err
-	}
-
 	// Log the built-in and merged config files to STDOUT. These are then written
 	// by journald to var/log/syslog and so to Cloud Logging once the ops-agent is
 	// running.
 	log.Printf("Built-in config:\n%s", apps.BuiltInConfStructs["linux"])
 	log.Printf("Merged config:\n%s", uc)
 
-	if *service == "" {
+	switch *service {
+	case "":
 		runHealthChecks()
 		log.Println("Startup checks finished")
 		if *healthChecks {
 			// If healthchecks is set, stop here
 			return nil
+		}
+	case "otel":
+		err = self_metrics.GenerateOpsAgentSelfMetricsOTLPJSON(ctx, *input, *service, *outDir)
+		if err != nil {
+			return err
 		}
 	}
 	return uc.GenerateFilesFromConfig(ctx, *service, *logsDir, *stateDir, *outDir)

@@ -18,11 +18,12 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
 	mexporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric"
+	"github.com/GoogleCloudPlatform/ops-agent/cmd/google_cloud_ops_agent_diagnostics/utils"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/contrib/detectors/gcp"
@@ -36,11 +37,9 @@ import (
 )
 
 const (
-	agentMetricNamespace             string = "agent.googleapis.com"
-	enabledReceiversMetricName       string = "agent/ops_agent/enabled_receivers"
-	featureTrackingMetricName        string = "agent/internal/ops/feature_tracking"
-	enabledReceiversOTLPJSONFilePath string = "/var/run/google-cloud-ops-agent-opentelemetry-collector/enabledReceiversOTLP.json"
-	featureTrackingOTLPJSONFilePath  string = "/var/run/google-cloud-ops-agent-opentelemetry-collector/featureTrackingOTLP.json"
+	agentMetricNamespace       string = "agent.googleapis.com"
+	enabledReceiversMetricName string = "agent/ops_agent/enabled_receivers"
+	featureTrackingMetricName  string = "agent/internal/ops/feature_tracking"
 )
 
 func getFullAgentMetricName(metricName string) string {
@@ -257,10 +256,10 @@ func CollectOpsAgentSelfMetrics(ctx context.Context, userUc, mergedUc *confgener
 	}
 }
 
-func CollectEnabledReceiversMetricToOLTPJSON(ctx context.Context, uc *confgenerator.UnifiedConfig) error {
+func CollectEnabledReceiversMetricToOLTPJSON(ctx context.Context, uc *confgenerator.UnifiedConfig) ([]byte, error) {
 	eR, err := CountEnabledReceivers(ctx, uc)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	metrics := pmetric.NewMetrics()
@@ -287,21 +286,16 @@ func CollectEnabledReceiversMetricToOLTPJSON(ctx context.Context, uc *confgenera
 	jsonMarshaler := &pmetric.JSONMarshaler{}
 	json, err := jsonMarshaler.MarshalMetrics(metrics)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	err = os.WriteFile(enabledReceiversOTLPJSONFilePath, json, 0644)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return json, nil
 }
 
-func CollectFeatureTrackingMetricToOTLPJSON(ctx context.Context, userUc, mergedUc *confgenerator.UnifiedConfig) error {
+func CollectFeatureTrackingMetricToOTLPJSON(ctx context.Context, userUc, mergedUc *confgenerator.UnifiedConfig) ([]byte, error) {
 	features, err := confgenerator.ExtractFeatures(ctx, userUc, mergedUc)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	metrics := pmetric.NewMetrics()
@@ -322,26 +316,32 @@ func CollectFeatureTrackingMetricToOTLPJSON(ctx context.Context, userUc, mergedU
 	jsonMarshaler := &pmetric.JSONMarshaler{}
 	json, err := jsonMarshaler.MarshalMetrics(metrics)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	err = os.WriteFile(featureTrackingOTLPJSONFilePath, json, 0644)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return json, nil
 }
 
-func CollectOpsAgentSelfMetricsToOTLPJSON(ctx context.Context, userUc, mergedUc *confgenerator.UnifiedConfig) (err error) {
-	err = CollectFeatureTrackingMetricToOTLPJSON(ctx, userUc, mergedUc)
+func GenerateOpsAgentSelfMetricsOTLPJSON(ctx context.Context, config, service, outDir string) (err error) {
+	userUc, mergedUc, err := utils.GetUserAndMergedConfigs(ctx, config)
 	if err != nil {
-		return fmt.Errorf("failed to collect feature tracking metric to otlp json: %w", err)
+		return err
 	}
 
-	err = CollectEnabledReceiversMetricToOLTPJSON(ctx, mergedUc)
+	featureTrackingOTLPJSON, err := CollectFeatureTrackingMetricToOTLPJSON(ctx, userUc, mergedUc)
 	if err != nil {
-		return fmt.Errorf("failed to collect enabled receivers metric to otlp json: %w", err)
+		return fmt.Errorf("failed to generate feature tracking metric otlp json: %w", err)
+	}
+	if err = confgenerator.WriteConfigFile(featureTrackingOTLPJSON, filepath.Join(outDir, "featureTrackingOTLP.json")); err != nil {
+		return fmt.Errorf("failed to write feature tracking metric otlp json file: %w", err)
+	}
+
+	enabledReceiverOTLPJSON, err := CollectEnabledReceiversMetricToOLTPJSON(ctx, mergedUc)
+	if err != nil {
+		return fmt.Errorf("failed to generate enabled receivers metric otlp json: %w", err)
+	}
+	if err = confgenerator.WriteConfigFile(enabledReceiverOTLPJSON, filepath.Join(outDir, "enabledReceiversOTLP.json")); err != nil {
+		return fmt.Errorf("failed to write enabled receivers metric otlp json file: %w", err)
 	}
 	return nil
 }
