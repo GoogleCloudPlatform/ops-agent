@@ -325,6 +325,7 @@ func (vm VM) extractMetadataFromOutput(output CommandOutput) error {
 		return err
 	}
 	vm.IPAddress = ipAddress
+	return nil
 }
 
 // ManagedInstanceGroupVM represents an individual VM in a Managed Instace Group.
@@ -1413,8 +1414,12 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		}
 	}()
 
-	vm.extractMetadataFromOutput(output)
+	if err := vm.extractMetadataFromOutput(output); err != nil {
+		return nil, err
+	}
+
 	logger.Printf("Instance Log: %v", instanceLogURL(vm))
+
 	// This is just informational, so it's ok if it fails. Just warn and proceed.
 	if _, err := DescribeVMDisk(ctx, logger, vm); err != nil {
 		logger.Printf("Unable to retrieve information about the VM's boot disk: %v", err)
@@ -1530,13 +1535,17 @@ func attemptCreateManagedInstanceGroupVM(ctx context.Context, logger *log.Logger
 		return nil, err
 	}
 
-	migVM.extractMetadataFromOutput(output)
-	logger.Printf("Instance Log: %v", instanceLogURL(vm))
+	if err := migVM.extractMetadataFromOutput(output); err != nil {
+		return nil, err
+	}
+
+	logger.Printf("Instance Log: %v", instanceLogURL(migVM.VM))
 
 	// This is just informational, so it's ok if it fails. Just warn and proceed.
 	if _, err := DescribeVMDisk(ctx, logger, migVM.VM); err != nil {
 		logger.Printf("Unable to retrieve information about the VM's boot disk: %v", err)
 	}
+
 	if err := verifyVMCreation(ctx, logger, migVM.VM); err != nil {
 		return nil, err
 	}
