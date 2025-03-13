@@ -5114,12 +5114,58 @@ func TestLogCompression(t *testing.T) {
 	})
 }
 
+func cleanupStaleResourcesForTestAppHubLogLabels(ctx context.Context, logger *log.Logger) error {
+	// 24h old resources are considered stale
+	staleResourcesTime := time.Now().Add(time.Duration(-24) * time.Hour)
+
+	// Formated timestamp
+	staleResourcesTimestamp := staleResourcesTime.Format("2025-03-12T00:00:00.00-00:00")
+
+	// gcloud resource filter
+	filter := "creationTimestamp < " + staleResourcesTimestamp
+	filter += " AND name ~ test-^[0-9]{1,8}-"
+
+	project := os.Getenv("PROJECT")
+
+	listMIGArgs := []string{
+		"compute", "instance-templates", "list",
+		"--filter=" + filter,
+		"--project=" + project,
+		"--uri",
+	}
+
+	output, err := gce.RunGcloud(ctx, logger, "", listMIGArgs)
+	if err != nil {
+		return err
+	}
+
+	logger.Println(strings.Join(listMIGArgs, " "))
+
+	resultURIs := strings.Split(output.Stdout, "\n")
+	deleteMIGArgs := []string{
+		"compute", "instance-templates", "delete",
+		strings.Join(resultURIs, " "),
+		"--project=" + project,
+	}
+
+	// _, err = gce.RunGcloud(ctx, logger, "", deleteMIGArgs)
+	// if err != nil {
+	// 	return err
+	// }
+
+	logger.Println(strings.Join(deleteMIGArgs, " "))
+
+	return nil
+}
+
 func TestAppHubLogLabels(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 
 		ctx, logger, migVM := setupMainLogAndManagedInstaceGroupVM(t, imageSpec)
+
+		cleanupStaleResourcesForTestAppHubLogLabels(ctx, logger)
 
 		// Discover Managed Instance Group resource from AppHub API.
 		vmRegion := migVM.Zone[:len(migVM.Zone)-2]
