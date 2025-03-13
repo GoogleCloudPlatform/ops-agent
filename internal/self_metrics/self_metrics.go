@@ -327,7 +327,7 @@ func CollectFeatureTrackingMetricToOTLPJSON(ctx context.Context, userUc, mergedU
 	return json, nil
 }
 
-func GenerateOpsAgentSelfMetricsOTLPJSON(ctx context.Context, config, service, outDir string) (err error) {
+func GenerateOpsAgentSelfMetricsOTLPJSON(ctx context.Context, config, outDir string) (err error) {
 	userUc, mergedUc, err := utils.GetUserAndMergedConfigs(ctx, config)
 	if err != nil {
 		return err

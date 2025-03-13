@@ -75,7 +75,7 @@ func run() error {
 			return nil
 		}
 	case "otel":
-		err = self_metrics.GenerateOpsAgentSelfMetricsOTLPJSON(ctx, *input, *service, *outDir)
+		err = self_metrics.GenerateOpsAgentSelfMetricsOTLPJSON(ctx, *input, *outDir)
 		if err != nil {
 			return err
 		}
