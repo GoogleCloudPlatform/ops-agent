@@ -312,6 +312,21 @@ type VM struct {
 	AlreadyDeleted bool
 }
 
+func (vm VM) extractMetadataFromOutput(output CommandOutput) error {
+	// Pull the instance ID and external IP address out of the output.
+	id, err := extractID(output.Stdout)
+	if err != nil {
+		return err
+	}
+	vm.ID = id
+
+	ipAddress, err := extractIPAddress(output.Stdout)
+	if err != nil {
+		return err
+	}
+	vm.IPAddress = ipAddress
+}
+
 // ManagedInstanceGroupVM represents an individual VM in a Managed Instace Group.
 type ManagedInstanceGroupVM struct {
 	*VM
@@ -1398,29 +1413,10 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		}
 	}()
 
-	// Pull the instance ID and external IP address out of the output.
-	id, err := extractID(output.Stdout)
-	if err != nil {
-		return nil, err
-	}
-	vm.ID = id
-
+	vm.extractMetadataFromOutput(output)
 	logger.Printf("Instance Log: %v", instanceLogURL(vm))
-
-	ipAddress, err := extractIPAddress(output.Stdout)
-	if err != nil {
-		return nil, err
-	}
-	vm.IPAddress = ipAddress
-
-	// RunGcloud will log the output of the command, so we don't need to.
-	if _, err = RunGcloud(ctx, logger, "", []string{
-		"compute", "disks", "describe", vm.Name,
-		"--project=" + vm.Project,
-		"--zone=" + vm.Zone,
-		"--format=json",
-	}); err != nil {
-		// This is just informational, so it's ok if it fails. Just warn and proceed.
+	// This is just informational, so it's ok if it fails. Just warn and proceed.
+	if _, err := DescribeVMDisk(ctx, logger, vm); err != nil {
 		logger.Printf("Unable to retrieve information about the VM's boot disk: %v", err)
 	}
 
@@ -1534,32 +1530,13 @@ func attemptCreateManagedInstanceGroupVM(ctx context.Context, logger *log.Logger
 		return nil, err
 	}
 
-	// Pull the instance ID and external IP address out of the output.
-	id, err := extractID(output.Stdout)
-	if err != nil {
-		return nil, err
-	}
-	migVM.ID = id
+	migVM.extractMetadataFromOutput(output)
+	logger.Printf("Instance Log: %v", instanceLogURL(vm))
 
-	logger.Printf("Instance Log: %v", instanceLogURL(migVM.VM))
-
-	ipAddress, err := extractIPAddress(output.Stdout)
-	if err != nil {
-		return nil, err
-	}
-	migVM.IPAddress = ipAddress
-
-	// RunGcloud will log the output of the command, so we don't need to.
-	if _, err = RunGcloud(ctx, logger, "", []string{
-		"compute", "disks", "describe", migVM.Name,
-		"--project=" + migVM.Project,
-		"--zone=" + migVM.Zone,
-		"--format=json",
-	}); err != nil {
-		// This is just informational, so it's ok if it fails. Just warn and proceed.
+	// This is just informational, so it's ok if it fails. Just warn and proceed.
+	if _, err := DescribeVMDisk(ctx, logger, migVM.VM); err != nil {
 		logger.Printf("Unable to retrieve information about the VM's boot disk: %v", err)
 	}
-
 	if err := verifyVMCreation(ctx, logger, migVM.VM); err != nil {
 		return nil, err
 	}
@@ -1715,6 +1692,17 @@ func CreateManagedInstanceGroupVM(origCtx context.Context, logger *log.Logger, o
 	}
 	logger.Printf("Managed Instance Group VM is ready: %#v", migVM)
 	return migVM, nil
+}
+
+// DescribeVMDisk queries the VM disk information.
+func DescribeVMDisk(ctx context.Context, logger *log.Logger, vm *VM) (CommandOutput, error) {
+	// RunGcloud will log the output of the command, so we don't need to.
+	return RunGcloud(ctx, logger, "", []string{
+		"compute", "disks", "describe", vm.Name,
+		"--project=" + vm.Project,
+		"--zone=" + vm.Zone,
+		"--format=json",
+	})
 }
 
 // RemoveExternalIP deletes the external ip for an instance.
