@@ -324,13 +324,13 @@ func generateConfigs(pc platformConfig, testDir string) (got map[string]string, 
 	if err != nil {
 		return
 	}
-	got["featureTrackingOTLP.json"] = string(generatedFeatureTrackingOTLPJSON)
+	got["feature_tracking_otlp.json"] = string(generatedFeatureTrackingOTLPJSON)
 
 	generatedEnabledReceiversOTLPJSON, err := self_metrics.CollectEnabledReceiversMetricToOLTPJSON(ctx, mergedUc)
 	if err != nil {
 		return
 	}
-	got["enabledReceiversOTLP.json"] = string(generatedEnabledReceiversOTLPJSON)
+	got["enabled_receivers_otlp.json"] = string(generatedEnabledReceiversOTLPJSON)
 
 	return
 }

@@ -337,7 +337,7 @@ func GenerateOpsAgentSelfMetricsOTLPJSON(ctx context.Context, config, outDir str
 	if err != nil {
 		return fmt.Errorf("failed to generate feature tracking metric otlp json: %w", err)
 	}
-	if err = confgenerator.WriteConfigFile(featureTrackingOTLPJSON, filepath.Join(outDir, "featureTrackingOTLP.json")); err != nil {
+	if err = confgenerator.WriteConfigFile(featureTrackingOTLPJSON, filepath.Join(outDir, "feature_tracking_otlp.json")); err != nil {
 		return fmt.Errorf("failed to write feature tracking metric otlp json file: %w", err)
 	}
 
@@ -345,7 +345,7 @@ func GenerateOpsAgentSelfMetricsOTLPJSON(ctx context.Context, config, outDir str
 	if err != nil {
 		return fmt.Errorf("failed to generate enabled receivers metric otlp json: %w", err)
 	}
-	if err = confgenerator.WriteConfigFile(enabledReceiverOTLPJSON, filepath.Join(outDir, "enabledReceiversOTLP.json")); err != nil {
+	if err = confgenerator.WriteConfigFile(enabledReceiverOTLPJSON, filepath.Join(outDir, "enabled_receivers_otlp.json")); err != nil {
 		return fmt.Errorf("failed to write enabled receivers metric otlp json file: %w", err)
 	}
 	return nil
