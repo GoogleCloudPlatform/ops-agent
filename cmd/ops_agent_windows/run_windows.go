@@ -177,6 +177,7 @@ func (s *service) generateConfigs(ctx context.Context) error {
 	} {
 		outDir := filepath.Join(s.outDirectory, subagent)
 		if subagent == "otel" {
+			// The generated otlp metric json files are only used by the otel service.
 			if err = self_metrics.GenerateOpsAgentSelfMetricsOTLPJSON(ctx, s.userConf, outDir); err != nil {
 				return err
 			}

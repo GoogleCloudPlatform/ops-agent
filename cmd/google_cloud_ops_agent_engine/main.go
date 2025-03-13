@@ -75,6 +75,7 @@ func run() error {
 			return nil
 		}
 	case "otel":
+		// The generated otlp metric json files are used only by the otel service.
 		err = self_metrics.GenerateOpsAgentSelfMetricsOTLPJSON(ctx, *input, *outDir)
 		if err != nil {
 			return err
