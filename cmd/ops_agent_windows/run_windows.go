@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
@@ -168,16 +169,20 @@ func (s *service) generateConfigs(ctx context.Context) error {
 		return err
 	}
 	// TODO: Add flag for passing in log/run path?
+	logsDir := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log")
+	stateDir := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "run")
 	for _, subagent := range []string{
 		"otel",
 		"fluentbit",
 	} {
-		if err := uc.GenerateFilesFromConfig(
-			ctx,
-			subagent,
-			filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log"),
-			filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "run"),
-			filepath.Join(s.outDirectory, subagent)); err != nil {
+		outDir := filepath.Join(s.outDirectory, subagent)
+		if subagent == "otel" {
+			// The generated otlp metric json files are used only by the otel service.
+			if err = self_metrics.GenerateOpsAgentSelfMetricsOTLPJSON(ctx, s.userConf, outDir); err != nil {
+				return err
+			}
+		}
+		if err := uc.GenerateFilesFromConfig(ctx, subagent, logsDir, stateDir, outDir); err != nil {
 			return err
 		}
 	}
