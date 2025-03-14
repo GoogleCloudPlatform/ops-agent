@@ -5114,46 +5114,75 @@ func TestLogCompression(t *testing.T) {
 	})
 }
 
-func cleanupStaleResourcesForTestAppHubLogLabels(ctx context.Context, logger *log.Logger) error {
-	// 24h old resources are considered stale
-	staleResourcesTime := time.Now().Add(time.Duration(-24) * time.Hour)
-
-	// Formated timestamp
-	staleResourcesTimestamp := staleResourcesTime.Format("2025-03-12T00:00:00.00-00:00")
-
-	// gcloud resource filter
-	filter := "creationTimestamp < " + staleResourcesTimestamp
-	filter += " AND name ~ test-^[0-9]{1,8}-"
-
-	project := os.Getenv("PROJECT")
-
-	listMIGArgs := []string{
-		"compute", "instance-templates", "list",
-		"--filter=" + filter,
-		"--project=" + project,
-		"--uri",
+func listAndDeleteResources(ctx context.Context, logger *log.Logger, resourceType []string, gcloudFilter string, extraArguments []string) error {
+	type gcloud_resource struct {
+		Name string
+		Zone string
 	}
 
-	output, err := gce.RunGcloud(ctx, logger, "", listMIGArgs)
+	listArgs := append(resourceType,
+		[]string{"list",
+			"--filter=" + gcloudFilter,
+			"--format=json",
+		}...)
+	listArgs = append(listArgs, extraArguments...)
+
+	logger.Println(strings.Join(listArgs, " "))
+
+	output, err := gce.RunGcloud(ctx, logger, "", listArgs)
 	if err != nil {
 		return err
 	}
 
-	logger.Println(strings.Join(listMIGArgs, " "))
-
-	resultURIs := strings.Split(output.Stdout, "\n")
-	deleteMIGArgs := []string{
-		"compute", "instance-templates", "delete",
-		strings.Join(resultURIs, " "),
-		"--project=" + project,
+	var resources []gcloud_resource
+	if err := json.Unmarshal([]byte(output.Stdout), &resources); err != nil {
+		return fmt.Errorf("could not parse JSON from %q: %v", output.Stdout, err)
 	}
 
-	// _, err = gce.RunGcloud(ctx, logger, "", deleteMIGArgs)
-	// if err != nil {
-	// 	return err
-	// }
+	if len(resources) == 0 {
+		return nil
+	}
 
-	logger.Println(strings.Join(deleteMIGArgs, " "))
+	for _, r := range resources {
+		logger.Println("name: ", r.Name)
+		deleteArgs := append(resourceType,
+			[]string{"delete", filepath.Base(r.Name),
+				"--format=json",
+			}...)
+		if r.Zone != "" {
+			deleteArgs = append(deleteArgs, "--zone")
+			deleteArgs = append(deleteArgs, filepath.Base(r.Zone))
+		}
+
+		deleteArgs = append(deleteArgs, extraArguments...)
+		logger.Println(strings.Join(deleteArgs, " "))
+
+		_, err = gce.RunGcloud(ctx, logger, "", deleteArgs)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func cleanupStaleResourcesForTestAppHubLogLabels(ctx context.Context, logger *log.Logger) error {
+	project := os.Getenv("PROJECT")
+	// 24h old resources are considered stale
+	staleResourceTime := time.Now().Add(-24 * time.Hour)
+
+	// Formated timestamp
+	staleResourceTimestamp := staleResourceTime.Format(time.RFC3339)
+
+	listAndDeleteResources(ctx, logger, []string{"compute", "instance-groups", "managed"},
+		"( creationTimestamp < "+staleResourceTimestamp+" AND name ~ .*test-[0-9]{1,8}-.*-mig$ )",
+		[]string{"--project", project})
+	listAndDeleteResources(ctx, logger, []string{"compute", "instance-templates"},
+		"( creationTimestamp <"+staleResourceTimestamp+" AND name ~ .*test-[0-9]{1,8}-.*-temp$ )",
+		[]string{"--project", project})
+	listAndDeleteResources(ctx, logger, []string{"apphub", "applications", "workloads"},
+		"( createTime <"+staleResourceTimestamp+" AND name ~ .*test-[0-9]{1,8}-.*-wl$ )",
+		[]string{"--project", project, "--application", gce.AppHubIntegrationTestApp, "--location", "global"})
 
 	return nil
 }
@@ -5164,8 +5193,6 @@ func TestAppHubLogLabels(t *testing.T) {
 		t.Parallel()
 
 		ctx, logger, migVM := setupMainLogAndManagedInstaceGroupVM(t, imageSpec)
-
-		cleanupStaleResourcesForTestAppHubLogLabels(ctx, logger)
 
 		// Discover Managed Instance Group resource from AppHub API.
 		vmRegion := migVM.Zone[:len(migVM.Zone)-2]
@@ -5215,6 +5242,21 @@ func TestAppHubLogLabels(t *testing.T) {
 		if err := gce.WaitForLog(ctx, logger, migVM.VM, tag, time.Hour, query); err != nil {
 			t.Error(err)
 		}
+
+		deleteAppHubWorkloadArgs := []string{
+			"apphub", "applications", "workloads", "delete", migVM.AppHubWorkloadName(),
+			"--application=" + gce.AppHubIntegrationTestApp,
+			"--project=" + migVM.Project,
+			"--location=global",
+			"--format=json",
+		}
+
+		output, err = gce.RunGcloud(ctx, logger, "", deleteAppHubWorkloadArgs)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		cleanupStaleResourcesForTestAppHubLogLabels(ctx, logger)
 	})
 }
 

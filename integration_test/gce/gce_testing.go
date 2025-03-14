@@ -312,22 +312,6 @@ type VM struct {
 	AlreadyDeleted bool
 }
 
-func (vm VM) extractMetadataFromOutput(output CommandOutput) error {
-	// Pull the instance ID and external IP address out of the output.
-	id, err := extractID(output.Stdout)
-	if err != nil {
-		return err
-	}
-	vm.ID = id
-
-	ipAddress, err := extractIPAddress(output.Stdout)
-	if err != nil {
-		return err
-	}
-	vm.IPAddress = ipAddress
-	return nil
-}
-
 // ManagedInstanceGroupVM represents an individual VM in a Managed Instace Group.
 type ManagedInstanceGroupVM struct {
 	*VM
@@ -1414,9 +1398,18 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		}
 	}()
 
-	if err := vm.extractMetadataFromOutput(output); err != nil {
+	// Pull the instance ID and external IP address out of the output.
+	id, err := extractID(output.Stdout)
+	if err != nil {
 		return nil, err
 	}
+	vm.ID = id
+
+	ipAddress, err := extractIPAddress(output.Stdout)
+	if err != nil {
+		return nil, err
+	}
+	vm.IPAddress = ipAddress
 
 	logger.Printf("Instance Log: %v", instanceLogURL(vm))
 
@@ -1535,11 +1528,20 @@ func attemptCreateManagedInstanceGroupVM(ctx context.Context, logger *log.Logger
 		return nil, err
 	}
 
-	if err := migVM.extractMetadataFromOutput(output); err != nil {
+	// Pull the instance ID and external IP address out of the output.
+	id, err := extractID(output.Stdout)
+	if err != nil {
 		return nil, err
 	}
+	migVM.ID = id
 
-	logger.Printf("Instance Log: %v", instanceLogURL(migVM.VM))
+	ipAddress, err := extractIPAddress(output.Stdout)
+	if err != nil {
+		return nil, err
+	}
+	migVM.IPAddress = ipAddress
+
+	logger.Printf("Instance Log: %v", instanceLogURL((*migVM).VM))
 
 	// This is just informational, so it's ok if it fails. Just warn and proceed.
 	if _, err := DescribeVMDisk(ctx, logger, migVM.VM); err != nil {
