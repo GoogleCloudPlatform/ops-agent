@@ -180,8 +180,6 @@ const (
 
 	DenyEgressTrafficTag = "test-ops-agent-deny-egress-traffic-tag"
 
-	AppHubIntegrationTestApp = "ops-agent-app-hub-integration-test-app"
-
 	TraceQueryMaxAttempts = QueryMaxAttempts / traceQueryDerate
 )
 

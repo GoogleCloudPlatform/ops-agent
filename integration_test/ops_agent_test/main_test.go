@@ -5166,6 +5166,8 @@ func listAndDeleteResources(ctx context.Context, logger *log.Logger, resourceTyp
 	return nil
 }
 
+const AppHubIntegrationTestApp = "ops-agent-app-hub-integration-test-app"
+
 func cleanupStaleResourcesForTestAppHubLogLabels(ctx context.Context, logger *log.Logger) error {
 	project := os.Getenv("PROJECT")
 	// 24h old resources are considered stale
@@ -5178,11 +5180,11 @@ func cleanupStaleResourcesForTestAppHubLogLabels(ctx context.Context, logger *lo
 		"( creationTimestamp < "+staleResourceTimestamp+" AND name ~ .*test-[0-9]{1,8}-.*-mig$ )",
 		[]string{"--project", project})
 	listAndDeleteResources(ctx, logger, []string{"compute", "instance-templates"},
-		"( creationTimestamp <"+staleResourceTimestamp+" AND name ~ .*test-[0-9]{1,8}-.*-temp$ )",
+		"( creationTimestamp < "+staleResourceTimestamp+" AND name ~ .*test-[0-9]{1,8}-.*-temp$ )",
 		[]string{"--project", project})
 	listAndDeleteResources(ctx, logger, []string{"apphub", "applications", "workloads"},
-		"( createTime <"+staleResourceTimestamp+" AND name ~ .*test-[0-9]{1,8}-.*-wl$ )",
-		[]string{"--project", project, "--application", gce.AppHubIntegrationTestApp, "--location", "global"})
+		"( createTime < "+staleResourceTimestamp+" AND name ~ .*test-[0-9]{1,8}-.*-wl$ )",
+		[]string{"--project", project, "--application", AppHubIntegrationTestApp, "--location", "global"})
 
 	return nil
 }
@@ -5194,7 +5196,10 @@ func TestAppHubLogLabels(t *testing.T) {
 
 		ctx, logger, migVM := setupMainLogAndManagedInstaceGroupVM(t, imageSpec)
 
-		// Discover Managed Instance Group resource from AppHub API.
+		// Cleanup stale resources.
+		t.Cleanup(func() { cleanupStaleResourcesForTestAppHubLogLabels(ctx, logger) })
+
+		// Setup Apphub #1 : Discover Managed Instance Group resource from AppHub API
 		vmRegion := migVM.Zone[:len(migVM.Zone)-2]
 		discoverMIGWorkloadArgs := []string{
 			"apphub", "discovered-workloads", "list",
@@ -5209,12 +5214,12 @@ func TestAppHubLogLabels(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		// Step #4 : Register Managed Instance Group as AppHub workload.
-		logger.Println("found uri : ", output.Stdout)
-		migResourceString := output.Stdout[33:]
+		// Setup Apphub #2 : Register Managed Instance Group as AppHub workload.
+		migResourceString := strings.Replace(output.Stdout, "https://apphub.googleapis.com/v1/", "", 1)
+		logger.Println("found uri : ", migResourceString)
 		registerAppHubWorkloadArgs := []string{
 			"apphub", "applications", "workloads", "create", migVM.AppHubWorkloadName(),
-			"--application=" + gce.AppHubIntegrationTestApp,
+			"--application=" + AppHubIntegrationTestApp,
 			"--project=" + migVM.Project,
 			"--location=global",
 			"--discovered-workload=" + migResourceString,
@@ -5226,6 +5231,22 @@ func TestAppHubLogLabels(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		t.Cleanup(func() {
+			// Setup Apphub #3 : Delete apphub workload.
+			deleteAppHubWorkloadArgs := []string{
+				"apphub", "applications", "workloads", "delete", migVM.AppHubWorkloadName(),
+				"--application=" + AppHubIntegrationTestApp,
+				"--project=" + migVM.Project,
+				"--location=global",
+				"--format=json",
+			}
+
+			output, err = gce.RunGcloud(ctx, logger, "", deleteAppHubWorkloadArgs)
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+
 		if err := agents.SetupOpsAgent(ctx, logger, migVM.VM, ""); err != nil {
 			t.Fatal(err)
 		}
@@ -5236,27 +5257,14 @@ func TestAppHubLogLabels(t *testing.T) {
 
 		tag := systemLogTagForImage(migVM.ImageSpec)
 		query := logMessageQueryForImage(migVM.ImageSpec, "123456789")
-		query += ` AND labels."compute.googleapis.com/instance_group_manager/name"=~".*" AND labels."compute.googleapis.com/instance_group_manager/zone"=~".*"`
-		query += ` AND apphub.application.id=~".*" AND apphub.workload.id=~".*"`
+		query += fmt.Sprintf(` AND labels."compute.googleapis.com/instance_group_manager/name"=~"%s"`, migVM.ManagedInstanceGroupName())
+		query += fmt.Sprintf(` AND labels."compute.googleapis.com/instance_group_manager/zone"=~"%s"`, migVM.Zone)
+		query += fmt.Sprintf(` AND apphub.application.id=~"%s"`, AppHubIntegrationTestApp)
+		query += fmt.Sprintf(` AND apphub.workload.id=~"%s"`, migVM.AppHubWorkloadName())
 
 		if err := gce.WaitForLog(ctx, logger, migVM.VM, tag, time.Hour, query); err != nil {
 			t.Error(err)
 		}
-
-		deleteAppHubWorkloadArgs := []string{
-			"apphub", "applications", "workloads", "delete", migVM.AppHubWorkloadName(),
-			"--application=" + gce.AppHubIntegrationTestApp,
-			"--project=" + migVM.Project,
-			"--location=global",
-			"--format=json",
-		}
-
-		output, err = gce.RunGcloud(ctx, logger, "", deleteAppHubWorkloadArgs)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		cleanupStaleResourcesForTestAppHubLogLabels(ctx, logger)
 	})
 }
 
