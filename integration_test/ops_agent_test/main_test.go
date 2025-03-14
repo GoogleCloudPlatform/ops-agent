@@ -5257,10 +5257,10 @@ func TestAppHubLogLabels(t *testing.T) {
 
 		tag := systemLogTagForImage(migVM.ImageSpec)
 		query := logMessageQueryForImage(migVM.ImageSpec, "123456789")
-		query += fmt.Sprintf(` AND labels."compute.googleapis.com/instance_group_manager/name"=~"%s"`, migVM.ManagedInstanceGroupName())
-		query += fmt.Sprintf(` AND labels."compute.googleapis.com/instance_group_manager/zone"=~"%s"`, migVM.Zone)
-		query += fmt.Sprintf(` AND apphub.application.id=~"%s"`, AppHubIntegrationTestApp)
-		query += fmt.Sprintf(` AND apphub.workload.id=~"%s"`, migVM.AppHubWorkloadName())
+		query += fmt.Sprintf(` AND labels."compute.googleapis.com/instance_group_manager/name"="%s"`, migVM.ManagedInstanceGroupName())
+		query += fmt.Sprintf(` AND labels."compute.googleapis.com/instance_group_manager/zone"="%s"`, migVM.Zone)
+		query += fmt.Sprintf(` AND apphub.application.id="%s"`, AppHubIntegrationTestApp)
+		query += fmt.Sprintf(` AND apphub.workload.id="%s"`, migVM.AppHubWorkloadName())
 
 		if err := gce.WaitForLog(ctx, logger, migVM.VM, tag, time.Hour, query); err != nil {
 			t.Error(err)
