@@ -24,6 +24,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 )
 
 var (
@@ -65,12 +66,19 @@ func run() error {
 	log.Printf("Built-in config:\n%s", apps.BuiltInConfStructs["linux"])
 	log.Printf("Merged config:\n%s", uc)
 
-	if *service == "" {
+	switch *service {
+	case "":
 		runHealthChecks()
 		log.Println("Startup checks finished")
 		if *healthChecks {
 			// If healthchecks is set, stop here
 			return nil
+		}
+	case "otel":
+		// The generated otlp metric json files are used only by the otel service.
+		err = self_metrics.GenerateOpsAgentSelfMetricsOTLPJSON(ctx, *input, *outDir)
+		if err != nil {
+			return err
 		}
 	}
 	return uc.GenerateFilesFromConfig(ctx, *service, *logsDir, *stateDir, *outDir)

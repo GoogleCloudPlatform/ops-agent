@@ -117,7 +117,7 @@ func ExtractFeatures(ctx context.Context, userUc, mergedUc *UnifiedConfig) ([]Fe
 	return allFeatures, nil
 }
 
-func getSortedKeys[V any](m map[string]V) []string {
+func GetSortedKeys[V any](m map[string]V) []string {
 	keys := make([]string, 0, len(m))
 	for k := range m {
 		keys = append(keys, k)
@@ -131,7 +131,7 @@ func trackedMappedComponents[C Component](module string, kind string, m map[stri
 		return nil, nil
 	}
 	var features []Feature
-	for i, k := range getSortedKeys(m) {
+	for i, k := range GetSortedKeys(m) {
 		c := m[k]
 		feature := Feature{
 			Module: module,

@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"github.com/goccy/go-yaml"
 	"github.com/shirou/gopsutil/host"
 	"gotest.tools/v3/assert"
@@ -317,6 +318,20 @@ func generateConfigs(pc platformConfig, testDir string) (got map[string]string, 
 	featureBytes, err := yaml.Marshal(&features)
 
 	got["features.yaml"] = string(featureBytes)
+
+	// Self metrics OTLP JSON
+	generatedFeatureTrackingOTLPJSON, err := self_metrics.CollectFeatureTrackingMetricToOTLPJSON(ctx, userUc, mergedUc)
+	if err != nil {
+		return
+	}
+	got["feature_tracking_otlp.json"] = string(generatedFeatureTrackingOTLPJSON)
+
+	generatedEnabledReceiversOTLPJSON, err := self_metrics.CollectEnabledReceiversMetricToOLTPJSON(ctx, mergedUc)
+	if err != nil {
+		return
+	}
+	got["enabled_receivers_otlp.json"] = string(generatedEnabledReceiversOTLPJSON)
+
 	return
 }
 
