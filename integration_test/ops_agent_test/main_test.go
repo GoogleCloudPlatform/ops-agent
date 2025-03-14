@@ -5114,6 +5114,9 @@ func TestLogCompression(t *testing.T) {
 	})
 }
 
+// listAndDeleteResources lists all gcloud resources of a given resourceType that match the gcloudFilter.
+// All the found listed resources are then deleted sequentially.
+// extraArguments can be used for different type of gcloud command requirements.
 func listAndDeleteResources(ctx context.Context, logger *log.Logger, resourceType []string, gcloudFilter string, extraArguments []string) error {
 	type gcloud_resource struct {
 		Name string
@@ -5127,8 +5130,6 @@ func listAndDeleteResources(ctx context.Context, logger *log.Logger, resourceTyp
 		}...)
 	listArgs = append(listArgs, extraArguments...)
 
-	logger.Println(strings.Join(listArgs, " "))
-
 	output, err := gce.RunGcloud(ctx, logger, "", listArgs)
 	if err != nil {
 		return err
@@ -5139,12 +5140,12 @@ func listAndDeleteResources(ctx context.Context, logger *log.Logger, resourceTyp
 		return fmt.Errorf("could not parse JSON from %q: %v", output.Stdout, err)
 	}
 
+	// Nothing to delete.
 	if len(resources) == 0 {
 		return nil
 	}
 
 	for _, r := range resources {
-		logger.Println("name: ", r.Name)
 		deleteArgs := append(resourceType,
 			[]string{"delete", filepath.Base(r.Name),
 				"--format=json",
@@ -5155,8 +5156,6 @@ func listAndDeleteResources(ctx context.Context, logger *log.Logger, resourceTyp
 		}
 
 		deleteArgs = append(deleteArgs, extraArguments...)
-		logger.Println(strings.Join(deleteArgs, " "))
-
 		_, err = gce.RunGcloud(ctx, logger, "", deleteArgs)
 		if err != nil {
 			return err
