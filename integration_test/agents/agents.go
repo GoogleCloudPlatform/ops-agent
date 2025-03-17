@@ -237,9 +237,12 @@ func getOpsAgentLogFilesList(imageSpec string) []string {
 }
 
 func runOpsAgentDiagnosticsWindows(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) {
+	uapWindowsPluginStateDir := `C:\ProgramData\Google\Compute Engine\google-guest-agent\agent_state\plugins\ops-agent-plugin\`
+	stateDir = `C:\ProgramData\Google\Cloud Operations\Ops Agent\`
 	if gce.IsOpsAgentUAPPlugin() {
-		return
-	}
+		stateDir = uapWindowsPluginStateDir
+		gce.RunRemotely(ctx, logger.ToFile("ops_agent_uap_plugin_logs.txt"), vm, "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent-uap-plugin' } | Format-Table -AutoSize -Wrap")
+	} else {
 	gce.RunRemotely(ctx, logger.ToFile("windows_System_log.txt"), vm, "Get-WinEvent -LogName System | Format-Table -AutoSize -Wrap")
 
 	gce.RunRemotely(ctx, logger.ToFile("Get-Service_output.txt"), vm, "Get-Service google-cloud-ops-agent* | Format-Table -AutoSize -Wrap")
@@ -247,17 +250,18 @@ func runOpsAgentDiagnosticsWindows(ctx context.Context, logger *logging.Director
 	gce.RunRemotely(ctx, logger.ToFile("ops_agent_logs.txt"), vm, "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent' } | Format-Table -AutoSize -Wrap")
 	gce.RunRemotely(ctx, logger.ToFile("ops_agent_diagnostics_logs.txt"), vm, "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent-diagnostics' } | Format-Table -AutoSize -Wrap")
 	gce.RunRemotely(ctx, logger.ToFile("open_telemetry_agent_logs.txt"), vm, "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent-opentelemetry-collector' } | Format-Table -AutoSize -Wrap")
+	}
 	// Fluent-Bit has not implemented exporting logs to the Windows event log yet.
-	gce.RunRemotely(ctx, logger.ToFile("fluent_bit_agent_logs.txt"), vm, fmt.Sprintf("Get-Content -Path '%s' -Raw", `C:\ProgramData\Google\Cloud Operations\Ops Agent\log\logging-module.log`))
-	gce.RunRemotely(ctx, logger.ToFile("health-checks.txt"), vm, fmt.Sprintf("Get-Content -Path '%s' -Raw", `C:\ProgramData\Google\Cloud Operations\Ops Agent\log\health-checks.log`))
+	gce.RunRemotely(ctx, logger.ToFile("fluent_bit_agent_logs.txt"), vm, fmt.Sprintf("Get-Content -Path '%s' -Raw", stateDir + `log\logging-module.log`))
+	gce.RunRemotely(ctx, logger.ToFile("health-checks.txt"), vm, fmt.Sprintf("Get-Content -Path '%s' -Raw", stateDir + `log\health-checks.log`))
 
 	for _, conf := range []string{
 		`C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml`,
-		`C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\fluentbit\fluent_bit_main.conf`,
-		`C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\fluentbit\fluent_bit_parser.conf`,
-		`C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\otel\otel.yaml`,
-		`C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\otel\feature_tracking_otlp.json`,
-		`C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\otel\enabled_receivers_otlp.json`,
+		stateDir + `generated_configs\fluentbit\fluent_bit_main.conf`,
+		stateDir + `generated_configs\fluentbit\fluent_bit_parser.conf`,
+		stateDir + `generated_configs\otel\otel.yaml`,
+		stateDir + `generated_configs\otel\feature_tracking_otlp.json`,
+		stateDir + `generated_configs\otel\enabled_receivers_otlp.json`,
 	} {
 		pathParts := strings.Split(conf, `\`)
 		basename := pathParts[len(pathParts)-1]
@@ -701,9 +705,9 @@ func InstallStandaloneWindowsMonitoringAgent(ctx context.Context, logger *log.Lo
 func getRestartOpsAgentCmd(imageSpec string) string {
 	if gce.IsOpsAgentUAPPlugin() {
 		if gce.IsWindows(imageSpec) {
-			return ""
+			return fmt.Sprintf("(grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Stop) -and (grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Start)", OpsAgentPluginServerPort, OpsAgentPluginServerPort)
 		}
-		return fmt.Sprintf("grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Stop && sleep 5 && grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Start", OpsAgentPluginServerPort, OpsAgentPluginServerPort)
+		return fmt.Sprintf("grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Stop ; Start-Sleep -Seconds 5 ; grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Start", OpsAgentPluginServerPort, OpsAgentPluginServerPort)
 	}
 
 	if gce.IsWindows(imageSpec) {
@@ -1048,7 +1052,7 @@ func installWindowsPackageFromGCS(ctx context.Context, logger *log.Logger, vm *g
 func GetOtelConfigPath(imageSpec string) string {
 	if gce.IsOpsAgentUAPPlugin() {
 		if gce.IsWindows(imageSpec) {
-			return ""
+			return "C:\ProgramData\Google\Compute Engine\google-guest-agent\agent_state\plugins\ops-agent-plugin\generated_configs\otel\otel.yaml"
 		}
 		return "/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml"
 	}

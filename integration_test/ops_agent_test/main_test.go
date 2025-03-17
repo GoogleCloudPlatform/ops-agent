@@ -96,9 +96,6 @@ func workDirForImage(imageSpec string) string {
 
 func startCommandForImage(imageSpec string) string {
 	if gce.IsOpsAgentUAPPlugin() {
-		if gce.IsWindows(imageSpec) {
-			return ""
-		}
 		return "grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Start"
 	}
 
@@ -111,9 +108,6 @@ func startCommandForImage(imageSpec string) string {
 
 func stopCommandForImage(imageSpec string) string {
 	if gce.IsOpsAgentUAPPlugin() {
-		if gce.IsWindows(imageSpec) {
-			return ""
-		}
 		return "grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Stop"
 	}
 
@@ -4591,10 +4585,7 @@ func checkExpectedHealthCheckResult(t *testing.T, output string, name string, ex
 	}
 }
 
-func getUAPPluginStatusForImage(imageSpec string) string {
-	if gce.IsWindows(imageSpec) {
-		return ""
-	}
+func getUAPPluginStatusForImage(_ string) string {
 	return "grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/GetStatus"
 
 }
@@ -4623,7 +4614,7 @@ func getHealthCheckResultsForImage(ctx context.Context, logger *log.Logger, vm *
 
 func getHealthCheckLogsForUAPPluginByImage(imageSpec string) string {
 	if gce.IsWindows(imageSpec) {
-		return ""
+		return fmt.Sprintf("Get-Content -Path '%s' -Raw", `C:\ProgramData\Google\Compute Engine\google-guest-agent\agent_state\plugins\ops-agent-plugin\log\health-checks.log`)
 	}
 
 	return "sudo cat /var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/health-checks.log"
