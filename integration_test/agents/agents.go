@@ -243,17 +243,17 @@ func runOpsAgentDiagnosticsWindows(ctx context.Context, logger *logging.Director
 		stateDir = uapWindowsPluginStateDir
 		gce.RunRemotely(ctx, logger.ToFile("ops_agent_uap_plugin_logs.txt"), vm, "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent-uap-plugin' } | Format-Table -AutoSize -Wrap")
 	} else {
-	gce.RunRemotely(ctx, logger.ToFile("windows_System_log.txt"), vm, "Get-WinEvent -LogName System | Format-Table -AutoSize -Wrap")
+		gce.RunRemotely(ctx, logger.ToFile("windows_System_log.txt"), vm, "Get-WinEvent -LogName System | Format-Table -AutoSize -Wrap")
 
-	gce.RunRemotely(ctx, logger.ToFile("Get-Service_output.txt"), vm, "Get-Service google-cloud-ops-agent* | Format-Table -AutoSize -Wrap")
+		gce.RunRemotely(ctx, logger.ToFile("Get-Service_output.txt"), vm, "Get-Service google-cloud-ops-agent* | Format-Table -AutoSize -Wrap")
 
-	gce.RunRemotely(ctx, logger.ToFile("ops_agent_logs.txt"), vm, "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent' } | Format-Table -AutoSize -Wrap")
-	gce.RunRemotely(ctx, logger.ToFile("ops_agent_diagnostics_logs.txt"), vm, "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent-diagnostics' } | Format-Table -AutoSize -Wrap")
-	gce.RunRemotely(ctx, logger.ToFile("open_telemetry_agent_logs.txt"), vm, "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent-opentelemetry-collector' } | Format-Table -AutoSize -Wrap")
+		gce.RunRemotely(ctx, logger.ToFile("ops_agent_logs.txt"), vm, "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent' } | Format-Table -AutoSize -Wrap")
+		gce.RunRemotely(ctx, logger.ToFile("ops_agent_diagnostics_logs.txt"), vm, "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent-diagnostics' } | Format-Table -AutoSize -Wrap")
+		gce.RunRemotely(ctx, logger.ToFile("open_telemetry_agent_logs.txt"), vm, "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent-opentelemetry-collector' } | Format-Table -AutoSize -Wrap")
 	}
 	// Fluent-Bit has not implemented exporting logs to the Windows event log yet.
-	gce.RunRemotely(ctx, logger.ToFile("fluent_bit_agent_logs.txt"), vm, fmt.Sprintf("Get-Content -Path '%s' -Raw", stateDir + `log\logging-module.log`))
-	gce.RunRemotely(ctx, logger.ToFile("health-checks.txt"), vm, fmt.Sprintf("Get-Content -Path '%s' -Raw", stateDir + `log\health-checks.log`))
+	gce.RunRemotely(ctx, logger.ToFile("fluent_bit_agent_logs.txt"), vm, fmt.Sprintf("Get-Content -Path '%s' -Raw", stateDir+`log\logging-module.log`))
+	gce.RunRemotely(ctx, logger.ToFile("health-checks.txt"), vm, fmt.Sprintf("Get-Content -Path '%s' -Raw", stateDir+`log\health-checks.log`))
 
 	for _, conf := range []string{
 		`C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml`,
@@ -959,34 +959,56 @@ func InstallOpsAgentUAPPlugin(ctx context.Context, logger *log.Logger, vm *gce.V
 //
 // gcsPath must point to a GCS Path to a .tar.gz file to install on the testing VMs.
 func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, gcsPath string) error {
-	if gce.IsWindows(vm.ImageSpec) {
-		return fmt.Errorf("Ops Agent UAP Plugin does not support Windows yet")
-	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, "mkdir -p /tmp/agentPlugin"); err != nil {
-		return err
-	}
 	if err := gce.InstallGsutilIfNeeded(ctx, logger, vm); err != nil {
 		return err
 	}
+
+	if gce.IsWindows(vm.ImageSpec) {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "New-Item -ItemType directory -Path C:\\agentPlugin"); err != nil {
+			return err
+		}
+
+		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf(`gsutil cp %s/google-cloud-ops-agent-plugin*.tar.gz C:\\agentPlugin`, gcsPath)); err != nil {
+			return fmt.Errorf("error copying down agent package from GCS: %v", err)
+		}
+
+		if _, err := gce.RunRemotely(ctx, logger, vm, "ls C:\\agentPlugin"); err != nil {
+			return err
+		}
+		if _, err := gce.RunRemotely(ctx, logger, vm, `Get-ChildItem -Path "agentPlugin" -Filter "google-cloud-ops-agent-plugin*.tar.gz" -File|Select-Object -First 1 | ForEach-Object { if ($_){ & tar -xzf $_.FullName -C C:\\agentPlugin} }`); err != nil {
+			return err
+		}
+		// Print the contents of the home dir into the logs.
+		if _, err := gce.RunRemotely(ctx, logger, vm, "ls C:\\agentPlugin"); err != nil {
+			return err
+		}
+
+	} else {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "mkdir -p /tmp/agentPlugin"); err != nil {
+			return err
+		}
+
+		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo gsutil cp "+gcsPath+"/google-cloud-ops-agent-plugin*.tar.gz /tmp/agentPlugin"); err != nil {
+			return fmt.Errorf("error copying down the agent uap plugin tarball from GCS: %v", err)
+		}
+
+		// Print the contents of /tmp/agentPlugin into the logs.
+		if _, err := gce.RunRemotely(ctx, logger, vm, "ls -la /tmp/agentPlugin"); err != nil {
+			return err
+		}
+		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo find /tmp/agentPlugin -maxdepth 1 -name \"google-cloud-ops-agent-plugin*.tar.gz\" -print0 | xargs -0 -I {} sudo tar -xzf {} --no-overwrite-dir -C ~/ && ls -la"); err != nil {
+			return err
+		}
+		// Print the contents of the home dir into the logs.
+		if _, err := gce.RunRemotely(ctx, logger, vm, "ls -la ~/"); err != nil {
+			return err
+		}
+	}
+
 	if err := gce.InstallGrpcurlIfNeeded(ctx, logger, vm); err != nil {
 		return err
 	}
 
-	if _, err := gce.RunRemotely(ctx, logger, vm, "sudo gsutil cp "+gcsPath+"/google-cloud-ops-agent-plugin*.tar.gz /tmp/agentPlugin"); err != nil {
-		return fmt.Errorf("error copying down the agent uap plugin tarball from GCS: %v", err)
-	}
-
-	// Print the contents of /tmp/agentPlugin into the logs.
-	if _, err := gce.RunRemotely(ctx, logger, vm, "ls -la /tmp/agentPlugin"); err != nil {
-		return err
-	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, "sudo find /tmp/agentPlugin -maxdepth 1 -name \"google-cloud-ops-agent-plugin*.tar.gz\" -print0 | xargs -0 -I {} sudo tar -xzf {} --no-overwrite-dir -C ~/ && ls -la"); err != nil {
-		return err
-	}
-	// Print the contents of the home dir into the logs.
-	if _, err := gce.RunRemotely(ctx, logger, vm, "ls -la ~/"); err != nil {
-		return err
-	}
 	return StartOpsAgentPlugin(ctx, logger, vm, OpsAgentPluginServerPort)
 }
 
@@ -1052,7 +1074,7 @@ func installWindowsPackageFromGCS(ctx context.Context, logger *log.Logger, vm *g
 func GetOtelConfigPath(imageSpec string) string {
 	if gce.IsOpsAgentUAPPlugin() {
 		if gce.IsWindows(imageSpec) {
-			return "C:\ProgramData\Google\Compute Engine\google-guest-agent\agent_state\plugins\ops-agent-plugin\generated_configs\otel\otel.yaml"
+			return `C:\ProgramData\Google\Compute Engine\google-guest-agent\agent_state\plugins\ops-agent-plugin\generated_configs\otel\otel.yaml`
 		}
 		return "/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml"
 	}
