@@ -1647,7 +1647,15 @@ func RestartInstance(ctx context.Context, logger *log.Logger, vm *VM) error {
 // it installed.
 func InstallGrpcurlIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) error {
 	if IsWindows(vm.ImageSpec) {
-		return fmt.Errorf("installing grpcurl on Windows is not yet supported")
+		// if _, err := RunRemotely(ctx, logger, vm, "Get-Command grpcurl"); err == nil {
+		// 	return nil
+		// }
+		// logger.Printf("grpcurl not found, installing it...")
+		// arch := "x86_64"
+		// installCmd := fmt.Sprintf("gsutil cp gs://ops-agents-public-buckets-vendored-deps/mirrored-content/grpcurl/v1.8.6/grpcurl_1.8.6_windows_%s.zip C:\\agentPlugin && sudo tar -xzf /tmp/agentPlugin/grpcurl_1.8.6_linux_%s.tar.gz --no-overwrite-dir -C /usr/local/bin", arch, arch)
+
+		// return nil
+		return fmt.Errorf("not implemented for Windows")
 	}
 
 	if _, err := RunRemotely(ctx, logger, vm, "which grpcurl"); err == nil {
