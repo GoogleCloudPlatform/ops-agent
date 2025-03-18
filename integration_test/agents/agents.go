@@ -975,11 +975,11 @@ func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm
 		if _, err := gce.RunRemotely(ctx, logger, vm, "ls C:\\agentPlugin"); err != nil {
 			return err
 		}
-		if _, err := gce.RunRemotely(ctx, logger, vm, `Get-ChildItem -Path "C:\agentPlugin" -Filter "google-cloud-ops-agent-plugin*.tar.gz" -File|Select-Object -First 1 -Expand FullName`); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, `Get-ChildItem -Path "C:\agentPlugin" -Filter "google-cloud-ops-agent-plugin*.tar.gz" -File|Select-Object -First 1 -Expand FullName | ForEach-Object { if ($_){ & tar -xzf $_ -C "C:\"} }`); err != nil {
 			return err
 		}
 		// Print the contents of the home dir into the logs.
-		if _, err := gce.RunRemotely(ctx, logger, vm, "ls C:\\agentPlugin"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "ls C:\\agentPlugin; ls C:\\"); err != nil {
 			return err
 		}
 
