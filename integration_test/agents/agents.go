@@ -705,9 +705,9 @@ func InstallStandaloneWindowsMonitoringAgent(ctx context.Context, logger *log.Lo
 func getRestartOpsAgentCmd(imageSpec string) string {
 	if gce.IsOpsAgentUAPPlugin() {
 		if gce.IsWindows(imageSpec) {
-			return fmt.Sprintf("(grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Stop) -and (grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Start)", OpsAgentPluginServerPort, OpsAgentPluginServerPort)
+			return fmt.Sprintf("grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Stop;Start-Sleep -Seconds 5;grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Start", OpsAgentPluginServerPort, OpsAgentPluginServerPort)
 		}
-		return fmt.Sprintf("grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Stop ; Start-Sleep -Seconds 5 ; grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Start", OpsAgentPluginServerPort, OpsAgentPluginServerPort)
+		return fmt.Sprintf("grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Stop && sleep 5 && grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Start", OpsAgentPluginServerPort, OpsAgentPluginServerPort)
 	}
 
 	if gce.IsWindows(imageSpec) {
@@ -975,7 +975,7 @@ func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm
 		if _, err := gce.RunRemotely(ctx, logger, vm, "ls C:\\agentPlugin"); err != nil {
 			return err
 		}
-		if _, err := gce.RunRemotely(ctx, logger, vm, `Get-ChildItem -Path "agentPlugin" -Filter "google-cloud-ops-agent-plugin*.tar.gz" -File|Select-Object -First 1 | ForEach-Object { if ($_){ & tar -xzf $_.FullName -C C:\\agentPlugin} }`); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, `Get-ChildItem -Path "C:\agentPlugin" -Filter "google-cloud-ops-agent-plugin*.tar.gz" -File|Select-Object -First 1 | ForEach-Object { if ($_){ & tar -xzf $_.FullName -C C:\} }`); err != nil {
 			return err
 		}
 		// Print the contents of the home dir into the logs.
