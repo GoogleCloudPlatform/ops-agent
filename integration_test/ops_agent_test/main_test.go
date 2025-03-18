@@ -1829,6 +1829,17 @@ EOF
 		// Escape record accessor dollar-signs
 		strings.ReplaceAll(fluentBitArgs, "$", `\$`))
 
+	if gce.IsWindows(imageSpec) {
+		command = fmt.Sprintf(`
+				New-Item %s
+				"%s" | Out-File -Encoding Ascii %s
+				Invoke-WmiMethod -Class Win32_Process -Name Create -ArgumentList 'C:\Program Files\Google\Cloud Operations\Ops Agent\bin\fluent-bit.exe %s'`,
+			remoteFile,
+			parserConfig,
+			parserFile,
+			fluentBitArgs)
+	}
+
 	if gce.IsOpsAgentUAPPlugin() {
 		command = fmt.Sprintf(`
 		sudo touch %s
@@ -1841,16 +1852,17 @@ EOF
 			parserConfig,
 			// Escape record accessor dollar-signs
 			strings.ReplaceAll(fluentBitArgs, "$", `\$`))
-	}
-	if gce.IsWindows(imageSpec) {
-		command = fmt.Sprintf(`
-			New-Item %s
-			"%s" | Out-File -Encoding Ascii %s
-			Invoke-WmiMethod -Class Win32_Process -Name Create -ArgumentList 'C:\Program Files\Google\Cloud Operations\Ops Agent\bin\fluent-bit.exe %s'`,
-			remoteFile,
-			parserConfig,
-			parserFile,
-			fluentBitArgs)
+
+		if gce.IsWindows(imageSpec) {
+			command = fmt.Sprintf(`
+				New-Item %s
+				"%s" | Out-File -Encoding Ascii %s
+				Invoke-WmiMethod -Class Win32_Process -Name Create -ArgumentList 'C:\fluent-bit.exe %s'`,
+				remoteFile,
+				parserConfig,
+				parserFile,
+				fluentBitArgs)
+		}
 	}
 
 	if _, err := gce.RunRemotely(ctx, logger, vm, command); err != nil {
