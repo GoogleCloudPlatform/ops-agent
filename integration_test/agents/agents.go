@@ -1005,9 +1005,7 @@ func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm
 		}
 	}
 
-	if err := gce.InstallGrpcurlIfNeeded(ctx, logger, vm); err != nil {
-		return err
-	}
+	gce.InstallGrpcurlIfNeeded(ctx, logger, vm)
 
 	return StartOpsAgentPlugin(ctx, logger, vm, OpsAgentPluginServerPort)
 }
