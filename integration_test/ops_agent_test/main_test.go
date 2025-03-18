@@ -96,7 +96,11 @@ func workDirForImage(imageSpec string) string {
 
 func startCommandForImage(imageSpec string) string {
 	if gce.IsOpsAgentUAPPlugin() {
-		return "grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Start"
+		grpcurlExecutable := "grpcurl"
+		if gce.IsWindows(imageSpec) {
+			grpcurlExecutable = `C:\grpcurl.exe`
+		}
+		return fmt.Sprintf("%s -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable)
 	}
 
 	if gce.IsWindows(imageSpec) {
@@ -108,7 +112,11 @@ func startCommandForImage(imageSpec string) string {
 
 func stopCommandForImage(imageSpec string) string {
 	if gce.IsOpsAgentUAPPlugin() {
-		return "grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Stop"
+		grpcurlExecutable := "grpcurl"
+		if gce.IsWindows(imageSpec) {
+			grpcurlExecutable = `C:\grpcurl.exe`
+		}
+		return fmt.Sprintf("%s -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Stop", grpcurlExecutable)
 	}
 
 	if gce.IsWindows(imageSpec) {
@@ -4597,8 +4605,12 @@ func checkExpectedHealthCheckResult(t *testing.T, output string, name string, ex
 	}
 }
 
-func getUAPPluginStatusForImage(_ string) string {
-	return "grpcurl -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/GetStatus"
+func getUAPPluginStatusForImage(imageSpec string) string {
+	grpcurlExecutable := "grpcurl"
+	if gce.IsWindows(imageSpec) {
+		grpcurlExecutable = `C:\grpcurl.exe`
+	}
+	return fmt.Sprintf("%s -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/GetStatus", grpcurlExecutable)
 
 }
 

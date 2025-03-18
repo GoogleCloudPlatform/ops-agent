@@ -191,7 +191,11 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 
 	isUAPPlugin := gce.IsOpsAgentUAPPlugin()
 	if isUAPPlugin {
-		gce.RunRemotely(ctx, logger.ToFile("status_for_ops_agent_uap_plugin.txt"), vm, fmt.Sprintf("grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/GetStatus", OpsAgentPluginServerPort))
+		grpcurlExecutable := "grpcurl"
+		if gce.IsWindows(vm.ImageSpec) {
+			grpcurlExecutable = `C:\grpcurl.exe`
+		}
+		gce.RunRemotely(ctx, logger.ToFile("status_for_ops_agent_uap_plugin.txt"), vm, fmt.Sprintf("%s -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/GetStatus", grpcurlExecutable, OpsAgentPluginServerPort))
 	} else {
 		gce.RunRemotely(ctx, logger.ToFile("systemctl_status_for_ops_agent.txt"), vm, "sudo systemctl status google-cloud-ops-agent*")
 	}
@@ -704,10 +708,11 @@ func InstallStandaloneWindowsMonitoringAgent(ctx context.Context, logger *log.Lo
 
 func getRestartOpsAgentCmd(imageSpec string) string {
 	if gce.IsOpsAgentUAPPlugin() {
+		grpcurlExecutable := "grpcurl"
 		if gce.IsWindows(imageSpec) {
-			return fmt.Sprintf("grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Stop;Start-Sleep -Seconds 5;grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Start", OpsAgentPluginServerPort, OpsAgentPluginServerPort)
+			grpcurlExecutable = `C:\grpcurl.exe`
 		}
-		return fmt.Sprintf("grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Stop && sleep 5 && grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Start", OpsAgentPluginServerPort, OpsAgentPluginServerPort)
+		return fmt.Sprintf("%s -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Stop && sleep 5 && %s -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable, OpsAgentPluginServerPort, grpcurlExecutable, OpsAgentPluginServerPort)
 	}
 
 	if gce.IsWindows(imageSpec) {
