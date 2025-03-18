@@ -1665,6 +1665,12 @@ func InstallGrpcurlIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) err
 			return err
 		}
 
+		installCmd = `ls "C:\"`
+		_, err = RunRemotely(ctx, logger, vm, installCmd)
+		if err != nil {
+			return err
+		}
+
 		installCmd = `$env:Path += ";C:\"`
 		_, err = RunRemotely(ctx, logger, vm, installCmd)
 		return err
