@@ -17,29 +17,7 @@ package main
 import (
 	"context"
 	"log"
-
-	"github.com/GoogleCloudPlatform/ops-agent/apps"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 )
-
-// getUserAndMergedConfigs if successful will return both the users original
-// config and merged config respectively
-func getUserAndMergedConfigs(ctx context.Context, userConfPath string) (*confgenerator.UnifiedConfig, *confgenerator.UnifiedConfig, error) {
-	userUc, err := confgenerator.ReadUnifiedConfigFromFile(ctx, userConfPath)
-	if err != nil {
-		return nil, nil, err
-	}
-	if userUc == nil {
-		userUc = &confgenerator.UnifiedConfig{}
-	}
-
-	mergedUc, err := confgenerator.MergeConfFiles(ctx, userConfPath, apps.BuiltInConfStructs)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return userUc, mergedUc, nil
-}
 
 func main() {
 	defer func() {

@@ -169,6 +169,7 @@ func TestStart(t *testing.T) {
 		cancel             context.CancelFunc
 		mockRunCommandFunc RunCommandFunc
 		wantError          bool
+		wantCancelNil      bool
 	}{
 		{
 			name:   "Happy path: plugin not already started, Start() exits successfully",
@@ -176,7 +177,6 @@ func TestStart(t *testing.T) {
 			mockRunCommandFunc: func(cmd *exec.Cmd) (string, error) {
 				return "", nil
 			},
-			wantError: false,
 		},
 		{
 			name:   "Plugin already started",
@@ -184,7 +184,6 @@ func TestStart(t *testing.T) {
 			mockRunCommandFunc: func(cmd *exec.Cmd) (string, error) {
 				return "", nil
 			},
-			wantError: false,
 		},
 		{
 			name:   "Start() returns errors, cancel() function should be reset to nil",
@@ -192,7 +191,8 @@ func TestStart(t *testing.T) {
 			mockRunCommandFunc: func(cmd *exec.Cmd) (string, error) {
 				return "", fmt.Errorf("error")
 			},
-			wantError: true,
+			wantError:     true,
+			wantCancelNil: true,
 		},
 	}
 
@@ -206,11 +206,8 @@ func TestStart(t *testing.T) {
 			if gotError != tc.wantError {
 				t.Errorf("%v: Start() got error: %v, err msg: %v, want error:%v", tc.name, gotError, err, tc.wantError)
 			}
-			if tc.wantError && ps.cancel != nil {
-				t.Errorf("%v: Start() did not reset the cancel function to nil", tc.name)
-			}
-			if !tc.wantError && ps.cancel == nil {
-				t.Errorf("%v: Start() reset cancel function to nil but shouldn't", tc.name)
+			if (ps.cancel == nil) != tc.wantCancelNil {
+				t.Errorf("%v: Start() got cancel function: %v, want cancel function to be reset to nil: %v", tc.name, ps.cancel, tc.wantCancelNil)
 			}
 		})
 	}

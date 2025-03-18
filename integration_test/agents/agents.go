@@ -217,6 +217,8 @@ func getOpsAgentLogFilesList(imageSpec string) []string {
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/run/google-cloud-ops-agent-fluent-bit/fluent_bit_main.conf",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/run/google-cloud-ops-agent-fluent-bit/fluent_bit_parser.conf",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml",
+			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/run/google-cloud-ops-agent-opentelemetry-collector/feature_tracking_otlp.json",
+			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/run/google-cloud-ops-agent-opentelemetry-collector/enabled_receivers_otlp.json",
 		}
 	}
 	return []string{
@@ -229,6 +231,8 @@ func getOpsAgentLogFilesList(imageSpec string) []string {
 		"/run/google-cloud-ops-agent-fluent-bit/fluent_bit_main.conf",
 		"/run/google-cloud-ops-agent-fluent-bit/fluent_bit_parser.conf",
 		"/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml",
+		"/run/google-cloud-ops-agent-opentelemetry-collector/feature_tracking_otlp.json",
+		"/run/google-cloud-ops-agent-opentelemetry-collector/enabled_receivers_otlp.json",
 	}
 }
 
@@ -252,6 +256,8 @@ func runOpsAgentDiagnosticsWindows(ctx context.Context, logger *logging.Director
 		`C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\fluentbit\fluent_bit_main.conf`,
 		`C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\fluentbit\fluent_bit_parser.conf`,
 		`C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\otel\otel.yaml`,
+		`C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\otel\feature_tracking_otlp.json`,
+		`C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\otel\enabled_receivers_otlp.json`,
 	} {
 		pathParts := strings.Split(conf, `\`)
 		basename := pathParts[len(pathParts)-1]
@@ -935,14 +941,14 @@ func CommonSetupWithExtraCreateArgumentsAndMetadata(t *testing.T, imageSpec stri
 }
 
 func InstallOpsAgentUAPPlugin(ctx context.Context, logger *log.Logger, vm *gce.VM, location PackageLocation) error {
-		// Used for manual testing or pre-submits
-		if location.packagesInGCS != "" {
-				return InstallOpsAgentUAPPluginFromGCS(ctx, logger, vm, location.packagesInGCS)
-		}
+	// Used for manual testing or pre-submits
+	if location.packagesInGCS != "" {
+		return InstallOpsAgentUAPPluginFromGCS(ctx, logger, vm, location.packagesInGCS)
+	}
 
-		// Used for nightly builds
-		artifactBucket := fmt.Sprintf("gs://%s-ops-agent-releases/%s", location.artifactRegistryProject, location.repoSuffix)
-		return InstallOpsAgentUAPPluginFromGCS(ctx, logger, vm, artifactBucket)
+	// Used for nightly builds
+	artifactBucket := fmt.Sprintf("gs://%s-ops-agent-releases/%s", location.artifactRegistryProject, location.repoSuffix)
+	return InstallOpsAgentUAPPluginFromGCS(ctx, logger, vm, artifactBucket)
 }
 
 // InstallOpsAgentUAPPluginFromGCS installs the Ops Agent plugin tarball from GCS onto the given Linux VM.

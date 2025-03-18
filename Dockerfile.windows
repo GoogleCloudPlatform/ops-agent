@@ -251,6 +251,18 @@ COPY . /work
 RUN go build -o bin/google-cloud-ops-agent-wrapper.exe ./cmd/agent_wrapper; `
     Copy-Item -Path bin/google-cloud-ops-agent-wrapper.exe -Destination /work/out/bin/;
 
+
+###############################################################################
+# Build the Ops Agent UAP plugin
+###############################################################################
+
+WORKDIR /work
+
+COPY . /work
+
+RUN go build -o bin/plugin.exe ./cmd/ops_agent_uap_plugin; `
+    Copy-Item -Path bin/plugin.exe -Destination /work/out/bin/;
+
 ###############################################################################
 # Packaging
 ###############################################################################
@@ -260,3 +272,15 @@ WORKDIR /work
 COPY . /work
 
 RUN & .\pkg\goo\build.ps1 -DestDir /work/out;
+
+###############################################################################
+# Packaging for the Ops Agent Plugin
+###############################################################################
+
+WORKDIR /work
+
+COPY . /work
+
+RUN & .\pkg\plugin\build.ps1 -DestDir /work/out/bin;
+
+

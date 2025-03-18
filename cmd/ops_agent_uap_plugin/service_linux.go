@@ -86,13 +86,15 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 
 	pluginInstallPath, err := os.Executable()
 	if err != nil {
+		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		log.Printf("Start() failed, because it cannot determine the plugin install location: %s", err)
 		return nil, status.Error(1, err.Error())
 	}
 	pluginInstallPath, err = filepath.EvalSymlinks(pluginInstallPath)
 	if err != nil {
+		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		log.Printf("Start() failed, because it cannot determine the plugin install location: %s", err)
-		status.Error(1, err.Error())
+		return nil, status.Error(1, err.Error())
 	}
 	pluginInstallDir := filepath.Dir(pluginInstallPath)
 
@@ -115,6 +117,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		return nil, status.Errorf(1, "failed to validate Ops Agent config: %s", err)
 	}
+
 	// Subagent config generation
 	if err := generateSubagentConfigs(pContext, ps.runCommand, pluginInstallDir, pluginStateDir); err != nil {
 		log.Printf("Start() failed: %s", err)
