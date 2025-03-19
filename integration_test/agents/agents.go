@@ -710,7 +710,8 @@ func getRestartOpsAgentCmd(imageSpec string) string {
 		grpcurlExecutable := "grpcurl"
 		if gce.IsWindows(imageSpec) {
 			grpcurlExecutable = `C:\grpcurl.exe`
-			return fmt.Sprintf("netstat -ano | findstr :1234; %s -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Stop; Start-Sleep -Seconds 5; %s -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable, OpsAgentPluginServerPort, grpcurlExecutable, OpsAgentPluginServerPort)
+			return `netstat -ano | findstr :1234`
+			// return fmt.Sprintf("netstat -ano | findstr :1234; %s -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Stop; Start-Sleep -Seconds 5; %s -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable, OpsAgentPluginServerPort, grpcurlExecutable, OpsAgentPluginServerPort)
 		}
 		return fmt.Sprintf("%s -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Stop && sleep 5 && %s -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable, OpsAgentPluginServerPort, grpcurlExecutable, OpsAgentPluginServerPort)
 	}
@@ -855,7 +856,7 @@ func RestartOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM) error 
 
 func getStartOpsAgentPluginCmd(imageSpec string, port string) string {
 	if gce.IsWindows(imageSpec) {
-		return fmt.Sprintf(`Start-Process -FilePath "C:\plugin.exe" -ArgumentList "--address=localhost:%s", "--errorlogfile=errorlog.txt", "--protocol=tcp"; netstat -ano | findstr :1234`, port)
+		return fmt.Sprintf(`Start-Process -FilePath "C:\plugin.exe" -ArgumentList "--address=localhost:%s", "--errorlogfile=errorlog.txt", "--protocol=tcp"`, port)
 	}
 	return fmt.Sprintf("sudo nohup ~/plugin --address=localhost:%s --errorlogfile=errorlog.txt --protocol=tcp 1>/dev/null 2>/dev/null &", port)
 }
@@ -863,6 +864,10 @@ func getStartOpsAgentPluginCmd(imageSpec string, port string) string {
 // StartOpsAgentPlugin starts the Ops Agent Plugin gRPC server on the testing VM in the background.
 func StartOpsAgentPlugin(ctx context.Context, logger *log.Logger, vm *gce.VM, port string) error {
 	if _, err := gce.RunRemotely(ctx, logger, vm, getStartOpsAgentPluginCmd(vm.ImageSpec, port)); err != nil {
+		return fmt.Errorf("StartOpsAgentPlugin() failed to start the ops agent plugin: %v", err)
+	}
+
+	if _, err := gce.RunRemotely(ctx, logger, vm, `netstat -ano | findstr :1234`); err != nil {
 		return fmt.Errorf("StartOpsAgentPlugin() failed to start the ops agent plugin: %v", err)
 	}
 
