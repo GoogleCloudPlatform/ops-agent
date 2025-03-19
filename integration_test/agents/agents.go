@@ -856,7 +856,7 @@ func RestartOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM) error 
 
 func getStartOpsAgentPluginCmd(imageSpec string, port string) string {
 	if gce.IsWindows(imageSpec) {
-		return ""
+		return fmt.Sprintf(`Start-Process -FilePath "C:\plugin.exe" -ArgumentList "--address=localhost:%s", "--errorlogfile=errorlog.txt", "--protocol=tcp"`, port)
 	}
 	return fmt.Sprintf("sudo nohup ~/plugin --address=localhost:%s --errorlogfile=errorlog.txt --protocol=tcp 1>/dev/null 2>/dev/null &", port)
 }
