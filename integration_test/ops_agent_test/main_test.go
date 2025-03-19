@@ -206,8 +206,8 @@ func setupMainLogAndVM(t *testing.T, imageSpec string) (context.Context, *log.Lo
 	return ctx, dirLog.ToMainLog(), vm
 }
 
-// setupMainLogAndManagedInstaceGroupVM sets up a VM for testing and returns it, along with a logger
-// that writes to a file called main_log.txt.
+// setupMainLogAndManagedInstaceGroupVM sets up a Managed Instance Group VM for testing
+// and returns it, along with a logger that writes to a file called main_log.txt.
 // This function is just a wrapper for agents.CommonSetup that returns a "plain"
 // log.Logger instead so that the callsite doesn't need to write
 // logger.ToMainLog() throughout.
@@ -5189,25 +5189,19 @@ func cleanupStaleResourcesForTestAppHubLogLabels(ctx context.Context, logger *lo
 }
 
 func TestAppHubLogLabels(t *testing.T) {
-	// Cleanup stale resources.
-	t.Cleanup(func() {
-		ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
-		gcloudConfigDir := t.TempDir()
-		if err := gce.SetupGcloudConfigDir(ctx, gcloudConfigDir); err != nil {
-			t.Fatalf("Unable to set up a gcloud config directory: %v", err)
-		}
-		ctx = gce.WithGcloudConfigDir(ctx, gcloudConfigDir)
-
-		logger := gce.SetupLogger(t).ToMainLog()
-		cleanupStaleResourcesForTestAppHubLogLabels(ctx, logger)
-		cancel()
-	})
-
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 
 		ctx, logger, migVM := setupMainLogAndManagedInstaceGroupVM(t, imageSpec)
+
+		// Cleanup stale resources
+		if imageSpec == gce.FirstImageSpec() {
+			// We don't need to clean stale (24h old) resources very often. This is only a guard
+			// in case the normal test cleanup is not executed correctly. We will only run the
+			// cleanup once per TestAppHubLogLabels execution to reduce race conditions.
+			t.Cleanup(func() { cleanupStaleResourcesForTestAppHubLogLabels(ctx, logger) })
+		}
 
 		// Setup Apphub #1 : Discover Managed Instance Group resource from AppHub API
 		vmRegion := migVM.Zone[:len(migVM.Zone)-2]
