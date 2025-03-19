@@ -968,10 +968,6 @@ func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm
 		return err
 	}
 
-	if err := gce.InstallGrpcurlIfNeeded(ctx, logger, vm); err != nil {
-		return err
-	}
-
 	if gce.IsWindows(vm.ImageSpec) {
 		if _, err := gce.RunRemotely(ctx, logger, vm, "New-Item -ItemType directory -Path C:\\agentPlugin"); err != nil {
 			return err
@@ -1012,6 +1008,10 @@ func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm
 		if _, err := gce.RunRemotely(ctx, logger, vm, "ls -la ~/"); err != nil {
 			return err
 		}
+	}
+
+	if err := gce.InstallGrpcurlIfNeeded(ctx, logger, vm); err != nil {
+		return err
 	}
 	return StartOpsAgentPlugin(ctx, logger, vm, OpsAgentPluginServerPort)
 }
