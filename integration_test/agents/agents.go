@@ -241,10 +241,9 @@ func getOpsAgentLogFilesList(imageSpec string) []string {
 }
 
 func runOpsAgentDiagnosticsWindows(ctx context.Context, logger *logging.DirectoryLogger, vm *gce.VM) {
-	uapWindowsPluginStateDir := `C:\ProgramData\Google\Compute Engine\google-guest-agent\agent_state\plugins\ops-agent-plugin\`
 	stateDir := `C:\ProgramData\Google\Cloud Operations\Ops Agent\`
 	if gce.IsOpsAgentUAPPlugin() {
-		stateDir = uapWindowsPluginStateDir
+		stateDir = `C:\ProgramData\Google\Compute Engine\google-guest-agent\agent_state\plugins\ops-agent-plugin\`
 		gce.RunRemotely(ctx, logger.ToFile("ops_agent_uap_plugin_logs.txt"), vm, "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent-uap-plugin' } | Format-Table -AutoSize -Wrap")
 	} else {
 		gce.RunRemotely(ctx, logger.ToFile("windows_System_log.txt"), vm, "Get-WinEvent -LogName System | Format-Table -AutoSize -Wrap")
