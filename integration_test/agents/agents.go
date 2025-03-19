@@ -961,7 +961,7 @@ func ManagedInstanceGroupVMSetup(t *testing.T, imageSpec string, extraCreateArgu
 		Metadata:             additionalMetadata,
 	}
 	migVM := gce.SetupManagedInstanceGroupVM(ctx, t, logger.ToFile("VM_initialization.txt"), options)
-	logger.ToMainLog().Printf("VM is ready: %#v", migVM.VM)
+	logger.ToMainLog().Printf("ManagedInstanceGroupVM is ready: %#v", migVM.VM)
 	t.Cleanup(func() {
 		RunOpsAgentDiagnostics(ctx, logger, migVM.VM)
 	})

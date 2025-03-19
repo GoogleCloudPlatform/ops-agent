@@ -320,7 +320,7 @@ func (migVM ManagedInstanceGroupVM) ManagedInstanceGroupName() string {
 }
 
 func (migVM ManagedInstanceGroupVM) InstanceTemplateName() string {
-	return migVM.Name + "-temp"
+	return migVM.Name + "-tmpl"
 }
 
 func (migVM ManagedInstanceGroupVM) AppHubWorkloadName() string {
@@ -1361,7 +1361,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	}
 
 	args := []string{
-		// "beta" is needed for --max-run-duration below.
+		// "beta" is needed for --max-run-duration.
 		"beta", "compute", "instances", "create", vm.Name,
 		"--project=" + vm.Project,
 		"--zone=" + vm.Zone,
@@ -1423,9 +1423,10 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	return vm, nil
 }
 
-// attemptCreateManagedInstanceGroupVM creates a VM instance and waits for it to be ready.
-// Returns a VM object or an error (never both). The caller is responsible for
-// deleting the VM if (and only if) the returned error is nil.
+// attemptCreateManagedInstanceGroupVM creates a individual VM instance in a Managed Instance Group
+// and waits for it to be ready.
+// Returns a ManagedInstanceGroupVM object or an error (never both). The caller is responsible for
+// deleting the ManagedInstanceGroupVM if (and only if) the returned error is nil.
 func attemptCreateManagedInstanceGroupVM(ctx context.Context, logger *log.Logger, options VMOptions) (migVmToReturn *ManagedInstanceGroupVM, errToReturn error) {
 	// We need a shorter uuid here to add suffixes and not go over the 63 character limit
 	// for resource names.
@@ -1437,6 +1438,7 @@ func attemptCreateManagedInstanceGroupVM(ctx context.Context, logger *log.Logger
 
 	// Step #1 : Create vm instance template
 	createTemplateArgs := []string{
+		// "beta" is needed for --max-run-duration.
 		"beta", "compute", "instance-templates", "create", migVM.InstanceTemplateName(),
 		"--project=" + migVM.Project,
 		"--machine-type=" + migVM.MachineType,

@@ -5179,7 +5179,7 @@ func cleanupStaleResourcesForTestAppHubLogLabels(ctx context.Context, logger *lo
 		"( creationTimestamp < "+staleResourceTimestamp+" AND name ~ .*test-[0-9]{1,8}-.*-mig$ )",
 		[]string{"--project", project})
 	listAndDeleteResources(ctx, logger, []string{"compute", "instance-templates"},
-		"( creationTimestamp < "+staleResourceTimestamp+" AND name ~ .*test-[0-9]{1,8}-.*-temp$ )",
+		"( creationTimestamp < "+staleResourceTimestamp+" AND name ~ .*test-[0-9]{1,8}-.*-tmpl$ )",
 		[]string{"--project", project})
 	listAndDeleteResources(ctx, logger, []string{"apphub", "applications", "workloads"},
 		"( createTime < "+staleResourceTimestamp+" AND name ~ .*test-[0-9]{1,8}-.*-wl$ )",
@@ -5220,7 +5220,6 @@ func TestAppHubLogLabels(t *testing.T) {
 
 		// Setup Apphub #2 : Register Managed Instance Group as AppHub workload.
 		migResourceString := strings.Replace(output.Stdout, "https://apphub.googleapis.com/v1/", "", 1)
-		logger.Println("found uri : ", migResourceString)
 		registerAppHubWorkloadArgs := []string{
 			"apphub", "applications", "workloads", "create", migVM.AppHubWorkloadName(),
 			"--application=" + AppHubIntegrationTestApp,
