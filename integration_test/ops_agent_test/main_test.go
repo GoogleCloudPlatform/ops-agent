@@ -5189,14 +5189,25 @@ func cleanupStaleResourcesForTestAppHubLogLabels(ctx context.Context, logger *lo
 }
 
 func TestAppHubLogLabels(t *testing.T) {
+	// Cleanup stale resources.
+	t.Cleanup(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
+		gcloudConfigDir := t.TempDir()
+		if err := gce.SetupGcloudConfigDir(ctx, gcloudConfigDir); err != nil {
+			t.Fatalf("Unable to set up a gcloud config directory: %v", err)
+		}
+		ctx = gce.WithGcloudConfigDir(ctx, gcloudConfigDir)
+
+		logger := gce.SetupLogger(t).ToMainLog()
+		cleanupStaleResourcesForTestAppHubLogLabels(ctx, logger)
+		cancel()
+	})
+
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 
 		ctx, logger, migVM := setupMainLogAndManagedInstaceGroupVM(t, imageSpec)
-
-		// Cleanup stale resources.
-		t.Cleanup(func() { cleanupStaleResourcesForTestAppHubLogLabels(ctx, logger) })
 
 		// Setup Apphub #1 : Discover Managed Instance Group resource from AppHub API
 		vmRegion := migVM.Zone[:len(migVM.Zone)-2]
