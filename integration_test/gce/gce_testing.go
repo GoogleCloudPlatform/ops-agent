@@ -1306,15 +1306,15 @@ func verifyVMCreation(ctx context.Context, logger *log.Logger, vm *VM) error {
 	return nil
 }
 
-func addditionalCreateInstaceArgs(options VMOptions, vm *VM) ([]string, error) {
+func additionalCreateInstanceArgs(options VMOptions, vm *VM) ([]string, error) {
 	args := []string{}
 	newMetadata, err := addFrameworkMetadata(vm.ImageSpec, options.Metadata)
 	if err != nil {
-		return nil, fmt.Errorf("addditionalCreateInstaceArgs() could not construct valid metadata: %v", err)
+		return nil, fmt.Errorf("additionalCreateInstanceArgs() could not construct valid metadata: %v", err)
 	}
 	newLabels, err := addFrameworkLabels(options.Labels)
 	if err != nil {
-		return nil, fmt.Errorf("addditionalCreateInstaceArgs() could not construct valid labels: %v", err)
+		return nil, fmt.Errorf("additionalCreateInstanceArgs() could not construct valid labels: %v", err)
 	}
 
 	image_flags, err := gcloudFlagsFromImageSpec(vm.ImageSpec)
@@ -1371,7 +1371,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		"--format=json",
 	}
 
-	additionalArgs, err := addditionalCreateInstaceArgs(options, vm)
+	additionalArgs, err := additionalCreateInstanceArgs(options, vm)
 	if err != nil {
 		return nil, err
 	}
@@ -1426,7 +1426,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 // attemptCreateManagedInstanceGroupVM creates a VM instance and waits for it to be ready.
 // Returns a VM object or an error (never both). The caller is responsible for
 // deleting the VM if (and only if) the returned error is nil.
-func attemptCreateManagedInstanceGroupVM(ctx context.Context, logger *log.Logger, options VMOptions) (vmToReturn *ManagedInstanceGroupVM, errToReturn error) {
+func attemptCreateManagedInstanceGroupVM(ctx context.Context, logger *log.Logger, options VMOptions) (migVmToReturn *ManagedInstanceGroupVM, errToReturn error) {
 	// We need a shorter uuid here to add suffixes and not go over the 63 character limit
 	// for resource names.
 	options.Name = fmt.Sprintf("%s-%s", sandboxPrefix, uuid.NewString()[:30])
@@ -1443,7 +1443,7 @@ func attemptCreateManagedInstanceGroupVM(ctx context.Context, logger *log.Logger
 		"--network=" + migVM.Network,
 		"--format=json",
 	}
-	additionalArgs, err := addditionalCreateInstaceArgs(options, migVM.VM)
+	additionalArgs, err := additionalCreateInstanceArgs(options, migVM.VM)
 	if err != nil {
 		return nil, err
 	}
@@ -1451,17 +1451,17 @@ func attemptCreateManagedInstanceGroupVM(ctx context.Context, logger *log.Logger
 
 	output, err := RunGcloud(ctx, logger, "", createTemplateArgs)
 	if err != nil {
-		// Note: we don't try and delete the instance template in this case because there is
-		// nothing to delete.
+		// Note: we don't try and delete the instance template or managed instance group
+		// in this case because there is nothing to delete.
 		return nil, err
 	}
 
 	defer func() {
 		if errToReturn != nil {
-			// This function is responsible for deleting the VM in all error cases.
+			// This function is responsible for deleting the ManagedInstanceGroupVM in all error cases.
 			errToReturn = multierr.Append(errToReturn, DeleteManagedInstanceGroupVM(logger, migVM))
-			// Make sure to never return both a valid VM object and an error.
-			vmToReturn = nil
+			// Make sure to never return both a valid ManagedInstanceGroupVM object and an error.
+			migVmToReturn = nil
 		}
 		if errToReturn == nil && migVM.VM == nil {
 			errToReturn = errors.New("programming error: attemptCreateManagedInstanceGroupVM() returned nil VM and nil error")
@@ -1597,6 +1597,24 @@ func IsOpsAgentUAPPlugin() bool {
 	return ok && value != ""
 }
 
+func shouldRetryCreateVM(err error, options VMOptions) bool {
+	// VM creation can hit quota, especially when re-running presubmits,
+	// or when multple people are running tests.
+	return strings.Contains(err.Error(), "Quota") ||
+		// Rarely, instance creation fails due to internal errors in the compute API.
+		strings.Contains(err.Error(), "Internal error") ||
+		// Instance creation can also fail due to service unavailability.
+		strings.Contains(err.Error(), "currently unavailable") ||
+		// This error is a consequence of running gcloud concurrently, which is actually
+		// unsupported. In the absence of a better fix, just retry such errors.
+		strings.Contains(err.Error(), "database is locked") ||
+		// windows-*-core instances sometimes fail to be ssh-able: b/305721001
+		(IsWindowsCore(options.ImageSpec) && strings.Contains(err.Error(), windowsStartupFailedMessage)) ||
+		// SLES instances sometimes fail to be ssh-able: b/186426190
+		(IsSUSEImageSpec(options.ImageSpec) && strings.Contains(err.Error(), startupFailedMessage)) ||
+		strings.Contains(err.Error(), prepareSLESMessage)
+}
+
 // CreateInstance launches a new VM instance based on the given options.
 // Also waits for the instance to be reachable over ssh.
 // Returns a VM object or an error (never both). The caller is responsible for
@@ -1610,24 +1628,6 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 	ctx, cancel := context.WithTimeout(origCtx, 3*vmInitTimeout)
 	defer cancel()
 
-	shouldRetry := func(err error) bool {
-		// VM creation can hit quota, especially when re-running presubmits,
-		// or when multple people are running tests.
-		return strings.Contains(err.Error(), "Quota") ||
-			// Rarely, instance creation fails due to internal errors in the compute API.
-			strings.Contains(err.Error(), "Internal error") ||
-			// Instance creation can also fail due to service unavailability.
-			strings.Contains(err.Error(), "currently unavailable") ||
-			// This error is a consequence of running gcloud concurrently, which is actually
-			// unsupported. In the absence of a better fix, just retry such errors.
-			strings.Contains(err.Error(), "database is locked") ||
-			// windows-*-core instances sometimes fail to be ssh-able: b/305721001
-			(IsWindowsCore(options.ImageSpec) && strings.Contains(err.Error(), windowsStartupFailedMessage)) ||
-			// SLES instances sometimes fail to be ssh-able: b/186426190
-			(IsSUSEImageSpec(options.ImageSpec) && strings.Contains(err.Error(), startupFailedMessage)) ||
-			strings.Contains(err.Error(), prepareSLESMessage)
-	}
-
 	var vm *VM
 	createFunc := func() error {
 		attemptCtx, cancel := context.WithTimeout(ctx, vmInitTimeout)
@@ -1636,7 +1636,7 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 		var err error
 		vm, err = attemptCreateInstance(attemptCtx, logger, options)
 
-		if err != nil && !shouldRetry(err) {
+		if err != nil && !shouldRetryCreateVM(err, options) {
 			err = backoff.Permanent(err)
 		}
 		// Returning a non-permanent error triggers retries.
@@ -1650,10 +1650,10 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 	return vm, nil
 }
 
-// CreateManagedInstanceGroupVM launches a new VM instance based on the given options.
+// CreateManagedInstanceGroupVM launches a new Managed Instance Group VM instance based on the given options.
 // Also waits for the instance to be reachable over ssh.
-// Returns a VM object or an error (never both). The caller is responsible for
-// deleting the VM if (and only if) the returned error is nil.
+// Returns a ManagedInstanceGroupVM object or an error (never both). The caller is responsible for
+// deleting the ManagedInstanceGroupVM if (and only if) the returned error is nil.
 func CreateManagedInstanceGroupVM(origCtx context.Context, logger *log.Logger, options VMOptions) (*ManagedInstanceGroupVM, error) {
 	// Give enough time for at least 3 consecutive attempts to start a VM.
 	// If an attempt returns a non-retriable error, it will be returned
@@ -1663,24 +1663,6 @@ func CreateManagedInstanceGroupVM(origCtx context.Context, logger *log.Logger, o
 	ctx, cancel := context.WithTimeout(origCtx, 3*vmInitTimeout)
 	defer cancel()
 
-	shouldRetry := func(err error) bool {
-		// VM creation can hit quota, especially when re-running presubmits,
-		// or when multple people are running tests.
-		return strings.Contains(err.Error(), "Quota") ||
-			// Rarely, instance creation fails due to internal errors in the compute API.
-			strings.Contains(err.Error(), "Internal error") ||
-			// Instance creation can also fail due to service unavailability.
-			strings.Contains(err.Error(), "currently unavailable") ||
-			// This error is a consequence of running gcloud concurrently, which is actually
-			// unsupported. In the absence of a better fix, just retry such errors.
-			strings.Contains(err.Error(), "database is locked") ||
-			// windows-*-core instances sometimes fail to be ssh-able: b/305721001
-			(IsWindowsCore(options.ImageSpec) && strings.Contains(err.Error(), windowsStartupFailedMessage)) ||
-			// SLES instances sometimes fail to be ssh-able: b/186426190
-			(IsSUSEImageSpec(options.ImageSpec) && strings.Contains(err.Error(), startupFailedMessage)) ||
-			strings.Contains(err.Error(), prepareSLESMessage)
-	}
-
 	var migVM *ManagedInstanceGroupVM
 	createFunc := func() error {
 		attemptCtx, cancel := context.WithTimeout(ctx, vmInitTimeout)
@@ -1689,7 +1671,7 @@ func CreateManagedInstanceGroupVM(origCtx context.Context, logger *log.Logger, o
 		var err error
 		migVM, err = attemptCreateManagedInstanceGroupVM(attemptCtx, logger, options)
 
-		if err != nil && !shouldRetry(err) {
+		if err != nil && !shouldRetryCreateVM(err, options) {
 			err = backoff.Permanent(err)
 		}
 		// Returning a non-permanent error triggers retries.
@@ -1765,6 +1747,26 @@ func SetEnvironmentVariables(ctx context.Context, logger *log.Logger, vm *VM, en
 	return err
 }
 
+func handleDeleteError(err error, attempt int) error {
+	if err == nil {
+		return nil
+	}
+	// GCE sometimes responds with 502 or 503 errors. Retry these errors
+	// (and other 50x errors for good measure), by returning them directly.
+	if strings.Contains(err.Error(), "Error 50") {
+		return err
+	}
+	// "not found" can happen when a previous attempt actually did delete
+	// the VM but there was some communication problem along the way.
+	// Consider that a successful deletion. Only do this when there has
+	// been a previous attempt.
+	if strings.Contains(err.Error(), "not found") && attempt > 1 {
+		return nil
+	}
+	// Wrap other errors in backoff.Permanent() to avoid retrying those.
+	return backoff.Permanent(err)
+}
+
 // DeleteInstance deletes the given VM instance synchronously.
 // Does nothing if the VM was already deleted.
 // Doesn't take a Context argument because even if the test has timed out or is
@@ -1787,23 +1789,7 @@ func DeleteInstance(logger *log.Logger, vm *VM) error {
 				"--zone=" + vm.Zone,
 				vm.Name,
 			})
-		if err == nil {
-			return nil
-		}
-		// GCE sometimes responds with 502 or 503 errors. Retry these errors
-		// (and other 50x errors for good measure), by returning them directly.
-		if strings.Contains(err.Error(), "Error 50") {
-			return err
-		}
-		// "not found" can happen when a previous attempt actually did delete
-		// the VM but there was some communication problem along the way.
-		// Consider that a successful deletion. Only do this when there has
-		// been a previous attempt.
-		if strings.Contains(err.Error(), "not found") && attempt > 1 {
-			return nil
-		}
-		// Wrap other errors in backoff.Permanent() to avoid retrying those.
-		return backoff.Permanent(err)
+		return handleDeleteError(err, attempt)
 	}
 	err := backoff.Retry(tryDelete, backoffPolicy)
 	if err == nil {
@@ -1812,10 +1798,10 @@ func DeleteInstance(logger *log.Logger, vm *VM) error {
 	return err
 }
 
-// DeleteManagedInstanceGroupVM deletes the given VM instance synchronously.
-// Does nothing if the VM was already deleted.
+// DeleteManagedInstanceGroupVM deletes the given Managed Instance Group VM instance synchronously.
+// Does nothing if the Managed Instance Group VM was already deleted.
 // Doesn't take a Context argument because even if the test has timed out or is
-// cancelled, we still want to delete the VMs.
+// cancelled, we still want to delete the Managed Instance Group.
 func DeleteManagedInstanceGroupVM(logger *log.Logger, migVM *ManagedInstanceGroupVM) error {
 	if migVM.AlreadyDeleted {
 		logger.Printf("Managed Instance Group %v was already deleted, skipping delete.", migVM.Name)
@@ -1836,21 +1822,7 @@ func DeleteManagedInstanceGroupVM(logger *log.Logger, migVM *ManagedInstanceGrou
 		if err == nil {
 			return nil
 		}
-		// GCE sometimes responds with 502 or 503 errors. Retry these errors
-		// (and other 50x errors for good measure), by returning them directly.
-		if strings.Contains(err.Error(), "Error 50") {
-			return err
-		}
-		// "not found" can happen when a previous attempt actually did delete
-		// the VM but there was some communication problem along the way.
-		// Consider that a successful deletion. Only do this when there has
-		// been a previous attempt.
-		if strings.Contains(err.Error(), "not found") && attempt > 1 {
-			return nil
-		}
-
-		// Wrap other errors in backoff.Permanent() to avoid retrying those.
-		return backoff.Permanent(err)
+		return handleDeleteError(err, attempt)
 	}
 	err := backoff.Retry(tryDeleteMIG, backoffPolicy)
 	if err == nil {
@@ -1865,24 +1837,7 @@ func DeleteManagedInstanceGroupVM(logger *log.Logger, migVM *ManagedInstanceGrou
 				"compute", "instance-templates", "delete", migVM.InstanceTemplateName(),
 				"--project=" + migVM.Project,
 			})
-		if err == nil {
-			return nil
-		}
-		// GCE sometimes responds with 502 or 503 errors. Retry these errors
-		// (and other 50x errors for good measure), by returning them directly.
-		if strings.Contains(err.Error(), "Error 50") {
-			return err
-		}
-		// "not found" can happen when a previous attempt actually did delete
-		// the VM but there was some communication problem along the way.
-		// Consider that a successful deletion. Only do this when there has
-		// been a previous attempt.
-		if strings.Contains(err.Error(), "not found") && attempt > 1 {
-			return nil
-		}
-
-		// Wrap other errors in backoff.Permanent() to avoid retrying those.
-		return backoff.Permanent(err)
+		return handleDeleteError(err, attempt)
 	}
 	err = backoff.Retry(tryDeleteTemplate, backoffPolicy)
 	if err == nil {
@@ -2412,6 +2367,11 @@ func RunForEachImage(t *testing.T, testBody func(t *testing.T, imageSpec string)
 			testBody(t, imageSpec)
 		})
 	}
+}
+
+// FirstImageSpec picks the first element from IMAGE_SPECS and returns it.
+func FirstImageSpec() string {
+	return strings.Split(os.Getenv("IMAGE_SPECS"), ",")[0]
 }
 
 // ArbitraryImageSpec picks an arbitrary element from IMAGE_SPECS and returns it.
