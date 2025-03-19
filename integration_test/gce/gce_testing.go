@@ -1650,35 +1650,11 @@ func InstallGrpcurlIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) err
 		if _, err := RunRemotely(ctx, logger, vm, "Get-Command grpcurl"); err == nil {
 			return nil
 		}
+
 		logger.Printf("grpcurl not found, installing it...")
-		installCmd := `gsutil cp gs://ops-agents-public-buckets-vendored-deps/mirrored-content/grpcurl/v1.8.6/grpcurl_1.8.6_windows_x86_64.zip C:\agentPlugin`
+		installCmd := `gsutil cp gs://ops-agents-public-buckets-vendored-deps/mirrored-content/grpcurl/v1.8.6/grpcurl_1.8.6_windows_x86_64.zip C:\agentPlugin;Expand-Archive -Path "C:\agentPlugin\grpcurl_1.8.6_windows_x86_64.zip" -DestinationPath "C:\" -Force;ls "C:\"`
 
 		_, err := RunRemotely(ctx, logger, vm, installCmd)
-		if err != nil {
-			return err
-		}
-
-		installCmd = `Expand-Archive -Path "C:\agentPlugin\grpcurl_1.8.6_windows_x86_64.zip" -DestinationPath "C:\" -Force`
-
-		_, err = RunRemotely(ctx, logger, vm, installCmd)
-		if err != nil {
-			return err
-		}
-
-		installCmd = `ls "C:\"`
-		_, err = RunRemotely(ctx, logger, vm, installCmd)
-		if err != nil {
-			return err
-		}
-
-		installCmd = `$env:Path += ";C:\"`
-		_, err = RunRemotely(ctx, logger, vm, installCmd)
-		if err != nil {
-			return err
-		}
-
-		installCmd = `$env:Path`
-		_, err = RunRemotely(ctx, logger, vm, installCmd)
 		return err
 	}
 
