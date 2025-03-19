@@ -1,1 +1,572 @@
-{"resourceMetrics":[{"resource":{},"scopeMetrics":[{"scope":{},"metrics":[{"name":"agent.googleapis.com/agent/internal/ops/feature_tracking","gauge":{"dataPoints":[{"attributes":[{"key":"module","value":{"stringValue":"logging"}},{"key":"feature","value":{"stringValue":"service:pipelines"}},{"key":"key","value":{"stringValue":"default_pipeline_overridden"}},{"key":"value","value":{"stringValue":"false"}}],"asInt":"1"},{"attributes":[{"key":"module","value":{"stringValue":"metrics"}},{"key":"feature","value":{"stringValue":"service:pipelines"}},{"key":"key","value":{"stringValue":"default_pipeline_overridden"}},{"key":"value","value":{"stringValue":"false"}}],"asInt":"1"},{"attributes":[{"key":"module","value":{"stringValue":"global"}},{"key":"feature","value":{"stringValue":"default:self_log"}},{"key":"key","value":{"stringValue":"default_self_log_file_collection"}},{"key":"value","value":{"stringValue":"true"}}],"asInt":"1"},{"attributes":[{"key":"module","value":{"stringValue":"logging"}},{"key":"feature","value":{"stringValue":"service:otel_logging"}},{"key":"key","value":{"stringValue":"otel_logging_supported_config"}},{"key":"value","value":{"stringValue":"false"}}],"asInt":"1"},{"attributes":[{"key":"module","value":{"stringValue":"logging"}},{"key":"feature","value":{"stringValue":"receivers:mysql_error"}},{"key":"key","value":{"stringValue":"[0].enabled"}},{"key":"value","value":{"stringValue":"true"}}],"asInt":"1"},{"attributes":[{"key":"module","value":{"stringValue":"logging"}},{"key":"feature","value":{"stringValue":"receivers:mysql_error"}},{"key":"key","value":{"stringValue":"[0].include_paths.__length"}},{"key":"value","value":{"stringValue":"1"}}],"asInt":"1"},{"attributes":[{"key":"module","value":{"stringValue":"logging"}},{"key":"feature","value":{"stringValue":"receivers:mysql_general"}},{"key":"key","value":{"stringValue":"[1].enabled"}},{"key":"value","value":{"stringValue":"true"}}],"asInt":"1"},{"attributes":[{"key":"module","value":{"stringValue":"logging"}},{"key":"feature","value":{"stringValue":"receivers:mysql_general"}},{"key":"key","value":{"stringValue":"[1].include_paths.__length"}},{"key":"value","value":{"stringValue":"1"}}],"asInt":"1"},{"attributes":[{"key":"module","value":{"stringValue":"logging"}},{"key":"feature","value":{"stringValue":"receivers:mysql_slow"}},{"key":"key","value":{"stringValue":"[2].enabled"}},{"key":"value","value":{"stringValue":"true"}}],"asInt":"1"},{"attributes":[{"key":"module","value":{"stringValue":"logging"}},{"key":"feature","value":{"stringValue":"receivers:mysql_slow"}},{"key":"key","value":{"stringValue":"[2].include_paths.__length"}},{"key":"value","value":{"stringValue":"1"}}],"asInt":"1"},{"attributes":[{"key":"module","value":{"stringValue":"logging"}},{"key":"feature","value":{"stringValue":"receivers:mysql_error"}},{"key":"key","value":{"stringValue":"[3].enabled"}},{"key":"value","value":{"stringValue":"true"}}],"asInt":"1"},{"attributes":[{"key":"module","value":{"stringValue":"logging"}},{"key":"feature","value":{"stringValue":"receivers:mysql_general"}},{"key":"key","value":{"stringValue":"[4].enabled"}},{"key":"value","value":{"stringValue":"true"}}],"asInt":"1"},{"attributes":[{"key":"module","value":{"stringValue":"logging"}},{"key":"feature","value":{"stringValue":"receivers:mysql_slow"}},{"key":"key","value":{"stringValue":"[5].enabled"}},{"key":"value","value":{"stringValue":"true"}}],"asInt":"1"},{"attributes":[{"key":"module","value":{"stringValue":"logging"}},{"key":"feature","value":{"stringValue":"receivers:syslog"}},{"key":"key","value":{"stringValue":"[6].enabled"}},{"key":"value","value":{"stringValue":"true"}}],"asInt":"1"},{"attributes":[{"key":"module","value":{"stringValue":"logging"}},{"key":"feature","value":{"stringValue":"receivers:syslog"}},{"key":"key","value":{"stringValue":"[7].enabled"}},{"key":"value","value":{"stringValue":"true"}}],"asInt":"1"},{"attributes":[{"key":"module","value":{"stringValue":"logging"}},{"key":"feature","value":{"stringValue":"receivers:syslog"}},{"key":"key","value":{"stringValue":"[8].enabled"}},{"key":"value","value":{"stringValue":"true"}}],"asInt":"1"},{"attributes":[{"key":"module","value":{"stringValue":"logging"}},{"key":"feature","value":{"stringValue":"processors:mysql_error"}},{"key":"key","value":{"stringValue":"[0].enabled"}},{"key":"value","value":{"stringValue":"true"}}],"asInt":"1"},{"attributes":[{"key":"module","value":{"stringValue":"logging"}},{"key":"feature","value":{"stringValue":"processors:mysql_general"}},{"key":"key","value":{"stringValue":"[1].enabled"}},{"key":"value","value":{"stringValue":"true"}}],"asInt":"1"},{"attributes":[{"key":"module","value":{"stringValue":"logging"}},{"key":"feature","value":{"stringValue":"processors:mysql_slow"}},{"key":"key","value":{"stringValue":"[2].enabled"}},{"key":"value","value":{"stringValue":"true"}}],"asInt":"1"}]}}]}]}]}
+{
+  "resourceMetrics": [
+    {
+      "resource": {},
+      "scopeMetrics": [
+        {
+          "scope": {},
+          "metrics": [
+            {
+              "name": "agent.googleapis.com/agent/internal/ops/feature_tracking",
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "module",
+                        "value": {
+                          "stringValue": "logging"
+                        }
+                      },
+                      {
+                        "key": "feature",
+                        "value": {
+                          "stringValue": "service:pipelines"
+                        }
+                      },
+                      {
+                        "key": "key",
+                        "value": {
+                          "stringValue": "default_pipeline_overridden"
+                        }
+                      },
+                      {
+                        "key": "value",
+                        "value": {
+                          "stringValue": "false"
+                        }
+                      }
+                    ],
+                    "asInt": "1"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "module",
+                        "value": {
+                          "stringValue": "metrics"
+                        }
+                      },
+                      {
+                        "key": "feature",
+                        "value": {
+                          "stringValue": "service:pipelines"
+                        }
+                      },
+                      {
+                        "key": "key",
+                        "value": {
+                          "stringValue": "default_pipeline_overridden"
+                        }
+                      },
+                      {
+                        "key": "value",
+                        "value": {
+                          "stringValue": "false"
+                        }
+                      }
+                    ],
+                    "asInt": "1"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "module",
+                        "value": {
+                          "stringValue": "global"
+                        }
+                      },
+                      {
+                        "key": "feature",
+                        "value": {
+                          "stringValue": "default:self_log"
+                        }
+                      },
+                      {
+                        "key": "key",
+                        "value": {
+                          "stringValue": "default_self_log_file_collection"
+                        }
+                      },
+                      {
+                        "key": "value",
+                        "value": {
+                          "stringValue": "true"
+                        }
+                      }
+                    ],
+                    "asInt": "1"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "module",
+                        "value": {
+                          "stringValue": "logging"
+                        }
+                      },
+                      {
+                        "key": "feature",
+                        "value": {
+                          "stringValue": "service:otel_logging"
+                        }
+                      },
+                      {
+                        "key": "key",
+                        "value": {
+                          "stringValue": "otel_logging_supported_config"
+                        }
+                      },
+                      {
+                        "key": "value",
+                        "value": {
+                          "stringValue": "false"
+                        }
+                      }
+                    ],
+                    "asInt": "1"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "module",
+                        "value": {
+                          "stringValue": "logging"
+                        }
+                      },
+                      {
+                        "key": "feature",
+                        "value": {
+                          "stringValue": "receivers:mysql_error"
+                        }
+                      },
+                      {
+                        "key": "key",
+                        "value": {
+                          "stringValue": "[0].enabled"
+                        }
+                      },
+                      {
+                        "key": "value",
+                        "value": {
+                          "stringValue": "true"
+                        }
+                      }
+                    ],
+                    "asInt": "1"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "module",
+                        "value": {
+                          "stringValue": "logging"
+                        }
+                      },
+                      {
+                        "key": "feature",
+                        "value": {
+                          "stringValue": "receivers:mysql_error"
+                        }
+                      },
+                      {
+                        "key": "key",
+                        "value": {
+                          "stringValue": "[0].include_paths.__length"
+                        }
+                      },
+                      {
+                        "key": "value",
+                        "value": {
+                          "stringValue": "1"
+                        }
+                      }
+                    ],
+                    "asInt": "1"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "module",
+                        "value": {
+                          "stringValue": "logging"
+                        }
+                      },
+                      {
+                        "key": "feature",
+                        "value": {
+                          "stringValue": "receivers:mysql_general"
+                        }
+                      },
+                      {
+                        "key": "key",
+                        "value": {
+                          "stringValue": "[1].enabled"
+                        }
+                      },
+                      {
+                        "key": "value",
+                        "value": {
+                          "stringValue": "true"
+                        }
+                      }
+                    ],
+                    "asInt": "1"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "module",
+                        "value": {
+                          "stringValue": "logging"
+                        }
+                      },
+                      {
+                        "key": "feature",
+                        "value": {
+                          "stringValue": "receivers:mysql_general"
+                        }
+                      },
+                      {
+                        "key": "key",
+                        "value": {
+                          "stringValue": "[1].include_paths.__length"
+                        }
+                      },
+                      {
+                        "key": "value",
+                        "value": {
+                          "stringValue": "1"
+                        }
+                      }
+                    ],
+                    "asInt": "1"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "module",
+                        "value": {
+                          "stringValue": "logging"
+                        }
+                      },
+                      {
+                        "key": "feature",
+                        "value": {
+                          "stringValue": "receivers:mysql_slow"
+                        }
+                      },
+                      {
+                        "key": "key",
+                        "value": {
+                          "stringValue": "[2].enabled"
+                        }
+                      },
+                      {
+                        "key": "value",
+                        "value": {
+                          "stringValue": "true"
+                        }
+                      }
+                    ],
+                    "asInt": "1"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "module",
+                        "value": {
+                          "stringValue": "logging"
+                        }
+                      },
+                      {
+                        "key": "feature",
+                        "value": {
+                          "stringValue": "receivers:mysql_slow"
+                        }
+                      },
+                      {
+                        "key": "key",
+                        "value": {
+                          "stringValue": "[2].include_paths.__length"
+                        }
+                      },
+                      {
+                        "key": "value",
+                        "value": {
+                          "stringValue": "1"
+                        }
+                      }
+                    ],
+                    "asInt": "1"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "module",
+                        "value": {
+                          "stringValue": "logging"
+                        }
+                      },
+                      {
+                        "key": "feature",
+                        "value": {
+                          "stringValue": "receivers:mysql_error"
+                        }
+                      },
+                      {
+                        "key": "key",
+                        "value": {
+                          "stringValue": "[3].enabled"
+                        }
+                      },
+                      {
+                        "key": "value",
+                        "value": {
+                          "stringValue": "true"
+                        }
+                      }
+                    ],
+                    "asInt": "1"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "module",
+                        "value": {
+                          "stringValue": "logging"
+                        }
+                      },
+                      {
+                        "key": "feature",
+                        "value": {
+                          "stringValue": "receivers:mysql_general"
+                        }
+                      },
+                      {
+                        "key": "key",
+                        "value": {
+                          "stringValue": "[4].enabled"
+                        }
+                      },
+                      {
+                        "key": "value",
+                        "value": {
+                          "stringValue": "true"
+                        }
+                      }
+                    ],
+                    "asInt": "1"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "module",
+                        "value": {
+                          "stringValue": "logging"
+                        }
+                      },
+                      {
+                        "key": "feature",
+                        "value": {
+                          "stringValue": "receivers:mysql_slow"
+                        }
+                      },
+                      {
+                        "key": "key",
+                        "value": {
+                          "stringValue": "[5].enabled"
+                        }
+                      },
+                      {
+                        "key": "value",
+                        "value": {
+                          "stringValue": "true"
+                        }
+                      }
+                    ],
+                    "asInt": "1"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "module",
+                        "value": {
+                          "stringValue": "logging"
+                        }
+                      },
+                      {
+                        "key": "feature",
+                        "value": {
+                          "stringValue": "receivers:syslog"
+                        }
+                      },
+                      {
+                        "key": "key",
+                        "value": {
+                          "stringValue": "[6].enabled"
+                        }
+                      },
+                      {
+                        "key": "value",
+                        "value": {
+                          "stringValue": "true"
+                        }
+                      }
+                    ],
+                    "asInt": "1"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "module",
+                        "value": {
+                          "stringValue": "logging"
+                        }
+                      },
+                      {
+                        "key": "feature",
+                        "value": {
+                          "stringValue": "receivers:syslog"
+                        }
+                      },
+                      {
+                        "key": "key",
+                        "value": {
+                          "stringValue": "[7].enabled"
+                        }
+                      },
+                      {
+                        "key": "value",
+                        "value": {
+                          "stringValue": "true"
+                        }
+                      }
+                    ],
+                    "asInt": "1"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "module",
+                        "value": {
+                          "stringValue": "logging"
+                        }
+                      },
+                      {
+                        "key": "feature",
+                        "value": {
+                          "stringValue": "receivers:syslog"
+                        }
+                      },
+                      {
+                        "key": "key",
+                        "value": {
+                          "stringValue": "[8].enabled"
+                        }
+                      },
+                      {
+                        "key": "value",
+                        "value": {
+                          "stringValue": "true"
+                        }
+                      }
+                    ],
+                    "asInt": "1"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "module",
+                        "value": {
+                          "stringValue": "logging"
+                        }
+                      },
+                      {
+                        "key": "feature",
+                        "value": {
+                          "stringValue": "processors:mysql_error"
+                        }
+                      },
+                      {
+                        "key": "key",
+                        "value": {
+                          "stringValue": "[0].enabled"
+                        }
+                      },
+                      {
+                        "key": "value",
+                        "value": {
+                          "stringValue": "true"
+                        }
+                      }
+                    ],
+                    "asInt": "1"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "module",
+                        "value": {
+                          "stringValue": "logging"
+                        }
+                      },
+                      {
+                        "key": "feature",
+                        "value": {
+                          "stringValue": "processors:mysql_general"
+                        }
+                      },
+                      {
+                        "key": "key",
+                        "value": {
+                          "stringValue": "[1].enabled"
+                        }
+                      },
+                      {
+                        "key": "value",
+                        "value": {
+                          "stringValue": "true"
+                        }
+                      }
+                    ],
+                    "asInt": "1"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "module",
+                        "value": {
+                          "stringValue": "logging"
+                        }
+                      },
+                      {
+                        "key": "feature",
+                        "value": {
+                          "stringValue": "processors:mysql_slow"
+                        }
+                      },
+                      {
+                        "key": "key",
+                        "value": {
+                          "stringValue": "[2].enabled"
+                        }
+                      },
+                      {
+                        "key": "value",
+                        "value": {
+                          "stringValue": "true"
+                        }
+                      }
+                    ],
+                    "asInt": "1"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
