@@ -1497,13 +1497,14 @@ func attemptCreateManagedInstanceGroupVM(ctx context.Context, logger *log.Logger
 
 	output, err = RunGcloud(ctx, logger, "", createVMArgs)
 	if err != nil {
-		return nil, err
+		logger.Println(err)
 	}
 
-	// Step #4 : Wait until Managed Instance Group is stable.
+	// Step #4 : Wait until Managed Instance Group is stable with a 120s timeout.
 	waitUntilStableArgs := []string{
 		"compute", "instance-groups", "managed", "wait-until", migVM.ManagedInstanceGroupName(),
 		"--stable",
+		"--timeout=120",
 		"--project=" + migVM.Project,
 		"--zone=" + migVM.Zone,
 		"--format=json",
@@ -1614,7 +1615,8 @@ func shouldRetryCreateVM(err error, options VMOptions) bool {
 		(IsWindowsCore(options.ImageSpec) && strings.Contains(err.Error(), windowsStartupFailedMessage)) ||
 		// SLES instances sometimes fail to be ssh-able: b/186426190
 		(IsSUSEImageSpec(options.ImageSpec) && strings.Contains(err.Error(), startupFailedMessage)) ||
-		strings.Contains(err.Error(), prepareSLESMessage)
+		strings.Contains(err.Error(), prepareSLESMessage) ||
+		strings.Contains(err.Error(), "Timeout while waiting for group to become stable.")
 }
 
 // CreateInstance launches a new VM instance based on the given options.
@@ -1683,7 +1685,7 @@ func CreateManagedInstanceGroupVM(origCtx context.Context, logger *log.Logger, o
 	if err := backoff.Retry(createFunc, backoffPolicy); err != nil {
 		return nil, err
 	}
-	logger.Printf("Managed Instance Group VM is ready: %#v", migVM)
+	logger.Printf("Managed Instance Group VM is ready: %#v", migVM.VM)
 	return migVM, nil
 }
 
