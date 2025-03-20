@@ -917,7 +917,7 @@ func UploadContent(ctx context.Context, logger *log.Logger, vm *VM, content io.R
 	}()
 
 	if IsWindows(vm.ImageSpec) {
-		_, err = RunRemotely(ctx, logger, vm, fmt.Sprintf(`Read-GcsObject -Force -Bucket "%s" -ObjectName "%s" -OutFile "%s"`, object.BucketName(), object.ObjectName(), remotePath))
+		_, err = RunRemotely(ctx, logger, vm, fmt.Sprintf(`New-Item -Path "%s" -ItemType File -Force ;Read-GcsObject -Force -Bucket "%s" -ObjectName "%s" -OutFile "%s"`, remotePath, object.BucketName(), object.ObjectName(), remotePath))
 		return err
 	}
 	if err := InstallGsutilIfNeeded(ctx, logger, vm); err != nil {
