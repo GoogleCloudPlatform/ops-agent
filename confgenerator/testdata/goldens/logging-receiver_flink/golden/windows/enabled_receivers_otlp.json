@@ -1,1 +1,106 @@
-{"resourceMetrics":[{"resource":{},"scopeMetrics":[{"scope":{},"metrics":[{"name":"agent.googleapis.com/agent/ops_agent/enabled_receivers","gauge":{"dataPoints":[{"attributes":[{"key":"telemetry_type","value":{"stringValue":"metrics"}},{"key":"receiver_type","value":{"stringValue":"hostmetrics"}}],"asInt":"1"},{"attributes":[{"key":"telemetry_type","value":{"stringValue":"metrics"}},{"key":"receiver_type","value":{"stringValue":"iis"}}],"asInt":"1"},{"attributes":[{"key":"telemetry_type","value":{"stringValue":"metrics"}},{"key":"receiver_type","value":{"stringValue":"mssql"}}],"asInt":"1"},{"attributes":[{"key":"telemetry_type","value":{"stringValue":"logs"}},{"key":"receiver_type","value":{"stringValue":"flink"}}],"asInt":"1"},{"attributes":[{"key":"telemetry_type","value":{"stringValue":"logs"}},{"key":"receiver_type","value":{"stringValue":"windows_event_log"}}],"asInt":"1"}]}}]}]}]}
+{
+  "resourceMetrics": [
+    {
+      "resource": {},
+      "scopeMetrics": [
+        {
+          "scope": {},
+          "metrics": [
+            {
+              "name": "agent.googleapis.com/agent/ops_agent/enabled_receivers",
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "telemetry_type",
+                        "value": {
+                          "stringValue": "metrics"
+                        }
+                      },
+                      {
+                        "key": "receiver_type",
+                        "value": {
+                          "stringValue": "hostmetrics"
+                        }
+                      }
+                    ],
+                    "asInt": "1"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "telemetry_type",
+                        "value": {
+                          "stringValue": "metrics"
+                        }
+                      },
+                      {
+                        "key": "receiver_type",
+                        "value": {
+                          "stringValue": "iis"
+                        }
+                      }
+                    ],
+                    "asInt": "1"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "telemetry_type",
+                        "value": {
+                          "stringValue": "metrics"
+                        }
+                      },
+                      {
+                        "key": "receiver_type",
+                        "value": {
+                          "stringValue": "mssql"
+                        }
+                      }
+                    ],
+                    "asInt": "1"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "telemetry_type",
+                        "value": {
+                          "stringValue": "logs"
+                        }
+                      },
+                      {
+                        "key": "receiver_type",
+                        "value": {
+                          "stringValue": "flink"
+                        }
+                      }
+                    ],
+                    "asInt": "1"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "telemetry_type",
+                        "value": {
+                          "stringValue": "logs"
+                        }
+                      },
+                      {
+                        "key": "receiver_type",
+                        "value": {
+                          "stringValue": "windows_event_log"
+                        }
+                      }
+                    ],
+                    "asInt": "1"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
