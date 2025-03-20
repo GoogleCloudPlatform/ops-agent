@@ -5146,10 +5146,7 @@ func listAndDeleteResources(ctx context.Context, logger *log.Logger, resourceTyp
 	}
 
 	for _, r := range resources {
-		deleteArgs := append(resourceType,
-			[]string{"delete", filepath.Base(r.Name),
-				"--format=json",
-			}...)
+		deleteArgs := append(resourceType, []string{"delete", filepath.Base(r.Name), "--format=json"}...)
 		if r.Zone != "" {
 			deleteArgs = append(deleteArgs, "--zone")
 			deleteArgs = append(deleteArgs, filepath.Base(r.Zone))

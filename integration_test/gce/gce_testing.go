@@ -1423,7 +1423,7 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	return vm, nil
 }
 
-// attemptCreateManagedInstanceGroupVM creates a individual VM instance in a Managed Instance Group
+// attemptCreateManagedInstanceGroupVM creates an individual VM instance in a Managed Instance Group
 // and waits for it to be ready.
 // Returns a ManagedInstanceGroupVM object or an error (never both). The caller is responsible for
 // deleting the ManagedInstanceGroupVM if (and only if) the returned error is nil.
@@ -2332,9 +2332,9 @@ func SetupVM(ctx context.Context, t *testing.T, logger *log.Logger, options VMOp
 	return vm
 }
 
-// SetupManagedInstanceGroupVM creates a new VM according to the given options.
-// If VM creation fails, it will abort the test.
-// At the end of the test, the VM will be cleaned up.
+// SetupManagedInstanceGroupVM creates an individual VM instance in a Managed Instance Group according to the given options.
+// If the ManagedInstanceGroupVM creation fails, it will abort the test.
+// At the end of the test, the ManagedInstanceGroupVM will be cleaned up.
 func SetupManagedInstanceGroupVM(ctx context.Context, t *testing.T, logger *log.Logger, options VMOptions) *ManagedInstanceGroupVM {
 	t.Helper()
 
