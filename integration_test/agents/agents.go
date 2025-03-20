@@ -871,6 +871,7 @@ func StartOpsAgentPlugin(ctx context.Context, logger *log.Logger, vm *gce.VM, po
 		if _, err := gce.RunRemotely(ctx, logger, vm, `netstat -ano | findstr :1234`); err != nil {
 			return fmt.Errorf("StartOpsAgentPlugin() failed to start the ops agent plugin: %v", err)
 		}
+		return nil
 	}
 
 	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo nohup ~/plugin --address=localhost:%s --errorlogfile=errorlog.txt --protocol=tcp 1>/dev/null 2>/dev/null &", port)); err != nil {
