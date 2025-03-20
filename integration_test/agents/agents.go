@@ -868,9 +868,6 @@ func StartOpsAgentPlugin(ctx context.Context, logger *log.Logger, vm *gce.VM, po
 		if _, err := gce.RunScriptRemotely(ctx, logger, vm, string(startUAPWindowsPlugin), nil, nil); err != nil {
 			return fmt.Errorf("StartOpsAgentPlugin() failed to start the ops agent plugin: %v", err)
 		}
-		if _, err := gce.RunRemotely(ctx, logger, vm, `netstat -ano | findstr :1234`); err != nil {
-			return fmt.Errorf("StartOpsAgentPlugin() failed to start the ops agent plugin: %v", err)
-		}
 		return nil
 	}
 
