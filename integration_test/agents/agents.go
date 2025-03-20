@@ -714,8 +714,7 @@ func getRestartOpsAgentCmd(imageSpec string) string {
 		grpcurlExecutable := "grpcurl"
 		if gce.IsWindows(imageSpec) {
 			grpcurlExecutable = `C:\grpcurl.exe`
-			return `netstat -ano | findstr :1234`
-			// return fmt.Sprintf("netstat -ano | findstr :1234; %s -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Stop; Start-Sleep -Seconds 5; %s -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable, OpsAgentPluginServerPort, grpcurlExecutable, OpsAgentPluginServerPort)
+			return fmt.Sprintf("%s -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Stop; Start-Sleep -Seconds 5; %s -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable, OpsAgentPluginServerPort, grpcurlExecutable, OpsAgentPluginServerPort)
 		}
 		return fmt.Sprintf("%s -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Stop && sleep 5 && %s -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable, OpsAgentPluginServerPort, grpcurlExecutable, OpsAgentPluginServerPort)
 	}
