@@ -2603,7 +2603,7 @@ func TestDefaultMetricsNoProxy(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		testDefaultMetrics(ctx, t, logger, vm, time.Hour)
+		testDefaultMetrics(ctx, t, logger, vm, 20*time.Minute)
 	})
 }
 
@@ -4073,16 +4073,27 @@ func testWindowsStandaloneAgentConflict(t *testing.T, installStandalone func(ctx
 		}
 
 		// 3. Check the error log for a message about Ops Agent conflicting with standalone agent.
-		getEvents := `Get-WinEvent -FilterHashtable @{
+		if gce.IsOpsAgentUAPPlugin() {
+			cmdOut, err := gce.RunRemotely(ctx, logger, vm, getUAPPluginStatusForImage(vm.ImageSpec))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if strings.Contains(cmdOut.Stdout, "The Ops Agent Plugin is running ok.") {
+				t.Errorf("Ops Agent plugin should not be running when conflicting installations are present: %v, cmdOut: %v, cmdErr: %v", err, cmdOut.Stdout, cmdOut.Stderr)
+			}
+		} else {
+			getEvents := `Get-WinEvent -FilterHashtable @{
 		  LogName = 'Application'
 			ProviderName = 'google-cloud-ops-agent'
 		} | Select-Object -ExpandProperty Message`
-		out, err := gce.RunRemotely(ctx, logger, vm, getEvents)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !strings.Contains(out.Stdout, wantError) {
-			t.Fatalf("got error log = %q, want substring %q", out.Stdout, wantError)
+			out, err := gce.RunRemotely(ctx, logger, vm, getEvents)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(out.Stdout, wantError) {
+				t.Fatalf("got error log = %q, want substring %q", out.Stdout, wantError)
+			}
 		}
 	})
 }
