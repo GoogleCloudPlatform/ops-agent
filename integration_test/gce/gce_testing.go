@@ -1403,13 +1403,13 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	}
 	vm.ID = id
 
+	logger.Printf("Instance Log: %v", instanceLogURL(vm))
+
 	ipAddress, err := extractIPAddress(output.Stdout)
 	if err != nil {
 		return nil, err
 	}
 	vm.IPAddress = ipAddress
-
-	logger.Printf("Instance Log: %v", instanceLogURL(vm))
 
 	// This is just informational, so it's ok if it fails. Just warn and proceed.
 	if _, err := DescribeVMDisk(ctx, logger, vm); err != nil {
@@ -1535,13 +1535,13 @@ func attemptCreateManagedInstanceGroupVM(ctx context.Context, logger *log.Logger
 	}
 	migVM.ID = id
 
+	logger.Printf("Instance Log: %v", instanceLogURL(migVM.VM))
+
 	ipAddress, err := extractIPAddress(output.Stdout)
 	if err != nil {
 		return nil, err
 	}
 	migVM.IPAddress = ipAddress
-
-	logger.Printf("Instance Log: %v", instanceLogURL((*migVM).VM))
 
 	// This is just informational, so it's ok if it fails. Just warn and proceed.
 	if _, err := DescribeVMDisk(ctx, logger, migVM.VM); err != nil {
@@ -1827,8 +1827,8 @@ func DeleteManagedInstanceGroupVM(logger *log.Logger, migVM *ManagedInstanceGrou
 		return handleDeleteError(err, attempt)
 	}
 	err := backoff.Retry(tryDeleteMIG, backoffPolicy)
-	if err == nil {
-		migVM.AlreadyDeleted = true
+	if err != nil {
+		return err
 	}
 
 	attempt = 0
