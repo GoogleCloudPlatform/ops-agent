@@ -260,7 +260,10 @@ WORKDIR /work
 
 COPY . /work
 
-RUN go build -o bin/plugin.exe ./cmd/ops_agent_uap_plugin; `
+ARG WINDOWS_VERSION
+ARG BUILD_DISTRO=windows-$WINDOWS_VERSION
+RUN Get-Content VERSION | Where-Object length | ForEach-Object { Invoke-Expression "`$env:$_" }; `
+    go build -o bin/plugin.exe -ldflags \"-X github.com/GoogleCloudPlatform/ops-agent/internal/version.BuildDistro=$env:BUILD_DISTRO -X github.com/GoogleCloudPlatform/ops-agent/internal/version.Version=$env:PKG_VERSION\" ./cmd/ops_agent_uap_plugin; `
     Copy-Item -Path bin/plugin.exe -Destination /work/out/bin/;
 
 ###############################################################################
