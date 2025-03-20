@@ -286,6 +286,13 @@ func generateSubAgentConfigs(ctx context.Context, userConfigPath string, pluginS
 		"otel",
 		"fluentbit",
 	} {
+		if subagent == "otel" {
+			// The generated otlp metric json files are used only by the otel service.
+			if err = self_metrics.GenerateOpsAgentSelfMetricsOTLPJSON(ctx, userConfigPath, filepath.Join(pluginStateDir, GeneratedConfigsOutDir, subagent)); err != nil {
+				return err
+			}
+
+		}
 		if err := uc.GenerateFilesFromConfig(
 			ctx,
 			subagent,
