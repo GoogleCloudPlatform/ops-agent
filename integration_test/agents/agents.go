@@ -27,6 +27,7 @@ package agents
 
 import (
 	"context"
+	"embed"
 	"fmt"
 	"log"
 	"os"
@@ -51,6 +52,9 @@ const TrailingQueryWindow = 2 * time.Minute
 
 // OpsAgentPluginServerPort defines the port on which the Ops Agent UAP Plugin gRPC server runs.
 const OpsAgentPluginServerPort = "1234"
+
+//go:embed testdata
+var scriptsDir embed.FS
 
 // AgentPackage represents a thing that we ask OS Config to install for us.
 // One agentPackage can expand out and result in multiple AgentServices
@@ -854,23 +858,24 @@ func RestartOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM) error 
 	return nil
 }
 
-func getStartOpsAgentPluginCmd(imageSpec string, port string) string {
-	if gce.IsWindows(imageSpec) {
-		return fmt.Sprintf(`Start-Process -FilePath "C:\plugin.exe" -ArgumentList "--address=localhost:%s", "--errorlogfile=errorlog.txt", "--protocol=tcp"`, port)
-	}
-	return fmt.Sprintf("sudo nohup ~/plugin --address=localhost:%s --errorlogfile=errorlog.txt --protocol=tcp 1>/dev/null 2>/dev/null &", port)
-}
-
 // StartOpsAgentPlugin starts the Ops Agent Plugin gRPC server on the testing VM in the background.
 func StartOpsAgentPlugin(ctx context.Context, logger *log.Logger, vm *gce.VM, port string) error {
-	if _, err := gce.RunRemotely(ctx, logger, vm, getStartOpsAgentPluginCmd(vm.ImageSpec, port)); err != nil {
-		return fmt.Errorf("StartOpsAgentPlugin() failed to start the ops agent plugin: %v", err)
+	if gce.IsWindows(vm.ImageSpec) {
+		startUAPWindowsPlugin, err := scriptsDir.ReadFile(path.Join("testdata", "start-uap-plugin-server.ps1"))
+		if err != nil {
+			return fmt.Errorf("StartOpsAgentPlugin() failed to read start-uap-plugin-server.ps1: %v", err)
+		}
+		if _, err := gce.RunScriptRemotely(ctx, logger, vm, string(startUAPWindowsPlugin), nil, nil); err != nil {
+			return fmt.Errorf("StartOpsAgentPlugin() failed to start the ops agent plugin: %v", err)
+		}
+		if _, err := gce.RunRemotely(ctx, logger, vm, `netstat -ano | findstr :1234`); err != nil {
+			return fmt.Errorf("StartOpsAgentPlugin() failed to start the ops agent plugin: %v", err)
+		}
 	}
 
-	if _, err := gce.RunRemotely(ctx, logger, vm, `netstat -ano | findstr :1234`); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo nohup ~/plugin --address=localhost:%s --errorlogfile=errorlog.txt --protocol=tcp 1>/dev/null 2>/dev/null &", port)); err != nil {
 		return fmt.Errorf("StartOpsAgentPlugin() failed to start the ops agent plugin: %v", err)
 	}
-
 	return nil
 
 }
