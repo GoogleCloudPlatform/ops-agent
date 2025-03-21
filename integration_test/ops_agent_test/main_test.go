@@ -5047,7 +5047,7 @@ func TestRestartVM(t *testing.T) {
 			}
 
 			if !strings.Contains(cmdOut.Stdout, "is running ok") {
-				t.Error("expected the plugin to be running, but is not running")
+				t.Errorf("expected the plugin to be running, but is not running, cmd out: %v, cmd err: %v", cmdOut.Stdout, cmdOut.Stderr)
 			}
 
 		} else {
