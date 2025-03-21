@@ -1360,7 +1360,11 @@ func TestExcludeLogs(t *testing.T) {
 			t.Error(err)
 		}
 		// p2: Verify that there are no vestigial __match_ fields.
-		payload := resultingLog2.Payload.(*structpb.Struct)
+		payload := &structpb.Struct{}
+		if resultingLog2 != nil && resultingLog2.Payload != nil {
+			payload = resultingLog2.Payload.(*structpb.Struct)
+		}
+
 		for k := range payload.GetFields() {
 			if strings.HasPrefix(k, "__match_") {
 				t.Errorf("unexpected vestigial field: %s", k)
