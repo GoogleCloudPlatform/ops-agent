@@ -855,24 +855,86 @@ func RestartOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM) error 
 	return nil
 }
 
-// StartOpsAgentPlugin starts the Ops Agent Plugin gRPC server on the testing VM in the background.
-func StartOpsAgentPlugin(ctx context.Context, logger *log.Logger, vm *gce.VM, port string) error {
+// StartOpsAgentPluginServer starts the Ops Agent Plugin gRPC server on the testing VM in the background.
+func StartOpsAgentPluginServer(ctx context.Context, logger *log.Logger, vm *gce.VM, port string) error {
 	if gce.IsWindows(vm.ImageSpec) {
 		startUAPWindowsPlugin, err := scriptsDir.ReadFile(path.Join("testdata", "start-uap-plugin-server.ps1"))
 		if err != nil {
-			return fmt.Errorf("StartOpsAgentPlugin() failed to read start-uap-plugin-server.ps1: %v", err)
+			return fmt.Errorf("StartOpsAgentPluginServer() failed to read start-uap-plugin-server.ps1: %v", err)
 		}
 		if _, err := gce.RunScriptRemotely(ctx, logger, vm, string(startUAPWindowsPlugin), nil, nil); err != nil {
-			return fmt.Errorf("StartOpsAgentPlugin() failed to start the ops agent plugin: %v", err)
+			return fmt.Errorf("StartOpsAgentPluginServer() failed to start the ops agent plugin: %v", err)
 		}
 		return nil
 	}
 
 	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo nohup ~/plugin --address=localhost:%s --errorlogfile=errorlog.txt --protocol=tcp 1>/dev/null 2>/dev/null &", port)); err != nil {
-		return fmt.Errorf("StartOpsAgentPlugin() failed to start the ops agent plugin: %v", err)
+		return fmt.Errorf("StartOpsAgentPluginServer() failed to start the ops agent plugin: %v", err)
 	}
 	return nil
 
+}
+
+func StartCommandForImage(imageSpec string) string {
+	if gce.IsOpsAgentUAPPlugin() {
+		grpcurlExecutable := "grpcurl"
+		if gce.IsWindows(imageSpec) {
+			grpcurlExecutable = `C:\grpcurl.exe`
+		}
+		return fmt.Sprintf("%s -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable)
+	}
+
+	if gce.IsWindows(imageSpec) {
+		return "Start-Service google-cloud-ops-agent"
+	}
+	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
+	return "sudo service google-cloud-ops-agent start || sudo systemctl start google-cloud-ops-agent"
+}
+
+func StopCommandForImage(imageSpec string) string {
+	if gce.IsOpsAgentUAPPlugin() {
+		grpcurlExecutable := "grpcurl"
+		if gce.IsWindows(imageSpec) {
+			grpcurlExecutable = `C:\grpcurl.exe`
+		}
+		return fmt.Sprintf("%s -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Stop", grpcurlExecutable)
+	}
+
+	if gce.IsWindows(imageSpec) {
+		return "Stop-Service google-cloud-ops-agent -Force"
+	}
+	// Return a command that works for both < 2.0.0 and >= 2.0.0 agents.
+	return "sudo service google-cloud-ops-agent stop || sudo systemctl stop google-cloud-ops-agent"
+}
+
+func GetUAPPluginStatusForImage(imageSpec string) string {
+	grpcurlExecutable := "grpcurl"
+	if gce.IsWindows(imageSpec) {
+		grpcurlExecutable = `C:\grpcurl.exe`
+	}
+	return fmt.Sprintf("%s -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/GetStatus", grpcurlExecutable)
+
+}
+
+func StartOpsAgentPluginWithBackoff(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	tryStartOpsAgent := func() error {
+		if _, err := gce.RunRemotely(ctx, logger, vm, StartCommandForImage(vm.ImageSpec)); err != nil {
+			return fmt.Errorf("failed to start Ops Agent: %v", err)
+		}
+		cmdOut, err := gce.RunRemotely(ctx, logger, vm, GetUAPPluginStatusForImage(vm.ImageSpec))
+		if err != nil {
+			return fmt.Errorf("failed to retrieve Ops Agent status: %v", err)
+		}
+		if !strings.Contains(cmdOut.Stdout, "is running ok") {
+			return fmt.Errorf("Ops Agent is not started successfully: stdout: %v, stderr: %v", cmdOut.Stdout, cmdOut.Stderr)
+		}
+		return nil
+	}
+	backoffPolicy := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(20*time.Second), 10), ctx)
+	if err := backoff.Retry(tryStartOpsAgent, backoffPolicy); err != nil {
+		return err
+	}
+	return nil
 }
 
 // SetupOpsAgentFrom is an overload of setupOpsAgent that allows the callsite to
@@ -891,10 +953,15 @@ func SetupOpsAgentFrom(ctx context.Context, logger *log.Logger, vm *gce.VM, conf
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(config), util.GetConfigPath(vm.ImageSpec)); err != nil {
 			return fmt.Errorf("SetupOpsAgentFrom() failed to upload config file: %v", err)
 		}
-		if err := RestartOpsAgent(ctx, logger, vm); err != nil {
-			return err
-		}
-	} else if gce.IsOpsAgentUAPPlugin() {
+	}
+
+	// UAP Plugin needs to be started regardless, since it's not automatically started upon install.
+	if gce.IsOpsAgentUAPPlugin() {
+		return StartOpsAgentPluginWithBackoff(ctx, logger, vm)
+	}
+
+	// Regular Ops Agent only needs a restart if the config is not empty.
+	if len(config) > 0 {
 		return RestartOpsAgent(ctx, logger, vm)
 	}
 	// Give agents time to start up.
@@ -1018,7 +1085,7 @@ func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm
 	if err := gce.InstallGrpcurlIfNeeded(ctx, logger, vm); err != nil {
 		return err
 	}
-	return StartOpsAgentPlugin(ctx, logger, vm, OpsAgentPluginServerPort)
+	return StartOpsAgentPluginServer(ctx, logger, vm, OpsAgentPluginServerPort)
 }
 
 // InstallPackageFromGCS installs the agent package from GCS onto the given Linux VM.
