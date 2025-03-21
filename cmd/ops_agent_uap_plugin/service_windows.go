@@ -62,7 +62,7 @@ const (
 var (
 	AgentWindowsServiceName       = []string{"StackdriverLogging", "StackdriverMonitoring", "google-cloud-ops-agent"}
 	DefaultPluginStateDirectory   = filepath.Join(os.Getenv("PROGRAMDATA"), "Google/Compute Engine/google-guest-agent/agent_state/plugins/ops-agent-plugin")
-	OpsAgentConfigLocationWindows = filepath.Join(os.Getenv("PROGRAMDATA"), "Google/Cloud Operations/Ops Agent/config/config.yaml")
+	OpsAgentConfigLocationWindows = filepath.Join("C:", "Program Files/Google/Cloud Operations/Ops Agent/config/config.yaml")
 )
 
 // RunSubAgentCommandFunc defines a function type that starts a subagent. If one subagent execution exited, other sugagents are also terminated via context cancellation. This abstraction is introduced
@@ -102,7 +102,8 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 
 	pContext, cancel := context.WithCancel(context.Background())
 	ps.cancel = cancel
-	ps.mu.Unlock()
+	// mutex will only be unlocked until wg reaches 3 (all subprocess runs have been triggered)
+	defer ps.mu.Unlock()
 
 	// Detect conflicting installations.
 	preInstalledAgents, err := findPreExistentAgents(&windowsServiceManager{}, AgentWindowsServiceName)
@@ -161,7 +162,10 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	}
 
 	otelErrorHandler := &otelErrorHandler{windowsEventLogger: windowsEventLogger, windowsEventId: OpsAgentUAPPluginEventID}
-	go runSubagents(pContext, cancelFunc, pluginInstallDir, pluginStateDir, runSubAgentCommand, ps.runCommand, otelErrorHandler)
+	ps.wg.Add(3)
+	go runSubagents(&ps.wg, pContext, cancelFunc, pluginInstallDir, pluginStateDir, runSubAgentCommand, ps.runCommand, otelErrorHandler)
+
+	ps.wg.Wait()
 
 	return &pb.StartResponse{}, nil
 }
@@ -286,6 +290,13 @@ func generateSubAgentConfigs(ctx context.Context, userConfigPath string, pluginS
 		"otel",
 		"fluentbit",
 	} {
+		if subagent == "otel" {
+			// The generated otlp metric json files are used only by the otel service.
+			if err = self_metrics.GenerateOpsAgentSelfMetricsOTLPJSON(ctx, userConfigPath, filepath.Join(pluginStateDir, GeneratedConfigsOutDir, subagent)); err != nil {
+				return err
+			}
+
+		}
 		if err := uc.GenerateFilesFromConfig(
 			ctx,
 			subagent,
@@ -355,20 +366,17 @@ func createWindowsJobHandle() (windows.Handle, error) {
 // and GetStatus() returns a non-healthy status, signaling UAP to re-trigger Start().
 //
 // otelErrorHandler: an implementation of otel.ErrorHandler that is used in the diagnostics service to log otel errors to the Windows event log.
-func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallDirectory string, pluginStateDirectory string, runSubAgentCommand RunSubAgentCommandFunc, runCommand RunCommandFunc, otelErrorHandler otel.ErrorHandler) {
+func runSubagents(wg *sync.WaitGroup, ctx context.Context, cancel context.CancelFunc, pluginInstallDirectory string, pluginStateDirectory string, runSubAgentCommand RunSubAgentCommandFunc, runCommand RunCommandFunc, otelErrorHandler otel.ErrorHandler) {
 
-	var wg sync.WaitGroup
 	// Starting the diagnostics service
-	wg.Add(1)
-	go runDiagnosticsService(ctx, cancel, otelErrorHandler, &wg)
+	go runDiagnosticsService(ctx, cancel, otelErrorHandler, wg)
 
 	// Starting Otel
 	runOtelCmd := exec.CommandContext(ctx,
 		path.Join(pluginInstallDirectory, OtelBinary),
 		"--config", path.Join(pluginStateDirectory, GeneratedConfigsOutDir, "otel/otel.yaml"),
 	)
-	wg.Add(1)
-	go runSubAgentCommand(ctx, cancel, runOtelCmd, runCommand, &wg)
+	go runSubAgentCommand(ctx, cancel, runOtelCmd, runCommand, wg)
 
 	// Starting Fluentbit
 	runFluentBitCmd := exec.CommandContext(ctx,
@@ -380,8 +388,7 @@ func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallD
 		"-R", path.Join(pluginStateDirectory, GeneratedConfigsOutDir, "fluentbit/fluent_bit_parser.conf"),
 		"--storage_path", path.Join(pluginStateDirectory, "run/buffers"),
 	)
-	wg.Add(1)
-	go runSubAgentCommand(ctx, cancel, runFluentBitCmd, runCommand, &wg)
+	go runSubAgentCommand(ctx, cancel, runFluentBitCmd, runCommand, wg)
 
 	wg.Wait()
 }
@@ -420,8 +427,11 @@ func runCommand(cmd *exec.Cmd) (string, error) {
 }
 
 func runSubAgentCommand(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup) {
-
 	defer wg.Done()
+	runSubAgentCommandAux(ctx, cancel, cmd, runCommand, wg, 10)
+}
+
+func runSubAgentCommandAux(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup, retry int) {
 	if cmd == nil {
 		return
 	}
@@ -436,6 +446,9 @@ func runSubAgentCommand(ctx context.Context, cancel context.CancelFunc, cmd *exe
 		log.Printf("command: %s exited with errors, not restarting.\nCommand output: %s\n Command error:%s", cmd.Args, string(output), err)
 	} else {
 		log.Printf("command: %s %s exited successfully.\nCommand output: %s", cmd.Path, cmd.Args, string(output))
+	}
+	if retry > 0 {
+		runSubAgentCommandAux(ctx, cancel, cmd, runCommand, wg, retry-1)
 	}
 	cancel() // cancels the parent context which also stops other Ops Agent sub-binaries from running.
 	return
