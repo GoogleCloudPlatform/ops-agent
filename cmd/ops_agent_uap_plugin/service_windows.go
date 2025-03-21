@@ -427,8 +427,11 @@ func runCommand(cmd *exec.Cmd) (string, error) {
 }
 
 func runSubAgentCommand(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup) {
-
 	defer wg.Done()
+	runSubAgentCommandAux(ctx, cancel, cmd, runCommand, wg, 10)
+}
+
+func runSubAgentCommandAux(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup, retry int) {
 	if cmd == nil {
 		return
 	}
@@ -443,6 +446,9 @@ func runSubAgentCommand(ctx context.Context, cancel context.CancelFunc, cmd *exe
 		log.Printf("command: %s exited with errors, not restarting.\nCommand output: %s\n Command error:%s", cmd.Args, string(output), err)
 	} else {
 		log.Printf("command: %s %s exited successfully.\nCommand output: %s", cmd.Path, cmd.Args, string(output))
+	}
+	if retry > 0 {
+		runSubAgentCommandAux(ctx, cancel, cmd, runCommand, wg, retry-1)
 	}
 	cancel() // cancels the parent context which also stops other Ops Agent sub-binaries from running.
 	return
