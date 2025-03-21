@@ -195,11 +195,7 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 
 	isUAPPlugin := gce.IsOpsAgentUAPPlugin()
 	if isUAPPlugin {
-		grpcurlExecutable := "grpcurl"
-		if gce.IsWindows(vm.ImageSpec) {
-			grpcurlExecutable = `C:\grpcurl.exe`
-		}
-		gce.RunRemotely(ctx, logger.ToFile("status_for_ops_agent_uap_plugin.txt"), vm, fmt.Sprintf("%s -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/GetStatus", grpcurlExecutable, OpsAgentPluginServerPort))
+		gce.RunRemotely(ctx, logger.ToFile("status_for_ops_agent_uap_plugin.txt"), vm, fmt.Sprintf("grpcurl -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/GetStatus", OpsAgentPluginServerPort))
 	} else {
 		gce.RunRemotely(ctx, logger.ToFile("systemctl_status_for_ops_agent.txt"), vm, "sudo systemctl status google-cloud-ops-agent*")
 	}
@@ -249,6 +245,8 @@ func runOpsAgentDiagnosticsWindows(ctx context.Context, logger *logging.Director
 	if gce.IsOpsAgentUAPPlugin() {
 		stateDir = `C:\ProgramData\Google\Compute Engine\google-guest-agent\agent_state\plugins\ops-agent-plugin\`
 		gce.RunRemotely(ctx, logger.ToFile("ops_agent_uap_plugin_logs.txt"), vm, "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent-uap-plugin' } | Format-Table -AutoSize -Wrap")
+		gce.RunRemotely(ctx, logger.ToFile("status_for_ops_agent_uap_plugin.txt"), vm, fmt.Sprintf(`C:\grpcurl.exe -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/GetStatus`, OpsAgentPluginServerPort))
+		gce.RunRemotely(ctx, logger.ToFile("active_processes_in_vm.txt"), vm, `Get-WmiObject -Class Win32_Process | Select-Object Name, ProcessId, ParentProcessId`)
 	} else {
 		gce.RunRemotely(ctx, logger.ToFile("windows_System_log.txt"), vm, "Get-WinEvent -LogName System | Format-Table -AutoSize -Wrap")
 
