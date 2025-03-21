@@ -1496,7 +1496,7 @@ func attemptCreateManagedInstanceGroupVM(ctx context.Context, logger *log.Logger
 
 	output, err = RunGcloud(ctx, logger, "", createVMArgs)
 	if err != nil {
-		logger.Println(err)
+		return nil, err
 	}
 
 	// Step #4 : Wait until Managed Instance Group is stable with a 300s timeout.
