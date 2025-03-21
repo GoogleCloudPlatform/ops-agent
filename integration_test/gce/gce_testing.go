@@ -1477,7 +1477,6 @@ func attemptCreateManagedInstanceGroupVM(ctx context.Context, logger *log.Logger
 		"--zone=" + migVM.Zone,
 		"--size=0",
 		"--template=" + migVM.InstanceTemplateName(),
-		"--stateful-internal-ip=enabled",
 		"--format=json",
 	}
 
