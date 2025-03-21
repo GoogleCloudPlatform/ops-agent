@@ -726,11 +726,19 @@ func TestCustomLogFile(t *testing.T) {
 			t.Fatalf("error writing dummy log line: %v", err)
 		}
 
+		cmdOut, err := gce.RunRemotely(ctx, logger, vm, agents.GetUAPPluginStatusForImage(vm.ImageSpec))
+		if err != nil {
+			t.Error(err)
+		}
+		if !strings.Contains(cmdOut.Stdout, "The Ops Agent Plugin is running ok.") {
+			t.Errorf("expected the plugin to report that the Ops Agent is running: cmdStdout: %v", cmdOut.Stdout)
+		}
+
 		if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, "jsonPayload.message=7654321"); err != nil {
 			t.Error(err)
 		}
 		time.Sleep(60 * time.Second)
-		_, err := gce.QueryLog(ctx, logger, vm, "mylog_source", time.Hour, `jsonPayload.message="abc test pattern xyz"`, 5)
+		_, err = gce.QueryLog(ctx, logger, vm, "mylog_source", time.Hour, `jsonPayload.message="abc test pattern xyz"`, 5)
 		if err == nil {
 			t.Error("expected log to be excluded but was included")
 		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
@@ -1309,13 +1317,21 @@ func TestExcludeLogs(t *testing.T) {
 			t.Fatalf("error uploading log: %v", err)
 		}
 
+		cmdOut, err := gce.RunRemotely(ctx, logger, vm, agents.GetUAPPluginStatusForImage(vm.ImageSpec))
+		if err != nil {
+			t.Error(err)
+		}
+		if !strings.Contains(cmdOut.Stdout, "The Ops Agent Plugin is running ok.") {
+			t.Errorf("expected the plugin to report that the Ops Agent is running: cmdStdout: %v", cmdOut.Stdout)
+		}
+
 		// p1: Expect to see the log that doesn't have pattern in it.
 		if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, `jsonPayload.field:"other"`); err != nil {
 			t.Error(err)
 		}
 		// p1: Give the excluded log some time to show up.
 		time.Sleep(60 * time.Second)
-		_, err := gce.QueryLog(ctx, logger, vm, "f1", time.Hour, `jsonPayload.field:"pattern"`, 5)
+		_, err = gce.QueryLog(ctx, logger, vm, "f1", time.Hour, `jsonPayload.field:"pattern"`, 5)
 		if err == nil {
 			t.Error("expected log to be excluded but was included")
 		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
@@ -5082,6 +5098,14 @@ func TestLogCompression(t *testing.T) {
 		line := `google` + "\n"
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
 			t.Fatalf("error uploading log: %v", err)
+		}
+
+		cmdOut, err := gce.RunRemotely(ctx, logger, vm, agents.GetUAPPluginStatusForImage(vm.ImageSpec))
+		if err != nil {
+			t.Error(err)
+		}
+		if !strings.Contains(cmdOut.Stdout, "The Ops Agent Plugin is running ok.") {
+			t.Errorf("expected the plugin to report that the Ops Agent is running: cmdStdout: %v", cmdOut.Stdout)
 		}
 
 		// Expect to see the log with the modifications applied
