@@ -97,7 +97,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 
 	cloudlogging "cloud.google.com/go/logging"
@@ -637,7 +636,6 @@ func WaitForLog(ctx context.Context, logger *log.Logger, vm *VM, logNameRegex st
 // found after some retries.
 func QueryLog(ctx context.Context, logger *log.Logger, vm *VM, logNameRegex string, window time.Duration, query string, maxAttempts int) (*cloudlogging.Entry, error) {
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		_, err := RunRemotely(ctx, logger, vm, agents.GetUAPPluginStatusForImage(vm.ImageSpec))
 		found, first, err := hasMatchingLog(ctx, logger, vm, logNameRegex, window, query)
 		if found {
 			// Success.
