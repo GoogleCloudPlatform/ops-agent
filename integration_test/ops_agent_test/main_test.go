@@ -800,7 +800,7 @@ func TestPluginGetStatusReturnsUnhealthyStatusOnSubAgentTermination(t *testing.T
 
 		time.Sleep(10 * time.Second)
 
-		cmdOut, err = gce.RunRemotely(ctx, logger, vm, agents.GetUAPPluginStatusForImageorImageorImage(vm.ImageSpec))
+		cmdOut, err = gce.RunRemotely(ctx, logger, vm, agents.GetUAPPluginStatusForImage(vm.ImageSpec))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -4046,7 +4046,7 @@ func testWindowsStandaloneAgentConflict(t *testing.T, installStandalone func(ctx
 
 		// 3. Check the error log for a message about Ops Agent conflicting with standalone agent.
 		if gce.IsOpsAgentUAPPlugin() {
-			cmdOut, err := gce.RunRemotely(ctx, logger, vm, agents.GetUAPPluginStatusForImageorImageorImage(vm.ImageSpec))
+			cmdOut, err := gce.RunRemotely(ctx, logger, vm, agents.GetUAPPluginStatusForImage(vm.ImageSpec))
 			if err != nil {
 				t.Fatal(err)
 			}
