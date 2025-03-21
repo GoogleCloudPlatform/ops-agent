@@ -102,7 +102,8 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 
 	pContext, cancel := context.WithCancel(context.Background())
 	ps.cancel = cancel
-	ps.mu.Unlock()
+	// mutex will only be unlocked until wg reaches 3 (all subprocess runs have been triggered)
+	defer ps.mu.Unlock()
 
 	// Detect conflicting installations.
 	preInstalledAgents, err := findPreExistentAgents(&windowsServiceManager{}, AgentWindowsServiceName)
@@ -161,7 +162,10 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	}
 
 	otelErrorHandler := &otelErrorHandler{windowsEventLogger: windowsEventLogger, windowsEventId: OpsAgentUAPPluginEventID}
-	go runSubagents(pContext, cancelFunc, pluginInstallDir, pluginStateDir, runSubAgentCommand, ps.runCommand, otelErrorHandler)
+	ps.wg.Add(3)
+	go runSubagents(&ps.wg, pContext, cancelFunc, pluginInstallDir, pluginStateDir, runSubAgentCommand, ps.runCommand, otelErrorHandler)
+
+	ps.wg.Wait()
 
 	return &pb.StartResponse{}, nil
 }
@@ -362,20 +366,17 @@ func createWindowsJobHandle() (windows.Handle, error) {
 // and GetStatus() returns a non-healthy status, signaling UAP to re-trigger Start().
 //
 // otelErrorHandler: an implementation of otel.ErrorHandler that is used in the diagnostics service to log otel errors to the Windows event log.
-func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallDirectory string, pluginStateDirectory string, runSubAgentCommand RunSubAgentCommandFunc, runCommand RunCommandFunc, otelErrorHandler otel.ErrorHandler) {
+func runSubagents(wg *sync.WaitGroup, ctx context.Context, cancel context.CancelFunc, pluginInstallDirectory string, pluginStateDirectory string, runSubAgentCommand RunSubAgentCommandFunc, runCommand RunCommandFunc, otelErrorHandler otel.ErrorHandler) {
 
-	var wg sync.WaitGroup
 	// Starting the diagnostics service
-	wg.Add(1)
-	go runDiagnosticsService(ctx, cancel, otelErrorHandler, &wg)
+	go runDiagnosticsService(ctx, cancel, otelErrorHandler, wg)
 
 	// Starting Otel
 	runOtelCmd := exec.CommandContext(ctx,
 		path.Join(pluginInstallDirectory, OtelBinary),
 		"--config", path.Join(pluginStateDirectory, GeneratedConfigsOutDir, "otel/otel.yaml"),
 	)
-	wg.Add(1)
-	go runSubAgentCommand(ctx, cancel, runOtelCmd, runCommand, &wg)
+	go runSubAgentCommand(ctx, cancel, runOtelCmd, runCommand, wg)
 
 	// Starting Fluentbit
 	runFluentBitCmd := exec.CommandContext(ctx,
@@ -387,8 +388,7 @@ func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallD
 		"-R", path.Join(pluginStateDirectory, GeneratedConfigsOutDir, "fluentbit/fluent_bit_parser.conf"),
 		"--storage_path", path.Join(pluginStateDirectory, "run/buffers"),
 	)
-	wg.Add(1)
-	go runSubAgentCommand(ctx, cancel, runFluentBitCmd, runCommand, &wg)
+	go runSubAgentCommand(ctx, cancel, runFluentBitCmd, runCommand, wg)
 
 	wg.Wait()
 }
