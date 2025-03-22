@@ -50,11 +50,9 @@ const (
 	LogsDirectory                    = "log"
 	RuntimeDirectory                 = "run"
 	OpsAgentUAPPluginEventID  uint32 = 8
-	DiagnosticsEventID        uint32 = 2
 	WindowsEventLogIdentifier        = "google-cloud-ops-agent-uap-plugin"
 	WindowJobHandleIdentifier        = "google-cloud-ops-agent-uap-plugin-job-handle"
 	AgentWrapperBinary               = "google-cloud-ops-agent-wrapper.exe"
-	DiagnosticsBinary                = "google-cloud-ops-agent-diagnostics.exe"
 	FluentbitBinary                  = "fluent-bit.exe"
 	OtelBinary                       = "google-cloud-metrics-agent_windows_amd64.exe"
 )
