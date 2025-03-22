@@ -2299,13 +2299,13 @@ func TestWindowsEventLogV2(t *testing.T) {
 
 		series, err := gce.WaitForMetricSeries(ctx, logger, vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", 2*time.Hour, nil, false, len(expectedFeatures))
 		if err != nil {
-			t.Error(err)
+			t.Errorf("TestWindowsEventLogV2 failed because feature tracking series dont match: got:%v, want:%v", series, expectedFeatures)
 			return
 		}
 
 		err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, expectedFeatures)
 		if err != nil {
-			t.Error(err)
+			t.Errorf("TestWindowsEventLogV2 failed because AssertFeatureTrackingMetrics failed: %v", err)
 			return
 		}
 	})
