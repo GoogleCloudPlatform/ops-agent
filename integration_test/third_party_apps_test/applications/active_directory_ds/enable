@@ -32,3 +32,7 @@ metrics:
         receivers:
         - active_directory_ds
 "
+
+if (Get-Service google-cloud-ops-agent* -ErrorAction SilentlyContinue) {
+  (Get-Service google-cloud-ops-agent*).WaitForStatus('Running', '00:03:00')
+}

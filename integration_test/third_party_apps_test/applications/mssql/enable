@@ -29,3 +29,7 @@ metrics:
         receivers:
         - mssql_v2
 "
+
+if (Get-Service google-cloud-ops-agent* -ErrorAction SilentlyContinue) {
+  (Get-Service google-cloud-ops-agent*).WaitForStatus('Running', '00:03:00')
+}
