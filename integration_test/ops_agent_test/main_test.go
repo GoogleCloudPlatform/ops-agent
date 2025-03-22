@@ -2218,12 +2218,6 @@ func TestWindowsEventLogV2(t *testing.T) {
 
 		expectedFeatures := []*feature_tracking_metadata.FeatureTracking{
 			{
-				Module:  "logging",
-				Feature: "service:pipelines",
-				Key:     "default_pipeline_overridden",
-				Value:   "false",
-			},
-			{
 				Module:  "metrics",
 				Feature: "service:pipelines",
 				Key:     "default_pipeline_overridden",
@@ -2295,6 +2289,16 @@ func TestWindowsEventLogV2(t *testing.T) {
 				Key:     "[2].channels.__length",
 				Value:   "2",
 			},
+		}
+		// The UAP Plugin executes the diagnostics service only on the config.yaml file's content at the time of execution.
+		// It does not run an additional time for the default/empty config.yaml.
+		if !gce.IsOpsAgentUAPPlugin() {
+			expectedFeatures = append(expectedFeatures, &feature_tracking_metadata.FeatureTracking{
+				Module:  "logging",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "false",
+			})
 		}
 
 		series, err := gce.WaitForMetricSeries(ctx, logger, vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", 2*time.Hour, nil, false, len(expectedFeatures))
