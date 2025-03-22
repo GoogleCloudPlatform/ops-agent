@@ -264,12 +264,32 @@ func findPreExistentAgents(mgr serviceManager, agentWindowsServiceNames []string
 	return alreadyInstalledAgentServiceNames, nil
 }
 
+// eventLogWriter implements the io.Writer interface. It writes logs to the Windows Event Log.
+type eventLogWriter struct {
+	EventID  uint32
+	EventLog *eventlog.Log
+}
+
+func (w *eventLogWriter) Write(p []byte) (int, error) {
+	err := w.EventLog.Info(w.EventID, string(p))
+	if err != nil {
+		return 0, err
+	}
+	return len(p), nil
+}
+
 func createWindowsEventLogger() (debug.Log, error) {
 	eventlog.InstallAsEventCreate(WindowsEventLogIdentifier, eventlog.Error|eventlog.Warning|eventlog.Info)
 	elog, err := eventlog.Open(WindowsEventLogIdentifier)
 	if err != nil {
 		return nil, err
 	}
+
+	// ConfGenerator might log messages to stdout, redirect them to the windows event log.
+	log.SetOutput(&eventLogWriter{
+		EventID:  OpsAgentUAPPluginEventID,
+		EventLog: elog,
+	})
 	return elog, nil
 }
 
