@@ -3,6 +3,14 @@ $ErrorActionPreference = 'Stop'
 # This config gets merged with the built-in Ops Agent config, which already
 # includes the v1 receiver in the default pipeline.
 
+
+# Create an empty config.yaml file if it doesn't exist.
+$configFilePath  = 'C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml'
+
+if (-not (Test-Path -Path $configFilePath -PathType Leaf)) {
+    New-Item -ItemType File -Path $configFilePath -Force | Out-Null
+}
+
 # Create a back up of the existing file so existing configurations are not lost.
 Copy-Item -Path 'C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml' -Destination 'C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml.bak'
 

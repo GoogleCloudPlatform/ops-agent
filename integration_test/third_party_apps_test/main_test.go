@@ -983,10 +983,6 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool) {
 			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, SAPHANAApp, SAPHANAImageSpec)
 			continue
 		}
-		// FIXME(b/398862433): Re-enable tests when writing windows implementation
-		if gce.IsOpsAgentUAPPlugin() && strings.Contains(test.imageSpec, "windows")  {
-			tests[i].skipReason = "Skipping test due to windows not being implemented on UAP"
-		}
 	}
 }
 

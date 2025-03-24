@@ -934,7 +934,7 @@ func UploadContent(ctx context.Context, logger *log.Logger, vm *VM, content io.R
 	}()
 
 	if IsWindows(vm.ImageSpec) {
-		_, err = RunRemotely(ctx, logger, vm, fmt.Sprintf(`Read-GcsObject -Force -Bucket "%s" -ObjectName "%s" -OutFile "%s"`, object.BucketName(), object.ObjectName(), remotePath))
+		_, err = RunRemotely(ctx, logger, vm, fmt.Sprintf(`New-Item -Path "%s" -ItemType File -Force ;Read-GcsObject -Force -Bucket "%s" -ObjectName "%s" -OutFile "%s"`, remotePath, object.BucketName(), object.ObjectName(), remotePath))
 		return err
 	}
 	if err := InstallGsutilIfNeeded(ctx, logger, vm); err != nil {
@@ -1919,7 +1919,15 @@ func RestartInstance(ctx context.Context, logger *log.Logger, vm *VM) error {
 // it installed.
 func InstallGrpcurlIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) error {
 	if IsWindows(vm.ImageSpec) {
-		return fmt.Errorf("installing grpcurl on Windows is not yet supported")
+		if _, err := RunRemotely(ctx, logger, vm, "Get-Command grpcurl"); err == nil {
+			return nil
+		}
+
+		logger.Printf("grpcurl not found, installing it...")
+		installCmd := `gsutil cp gs://ops-agents-public-buckets-vendored-deps/mirrored-content/grpcurl/v1.8.6/grpcurl_1.8.6_windows_x86_64.zip C:\agentPlugin;Expand-Archive -Path "C:\agentPlugin\grpcurl_1.8.6_windows_x86_64.zip" -DestinationPath "C:\" -Force;ls "C:\"`
+
+		_, err := RunRemotely(ctx, logger, vm, installCmd)
+		return err
 	}
 
 	if _, err := RunRemotely(ctx, logger, vm, "which grpcurl"); err == nil {
@@ -1934,7 +1942,6 @@ func InstallGrpcurlIfNeeded(ctx context.Context, logger *log.Logger, vm *VM) err
 	}
 
 	installCmd := fmt.Sprintf("sudo gsutil cp gs://ops-agents-public-buckets-vendored-deps/mirrored-content/grpcurl/v1.8.6/grpcurl_1.8.6_linux_%s.tar.gz /tmp/agentPlugin && sudo tar -xzf /tmp/agentPlugin/grpcurl_1.8.6_linux_%s.tar.gz --no-overwrite-dir -C /usr/local/bin", arch, arch)
-
 	installCmd = `set -ex
 ` + installCmd
 	_, err := RunRemotely(ctx, logger, vm, installCmd)
@@ -2366,10 +2373,6 @@ func RunForEachImage(t *testing.T, testBody func(t *testing.T, imageSpec string)
 	imageSpecs := strings.Split(imageSpecsEnv, ",")
 	for _, imageSpec := range imageSpecs {
 		imageSpec := imageSpec // https://golang.org/doc/faq#closures_and_goroutines
-		// FIXME(b/398862433): Re-enable tests when writing windows implementation
-		if IsOpsAgentUAPPlugin() && IsWindows(imageSpec) {
-			continue
-		}
 		t.Run(imageSpec, func(t *testing.T) {
 			testBody(t, imageSpec)
 		})

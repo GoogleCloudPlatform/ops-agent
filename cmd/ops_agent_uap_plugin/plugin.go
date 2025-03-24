@@ -51,6 +51,7 @@ type OpsAgentPluginServer struct {
 
 	// mu protects the cancel field.
 	mu     sync.Mutex
+	wg     sync.WaitGroup
 	cancel context.CancelFunc
 
 	runCommand RunCommandFunc
