@@ -7,5 +7,3 @@ if (-not(Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue)) {
     Register-ScheduledTask -TaskName $taskName -Action $action  -Principal $principal
 }
 Start-ScheduledTask -TaskName $taskName
-
-
