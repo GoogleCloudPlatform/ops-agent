@@ -2091,7 +2091,7 @@ func RunForEachImage(t *testing.T, testBody func(t *testing.T, imageSpec string)
 	imageSpecs := strings.Split(imageSpecsEnv, ",")
 	for _, imageSpec := range imageSpecs {
 		imageSpec := imageSpec // https://golang.org/doc/faq#closures_and_goroutines
-		if IsOpsAgentUAPPlugin() && IsWindows2016(imageSpec) {
+		if IsOpsAgentUAPPlugin() && (IsWindows2016(imageSpec) || IsWindows2019(imageSpec)) {
 			continue
 		}
 		t.Run(imageSpec, func(t *testing.T) {
