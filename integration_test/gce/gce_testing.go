@@ -355,9 +355,9 @@ func IsWindows2016(imageSpec string) bool {
 	return IsWindows(imageSpec) && strings.Contains(imageSpec, "2016")
 }
 
-// IsWindows2016 returns whether the given image is a Windows 2016 image.
-func IsWindows2019(imageSpec string) bool {
-	return IsWindows(imageSpec) && strings.Contains(imageSpec, "2019")
+// IsSql2019Windows2019 returns whether the given image is windows-sql-cloud:sql-std-2019-win-2019.
+func IsSql2019Windows2019(imageSpec string) bool {
+	return IsWindows(imageSpec) && strings.Contains(imageSpec, "sql-std-2019-win-2019")
 }
 
 // OSKind returns "linux" or "windows" based on the given image spec.
@@ -2091,7 +2091,7 @@ func RunForEachImage(t *testing.T, testBody func(t *testing.T, imageSpec string)
 	imageSpecs := strings.Split(imageSpecsEnv, ",")
 	for _, imageSpec := range imageSpecs {
 		imageSpec := imageSpec // https://golang.org/doc/faq#closures_and_goroutines
-		if IsOpsAgentUAPPlugin() && (IsWindows2016(imageSpec) || IsWindows2019(imageSpec)) {
+		if IsOpsAgentUAPPlugin() && (IsWindows2016(imageSpec) || IsSql2019Windows2019(imageSpec)) {
 			continue
 		}
 		t.Run(imageSpec, func(t *testing.T) {
