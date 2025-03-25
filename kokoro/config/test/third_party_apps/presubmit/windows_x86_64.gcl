@@ -5,7 +5,6 @@ config build = common.third_party_apps_test {
     environment {
       TARGET = 'windows'
       ARCH = 'x86_64'
-      IS_OPS_AGENT_UAP_PLUGIN = 'true'
     }
   }
 }
