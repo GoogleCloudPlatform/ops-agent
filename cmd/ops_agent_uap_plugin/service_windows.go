@@ -302,17 +302,15 @@ func generateSubAgentConfigs(ctx context.Context, userConfigPath string, pluginS
 	windowsEventLogger.Info(OpsAgentUAPPluginEventID, fmt.Sprintf("Built-in config:\n%s\n", apps.BuiltInConfStructs["windows"]))
 	windowsEventLogger.Info(OpsAgentUAPPluginEventID, fmt.Sprintf("Merged config:\n%s\n", uc))
 
+	// The generated otlp metric json files are used only by the otel service.
+	if err = self_metrics.GenerateOpsAgentSelfMetricsOTLPJSON(ctx, userConfigPath, filepath.Join(pluginStateDir, GeneratedConfigsOutDir, "otel")); err != nil {
+		return err
+	}
+
 	for _, subagent := range []string{
 		"otel",
 		"fluentbit",
 	} {
-		if subagent == "otel" {
-			// The generated otlp metric json files are used only by the otel service.
-			if err = self_metrics.GenerateOpsAgentSelfMetricsOTLPJSON(ctx, userConfigPath, filepath.Join(pluginStateDir, GeneratedConfigsOutDir, subagent)); err != nil {
-				return err
-			}
-
-		}
 		if err := uc.GenerateFilesFromConfig(
 			ctx,
 			subagent,

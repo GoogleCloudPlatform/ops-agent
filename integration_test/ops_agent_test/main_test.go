@@ -5037,6 +5037,8 @@ func TestRestartVM(t *testing.T) {
 			if err := agents.StartOpsAgentPluginServer(ctx, logger, vm, "1234"); err != nil {
 				t.Fatal(err)
 			}
+			// Buffer time to allow the Ops Agent Plugin gRPC server to start up and begin accepting gRPC requests.
+			time.Sleep(5 * time.Second)
 			if err := agents.StartOpsAgentPluginWithBackoff(ctx, logger, vm); err != nil {
 				t.Fatal(err)
 			}

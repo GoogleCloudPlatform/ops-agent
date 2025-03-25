@@ -2091,6 +2091,7 @@ func RunForEachImage(t *testing.T, testBody func(t *testing.T, imageSpec string)
 	imageSpecs := strings.Split(imageSpecsEnv, ",")
 	for _, imageSpec := range imageSpecs {
 		imageSpec := imageSpec // https://golang.org/doc/faq#closures_and_goroutines
+		// FIXME(b/406277901): Re-enable tests to run for the UAP plugin on the two images.
 		if IsOpsAgentUAPPlugin() && (IsWindows2016(imageSpec) || IsSql2019Windows2019(imageSpec)) {
 			continue
 		}
