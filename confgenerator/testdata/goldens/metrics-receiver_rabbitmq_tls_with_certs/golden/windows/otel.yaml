@@ -558,8 +558,8 @@ receivers:
   otlpjsonfile/otlpjsonfile:
     exclude: []
     include:
-    - "C:\\ProgramData/Google/Cloud Operations/Ops Agent/generated_configs/otel/feature_tracking_otlp.json"
-    - "C:\\ProgramData/Google/Cloud Operations/Ops Agent/generated_configs/otel/enabled_receivers_otlp.json"
+    - C:/ProgramData/Google/Cloud Operations/Ops Agent/generated_configs/otel/feature_tracking_otlp.json
+    - C:/ProgramData/Google/Cloud Operations/Ops Agent/generated_configs/otel/enabled_receivers_otlp.json
   prometheus/fluentbit:
     config:
       scrape_configs:
