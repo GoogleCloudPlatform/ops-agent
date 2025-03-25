@@ -101,8 +101,8 @@ var (
 					"otlpjsonfile": &OTLPJsonFileReceiver{
 						ConfigComponent:       cg.ConfigComponent{Type: "otlpjsonfile"},
 						IncludePaths:    []string{
-							filepath.Join(`C:\ProgramData`, `Google/Cloud Operations/Ops Agent`, "generated_configs", "otel", "feature_tracking_otlp.json"),
-							filepath.Join(`C:\ProgramData`, `Google/Cloud Operations/Ops Agent`, "generated_configs", "otel", "enabled_receivers_otlp.json")},
+							filepath.Join(`C:/ProgramData`, `Google/Cloud Operations/Ops Agent`, "generated_configs", "otel", "feature_tracking_otlp.json"),
+							filepath.Join(`C:/ProgramData`, `Google/Cloud Operations/Ops Agent`, "generated_configs", "otel", "enabled_receivers_otlp.json")},
 					},
 				},
 				Processors: map[string]cg.MetricsProcessor{
