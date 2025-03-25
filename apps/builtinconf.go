@@ -41,6 +41,12 @@ var (
 						ConfigComponent:       cg.ConfigComponent{Type: "hostmetrics"},
 						MetricsReceiverShared: cg.MetricsReceiverShared{CollectionInterval: "60s"},
 					},
+					"otlpjsonfile": &OTLPJsonFileReceiver{
+						ConfigComponent:       cg.ConfigComponent{Type: "otlpjsonfile"},
+						IncludePaths:    []string{
+							"/var/run/google-cloud-ops-agent-opentelemetry-collector/feature_tracking_otlp.json",
+						 "/var/run/google-cloud-ops-agent-opentelemetry-collector/enabled_receivers_otlp.json"},
+					},
 				},
 				Processors: map[string]cg.MetricsProcessor{
 					"metrics_filter": &MetricsProcessorExcludeMetrics{
@@ -50,7 +56,7 @@ var (
 				Service: &cg.MetricsService{
 					Pipelines: map[string]*cg.Pipeline{
 						"default_pipeline": {
-							ReceiverIDs:  []string{"hostmetrics"},
+							ReceiverIDs:  []string{"hostmetrics", "otlpjsonfile"},
 							ProcessorIDs: []string{"metrics_filter"},
 						},
 					},

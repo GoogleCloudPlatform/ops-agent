@@ -14,6 +14,11 @@ metrics:
     hostmetrics:
       type: hostmetrics
       collection_interval: 60s
+    otlpjsonfile:
+      type: otlpjsonfile
+      include_paths:
+      - /var/run/google-cloud-ops-agent-opentelemetry-collector/feature_tracking_otlp.json
+      - /var/run/google-cloud-ops-agent-opentelemetry-collector/enabled_receivers_otlp.json
   processors:
     metrics_filter:
       type: exclude_metrics
@@ -21,5 +26,5 @@ metrics:
   service:
     pipelines:
       default_pipeline:
-        receivers: [hostmetrics]
+        receivers: [hostmetrics, otlpjsonfile]
         processors: [metrics_filter]

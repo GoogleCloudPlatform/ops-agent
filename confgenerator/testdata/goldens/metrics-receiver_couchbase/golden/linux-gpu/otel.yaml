@@ -39,6 +39,11 @@ processors:
       exclude:
         match_type: regexp
         metric_names: []
+  filter/default__pipeline_otlpjsonfile_0:
+    metrics:
+      exclude:
+        match_type: regexp
+        metric_names: []
   filter/fluentbit_0:
     metrics:
       include:
@@ -614,6 +619,11 @@ receivers:
       processes: {}
   nvml/hostmetrics_1:
     collection_interval: 60s
+  otlpjsonfile/otlpjsonfile:
+    exclude: []
+    include:
+    - /var/run/google-cloud-ops-agent-opentelemetry-collector/feature_tracking_otlp.json
+    - /var/run/google-cloud-ops-agent-opentelemetry-collector/enabled_receivers_otlp.json
   prometheus/couchbase:
     config:
       scrape_configs:
@@ -681,6 +691,14 @@ service:
       - resourcedetection/_global_0
       receivers:
       - nvml/hostmetrics_1
+    metrics/default__pipeline_otlpjsonfile:
+      exporters:
+      - googlecloud/otel
+      processors:
+      - filter/default__pipeline_otlpjsonfile_0
+      - resourcedetection/_global_0
+      receivers:
+      - otlpjsonfile/otlpjsonfile
     metrics/fluentbit:
       exporters:
       - googlecloud
