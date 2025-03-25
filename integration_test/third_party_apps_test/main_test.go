@@ -983,6 +983,10 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool) {
 			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, SAPHANAApp, SAPHANAImageSpec)
 			continue
 		}
+		if gce.IsOpsAgentUAPPlugin() && (gce.IsWindows2016(test.imageSpec) || gce.IsSql2019Windows2019(test.imageSpec)) {
+			tests[i].skipReason = "skip running the test against the Ops Agent UAP Plugin on the windows image"
+			continue
+		}
 	}
 }
 
