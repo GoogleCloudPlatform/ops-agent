@@ -45,6 +45,13 @@ processors:
         metric_names:
         - "^workload\\.googleapis\\.com/otlp\\.test\\.gauge$$"
         - "^workload\\.googleapis\\.com/otlp\\.test\\.prefix.*$$"
+  filter/default__pipeline_otlpjsonfile_0:
+    metrics:
+      exclude:
+        match_type: regexp
+        metric_names:
+        - "^workload\\.googleapis\\.com/otlp\\.test\\.gauge$$"
+        - "^workload\\.googleapis\\.com/otlp\\.test\\.prefix.*$$"
   filter/fluentbit_0:
     metrics:
       include:
@@ -572,6 +579,11 @@ receivers:
     protocols:
       grpc:
         endpoint: 0.0.0.0:4317
+  otlpjsonfile/otlpjsonfile:
+    exclude: []
+    include:
+    - "C:\\ProgramData/Google/Cloud Operations/Ops Agent/generated_configs/otel/feature_tracking_otlp.json"
+    - "C:\\ProgramData/Google/Cloud Operations/Ops Agent/generated_configs/otel/enabled_receivers_otlp.json"
   prometheus/fluentbit:
     config:
       scrape_configs:
@@ -656,6 +668,14 @@ service:
       - resourcedetection/_global_0
       receivers:
       - windowsperfcounters/mssql
+    metrics/default__pipeline_otlpjsonfile:
+      exporters:
+      - googlecloud/otel
+      processors:
+      - filter/default__pipeline_otlpjsonfile_0
+      - resourcedetection/_global_0
+      receivers:
+      - otlpjsonfile/otlpjsonfile
     metrics/fluentbit:
       exporters:
       - googlecloud

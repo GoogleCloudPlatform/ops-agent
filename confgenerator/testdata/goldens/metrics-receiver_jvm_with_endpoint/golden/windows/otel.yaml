@@ -39,6 +39,11 @@ processors:
       exclude:
         match_type: regexp
         metric_names: []
+  filter/default__pipeline_otlpjsonfile_0:
+    metrics:
+      exclude:
+        match_type: regexp
+        metric_names: []
   filter/fluentbit_0:
     metrics:
       include:
@@ -548,6 +553,11 @@ receivers:
     endpoint: localhost:9999
     jar_path: /path/to/executables/opentelemetry-java-contrib-jmx-metrics.jar
     target_system: jvm
+  otlpjsonfile/otlpjsonfile:
+    exclude: []
+    include:
+    - "C:\\ProgramData/Google/Cloud Operations/Ops Agent/generated_configs/otel/feature_tracking_otlp.json"
+    - "C:\\ProgramData/Google/Cloud Operations/Ops Agent/generated_configs/otel/enabled_receivers_otlp.json"
   prometheus/fluentbit:
     config:
       scrape_configs:
@@ -632,6 +642,14 @@ service:
       - resourcedetection/_global_0
       receivers:
       - windowsperfcounters/mssql
+    metrics/default__pipeline_otlpjsonfile:
+      exporters:
+      - googlecloud/otel
+      processors:
+      - filter/default__pipeline_otlpjsonfile_0
+      - resourcedetection/_global_0
+      receivers:
+      - otlpjsonfile/otlpjsonfile
     metrics/fluentbit:
       exporters:
       - googlecloud

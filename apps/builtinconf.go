@@ -14,7 +14,11 @@
 
 package apps
 
-import cg "github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+import (
+	"path/filepath"
+
+	cg "github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+)
 
 var (
 	BuiltInConfStructs = map[string]*cg.UnifiedConfig{
@@ -45,7 +49,7 @@ var (
 						ConfigComponent:       cg.ConfigComponent{Type: "otlpjsonfile"},
 						IncludePaths:    []string{
 							"/var/run/google-cloud-ops-agent-opentelemetry-collector/feature_tracking_otlp.json",
-						 "/var/run/google-cloud-ops-agent-opentelemetry-collector/enabled_receivers_otlp.json"},
+							"/var/run/google-cloud-ops-agent-opentelemetry-collector/enabled_receivers_otlp.json"},
 					},
 				},
 				Processors: map[string]cg.MetricsProcessor{
@@ -94,6 +98,12 @@ var (
 						ConfigComponent:       cg.ConfigComponent{Type: "mssql"},
 						MetricsReceiverShared: cg.MetricsReceiverShared{CollectionInterval: "60s"},
 					},
+					"otlpjsonfile": &OTLPJsonFileReceiver{
+						ConfigComponent:       cg.ConfigComponent{Type: "otlpjsonfile"},
+						IncludePaths:    []string{
+							filepath.Join(`C:\ProgramData`, `Google/Cloud Operations/Ops Agent`, "generated_configs", "otel", "feature_tracking_otlp.json"),
+							filepath.Join(`C:\ProgramData`, `Google/Cloud Operations/Ops Agent`, "generated_configs", "otel", "enabled_receivers_otlp.json")},
+					},
 				},
 				Processors: map[string]cg.MetricsProcessor{
 					"metrics_filter": &MetricsProcessorExcludeMetrics{
@@ -103,7 +113,7 @@ var (
 				Service: &cg.MetricsService{
 					Pipelines: map[string]*cg.Pipeline{
 						"default_pipeline": {
-							ReceiverIDs:  []string{"hostmetrics", "iis", "mssql"},
+							ReceiverIDs:  []string{"hostmetrics", "iis", "mssql", "otlpjsonfile"},
 							ProcessorIDs: []string{"metrics_filter"},
 						},
 					},

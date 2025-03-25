@@ -72,6 +72,23 @@
                       {
                         "key": "receiver_type",
                         "value": {
+                          "stringValue": "otlpjsonfile"
+                        }
+                      }
+                    ],
+                    "asInt": "1"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "telemetry_type",
+                        "value": {
+                          "stringValue": "metrics"
+                        }
+                      },
+                      {
+                        "key": "receiver_type",
+                        "value": {
                           "stringValue": "saphana"
                         }
                       }

@@ -35,7 +35,7 @@ func TestEnabledReceiversDefaultConfig(t *testing.T) {
 			name:   "builtin_linux",
 			config: apps.BuiltInConfStructs["linux"],
 			enabledReceivers: self_metrics.EnabledReceivers{
-				MetricsReceiverCountsByType: map[string]int{"hostmetrics": 1},
+				MetricsReceiverCountsByType: map[string]int{"hostmetrics": 1, "otlpjsonfile": 1},
 				LogsReceiverCountsByType:    map[string]int{"files": 1},
 			},
 		},
@@ -43,7 +43,7 @@ func TestEnabledReceiversDefaultConfig(t *testing.T) {
 			name:   "builtin_windows",
 			config: apps.BuiltInConfStructs["windows"],
 			enabledReceivers: self_metrics.EnabledReceivers{
-				MetricsReceiverCountsByType: map[string]int{"hostmetrics": 1, "iis": 1, "mssql": 1},
+				MetricsReceiverCountsByType: map[string]int{"hostmetrics": 1, "iis": 1, "mssql": 1, "otlpjsonfile": 1},
 				LogsReceiverCountsByType:    map[string]int{"windows_event_log": 1},
 			},
 		},

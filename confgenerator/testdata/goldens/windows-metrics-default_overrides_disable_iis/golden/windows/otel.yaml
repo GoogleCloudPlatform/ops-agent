@@ -7,6 +7,14 @@ exporters:
       service_resource_labels: false
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
+  googlecloud/otel:
+    metric:
+      instrumentation_library_labels: true
+      prefix: ""
+      resource_filters: []
+      service_resource_labels: false
+      skip_create_descriptor: true
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
@@ -29,6 +37,12 @@ processors:
         metric_names:
         - "^agent\\.googleapis\\.com/iis/.*$$"
   filter/default__pipeline_mssql_0:
+    metrics:
+      exclude:
+        match_type: regexp
+        metric_names:
+        - "^agent\\.googleapis\\.com/iis/.*$$"
+  filter/default__pipeline_otlpjsonfile_0:
     metrics:
       exclude:
         match_type: regexp
@@ -528,6 +542,11 @@ receivers:
         mute_process_exe_error: true
         mute_process_name_error: true
       processes: {}
+  otlpjsonfile/otlpjsonfile:
+    exclude: []
+    include:
+    - "C:\\ProgramData/Google/Cloud Operations/Ops Agent/generated_configs/otel/feature_tracking_otlp.json"
+    - "C:\\ProgramData/Google/Cloud Operations/Ops Agent/generated_configs/otel/enabled_receivers_otlp.json"
   prometheus/fluentbit:
     config:
       scrape_configs:
@@ -612,6 +631,14 @@ service:
       - resourcedetection/_global_0
       receivers:
       - windowsperfcounters/mssql
+    metrics/default__pipeline_otlpjsonfile:
+      exporters:
+      - googlecloud/otel
+      processors:
+      - filter/default__pipeline_otlpjsonfile_0
+      - resourcedetection/_global_0
+      receivers:
+      - otlpjsonfile/otlpjsonfile
     metrics/fluentbit:
       exporters:
       - googlecloud

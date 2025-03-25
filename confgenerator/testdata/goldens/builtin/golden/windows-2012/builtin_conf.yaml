@@ -18,6 +18,11 @@ metrics:
     mssql:
       type: mssql
       collection_interval: 60s
+    otlpjsonfile:
+      type: otlpjsonfile
+      include_paths:
+      - "C:\\ProgramData/Google/Cloud Operations/Ops Agent/generated_configs/otel/feature_tracking_otlp.json"
+      - "C:\\ProgramData/Google/Cloud Operations/Ops Agent/generated_configs/otel/enabled_receivers_otlp.json"
   processors:
     metrics_filter:
       type: exclude_metrics
@@ -25,5 +30,5 @@ metrics:
   service:
     pipelines:
       default_pipeline:
-        receivers: [hostmetrics, iis, mssql]
+        receivers: [hostmetrics, iis, mssql, otlpjsonfile]
         processors: [metrics_filter]
