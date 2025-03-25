@@ -156,7 +156,7 @@ const (
 
 	// QueryMaxAttempts is the default number of retries when calling WaitForLog and WaitForMetricSeries.
 	// Retries are spaced by 10 seconds, so 40 retries denotes 6 minutes 40 seconds total.
-	QueryMaxAttempts              = 80 // 6 minutes 40 seconds total.
+	QueryMaxAttempts              = 40 // 6 minutes 40 seconds total.
 	queryMaxAttemptsMetricMissing = 5  // 50 seconds total.
 	queryMaxAttemptsLogMissing    = 5  // 50 seconds total.
 	queryBackoffDuration          = 10 * time.Second

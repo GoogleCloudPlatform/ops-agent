@@ -2601,7 +2601,10 @@ func TestDefaultMetricsNoProxy(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		testDefaultMetrics(ctx, t, logger, vm, time.Hour)
+		testDefaultMetrics(ctx, t, logger, vm, 4*time.Hour)
+		if vm.OS.ID == "debian" {
+			time.Sleep(4 * time.Hour)
+		}
 	})
 }
 
