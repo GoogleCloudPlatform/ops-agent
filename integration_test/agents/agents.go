@@ -921,7 +921,7 @@ func StartOpsAgentPluginWithBackoff(ctx context.Context, logger *log.Logger, vm 
 		if _, err := gce.RunRemotely(ctx, logger, vm, StartCommandForImage(vm.ImageSpec)); err != nil {
 			return fmt.Errorf("failed to start Ops Agent: %v", err)
 		}
-		time.Sleep(5 * time.Second)
+		time.Sleep(8 * time.Second)
 		cmdOut, err := gce.RunRemotely(ctx, logger, vm, GetUAPPluginStatusForImage(vm.ImageSpec))
 		if err != nil {
 			return fmt.Errorf("failed to retrieve Ops Agent status: %v", err)

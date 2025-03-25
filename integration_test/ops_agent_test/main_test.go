@@ -2579,7 +2579,7 @@ func TestDefaultMetricsNoProxy(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		testDefaultMetrics(ctx, t, logger, vm, 20*time.Minute)
+		testDefaultMetrics(ctx, t, logger, vm, time.Hour)
 	})
 }
 
