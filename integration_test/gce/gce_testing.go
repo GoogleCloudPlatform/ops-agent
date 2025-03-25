@@ -310,6 +310,23 @@ type VM struct {
 	AlreadyDeleted bool
 }
 
+// ManagedInstanceGroupVM represents an individual VM in a Managed Instace Group.
+type ManagedInstanceGroupVM struct {
+	*VM
+}
+
+func (migVM ManagedInstanceGroupVM) ManagedInstanceGroupName() string {
+	return migVM.Name + "-mig"
+}
+
+func (migVM ManagedInstanceGroupVM) InstanceTemplateName() string {
+	return migVM.Name + "-tmpl"
+}
+
+func (migVM ManagedInstanceGroupVM) AppHubWorkloadName() string {
+	return migVM.Name + "-wl"
+}
+
 // SyslogLocation returns a filesystem path to the system log. This function
 // assumes the image spec is some kind of Linux.
 func SyslogLocation(imageSpec string) string {
@@ -1201,10 +1218,7 @@ func getOS(ctx context.Context, logger *log.Logger, vm *VM) (*OS, error) {
 	}, nil
 }
 
-// attemptCreateInstance creates a VM instance and waits for it to be ready.
-// Returns a VM object or an error (never both). The caller is responsible for
-// deleting the VM if (and only if) the returned error is nil.
-func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOptions) (vmToReturn *VM, errToReturn error) {
+func createVMFromVMOptions(options VMOptions) *VM {
 	vm := &VM{
 		Project:   options.Project,
 		ImageSpec: options.ImageSpec,
@@ -1239,32 +1253,80 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 			vm.MachineType = "t2a-standard-4"
 		}
 	}
+	return vm
+}
 
+func verifyVMCreation(ctx context.Context, logger *log.Logger, vm *VM) error {
+	if err := waitForStart(ctx, logger, vm); err != nil {
+		return err
+	}
+
+	if os, err := getOS(ctx, logger, vm); err != nil {
+		return err
+	} else {
+		vm.OS = *os
+	}
+
+	if IsSUSEVM(vm) {
+		// Set download.max_silent_tries to 5 (by default, it is commented out in
+		// the config file). This should help with issues like b/211003972.
+		if _, err := RunRemotely(ctx, logger, vm, "sudo sed -i -E 's/.*download.max_silent_tries.*/download.max_silent_tries = 5/g' /etc/zypp/zypp.conf"); err != nil {
+			return fmt.Errorf("attemptCreateInstance() failed to configure retries in zypp.conf: %v", err)
+		}
+	}
+
+	if IsSLESVM(vm) {
+		if err := prepareSLES(ctx, logger, vm); err != nil {
+			return fmt.Errorf("%s: %v", prepareSLESMessage, err)
+		}
+	}
+
+	if IsSUSEVM(vm) {
+		// Set ZYPP_LOCK_TIMEOUT so tests that use zypper don't randomly fail
+		// because some background process happened to be using zypper at the same time.
+		if _, err := RunRemotely(ctx, logger, vm, `echo 'ZYPP_LOCK_TIMEOUT=300' | sudo tee -a /etc/environment`); err != nil {
+			return err
+		}
+	}
+
+	// Removing flaky rhel-7 repositories due to b/265341502
+	if isRHEL7SAPHA(vm.ImageSpec) {
+		if _, err := RunRemotely(ctx,
+			logger, vm, `sudo yum -y --disablerepo=rhui-rhel*-7-* install yum-utils && sudo yum-config-manager --disable "rhui-rhel*-7-*"`); err != nil {
+			return fmt.Errorf("disabling flaky repos failed: %w", err)
+		}
+	}
+
+	// Pre-installed jupyter services on DLVM images cause port conflicts for third-party apps.
+	// See b/347107292.
+	if IsDLVMImage(vm.ImageSpec) {
+		if _, err := RunRemotely(ctx, logger, vm, "sudo service jupyter stop || true"); err != nil {
+			return fmt.Errorf("attemptCreateInstance() failed to stop pre-installed jupyter service: %v", err)
+		}
+	}
+
+	// TODO(b/369656678): We see frequent errors like "Waiting for cache lock:
+	//   Could not get lock /var/lib/dpkg/lock-frontend", so add a generous timeout.
+	if IsDebianBased(vm.ImageSpec) {
+		if _, err := RunRemotely(ctx, logger, vm, "echo 'DPkg::Lock::Timeout=300' | sudo tee /etc/dpkg/dpkg.cfg.d/cache-lock-timeout.cfg"); err != nil {
+			return fmt.Errorf("setting increased dpkg cache lock timeout failed: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func additionalCreateInstanceArgs(options VMOptions, vm *VM) ([]string, error) {
+	args := []string{}
 	newMetadata, err := addFrameworkMetadata(vm.ImageSpec, options.Metadata)
 	if err != nil {
-		return nil, fmt.Errorf("attemptCreateInstance() could not construct valid metadata: %v", err)
+		return nil, fmt.Errorf("additionalCreateInstanceArgs() could not construct valid metadata: %v", err)
 	}
 	newLabels, err := addFrameworkLabels(options.Labels)
 	if err != nil {
-		return nil, fmt.Errorf("attemptCreateInstance() could not construct valid labels: %v", err)
+		return nil, fmt.Errorf("additionalCreateInstanceArgs() could not construct valid labels: %v", err)
 	}
 
-	imageFamilyScope := options.ImageFamilyScope
-
-	if imageFamilyScope == "" {
-		imageFamilyScope = "global"
-	}
-
-	args := []string{
-		// "beta" is needed for --max-run-duration below.
-		"beta", "compute", "instances", "create", vm.Name,
-		"--project=" + vm.Project,
-		"--zone=" + vm.Zone,
-		"--machine-type=" + vm.MachineType,
-		"--image-family-scope=" + imageFamilyScope,
-		"--network=" + vm.Network,
-		"--format=json",
-	}
 	image_flags, err := gcloudFlagsFromImageSpec(vm.ImageSpec)
 	if err != nil {
 		return nil, err
@@ -1292,6 +1354,38 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 		args = append(args, "--max-run-duration="+options.TimeToLive, "--instance-termination-action=DELETE", "--provisioning-model=STANDARD")
 	}
 	args = append(args, options.ExtraCreateArguments...)
+
+	return args, nil
+}
+
+// attemptCreateInstance creates a VM instance and waits for it to be ready.
+// Returns a VM object or an error (never both). The caller is responsible for
+// deleting the VM if (and only if) the returned error is nil.
+func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOptions) (vmToReturn *VM, errToReturn error) {
+	vm := createVMFromVMOptions(options)
+
+	imageFamilyScope := options.ImageFamilyScope
+
+	if imageFamilyScope == "" {
+		imageFamilyScope = "global"
+	}
+
+	args := []string{
+		// "beta" is needed for --max-run-duration.
+		"beta", "compute", "instances", "create", vm.Name,
+		"--project=" + vm.Project,
+		"--zone=" + vm.Zone,
+		"--machine-type=" + vm.MachineType,
+		"--image-family-scope=" + imageFamilyScope,
+		"--network=" + vm.Network,
+		"--format=json",
+	}
+
+	additionalArgs, err := additionalCreateInstanceArgs(options, vm)
+	if err != nil {
+		return nil, err
+	}
+	args = append(args, additionalArgs...)
 
 	output, err := RunGcloud(ctx, logger, "", args)
 	if err != nil {
@@ -1327,74 +1421,148 @@ func attemptCreateInstance(ctx context.Context, logger *log.Logger, options VMOp
 	}
 	vm.IPAddress = ipAddress
 
-	// RunGcloud will log the output of the command, so we don't need to.
-	if _, err = RunGcloud(ctx, logger, "", []string{
-		"compute", "disks", "describe", vm.Name,
-		"--project=" + vm.Project,
-		"--zone=" + vm.Zone,
-		"--format=json",
-	}); err != nil {
-		// This is just informational, so it's ok if it fails. Just warn and proceed.
+	// This is just informational, so it's ok if it fails. Just warn and proceed.
+	if _, err := DescribeVMDisk(ctx, logger, vm); err != nil {
 		logger.Printf("Unable to retrieve information about the VM's boot disk: %v", err)
 	}
 
-	if err := waitForStart(ctx, logger, vm); err != nil {
+	if err := verifyVMCreation(ctx, logger, vm); err != nil {
 		return nil, err
-	}
-
-	if os, err := getOS(ctx, logger, vm); err != nil {
-		return nil, err
-	} else {
-		vm.OS = *os
-	}
-
-	if IsSUSEVM(vm) {
-		// Set download.max_silent_tries to 5 (by default, it is commented out in
-		// the config file). This should help with issues like b/211003972.
-		if _, err := RunRemotely(ctx, logger, vm, "sudo sed -i -E 's/.*download.max_silent_tries.*/download.max_silent_tries = 5/g' /etc/zypp/zypp.conf"); err != nil {
-			return nil, fmt.Errorf("attemptCreateInstance() failed to configure retries in zypp.conf: %v", err)
-		}
-	}
-
-	if IsSLESVM(vm) {
-		if err := prepareSLES(ctx, logger, vm); err != nil {
-			return nil, fmt.Errorf("%s: %v", prepareSLESMessage, err)
-		}
-	}
-
-	if IsSUSEVM(vm) {
-		// Set ZYPP_LOCK_TIMEOUT so tests that use zypper don't randomly fail
-		// because some background process happened to be using zypper at the same time.
-		if _, err := RunRemotely(ctx, logger, vm, `echo 'ZYPP_LOCK_TIMEOUT=300' | sudo tee -a /etc/environment`); err != nil {
-			return nil, err
-		}
-	}
-
-	// Removing flaky rhel-7 repositories due to b/265341502
-	if isRHEL7SAPHA(vm.ImageSpec) {
-		if _, err := RunRemotely(ctx,
-			logger, vm, `sudo yum -y --disablerepo=rhui-rhel*-7-* install yum-utils && sudo yum-config-manager --disable "rhui-rhel*-7-*"`); err != nil {
-			return nil, fmt.Errorf("disabling flaky repos failed: %w", err)
-		}
-	}
-
-	// Pre-installed jupyter services on DLVM images cause port conflicts for third-party apps.
-	// See b/347107292.
-	if IsDLVMImage(vm.ImageSpec) {
-		if _, err := RunRemotely(ctx, logger, vm, "sudo service jupyter stop || true"); err != nil {
-			return nil, fmt.Errorf("attemptCreateInstance() failed to stop pre-installed jupyter service: %v", err)
-		}
-	}
-
-	// TODO(b/369656678): We see frequent errors like "Waiting for cache lock:
-	//   Could not get lock /var/lib/dpkg/lock-frontend", so add a generous timeout.
-	if IsDebianBased(vm.ImageSpec) {
-		if _, err := RunRemotely(ctx, logger, vm, "echo 'DPkg::Lock::Timeout=300' | sudo tee /etc/dpkg/dpkg.cfg.d/cache-lock-timeout.cfg"); err != nil {
-			return nil, fmt.Errorf("setting increased dpkg cache lock timeout failed: %w", err)
-		}
 	}
 
 	return vm, nil
+}
+
+// attemptCreateManagedInstanceGroupVM creates an individual VM instance in a Managed Instance Group
+// and waits for it to be ready.
+// Returns a ManagedInstanceGroupVM object or an error (never both). The caller is responsible for
+// deleting the ManagedInstanceGroupVM if (and only if) the returned error is nil.
+func attemptCreateManagedInstanceGroupVM(ctx context.Context, logger *log.Logger, options VMOptions) (migVmToReturn *ManagedInstanceGroupVM, errToReturn error) {
+	// We need a shorter uuid here to add suffixes and not go over the 63 character limit
+	// for resource names.
+	options.Name = fmt.Sprintf("%s-%s", sandboxPrefix, uuid.NewString()[:30])
+
+	migVM := &ManagedInstanceGroupVM{
+		VM: createVMFromVMOptions(options),
+	}
+
+	// Step #1 : Create vm instance template
+	createTemplateArgs := []string{
+		// "beta" is needed for --max-run-duration.
+		"beta", "compute", "instance-templates", "create", migVM.InstanceTemplateName(),
+		"--project=" + migVM.Project,
+		"--machine-type=" + migVM.MachineType,
+		"--network=" + migVM.Network,
+		"--format=json",
+	}
+	additionalArgs, err := additionalCreateInstanceArgs(options, migVM.VM)
+	if err != nil {
+		return nil, err
+	}
+	createTemplateArgs = append(createTemplateArgs, additionalArgs...)
+
+	output, err := RunGcloud(ctx, logger, "", createTemplateArgs)
+	if err != nil {
+		// Note: we don't try and delete the instance template or managed instance group
+		// in this case because there is nothing to delete.
+		return nil, err
+	}
+
+	defer func() {
+		if errToReturn != nil {
+			// This function is responsible for deleting the ManagedInstanceGroupVM in all error cases.
+			errToReturn = multierr.Append(errToReturn, DeleteManagedInstanceGroupVM(logger, migVM))
+			// Make sure to never return both a valid ManagedInstanceGroupVM object and an error.
+			migVmToReturn = nil
+		}
+		if errToReturn == nil && migVM.VM == nil {
+			errToReturn = errors.New("programming error: attemptCreateManagedInstanceGroupVM() returned nil VM and nil error")
+		}
+	}()
+
+	// Step #2 : Create empty Managed Instance Group using template.
+	createMIGArgs := []string{
+		"compute", "instance-groups", "managed", "create", migVM.ManagedInstanceGroupName(),
+		"--project=" + migVM.Project,
+		"--zone=" + migVM.Zone,
+		"--size=0",
+		"--template=" + migVM.InstanceTemplateName(),
+		"--format=json",
+	}
+
+	output, err = RunGcloud(ctx, logger, "", createMIGArgs)
+	if err != nil {
+		return nil, err
+	}
+
+	// Step #3 : Create test VM in Managed Instance Group.
+	createVMArgs := []string{
+		"compute", "instance-groups", "managed", "create-instance", migVM.ManagedInstanceGroupName(),
+		"--instance=" + migVM.Name,
+		"--project=" + migVM.Project,
+		"--zone=" + migVM.Zone,
+		"--format=json",
+	}
+
+	output, err = RunGcloud(ctx, logger, "", createVMArgs)
+	if err != nil {
+		return nil, err
+	}
+
+	// Step #4 : Wait until Managed Instance Group is stable with a 300s timeout.
+	waitUntilStableArgs := []string{
+		"compute", "instance-groups", "managed", "wait-until", migVM.ManagedInstanceGroupName(),
+		"--stable",
+		"--timeout=300",
+		"--project=" + migVM.Project,
+		"--zone=" + migVM.Zone,
+		"--format=json",
+	}
+
+	output, err = RunGcloud(ctx, logger, "", waitUntilStableArgs)
+	if err != nil {
+		return nil, err
+	}
+
+	// Step #5 : Query newly created VM metadata.
+	listVMArgs := []string{
+		"compute", "instances", "list",
+		"--filter=name=( '" + migVM.Name + "' ... )",
+		"--project=" + migVM.Project,
+		"--zones=" + migVM.Zone,
+		"--format=json",
+	}
+
+	output, err = RunGcloud(ctx, logger, "", listVMArgs)
+	if err != nil {
+		return nil, err
+	}
+
+	// Pull the instance ID and external IP address out of the output.
+	id, err := extractID(output.Stdout)
+	if err != nil {
+		return nil, err
+	}
+	migVM.ID = id
+
+	logger.Printf("Instance Log: %v", instanceLogURL(migVM.VM))
+
+	ipAddress, err := extractIPAddress(output.Stdout)
+	if err != nil {
+		return nil, err
+	}
+	migVM.IPAddress = ipAddress
+
+	// This is just informational, so it's ok if it fails. Just warn and proceed.
+	if _, err := DescribeVMDisk(ctx, logger, migVM.VM); err != nil {
+		logger.Printf("Unable to retrieve information about the VM's boot disk: %v", err)
+	}
+
+	if err := verifyVMCreation(ctx, logger, migVM.VM); err != nil {
+		return nil, err
+	}
+
+	return migVM, nil
 }
 
 func IsSLESVM(vm *VM) bool {
@@ -1441,6 +1609,29 @@ func IsOpsAgentUAPPlugin() bool {
 	return ok && value != ""
 }
 
+func shouldRetryCreateVM(err error, options VMOptions) bool {
+	// VM creation can hit quota, especially when re-running presubmits,
+	// or when multple people are running tests.
+	return strings.Contains(err.Error(), "Quota") ||
+		// Rarely, instance creation fails due to internal errors in the compute API.
+		strings.Contains(err.Error(), "Internal error") ||
+		// Instance creation can also fail due to service unavailability.
+		strings.Contains(err.Error(), "currently unavailable") ||
+		// This error is a consequence of running gcloud concurrently, which is actually
+		// unsupported. In the absence of a better fix, just retry such errors.
+		strings.Contains(err.Error(), "database is locked") ||
+		// windows-*-core instances sometimes fail to be ssh-able: b/305721001
+		(IsWindowsCore(options.ImageSpec) && strings.Contains(err.Error(), windowsStartupFailedMessage)) ||
+		// SLES instances sometimes fail to be ssh-able: b/186426190
+		(IsSUSEImageSpec(options.ImageSpec) && strings.Contains(err.Error(), startupFailedMessage)) ||
+		strings.Contains(err.Error(), prepareSLESMessage)
+}
+
+func shouldRetryCreateManagedInstanceGroupVM(err error, options VMOptions) bool {
+	return shouldRetryCreateVM(err, options) ||
+		strings.Contains(err.Error(), "Timeout while waiting for group to become stable.")
+}
+
 // CreateInstance launches a new VM instance based on the given options.
 // Also waits for the instance to be reachable over ssh.
 // Returns a VM object or an error (never both). The caller is responsible for
@@ -1454,24 +1645,6 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 	ctx, cancel := context.WithTimeout(origCtx, 3*vmInitTimeout)
 	defer cancel()
 
-	shouldRetry := func(err error) bool {
-		// VM creation can hit quota, especially when re-running presubmits,
-		// or when multple people are running tests.
-		return strings.Contains(err.Error(), "Quota") ||
-			// Rarely, instance creation fails due to internal errors in the compute API.
-			strings.Contains(err.Error(), "Internal error") ||
-			// Instance creation can also fail due to service unavailability.
-			strings.Contains(err.Error(), "currently unavailable") ||
-			// This error is a consequence of running gcloud concurrently, which is actually
-			// unsupported. In the absence of a better fix, just retry such errors.
-			strings.Contains(err.Error(), "database is locked") ||
-			// windows-*-core instances sometimes fail to be ssh-able: b/305721001
-			(IsWindowsCore(options.ImageSpec) && strings.Contains(err.Error(), windowsStartupFailedMessage)) ||
-			// SLES instances sometimes fail to be ssh-able: b/186426190
-			(IsSUSEImageSpec(options.ImageSpec) && strings.Contains(err.Error(), startupFailedMessage)) ||
-			strings.Contains(err.Error(), prepareSLESMessage)
-	}
-
 	var vm *VM
 	createFunc := func() error {
 		attemptCtx, cancel := context.WithTimeout(ctx, vmInitTimeout)
@@ -1480,7 +1653,7 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 		var err error
 		vm, err = attemptCreateInstance(attemptCtx, logger, options)
 
-		if err != nil && !shouldRetry(err) {
+		if err != nil && !shouldRetryCreateVM(err, options) {
 			err = backoff.Permanent(err)
 		}
 		// Returning a non-permanent error triggers retries.
@@ -1492,6 +1665,52 @@ func CreateInstance(origCtx context.Context, logger *log.Logger, options VMOptio
 	}
 	logger.Printf("VM is ready: %#v", vm)
 	return vm, nil
+}
+
+// CreateManagedInstanceGroupVM launches a new Managed Instance Group VM instance based on the given options.
+// Also waits for the instance to be reachable over ssh.
+// Returns a ManagedInstanceGroupVM object or an error (never both). The caller is responsible for
+// deleting the ManagedInstanceGroupVM if (and only if) the returned error is nil.
+func CreateManagedInstanceGroupVM(origCtx context.Context, logger *log.Logger, options VMOptions) (*ManagedInstanceGroupVM, error) {
+	// Give enough time for at least 3 consecutive attempts to start a VM.
+	// If an attempt returns a non-retriable error, it will be returned
+	// immediately.
+	// If retriable errors happen quickly, there will be more than 3 attempts.
+	// If retriable errors happen slowly, there will still be at least 3 attempts.
+	ctx, cancel := context.WithTimeout(origCtx, 3*vmInitTimeout)
+	defer cancel()
+
+	var migVM *ManagedInstanceGroupVM
+	createFunc := func() error {
+		attemptCtx, cancel := context.WithTimeout(ctx, vmInitTimeout)
+		defer cancel()
+
+		var err error
+		migVM, err = attemptCreateManagedInstanceGroupVM(attemptCtx, logger, options)
+
+		if err != nil && !shouldRetryCreateManagedInstanceGroupVM(err, options) {
+			err = backoff.Permanent(err)
+		}
+		// Returning a non-permanent error triggers retries.
+		return err
+	}
+	backoffPolicy := backoff.WithContext(backoff.NewConstantBackOff(time.Minute), ctx)
+	if err := backoff.Retry(createFunc, backoffPolicy); err != nil {
+		return nil, err
+	}
+	logger.Printf("Managed Instance Group VM is ready: %#v", migVM.VM)
+	return migVM, nil
+}
+
+// DescribeVMDisk queries the VM disk information.
+func DescribeVMDisk(ctx context.Context, logger *log.Logger, vm *VM) (CommandOutput, error) {
+	// RunGcloud will log the output of the command, so we don't need to.
+	return RunGcloud(ctx, logger, "", []string{
+		"compute", "disks", "describe", vm.Name,
+		"--project=" + vm.Project,
+		"--zone=" + vm.Zone,
+		"--format=json",
+	})
 }
 
 // RemoveExternalIP deletes the external ip for an instance.
@@ -1545,6 +1764,26 @@ func SetEnvironmentVariables(ctx context.Context, logger *log.Logger, vm *VM, en
 	return err
 }
 
+func handleDeleteError(err error, attempt int) error {
+	if err == nil {
+		return nil
+	}
+	// GCE sometimes responds with 502 or 503 errors. Retry these errors
+	// (and other 50x errors for good measure), by returning them directly.
+	if strings.Contains(err.Error(), "Error 50") {
+		return err
+	}
+	// "not found" can happen when a previous attempt actually did delete
+	// the VM but there was some communication problem along the way.
+	// Consider that a successful deletion. Only do this when there has
+	// been a previous attempt.
+	if strings.Contains(err.Error(), "not found") && attempt > 1 {
+		return nil
+	}
+	// Wrap other errors in backoff.Permanent() to avoid retrying those.
+	return backoff.Permanent(err)
+}
+
 // DeleteInstance deletes the given VM instance synchronously.
 // Does nothing if the VM was already deleted.
 // Doesn't take a Context argument because even if the test has timed out or is
@@ -1567,28 +1806,61 @@ func DeleteInstance(logger *log.Logger, vm *VM) error {
 				"--zone=" + vm.Zone,
 				vm.Name,
 			})
-		if err == nil {
-			return nil
-		}
-		// GCE sometimes responds with 502 or 503 errors. Retry these errors
-		// (and other 50x errors for good measure), by returning them directly.
-		if strings.Contains(err.Error(), "Error 50") {
-			return err
-		}
-		// "not found" can happen when a previous attempt actually did delete
-		// the VM but there was some communication problem along the way.
-		// Consider that a successful deletion. Only do this when there has
-		// been a previous attempt.
-		if strings.Contains(err.Error(), "not found") && attempt > 1 {
-			return nil
-		}
-		// Wrap other errors in backoff.Permanent() to avoid retrying those.
-		return backoff.Permanent(err)
+		return handleDeleteError(err, attempt)
 	}
 	err := backoff.Retry(tryDelete, backoffPolicy)
 	if err == nil {
 		vm.AlreadyDeleted = true
 	}
+	return err
+}
+
+// DeleteManagedInstanceGroupVM deletes the given Managed Instance Group VM instance synchronously.
+// Does nothing if the Managed Instance Group VM was already deleted.
+// Doesn't take a Context argument because even if the test has timed out or is
+// cancelled, we still want to delete the Managed Instance Group.
+func DeleteManagedInstanceGroupVM(logger *log.Logger, migVM *ManagedInstanceGroupVM) error {
+	if migVM.AlreadyDeleted {
+		logger.Printf("Managed Instance Group %v was already deleted, skipping delete.", migVM.Name)
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+	backoffPolicy := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(30*time.Second), 10), ctx)
+	attempt := 0
+	tryDeleteMIG := func() error {
+		attempt++
+		_, err := RunGcloud(ctx, logger, "",
+			[]string{
+				"compute", "instance-groups", "managed", "delete", migVM.ManagedInstanceGroupName(),
+				"--project=" + migVM.Project,
+				"--zone=" + migVM.Zone,
+			})
+		if err == nil {
+			return nil
+		}
+		return handleDeleteError(err, attempt)
+	}
+	err := backoff.Retry(tryDeleteMIG, backoffPolicy)
+	if err != nil {
+		return err
+	}
+
+	attempt = 0
+	tryDeleteTemplate := func() error {
+		attempt++
+		_, err = RunGcloud(ctx, logger, "",
+			[]string{
+				"compute", "instance-templates", "delete", migVM.InstanceTemplateName(),
+				"--project=" + migVM.Project,
+			})
+		return handleDeleteError(err, attempt)
+	}
+	err = backoff.Retry(tryDeleteTemplate, backoffPolicy)
+	if err == nil {
+		migVM.AlreadyDeleted = true
+	}
+
 	return err
 }
 
@@ -2082,6 +2354,26 @@ func SetupVM(ctx context.Context, t *testing.T, logger *log.Logger, options VMOp
 	return vm
 }
 
+// SetupManagedInstanceGroupVM creates an individual VM instance in a Managed Instance Group according to the given options.
+// If the ManagedInstanceGroupVM creation fails, it will abort the test.
+// At the end of the test, the ManagedInstanceGroupVM will be cleaned up.
+func SetupManagedInstanceGroupVM(ctx context.Context, t *testing.T, logger *log.Logger, options VMOptions) *ManagedInstanceGroupVM {
+	t.Helper()
+
+	migVM, err := CreateManagedInstanceGroupVM(ctx, logger, options)
+	if err != nil {
+		t.Fatalf("SetupManagedInstanceGroupVM() error creating instance: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := DeleteManagedInstanceGroupVM(logger, migVM); err != nil {
+			t.Errorf("SetupManagedInstanceGroupVM() error deleting instance: %v", err)
+		}
+	})
+
+	t.Logf("Instance Log: %v", instanceLogURL(migVM.VM))
+	return migVM
+}
+
 // RunForEachImage runs a subtest for each image defined in IMAGE_SPECS.
 func RunForEachImage(t *testing.T, testBody func(t *testing.T, imageSpec string)) {
 	imageSpecsEnv := os.Getenv("IMAGE_SPECS")
@@ -2098,6 +2390,11 @@ func RunForEachImage(t *testing.T, testBody func(t *testing.T, imageSpec string)
 			testBody(t, imageSpec)
 		})
 	}
+}
+
+// FirstImageSpec picks the first element from IMAGE_SPECS and returns it.
+func FirstImageSpec() string {
+	return strings.Split(os.Getenv("IMAGE_SPECS"), ",")[0]
 }
 
 // ArbitraryImageSpec picks an arbitrary element from IMAGE_SPECS and returns it.

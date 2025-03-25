@@ -15,7 +15,9 @@
 package self_metrics
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"path/filepath"
@@ -256,6 +258,20 @@ func CollectOpsAgentSelfMetrics(ctx context.Context, userUc, mergedUc *confgener
 	}
 }
 
+func metricToPrettyJson(metrics pmetric.Metrics) ([]byte, error) {
+	jsonMarshaler := &pmetric.JSONMarshaler{}
+	jsonResult, err := jsonMarshaler.MarshalMetrics(metrics)
+	if err != nil {
+		return nil, err
+	}
+	var prettyJSON bytes.Buffer
+	error := json.Indent(&prettyJSON, jsonResult, "", "  ")
+	if error != nil {
+			return nil, error
+	}
+	return prettyJSON.Bytes(), nil
+}
+
 func CollectEnabledReceiversMetricToOLTPJSON(ctx context.Context, uc *confgenerator.UnifiedConfig) ([]byte, error) {
 	eR, err := CountEnabledReceivers(ctx, uc)
 	if err != nil {
@@ -288,13 +304,7 @@ func CollectEnabledReceiversMetricToOLTPJSON(ctx context.Context, uc *confgenera
 		attributes.PutStr("receiver_type", rType)
 	}
 
-	jsonMarshaler := &pmetric.JSONMarshaler{}
-	json, err := jsonMarshaler.MarshalMetrics(metrics)
-	if err != nil {
-		return nil, err
-	}
-
-	return json, nil
+	return metricToPrettyJson(metrics)
 }
 
 func CollectFeatureTrackingMetricToOTLPJSON(ctx context.Context, userUc, mergedUc *confgenerator.UnifiedConfig) ([]byte, error) {
@@ -318,13 +328,7 @@ func CollectFeatureTrackingMetricToOTLPJSON(ctx context.Context, userUc, mergedU
 		attributes.PutStr("value", f.Value)
 	}
 
-	jsonMarshaler := &pmetric.JSONMarshaler{}
-	json, err := jsonMarshaler.MarshalMetrics(metrics)
-	if err != nil {
-		return nil, err
-	}
-
-	return json, nil
+	return metricToPrettyJson(metrics)
 }
 
 func GenerateOpsAgentSelfMetricsOTLPJSON(ctx context.Context, config, outDir string) (err error) {
