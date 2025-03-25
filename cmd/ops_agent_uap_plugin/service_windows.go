@@ -62,7 +62,7 @@ const (
 var (
 	AgentWindowsServiceName       = []string{"StackdriverLogging", "StackdriverMonitoring", "google-cloud-ops-agent"}
 	DefaultPluginStateDirectory   = filepath.Join(os.Getenv("PROGRAMDATA"), "Google/Compute Engine/google-guest-agent/agent_state/plugins/ops-agent-plugin")
-	OpsAgentConfigLocationWindows = filepath.Join(os.Getenv("PROGRAMDATA"), "Google/Cloud Operations/Ops Agent/config/config.yaml")
+	OpsAgentConfigLocationWindows = filepath.Join("C:", "Program Files/Google/Cloud Operations/Ops Agent/config/config.yaml")
 )
 
 // RunSubAgentCommandFunc defines a function type that starts a subagent. If one subagent execution exited, other sugagents are also terminated via context cancellation. This abstraction is introduced
@@ -264,12 +264,32 @@ func findPreExistentAgents(mgr serviceManager, agentWindowsServiceNames []string
 	return alreadyInstalledAgentServiceNames, nil
 }
 
+// eventLogWriter implements the io.Writer interface. It writes logs to the Windows Event Log.
+type eventLogWriter struct {
+	EventID  uint32
+	EventLog *eventlog.Log
+}
+
+func (w *eventLogWriter) Write(p []byte) (int, error) {
+	err := w.EventLog.Info(w.EventID, string(p))
+	if err != nil {
+		return 0, err
+	}
+	return len(p), nil
+}
+
 func createWindowsEventLogger() (debug.Log, error) {
 	eventlog.InstallAsEventCreate(WindowsEventLogIdentifier, eventlog.Error|eventlog.Warning|eventlog.Info)
 	elog, err := eventlog.Open(WindowsEventLogIdentifier)
 	if err != nil {
 		return nil, err
 	}
+
+	// ConfGenerator might log messages to stdout, redirect them to the windows event log.
+	log.SetOutput(&eventLogWriter{
+		EventID:  OpsAgentUAPPluginEventID,
+		EventLog: elog,
+	})
 	return elog, nil
 }
 
@@ -281,6 +301,11 @@ func generateSubAgentConfigs(ctx context.Context, userConfigPath string, pluginS
 
 	windowsEventLogger.Info(OpsAgentUAPPluginEventID, fmt.Sprintf("Built-in config:\n%s\n", apps.BuiltInConfStructs["windows"]))
 	windowsEventLogger.Info(OpsAgentUAPPluginEventID, fmt.Sprintf("Merged config:\n%s\n", uc))
+
+	// The generated otlp metric json files are used only by the otel service.
+	if err = self_metrics.GenerateOpsAgentSelfMetricsOTLPJSON(ctx, userConfigPath, filepath.Join(pluginStateDir, GeneratedConfigsOutDir, "otel")); err != nil {
+		return err
+	}
 
 	for _, subagent := range []string{
 		"otel",

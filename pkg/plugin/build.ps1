@@ -9,6 +9,7 @@ if (!$DestDir) {
 
 # Read PKG_VERSION from VERSION file.
 $PkgVersion = Select-String -Path "VERSION" -Pattern '^PKG_VERSION="(.*)"$' | %{$_.Matches.Groups[1].Value}
+$env:PKG_VERSION=$PkgVersion
 
 # If ARCH is not supplied, set default value based on user's system.
 if (!$Arch) {
