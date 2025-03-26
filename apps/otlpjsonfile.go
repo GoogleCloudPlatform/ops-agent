@@ -25,6 +25,8 @@ type OTLPJsonFileReceiver struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 	IncludePaths            []string       `yaml:"include_paths" validate:"required,min=1"`
 	ExcludePaths            []string       `yaml:"exclude_paths,omitempty"`
+	ReplayFile 							bool					 `yaml:"replay_file,omitempty"`
+	PollInterval						int	 					 `yaml:"poll_interval,omitempty"`
 }
 
 func (r OTLPJsonFileReceiver) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
@@ -32,6 +34,8 @@ func (r OTLPJsonFileReceiver) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 	receiver_config := map[string]any{
 		"include":           r.IncludePaths,
 		"exclude":           r.ExcludePaths,
+		"replay_file": 			 r.ReplayFile,
+		"poll_interval": 		 r.PollInterval,
 	}
 
 	return []otel.ReceiverPipeline{{

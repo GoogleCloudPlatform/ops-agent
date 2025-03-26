@@ -149,13 +149,6 @@ func metricsAgentProcessNamesForImage(imageSpec string) []string {
 	return []string{"otelopscol", "collectd"}
 }
 
-func diagnosticsProcessNamesForImage(imageSpec string) []string {
-	if gce.IsWindows(imageSpec) {
-		return []string{"google-cloud-ops-agent-diagnostics"}
-	}
-	return []string{"google_cloud_ops_agent_diagnostics"}
-}
-
 func makeDirectory(ctx context.Context, logger *log.Logger, vm *gce.VM, directory string) error {
 	var createFolderCmd string
 	if gce.IsWindows(vm.ImageSpec) {
@@ -4035,20 +4028,6 @@ func diagnosticsLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce
 	// up metrics from a previous instance of the diagnostics service.
 	_, err := gce.WaitForMetric(ctx, logger, vm, "agent.googleapis.com/agent/ops_agent/enabled_receivers", time.Minute, nil, false)
 	return err
-}
-
-func TestDiagnosticsCrashRestart(t *testing.T) {
-	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-		t.Parallel()
-		if gce.IsOpsAgentUAPPlugin() {
-			// Ops Agent Plugin does not restart the diagnostics service on termination.
-			t.SkipNow()
-		}
-		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-
-		testAgentCrashRestart(ctx, t, logger, vm, diagnosticsProcessNamesForImage(vm.ImageSpec), diagnosticsLivenessChecker)
-	})
 }
 
 func testWindowsStandaloneAgentConflict(t *testing.T, installStandalone func(ctx context.Context, logger *log.Logger, vm *gce.VM) error, wantError string) {

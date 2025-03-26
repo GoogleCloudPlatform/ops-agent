@@ -46,10 +46,12 @@ var (
 						MetricsReceiverShared: cg.MetricsReceiverShared{CollectionInterval: "60s"},
 					},
 					"otlpjsonfile": &OTLPJsonFileReceiver{
-						ConfigComponent:       cg.ConfigComponent{Type: "otlpjsonfile"},
-						IncludePaths:    []string{
+						ConfigComponent: cg.ConfigComponent{Type: "otlpjsonfile"},
+						IncludePaths: []string{
 							"/var/run/google-cloud-ops-agent-opentelemetry-collector/feature_tracking_otlp.json",
 							"/var/run/google-cloud-ops-agent-opentelemetry-collector/enabled_receivers_otlp.json"},
+						ReplayFile:   true,
+						PollInterval: 30,
 					},
 				},
 				Processors: map[string]cg.MetricsProcessor{
@@ -99,10 +101,12 @@ var (
 						MetricsReceiverShared: cg.MetricsReceiverShared{CollectionInterval: "60s"},
 					},
 					"otlpjsonfile": &OTLPJsonFileReceiver{
-						ConfigComponent:       cg.ConfigComponent{Type: "otlpjsonfile"},
-						IncludePaths:    []string{
+						ConfigComponent: cg.ConfigComponent{Type: "otlpjsonfile"},
+						IncludePaths: []string{
 							filepath.Join(`C:/ProgramData`, `Google/Cloud Operations/Ops Agent`, "generated_configs", "otel", "feature_tracking_otlp.json"),
 							filepath.Join(`C:/ProgramData`, `Google/Cloud Operations/Ops Agent`, "generated_configs", "otel", "enabled_receivers_otlp.json")},
+						ReplayFile:   true,
+						PollInterval: 30,
 					},
 				},
 				Processors: map[string]cg.MetricsProcessor{

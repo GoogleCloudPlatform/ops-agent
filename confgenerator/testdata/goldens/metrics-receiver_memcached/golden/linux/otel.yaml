@@ -488,6 +488,8 @@ receivers:
     include:
     - /var/run/google-cloud-ops-agent-opentelemetry-collector/feature_tracking_otlp.json
     - /var/run/google-cloud-ops-agent-opentelemetry-collector/enabled_receivers_otlp.json
+    poll_interval: 30
+    replay_file: true
   prometheus/fluentbit:
     config:
       scrape_configs:

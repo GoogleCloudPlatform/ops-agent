@@ -1,5 +1,8 @@
 {
     "gopls": {
         "build.buildFlags": ["-tags=integration_test"]
+    },
+    "[go]": {
+      "editor.defaultFormatter": "golang.go"
     }
 }
