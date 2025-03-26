@@ -822,9 +822,57 @@ func TestPluginGetStatusReturnsUnhealthyStatusOnSubAgentTermination(t *testing.T
 			t.Error("expected the plugin to report that the Ops Agent is not running")
 		}
 
-		pid, err := fetchPID(ctx, logger, vm, "otel")
+		pid, _, err := fetchPIDAndProcessName(ctx, logger, vm, metricsAgentProcessNamesForImage(vm.ImageSpec))
 		if pid != "" {
 			t.Error("expected the plugin to terminate the other subagent when one crashes")
+		}
+	})
+
+}
+
+func TestKillChildJobsWhenPluginServerProcessTerminates(t *testing.T) {
+	t.Parallel()
+	if !gce.IsOpsAgentUAPPlugin() {
+		t.SkipNow()
+	}
+
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		cmdOut, err := gce.RunRemotely(ctx, logger, vm, agents.GetUAPPluginStatusForImage(vm.ImageSpec))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if !strings.Contains(cmdOut.Stdout, "The Ops Agent Plugin is running ok.") {
+			t.Error("expected the plugin to report that the Ops Agent is running")
+		}
+
+		_, processName, err := fetchPIDAndProcessName(ctx, logger, vm, []string{"plugin"})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Simulate a plugin gRPC server process termination
+		if err := terminateProcess(ctx, logger, vm, processName); err != nil {
+			t.Fatal(err)
+		}
+
+		time.Sleep(10 * time.Second)
+
+		pid, _, err := fetchPIDAndProcessName(ctx, logger, vm, metricsAgentProcessNamesForImage(vm.ImageSpec))
+		if pid != "" {
+			t.Error("expected the plugin to terminate otel subagent process when the parent gRPC server process terminates")
+		}
+
+		pid, err = fetchPID(ctx, logger, vm, "fluent-bit")
+		if pid != "" {
+			t.Error("expected the plugin to terminate fluent-bit subagent process when the parent gRPC server process terminates")
 		}
 	})
 
