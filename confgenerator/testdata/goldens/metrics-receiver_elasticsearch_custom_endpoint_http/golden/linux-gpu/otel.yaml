@@ -491,6 +491,12 @@ processors:
     - context: metric
       statements:
       - extract_count_metric(true) where name == "grpc_client_attempt_duration"
+  transform/otlpjsonfile_0:
+    error_mode: ignore
+    metrics_statements:
+    - context: datapoint
+      statements:
+      - set(time, Now())
 receivers:
   elasticsearch/elasticsearch:
     collection_interval: 60s
@@ -550,9 +556,8 @@ receivers:
   otlpjsonfile/otlpjsonfile:
     exclude: []
     include:
-    - /var/run/google-cloud-ops-agent-opentelemetry-collector/feature_tracking_otlp.json
     - /var/run/google-cloud-ops-agent-opentelemetry-collector/enabled_receivers_otlp.json
-    poll_interval: 30
+    poll_interval: 1m0s
     replay_file: true
   prometheus/fluentbit:
     config:
@@ -595,8 +600,9 @@ service:
       - nvml/hostmetrics_1
     metrics/default__pipeline_otlpjsonfile:
       exporters:
-      - googlecloud/otel
+      - googlecloud
       processors:
+      - transform/otlpjsonfile_0
       - filter/default__pipeline_otlpjsonfile_0
       - resourcedetection/_global_0
       receivers:

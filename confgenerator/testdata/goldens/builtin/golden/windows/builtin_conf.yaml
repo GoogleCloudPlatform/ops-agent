@@ -24,7 +24,7 @@ metrics:
       - C:/ProgramData/Google/Cloud Operations/Ops Agent/generated_configs/otel/feature_tracking_otlp.json
       - C:/ProgramData/Google/Cloud Operations/Ops Agent/generated_configs/otel/enabled_receivers_otlp.json
       replay_file: true
-      poll_interval: 30
+      poll_interval: 1m0s
   processors:
     metrics_filter:
       type: exclude_metrics

@@ -7,14 +7,6 @@ exporters:
       service_resource_labels: false
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
-  googlecloud/otel:
-    metric:
-      instrumentation_library_labels: true
-      prefix: ""
-      resource_filters: []
-      service_resource_labels: false
-      skip_create_descriptor: true
-    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
   googlemanagedprometheus:
     metric:
       add_metric_suffixes: false
@@ -452,6 +444,12 @@ processors:
     - context: metric
       statements:
       - extract_count_metric(true) where name == "grpc_client_attempt_duration"
+  transform/otlpjsonfile_0:
+    error_mode: ignore
+    metrics_statements:
+    - context: datapoint
+      statements:
+      - set(time, Now())
   transform/prometheus_0:
     metric_statements:
     - context: datapoint
@@ -480,9 +478,8 @@ receivers:
   otlpjsonfile/otlpjsonfile:
     exclude: []
     include:
-    - /var/run/google-cloud-ops-agent-opentelemetry-collector/feature_tracking_otlp.json
     - /var/run/google-cloud-ops-agent-opentelemetry-collector/enabled_receivers_otlp.json
-    poll_interval: 30
+    poll_interval: 1m0s
     replay_file: true
   prometheus/fluentbit:
     config:
@@ -624,8 +621,9 @@ service:
       - hostmetrics/hostmetrics
     metrics/default__pipeline_otlpjsonfile:
       exporters:
-      - googlecloud/otel
+      - googlecloud
       processors:
+      - transform/otlpjsonfile_0
       - filter/default__pipeline_otlpjsonfile_0
       - resourcedetection/_global_0
       receivers:
