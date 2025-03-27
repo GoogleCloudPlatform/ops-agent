@@ -171,7 +171,7 @@ COPY --from=centos8-build-fluent-bit /work/cache /work/cache
 COPY --from=centos8-build-systemd /work/cache /work/cache
 COPY --from=centos8-build-diagnostics /work/cache /work/cache
 COPY --from=centos8-build-wrapper /work/cache /work/cache
-# RUN ./pkg/rpm/build.sh
+RUN ./pkg/rpm/build.sh
 
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
 COPY ./builds/ops_agent_plugin.sh .
@@ -285,7 +285,7 @@ COPY --from=rockylinux9-build-fluent-bit /work/cache /work/cache
 COPY --from=rockylinux9-build-systemd /work/cache /work/cache
 COPY --from=rockylinux9-build-diagnostics /work/cache /work/cache
 COPY --from=rockylinux9-build-wrapper /work/cache /work/cache
-# RUN ./pkg/rpm/build.sh
+RUN ./pkg/rpm/build.sh
 
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
 COPY ./builds/ops_agent_plugin.sh .
@@ -394,7 +394,7 @@ COPY --from=bookworm-build-fluent-bit /work/cache /work/cache
 COPY --from=bookworm-build-systemd /work/cache /work/cache
 COPY --from=bookworm-build-diagnostics /work/cache /work/cache
 COPY --from=bookworm-build-wrapper /work/cache /work/cache
-# RUN ./pkg/deb/build.sh
+RUN ./pkg/deb/build.sh
 
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
 COPY ./builds/ops_agent_plugin.sh .
@@ -503,7 +503,7 @@ COPY --from=bullseye-build-fluent-bit /work/cache /work/cache
 COPY --from=bullseye-build-systemd /work/cache /work/cache
 COPY --from=bullseye-build-diagnostics /work/cache /work/cache
 COPY --from=bullseye-build-wrapper /work/cache /work/cache
-# RUN ./pkg/deb/build.sh
+RUN ./pkg/deb/build.sh
 
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
 COPY ./builds/ops_agent_plugin.sh .
@@ -631,7 +631,7 @@ COPY --from=sles12-build-fluent-bit /work/cache /work/cache
 COPY --from=sles12-build-systemd /work/cache /work/cache
 COPY --from=sles12-build-diagnostics /work/cache /work/cache
 COPY --from=sles12-build-wrapper /work/cache /work/cache
-# RUN ./pkg/rpm/build.sh
+RUN ./pkg/rpm/build.sh
 
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
 COPY ./builds/ops_agent_plugin.sh .
@@ -745,7 +745,7 @@ COPY --from=sles15-build-fluent-bit /work/cache /work/cache
 COPY --from=sles15-build-systemd /work/cache /work/cache
 COPY --from=sles15-build-diagnostics /work/cache /work/cache
 COPY --from=sles15-build-wrapper /work/cache /work/cache
-# RUN ./pkg/rpm/build.sh
+RUN ./pkg/rpm/build.sh
 
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
 COPY ./builds/ops_agent_plugin.sh .
@@ -854,7 +854,7 @@ COPY --from=focal-build-fluent-bit /work/cache /work/cache
 COPY --from=focal-build-systemd /work/cache /work/cache
 COPY --from=focal-build-diagnostics /work/cache /work/cache
 COPY --from=focal-build-wrapper /work/cache /work/cache
-# RUN ./pkg/deb/build.sh
+RUN ./pkg/deb/build.sh
 
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
 COPY ./builds/ops_agent_plugin.sh .
@@ -963,7 +963,7 @@ COPY --from=jammy-build-fluent-bit /work/cache /work/cache
 COPY --from=jammy-build-systemd /work/cache /work/cache
 COPY --from=jammy-build-diagnostics /work/cache /work/cache
 COPY --from=jammy-build-wrapper /work/cache /work/cache
-# RUN ./pkg/deb/build.sh
+RUN ./pkg/deb/build.sh
 
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
 COPY ./builds/ops_agent_plugin.sh .
@@ -1072,7 +1072,7 @@ COPY --from=noble-build-fluent-bit /work/cache /work/cache
 COPY --from=noble-build-systemd /work/cache /work/cache
 COPY --from=noble-build-diagnostics /work/cache /work/cache
 COPY --from=noble-build-wrapper /work/cache /work/cache
-# RUN ./pkg/deb/build.sh
+RUN ./pkg/deb/build.sh
 
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
 COPY ./builds/ops_agent_plugin.sh .
@@ -1181,7 +1181,7 @@ COPY --from=oracular-build-fluent-bit /work/cache /work/cache
 COPY --from=oracular-build-systemd /work/cache /work/cache
 COPY --from=oracular-build-diagnostics /work/cache /work/cache
 COPY --from=oracular-build-wrapper /work/cache /work/cache
-# RUN ./pkg/deb/build.sh
+RUN ./pkg/deb/build.sh
 
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
 COPY ./builds/ops_agent_plugin.sh .
