@@ -372,7 +372,7 @@ func IsWindows2016(imageSpec string) bool {
 	return IsWindows(imageSpec) && strings.Contains(imageSpec, "2016")
 }
 
-// IsWindows2019 returns whether the given image is a Windows 2016 image..
+// IsWindows2019 returns whether the given image is a Windows 2019 image.
 func IsWindows2019(imageSpec string) bool {
 	return IsWindows(imageSpec) && strings.Contains(imageSpec, "2019")
 }
