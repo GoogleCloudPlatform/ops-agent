@@ -94,6 +94,7 @@ COPY --from={target_name}-build-wrapper /work/cache /work/cache
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
 COPY ./builds/ops_agent_plugin.sh .
 RUN ./ops_agent_plugin.sh /work/cache/
+RUN cp VERSION  /work/cache
 RUN ./pkg/plugin/build.sh /work/cache {target_name}
 
 
