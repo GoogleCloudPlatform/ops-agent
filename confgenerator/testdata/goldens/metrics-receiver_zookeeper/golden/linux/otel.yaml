@@ -24,11 +24,6 @@ processors:
       exclude:
         match_type: regexp
         metric_names: []
-  filter/default__pipeline_otlpjsonfile_0:
-    metrics:
-      exclude:
-        match_type: regexp
-        metric_names: []
   filter/fluentbit_0:
     metrics:
       include:
@@ -452,18 +447,24 @@ processors:
   resourcedetection/_global_0:
     detectors:
     - gcp
+  transform/enabled_receivers_0:
+    error_mode: ignore
+    metric_statements:
+    - context: datapoint
+      statements:
+      - set(time, Now())
+  transform/feature_tracking_0:
+    error_mode: ignore
+    metric_statements:
+    - context: datapoint
+      statements:
+      - set(time, Now())
   transform/otel_1:
     error_mode: ignore
     metric_statements:
     - context: metric
       statements:
       - extract_count_metric(true) where name == "grpc_client_attempt_duration"
-  transform/otlpjsonfile_0:
-    error_mode: ignore
-    metrics_statements:
-    - context: datapoint
-      statements:
-      - set(time, Now())
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
@@ -479,11 +480,13 @@ receivers:
         mute_process_exe_error: true
         mute_process_name_error: true
       processes: {}
-  otlpjsonfile/otlpjsonfile:
-    exclude: []
-    include:
-    - /var/run/google-cloud-ops-agent-opentelemetry-collector/enabled_receivers_otlp.json
+  otlpjsonfile/enabled_receivers:
+    include: /var/run/google-cloud-ops-agent-opentelemetry-collector/enabled_receivers_otlp.json
     poll_interval: 1m0s
+    replay_file: true
+  otlpjsonfile/feature_tracking:
+    include: /var/run/google-cloud-ops-agent-opentelemetry-collector/feature_tracking_otlp.json
+    poll_interval: 2h0m0s
     replay_file: true
   prometheus/fluentbit:
     config:
@@ -518,15 +521,22 @@ service:
       - resourcedetection/_global_0
       receivers:
       - hostmetrics/hostmetrics
-    metrics/default__pipeline_otlpjsonfile:
+    metrics/enabled_receivers:
       exporters:
       - googlecloud
       processors:
-      - transform/otlpjsonfile_0
-      - filter/default__pipeline_otlpjsonfile_0
+      - transform/enabled_receivers_0
       - resourcedetection/_global_0
       receivers:
-      - otlpjsonfile/otlpjsonfile
+      - otlpjsonfile/enabled_receivers
+    metrics/feature_tracking:
+      exporters:
+      - googlecloud
+      processors:
+      - transform/feature_tracking_0
+      - resourcedetection/_global_0
+      receivers:
+      - otlpjsonfile/feature_tracking
     metrics/fluentbit:
       exporters:
       - googlecloud
