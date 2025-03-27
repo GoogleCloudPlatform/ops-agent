@@ -33,7 +33,6 @@ touch ${PLUGIN_DIR}/THIRD_PARTY_LICENSES/license.txt
 cp /work/google_cloud_ops_agent_engine ${PLUGIN_DIR}/libexec/google_cloud_ops_agent_engine
 cp $WS/opt/google-cloud-ops-agent/plugin ${PLUGIN_DIR}/plugin
 cp $WS/opt/google-cloud-ops-agent/libexec/google_cloud_ops_agent_wrapper ${PLUGIN_DIR}/libexec/google_cloud_ops_agent_wrapper
-cp $WS/opt/google-cloud-ops-agent/libexec/google_cloud_ops_agent_diagnostics ${PLUGIN_DIR}/libexec/google_cloud_ops_agent_diagnostics
 
 cp $WS/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol ${PLUGIN_DIR}/subagents/opentelemetry-collector/otelopscol
 cp $WS/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar ${PLUGIN_DIR}/subagents/opentelemetry-collector/opentelemetry-java-contrib-jmx-metrics.jar

@@ -100,6 +100,18 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context) (string, error)
 		ReceiverPipelineName: "otel",
 	}
 
+	receiverPipelines["enabled_receivers"] = EnabledReceiversMetricPipeline()
+	pipelines["enabled_receivers"] = otel.Pipeline{
+		Type:                 "metrics",
+		ReceiverPipelineName: "enabled_receivers",
+	}
+
+	receiverPipelines["feature_tracking"] = FeatureTrackingMetricPipeline()
+	pipelines["feature_tracking"] = otel.Pipeline{
+		Type:                 "metrics",
+		ReceiverPipelineName: "feature_tracking",
+	}
+
 	receiverPipelines["fluentbit"] = AgentSelfMetrics{
 		Version: loggingVersionLabel,
 		Port:    fluentbit.MetricsPort,
