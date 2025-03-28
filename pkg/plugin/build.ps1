@@ -46,7 +46,7 @@ $FilesToInclude = @(
     "google-cloud-ops-agent-wrapper.exe"
     "plugin.exe"
     "THIRD_PARTY_LICENSES"
-    "VERSION"
+    "OPS_AGENT_VERSION"
 )
 
 # Create the tar archive
