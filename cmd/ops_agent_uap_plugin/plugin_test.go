@@ -3,10 +3,8 @@ package main
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
-	"github.com/bufbuild/protoyaml-go"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
@@ -16,7 +14,7 @@ func TestWriteCustomConfigToFile(t *testing.T) {
 	tests := []struct {
 		name        string
 		req         *pb.StartRequest
-		wantError boolean 
+		wantError   bool
 		wantContent string
 	}{
 		{
@@ -45,7 +43,6 @@ func TestWriteCustomConfigToFile(t *testing.T) {
 		{
 			name: "No ServiceConfig",
 			req:  &pb.StartRequest{},
-			
 		},
 		{
 			name: "StructConfig Marshal Error",
@@ -70,7 +67,7 @@ func TestWriteCustomConfigToFile(t *testing.T) {
 
 			err := writeCustomConfigToFile(tc.req, configPath)
 
-			if (err != nil) != tc.wantError{
+			if (err != nil) != tc.wantError {
 				t.Errorf("%v: writeCustomConfigToFile got error: %v, want error: %v", tc.name, err, tc.wantError)
 			}
 
@@ -82,7 +79,7 @@ func TestWriteCustomConfigToFile(t *testing.T) {
 			gotContent := string(contentBytes)
 
 			if gotContent != tc.wantContent {
-				t.Errorf("%v: writeCustomConfigToFile write content: %s to file\n, want content: %s", tc.name, gotContent,tc.wantContent)
+				t.Errorf("%v: writeCustomConfigToFile write content: %s to file\n, want content: %s", tc.name, gotContent, tc.wantContent)
 			}
 		})
 	}
