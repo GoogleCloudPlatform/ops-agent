@@ -23,7 +23,7 @@ import (
 	"os/exec"
 	"sync"
 
-	yaml "github.com/goccy/go-yaml"
+	"buf.build/go/protoyaml"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
@@ -105,7 +105,7 @@ func writeCustomConfigToFile(req *pb.StartRequest, configPath string) error {
 		customConfig = []byte(req.GetStringConfig())
 	case *pb.StartRequest_StructConfig:
 		structConfig := req.GetStructConfig()
-		yamlBytes, err := yaml.Marshal(structConfig)
+		yamlBytes, err := protoyaml.Marshal(structConfig)
 		if err != nil {
 			return fmt.Errorf("failed to parse the custom Ops Agent config: %v", err)
 		}
