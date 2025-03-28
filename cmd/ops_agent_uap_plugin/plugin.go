@@ -25,6 +25,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+	"github.com/bufbuild/protoyaml-go"
 
 	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
 )
@@ -95,4 +96,32 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Exiting, cannot continue serving: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+func writeCustomConfigToFile(req *pb.StartRequest, configPath string) error {
+	file, err := os.OpenFile(configPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to open the config.yaml file at location: %s, error: %v", configPath, err)
+	}
+	defer file.Close()
+
+	switch req.GetServiceConfig().(type) {
+	case *pb.StartRequest_StringConfig:
+		stringConfig := req.GetStringConfig()
+		if _, err := file.Write([]byte(stringConfig)); err != nil {
+			return fmt.Errorf("failed to write the custom Ops Agent config to file: %v", err)
+		}
+		return nil
+	case *pb.StartRequest_StructConfig:
+		structConfig := req.GetStructConfig()
+		yamlBytes, err := protoyaml.Marshal(structConfig)
+		if err != nil {
+			return fmt.Errorf("failed to parse the custom Ops Agent config: %v", err)
+		}
+		if _, err := file.Write(yamlBytes); err != nil {
+			return fmt.Errorf("failed to write the custom Ops Agent config to file: %v", err)
+		}
+		return nil
+	}
+	return nil 
 }
