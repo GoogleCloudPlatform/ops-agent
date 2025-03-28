@@ -1137,6 +1137,44 @@ func TestInvalidConfig(t *testing.T) {
 	})
 }
 
+func TestInvalidConfigReceivedFromUAP(t *testing.T) {
+	t.Parallel()
+	if !gce.IsOpsAgentUAPPlugin() {
+		t.SkipNow()
+	}
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+
+		// Sample bad config sourced from:
+		// https://github.com/GoogleCloudPlatform/ops-agent/blob/master/confgenerator/testdata/invalid/linux/logging-receiver_reserved_id_prefix/input.yaml
+		config := `logging:
+  receivers:
+    lib:receiver_1:
+      type: files
+      include_paths:
+      - /var/log/user-log
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [lib:receiver_1]
+`
+
+		// Run install with an invalid config. We expect to see an error.
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err == nil {
+			t.Fatal("Expected agent to reject bad config.")
+		}
+
+		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StopCommandForImage(imageSpec)); err != nil {
+			t.Fatalf("Failed to stop the Ops Agent: %v", err)
+		}
+		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartOpsAgentViaUAPCommand(imageSpec, config)); err == nil {
+			// We expect this to fail because the config is invalid.
+			t.Fatal("Expected starting the Ops Agent with invalid config to fail.")
+		}
+	})
+}
+
 func TestProcessorOrder(t *testing.T) {
 	// See b/194632049 and b/195105380.  In that bug, the generated Fluent Bit
 	// config had mis-ordered filters: json2 came before json1 because "log"

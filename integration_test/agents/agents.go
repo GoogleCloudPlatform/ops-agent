@@ -891,6 +891,17 @@ func StartCommandForImage(imageSpec string) string {
 	return "sudo service google-cloud-ops-agent start || sudo systemctl start google-cloud-ops-agent"
 }
 
+func StartOpsAgentViaUAPCommand(imageSpec string, config string) string {
+	grpcurlExecutable := "grpcurl"
+	if gce.IsWindows(imageSpec) {
+		grpcurlExecutable = `C:\grpcurl.exe`
+	}
+	if len(config) > 0 {
+		return fmt.Sprintf("%s -plaintext -d '{string_config: %s}' localhost:1234 plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable, config)
+	}
+	return fmt.Sprintf("%s -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable)
+}
+
 func StopCommandForImage(imageSpec string) string {
 	if gce.IsOpsAgentUAPPlugin() {
 		grpcurlExecutable := "grpcurl"
