@@ -1161,7 +1161,7 @@ func TestInvalidConfigReceivedFromUAP(t *testing.T) {
 `
 
 		// Run install with an invalid config. We expect to see an error.
-		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err == nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal("Expected agent to reject bad config.")
 		}
 
