@@ -14,14 +14,15 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"buf.build/go/protoyaml" // Import the protoyaml-go package
-	"google.golang.org/protobuf/types/known/structpb"
 
 	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
+	spb "google.golang.org/protobuf/types/known/structpb"
 )
 
 func TestWriteCustomConfigToFile(t *testing.T) {
@@ -46,7 +47,7 @@ func TestWriteCustomConfigToFile(t *testing.T) {
       p1:
         receivers: [files_1]
         processors: [multiline_parser_1]`
-	structConfig := &structpb.Struct{}
+	structConfig := &spb.Struct{}
 	err := protoyaml.Unmarshal([]byte(yamlConfig), structConfig)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal YAML into structpb.Struct: %v", err)
@@ -82,7 +83,7 @@ func TestWriteCustomConfigToFile(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Create a temporary directory for the test file
 			tmpDir := t.TempDir()
-			configPath := filepath.Join(tmpDir, "config.yaml")
+			configPath := filepath.Join(tmpDir, fmt.Sprintf("%sconfig.yaml", tc.name))
 
 			err := writeCustomConfigToFile(tc.req, configPath)
 
@@ -119,25 +120,21 @@ func TestWriteCustomConfigToFile_receivedEmptyCustomConfig(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			// Create a temporary directory for the test file
-			tmpDir := t.TempDir()
-			configPath := filepath.Join(tmpDir, "config.yaml")
-
-			file, err := os.OpenFile(configPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+			configFile, err := os.CreateTemp("", "config.yaml")
 			if err != nil {
-				t.Fatalf("%v: failed to open the config.yaml file at location: %s, error: %v", tc.name, configPath, err)
+				t.Fatalf("%v: failed to create the config.yaml file at location: %s, error: %v", tc.name, configFile.Name(), err)
 			}
+			configPath := configFile.Name()
 			wantFileContent := "1234"
-			if _, err := file.WriteString(wantFileContent); err != nil {
+			if _, err := configFile.WriteString(wantFileContent); err != nil {
 				t.Fatalf("%v: failed to write to the config.yaml file at location: %s, error: %v", tc.name, configPath, err)
 			}
 
 			err = writeCustomConfigToFile(tc.req, configPath)
-
 			if (err != nil) != tc.wantError {
 				t.Errorf("%v: writeCustomConfigToFile got error: %v, want error: %v", tc.name, err, tc.wantError)
 			}
-			// Read the content of the created file
+
 			gotContent, err := os.ReadFile(configPath)
 			if err != nil {
 				t.Fatalf("%s: failed to read the config.yaml file content: %v", tc.name, err)
@@ -145,6 +142,8 @@ func TestWriteCustomConfigToFile_receivedEmptyCustomConfig(t *testing.T) {
 			if string(gotContent) != wantFileContent {
 				t.Errorf("%s: got config.yaml content: %v, want: %v", tc.name, string(gotContent), wantFileContent)
 			}
+			configFile.Close()
+			os.Remove(configPath)
 		})
 	}
 }
