@@ -514,13 +514,7 @@ processors:
     detectors:
     - gcp
     override: false
-  transform/enabled_receivers_0:
-    error_mode: ignore
-    metric_statements:
-    - context: datapoint
-      statements:
-      - set(time, Now())
-  transform/feature_tracking_0:
+  transform/enabled_receivers_feature_tracking_0:
     error_mode: ignore
     metric_statements:
     - context: datapoint
@@ -564,13 +558,11 @@ receivers:
     protocols:
       grpc:
         endpoint: 0.0.0.0:4317
-  otlpjsonfile/enabled_receivers:
-    include: /var/run/google-cloud-ops-agent-opentelemetry-collector/enabled_receivers_otlp.json
+  otlpjsonfile/enabled_receivers_feature_tracking:
+    include:
+    - /var/run/google-cloud-ops-agent-opentelemetry-collector/enabled_receivers_otlp.json
+    - /var/run/google-cloud-ops-agent-opentelemetry-collector/feature_tracking_otlp.json
     poll_interval: 1m0s
-    replay_file: true
-  otlpjsonfile/feature_tracking:
-    include: /var/run/google-cloud-ops-agent-opentelemetry-collector/feature_tracking_otlp.json
-    poll_interval: 2h0m0s
     replay_file: true
   prometheus/fluentbit:
     config:
@@ -656,22 +648,14 @@ service:
       - resourcedetection/_global_0
       receivers:
       - windowsperfcounters/mssql
-    metrics/enabled_receivers:
+    metrics/enabled_receivers_feature_tracking:
       exporters:
       - googlecloud
       processors:
-      - transform/enabled_receivers_0
+      - transform/enabled_receivers_feature_tracking_0
       - resourcedetection/_global_0
       receivers:
-      - otlpjsonfile/enabled_receivers
-    metrics/feature_tracking:
-      exporters:
-      - googlecloud
-      processors:
-      - transform/feature_tracking_0
-      - resourcedetection/_global_0
-      receivers:
-      - otlpjsonfile/feature_tracking
+      - otlpjsonfile/enabled_receivers_feature_tracking
     metrics/fluentbit:
       exporters:
       - googlecloud

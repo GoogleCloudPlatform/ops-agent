@@ -256,7 +256,7 @@ func CollectOpsAgentSelfMetrics(ctx context.Context, userUc, mergedUc *confgener
 	}
 }
 
-func metricToPrettyJson(metrics pmetric.Metrics) ([]byte, error) {
+func metricToJson(metrics pmetric.Metrics) ([]byte, error) {
 	jsonMarshaler := &pmetric.JSONMarshaler{}
 	jsonResult, err := jsonMarshaler.MarshalMetrics(metrics)
 	if err != nil {
@@ -300,7 +300,7 @@ func CollectEnabledReceiversMetricToOLTPJSON(ctx context.Context, uc *confgenera
 		attributes.PutStr("receiver_type", rType)
 	}
 
-	return metricToPrettyJson(metrics)
+	return metricToJson(metrics)
 }
 
 func CollectFeatureTrackingMetricToOTLPJSON(ctx context.Context, userUc, mergedUc *confgenerator.UnifiedConfig) ([]byte, error) {
@@ -327,7 +327,7 @@ func CollectFeatureTrackingMetricToOTLPJSON(ctx context.Context, userUc, mergedU
 		attributes.PutStr("value", f.Value)
 	}
 
-	return metricToPrettyJson(metrics)
+	return metricToJson(metrics)
 }
 
 func GenerateOpsAgentSelfMetricsOTLPJSON(ctx context.Context, config, outDir string) (err error) {

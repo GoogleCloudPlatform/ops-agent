@@ -167,21 +167,15 @@ func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.ReceiverPipeline {
 	}
 }
 
-func EnabledReceiversMetricPipeline() otel.ReceiverPipeline {
-	return OtlpJSONfileMetricPipeline("/var/run/google-cloud-ops-agent-opentelemetry-collector/enabled_receivers_otlp.json", time.Duration(60*time.Second))
+func EnabledReceiversFeatureTrackingMetricsPipeline() otel.ReceiverPipeline {
 	// filepath.Join(`C:/ProgramData`, `Google/Cloud Operations/Ops Agent`, "generated_configs", "otel", "feature_tracking_otlp.json"),
 	// filepath.Join(`C:/ProgramData`, `Google/Cloud Operations/Ops Agent`, "generated_configs", "otel", "enabled_receivers_otlp.json")},
-}
-
-func FeatureTrackingMetricPipeline() otel.ReceiverPipeline {
-	return OtlpJSONfileMetricPipeline("/var/run/google-cloud-ops-agent-opentelemetry-collector/feature_tracking_otlp.json", time.Duration(2*time.Hour))
-}
-
-func OtlpJSONfileMetricPipeline(includePath string, pollInterval time.Duration) otel.ReceiverPipeline {
 	receiver_config := map[string]any{
-		"include":       includePath,
+		"include": []string{
+			"/var/run/google-cloud-ops-agent-opentelemetry-collector/enabled_receivers_otlp.json",
+			"/var/run/google-cloud-ops-agent-opentelemetry-collector/feature_tracking_otlp.json"},
 		"replay_file":   true,
-		"poll_interval": pollInterval.String(),
+		"poll_interval": time.Duration(60 * time.Second).String(),
 	}
 	return otel.ReceiverPipeline{
 		Receiver: otel.Component{
