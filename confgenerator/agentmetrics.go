@@ -15,11 +15,14 @@
 package confgenerator
 
 import (
+	"context"
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
 // AgentSelfMetrics provides the agent.googleapis.com/agent/ metrics.
@@ -167,13 +170,19 @@ func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.ReceiverPipeline {
 	}
 }
 
-func EnabledReceiversFeatureTrackingMetricsPipeline() otel.ReceiverPipeline {
-	// filepath.Join(`C:/ProgramData`, `Google/Cloud Operations/Ops Agent`, "generated_configs", "otel", "feature_tracking_otlp.json"),
-	// filepath.Join(`C:/ProgramData`, `Google/Cloud Operations/Ops Agent`, "generated_configs", "otel", "enabled_receivers_otlp.json")},
+func EnabledReceiversFeatureTrackingMetricsPipeline(ctx context.Context) otel.ReceiverPipeline {
+	p := platform.FromContext(ctx)
+	jsonFiles := []string{
+		"/var/run/google-cloud-ops-agent-opentelemetry-collector/enabled_receivers_otlp.json",
+		"/var/run/google-cloud-ops-agent-opentelemetry-collector/feature_tracking_otlp.json"}
+	if p.Type == platform.Windows {
+		jsonFiles = []string{
+			filepath.Join(`C:/ProgramData`, `Google/Cloud Operations/Ops Agent`, "generated_configs", "otel", "feature_tracking_otlp.json"),
+			filepath.Join(`C:/ProgramData`, `Google/Cloud Operations/Ops Agent`, "generated_configs", "otel", "enabled_receivers_otlp.json")}
+	}
+
 	receiver_config := map[string]any{
-		"include": []string{
-			"/var/run/google-cloud-ops-agent-opentelemetry-collector/enabled_receivers_otlp.json",
-			"/var/run/google-cloud-ops-agent-opentelemetry-collector/feature_tracking_otlp.json"},
+		"include":       jsonFiles,
 		"replay_file":   true,
 		"poll_interval": time.Duration(60 * time.Second).String(),
 	}

@@ -558,8 +558,8 @@ receivers:
     username: ""
   otlpjsonfile/enabled_receivers_feature_tracking:
     include:
-    - /var/run/google-cloud-ops-agent-opentelemetry-collector/enabled_receivers_otlp.json
-    - /var/run/google-cloud-ops-agent-opentelemetry-collector/feature_tracking_otlp.json
+    - C:/ProgramData/Google/Cloud Operations/Ops Agent/generated_configs/otel/feature_tracking_otlp.json
+    - C:/ProgramData/Google/Cloud Operations/Ops Agent/generated_configs/otel/enabled_receivers_otlp.json
     poll_interval: 1m0s
     replay_file: true
   prometheus/fluentbit:
