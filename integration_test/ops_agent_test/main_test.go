@@ -1138,7 +1138,6 @@ func TestInvalidConfig(t *testing.T) {
 }
 
 func stringifyYaml(data string) string {
-	// Convert the byte slice to a string and replace newlines
 	singleLine := strings.ReplaceAll(data, "\n", "\\n ")
 
 	// Trim any trailing space
