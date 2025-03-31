@@ -21,11 +21,11 @@ import (
 	"testing"
 
 	"buf.build/go/protoyaml" // Import the protoyaml-go package
-
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
-	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
+
+	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
 	spb "google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -65,9 +65,8 @@ func TestWriteCustomConfigToFile(t *testing.T) {
 	}
 
 	tests := []struct {
-		name      string
-		req       *pb.StartRequest
-		wantError bool
+		name string
+		req  *pb.StartRequest
 	}{
 		{
 			name: "Received a valid StringConfig from UAP, the output should be a valid Ops agent yaml",
@@ -95,8 +94,8 @@ func TestWriteCustomConfigToFile(t *testing.T) {
 
 			err := writeCustomConfigToFile(tc.req, configPath)
 
-			if (err != nil) != tc.wantError {
-				t.Errorf("%v: writeCustomConfigToFile got error: %v, want error: %v", tc.name, err, tc.wantError)
+			if err != nil {
+				t.Errorf("%v: writeCustomConfigToFile got error: %v, want nil error", tc.name, err)
 			}
 
 			_, err = confgenerator.MergeConfFiles(context.Background(), configPath, apps.BuiltInConfStructs)
@@ -109,9 +108,8 @@ func TestWriteCustomConfigToFile(t *testing.T) {
 
 func TestWriteCustomConfigToFile_receivedEmptyCustomConfig(t *testing.T) {
 	tests := []struct {
-		name      string
-		req       *pb.StartRequest
-		wantError bool
+		name string
+		req  *pb.StartRequest
 	}{
 		{
 			name: "The ops agent config.yaml file should not be modified if UAP does not send any StringConfig",
@@ -136,8 +134,8 @@ func TestWriteCustomConfigToFile_receivedEmptyCustomConfig(t *testing.T) {
 			}
 
 			err = writeCustomConfigToFile(tc.req, configPath)
-			if (err != nil) != tc.wantError {
-				t.Errorf("%v: writeCustomConfigToFile got error: %v, want error: %v", tc.name, err, tc.wantError)
+			if err != nil {
+				t.Errorf("%v: writeCustomConfigToFile got error: %v, want nil error", tc.name, err)
 			}
 
 			gotContent, err := os.ReadFile(configPath)
