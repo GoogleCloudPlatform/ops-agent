@@ -1149,7 +1149,7 @@ func TestInvalidStringConfigReceivedFromUAP(t *testing.T) {
 
 		// Sample bad config sourced from:
 		// https://github.com/GoogleCloudPlatform/ops-agent/blob/master/confgenerator/testdata/invalid/linux/logging-receiver_reserved_id_prefix/input.yaml
-		config := `string_config: logging:
+		config := `"string_config": logging:
   receivers:
     lib:receiver_1:
       type: files
@@ -1210,7 +1210,7 @@ func TestInvalidProtoStructConfigReceivedFromUAP(t *testing.T) {
 		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StopCommandForImage(imageSpec)); err != nil {
 			t.Fatalf("Failed to stop the Ops Agent: %v", err)
 		}
-		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartOpsAgentViaUAPCommand(imageSpec, fmt.Sprintf("struct_config: %v", structConfig))); err == nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartOpsAgentViaUAPCommand(imageSpec, fmt.Sprintf("\"struct_config\": %v", structConfig))); err == nil {
 			// We expect this to fail because the config is invalid.
 			t.Fatal("Expected starting the Ops Agent with invalid config to fail.")
 		}
@@ -1226,7 +1226,7 @@ func TestCustomStringConfigReceivedFromUAP(t *testing.T) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		logPath := logPathForImage(vm.ImageSpec)
-		config := fmt.Sprintf(`string_config: logging:
+		config := fmt.Sprintf(`"string_config": logging:
   receivers:
     mylog_source:
       type: files
@@ -1287,7 +1287,7 @@ func TestCustomStructProtoConfigReceivedFromUAP(t *testing.T) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		logPath := logPathForImage(vm.ImageSpec)
-		config := fmt.Sprintf(`string_config: logging:
+		config := fmt.Sprintf(`logging:
   receivers:
     mylog_source:
       type: files
@@ -1322,7 +1322,7 @@ func TestCustomStructProtoConfigReceivedFromUAP(t *testing.T) {
 		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StopCommandForImage(imageSpec)); err != nil {
 			t.Fatalf("Failed to stop the Ops Agent: %v", err)
 		}
-		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartOpsAgentViaUAPCommand(imageSpec, fmt.Sprintf("struct_config: %v", structConfig))); err == nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartOpsAgentViaUAPCommand(imageSpec, fmt.Sprintf("\"struct_config\": %v", structConfig))); err == nil {
 			// We expect this to fail because the config is invalid.
 			t.Fatal("Expected starting the Ops Agent with invalid config to fail.")
 		}
