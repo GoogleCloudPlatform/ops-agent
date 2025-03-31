@@ -29,13 +29,11 @@ import (
 	"unsafe"
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
-	"github.com/GoogleCloudPlatform/ops-agent/cmd/google_cloud_ops_agent_diagnostics/utils"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"github.com/kardianos/osext"
-	"go.opentelemetry.io/otel"
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
@@ -74,16 +72,6 @@ type RunSubAgentCommandFunc func(ctx context.Context, cancel context.CancelFunc,
 // plugin config to enable/disable feature here plugins can react to such requests.
 func (ps *OpsAgentPluginServer) Apply(ctx context.Context, msg *pb.ApplyRequest) (*pb.ApplyResponse, error) {
 	panic("Apply method is not implemented on Windows yet")
-}
-
-// otelErrorHandler is an implementation of otel.ErrorHandler that is used in the diagnostics service to log otel errors to the Windows event log.
-type otelErrorHandler struct {
-	windowsEventLogger debug.Log
-	windowsEventId     uint32
-}
-
-func (h *otelErrorHandler) Handle(err error) {
-	h.windowsEventLogger.Error(h.windowsEventId, fmt.Sprintf("error collecting metrics: %v", err))
 }
 
 // Start starts the plugin and initiates the plugin functionality.
@@ -158,8 +146,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 		windowsEventLogger.Close()
 	}
 
-	otelErrorHandler := &otelErrorHandler{windowsEventLogger: windowsEventLogger, windowsEventId: OpsAgentUAPPluginEventID}
-	go runSubagents(pContext, cancelFunc, pluginInstallDir, pluginStateDir, runSubAgentCommand, ps.runCommand, otelErrorHandler)
+	go runSubagents(pContext, cancelFunc, pluginInstallDir, pluginStateDir, runSubAgentCommand, ps.runCommand)
 
 	return &pb.StartResponse{}, nil
 }
@@ -365,7 +352,7 @@ func createWindowsJobHandle() (windows.Handle, error) {
 	return jobHandle, nil
 }
 
-// runSubagents starts up the diagnostics service, otel, and fluent bit subagents in separate goroutines.
+// runSubagents starts up otel, and fluent bit subagents in separate goroutines.
 // All child goroutines create a new context derived from the same parent context.
 // This ensures that crashes in one goroutine don't affect other goroutines.
 // However, when one goroutine exits with errors, it won't be restarted, and all other goroutines are also terminated.
@@ -377,13 +364,9 @@ func createWindowsJobHandle() (windows.Handle, error) {
 // cancel: the cancel function for the parent context. By calling this function, the parent context is canceled,
 // and GetStatus() returns a non-healthy status, signaling UAP to re-trigger Start().
 //
-// otelErrorHandler: an implementation of otel.ErrorHandler that is used in the diagnostics service to log otel errors to the Windows event log.
-func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallDirectory string, pluginStateDirectory string, runSubAgentCommand RunSubAgentCommandFunc, runCommand RunCommandFunc, otelErrorHandler otel.ErrorHandler) {
+func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallDirectory string, pluginStateDirectory string, runSubAgentCommand RunSubAgentCommandFunc, runCommand RunCommandFunc) {
 
 	var wg sync.WaitGroup
-	// Starting the diagnostics service
-	wg.Add(1)
-	go runDiagnosticsService(ctx, cancel, otelErrorHandler, &wg)
 
 	// Starting Otel
 	runOtelCmd := exec.CommandContext(ctx,
@@ -407,27 +390,6 @@ func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallD
 	go runSubAgentCommand(ctx, cancel, runFluentBitCmd, runCommand, &wg)
 
 	wg.Wait()
-}
-
-func runDiagnosticsService(ctx context.Context, cancel context.CancelFunc, otelErrorHandler otel.ErrorHandler, wg *sync.WaitGroup) {
-	defer wg.Done()
-
-	userUc, mergedUc, err := utils.GetUserAndMergedConfigs(ctx, OpsAgentConfigLocationWindows)
-	if err != nil {
-		log.Printf("Failed to run the diagnostics service: %v", err)
-		cancel()
-		return
-	}
-
-	// Set otel error handler
-	otel.SetErrorHandler(otelErrorHandler)
-
-	err = self_metrics.CollectOpsAgentSelfMetrics(ctx, userUc, mergedUc)
-	if err != nil {
-		log.Printf("Failed to run the diagnostics service: %v", err)
-		cancel()
-		return
-	}
 }
 
 func runCommand(cmd *exec.Cmd) (string, error) {
