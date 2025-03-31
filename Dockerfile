@@ -141,12 +141,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM centos8-build-golang-base AS centos8-build-diagnostics
-WORKDIR /work
-COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
-COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
-
 
 FROM centos8-build-golang-base AS centos8-build-wrapper
 WORKDIR /work
@@ -169,7 +163,6 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from=centos8-build-otel /work/cache /work/cache
 COPY --from=centos8-build-fluent-bit /work/cache /work/cache
 COPY --from=centos8-build-systemd /work/cache /work/cache
-COPY --from=centos8-build-diagnostics /work/cache /work/cache
 COPY --from=centos8-build-wrapper /work/cache /work/cache
 RUN ./pkg/rpm/build.sh
 
@@ -255,12 +248,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM rockylinux9-build-golang-base AS rockylinux9-build-diagnostics
-WORKDIR /work
-COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
-COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
-
 
 FROM rockylinux9-build-golang-base AS rockylinux9-build-wrapper
 WORKDIR /work
@@ -283,7 +270,6 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from=rockylinux9-build-otel /work/cache /work/cache
 COPY --from=rockylinux9-build-fluent-bit /work/cache /work/cache
 COPY --from=rockylinux9-build-systemd /work/cache /work/cache
-COPY --from=rockylinux9-build-diagnostics /work/cache /work/cache
 COPY --from=rockylinux9-build-wrapper /work/cache /work/cache
 RUN ./pkg/rpm/build.sh
 
@@ -364,12 +350,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM bookworm-build-golang-base AS bookworm-build-diagnostics
-WORKDIR /work
-COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
-COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
-
 
 FROM bookworm-build-golang-base AS bookworm-build-wrapper
 WORKDIR /work
@@ -392,7 +372,6 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from=bookworm-build-otel /work/cache /work/cache
 COPY --from=bookworm-build-fluent-bit /work/cache /work/cache
 COPY --from=bookworm-build-systemd /work/cache /work/cache
-COPY --from=bookworm-build-diagnostics /work/cache /work/cache
 COPY --from=bookworm-build-wrapper /work/cache /work/cache
 RUN ./pkg/deb/build.sh
 
@@ -473,12 +452,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM bullseye-build-golang-base AS bullseye-build-diagnostics
-WORKDIR /work
-COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
-COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
-
 
 FROM bullseye-build-golang-base AS bullseye-build-wrapper
 WORKDIR /work
@@ -501,7 +474,6 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from=bullseye-build-otel /work/cache /work/cache
 COPY --from=bullseye-build-fluent-bit /work/cache /work/cache
 COPY --from=bullseye-build-systemd /work/cache /work/cache
-COPY --from=bullseye-build-diagnostics /work/cache /work/cache
 COPY --from=bullseye-build-wrapper /work/cache /work/cache
 RUN ./pkg/deb/build.sh
 
@@ -601,12 +573,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM sles12-build-golang-base AS sles12-build-diagnostics
-WORKDIR /work
-COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
-COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
-
 
 FROM sles12-build-golang-base AS sles12-build-wrapper
 WORKDIR /work
@@ -629,7 +595,6 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from=sles12-build-otel /work/cache /work/cache
 COPY --from=sles12-build-fluent-bit /work/cache /work/cache
 COPY --from=sles12-build-systemd /work/cache /work/cache
-COPY --from=sles12-build-diagnostics /work/cache /work/cache
 COPY --from=sles12-build-wrapper /work/cache /work/cache
 RUN ./pkg/rpm/build.sh
 
@@ -715,12 +680,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM sles15-build-golang-base AS sles15-build-diagnostics
-WORKDIR /work
-COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
-COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
-
 
 FROM sles15-build-golang-base AS sles15-build-wrapper
 WORKDIR /work
@@ -743,7 +702,6 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from=sles15-build-otel /work/cache /work/cache
 COPY --from=sles15-build-fluent-bit /work/cache /work/cache
 COPY --from=sles15-build-systemd /work/cache /work/cache
-COPY --from=sles15-build-diagnostics /work/cache /work/cache
 COPY --from=sles15-build-wrapper /work/cache /work/cache
 RUN ./pkg/rpm/build.sh
 
@@ -824,12 +782,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM focal-build-golang-base AS focal-build-diagnostics
-WORKDIR /work
-COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
-COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
-
 
 FROM focal-build-golang-base AS focal-build-wrapper
 WORKDIR /work
@@ -852,7 +804,6 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from=focal-build-otel /work/cache /work/cache
 COPY --from=focal-build-fluent-bit /work/cache /work/cache
 COPY --from=focal-build-systemd /work/cache /work/cache
-COPY --from=focal-build-diagnostics /work/cache /work/cache
 COPY --from=focal-build-wrapper /work/cache /work/cache
 RUN ./pkg/deb/build.sh
 
@@ -933,12 +884,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM jammy-build-golang-base AS jammy-build-diagnostics
-WORKDIR /work
-COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
-COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
-
 
 FROM jammy-build-golang-base AS jammy-build-wrapper
 WORKDIR /work
@@ -961,7 +906,6 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from=jammy-build-otel /work/cache /work/cache
 COPY --from=jammy-build-fluent-bit /work/cache /work/cache
 COPY --from=jammy-build-systemd /work/cache /work/cache
-COPY --from=jammy-build-diagnostics /work/cache /work/cache
 COPY --from=jammy-build-wrapper /work/cache /work/cache
 RUN ./pkg/deb/build.sh
 
@@ -1042,12 +986,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM noble-build-golang-base AS noble-build-diagnostics
-WORKDIR /work
-COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
-COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
-
 
 FROM noble-build-golang-base AS noble-build-wrapper
 WORKDIR /work
@@ -1070,7 +1008,6 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from=noble-build-otel /work/cache /work/cache
 COPY --from=noble-build-fluent-bit /work/cache /work/cache
 COPY --from=noble-build-systemd /work/cache /work/cache
-COPY --from=noble-build-diagnostics /work/cache /work/cache
 COPY --from=noble-build-wrapper /work/cache /work/cache
 RUN ./pkg/deb/build.sh
 
@@ -1151,12 +1088,6 @@ COPY apps apps
 COPY internal internal
 
 
-FROM oracular-build-golang-base AS oracular-build-diagnostics
-WORKDIR /work
-COPY cmd/google_cloud_ops_agent_diagnostics cmd/google_cloud_ops_agent_diagnostics
-COPY ./builds/ops_agent_diagnostics.sh .
-RUN ./ops_agent_diagnostics.sh /work/cache/
-
 
 FROM oracular-build-golang-base AS oracular-build-wrapper
 WORKDIR /work
@@ -1179,7 +1110,6 @@ COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/
 COPY --from=oracular-build-otel /work/cache /work/cache
 COPY --from=oracular-build-fluent-bit /work/cache /work/cache
 COPY --from=oracular-build-systemd /work/cache /work/cache
-COPY --from=oracular-build-diagnostics /work/cache /work/cache
 COPY --from=oracular-build-wrapper /work/cache /work/cache
 RUN ./pkg/deb/build.sh
 

@@ -119,13 +119,6 @@ func metricsAgentProcessNamesForImage(imageSpec string) []string {
 	return []string{"otelopscol", "collectd"}
 }
 
-func diagnosticsProcessNamesForImage(imageSpec string) []string {
-	if gce.IsWindows(imageSpec) {
-		return []string{"google-cloud-ops-agent-diagnostics"}
-	}
-	return []string{"google_cloud_ops_agent_diagnostics"}
-}
-
 func makeDirectory(ctx context.Context, logger *log.Logger, vm *gce.VM, directory string) error {
 	var createFolderCmd string
 	if gce.IsWindows(vm.ImageSpec) {
@@ -2639,7 +2632,10 @@ func TestDefaultMetricsNoProxy(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		testDefaultMetrics(ctx, t, logger, vm, time.Hour)
+		// Wait until the otlpjsonfile receiver writes the metrics with the
+		// correct labels.
+		time.Sleep(2 * time.Minute)
+		testDefaultMetrics(ctx, t, logger, vm, 1 * time.Minute)
 	})
 }
 
@@ -4063,29 +4059,6 @@ func TestLoggingDataprocAttributes(t *testing.T) {
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, tag, time.Hour, query); err != nil {
 			t.Error(err)
 		}
-	})
-}
-
-func diagnosticsLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
-	time.Sleep(3 * time.Minute)
-	// Query for a metric sent by the diagnostics service from the last
-	// minute. Sleep for 3 minutes first to make sure we aren't picking
-	// up metrics from a previous instance of the diagnostics service.
-	_, err := gce.WaitForMetric(ctx, logger, vm, "agent.googleapis.com/agent/ops_agent/enabled_receivers", time.Minute, nil, false)
-	return err
-}
-
-func TestDiagnosticsCrashRestart(t *testing.T) {
-	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-		t.Parallel()
-		if gce.IsOpsAgentUAPPlugin() {
-			// Ops Agent Plugin does not restart the diagnostics service on termination.
-			t.SkipNow()
-		}
-		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-
-		testAgentCrashRestart(ctx, t, logger, vm, diagnosticsProcessNamesForImage(vm.ImageSpec), diagnosticsLivenessChecker)
 	})
 }
 

@@ -15,9 +15,7 @@
 package self_metrics
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"path/filepath"
@@ -258,18 +256,13 @@ func CollectOpsAgentSelfMetrics(ctx context.Context, userUc, mergedUc *confgener
 	}
 }
 
-func metricToPrettyJson(metrics pmetric.Metrics) ([]byte, error) {
+func metricToJson(metrics pmetric.Metrics) ([]byte, error) {
 	jsonMarshaler := &pmetric.JSONMarshaler{}
 	jsonResult, err := jsonMarshaler.MarshalMetrics(metrics)
 	if err != nil {
 		return nil, err
 	}
-	var prettyJSON bytes.Buffer
-	error := json.Indent(&prettyJSON, jsonResult, "", "  ")
-	if error != nil {
-			return nil, error
-	}
-	return prettyJSON.Bytes(), nil
+	return jsonResult, nil
 }
 
 func CollectEnabledReceiversMetricToOLTPJSON(ctx context.Context, uc *confgenerator.UnifiedConfig) ([]byte, error) {
@@ -279,7 +272,10 @@ func CollectEnabledReceiversMetricToOLTPJSON(ctx context.Context, uc *confgenera
 	}
 
 	metrics := pmetric.NewMetrics()
-	gaugeMetric := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	resource := metrics.ResourceMetrics().AppendEmpty()
+	resource.Resource().Attributes().PutStr("k", "v") // Resources can't be empty
+
+	gaugeMetric := resource.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	gaugeMetric.SetName(getFullAgentMetricName(enabledReceiversMetricName))
 	dataPoints := gaugeMetric.SetEmptyGauge().DataPoints()
 
@@ -304,7 +300,7 @@ func CollectEnabledReceiversMetricToOLTPJSON(ctx context.Context, uc *confgenera
 		attributes.PutStr("receiver_type", rType)
 	}
 
-	return metricToPrettyJson(metrics)
+	return metricToJson(metrics)
 }
 
 func CollectFeatureTrackingMetricToOTLPJSON(ctx context.Context, userUc, mergedUc *confgenerator.UnifiedConfig) ([]byte, error) {
@@ -314,7 +310,10 @@ func CollectFeatureTrackingMetricToOTLPJSON(ctx context.Context, userUc, mergedU
 	}
 
 	metrics := pmetric.NewMetrics()
-	gaugeMetric := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	resource := metrics.ResourceMetrics().AppendEmpty()
+	resource.Resource().Attributes().PutStr("k", "v") // Resources can't be empty
+
+	gaugeMetric := resource.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	gaugeMetric.SetName(getFullAgentMetricName(featureTrackingMetricName))
 	dataPoints := gaugeMetric.SetEmptyGauge().DataPoints()
 
@@ -328,7 +327,7 @@ func CollectFeatureTrackingMetricToOTLPJSON(ctx context.Context, userUc, mergedU
 		attributes.PutStr("value", f.Value)
 	}
 
-	return metricToPrettyJson(metrics)
+	return metricToJson(metrics)
 }
 
 func GenerateOpsAgentSelfMetricsOTLPJSON(ctx context.Context, config, outDir string) (err error) {
