@@ -1203,8 +1203,8 @@ func TestCustomStringConfigReceivedFromUAP(t *testing.T) {
     my_exclude:
       type: exclude_logs
       match_any:
-      - jsonPayload.missing_field = "value"
-      - jsonPayload.message =~ "test pattern"
+      - jsonPayload.missing_field = \"value\"
+      - jsonPayload.message =~ \"test pattern\"
   service:
     pipelines:
       my_pipeline:
