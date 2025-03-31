@@ -1256,9 +1256,8 @@ func TestCustomStringConfigReceivedFromUAP(t *testing.T) {
 		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StopCommandForImage(imageSpec)); err != nil {
 			t.Fatalf("Failed to stop the Ops Agent: %v", err)
 		}
-		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartOpsAgentViaUAPCommand(imageSpec, config)); err == nil {
-			// We expect this to fail because the config is invalid.
-			t.Fatal("Expected starting the Ops Agent with invalid config to fail.")
+		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartOpsAgentViaUAPCommand(imageSpec, config)); err != nil {
+			t.Fatalf("Expected starting the Ops Agent with valid config to succeed: %v", err)
 		}
 
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader("abc test pattern xyz\n7654321\n"), logPath); err != nil {
@@ -1322,9 +1321,8 @@ func TestCustomStructProtoConfigReceivedFromUAP(t *testing.T) {
 		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StopCommandForImage(imageSpec)); err != nil {
 			t.Fatalf("Failed to stop the Ops Agent: %v", err)
 		}
-		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartOpsAgentViaUAPCommand(imageSpec, fmt.Sprintf("\"struct_config\": %v", structConfig))); err == nil {
-			// We expect this to fail because the config is invalid.
-			t.Fatal("Expected starting the Ops Agent with invalid config to fail.")
+		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartOpsAgentViaUAPCommand(imageSpec, fmt.Sprintf("\"struct_config\": %v", structConfig))); err != nil {
+			t.Fatalf("Expected starting the Ops Agent with valid config to succeed: %v", err)
 		}
 
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader("abc test pattern xyz\n7654321\n"), logPath); err != nil {
