@@ -1150,7 +1150,7 @@ func stringifyProtoStruct(data *structpb.Struct) (string, error) {
 	if data == nil {
 		return "", fmt.Errorf("provided proto message is nil")
 	}
-	jsonData, err := json.Marshal(pb)
+	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal proto message to JSON: %w", err)
 	}
