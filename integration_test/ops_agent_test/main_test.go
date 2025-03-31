@@ -1138,20 +1138,12 @@ func TestInvalidConfig(t *testing.T) {
 	})
 }
 
-func stringifyYaml(data interface{}) (string, error) {
-	// Marshal the YAML data into a byte slice
-	yamlBytes, err := yaml.Marshal(data)
-	if err != nil {
-		return "", fmt.Errorf("error marshaling YAML: %w", err)
-	}
-
+func stringifyYaml(data string) string {
 	// Convert the byte slice to a string and replace newlines
-	singleLine := strings.ReplaceAll(string(yamlBytes), "\n", "\\n ")
+	singleLine := strings.ReplaceAll(data, "\n", "\\n ")
 
 	// Trim any trailing space
-	singleLine = strings.TrimSpace(singleLine)
-
-	return singleLine, nil
+	return strings.TrimSpace(singleLine)
 }
 
 func TestInvalidStringConfigReceivedFromUAP(t *testing.T) {
@@ -1183,11 +1175,7 @@ func TestInvalidStringConfigReceivedFromUAP(t *testing.T) {
       default_pipeline:
         receivers: [lib:receiver_1]
 `
-		singleLineYaml, err := stringifyYaml(config)
-		if err != nil {
-			t.Fatalf("Failed to stringify YAML: %v", err)
-		}
-
+		singleLineYaml := stringifyYaml(config)
 		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartOpsAgentViaUAPCommand(imageSpec, fmt.Sprintf("\"string_config\":\"%s\"", singleLineYaml))); err == nil {
 			// We expect this to fail because the config is invalid.
 			t.Fatal("Expected starting the Ops Agent with invalid config to fail.")
@@ -1276,10 +1264,7 @@ func TestCustomStringConfigReceivedFromUAP(t *testing.T) {
 			t.Fatalf("Failed to stop the Ops Agent: %v", err)
 		}
 
-		singleLineYaml, err := stringifyYaml(config)
-		if err != nil {
-			t.Fatalf("Failed to stringify YAML: %v", err)
-		}
+		singleLineYaml := stringifyYaml(config)
 
 		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartOpsAgentViaUAPCommand(imageSpec, fmt.Sprintf("\"string_config\":\"%s\"", singleLineYaml))); err != nil {
 			t.Fatalf("Expected starting the Ops Agent with valid config to succeed: %v", err)
@@ -1293,7 +1278,7 @@ func TestCustomStringConfigReceivedFromUAP(t *testing.T) {
 			t.Error(err)
 		}
 		time.Sleep(60 * time.Second)
-		_, err = gce.QueryLog(ctx, logger, vm, "mylog_source", time.Hour, `jsonPayload.message="abc test pattern xyz"`, 5)
+		_, err := gce.QueryLog(ctx, logger, vm, "mylog_source", time.Hour, `jsonPayload.message="abc test pattern xyz"`, 5)
 		if err == nil {
 			t.Error("expected log to be excluded but was included")
 		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
