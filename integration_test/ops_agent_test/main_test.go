@@ -1137,7 +1137,7 @@ func TestInvalidConfig(t *testing.T) {
 	})
 }
 
-func TestInvalidConfigReceivedFromUAP(t *testing.T) {
+func TestInvalidStringConfigReceivedFromUAP(t *testing.T) {
 	t.Parallel()
 	if !gce.IsOpsAgentUAPPlugin() {
 		t.SkipNow()
@@ -1148,7 +1148,7 @@ func TestInvalidConfigReceivedFromUAP(t *testing.T) {
 
 		// Sample bad config sourced from:
 		// https://github.com/GoogleCloudPlatform/ops-agent/blob/master/confgenerator/testdata/invalid/linux/logging-receiver_reserved_id_prefix/input.yaml
-		config := `logging:
+		config := `string_config: logging:
   receivers:
     lib:receiver_1:
       type: files
