@@ -1181,6 +1181,58 @@ func TestInvalidStringConfigReceivedFromUAP(t *testing.T) {
 	})
 }
 
+func TestCustomStringConfigReceivedFromUAP(t *testing.T) {
+	t.Parallel()
+	if !gce.IsOpsAgentUAPPlugin() {
+		t.SkipNow()
+	}
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StopCommandForImage(imageSpec)); err != nil {
+			t.Fatalf("Failed to stop the Ops Agent: %v", err)
+		}
+
+		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
+		config := fmt.Sprintf(`logging:
+  receivers:
+    f1:
+      type: files
+      include_paths:
+      - %s
+  processors:
+    json:
+      type: parse_json
+  service:
+    pipelines:
+      p1:
+        receivers: [f1]
+        processors: [json]
+`, file1)
+		singleLineYaml := stringifyYaml(config)
+
+		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartOpsAgentViaUAPCommand(imageSpec, fmt.Sprintf("\"string_config\":\"%s\"", singleLineYaml))); err != nil {
+			t.Fatalf("Expected starting the Ops Agent with valid config to succeed: %v", err)
+		}
+
+		line := `{"default_present":"original"}` + "\n"
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
+			t.Fatalf("error uploading log: %v", err)
+		}
+
+		// Expect to see the log with the modifications applied
+		check := fmt.Sprintf(`labels."compute.googleapis.com/resource_name"="%s" AND jsonPayload.default_present="original"`, vm.Name)
+		if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, check); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
 func TestProcessorOrder(t *testing.T) {
 	// See b/194632049 and b/195105380.  In that bug, the generated Fluent Bit
 	// config had mis-ordered filters: json2 came before json1 because "log"
