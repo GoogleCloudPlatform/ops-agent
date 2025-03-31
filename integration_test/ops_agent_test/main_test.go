@@ -1224,7 +1224,7 @@ func TestInvalidProtoStructConfigReceivedFromUAP(t *testing.T) {
 		}
 		stringStructConfig, err := stringifyProtoStruct(structConfig)
 		if err != nil {
-			t.Faltalf("Failed to stringify proto struct: %v", err)
+			t.Fatalf("Failed to stringify proto struct: %v", err)
 		}
 		// Run install with an invalid config. We expect to see an error.
 		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
