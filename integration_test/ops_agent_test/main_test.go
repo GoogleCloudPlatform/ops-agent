@@ -1191,7 +1191,7 @@ func TestCustomStringConfigReceivedFromUAP(t *testing.T) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		logPath := logPathForImage(vm.ImageSpec)
-		config := fmt.Sprintf(`"string_config": logging:
+		config := fmt.Sprintf(`logging:
   receivers:
     mylog_source:
       type: files
