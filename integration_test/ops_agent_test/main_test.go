@@ -2594,7 +2594,10 @@ func TestDefaultMetricsNoProxy(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		testDefaultMetrics(ctx, t, logger, vm, time.Hour)
+		// Wait until the otlpjsonfile receiver writes the metrics with the
+		// correct labels.
+		time.Sleep(2 * time.Minute)
+		testDefaultMetrics(ctx, t, logger, vm, 1 * time.Minute)
 	})
 }
 
