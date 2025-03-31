@@ -273,7 +273,10 @@ func CollectEnabledReceiversMetricToOLTPJSON(ctx context.Context, uc *confgenera
 
 	metrics := pmetric.NewMetrics()
 	resource := metrics.ResourceMetrics().AppendEmpty()
-	resource.Resource().Attributes().PutStr("k", "v") // Resources can't be empty
+
+	// Temporarily add resource attributes. This will be properly populated
+	// later in the pipeline by gce resource detector.
+	resource.Resource().Attributes().PutStr("k", "v")
 
 	gaugeMetric := resource.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	gaugeMetric.SetName(getFullAgentMetricName(enabledReceiversMetricName))
