@@ -17,7 +17,7 @@ package confgenerator
 import (
 	"context"
 	"fmt"
-	"path/filepath"
+	"path"
 	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -177,8 +177,8 @@ func EnabledReceiversFeatureTrackingMetricsPipeline(ctx context.Context) otel.Re
 		"/var/run/google-cloud-ops-agent-opentelemetry-collector/feature_tracking_otlp.json"}
 	if p.Type == platform.Windows {
 		jsonFiles = []string{
-			filepath.Join(`C:/ProgramData`, `Google/Cloud Operations/Ops Agent`, "generated_configs", "otel", "feature_tracking_otlp.json"),
-			filepath.Join(`C:/ProgramData`, `Google/Cloud Operations/Ops Agent`, "generated_configs", "otel", "enabled_receivers_otlp.json")}
+			path.Join(`C:/ProgramData`, `Google/Cloud Operations/Ops Agent`, "generated_configs", "otel", "feature_tracking_otlp.json"),
+			path.Join(`C:/ProgramData`, `Google/Cloud Operations/Ops Agent`, "generated_configs", "otel", "enabled_receivers_otlp.json")}
 	}
 
 	receiver_config := map[string]any{
