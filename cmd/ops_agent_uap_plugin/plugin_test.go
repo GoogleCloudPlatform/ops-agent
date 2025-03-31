@@ -14,6 +14,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -21,32 +22,42 @@ import (
 
 	"buf.build/go/protoyaml" // Import the protoyaml-go package
 
+	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	spb "google.golang.org/protobuf/types/known/structpb"
 )
 
+func customLogPathByOsType(ctx context.Context) string {
+	osType := platform.FromContext(ctx).Name()
+	if osType == "linux" {
+		return "/var/log"
+	}
+	return `C:\mylog`
+}
 func TestWriteCustomConfigToFile(t *testing.T) {
-	yamlConfig := `logging:
+	yamlConfig := fmt.Sprintf(`logging:
   receivers:
-    files_1:
+    mylog_source:
       type: files
-      include_paths: ""
-      wildcard_refresh_interval: 30s
+      include_paths:
+      - %s
+  exporters:
+    google:
+      type: google_cloud_logging
   processors:
-    multiline_parser_1:
-      type: parse_multiline
+    my_exclude:
+      type: exclude_logs
       match_any:
-      - type: language_exceptions
-        language: go
-      - type: language_exceptions
-        language: java
-      - type: language_exceptions
-        language: python
+      - jsonPayload.missing_field = "value"
+      - jsonPayload.message =~ "test pattern"
   service:
     pipelines:
-      p1:
-        receivers: [files_1]
-        processors: [multiline_parser_1]`
+      my_pipeline:
+        receivers: [mylog_source]
+        processors: [my_exclude]
+        exporters: [google]`, customLogPathByOsType(context.Background()))
 	structConfig := &spb.Struct{}
 	err := protoyaml.Unmarshal([]byte(yamlConfig), structConfig)
 	if err != nil {
@@ -54,28 +65,25 @@ func TestWriteCustomConfigToFile(t *testing.T) {
 	}
 
 	tests := []struct {
-		name        string
-		req         *pb.StartRequest
-		wantError   bool
-		wantContent string
+		name      string
+		req       *pb.StartRequest
+		wantError bool
 	}{
 		{
-			name: "StringConfig Success",
+			name: "Received a valid StringConfig from UAP, the output should be a valid Ops agent yaml",
 			req: &pb.StartRequest{
 				ServiceConfig: &pb.StartRequest_StringConfig{
-					StringConfig: "custom_string_config",
+					StringConfig: yamlConfig,
 				},
 			},
-			wantContent: "custom_string_config",
 		},
 		{
-			name: "StructConfig Success",
+			name: "Received a valid StructConfig from UAP, the output should be a valid Ops agent yaml",
 			req: &pb.StartRequest{
 				ServiceConfig: &pb.StartRequest_StructConfig{
 					StructConfig: structConfig,
 				},
 			},
-			wantContent: yamlConfig,
 		},
 	}
 
@@ -90,13 +98,10 @@ func TestWriteCustomConfigToFile(t *testing.T) {
 			if (err != nil) != tc.wantError {
 				t.Errorf("%v: writeCustomConfigToFile got error: %v, want error: %v", tc.name, err, tc.wantError)
 			}
-			// Read the content of the created file
-			contentBytes, err := os.ReadFile(configPath)
+
+			_, err = confgenerator.MergeConfFiles(context.Background(), configPath, apps.BuiltInConfStructs)
 			if err != nil {
-				t.Fatalf("%s: failed to read the config.yaml file content: %v", tc.name, err)
-			}
-			if len(contentBytes) == 0 {
-				t.Errorf("%s: expected content in file but got empty content", tc.name)
+				t.Errorf("%v: conf generator fails to validate the output Ops agent yaml: %v", tc.name, err)
 			}
 		})
 	}
@@ -109,11 +114,11 @@ func TestWriteCustomConfigToFile_receivedEmptyCustomConfig(t *testing.T) {
 		wantError bool
 	}{
 		{
-			name: "empty StringConfig",
+			name: "The ops agent config.yaml file should not be modified if UAP does not send any StringConfig",
 			req:  &pb.StartRequest{},
 		},
 		{
-			name: "empty StructConfig",
+			name: "The ops agent config.yaml file should not be modified if UAP does not send any StructConfig",
 			req:  &pb.StartRequest{},
 		},
 	}

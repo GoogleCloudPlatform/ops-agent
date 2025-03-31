@@ -21,6 +21,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sync"
 
 	"buf.build/go/protoyaml"
@@ -113,6 +114,14 @@ func writeCustomConfigToFile(req *pb.StartRequest, configPath string) error {
 	}
 
 	if len(customConfig) > 0 {
+		parentDir := filepath.Dir(configPath)
+		if _, err := os.Stat(parentDir); os.IsNotExist(err) {
+			err := os.MkdirAll(parentDir, 0755)
+			if err != nil {
+				return fmt.Errorf("failed to create parent directory %s: %v", parentDir, err)
+			}
+		}
+
 		file, err := os.OpenFile(configPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 		if err != nil {
 			return fmt.Errorf("failed to open the config.yaml file at location: %s, error: %v", configPath, err)
