@@ -1146,6 +1146,19 @@ func stringifyYaml(data string) string {
 	return strings.TrimSpace(singleLine)
 }
 
+func stringifyProtoStruct(data *structpb.Struct) (string, error) {
+	if data == nil {
+		return "", fmt.Errorf("provided proto message is nil")
+	}
+	jsonData, err := json.Marshal(pb)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal proto message to JSON: %w", err)
+	}
+
+	return string(jsonData), nil
+
+}
+
 func TestInvalidStringConfigReceivedFromUAP(t *testing.T) {
 	t.Parallel()
 	if !gce.IsOpsAgentUAPPlugin() {
@@ -1209,6 +1222,10 @@ func TestInvalidProtoStructConfigReceivedFromUAP(t *testing.T) {
 		if err := protoyaml.Unmarshal([]byte(config), structConfig); err != nil {
 			t.Fatalf("Failed to unmarshal config: %v", err)
 		}
+		stringStructConfig, err := stringifyProtoStruct(structConfig)
+		if err != nil {
+			t.Faltalf("Failed to stringify proto struct: %v", err)
+		}
 		// Run install with an invalid config. We expect to see an error.
 		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal("Expected agent to reject bad config.")
@@ -1217,7 +1234,7 @@ func TestInvalidProtoStructConfigReceivedFromUAP(t *testing.T) {
 		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StopCommandForImage(imageSpec)); err != nil {
 			t.Fatalf("Failed to stop the Ops Agent: %v", err)
 		}
-		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartOpsAgentViaUAPCommand(imageSpec, fmt.Sprintf("\"struct_config\": %v", structConfig))); err == nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartOpsAgentViaUAPCommand(imageSpec, fmt.Sprintf("\"struct_config\": %s", stringStructConfig))); err == nil {
 			// We expect this to fail because the config is invalid.
 			t.Fatal("Expected starting the Ops Agent with invalid config to fail.")
 		}
