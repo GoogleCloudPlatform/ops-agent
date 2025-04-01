@@ -431,6 +431,12 @@ processors:
   resourcedetection/_global_0:
     detectors:
     - gcp
+  transform/enabled_receivers_feature_tracking_0:
+    error_mode: ignore
+    metric_statements:
+    - context: datapoint
+      statements:
+      - set(time, Now())
   transform/otel_1:
     error_mode: ignore
     metric_statements:
@@ -455,6 +461,12 @@ receivers:
         mute_process_exe_error: true
         mute_process_name_error: true
       processes: {}
+  otlpjsonfile/enabled_receivers_feature_tracking:
+    include:
+    - generated_configs/otel/feature_tracking_otlp.json
+    - generated_configs/otel/enabled_receivers_otlp.json
+    poll_interval: 1m0s
+    replay_file: true
   prometheus/fluentbit:
     config:
       scrape_configs:
@@ -484,6 +496,14 @@ service:
       - resourcedetection/_global_0
       receivers:
       - hostmetrics/hostmetrics
+    metrics/enabled_receivers_feature_tracking:
+      exporters:
+      - googlecloud
+      processors:
+      - transform/enabled_receivers_feature_tracking_0
+      - resourcedetection/_global_0
+      receivers:
+      - otlpjsonfile/enabled_receivers_feature_tracking
     metrics/fluentbit:
       exporters:
       - googlecloud
