@@ -4844,9 +4844,6 @@ func TestNetworkHealthCheck(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		if !isHealthCheckTestImage(imageSpec) {
-			t.SkipNow()
-		}
 
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
@@ -4877,6 +4874,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		time.Sleep(time.Second * 30) // Allow some time for the health check to run after restart.
 		cmdOut, err = getHealthCheckResultsForImage(ctx, logger, vm)
 		if err != nil {
 			t.Fatal(err)
