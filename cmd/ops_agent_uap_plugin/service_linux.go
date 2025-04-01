@@ -185,13 +185,6 @@ func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallD
 	})
 
 	var wg sync.WaitGroup
-	// Starting the diagnostics service
-	runDiagnosticsCmd := exec.CommandContext(ctx,
-		path.Join(pluginInstallDirectory, DiagnosticsBinary),
-		"-config", OpsAgentConfigLocationLinux,
-	)
-	wg.Add(1)
-	go runSubAgentCommand(ctx, cancel, runDiagnosticsCmd, runCommand, &wg)
 
 	// Starting Otel
 	runOtelCmd := exec.CommandContext(ctx,

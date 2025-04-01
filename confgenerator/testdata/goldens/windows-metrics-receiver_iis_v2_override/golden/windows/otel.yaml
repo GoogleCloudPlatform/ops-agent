@@ -537,8 +537,8 @@ receivers:
     collection_interval: 60s
   otlpjsonfile/enabled_receivers_feature_tracking:
     include:
-    - generated_configs/otel/feature_tracking_otlp.json
-    - generated_configs/otel/enabled_receivers_otlp.json
+    - enabled_receivers_otlp.json
+    - feature_tracking_otlp.json
     poll_interval: 1m0s
     replay_file: true
   prometheus/fluentbit:

@@ -523,8 +523,8 @@ receivers:
         endpoint: 0.0.0.0:4317
   otlpjsonfile/enabled_receivers_feature_tracking:
     include:
-    - /enabled_receivers_otlp.json
-    - /feature_tracking_otlp.json
+    - enabled_receivers_otlp.json
+    - feature_tracking_otlp.json
     poll_interval: 1m0s
     replay_file: true
   prometheus/fluentbit:
