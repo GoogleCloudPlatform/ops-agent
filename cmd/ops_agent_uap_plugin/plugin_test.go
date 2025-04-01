@@ -90,7 +90,7 @@ func TestWriteCustomConfigToFile(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Create a temporary directory for the test file
 			tmpDir := t.TempDir()
-			configPath := filepath.Join(tmpDir, fmt.Sprintf("%sconfig.yaml", tc.name))
+			configPath := filepath.Join(tmpDir, "ops-agent-config", fmt.Sprintf("%sconfig.yaml", tc.name))
 
 			err := writeCustomConfigToFile(tc.req, configPath)
 
