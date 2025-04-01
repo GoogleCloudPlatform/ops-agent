@@ -17,12 +17,11 @@ package confgenerator
 import (
 	"context"
 	"fmt"
-	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
 // AgentSelfMetrics provides the agent.googleapis.com/agent/ metrics.
@@ -171,18 +170,10 @@ func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.ReceiverPipeline {
 }
 
 func EnabledReceiversFeatureTrackingMetricsPipeline(ctx context.Context, outDir string) otel.ReceiverPipeline {
-	p := platform.FromContext(ctx)
-	jsonFiles := []string{
-		fmt.Sprintf("%s/enabled_receivers_otlp.json", outDir),
-		fmt.Sprintf("%s/feature_tracking_otlp.json", outDir)}
-	if p.Type == platform.Windows {
-		jsonFiles = []string{
-			path.Join(outDir, "generated_configs", "otel", "feature_tracking_otlp.json"),
-			path.Join(outDir, "generated_configs", "otel", "enabled_receivers_otlp.json")}
-	}
-
 	receiver_config := map[string]any{
-		"include":       jsonFiles,
+		"include": []string{
+			filepath.Join(outDir, "enabled_receivers_otlp.json"),
+			filepath.Join(outDir, "feature_tracking_otlp.json")},
 		"replay_file":   true,
 		"poll_interval": time.Duration(60 * time.Second).String(),
 	}
