@@ -176,7 +176,6 @@ RUN ./pkg/rpm/build.sh
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
 COPY ./builds/ops_agent_plugin.sh .
 RUN ./ops_agent_plugin.sh /work/cache/
-RUN source VERSION && echo $PKG_VERSION  > /work/cache/OPS_AGENT_VERSION
 RUN ./pkg/plugin/build.sh /work/cache centos8
 
 
@@ -290,7 +289,6 @@ RUN ./pkg/rpm/build.sh
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
 COPY ./builds/ops_agent_plugin.sh .
 RUN ./ops_agent_plugin.sh /work/cache/
-RUN source VERSION && echo $PKG_VERSION  > /work/cache/OPS_AGENT_VERSION
 RUN ./pkg/plugin/build.sh /work/cache rockylinux9
 
 
@@ -399,7 +397,6 @@ RUN ./pkg/deb/build.sh
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
 COPY ./builds/ops_agent_plugin.sh .
 RUN ./ops_agent_plugin.sh /work/cache/
-RUN source VERSION && echo $PKG_VERSION  > /work/cache/OPS_AGENT_VERSION
 RUN ./pkg/plugin/build.sh /work/cache bookworm
 
 
@@ -508,7 +505,6 @@ RUN ./pkg/deb/build.sh
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
 COPY ./builds/ops_agent_plugin.sh .
 RUN ./ops_agent_plugin.sh /work/cache/
-RUN source VERSION && echo $PKG_VERSION  > /work/cache/OPS_AGENT_VERSION
 RUN ./pkg/plugin/build.sh /work/cache bullseye
 
 
@@ -636,7 +632,6 @@ RUN ./pkg/rpm/build.sh
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
 COPY ./builds/ops_agent_plugin.sh .
 RUN ./ops_agent_plugin.sh /work/cache/
-RUN source VERSION && echo $PKG_VERSION  > /work/cache/OPS_AGENT_VERSION
 RUN ./pkg/plugin/build.sh /work/cache sles12
 
 
@@ -750,7 +745,6 @@ RUN ./pkg/rpm/build.sh
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
 COPY ./builds/ops_agent_plugin.sh .
 RUN ./ops_agent_plugin.sh /work/cache/
-RUN source VERSION && echo $PKG_VERSION  > /work/cache/OPS_AGENT_VERSION
 RUN ./pkg/plugin/build.sh /work/cache sles15
 
 
@@ -859,7 +853,6 @@ RUN ./pkg/deb/build.sh
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
 COPY ./builds/ops_agent_plugin.sh .
 RUN ./ops_agent_plugin.sh /work/cache/
-RUN source VERSION && echo $PKG_VERSION  > /work/cache/OPS_AGENT_VERSION
 RUN ./pkg/plugin/build.sh /work/cache focal
 
 
@@ -968,7 +961,6 @@ RUN ./pkg/deb/build.sh
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
 COPY ./builds/ops_agent_plugin.sh .
 RUN ./ops_agent_plugin.sh /work/cache/
-RUN source VERSION && echo $PKG_VERSION  > /work/cache/OPS_AGENT_VERSION
 RUN ./pkg/plugin/build.sh /work/cache jammy
 
 
@@ -1077,7 +1069,6 @@ RUN ./pkg/deb/build.sh
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
 COPY ./builds/ops_agent_plugin.sh .
 RUN ./ops_agent_plugin.sh /work/cache/
-RUN source VERSION && echo $PKG_VERSION  > /work/cache/OPS_AGENT_VERSION
 RUN ./pkg/plugin/build.sh /work/cache noble
 
 
@@ -1186,7 +1177,6 @@ RUN ./pkg/deb/build.sh
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
 COPY ./builds/ops_agent_plugin.sh .
 RUN ./ops_agent_plugin.sh /work/cache/
-RUN source VERSION && echo $PKG_VERSION  > /work/cache/OPS_AGENT_VERSION
 RUN ./pkg/plugin/build.sh /work/cache oracular
 
 
