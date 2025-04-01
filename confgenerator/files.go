@@ -17,7 +17,6 @@ package confgenerator
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -78,7 +77,8 @@ func WriteConfigFile(content []byte, path string) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return fmt.Errorf("failed to create directory for %q: %w", path, err)
 	}
-	if err := ioutil.WriteFile(path, content, 0644); err != nil {
+	content = append(content, []byte("\n")...)
+	if err := os.WriteFile(path, content, 0644); err != nil {
 		return fmt.Errorf("failed to write file to %q: %w", path, err)
 	}
 	return nil
