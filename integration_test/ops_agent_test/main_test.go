@@ -1162,17 +1162,7 @@ func TestInvalidStringConfigReceivedFromUAP(t *testing.T) {
 
 		// Sample bad config sourced from:
 		// https://github.com/GoogleCloudPlatform/ops-agent/blob/master/confgenerator/testdata/invalid/linux/logging-receiver_reserved_id_prefix/input.yaml
-		config := `logging:
-  receivers:
-    lib:receiver_1:
-      type: files
-      include_paths:
-      - /var/log/user-log
-  service:
-    pipelines:
-      default_pipeline:
-        receivers: [lib:receiver_1]
-`
+		config := `invalid_config`
 		singleLineYaml := stringifyYaml(config)
 		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartOpsAgentViaUAPCommand(imageSpec, fmt.Sprintf("\"string_config\":\"%s\"", singleLineYaml))); err == nil {
 			// We expect this to fail because the config is invalid.
