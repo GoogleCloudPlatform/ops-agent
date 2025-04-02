@@ -4844,6 +4844,9 @@ func TestNetworkHealthCheck(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
+		if !isHealthCheckTestImage(imageSpec) {
+			t.SkipNow()
+		}
 
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
