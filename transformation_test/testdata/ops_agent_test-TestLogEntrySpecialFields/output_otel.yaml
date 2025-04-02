@@ -1,58 +1,62 @@
 - collector_errors:
-  - caller: localhostgate/featuregate.go:63
-    feature gate ID: component.UseLocalHostAsDefaultHost
-    level: warn
-    msg: The default endpoints for all servers in components will change to use localhost instead of 0.0.0.0 in a future version. Use the feature gate to preview the new default.
-  - caller: exporterhelper/common.go:296
-    data_type: logs
+  - caller: internal/base_exporter.go:120
     error: "could not process attribute gcp.source_location: json: cannot unmarshal string into Go struct field LogEntrySourceLocation.line of type int64"
-    kind: exporter
     level: error
     msg: Exporting failed. Rejecting data. Try enabling sending_queue to survive temporary failures.
-    name: googlecloud/otel
+    otelcol.component.id: googlecloud/otel
+    otelcol.component.kind: Exporter
+    otelcol.signal: logs
     rejected_items: 1.0
     stacktrace: |-
-      go.opentelemetry.io/collector/exporter/exporterhelper.(*baseExporter).send
-        go.opentelemetry.io/collector/exporter@v0.102.0/exporterhelper/common.go:296
-      go.opentelemetry.io/collector/exporter/exporterhelper.NewLogsRequestExporter.func1
-        go.opentelemetry.io/collector/exporter@v0.102.0/exporterhelper/logs.go:134
+      go.opentelemetry.io/collector/exporter/exporterhelper/internal.(*BaseExporter).Send
+        go.opentelemetry.io/collector/exporter@v0.121.0/exporterhelper/internal/base_exporter.go:120
+      go.opentelemetry.io/collector/exporter/exporterhelper.NewLogsRequest.newConsumeLogs.func1
+        go.opentelemetry.io/collector/exporter@v0.121.0/exporterhelper/logs.go:157
       go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
-        go.opentelemetry.io/collector/consumer@v0.102.0/logs.go:25
-      go.opentelemetry.io/collector/processor/processorhelper.NewLogsProcessor.func1
-        go.opentelemetry.io/collector/processor@v0.102.0/processorhelper/logs.go:56
-      go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
-        go.opentelemetry.io/collector/consumer@v0.102.0/logs.go:25
-      go.opentelemetry.io/collector/processor/processorhelper.NewLogsProcessor.func1
-        go.opentelemetry.io/collector/processor@v0.102.0/processorhelper/logs.go:56
-      go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
-        go.opentelemetry.io/collector/consumer@v0.102.0/logs.go:25
-      go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
-        go.opentelemetry.io/collector/consumer@v0.102.0/logs.go:25
+        go.opentelemetry.io/collector/consumer@v1.27.0/logs.go:27
       go.opentelemetry.io/collector/internal/fanoutconsumer.(*logsConsumer).ConsumeLogs
-        go.opentelemetry.io/collector@v0.102.0/internal/fanoutconsumer/logs.go:62
+        go.opentelemetry.io/collector/internal/fanoutconsumer@v0.121.0/logs.go:62
+      go.opentelemetry.io/collector/processor/processorhelper.NewLogs.func1
+        go.opentelemetry.io/collector/processor@v0.121.0/processorhelper/logs.go:66
+      go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
+        go.opentelemetry.io/collector/consumer@v1.27.0/logs.go:27
+      go.opentelemetry.io/collector/processor/processorhelper.NewLogs.func1
+        go.opentelemetry.io/collector/processor@v0.121.0/processorhelper/logs.go:66
+      go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
+        go.opentelemetry.io/collector/consumer@v1.27.0/logs.go:27
+      go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
+        go.opentelemetry.io/collector/consumer@v1.27.0/logs.go:27
+      go.opentelemetry.io/collector/internal/fanoutconsumer.(*logsConsumer).ConsumeLogs
+        go.opentelemetry.io/collector/internal/fanoutconsumer@v0.121.0/logs.go:62
       github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry.(*logsConsumer).ConsumeLogs
-        github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.102.0/consumerretry/logs.go:37
-      github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.(*receiver).consumerLoop
-        github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.102.0/adapter/receiver.go:126
+        github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.121.0/consumerretry/logs.go:37
+      github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.(*receiver).consumeEntries
+        github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.121.0/adapter/receiver.go:59
+      github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper.(*LogEmitter).flusher
+        github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.121.0/operator/helper/emitter.go:163
   - caller: consumerretry/logs.go:39
-    data_type: logs
     error: "could not process attribute gcp.source_location: json: cannot unmarshal string into Go struct field LogEntrySourceLocation.line of type int64"
-    kind: receiver
     level: error
     msg: ConsumeLogs() failed. Enable retry_on_failure to slow down reading logs and avoid dropping.
-    name: filelog/input
+    otelcol.component.id: filelog/input
+    otelcol.component.kind: Receiver
+    otelcol.signal: logs
     stacktrace: |-
       github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry.(*logsConsumer).ConsumeLogs
-        github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.102.0/consumerretry/logs.go:39
-      github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.(*receiver).consumerLoop
-        github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.102.0/adapter/receiver.go:126
-  - caller: adapter/receiver.go:128
-    data_type: logs
+        github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.121.0/consumerretry/logs.go:39
+      github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.(*receiver).consumeEntries
+        github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.121.0/adapter/receiver.go:59
+      github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper.(*LogEmitter).flusher
+        github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.121.0/operator/helper/emitter.go:163
+  - caller: adapter/receiver.go:61
     error: "could not process attribute gcp.source_location: json: cannot unmarshal string into Go struct field LogEntrySourceLocation.line of type int64"
-    kind: receiver
     level: error
     msg: ConsumeLogs() failed
-    name: filelog/input
+    otelcol.component.id: filelog/input
+    otelcol.component.kind: Receiver
+    otelcol.signal: logs
     stacktrace: |-
-      github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.(*receiver).consumerLoop
-        github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.102.0/adapter/receiver.go:128
+      github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.(*receiver).consumeEntries
+        github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.121.0/adapter/receiver.go:61
+      github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper.(*LogEmitter).flusher
+        github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.121.0/operator/helper/emitter.go:163
