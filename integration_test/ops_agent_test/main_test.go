@@ -2357,11 +2357,11 @@ func TestWindowsEventLogV2(t *testing.T) {
 			},
 		}
 
-		// Wait until the otlpjsonfile receiver writes the metrics with the
-		// correct labels.
-		time.Sleep(2 * time.Minute)
+		// Wait at least a minute since feature_tracking and enabled_receivers
+		// metrics are sent one minute after agent startup
+		time.Sleep(70 * time.Second)
 
-		series, err := gce.WaitForMetricSeries(ctx, logger, vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", 1*time.Minute, nil, false, len(expectedFeatures))
+		series, err := gce.WaitForMetricSeries(ctx, logger, vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", 2*time.Hour, nil, false, len(expectedFeatures))
 		if err != nil {
 			t.Error(err)
 			return
@@ -2639,10 +2639,10 @@ func TestDefaultMetricsNoProxy(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		// Wait until the otlpjsonfile receiver writes the metrics with the
-		// correct labels.
-		time.Sleep(2 * time.Minute)
-		testDefaultMetrics(ctx, t, logger, vm, time.Minute)
+		// Wait at least a minute since feature_tracking and enabled_receivers
+		// metrics are sent one minute after agent startup
+		time.Sleep(70 * time.Second)
+		testDefaultMetrics(ctx, t, logger, vm, time.Hour)
 	})
 }
 

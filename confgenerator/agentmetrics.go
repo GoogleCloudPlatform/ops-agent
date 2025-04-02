@@ -169,7 +169,7 @@ func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.ReceiverPipeline {
 	}
 }
 
-func EnabledReceiversFeatureTrackingMetricsPipeline(ctx context.Context, outDir string) otel.ReceiverPipeline {
+func OpsAgentSelfMetricsPipeline(ctx context.Context, outDir string) otel.ReceiverPipeline {
 	receiver_config := map[string]any{
 		"include": []string{
 			filepath.Join(outDir, "enabled_receivers_otlp.json"),

@@ -100,10 +100,10 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 		ReceiverPipelineName: "otel",
 	}
 
-	receiverPipelines["enabled_receivers_feature_tracking"] = EnabledReceiversFeatureTrackingMetricsPipeline(ctx, outDir)
-	pipelines["enabled_receivers_feature_tracking"] = otel.Pipeline{
+	receiverPipelines["ops_agent"] = OpsAgentSelfMetricsPipeline(ctx, outDir)
+	pipelines["ops_agent"] = otel.Pipeline{
 		Type:                 "metrics",
-		ReceiverPipelineName: "enabled_receivers_feature_tracking",
+		ReceiverPipelineName: "ops_agent",
 	}
 
 	receiverPipelines["fluentbit"] = AgentSelfMetrics{
