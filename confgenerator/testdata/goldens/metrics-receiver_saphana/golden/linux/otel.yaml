@@ -453,7 +453,7 @@ processors:
   resourcedetection/_global_0:
     detectors:
     - gcp
-  transform/enabled_receivers_feature_tracking_0:
+  transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
     - context: datapoint
@@ -485,7 +485,7 @@ receivers:
         mute_process_exe_error: true
         mute_process_name_error: true
       processes: {}
-  otlpjsonfile/enabled_receivers_feature_tracking:
+  otlpjsonfile/ops_agent:
     include:
     - enabled_receivers_otlp.json
     - feature_tracking_otlp.json
@@ -528,14 +528,6 @@ service:
       - resourcedetection/_global_0
       receivers:
       - hostmetrics/hostmetrics
-    metrics/enabled_receivers_feature_tracking:
-      exporters:
-      - googlecloud
-      processors:
-      - transform/enabled_receivers_feature_tracking_0
-      - resourcedetection/_global_0
-      receivers:
-      - otlpjsonfile/enabled_receivers_feature_tracking
     metrics/fluentbit:
       exporters:
       - googlecloud
@@ -545,6 +537,14 @@ service:
       - resourcedetection/_global_0
       receivers:
       - prometheus/fluentbit
+    metrics/ops_agent:
+      exporters:
+      - googlecloud
+      processors:
+      - transform/ops_agent_0
+      - resourcedetection/_global_0
+      receivers:
+      - otlpjsonfile/ops_agent
     metrics/otel:
       exporters:
       - googlecloud
