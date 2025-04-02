@@ -2359,7 +2359,7 @@ func TestWindowsEventLogV2(t *testing.T) {
 
 		// Wait at least a minute since feature_tracking and enabled_receivers
 		// metrics are sent one minute after agent startup
-		time.Sleep(70 * time.Second)
+		time.Sleep(2 * time.Minute)
 
 		series, err := gce.WaitForMetricSeries(ctx, logger, vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", 2*time.Hour, nil, false, len(expectedFeatures))
 		if err != nil {
@@ -2641,7 +2641,8 @@ func TestDefaultMetricsNoProxy(t *testing.T) {
 
 		// Wait at least a minute since feature_tracking and enabled_receivers
 		// metrics are sent one minute after agent startup
-		time.Sleep(70 * time.Second)
+		time.Sleep(2 * time.Minute)
+
 		testDefaultMetrics(ctx, t, logger, vm, time.Hour)
 	})
 }
