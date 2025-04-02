@@ -2551,9 +2551,6 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 
 		var series *monitoringpb.TimeSeries
 		series, err = gce.WaitForMetric(ctx, logger, vm, metric.Type, window, nil, false)
-		if vm.OS.ID == "debian" {
-			time.Sleep(4 * time.Hour)
-		}
 
 		if err != nil {
 			t.Fatal(err)
@@ -2643,10 +2640,7 @@ func TestDefaultMetricsNoProxy(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		testDefaultMetrics(ctx, t, logger, vm, 4*time.Hour)
-		if vm.OS.ID == "debian" {
-			time.Sleep(4 * time.Hour)
-		}
+		testDefaultMetrics(ctx, t, logger, vm, 1*time.Hour)
 	})
 }
 

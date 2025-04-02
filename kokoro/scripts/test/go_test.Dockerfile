@@ -36,6 +36,5 @@ RUN echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] http
 RUN apt-get update && apt-get install terraform
 
 # Install go/grte.
-# REMOVE
 COPY grte-runtimes.deb /install/grte-debs/
 RUN dpkg -i /install/grte-debs/*.deb

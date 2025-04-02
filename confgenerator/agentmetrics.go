@@ -55,21 +55,20 @@ func (r AgentSelfMetrics) MetricsSubmodulePipeline() otel.ReceiverPipeline {
 				"strict",
 				"otelcol_process_uptime",
 				"otelcol_process_memory_rss",
-				"grpc_client_attempt_duration",
-				"googlecloudmonitoring_point_count",
+				"grpc.client.attempt.duration",
+				"googlecloudmonitoring/point_count",
 			),
 			otel.Transform("metric", "metric",
-				// todo remove todo
 				// create new count metric from histogram metric
-				ottl.ExtractCountMetric(true, "grpc_client_attempt_duration"),
+				ottl.ExtractCountMetric(true, "grpc.client.attempt.duration"),
 			),
 			otel.MetricsFilter(
 				"include",
 				"strict",
 				"otelcol_process_uptime",
 				"otelcol_process_memory_rss",
-				"grpc_client_attempt_duration_count",
-				"googlecloudmonitoring_point_count",
+				"grpc.client.attempt.duration_count",
+				"googlecloudmonitoring/point_count",
 			),
 			otel.MetricsTransform(
 				otel.RenameMetric("otelcol_process_uptime", "agent/uptime",
