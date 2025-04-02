@@ -1137,6 +1137,95 @@ func TestInvalidConfig(t *testing.T) {
 	})
 }
 
+func stringifyYaml(data string) string {
+	singleLine := strings.ReplaceAll(data, "\n", "\\n ")
+
+	// Trim any trailing space
+	return strings.TrimSpace(singleLine)
+}
+
+func TestInvalidStringConfigReceivedFromUAP(t *testing.T) {
+	t.Parallel()
+	if !gce.IsOpsAgentUAPPlugin() {
+		t.SkipNow()
+	}
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal("Expected agent to reject bad config.")
+		}
+		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StopCommandForImage(imageSpec)); err != nil {
+			t.Fatalf("Failed to stop the Ops Agent: %v", err)
+		}
+
+		// Sample bad config sourced from:
+		// https://github.com/GoogleCloudPlatform/ops-agent/blob/master/confgenerator/testdata/invalid/linux/logging-receiver_reserved_id_prefix/input.yaml
+		config := `invalid_config`
+		singleLineYaml := stringifyYaml(config)
+		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartOpsAgentViaUAPCommand(imageSpec, fmt.Sprintf("\"string_config\":\"%s\"", singleLineYaml))); err == nil {
+			// We expect this to fail because the config is invalid.
+			t.Fatal("Expected starting the Ops Agent with invalid config to fail.")
+		}
+	})
+}
+
+func TestCustomStringConfigReceivedFromUAP(t *testing.T) {
+	t.Parallel()
+	if !gce.IsOpsAgentUAPPlugin() {
+		t.SkipNow()
+	}
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+		if gce.IsWindows(imageSpec) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StopCommandForImage(imageSpec)); err != nil {
+			t.Fatalf("Failed to stop the Ops Agent: %v", err)
+		}
+
+		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
+		config := fmt.Sprintf(`logging:
+  receivers:
+    f1:
+      type: files
+      include_paths:
+      - %s
+  processors:
+    json:
+      type: parse_json
+  service:
+    pipelines:
+      p1:
+        receivers: [f1]
+        processors: [json]
+`, file1)
+		singleLineYaml := stringifyYaml(config)
+
+		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartOpsAgentViaUAPCommand(imageSpec, fmt.Sprintf("\"string_config\":\"%s\"", singleLineYaml))); err != nil {
+			t.Fatalf("Expected starting the Ops Agent with valid config to succeed: %v", err)
+		}
+
+		line := `{"default_present":"original"}` + "\n"
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
+			t.Fatalf("error uploading log: %v", err)
+		}
+
+		// Expect to see the log with the modifications applied
+		check := fmt.Sprintf(`labels."compute.googleapis.com/resource_name"="%s" AND jsonPayload.default_present="original"`, vm.Name)
+		if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, check); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
 func TestProcessorOrder(t *testing.T) {
 	// See b/194632049 and b/195105380.  In that bug, the generated Fluent Bit
 	// config had mis-ordered filters: json2 came before json1 because "log"
@@ -4763,7 +4852,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 		if _, err := gce.AddTagToVm(ctx, logger, vm, []string{gce.DenyEgressTrafficTag}); err != nil {
 			t.Fatal(err)
 		}
-		time.Sleep(time.Minute)
+		time.Sleep(2 * time.Minute)
 
 		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartCommandForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)

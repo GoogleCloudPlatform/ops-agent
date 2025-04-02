@@ -88,13 +88,13 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	if err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		log.Printf("Start() failed, because it cannot determine the plugin install location: %s", err)
-		return nil, status.Error(1, err.Error())
+		return nil, status.Error(13, err.Error()) // Internal
 	}
 	pluginInstallPath, err = filepath.EvalSymlinks(pluginInstallPath)
 	if err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		log.Printf("Start() failed, because it cannot determine the plugin install location: %s", err)
-		return nil, status.Error(1, err.Error())
+		return nil, status.Error(13, err.Error()) // Internal
 	}
 	pluginInstallDir := filepath.Dir(pluginInstallPath)
 
@@ -108,21 +108,27 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	if foundConflictingInstallations || err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		log.Printf("Start() failed: %s", err)
-		return nil, status.Error(1, err.Error())
+		return nil, status.Error(9, err.Error()) // FailedPrecondition
+	}
+
+	// Receive config from the Start request and write it to the Ops Agent config file.
+	if err := writeCustomConfigToFile(msg, OpsAgentConfigLocationLinux); err != nil {
+		log.Printf("Start() failed: %s", err)
+		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
+		return nil, status.Errorf(13, "failed to write the custom Ops Agent config to file: %s", err) // Internal
 	}
 
 	// Ops Agent config validation
 	if err := validateOpsAgentConfig(pContext, pluginInstallDir, pluginStateDir, ps.runCommand); err != nil {
 		log.Printf("Start() failed: %s", err)
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
-		return nil, status.Errorf(1, "failed to validate Ops Agent config: %s", err)
+		return nil, status.Errorf(9, "failed to validate Ops Agent config: %s", err) // FailedPrecondition
 	}
-
 	// Subagent config generation
 	if err := generateSubagentConfigs(pContext, ps.runCommand, pluginInstallDir, pluginStateDir); err != nil {
 		log.Printf("Start() failed: %s", err)
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
-		return nil, status.Errorf(1, "failed to generate subagent configs: %s", err)
+		return nil, status.Errorf(9, "failed to generate subagent configs: %s", err) // FailedPrecondition
 	}
 
 	// the diagnostics service and subagent startups

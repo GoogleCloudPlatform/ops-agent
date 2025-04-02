@@ -21,8 +21,10 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sync"
 
+	"buf.build/go/protoyaml"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
@@ -95,4 +97,39 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Exiting, cannot continue serving: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+func writeCustomConfigToFile(req *pb.StartRequest, configPath string) error {
+	customConfig := []byte{}
+	switch req.GetServiceConfig().(type) {
+	case *pb.StartRequest_StringConfig:
+		customConfig = []byte(req.GetStringConfig())
+	case *pb.StartRequest_StructConfig:
+		structConfig := req.GetStructConfig()
+		yamlBytes, err := protoyaml.Marshal(structConfig)
+		if err != nil {
+			return fmt.Errorf("failed to parse the custom Ops Agent config: %v", err)
+		}
+		customConfig = yamlBytes
+	}
+
+	if len(customConfig) > 0 {
+		parentDir := filepath.Dir(configPath)
+		if _, err := os.Stat(parentDir); os.IsNotExist(err) {
+			err := os.MkdirAll(parentDir, 0755)
+			if err != nil {
+				return fmt.Errorf("failed to create parent directory %s: %v", parentDir, err)
+			}
+		}
+
+		file, err := os.OpenFile(configPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+		if err != nil {
+			return fmt.Errorf("failed to open the config.yaml file at location: %s, error: %v", configPath, err)
+		}
+		defer file.Close()
+		if _, err := file.Write(customConfig); err != nil {
+			return fmt.Errorf("failed to write to the config.yaml file at location: %s, error: %v", configPath, err)
+		}
+	}
+	return nil
 }
