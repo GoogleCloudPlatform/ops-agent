@@ -59,6 +59,7 @@ func (r AgentSelfMetrics) MetricsSubmodulePipeline() otel.ReceiverPipeline {
 				"googlecloudmonitoring_point_count",
 			),
 			otel.Transform("metric", "metric",
+				// todo remove todo
 				// create new count metric from histogram metric
 				ottl.ExtractCountMetric(true, "grpc_client_attempt_duration"),
 			),
