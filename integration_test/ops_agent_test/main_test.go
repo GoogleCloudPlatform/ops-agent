@@ -2136,7 +2136,7 @@ func TestWindowsEventLogV2(t *testing.T) {
 
 		// Have to wait for startup feature tracking metrics to be sent
 		// before we tear down the service.
-		time.Sleep(20 * time.Second)
+		time.Sleep(2 * time.Minute)
 
 		// There is a limitation on custom event log sources that requires their associated
 		// log names to have a unique eight-character prefix, so unfortunately we can only test
@@ -2178,7 +2178,7 @@ func TestWindowsEventLogV2(t *testing.T) {
 
 		// Have to wait for startup feature tracking metrics to be sent
 		// before we tear down the service.
-		time.Sleep(20 * time.Second)
+		time.Sleep(2 * time.Minute)
 
 		payloads := map[string]map[string]string{
 			"winlog2_space": {
