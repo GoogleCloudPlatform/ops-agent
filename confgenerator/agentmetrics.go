@@ -88,7 +88,7 @@ func (r AgentSelfMetrics) MetricsSubmodulePipeline() otel.ReceiverPipeline {
 					// - action: select_label_values
 					//   label: grpc_client_method
 					//   value_regexp: ^google\.monitoring
-					otel.RenameLabel("grpc_status", "state"),
+					otel.RenameLabel("grpc.status", "state"),
 					// delete grpc_client_method dimension & service.version label, retaining only state
 					otel.AggregateLabels("sum", "state"),
 				),
