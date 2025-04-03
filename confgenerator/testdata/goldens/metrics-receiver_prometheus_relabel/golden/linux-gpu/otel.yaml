@@ -440,7 +440,7 @@ processors:
       new_name: agent/api_request_count
       operations:
       - action: update_label
-        label: grpc_status
+        label: grpc.status
         new_label: state
       - action: aggregate_labels
         aggregation_type: sum
