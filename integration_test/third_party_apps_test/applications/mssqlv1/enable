@@ -18,5 +18,5 @@ Add-Content 'C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.ya
 "
 
 if (Get-Service google-cloud-ops-agent* -ErrorAction SilentlyContinue) {
-  (Get-Service google-cloud-ops-agent*).WaitForStatus('Running', '00:05:00')
+  (Get-Service google-cloud-ops-agent*).WaitForStatus('Running', '00:03:00')
 }
