@@ -2455,7 +2455,6 @@ func TestWindowsEventLogV2(t *testing.T) {
 			t.Error(err)
 			return
 		}
-
 		err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, expectedFeatures)
 		if err != nil {
 			t.Error(err)
@@ -4241,6 +4240,7 @@ func TestUpgradeOpsAgent(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		time.Sleep(2 * time.Minute)
 		// Wait for the Ops Agent to be active. Make sure that it is working.
 		if err := opsAgentLivenessChecker(ctx, logger, vm); err != nil {
 			t.Fatal(err)
@@ -4252,6 +4252,7 @@ func TestUpgradeOpsAgent(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		time.Sleep(2 * time.Minute)
 		// Make sure that the newly installed Ops Agent is working.
 		if err := opsAgentLivenessChecker(ctx, logger, vm); err != nil {
 			t.Fatal(err)
