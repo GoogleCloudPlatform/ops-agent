@@ -22,8 +22,12 @@
     timestamp: now
   partialSuccess: true
 - collector_errors:
-  - caller: ottl@v0.119.0/parser.go:365
+  - caller: ottl@v0.121.0/parser.go:365
     error: "parsing time \"unparsable time\" as \"2006-01-02T15:04\": cannot parse \"unparsable time\" as \"2006\""
     level: warn
     msg: failed to execute statement
+    otelcol.component.id: transform/input_0
+    otelcol.component.kind: Processor
+    otelcol.pipeline.id: logs/input
+    otelcol.signal: logs
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M") != nil)
