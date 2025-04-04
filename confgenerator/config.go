@@ -1154,7 +1154,7 @@ func (uc *UnifiedConfig) OTelLoggingSupported(ctx context.Context) bool {
 		ucLoggingCopy.Logging.Service = &LoggingService{}
 	}
 	ucLoggingCopy.Logging.Service.OTelLogging = true
-	_, err = ucLoggingCopy.GenerateOtelConfig(ctx)
+	_, err = ucLoggingCopy.GenerateOtelConfig(ctx, "")
 	return err == nil
 }
 

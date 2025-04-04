@@ -562,6 +562,12 @@ processors:
       - set(metric.unit, "{operations}") where metric.name == "workload.googleapis.com/couchbase.bucket.operation.count"
       - set(metric.description, "Number of non-resident vBuckets.") where metric.name == "workload.googleapis.com/couchbase.bucket.vbucket.count"
       - set(metric.unit, "{vbuckets}") where metric.name == "workload.googleapis.com/couchbase.bucket.vbucket.count"
+  transform/ops_agent_0:
+    error_mode: ignore
+    metric_statements:
+    - context: datapoint
+      statements:
+      - set(time, Now())
   transform/otel_1:
     error_mode: ignore
     metric_statements:
@@ -583,6 +589,12 @@ receivers:
         mute_process_exe_error: true
         mute_process_name_error: true
       processes: {}
+  otlpjsonfile/ops_agent:
+    include:
+    - enabled_receivers_otlp.json
+    - feature_tracking_otlp.json
+    poll_interval: 1m0s
+    replay_file: true
   prometheus/couchbase:
     config:
       scrape_configs:
@@ -650,6 +662,14 @@ service:
       - resourcedetection/_global_0
       receivers:
       - prometheus/fluentbit
+    metrics/ops_agent:
+      exporters:
+      - googlecloud
+      processors:
+      - transform/ops_agent_0
+      - resourcedetection/_global_0
+      receivers:
+      - otlpjsonfile/ops_agent
     metrics/otel:
       exporters:
       - googlecloud

@@ -146,14 +146,6 @@ func initServices() error {
 				"--storage_path", fluentbitStoragePath,
 			},
 		},
-		{
-			fmt.Sprintf("%s-diagnostics", serviceName),
-			fmt.Sprintf("%s - Diagnostics", serviceDisplayName),
-			filepath.Join(base, fmt.Sprintf("%s-diagnostics.exe", serviceName)),
-			[]string{
-				"-config", filepath.Join(base, "../config/config.yaml"),
-			},
-		},
 	}
 	return nil
 }

@@ -80,7 +80,7 @@ func (uc *UnifiedConfig) getOTelLogLevel() string {
 	return logLevel
 }
 
-func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context) (string, error) {
+func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) (string, error) {
 	p := platform.FromContext(ctx)
 	userAgent, _ := p.UserAgent("Google-Cloud-Ops-Agent-Metrics")
 	metricVersionLabel, _ := p.VersionLabel("google-cloud-ops-agent-metrics")
@@ -98,6 +98,12 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context) (string, error)
 	pipelines["otel"] = otel.Pipeline{
 		Type:                 "metrics",
 		ReceiverPipelineName: "otel",
+	}
+
+	receiverPipelines["ops_agent"] = OpsAgentSelfMetricsPipeline(ctx, outDir)
+	pipelines["ops_agent"] = otel.Pipeline{
+		Type:                 "metrics",
+		ReceiverPipelineName: "ops_agent",
 	}
 
 	receiverPipelines["fluentbit"] = AgentSelfMetrics{

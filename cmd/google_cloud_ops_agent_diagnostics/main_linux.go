@@ -24,7 +24,6 @@ import (
 	"syscall"
 
 	"github.com/GoogleCloudPlatform/ops-agent/cmd/google_cloud_ops_agent_diagnostics/utils"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 )
 
 var (
@@ -32,12 +31,12 @@ var (
 )
 
 func run(ctx context.Context) error {
-	userUc, mergedUc, err := utils.GetUserAndMergedConfigs(ctx, *config)
+	_, _, err := utils.GetUserAndMergedConfigs(ctx, *config)
 	if err != nil {
 		return err
 	}
 
-	ctx, cancel := context.WithCancel(ctx)
+	_, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	go func() {
@@ -53,11 +52,6 @@ func run(ctx context.Context) error {
 			}
 		}
 	}()
-
-	err = self_metrics.CollectOpsAgentSelfMetrics(ctx, userUc, mergedUc)
-	if err != nil {
-		return err
-	}
 
 	return nil
 }

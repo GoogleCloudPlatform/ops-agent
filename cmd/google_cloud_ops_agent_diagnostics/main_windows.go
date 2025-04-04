@@ -23,7 +23,6 @@ import (
 	"os"
 
 	"github.com/GoogleCloudPlatform/ops-agent/cmd/google_cloud_ops_agent_diagnostics/utils"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"go.opentelemetry.io/otel"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
@@ -81,7 +80,7 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		return false, ERROR_INVALID_PARAMETER
 	}
 
-	userUc, mergedUc, err := utils.GetUserAndMergedConfigs(ctx, s.userConf)
+	_, _, err := utils.GetUserAndMergedConfigs(ctx, s.userConf)
 	if err != nil {
 		s.log.Error(DiagnosticsEventID, fmt.Sprintf("failed to obtain unified configuration: %v", err))
 		return false, ERROR_FILE_NOT_FOUND
@@ -112,12 +111,6 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 
 	// Set otel error handler
 	otel.SetErrorHandler(s)
-
-	err = self_metrics.CollectOpsAgentSelfMetrics(ctx, userUc, mergedUc)
-	if err != nil {
-		s.log.Error(DiagnosticsEventID, fmt.Sprintf("failed to collect ops agent self metrics: %v", err))
-		return false, ERROR_INVALID_DATA
-	}
 
 	return false, ERROR_SUCCESS
 }

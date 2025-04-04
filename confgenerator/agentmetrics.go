@@ -15,7 +15,10 @@
 package confgenerator
 
 import (
+	"context"
 	"fmt"
+	"path/filepath"
+	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
@@ -163,6 +166,30 @@ func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.ReceiverPipeline {
 				otel.AddPrefix("agent.googleapis.com"),
 			),
 		}},
+	}
+}
+
+func OpsAgentSelfMetricsPipeline(ctx context.Context, outDir string) otel.ReceiverPipeline {
+	receiver_config := map[string]any{
+		"include": []string{
+			filepath.Join(outDir, "enabled_receivers_otlp.json"),
+			filepath.Join(outDir, "feature_tracking_otlp.json")},
+		"replay_file":   true,
+		"poll_interval": time.Duration(60 * time.Second).String(),
+	}
+	return otel.ReceiverPipeline{
+		Receiver: otel.Component{
+			Type:   "otlpjsonfile",
+			Config: receiver_config,
+		},
+		ExporterTypes: map[string]otel.ExporterType{
+			"metrics": otel.System,
+		},
+		Processors: map[string][]otel.Component{
+			"metrics": {
+				otel.Transform("metric", "datapoint", []ottl.Statement{"set(time, Now())"}),
+			},
+		},
 	}
 }
 
