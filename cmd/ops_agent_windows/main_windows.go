@@ -73,12 +73,16 @@ func main() {
 	}
 }
 
-var services []struct {
+type windowsService struct {
 	name        string
 	displayName string
 	exepath     string
 	args        []string
 }
+
+var services []windowsService
+
+var diagnosticsService windowsService
 
 func init() {
 	if err := initServices(); err != nil {
@@ -108,13 +112,18 @@ func initServices() error {
 	if err := os.MkdirAll(logDirectory, 0644); err != nil {
 		return err
 	}
+
+	diagnosticsService = windowsService{
+		fmt.Sprintf("%s-diagnostics", serviceName),
+		fmt.Sprintf("%s - Diagnostics", serviceDisplayName),
+		filepath.Join(base, fmt.Sprintf("%s-diagnostics.exe", serviceName)),
+		[]string{
+			"-config", filepath.Join(base, "../config/config.yaml"),
+		},
+	}
+
 	// TODO: Write meaningful descriptions for these services
-	services = []struct {
-		name        string
-		displayName string
-		exepath     string
-		args        []string
-	}{
+	services = []windowsService{
 		{
 			serviceName,
 			serviceDisplayName,

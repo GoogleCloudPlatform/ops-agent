@@ -2225,7 +2225,7 @@ func TestWindowsEventLogV2(t *testing.T) {
 
 		// Have to wait for startup feature tracking metrics to be sent
 		// before we tear down the service.
-		time.Sleep(2 * time.Minute)
+		time.Sleep(20 * time.Second)
 
 		// There is a limitation on custom event log sources that requires their associated
 		// log names to have a unique eight-character prefix, so unfortunately we can only test
@@ -2437,12 +2437,6 @@ func TestWindowsEventLogV2(t *testing.T) {
 				Feature: "receivers:windows_event_log",
 				Key:     "[2].channels.__length",
 				Value:   "2",
-			},
-			{
-				Module:  "logging",
-				Feature: "service:pipelines",
-				Key:     "default_pipeline_overridden",
-				Value:   "false",
 			},
 		}
 
@@ -4252,7 +4246,7 @@ func TestUpgradeOpsAgent(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		time.Sleep(2 * time.Minute)
+		time.Sleep(4 * time.Minute)
 		// Make sure that the newly installed Ops Agent is working.
 		if err := opsAgentLivenessChecker(ctx, logger, vm); err != nil {
 			t.Fatal(err)

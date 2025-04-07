@@ -99,6 +99,22 @@ func install() error {
 	return handles[0].Start()
 }
 
+func uninstallDiagnosticService(m mgr.Mgr) error {
+	serviceHandle, err := m.OpenService(diagnosticsService.name)
+	if err != nil {
+		// Service does not exist, so nothing to delete.
+		return nil
+	}
+	defer serviceHandle.Close()
+	if err := stopService(serviceHandle, 30*time.Second); err != nil {
+		return err
+	}
+	if err := serviceHandle.Delete(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func uninstall() error {
 	m, err := mgr.Connect()
 	if err != nil {
@@ -106,6 +122,12 @@ func uninstall() error {
 	}
 	defer m.Disconnect()
 	var errs error
+
+	diagErr := uninstallDiagnosticService(m)
+
+	if diagErr {
+		errs = multierror.Append(errs, err)
+	}
 	// Have to remove the services in reverse order.
 	for i := len(services) - 1; i >= 0; i-- {
 		s := services[i]
