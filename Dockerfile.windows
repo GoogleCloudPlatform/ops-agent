@@ -230,17 +230,6 @@ RUN Get-Content VERSION | Where-Object length | ForEach-Object { Invoke-Expressi
     Copy-Item -Path confgenerator/default-config.yaml -Destination /work/out/config/config.yaml;
 
 ###############################################################################
-# Build diagnostic service
-###############################################################################
-
-WORKDIR /work
-
-COPY . /work
-
-RUN go build -o bin/google-cloud-ops-agent-diagnostics.exe ./cmd/google_cloud_ops_agent_diagnostics; `
-    Copy-Item -Path bin/google-cloud-ops-agent-diagnostics.exe -Destination /work/out/bin/;
-
-###############################################################################
 # Build agent wrapping tool
 ###############################################################################
 

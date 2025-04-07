@@ -45,6 +45,7 @@ func main() {
 			log.Fatal(err)
 		}
 	} else if err != nil {
+		infoLog.Printf("failed to talk to service control manager: %v", err)
 		log.Fatalf("failed to talk to service control manager: %v", err)
 	} else {
 		flag.Parse()
@@ -53,11 +54,13 @@ func main() {
 		}
 		if *installServices {
 			if err := install(); err != nil {
+				infoLog.Printf("error install: %v", err)
 				log.Fatal(err)
 			}
 			infoLog.Printf("installed services")
 		} else if *uninstallServices {
 			if err := uninstall(); err != nil {
+				infoLog.Printf("error uninstall: %v", err)
 				log.Fatal(err)
 			}
 			infoLog.Printf("uninstalled services")
@@ -86,6 +89,7 @@ var diagnosticsService windowsService
 
 func init() {
 	if err := initServices(); err != nil {
+
 		log.Fatal(err)
 	}
 }
