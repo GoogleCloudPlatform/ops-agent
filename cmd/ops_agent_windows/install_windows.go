@@ -34,13 +34,7 @@ func escapeExe(exepath string, args []string) string {
 	return s
 }
 
-func install() error {
-	m, err := mgr.Connect()
-	if err != nil {
-		return err
-	}
-	defer m.Disconnect()
-
+func uninstallDiagnosticService(m *mgr.Mgr) error {
 	diagnosticsServiceHandle, err := m.OpenService("google-cloud-ops-agent-diagnostics")
 	// err == nil means the service exists.
 	// If err != nil, the service does not exist, so nothing to delete.
@@ -50,9 +44,22 @@ func install() error {
 			return fmt.Errorf("failed to stop the diagnostics Windows service: %w", err)
 		}
 		if err := diagnosticsServiceHandle.Delete(); err != nil {
-			// Don't return until all services have been processed.
 			return fmt.Errorf("fails to delete the diagnostics Windows service: %w", err)
 		}
+	}
+	return nil
+}
+
+func install() error {
+	m, err := mgr.Connect()
+	if err != nil {
+		return err
+	}
+	defer m.Disconnect()
+
+	diagnosticError := uninstallDiagnosticService(m)
+	if diagnosticError != nil {
+		return diagnosticError
 	}
 
 	handles := make([]*mgr.Service, len(services))
@@ -142,20 +149,10 @@ func uninstall() error {
 		}
 	}
 
-	diagnosticsServiceHandle, err := m.OpenService("google-cloud-ops-agent-diagnostics")
-	// err == nil means the service exists.
-	// If err != nil, the service does not exist, so nothing to delete.
-	if err == nil {
-		defer diagnosticsServiceHandle.Close()
-		if err := stopService(diagnosticsServiceHandle, 30*time.Second); err != nil {
-			errs = multierror.Append(errs, fmt.Errorf("failed to stop the diagnostics Windows service: %w", err))
-		}
-		if err := diagnosticsServiceHandle.Delete(); err != nil {
-			// Don't return until all services have been processed.
-			errs = multierror.Append(errs, fmt.Errorf("fails to delete the diagnostics Windows service: %w", err))
-		}
+	diagnosticError := uninstallDiagnosticService(m)
+	if diagnosticError != nil {
+		errs = multierror.Append(errs, diagnosticError)
 	}
-
 	return errs
 }
 
