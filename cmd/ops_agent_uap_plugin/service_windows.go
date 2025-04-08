@@ -52,7 +52,6 @@ const (
 	WindowsEventLogIdentifier        = "google-cloud-ops-agent-uap-plugin"
 	WindowJobHandleIdentifier        = "google-cloud-ops-agent-uap-plugin-job-handle"
 	AgentWrapperBinary               = "google-cloud-ops-agent-wrapper.exe"
-	DiagnosticsBinary                = "google-cloud-ops-agent-diagnostics.exe"
 	FluentbitBinary                  = "fluent-bit.exe"
 	OtelBinary                       = "google-cloud-metrics-agent_windows_amd64.exe"
 )
@@ -74,16 +73,6 @@ type RunSubAgentCommandFunc func(ctx context.Context, cancel context.CancelFunc,
 // plugin config to enable/disable feature here plugins can react to such requests.
 func (ps *OpsAgentPluginServer) Apply(ctx context.Context, msg *pb.ApplyRequest) (*pb.ApplyResponse, error) {
 	panic("Apply method is not implemented on Windows yet")
-}
-
-// otelErrorHandler is an implementation of otel.ErrorHandler that is used in the diagnostics service to log otel errors to the Windows event log.
-type otelErrorHandler struct {
-	windowsEventLogger debug.Log
-	windowsEventId     uint32
-}
-
-func (h *otelErrorHandler) Handle(err error) {
-	h.windowsEventLogger.Error(h.windowsEventId, fmt.Sprintf("error collecting metrics: %v", err))
 }
 
 // Start starts the plugin and initiates the plugin functionality.
