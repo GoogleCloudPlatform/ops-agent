@@ -25,7 +25,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/kardianos/osext"
 	"golang.org/x/sys/windows/svc"
-	"golang.org/x/sys/windows/svc/eventlog"
 )
 
 const dataDirectory = `Google/Cloud Operations/Ops Agent`
@@ -41,22 +40,12 @@ var (
 func main() {
 
 	infoLog := logs.NewSimpleLogger()
-	identifier := "google-cloud-ops-agent"
-	eventlog.InstallAsEventCreate(identifier, eventlog.Error|eventlog.Warning|eventlog.Info)
-	elog, err := eventlog.Open(identifier)
-	if err != nil {
-		// probably futile
-		log.Fatalf("failed to open event log: %v", err)
-	}
-	defer elog.Close()
-	eventId := uint32(17)
 
 	if ok, err := svc.IsWindowsService(); ok && err == nil {
 		if err := run(serviceName); err != nil {
 			log.Fatal(err)
 		}
 	} else if err != nil {
-		infoLog.Printf("failed to talk to service control manager: %v", err)
 		log.Fatalf("failed to talk to service control manager: %v", err)
 	} else {
 		flag.Parse()
@@ -65,15 +54,11 @@ func main() {
 		}
 		if *installServices {
 			if err := install(); err != nil {
-				infoLog.Printf("error install: %v", err)
-				elog.Error(eventId, fmt.Sprintf("error installing services: %v", err))
 				log.Fatal(err)
 			}
 			infoLog.Printf("installed services")
 		} else if *uninstallServices {
 			if err := uninstall(); err != nil {
-				infoLog.Printf("error uninstall: %v", err)
-				elog.Error(eventId, fmt.Sprintf("error uninstalling services: %v", err))
 				log.Fatal(err)
 			}
 			infoLog.Printf("uninstalled services")
@@ -89,14 +74,12 @@ func main() {
 	}
 }
 
-type windowsService struct {
+var services []struct {
 	name        string
 	displayName string
 	exepath     string
 	args        []string
 }
-
-var services []windowsService
 
 func init() {
 	if err := initServices(); err != nil {
@@ -129,7 +112,12 @@ func initServices() error {
 	}
 
 	// TODO: Write meaningful descriptions for these services
-	services = []windowsService{
+	services = []struct {
+		name        string
+		displayName string
+		exepath     string
+		args        []string
+	}{
 		{
 			serviceName,
 			serviceDisplayName,
