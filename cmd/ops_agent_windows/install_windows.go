@@ -99,22 +99,6 @@ func install() error {
 	return handles[0].Start()
 }
 
-func uninstallDiagnosticService(m *mgr.Mgr) error {
-	serviceHandle, err := m.OpenService(diagnosticsService.name)
-	if err != nil {
-		// Service does not exist, so nothing to delete.
-		return nil
-	}
-	defer serviceHandle.Close()
-	if err := stopService(serviceHandle, 30*time.Second); err != nil {
-		return err
-	}
-	if err := serviceHandle.Delete(); err != nil {
-		return err
-	}
-	return nil
-}
-
 func uninstall() error {
 	m, err := mgr.Connect()
 	if err != nil {
@@ -122,12 +106,6 @@ func uninstall() error {
 	}
 	defer m.Disconnect()
 	var errs error
-
-	// Remove the deprecated diagnostics service.
-	diagErr := uninstallDiagnosticService(m)
-	if diagErr != nil {
-		errs = multierror.Append(errs, err)
-	}
 
 	// Have to remove the services in reverse order.
 	for i := len(services) - 1; i >= 0; i-- {
@@ -147,6 +125,21 @@ func uninstall() error {
 			errs = multierror.Append(errs, err)
 		}
 	}
+
+	diagnosticsServiceHandle, err := m.OpenService("google-cloud-ops-agent-diagnostics")
+	// err == nil means the service exists.
+	// If err != nil, the service does not exist, so nothing to delete.
+	if err == nil {
+		defer diagnosticsServiceHandle.Close()
+		if err := stopService(diagnosticsServiceHandle, 30*time.Second); err != nil {
+			errs = multierror.Append(errs, fmt.Errorf("failed to stop the diagnostics Windows service: %w", err))
+		}
+		if err := diagnosticsServiceHandle.Delete(); err != nil {
+			// Don't return until all services have been processed.
+			errs = multierror.Append(errs, fmt.Errorf("fails to delete the diagnostics Windows service: %w", err))
+		}
+	}
+
 	return errs
 }
 
