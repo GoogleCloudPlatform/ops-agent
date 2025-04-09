@@ -119,13 +119,6 @@ func metricsAgentProcessNamesForImage(imageSpec string) []string {
 	return []string{"otelopscol", "collectd"}
 }
 
-func diagnosticsProcessNamesForImage(imageSpec string) []string {
-	if gce.IsWindows(imageSpec) {
-		return []string{"google-cloud-ops-agent-diagnostics"}
-	}
-	return []string{"google_cloud_ops_agent_diagnostics"}
-}
-
 func makeDirectory(ctx context.Context, logger *log.Logger, vm *gce.VM, directory string) error {
 	var createFolderCmd string
 	if gce.IsWindows(vm.ImageSpec) {

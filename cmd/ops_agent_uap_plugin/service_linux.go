@@ -130,7 +130,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 		return nil, status.Errorf(9, "failed to generate subagent configs: %s", err) // FailedPrecondition
 	}
 
-	// the diagnostics service and subagent startups
+	// the subagent startups
 	cancelFunc := func() {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 	}
@@ -172,7 +172,7 @@ func (ps *OpsAgentPluginServer) GetStatus(ctx context.Context, msg *pb.GetStatus
 	return &pb.Status{Code: 0, Results: []string{"The Ops Agent Plugin is running ok."}}, nil
 }
 
-// runSubagents starts up the diagnostics service, otel, and fluent bit subagents in separate goroutines.
+// runSubagents starts up otel and fluent bit subagents in separate goroutines.
 // All child goroutines create a new context derived from the same parent context.
 // This ensures that crashes in one goroutine don't affect other goroutines.
 // However, when one goroutine exits with errors, it won't be restarted, and all other goroutines are also terminated.
