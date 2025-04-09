@@ -23,7 +23,7 @@ import (
 	"time"
 
 	mexporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric"
-	"github.com/GoogleCloudPlatform/ops-agent/cmd/google_cloud_ops_agent_diagnostics/utils"
+	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/contrib/detectors/gcp"
@@ -333,8 +333,26 @@ func CollectFeatureTrackingMetricToOTLPJSON(ctx context.Context, userUc, mergedU
 	return metricToJson(metrics)
 }
 
+// config and merged config respectively
+func getUserAndMergedConfigs(ctx context.Context, userConfPath string) (*confgenerator.UnifiedConfig, *confgenerator.UnifiedConfig, error) {
+	userUc, err := confgenerator.ReadUnifiedConfigFromFile(ctx, userConfPath)
+	if err != nil {
+		return nil, nil, err
+	}
+	if userUc == nil {
+		userUc = &confgenerator.UnifiedConfig{}
+	}
+
+	mergedUc, err := confgenerator.MergeConfFiles(ctx, userConfPath, apps.BuiltInConfStructs)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return userUc, mergedUc, nil
+}
+
 func GenerateOpsAgentSelfMetricsOTLPJSON(ctx context.Context, config, outDir string) (err error) {
-	userUc, mergedUc, err := utils.GetUserAndMergedConfigs(ctx, config)
+	userUc, mergedUc, err := getUserAndMergedConfigs(ctx, config)
 	if err != nil {
 		return err
 	}
