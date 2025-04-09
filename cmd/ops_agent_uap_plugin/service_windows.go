@@ -48,7 +48,6 @@ const (
 	LogsDirectory                    = "log"
 	RuntimeDirectory                 = "run"
 	OpsAgentUAPPluginEventID  uint32 = 8
-	DiagnosticsEventID        uint32 = 2
 	WindowsEventLogIdentifier        = "google-cloud-ops-agent-uap-plugin"
 	WindowJobHandleIdentifier        = "google-cloud-ops-agent-uap-plugin-job-handle"
 	AgentWrapperBinary               = "google-cloud-ops-agent-wrapper.exe"
@@ -361,7 +360,7 @@ func createWindowsJobHandle() (windows.Handle, error) {
 	return jobHandle, nil
 }
 
-// runSubagents starts up the diagnostics service, otel, and fluent bit subagents in separate goroutines.
+// runSubagents starts up otel and fluent bit subagents in separate goroutines.
 // All child goroutines create a new context derived from the same parent context.
 // This ensures that crashes in one goroutine don't affect other goroutines.
 // However, when one goroutine exits with errors, it won't be restarted, and all other goroutines are also terminated.
