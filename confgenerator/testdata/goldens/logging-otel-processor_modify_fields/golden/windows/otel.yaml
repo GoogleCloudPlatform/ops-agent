@@ -598,6 +598,12 @@ processors:
       - set(cache["__setif_value"], cache["value"])
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "")
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
+  transform/ops_agent_0:
+    error_mode: ignore
+    metric_statements:
+    - context: datapoint
+      statements:
+      - set(time, Now())
   transform/otel_1:
     error_mode: ignore
     metric_statements:
@@ -977,6 +983,12 @@ receivers:
         mute_process_exe_error: true
         mute_process_name_error: true
       processes: {}
+  otlpjsonfile/ops_agent:
+    include:
+    - enabled_receivers_otlp.json
+    - feature_tracking_otlp.json
+    poll_interval: 1m0s
+    replay_file: true
   prometheus/fluentbit:
     config:
       scrape_configs:
@@ -1118,6 +1130,14 @@ service:
       - resourcedetection/_global_0
       receivers:
       - prometheus/fluentbit
+    metrics/ops_agent:
+      exporters:
+      - googlecloud
+      processors:
+      - transform/ops_agent_0
+      - resourcedetection/_global_0
+      receivers:
+      - otlpjsonfile/ops_agent
     metrics/otel:
       exporters:
       - googlecloud

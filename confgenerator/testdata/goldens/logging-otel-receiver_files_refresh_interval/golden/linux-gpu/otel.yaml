@@ -495,6 +495,12 @@ processors:
       - set(cache["value"], cache["__field_3"])
       - set(cache["value"], "log_source_id1") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+  transform/ops_agent_0:
+    error_mode: ignore
+    metric_statements:
+    - context: datapoint
+      statements:
+      - set(time, Now())
   transform/otel_1:
     error_mode: ignore
     metric_statements:
@@ -571,6 +577,12 @@ receivers:
       processes: {}
   nvml/hostmetrics_1:
     collection_interval: 60s
+  otlpjsonfile/ops_agent:
+    include:
+    - enabled_receivers_otlp.json
+    - feature_tracking_otlp.json
+    poll_interval: 1m0s
+    replay_file: true
   prometheus/fluentbit:
     config:
       scrape_configs:
@@ -635,6 +647,14 @@ service:
       - resourcedetection/_global_0
       receivers:
       - prometheus/fluentbit
+    metrics/ops_agent:
+      exporters:
+      - googlecloud
+      processors:
+      - transform/ops_agent_0
+      - resourcedetection/_global_0
+      receivers:
+      - otlpjsonfile/ops_agent
     metrics/otel:
       exporters:
       - googlecloud
