@@ -66,7 +66,7 @@ func run(ctx context.Context) error {
 }
 
 func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
-	ctx, cancel := context.WithCancel(s.ctx)
+	_, cancel := context.WithCancel(s.ctx)
 	defer cancel()
 
 	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown
