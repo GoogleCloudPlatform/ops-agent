@@ -897,6 +897,19 @@ func TestKillChildJobsWhenPluginServerProcessTerminates(t *testing.T) {
 
 func TestCustomLogFormat(t *testing.T) {
 	t.Parallel()
+	if gce.IsOpsAgentUAPPlugin() {
+		t.SkipNow()
+	}
+	t.Run("fluent-bit", func(t *testing.T) {
+		testCustomLogFormat(t, false)
+	})
+	t.Run("otel", func(t *testing.T) {
+		testCustomLogFormat(t, true)
+	})
+}
+
+func testCustomLogFormat(t *testing.T, otel bool) {
+	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
@@ -918,12 +931,13 @@ func TestCustomLogFormat(t *testing.T) {
       time_key: time
       time_format: "%s"
   service:
+    experimental_otel_logging: %v
     pipelines:
       my_pipeline:
         receivers: [mylog_source]
         processors: [rfc5424]
         exporters: [google]
-`, logPath, "%Y-%m-%dT%H:%M:%S.%L%z")
+`, logPath, "%Y-%m-%dT%H:%M:%S.%L%z", otel)
 
 		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
