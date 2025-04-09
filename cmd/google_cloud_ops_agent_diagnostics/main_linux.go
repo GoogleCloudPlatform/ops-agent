@@ -22,8 +22,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-
-	"github.com/GoogleCloudPlatform/ops-agent/cmd/google_cloud_ops_agent_diagnostics/utils"
 )
 
 var (
@@ -31,11 +29,6 @@ var (
 )
 
 func run(ctx context.Context) error {
-	_, _, err := utils.GetUserAndMergedConfigs(ctx, *config)
-	if err != nil {
-		return err
-	}
-
 	_, cancel := context.WithCancel(ctx)
 	defer cancel()
 

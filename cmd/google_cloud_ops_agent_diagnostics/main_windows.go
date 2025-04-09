@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/GoogleCloudPlatform/ops-agent/cmd/google_cloud_ops_agent_diagnostics/utils"
 	"go.opentelemetry.io/otel"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/debug"
@@ -67,7 +66,7 @@ func run(ctx context.Context) error {
 }
 
 func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
-	ctx, cancel := context.WithCancel(s.ctx)
+	_, cancel := context.WithCancel(s.ctx)
 	defer cancel()
 
 	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown
@@ -80,11 +79,6 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		return false, ERROR_INVALID_PARAMETER
 	}
 
-	_, _, err := utils.GetUserAndMergedConfigs(ctx, s.userConf)
-	if err != nil {
-		s.log.Error(DiagnosticsEventID, fmt.Sprintf("failed to obtain unified configuration: %v", err))
-		return false, ERROR_FILE_NOT_FOUND
-	}
 	s.log.Info(DiagnosticsEventID, "obtained unified configuration")
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 
