@@ -253,7 +253,6 @@ func runOpsAgentDiagnosticsWindows(ctx context.Context, logger *logging.Director
 		gce.RunRemotely(ctx, logger.ToFile("Get-Service_output.txt"), vm, "Get-Service google-cloud-ops-agent* | Format-Table -AutoSize -Wrap")
 
 		gce.RunRemotely(ctx, logger.ToFile("ops_agent_logs.txt"), vm, "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent' } | Format-Table -AutoSize -Wrap")
-		gce.RunRemotely(ctx, logger.ToFile("ops_agent_diagnostics_logs.txt"), vm, "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent-diagnostics' } | Format-Table -AutoSize -Wrap")
 		gce.RunRemotely(ctx, logger.ToFile("open_telemetry_agent_logs.txt"), vm, "Get-WinEvent -FilterHashtable @{ Logname='Application'; ProviderName='google-cloud-ops-agent-opentelemetry-collector' } | Format-Table -AutoSize -Wrap")
 	}
 	// Fluent-Bit has not implemented exporting logs to the Windows event log yet.
