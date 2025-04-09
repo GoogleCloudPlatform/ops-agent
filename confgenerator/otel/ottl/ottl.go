@@ -168,6 +168,10 @@ func ParseJSON(a Value) Value {
 	return valuef(`ParseJSON(%s)`, a)
 }
 
+func ExtractPatterns(a Value, pattern string) Value {
+	return valuef(`ExtractPatterns(%s, %q)`, a, pattern)
+}
+
 func ConvertCase(a Value, toCase string) Value {
 	return valuef(`ConvertCase(%s, %q)`, a, toCase)
 }

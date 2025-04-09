@@ -292,6 +292,48 @@ func (p LoggingProcessorParseRegex) Components(ctx context.Context, tag, uid str
 	return parserFilters
 }
 
+func (p LoggingProcessorParseRegex) Processors(ctx context.Context) ([]otel.Component, error) {
+	from := p.Field
+	if from == "" {
+		from = "jsonPayload.message"
+	}
+	m, err := filter.NewMemberLegacy(from)
+	if err != nil {
+		return nil, err
+	}
+
+	fromAccessor, err := m.OTTLAccessor()
+	if err != nil {
+		return nil, err
+	}
+
+	cachedJSON := ottl.LValue{"cache", "__parsed_regex"}
+	statements := ottl.NewStatements(
+		cachedJSON.SetIf(ottl.ExtractPatterns(fromAccessor, p.Regex), fromAccessor.IsPresent()),
+		fromAccessor.DeleteIf(cachedJSON.IsPresent()),
+		ottl.LValue{"body"}.MergeMapsIf(cachedJSON, "upsert", cachedJSON.IsPresent()),
+		cachedJSON.Delete(),
+	)
+
+	ts, err := p.TimestampStatements()
+	if err != nil {
+		return nil, err
+	}
+	statements = statements.Append(ts)
+	ts, err = p.TypesStatements()
+	if err != nil {
+		return nil, err
+	}
+	statements = statements.Append(ts)
+
+	statements = statements.Append(p.FluentBitSpecialFieldsStatements(ctx))
+
+	return []otel.Component{otel.Transform(
+		"log", "log",
+		statements,
+	)}, nil
+}
+
 type RegexParser struct {
 	Regex  string
 	Parser ParserShared
