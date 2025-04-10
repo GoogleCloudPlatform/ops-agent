@@ -307,12 +307,12 @@ func (p LoggingProcessorParseRegex) Processors(ctx context.Context) ([]otel.Comp
 		return nil, err
 	}
 
-	cachedJSON := ottl.LValue{"cache", "__parsed_regex"}
+	cachedRegex := ottl.LValue{"cache", "__parsed_regex"}
 	statements := ottl.NewStatements(
-		cachedJSON.SetIf(ottl.ExtractPatterns(fromAccessor, p.Regex), fromAccessor.IsPresent()),
-		fromAccessor.DeleteIf(cachedJSON.IsPresent()),
-		ottl.LValue{"body"}.MergeMapsIf(cachedJSON, "upsert", cachedJSON.IsPresent()),
-		cachedJSON.Delete(),
+		cachedRegex.SetIf(ottl.ExtractPatterns(fromAccessor, p.Regex), fromAccessor.IsPresent()),
+		fromAccessor.DeleteIf(cachedRegex.IsPresent()),
+		ottl.LValue{"body"}.MergeMapsIf(cachedRegex, "upsert", cachedRegex.IsPresent()),
+		cachedRegex.Delete(),
 	)
 
 	ts, err := p.TimestampStatements()

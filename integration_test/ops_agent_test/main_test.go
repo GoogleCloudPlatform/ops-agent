@@ -939,6 +939,13 @@ func testCustomLogFormat(t *testing.T, otel bool) {
         exporters: [google]
 `, logPath, "%Y-%m-%dT%H:%M:%S.%L%z", otel)
 
+		if otel {
+			// Turn on the otel feature gate.
+			if err := gce.SetEnvironmentVariables(ctx, logger, vm, map[string]string{"EXPERIMENTAL_FEATURES": "otel_logging"}); err != nil {
+				t.Fatal(err)
+			}
+		}
+
 		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
