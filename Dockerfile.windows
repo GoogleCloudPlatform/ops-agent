@@ -208,8 +208,7 @@ COPY submodules/opentelemetry-operations-collector /work/submodules/opentelemetr
 
 WORKDIR /work/submodules/opentelemetry-operations-collector/otelopscol
 
-RUN $JarHash = (Get-FileHash /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar -Algorithm SHA256 | Select -Expand Hash).toLower(); `
-    powershell.exe -File ./build.ps1 -jmxHash $JarHash -outDir /work/out;
+RUN & ./build.ps1 -outDir /work/out/bin -jmxHash (Get-FileHash /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar -Algorithm SHA256 | Select -Expand Has>
 
 ###############################################################################
 # Config generator/service installer
