@@ -1,4 +1,4 @@
-# Configures Ops Agent to collect telemetry from the app and restart Ops Agent.
+# Configures Ops Agent to collect telemetry from the app. You must restart the agent for the configuration to take effect.
 set -e
 
 # Check if the file exists
