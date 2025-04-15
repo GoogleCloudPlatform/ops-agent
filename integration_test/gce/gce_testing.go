@@ -1748,7 +1748,6 @@ func SetEnvironmentVariables(ctx context.Context, logger *log.Logger, vm *VM, en
 	}
 	for _, service := range []string{
 		"google-cloud-ops-agent",
-		"google-cloud-ops-agent-diagnostics",
 		"google-cloud-ops-agent-fluent-bit",
 		"google-cloud-ops-agent-opentelemetry-collector",
 	} {

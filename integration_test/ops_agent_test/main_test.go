@@ -119,13 +119,6 @@ func metricsAgentProcessNamesForImage(imageSpec string) []string {
 	return []string{"otelopscol", "collectd"}
 }
 
-func diagnosticsProcessNamesForImage(imageSpec string) []string {
-	if gce.IsWindows(imageSpec) {
-		return []string{"google-cloud-ops-agent-diagnostics"}
-	}
-	return []string{"google_cloud_ops_agent_diagnostics"}
-}
-
 func makeDirectory(ctx context.Context, logger *log.Logger, vm *gce.VM, directory string) error {
 	var createFolderCmd string
 	if gce.IsWindows(vm.ImageSpec) {
@@ -2223,10 +2216,6 @@ func TestWindowsEventLogV2(t *testing.T) {
 		}
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
-		// Have to wait for startup feature tracking metrics to be sent
-		// before we tear down the service.
-		time.Sleep(20 * time.Second)
-
 		// There is a limitation on custom event log sources that requires their associated
 		// log names to have a unique eight-character prefix, so unfortunately we can only test
 		// at most one "Microsoft-*" log.
@@ -2267,7 +2256,7 @@ func TestWindowsEventLogV2(t *testing.T) {
 
 		// Have to wait for startup feature tracking metrics to be sent
 		// before we tear down the service.
-		time.Sleep(20 * time.Second)
+		time.Sleep(2 * time.Minute)
 
 		payloads := map[string]map[string]string{
 			"winlog2_space": {
@@ -2439,23 +2428,16 @@ func TestWindowsEventLogV2(t *testing.T) {
 				Value:   "2",
 			},
 		}
-		// The UAP Plugin executes the diagnostics service only on the config.yaml file's content at the time of execution.
-		// It does not run an additional time for the default/empty config.yaml.
-		if !gce.IsOpsAgentUAPPlugin() {
-			expectedFeatures = append(expectedFeatures, &feature_tracking_metadata.FeatureTracking{
-				Module:  "logging",
-				Feature: "service:pipelines",
-				Key:     "default_pipeline_overridden",
-				Value:   "false",
-			})
-		}
+
+		// Wait at least a minute since feature_tracking and enabled_receivers
+		// metrics are sent one minute after agent startup
+		time.Sleep(2 * time.Minute)
 
 		series, err := gce.WaitForMetricSeries(ctx, logger, vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", 2*time.Hour, nil, false, len(expectedFeatures))
 		if err != nil {
 			t.Error(err)
 			return
 		}
-
 		err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, expectedFeatures)
 		if err != nil {
 			t.Error(err)
@@ -2729,7 +2711,11 @@ func TestDefaultMetricsNoProxy(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		testDefaultMetrics(ctx, t, logger, vm, 1*time.Hour)
+		// Wait at least a minute since feature_tracking and enabled_receivers
+		// metrics are sent one minute after agent startup
+		time.Sleep(2 * time.Minute)
+
+		testDefaultMetrics(ctx, t, logger, vm, time.Hour)
 	})
 }
 
@@ -4156,29 +4142,6 @@ func TestLoggingDataprocAttributes(t *testing.T) {
 	})
 }
 
-func diagnosticsLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
-	time.Sleep(3 * time.Minute)
-	// Query for a metric sent by the diagnostics service from the last
-	// minute. Sleep for 3 minutes first to make sure we aren't picking
-	// up metrics from a previous instance of the diagnostics service.
-	_, err := gce.WaitForMetric(ctx, logger, vm, "agent.googleapis.com/agent/ops_agent/enabled_receivers", time.Minute, nil, false)
-	return err
-}
-
-func TestDiagnosticsCrashRestart(t *testing.T) {
-	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-		t.Parallel()
-		if gce.IsOpsAgentUAPPlugin() {
-			// Ops Agent Plugin does not restart the diagnostics service on termination.
-			t.SkipNow()
-		}
-		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-
-		testAgentCrashRestart(ctx, t, logger, vm, diagnosticsProcessNamesForImage(vm.ImageSpec), diagnosticsLivenessChecker)
-	})
-}
-
 func testWindowsStandaloneAgentConflict(t *testing.T, installStandalone func(ctx context.Context, logger *log.Logger, vm *gce.VM) error, wantError string) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
@@ -4261,6 +4224,7 @@ func TestUpgradeOpsAgent(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		time.Sleep(2 * time.Minute)
 		// Wait for the Ops Agent to be active. Make sure that it is working.
 		if err := opsAgentLivenessChecker(ctx, logger, vm); err != nil {
 			t.Fatal(err)
@@ -4272,6 +4236,7 @@ func TestUpgradeOpsAgent(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		time.Sleep(2 * time.Minute)
 		// Make sure that the newly installed Ops Agent is working.
 		if err := opsAgentLivenessChecker(ctx, logger, vm); err != nil {
 			t.Fatal(err)
