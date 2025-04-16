@@ -32,8 +32,8 @@ require (
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8
-	golang.org/x/sys v0.30.0
-	golang.org/x/text v0.22.0
+	golang.org/x/sys v0.31.0
+	golang.org/x/text v0.23.0
 	google.golang.org/api v0.195.0
 	google.golang.org/genproto v0.0.0-20240827150818-7e3bb234dfed // indirect
 	google.golang.org/grpc v1.66.0
@@ -47,7 +47,7 @@ require (
 	buf.build/go/protoyaml v0.3.1
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.24.3
 	go.opentelemetry.io/collector/pdata v1.4.0
-	golang.org/x/sync v0.11.0
+	golang.org/x/sync v0.12.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20240827150818-7e3bb234dfed
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -169,11 +169,11 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.53.0 // indirect
 	go.opentelemetry.io/otel/trace v1.31.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	golang.org/x/crypto v0.35.0 // indirect
+	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/mod v0.19.0 // indirect
-	golang.org/x/net v0.36.0 // indirect
+	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/oauth2 v0.22.0 // indirect
-	golang.org/x/term v0.29.0 // indirect
+	golang.org/x/term v0.30.0 // indirect
 	golang.org/x/time v0.6.0 // indirect
 	golang.org/x/tools v0.23.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1 // indirect
