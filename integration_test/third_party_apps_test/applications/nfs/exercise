@@ -1,0 +1,10 @@
+NFS_SHARE_DIRECTORY=/mnt/nfssrv
+NFS_LOG_FILE=$NFS_SHARE_DIRECTORY/example.log
+
+sudo tee $NFS_LOG_FILE > /dev/null << EOF
+Example log line 1
+Example log line 2
+Example log line 3
+Example log line 4
+Example log line 5
+EOF
