@@ -180,7 +180,7 @@ expected_metrics:
       - name: direction
         value_regex: sent|received
       - name: type
-        value_regex: distingushed_names|other
+        value_regex: distinguished_names|other
   - type: workload.googleapis.com/active_directory.ds.security_descriptor_propagations_event.queued
     value_type: INT64
     kind: GAUGE

@@ -65,8 +65,8 @@ processors:
         metric_names:
         - otelcol_process_uptime
         - otelcol_process_memory_rss
-        - grpc_client_attempt_duration
-        - googlecloudmonitoring_point_count
+        - grpc.client.attempt.duration
+        - googlecloudmonitoring/point_count
   filter/otel_2:
     metrics:
       include:
@@ -74,8 +74,8 @@ processors:
         metric_names:
         - otelcol_process_uptime
         - otelcol_process_memory_rss
-        - grpc_client_attempt_duration_count
-        - googlecloudmonitoring_point_count
+        - grpc.client.attempt.duration_count
+        - googlecloudmonitoring/point_count
   filter/vault_1:
     metrics:
       include:
@@ -498,18 +498,18 @@ processors:
         aggregation_type: sum
         label_set: []
     - action: update
-      include: grpc_client_attempt_duration_count
+      include: grpc.client.attempt.duration_count
       new_name: agent/api_request_count
       operations:
       - action: update_label
-        label: grpc_status
+        label: grpc.status
         new_label: state
       - action: aggregate_labels
         aggregation_type: sum
         label_set:
         - state
     - action: update
-      include: googlecloudmonitoring_point_count
+      include: googlecloudmonitoring/point_count
       new_name: agent/monitoring/point_count
       operations:
       - action: toggle_scalar_data_type
@@ -574,7 +574,7 @@ processors:
     metric_statements:
     - context: metric
       statements:
-      - extract_count_metric(true) where name == "grpc_client_attempt_duration"
+      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
   transform/vault_0:
     metric_statements:
     - context: datapoint
@@ -1224,6 +1224,7 @@ receivers:
         metrics:
           process.handles:
             enabled: true
+        mute_process_all_errors: true
         mute_process_exe_error: true
         mute_process_name_error: true
       processes: {}
