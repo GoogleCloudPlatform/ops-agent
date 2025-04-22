@@ -744,58 +744,6 @@ func TestCustomLogFile(t *testing.T) {
 	})
 }
 
-func TestGoogleSecretProvider(t *testing.T) {
-	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-		t.Parallel()
-		if gce.IsWindows(imageSpec) {
-			t.SkipNow()
-		}
-		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-		logPath := logPathForImage(vm.ImageSpec)
-		config := `logging:
-  receivers:
-    mylog_source:
-      type: files
-      include_paths:
-      - ${googlesecretmanager:projects/1234/secrets/mysecret/versions/latest}
-  exporters:
-    google:
-      type: google_cloud_logging
-  processors:
-    my_exclude:
-      type: exclude_logs
-      match_any:
-      - jsonPayload.missing_field = "value"
-      - jsonPayload.message =~ "test pattern"
-  service:
-    pipelines:
-      my_pipeline:
-        receivers: [mylog_source]
-        processors: [my_exclude]
-        exporters: [google]
-`
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
-			t.Fatal(err)
-		}
-
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader("abc test pattern xyz\n7654321\n"), logPath); err != nil {
-			t.Fatalf("error writing dummy log line: %v", err)
-		}
-
-		if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, "jsonPayload.message=7654321"); err != nil {
-			t.Error(err)
-		}
-		time.Sleep(60 * time.Second)
-		_, err := gce.QueryLog(ctx, logger, vm, "mylog_source", time.Hour, `jsonPayload.message="abc test pattern xyz"`, 5)
-		if err == nil {
-			t.Error("expected log to be excluded but was included")
-		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
-			t.Fatalf("unexpected error: %v", err)
-		}
-	})
-}
-
 func TestPluginGetStatusReturnsHealthyStatusOnSuccessfulOpsAgentStart(t *testing.T) {
 	t.Parallel()
 	if !gce.IsOpsAgentUAPPlugin() {
@@ -3195,6 +3143,55 @@ func TestPrometheusRelabelConfigs(t *testing.T) {
         scrape_configs:
         - job_name: test
           metrics_path: /data
+          scrape_interval: 10s
+          static_configs:
+            - targets:
+              - localhost:8000
+          metric_relabel_configs:
+          - source_labels: [test_label]
+            regex: "(.*)@(.*)"
+            target_label: destination
+            replacement: "${2}/${1}"
+  service:
+    pipelines:
+      prom_pipeline:
+        receivers: [prom_app]
+`
+	prometheusTestdata := path.Join("testdata", "prometheus")
+	remoteWorkDir := path.Join("/opt", "go-http-server")
+	testChecks := make([]mockPrometheusCheck, 0)
+	testChecks = append(testChecks, mockPrometheusCheck{
+		fileToUpload: fileToUpload{
+			local:  path.Join(prometheusTestdata, "sample_label_replace"),
+			remote: path.Join(remoteWorkDir, "data"),
+		},
+		check: func(ctx context.Context, logger *log.Logger, vm *gce.VM, window time.Duration) error {
+			if pts, err := gce.WaitForMetric(ctx, logger, vm, "prometheus.googleapis.com/test_metric/gauge", window, nil, true); err != nil {
+				return err
+			} else {
+				labelValue, ok := pts.Metric.Labels["test_label"]
+				if !ok {
+					return errors.New("test_label label not found in metric")
+				}
+				if labelValue != "group/capture" {
+					return fmt.Errorf("Expected test_label to be 'group/capture' but got %s", labelValue)
+				}
+			}
+			return nil
+		},
+	})
+	testPrometheusMetrics(t, config, testChecks)
+}
+
+func TestGoogleSecretProvider(t *testing.T) {
+	config := `metrics:
+  receivers:
+    prom_app:
+      type: prometheus
+      config:
+        scrape_configs:
+        - job_name: test
+          metrics_path: ${googlesecretmanager:projects/1234/secrets/mysecret/versions/latest}
           scrape_interval: 10s
           static_configs:
             - targets:
