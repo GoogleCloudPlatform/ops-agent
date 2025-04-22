@@ -744,6 +744,58 @@ func TestCustomLogFile(t *testing.T) {
 	})
 }
 
+func TestGoogleSecretProvider(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+		if gce.IsWindows(imageSpec) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		logPath := logPathForImage(vm.ImageSpec)
+		config := `logging:
+  receivers:
+    mylog_source:
+      type: files
+      include_paths:
+      - ${googlesecretmanager:projects/1234/secrets/mysecret/versions/latest}
+  exporters:
+    google:
+      type: google_cloud_logging
+  processors:
+    my_exclude:
+      type: exclude_logs
+      match_any:
+      - jsonPayload.missing_field = "value"
+      - jsonPayload.message =~ "test pattern"
+  service:
+    pipelines:
+      my_pipeline:
+        receivers: [mylog_source]
+        processors: [my_exclude]
+        exporters: [google]
+`
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader("abc test pattern xyz\n7654321\n"), logPath); err != nil {
+			t.Fatalf("error writing dummy log line: %v", err)
+		}
+
+		if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, "jsonPayload.message=7654321"); err != nil {
+			t.Error(err)
+		}
+		time.Sleep(60 * time.Second)
+		_, err := gce.QueryLog(ctx, logger, vm, "mylog_source", time.Hour, `jsonPayload.message="abc test pattern xyz"`, 5)
+		if err == nil {
+			t.Error("expected log to be excluded but was included")
+		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+}
+
 func TestPluginGetStatusReturnsHealthyStatusOnSuccessfulOpsAgentStart(t *testing.T) {
 	t.Parallel()
 	if !gce.IsOpsAgentUAPPlugin() {
