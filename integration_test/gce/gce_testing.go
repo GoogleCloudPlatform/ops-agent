@@ -16,32 +16,7 @@
 
 /*
 Package gce holds various helpers for testing the agents on GCE.
-To run a test based on this library, you can either:
-
-* use Kokoro by triggering automated presubmits on your change, or
-* use "go test" directly, after performing the setup steps described
-in README.md.
-
-NOTE: When testing Windows VMs without using Kokoro, PROJECT needs to be
-a project whose firewall allows ssh connections.
-[Kokoro can use stackdriver-test-143416, which does not allow ssh
-connections, because our Kokoro workers are also running in that project.]
-
-NOTE: This command does not actually build the Ops Agent. To test the latest
-
-Ops Agent code, first build and upload a package to Rapture. Then look up
-the REPO_SUFFIX for that build and add it as an environment variable to the
-command below; for example: REPO_SUFFIX=20210805-2. You can also use
-AGENT_PACKAGES_IN_GCS, for details see README.md.
-
-	PROJECT=dev_project \
-	ZONES=us-central1-b \
-	IMAGE_SPECS=debian-cloud:debian-12,rocky-linux-cloud:rocky-linux-8,rhel-sap-cloud:rhel-8-8-sap-ha,suse-cloud:sles-15,ubuntu-os-cloud:ubuntu-2004-lts,windows-cloud:windows-2016,windows-cloud:windows-2019 \
-
-	go test -v ops_agent_test.go \
-	  -test.parallel=1000 \
-	  -tags=integration_test \
-	  -timeout=4h
+This library is intended to work when run via Kokoro.
 
 This library needs the following environment variables to be defined:
 PROJECT: What GCP project to use.
