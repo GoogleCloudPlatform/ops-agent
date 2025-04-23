@@ -2622,6 +2622,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 
 		var series *monitoringpb.TimeSeries
 		series, err = gce.WaitForMetric(ctx, logger, vm, metric.Type, window, nil, false)
+
 		if err != nil {
 			t.Fatal(err)
 		}

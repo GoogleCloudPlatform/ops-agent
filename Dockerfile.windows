@@ -206,13 +206,9 @@ RUN ./gradlew --no-daemon :jmx-metrics:build; `
 
 COPY submodules/opentelemetry-operations-collector /work/submodules/opentelemetry-operations-collector
 
-WORKDIR /work/submodules/opentelemetry-operations-collector
+WORKDIR /work/submodules/opentelemetry-operations-collector/otelopscol
 
-RUN $JarHash = (Get-FileHash /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar -Algorithm SHA256 | Select -Expand Hash).toLower(); `
-    go build -o bin/google-cloud-metrics-agent_windows_amd64.exe `
-    -ldflags \"-X github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver.MetricsGathererHash=$JarHash\" `
-    ./cmd/otelopscol; `
-    Copy-Item -Path bin/google-cloud-metrics-agent_windows_amd64.exe -Destination /work/out/bin/;
+RUN & ./build.ps1 -outDir /work/out/bin -jmxHash (Get-FileHash /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar -Algorithm SHA256 | Select -Expand Hash).toLower()
 
 ###############################################################################
 # Config generator/service installer
