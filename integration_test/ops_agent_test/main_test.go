@@ -3191,7 +3191,7 @@ func TestGoogleSecretProvider(t *testing.T) {
       config:
         scrape_configs:
         - job_name: test
-          metrics_path: ${googlesecretmanager:projects/1234/secrets/mysecret/versions/latest}
+          metrics_path: ${googlesecretsprovider:projects/1234/secrets/mysecret/versions/latest}
           scrape_interval: 10s
           static_configs:
             - targets:
