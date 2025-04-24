@@ -6,6 +6,8 @@
       float: 10.5
       integer: 15.0
       mapped_field: field value
+      omitted: broken
+      omitted2: broken
       spanId: facefeedb0bacafe
     labels:
       label2: label1 value
@@ -23,6 +25,8 @@
       float: 10.5
       integer: 15.0
       mapped_field: field value
+      omitted: broken
+      omitted2: broken
       spanId: facefeedb0bacafe
     labels:
       label2: label1 value
