@@ -937,7 +937,7 @@ func testCustomLogFormat(t *testing.T, otel bool) {
         receivers: [mylog_source]
         processors: [rfc5424]
         exporters: [google]
-`, logPath, "%Y-%m-%dT%H:%M:%S.%L%z", otel)
+`, logPath, "%Y-%m-%dT%H:%M:%S%z", otel)
 
 		if otel {
 			// Turn on the otel feature gate.
@@ -950,8 +950,8 @@ func testCustomLogFormat(t *testing.T, otel bool) {
 			t.Fatal(err)
 		}
 
-		zone := time.FixedZone("UTC-8", int((-8 * time.Hour).Seconds()))
-		line := fmt.Sprintf("<13>1 %s %s my_app_id - - - qqqqrrrr\n", time.Now().In(zone).Format(time.RFC3339Nano), vm.Name)
+		// zone := time.FixedZone("UTC-8", int((-8 * time.Hour).Seconds()))
+		line := fmt.Sprintf("<13>1 %s %s my_app_id - - - qqqqrrrr\n", time.Now().Format(time.RFC3339), vm.Name)
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), logPath); err != nil {
 			t.Fatalf("error writing dummy log line: %v", err)
 		}
