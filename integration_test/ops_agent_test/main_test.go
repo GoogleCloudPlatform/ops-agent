@@ -62,10 +62,10 @@ import (
 
 	cloudlogging "cloud.google.com/go/logging"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
 	feature_tracking_metadata "github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
-	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
 	"github.com/google/uuid"
 	"go.uber.org/multierr"
