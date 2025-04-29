@@ -39,7 +39,6 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
-	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
 
 	"github.com/blang/semver"
 	"github.com/cenkalti/backoff/v4"
@@ -213,8 +212,8 @@ func getOpsAgentLogFilesList(imageSpec string) []string {
 	if gce.IsOpsAgentUAPPlugin() {
 		return []string{
 			gce.SyslogLocation(imageSpec),
+			OpsAgentConfigPath(imageSpec),
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/health-checks.log",
-			"/etc/google-cloud-ops-agent/config.yaml",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/subagents/logging-module.log",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/subagents/metrics-module.log",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/nvidia-installer.log",
@@ -227,8 +226,8 @@ func getOpsAgentLogFilesList(imageSpec string) []string {
 	}
 	return []string{
 		gce.SyslogLocation(imageSpec),
+		OpsAgentConfigPath(imageSpec),
 		"/var/log/google-cloud-ops-agent/health-checks.log",
-		"/etc/google-cloud-ops-agent/config.yaml",
 		"/var/log/google-cloud-ops-agent/subagents/logging-module.log",
 		"/var/log/google-cloud-ops-agent/subagents/metrics-module.log",
 		"/var/log/nvidia-installer.log",
@@ -260,7 +259,7 @@ func runOpsAgentDiagnosticsWindows(ctx context.Context, logger *logging.Director
 	gce.RunRemotely(ctx, logger.ToFile("health-checks.txt"), vm, fmt.Sprintf("Get-Content -Path '%s' -Raw", stateDir+`log\health-checks.log`))
 
 	for _, conf := range []string{
-		`C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml`,
+		OpsAgentConfigPath(vm.ImageSpec),
 		stateDir + `generated_configs\fluentbit\fluent_bit_main.conf`,
 		stateDir + `generated_configs\fluentbit\fluent_bit_parser.conf`,
 		stateDir + `generated_configs\otel\otel.yaml`,
@@ -961,7 +960,7 @@ func SetupOpsAgentFrom(ctx context.Context, logger *log.Logger, vm *gce.VM, conf
 			// services have not fully started up yet.
 			time.Sleep(startupDelay)
 		}
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(config), util.GetConfigPath(vm.ImageSpec)); err != nil {
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(config), OpsAgentConfigPath(vm.ImageSpec)); err != nil {
 			return fmt.Errorf("SetupOpsAgentFrom() failed to upload config file: %v", err)
 		}
 	}
@@ -1184,6 +1183,15 @@ func installWindowsPackageFromGCS(ctx context.Context, logger *log.Logger, vm *g
 		return fmt.Errorf("error installing agent from .goo file: %v", err)
 	}
 	return nil
+}
+
+// OpsAgentConfigPath returns the platform-specific filesystem location where
+// the Ops Agent config is stored.
+func OpsAgentConfigPath(imageSpec string) string {
+	if gce.IsWindows(imageSpec) {
+		return `C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml`
+	}
+	return "/etc/google-cloud-ops-agent/config.yaml"
 }
 
 func GetOtelConfigPath(imageSpec string) string {
