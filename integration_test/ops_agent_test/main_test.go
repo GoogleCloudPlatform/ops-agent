@@ -4755,7 +4755,7 @@ func TestPortsAndAPIHealthChecks(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		if !isHealthCheckTestImage(imageSpec) {
+		if !isHealthCheckTestImage(imageSpec) || gce.IsOpsAgentUAPPlugin() {
 			t.SkipNow()
 		}
 
