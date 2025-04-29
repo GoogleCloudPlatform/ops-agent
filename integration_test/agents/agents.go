@@ -947,13 +947,6 @@ func StartOpsAgentPluginWithBackoff(ctx context.Context, logger *log.Logger, vm 
 	return nil
 }
 
-func OpsAgentConfigPath(imageSpec string) string {
-	if gce.IsWindows(imageSpec) {
-		return `C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml`
-	}
-	return "/etc/google-cloud-ops-agent/config.yaml"
-}
-
 // SetupOpsAgentFrom is an overload of setupOpsAgent that allows the callsite to
 // decide which version of the agent gets installed.
 func SetupOpsAgentFrom(ctx context.Context, logger *log.Logger, vm *gce.VM, config string, location PackageLocation) error {
@@ -1190,6 +1183,15 @@ func installWindowsPackageFromGCS(ctx context.Context, logger *log.Logger, vm *g
 		return fmt.Errorf("error installing agent from .goo file: %v", err)
 	}
 	return nil
+}
+
+// OpsAgentConfigPath returns the platform-specific filesystem location where
+// the Ops Agent config is stored.
+func OpsAgentConfigPath(imageSpec string) string {
+	if gce.IsWindows(imageSpec) {
+		return `C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml`
+	}
+	return "/etc/google-cloud-ops-agent/config.yaml"
 }
 
 func GetOtelConfigPath(imageSpec string) string {
