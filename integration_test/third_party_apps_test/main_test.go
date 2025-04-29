@@ -600,7 +600,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	}
 	time.Sleep(60 * time.Second)
 
-	backupConfigFilePath := util.GetConfigPath(vm.ImageSpec) + ".bak"
+	backupConfigFilePath := agents.OpsAgentConfigPath(vm.ImageSpec) + ".bak"
 	if err = assertFilePresence(ctx, logger.ToMainLog(), vm, backupConfigFilePath); err != nil {
 		return nonRetryable, fmt.Errorf("error when fetching back up config file %s: %v", backupConfigFilePath, err)
 	}
