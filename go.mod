@@ -6,8 +6,8 @@ require (
 	cloud.google.com/go/compute/metadata v0.6.0
 	cloud.google.com/go/logging v1.13.0
 	cloud.google.com/go/monitoring v1.24.2
-	cloud.google.com/go/storage v1.52.0
-	cloud.google.com/go/trace v1.11.6
+	cloud.google.com/go/storage v1.52.0 // indirect
+	cloud.google.com/go/trace v1.11.6 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.51.0
 	github.com/binxio/gcloudconfig v0.1.5
 	github.com/blang/semver v3.5.1+incompatible
@@ -23,7 +23,7 @@ require (
 	github.com/prometheus/common v0.55.0
 	github.com/prometheus/prometheus v0.51.2-0.20240405174432-b4a973753c6e
 	github.com/shirou/gopsutil v3.21.11+incompatible
-	github.com/smallnest/weighted v0.0.0-20230419055410-36b780e40a7a
+	github.com/smallnest/weighted v0.0.0-20230419055410-36b780e40a7a // indirect
 	go.opentelemetry.io/contrib/detectors/gcp v1.35.0
 	go.opentelemetry.io/otel v1.35.0
 	go.opentelemetry.io/otel/metric v1.35.0
@@ -33,7 +33,7 @@ require (
 	go.uber.org/zap v1.24.0
 	golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8
 	golang.org/x/sys v0.32.0
-	golang.org/x/text v0.24.0
+	golang.org/x/text v0.24.0 // indirect
 	google.golang.org/api v0.230.0
 	google.golang.org/genproto v0.0.0-20250303144028-a0af3efb3deb // indirect
 	google.golang.org/grpc v1.72.0

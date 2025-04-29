@@ -39,7 +39,6 @@ import (
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/gce"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/logging"
-	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
 
 	"github.com/blang/semver"
 	"github.com/cenkalti/backoff/v4"
@@ -948,6 +947,13 @@ func StartOpsAgentPluginWithBackoff(ctx context.Context, logger *log.Logger, vm 
 	return nil
 }
 
+func OpsAgentConfigPath(imageSpec string) string {
+	if gce.IsWindows(imageSpec) {
+		return `C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml`
+	}
+	return "/etc/google-cloud-ops-agent/config.yaml"
+}
+
 // SetupOpsAgentFrom is an overload of setupOpsAgent that allows the callsite to
 // decide which version of the agent gets installed.
 func SetupOpsAgentFrom(ctx context.Context, logger *log.Logger, vm *gce.VM, config string, location PackageLocation) error {
@@ -961,7 +967,7 @@ func SetupOpsAgentFrom(ctx context.Context, logger *log.Logger, vm *gce.VM, conf
 			// services have not fully started up yet.
 			time.Sleep(startupDelay)
 		}
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(config), util.GetConfigPath(vm.ImageSpec)); err != nil {
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(config), OpsAgentConfigPath(vm.ImageSpec)); err != nil {
 			return fmt.Errorf("SetupOpsAgentFrom() failed to upload config file: %v", err)
 		}
 	}
