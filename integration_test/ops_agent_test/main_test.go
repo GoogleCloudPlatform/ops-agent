@@ -3183,53 +3183,62 @@ func TestPrometheusRelabelConfigs(t *testing.T) {
 	testPrometheusMetrics(t, config, testChecks)
 }
 
-func TestGoogleSecretProvider(t *testing.T) {
-	config := `metrics:
+func TestGoogleProvider(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+		metadataKey, metadataValue := "test", "${test:value}"
+		escapedMetadataValue := "_{test:value}"
+
+		customScopes := "https://www.googleapis.com/auth/cloud-platform"
+
+		ctx, logger, vm := agents.CommonSetupWithExtraCreateArgumentsAndMetadata(t, imageSpec, []string{"--scopes", customScopes}, map[string]string{
+			metadataKey: metadataValue,
+		})
+
+		promConfig := fmt.Sprintf(`metrics:
   receivers:
-    prom_app:
-      type: prometheus
+    prometheus:
+      type: ${googlesecretsprovider:projects/506114058399/secrets/ida-test-secret-1/versions/4}
       config:
         scrape_configs:
-        - job_name: test
-          metrics_path: ${googlesecretsprovider:projects/1234/secrets/mysecret/versions/latest}
-          scrape_interval: 10s
-          static_configs:
-            - targets:
-              - localhost:8000
-          metric_relabel_configs:
-          - source_labels: [test_label]
-            regex: "(.*)@(.*)"
-            target_label: destination
-            replacement: "${2}/${1}"
+          - job_name: 'prometheus'
+            scrape_interval: 10s
+            static_configs:
+              - targets: ['localhost:20202']
+            relabel_configs:
+              - source_labels: [__meta_gce_metadata_%s]
+                regex: '(.+)'
+                replacement: '${1}'
+                target_label: %s
   service:
     pipelines:
-      prom_pipeline:
-        receivers: [prom_app]
-`
-	prometheusTestdata := path.Join("testdata", "prometheus")
-	remoteWorkDir := path.Join("/opt", "go-http-server")
-	testChecks := make([]mockPrometheusCheck, 0)
-	testChecks = append(testChecks, mockPrometheusCheck{
-		fileToUpload: fileToUpload{
-			local:  path.Join(prometheusTestdata, "sample_label_replace"),
-			remote: path.Join(remoteWorkDir, "data"),
-		},
-		check: func(ctx context.Context, logger *log.Logger, vm *gce.VM, window time.Duration) error {
-			if pts, err := gce.WaitForMetric(ctx, logger, vm, "prometheus.googleapis.com/test_metric/gauge", window, nil, true); err != nil {
-				return err
-			} else {
-				labelValue, ok := pts.Metric.Labels["test_label"]
-				if !ok {
-					return errors.New("test_label label not found in metric")
-				}
-				if labelValue != "group/capture" {
-					return fmt.Errorf("Expected test_label to be 'group/capture' but got %s", labelValue)
-				}
-			}
-			return nil
-		},
+      prometheus_pipeline:
+        receivers:
+          - prometheus
+`, metadataKey, metadataKey)
+
+		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, promConfig); err != nil {
+			t.Fatal(err)
+		}
+
+		// Wait long enough for the data to percolate through the backends
+		// under normal circumstances. Based on some experiments, 2 minutes
+		// is normal; wait a bit longer to be on the safe side.
+		time.Sleep(3 * time.Minute)
+
+		existingMetric := "prometheus.googleapis.com/fluentbit_uptime/counter"
+		window := time.Minute
+		metric, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, existingMetric, window, nil, true)
+		if err != nil {
+			t.Fatal(fmt.Errorf("failed to find metric %q in VM %q: %w", existingMetric, vm.Name, err))
+		}
+
+		metricLabels := metric.Metric.Labels
+		if metricLabels[metadataKey] != escapedMetadataValue {
+			t.Errorf("metric %q has VM metadata %q set to %q instead of %q", existingMetric, metadataKey, metricLabels[metadataKey], escapedMetadataValue)
+		}
 	})
-	testPrometheusMetrics(t, config, testChecks)
 }
 
 func TestPrometheusUntypedMetrics(t *testing.T) {
