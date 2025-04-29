@@ -3184,63 +3184,65 @@ func TestPrometheusRelabelConfigs(t *testing.T) {
 }
 
 func TestGoogleProvider(t *testing.T) {
-	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-		t.Parallel()
-		metadataKey, metadataValue := "test", "${test:value}"
-		escapedMetadataValue := "_{test:value}"
-
-		customScopes := "https://www.googleapis.com/auth/cloud-platform"
-
-		ctx, logger, vm := agents.CommonSetupWithExtraCreateArgumentsAndMetadata(t, imageSpec, []string{"--scopes", customScopes}, map[string]string{
-			metadataKey: metadataValue,
-		})
-
-		promConfig := fmt.Sprintf(`metrics:
+	config := `metrics:
   receivers:
-    prometheus:
-      type: ${googlesecretsprovider:projects/506114058399/secrets/ida-test-secret-1/versions/4}
+    prom_app:
+      type: prometheus
       config:
         scrape_configs:
-          - job_name: 'prometheus'
-            scrape_interval: 10s
-            static_configs:
-              - targets: ['localhost:20202']
-            relabel_configs:
-              - source_labels: [__meta_gce_metadata_%s]
-                regex: '(.+)'
-                replacement: '${1}'
-                target_label: %s
+        - job_name: test
+          metrics_path: ${googlesecretsprovider:projects/506114058399/secrets/ida-test-secret-1/versions/3}
+          scrape_interval: 10s
+          static_configs:
+            - targets:
+              - localhost:8000
   service:
     pipelines:
-      prometheus_pipeline:
-        receivers:
-          - prometheus
-`, metadataKey, metadataKey)
+      prom_pipeline:
+        receivers: [prom_app]
+`
+	prometheusTestdata := path.Join("testdata", "prometheus")
+	remoteWorkDir := path.Join("/opt", "go-http-server")
+	testChecks := make([]mockPrometheusCheck, 0)
+	testChecks = append(testChecks, mockPrometheusCheck{
+		fileToUpload: fileToUpload{
+			local:  path.Join(prometheusTestdata, "sample_untyped"),
+			remote: path.Join(remoteWorkDir, "data"),
+		},
+		check: func(ctx context.Context, logger *log.Logger, vm *gce.VM, window time.Duration) error {
+			tests := []prometheusMetricTest{
+				{"prometheus.googleapis.com/explicit_untyped_metric/unknown", nil,
+					metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 1.0},
+				{"prometheus.googleapis.com/missing_type_hint_metric/unknown", nil,
+					metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 10.0},
+				// Since we are sending the same number at every time point,
+				// the cumulative counter metric will return 0 as no change in values
+				{"prometheus.googleapis.com/explicit_untyped_metric/unknown:counter", nil,
+					metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 0.0},
+				{"prometheus.googleapis.com/missing_type_hint_metric/unknown:counter", nil,
+					metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 0.0},
+			}
 
-		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, promConfig); err != nil {
-			t.Fatal(err)
-		}
+			var multiErr error
+			for _, test := range tests {
+				multiErr = multierr.Append(multiErr, assertPrometheusMetric(ctx, logger, vm, window, test))
+			}
+			if multiErr != nil {
+				t.Error(multiErr)
+			}
 
-		// Wait long enough for the data to percolate through the backends
-		// under normal circumstances. Based on some experiments, 2 minutes
-		// is normal; wait a bit longer to be on the safe side.
-		time.Sleep(3 * time.Minute)
-
-		existingMetric := "prometheus.googleapis.com/fluentbit_uptime/counter"
-		window := time.Minute
-		metric, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, existingMetric, window, nil, true)
-		if err != nil {
-			t.Fatal(fmt.Errorf("failed to find metric %q in VM %q: %w", existingMetric, vm.Name, err))
-		}
-
-		metricLabels := metric.Metric.Labels
-		if metricLabels[metadataKey] != escapedMetadataValue {
-			t.Errorf("metric %q has VM metadata %q set to %q instead of %q", existingMetric, metadataKey, metricLabels[metadataKey], escapedMetadataValue)
-		}
+			// Ensure that the gauge-casted metric isn't reported when the unknown typed one is.
+			if err := gce.AssertMetricMissing(ctx, logger, vm, "prometheus.googleapis.com/explicit_untyped_metric/gauge", true, window); err != nil {
+				t.Error(err)
+			}
+			if err := gce.AssertMetricMissing(ctx, logger, vm, "prometheus.googleapis.com/missing_type_hint_metric/gauge", true, window); err != nil {
+				t.Error(err)
+			}
+			return multiErr
+		},
 	})
+	testPrometheusMetricsToTestProvider(t, config, testChecks)
 }
-
 func TestPrometheusUntypedMetrics(t *testing.T) {
 	config := `metrics:
   receivers:
@@ -3617,6 +3619,99 @@ func TestPrometheusSummaryMetrics(t *testing.T) {
 func buildGoBinary(ctx context.Context, logger *log.Logger, vm *gce.VM, source, dest string) error {
 	_, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo /usr/local/go/bin/go build -o %s/ %s", dest, source))
 	return err
+}
+
+// testPrometheusMetrics tests different Prometheus metric types using static
+// testing files. The files will contain metrics in the right format and hosted
+// by a simple HTTP server so that the agent can scrape the metrics
+// The test will send two sets of metric points, to verify the metrics are
+// correctly received and processed
+func testPrometheusMetricsToTestProvider(t *testing.T, opsAgentConfig string, testChecks []mockPrometheusCheck) {
+	t.Parallel()
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+		if gce.IsWindows(imageSpec) {
+			t.SkipNow()
+		}
+		customScopes := "https://www.googleapis.com/auth/cloud-platform"
+		ctx, dirLog, vm := agents.CommonSetupWithExtraCreateArguments(t, imageSpec, []string{"--scopes", customScopes})
+		logger := dirLog.ToMainLog()
+		prometheusTestdata := path.Join("testdata", "prometheus")
+		remoteWorkDir := path.Join("/opt", "go-http-server")
+		serviceFiles := []fileToUpload{
+			{local: path.Join(prometheusTestdata, "http_server.go"),
+				remote: path.Join(remoteWorkDir, "http_server.go")},
+			{local: path.Join(prometheusTestdata, "http-server-for-prometheus-test.service"),
+				remote: path.Join("/etc", "systemd", "system", "http-server-for-prometheus-test.service")},
+		}
+
+		if len(testChecks) == 0 {
+			return
+		}
+
+		firstTest := testChecks[0]
+		restTests := testChecks[1:]
+		// 1. Upload the step one files and files used to setup the http service
+		err := uploadFiles(ctx, logger, vm, testdataDir, append(serviceFiles, firstTest.fileToUpload))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// 2. Setup the golang
+		if err := installGolang(ctx, logger, vm); err != nil {
+			t.Fatal(err)
+		}
+
+		// 3. Build the http server
+		if err := buildGoBinary(ctx, logger, vm, serviceFiles[0].remote, remoteWorkDir); err != nil {
+			t.Fatal(err)
+		}
+
+		// 4. Start the go http server
+		setupScript := `sudo systemctl daemon-reload && sudo systemctl enable http-server-for-prometheus-test && sudo systemctl restart http-server-for-prometheus-test`
+		_, err = gce.RunRemotely(ctx, logger, vm, setupScript)
+		if err != nil {
+			t.Fatalf("failed to start the http server in VM via systemctl with err: %v", err)
+		}
+		// Wait until the http server is ready
+		time.Sleep(20 * time.Second)
+		liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger, vm, `curl "http://localhost:8000/data"`)
+		if liveCheckErr != nil || strings.Contains(liveCheckOut.Stderr, "Connection refused") {
+			t.Fatalf("Http server failed to start with stdout %s and stderr %s", liveCheckOut.Stdout, liveCheckOut.Stderr)
+		}
+		// 3. Config and start the agent
+		if err := agents.SetupOpsAgent(ctx, logger, vm, opsAgentConfig); err != nil {
+			t.Fatal(err)
+		}
+
+		// Wait long enough for the data to percolate through the backends
+		// under normal circumstances. Based on some experiments, 2 minutes
+		// is normal; wait a bit longer to be on the safe side.
+		//
+		// We perform the first test seperately since it requires an agent configuration
+		//  and setup. All subsequest tests, can just replace the served file and have its
+		// own checks.
+		time.Sleep(3 * time.Minute)
+		window := time.Minute
+		var multiErr error
+		multiErr = multierr.Append(multiErr, firstTest.check(ctx, logger, vm, window))
+
+		for _, test := range restTests {
+			// Replace the text file with the next step metrics
+			err = uploadFiles(ctx, logger, vm, testdataDir, []fileToUpload{test.fileToUpload})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// Wait until the new points have arrived and complete the check for this test input.
+			time.Sleep(3 * time.Minute)
+			multiErr = multierr.Append(multiErr, test.check(ctx, logger, vm, window))
+
+			if multiErr != nil {
+				t.Error(multiErr)
+			}
+		}
+	})
 }
 
 // testPrometheusMetrics tests different Prometheus metric types using static
