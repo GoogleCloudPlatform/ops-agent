@@ -39,7 +39,6 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
-	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
 
 	"github.com/blang/semver"
 	"github.com/cenkalti/backoff/v4"
