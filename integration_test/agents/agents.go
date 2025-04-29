@@ -212,8 +212,8 @@ func getOpsAgentLogFilesList(imageSpec string) []string {
 	if gce.IsOpsAgentUAPPlugin() {
 		return []string{
 			gce.SyslogLocation(imageSpec),
+			OpsAgentConfigPath(imageSpec),
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/health-checks.log",
-			"/etc/google-cloud-ops-agent/config.yaml",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/subagents/logging-module.log",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/subagents/metrics-module.log",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/nvidia-installer.log",
@@ -226,8 +226,8 @@ func getOpsAgentLogFilesList(imageSpec string) []string {
 	}
 	return []string{
 		gce.SyslogLocation(imageSpec),
+		OpsAgentConfigPath(imageSpec),
 		"/var/log/google-cloud-ops-agent/health-checks.log",
-		"/etc/google-cloud-ops-agent/config.yaml",
 		"/var/log/google-cloud-ops-agent/subagents/logging-module.log",
 		"/var/log/google-cloud-ops-agent/subagents/metrics-module.log",
 		"/var/log/nvidia-installer.log",
@@ -259,7 +259,7 @@ func runOpsAgentDiagnosticsWindows(ctx context.Context, logger *logging.Director
 	gce.RunRemotely(ctx, logger.ToFile("health-checks.txt"), vm, fmt.Sprintf("Get-Content -Path '%s' -Raw", stateDir+`log\health-checks.log`))
 
 	for _, conf := range []string{
-		`C:\Program Files\Google\Cloud Operations\Ops Agent\config\config.yaml`,
+		OpsAgentConfigPath(vm.ImageSpec),
 		stateDir + `generated_configs\fluentbit\fluent_bit_main.conf`,
 		stateDir + `generated_configs\fluentbit\fluent_bit_parser.conf`,
 		stateDir + `generated_configs\otel\otel.yaml`,
