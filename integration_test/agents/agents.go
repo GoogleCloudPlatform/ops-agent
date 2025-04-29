@@ -259,7 +259,7 @@ func runOpsAgentDiagnosticsWindows(ctx context.Context, logger *logging.Director
 	gce.RunRemotely(ctx, logger.ToFile("health-checks.txt"), vm, fmt.Sprintf("Get-Content -Path '%s' -Raw", stateDir+`log\health-checks.log`))
 
 	for _, conf := range []string{
-		OpsAgentConfigPath(vm.imageSpec),
+		OpsAgentConfigPath(vm.ImageSpec),
 		stateDir + `generated_configs\fluentbit\fluent_bit_main.conf`,
 		stateDir + `generated_configs\fluentbit\fluent_bit_parser.conf`,
 		stateDir + `generated_configs\otel\otel.yaml`,
