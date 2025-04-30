@@ -446,7 +446,7 @@ func runLoggingTestCases(ctx context.Context, logger *log.Logger, vm *gce.VM, lo
 			query := constructQuery(entry.LogName, entry.Fields)
 
 			// Query logging backend for log matching the query.
-			actualLog, err := gce.QueryLog(ctx, logger, vm, entry.LogName, 1*time.Hour, query, gce.QueryMaxAttempts)
+			actualLog, err := gce.QueryLog(ctx, logger, vm, entry.LogName, 1*time.Hour, query, gce.LogQueryMaxAttempts)
 			if err != nil {
 				c <- err
 				return
