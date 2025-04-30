@@ -53,10 +53,10 @@ import (
 	"time"
 
 	cloudlogging "cloud.google.com/go/logging"
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/gce"
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
 	feature_tracking_metadata "github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
-	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
-	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
 	structpb "google.golang.org/protobuf/types/known/structpb"
@@ -600,7 +600,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	}
 	time.Sleep(60 * time.Second)
 
-	backupConfigFilePath := util.GetConfigPath(vm.ImageSpec) + ".bak"
+	backupConfigFilePath := agents.OpsAgentConfigPath(vm.ImageSpec) + ".bak"
 	if err = assertFilePresence(ctx, logger.ToMainLog(), vm, backupConfigFilePath); err != nil {
 		return nonRetryable, fmt.Errorf("error when fetching back up config file %s: %v", backupConfigFilePath, err)
 	}
