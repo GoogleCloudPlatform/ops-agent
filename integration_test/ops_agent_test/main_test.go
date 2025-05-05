@@ -62,10 +62,10 @@ import (
 
 	cloudlogging "cloud.google.com/go/logging"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
 	feature_tracking_metadata "github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
-	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
 	"github.com/google/uuid"
 	"go.uber.org/multierr"
@@ -999,7 +999,7 @@ func TestHTTPRequestLog(t *testing.T) {
 				"mylog_source",
 				time.Hour,
 				fmt.Sprintf("jsonPayload.logId=%q", logId),
-				gce.QueryMaxAttempts)
+				gce.LogQueryMaxAttempts)
 		}
 
 		isKeyInPayload := func(httpRequestKey string, entry *cloudlogging.Entry) bool {
@@ -1269,7 +1269,7 @@ func TestProcessorOrder(t *testing.T) {
 			t.Fatalf("error writing dummy log line: %v", err)
 		}
 
-		entry, err := gce.QueryLog(ctx, logger, vm, "mylog_source", time.Hour, "", gce.QueryMaxAttempts)
+		entry, err := gce.QueryLog(ctx, logger, vm, "mylog_source", time.Hour, "", gce.LogQueryMaxAttempts)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1465,7 +1465,7 @@ func TestExcludeLogs(t *testing.T) {
 		}
 
 		// p2: Expect to see the log.
-		resultingLog2, err := gce.QueryLog(ctx, logger, vm, "f2", time.Hour, `jsonPayload.field1:*`, gce.QueryMaxAttempts)
+		resultingLog2, err := gce.QueryLog(ctx, logger, vm, "f2", time.Hour, `jsonPayload.field1:*`, gce.LogQueryMaxAttempts)
 		if err != nil {
 			t.Error(err)
 		}
@@ -2314,7 +2314,7 @@ func TestWindowsEventLogV2(t *testing.T) {
 		// - that jsonPayload.raw_xml contains a valid XML document.
 		// - that a few sample fields are present in that XML document.
 		for _, payload := range payloads["winlog2_xml"] {
-			log, err := gce.QueryLog(ctx, logger, vm, "winlog2_xml", time.Hour, logMessageQueryForImage(vm.ImageSpec, payload), gce.QueryMaxAttempts)
+			log, err := gce.QueryLog(ctx, logger, vm, "winlog2_xml", time.Hour, logMessageQueryForImage(vm.ImageSpec, payload), gce.LogQueryMaxAttempts)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -2479,7 +2479,7 @@ func TestWindowsEventLogWithNonDefaultTimeZone(t *testing.T) {
 
 		// Validate that the log written to Cloud Logging has a timestamp that's
 		// close to eventTime. Use 24*time.Hour to cover all possible time zones.
-		logEntry, err := gce.QueryLog(ctx, logger, vm, "windows_event_log", 24*time.Hour, logMessageQueryForImage(imageSpec, testMessage), gce.QueryMaxAttempts)
+		logEntry, err := gce.QueryLog(ctx, logger, vm, "windows_event_log", 24*time.Hour, logMessageQueryForImage(imageSpec, testMessage), gce.LogQueryMaxAttempts)
 		if err != nil {
 			t.Fatal(err)
 		}
