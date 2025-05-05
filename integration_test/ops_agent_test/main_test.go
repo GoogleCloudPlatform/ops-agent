@@ -4576,7 +4576,7 @@ traces:
 
 		// Have to wait for startup feature tracking metrics to be sent
 		// before we tear down the service.
-		time.Sleep(20 * time.Second)
+		time.Sleep(2 * time.Minute)
 
 		// Generate metric traffic with dummy app
 		metricFile, err := testdataDir.Open(path.Join("testdata", "otlp", "metrics.go"))
