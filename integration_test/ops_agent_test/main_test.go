@@ -213,9 +213,6 @@ func RunForEachLoggingSubagent(t *testing.T, testBody func(t *testing.T, otel bo
 	})
 
 	t.Run("otel", func(t *testing.T) {
-		if gce.IsOpsAgentUAPPlugin() {
-			t.SkipNow()
-		}
 		testBody(t, true)
 	})
 }
