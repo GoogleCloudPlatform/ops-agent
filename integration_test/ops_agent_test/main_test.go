@@ -206,6 +206,29 @@ func retrieveOtelConfig(ctx context.Context, logger *log.Logger, vm *gce.VM) (co
 	return gce.RetrieveContent(ctx, logger, vm, agents.GetOtelConfigPath(vm.ImageSpec))
 }
 
+// RunForEachLoggingSubagent runs a subtest for the logging subagent fluent-bit and otel.
+func RunForEachLoggingSubagent(t *testing.T, testBody func(t *testing.T, otel bool)) {
+	t.Run("fluent-bit", func(t *testing.T) {
+		testBody(t, false)
+	})
+
+	t.Run("otel", func(t *testing.T) {
+		if gce.IsOpsAgentUAPPlugin() {
+			t.SkipNow()
+		}
+		testBody(t, true)
+	})
+}
+
+// setOtelLoggingEnvironmentVariable sets the EXPERIMENTAL_FEATURES: otel_logging environment variable.
+func setOtelLoggingEnvironmentVariable(ctx context.Context, logger *log.Logger, vm *gce.VM, otel bool) error {
+	if otel {
+		// Turn on the otel feature gate.
+		return gce.SetEnvironmentVariables(ctx, logger, vm, map[string]string{"EXPERIMENTAL_FEATURES": "otel_logging"})
+	}
+	return nil
+}
+
 func TestParseMultilineFileJava(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
@@ -1844,25 +1867,14 @@ func TestResourceNameLabel(t *testing.T) {
 
 func TestLogFilePathLabel(t *testing.T) {
 	t.Parallel()
-	if gce.IsOpsAgentUAPPlugin() {
-		t.SkipNow()
-	}
-	t.Run("fluent-bit", func(t *testing.T) {
-		testLogFilePathLabel(t, false)
-	})
-	t.Run("otel", func(t *testing.T) {
-		testLogFilePathLabel(t, true)
-	})
-}
-
-func testLogFilePathLabel(t *testing.T, otel bool) {
-	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachLoggingSubagent(t, func(t *testing.T, otel bool) {
 		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
+		gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+			t.Parallel()
+			ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+			file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
 
-		config := fmt.Sprintf(`logging:
+			config := fmt.Sprintf(`logging:
   receivers:
     f1:
       type: files
@@ -1880,34 +1892,32 @@ func testLogFilePathLabel(t *testing.T, otel bool) {
         processors: [json]
 `, file1, otel)
 
-		if otel {
-			// Turn on the otel feature gate.
-			if err := gce.SetEnvironmentVariables(ctx, logger, vm, map[string]string{"EXPERIMENTAL_FEATURES": "otel_logging"}); err != nil {
+			if err := setOtelLoggingEnvironmentVariable(ctx, logger, vm, otel); err != nil {
 				t.Fatal(err)
 			}
-		}
 
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
-			t.Fatal(err)
-		}
+			if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+				t.Fatal(err)
+			}
 
-		line := `{"default_present":"original"}` + "\n"
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
-			t.Fatalf("error uploading log: %v", err)
-		}
+			line := `{"default_present":"original"}` + "\n"
+			if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
+				t.Fatalf("error uploading log: %v", err)
+			}
 
-		// In Windows the generated log_file_path "C:\mylog_1" uses a backslash.
-		// When constructing the query in WaithForLog the backslashes are escaped so
-		// replacing with two backslahes correctly queries for "C:\mylog_1" label.
-		if gce.IsWindows(imageSpec) {
-			file1 = strings.Replace(file1, `\`, `\\`, 1)
-		}
+			// In Windows the generated log_file_path "C:\mylog_1" uses a backslash.
+			// When constructing the query in WaithForLog the backslashes are escaped so
+			// replacing with two backslahes correctly queries for "C:\mylog_1" label.
+			if gce.IsWindows(imageSpec) {
+				file1 = strings.Replace(file1, `\`, `\\`, 1)
+			}
 
-		// Expect to see log with label added.
-		check := fmt.Sprintf(`labels."agent.googleapis.com/log_file_path"="%s" AND jsonPayload.default_present="original"`, file1)
-		if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, check); err != nil {
-			t.Error(err)
-		}
+			// Expect to see log with label added.
+			check := fmt.Sprintf(`labels."agent.googleapis.com/log_file_path"="%s" AND jsonPayload.default_present="original"`, file1)
+			if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, check); err != nil {
+				t.Error(err)
+			}
+		})
 	})
 }
 
@@ -2492,27 +2502,16 @@ func TestWindowsEventLogWithNonDefaultTimeZone(t *testing.T) {
 
 func TestSystemdLog(t *testing.T) {
 	t.Parallel()
-	if gce.IsOpsAgentUAPPlugin() {
-		t.SkipNow()
-	}
-	t.Run("fluent-bit", func(t *testing.T) {
-		testSystemdLog(t, false)
-	})
-	t.Run("otel", func(t *testing.T) {
-		testSystemdLog(t, true)
-	})
-}
-
-func testSystemdLog(t *testing.T, otel bool) {
-	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachLoggingSubagent(t, func(t *testing.T, otel bool) {
 		t.Parallel()
-		if gce.IsWindows(imageSpec) {
-			t.SkipNow()
-		}
-		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+			t.Parallel()
+			if gce.IsWindows(imageSpec) {
+				t.SkipNow()
+			}
+			ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
-		config := fmt.Sprintf(`logging:
+			config := fmt.Sprintf(`logging:
   receivers:
     systemd_logs:
       type: systemd_journald
@@ -2523,44 +2522,42 @@ func testSystemdLog(t *testing.T, otel bool) {
         receivers: [systemd_logs]
 `, otel)
 
-		if otel {
-			// Turn on the otel feature gate.
-			if err := gce.SetEnvironmentVariables(ctx, logger, vm, map[string]string{"EXPERIMENTAL_FEATURES": "otel_logging"}); err != nil {
+			if err := setOtelLoggingEnvironmentVariable(ctx, logger, vm, otel); err != nil {
 				t.Fatal(err)
 			}
-		}
 
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
-			t.Fatal(err)
-		}
+			if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+				t.Fatal(err)
+			}
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_info_log_message' | systemd-cat --priority=info"); err != nil {
-			t.Fatalf("Error writing dummy Systemd log line: %v", err)
-		}
+			if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_info_log_message' | systemd-cat --priority=info"); err != nil {
+				t.Fatalf("Error writing dummy Systemd log line: %v", err)
+			}
 
-		querySystemdInfoLog := fmt.Sprintf(`severity="INFO" AND jsonPayload.MESSAGE="my_systemd_info_log_message" AND jsonPayload.PRIORITY="6"`)
-		if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdInfoLog); err != nil {
-			t.Error(err)
-		}
+			querySystemdInfoLog := fmt.Sprintf(`severity="INFO" AND jsonPayload.MESSAGE="my_systemd_info_log_message" AND jsonPayload.PRIORITY="6"`)
+			if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdInfoLog); err != nil {
+				t.Error(err)
+			}
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_error_log_message' | systemd-cat --priority=err"); err != nil {
-			t.Fatalf("Error writing dummy Systemd log line: %v", err)
-		}
+			if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_error_log_message' | systemd-cat --priority=err"); err != nil {
+				t.Fatalf("Error writing dummy Systemd log line: %v", err)
+			}
 
-		querySystemdErrorLog := fmt.Sprintf(`severity="ERROR" AND jsonPayload.MESSAGE="my_systemd_error_log_message" AND jsonPayload.PRIORITY="3"`)
-		if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdErrorLog); err != nil {
-			t.Error(err)
-		}
+			querySystemdErrorLog := fmt.Sprintf(`severity="ERROR" AND jsonPayload.MESSAGE="my_systemd_error_log_message" AND jsonPayload.PRIORITY="3"`)
+			if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdErrorLog); err != nil {
+				t.Error(err)
+			}
 
-		// TODO: b/400435104 - Re-enable when the `googlecloudexporter` supports all LogSeverity levels.
-		// if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_notice_log_message' | systemd-cat --priority=notice"); err != nil {
-		// 	t.Fatalf("Error writing dummy Systemd log line: %v", err)
-		// }
+			// TODO: b/400435104 - Re-enable when the `googlecloudexporter` supports all LogSeverity levels.
+			// if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_notice_log_message' | systemd-cat --priority=notice"); err != nil {
+			// 	t.Fatalf("Error writing dummy Systemd log line: %v", err)
+			// }
 
-		// querySystemdNoticeLog := fmt.Sprintf(`severity="NOTICE" AND jsonPayload.MESSAGE="my_systemd_notice_log_message" AND jsonPayload.PRIORITY="5"`)
-		// if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdNoticeLog); err != nil {
-		// 	t.Error(err)
-		// }
+			// querySystemdNoticeLog := fmt.Sprintf(`severity="NOTICE" AND jsonPayload.MESSAGE="my_systemd_notice_log_message" AND jsonPayload.PRIORITY="5"`)
+			// if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdNoticeLog); err != nil {
+			// 	t.Error(err)
+			// }
+		})
 	})
 }
 
