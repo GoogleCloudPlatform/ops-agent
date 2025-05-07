@@ -91,28 +91,33 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 		return "", err
 	}
 
-	receiverPipelines["otel"] = AgentSelfMetrics{
-		Version: metricVersionLabel,
-		Port:    otel.MetricsPort,
-	}.MetricsSubmodulePipeline()
+	agentSelfMetrics := AgentSelfMetrics{
+		MetricsVersionLabel: metricVersionLabel,
+		LoggingVersionLabel: loggingVersionLabel,
+		FluentBitPort:       fluentbit.MetricsPort,
+		OtelPort:            otel.MetricsPort,
+		OtelLoggingEnabled:  uc.Logging.Service.OTelLogging,
+		OtelRuntimeDir:      outDir,
+	}
+
+	receiverPipelines["otel"] = agentSelfMetrics.OtelPipeline()
 	pipelines["otel"] = otel.Pipeline{
 		Type:                 "metrics",
 		ReceiverPipelineName: "otel",
 	}
 
-	receiverPipelines["ops_agent"] = OpsAgentSelfMetricsPipeline(ctx, outDir)
+	receiverPipelines["ops_agent"] = agentSelfMetrics.OpsAgentPipeline()
 	pipelines["ops_agent"] = otel.Pipeline{
 		Type:                 "metrics",
 		ReceiverPipelineName: "ops_agent",
 	}
 
-	receiverPipelines["fluentbit"] = AgentSelfMetrics{
-		Version: loggingVersionLabel,
-		Port:    fluentbit.MetricsPort,
-	}.LoggingSubmodulePipeline()
-	pipelines["fluentbit"] = otel.Pipeline{
-		Type:                 "metrics",
-		ReceiverPipelineName: "fluentbit",
+	if !uc.Logging.Service.OTelLogging {
+		receiverPipelines["fluentbit"] = agentSelfMetrics.FluentBitPipeline()
+		pipelines["fluentbit"] = otel.Pipeline{
+			Type:                 "metrics",
+			ReceiverPipelineName: "fluentbit",
+		}
 	}
 
 	exp_otlp_exporter := experimentsFromContext(ctx)["otlp_exporter"]
