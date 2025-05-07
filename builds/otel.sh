@@ -48,5 +48,10 @@ if [ "$SKIP_OTEL_JAVA" != "true" ]; then
 fi
 
 cd submodules/opentelemetry-operations-collector/otelopscol
-GO_BIN=/usr/local/go/bin/go make build COLLECTOR_LD_FLAGS="$LDFLAGS" COLLECTOR_BUILDVCS="false" COLLECTOR_BUILD_TAGS="gpu"
+GO_BIN=/usr/local/go/bin/go \
+TARGETARCH=$(/usr/local/go/bin/go env GOARCH) \
+COLLECTOR_LD_FLAGS="$LDFLAGS" \
+COLLECTOR_BUILDVCS="false" \
+COLLECTOR_BUILD_TAGS="gpu" \
+    make build
 cp ./otelopscol "$DESTDIR/otelopscol"
