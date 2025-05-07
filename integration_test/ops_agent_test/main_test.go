@@ -1889,8 +1889,10 @@ func TestLogFilePathLabel(t *testing.T) {
         processors: [json]
 `, file1, otel)
 
-			if err := setExperimentalFeatures(ctx, logger, vm, "setExperimentalFeatures"); err != nil {
-				t.Fatal(err)
+			if otel {
+				if err := setExperimentalFeatures(ctx, logger, vm, "otel_logging"); err != nil {
+					t.Fatal(err)
+				}
 			}
 
 			if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
@@ -2519,8 +2521,10 @@ func TestSystemdLog(t *testing.T) {
         receivers: [systemd_logs]
 `, otel)
 
-			if err := setExperimentalFeatures(ctx, logger, vm, "otel_logging"); err != nil {
-				t.Fatal(err)
+			if otel {
+				if err := setExperimentalFeatures(ctx, logger, vm, "otel_logging"); err != nil {
+					t.Fatal(err)
+				}
 			}
 
 			if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
