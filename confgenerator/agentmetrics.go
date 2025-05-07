@@ -15,7 +15,6 @@
 package confgenerator
 
 import (
-	"context"
 	"fmt"
 	"path/filepath"
 	"time"
@@ -28,11 +27,15 @@ import (
 // It is never referenced in the config file, and instead is forcibly added in confgenerator.go.
 // Therefore, it does not need to implement any interfaces.
 type AgentSelfMetrics struct {
-	Version string
-	Port    int
+	MetricsVersionLabel string
+	LoggingVersionLabel string
+	FluentBitPort       int
+	OtelPort            int
+	OtelLoggingEnabled  bool
+	OtelRuntimeDir      string
 }
 
-func (r AgentSelfMetrics) MetricsSubmodulePipeline() otel.ReceiverPipeline {
+func (r AgentSelfMetrics) OtelPipeline() otel.ReceiverPipeline {
 	return otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "prometheus",
@@ -43,7 +46,7 @@ func (r AgentSelfMetrics) MetricsSubmodulePipeline() otel.ReceiverPipeline {
 						"scrape_interval": "1m",
 						"static_configs": []map[string]interface{}{{
 							// TODO(b/196990135): Customization for the port number
-							"targets": []string{fmt.Sprintf("0.0.0.0:%d", r.Port)},
+							"targets": []string{fmt.Sprintf("0.0.0.0:%d", r.OtelPort)},
 						}},
 					}},
 				},
@@ -77,7 +80,7 @@ func (r AgentSelfMetrics) MetricsSubmodulePipeline() otel.ReceiverPipeline {
 				otel.RenameMetric("otelcol_process_uptime", "agent/uptime",
 					// change data type from double -> int64
 					otel.ToggleScalarDataType,
-					otel.AddLabel("version", r.Version),
+					otel.AddLabel("version", r.MetricsVersionLabel),
 					// remove service.version label
 					otel.AggregateLabels("sum", "version"),
 				),
@@ -107,7 +110,7 @@ func (r AgentSelfMetrics) MetricsSubmodulePipeline() otel.ReceiverPipeline {
 	}
 }
 
-func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.ReceiverPipeline {
+func (r AgentSelfMetrics) FluentBitPipeline() otel.ReceiverPipeline {
 	return otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "prometheus",
@@ -119,7 +122,7 @@ func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.ReceiverPipeline {
 						"metrics_path":    "/metrics",
 						"static_configs": []map[string]interface{}{{
 							// TODO(b/196990135): Customization for the port number
-							"targets": []string{fmt.Sprintf("0.0.0.0:%d", r.Port)},
+							"targets": []string{fmt.Sprintf("0.0.0.0:%d", r.FluentBitPort)},
 						}},
 					}},
 				},
@@ -141,7 +144,7 @@ func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.ReceiverPipeline {
 				otel.RenameMetric("fluentbit_uptime", "agent/uptime",
 					// change data type from double -> int64
 					otel.ToggleScalarDataType,
-					otel.AddLabel("version", r.Version),
+					otel.AddLabel("version", r.LoggingVersionLabel),
 					// remove service.version label
 					otel.AggregateLabels("sum", "version"),
 				),
@@ -169,11 +172,11 @@ func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.ReceiverPipeline {
 	}
 }
 
-func OpsAgentSelfMetricsPipeline(ctx context.Context, outDir string) otel.ReceiverPipeline {
+func (r AgentSelfMetrics) OpsAgentPipeline() otel.ReceiverPipeline {
 	receiver_config := map[string]any{
 		"include": []string{
-			filepath.Join(outDir, "enabled_receivers_otlp.json"),
-			filepath.Join(outDir, "feature_tracking_otlp.json")},
+			filepath.Join(r.OtelRuntimeDir, "enabled_receivers_otlp.json"),
+			filepath.Join(r.OtelRuntimeDir, "feature_tracking_otlp.json")},
 		"replay_file":   true,
 		"poll_interval": time.Duration(60 * time.Second).String(),
 	}
