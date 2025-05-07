@@ -208,11 +208,15 @@ func retrieveOtelConfig(ctx context.Context, logger *log.Logger, vm *gce.VM) (co
 
 // RunForEachLoggingSubagent runs a subtest for the logging subagent fluent-bit and otel.
 func RunForEachLoggingSubagent(t *testing.T, testBody func(t *testing.T, otel bool)) {
+	t.Helper()
 	t.Run("fluent-bit", func(t *testing.T) {
 		testBody(t, false)
 	})
 
 	t.Run("otel", func(t *testing.T) {
+		if gce.IsOpsAgentUAPPlugin() {
+			t.SkipNow()
+		}
 		testBody(t, true)
 	})
 }
