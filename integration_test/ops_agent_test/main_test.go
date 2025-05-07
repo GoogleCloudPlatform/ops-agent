@@ -217,13 +217,9 @@ func RunForEachLoggingSubagent(t *testing.T, testBody func(t *testing.T, otel bo
 	})
 }
 
-// setOtelLoggingEnvironmentVariable sets the EXPERIMENTAL_FEATURES: otel_logging environment variable.
-func setOtelLoggingEnvironmentVariable(ctx context.Context, logger *log.Logger, vm *gce.VM, otel bool) error {
-	if otel {
-		// Turn on the otel feature gate.
-		return gce.SetEnvironmentVariables(ctx, logger, vm, map[string]string{"EXPERIMENTAL_FEATURES": "otel_logging"})
-	}
-	return nil
+// setExperimentalFeatures sets the EXPERIMENTAL_FEATURES environment variable.
+func setExperimentalFeatures(ctx context.Context, logger *log.Logger, vm *gce.VM, feature string) error {
+	return gce.SetEnvironmentVariables(ctx, logger, vm, map[string]string{"EXPERIMENTAL_FEATURES": feature})
 }
 
 func TestParseMultilineFileJava(t *testing.T) {
@@ -1889,7 +1885,7 @@ func TestLogFilePathLabel(t *testing.T) {
         processors: [json]
 `, file1, otel)
 
-			if err := setOtelLoggingEnvironmentVariable(ctx, logger, vm, otel); err != nil {
+			if err := setExperimentalFeatures(ctx, logger, vm, "setExperimentalFeatures"); err != nil {
 				t.Fatal(err)
 			}
 
@@ -2519,7 +2515,7 @@ func TestSystemdLog(t *testing.T) {
         receivers: [systemd_logs]
 `, otel)
 
-			if err := setOtelLoggingEnvironmentVariable(ctx, logger, vm, otel); err != nil {
+			if err := setExperimentalFeatures(ctx, logger, vm, "otel_logging"); err != nil {
 				t.Fatal(err)
 			}
 
