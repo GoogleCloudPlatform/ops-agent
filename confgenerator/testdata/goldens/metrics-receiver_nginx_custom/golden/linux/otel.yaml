@@ -50,8 +50,8 @@ processors:
         metric_names:
         - otelcol_process_uptime
         - otelcol_process_memory_rss
-        - grpc_client_attempt_duration
-        - googlecloudmonitoring_point_count
+        - grpc.client.attempt.duration
+        - googlecloudmonitoring/point_count
   filter/otel_2:
     metrics:
       include:
@@ -59,8 +59,8 @@ processors:
         metric_names:
         - otelcol_process_uptime
         - otelcol_process_memory_rss
-        - grpc_client_attempt_duration_count
-        - googlecloudmonitoring_point_count
+        - grpc.client.attempt.duration_count
+        - googlecloudmonitoring/point_count
   metricstransform/fluentbit_1:
     transforms:
     - action: update
@@ -417,18 +417,18 @@ processors:
         aggregation_type: sum
         label_set: []
     - action: update
-      include: grpc_client_attempt_duration_count
+      include: grpc.client.attempt.duration_count
       new_name: agent/api_request_count
       operations:
       - action: update_label
-        label: grpc_status
+        label: grpc.status
         new_label: state
       - action: aggregate_labels
         aggregation_type: sum
         label_set:
         - state
     - action: update
-      include: googlecloudmonitoring_point_count
+      include: googlecloudmonitoring/point_count
       new_name: agent/monitoring/point_count
       operations:
       - action: toggle_scalar_data_type
@@ -447,12 +447,18 @@ processors:
   resourcedetection/_global_0:
     detectors:
     - gcp
+  transform/ops_agent_0:
+    error_mode: ignore
+    metric_statements:
+    - context: datapoint
+      statements:
+      - set(time, Now())
   transform/otel_1:
     error_mode: ignore
     metric_statements:
     - context: metric
       statements:
-      - extract_count_metric(true) where name == "grpc_client_attempt_duration"
+      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
@@ -465,12 +471,19 @@ receivers:
       network: {}
       paging: {}
       process:
+        mute_process_all_errors: true
         mute_process_exe_error: true
         mute_process_name_error: true
       processes: {}
   nginx/nginx:
     collection_interval: 30s
     endpoint: http://localhost/status
+  otlpjsonfile/ops_agent:
+    include:
+    - enabled_receivers_otlp.json
+    - feature_tracking_otlp.json
+    poll_interval: 1m0s
+    replay_file: true
   prometheus/fluentbit:
     config:
       scrape_configs:
@@ -520,6 +533,14 @@ service:
       - resourcedetection/_global_0
       receivers:
       - nginx/nginx
+    metrics/ops_agent:
+      exporters:
+      - googlecloud
+      processors:
+      - transform/ops_agent_0
+      - resourcedetection/_global_0
+      receivers:
+      - otlpjsonfile/ops_agent
     metrics/otel:
       exporters:
       - googlecloud

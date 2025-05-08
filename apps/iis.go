@@ -249,17 +249,17 @@ func (p *LoggingProcessorIisAccess) Components(ctx context.Context, tag, uid str
 }
 
 type LoggingReceiverIisAccess struct {
-	LoggingProcessorIisAccess               `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	LoggingProcessorIisAccess `yaml:",inline"`
+	ReceiverMixin             confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r LoggingReceiverIisAccess) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
+		r.ReceiverMixin.IncludePaths = []string{
 			`C:\inetpub\logs\LogFiles\W3SVC1\u_ex*`,
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := r.ReceiverMixin.Components(ctx, tag)
 	c = append(c, r.LoggingProcessorIisAccess.Components(ctx, tag, "iis_access")...)
 	return c
 }

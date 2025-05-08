@@ -144,13 +144,13 @@ func (LoggingProcessorApacheAccess) Type() string {
 }
 
 type LoggingReceiverApacheAccess struct {
-	LoggingProcessorApacheAccess            `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	LoggingProcessorApacheAccess `yaml:",inline"`
+	ReceiverMixin                confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r LoggingReceiverApacheAccess) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
+		r.ReceiverMixin.IncludePaths = []string{
 			// Default log file path on Debian / Ubuntu
 			"/var/log/apache2/access.log",
 			// Default log file path RHEL / CentOS
@@ -159,19 +159,19 @@ func (r LoggingReceiverApacheAccess) Components(ctx context.Context, tag string)
 			"/var/log/httpd/access_log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := r.ReceiverMixin.Components(ctx, tag)
 	c = append(c, r.LoggingProcessorApacheAccess.Components(ctx, tag, "apache_access")...)
 	return c
 }
 
 type LoggingReceiverApacheError struct {
-	LoggingProcessorApacheError             `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	LoggingProcessorApacheError `yaml:",inline"`
+	ReceiverMixin               confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r LoggingReceiverApacheError) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
+		r.ReceiverMixin.IncludePaths = []string{
 			// Default log file path on Debian / Ubuntu
 			"/var/log/apache2/error.log",
 			// Default log file path RHEL / CentOS
@@ -180,7 +180,7 @@ func (r LoggingReceiverApacheError) Components(ctx context.Context, tag string) 
 			"/var/log/httpd/error_log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := r.ReceiverMixin.Components(ctx, tag)
 	c = append(c, r.LoggingProcessorApacheError.Components(ctx, tag, "apache_error")...)
 	return c
 }

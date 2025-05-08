@@ -60,8 +60,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
-	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
 )
 
 var (
@@ -122,11 +122,11 @@ func mainErr() error {
 
 	// Create the VM.
 	options := gce.VMOptions{
-		ImageSpec:    distro,
-		TimeToLive:   ttl,
-		Name:         vmName,
-		MachineType:  "e2-standard-16",
-		Metadata:     map[string]string{
+		ImageSpec:   distro,
+		TimeToLive:  ttl,
+		Name:        vmName,
+		MachineType: "e2-standard-16",
+		Metadata: map[string]string{
 			// This is to avoid Windows updates and reboots (b/295165549), and
 			// also to avoid throughput blips when the OS Config agent runs
 			// periodically.

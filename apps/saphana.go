@@ -96,25 +96,25 @@ func (p LoggingProcessorSapHanaTrace) Components(ctx context.Context, tag string
 }
 
 type LoggingReceiverSapHanaTrace struct {
-	LoggingProcessorSapHanaTrace            `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	LoggingProcessorSapHanaTrace `yaml:",inline"`
+	ReceiverMixin                confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r LoggingReceiverSapHanaTrace) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
+		r.ReceiverMixin.IncludePaths = []string{
 			"/usr/sap/*/HDB*/${HOSTNAME}/trace/*.trc",
 		}
 	}
-	if len(r.ExcludePaths) == 0 {
-		r.ExcludePaths = []string{
+	if len(r.ReceiverMixin.ExcludePaths) == 0 {
+		r.ReceiverMixin.ExcludePaths = []string{
 			"/usr/sap/*/HDB*/${HOSTNAME}/trace/nameserver_history*.trc",
 			"/usr/sap/*/HDB*/${HOSTNAME}/trace/nameserver*loads*.trc",
 			"/usr/sap/*/HDB*/${HOSTNAME}/trace/nameserver*executed_statements*.trc",
 		}
 	}
 
-	r.MultilineRules = []confgenerator.MultilineRule{
+	r.ReceiverMixin.MultilineRules = []confgenerator.MultilineRule{
 		{
 			StateName: "start_state",
 			NextState: "cont",
@@ -127,7 +127,7 @@ func (r LoggingReceiverSapHanaTrace) Components(ctx context.Context, tag string)
 		},
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := r.ReceiverMixin.Components(ctx, tag)
 	c = append(c, r.LoggingProcessorSapHanaTrace.Components(ctx, tag, r.Type())...)
 	return c
 }

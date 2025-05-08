@@ -38,7 +38,6 @@ import (
 const (
 	OpsAgentConfigLocationLinux = "/etc/google-cloud-ops-agent/config.yaml"
 	ConfGeneratorBinary         = "libexec/google_cloud_ops_agent_engine"
-	DiagnosticsBinary           = "libexec/google_cloud_ops_agent_diagnostics"
 	AgentWrapperBinary          = "libexec/google_cloud_ops_agent_wrapper"
 	FluentbitBinary             = "subagents/fluent-bit/bin/fluent-bit"
 	OtelBinary                  = "subagents/opentelemetry-collector/otelopscol"
@@ -86,13 +85,15 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 
 	pluginInstallPath, err := os.Executable()
 	if err != nil {
+		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		log.Printf("Start() failed, because it cannot determine the plugin install location: %s", err)
-		return nil, status.Error(1, err.Error())
+		return nil, status.Error(13, err.Error()) // Internal
 	}
 	pluginInstallPath, err = filepath.EvalSymlinks(pluginInstallPath)
 	if err != nil {
+		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		log.Printf("Start() failed, because it cannot determine the plugin install location: %s", err)
-		status.Error(1, err.Error())
+		return nil, status.Error(13, err.Error()) // Internal
 	}
 	pluginInstallDir := filepath.Dir(pluginInstallPath)
 
@@ -106,23 +107,30 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	if foundConflictingInstallations || err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		log.Printf("Start() failed: %s", err)
-		return nil, status.Error(1, err.Error())
+		return nil, status.Error(9, err.Error()) // FailedPrecondition
+	}
+
+	// Receive config from the Start request and write it to the Ops Agent config file.
+	if err := writeCustomConfigToFile(msg, OpsAgentConfigLocationLinux); err != nil {
+		log.Printf("Start() failed: %s", err)
+		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
+		return nil, status.Errorf(13, "failed to write the custom Ops Agent config to file: %s", err) // Internal
 	}
 
 	// Ops Agent config validation
 	if err := validateOpsAgentConfig(pContext, pluginInstallDir, pluginStateDir, ps.runCommand); err != nil {
 		log.Printf("Start() failed: %s", err)
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
-		return nil, status.Errorf(1, "failed to validate Ops Agent config: %s", err)
+		return nil, status.Errorf(9, "failed to validate Ops Agent config: %s", err) // FailedPrecondition
 	}
 	// Subagent config generation
 	if err := generateSubagentConfigs(pContext, ps.runCommand, pluginInstallDir, pluginStateDir); err != nil {
 		log.Printf("Start() failed: %s", err)
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
-		return nil, status.Errorf(1, "failed to generate subagent configs: %s", err)
+		return nil, status.Errorf(9, "failed to generate subagent configs: %s", err) // FailedPrecondition
 	}
 
-	// the diagnostics service and subagent startups
+	// the subagent startups
 	cancelFunc := func() {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 	}
@@ -164,7 +172,7 @@ func (ps *OpsAgentPluginServer) GetStatus(ctx context.Context, msg *pb.GetStatus
 	return &pb.Status{Code: 0, Results: []string{"The Ops Agent Plugin is running ok."}}, nil
 }
 
-// runSubagents starts up the diagnostics service, otel, and fluent bit subagents in separate goroutines.
+// runSubagents starts up otel and fluent bit subagents in separate goroutines.
 // All child goroutines create a new context derived from the same parent context.
 // This ensures that crashes in one goroutine don't affect other goroutines.
 // However, when one goroutine exits with errors, it won't be restarted, and all other goroutines are also terminated.
@@ -182,13 +190,6 @@ func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallD
 	})
 
 	var wg sync.WaitGroup
-	// Starting the diagnostics service
-	runDiagnosticsCmd := exec.CommandContext(ctx,
-		path.Join(pluginInstallDirectory, DiagnosticsBinary),
-		"-config", OpsAgentConfigLocationLinux,
-	)
-	wg.Add(1)
-	go runSubAgentCommand(ctx, cancel, runDiagnosticsCmd, runCommand, &wg)
 
 	// Starting Otel
 	runOtelCmd := exec.CommandContext(ctx,

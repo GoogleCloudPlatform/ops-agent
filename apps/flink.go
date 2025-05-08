@@ -142,19 +142,19 @@ func (p LoggingProcessorFlink) Components(ctx context.Context, tag string, uid s
 }
 
 type LoggingReceiverFlink struct {
-	LoggingProcessorFlink                   `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	LoggingProcessorFlink `yaml:",inline"`
+	ReceiverMixin         confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r LoggingReceiverFlink) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
+		r.ReceiverMixin.IncludePaths = []string{
 			"/opt/flink/log/flink-*-standalonesession-*.log",
 			"/opt/flink/log/flink-*-taskexecutor-*.log",
 			"/opt/flink/log/flink-*-client-*.log",
 		}
 	}
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := r.ReceiverMixin.Components(ctx, tag)
 	c = append(c, r.LoggingProcessorFlink.Components(ctx, tag, "flink")...)
 	return c
 }

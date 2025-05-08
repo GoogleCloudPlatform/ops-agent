@@ -577,5 +577,7 @@ func sanitizeStacktrace(t *testing.T, input string) string {
 	result = regexp.MustCompile(`0x[0-9a-f]+`).ReplaceAllString(result, "0xX")
 	// Remove goroutine numbers
 	result = regexp.MustCompile(`goroutine \d+`).ReplaceAllString(result, "goroutine N")
+
+	result = strings.ReplaceAll(result, "\t", "  ")
 	return result
 }

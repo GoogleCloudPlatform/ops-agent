@@ -206,13 +206,9 @@ RUN ./gradlew --no-daemon :jmx-metrics:build; `
 
 COPY submodules/opentelemetry-operations-collector /work/submodules/opentelemetry-operations-collector
 
-WORKDIR /work/submodules/opentelemetry-operations-collector
+WORKDIR /work/submodules/opentelemetry-operations-collector/otelopscol
 
-RUN $JarHash = (Get-FileHash /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar -Algorithm SHA256 | Select -Expand Hash).toLower(); `
-    go build -o bin/google-cloud-metrics-agent_windows_amd64.exe `
-    -ldflags \"-X github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver.MetricsGathererHash=$JarHash\" `
-    ./cmd/otelopscol; `
-    Copy-Item -Path bin/google-cloud-metrics-agent_windows_amd64.exe -Destination /work/out/bin/;
+RUN & ./build.ps1 -outDir /work/out/bin -jmxHash (Get-FileHash /work/out/bin/opentelemetry-java-contrib-jmx-metrics.jar -Algorithm SHA256 | Select -Expand Hash).toLower()
 
 ###############################################################################
 # Config generator/service installer
@@ -230,17 +226,6 @@ RUN Get-Content VERSION | Where-Object length | ForEach-Object { Invoke-Expressi
     Copy-Item -Path confgenerator/default-config.yaml -Destination /work/out/config/config.yaml;
 
 ###############################################################################
-# Build diagnostic service
-###############################################################################
-
-WORKDIR /work
-
-COPY . /work
-
-RUN go build -o bin/google-cloud-ops-agent-diagnostics.exe ./cmd/google_cloud_ops_agent_diagnostics; `
-    Copy-Item -Path bin/google-cloud-ops-agent-diagnostics.exe -Destination /work/out/bin/;
-
-###############################################################################
 # Build agent wrapping tool
 ###############################################################################
 
@@ -251,6 +236,21 @@ COPY . /work
 RUN go build -o bin/google-cloud-ops-agent-wrapper.exe ./cmd/agent_wrapper; `
     Copy-Item -Path bin/google-cloud-ops-agent-wrapper.exe -Destination /work/out/bin/;
 
+
+###############################################################################
+# Build the Ops Agent UAP plugin
+###############################################################################
+
+WORKDIR /work
+
+COPY . /work
+
+ARG WINDOWS_VERSION
+ARG BUILD_DISTRO=windows-$WINDOWS_VERSION
+RUN Get-Content VERSION | Where-Object length | ForEach-Object { Invoke-Expression "`$env:$_" }; `
+    go build -o bin/plugin.exe -ldflags \"-X github.com/GoogleCloudPlatform/ops-agent/internal/version.BuildDistro=$env:BUILD_DISTRO -X github.com/GoogleCloudPlatform/ops-agent/internal/version.Version=$env:PKG_VERSION\" ./cmd/ops_agent_uap_plugin; `
+    Copy-Item -Path bin/plugin.exe -Destination /work/out/bin/; `
+    $env:PKG_VERSION | Out-File -FilePath /work/out/bin/OPS_AGENT_VERSION -Encoding UTF8;
 ###############################################################################
 # Packaging
 ###############################################################################
@@ -260,3 +260,15 @@ WORKDIR /work
 COPY . /work
 
 RUN & .\pkg\goo\build.ps1 -DestDir /work/out;
+
+###############################################################################
+# Packaging for the Ops Agent Plugin
+###############################################################################
+
+WORKDIR /work
+
+COPY . /work
+
+RUN & .\pkg\plugin\build.ps1 -DestDir /work/out/bin;
+
+

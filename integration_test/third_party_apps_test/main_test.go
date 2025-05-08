@@ -53,10 +53,10 @@ import (
 	"time"
 
 	cloudlogging "cloud.google.com/go/logging"
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/gce"
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
 	feature_tracking_metadata "github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
-	"github.com/GoogleCloudPlatform/ops-agent/integration_test/gce"
-	"github.com/GoogleCloudPlatform/ops-agent/integration_test/logging"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
 	structpb "google.golang.org/protobuf/types/known/structpb"
@@ -446,7 +446,7 @@ func runLoggingTestCases(ctx context.Context, logger *log.Logger, vm *gce.VM, lo
 			query := constructQuery(entry.LogName, entry.Fields)
 
 			// Query logging backend for log matching the query.
-			actualLog, err := gce.QueryLog(ctx, logger, vm, entry.LogName, 1*time.Hour, query, gce.QueryMaxAttempts)
+			actualLog, err := gce.QueryLog(ctx, logger, vm, entry.LogName, 1*time.Hour, query, gce.LogQueryMaxAttempts)
 			if err != nil {
 				c <- err
 				return
@@ -600,7 +600,7 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	}
 	time.Sleep(60 * time.Second)
 
-	backupConfigFilePath := util.GetConfigPath(vm.ImageSpec) + ".bak"
+	backupConfigFilePath := agents.OpsAgentConfigPath(vm.ImageSpec) + ".bak"
 	if err = assertFilePresence(ctx, logger.ToMainLog(), vm, backupConfigFilePath); err != nil {
 		return nonRetryable, fmt.Errorf("error when fetching back up config file %s: %v", backupConfigFilePath, err)
 	}
@@ -949,6 +949,7 @@ func getAcceleratorCount(machineType string) string {
 // Also, restrict `SAPHANAImageSpec` to only test `SAPHANAApp` and skip that
 // app on all other images too.
 func determineTestsToSkip(tests []test, impactedApps map[string]bool) {
+
 	for i, test := range tests {
 		if testing.Short() {
 			_, testApp := impactedApps[test.app]
@@ -980,6 +981,10 @@ func determineTestsToSkip(tests []test, impactedApps map[string]bool) {
 		isSAPHANAApp := test.app == SAPHANAApp
 		if isSAPHANAImageSpec != isSAPHANAApp {
 			tests[i].skipReason = fmt.Sprintf("Skipping %v because we only want to test %v on %v", test.app, SAPHANAApp, SAPHANAImageSpec)
+			continue
+		}
+		if gce.IsOpsAgentUAPPlugin() && (gce.IsWindows2016(test.imageSpec) || gce.IsWindows2019(test.imageSpec)) {
+			tests[i].skipReason = "skip running the test against the Ops Agent UAP Plugin on the windows image"
 			continue
 		}
 	}

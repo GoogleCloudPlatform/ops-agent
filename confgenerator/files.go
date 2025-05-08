@@ -17,7 +17,6 @@ package confgenerator
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -60,7 +59,7 @@ func (uc *UnifiedConfig) GenerateFilesFromConfig(ctx context.Context, service, l
 			}
 		}
 	case "otel":
-		otelConfig, err := uc.GenerateOtelConfig(ctx)
+		otelConfig, err := uc.GenerateOtelConfig(ctx, outDir)
 		if err != nil {
 			return fmt.Errorf("can't parse configuration: %w", err)
 		}
@@ -78,7 +77,8 @@ func WriteConfigFile(content []byte, path string) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return fmt.Errorf("failed to create directory for %q: %w", path, err)
 	}
-	if err := ioutil.WriteFile(path, content, 0644); err != nil {
+	content = append(content, []byte("\n")...)
+	if err := os.WriteFile(path, content, 0644); err != nil {
 		return fmt.Errorf("failed to write file to %q: %w", path, err)
 	}
 	return nil

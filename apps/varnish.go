@@ -72,16 +72,16 @@ func (p LoggingProcessorVarnish) Components(ctx context.Context, tag string, uid
 }
 
 type LoggingReceiverVarnish struct {
-	LoggingProcessorVarnish                 `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	LoggingProcessorVarnish `yaml:",inline"`
+	ReceiverMixin           confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r LoggingReceiverVarnish) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{"/var/log/varnish/varnishncsa.log"}
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
+		r.ReceiverMixin.IncludePaths = []string{"/var/log/varnish/varnishncsa.log"}
 	}
 
-	c := r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	c := r.ReceiverMixin.Components(ctx, tag)
 	c = append(c, r.LoggingProcessorVarnish.Components(ctx, tag, "varnish")...)
 	return c
 }
