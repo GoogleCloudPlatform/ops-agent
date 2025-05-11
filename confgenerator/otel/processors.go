@@ -345,6 +345,21 @@ func RenameMetric(old, new string, operations ...map[string]interface{}) map[str
 	return out
 }
 
+// RenameMetricRegexp returns a config snippet that renames metrics matching the input regex
+// to new, applying zero or more transformations.
+func RenameMetricRegexp(metricRegex string, new string, operations ...map[string]interface{}) map[string]interface{} {
+	out := map[string]interface{}{
+		"match_type": "regexp",
+		"include":    metricRegex,
+		"action":     "update",
+		"new_name":   new,
+	}
+	if len(operations) > 0 {
+		out["operations"] = operations
+	}
+	return out
+}
+
 // UpdateMetric returns a config snippet applies transformations to the given metric name
 func UpdateMetric(metric string, operations ...map[string]interface{}) map[string]interface{} {
 	out := map[string]interface{}{

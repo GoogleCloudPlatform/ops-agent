@@ -63,6 +63,21 @@ func (r AgentSelfMetrics) OtelPipeline() otel.ReceiverPipeline {
 				"otelcol_process_memory_rss",
 				"grpc.client.attempt.duration",
 				"googlecloudmonitoring/point_count",
+				"otelcol_exporter_sent_log_records",
+				"otelcol_receiver_refused_log_records",
+				"otelcol_receiver_accepted_log_records",
+			),
+			otel.MetricsTransform(
+				otel.RenameMetric("grpc.client.attempt.duration", "grpc.client.attempt.duration.logging",
+					// TODO: below is proposed new configuration for the metrics transform processor
+					// ignore any non "google.monitoring" RPCs (note there won't be any other RPCs for now)
+					// - action: select_label_values
+					//   label: grpc_client_method
+					//   value_regexp: ^google\.monitoring
+					otel.RenameLabel("grpc.status", "state"),
+					// delete grpc_client_method dimension & service.version label, retaining only state
+					otel.AggregateLabels("sum", "state"),
+				),
 			),
 			otel.Transform("metric", "metric",
 				// create new count metric from histogram metric
