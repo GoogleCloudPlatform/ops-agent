@@ -23,6 +23,9 @@ case $VERSION_ID in
   24.04|25.04)
     echo "deb http://ppa.launchpad.net/rabbitmq/rabbitmq-erlang/ubuntu noble main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
     ;;
+  25.04)
+    echo "deb http://ppa.launchpad.net/rabbitmq/rabbitmq-erlang/ubuntu noble main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
+    ;;
   # debian
   11)
     echo "deb http://ppa.launchpad.net/rabbitmq/rabbitmq-erlang/ubuntu focal main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
