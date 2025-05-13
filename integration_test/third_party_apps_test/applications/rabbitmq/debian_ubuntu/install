@@ -49,8 +49,9 @@ case $VERSION_ID in
 esac
 
 curl -s \
-    https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.deb.sh | \
-    sudo bash
+    https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.deb.sh > install_rabbitmq.sh
+    chmod +x install_rabbitmq.sh
+    sudo os=ubuntu dist=noble ./install_rabbitmq.sh
 
 sudo apt-get update
 
