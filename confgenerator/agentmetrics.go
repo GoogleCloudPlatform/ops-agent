@@ -67,28 +67,22 @@ func (r AgentSelfMetrics) OtelPipeline() otel.ReceiverPipeline {
 				"otelcol_receiver_refused_log_records",
 				"otelcol_receiver_accepted_log_records",
 			),
-			otel.MetricsTransform(
-				otel.RenameMetric("grpc.client.attempt.duration", "grpc.client.attempt.duration.logging",
-					// TODO: below is proposed new configuration for the metrics transform processor
-					// ignore any non "google.monitoring" RPCs (note there won't be any other RPCs for now)
-					// - action: select_label_values
-					//   label: grpc_client_method
-					//   value_regexp: ^google\.monitoring
-					otel.RenameLabel("grpc.status", "state"),
-					// delete grpc_client_method dimension & service.version label, retaining only state
-					otel.AggregateLabels("sum", "state"),
-				),
-			),
 			otel.Transform("metric", "metric",
-				// create new count metric from histogram metric
-				ottl.ExtractCountMetric(true, "grpc.client.attempt.duration"),
+				[]ottl.Statement{
+					// Separate metric into logging and monitoring
+					ottl.CopyMetric("grpc.client.attempt.duration.logging", `grpc.client.attempt.duration.grpc_client_method ~= ^google\.logging`)[0],
+					ottl.CopyMetric("grpc.client.attempt.duration.monitoring", `grpc.client.attempt.duration.grpc_client_method ~= ^google\.monitoring`)[0],
+					// Create new count metrics from histogram metric
+					ottl.ExtractCountMetric(true, "grpc.client.attempt.duration.logging")[0],
+					ottl.ExtractCountMetric(true, "grpc.client.attempt.duration.monitoring")[0]},
 			),
 			otel.MetricsFilter(
 				"include",
 				"strict",
 				"otelcol_process_uptime",
 				"otelcol_process_memory_rss",
-				"grpc.client.attempt.duration_count",
+				"grpc.client.attempt.duration.logging_count",
+				"grpc.client.attempt.duration.monitoring_count",
 				"googlecloudmonitoring/point_count",
 			),
 			otel.MetricsTransform(
@@ -103,7 +97,17 @@ func (r AgentSelfMetrics) OtelPipeline() otel.ReceiverPipeline {
 					// remove service.version label
 					otel.AggregateLabels("sum"),
 				),
-				otel.RenameMetric("grpc.client.attempt.duration_count", "agent/api_request_count",
+				otel.RenameMetric("grpc.client.attempt.duration.monitoring_count", "agent/api_request_count",
+					// TODO: below is proposed new configuration for the metrics transform processor
+					// ignore any non "google.monitoring" RPCs (note there won't be any other RPCs for now)
+					// - action: select_label_values
+					//   label: grpc_client_method
+					//   value_regexp: ^google\.monitoring
+					otel.RenameLabel("grpc.status", "state"),
+					// delete grpc_client_method dimension & service.version label, retaining only state
+					otel.AggregateLabels("sum", "state"),
+				),
+				otel.RenameMetric("grpc.client.attempt.duration.logging_count", "agent/request_count",
 					// TODO: below is proposed new configuration for the metrics transform processor
 					// ignore any non "google.monitoring" RPCs (note there won't be any other RPCs for now)
 					// - action: select_label_values
