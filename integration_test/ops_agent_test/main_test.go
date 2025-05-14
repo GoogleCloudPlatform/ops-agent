@@ -3191,7 +3191,7 @@ func TestGoogleProvider(t *testing.T) {
       config:
         scrape_configs:
         - job_name: test
-          metrics_path: ${googlesecretsprovider:projects/506114058399/secrets/ida-test-secret-1/versions/3}
+          metrics_path: ${googlesecretmanager:projects/506114058399/secrets/ida-test-secret-1/versions/3}
           scrape_interval: 10s
           static_configs:
             - targets:
