@@ -19,7 +19,7 @@ metrics:
     postgresql:
       type: postgresql
       username: postgres
-      password: {googlesecretmanager:projects/228437877067/secrets/ops-agent-3p-test-postgresql-password/versions/1}
+      password: ${googlesecretmanager:projects/228437877067/secrets/ops-agent-3p-test-postgresql-password/versions/1}
       insecure: true
       endpoint: localhost:5432
   service:

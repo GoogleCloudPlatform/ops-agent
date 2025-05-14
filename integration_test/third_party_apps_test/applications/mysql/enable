@@ -19,7 +19,7 @@ metrics:
     mysql:
       type: mysql
       username: root
-      password: {googlesecretmanager:projects/228437877067/secrets/ops-agent-3p-test-mysql-password/versions/1}
+      password: ${googlesecretmanager:projects/228437877067/secrets/ops-agent-3p-test-mysql-password/versions/1}
   service:
     pipelines:
       mysql:
