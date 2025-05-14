@@ -524,11 +524,14 @@ func init() {
 	LoggingProcessorTypes.RegisterType(func() LoggingProcessor { return &LoggingProcessorExcludeLogs{} })
 }
 
+// LoggingMultiProcessorMixin implements the methods required to describe a pipeline with one or more log processors.
 type LoggingMultiProcessorMixin interface {
 	Type() string
+	// Processors returns slice of logging processors. This is an intermediate representation before sub-agent specific configurations.
 	Processors(ctx context.Context) []LoggingProcessorMixin
 }
 
+// LoggingMultiProcessor represents a pipeline that consists of one or more log processors.
 type LoggingMultiProcessor[P LoggingMultiProcessorMixin] struct {
 	ConfigComponent     `yaml:",inline"`
 	MultiProcessorMixin P `yaml:",inline"`

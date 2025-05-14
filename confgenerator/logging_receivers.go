@@ -741,6 +741,7 @@ func init() {
 	LoggingReceiverTypes.RegisterType(func() LoggingReceiver { return &LoggingReceiverSystemd{} }, platform.Linux)
 }
 
+// LoggingCompositeReceiver represents a pipeline that consists of one log receiver & one or more log processors.
 type LoggingCompositeReceiver[R LoggingReceiverMixin, P LoggingMultiProcessorMixin] struct {
 	ConfigComponent     `yaml:",inline"`
 	MultiProcessorMixin P `yaml:",inline"`
