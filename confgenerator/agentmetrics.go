@@ -98,21 +98,11 @@ func (r AgentSelfMetrics) OtelPipeline() otel.ReceiverPipeline {
 					otel.AggregateLabels("sum"),
 				),
 				otel.RenameMetric("grpc.client.attempt.duration.monitoring_count", "agent/api_request_count",
-					// TODO: below is proposed new configuration for the metrics transform processor
-					// ignore any non "google.monitoring" RPCs (note there won't be any other RPCs for now)
-					// - action: select_label_values
-					//   label: grpc_client_method
-					//   value_regexp: ^google\.monitoring
 					otel.RenameLabel("grpc.status", "state"),
 					// delete grpc_client_method dimension & service.version label, retaining only state
 					otel.AggregateLabels("sum", "state"),
 				),
 				otel.RenameMetric("grpc.client.attempt.duration.logging_count", "agent/request_count",
-					// TODO: below is proposed new configuration for the metrics transform processor
-					// ignore any non "google.monitoring" RPCs (note there won't be any other RPCs for now)
-					// - action: select_label_values
-					//   label: grpc_client_method
-					//   value_regexp: ^google\.monitoring
 					otel.RenameLabel("grpc.status", "state"),
 					// delete grpc_client_method dimension & service.version label, retaining only state
 					otel.AggregateLabels("sum", "state"),
