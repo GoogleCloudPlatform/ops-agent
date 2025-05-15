@@ -143,6 +143,7 @@ func runScriptFromScriptsDir(ctx context.Context, logger *log.Logger, vm *gce.VM
 	if err != nil {
 		return gce.CommandOutput{}, err
 	}
+	logger.Printf("Running script with content %s", scriptContents)
 	return gce.RunScriptRemotely(ctx, logger, vm, string(scriptContents), nil, env)
 }
 

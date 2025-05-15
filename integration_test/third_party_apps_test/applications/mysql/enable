@@ -13,7 +13,7 @@ fi
 sudo cp /etc/google-cloud-ops-agent/config.yaml /etc/google-cloud-ops-agent/config.yaml.bak
 
 # Configure the Ops Agent.
-sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
+sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << \EOF
 metrics:
   receivers:
     mysql:
