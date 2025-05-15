@@ -627,9 +627,13 @@ service:
       - prometheus/prometheus
   telemetry:
     metrics:
+      level: detailed
       readers:
       - pull:
           exporter:
             prometheus:
               host: 0.0.0.0
               port: 20201
+              without_scope_info: true
+              without_type_suffix: true
+              without_units: true
