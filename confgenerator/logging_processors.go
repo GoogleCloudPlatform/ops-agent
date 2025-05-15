@@ -523,28 +523,3 @@ func (p LoggingProcessorExcludeLogs) Processors(ctx context.Context) ([]otel.Com
 func init() {
 	LoggingProcessorTypes.RegisterType(func() LoggingProcessor { return &LoggingProcessorExcludeLogs{} })
 }
-
-// LoggingProcessorMacro implements the methods required to describe a pipeline with one or more log processors.
-type LoggingProcessorMacro interface {
-	Type() string
-	// Processors returns slice of logging processors. This is an intermediate representation before sub-agent specific configurations.
-	InternalLoggingProcessors(ctx context.Context) []InternalLoggingProcessor
-}
-
-// LoggingProcessorExpandedMacro represents a pipeline that consists of one or more log processors.
-type LoggingProcessorExpandedMacro[P LoggingProcessorMacro] struct {
-	ConfigComponent `yaml:",inline"`
-	ProcessorMacro  P `yaml:",inline"`
-}
-
-func (cp LoggingProcessorExpandedMacro[P]) Type() string {
-	return cp.ProcessorMacro.Type()
-}
-
-func (cp LoggingProcessorExpandedMacro[P]) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
-	var c []fluentbit.Component
-	for _, p := range cp.ProcessorMacro.InternalLoggingProcessors(ctx) {
-		c = append(c, p.Components(ctx, tag, uid)...)
-	}
-	return c
-}

@@ -16,7 +16,6 @@ package confgenerator
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"path"
 	"strconv"
@@ -739,47 +738,4 @@ func (r LoggingReceiverSystemd) Pipelines(ctx context.Context) ([]otel.ReceiverP
 
 func init() {
 	LoggingReceiverTypes.RegisterType(func() LoggingReceiver { return &LoggingReceiverSystemd{} }, platform.Linux)
-}
-
-// LoggingCompositeReceiver represents a pipeline that consists of one log receiver & one or more log processors.
-type LoggingCompositeReceiver[R InternalLoggingReceiver, P LoggingProcessorMacro] struct {
-	ConfigComponent  `yaml:",inline"`
-	ProcessorMacro   P `yaml:",inline"`
-	InternalReceiver R `yaml:",inline"`
-}
-
-func (cr *LoggingCompositeReceiver[R, P]) Type() string {
-	return cr.ProcessorMacro.Type()
-}
-
-func (cr *LoggingCompositeReceiver[R, P]) processor() InternalLoggingProcessor {
-	return &LoggingProcessorExpandedMacro[P]{ProcessorMacro: cr.ProcessorMacro}
-}
-
-func (cr *LoggingCompositeReceiver[R, P]) Components(ctx context.Context, tag string) []fluentbit.Component {
-	c := cr.InternalReceiver.Components(ctx, tag)
-	c = append(c, cr.processor().Components(ctx, tag, fmt.Sprintf("%s", cr.Type()))...)
-	return c
-}
-
-func (cr *LoggingCompositeReceiver[R, P]) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
-	if r, ok := any(cr.InternalReceiver).(OTelReceiver); ok {
-		rps, err := r.Pipelines(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, pipeline := range rps {
-			if p, ok := any(cr.processor()).(OTelProcessor); ok {
-				c, err := p.Processors(ctx)
-				if err != nil {
-					return nil, err
-				}
-				pipeline.Processors["logs"] = append(pipeline.Processors["logs"], c...)
-			} else {
-				return nil, errors.New("unimplemented")
-			}
-		}
-		return rps, nil
-	}
-	return nil, errors.New("unimplemented")
 }
