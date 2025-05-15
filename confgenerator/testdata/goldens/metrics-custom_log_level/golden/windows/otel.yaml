@@ -655,7 +655,7 @@ service:
       level: debug
     metrics:
       readers:
-        pull:
+      - pull:
           exporter:
             prometheus:
               host: 0.0.0.0
