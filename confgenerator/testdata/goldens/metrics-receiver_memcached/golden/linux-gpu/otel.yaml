@@ -602,4 +602,9 @@ service:
       - prometheus/otel
   telemetry:
     metrics:
-      address: 0.0.0.0:20201
+      readers:
+        pull:
+          exporter:
+            prometheus:
+              host: 0.0.0.0
+              port: 20201
