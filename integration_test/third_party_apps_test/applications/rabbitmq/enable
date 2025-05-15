@@ -13,13 +13,13 @@ fi
 sudo cp /etc/google-cloud-ops-agent/config.yaml /etc/google-cloud-ops-agent/config.yaml.bak
 
 # Configure the Ops Agent.
-sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
+sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << \EOF
 metrics:
   receivers:
     rabbitmq:
       type: rabbitmq
       username: usr
-      password: pwd
+      password: ${googlesecretmanager:projects/228437877067/secrets/ops-agent-3p-test-rabbitmq-password/versions/1}
   service:
     pipelines:
       rabbitmq:
