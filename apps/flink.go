@@ -157,7 +157,5 @@ func init() {
 	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
 		return &confgenerator.LoggingCompositeReceiver[InternalLoggingReceiverFlink, confgenerator.LoggingProcessorExpandedMacro[LoggingProcessorMacroFlink]]{}
 	})
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor {
-		return &confgenerator.LoggingProcessorExpandedMacro[LoggingProcessorMacroFlink]{}
-	})
+	confgenerator.RegisterLoggingProcessorMacro[LoggingProcessorMacroFlink]()
 }

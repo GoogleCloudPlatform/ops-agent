@@ -427,27 +427,6 @@ func (r *componentTypeRegistry[CI, M]) RegisterType(constructor func() CI, platf
 	r.TypeMap[name] = &componentFactory[CI]{constructor, platformsValue}
 }
 
-func (r *componentTypeRegistry[CI, M]) RegisterLogginProcessorMacro(macro LoggingProcessorMacro, platforms ...platform.Type) {
-	name := macro.Type()
-	if _, ok := r.TypeMap[name]; ok {
-		panic(fmt.Sprintf("attempt to register duplicate %s %s type: %q", r.Subagent, r.Kind, name))
-	}
-	if r.TypeMap == nil {
-		r.TypeMap = make(map[string]*componentFactory[CI])
-	}
-	var platformsValue platform.Type
-	for _, p := range platforms {
-		platformsValue = platformsValue | p
-	}
-	if platformsValue == 0 {
-		platformsValue = platform.All
-	}
-	constructor := func() CI {
-		return &LoggingProcessorExpandedMacro[LoggingProcessorMacro]{}
-	}
-	r.TypeMap[name] = &componentFactory[CI]{constructor, platformsValue}
-}
-
 // UnmarshalComponentYaml is the custom unmarshaller for reading a component's configuration from the config file.
 // It first unmarshals into a struct containing only the "type" field, then looks up the config struct with the full set of fields for that type, and finally unmarshals into an instance of that struct.
 func (r *componentTypeRegistry[CI, M]) UnmarshalComponentYaml(ctx context.Context, inner *CI, unmarshal func(interface{}) error) error {
@@ -581,6 +560,12 @@ type InternalLoggingProcessor interface {
 
 var LoggingProcessorTypes = &componentTypeRegistry[LoggingProcessor, loggingProcessorMap]{
 	Subagent: "logging", Kind: "processor",
+}
+
+func RegisterLoggingProcessorMacro[LPM LoggingProcessorMacro]() {
+	LoggingProcessorTypes.RegisterType(func() LoggingProcessor {
+		return &LoggingProcessorExpandedMacro[LPM]{}
+	})
 }
 
 func (m *loggingProcessorMap) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
