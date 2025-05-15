@@ -1,47 +1,65 @@
 - collector_errors:
-  - caller: internal/base_exporter.go:130
+  - caller: internal/base_exporter.go:116
     error: "could not process attribute gcp.source_location: json: cannot unmarshal string into Go struct field LogEntrySourceLocation.line of type int64"
     level: error
     msg: Exporting failed. Rejecting data. Try enabling sending_queue to survive temporary failures.
+    otelcol.component.id: googlecloud/otel
+    otelcol.component.kind: exporter
+    otelcol.signal: logs
     rejected_items: 1.0
+    resource: {}
     stacktrace: |-
       go.opentelemetry.io/collector/exporter/exporterhelper/internal.(*BaseExporter).Send
-        go.opentelemetry.io/collector/exporter@v0.112.0/exporterhelper/internal/base_exporter.go:130
-      go.opentelemetry.io/collector/exporter/exporterhelper.NewLogsRequest.func1
-        go.opentelemetry.io/collector/exporter@v0.112.0/exporterhelper/logs.go:138
+        go.opentelemetry.io/collector/exporter@v0.126.0/exporterhelper/internal/base_exporter.go:116
+      go.opentelemetry.io/collector/exporter/exporterhelper.NewLogsRequest.newConsumeLogs.func1
+        go.opentelemetry.io/collector/exporter@v0.126.0/exporterhelper/logs.go:176
       go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
-        go.opentelemetry.io/collector/consumer@v0.112.0/logs.go:26
+        go.opentelemetry.io/collector/consumer@v1.32.0/logs.go:27
       go.opentelemetry.io/collector/internal/fanoutconsumer.(*logsConsumer).ConsumeLogs
-        go.opentelemetry.io/collector@v0.112.0/internal/fanoutconsumer/logs.go:62
+        go.opentelemetry.io/collector/internal/fanoutconsumer@v0.126.0/logs.go:62
       go.opentelemetry.io/collector/processor/processorhelper.NewLogs.func1
-        go.opentelemetry.io/collector/processor@v0.112.0/processorhelper/logs.go:66
+        go.opentelemetry.io/collector/processor/processorhelper@v0.126.0/logs.go:66
       go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
-        go.opentelemetry.io/collector/consumer@v0.112.0/logs.go:26
+        go.opentelemetry.io/collector/consumer@v1.32.0/logs.go:27
       go.opentelemetry.io/collector/processor/processorhelper.NewLogs.func1
-        go.opentelemetry.io/collector/processor@v0.112.0/processorhelper/logs.go:66
+        go.opentelemetry.io/collector/processor/processorhelper@v0.126.0/logs.go:66
       go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
-        go.opentelemetry.io/collector/consumer@v0.112.0/logs.go:26
+        go.opentelemetry.io/collector/consumer@v1.32.0/logs.go:27
       go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
-        go.opentelemetry.io/collector/consumer@v0.112.0/logs.go:26
+        go.opentelemetry.io/collector/consumer@v1.32.0/logs.go:27
       go.opentelemetry.io/collector/internal/fanoutconsumer.(*logsConsumer).ConsumeLogs
-        go.opentelemetry.io/collector@v0.112.0/internal/fanoutconsumer/logs.go:62
+        go.opentelemetry.io/collector/internal/fanoutconsumer@v0.126.0/logs.go:62
       github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry.(*logsConsumer).ConsumeLogs
-        github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.112.0/consumerretry/logs.go:37
-      github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.(*receiver).consumerLoop
-        github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.112.0/adapter/receiver.go:110
+        github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.126.0/consumerretry/logs.go:37
+      github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.(*receiver).consumeEntries
+        github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.126.0/adapter/receiver.go:59
+      github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper.(*BatchingLogEmitter).flusher
+        github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.126.0/operator/helper/emitter.go:171
   - caller: consumerretry/logs.go:39
     error: "could not process attribute gcp.source_location: json: cannot unmarshal string into Go struct field LogEntrySourceLocation.line of type int64"
     level: error
     msg: ConsumeLogs() failed. Enable retry_on_failure to slow down reading logs and avoid dropping.
+    otelcol.component.id: filelog/input
+    otelcol.component.kind: receiver
+    otelcol.signal: logs
+    resource: {}
     stacktrace: |-
       github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry.(*logsConsumer).ConsumeLogs
-        github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.112.0/consumerretry/logs.go:39
-      github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.(*receiver).consumerLoop
-        github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.112.0/adapter/receiver.go:110
-  - caller: adapter/receiver.go:112
+        github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.126.0/consumerretry/logs.go:39
+      github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.(*receiver).consumeEntries
+        github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.126.0/adapter/receiver.go:59
+      github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper.(*BatchingLogEmitter).flusher
+        github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.126.0/operator/helper/emitter.go:171
+  - caller: adapter/receiver.go:61
     error: "could not process attribute gcp.source_location: json: cannot unmarshal string into Go struct field LogEntrySourceLocation.line of type int64"
     level: error
     msg: ConsumeLogs() failed
+    otelcol.component.id: filelog/input
+    otelcol.component.kind: receiver
+    otelcol.signal: logs
+    resource: {}
     stacktrace: |-
-      github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.(*receiver).consumerLoop
-        github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.112.0/adapter/receiver.go:112
+      github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.(*receiver).consumeEntries
+        github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.126.0/adapter/receiver.go:61
+      github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper.(*BatchingLogEmitter).flusher
+        github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.126.0/operator/helper/emitter.go:171
