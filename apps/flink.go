@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
 
@@ -72,14 +71,15 @@ func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverFlink{} })
 }
 
-type LoggingProcessorMacroFlink struct {
+type LoggingComponentMacroFlink struct {
+	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (LoggingProcessorMacroFlink) Type() string {
+func (LoggingComponentMacroFlink) Type() string {
 	return "flink"
 }
 
-func (p LoggingProcessorMacroFlink) InternalLoggingProcessors(ctx context.Context) []confgenerator.InternalLoggingProcessor {
+func (p LoggingComponentMacroFlink) Processors(ctx context.Context) []confgenerator.InternalLoggingProcessor {
 	return []confgenerator.InternalLoggingProcessor{
 		confgenerator.LoggingProcessorParseMultilineRegex{
 			LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
@@ -138,11 +138,7 @@ func (p LoggingProcessorMacroFlink) InternalLoggingProcessors(ctx context.Contex
 	}
 }
 
-type InternalLoggingReceiverFlink struct {
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
-}
-
-func (r InternalLoggingReceiverFlink) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (r LoggingComponentMacroFlink) Receiver(ctx context.Context) confgenerator.InternalLoggingReceiver {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			"/opt/flink/log/flink-*-standalonesession-*.log",
@@ -150,12 +146,10 @@ func (r InternalLoggingReceiverFlink) Components(ctx context.Context, tag string
 			"/opt/flink/log/flink-*-client-*.log",
 		}
 	}
-	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
+	return r.LoggingReceiverFilesMixin
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
-		return &confgenerator.LoggingCompositeReceiver[InternalLoggingReceiverFlink, LoggingProcessorMacroFlink]{}
-	})
-	confgenerator.RegisterLoggingProcessorMacro[LoggingProcessorMacroFlink]()
+	confgenerator.RegisterLoggingCompositeReceiverMacro[LoggingComponentMacroFlink]()
+	confgenerator.RegisterLoggingProcessorMacro[LoggingComponentMacroFlink]()
 }

@@ -562,12 +562,6 @@ var LoggingProcessorTypes = &componentTypeRegistry[LoggingProcessor, loggingProc
 	Subagent: "logging", Kind: "processor",
 }
 
-func RegisterLoggingProcessorMacro[LPM LoggingProcessorMacro]() {
-	LoggingProcessorTypes.RegisterType(func() LoggingProcessor {
-		return &LoggingProcessorExpandedMacro[LPM]{}
-	})
-}
-
 func (m *loggingProcessorMap) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
 	return LoggingProcessorTypes.unmarshalToMap(ctx, m, unmarshal)
 }
