@@ -72,15 +72,15 @@ func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverFlink{} })
 }
 
-type LoggingMultiProcessorMixinFlink struct {
+type LoggingProcessorMacroFlink struct {
 }
 
-func (LoggingMultiProcessorMixinFlink) Type() string {
+func (LoggingProcessorMacroFlink) Type() string {
 	return "flink"
 }
 
-func (p LoggingMultiProcessorMixinFlink) Processors(ctx context.Context) []confgenerator.LoggingProcessorMixin {
-	return []confgenerator.LoggingProcessorMixin{
+func (p LoggingProcessorMacroFlink) InternalLoggingProcessors(ctx context.Context) []confgenerator.InternalLoggingProcessor {
+	return []confgenerator.InternalLoggingProcessor{
 		confgenerator.LoggingProcessorParseMultilineRegex{
 			LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 				Parsers: []confgenerator.RegexParser{
@@ -138,11 +138,11 @@ func (p LoggingMultiProcessorMixinFlink) Processors(ctx context.Context) []confg
 	}
 }
 
-type LoggingReceiverMixinFlink struct {
+type InternalLoggingReceiverFlink struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverMixinFlink) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (r InternalLoggingReceiverFlink) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			"/opt/flink/log/flink-*-standalonesession-*.log",
@@ -155,9 +155,9 @@ func (r LoggingReceiverMixinFlink) Components(ctx context.Context, tag string) [
 
 func init() {
 	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
-		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverMixinFlink, LoggingMultiProcessorMixinFlink]{}
+		return &confgenerator.LoggingCompositeReceiver[InternalLoggingReceiverFlink, confgenerator.LoggingProcessorExpandedMacro[LoggingProcessorMacroFlink]]{}
 	})
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor {
-		return &confgenerator.LoggingMultiProcessor[LoggingMultiProcessorMixinFlink]{}
+		return &confgenerator.LoggingProcessorExpandedMacro[LoggingProcessorMacroFlink]{}
 	})
 }
