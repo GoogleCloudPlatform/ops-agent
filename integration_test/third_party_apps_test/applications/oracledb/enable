@@ -33,7 +33,7 @@ metrics:
     oracledb:
       type: oracledb
       username: otel
-      password: ${googlesecretmanager:projects/228437877067/secrets/ops-agent-3p-test-oracledb-password/versions/2}
+      password: ora19c
       sid: ORCLCDB
       service_name: ORCLCDB
   service:

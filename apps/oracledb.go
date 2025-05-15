@@ -16,6 +16,7 @@ package apps
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"path"
@@ -78,6 +79,9 @@ func (r MetricsReceiverOracleDB) Pipelines(_ context.Context) ([]otel.ReceiverPi
 	auth := url.QueryEscape(r.Username)
 	secretPassword := r.Password.SecretValue()
 	if len(secretPassword) > 0 {
+		if strings.Contains(secretPassword, "${googlesecretmanager") {
+			return nil, errors.New("google secret manager provider is not supported for OracleDB receiver yet")
+		}
 		auth = fmt.Sprintf("%s:%s", auth, url.QueryEscape(secretPassword))
 	}
 
