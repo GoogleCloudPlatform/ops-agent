@@ -13,13 +13,13 @@ fi
 sudo cp /etc/google-cloud-ops-agent/config.yaml /etc/google-cloud-ops-agent/config.yaml.bak
 
 # Configure the Ops Agent.
-sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
+sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << \EOF
 metrics:
   receivers:
     couchbase:
       type: couchbase
       username: admin
-      password: password
+      password: ${googlesecretmanager:projects/228437877067/secrets/ops-agent-3p-test-couchbase-password/versions/1}
       collection_interval: 30s
   service:
     pipelines:
