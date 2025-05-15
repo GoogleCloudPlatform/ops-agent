@@ -656,7 +656,7 @@ service:
   telemetry:
     metrics:
       readers:
-        pull:
+      - pull:
           exporter:
             prometheus:
               host: 0.0.0.0
