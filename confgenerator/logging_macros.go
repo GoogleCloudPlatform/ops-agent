@@ -38,14 +38,22 @@ func RegisterLoggingCompositeReceiverMacro[LCM LoggingComponentMacro]() {
 	})
 }
 
-func RegisterLoggingProcessorMacro[LCM LoggingComponentMacro]() {
+// LoggingProcessorMacro is a logging component that generates other
+// Ops Agent receiver and/or processors as its implementation.
+type LoggingProcessorMacro interface {
+	Type() string
+	// Processors returns slice of logging processors. This is an intermediate representation before sub-agent specific configurations.
+	Processors(ctx context.Context) []InternalLoggingProcessor
+}
+
+func RegisterLoggingProcessorMacro[LPM LoggingProcessorMacro]() {
 	LoggingProcessorTypes.RegisterType(func() LoggingProcessor {
-		return &loggingProcessorMacroAdapter[LCM]{}
+		return &loggingProcessorMacroAdapter[LPM]{}
 	})
 }
 
-// loggingProcessorMacroAdapter is the type used to unmarshal user configuration for a LoggingComponentMacro and adapt its interface to the LoggingProcessor interface.
-type loggingProcessorMacroAdapter[P LoggingComponentMacro] struct {
+// loggingProcessorMacroAdapter is the type used to unmarshal user configuration for a LoggingProcessorMacro and adapt its interface to the LoggingProcessor interface.
+type loggingProcessorMacroAdapter[P LoggingProcessorMacro] struct {
 	ConfigComponent `yaml:",inline"`
 	ProcessorMacro  P `yaml:",inline"`
 }
