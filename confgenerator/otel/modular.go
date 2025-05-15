@@ -139,10 +139,18 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 	pipelines := map[string]interface{}{}
 	service := map[string]map[string]interface{}{
 		"pipelines": pipelines,
-		"telemetry": map[string]interface{}{
+		"telemetry": {
 			"metrics": map[string]interface{}{
-				// TODO: switch to metrics.readers so we can stop binding a port
-				"address": fmt.Sprintf("0.0.0.0:%d", MetricsPort),
+				"readers": map[string]interface{}{
+					"pull": map[string]interface{}{
+						"exporter": map[string]interface{}{
+							"prometheus": map[string]interface{}{
+								"host": "0.0.0.0",
+								"port": MetricsPort,
+							},
+						},
+					},
+				},
 			},
 		},
 	}
