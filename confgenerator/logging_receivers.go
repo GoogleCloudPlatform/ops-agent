@@ -742,19 +742,23 @@ func init() {
 }
 
 // LoggingCompositeReceiver represents a pipeline that consists of one log receiver & one or more log processors.
-type LoggingCompositeReceiver[R InternalLoggingReceiver, P LoggingProcessor] struct {
+type LoggingCompositeReceiver[R InternalLoggingReceiver, P LoggingProcessorMacro] struct {
 	ConfigComponent  `yaml:",inline"`
-	Processor        P `yaml:",inline"`
+	ProcessorMacro   P `yaml:",inline"`
 	InternalReceiver R `yaml:",inline"`
 }
 
 func (cr *LoggingCompositeReceiver[R, P]) Type() string {
-	return cr.Processor.Type()
+	return cr.ProcessorMacro.Type()
+}
+
+func (cr *LoggingCompositeReceiver[R, P]) processor() InternalLoggingProcessor {
+	return &LoggingProcessorExpandedMacro[P]{ProcessorMacro: cr.ProcessorMacro}
 }
 
 func (cr *LoggingCompositeReceiver[R, P]) Components(ctx context.Context, tag string) []fluentbit.Component {
 	c := cr.InternalReceiver.Components(ctx, tag)
-	c = append(c, cr.Processor.Components(ctx, tag, fmt.Sprintf("%s", cr.Type()))...)
+	c = append(c, cr.processor().Components(ctx, tag, fmt.Sprintf("%s", cr.Type()))...)
 	return c
 }
 
@@ -765,7 +769,7 @@ func (cr *LoggingCompositeReceiver[R, P]) Pipelines(ctx context.Context) ([]otel
 			return nil, err
 		}
 		for _, pipeline := range rps {
-			if p, ok := any(cr.Processor).(OTelProcessor); ok {
+			if p, ok := any(cr.processor()).(OTelProcessor); ok {
 				c, err := p.Processors(ctx)
 				if err != nil {
 					return nil, err
