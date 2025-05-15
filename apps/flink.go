@@ -155,7 +155,7 @@ func (r InternalLoggingReceiverFlink) Components(ctx context.Context, tag string
 
 func init() {
 	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
-		return &confgenerator.LoggingCompositeReceiver[InternalLoggingReceiverFlink, confgenerator.LoggingProcessorExpandedMacro[LoggingProcessorMacroFlink]]{}
+		return &confgenerator.LoggingCompositeReceiver[InternalLoggingReceiverFlink, LoggingProcessorMacroFlink]{}
 	})
 	confgenerator.RegisterLoggingProcessorMacro[LoggingProcessorMacroFlink]()
 }
