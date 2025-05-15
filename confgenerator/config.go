@@ -427,8 +427,8 @@ func (r *componentTypeRegistry[CI, M]) RegisterType(constructor func() CI, platf
 	r.TypeMap[name] = &componentFactory[CI]{constructor, platformsValue}
 }
 
-func (r *componentTypeRegistry[CI, M]) RegisterMacro(constructor func() CI, platforms ...platform.Type) {
-	name := constructor().Type()
+func (r *componentTypeRegistry[CI, M]) RegisterLogginProcessorMacro(macro LoggingProcessorMacro, platforms ...platform.Type) {
+	name := macro.Type()
 	if _, ok := r.TypeMap[name]; ok {
 		panic(fmt.Sprintf("attempt to register duplicate %s %s type: %q", r.Subagent, r.Kind, name))
 	}
@@ -441,6 +441,9 @@ func (r *componentTypeRegistry[CI, M]) RegisterMacro(constructor func() CI, plat
 	}
 	if platformsValue == 0 {
 		platformsValue = platform.All
+	}
+	constructor := func() CI {
+		return &LoggingProcessorExpandedMacro[LoggingProcessorMacro]{}
 	}
 	r.TypeMap[name] = &componentFactory[CI]{constructor, platformsValue}
 }
