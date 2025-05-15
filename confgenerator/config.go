@@ -427,6 +427,24 @@ func (r *componentTypeRegistry[CI, M]) RegisterType(constructor func() CI, platf
 	r.TypeMap[name] = &componentFactory[CI]{constructor, platformsValue}
 }
 
+func (r *componentTypeRegistry[CI, M]) RegisterMacro(constructor func() CI, platforms ...platform.Type) {
+	name := constructor().Type()
+	if _, ok := r.TypeMap[name]; ok {
+		panic(fmt.Sprintf("attempt to register duplicate %s %s type: %q", r.Subagent, r.Kind, name))
+	}
+	if r.TypeMap == nil {
+		r.TypeMap = make(map[string]*componentFactory[CI])
+	}
+	var platformsValue platform.Type
+	for _, p := range platforms {
+		platformsValue = platformsValue | p
+	}
+	if platformsValue == 0 {
+		platformsValue = platform.All
+	}
+	r.TypeMap[name] = &componentFactory[CI]{constructor, platformsValue}
+}
+
 // UnmarshalComponentYaml is the custom unmarshaller for reading a component's configuration from the config file.
 // It first unmarshals into a struct containing only the "type" field, then looks up the config struct with the full set of fields for that type, and finally unmarshals into an instance of that struct.
 func (r *componentTypeRegistry[CI, M]) UnmarshalComponentYaml(ctx context.Context, inner *CI, unmarshal func(interface{}) error) error {
@@ -511,11 +529,11 @@ type Logging struct {
 
 type LoggingReceiver interface {
 	Component
-	LoggingReceiverMixin
+	InternalLoggingReceiver
 }
 
-// LoggingReceiverMixin implements all the methods required to describe a logging receiver pipeline.
-type LoggingReceiverMixin interface {
+// InternalLoggingReceiver implements all the methods required to describe a logging receiver pipeline.
+type InternalLoggingReceiver interface {
 	// Components returns fluentbit components that implement this receiver.
 	// tag is the log tag that is assigned to the collected logs.
 	Components(ctx context.Context, tag string) []fluentbit.Component
@@ -548,11 +566,11 @@ func (m *loggingReceiverMap) GetListenPorts() map[string]uint16 {
 
 type LoggingProcessor interface {
 	Component
-	LoggingProcessorMixin
+	InternalLoggingProcessor
 }
 
-// LoggingProcessorMixin implements the methods required to define a logging receiver pipeline.
-type LoggingProcessorMixin interface {
+// InternalLoggingProcessor implements the methods required to define a logging receiver pipeline.
+type InternalLoggingProcessor interface {
 	// Components returns fluentbit components that implement this processor.
 	// tag is the log tag that should be matched by those components, and uid is a string which should be used when needed to generate unique names.
 	Components(ctx context.Context, tag string, uid string) []fluentbit.Component

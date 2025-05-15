@@ -524,26 +524,26 @@ func init() {
 	LoggingProcessorTypes.RegisterType(func() LoggingProcessor { return &LoggingProcessorExcludeLogs{} })
 }
 
-// LoggingMultiProcessorMixin implements the methods required to describe a pipeline with one or more log processors.
-type LoggingMultiProcessorMixin interface {
+// LoggingProcessorMacro implements the methods required to describe a pipeline with one or more log processors.
+type LoggingProcessorMacro interface {
 	Type() string
 	// Processors returns slice of logging processors. This is an intermediate representation before sub-agent specific configurations.
-	Processors(ctx context.Context) []LoggingProcessorMixin
+	InternalLoggingProcessors(ctx context.Context) []InternalLoggingProcessor
 }
 
-// LoggingMultiProcessor represents a pipeline that consists of one or more log processors.
-type LoggingMultiProcessor[P LoggingMultiProcessorMixin] struct {
-	ConfigComponent     `yaml:",inline"`
-	MultiProcessorMixin P `yaml:",inline"`
+// LoggingProcessorExpandedMacro represents a pipeline that consists of one or more log processors.
+type LoggingProcessorExpandedMacro[P LoggingProcessorMacro] struct {
+	ConfigComponent `yaml:",inline"`
+	ProcessorMacro  P `yaml:",inline"`
 }
 
-func (cp *LoggingMultiProcessor[P]) Type() string {
-	return cp.MultiProcessorMixin.Type()
+func (cp LoggingProcessorExpandedMacro[P]) Type() string {
+	return cp.ProcessorMacro.Type()
 }
 
-func (cp *LoggingMultiProcessor[P]) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
+func (cp LoggingProcessorExpandedMacro[P]) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	var c []fluentbit.Component
-	for _, p := range cp.MultiProcessorMixin.Processors(ctx) {
+	for _, p := range cp.ProcessorMacro.InternalLoggingProcessors(ctx) {
 		c = append(c, p.Components(ctx, tag, uid)...)
 	}
 	return c
