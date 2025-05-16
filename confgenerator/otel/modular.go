@@ -138,16 +138,21 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 	exporterNames := map[ExporterType]string{}
 	pipelines := map[string]interface{}{}
 	service := map[string]map[string]interface{}{
+		// service::telemetry::metrics::address setting is ignored in otel v0.123.0.
+		// A prometheus reader needs to be explicitly configured to replace service::telemetry::metrics::address.
+		// See: https://opentelemetry.io/docs/collector/internal-telemetry/#configure-internal-metrics for details.
 		"pipelines": pipelines,
 		"telemetry": {
 			"metrics": map[string]interface{}{
-				"level": "detailed",
 				"readers": []map[string]interface{}{{
 					"pull": map[string]interface{}{
 						"exporter": map[string]interface{}{
 							"prometheus": map[string]interface{}{
-								"host":                "0.0.0.0",
-								"port":                MetricsPort,
+								"host": "0.0.0.0",
+								"port": MetricsPort,
+
+								// See https://docs.datadoghq.com/opentelemetry/migrate/collector_0_120_0/#changes-to-prometheus-server-reader-defaults for why these fields are needed.
+								// See https://github.com/open-telemetry/opentelemetry-collector/pull/11611/files#diff-150d72bc611b4b0de17f646768979b15936f820a029cafa91c4037d50ae47e5a for the actual upstream otel code changes.
 								"without_scope_info":  true,
 								"without_units":       true,
 								"without_type_suffix": true,
