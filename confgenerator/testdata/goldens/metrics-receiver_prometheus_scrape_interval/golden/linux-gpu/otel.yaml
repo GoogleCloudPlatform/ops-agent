@@ -667,7 +667,6 @@ service:
       - prometheus/prometheus
   telemetry:
     metrics:
-      level: detailed
       readers:
       - pull:
           exporter:

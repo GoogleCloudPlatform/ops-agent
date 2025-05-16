@@ -635,7 +635,6 @@ service:
       - prometheus/otel
   telemetry:
     metrics:
-      level: detailed
       readers:
       - pull:
           exporter:
