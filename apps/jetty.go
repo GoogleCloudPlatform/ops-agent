@@ -59,35 +59,35 @@ func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverJetty{} })
 }
 
-type LoggingProcessorJettyAccess struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
+type LoggingMultiProcessorMixinJettyAccess struct {
 }
 
-func (p LoggingProcessorJettyAccess) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
-	return genericAccessLogParser(ctx, p.Type(), tag, uid)
+func (p LoggingMultiProcessorMixinJettyAccess) Processors(ctx context.Context) []confgenerator.LoggingProcessorMixin {
+	return genericAccessLogParser(ctx, p.Type())
 }
 
-func (LoggingProcessorJettyAccess) Type() string {
+func (LoggingMultiProcessorMixinJettyAccess) Type() string {
 	return "jetty_access"
 }
 
-type LoggingReceiverJettyAccess struct {
-	LoggingProcessorJettyAccess `yaml:",inline"`
-	ReceiverMixin               confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+type LoggingReceiverMixinJettyAccess struct {
+	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverJettyAccess) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.ReceiverMixin.IncludePaths) == 0 {
-		r.ReceiverMixin.IncludePaths = []string{
+func (r LoggingReceiverMixinJettyAccess) Components(ctx context.Context, tag string) []fluentbit.Component {
+	if len(r.IncludePaths) == 0 {
+		r.IncludePaths = []string{
 			"/opt/logs/*.request.log",
 		}
 	}
-	c := r.ReceiverMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorJettyAccess.Components(ctx, tag, "jetty_access")...)
-	return c
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
 func init() {
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorJettyAccess{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverJettyAccess{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor {
+		return &confgenerator.LoggingMultiProcessor[LoggingMultiProcessorMixinJettyAccess]{}
+	})
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverMixinJettyAccess, LoggingMultiProcessorMixinJettyAccess]{}
+	})
 }

@@ -68,16 +68,15 @@ func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverCouchdb{} })
 }
 
-type LoggingProcessorCouchdb struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
+type LoggingMultiProcessorMixinCouchdb struct {
 }
 
-func (LoggingProcessorCouchdb) Type() string {
+func (LoggingMultiProcessorMixinCouchdb) Type() string {
 	return "couchdb"
 }
 
-func (p LoggingProcessorCouchdb) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseMultilineRegex{
+func (p LoggingMultiProcessorMixinCouchdb) Processors(ctx context.Context) []confgenerator.LoggingProcessorMixin {
+	parseMultilineRegex := confgenerator.LoggingProcessorParseMultilineRegex{
 		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 			Parsers: []confgenerator.RegexParser{
 				{
@@ -107,7 +106,7 @@ func (p LoggingProcessorCouchdb) Components(ctx context.Context, tag string, uid
 				},
 			},
 		},
-	}.Components(ctx, tag, uid)
+	}
 
 	fields := map[string]*confgenerator.ModifyField{
 		"severity": {
@@ -145,27 +144,24 @@ func (p LoggingProcessorCouchdb) Components(ctx context.Context, tag string, uid
 	}
 
 	// Log levels documented: https://docs.couchdb.org/en/stable/config/logging.html#log/level
-	c = append(c,
-		confgenerator.LoggingProcessorModifyFields{
-			Fields: fields,
-		}.Components(ctx, tag, uid)...,
-	)
-	return c
+	return []confgenerator.LoggingProcessorMixin{
+		parseMultilineRegex,
+		confgenerator.LoggingProcessorModifyFields{Fields: fields},
+	}
 }
 
-type LoggingReceiverCouchdb struct {
-	LoggingProcessorCouchdb `yaml:",inline"`
-	ReceiverMixin           confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+type LoggingReceiverMixinCouchdb struct {
+	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverCouchdb) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.ReceiverMixin.IncludePaths) == 0 {
-		r.ReceiverMixin.IncludePaths = []string{
+func (r LoggingReceiverMixinCouchdb) Components(ctx context.Context, tag string) []fluentbit.Component {
+	if len(r.IncludePaths) == 0 {
+		r.IncludePaths = []string{
 			// Default log file
 			"/var/log/couchdb/couchdb.log",
 		}
 	}
-	r.ReceiverMixin.MultilineRules = []confgenerator.MultilineRule{
+	r.MultilineRules = []confgenerator.MultilineRule{
 		{
 			StateName: "start_state",
 			NextState: "cont",
@@ -178,12 +174,14 @@ func (r LoggingReceiverCouchdb) Components(ctx context.Context, tag string) []fl
 		},
 	}
 
-	c := r.ReceiverMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorCouchdb.Components(ctx, tag, "couchdb")...)
-	return c
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
 func init() {
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorCouchdb{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverCouchdb{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor {
+		return &confgenerator.LoggingMultiProcessor[LoggingMultiProcessorMixinCouchdb]{}
+	})
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverMixinCouchdb, LoggingMultiProcessorMixinCouchdb]{}
+	})
 }

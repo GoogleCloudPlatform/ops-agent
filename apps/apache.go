@@ -70,16 +70,15 @@ func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverApache{} })
 }
 
-type LoggingProcessorApacheError struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
+type LoggingMultiProcessorMixinApacheError struct {
 }
 
-func (LoggingProcessorApacheError) Type() string {
+func (LoggingMultiProcessorMixinApacheError) Type() string {
 	return "apache_error"
 }
 
-func (p LoggingProcessorApacheError) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseRegex{
+func (p LoggingMultiProcessorMixinApacheError) Processors(ctx context.Context) []confgenerator.LoggingProcessorMixin {
+	parseRegex := confgenerator.LoggingProcessorParseRegex{
 		// Documentation: https://httpd.apache.org/docs/current/logs.html#errorlog
 		// Sample line 2.4: [Fri Sep 09 10:42:29.902022 2011] [core:error] [pid 35708:tid 4328636416] (13)Permission denied [client 72.15.99.187] File does not exist: /usr/local/apache2/htdocs/favicon.ico
 		// 					[Thu Sep 30 03:18:29.239182 2021] [ssl:error] [pid 2451:tid 140169666050176] AH02217: ssl_stapling_init_cert: Can't retrieve issuer certificate!
@@ -95,62 +94,56 @@ func (p LoggingProcessorApacheError) Components(ctx context.Context, tag string,
 				"tid": "integer",
 			},
 		},
-	}.Components(ctx, tag, uid)
-
-	// Log levels documented: https://httpd.apache.org/docs/2.4/mod/core.html#loglevel
-	c = append(c,
-		confgenerator.LoggingProcessorModifyFields{
-			Fields: map[string]*confgenerator.ModifyField{
-				"severity": {
-					CopyFrom: "jsonPayload.level",
-					MapValues: map[string]string{
-						"emerg":  "EMERGENCY",
-						"alert":  "ALERT",
-						"crit":   "CRITICAL",
-						"error":  "ERROR",
-						"warn":   "WARNING",
-						"notice": "NOTICE",
-						"info":   "INFO",
-						"debug":  "DEBUG",
-						"trace1": "DEBUG",
-						"trace2": "DEBUG",
-						"trace3": "DEBUG",
-						"trace4": "DEBUG",
-						"trace5": "DEBUG",
-						"trace6": "DEBUG",
-						"trace7": "DEBUG",
-						"trace8": "DEBUG",
-					},
-					MapValuesExclusive: true,
+	}
+	modifyFields := confgenerator.LoggingProcessorModifyFields{
+		// Log levels documented: https://httpd.apache.org/docs/2.4/mod/core.html#loglevel
+		Fields: map[string]*confgenerator.ModifyField{
+			"severity": {
+				CopyFrom: "jsonPayload.level",
+				MapValues: map[string]string{
+					"emerg":  "EMERGENCY",
+					"alert":  "ALERT",
+					"crit":   "CRITICAL",
+					"error":  "ERROR",
+					"warn":   "WARNING",
+					"notice": "NOTICE",
+					"info":   "INFO",
+					"debug":  "DEBUG",
+					"trace1": "DEBUG",
+					"trace2": "DEBUG",
+					"trace3": "DEBUG",
+					"trace4": "DEBUG",
+					"trace5": "DEBUG",
+					"trace6": "DEBUG",
+					"trace7": "DEBUG",
+					"trace8": "DEBUG",
 				},
-				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+				MapValuesExclusive: true,
 			},
-		}.Components(ctx, tag, uid)...,
-	)
-
-	return c
+			InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+		},
+	}
+	return []confgenerator.LoggingProcessorMixin{parseRegex, modifyFields}
 }
 
-type LoggingProcessorApacheAccess struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
+type LoggingMultiProcessorMixinApacheAccess struct {
 }
 
-func (p LoggingProcessorApacheAccess) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
-	return genericAccessLogParser(ctx, p.Type(), tag, uid)
+func (p LoggingMultiProcessorMixinApacheAccess) Processors(ctx context.Context) []confgenerator.LoggingProcessorMixin {
+	return genericAccessLogParser(ctx, p.Type())
 }
 
-func (LoggingProcessorApacheAccess) Type() string {
+func (LoggingMultiProcessorMixinApacheAccess) Type() string {
 	return "apache_access"
 }
 
-type LoggingReceiverApacheAccess struct {
-	LoggingProcessorApacheAccess `yaml:",inline"`
-	ReceiverMixin                confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+type LoggingReceiverApacheAccessMixin struct {
+	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverApacheAccess) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.ReceiverMixin.IncludePaths) == 0 {
-		r.ReceiverMixin.IncludePaths = []string{
+func (r LoggingReceiverApacheAccessMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
+	if len(r.IncludePaths) == 0 {
+		r.IncludePaths = []string{
 			// Default log file path on Debian / Ubuntu
 			"/var/log/apache2/access.log",
 			// Default log file path RHEL / CentOS
@@ -159,19 +152,16 @@ func (r LoggingReceiverApacheAccess) Components(ctx context.Context, tag string)
 			"/var/log/httpd/access_log",
 		}
 	}
-	c := r.ReceiverMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorApacheAccess.Components(ctx, tag, "apache_access")...)
-	return c
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
-type LoggingReceiverApacheError struct {
-	LoggingProcessorApacheError `yaml:",inline"`
-	ReceiverMixin               confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+type LoggingReceiverApacheErrorMixin struct {
+	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (r LoggingReceiverApacheError) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.ReceiverMixin.IncludePaths) == 0 {
-		r.ReceiverMixin.IncludePaths = []string{
+func (r LoggingReceiverApacheErrorMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
+	if len(r.IncludePaths) == 0 {
+		r.IncludePaths = []string{
 			// Default log file path on Debian / Ubuntu
 			"/var/log/apache2/error.log",
 			// Default log file path RHEL / CentOS
@@ -180,14 +170,21 @@ func (r LoggingReceiverApacheError) Components(ctx context.Context, tag string) 
 			"/var/log/httpd/error_log",
 		}
 	}
-	c := r.ReceiverMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorApacheError.Components(ctx, tag, "apache_error")...)
-	return c
+	return r.LoggingReceiverFilesMixin.Components(ctx, tag)
 }
 
 func init() {
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorApacheAccess{} })
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorApacheError{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverApacheAccess{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverApacheError{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor {
+		return &confgenerator.LoggingMultiProcessor[LoggingMultiProcessorMixinApacheAccess]{}
+	})
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor {
+		return &confgenerator.LoggingMultiProcessor[LoggingMultiProcessorMixinApacheError]{}
+	})
+
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverApacheAccessMixin, LoggingMultiProcessorMixinApacheAccess]{}
+	})
+	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver {
+		return &confgenerator.LoggingCompositeReceiver[LoggingReceiverApacheErrorMixin, LoggingMultiProcessorMixinApacheError]{}
+	})
 }
