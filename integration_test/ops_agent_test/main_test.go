@@ -4682,7 +4682,10 @@ metrics:
 			t.Fatal(err)
 		}
 
-		if _, err := gce.WaitForTraceDeprecated(ctx, logger, vm, time.Hour); err != nil {
+		options := gce.WaitForTraceOptions{
+			Window: time.Hour,
+		}
+		if _, err := gce.WaitForTrace(ctx, logger, vm, options); err != nil {
 			t.Error(err)
 		}
 	})
