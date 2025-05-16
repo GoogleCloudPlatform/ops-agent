@@ -34,6 +34,8 @@ metrics:
     saphana:
       type: saphana
       username: SYSTEM
+      # Use plaintext password if you are not using the googlesecretmanager provider.
+      # password: G00g3l21
       password: ${googlesecretmanager:projects/228437877067/secrets/ops-agent-3p-test-saphana-password/versions/1}
       endpoint: localhost:30015
   service:
