@@ -2750,6 +2750,63 @@ func TestDefaultMetricsWithProxy(t *testing.T) {
 	})
 }
 
+func TestGoogleSecretManagerProvider(t *testing.T) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+		// GoogleSecretManagerProvider requires the following scope to be set in order to access secret entries in the Google secret manager.
+		// See: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/confmap/provider/googlesecretmanagerprovider/README.md#prerequisites.
+		customScope := "https://www.googleapis.com/auth/cloud-platform"
+		ctx, dirLog, vm := agents.CommonSetupWithExtraCreateArguments(t, imageSpec, []string{"--scopes", customScope})
+		logger := dirLog.ToMainLog()
+		excludeCPUTimeProcessMetricsConfig := `logging:
+  receivers:
+    syslog:
+      type: files
+      include_paths:
+      - /var/log/messages
+      - /var/log/syslog
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [syslog]
+metrics:
+  receivers:
+    hostmetrics:
+      type: hostmetrics
+      collection_interval: 60s
+  processors:
+    metrics_filter:
+      type: exclude_metrics
+      metrics_pattern:
+      - ${googlesecretmanager:projects/228437877067/secrets/ops-agent-integration-test-google-secret-manager-provider/versions/1}
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: [hostmetrics]
+        processors: [metrics_filter]
+`
+		if err := agents.SetupOpsAgent(ctx, logger, vm, excludeCPUTimeProcessMetricsConfig); err != nil {
+			t.Fatal(err)
+		}
+
+		// Wait long enough for the data to percolate through the backends
+		// under normal circumstances. Based on some experiments, 2 minutes
+		// is normal; wait a bit longer to be on the safe side.
+		time.Sleep(3 * time.Minute)
+
+		includedForkCountProcessMetric := "agent.googleapis.com/processes/fork_count"
+		excludedCPUTimeProcessMetric := "agent.googleapis.com/processes/cpu_time"
+
+		window := time.Minute
+		if _, err := gce.WaitForMetric(ctx, logger, vm, includedForkCountProcessMetric, window, nil, false); err != nil {
+			t.Error(err)
+		}
+		if err := gce.AssertMetricMissing(ctx, logger, vm, excludedCPUTimeProcessMetric, false, window); err != nil {
+			t.Error(err)
+		}
+	})
+
+}
 func TestPrometheusMetrics(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
