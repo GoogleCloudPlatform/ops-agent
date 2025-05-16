@@ -19,6 +19,8 @@ metrics:
     couchbase:
       type: couchbase
       username: admin
+      # Use plaintext password if you are not using the googlesecretmanager provider.
+      # password: password 
       password: ${googlesecretmanager:projects/228437877067/secrets/ops-agent-3p-test-couchbase-password/versions/1}
       collection_interval: 30s
   service:

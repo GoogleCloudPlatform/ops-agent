@@ -19,6 +19,8 @@ metrics:
     mysql:
       type: mysql
       username: root
+      # Use plaintext password if you are not using the googlesecretmanager provider.
+      # password: Ss123%321
       password: ${googlesecretmanager:projects/228437877067/secrets/ops-agent-3p-test-mysql-password/versions/1}
   service:
     pipelines:
