@@ -2758,34 +2758,28 @@ func TestGoogleSecretManagerProvider(t *testing.T) {
 		customScope := "https://www.googleapis.com/auth/cloud-platform"
 		ctx, dirLog, vm := agents.CommonSetupWithExtraCreateArguments(t, imageSpec, []string{"--scopes", customScope})
 		logger := dirLog.ToMainLog()
-		excludeCPUTimeProcessMetricsConfig := `logging:
+		config := `metrics:
   receivers:
-    syslog:
-      type: files
-      include_paths:
-      - /var/log/messages
-      - /var/log/syslog
+    prometheus:
+      type: prometheus
+      config:
+        scrape_configs:
+          - job_name: 'prometheus'
+            scrape_interval: 10s
+            static_configs:
+              - targets: ['${googlesecretmanager:projects/228437877067/secrets/ops-agent-integration-test-google-secret-manager-provider/versions/2}']
+            relabel_configs:
+              - source_labels: [__meta_gce_instance_id]
+                regex: '(.+)'
+                replacement: '${1}'
+                target_label: instance_id
   service:
     pipelines:
-      default_pipeline:
-        receivers: [syslog]
-metrics:
-  receivers:
-    hostmetrics:
-      type: hostmetrics
-      collection_interval: 60s
-  processors:
-    metrics_filter:
-      type: exclude_metrics
-      metrics_pattern:
-      - ${googlesecretmanager:projects/228437877067/secrets/ops-agent-integration-test-google-secret-manager-provider/versions/1}
-  service:
-    pipelines:
-      default_pipeline:
-        receivers: [hostmetrics]
-        processors: [metrics_filter]
+      prometheus_pipeline:
+        receivers:
+          - prometheus
 `
-		if err := agents.SetupOpsAgent(ctx, logger, vm, excludeCPUTimeProcessMetricsConfig); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2794,15 +2788,36 @@ metrics:
 		// is normal; wait a bit longer to be on the safe side.
 		time.Sleep(3 * time.Minute)
 
-		includedForkCountProcessMetric := "agent.googleapis.com/processes/fork_count"
-		excludedCPUTimeProcessMetric := "agent.googleapis.com/processes/cpu_time"
-
+		existingMetric := "prometheus.googleapis.com/fluentbit_uptime/counter"
 		window := time.Minute
-		if _, err := gce.WaitForMetric(ctx, logger, vm, includedForkCountProcessMetric, window, nil, false); err != nil {
-			t.Error(err)
+		metric, err := gce.WaitForMetric(ctx, logger, vm, existingMetric, window, nil, true)
+		if err != nil {
+			t.Fatal(fmt.Errorf("failed to find metric %q in VM %q: %w", existingMetric, vm.Name, err))
 		}
-		if err := gce.AssertMetricMissing(ctx, logger, vm, excludedCPUTimeProcessMetric, false, window); err != nil {
-			t.Error(err)
+
+		var multiErr error
+		metricValueType := metric.ValueType.String()
+		metricKind := metric.MetricKind.String()
+		metricResource := metric.Resource.Type
+		metricLabels := metric.Metric.Labels
+
+		if metricValueType != "DOUBLE" {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected value type %q", existingMetric, metricValueType))
+		}
+		if metricKind != "CUMULATIVE" {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected kind %q", existingMetric, metricKind))
+		}
+		if metricResource != "prometheus_target" {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected resource type %q", existingMetric, metricResource))
+		}
+		if metricLabels["instance_name"] != vm.Name {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected instance_name label %q. But expected %q", existingMetric, metricLabels["instance_name"], vm.Name))
+		}
+		if metricLabels["instance_id"] != fmt.Sprintf("%d", vm.ID) {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected instance_id label %q. But expected %q", existingMetric, metricLabels["instance_id"], fmt.Sprintf("%d", vm.ID)))
+		}
+		if multiErr != nil {
+			t.Error(multiErr)
 		}
 	})
 
