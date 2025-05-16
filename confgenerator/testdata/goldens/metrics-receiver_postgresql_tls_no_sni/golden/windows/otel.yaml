@@ -708,7 +708,6 @@ service:
       - postgresql/postgresql
   telemetry:
     metrics:
-      level: detailed
       readers:
       - pull:
           exporter:

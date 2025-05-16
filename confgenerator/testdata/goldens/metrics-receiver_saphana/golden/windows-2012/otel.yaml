@@ -700,7 +700,6 @@ service:
       - saphana/saphana
   telemetry:
     metrics:
-      level: detailed
       readers:
       - pull:
           exporter:
