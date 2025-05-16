@@ -53,21 +53,37 @@ func RegisterLoggingProcessorMacro[LPM LoggingProcessorMacro]() {
 }
 
 // loggingProcessorMacroAdapter is the type used to unmarshal user configuration for a LoggingProcessorMacro and adapt its interface to the LoggingProcessor interface.
-type loggingProcessorMacroAdapter[P LoggingProcessorMacro] struct {
+type loggingProcessorMacroAdapter[LPM LoggingProcessorMacro] struct {
 	ConfigComponent `yaml:",inline"`
-	ProcessorMacro  P `yaml:",inline"`
+	ProcessorMacro  LPM `yaml:",inline"`
 }
 
-func (cp loggingProcessorMacroAdapter[P]) Type() string {
+func (cp loggingProcessorMacroAdapter[LPM]) Type() string {
 	return cp.ProcessorMacro.Type()
 }
 
-func (cp loggingProcessorMacroAdapter[P]) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
+func (cp loggingProcessorMacroAdapter[LPM]) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	var c []fluentbit.Component
 	for _, p := range cp.ProcessorMacro.Processors(ctx) {
 		c = append(c, p.Components(ctx, tag, uid)...)
 	}
 	return c
+}
+
+func (cp loggingProcessorMacroAdapter[LPM]) Processors(ctx context.Context) ([]otel.Component, error) {
+	var processors []otel.Component
+	for _, lp := range cp.ProcessorMacro.Processors(ctx) {
+		if p, ok := any(lp).(OTelProcessor); ok {
+			c, err := p.Processors(ctx)
+			if err != nil {
+				return nil, err
+			}
+			processors = append(processors, c...)
+		} else {
+			return nil, errors.New("unimplemented")
+		}
+	}
+	return processors, nil
 }
 
 // loggingCompositeReceiverMacroAdapter represents a pipeline that consists of one log receiver & one or more log processors.
