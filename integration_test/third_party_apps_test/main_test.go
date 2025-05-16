@@ -1074,10 +1074,6 @@ func TestThirdPartyApps(t *testing.T) {
 					}
 					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-size=150GB", "--boot-disk-type=pd-ssd")
 				}
-				// GoogleSecretManagerProvider requires the following scope to be set in order to access secret entries in the Google secret manager.
-				// See: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/confmap/provider/googlesecretmanagerprovider/README.md#prerequisites
-				customScopes := "https://www.googleapis.com/auth/cloud-platform"
-				options.ExtraCreateArguments = append(options.ExtraCreateArguments, fmt.Sprintf("--scopes=%s", customScopes))
 				vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), options)
 				logger.ToMainLog().Printf("VM is ready: %#v", vm)
 

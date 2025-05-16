@@ -19,9 +19,9 @@ metrics:
     rabbitmq:
       type: rabbitmq
       username: usr
-      # Use plaintext password if you are not using the googlesecretmanager provider.
-      # password: pwd
-      password: ${googlesecretmanager:projects/228437877067/secrets/ops-agent-3p-test-rabbitmq-password/versions/1}
+      password: pwd
+      # To use the googlesecretmanager provider to replace plaintext passwords, refer to the example below.
+      # password: ${googlesecretmanager:projects/<project-id>/secrets/<secret-id>/versions/<version-id>}
   service:
     pipelines:
       rabbitmq:
