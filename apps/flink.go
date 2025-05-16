@@ -71,15 +71,15 @@ func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverFlink{} })
 }
 
-type LoggingComponentMacroFlink struct {
+type LoggingCompositeReceiverMacroFlink struct {
 	confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-func (LoggingComponentMacroFlink) Type() string {
+func (LoggingCompositeReceiverMacroFlink) Type() string {
 	return "flink"
 }
 
-func (p LoggingComponentMacroFlink) Processors(ctx context.Context) []confgenerator.InternalLoggingProcessor {
+func (p LoggingCompositeReceiverMacroFlink) Processors(ctx context.Context) []confgenerator.InternalLoggingProcessor {
 	return []confgenerator.InternalLoggingProcessor{
 		confgenerator.LoggingProcessorParseMultilineRegex{
 			LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
@@ -138,7 +138,7 @@ func (p LoggingComponentMacroFlink) Processors(ctx context.Context) []confgenera
 	}
 }
 
-func (r LoggingComponentMacroFlink) Receiver(ctx context.Context) confgenerator.InternalLoggingReceiver {
+func (r LoggingCompositeReceiverMacroFlink) Receiver(ctx context.Context) confgenerator.InternalLoggingReceiver {
 	if len(r.IncludePaths) == 0 {
 		r.IncludePaths = []string{
 			"/opt/flink/log/flink-*-standalonesession-*.log",
@@ -150,6 +150,6 @@ func (r LoggingComponentMacroFlink) Receiver(ctx context.Context) confgenerator.
 }
 
 func init() {
-	confgenerator.RegisterLoggingCompositeReceiverMacro[LoggingComponentMacroFlink]()
-	confgenerator.RegisterLoggingProcessorMacro[LoggingComponentMacroFlink]()
+	confgenerator.RegisterLoggingCompositeReceiverMacro[LoggingCompositeReceiverMacroFlink]()
+	confgenerator.RegisterLoggingProcessorMacro[LoggingCompositeReceiverMacroFlink]()
 }

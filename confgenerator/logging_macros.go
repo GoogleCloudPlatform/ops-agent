@@ -23,23 +23,23 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
 
-// LoggingComponentMacro is a logging component that generates other
+// LoggingCompositeReceiverMacro is a logging component that generates other
 // Ops Agent receiver and/or processors as its implementation.
-type LoggingComponentMacro interface {
+type LoggingCompositeReceiverMacro interface {
 	Type() string
 	// Processors returns slice of logging processors. This is an intermediate representation before sub-agent specific configurations.
 	Processors(ctx context.Context) []InternalLoggingProcessor
 	Receiver(ctx context.Context) InternalLoggingReceiver
 }
 
-func RegisterLoggingCompositeReceiverMacro[LCM LoggingComponentMacro]() {
+func RegisterLoggingCompositeReceiverMacro[LCRM LoggingCompositeReceiverMacro]() {
 	LoggingReceiverTypes.RegisterType(func() LoggingReceiver {
-		return &loggingCompositeReceiverMacroAdapter[LCM]{}
+		return &loggingCompositeReceiverMacroAdapter[LCRM]{}
 	})
 }
 
 // LoggingProcessorMacro is a logging component that generates other
-// Ops Agent receiver and/or processors as its implementation.
+// Ops Agent processors as its implementation.
 type LoggingProcessorMacro interface {
 	Type() string
 	// Processors returns slice of logging processors. This is an intermediate representation before sub-agent specific configurations.
@@ -87,26 +87,26 @@ func (cp loggingProcessorMacroAdapter[LPM]) Processors(ctx context.Context) ([]o
 }
 
 // loggingCompositeReceiverMacroAdapter represents a pipeline that consists of one log receiver & one or more log processors.
-type loggingCompositeReceiverMacroAdapter[LCM LoggingComponentMacro] struct {
+type loggingCompositeReceiverMacroAdapter[LCRM LoggingCompositeReceiverMacro] struct {
 	ConfigComponent `yaml:",inline"`
-	ComponentMacro  LCM `yaml:",inline"`
+	ComponentMacro  LCRM `yaml:",inline"`
 }
 
-func (cr *loggingCompositeReceiverMacroAdapter[LCM]) Type() string {
+func (cr *loggingCompositeReceiverMacroAdapter[LCRM]) Type() string {
 	return cr.ComponentMacro.Type()
 }
 
-func (cr *loggingCompositeReceiverMacroAdapter[LCM]) processor() InternalLoggingProcessor {
-	return &loggingProcessorMacroAdapter[LCM]{ProcessorMacro: cr.ComponentMacro}
+func (cr *loggingCompositeReceiverMacroAdapter[LCRM]) processor() InternalLoggingProcessor {
+	return &loggingProcessorMacroAdapter[LCRM]{ProcessorMacro: cr.ComponentMacro}
 }
 
-func (cr *loggingCompositeReceiverMacroAdapter[LCM]) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (cr *loggingCompositeReceiverMacroAdapter[LCRM]) Components(ctx context.Context, tag string) []fluentbit.Component {
 	c := cr.ComponentMacro.Receiver(ctx).Components(ctx, tag)
 	c = append(c, cr.processor().Components(ctx, tag, fmt.Sprintf("%s", cr.Type()))...)
 	return c
 }
 
-func (cr *loggingCompositeReceiverMacroAdapter[LCM]) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
+func (cr *loggingCompositeReceiverMacroAdapter[LCRM]) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	if r, ok := any(cr.ComponentMacro.Receiver(ctx)).(OTelReceiver); ok {
 		rps, err := r.Pipelines(ctx)
 		if err != nil {
