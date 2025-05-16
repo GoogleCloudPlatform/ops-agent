@@ -143,7 +143,6 @@ func runScriptFromScriptsDir(ctx context.Context, logger *log.Logger, vm *gce.VM
 	if err != nil {
 		return gce.CommandOutput{}, err
 	}
-	logger.Printf("Running script with content %s", scriptContents)
 	return gce.RunScriptRemotely(ctx, logger, vm, string(scriptContents), nil, env)
 }
 
@@ -1075,7 +1074,8 @@ func TestThirdPartyApps(t *testing.T) {
 					}
 					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-size=150GB", "--boot-disk-type=pd-ssd")
 				}
-				// GoogleSecretManagerProvider requires the following scope to be set.
+				// GoogleSecretManagerProvider requires the following scope to be set in order to access secret entries in the Google secret manager.
+				// See: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/confmap/provider/googlesecretmanagerprovider/README.md#prerequisites
 				customScopes := "https://www.googleapis.com/auth/cloud-platform"
 				options.ExtraCreateArguments = append(options.ExtraCreateArguments, fmt.Sprintf("--scopes=%s", customScopes))
 				vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), options)
