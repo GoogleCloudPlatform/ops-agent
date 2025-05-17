@@ -79,8 +79,8 @@ func (r MetricsReceiverOracleDB) Pipelines(_ context.Context) ([]otel.ReceiverPi
 	auth := url.QueryEscape(r.Username)
 	secretPassword := r.Password.SecretValue()
 	if len(secretPassword) > 0 {
-		if strings.Contains(secretPassword, "${googlesecretmanager") {
-			return nil, errors.New("google secret manager provider is not supported for OracleDB receiver yet")
+		if strings.Contains(secretPassword, "${") {
+			return nil, errors.New("using OpenTelemetry providers in OracleDB metric receiver configuration is not supported yet")
 		}
 		auth = fmt.Sprintf("%s:%s", auth, url.QueryEscape(secretPassword))
 	}
