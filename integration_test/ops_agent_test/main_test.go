@@ -62,6 +62,8 @@ import (
 
 	cloudlogging "cloud.google.com/go/logging"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
+	secretmanager "cloud.google.com/go/secretmanager/apiv1"
+	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
@@ -2750,6 +2752,50 @@ func TestDefaultMetricsWithProxy(t *testing.T) {
 	})
 }
 
+func hasSecretEntry(ctx context.Context, client *secretmanager.Client, name string) (bool, error) {
+	req := &secretmanagerpb.AccessSecretVersionRequest{
+		Name: name,
+	}
+	// Call the API.
+	result, err := client.AccessSecretVersion(ctx, req)
+	if err != nil {
+		return false, fmt.Errorf("failed to access secret version: %w", err)
+	}
+	return result.GetName() == name, nil
+
+}
+func addSecretEntry(ctx context.Context, client *secretmanager.Client, projectID string, secretID string, secretValue string) (*secretmanagerpb.Secret, error) {
+	// Build secret creation request.
+	req := &secretmanagerpb.CreateSecretRequest{
+		Parent:   fmt.Sprintf("projects/%s", projectID),
+		SecretId: secretID,
+		Secret: &secretmanagerpb.Secret{
+			Replication: &secretmanagerpb.Replication{
+				Replication: &secretmanagerpb.Replication_Automatic_{
+					Automatic: &secretmanagerpb.Replication_Automatic{},
+				},
+			},
+		},
+	}
+	_, err := client.CreateSecret(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create secret: %w", err)
+	}
+
+	// Build secret version creation request.
+	req = &secretmanagerpb.AddSecretVersionRequest{
+		Parent: fmt.Sprintf("projects/%s/secrets/%s", projectID, secretID),
+		Payload: &secretmanagerpb.SecretPayload{
+			Data: []byte(secretValue),
+		},
+	}
+
+	result, err := client.AddSecretVersion(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to add secret version: %w", err)
+	}
+	return result, nil
+}
 func TestGoogleSecretManagerProvider(t *testing.T) {
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
@@ -2758,7 +2804,26 @@ func TestGoogleSecretManagerProvider(t *testing.T) {
 		customScope := "https://www.googleapis.com/auth/cloud-platform"
 		ctx, dirLog, vm := agents.CommonSetupWithExtraCreateArguments(t, imageSpec, []string{"--scopes", customScope})
 		logger := dirLog.ToMainLog()
-		config := `metrics:
+		projectID := vm.Project
+		secretID := "ops-agent-integration-test-google-secret-manager-provider"
+		secretName := fmt.Sprintf("projects/%s/secrets/%s/versions/1", projectID, secretID)
+		secretValue := "localhost:20202"
+		client, err := secretmanager.NewClient(ctx)
+		if err != nil {
+			t.Fatalf("failed to create secretmanager client: %w", err)
+		}
+		defer client.Close()
+		hasEntry, err := hasSecretEntry(ctx, client, secretName)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !hasEntry {
+			if _, err := addSecretEntry(ctx, client, projectID, secretID, secretValue); err != nil {
+				t.Fatalf("failed to add secret entry: %w", err)
+			}
+		}
+
+		config := fmt.Sprintf(`metrics:
   receivers:
     prometheus:
       type: prometheus
@@ -2767,7 +2832,7 @@ func TestGoogleSecretManagerProvider(t *testing.T) {
           - job_name: 'prometheus'
             scrape_interval: 10s
             static_configs:
-              - targets: ['${googlesecretmanager:projects/228437877067/secrets/ops-agent-integration-test-google-secret-manager-provider/versions/2}']
+              - targets: ['${googlesecretmanager:%s}']
             relabel_configs:
               - source_labels: [__meta_gce_instance_id]
                 regex: '(.+)'
@@ -2778,7 +2843,7 @@ func TestGoogleSecretManagerProvider(t *testing.T) {
       prometheus_pipeline:
         receivers:
           - prometheus
-`
+`, secretName)
 		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
