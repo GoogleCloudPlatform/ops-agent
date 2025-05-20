@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
@@ -761,188 +760,184 @@ func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverOracleDB{} })
 }
 
-type LoggingProcessorOracleDBAlert struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
+type LoggingProcessorMacroOracleDBAlert struct {
 }
 
-func (lr LoggingProcessorOracleDBAlert) Type() string {
+func (lr LoggingProcessorMacroOracleDBAlert) Type() string {
 	return "oracledb_alert"
 }
 
-func (lr LoggingProcessorOracleDBAlert) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
-	components := confgenerator.LoggingProcessorParseMultilineRegex{
-		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
-			Parsers: []confgenerator.RegexParser{
-				{
-					// Sample log:  2021-12-21T10:19:47.339827-05:00
-					//				Thread 1 opened at log sequence 1
-					//				Current log# 1 seq# 1 mem# 0: /u01/oracle/oradata/DB19C/redo01.log
-					//				Successful open of redo thread 1
-					Regex: `^(?<timestamp>\d+-\d+-\d+T\d+:\d+:\d+.\d+(?:[-+]\d+:\d+|Z))\n(?<message>[\s\S]+)`,
-					Parser: confgenerator.ParserShared{
-						TimeKey:    "timestamp",
-						TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
+func (lr LoggingProcessorMacroOracleDBAlert) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
+	severityVal := "ALERT"
+	return []confgenerator.InternalLoggingProcessor{
+		confgenerator.LoggingProcessorParseMultilineRegex{
+			LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
+				Parsers: []confgenerator.RegexParser{
+					{
+						// Sample log:  2021-12-21T10:19:47.339827-05:00
+						//				Thread 1 opened at log sequence 1
+						//				Current log# 1 seq# 1 mem# 0: /u01/oracle/oradata/DB19C/redo01.log
+						//				Successful open of redo thread 1
+						Regex: `^(?<timestamp>\d+-\d+-\d+T\d+:\d+:\d+.\d+(?:[-+]\d+:\d+|Z))\n(?<message>[\s\S]+)`,
+						Parser: confgenerator.ParserShared{
+							TimeKey:    "timestamp",
+							TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
+						},
 					},
 				},
 			},
-		},
-		Rules: []confgenerator.MultilineRule{
-			{
-				StateName: "start_state",
-				NextState: "cont",
-				Regex:     `^\d+-\d+-\d+T\d+:\d+:\d+.\d+(?:[-+]\d+:\d+|Z)`,
+			Rules: []confgenerator.MultilineRule{
+				{
+					StateName: "start_state",
+					NextState: "cont",
+					Regex:     `^\d+-\d+-\d+T\d+:\d+:\d+.\d+(?:[-+]\d+:\d+|Z)`,
+				},
+				{
+					StateName: "cont",
+					NextState: "cont",
+					Regex:     `^(?!\d+-\d+-\d+T\d+:\d+:\d+.\d+(?:[-+]\d+:\d+|Z)).*$`,
+				},
 			},
-			{
-				StateName: "cont",
-				NextState: "cont",
-				Regex:     `^(?!\d+-\d+-\d+T\d+:\d+:\d+.\d+(?:[-+]\d+:\d+|Z)).*$`,
-			},
 		},
-	}.Components(ctx, tag, uid)
-
-	severityVal := "ALERT"
-	components = append(components,
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				"severity":                 {StaticValue: &severityVal},
 				InstrumentationSourceLabel: instrumentationSourceValue(lr.Type()),
 			},
-		}.Components(ctx, tag, uid)...)
-	return components
+		},
+	}
 }
 
-type LoggingReceiverOracleDBAlert struct {
-	LoggingProcessorOracleDBAlert `yaml:",inline"`
-	ReceiverMixin                 confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
-	OracleHome                    string                                  `yaml:"oracle_home,omitempty" validate:"required_without=IncludePaths,excluded_with=IncludePaths"`
-	IncludePaths                  []string                                `yaml:"include_paths,omitempty" validate:"required_without=OracleHome,excluded_with=OracleHome"`
+type LoggingReceiverMacroOracleDBAlert struct {
+	OracleHome                              string   `yaml:"oracle_home,omitempty" validate:"required_without=IncludePaths,excluded_with=IncludePaths"`
+	IncludePaths                            []string `yaml:"include_paths,omitempty" validate:"required_without=OracleHome,excluded_with=OracleHome"`
+	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
+	LoggingProcessorMacroOracleDBAlert      `yaml:",inline"`
 }
 
-func (lr LoggingReceiverOracleDBAlert) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (lr LoggingReceiverMacroOracleDBAlert) Expand(ctx context.Context) (confgenerator.InternalLoggingReceiver, []confgenerator.InternalLoggingProcessor) {
 	if len(lr.OracleHome) > 0 {
 		lr.IncludePaths = []string{
 			path.Join(lr.OracleHome, "/diag/rdbms/*/*/trace/alert_*.log"),
 		}
 	}
 
-	lr.ReceiverMixin.IncludePaths = lr.IncludePaths
+	lr.LoggingReceiverFilesMixin.IncludePaths = lr.IncludePaths
 
-	c := lr.ReceiverMixin.Components(ctx, tag)
-	c = append(c, lr.LoggingProcessorOracleDBAlert.Components(ctx, tag, lr.Type())...)
-	return c
+	return &lr.LoggingReceiverFilesMixin, lr.LoggingProcessorMacroOracleDBAlert.Expand(ctx)
 }
 
-type LoggingProcessorOracleDBAudit struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
+type LoggingProcessorMacroOracleDBAudit struct {
 }
 
-func (lr LoggingProcessorOracleDBAudit) Type() string {
+func (lr LoggingProcessorMacroOracleDBAudit) Type() string {
 	return "oracledb_audit"
 }
 
-func (lr LoggingProcessorOracleDBAudit) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
-	components := confgenerator.LoggingProcessorParseMultilineRegex{
-		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
-			Parsers: []confgenerator.RegexParser{
-				{
-					// Sample log:  Wed Sep 14 16:18:03 2022 +00:00
-					//				LENGTH : '623'
-					//				ACTION :[373] 'select distinct 'ALTER SYSTEM KILL SESSION ''' || stat.sid || ',' ||
-					//								sess.serial# ||
-					//								decode(substr(inst.version, 1, 4),
-					//										'12.1', ''' immediate ', ''' force timeout 0 ') ||
-					//								'-- process 73841'
-					//				FROM SYS.V$mystat stat, v$session sess, v$instance inst
-					//				where stat.sid=sess.sid
-					//				union all
-					//				select '/' from dual'
-					//				DATABASE USER:[1] '/'
-					//				PRIVILEGE :[6] 'SYSDBA'
-					//				CLIENT USER:[6] 'oracle'
-					//				CLIENT TERMINAL:[5] 'pts/1'
-					//				STATUS:[1] '0'
-					//				DBID:[10] '1643176521'
-					//				SESSIONID:[10] '4294967295'
-					//				USERHOST:[7] 'oradb19'
-					//				CLIENT ADDRESS:[0] ''
-					//				ACTION NUMBER:[1] '3'
-					Regex: `^(?<timestamp>\w+\s+\w+\s+\d+\s+\d+:\d+:\d+\s+\d+\s+(?:[-+]\d+:\d+|Z))\n` +
-						`LENGTH\s*:(?:\[\d*\])?\s*'(?<length>.*)'\n` +
-						`ACTION\s*:(?:\[\d*\])?\s*'(?<action>[\s\S]*)'\n` +
-						`DATABASE USER\s*:(?:\[\d*\])?\s*'(?<database_user>.*)'\n` +
-						`PRIVILEGE\s*:(?:\[\d*\])?\s*'(?<privilege>.*)'\n` +
-						`CLIENT USER\s*:(?:\[\d*\])?\s*'(?<client_user>.*)'\n` +
-						`CLIENT TERMINAL\s*:(?:\[\d*\])?\s*'(?<client_terminal>.*)'\n` +
-						`STATUS\s*:(?:\[\d*\])?\s*'(?<status>.*)'\n` +
-						`DBID\s*:(?:\[\d*\])?\s*'(?<dbid>.*)'\n` +
-						`SESSIONID\s*:(?:\[\d*\])?\s*'(?<sessionid>.*)'\n` +
-						`USERHOST\s*:(?:\[\d*\])?\s*'(?<user_host>.*)'\n` +
-						`CLIENT ADDRESS\s*:(?:\[\d*\])?\s*'(?<client_address>.*)'\n` +
-						`ACTION NUMBER\s*:(?:\[\d*\])?\s*'(?<action_number>.*)'\n?`,
-					Parser: confgenerator.ParserShared{
-						TimeKey:    "timestamp",
-						TimeFormat: "%a %b %d %H:%M:%S %Y %z",
-						Types: map[string]string{
-							"length":        "int",
-							"action_number": "int",
-							"dbid":          "int",
-							"sessionid":     "int",
-							"status":        "int",
+func (lr LoggingProcessorMacroOracleDBAudit) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
+	severityVal := "INFO"
+	return []confgenerator.InternalLoggingProcessor{
+		confgenerator.LoggingProcessorParseMultilineRegex{
+			LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
+				Parsers: []confgenerator.RegexParser{
+					{
+						// Sample log:  Wed Sep 14 16:18:03 2022 +00:00
+						//				LENGTH : '623'
+						//				ACTION :[373] 'select distinct 'ALTER SYSTEM KILL SESSION ''' || stat.sid || ',' ||
+						//								sess.serial# ||
+						//								decode(substr(inst.version, 1, 4),
+						//										'12.1', ''' immediate ', ''' force timeout 0 ') ||
+						//								'-- process 73841'
+						//				FROM SYS.V$mystat stat, v$session sess, v$instance inst
+						//				where stat.sid=sess.sid
+						//				union all
+						//				select '/' from dual'
+						//				DATABASE USER:[1] '/'
+						//				PRIVILEGE :[6] 'SYSDBA'
+						//				CLIENT USER:[6] 'oracle'
+						//				CLIENT TERMINAL:[5] 'pts/1'
+						//				STATUS:[1] '0'
+						//				DBID:[10] '1643176521'
+						//				SESSIONID:[10] '4294967295'
+						//				USERHOST:[7] 'oradb19'
+						//				CLIENT ADDRESS:[0] ''
+						//				ACTION NUMBER:[1] '3'
+						Regex: `^(?<timestamp>\w+\s+\w+\s+\d+\s+\d+:\d+:\d+\s+\d+\s+(?:[-+]\d+:\d+|Z))\n` +
+							`LENGTH\s*:(?:\[\d*\])?\s*'(?<length>.*)'\n` +
+							`ACTION\s*:(?:\[\d*\])?\s*'(?<action>[\s\S]*)'\n` +
+							`DATABASE USER\s*:(?:\[\d*\])?\s*'(?<database_user>.*)'\n` +
+							`PRIVILEGE\s*:(?:\[\d*\])?\s*'(?<privilege>.*)'\n` +
+							`CLIENT USER\s*:(?:\[\d*\])?\s*'(?<client_user>.*)'\n` +
+							`CLIENT TERMINAL\s*:(?:\[\d*\])?\s*'(?<client_terminal>.*)'\n` +
+							`STATUS\s*:(?:\[\d*\])?\s*'(?<status>.*)'\n` +
+							`DBID\s*:(?:\[\d*\])?\s*'(?<dbid>.*)'\n` +
+							`SESSIONID\s*:(?:\[\d*\])?\s*'(?<sessionid>.*)'\n` +
+							`USERHOST\s*:(?:\[\d*\])?\s*'(?<user_host>.*)'\n` +
+							`CLIENT ADDRESS\s*:(?:\[\d*\])?\s*'(?<client_address>.*)'\n` +
+							`ACTION NUMBER\s*:(?:\[\d*\])?\s*'(?<action_number>.*)'\n?`,
+						Parser: confgenerator.ParserShared{
+							TimeKey:    "timestamp",
+							TimeFormat: "%a %b %d %H:%M:%S %Y %z",
+							Types: map[string]string{
+								"length":        "int",
+								"action_number": "int",
+								"dbid":          "int",
+								"sessionid":     "int",
+								"status":        "int",
+							},
 						},
 					},
 				},
 			},
-		},
-		Rules: []confgenerator.MultilineRule{
-			{
-				StateName: "start_state",
-				NextState: "cont",
-				Regex:     `^\w+ \w+ {1,2}\d+ {1,2}\d+:\d+:\d+ \d+ (?:[-+]\d+:\d+|Z)`,
+			Rules: []confgenerator.MultilineRule{
+				{
+					StateName: "start_state",
+					NextState: "cont",
+					Regex:     `^\w+ \w+ {1,2}\d+ {1,2}\d+:\d+:\d+ \d+ (?:[-+]\d+:\d+|Z)`,
+				},
+				{
+					StateName: "cont",
+					NextState: "cont",
+					Regex:     `^(?!\w+ \w+ {1,2}\d+ {1,2}\d+:\d+:\d+ \d+ (?:[-+]\d+:\d+|Z)).*$`,
+				},
 			},
-			{
-				StateName: "cont",
-				NextState: "cont",
-				Regex:     `^(?!\w+ \w+ {1,2}\d+ {1,2}\d+:\d+:\d+ \d+ (?:[-+]\d+:\d+|Z)).*$`,
-			},
 		},
-	}.Components(ctx, tag, uid)
-
-	severityVal := "INFO"
-
-	components = append(components,
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				"severity":                 {StaticValue: &severityVal},
 				InstrumentationSourceLabel: instrumentationSourceValue(lr.Type()),
 			},
-		}.Components(ctx, tag, uid)...)
-	return components
+		},
+	}
 }
 
-type LoggingReceiverOracleDBAudit struct {
-	LoggingProcessorOracleDBAudit `yaml:",inline"`
-	ReceiverMixin                 confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
-	OracleHome                    string                                  `yaml:"oracle_home,omitempty" validate:"required_without=IncludePaths,excluded_with=IncludePaths"`
-	IncludePaths                  []string                                `yaml:"include_paths,omitempty" validate:"required_without=OracleHome,excluded_with=OracleHome"`
+type LoggingReceiverMacroOracleDBAudit struct {
+	OracleHome                              string   `yaml:"oracle_home,omitempty" validate:"required_without=IncludePaths,excluded_with=IncludePaths"`
+	IncludePaths                            []string `yaml:"include_paths,omitempty" validate:"required_without=OracleHome,excluded_with=OracleHome"`
+	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
+	LoggingProcessorMacroOracleDBAudit      `yaml:",inline"`
 }
 
-func (lr LoggingReceiverOracleDBAudit) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (lr LoggingReceiverMacroOracleDBAudit) Expand(ctx context.Context) (confgenerator.InternalLoggingReceiver, []confgenerator.InternalLoggingProcessor) {
 	if len(lr.OracleHome) > 0 {
 		lr.IncludePaths = []string{
 			path.Join(lr.OracleHome, "/admin/*/adump/*.aud"),
 		}
 	}
 
-	lr.ReceiverMixin.IncludePaths = lr.IncludePaths
+	lr.LoggingReceiverFilesMixin.IncludePaths = lr.IncludePaths
 
-	c := lr.ReceiverMixin.Components(ctx, tag)
-	c = append(c, lr.LoggingProcessorOracleDBAudit.Components(ctx, tag, lr.Type())...)
-	return c
+	return &lr.LoggingReceiverFilesMixin, lr.LoggingProcessorMacroOracleDBAudit.Expand(ctx)
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverOracleDBAlert{} })
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorOracleDBAlert{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverOracleDBAudit{} })
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorOracleDBAudit{} })
+	confgenerator.RegisterLoggingProcessorMacro[LoggingProcessorMacroOracleDBAlert]()
+	confgenerator.RegisterLoggingReceiverMacro[LoggingReceiverMacroOracleDBAlert](func() LoggingReceiverMacroOracleDBAlert {
+		return LoggingReceiverMacroOracleDBAlert{}
+	})
+	confgenerator.RegisterLoggingProcessorMacro[LoggingProcessorMacroOracleDBAudit]()
+	confgenerator.RegisterLoggingReceiverMacro[LoggingReceiverMacroOracleDBAudit](func() LoggingReceiverMacroOracleDBAudit {
+		return LoggingReceiverMacroOracleDBAudit{}
+	})
+
 }
