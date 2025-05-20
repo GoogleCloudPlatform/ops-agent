@@ -2810,7 +2810,7 @@ func TestGoogleSecretManagerProvider(t *testing.T) {
 		secretValue := "localhost:20202"
 		client, err := secretmanager.NewClient(ctx)
 		if err != nil {
-			t.Fatalf("failed to create secretmanager client: %w", err)
+			t.Fatalf("failed to create secretmanager client: %v", err)
 		}
 		defer client.Close()
 		hasEntry, err := hasSecretEntry(ctx, client, secretName)
@@ -2819,7 +2819,7 @@ func TestGoogleSecretManagerProvider(t *testing.T) {
 		}
 		if !hasEntry {
 			if _, err := addSecretEntry(ctx, client, projectID, secretID, secretValue); err != nil {
-				t.Fatalf("failed to add secret entry: %w", err)
+				t.Fatalf("failed to add secret entry: %v", err)
 			}
 		}
 
