@@ -2809,8 +2809,7 @@ func TestGoogleSecretManagerProvider(t *testing.T) {
 		customScope := "https://www.googleapis.com/auth/cloud-platform"
 		ctx, dirLog, vm := agents.CommonSetupWithExtraCreateArguments(t, imageSpec, []string{"--scopes", customScope})
 		logger := dirLog.ToMainLog()
-		//projectID := vm.Project
-		projectID := "xuechun-gke-dev"
+		projectID := vm.Project
 		secretID := "ops-agent-integration-test-google-secret-manager-provider"
 		secretName := fmt.Sprintf("projects/%s/secrets/%s/versions/1", projectID, secretID)
 		secretValue := "localhost:20202"
