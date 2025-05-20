@@ -2762,9 +2762,9 @@ func hasSecretEntry(ctx context.Context, client *secretmanager.Client, name stri
 		return false, fmt.Errorf("failed to access secret version: %w", err)
 	}
 	return result.GetName() == name, nil
-
 }
-func addSecretEntry(ctx context.Context, client *secretmanager.Client, projectID string, secretID string, secretValue string) (*secretmanagerpb.Secret, error) {
+
+func addSecretEntry(ctx context.Context, client *secretmanager.Client, projectID string, secretID string, secretValue string) (*secretmanagerpb.SecretVersion, error) {
 	// Build secret creation request.
 	req := &secretmanagerpb.CreateSecretRequest{
 		Parent:   fmt.Sprintf("projects/%s", projectID),
@@ -2783,14 +2783,14 @@ func addSecretEntry(ctx context.Context, client *secretmanager.Client, projectID
 	}
 
 	// Build secret version creation request.
-	req = &secretmanagerpb.AddSecretVersionRequest{
+	addVersionReq := &secretmanagerpb.AddSecretVersionRequest{
 		Parent: fmt.Sprintf("projects/%s/secrets/%s", projectID, secretID),
 		Payload: &secretmanagerpb.SecretPayload{
 			Data: []byte(secretValue),
 		},
 	}
 
-	result, err := client.AddSecretVersion(ctx, req)
+	result, err := client.AddSecretVersion(ctx, addVersionReq)
 	if err != nil {
 		return nil, fmt.Errorf("failed to add secret version: %w", err)
 	}
