@@ -74,6 +74,8 @@ import (
 	"golang.org/x/exp/slices"
 	"google.golang.org/genproto/googleapis/api/distribution"
 	"google.golang.org/genproto/googleapis/api/metric"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	structpb "google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v2"
@@ -2757,11 +2759,14 @@ func hasSecretEntry(ctx context.Context, client *secretmanager.Client, name stri
 		Name: name,
 	}
 	// Call the API.
-	result, err := client.AccessSecretVersion(ctx, req)
+	_, err := client.AccessSecretVersion(ctx, req)
 	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return false, nil
+		}
 		return false, fmt.Errorf("failed to access secret version: %w", err)
 	}
-	return result.GetName() == name, nil
+	return true, nil
 }
 
 func addSecretEntry(ctx context.Context, client *secretmanager.Client, projectID string, secretID string, secretValue string) (*secretmanagerpb.SecretVersion, error) {
