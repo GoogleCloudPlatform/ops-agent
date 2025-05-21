@@ -511,6 +511,13 @@ type Logging struct {
 
 type LoggingReceiver interface {
 	Component
+	InternalLoggingReceiver
+}
+
+// InternalLoggingReceiver implements all the methods required to describe a logging receiver pipeline.
+type InternalLoggingReceiver interface {
+	// Components returns fluentbit components that implement this receiver.
+	// tag is the log tag that is assigned to the collected logs.
 	Components(ctx context.Context, tag string) []fluentbit.Component
 }
 
@@ -541,6 +548,11 @@ func (m *loggingReceiverMap) GetListenPorts() map[string]uint16 {
 
 type LoggingProcessor interface {
 	Component
+	InternalLoggingProcessor
+}
+
+// InternalLoggingProcessor implements the methods required to define a logging processor pipeline.
+type InternalLoggingProcessor interface {
 	// Components returns fluentbit components that implement this processor.
 	// tag is the log tag that should be matched by those components, and uid is a string which should be used when needed to generate unique names.
 	Components(ctx context.Context, tag string, uid string) []fluentbit.Component

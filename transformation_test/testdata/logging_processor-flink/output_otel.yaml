@@ -1,0 +1,1 @@
+- config_error: "failed generating OTel processor: &confgenerator.loggingProcessorMacroAdapter[github.com/GoogleCloudPlatform/ops-agent/apps.LoggingProcessorMacroFlink]{ConfigComponent:confgenerator.ConfigComponent{Type:\"flink\"}, ProcessorMacro:apps.LoggingProcessorMacroFlink{}}, err: unimplemented"
