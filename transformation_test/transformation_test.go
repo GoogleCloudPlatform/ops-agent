@@ -33,6 +33,7 @@ import (
 	"time"
 
 	logpb "cloud.google.com/go/logging/apiv2/loggingpb"
+	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -59,6 +60,7 @@ const (
 var (
 	flbPath        = flag.String("flb", os.Getenv("FLB"), "path to fluent-bit")
 	otelopscolPath = flag.String("otelopscol", os.Getenv("OTELOPSCOL"), "path to otelopscol")
+	builtInConf    = apps.BuiltInConfStructs
 )
 
 type transformationTest []loggingProcessor
@@ -294,7 +296,7 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 		if op, ok := p.LoggingProcessor.(confgenerator.OTelProcessor); ok {
 			processors, err := op.Processors(ctx)
 			if err != nil {
-				t.Fatal(err)
+				return "", fmt.Errorf("failed generating OTel processor: %#v, err: %v", p.LoggingProcessor, err)
 			}
 			components = append(components, processors...)
 		} else {
