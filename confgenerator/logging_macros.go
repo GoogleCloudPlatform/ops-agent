@@ -23,7 +23,7 @@ import (
 )
 
 // LoggingReceiverMacro is a logging component that generates other
-// Ops Agent processors as its implementation.
+// Ops Agent receivers and processors as its implementation.
 type LoggingReceiverMacro interface {
 	Type() string
 	// Expand returns a receiver and slice of logging processors that implement this receivers. This is an intermediate step for receivers that can be implemented in a subagent-agnostic way.
@@ -50,7 +50,6 @@ func (cr loggingReceiverMacroAdapter[LRM]) Components(ctx context.Context, tag s
 	receiver, processors := cr.ReceiverMacro.Expand(ctx)
 	c := receiver.Components(ctx, tag)
 	for _, p := range processors {
-		// FIXME: Does the uid need to contain the index?
 		c = append(c, p.Components(ctx, tag, cr.Type())...)
 	}
 	return c

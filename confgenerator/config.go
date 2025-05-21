@@ -551,7 +551,7 @@ type LoggingProcessor interface {
 	InternalLoggingProcessor
 }
 
-// InternalLoggingProcessor implements the methods required to define a logging receiver pipeline.
+// InternalLoggingProcessor implements the methods required to define a logging processor pipeline.
 type InternalLoggingProcessor interface {
 	// Components returns fluentbit components that implement this processor.
 	// tag is the log tag that should be matched by those components, and uid is a string which should be used when needed to generate unique names.
