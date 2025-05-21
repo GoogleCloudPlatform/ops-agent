@@ -33,7 +33,7 @@ import (
 	"time"
 
 	logpb "cloud.google.com/go/logging/apiv2/loggingpb"
-	"github.com/GoogleCloudPlatform/ops-agent/apps"
+	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -60,7 +60,6 @@ const (
 var (
 	flbPath        = flag.String("flb", os.Getenv("FLB"), "path to fluent-bit")
 	otelopscolPath = flag.String("otelopscol", os.Getenv("OTELOPSCOL"), "path to otelopscol")
-	builtInConf    = apps.BuiltInConfStructs
 )
 
 type transformationTest []loggingProcessor
