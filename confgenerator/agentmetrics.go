@@ -64,8 +64,9 @@ func (r AgentSelfMetrics) OtelPipeline() otel.ReceiverPipeline {
 				"grpc.client.attempt.duration",
 				"googlecloudmonitoring/point_count",
 				"otelcol_exporter_sent_log_records",
-				"otelcol_receiver_refused_log_records",
-				"otelcol_receiver_accepted_log_records",
+				//"otelcol_receiver_refused_log_records",
+				//"otelcol_receiver_accepted_log_records",
+				"otelcol_exporter_send_failed_log_records",
 			),
 			otel.Transform("metric", "metric",
 				[]ottl.Statement{
@@ -81,11 +82,25 @@ func (r AgentSelfMetrics) OtelPipeline() otel.ReceiverPipeline {
 				"strict",
 				"otelcol_process_uptime",
 				"otelcol_process_memory_rss",
+				"otelcol_exporter_sent_log_records",
+				// "otelcol_receiver_refused_log_records",
+				// "otelcol_receiver_accepted_log_records",
+				"otelcol_exporter_send_failed_log_records",
 				"grpc.client.attempt.duration.logging_count",
 				"grpc.client.attempt.duration.monitoring_count",
 				"googlecloudmonitoring/point_count",
 			),
 			otel.MetricsTransform(
+				otel.RenameMetric("otelcol_exporter_sent_log_records", "agent/log_entry_count",
+					// change data type from double -> int64
+					//otel.ToggleScalarDataType,
+					otel.RenameLabel("response_code", "200"),
+				),
+				otel.RenameMetric("otelcol_exporter_send_failed_log_records", "agent/log_entry_retry_count",
+					// change data type from double -> int64
+					//otel.ToggleScalarDataType,
+					otel.RenameLabel("response_code", "400"),
+				),
 				otel.RenameMetric("otelcol_process_uptime", "agent/uptime",
 					// change data type from double -> int64
 					otel.ToggleScalarDataType,
