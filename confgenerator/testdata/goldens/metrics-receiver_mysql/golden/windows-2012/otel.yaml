@@ -67,6 +67,9 @@ processors:
         - otelcol_process_memory_rss
         - grpc.client.attempt.duration
         - googlecloudmonitoring/point_count
+        - otelcol_exporter_sent_log_records
+        - otelcol_receiver_refused_log_records
+        - otelcol_receiver_accepted_log_records
   filter/otel_2:
     metrics:
       include:
@@ -74,7 +77,8 @@ processors:
         metric_names:
         - otelcol_process_uptime
         - otelcol_process_memory_rss
-        - grpc.client.attempt.duration_count
+        - grpc.client.attempt.duration.logging_count
+        - grpc.client.attempt.duration.monitoring_count
         - googlecloudmonitoring/point_count
   metricstransform/fluentbit_1:
     transforms:
@@ -502,8 +506,19 @@ processors:
         aggregation_type: sum
         label_set: []
     - action: update
-      include: grpc.client.attempt.duration_count
+      include: grpc.client.attempt.duration.monitoring_count
       new_name: agent/api_request_count
+      operations:
+      - action: update_label
+        label: grpc.status
+        new_label: state
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - state
+    - action: update
+      include: grpc.client.attempt.duration.logging_count
+      new_name: agent/request_count
       operations:
       - action: update_label
         label: grpc.status
@@ -550,7 +565,10 @@ processors:
     metric_statements:
     - context: metric
       statements:
-      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
+      - "copy_metric(\"grpc.client.attempt.duration.logging\") where grpc.client.attempt.duration.grpc_client_method ~= ^google\\.logging"
+      - "copy_metric(\"grpc.client.attempt.duration.monitoring\") where grpc.client.attempt.duration.grpc_client_method ~= ^google\\.monitoring"
+      - extract_count_metric(true) where name == "grpc.client.attempt.duration.logging"
+      - extract_count_metric(true) where name == "grpc.client.attempt.duration.monitoring"
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
