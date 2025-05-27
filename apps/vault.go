@@ -358,4 +358,5 @@ func (r LoggingReceiverMacroVaultAuditJson) Expand(ctx context.Context) (confgen
 
 func init() {
 	confgenerator.RegisterLoggingReceiverMacro[LoggingReceiverMacroVaultAuditJson](func() LoggingReceiverMacroVaultAuditJson { return LoggingReceiverMacroVaultAuditJson{} })
+	confgenerator.RegisterLoggingProcessorMacro[LoggingProcessorMacroVaultJson]()
 }

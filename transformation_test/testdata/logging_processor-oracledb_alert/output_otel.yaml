@@ -1,0 +1,1 @@
+- config_error: "failed generating OTel processor: &confgenerator.loggingProcessorMacroAdapter[github.com/GoogleCloudPlatform/ops-agent/apps.LoggingProcessorMacroOracleDBAlert]{ConfigComponent:confgenerator.ConfigComponent{Type:\"oracledb_alert\"}, ProcessorMacro:apps.LoggingProcessorMacroOracleDBAlert{}}, err: unimplemented"
