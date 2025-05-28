@@ -205,7 +205,7 @@ func IsNotNil(a Value) Value {
 // CopyMetric creates a copy of a given metric with a new name
 func CopyMetric(metricName string, condition string) Statements {
 	return Statements{
-		statementf(`copy_metric(%q) where %s`, metricName, condition),
+		statementf(`copy_metric(%q) where name == "%s"`, metricName, condition),
 	}
 }
 

@@ -62,15 +62,21 @@ processors:
         - grpc.client.attempt.duration
         - googlecloudmonitoring/point_count
         - otelcol_exporter_sent_log_records
-        - otelcol_receiver_refused_log_records
-        - otelcol_receiver_accepted_log_records
+        - otelcol_exporter_send_failed_log_records
   filter/otel_2:
+    metrics:
+      datapoint:
+      - metric.name == "grpc.client.attempt.duration.logging_count" and datapoint.attributes["grpc.target"] == "passthrough:///monitoring.googleapis.com:443"
+      - metric.name == "grpc.client.attempt.duration.monitoring_count" and datapoint.attributes["grpc.target"] == "passthrough:///logging.googleapis.com:443"
+  filter/otel_3:
     metrics:
       include:
         match_type: strict
         metric_names:
         - otelcol_process_uptime
         - otelcol_process_memory_rss
+        - otelcol_exporter_sent_log_records
+        - otelcol_exporter_send_failed_log_records
         - grpc.client.attempt.duration.logging_count
         - grpc.client.attempt.duration.monitoring_count
         - googlecloudmonitoring/point_count
@@ -433,8 +439,32 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/otel_3:
+  metricstransform/otel_4:
     transforms:
+    - action: update
+      include: otelcol_exporter_sent_log_records
+      new_name: agent/log_entry_count
+      operations:
+      - action: toggle_scalar_data_type
+      - action: add_label
+        new_label: response_code
+        new_value: "200"
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+    - action: update
+      include: otelcol_exporter_send_failed_log_records
+      new_name: agent/log_entry_retry_count
+      operations:
+      - action: toggle_scalar_data_type
+      - action: add_label
+        new_label: response_code
+        new_value: "400"
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
     - action: update
       include: otelcol_process_uptime
       new_name: agent/uptime
@@ -471,11 +501,11 @@ processors:
       operations:
       - action: update_label
         label: grpc.status
-        new_label: state
+        new_label: response_code
       - action: aggregate_labels
         aggregation_type: sum
         label_set:
-        - state
+        - response_code
     - action: update
       include: googlecloudmonitoring/point_count
       new_name: agent/monitoring/point_count
@@ -525,8 +555,8 @@ processors:
     metric_statements:
     - context: metric
       statements:
-      - "copy_metric(\"grpc.client.attempt.duration.logging\") where grpc.client.attempt.duration.grpc_client_method ~= ^google\\.logging"
-      - "copy_metric(\"grpc.client.attempt.duration.monitoring\") where grpc.client.attempt.duration.grpc_client_method ~= ^google\\.monitoring"
+      - copy_metric("grpc.client.attempt.duration.logging") where name == "grpc.client.attempt.duration"
+      - copy_metric("grpc.client.attempt.duration.monitoring") where name == "grpc.client.attempt.duration"
       - extract_count_metric(true) where name == "grpc.client.attempt.duration.logging"
       - extract_count_metric(true) where name == "grpc.client.attempt.duration.monitoring"
 receivers:
@@ -620,7 +650,8 @@ service:
       - filter/otel_0
       - transform/otel_1
       - filter/otel_2
-      - metricstransform/otel_3
+      - filter/otel_3
+      - metricstransform/otel_4
       - resourcedetection/_global_0
       receivers:
       - prometheus/otel
