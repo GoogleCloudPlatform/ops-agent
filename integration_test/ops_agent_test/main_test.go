@@ -897,6 +897,19 @@ func TestKillChildJobsWhenPluginServerProcessTerminates(t *testing.T) {
 
 func TestCustomLogFormat(t *testing.T) {
 	t.Parallel()
+	if gce.IsOpsAgentUAPPlugin() {
+		t.SkipNow()
+	}
+	t.Run("fluent-bit", func(t *testing.T) {
+		testCustomLogFormat(t, false)
+	})
+	t.Run("otel", func(t *testing.T) {
+		testCustomLogFormat(t, true)
+	})
+}
+
+func testCustomLogFormat(t *testing.T, otel bool) {
+	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
@@ -918,19 +931,27 @@ func TestCustomLogFormat(t *testing.T) {
       time_key: time
       time_format: "%s"
   service:
+    experimental_otel_logging: %v
     pipelines:
       my_pipeline:
         receivers: [mylog_source]
         processors: [rfc5424]
         exporters: [google]
-`, logPath, "%Y-%m-%dT%H:%M:%S.%L%z")
+`, logPath, "%Y-%m-%dT%H:%M:%S%z", otel)
+
+		if otel {
+			// Turn on the otel feature gate.
+			if err := gce.SetEnvironmentVariables(ctx, logger, vm, map[string]string{"EXPERIMENTAL_FEATURES": "otel_logging"}); err != nil {
+				t.Fatal(err)
+			}
+		}
 
 		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 			t.Fatal(err)
 		}
 
-		zone := time.FixedZone("UTC-8", int((-8 * time.Hour).Seconds()))
-		line := fmt.Sprintf("<13>1 %s %s my_app_id - - - qqqqrrrr\n", time.Now().In(zone).Format(time.RFC3339Nano), vm.Name)
+		// zone := time.FixedZone("UTC-8", int((-8 * time.Hour).Seconds()))
+		line := fmt.Sprintf("<13>1 %s %s my_app_id - - - qqqqrrrr\n", time.Now().Format(time.RFC3339), vm.Name)
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), logPath); err != nil {
 			t.Fatalf("error writing dummy log line: %v", err)
 		}
