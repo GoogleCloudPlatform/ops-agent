@@ -50,8 +50,12 @@ esac
 
 curl -s \
     https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.deb.sh > install_rabbitmq.sh
-    chmod +x install_rabbitmq.sh
-    sudo os=ubuntu dist=noble ./install_rabbitmq.sh
+chmod +x install_rabbitmq.sh
+if [[ "${VERSION_ID}" == 25.04 ]]; then
+  sudo PLUGINS_DIR="/usr/lib/rabbitmq/plugins:/usr/lib/rabbitmq/lib/rabbitmq_server-4.0.5-2/plugins"  os=ubuntu dist=noble ./install_rabbitmq.sh
+else
+  sudo ./install_rabbitmq.sh
+fi
 
 sudo apt-get update
 
