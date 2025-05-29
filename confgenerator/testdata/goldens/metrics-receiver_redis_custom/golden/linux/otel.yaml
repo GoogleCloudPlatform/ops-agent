@@ -54,10 +54,6 @@ processors:
         - googlecloudmonitoring/point_count
   filter/otel_2:
     metrics:
-      datapoint:
-      - metric.name == "grpc.client.attempt.duration_count" and datapoint.attributes["grpc.target"] != "passthrough:///monitoring.googleapis.com:443"
-  filter/otel_3:
-    metrics:
       include:
         match_type: strict
         metric_names:
@@ -400,7 +396,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/otel_4:
+  metricstransform/otel_3:
     transforms:
     - action: update
       include: otelcol_process_uptime
@@ -553,8 +549,7 @@ service:
       - filter/otel_0
       - transform/otel_1
       - filter/otel_2
-      - filter/otel_3
-      - metricstransform/otel_4
+      - metricstransform/otel_3
       - resourcedetection/_global_0
       receivers:
       - prometheus/otel

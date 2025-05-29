@@ -146,10 +146,6 @@ func (r AgentSelfMetrics) otelProcessors() map[string][]otel.Component {
 					ottl.ExtractCountMetric(true, "grpc.client.attempt.duration"),
 				},
 			),
-			otel.MetricsOTTLFilter([]string{}, []string{
-				// Filter out histogram datapoints where the grpc.taget is not related.
-				`metric.name == "grpc.client.attempt.duration_count" and datapoint.attributes["grpc.target"] != "passthrough:///monitoring.googleapis.com:443"`,
-			}),
 			otel.MetricsFilter(
 				"include",
 				"strict",
