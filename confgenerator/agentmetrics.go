@@ -60,8 +60,8 @@ func (r AgentSelfMetrics) otelProcessors() map[string][]otel.Component {
 			),
 			otel.MetricsOTTLFilter([]string{}, []string{
 				// Filter out histogram datapoints where the grpc.taget is not related.
-				`metric.name == "grpc.client.attempt.duration.logging_count" and datapoint.attributes["grpc.target"] == "passthrough:///monitoring.googleapis.com:443"`,
-				`metric.name == "grpc.client.attempt.duration.monitoring_count" and datapoint.attributes["grpc.target"] == "passthrough:///logging.googleapis.com:443"`,
+				`metric.name == "grpc.client.attempt.duration.logging_count" and datapoint.attributes["grpc.target"] != "passthrough:///logging.googleapis.com:443"`,
+				`metric.name == "grpc.client.attempt.duration.monitoring_count" and datapoint.attributes["grpc.target"] != "passthrough:///monitoring.googleapis.com:443"`,
 			}),
 			otel.MetricsFilter(
 				"include",
@@ -146,6 +146,10 @@ func (r AgentSelfMetrics) otelProcessors() map[string][]otel.Component {
 					ottl.ExtractCountMetric(true, "grpc.client.attempt.duration"),
 				},
 			),
+			otel.MetricsOTTLFilter([]string{}, []string{
+				// Filter out histogram datapoints where the grpc.taget is not related.
+				`metric.name == "grpc.client.attempt.duration_count" and datapoint.attributes["grpc.target"] != "passthrough:///monitoring.googleapis.com:443"`,
+			}),
 			otel.MetricsFilter(
 				"include",
 				"strict",
@@ -167,11 +171,6 @@ func (r AgentSelfMetrics) otelProcessors() map[string][]otel.Component {
 					otel.AggregateLabels("sum"),
 				),
 				otel.RenameMetric("grpc.client.attempt.duration_count", "agent/api_request_count",
-					// TODO: below is proposed new configuration for the metrics transform processor
-					// ignore any non "google.monitoring" RPCs (note there won't be any other RPCs for now)
-					// - action: select_label_values
-					//   label: grpc_client_method
-					//   value_regexp: ^google\.monitoring
 					otel.RenameLabel("grpc.status", "state"),
 					// delete grpc_client_method dimension & service.version label, retaining only state
 					otel.AggregateLabels("sum", "state"),
