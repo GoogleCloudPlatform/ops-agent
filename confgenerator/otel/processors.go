@@ -53,7 +53,7 @@ func MetricsOTTLFilter(metricQueries []string, datapointQueries []string) Compon
 		metricsConfig["metric"] = metricQueries
 	}
 	if len(datapointQueries) > 0 {
-		metricsConfig["datapoint"] = metricQueries
+		metricsConfig["datapoint"] = datapointQueries
 	}
 
 	return Component{
@@ -338,6 +338,21 @@ func RenameMetric(old, new string, operations ...map[string]interface{}) map[str
 		"include":  old,
 		"action":   "update",
 		"new_name": new,
+	}
+	if len(operations) > 0 {
+		out["operations"] = operations
+	}
+	return out
+}
+
+// RenameMetricRegexp returns a config snippet that renames metrics matching the input regex
+// to new, applying zero or more transformations.
+func RenameMetricRegexp(metricRegex string, new string, operations ...map[string]interface{}) map[string]interface{} {
+	out := map[string]interface{}{
+		"match_type": "regexp",
+		"include":    metricRegex,
+		"action":     "update",
+		"new_name":   new,
 	}
 	if len(operations) > 0 {
 		out["operations"] = operations
