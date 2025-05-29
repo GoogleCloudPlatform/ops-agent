@@ -35,6 +35,26 @@ type AgentSelfMetrics struct {
 	OtelRuntimeDir      string
 }
 
+var grpcToHTTPStatus = map[string]string{
+	"OK":                  "200",
+	"INVALID_ARGUMENT":    "400",
+	"FAILED_PRECONDITION": "400",
+	"OUT_OF_RANGE":        "400",
+	"UNAUTHENTICATED":     "401",
+	"PERMISSION_DENIED":   "403",
+	"NOT_FOUND":           "404",
+	"ALREADY_EXISTS":      "409",
+	"ABORTED":             "409",
+	"RESOURCE_EXHAUSTED":  "429",
+	"CANCELLED":           "499",
+	"UNKNOWN":             "500",
+	"INTERNAL":            "500",
+	"DATA_LOSS":           "500",
+	"UNIMPLEMENTED":       "501",
+	"UNAVAILABLE":         "503",
+	"DEADLINE_EXCEEDED":   "504",
+}
+
 func (r AgentSelfMetrics) otelProcessors() map[string][]otel.Component {
 	if r.OtelLoggingEnabled {
 		return map[string][]otel.Component{"metrics": {
@@ -118,6 +138,7 @@ func (r AgentSelfMetrics) otelProcessors() map[string][]otel.Component {
 				),
 				otel.RenameMetric("grpc.client.attempt.duration.logging_count", "agent/request_count",
 					otel.RenameLabel("grpc.status", "response_code"),
+					otel.RenameLabelValues("response_code", grpcToHTTPStatus),
 					// delete grpc_client_method dimension & service.version label, retaining only response_code
 					otel.AggregateLabels("sum", "response_code"),
 				),
