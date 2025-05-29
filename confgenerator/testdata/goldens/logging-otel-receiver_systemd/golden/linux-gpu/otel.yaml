@@ -452,6 +452,43 @@ processors:
       - action: update_label
         label: grpc.status
         new_label: response_code
+      - action: update_label
+        label: response_code
+        value_actions:
+        - new_value: "409"
+          value: ABORTED
+        - new_value: "409"
+          value: ALREADY_EXISTS
+        - new_value: "499"
+          value: CANCELLED
+        - new_value: "500"
+          value: DATA_LOSS
+        - new_value: "504"
+          value: DEADLINE_EXCEEDED
+        - new_value: "400"
+          value: FAILED_PRECONDITION
+        - new_value: "500"
+          value: INTERNAL
+        - new_value: "400"
+          value: INVALID_ARGUMENT
+        - new_value: "404"
+          value: NOT_FOUND
+        - new_value: "200"
+          value: OK
+        - new_value: "400"
+          value: OUT_OF_RANGE
+        - new_value: "403"
+          value: PERMISSION_DENIED
+        - new_value: "429"
+          value: RESOURCE_EXHAUSTED
+        - new_value: "401"
+          value: UNAUTHENTICATED
+        - new_value: "503"
+          value: UNAVAILABLE
+        - new_value: "501"
+          value: UNIMPLEMENTED
+        - new_value: "500"
+          value: UNKNOWN
       - action: aggregate_labels
         aggregation_type: sum
         label_set:
