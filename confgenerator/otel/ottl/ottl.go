@@ -203,21 +203,17 @@ func IsNotNil(a Value) Value {
 }
 
 // CopyMetric creates a copy of a given metric with a new name
-func CopyMetric(metricName string, condition string) Statements {
-	return Statements{
-		statementf(`copy_metric(%q) where name == "%s"`, metricName, condition),
-	}
+func CopyMetric(metricName string, condition string) Statement {
+	return statementf(`copy_metric(%q) where name == "%s"`, metricName, condition)
 }
 
 // ExtractCountMetric creates a new metric based on the count value of a Histogram metric
-func ExtractCountMetric(monotonic bool, metricName string) Statements {
+func ExtractCountMetric(monotonic bool, metricName string) Statement {
 	monotonicStr := "false"
 	if monotonic {
 		monotonicStr = "true"
 	}
-	return Statements{
-		statementf(`extract_count_metric(%s) where name == "%s"`, monotonicStr, metricName),
-	}
+	return statementf(`extract_count_metric(%s) where name == "%s"`, monotonicStr, metricName)
 }
 
 func (a LValue) SetToBool(b Value) Statements {

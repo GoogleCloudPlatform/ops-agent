@@ -338,6 +338,18 @@ processors:
       new_name: agent.googleapis.com/$${1}
   metricstransform/otel_4:
     transforms:
+    - action: insert
+      include: otelcol_exporter_send_failed_log_records
+      new_name: agent/log_entry_retry_count
+      operations:
+      - action: toggle_scalar_data_type
+      - action: add_label
+        new_label: response_code
+        new_value: "400"
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
     - action: update
       include: otelcol_exporter_sent_log_records
       new_name: agent/log_entry_count
@@ -352,7 +364,7 @@ processors:
         - response_code
     - action: update
       include: otelcol_exporter_send_failed_log_records
-      new_name: agent/log_entry_retry_count
+      new_name: agent/log_entry_count
       operations:
       - action: toggle_scalar_data_type
       - action: add_label
@@ -362,6 +374,18 @@ processors:
         aggregation_type: sum
         label_set:
         - response_code
+    - action: insert
+      include: otelcol_process_uptime
+      new_name: agent/uptime
+      operations:
+      - action: toggle_scalar_data_type
+      - action: add_label
+        new_label: version
+        new_value: google-cloud-ops-agent-logging/latest-build_distro
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - version
     - action: update
       include: otelcol_process_uptime
       new_name: agent/uptime

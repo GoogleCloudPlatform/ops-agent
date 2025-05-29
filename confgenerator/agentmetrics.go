@@ -35,27 +35,9 @@ type AgentSelfMetrics struct {
 	OtelRuntimeDir      string
 }
 
-func (r AgentSelfMetrics) OtelPipeline() otel.ReceiverPipeline {
-	return otel.ReceiverPipeline{
-		Receiver: otel.Component{
-			Type: "prometheus",
-			Config: map[string]interface{}{
-				"config": map[string]interface{}{
-					"scrape_configs": []map[string]interface{}{{
-						"job_name":        "otel-collector",
-						"scrape_interval": "1m",
-						"static_configs": []map[string]interface{}{{
-							// TODO(b/196990135): Customization for the port number
-							"targets": []string{fmt.Sprintf("0.0.0.0:%d", r.OtelPort)},
-						}},
-					}},
-				},
-			},
-		},
-		ExporterTypes: map[string]otel.ExporterType{
-			"metrics": otel.System,
-		},
-		Processors: map[string][]otel.Component{"metrics": {
+func (r AgentSelfMetrics) otelProcessors() map[string][]otel.Component {
+	if r.OtelLoggingEnabled {
+		return map[string][]otel.Component{"metrics": {
 			otel.MetricsFilter(
 				"include",
 				"strict",
@@ -64,20 +46,20 @@ func (r AgentSelfMetrics) OtelPipeline() otel.ReceiverPipeline {
 				"grpc.client.attempt.duration",
 				"googlecloudmonitoring/point_count",
 				"otelcol_exporter_sent_log_records",
-				//"otelcol_receiver_refused_log_records",
-				//"otelcol_receiver_accepted_log_records",
 				"otelcol_exporter_send_failed_log_records",
 			),
 			otel.Transform("metric", "metric",
 				[]ottl.Statement{
-					// Separate metric into logging and monitoring
-					ottl.CopyMetric("grpc.client.attempt.duration.logging", `grpc.client.attempt.duration`)[0],
-					ottl.CopyMetric("grpc.client.attempt.duration.monitoring", `grpc.client.attempt.duration`)[0],
+					// Make two copies of request duration for logging and monitoring
+					ottl.CopyMetric("grpc.client.attempt.duration.logging", `grpc.client.attempt.duration`),
+					ottl.CopyMetric("grpc.client.attempt.duration.monitoring", `grpc.client.attempt.duration`),
 					// Create new count metrics from histogram metric
-					ottl.ExtractCountMetric(true, "grpc.client.attempt.duration.logging")[0],
-					ottl.ExtractCountMetric(true, "grpc.client.attempt.duration.monitoring")[0]},
+					ottl.ExtractCountMetric(true, "grpc.client.attempt.duration.logging"),
+					ottl.ExtractCountMetric(true, "grpc.client.attempt.duration.monitoring"),
+				},
 			),
 			otel.MetricsOTTLFilter([]string{}, []string{
+				// Filter out histogram datapoints where the grpc.taget is not related.
 				`metric.name == "grpc.client.attempt.duration.logging_count" and datapoint.attributes["grpc.target"] == "passthrough:///monitoring.googleapis.com:443"`,
 				`metric.name == "grpc.client.attempt.duration.monitoring_count" and datapoint.attributes["grpc.target"] == "passthrough:///logging.googleapis.com:443"`,
 			}),
@@ -87,25 +69,36 @@ func (r AgentSelfMetrics) OtelPipeline() otel.ReceiverPipeline {
 				"otelcol_process_uptime",
 				"otelcol_process_memory_rss",
 				"otelcol_exporter_sent_log_records",
-				// "otelcol_receiver_refused_log_records",
-				// "otelcol_receiver_accepted_log_records",
 				"otelcol_exporter_send_failed_log_records",
 				"grpc.client.attempt.duration.logging_count",
 				"grpc.client.attempt.duration.monitoring_count",
 				"googlecloudmonitoring/point_count",
 			),
 			otel.MetricsTransform(
+				otel.DuplicateMetric("otelcol_exporter_send_failed_log_records", "agent/log_entry_retry_count",
+					// change data type from double -> int64
+					otel.ToggleScalarDataType,
+					otel.AddLabel("response_code", "400"),
+					otel.AggregateLabels("sum", "response_code"),
+				),
 				otel.RenameMetric("otelcol_exporter_sent_log_records", "agent/log_entry_count",
 					// change data type from double -> int64
 					otel.ToggleScalarDataType,
 					otel.AddLabel("response_code", "200"),
 					otel.AggregateLabels("sum", "response_code"),
 				),
-				otel.RenameMetric("otelcol_exporter_send_failed_log_records", "agent/log_entry_retry_count",
+				otel.RenameMetric("otelcol_exporter_send_failed_log_records", "agent/log_entry_count",
 					// change data type from double -> int64
 					otel.ToggleScalarDataType,
 					otel.AddLabel("response_code", "400"),
 					otel.AggregateLabels("sum", "response_code"),
+				),
+				otel.DuplicateMetric("otelcol_process_uptime", "agent/uptime",
+					// change data type from double -> int64
+					otel.ToggleScalarDataType,
+					otel.AddLabel("version", r.LoggingVersionLabel),
+					// remove service.version label
+					otel.AggregateLabels("sum", "version"),
 				),
 				otel.RenameMetric("otelcol_process_uptime", "agent/uptime",
 					// change data type from double -> int64
@@ -136,7 +129,86 @@ func (r AgentSelfMetrics) OtelPipeline() otel.ReceiverPipeline {
 				),
 				otel.AddPrefix("agent.googleapis.com"),
 			),
-		}},
+		}}
+	} else {
+		return map[string][]otel.Component{"metrics": {
+			otel.MetricsFilter(
+				"include",
+				"strict",
+				"otelcol_process_uptime",
+				"otelcol_process_memory_rss",
+				"grpc.client.attempt.duration",
+				"googlecloudmonitoring/point_count",
+			),
+			otel.Transform("metric", "metric",
+				[]ottl.Statement{
+					// create new count metric from histogram metric
+					ottl.ExtractCountMetric(true, "grpc.client.attempt.duration"),
+				},
+			),
+			otel.MetricsFilter(
+				"include",
+				"strict",
+				"otelcol_process_uptime",
+				"otelcol_process_memory_rss",
+				"grpc.client.attempt.duration_count",
+				"googlecloudmonitoring/point_count",
+			),
+			otel.MetricsTransform(
+				otel.RenameMetric("otelcol_process_uptime", "agent/uptime",
+					// change data type from double -> int64
+					otel.ToggleScalarDataType,
+					otel.AddLabel("version", r.MetricsVersionLabel),
+					// remove service.version label
+					otel.AggregateLabels("sum", "version"),
+				),
+				otel.RenameMetric("otelcol_process_memory_rss", "agent/memory_usage",
+					// remove service.version label
+					otel.AggregateLabels("sum"),
+				),
+				otel.RenameMetric("grpc.client.attempt.duration_count", "agent/api_request_count",
+					// TODO: below is proposed new configuration for the metrics transform processor
+					// ignore any non "google.monitoring" RPCs (note there won't be any other RPCs for now)
+					// - action: select_label_values
+					//   label: grpc_client_method
+					//   value_regexp: ^google\.monitoring
+					otel.RenameLabel("grpc.status", "state"),
+					// delete grpc_client_method dimension & service.version label, retaining only state
+					otel.AggregateLabels("sum", "state"),
+				),
+				otel.RenameMetric("googlecloudmonitoring/point_count", "agent/monitoring/point_count",
+					// change data type from double -> int64
+					otel.ToggleScalarDataType,
+					// Remove service.version label
+					otel.AggregateLabels("sum", "status"),
+				),
+				otel.AddPrefix("agent.googleapis.com"),
+			),
+		}}
+	}
+}
+
+func (r AgentSelfMetrics) OtelPipeline() otel.ReceiverPipeline {
+	return otel.ReceiverPipeline{
+		Receiver: otel.Component{
+			Type: "prometheus",
+			Config: map[string]interface{}{
+				"config": map[string]interface{}{
+					"scrape_configs": []map[string]interface{}{{
+						"job_name":        "otel-collector",
+						"scrape_interval": "1m",
+						"static_configs": []map[string]interface{}{{
+							// TODO(b/196990135): Customization for the port number
+							"targets": []string{fmt.Sprintf("0.0.0.0:%d", r.OtelPort)},
+						}},
+					}},
+				},
+			},
+		},
+		ExporterTypes: map[string]otel.ExporterType{
+			"metrics": otel.System,
+		},
+		Processors: r.otelProcessors(),
 	}
 }
 
