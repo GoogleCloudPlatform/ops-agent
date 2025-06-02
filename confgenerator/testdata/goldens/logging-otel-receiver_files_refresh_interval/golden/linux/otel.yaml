@@ -48,8 +48,8 @@ processors:
   filter/otel_2:
     metrics:
       datapoint:
-      - metric.name == "grpc.client.attempt.duration.logging_count" and datapoint.attributes["grpc.target"] != "passthrough:///logging.googleapis.com:443"
-      - metric.name == "grpc.client.attempt.duration.monitoring_count" and datapoint.attributes["grpc.target"] != "passthrough:///monitoring.googleapis.com:443"
+      - "metric.name == \"grpc.client.attempt.duration.logging_count\" and (not IsMatch(datapoint.attributes[\"grpc.target\"], \".*logging\\.googleapis.*\"))"
+      - "metric.name == \"grpc.client.attempt.duration.monitoring_count\" and (not IsMatch(datapoint.attributes[\"grpc.target\"], \".*monitoring\\.googleapis.*\"))"
   filter/otel_3:
     metrics:
       include:

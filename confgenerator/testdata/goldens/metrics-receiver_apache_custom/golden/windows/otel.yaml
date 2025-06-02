@@ -82,6 +82,10 @@ processors:
         - otelcol_process_memory_rss
         - grpc.client.attempt.duration_count
         - googlecloudmonitoring/point_count
+  filter/otel_3:
+    metrics:
+      datapoint:
+      - "metric.name == \"grpc.client.attempt.duration_count\" and (not IsMatch(datapoint.attributes[\"grpc.target\"], \".*monitoring\\.googleapis.*\"))"
   metricstransform/apache_2:
     transforms:
     - action: update
@@ -466,7 +470,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/otel_3:
+  metricstransform/otel_4:
     transforms:
     - action: update
       include: otelcol_process_uptime
@@ -690,7 +694,8 @@ service:
       - filter/otel_0
       - transform/otel_1
       - filter/otel_2
-      - metricstransform/otel_3
+      - filter/otel_3
+      - metricstransform/otel_4
       - resourcedetection/_global_0
       receivers:
       - prometheus/otel
