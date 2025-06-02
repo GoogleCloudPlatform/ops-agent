@@ -55,24 +55,24 @@ var grpcToHTTPStatus = map[string]string{
 	"DEADLINE_EXCEEDED":   "504",
 }
 
-func (r AgentSelfMetrics) otelProcessorsWithOtelLoggingMetrics() map[string][]otel.Component {
+func (r AgentSelfMetrics) otelPipelineProcessorsWithOtelLogging() map[string][]otel.Component {
 	return map[string][]otel.Component{"metrics": {
 		otel.MetricsFilter(
 			"include",
 			"strict",
 			"otelcol_process_uptime",
 			"otelcol_process_memory_rss",
-			"grpc.client.attempt.duration",
-			"googlecloudmonitoring/point_count",
 			"otelcol_exporter_sent_log_records",
 			"otelcol_exporter_send_failed_log_records",
+			"grpc.client.attempt.duration",
+			"googlecloudmonitoring/point_count",
 		),
 		otel.Transform("metric", "metric",
 			[]ottl.Statement{
 				// Make two copies of request duration for logging and monitoring
 				ottl.CopyMetric("grpc.client.attempt.duration.logging", `grpc.client.attempt.duration`),
 				ottl.CopyMetric("grpc.client.attempt.duration.monitoring", `grpc.client.attempt.duration`),
-				// Create new count metrics from histogram metric
+				// Extract count from histogram metrics
 				ottl.ExtractCountMetric(true, "grpc.client.attempt.duration.logging"),
 				ottl.ExtractCountMetric(true, "grpc.client.attempt.duration.monitoring"),
 			},
@@ -152,9 +152,9 @@ func (r AgentSelfMetrics) otelProcessorsWithOtelLoggingMetrics() map[string][]ot
 	}}
 }
 
-func (r AgentSelfMetrics) otelProcessors() map[string][]otel.Component {
+func (r AgentSelfMetrics) otelPipelineProcessors() map[string][]otel.Component {
 	if r.OtelLoggingEnabled {
-		return r.otelProcessorsWithOtelLoggingMetrics()
+		return r.otelPipelineProcessorsWithOtelLogging()
 	}
 
 	return map[string][]otel.Component{"metrics": {
@@ -232,7 +232,7 @@ func (r AgentSelfMetrics) OtelPipeline() otel.ReceiverPipeline {
 		ExporterTypes: map[string]otel.ExporterType{
 			"metrics": otel.System,
 		},
-		Processors: r.otelProcessors(),
+		Processors: r.otelPipelineProcessors(),
 	}
 }
 
