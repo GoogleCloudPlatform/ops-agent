@@ -73,7 +73,7 @@ processors:
   filter/otel_3:
     metrics:
       datapoint:
-      - "metric.name == \"grpc.client.attempt.duration_count\" and (not IsMatch(datapoint.attributes[\"grpc.target\"], \".*monitoring\\.googleapis.*\"))"
+      - metric.name == "grpc.client.attempt.duration_count" and (not IsMatch(datapoint.attributes["grpc.target"], "monitoring.googleapis"))
   metricstransform/elasticsearch_2:
     transforms:
     - action: update
