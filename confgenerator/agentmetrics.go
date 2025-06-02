@@ -80,8 +80,8 @@ func (r AgentSelfMetrics) otelProcessors() map[string][]otel.Component {
 			),
 			otel.MetricsOTTLFilter([]string{}, []string{
 				// Filter out histogram datapoints where the grpc.taget is not related.
-				`metric.name == "grpc.client.attempt.duration.logging_count" and datapoint.attributes["grpc.target"] != "passthrough:///logging.googleapis.com:443"`,
-				`metric.name == "grpc.client.attempt.duration.monitoring_count" and datapoint.attributes["grpc.target"] != "passthrough:///monitoring.googleapis.com:443"`,
+				`metric.name == "grpc.client.attempt.duration.logging_count" and (not IsMatch(datapoint.attributes["grpc.target"], ".*logging\.googleapis.*"))`,
+				`metric.name == "grpc.client.attempt.duration.monitoring_count" and (not IsMatch(datapoint.attributes["grpc.target"], ".*monitoring\.googleapis.*"))`,
 			}),
 			otel.MetricsFilter(
 				"include",
@@ -175,6 +175,10 @@ func (r AgentSelfMetrics) otelProcessors() map[string][]otel.Component {
 				"grpc.client.attempt.duration_count",
 				"googlecloudmonitoring/point_count",
 			),
+			otel.MetricsOTTLFilter([]string{}, []string{
+				// Filter out histogram datapoints where the grpc.taget is not related.
+				`metric.name == "grpc.client.attempt.duration_count" and (not IsMatch(datapoint.attributes["grpc.target"], ".*monitoring\.googleapis.*"))`,
+			}),
 			otel.MetricsTransform(
 				otel.RenameMetric("otelcol_process_uptime", "agent/uptime",
 					// change data type from double -> int64
