@@ -175,11 +175,11 @@ const (
 	  else
 		record["http_request_requestUrl"] = table.concat({record["cs_uri_stem"], "?", record["cs_uri_query"]})
 	  end
-	  
+
 	  record["cs_uri_query"] = nil
 	  record["cs_uri_stem"] = nil
 	  record["s_port"] = nil
-	  return 2, timestamp, record 
+	  return 2, timestamp, record
 	end
 	`
 )
