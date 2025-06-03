@@ -20,6 +20,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
 
@@ -162,7 +163,14 @@ func (r MetricsReceiverRabbitmq) Pipelines(_ context.Context) ([]otel.ReceiverPi
 				otel.FlattenResourceAttribute("rabbitmq.node.name", "node_name"),
 				otel.FlattenResourceAttribute("rabbitmq.vhost.name", "vhost_name"),
 			),
-			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+			otel.Transform(
+				"metric",
+				"scope",
+				ottl.NewStatements(
+					ottl.LValue{"name"}.Set(ottl.StringLiteral("agent.googleapis.com/"+r.Type())),
+					ottl.LValue{"version"}.Set(ottl.StringLiteral("1.0")),
+				),
+			),
 		}},
 	}}, nil
 }

@@ -21,6 +21,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 )
 
 type MetricsReceiverHbase struct {
@@ -53,7 +54,14 @@ func (r MetricsReceiverHbase) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 						otel.AggregateLabels("max", "state"),
 					),
 				),
-				otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+				otel.Transform(
+					"metric",
+					"scope",
+					ottl.NewStatements(
+						ottl.LValue{"name"}.Set(ottl.StringLiteral("agent.googleapis.com/"+r.Type())),
+						ottl.LValue{"version"}.Set(ottl.StringLiteral("1.0")),
+					),
+				),
 			},
 		)
 }

@@ -19,6 +19,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 )
 
 type MetricsReceiverJVM struct {
@@ -43,7 +44,14 @@ func (r MetricsReceiverJVM) Pipelines(_ context.Context) ([]otel.ReceiverPipelin
 				otel.MetricsTransform(
 					otel.AddPrefix("workload.googleapis.com"),
 				),
-				otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+				otel.Transform(
+					"metric",
+					"scope",
+					ottl.NewStatements(
+						ottl.LValue{"name"}.Set(ottl.StringLiteral("agent.googleapis.com/"+r.Type())),
+						ottl.LValue{"version"}.Set(ottl.StringLiteral("1.0")),
+					),
+				),
 			},
 		)
 }

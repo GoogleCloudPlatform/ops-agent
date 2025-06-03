@@ -19,6 +19,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
@@ -89,7 +90,14 @@ func (r MetricsReceiverDcgm) Pipelines(_ context.Context) ([]otel.ReceiverPipeli
 					otel.FlattenResourceAttribute("gpu.number", "gpu_number"),
 					otel.FlattenResourceAttribute("gpu.uuid", "uuid"),
 				),
-				otel.ModifyInstrumentationScope(r.Type(), "2.0"),
+				otel.Transform(
+					"metric",
+					"scope",
+					ottl.NewStatements(
+						ottl.LValue{"name"}.Set(ottl.StringLiteral("agent.googleapis.com/"+r.Type())),
+						ottl.LValue{"version"}.Set(ottl.StringLiteral("2.0")),
+					),
+				),
 			}},
 		}}, nil
 	}
@@ -133,7 +141,7 @@ func (r MetricsReceiverDcgm) Pipelines(_ context.Context) ([]otel.ReceiverPipeli
 			Config: map[string]interface{}{
 				"collection_interval": r.CollectionIntervalString(),
 				"endpoint":            r.Endpoint,
-				"metrics": metricsConfig,
+				"metrics":             metricsConfig,
 			},
 		},
 		Processors: map[string][]otel.Component{"metrics": {
@@ -200,7 +208,14 @@ func (r MetricsReceiverDcgm) Pipelines(_ context.Context) ([]otel.ReceiverPipeli
 				otel.FlattenResourceAttribute("gpu.number", "gpu_number"),
 				otel.FlattenResourceAttribute("gpu.uuid", "uuid"),
 			),
-			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+			otel.Transform(
+				"metric",
+				"scope",
+				ottl.NewStatements(
+					ottl.LValue{"name"}.Set(ottl.StringLiteral("agent.googleapis.com/"+r.Type())),
+					ottl.LValue{"version"}.Set(ottl.StringLiteral("1.0")),
+				),
+			),
 		}},
 	}}, nil
 }

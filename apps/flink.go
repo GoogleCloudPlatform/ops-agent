@@ -19,6 +19,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 )
 
 type MetricsReceiverFlink struct {
@@ -62,7 +63,14 @@ func (r MetricsReceiverFlink) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 				otel.FlattenResourceAttribute("flink.subtask.index", "subtask_index"),
 				otel.FlattenResourceAttribute("flink.resource.type", "resource_type"),
 			),
-			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+			otel.Transform(
+				"metric",
+				"scope",
+				ottl.NewStatements(
+					ottl.LValue{"name"}.Set(ottl.StringLiteral("agent.googleapis.com/"+r.Type())),
+					ottl.LValue{"version"}.Set(ottl.StringLiteral("1.0")),
+				),
+			),
 		}},
 	}}, nil
 }

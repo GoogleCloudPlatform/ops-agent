@@ -20,6 +20,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 )
 
 func init() {
@@ -58,7 +59,14 @@ func (r MetricsReceiverZookeeper) Pipelines(_ context.Context) ([]otel.ReceiverP
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+			otel.Transform(
+				"metric",
+				"scope",
+				ottl.NewStatements(
+					ottl.LValue{"name"}.Set(ottl.StringLiteral("agent.googleapis.com/"+r.Type())),
+					ottl.LValue{"version"}.Set(ottl.StringLiteral("1.0")),
+				),
+			),
 		}},
 	}}, nil
 }
