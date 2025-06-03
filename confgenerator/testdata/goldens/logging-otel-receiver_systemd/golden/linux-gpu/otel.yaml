@@ -67,6 +67,18 @@ processors:
         - grpc.client.attempt.duration.logging_count
         - grpc.client.attempt.duration.monitoring_count
         - googlecloudmonitoring/point_count
+  filter/otel_5:
+    metrics:
+      include:
+        match_type: strict
+        metric_names:
+        - agent.googleapis.com/agent/memory_usage
+        - agent.googleapis.com/agent/uptime
+        - agent.googleapis.com/agent/api_request_count
+        - agent.googleapis.com/agent/monitoring/point_count
+        - agent.googleapis.com/agent/log_entry_count
+        - agent.googleapis.com/agent/log_entry_retry_count
+        - agent.googleapis.com/agent/request_count
   metricstransform/hostmetrics_1_0:
     transforms:
     - action: update
@@ -403,18 +415,6 @@ processors:
         aggregation_type: sum
         label_set:
         - response_code
-    - action: insert
-      include: otelcol_process_uptime
-      new_name: agent/uptime
-      operations:
-      - action: toggle_scalar_data_type
-      - action: add_label
-        new_label: version
-        new_value: google-cloud-ops-agent-logging/latest-build_distro
-      - action: aggregate_labels
-        aggregation_type: sum
-        label_set:
-        - version
     - action: update
       include: otelcol_process_uptime
       new_name: agent/uptime
@@ -721,6 +721,7 @@ service:
       - filter/otel_2
       - filter/otel_3
       - metricstransform/otel_4
+      - filter/otel_5
       - resourcedetection/_global_0
       receivers:
       - prometheus/otel
