@@ -36,6 +36,10 @@ jobs:
       # `steps.get_labels.outputs.*` gives us the names of all labels for the PR
     - run: echo "labels=$(go run ./ci/get_labels -url=${{ github.event.pull_request.url }})" >> "$GITHUB_OUTPUT"
       id: get_labels
+    - id: run_lint
+      uses: golangci/golangci-lint-action@v8
+      with:
+        version: v2.1
     - run: go test ./ci -added="$ADDED_FILES" -modified="$MODIFIED_FILES" -labels="$PR_LABELS" -base-dir="base_checkout" -tags=ci
       env:
         ADDED_FILES: ${{ steps.files.outputs.added }}
