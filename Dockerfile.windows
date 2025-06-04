@@ -93,7 +93,8 @@ WORKDIR /goget
 
 # @latest has an issue with path separators, so pin to an older version for now.
 # https://github.com/google/googet/issues/83#issuecomment-2536975624
-RUN go install github.com/google/googet/v2/goopack@v2.18.4;
+# TODO Delete
+# RUN go install github.com/google/googet/v2/goopack@v2.18.4;
 
 ###############################################################################
 # Build fluent-bit
@@ -251,15 +252,6 @@ RUN Get-Content VERSION | Where-Object length | ForEach-Object { Invoke-Expressi
     go build -o bin/plugin.exe -ldflags \"-X github.com/GoogleCloudPlatform/ops-agent/internal/version.BuildDistro=$env:BUILD_DISTRO -X github.com/GoogleCloudPlatform/ops-agent/internal/version.Version=$env:PKG_VERSION\" ./cmd/ops_agent_uap_plugin; `
     Copy-Item -Path bin/plugin.exe -Destination /work/out/bin/; `
     $env:PKG_VERSION | Out-File -FilePath /work/out/bin/OPS_AGENT_VERSION -Encoding UTF8;
-###############################################################################
-# Packaging
-###############################################################################
-
-WORKDIR /work
-
-COPY . /work
-
-RUN & .\pkg\goo\build.ps1 -DestDir /work/out;
 
 ###############################################################################
 # Packaging for the Ops Agent Plugin
