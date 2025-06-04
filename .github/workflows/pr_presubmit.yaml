@@ -23,24 +23,33 @@ jobs:
     runs-on: ${{matrix.os}}
     steps:
     - uses: actions/checkout@v2
+
     - uses: actions/setup-go@v3
       with:
         go-version: 1.x
         cache: true
+
     - id: files
       uses: Ana06/get-changed-files@v2.2.0
+
     - uses: actions/checkout@v2
       with:
         ref: ${{ github.base_ref }}
         path: base_checkout
       # `steps.get_labels.outputs.*` gives us the names of all labels for the PR
-    - run: echo "labels=$(go run ./ci/get_labels -url=${{ github.event.pull_request.url }})" >> "$GITHUB_OUTPUT"
+
+    - name: Get labels
+      run: echo "labels=$(go run ./ci/get_labels -url=${{ github.event.pull_request.url }})" >> "$GITHUB_OUTPUT"
       id: get_labels
-    - id: run_lint
-      uses: golangci/golangci-lint-action@v8
-      with:
-        version: v2.1
-    - run: go test ./ci -added="$ADDED_FILES" -modified="$MODIFIED_FILES" -labels="$PR_LABELS" -base-dir="base_checkout" -tags=ci
+
+    - name: Install goimports
+      run: go install golang.org/x/tools/cmd/goimports@latest
+
+    - name: Check goimports formatting
+      run: goimports -d . | tee /tmp/goimports_output && [ ! -s /tmp/goimports_output ]
+
+    - name: Run tests
+      run: go test ./ci -added="$ADDED_FILES" -modified="$MODIFIED_FILES" -labels="$PR_LABELS" -base-dir="base_checkout" -tags=ci
       env:
         ADDED_FILES: ${{ steps.files.outputs.added }}
         MODIFIED_FILES: ${{ steps.files.outputs.modified }}
