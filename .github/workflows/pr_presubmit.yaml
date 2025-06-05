@@ -32,11 +32,11 @@ jobs:
     - id: files
       uses: Ana06/get-changed-files@v2.2.0
 
-    - name: Install goimports
-      run: go install golang.org/x/tools/cmd/goimports@latest
+    - name: Install workflow tools
+      run: make -f tasks.mak makefile_symlink && make install_tools
 
-    - name: Check goimports formatting
-      run: goimports -d . | tee /tmp/goimports_output && [ ! -s /tmp/goimports_output ]
+    - name: Run lint
+      run: make lint
 
     - name: Checkout base ref
       uses: actions/checkout@v2
