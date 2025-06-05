@@ -28,6 +28,7 @@ makefile_symlink:
 install_tools:
 	go install github.com/google/yamlfmt/cmd/yamlfmt@latest
 	go install github.com/google/addlicense@master
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 
 ############
 # Build
@@ -78,6 +79,15 @@ yaml_lint:
 .PHONY: compile_dockerfile
 compile_dockerfile:
 	go run ./dockerfiles
+
+# TODO: Enable more linters in the future
+.PHONY: lint
+lint:
+	golangci-lint run --allow-parallel-runners --enable-only=gci --timeout=20m
+
+.PHONY: lint-fix
+lint-fix:
+	golangci-lint run --fix --allow-parallel-runners --enable-only=gci --timeout=20m
 
 ############
 # Unit Tests
