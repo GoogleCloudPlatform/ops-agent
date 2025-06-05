@@ -83,11 +83,11 @@ compile_dockerfile:
 # TODO: Enable more linters in the future
 .PHONY: lint
 lint:
-	golangci-lint run --allow-parallel-runners --enable-only=goimports --timeout=20m
+	golangci-lint run --allow-parallel-runners --enable-only=gci --timeout=20m
 
 .PHONY: lint-fix
 lint-fix:
-	golangci-lint run --fix --allow-parallel-runners --enable-only=goimports --timeout=20m
+	golangci-lint run --fix --allow-parallel-runners --enable-only=gci --timeout=20m
 
 ############
 # Unit Tests
