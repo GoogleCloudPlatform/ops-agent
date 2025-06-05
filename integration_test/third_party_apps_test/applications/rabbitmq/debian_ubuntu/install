@@ -26,10 +26,7 @@ case $VERSION_ID in
   24.04)
     echo "deb http://ppa.launchpad.net/rabbitmq/rabbitmq-erlang/ubuntu noble main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
     ;;
-  24.10)
-    echo "deb http://ppa.launchpad.net/rabbitmq/rabbitmq-erlang/ubuntu noble main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
-    ;;
-  25.04)
+  24.10|25.04)
     echo "deb http://ppa.launchpad.net/rabbitmq/rabbitmq-erlang/ubuntu noble main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
     ;;
   # debian
@@ -70,7 +67,7 @@ fi
 sudo systemctl daemon-reload
 sudo systemctl enable rabbitmq-server
 sudo systemctl restart rabbitmq-server
-sudo rabbitmq-plugins enable rabbitmq_management
+sudo PLUGINS_DIR="/usr/lib/rabbitmq/plugins:/usr/lib/rabbitmq/lib/rabbitmq_server-4.0.5-2/plugins" rabbitmq-plugins enable rabbitmq_management
 sudo systemctl restart rabbitmq-server
 
 sudo rabbitmqctl add_vhost dev
