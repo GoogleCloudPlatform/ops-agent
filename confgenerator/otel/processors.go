@@ -53,7 +53,7 @@ func MetricsOTTLFilter(metricQueries []string, datapointQueries []string) Compon
 		metricsConfig["metric"] = metricQueries
 	}
 	if len(datapointQueries) > 0 {
-		metricsConfig["datapoint"] = metricQueries
+		metricsConfig["datapoint"] = datapointQueries
 	}
 
 	return Component{
