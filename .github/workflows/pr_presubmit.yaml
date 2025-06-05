@@ -33,7 +33,7 @@ jobs:
       uses: Ana06/get-changed-files@v2.2.0
 
     - name: Install workflow tools
-      run: make -f tasks.mak makefile_symlink && make install_tools
+      run: make -f tasks.mak makefile_symlink install_tools
 
     - name: Run lint
       run: make lint
