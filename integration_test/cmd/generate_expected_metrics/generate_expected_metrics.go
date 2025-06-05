@@ -181,7 +181,7 @@ func toExpectedMetric(metric *metric.MetricDescriptor) *metadata.ExpectedMetric 
 	labels := make([]*metadata.MetricLabel, len(metric.Labels))
 	for _, l := range metric.Labels {
 		labels = append(labels, &metadata.MetricLabel{
-			Name: l.Key,
+			Name:       l.Key,
 			ValueRegex: ".*",
 		})
 	}

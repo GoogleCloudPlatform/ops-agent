@@ -133,7 +133,7 @@ func (r MetricsReceiverDcgm) Pipelines(_ context.Context) ([]otel.ReceiverPipeli
 			Config: map[string]interface{}{
 				"collection_interval": r.CollectionIntervalString(),
 				"endpoint":            r.Endpoint,
-				"metrics": metricsConfig,
+				"metrics":             metricsConfig,
 			},
 		},
 		Processors: map[string][]otel.Component{"metrics": {
