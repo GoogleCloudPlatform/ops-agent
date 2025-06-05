@@ -67,7 +67,11 @@ fi
 sudo systemctl daemon-reload
 sudo systemctl enable rabbitmq-server
 sudo systemctl restart rabbitmq-server
-sudo PLUGINS_DIR="/usr/lib/rabbitmq/plugins:/usr/lib/rabbitmq/lib/rabbitmq_server-4.0.5-2/plugins" rabbitmq-plugins enable rabbitmq_management
+if [[ "${VERSION_ID}" == 25.04 ]]; then
+  sudo PLUGINS_DIR="/usr/lib/rabbitmq/plugins:/usr/lib/rabbitmq/lib/rabbitmq_server-4.0.5-2/plugins" rabbitmq-plugins enable rabbitmq_management
+else
+  sudo rabbitmq-plugins enable rabbitmq_management
+fi
 sudo systemctl restart rabbitmq-server
 
 sudo rabbitmqctl add_vhost dev
