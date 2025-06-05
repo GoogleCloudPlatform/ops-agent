@@ -32,10 +32,6 @@ jobs:
     - id: files
       uses: Ana06/get-changed-files@v2.2.0
 
-    - name: Get labels
-      id: get_labels
-      run: echo "labels=$(go run ./ci/get_labels -url=${{ github.event.pull_request.url }})" >> "$GITHUB_OUTPUT"
-
     - name: Install goimports
       run: go install golang.org/x/tools/cmd/goimports@latest
 
@@ -48,6 +44,10 @@ jobs:
         ref: ${{ github.base_ref }}
         path: base_checkout
       # `steps.get_labels.outputs.*` gives us the names of all labels for the PR
+
+    - name: Get labels
+      id: get_labels
+      run: echo "labels=$(go run ./ci/get_labels -url=${{ github.event.pull_request.url }})" >> "$GITHUB_OUTPUT"
 
     - name: Run tests
       run: go test ./ci -added="$ADDED_FILES" -modified="$MODIFIED_FILES" -labels="$PR_LABELS" -base-dir="base_checkout" -tags=ci
