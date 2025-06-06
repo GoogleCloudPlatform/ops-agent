@@ -4,3 +4,4 @@ Dockerfile.windows
 .dockerignore
 
 integration_test
+kokoro
