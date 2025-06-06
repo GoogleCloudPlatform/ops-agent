@@ -20,9 +20,17 @@ Set-Location "%KOKORO_ARTIFACTS_DIR%"\result
 $timestamp_server = 'http://timestamp.digicert.com'
 Write-Host "Using the timestamp server: '$timestamp_server'"
 
-$files_remaining = (Get-ChildItem | Measure-Object).Count
-Get-ChildItem . -Recurse -File| ForEach-Object {
-  do {
+$files_to_sign = @(
+'out/bin/fluent-bit.exe',
+'out/bin/fluent-bit.dll',
+'out/bin/google-cloud-metrics-agent.exe',
+'out/bin/google-cloud-ops-agent.exe',
+'out/bin/google-cloud-ops-agent-diagnostics.exe',
+'out/bin/google-cloud-ops-agent-wrapper.exe',
+'pkg/goo/maint.ps1'
+)
+
+$files_to_sign | ForEach-Object {
     $sign_command = "& ksigntool.exe sign GOOGLE_EXTERNAL /v /debug /t $timestamp_server $_ 2>&1"
     $verify_command = "& signtool.exe verify /pa /all $_ 2>&1"
 
@@ -34,13 +42,6 @@ Get-ChildItem . -Recurse -File| ForEach-Object {
     $out = Invoke-Expression $verify_command
     Write-Host -separator "`n" $out
     Write-Host "Exit code: $LastExitCode"
-  } until ($LastExitCode -eq 0)
-
-  $files_remaining--
-}
-
-if ($files_remaining -gt 0) {
-  throw 'Could not sign all files, $files_remaining remaining!'
 }
 
 exit $LastExitCode
