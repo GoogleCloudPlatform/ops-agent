@@ -493,9 +493,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  modifyscope/flink_3:
-    override_scope_name: agent.googleapis.com/flink
-    override_scope_version: "1.0"
   normalizesums/flink_0: {}
   resourcedetection/_global_0:
     detectors:
@@ -510,6 +507,10 @@ processors:
       - set(attributes["task_name"], resource.attributes["flink.task.name"])
       - set(attributes["subtask_index"], resource.attributes["flink.subtask.index"])
       - set(attributes["resource_type"], resource.attributes["flink.resource.type"])
+    - context: scope
+      statements:
+      - set(name, "agent.googleapis.com/flink")
+      - set(version, "1.0")
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
@@ -595,7 +596,6 @@ service:
       - normalizesums/flink_0
       - metricstransform/flink_1
       - transform/flink_2
-      - modifyscope/flink_3
       - resourcedetection/_global_0
       receivers:
       - flinkmetrics/flink

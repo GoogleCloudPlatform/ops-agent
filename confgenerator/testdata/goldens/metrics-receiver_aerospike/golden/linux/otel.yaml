@@ -440,9 +440,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  modifyscope/aerospike_3:
-    override_scope_name: agent.googleapis.com/aerospike
-    override_scope_version: "1.0"
   normalizesums/aerospike_0: {}
   resourcedetection/_global_0:
     detectors:
@@ -453,6 +450,10 @@ processors:
       statements:
       - set(attributes["node_name"], resource.attributes["aerospike.node.name"])
       - set(attributes["namespace_name"], resource.attributes["aerospike.namespace"])
+    - context: scope
+      statements:
+      - set(name, "agent.googleapis.com/aerospike")
+      - set(version, "1.0")
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
@@ -520,7 +521,6 @@ service:
       - normalizesums/aerospike_0
       - metricstransform/aerospike_1
       - transform/aerospike_2
-      - modifyscope/aerospike_3
       - resourcedetection/_global_0
       receivers:
       - aerospike/aerospike

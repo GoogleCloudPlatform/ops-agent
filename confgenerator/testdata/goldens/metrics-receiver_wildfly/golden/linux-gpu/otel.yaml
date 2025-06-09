@@ -469,9 +469,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: workload.googleapis.com/$${1}
-  modifyscope/wildfly_2:
-    override_scope_name: agent.googleapis.com/wildfly
-    override_scope_version: "1.0"
   normalizesums/wildfly_0: {}
   resourcedetection/_global_0:
     detectors:
@@ -488,6 +485,12 @@ processors:
     - context: metric
       statements:
       - extract_count_metric(true) where name == "grpc.client.attempt.duration"
+  transform/wildfly_2:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "agent.googleapis.com/wildfly")
+      - set(version, "1.0")
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
@@ -594,7 +597,7 @@ service:
       processors:
       - normalizesums/wildfly_0
       - metricstransform/wildfly_1
-      - modifyscope/wildfly_2
+      - transform/wildfly_2
       - resourcedetection/_global_0
       receivers:
       - jmx/wildfly
