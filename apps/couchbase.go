@@ -165,7 +165,7 @@ func (r MetricsReceiverCouchbase) Pipelines(_ context.Context) ([]otel.ReceiverP
 					r.transformMetrics(),
 					otel.SetScopeName("agent.googleapis.com/"+r.Type()),
 					otel.SetScopeVersion("1.0"),
-				)...
+				)...,
 			),
 		}},
 	}}, nil
