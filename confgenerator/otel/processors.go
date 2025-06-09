@@ -515,19 +515,6 @@ func CondenseResourceMetrics() Component {
 	}
 }
 
-// ModifyInstrumentationScope sets the instrumentation scope name and version
-// fields which will later be exported to Cloud Monitoring metric labels.
-// The name will always be prefixed with "agent.googleapis.com/".
-func ModifyInstrumentationScope(name string, version string) Component {
-	return Component{
-		Type: "modifyscope",
-		Config: map[string]interface{}{
-			"override_scope_name":    "agent.googleapis.com/" + name,
-			"override_scope_version": version,
-		},
-	}
-}
-
 // GroupByGMPAttrs moves the "namespace", "cluster", and "location"
 // metric attributes to resource attributes. The
 // googlemanagedprometheus exporter will use these resource attributes
