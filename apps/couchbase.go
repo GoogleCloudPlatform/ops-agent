@@ -160,8 +160,13 @@ func (r MetricsReceiverCouchbase) Pipelines(_ context.Context) ([]otel.ReceiverP
 				otel.AddPrefix("workload.googleapis.com"),
 			),
 			// Using the transform processor for metrics
-			otel.TransformationMetrics(r.transformMetrics()...),
-			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+			otel.TransformationMetrics(
+				append(
+					r.transformMetrics(),
+					otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+					otel.SetScopeVersion("1.0"),
+				)...
+			),
 		}},
 	}}, nil
 }
