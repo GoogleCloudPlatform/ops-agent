@@ -440,9 +440,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: workload.googleapis.com/$${1}
-  modifyscope/solr_2:
-    override_scope_name: agent.googleapis.com/solr
-    override_scope_version: "1.0"
   normalizesums/solr_0: {}
   resourcedetection/_global_0:
     detectors:
@@ -459,6 +456,12 @@ processors:
     - context: metric
       statements:
       - extract_count_metric(true) where name == "grpc.client.attempt.duration"
+  transform/solr_2:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "agent.googleapis.com/solr")
+      - set(version, "1.0")
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
@@ -552,7 +555,7 @@ service:
       processors:
       - normalizesums/solr_0
       - metricstransform/solr_1
-      - modifyscope/solr_2
+      - transform/solr_2
       - resourcedetection/_global_0
       receivers:
       - jmx/solr

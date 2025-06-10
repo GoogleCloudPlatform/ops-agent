@@ -469,13 +469,16 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  modifyscope/couchdb_2:
-    override_scope_name: agent.googleapis.com/couchdb
-    override_scope_version: "1.0"
   normalizesums/couchdb_0: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
+  transform/couchdb_2:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "agent.googleapis.com/couchdb")
+      - set(version, "1.0")
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
@@ -542,7 +545,7 @@ service:
       processors:
       - normalizesums/couchdb_0
       - metricstransform/couchdb_1
-      - modifyscope/couchdb_2
+      - transform/couchdb_2
       - resourcedetection/_global_0
       receivers:
       - couchdb/couchdb

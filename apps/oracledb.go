@@ -119,7 +119,10 @@ func (r MetricsReceiverOracleDB) Pipelines(_ context.Context) ([]otel.ReceiverPi
 					otel.RenameLabel("WAIT_CLASS", "wait_class"),
 				),
 			),
-			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+			otel.TransformationMetrics(
+				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+				otel.SetScopeVersion("1.0"),
+			),
 		}},
 	}}, nil
 }

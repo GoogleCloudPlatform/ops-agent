@@ -49,6 +49,8 @@ func (r MetricsReceiverIis) Pipelines(_ context.Context) ([]otel.ReceiverPipelin
 				otel.TransformationMetrics(
 					otel.FlattenResourceAttribute("iis.site", "site"),
 					otel.FlattenResourceAttribute("iis.application_pool", "app_pool"),
+					otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+					otel.SetScopeVersion("2.0"),
 				),
 				// Drop all resource keys; Must be done in a separate transform,
 				// otherwise the above flatten resource attribute queries will only
@@ -68,7 +70,6 @@ func (r MetricsReceiverIis) Pipelines(_ context.Context) ([]otel.ReceiverPipelin
 					otel.AddPrefix("workload.googleapis.com"),
 				),
 				otel.NormalizeSums(),
-				otel.ModifyInstrumentationScope(r.Type(), "2.0"),
 			}},
 		}}, nil
 	}
@@ -137,7 +138,10 @@ func (r MetricsReceiverIis) Pipelines(_ context.Context) ([]otel.ReceiverPipelin
 				"agent.googleapis.com/iis/request_count",
 			),
 			otel.NormalizeSums(),
-			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+			otel.TransformationMetrics(
+				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+				otel.SetScopeVersion("1.0"),
+			),
 		}},
 	}}, nil
 }
