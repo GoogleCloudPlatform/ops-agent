@@ -34,7 +34,7 @@ template config windows_build = build {
 }
 
 template config windows_sign = build {
-  build_file = 'unified_agents/kokoro/scripts/build/sign/sign.bat'
+  build_file = 'unified_agents/kokoro/scripts/build/signing/sign.bat'
 }
 
 template config windows_package = build {
