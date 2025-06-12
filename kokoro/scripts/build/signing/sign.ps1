@@ -1,8 +1,8 @@
-New-Item -Path $env:KOKORO_ARTIFACTS_DIR -Name 'result' -ItemType 'directory'
+New-Item -Path "$env:KOKORO_ARTIFACTS_DIR" -Name 'result' -ItemType 'directory'
 
-robocopy "%KOKORO_GFILE_DIR%"\result "%KOKORO_ARTIFACTS_DIR%"\result /E
+robocopy "$env:KOKORO_GFILE_DIR"\result "$env:KOKORO_ARTIFACTS_DIR"\result /E
 
-Set-Location "%KOKORO_ARTIFACTS_DIR%"\result
+Set-Location "$env:KOKORO_ARTIFACTS_DIR"\result
 
 $timestamp_server = 'http://timestamp.digicert.com'
 Write-Host "Using the timestamp server: '$timestamp_server'"
