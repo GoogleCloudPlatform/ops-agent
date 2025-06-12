@@ -1,3 +1,5 @@
+New-Item -Path $env:KOKORO_ARTIFACTS_DIR -Name 'result' -ItemType 'directory'
+
 robocopy "%KOKORO_GFILE_DIR%"\result "%KOKORO_ARTIFACTS_DIR%"\result /E
 
 Set-Location "%KOKORO_ARTIFACTS_DIR%"\result
