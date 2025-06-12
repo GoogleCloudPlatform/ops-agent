@@ -9,6 +9,8 @@ if [[ $ID == debian && "${VERSION_ID}" == 12 ]]; then
 else
     if [[ $ID == ubuntu && "${VERSION_ID}" == 24* ]]; then
         TOMCAT_VERSION=tomcat10
+    elif [[ $ID == ubuntu && "${VERSION_ID}" == 25* ]]; then
+        TOMCAT_VERSION=tomcat10
     else
         TOMCAT_VERSION=tomcat9
     fi
