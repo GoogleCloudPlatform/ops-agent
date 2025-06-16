@@ -12,15 +12,15 @@
   "license": "http://www.apache.org/licenses/LICENSE-2.0",
   "description": "The Google Cloud Ops Agent collects metrics and logs from the system.",
   "files": {
-    "out/bin/msvcp140.dll": "{{$INSTALL_DIR}}/bin/msvcp140.dll",
-    "out/bin/vccorlib140.dll": "{{$INSTALL_DIR}}/bin/vccorlib140.dll",
-    "out/bin/vcruntime140.dll": "{{$INSTALL_DIR}}/bin/vcruntime140.dll",
-    "out/bin/fluent-bit.exe": "{{$INSTALL_DIR}}/bin/fluent-bit.exe",
-    "out/bin/fluent-bit.dll": "{{$INSTALL_DIR}}/bin/fluent-bit.dll",
-    "out/bin/opentelemetry-java-contrib-jmx-metrics.jar": "{{$INSTALL_DIR}}/bin/opentelemetry-java-contrib-jmx-metrics.jar",
-    "out/bin/google-cloud-metrics-agent_{{$GOOS}}_{{$GOARCH}}.exe": "{{$INSTALL_DIR}}/bin/google-cloud-metrics-agent_{{$GOOS}}_{{$GOARCH}}.exe",
-    "out/bin/google-cloud-ops-agent.exe": "{{$INSTALL_DIR}}/bin/google-cloud-ops-agent.exe",
-    "out/bin/google-cloud-ops-agent-wrapper.exe": "{{$INSTALL_DIR}}/bin/google-cloud-ops-agent-wrapper.exe"
+    "{{$FROM_DIR}}/out/bin/msvcp140.dll": "{{$INSTALL_DIR}}/bin/msvcp140.dll",
+    "{{$FROM_DIR}}/out/bin/vccorlib140.dll": "{{$INSTALL_DIR}}/bin/vccorlib140.dll",
+    "{{$FROM_DIR}}/out/bin/vcruntime140.dll": "{{$INSTALL_DIR}}/bin/vcruntime140.dll",
+    "{{$FROM_DIR}}/out/bin/fluent-bit.exe": "{{$INSTALL_DIR}}/bin/fluent-bit.exe",
+    "{{$FROM_DIR}}/out/bin/fluent-bit.dll": "{{$INSTALL_DIR}}/bin/fluent-bit.dll",
+    "{{$FROM_DIR}}/out/bin/opentelemetry-java-contrib-jmx-metrics.jar": "{{$INSTALL_DIR}}/bin/opentelemetry-java-contrib-jmx-metrics.jar",
+    "{{$FROM_DIR}}/out/bin/google-cloud-metrics-agent_{{$GOOS}}_{{$GOARCH}}.exe": "{{$INSTALL_DIR}}/bin/google-cloud-metrics-agent_{{$GOOS}}_{{$GOARCH}}.exe",
+    "{{$FROM_DIR}}/out/bin/google-cloud-ops-agent.exe": "{{$INSTALL_DIR}}/bin/google-cloud-ops-agent.exe",
+    "{{$FROM_DIR}}/out/bin/google-cloud-ops-agent-wrapper.exe": "{{$INSTALL_DIR}}/bin/google-cloud-ops-agent-wrapper.exe"
   },
   "install": {
     "path": "pkg/goo/maint.ps1",

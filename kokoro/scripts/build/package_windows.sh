@@ -2,14 +2,23 @@
 
 go install -trimpath -ldflags="-s -w" github.com/google/googet/v2/goopack@latest
 
-releaseName=$(awk -F "=" '/PKG_VERSION/ {print $2}' "${KOKORO_ARTIFACTS_DIR}/github/unified_agents/VERSION" | tr -d '"')
+# cd to the root of the git repo containing this script.
+cd "$(readlink -f "$(dirname "$0")")"
+cd "$(git rev-parse --show-toplevel)"
+
+mkdir "${KOKORO_ARTIFACTS_DIR}/result"
+
+mv "${KOKORO_GFILE_DIR}\result" "${KOKORO_ARTIFACTS_DIR}\result"
+
+releaseName=$(awk -F "=" '/PKG_VERSION/ {print $2}' VERSION | tr -d '"')
 
 "$GOPATH"/bin/goopack -output_dir "${KOKORO_ARTIFACTS_DIR}/result" \
   -var:PKG_VERSION="$releaseName" \
   -var:ARCH=x86_64 \
   -var:GOOS=windows \
   -var:GOARCH=amd64 \
-  "${KOKORO_ARTIFACTS_DIR}/github/unified_agents/pkg/goo/google-cloud-ops-agent.goospec"
+  -var:FROM_DIR="${KOKORO_ARTIFACTS_DIR}/result/out" \
+  pkg/goo/google-cloud-ops-agent.goospec
 
 if [[ -n $_LOUHI_TAG_NAME ]]
 then
