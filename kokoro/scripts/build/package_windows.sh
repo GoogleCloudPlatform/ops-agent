@@ -9,7 +9,6 @@ releaseName=$(awk -F "=" '/PKG_VERSION/ {print $2}' "${KOKORO_ARTIFACTS_DIR}/git
   -var:ARCH=x86_64 \
   -var:GOOS=windows \
   -var:GOARCH=amd64 \
-  -var:FROM_DIR="$KOKORO_GFILE_DIR"
   "${KOKORO_ARTIFACTS_DIR}/github/unified_agents/pkg/goo/google-cloud-ops-agent.goospec"
 
 if [[ -n $_LOUHI_TAG_NAME ]]
