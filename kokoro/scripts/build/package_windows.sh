@@ -1,14 +1,16 @@
 go install -trimpath -ldflags="-s -w" github.com/google/googet/v2/goopack@latest
 
-releaseName=$(awk -F "=" '/PKG_VERSION/ {print $2}' /unified_agents/VERSION | tr -d '"')
+Set-Location "${KOKORO_ARTIFACTS_DIR}/github/unified_agents"
 
-"$GOPATH"/bin/goopack -output_dir "$KOKORO_ARTIFACTS_DIR/result" \
+releaseName=$(awk -F "=" '/PKG_VERSION/ {print $2}' ./VERSION | tr -d '"')
+
+"$GOPATH"/bin/goopack -output_dir "${KOKORO_ARTIFACTS_DIR}/result" \
   -var:PKG_VERSION="$releaseName" \
   -var:ARCH=x86_64 \
   -var:GOOS=windows \
   -var:GOARCH=amd64 \
   -var:FROM_DIR="$KOKORO_GFILE_DIR"
-  unified_agents/pkg/goo/google-cloud-ops-agent.goospec
+  "${KOKORO_ARTIFACTS_DIR}/github/unified_agents/pkg/goo/google-cloud-ops-agent.goospec"
 
 if [[ -n $_LOUHI_TAG_NAME ]]
 then
@@ -20,5 +22,5 @@ then
   target="${louhi_tag_components[3]}"
   arch="${louhi_tag_components[4]}"
   gcs_bucket="gs://${_STAGING_ARTIFACTS_PROJECT_ID}-ops-agent-releases/${ver}/${ref}/${target}/${arch}/"
-  gsutil cp "$KOKORO_ARTIFACTS_DIR"/result/*.goo  "${gcs_bucket}"
+  gsutil cp "${KOKORO_ARTIFACTS_DIR}"/result/*.goo  "${gcs_bucket}"
 fi
