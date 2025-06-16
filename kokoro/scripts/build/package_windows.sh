@@ -1,8 +1,8 @@
+#!/bin/bash
+
 go install -trimpath -ldflags="-s -w" github.com/google/googet/v2/goopack@latest
 
-Set-Location "${KOKORO_ARTIFACTS_DIR}/github/unified_agents"
-
-releaseName=$(awk -F "=" '/PKG_VERSION/ {print $2}' ./VERSION | tr -d '"')
+releaseName=$(awk -F "=" '/PKG_VERSION/ {print $2}' "${KOKORO_ARTIFACTS_DIR}/github/unified_agents/VERSION" | tr -d '"')
 
 "$GOPATH"/bin/goopack -output_dir "${KOKORO_ARTIFACTS_DIR}/result" \
   -var:PKG_VERSION="$releaseName" \
