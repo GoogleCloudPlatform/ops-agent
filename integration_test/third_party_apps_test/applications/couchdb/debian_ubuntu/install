@@ -3,8 +3,13 @@ set -e
 sudo apt-get update
 sudo apt install -y curl apt-transport-https gnupg
 
+DISTRO=$(lsb_release -cs)
+if [ "$DISTRO" = "plucky" ]; then
+  DISTRO="noble"
+fi
+
 curl https://couchdb.apache.org/repo/keys.asc | gpg --dearmor | sudo tee /usr/share/keyrings/couchdb-archive-keyring.gpg >/dev/null 2>&1
-echo "deb [signed-by=/usr/share/keyrings/couchdb-archive-keyring.gpg] https://apache.jfrog.io/artifactory/couchdb-deb/ $(lsb_release -cs) main" \
+echo "deb [signed-by=/usr/share/keyrings/couchdb-archive-keyring.gpg] https://apache.jfrog.io/artifactory/couchdb-deb/ ${DISTRO} main" \
   | sudo tee /etc/apt/sources.list.d/couchdb.list >/dev/null
 
 # https://github.com/apache/couchdb-pkg/blob/main/debian/README.Debian
