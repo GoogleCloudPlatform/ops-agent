@@ -62,6 +62,8 @@ import (
 
 	cloudlogging "cloud.google.com/go/logging"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
+	secretmanager "cloud.google.com/go/secretmanager/apiv1"
+	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
@@ -72,6 +74,8 @@ import (
 	"golang.org/x/exp/slices"
 	"google.golang.org/genproto/googleapis/api/distribution"
 	"google.golang.org/genproto/googleapis/api/metric"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	structpb "google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v2"
@@ -204,6 +208,26 @@ func writeToSystemLog(ctx context.Context, logger *log.Logger, vm *gce.VM, paylo
 // file from the remote VM
 func retrieveOtelConfig(ctx context.Context, logger *log.Logger, vm *gce.VM) (content string, err error) {
 	return gce.RetrieveContent(ctx, logger, vm, agents.GetOtelConfigPath(vm.ImageSpec))
+}
+
+// RunForEachLoggingSubagent runs a subtest for the logging subagent fluent-bit and otel.
+func RunForEachLoggingSubagent(t *testing.T, testBody func(t *testing.T, otel bool)) {
+	t.Helper()
+	t.Run("fluent-bit", func(t *testing.T) {
+		testBody(t, false)
+	})
+
+	t.Run("otel", func(t *testing.T) {
+		if gce.IsOpsAgentUAPPlugin() {
+			t.SkipNow()
+		}
+		testBody(t, true)
+	})
+}
+
+// setExperimentalFeatures sets the EXPERIMENTAL_FEATURES environment variable.
+func setExperimentalFeatures(ctx context.Context, logger *log.Logger, vm *gce.VM, feature string) error {
+	return gce.SetEnvironmentVariables(ctx, logger, vm, map[string]string{"EXPERIMENTAL_FEATURES": feature})
 }
 
 func TestParseMultilineFileJava(t *testing.T) {
@@ -1844,25 +1868,14 @@ func TestResourceNameLabel(t *testing.T) {
 
 func TestLogFilePathLabel(t *testing.T) {
 	t.Parallel()
-	if gce.IsOpsAgentUAPPlugin() {
-		t.SkipNow()
-	}
-	t.Run("fluent-bit", func(t *testing.T) {
-		testLogFilePathLabel(t, false)
-	})
-	t.Run("otel", func(t *testing.T) {
-		testLogFilePathLabel(t, true)
-	})
-}
-
-func testLogFilePathLabel(t *testing.T, otel bool) {
-	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachLoggingSubagent(t, func(t *testing.T, otel bool) {
 		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
+		gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+			t.Parallel()
+			ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+			file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
 
-		config := fmt.Sprintf(`logging:
+			config := fmt.Sprintf(`logging:
   receivers:
     f1:
       type: files
@@ -1880,34 +1893,34 @@ func testLogFilePathLabel(t *testing.T, otel bool) {
         processors: [json]
 `, file1, otel)
 
-		if otel {
-			// Turn on the otel feature gate.
-			if err := gce.SetEnvironmentVariables(ctx, logger, vm, map[string]string{"EXPERIMENTAL_FEATURES": "otel_logging"}); err != nil {
+			if otel {
+				if err := setExperimentalFeatures(ctx, logger, vm, "otel_logging"); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 				t.Fatal(err)
 			}
-		}
 
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
-			t.Fatal(err)
-		}
+			line := `{"default_present":"original"}` + "\n"
+			if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
+				t.Fatalf("error uploading log: %v", err)
+			}
 
-		line := `{"default_present":"original"}` + "\n"
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
-			t.Fatalf("error uploading log: %v", err)
-		}
+			// In Windows the generated log_file_path "C:\mylog_1" uses a backslash.
+			// When constructing the query in WaithForLog the backslashes are escaped so
+			// replacing with two backslahes correctly queries for "C:\mylog_1" label.
+			if gce.IsWindows(imageSpec) {
+				file1 = strings.Replace(file1, `\`, `\\`, 1)
+			}
 
-		// In Windows the generated log_file_path "C:\mylog_1" uses a backslash.
-		// When constructing the query in WaithForLog the backslashes are escaped so
-		// replacing with two backslahes correctly queries for "C:\mylog_1" label.
-		if gce.IsWindows(imageSpec) {
-			file1 = strings.Replace(file1, `\`, `\\`, 1)
-		}
-
-		// Expect to see log with label added.
-		check := fmt.Sprintf(`labels."agent.googleapis.com/log_file_path"="%s" AND jsonPayload.default_present="original"`, file1)
-		if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, check); err != nil {
-			t.Error(err)
-		}
+			// Expect to see log with label added.
+			check := fmt.Sprintf(`labels."agent.googleapis.com/log_file_path"="%s" AND jsonPayload.default_present="original"`, file1)
+			if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, check); err != nil {
+				t.Error(err)
+			}
+		})
 	})
 }
 
@@ -2492,27 +2505,16 @@ func TestWindowsEventLogWithNonDefaultTimeZone(t *testing.T) {
 
 func TestSystemdLog(t *testing.T) {
 	t.Parallel()
-	if gce.IsOpsAgentUAPPlugin() {
-		t.SkipNow()
-	}
-	t.Run("fluent-bit", func(t *testing.T) {
-		testSystemdLog(t, false)
-	})
-	t.Run("otel", func(t *testing.T) {
-		testSystemdLog(t, true)
-	})
-}
-
-func testSystemdLog(t *testing.T, otel bool) {
-	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachLoggingSubagent(t, func(t *testing.T, otel bool) {
 		t.Parallel()
-		if gce.IsWindows(imageSpec) {
-			t.SkipNow()
-		}
-		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+			t.Parallel()
+			if gce.IsWindows(imageSpec) {
+				t.SkipNow()
+			}
+			ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
-		config := fmt.Sprintf(`logging:
+			config := fmt.Sprintf(`logging:
   receivers:
     systemd_logs:
       type: systemd_journald
@@ -2523,44 +2525,44 @@ func testSystemdLog(t *testing.T, otel bool) {
         receivers: [systemd_logs]
 `, otel)
 
-		if otel {
-			// Turn on the otel feature gate.
-			if err := gce.SetEnvironmentVariables(ctx, logger, vm, map[string]string{"EXPERIMENTAL_FEATURES": "otel_logging"}); err != nil {
+			if otel {
+				if err := setExperimentalFeatures(ctx, logger, vm, "otel_logging"); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
 				t.Fatal(err)
 			}
-		}
 
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
-			t.Fatal(err)
-		}
+			if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_info_log_message' | systemd-cat --priority=info"); err != nil {
+				t.Fatalf("Error writing dummy Systemd log line: %v", err)
+			}
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_info_log_message' | systemd-cat --priority=info"); err != nil {
-			t.Fatalf("Error writing dummy Systemd log line: %v", err)
-		}
+			querySystemdInfoLog := fmt.Sprintf(`severity="INFO" AND jsonPayload.MESSAGE="my_systemd_info_log_message" AND jsonPayload.PRIORITY="6"`)
+			if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdInfoLog); err != nil {
+				t.Error(err)
+			}
 
-		querySystemdInfoLog := fmt.Sprintf(`severity="INFO" AND jsonPayload.MESSAGE="my_systemd_info_log_message" AND jsonPayload.PRIORITY="6"`)
-		if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdInfoLog); err != nil {
-			t.Error(err)
-		}
+			if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_error_log_message' | systemd-cat --priority=err"); err != nil {
+				t.Fatalf("Error writing dummy Systemd log line: %v", err)
+			}
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_error_log_message' | systemd-cat --priority=err"); err != nil {
-			t.Fatalf("Error writing dummy Systemd log line: %v", err)
-		}
+			querySystemdErrorLog := fmt.Sprintf(`severity="ERROR" AND jsonPayload.MESSAGE="my_systemd_error_log_message" AND jsonPayload.PRIORITY="3"`)
+			if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdErrorLog); err != nil {
+				t.Error(err)
+			}
 
-		querySystemdErrorLog := fmt.Sprintf(`severity="ERROR" AND jsonPayload.MESSAGE="my_systemd_error_log_message" AND jsonPayload.PRIORITY="3"`)
-		if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdErrorLog); err != nil {
-			t.Error(err)
-		}
+			// TODO: b/400435104 - Re-enable when the `googlecloudexporter` supports all LogSeverity levels.
+			// if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_notice_log_message' | systemd-cat --priority=notice"); err != nil {
+			// 	t.Fatalf("Error writing dummy Systemd log line: %v", err)
+			// }
 
-		// TODO: b/400435104 - Re-enable when the `googlecloudexporter` supports all LogSeverity levels.
-		// if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_notice_log_message' | systemd-cat --priority=notice"); err != nil {
-		// 	t.Fatalf("Error writing dummy Systemd log line: %v", err)
-		// }
-
-		// querySystemdNoticeLog := fmt.Sprintf(`severity="NOTICE" AND jsonPayload.MESSAGE="my_systemd_notice_log_message" AND jsonPayload.PRIORITY="5"`)
-		// if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdNoticeLog); err != nil {
-		// 	t.Error(err)
-		// }
+			// querySystemdNoticeLog := fmt.Sprintf(`severity="NOTICE" AND jsonPayload.MESSAGE="my_systemd_notice_log_message" AND jsonPayload.PRIORITY="5"`)
+			// if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdNoticeLog); err != nil {
+			// 	t.Error(err)
+			// }
+		})
 	})
 }
 
@@ -2752,6 +2754,144 @@ func TestDefaultMetricsWithProxy(t *testing.T) {
 	})
 }
 
+func hasSecretEntry(ctx context.Context, client *secretmanager.Client, name string) (bool, error) {
+	req := &secretmanagerpb.AccessSecretVersionRequest{
+		Name: name,
+	}
+	// Call the API.
+	_, err := client.AccessSecretVersion(ctx, req)
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return false, nil
+		}
+		return false, fmt.Errorf("failed to access secret version: %w", err)
+	}
+	return true, nil
+}
+
+func addSecretEntry(ctx context.Context, client *secretmanager.Client, projectID string, secretID string, secretValue string) (*secretmanagerpb.SecretVersion, error) {
+	// Build secret creation request.
+	req := &secretmanagerpb.CreateSecretRequest{
+		Parent:   fmt.Sprintf("projects/%s", projectID),
+		SecretId: secretID,
+		Secret: &secretmanagerpb.Secret{
+			Replication: &secretmanagerpb.Replication{
+				Replication: &secretmanagerpb.Replication_Automatic_{
+					Automatic: &secretmanagerpb.Replication_Automatic{},
+				},
+			},
+		},
+	}
+	_, err := client.CreateSecret(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create secret: %w", err)
+	}
+
+	// Build secret version creation request.
+	addVersionReq := &secretmanagerpb.AddSecretVersionRequest{
+		Parent: fmt.Sprintf("projects/%s/secrets/%s", projectID, secretID),
+		Payload: &secretmanagerpb.SecretPayload{
+			Data: []byte(secretValue),
+		},
+	}
+
+	result, err := client.AddSecretVersion(ctx, addVersionReq)
+	if err != nil {
+		return nil, fmt.Errorf("failed to add secret version: %w", err)
+	}
+	return result, nil
+}
+func TestGoogleSecretManagerProvider(t *testing.T) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+		// GoogleSecretManagerProvider requires the following scope to be set in order to access secret entries in the Google secret manager.
+		// See: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/confmap/provider/googlesecretmanagerprovider/README.md#prerequisites.
+		customScope := "https://www.googleapis.com/auth/cloud-platform"
+		ctx, dirLog, vm := agents.CommonSetupWithExtraCreateArguments(t, imageSpec, []string{"--scopes", customScope})
+		logger := dirLog.ToMainLog()
+		projectID := vm.Project
+		secretID := "ops-agent-integration-test-google-secret-manager-provider"
+		secretName := fmt.Sprintf("projects/%s/secrets/%s/versions/1", projectID, secretID)
+		secretValue := "localhost:20202"
+		client, err := secretmanager.NewClient(ctx)
+		if err != nil {
+			t.Fatalf("failed to create secretmanager client: %v", err)
+		}
+		defer client.Close()
+		hasEntry, err := hasSecretEntry(ctx, client, secretName)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !hasEntry {
+			if _, err := addSecretEntry(ctx, client, projectID, secretID, secretValue); err != nil {
+				t.Fatalf("failed to add secret entry: %v", err)
+			}
+		}
+
+		config := fmt.Sprintf(`metrics:
+  receivers:
+    prometheus:
+      type: prometheus
+      config:
+        scrape_configs:
+          - job_name: 'prometheus'
+            scrape_interval: 10s
+            static_configs:
+              - targets: ['${googlesecretmanager:%s}']
+            relabel_configs:
+              - source_labels: [__meta_gce_instance_id]
+                regex: '(.+)'
+                replacement: '${1}'
+                target_label: instance_id
+  service:
+    pipelines:
+      prometheus_pipeline:
+        receivers:
+          - prometheus
+`, secretName)
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
+
+		// Wait long enough for the data to percolate through the backends
+		// under normal circumstances. Based on some experiments, 2 minutes
+		// is normal; wait a bit longer to be on the safe side.
+		time.Sleep(3 * time.Minute)
+
+		existingMetric := "prometheus.googleapis.com/fluentbit_uptime/counter"
+		window := time.Minute
+		metric, err := gce.WaitForMetric(ctx, logger, vm, existingMetric, window, nil, true)
+		if err != nil {
+			t.Fatal(fmt.Errorf("failed to find metric %q in VM %q: %w", existingMetric, vm.Name, err))
+		}
+
+		var multiErr error
+		metricValueType := metric.ValueType.String()
+		metricKind := metric.MetricKind.String()
+		metricResource := metric.Resource.Type
+		metricLabels := metric.Metric.Labels
+
+		if metricValueType != "DOUBLE" {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected value type %q", existingMetric, metricValueType))
+		}
+		if metricKind != "CUMULATIVE" {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected kind %q", existingMetric, metricKind))
+		}
+		if metricResource != "prometheus_target" {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected resource type %q", existingMetric, metricResource))
+		}
+		if metricLabels["instance_name"] != vm.Name {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected instance_name label %q. But expected %q", existingMetric, metricLabels["instance_name"], vm.Name))
+		}
+		if metricLabels["instance_id"] != fmt.Sprintf("%d", vm.ID) {
+			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected instance_id label %q. But expected %q", existingMetric, metricLabels["instance_id"], fmt.Sprintf("%d", vm.ID)))
+		}
+		if multiErr != nil {
+			t.Error(multiErr)
+		}
+	})
+
+}
 func TestPrometheusMetrics(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
@@ -4684,7 +4824,10 @@ metrics:
 			t.Fatal(err)
 		}
 
-		if _, err := gce.WaitForTrace(ctx, logger, vm, time.Hour); err != nil {
+		options := gce.WaitForTraceOptions{
+			Window: time.Hour,
+		}
+		if _, err := gce.WaitForTrace(ctx, logger, vm, options); err != nil {
 			t.Error(err)
 		}
 	})

@@ -505,20 +505,29 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  modifyscope/iis_3:
-    override_scope_name: agent.googleapis.com/iis
-    override_scope_version: "1.0"
-  modifyscope/jvm_2:
-    override_scope_name: agent.googleapis.com/jvm
-    override_scope_version: "1.0"
-  modifyscope/mssql_1:
-    override_scope_name: agent.googleapis.com/mssql
-    override_scope_version: "1.0"
   normalizesums/iis_2: {}
   normalizesums/jvm_0: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
+  transform/iis_3:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "agent.googleapis.com/iis")
+      - set(version, "1.0")
+  transform/jvm_2:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "agent.googleapis.com/jvm")
+      - set(version, "1.0")
+  transform/mssql_1:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "agent.googleapis.com/mssql")
+      - set(version, "1.0")
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
@@ -630,7 +639,7 @@ service:
       - metricstransform/iis_0
       - casttosum/iis_1
       - normalizesums/iis_2
-      - modifyscope/iis_3
+      - transform/iis_3
       - filter/default__pipeline_iis_0
       - resourcedetection/_global_0
       receivers:
@@ -640,7 +649,7 @@ service:
       - googlecloud
       processors:
       - metricstransform/mssql_0
-      - modifyscope/mssql_1
+      - transform/mssql_1
       - filter/default__pipeline_mssql_0
       - resourcedetection/_global_0
       receivers:
@@ -660,7 +669,7 @@ service:
       processors:
       - normalizesums/jvm_0
       - metricstransform/jvm_1
-      - modifyscope/jvm_2
+      - transform/jvm_2
       - resourcedetection/_global_0
       receivers:
       - jmx/jvm
@@ -685,4 +694,12 @@ service:
       - prometheus/otel
   telemetry:
     metrics:
-      address: 0.0.0.0:20201
+      readers:
+      - pull:
+          exporter:
+            prometheus:
+              host: 0.0.0.0
+              port: 20201
+              without_scope_info: true
+              without_type_suffix: true
+              without_units: true

@@ -35,6 +35,8 @@ metrics:
       type: saphana
       username: SYSTEM
       password: G00g3l21
+      # To use the googlesecretmanager provider to replace plaintext passwords, refer to the example below.
+      # password: ${googlesecretmanager:projects/<project-id>/secrets/<secret-id>/versions/<version-id>}
       endpoint: localhost:30015
   service:
     pipelines:

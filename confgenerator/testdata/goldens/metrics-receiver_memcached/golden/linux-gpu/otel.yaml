@@ -475,13 +475,16 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  modifyscope/memcached_3:
-    override_scope_name: agent.googleapis.com/memcached
-    override_scope_version: "1.0"
   normalizesums/memcached_1: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
+  transform/memcached_3:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "agent.googleapis.com/memcached")
+      - set(version, "1.0")
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
@@ -577,7 +580,7 @@ service:
       - filter/memcached_0
       - normalizesums/memcached_1
       - metricstransform/memcached_2
-      - modifyscope/memcached_3
+      - transform/memcached_3
       - resourcedetection/_global_0
       receivers:
       - memcached/memcached
@@ -602,4 +605,12 @@ service:
       - prometheus/otel
   telemetry:
     metrics:
-      address: 0.0.0.0:20201
+      readers:
+      - pull:
+          exporter:
+            prometheus:
+              host: 0.0.0.0
+              port: 20201
+              without_scope_info: true
+              without_type_suffix: true
+              without_units: true

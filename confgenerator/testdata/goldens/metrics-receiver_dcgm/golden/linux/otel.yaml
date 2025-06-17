@@ -506,9 +506,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  modifyscope/dcgm_6:
-    override_scope_name: agent.googleapis.com/dcgm
-    override_scope_version: "1.0"
   resourcedetection/_global_0:
     detectors:
     - gcp
@@ -519,6 +516,10 @@ processors:
       - set(attributes["model"], resource.attributes["gpu.model"])
       - set(attributes["gpu_number"], resource.attributes["gpu.number"])
       - set(attributes["uuid"], resource.attributes["gpu.uuid"])
+    - context: scope
+      statements:
+      - set(name, "agent.googleapis.com/dcgm")
+      - set(version, "1.0")
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
@@ -618,7 +619,6 @@ service:
       - metricstransform/dcgm_3
       - metricstransform/dcgm_4
       - transform/dcgm_5
-      - modifyscope/dcgm_6
       - resourcedetection/_global_0
       receivers:
       - dcgm/dcgm
@@ -663,4 +663,12 @@ service:
       - prometheus/otel
   telemetry:
     metrics:
-      address: 0.0.0.0:20201
+      readers:
+      - pull:
+          exporter:
+            prometheus:
+              host: 0.0.0.0
+              port: 20201
+              without_scope_info: true
+              without_type_suffix: true
+              without_units: true

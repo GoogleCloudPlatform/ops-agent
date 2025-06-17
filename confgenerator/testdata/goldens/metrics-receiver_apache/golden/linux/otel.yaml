@@ -446,9 +446,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  modifyscope/apache_4:
-    override_scope_name: agent.googleapis.com/apache
-    override_scope_version: "1.0"
   normalizesums/apache_1: {}
   resourcedetection/_global_0:
     detectors:
@@ -458,6 +455,10 @@ processors:
     - context: datapoint
       statements:
       - set(attributes["server_name"], resource.attributes["apache.server.name"])
+    - context: scope
+      statements:
+      - set(name, "agent.googleapis.com/apache")
+      - set(version, "1.0")
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
@@ -522,7 +523,6 @@ service:
       - normalizesums/apache_1
       - metricstransform/apache_2
       - transform/apache_3
-      - modifyscope/apache_4
       - resourcedetection/_global_0
       receivers:
       - apache/apache
@@ -567,4 +567,12 @@ service:
       - prometheus/otel
   telemetry:
     metrics:
-      address: 0.0.0.0:20201
+      readers:
+      - pull:
+          exporter:
+            prometheus:
+              host: 0.0.0.0
+              port: 20201
+              without_scope_info: true
+              without_type_suffix: true
+              without_units: true

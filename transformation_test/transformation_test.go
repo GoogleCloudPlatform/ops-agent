@@ -33,6 +33,7 @@ import (
 	"time"
 
 	logpb "cloud.google.com/go/logging/apiv2/loggingpb"
+	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -294,7 +295,7 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 		if op, ok := p.LoggingProcessor.(confgenerator.OTelProcessor); ok {
 			processors, err := op.Processors(ctx)
 			if err != nil {
-				t.Fatal(err)
+				return "", fmt.Errorf("failed generating OTel processor: %#v, err: %v", p.LoggingProcessor, err)
 			}
 			components = append(components, processors...)
 		} else {
