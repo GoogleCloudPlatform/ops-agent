@@ -6,6 +6,12 @@ sudo apt install -y curl apt-transport-https gnupg
 DISTRO=$(lsb_release -cs)
 if [ "$DISTRO" = "plucky" ]; then
   DISTRO="noble"
+  if [[ "$(uname -m)" == aarch64 ]]; then
+    curl -LO http://launchpadlibrarian.net/742841128/libicu74_74.2-1ubuntu4_arm64.deb
+  else
+    curl -LO http://launchpadlibrarian.net/742841128/libicu74_74.2-1ubuntu4_amd64.deb
+  fi
+  sudo dpkg -i libicu74_74*.deb
 fi
 
 curl https://couchdb.apache.org/repo/keys.asc | gpg --dearmor | sudo tee /usr/share/keyrings/couchdb-archive-keyring.gpg >/dev/null 2>&1
