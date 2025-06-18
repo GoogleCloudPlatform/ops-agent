@@ -2,13 +2,16 @@
 
 go install -trimpath -ldflags="-s -w" github.com/google/googet/v2/goopack@latest
 
+# Avoids "fatal: detected dubious ownership in repository" errors on Kokoro containers.
+git config --global --add safe.directory "$(pwd)"
+
 # cd to the root of the git repo containing this script.
 cd "$(readlink -f "$(dirname "$0")")"
 cd "$(git rev-parse --show-toplevel)"
 
 mkdir "${KOKORO_ARTIFACTS_DIR}/result"
 
-mv "${KOKORO_GFILE_DIR}\result" "${KOKORO_ARTIFACTS_DIR}\result"
+mv "${KOKORO_GFILE_DIR}/result" "${KOKORO_ARTIFACTS_DIR}/result"
 
 releaseName=$(awk -F "=" '/PKG_VERSION/ {print $2}' VERSION | tr -d '"')
 
