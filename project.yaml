@@ -75,6 +75,8 @@ targets:
       deb
     architectures:
       x86_64:
+        soak_distro:
+          ubuntu-os-cloud:ubuntu-2204-lts
         test_distros:
           representative:
           - ubuntu-os-cloud:ubuntu-2204-lts
