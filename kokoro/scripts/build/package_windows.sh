@@ -5,6 +5,7 @@ cd "$(readlink -f "$(dirname "$0")")"
 cd "$(git rev-parse --show-toplevel)"
 
 # Avoids "fatal: detected dubious ownership in repository" errors on Kokoro containers.
+echo "$(pwd)"
 git config --global --add safe.directory "$(pwd)"
 
 go install -trimpath -ldflags="-s -w" github.com/google/googet/v2/goopack@latest
