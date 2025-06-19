@@ -1,13 +1,13 @@
 #!/bin/bash
 
-go install -trimpath -ldflags="-s -w" github.com/google/googet/v2/goopack@latest
-
 # cd to the root of the git repo containing this script.
 cd "$(readlink -f "$(dirname "$0")")"
 cd "$(git rev-parse --show-toplevel)"
 
 # Avoids "fatal: detected dubious ownership in repository" errors on Kokoro containers.
 git config --global --add safe.directory "$(pwd)"
+
+go install -trimpath -ldflags="-s -w" github.com/google/googet/v2/goopack@latest
 
 mkdir "${KOKORO_ARTIFACTS_DIR}/result"
 
