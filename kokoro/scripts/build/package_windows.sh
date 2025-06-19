@@ -1,15 +1,5 @@
 #!/bin/bash
 
-echo "1st location $(pwd)"
-# cd to the root of the git repo containing this script.
-cd "$(readlink -f "$(dirname "$0")")"
-cd "$(git rev-parse --show-toplevel)"
-
-# Avoids "fatal: detected dubious ownership in repository" errors on Kokoro containers.
-echo "2nd location $(pwd)"
-
-cd ../../..
-echo "3nd location $(pwd)"
 git config --global --add safe.directory "$(pwd)"
 
 go install -trimpath -ldflags="-s -w" github.com/google/googet/v2/goopack@latest
@@ -17,6 +7,8 @@ go install -trimpath -ldflags="-s -w" github.com/google/googet/v2/goopack@latest
 mkdir "${KOKORO_ARTIFACTS_DIR}/result"
 
 mv "${KOKORO_GFILE_DIR}/result" "${KOKORO_ARTIFACTS_DIR}/result"
+
+tree "${KOKORO_ARTIFACTS_DIR}/result"
 
 releaseName=$(awk -F "=" '/PKG_VERSION/ {print $2}' VERSION | tr -d '"')
 
