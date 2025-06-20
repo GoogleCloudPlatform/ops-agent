@@ -8,13 +8,13 @@ mkdir "${KOKORO_ARTIFACTS_DIR}/result"
 
 mv "${KOKORO_GFILE_DIR}/result" "${KOKORO_ARTIFACTS_DIR}/result"
 
-echo $(pwd)
+cd git/unified_agents
 
 echo "kokoro dir"
 ls "${KOKORO_ARTIFACTS_DIR}/result"
 
-echo "current dir"
-ls
+echo "kokoro dir 2"
+ls -la "${KOKORO_ARTIFACTS_DIR}/result/result"
 
 releaseName=$(awk -F "=" '/PKG_VERSION/ {print $2}' ./VERSION | tr -d '"')
 
