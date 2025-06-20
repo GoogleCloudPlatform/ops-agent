@@ -8,9 +8,15 @@ mkdir "${KOKORO_ARTIFACTS_DIR}/result"
 
 mv "${KOKORO_GFILE_DIR}/result" "${KOKORO_ARTIFACTS_DIR}/result"
 
-tree "${KOKORO_ARTIFACTS_DIR}/result"
+echo $(pwd)
 
-releaseName=$(awk -F "=" '/PKG_VERSION/ {print $2}' VERSION | tr -d '"')
+echo "kokoro dir"
+ls "${KOKORO_ARTIFACTS_DIR}/result"
+
+echo "current dir"
+ls
+
+releaseName=$(awk -F "=" '/PKG_VERSION/ {print $2}' ./VERSION | tr -d '"')
 
 "$GOPATH"/bin/goopack -output_dir "${KOKORO_ARTIFACTS_DIR}/result" \
   -var:PKG_VERSION="$releaseName" \
