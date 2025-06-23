@@ -30,7 +30,6 @@ if (Test-Path -Path $gitOnBorgLocation) {
 }
 else {
   Set-Location "$env:KOKORO_ARTIFACTS_DIR/github/unified_agents"
-
 }
 
 # Record OPS_AGENT_REPO_HASH so that we can later run tests from the
