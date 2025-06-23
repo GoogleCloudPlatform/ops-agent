@@ -30,6 +30,7 @@ if (Test-Path -Path $gitOnBorgLocation) {
 }
 else {
   Set-Location "$env:KOKORO_ARTIFACTS_DIR/github/unified_agents"
+
 }
 
 # Record OPS_AGENT_REPO_HASH so that we can later run tests from the
@@ -83,6 +84,7 @@ Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/*.goo" -Destination "$env:KOKORO_
 Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/*.pdb" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
 Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/*.dll" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
 # Copy Ops Agent UAP Plugin tarball to the result directory.
+(Get-FileHash -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/google-cloud-ops-agent-plugin*.tar.gz" -Algorithm SHA256).Hash > "$env:KOKORO_ARTIFACTS_DIR/result/google-cloud-ops-agent-plugin-sha256.txt"
 Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/google-cloud-ops-agent-plugin*.tar.gz" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
 
 # If Kokoro is being triggered by Louhi, then Louhi needs to be able to
@@ -99,4 +101,5 @@ if ($env:_LOUHI_TAG_NAME -ne $null) {
   $gcs_bucket="gs://${env:_STAGING_ARTIFACTS_PROJECT_ID}-ops-agent-releases/${ver}/${ref}/${target}/${arch}/"
   gsutil cp "$env:KOKORO_ARTIFACTS_DIR/result/*.goo"  "${gcs_bucket}"
   gsutil cp "$env:KOKORO_ARTIFACTS_DIR/result/google-cloud-ops-agent-plugin*.tar.gz"  "${gcs_bucket}"
+  gsutil cp "$env:KOKORO_ARTIFACTS_DIR/result/google-cloud-ops-agent-plugin-sha256.txt"  "${gcs_bucket}"
 }
