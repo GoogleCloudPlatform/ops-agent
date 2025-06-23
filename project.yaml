@@ -70,29 +70,13 @@ targets:
         test_distros:
           representative:
           - rocky-linux-cloud:rocky-linux-8-optimized-gcp-arm64
-  focal:
-    package_extension:
-      deb
-    architectures:
-      x86_64:
-        soak_distro:
-          ubuntu-os-cloud:ubuntu-2004-lts
-        test_distros:
-          representative:
-          - ubuntu-os-cloud:ubuntu-2004-lts
-          exhaustive:
-          - ubuntu-os-cloud:ubuntu-minimal-2004-lts
-      aarch64:
-        test_distros:
-          representative:
-          - ubuntu-os-cloud:ubuntu-2004-lts-arm64
-          exhaustive:
-          - ubuntu-os-cloud:ubuntu-minimal-2004-lts-arm64
   jammy:
     package_extension:
       deb
     architectures:
       x86_64:
+        soak_distro:
+          ubuntu-os-cloud:ubuntu-2204-lts
         test_distros:
           representative:
           - ubuntu-os-cloud:ubuntu-2204-lts
