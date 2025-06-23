@@ -12,7 +12,7 @@ echo "kokoro dir"
 ls "${KOKORO_ARTIFACTS_DIR}/result"
 
 echo "kokoro dir 2"
-ls -la "${KOKORO_ARTIFACTS_DIR}/result/result"
+ls -la "${KOKORO_ARTIFACTS_DIR}/result"
 
 releaseName=$(awk -F "=" '/PKG_VERSION/ {print $2}' ./VERSION | tr -d '"')
 
