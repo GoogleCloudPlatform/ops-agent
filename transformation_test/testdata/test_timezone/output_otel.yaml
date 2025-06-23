@@ -30,8 +30,4 @@
     otelcol.component.kind: processor
     otelcol.pipeline.id: logs/input
     otelcol.signal: logs
-    resource:
-      service.instance.id: ad1c5dfa-09f2-47dc-b464-a332310aff9f
-      service.name: otelopscol
-      service.version: ""
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M") != nil)

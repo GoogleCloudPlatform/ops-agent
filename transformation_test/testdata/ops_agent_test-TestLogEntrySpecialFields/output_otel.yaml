@@ -7,10 +7,6 @@
     otelcol.component.kind: exporter
     otelcol.signal: logs
     rejected_items: 1.0
-    resource:
-      service.instance.id: f109f31b-1157-431b-9a05-aad02399d051
-      service.name: otelopscol
-      service.version: ""
     stacktrace: |-
       go.opentelemetry.io/collector/exporter/exporterhelper/internal.(*BaseExporter).Send
         go.opentelemetry.io/collector/exporter@v0.128.0/exporterhelper/internal/base_exporter.go:117
@@ -45,10 +41,6 @@
     otelcol.component.id: filelog/input
     otelcol.component.kind: receiver
     otelcol.signal: logs
-    resource:
-      service.instance.id: f109f31b-1157-431b-9a05-aad02399d051
-      service.name: otelopscol
-      service.version: ""
     stacktrace: |-
       github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry.(*logsConsumer).ConsumeLogs
         github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.128.0/consumerretry/logs.go:39
@@ -63,10 +55,6 @@
     otelcol.component.id: filelog/input
     otelcol.component.kind: receiver
     otelcol.signal: logs
-    resource:
-      service.instance.id: f109f31b-1157-431b-9a05-aad02399d051
-      service.name: otelopscol
-      service.version: ""
     stacktrace: |-
       github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.(*receiver).consumeEntries
         github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.128.0/adapter/receiver.go:61
