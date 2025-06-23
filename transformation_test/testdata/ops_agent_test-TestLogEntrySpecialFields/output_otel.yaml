@@ -1,5 +1,5 @@
 - collector_errors:
-  - caller: internal/base_exporter.go:116
+  - caller: internal/base_exporter.go:117
     error: "could not process attribute gcp.source_location: json: cannot unmarshal string into Go struct field LogEntrySourceLocation.line of type int64"
     level: error
     msg: Exporting failed. Rejecting data. Try enabling sending_queue to survive temporary failures.
