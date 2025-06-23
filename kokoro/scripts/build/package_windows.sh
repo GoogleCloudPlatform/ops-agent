@@ -4,9 +4,7 @@ git config --global --add safe.directory "$(pwd)"
 
 go install -trimpath -ldflags="-s -w" github.com/google/googet/v2/goopack@latest
 
-mkdir "${KOKORO_ARTIFACTS_DIR}/result"
-
-mv "${KOKORO_GFILE_DIR}/result" "${KOKORO_ARTIFACTS_DIR}/result"
+mv "${KOKORO_GFILE_DIR}/result" "${KOKORO_ARTIFACTS_DIR}"
 
 cd git/unified_agents
 
@@ -23,7 +21,7 @@ releaseName=$(awk -F "=" '/PKG_VERSION/ {print $2}' ./VERSION | tr -d '"')
   -var:ARCH=x86_64 \
   -var:GOOS=windows \
   -var:GOARCH=amd64 \
-  -var:FROM_DIR="${KOKORO_ARTIFACTS_DIR}/result/out" \
+  -var:FROM_DIR="../../result/out" \
   pkg/goo/google-cloud-ops-agent.goospec
 
 if [[ -n $_LOUHI_TAG_NAME ]]
