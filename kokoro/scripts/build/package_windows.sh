@@ -21,7 +21,7 @@ releaseName=$(awk -F "=" '/PKG_VERSION/ {print $2}' ./VERSION | tr -d '"')
   -var:ARCH=x86_64 \
   -var:GOOS=windows \
   -var:GOARCH=amd64 \
-  -var:FROM_DIR="../../result/out" \
+  -var:FROM_DIR="../../result" \
   pkg/goo/google-cloud-ops-agent.goospec
 
 if [[ -n $_LOUHI_TAG_NAME ]]
