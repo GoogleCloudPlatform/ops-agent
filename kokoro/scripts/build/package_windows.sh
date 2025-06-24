@@ -17,6 +17,9 @@ ls -la "../../result"
 echo "kokoro dir /out"
 ls -la "../../result/out"
 
+echo "kokoro dir /out/bin"
+ls -la "../../result/out"
+
 echo "kokoro dir /pkg"
 ls -la "../../result/pkg"
 
@@ -30,15 +33,15 @@ releaseName=$(awk -F "=" '/PKG_VERSION/ {print $2}' ./VERSION | tr -d '"')
   -var:FROM_DIR="../../result" \
   "../../result/pkg/goo/google-cloud-ops-agent.goospec"
 
-if [[ -n $_LOUHI_TAG_NAME ]]
-then
-  # Example value: louhi/2.46.0/abcdef/windows/x86_64/start
-  IFS="/"
-  read -ra louhi_tag_components <<< "$_LOUHI_TAG_NAME"
-  ver="${louhi_tag_components[1]}"
-  ref="${louhi_tag_components[2]}"
-  target="${louhi_tag_components[3]}"
-  arch="${louhi_tag_components[4]}"
-  gcs_bucket="gs://${_STAGING_ARTIFACTS_PROJECT_ID}-ops-agent-releases/${ver}/${ref}/${target}/${arch}/"
-  gsutil cp "${KOKORO_ARTIFACTS_DIR}"/result/*.goo  "${gcs_bucket}"
-fi
+#if [[ -n $_LOUHI_TAG_NAME ]]
+#then
+#  # Example value: louhi/2.46.0/abcdef/windows/x86_64/start
+#  IFS="/"
+#  read -ra louhi_tag_components <<< "$_LOUHI_TAG_NAME"
+#  ver="${louhi_tag_components[1]}"
+#  ref="${louhi_tag_components[2]}"
+#  target="${louhi_tag_components[3]}"
+#  arch="${louhi_tag_components[4]}"
+#  gcs_bucket="gs://${_STAGING_ARTIFACTS_PROJECT_ID}-ops-agent-releases/${ver}/${ref}/${target}/${arch}/"
+#  gsutil cp "${KOKORO_ARTIFACTS_DIR}"/result/*.goo  "${gcs_bucket}"
+#fi
