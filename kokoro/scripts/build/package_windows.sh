@@ -14,6 +14,12 @@ ls "${KOKORO_ARTIFACTS_DIR}/result"
 echo "kokoro dir 2"
 ls -la "../../result"
 
+echo "kokoro dir /out"
+ls -la "../../result/out"
+
+echo "kokoro dir /pkg"
+ls -la "../../result/pkg"
+
 releaseName=$(awk -F "=" '/PKG_VERSION/ {print $2}' ./VERSION | tr -d '"')
 
 "$GOPATH"/bin/goopack -output_dir "${KOKORO_ARTIFACTS_DIR}/result" \
@@ -22,7 +28,7 @@ releaseName=$(awk -F "=" '/PKG_VERSION/ {print $2}' ./VERSION | tr -d '"')
   -var:GOOS=windows \
   -var:GOARCH=amd64 \
   -var:FROM_DIR="../../result" \
-  pkg/goo/google-cloud-ops-agent.goospec
+  "../../result/pkg/goo/google-cloud-ops-agent.goospec"
 
 if [[ -n $_LOUHI_TAG_NAME ]]
 then
