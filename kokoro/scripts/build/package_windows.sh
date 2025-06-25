@@ -18,7 +18,7 @@ echo "kokoro dir /out"
 ls -la "../../result/out"
 
 echo "kokoro dir /out/bin"
-ls -la "../../result/out"
+ls -la "../../result/out/bin"
 
 echo "kokoro dir /pkg"
 ls -la "../../result/pkg"
