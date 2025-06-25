@@ -33,17 +33,17 @@
   },
   "sources": [{
       "include": [
-        "out/bin/msvcp140.dll",
-        "out/bin/vccorlib140.dll",
-        "out/bin/vcruntime140.dll",
-        "out/bin/fluent-bit.exe",
-        "out/bin/fluent-bit.dll",
-        "out/bin/google-cloud-metrics-agent_{{$GOOS}}_{{$GOARCH}}.exe",
-        "out/bin/opentelemetry-java-contrib-jmx-metrics.jar",
-        "out/bin/google-cloud-ops-agent.exe",
-        "out/bin/google-cloud-ops-agent-wrapper.exe",
-        "confgenerator/default-config.yaml",
-        "pkg/goo/maint.ps1"
+        "{{$FROM_DIR}}/out/bin/msvcp140.dll",
+        "{{$FROM_DIR}}/out/bin/vccorlib140.dll",
+        "{{$FROM_DIR}}/out/bin/vcruntime140.dll",
+        "{{$FROM_DIR}}/out/bin/fluent-bit.exe",
+        "{{$FROM_DIR}}/out/bin/fluent-bit.dll",
+        "{{$FROM_DIR}}/out/bin/google-cloud-metrics-agent_{{$GOOS}}_{{$GOARCH}}.exe",
+        "{{$FROM_DIR}}/out/bin/opentelemetry-java-contrib-jmx-metrics.jar",
+        "{{$FROM_DIR}}/out/bin/google-cloud-ops-agent.exe",
+        "{{$FROM_DIR}}/out/bin/google-cloud-ops-agent-wrapper.exe",
+        "{{$FROM_DIR}}/confgenerator/default-config.yaml",
+        "{{$FROM_DIR}}/pkg/goo/maint.ps1"
       ]
   }]
 }

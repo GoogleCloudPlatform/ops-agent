@@ -8,19 +8,19 @@ mv "${KOKORO_GFILE_DIR}/result" "${KOKORO_ARTIFACTS_DIR}"
 
 cd git/unified_agents
 
-echo "kokoro dir"
+echo "kokoro dir KOKORO_ARTIFACTS_DIR/result"
 ls "${KOKORO_ARTIFACTS_DIR}/result"
 
-echo "kokoro dir 2"
+echo "ls ../../result"
 ls -la "../../result"
 
-echo "kokoro dir /out"
+echo "ls ../../result/out"
 ls -la "../../result/out"
 
-echo "kokoro dir /out/bin"
+echo "ls ../../result/out/bin"
 ls -la "../../result/out/bin"
 
-echo "kokoro dir /pkg"
+echo "ls ../../result/pkg"
 ls -la "../../result/pkg"
 
 releaseName=$(awk -F "=" '/PKG_VERSION/ {print $2}' ./VERSION | tr -d '"')
