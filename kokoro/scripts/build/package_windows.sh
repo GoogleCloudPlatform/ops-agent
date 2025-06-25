@@ -1,27 +1,22 @@
 #!/bin/bash
 
+echo "working dir $(pwd)"
 git config --global --add safe.directory "$(pwd)"
 
 go install -trimpath -ldflags="-s -w" github.com/google/googet/v2/goopack@latest
 
-mv "${KOKORO_GFILE_DIR}/result" "${KOKORO_ARTIFACTS_DIR}"
-
 cd git/unified_agents
 
-echo "kokoro dir KOKORO_ARTIFACTS_DIR/result"
-ls "${KOKORO_ARTIFACTS_DIR}/result"
+mkdir out
 
-echo "ls ../../result"
-ls -la "../../result"
+ls -la
 
-echo "ls ../../result/out"
-ls -la "../../result/out"
+mv "${KOKORO_GFILE_DIR}/result/out/*" ./out
 
-echo "ls ../../result/out/bin"
-ls -la "../../result/out/bin"
+# replace pkg/goo/maint.ps1 with the signed version
+mv "${KOKORO_GFILE_DIR}/result/pkg/goo/maint.ps1" ./out
 
-echo "ls ../../result/pkg"
-ls -la "../../result/pkg"
+mkdir "${KOKORO_ARTIFACTS_DIR}/result"
 
 releaseName=$(awk -F "=" '/PKG_VERSION/ {print $2}' ./VERSION | tr -d '"')
 
@@ -30,7 +25,6 @@ releaseName=$(awk -F "=" '/PKG_VERSION/ {print $2}' ./VERSION | tr -d '"')
   -var:ARCH=x86_64 \
   -var:GOOS=windows \
   -var:GOARCH=amd64 \
-  -var:FROM_DIR="../../result" \
   pkg/goo/google-cloud-ops-agent.goospec
 
 #if [[ -n $_LOUHI_TAG_NAME ]]
