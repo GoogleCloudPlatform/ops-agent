@@ -62,8 +62,6 @@ platforms_to_skip:
   - suse-cloud:sles-12
   - suse-cloud:sles-15
   - suse-cloud:sles-15-arm64
-  - ubuntu-os-cloud:ubuntu-2004-lts
-  - ubuntu-os-cloud:ubuntu-2004-lts-arm64
   - ubuntu-os-cloud:ubuntu-2204-lts
   - ubuntu-os-cloud:ubuntu-2204-lts-arm64
   - ubuntu-os-cloud:ubuntu-2404-lts-amd64
