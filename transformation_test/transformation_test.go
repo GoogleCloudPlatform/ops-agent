@@ -512,6 +512,7 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 			if ok {
 				log["stacktrace"] = sanitizeStacktrace(t, stacktrace)
 			}
+			delete(log, "resource")
 		}
 	})
 
