@@ -58,45 +58,48 @@ const (
 	flbTag               = "transformation_test"
 )
 
-var testResource = resourcedetector.GCEResource{
-	Project:       "test-project",
-	Zone:          "test-zone",
-	Network:       "test-network",
-	Subnetwork:    "test-subnetwork",
-	PublicIP:      "test-public-ip",
-	PrivateIP:     "test-private-ip",
-	InstanceID:    "test-instance-id",
-	InstanceName:  "test-instance-name",
-	Tags:          "test-tag",
-	MachineType:   "test-machine-type",
-	Metadata:      map[string]string{"test-key": "test-value", "test-escape": "$foo", "test-escape-parentheses": "${foo:bar}"},
-	Label:         map[string]string{"test-label-key": "test-label-value"},
-	InterfaceIPv4: map[string]string{"test-interface": "test-interface-ipv4"},
-	ManagedInstanceGroup: gcp.ManagedInstanceGroup{
-		Name:     "test-mig",
-		Type:     gcp.Zone,
-		Location: "test-zone",
-	},
-}
-
-var windowsTestPlatform = platform.Platform{
-	Type:               platform.Windows,
-	WindowsBuildNumber: "1", // Is2012 == false, Is2016 == false
-	WinlogV1Channels: []string{"Application",
-		"Security",
-		"Setup",
-		"System"},
-	HostInfo: &host.InfoStat{
-		OS:              "windows",
-		Platform:        "win_platform",
-		PlatformVersion: "win_platform_version",
-	},
-	TestGCEResourceOverride: testResource,
-}
-
 var (
 	flbPath        = flag.String("flb", os.Getenv("FLB"), "path to fluent-bit")
 	otelopscolPath = flag.String("otelopscol", os.Getenv("OTELOPSCOL"), "path to otelopscol")
+)
+
+var (
+	emptyLoggingReceiver = loggingReceiver{}
+	testResource         = resourcedetector.GCEResource{
+		Project:       "test-project",
+		Zone:          "test-zone",
+		Network:       "test-network",
+		Subnetwork:    "test-subnetwork",
+		PublicIP:      "test-public-ip",
+		PrivateIP:     "test-private-ip",
+		InstanceID:    "test-instance-id",
+		InstanceName:  "test-instance-name",
+		Tags:          "test-tag",
+		MachineType:   "test-machine-type",
+		Metadata:      map[string]string{"test-key": "test-value", "test-escape": "$foo", "test-escape-parentheses": "${foo:bar}"},
+		Label:         map[string]string{"test-label-key": "test-label-value"},
+		InterfaceIPv4: map[string]string{"test-interface": "test-interface-ipv4"},
+		ManagedInstanceGroup: gcp.ManagedInstanceGroup{
+			Name:     "test-mig",
+			Type:     gcp.Zone,
+			Location: "test-zone",
+		},
+	}
+
+	windowsTestPlatform = platform.Platform{
+		Type:               platform.Windows,
+		WindowsBuildNumber: "1", // Is2012 == false, Is2016 == false
+		WinlogV1Channels: []string{"Application",
+			"Security",
+			"Setup",
+			"System"},
+		HostInfo: &host.InfoStat{
+			OS:              "windows",
+			Platform:        "win_platform",
+			PlatformVersion: "win_platform_version",
+		},
+		TestGCEResourceOverride: testResource,
+	}
 )
 
 type transformationTest struct {
@@ -293,7 +296,6 @@ func generateFluentBitConfigs(ctx context.Context, name string, transformationTe
 
 	components = append(components, input)
 
-	emptyLoggingReceiver := loggingReceiver{}
 	if transformationTest.Receiver != emptyLoggingReceiver {
 		parseJsonProcessor := confgenerator.LoggingProcessorParseJson{}
 		components = append(components, parseJsonProcessor.Components(ctx, flbTag, strconv.Itoa(0))...)
@@ -358,7 +360,6 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 		t.Fatal(err)
 	}
 	var components []otel.Component
-	emptyLoggingReceiver := loggingReceiver{}
 	if transformationConfig.Receiver != emptyLoggingReceiver {
 		parseJsonProcessor := confgenerator.LoggingProcessorParseJson{}
 		processors, err := parseJsonProcessor.Processors(ctx)
