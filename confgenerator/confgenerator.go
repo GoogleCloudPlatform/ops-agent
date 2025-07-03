@@ -126,12 +126,10 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 		ReceiverPipelineName: "ops_agent",
 	}
 
-	if !uc.Logging.Service.OTelLogging {
-		receiverPipelines["fluentbit"] = agentSelfMetrics.FluentBitPipeline()
-		pipelines["fluentbit"] = otel.Pipeline{
-			Type:                 "metrics",
-			ReceiverPipelineName: "fluentbit",
-		}
+	receiverPipelines["fluentbit"] = agentSelfMetrics.FluentBitPipeline()
+	pipelines["fluentbit"] = otel.Pipeline{
+		Type:                 "metrics",
+		ReceiverPipelineName: "fluentbit",
 	}
 
 	exp_otlp_exporter := experimentsFromContext(ctx)["otlp_exporter"]
