@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -62,9 +63,21 @@ var (
 	otelopscolPath = flag.String("otelopscol", os.Getenv("OTELOPSCOL"), "path to otelopscol")
 )
 
-type transformationTest []loggingProcessor
+type transformationTest struct {
+	Receiver   *loggingReceiver   `yaml:"receiver,omitempty"`
+	Processors []loggingProcessor `yaml:"processors,omitempty"`
+}
+
+type loggingReceiver struct {
+	confgenerator.LoggingReceiver
+}
+
 type loggingProcessor struct {
 	confgenerator.LoggingProcessor
+}
+
+func (l *loggingReceiver) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
+	return confgenerator.LoggingReceiverTypes.UnmarshalComponentYaml(ctx, &l.LoggingReceiver, unmarshal)
 }
 
 func (l *loggingProcessor) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
@@ -201,17 +214,43 @@ func checkOutput(t *testing.T, name string, got []map[string]any) {
 		t.Fatalf("got(-)/want(+):\n%s", diff)
 	}
 }
+
+func validateTestReceiverConfig(receiver *loggingReceiver) error {
+	if receiver != nil && receiver.LoggingReceiver != nil {
+		logReceiverFiles, ok := receiver.LoggingReceiver.(*confgenerator.LoggingReceiverFiles)
+		if ok {
+			if len(logReceiverFiles.IncludePaths) == 0 {
+				return errors.New("IncludePaths cannot be empty")
+			}
+		} else {
+			return errors.New("not a LoggingReceiverFiles")
+		}
+	}
+	return nil
+}
+
 func readTransformationConfig(dir string) (transformationTest, error) {
 	var transformationTestData []byte
 	var config transformationTest
 
-	transformationTestData, err := os.ReadFile(filepath.Join("testdata", dir, "config.yaml"))
+	inputLogPath, err := filepath.Abs(filepath.Join("testdata", dir, transformationInput))
+	if err != nil {
+		return config, err
+	}
+
+	transformationTestData, err = os.ReadFile(filepath.Join("testdata", dir, "config.yaml"))
 	if err != nil {
 		return config, err
 	}
 	transformationTestData = bytes.ReplaceAll(transformationTestData, []byte("\r\n"), []byte("\n"))
+	transformationTestData = bytes.ReplaceAll(transformationTestData, []byte("__INPUT_LOG__"), []byte(inputLogPath))
 
 	err = yaml.UnmarshalWithOptions(transformationTestData, &config, yaml.DisallowUnknownField())
+	if err != nil {
+		return config, err
+	}
+
+	err = validateTestReceiverConfig(config.Receiver)
 	if err != nil {
 		return config, err
 	}
@@ -225,21 +264,26 @@ func generateFluentBitConfigs(ctx context.Context, name string, transformationTe
 		return nil, err
 	}
 	var components []fluentbit.Component
-	input := fluentbit.Component{
-		Kind: "INPUT",
-		Config: map[string]string{
-			"Name":           "tail",
-			"Tag":            flbTag,
-			"Read_from_Head": "True",
-			"Exit_On_Eof":    "True",
-			"Path":           abs,
-			"Key":            "message",
-		},
+
+	// Only one (or empty) `Receiver` can be set in a transformation test.
+	if transformationTest.Receiver != nil {
+		components = append(components, transformationTest.Receiver.Components(ctx, flbTag)...)
+	} else {
+		input := fluentbit.Component{
+			Kind: "INPUT",
+			Config: map[string]string{
+				"Name":           "tail",
+				"Tag":            flbTag,
+				"Read_from_Head": "True",
+				"Exit_On_Eof":    "True",
+				"Path":           abs,
+				"Key":            "message",
+			},
+		}
+		components = append(components, input)
 	}
 
-	components = append(components, input)
-
-	for i, t := range transformationTest {
+	for i, t := range transformationTest.Processors {
 		components = append(components, t.Components(ctx, flbTag, strconv.Itoa(i))...)
 	}
 
@@ -291,7 +335,7 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 		t.Fatal(err)
 	}
 	var components []otel.Component
-	for _, p := range transformationConfig {
+	for _, p := range transformationConfig.Processors {
 		if op, ok := p.LoggingProcessor.(confgenerator.OTelProcessor); ok {
 			processors, err := op.Processors(ctx)
 			if err != nil {
@@ -303,13 +347,27 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 		}
 	}
 
-	rp, err := confgenerator.LoggingReceiverFilesMixin{
-		IncludePaths: []string{
-			abs,
-		},
-	}.Pipelines(ctx)
-	if err != nil {
-		return "", err
+	// Only one (or empty) `Receiver` can be set in a transformation test.
+	var rPipelines []otel.ReceiverPipeline
+	if transformationConfig.Receiver != nil {
+		if op, ok := transformationConfig.Receiver.LoggingReceiver.(confgenerator.OTelReceiver); ok {
+			rPipelines, err = op.Pipelines(ctx)
+			if err != nil {
+				return "", fmt.Errorf("failed generating OTel pipelines: %#v, err: %v", transformationConfig.Receiver.LoggingReceiver, err)
+			}
+		} else {
+			return "", fmt.Errorf("not an OTel receiver: %#v", transformationConfig.Receiver)
+		}
+
+	} else {
+		rPipelines, err = confgenerator.LoggingReceiverFilesMixin{
+			IncludePaths: []string{
+				abs,
+			},
+		}.Pipelines(ctx)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	return otel.ModularConfig{
@@ -317,7 +375,7 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 		JSONLogs:       true,
 		LogLevel:       "debug",
 		ReceiverPipelines: map[string]otel.ReceiverPipeline{
-			"input": rp[0],
+			"input": rPipelines[0],
 		},
 		Pipelines: map[string]otel.Pipeline{
 			"input": {

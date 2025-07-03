@@ -1,4 +1,5 @@
 # Resultant log should be not be excluded since it hasn't been parsed yet
+processors:
 - type: exclude_logs
   match_any:
   - jsonPayload.field =~ "value"
