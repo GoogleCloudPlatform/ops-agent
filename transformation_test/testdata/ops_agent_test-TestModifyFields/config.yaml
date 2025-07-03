@@ -1,3 +1,4 @@
+processors:
 - type: parse_json
 - type: modify_fields
   fields:

@@ -1,3 +1,4 @@
+processors:
 - type: parse_json
   field: message
   time_key: time

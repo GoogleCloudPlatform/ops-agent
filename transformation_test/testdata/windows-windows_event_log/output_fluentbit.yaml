@@ -1,0 +1,63 @@
+- entries:
+  - jsonPayload:
+      EventType: Information
+      channel: System
+      computer: windows-test
+      event_data:
+        binary: "1234568910"
+        data:
+        - param1: Windows Modules Installer
+        - param2: running
+      event_id:
+        id: 7036.0
+        qualifiers: 16384.0
+      execution:
+        process_id: 628.0
+        thread_id: 4148.0
+      keywords:
+      - Classic
+      message: The Windows Modules Installer service entered the running state.
+      opcode: "0"
+      provider:
+        event_source: Service Control Manager
+        guid: "{555908d1-a6d7-4695-8e1e-26931d2012f4}"
+        name: Service Control Manager
+      record_id: 8329.0
+      system_time: 2025-07-02T20:38:45.026077400Z
+      task: "0"
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      EventType: Information
+      channel: System
+      computer: windows-test
+      event_data:
+        binary: "1234568910"
+        data:
+        - param1: Software Protection
+        - param2: stopped
+      event_id:
+        id: 7036.0
+        qualifiers: 16384.0
+      execution:
+        process_id: 628.0
+        thread_id: 4148.0
+      keywords:
+      - Classic
+      message: The Software Protection service entered the stopped state.
+      opcode: "0"
+      provider:
+        event_source: Service Control Manager
+        guid: "{555908d1-a6d7-4695-8e1e-26931d2012f4}"
+        name: Service Control Manager
+      record_id: 8330.0
+      system_time: 2025-07-02T20:39:32.339006100Z
+      task: "0"
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance

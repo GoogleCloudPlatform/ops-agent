@@ -1,3 +1,4 @@
+processors:
 - type: modify_fields
   fields:
     jsonPayload.hello:
