@@ -1,0 +1,2 @@
+receiver:
+  type: windows_event_log
