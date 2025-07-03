@@ -33,6 +33,7 @@ import (
 	"time"
 
 	logpb "cloud.google.com/go/logging/apiv2/loggingpb"
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
 	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
@@ -57,12 +58,60 @@ const (
 	flbTag               = "transformation_test"
 )
 
+var testResource = resourcedetector.GCEResource{
+	Project:       "test-project",
+	Zone:          "test-zone",
+	Network:       "test-network",
+	Subnetwork:    "test-subnetwork",
+	PublicIP:      "test-public-ip",
+	PrivateIP:     "test-private-ip",
+	InstanceID:    "test-instance-id",
+	InstanceName:  "test-instance-name",
+	Tags:          "test-tag",
+	MachineType:   "test-machine-type",
+	Metadata:      map[string]string{"test-key": "test-value", "test-escape": "$foo", "test-escape-parentheses": "${foo:bar}"},
+	Label:         map[string]string{"test-label-key": "test-label-value"},
+	InterfaceIPv4: map[string]string{"test-interface": "test-interface-ipv4"},
+	ManagedInstanceGroup: gcp.ManagedInstanceGroup{
+		Name:     "test-mig",
+		Type:     gcp.Zone,
+		Location: "test-zone",
+	},
+}
+
+var windowsTestPlatform = platform.Platform{
+	Type:               platform.Windows,
+	WindowsBuildNumber: "1", // Is2012 == false, Is2016 == false
+	WinlogV1Channels: []string{"Application",
+		"Security",
+		"Setup",
+		"System"},
+	HostInfo: &host.InfoStat{
+		OS:              "windows",
+		Platform:        "win_platform",
+		PlatformVersion: "win_platform_version",
+	},
+	TestGCEResourceOverride: testResource,
+}
+
 var (
 	flbPath        = flag.String("flb", os.Getenv("FLB"), "path to fluent-bit")
 	otelopscolPath = flag.String("otelopscol", os.Getenv("OTELOPSCOL"), "path to otelopscol")
 )
 
-type transformationTest []loggingProcessor
+type transformationTest struct {
+	Receiver   loggingReceiver    `yaml:"receiver,omitempty"`
+	Processors []loggingProcessor `yaml:"processors,omitempty"`
+}
+
+type loggingReceiver struct {
+	confgenerator.LoggingReceiver
+}
+
+func (l *loggingReceiver) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
+	return confgenerator.LoggingReceiverTypes.UnmarshalComponentYaml(ctx, &l.LoggingReceiver, unmarshal)
+}
+
 type loggingProcessor struct {
 	confgenerator.LoggingProcessor
 }
@@ -202,6 +251,11 @@ func checkOutput(t *testing.T, name string, got []map[string]any) {
 	}
 }
 func readTransformationConfig(dir string) (transformationTest, error) {
+	ctx := context.Background()
+	if strings.Contains(dir, "windows") {
+		ctx = windowsTestPlatform.TestContext(context.Background())
+	}
+
 	var transformationTestData []byte
 	var config transformationTest
 
@@ -211,7 +265,7 @@ func readTransformationConfig(dir string) (transformationTest, error) {
 	}
 	transformationTestData = bytes.ReplaceAll(transformationTestData, []byte("\r\n"), []byte("\n"))
 
-	err = yaml.UnmarshalWithOptions(transformationTestData, &config, yaml.DisallowUnknownField())
+	err = yaml.UnmarshalContext(ctx, transformationTestData, &config, yaml.DisallowUnknownField())
 	if err != nil {
 		return config, err
 	}
@@ -239,8 +293,21 @@ func generateFluentBitConfigs(ctx context.Context, name string, transformationTe
 
 	components = append(components, input)
 
-	for i, t := range transformationTest {
-		components = append(components, t.Components(ctx, flbTag, strconv.Itoa(i))...)
+	emptyLoggingReceiver := loggingReceiver{}
+	if transformationTest.Receiver != emptyLoggingReceiver {
+		parseJsonProcessor := confgenerator.LoggingProcessorParseJson{}
+		components = append(components, parseJsonProcessor.Components(ctx, flbTag, strconv.Itoa(0))...)
+
+		receiverComponents := transformationTest.Receiver.LoggingReceiver.Components(ctx, flbTag)
+		for _, rComponent := range receiverComponents {
+			if rComponent.Kind != "INPUT" {
+				components = append(components, rComponent)
+			}
+		}
+	}
+
+	for i, p := range transformationTest.Processors {
+		components = append(components, p.Components(ctx, flbTag, strconv.Itoa(i+1))...)
 	}
 
 	output := fluentbit.Component{
@@ -291,7 +358,29 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 		t.Fatal(err)
 	}
 	var components []otel.Component
-	for _, p := range transformationConfig {
+	emptyLoggingReceiver := loggingReceiver{}
+	if transformationConfig.Receiver != emptyLoggingReceiver {
+		parseJsonProcessor := confgenerator.LoggingProcessorParseJson{}
+		processors, err := parseJsonProcessor.Processors(ctx)
+		if err != nil {
+			return "", fmt.Errorf("failed generating OTel processor: %#v, err: %v", parseJsonProcessor, err)
+		}
+		components = append(components, processors...)
+
+		if op, ok := transformationConfig.Receiver.LoggingReceiver.(confgenerator.OTelReceiver); ok {
+			rPipelines, err := op.Pipelines(ctx)
+			if err != nil {
+				return "", fmt.Errorf("failed generating OTel pipelines: %#v, err: %v", transformationConfig.Receiver.LoggingReceiver, err)
+			}
+			for _, p := range rPipelines {
+				components = append(components, p.Processors["logs"]...)
+			}
+		} else {
+			return "", fmt.Errorf("not an OTel receiver: %#v", transformationConfig.Receiver.LoggingReceiver)
+		}
+	}
+
+	for _, p := range transformationConfig.Processors {
 		if op, ok := p.LoggingProcessor.(confgenerator.OTelProcessor); ok {
 			processors, err := op.Processors(ctx)
 			if err != nil {
