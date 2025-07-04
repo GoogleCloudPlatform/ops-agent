@@ -38,5 +38,5 @@ template config windows_sign = build {
 }
 
 template config windows_package = build {
-  build_file = 'unified_agents/kokoro/scripts/build/package_windows.sh'
+  build_file = 'unified_agents/kokoro/scripts/build/packaging/package_windows.sh'
 }
