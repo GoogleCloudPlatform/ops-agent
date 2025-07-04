@@ -52,7 +52,7 @@ ls -la
 mv "$KOKORO_GFILE_DIR"/result/out/* ./out
 
 # replace pkg/goo/maint.ps1 with the signed version
-mv "${KOKORO_GFILE_DIR}/result/pkg/goo/maint.ps1" ./out
+mv "${KOKORO_GFILE_DIR}/result/pkg/goo/maint.ps1" ./pkg/goo/maint.ps1
 
 mkdir "${KOKORO_ARTIFACTS_DIR}/result"
 
