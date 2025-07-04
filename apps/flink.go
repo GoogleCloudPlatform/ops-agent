@@ -61,8 +61,9 @@ func (r MetricsReceiverFlink) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 				otel.FlattenResourceAttribute("flink.task.name", "task_name"),
 				otel.FlattenResourceAttribute("flink.subtask.index", "subtask_index"),
 				otel.FlattenResourceAttribute("flink.resource.type", "resource_type"),
+				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+				otel.SetScopeVersion("1.0"),
 			),
-			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
 	}}, nil
 }

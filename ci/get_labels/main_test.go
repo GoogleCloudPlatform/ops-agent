@@ -20,12 +20,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/GoogleCloudPlatform/ops-agent/ci/get_labels"
+	gl "github.com/GoogleCloudPlatform/ops-agent/ci/get_labels"
 )
 
 type Test struct {
 	Name   string
-	Labels main.RespLabelCollection
+	Labels gl.RespLabelCollection
 }
 
 func TestLabels(t *testing.T) {
@@ -35,7 +35,7 @@ func TestLabels(t *testing.T) {
 		},
 		{
 			Name: "release & foo",
-			Labels: main.RespLabelCollection{
+			Labels: gl.RespLabelCollection{
 				{
 					Name: "release",
 				},
@@ -53,11 +53,11 @@ func TestLabels(t *testing.T) {
 	}
 }
 
-func testGetLabels(t *testing.T, expected main.RespLabelCollection) {
+func testGetLabels(t *testing.T, expected gl.RespLabelCollection) {
 	t.Parallel()
 	server := getHttpClient(t, expected)
 	defer server.Close()
-	labelCollector := main.LabelCollector{
+	labelCollector := gl.LabelCollector{
 		Client: server.Client(),
 	}
 
@@ -69,7 +69,7 @@ func testGetLabels(t *testing.T, expected main.RespLabelCollection) {
 	assertRespLabelCollectionEqual(t, expected, actual)
 }
 
-func assertRespLabelCollectionEqual(t *testing.T, expected main.RespLabelCollection, actual main.RespLabelCollection) {
+func assertRespLabelCollectionEqual(t *testing.T, expected gl.RespLabelCollection, actual gl.RespLabelCollection) {
 	if len(actual) != len(expected) {
 		t.Fatalf("Actual did not meet expected.\nactual: \"%s\"\nexpected: \"%s\"", actual, expected)
 	}
@@ -85,7 +85,7 @@ func assertRespLabelCollectionEqual(t *testing.T, expected main.RespLabelCollect
 	}
 }
 
-func getHttpClient(t *testing.T, respLabels main.RespLabelCollection) *httptest.Server {
+func getHttpClient(t *testing.T, respLabels gl.RespLabelCollection) *httptest.Server {
 	t.Helper()
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		bytes, err := json.Marshal(respLabels)

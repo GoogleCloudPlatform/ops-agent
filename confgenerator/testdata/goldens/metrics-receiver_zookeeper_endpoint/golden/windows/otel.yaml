@@ -505,20 +505,23 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: workload.googleapis.com/$${1}
-  modifyscope/iis_3:
-    override_scope_name: agent.googleapis.com/iis
-    override_scope_version: "1.0"
-  modifyscope/mssql_1:
-    override_scope_name: agent.googleapis.com/mssql
-    override_scope_version: "1.0"
-  modifyscope/zookeeper_2:
-    override_scope_name: agent.googleapis.com/zookeeper
-    override_scope_version: "1.0"
   normalizesums/iis_2: {}
   normalizesums/zookeeper_0: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
+  transform/iis_3:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "agent.googleapis.com/iis")
+      - set(version, "1.0")
+  transform/mssql_1:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "agent.googleapis.com/mssql")
+      - set(version, "1.0")
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
@@ -531,6 +534,12 @@ processors:
     - context: metric
       statements:
       - extract_count_metric(true) where name == "grpc.client.attempt.duration"
+  transform/zookeeper_2:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "agent.googleapis.com/zookeeper")
+      - set(version, "1.0")
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
@@ -628,7 +637,7 @@ service:
       - metricstransform/iis_0
       - casttosum/iis_1
       - normalizesums/iis_2
-      - modifyscope/iis_3
+      - transform/iis_3
       - filter/default__pipeline_iis_0
       - resourcedetection/_global_0
       receivers:
@@ -638,7 +647,7 @@ service:
       - googlecloud
       processors:
       - metricstransform/mssql_0
-      - modifyscope/mssql_1
+      - transform/mssql_1
       - filter/default__pipeline_mssql_0
       - resourcedetection/_global_0
       receivers:
@@ -677,7 +686,7 @@ service:
       processors:
       - normalizesums/zookeeper_0
       - metricstransform/zookeeper_1
-      - modifyscope/zookeeper_2
+      - transform/zookeeper_2
       - resourcedetection/_global_0
       receivers:
       - zookeeper/zookeeper

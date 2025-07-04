@@ -493,22 +493,26 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  modifyscope/iis_3:
-    override_scope_name: agent.googleapis.com/iis
-    override_scope_version: "1.0"
-  modifyscope/mssql_3:
-    override_scope_name: agent.googleapis.com/mssql
-    override_scope_version: "2.0"
   normalizesums/iis_2: {}
   normalizesums/mssql_2: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
+  transform/iis_3:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "agent.googleapis.com/iis")
+      - set(version, "1.0")
   transform/mssql_1:
     metric_statements:
     - context: datapoint
       statements:
       - set(attributes["database"], resource.attributes["sqlserver.database.name"])
+    - context: scope
+      statements:
+      - set(name, "agent.googleapis.com/mssql")
+      - set(version, "2.0")
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
@@ -603,7 +607,7 @@ service:
       - metricstransform/iis_0
       - casttosum/iis_1
       - normalizesums/iis_2
-      - modifyscope/iis_3
+      - transform/iis_3
       - filter/default__pipeline_iis_0
       - resourcedetection/_global_0
       receivers:
@@ -615,7 +619,6 @@ service:
       - metricstransform/mssql_0
       - transform/mssql_1
       - normalizesums/mssql_2
-      - modifyscope/mssql_3
       - filter/default__pipeline_mssql_0
       - resourcedetection/_global_0
       receivers:
@@ -636,7 +639,6 @@ service:
       - metricstransform/mssql_0
       - transform/mssql_1
       - normalizesums/mssql_2
-      - modifyscope/mssql_3
       - resourcedetection/_global_0
       receivers:
       - sqlserver/mssql

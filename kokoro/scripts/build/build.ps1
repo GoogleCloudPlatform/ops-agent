@@ -77,6 +77,7 @@ if (($env:KOKORO_ROOT_JOB_TYPE -eq 'CONTINUOUS_INTEGRATION') -or ($env:KOKORO_JO
 # The .goo file is the installable package that is distributed to customers.
 New-Item -Path $env:KOKORO_ARTIFACTS_DIR -Name 'result' -ItemType 'directory'
 # Copy Ops Agent UAP Plugin tarball to the result directory.
+(Get-FileHash -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/google-cloud-ops-agent-plugin*.tar.gz" -Algorithm SHA256).Hash | Out-File -FilePath "$env:KOKORO_ARTIFACTS_DIR/result/google-cloud-ops-agent-plugin-sha256.txt" -Encoding ascii
 Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/google-cloud-ops-agent-plugin*.tar.gz" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
 
 Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
@@ -101,4 +102,5 @@ if ($env:_LOUHI_TAG_NAME -ne $null) {
   $gcs_bucket="gs://${env:_STAGING_ARTIFACTS_PROJECT_ID}-ops-agent-releases/${ver}/${ref}/${target}/${arch}/"
   gsutil cp "$env:KOKORO_ARTIFACTS_DIR/result/*.goo"  "${gcs_bucket}"
   gsutil cp "$env:KOKORO_ARTIFACTS_DIR/result/google-cloud-ops-agent-plugin*.tar.gz"  "${gcs_bucket}"
+  gsutil cp "$env:KOKORO_ARTIFACTS_DIR/result/google-cloud-ops-agent-plugin-sha256.txt"  "${gcs_bucket}"
 }

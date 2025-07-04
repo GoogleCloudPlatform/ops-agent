@@ -88,8 +88,9 @@ func (r MetricsReceiverDcgm) Pipelines(_ context.Context) ([]otel.ReceiverPipeli
 					otel.FlattenResourceAttribute("gpu.model", "model"),
 					otel.FlattenResourceAttribute("gpu.number", "gpu_number"),
 					otel.FlattenResourceAttribute("gpu.uuid", "uuid"),
+					otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+					otel.SetScopeVersion("2.0"),
 				),
-				otel.ModifyInstrumentationScope(r.Type(), "2.0"),
 			}},
 		}}, nil
 	}
@@ -133,7 +134,7 @@ func (r MetricsReceiverDcgm) Pipelines(_ context.Context) ([]otel.ReceiverPipeli
 			Config: map[string]interface{}{
 				"collection_interval": r.CollectionIntervalString(),
 				"endpoint":            r.Endpoint,
-				"metrics": metricsConfig,
+				"metrics":             metricsConfig,
 			},
 		},
 		Processors: map[string][]otel.Component{"metrics": {
@@ -199,8 +200,9 @@ func (r MetricsReceiverDcgm) Pipelines(_ context.Context) ([]otel.ReceiverPipeli
 				otel.FlattenResourceAttribute("gpu.model", "model"),
 				otel.FlattenResourceAttribute("gpu.number", "gpu_number"),
 				otel.FlattenResourceAttribute("gpu.uuid", "uuid"),
+				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+				otel.SetScopeVersion("1.0"),
 			),
-			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
 	}}, nil
 }
