@@ -8,14 +8,27 @@ $timestamp_server = 'http://timestamp.digicert.com'
 Write-Host "Using the timestamp server: '$timestamp_server'"
 
 $files_to_sign = @(
-'out/bin/fluent-bit.exe',
-'out/bin/fluent-bit.dll',
-'out/bin/google-cloud-metrics-agent.exe',
-'out/bin/google-cloud-ops-agent.exe',
-'out/bin/google-cloud-ops-agent-diagnostics.exe',
-'out/bin/google-cloud-ops-agent-wrapper.exe',
-'pkg/goo/maint.ps1'
+    'out/bin/fluent-bit.exe',
+    'out/bin/fluent-bit.dll',
+    'out/bin/google-cloud-ops-agent.exe',
+    'out/bin/google-cloud-ops-agent-diagnostics.exe',
+    'out/bin/google-cloud-ops-agent-wrapper.exe',
+    'pkg/goo/maint.ps1'
 )
+
+$amd64_path = 'out/bin/google-cloud-metrics-agent_windows_amd64.exe'
+$x86_path = 'out/bin/google-cloud-metrics-agent_windows_386.exe'
+
+# Check which file exists and add it to the list.
+if (Test-Path $amd64_path) {
+    $files_to_sign += $amd64_path
+}
+elseif (Test-Path $x86_path) {
+    $files_to_sign += $x86_path
+}
+else {
+    Throw "ERROR: Could not find the Google Cloud Metrics Agent executable. Checked for '$amd64_path' and '$x86_path'."
+}
 
 $files_to_sign | ForEach-Object {
     $sign_command = "& ksigntool.exe sign GOOGLE_EXTERNAL /v /debug /t $timestamp_server $_ 2>&1"
