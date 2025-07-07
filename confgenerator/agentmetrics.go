@@ -31,7 +31,6 @@ type AgentSelfMetrics struct {
 	LoggingVersionLabel string
 	FluentBitPort       int
 	OtelPort            int
-	OtelLoggingEnabled  bool
 	OtelRuntimeDir      string
 }
 
@@ -57,9 +56,6 @@ var grpcToHTTPStatus = map[string]string{
 
 func (r AgentSelfMetrics) PrometheusMetricsPipeline() otel.ReceiverPipeline {
 	return otel.ReceiverPipeline{
-		ExporterTypes: map[string]otel.ExporterType{
-			"metrics": otel.System,
-		},
 		Receiver: otel.Component{
 			Type: "prometheus",
 			Config: map[string]interface{}{
@@ -86,8 +82,18 @@ func (r AgentSelfMetrics) PrometheusMetricsPipeline() otel.ReceiverPipeline {
 				},
 			},
 		},
+		ExporterTypes: map[string]otel.ExporterType{
+			"metrics": otel.System,
+		},
 		Processors: map[string][]otel.Component{
-			"metrics": {},
+			"metrics": {
+				otel.TransformationMetrics(
+					otel.DeleteMetricAttribute("service.name"),
+					otel.DeleteMetricAttribute("service.instance.id"),
+					otel.DeleteMetricAttribute("server.port"),
+					otel.DeleteMetricAttribute("url.scheme"),
+				),
+			},
 		},
 	}
 }
