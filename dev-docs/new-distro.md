@@ -11,7 +11,7 @@ values for these variables are: `hirsute` for `$DISTRO_SHORT` and
 `ubuntu-os-cloud:ubuntu-2104` for `$DISTRO_FAMILY`.
 
 NOTE: Some Ubuntu releases are LTS and some are not. For LTS releases, make
-sure the distro family ends in `-lts`. For example, `ubuntu-os-cloud:ubuntu-2004-lts`.
+sure the distro family ends in `-lts`. For example, `ubuntu-os-cloud:ubuntu-2204-lts`.
 
 For a list of existing distro families, consult
 [image_lists.gcl](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/kokoro/config/test/image_lists.gcl)

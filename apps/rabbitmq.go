@@ -161,8 +161,9 @@ func (r MetricsReceiverRabbitmq) Pipelines(_ context.Context) ([]otel.ReceiverPi
 				otel.FlattenResourceAttribute("rabbitmq.queue.name", "queue_name"),
 				otel.FlattenResourceAttribute("rabbitmq.node.name", "node_name"),
 				otel.FlattenResourceAttribute("rabbitmq.vhost.name", "vhost_name"),
+				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+				otel.SetScopeVersion("1.0"),
 			),
-			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
 	}}, nil
 }

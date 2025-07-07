@@ -38,10 +38,9 @@ import (
 	"sort"
 	"time"
 
-	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
-
 	monitoring "cloud.google.com/go/monitoring/apiv3"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/metadata"
 	"go.uber.org/multierr"
 	"google.golang.org/api/iterator"
 	"google.golang.org/genproto/googleapis/api/metric"
@@ -181,7 +180,7 @@ func toExpectedMetric(metric *metric.MetricDescriptor) *metadata.ExpectedMetric 
 	labels := make([]*metadata.MetricLabel, len(metric.Labels))
 	for _, l := range metric.Labels {
 		labels = append(labels, &metadata.MetricLabel{
-			Name: l.Key,
+			Name:       l.Key,
 			ValueRegex: ".*",
 		})
 	}

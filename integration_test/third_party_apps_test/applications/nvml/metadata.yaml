@@ -26,20 +26,20 @@ supported_app_version: ["515.65.01"]
 gpu_platforms:
   - model: a100
     platforms:
-      - ubuntu-os-cloud:ubuntu-2004-lts
+      - ubuntu-os-cloud:ubuntu-2204-lts
   - model: v100
     platforms:
-      - ubuntu-os-cloud:ubuntu-2004-lts
+      - ubuntu-os-cloud:ubuntu-2204-lts
   - model: p4
     platforms:
-      - ubuntu-os-cloud:ubuntu-2004-lts
+      - ubuntu-os-cloud:ubuntu-2204-lts
   - model: t4
     platforms:
-      - ubuntu-os-cloud:ubuntu-2004-lts
+      - ubuntu-os-cloud:ubuntu-2204-lts
       - ml-images:common-gpu-debian-11-py310
   - model: p100
     platforms:
-      - ubuntu-os-cloud:ubuntu-2004-lts
+      - ubuntu-os-cloud:ubuntu-2204-lts
   - model: l4
     platforms:
       - debian-cloud:debian-11
@@ -47,11 +47,11 @@ gpu_platforms:
       - rocky-linux-cloud:rocky-linux-8
       - rocky-linux-cloud:rocky-linux-9
       - suse-cloud:sles-15
-      - ubuntu-os-cloud:ubuntu-2004-lts
       - ubuntu-os-cloud:ubuntu-2204-lts
+      - ubuntu-os-cloud:ubuntu-2404-lts-amd64
   - model: h100
     platforms:
-      - ubuntu-os-cloud:ubuntu-minimal-2004-lts # due to H100 quota, choose an image from the exhaustive list to skip presubmits
+      - ubuntu-os-cloud:ubuntu-minimal-2204-lts # due to H100 quota, choose an image from the exhaustive list to skip presubmits
 expected_metrics:
   - type: agent.googleapis.com/gpu/utilization
     value_type: DOUBLE

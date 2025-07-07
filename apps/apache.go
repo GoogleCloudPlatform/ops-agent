@@ -60,8 +60,9 @@ func (r MetricsReceiverApache) Pipelines(_ context.Context) ([]otel.ReceiverPipe
 			),
 			otel.TransformationMetrics(
 				otel.FlattenResourceAttribute("apache.server.name", "server_name"),
+				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+				otel.SetScopeVersion("1.0"),
 			),
-			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
 	}}, nil
 }

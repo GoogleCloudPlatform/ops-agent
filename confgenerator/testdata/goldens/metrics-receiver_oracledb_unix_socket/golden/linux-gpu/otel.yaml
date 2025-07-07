@@ -494,9 +494,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  modifyscope/oracledb_2:
-    override_scope_name: agent.googleapis.com/oracledb
-    override_scope_version: "1.0"
   normalizesums/oracledb_0: {}
   resourcedetection/_global_0:
     detectors:
@@ -507,6 +504,12 @@ processors:
     - context: datapoint
       statements:
       - set(time, Now())
+  transform/oracledb_2:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "agent.googleapis.com/oracledb")
+      - set(version, "1.0")
   transform/otel_1:
     error_mode: ignore
     metric_statements:
@@ -1194,7 +1197,7 @@ service:
       processors:
       - normalizesums/oracledb_0
       - metricstransform/oracledb_1
-      - modifyscope/oracledb_2
+      - transform/oracledb_2
       - resourcedetection/_global_0
       receivers:
       - sqlquery/oracledb
@@ -1211,4 +1214,12 @@ service:
       - prometheus/otel
   telemetry:
     metrics:
-      address: 0.0.0.0:20201
+      readers:
+      - pull:
+          exporter:
+            prometheus:
+              host: 0.0.0.0
+              port: 20201
+              without_scope_info: true
+              without_type_suffix: true
+              without_units: true

@@ -43,7 +43,6 @@ platforms_to_skip:
   - rocky-linux-cloud:rocky-linux-8-optimized-gcp
   - suse-cloud:sles-12
   - suse-cloud:sles-15
-  - ubuntu-os-cloud:ubuntu-2004-lts
 supported_app_version: ["26.x", "25.x"]
 expected_metrics:
   - type: workload.googleapis.com/wildfly.session.count

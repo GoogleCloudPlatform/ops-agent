@@ -96,8 +96,9 @@ func (r MetricsReceiverAerospike) Pipelines(_ context.Context) ([]otel.ReceiverP
 			otel.TransformationMetrics(
 				otel.FlattenResourceAttribute("aerospike.node.name", "node_name"),
 				otel.FlattenResourceAttribute("aerospike.namespace", "namespace_name"),
+				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+				otel.SetScopeVersion("1.0"),
 			),
-			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
 	}}, nil
 }

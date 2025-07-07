@@ -24,7 +24,7 @@ To run something from the Makefile, you will need to give `make` the `-f` (file)
 make test
 ```
 
-If you want to run one of the tool targets (i.e. `addlicense` or `yaml_format`), you'll first need to run the `install_tools` target:
+If you want to run one of the tool targets (i.e. `addlicense`, `yaml_format`, or `lint`), you'll first need to run the `install_tools` target:
 ```
 make install_tools
 ```

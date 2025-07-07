@@ -138,7 +138,13 @@ func (r MetricsReceiverVault) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 			},
 		},
 		Processors: map[string][]otel.Component{"metrics": {
-			otel.TransformationMetrics(queries...),
+			otel.TransformationMetrics(
+				append(
+					queries,
+					otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+					otel.SetScopeVersion("1.0"),
+				)...,
+			),
 			otel.MetricsFilter(
 				"include",
 				"strict",
@@ -172,7 +178,6 @@ func (r MetricsReceiverVault) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
 	}}, nil
 }

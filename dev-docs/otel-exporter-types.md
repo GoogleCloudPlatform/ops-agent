@@ -29,9 +29,9 @@ are exported to `workload.googleapis.com/...` and have labels named
 scope](https://opentelemetry.io/docs/specs/otel/glossary/#instrumentation-scope)
 associated with each metric.
 
-Built-in Ops Agent receiver types should use the `modifyscope` processor (via
-`otel.ModifyInstrumentationScope`) to set an instrumentation scope of
-`agent.googleapis.com/{receiver_type}`.
+Built-in Ops Agent receiver types should create a metrics `transform` processor (via
+`otel.TransformationMetrics`) with the `otel.SetScopeName` and `otel.SetScopeVersion` queries
+to set an instrumentation scope of `agent.googleapis.com/{receiver_type}`.
 
 The `OTel` exporter handles trace data without any special configuration.
 

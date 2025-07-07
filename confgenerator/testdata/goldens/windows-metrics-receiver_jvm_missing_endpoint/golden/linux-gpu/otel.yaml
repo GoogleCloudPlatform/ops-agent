@@ -469,13 +469,16 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  modifyscope/jvmmetrics_2:
-    override_scope_name: agent.googleapis.com/jvm
-    override_scope_version: "1.0"
   normalizesums/jvmmetrics_0: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
+  transform/jvmmetrics_2:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "agent.googleapis.com/jvm")
+      - set(version, "1.0")
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
@@ -571,7 +574,7 @@ service:
       processors:
       - normalizesums/jvmmetrics_0
       - metricstransform/jvmmetrics_1
-      - modifyscope/jvmmetrics_2
+      - transform/jvmmetrics_2
       - resourcedetection/_global_0
       receivers:
       - jmx/jvmmetrics
@@ -596,4 +599,12 @@ service:
       - prometheus/otel
   telemetry:
     metrics:
-      address: 0.0.0.0:20201
+      readers:
+      - pull:
+          exporter:
+            prometheus:
+              host: 0.0.0.0
+              port: 20201
+              without_scope_info: true
+              without_type_suffix: true
+              without_units: true

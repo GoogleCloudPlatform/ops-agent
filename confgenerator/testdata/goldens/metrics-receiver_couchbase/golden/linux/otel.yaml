@@ -530,9 +530,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  modifyscope/couchbase_4:
-    override_scope_name: agent.googleapis.com/couchbase
-    override_scope_version: "1.0"
   normalizesums/couchbase_0: {}
   resourcedetection/_global_0:
     detectors:
@@ -562,6 +559,10 @@ processors:
       - set(metric.unit, "{operations}") where metric.name == "workload.googleapis.com/couchbase.bucket.operation.count"
       - set(metric.description, "Number of non-resident vBuckets.") where metric.name == "workload.googleapis.com/couchbase.bucket.vbucket.count"
       - set(metric.unit, "{vbuckets}") where metric.name == "workload.googleapis.com/couchbase.bucket.vbucket.count"
+    - context: scope
+      statements:
+      - set(name, "agent.googleapis.com/couchbase")
+      - set(version, "1.0")
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
@@ -639,7 +640,6 @@ service:
       - filter/couchbase_1
       - metricstransform/couchbase_2
       - transform/couchbase_3
-      - modifyscope/couchbase_4
       - resourcedetection/_global_0
       receivers:
       - prometheus/couchbase
@@ -684,4 +684,12 @@ service:
       - prometheus/otel
   telemetry:
     metrics:
-      address: 0.0.0.0:20201
+      readers:
+      - pull:
+          exporter:
+            prometheus:
+              host: 0.0.0.0
+              port: 20201
+              without_scope_info: true
+              without_type_suffix: true
+              without_units: true

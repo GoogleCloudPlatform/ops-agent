@@ -182,8 +182,9 @@ func (s MetricsReceiverSapHana) Pipelines(_ context.Context) ([]otel.ReceiverPip
 			),
 			otel.TransformationMetrics(
 				otel.FlattenResourceAttribute("saphana.host", "host"),
+				otel.SetScopeName("agent.googleapis.com/"+s.Type()),
+				otel.SetScopeVersion("1.0"),
 			),
-			otel.ModifyInstrumentationScope(s.Type(), "1.0"),
 		}},
 	}}, nil
 }

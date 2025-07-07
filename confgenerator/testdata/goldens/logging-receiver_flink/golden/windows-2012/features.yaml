@@ -18,3 +18,7 @@
   feature: receivers:flink
   key: "[0].enabled"
   value: "true"
+- module: logging
+  feature: receivers:flink
+  key: "[0].include_paths.__length"
+  value: "3"

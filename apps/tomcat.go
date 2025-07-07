@@ -48,7 +48,10 @@ func (r MetricsReceiverTomcat) Pipelines(_ context.Context) ([]otel.ReceiverPipe
 				otel.MetricsTransform(
 					otel.AddPrefix("workload.googleapis.com"),
 				),
-				otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+				otel.TransformationMetrics(
+					otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+					otel.SetScopeVersion("1.0"),
+				),
 			},
 		)
 }

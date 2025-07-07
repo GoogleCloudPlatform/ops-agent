@@ -92,6 +92,8 @@ func (r MetricsReceiverPostgresql) Pipelines(_ context.Context) ([]otel.Receiver
 				// The two metrics are mutually exclusive so we do not need to worry about overwriting or removing the original wal.lag.
 				otel.ConvertFloatToInt("postgresql.wal.delay"),
 				otel.SetName("postgresql.wal.delay", "postgresql.wal.lag"),
+				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+				otel.SetScopeVersion("1.0"),
 			),
 			otel.MetricsTransform(
 				otel.UpdateMetric("postgresql.bgwriter.duration",
@@ -99,7 +101,6 @@ func (r MetricsReceiverPostgresql) Pipelines(_ context.Context) ([]otel.Receiver
 				),
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
 		}},
 	}}, nil
 }

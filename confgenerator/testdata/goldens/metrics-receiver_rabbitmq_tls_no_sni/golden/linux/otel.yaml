@@ -440,9 +440,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: workload.googleapis.com/$${1}
-  modifyscope/rabbitmq_3:
-    override_scope_name: agent.googleapis.com/rabbitmq
-    override_scope_version: "1.0"
   normalizesums/rabbitmq_0: {}
   resourcedetection/_global_0:
     detectors:
@@ -466,6 +463,10 @@ processors:
       - set(attributes["queue_name"], resource.attributes["rabbitmq.queue.name"])
       - set(attributes["node_name"], resource.attributes["rabbitmq.node.name"])
       - set(attributes["vhost_name"], resource.attributes["rabbitmq.vhost.name"])
+    - context: scope
+      statements:
+      - set(name, "agent.googleapis.com/rabbitmq")
+      - set(version, "1.0")
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
@@ -561,10 +562,17 @@ service:
       - normalizesums/rabbitmq_0
       - metricstransform/rabbitmq_1
       - transform/rabbitmq_2
-      - modifyscope/rabbitmq_3
       - resourcedetection/_global_0
       receivers:
       - rabbitmq/rabbitmq
   telemetry:
     metrics:
-      address: 0.0.0.0:20201
+      readers:
+      - pull:
+          exporter:
+            prometheus:
+              host: 0.0.0.0
+              port: 20201
+              without_scope_info: true
+              without_type_suffix: true
+              without_units: true

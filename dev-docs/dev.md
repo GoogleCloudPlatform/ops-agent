@@ -68,12 +68,12 @@ good way to easily see all the files that are changed.
 $ git diff origin/master -- . ':!confgenerator/testdata'
 ```
 
-## Run goimports
+## Linting and formatting
 
-Run `goimports` to keep the codebase format style in sync:
+Setup `make` as described in [makefile.md](./makefile.md), install all required tools with `make install_tools`, then run `make lint-fix` (or just `make lint` to preview fixes) to keep the codebase format style in sync:
 
 ```shell
-ops-agent$ goimports -w .
+ops-agent$ make lint-fix
 ```
 
 ## Test locally
