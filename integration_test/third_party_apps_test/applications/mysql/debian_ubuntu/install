@@ -16,7 +16,9 @@ if [[ "${ID}" == debian && "${VERSION_ID}" == 9 ]]; then
   sudo apt install -y libmariadbclient18
 elif [[ "${ID}" == ubuntu && "${VERSION_ID}" == 1[68].04 ]]; then
   sudo apt install -y libmysqlclient20
-elif [[ "${ID}" == ubuntu ]]; then  # 19.10 and later
+elif [[ "${ID}" == ubuntu && "${VERSION_ID}" == 25.04 ]]; then  # 25.04 and later
+  sudo apt install -y libmysqlclient24
+elif [[ "${ID}" == ubuntu ]]; then  # 25.10 and later
   sudo apt install -y libmysqlclient21
 fi
 
