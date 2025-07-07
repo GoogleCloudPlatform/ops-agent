@@ -116,10 +116,7 @@ func (r AgentSelfMetrics) OtelPipelineProcessors() []otel.Component {
 			"strict",
 			"otelcol_process_uptime",
 			"otelcol_process_memory_rss",
-			"otelcol_exporter_sent_log_records",
-			"otelcol_exporter_send_failed_log_records",
-			"grpc.client.attempt.duration.logging_count",
-			"grpc.client.attempt.duration.monitoring_count",
+			"grpc.client.attempt.duration_count",
 			"googlecloudmonitoring/point_count",
 		),
 		otel.MetricsTransform(
@@ -191,6 +188,16 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors() []otel.Component {
 			// Filter out histogram datapoints where the grpc.target is not related to logging.
 			`metric.name == "grpc.client.attempt.duration_count" and (not IsMatch(datapoint.attributes["grpc.target"], "logging.googleapis"))`,
 		}),
+		otel.MetricsFilter(
+			"include",
+			"strict",
+			"fluentbit_stackdriver_requests_total",
+			"fluentbit_stackdriver_proc_records_total",
+			"fluentbit_stackdriver_retried_records_total",
+			"otelcol_exporter_sent_log_records",
+			"otelcol_exporter_send_failed_log_records",
+			"grpc.client.attempt.duration_count",
+		),
 		otel.MetricsTransform(
 			otel.RenameMetric("fluentbit_stackdriver_requests_total", "agent/request_count",
 				// change data type from double -> int64
