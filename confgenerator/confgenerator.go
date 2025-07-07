@@ -114,10 +114,24 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 		OtelRuntimeDir:      outDir,
 	}
 
-	receiverPipelines["otel"] = agentSelfMetrics.OtelPipeline()
+	receiverPipelines["prometheus_metrics"] = agentSelfMetrics.PrometheusMetricsPipeline()
+
 	pipelines["otel"] = otel.Pipeline{
 		Type:                 "metrics",
-		ReceiverPipelineName: "otel",
+		ReceiverPipelineName: "prometheus_metrics",
+		Processors:           agentSelfMetrics.OtelPipelineProcessors(),
+	}
+
+	pipelines["fluentbit"] = otel.Pipeline{
+		Type:                 "metrics",
+		ReceiverPipelineName: "prometheus_metrics",
+		Processors:           agentSelfMetrics.FluentBitPipelineProcessors(),
+	}
+
+	pipelines["logging_metrics"] = otel.Pipeline{
+		Type:                 "metrics",
+		ReceiverPipelineName: "prometheus_metrics",
+		Processors:           agentSelfMetrics.LoggingMetricsPipelineProcessors(),
 	}
 
 	receiverPipelines["ops_agent"] = agentSelfMetrics.OpsAgentPipeline()
@@ -463,13 +477,13 @@ func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAg
 		if len(tags) > 0 {
 			out = append(out, stackdriverOutputComponent(ctx, strings.Join(tags, "|"), userAgent, "2G", l.Service.Compress))
 		}
-		out = append(out, uc.generateSelfLogsComponents(ctx, userAgent)...)
 		out = append(out, addGceMetadataAttributesComponents(ctx, []string{
 			"dataproc-cluster-name",
 			"dataproc-cluster-uuid",
 			"dataproc-region",
 		}, "*", "default-dataproc")...)
 	}
+	out = append(out, uc.generateSelfLogsComponents(ctx, userAgent)...)
 	out = append(out, fluentbit.MetricsOutputComponent())
 
 	return out, nil
