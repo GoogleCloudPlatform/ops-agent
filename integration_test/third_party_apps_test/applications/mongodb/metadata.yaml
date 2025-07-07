@@ -38,6 +38,8 @@ platforms_to_skip:
   - ubuntu-os-cloud:ubuntu-minimal-2410-amd64 # Possible support in the future
   - ubuntu-os-cloud:ubuntu-2410-arm64 # Possible support in the future
   - ubuntu-os-cloud:ubuntu-minimal-2410-arm64 # Possible support in the future
+  - ubuntu-os-cloud:ubuntu-2504-lts-amd64 # Possible support in the future
+  - ubuntu-os-cloud:ubuntu-2504-lts-arm64 # Possible support in the future
   - debian-cloud:debian-12
   - debian-cloud:debian-12-arm64
   - suse-cloud:sles-15-arm64
