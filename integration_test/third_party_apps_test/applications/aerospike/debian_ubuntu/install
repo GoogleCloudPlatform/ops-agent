@@ -25,14 +25,6 @@ install_7() {
     (cd aerospike-server-community_7.2.0.3*/ && sudo ./asinstall)
 }
 
-install_7_ubuntu_25() {
-    # download, extract, install, and start aerospike community edition
-    # Aerospike doesn't provide a community edition for Ubuntu 25.04, the Ubuntu 24.04 version is used instead
-    wget -O aerospike.tgz "https://download.aerospike.com/artifacts/aerospike-server-community/7.2.0/aerospike-server-community_7.2.0.11_tools-11.2.2_ubuntu24.04_$(uname -m).tgz"
-    tar -xvf aerospike.tgz
-    (cd aerospike-server-community_7*/ && sudo ./asinstall)
-}
-
 sudo apt-get update
 sudo apt-get install -y wget
 
@@ -66,10 +58,8 @@ case $os_version in
         install_5;;
     debian10|debian11|ubuntu20.04|ubuntu22.04)
         install_6;;
-    ubuntu24.04)
+    ubuntu24.04|ubuntu25.04)
         install_7;;
-    ubuntu25.04)
-        install_7_ubuntu_25;;
     *)  echo "Found os_version: $os_version, not in supported list";;
 esac
 
