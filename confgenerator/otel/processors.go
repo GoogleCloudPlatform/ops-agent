@@ -306,6 +306,14 @@ func GroupByAttribute(attribute string) TransformQuery {
 	}
 }
 
+// DeleteMetricResourceAttribute returns an expression that removes the metric resource attribute specified.
+func DeleteMetricResourceAttribute(metricAttribute string) TransformQuery {
+	return TransformQuery{
+		Context:   Metric,
+		Statement: fmt.Sprintf(`delete_key(resource.attributes, "%s")`, metricAttribute),
+	}
+}
+
 // DeleteMetricAttribute returns an expression that removes the metric attribute specified.
 func DeleteMetricAttribute(metricAttribute string) TransformQuery {
 	return TransformQuery{
@@ -456,11 +464,12 @@ func DuplicateMetric(old, new string, operations ...map[string]interface{}) map[
 // CombineMetrics returns a config snippet that renames metrics matching the regex old to new, applying zero or more transformations.
 func CombineMetrics(old, new string, operations ...map[string]interface{}) map[string]interface{} {
 	out := map[string]interface{}{
-		"include":       old,
-		"match_type":    "regexp",
-		"action":        "combine",
-		"new_name":      new,
-		"submatch_case": "lower",
+		"include":          old,
+		"match_type":       "regexp",
+		"action":           "combine",
+		"new_name":         new,
+		"aggregation_type": "sum",
+		"submatch_case":    "lower",
 	}
 	if len(operations) > 0 {
 		out["operations"] = operations
