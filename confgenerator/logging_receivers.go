@@ -625,7 +625,7 @@ func windowsEventLogV1Processors(ctx context.Context) ([]otel.Component, error) 
 				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
 					// This uses the OTTL FormatTime function to format the timestamp.
 					// "%Y-%m-%d %T.%s +0000" is the desired format string.
-					return v.Set(ottl.FormatTime(ottl.LValue{"cache", "body", "timestamp"}, "%Y-%m-%d %T.%s +0000"))
+					return v.Set(ottl.FormatTime(v, "%Y-%m-%d %T.%s +0000"))
 				},
 			},
 			// TODO: Reformat?
