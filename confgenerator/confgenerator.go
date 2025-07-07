@@ -96,7 +96,6 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 		LoggingVersionLabel: loggingVersionLabel,
 		FluentBitPort:       fluentbit.MetricsPort,
 		OtelPort:            otel.MetricsPort,
-		OtelLoggingEnabled:  uc.Logging.Service.OTelLogging,
 		OtelRuntimeDir:      outDir,
 	}
 
