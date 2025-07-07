@@ -619,13 +619,12 @@ func windowsEventLogV1Processors(ctx context.Context) ([]otel.Component, error) 
 			},
 			// TODO: Convert from array of maps to array of strings
 			"jsonPayload.StringInserts": {CopyFrom: "jsonPayload.event_data.data"},
-			// TODO: Reformat? (v1 was "YYYY-MM-DD hh:mm:ss +0000", OTel is "YYYY-MM-DDThh:mm:ssZ")
 			"jsonPayload.TimeGenerated": {
-				CopyFrom: "jsonPayload.timestamp",
+				CopyFrom: "jsonPayload.system_time",
 				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
 					// This uses the OTTL FormatTime function to format the timestamp.
 					// "%Y-%m-%d %T.%s +0000" is the desired format string.
-					return v.Set(ottl.FormatTime(v, "%Y-%m-%d %T.%s +0000"))
+					return v.Set(ottl.FormatTime(ottl.ToTime(v, "%Y-%m-%dT%T.%sZ"), "%Y-%m-%d %T.%s +0000"))
 				},
 			},
 			// TODO: Reformat?
