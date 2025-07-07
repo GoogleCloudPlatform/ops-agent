@@ -115,6 +115,16 @@ func DeltaToRate(metrics ...string) Component {
 	}
 }
 
+// Interval returns a Component that aggregates metrics within an interval.
+func Interval(duration string) Component {
+	return Component{
+		Type: "interval",
+		Config: map[string]interface{}{
+			"interval": duration,
+		},
+	}
+}
+
 // AddPrefix returns a config snippet that adds a domain prefix to all metrics.
 func AddPrefix(prefix string, operations ...map[string]interface{}) map[string]interface{} {
 	return RegexpRename(
