@@ -25,6 +25,8 @@ OUTPUT_DIR="${KOKORO_ARTIFACTS_DIR}/result"
 echo "Changing directory to git/unified_agents..."
 cd git/unified_agents
 
+echo "-a $Arch -i $INPUT_DIR -o $OUTPUT_DIR"
+
 # Execute the main builder script, which is now in the parent directory.
 # Pass variables as arguments.
 ./kokoro/scripts/build/packaging/package_windows.sh -a "$Arch" -i "$INPUT_DIR" -o "$OUTPUT_DIR"
