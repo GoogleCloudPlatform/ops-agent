@@ -177,8 +177,6 @@ expected_logs:
           # described in:
           # https://github.com/GoogleCloudPlatform/ops-agent/issues/1173
           - suse-cloud:sles-12
-          - suse-cloud:sles-15
-          - suse-cloud:sles-15-arm64
       - name: severity
         type: string
         description: ''
