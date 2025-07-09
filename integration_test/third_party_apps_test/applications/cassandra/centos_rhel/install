@@ -24,7 +24,7 @@ EOF
 
 sudo mv cassandra.repo /etc/yum.repos.d/cassandra.repo
 
-sudo yum -y update
+sudo yum -y update --exclude=google-cloud-cli*
 
 sudo yum -y install java-1.8.0-openjdk java-1.8.0-openjdk-devel cassandra
 sudo systemctl daemon-reload
