@@ -251,15 +251,6 @@ RUN Get-Content VERSION | Where-Object length | ForEach-Object { Invoke-Expressi
     go build -o bin/plugin.exe -ldflags \"-X github.com/GoogleCloudPlatform/ops-agent/internal/version.BuildDistro=$env:BUILD_DISTRO -X github.com/GoogleCloudPlatform/ops-agent/internal/version.Version=$env:PKG_VERSION\" ./cmd/ops_agent_uap_plugin; `
     Copy-Item -Path bin/plugin.exe -Destination /work/out/bin/; `
     $env:PKG_VERSION | Out-File -FilePath /work/out/bin/OPS_AGENT_VERSION -Encoding UTF8;
-###############################################################################
-# Packaging
-###############################################################################
-
-WORKDIR /work
-
-COPY . /work
-
-RUN & .\pkg\goo\build.ps1 -DestDir /work/out;
 
 ###############################################################################
 # Packaging for the Ops Agent Plugin
@@ -270,5 +261,4 @@ WORKDIR /work
 COPY . /work
 
 RUN & .\pkg\plugin\build.ps1 -DestDir /work/out/bin;
-
 
