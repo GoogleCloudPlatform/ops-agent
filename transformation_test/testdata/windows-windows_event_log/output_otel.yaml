@@ -1,10 +1,9 @@
 - entries:
   - jsonPayload:
-      EventType: Information
       channel: System
-      computer: windows-test
+      computer: test-computer
       event_data:
-        binary: "1234568910"
+        binary: "12345"
         data:
         - param1: Windows Modules Installer
         - param2: running
@@ -16,14 +15,14 @@
         thread_id: 4148
       keywords:
       - Classic
+      level: Information
       message: The Windows Modules Installer service entered the running state.
       opcode: "0"
       provider:
         event_source: Service Control Manager
-        guid: "{555908d1-a6d7-4695-8e1e-26931d2012f4}"
+        guid: "{11111111}"
         name: Service Control Manager
       record_id: 8329
-      system_time: 2025-07-02T20:38:45.026077400Z
       task: "0"
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -31,13 +30,12 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
+    timestamp: 2025-07-02T20:38:45.026077400Z
   - jsonPayload:
-      EventType: Information
       channel: System
-      computer: windows-test
+      computer: test-computer
       event_data:
-        binary: "1234568910"
+        binary: "12345"
         data:
         - param1: Software Protection
         - param2: stopped
@@ -49,14 +47,14 @@
         thread_id: 4148
       keywords:
       - Classic
+      level: Information
       message: The Software Protection service entered the stopped state.
       opcode: "0"
       provider:
         event_source: Service Control Manager
-        guid: "{555908d1-a6d7-4695-8e1e-26931d2012f4}"
+        guid: "{11111111}"
         name: Service Control Manager
       record_id: 8330
-      system_time: 2025-07-02T20:39:32.339006100Z
       task: "0"
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -64,5 +62,5 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
+    timestamp: 2025-07-02T20:39:32.339006100Z
   partialSuccess: true
