@@ -175,6 +175,7 @@ func (r AgentSelfMetrics) FluentBitPipelineProcessors() []otel.Component {
 
 func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors() []otel.Component {
 	return []otel.Component{
+		otel.Interval("1m"),
 		otel.MetricsFilter(
 			"include",
 			"strict",
@@ -205,6 +206,20 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors() []otel.Component {
 			"grpc.client.attempt.duration_count",
 		),
 		otel.MetricsTransform(
+			otel.RenameMetric("fluentbit_stackdriver_retried_records_total", "fluentbit_log_entry_retry_count",
+				// change data type from double -> int64
+				otel.ToggleScalarDataType,
+				otel.RenameLabel("status", "response_code"),
+				otel.AggregateLabels("sum", "response_code"),
+			),
+			otel.DuplicateMetric("otelcol_exporter_send_failed_log_records", "otel_log_entry_retry_count",
+				// change data type from double -> int64
+				otel.ToggleScalarDataType,
+				otel.AddLabel("response_code", "400"),
+				otel.AggregateLabels("sum", "response_code"),
+			),
+			// otel.CombineMetrics("^.*_log_entry_retry_count$$", "agent/log_entry_retry_count",
+			//	otel.AggregateLabels("sum", "response_code")),
 			otel.RenameMetric("fluentbit_stackdriver_requests_total", "fluentbit_request_count",
 				// change data type from double -> int64
 				otel.ToggleScalarDataType,
@@ -217,7 +232,8 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors() []otel.Component {
 				// delete grpc_client_method dimension & service.version label, retaining only response_code
 				otel.AggregateLabels("sum", "response_code"),
 			),
-			otel.CombineMetrics("^.*_request_count$$", "agent/request_count"),
+			// otel.CombineMetrics("^.*_request_count$$", "agent/request_count",
+			//	otel.AggregateLabels("sum", "response_code")),
 			otel.RenameMetric("fluentbit_stackdriver_proc_records_total", "fluentbit_log_entry_count",
 				// change data type from double -> int64
 				otel.ToggleScalarDataType,
@@ -236,22 +252,11 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors() []otel.Component {
 				otel.AddLabel("response_code", "400"),
 				otel.AggregateLabels("sum", "response_code"),
 			),
-			otel.CombineMetrics("^.*_log_entry_count$$", "agent/log_entry_count"),
-			otel.RenameMetric("fluentbit_stackdriver_retried_records_total", "otel_log_entry_retry_count",
-				// change data type from double -> int64
-				otel.ToggleScalarDataType,
-				otel.RenameLabel("status", "response_code"),
-				otel.AggregateLabels("sum", "response_code"),
-			),
-			otel.DuplicateMetric("otelcol_exporter_send_failed_log_records", "fluentbit_log_entry_retry_count",
-				// change data type from double -> int64
-				otel.ToggleScalarDataType,
-				otel.AddLabel("response_code", "400"),
-				otel.AggregateLabels("sum", "response_code"),
-			),
-			otel.CombineMetrics("^.*_log_entry_retry_count$$", "agent/log_entry_retry_count"),
-			otel.AddPrefix("agent.googleapis.com"),
+			otel.CombineMetrics("^otel_log_entry_count$$", "otel_log_entry_count",
+				otel.AggregateLabels("sum", "response_code")),
 		),
+		otel.MetricsGeneration("agent/log_entry_count", "otel_log_entry_count", "fluentbit_log_entry_count"),
+		otel.MetricsTransform(otel.AddPrefix("agent.googleapis.com")),
 	}
 }
 
