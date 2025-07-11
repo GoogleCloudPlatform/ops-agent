@@ -63,8 +63,7 @@ var (
 )
 
 var (
-	emptyTestReceiver = testReceiver{}
-	testResource      = resourcedetector.GCEResource{
+	testResource = resourcedetector.GCEResource{
 		Project:       "test-project",
 		Zone:          "test-zone",
 		Network:       "test-network",
@@ -97,7 +96,7 @@ var (
 )
 
 type transformationTest struct {
-	Receiver   testReceiver       `yaml:"receiver,omitempty"`
+	Receiver   *testReceiver      `yaml:"receiver,omitempty"`
 	Processors []loggingProcessor `yaml:"processors,omitempty"`
 }
 
@@ -300,7 +299,7 @@ func generateFluentBitConfigs(ctx context.Context, name string, transformationTe
 	uidComponentsIndex := 0
 
 	// Only one (or empty) `Receiver` can be set in a transformation test.
-	if transformationTest.Receiver != emptyTestReceiver {
+	if transformationTest.Receiver != nil {
 		if transformationTest.Receiver.InputParser.LoggingProcessor == nil {
 			return nil, fmt.Errorf("input_parser is required with input_receiver.")
 		}
@@ -376,7 +375,7 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 	}
 	var components []otel.Component
 	// Only one (or empty) `Receiver` can be set in a transformation test.
-	if transformationConfig.Receiver != emptyTestReceiver {
+	if transformationConfig.Receiver != nil {
 		if transformationConfig.Receiver.InputParser.LoggingProcessor == nil {
 			return "", fmt.Errorf("input_parser is required with input_receiver.")
 		}
