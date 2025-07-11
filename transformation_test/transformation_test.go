@@ -132,9 +132,6 @@ func TestTransformationTests(t *testing.T) {
 		if !dir.IsDir() {
 			continue
 		}
-		// if !strings.Contains(dir.Name(), "windows") {
-		// 	continue
-		// }
 		t.Run(dir.Name(), func(t *testing.T) {
 			t.Parallel()
 			// Unmarshal transformation_config.yaml
@@ -256,7 +253,9 @@ func checkOutput(t *testing.T, name string, got []map[string]any) {
 }
 func readTransformationConfig(dir string) (transformationTest, error) {
 	ctx := context.Background()
-	if strings.Contains(dir, "windows") {
+	// If the test dir name has the prefix "windows" we will set a mock
+	// Windows test platform.
+	if strings.HasPrefix(dir, "windows") {
 		ctx = windowsTestPlatform.TestContext(context.Background())
 	}
 
