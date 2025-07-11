@@ -62,9 +62,59 @@ var (
 	otelopscolPath = flag.String("otelopscol", os.Getenv("OTELOPSCOL"), "path to otelopscol")
 )
 
-type transformationTest []loggingProcessor
+var (
+	testResource = resourcedetector.GCEResource{
+		Project:       "test-project",
+		Zone:          "test-zone",
+		Network:       "test-network",
+		Subnetwork:    "test-subnetwork",
+		PublicIP:      "test-public-ip",
+		PrivateIP:     "test-private-ip",
+		InstanceID:    "test-instance-id",
+		InstanceName:  "test-instance-name",
+		Tags:          "test-tag",
+		MachineType:   "test-machine-type",
+		Metadata:      map[string]string{"test-key": "test-value", "test-escape": "$foo", "test-escape-parentheses": "${foo:bar}"},
+		Label:         map[string]string{"test-label-key": "test-label-value"},
+		InterfaceIPv4: map[string]string{"test-interface": "test-interface-ipv4"},
+	}
+
+	windowsTestPlatform = platform.Platform{
+		Type:               platform.Windows,
+		WindowsBuildNumber: "1",
+		WinlogV1Channels: []string{"Application",
+			"Security",
+			"Setup",
+			"System"},
+		HostInfo: &host.InfoStat{
+			OS:              "windows",
+			Platform:        "win_platform",
+			PlatformVersion: "win_platform_version",
+		},
+		TestGCEResourceOverride: testResource,
+	}
+)
+
+type transformationTest struct {
+	Receiver   *testReceiver      `yaml:"receiver,omitempty"`
+	Processors []loggingProcessor `yaml:"processors,omitempty"`
+}
+
+type loggingReceiver struct {
+	confgenerator.LoggingReceiver
+}
+
 type loggingProcessor struct {
 	confgenerator.LoggingProcessor
+}
+
+type testReceiver struct {
+	InputReceiver loggingReceiver  `yaml:"input_receiver"`
+	InputParser   loggingProcessor `yaml:"input_parser"`
+}
+
+func (l *loggingReceiver) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
+	return confgenerator.LoggingReceiverTypes.UnmarshalComponentYaml(ctx, &l.LoggingReceiver, unmarshal)
 }
 
 func (l *loggingProcessor) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
@@ -202,6 +252,13 @@ func checkOutput(t *testing.T, name string, got []map[string]any) {
 	}
 }
 func readTransformationConfig(dir string) (transformationTest, error) {
+	ctx := context.Background()
+	// If the test dir name has the prefix "windows" we will set a mock
+	// Windows test platform.
+	if strings.HasPrefix(dir, "windows") {
+		ctx = windowsTestPlatform.TestContext(context.Background())
+	}
+
 	var transformationTestData []byte
 	var config transformationTest
 
@@ -211,7 +268,7 @@ func readTransformationConfig(dir string) (transformationTest, error) {
 	}
 	transformationTestData = bytes.ReplaceAll(transformationTestData, []byte("\r\n"), []byte("\n"))
 
-	err = yaml.UnmarshalWithOptions(transformationTestData, &config, yaml.DisallowUnknownField())
+	err = yaml.UnmarshalContext(ctx, transformationTestData, &config, yaml.DisallowUnknownField())
 	if err != nil {
 		return config, err
 	}
@@ -238,9 +295,34 @@ func generateFluentBitConfigs(ctx context.Context, name string, transformationTe
 	}
 
 	components = append(components, input)
+	uidComponentsIndex := 0
 
-	for i, t := range transformationTest {
-		components = append(components, t.Components(ctx, flbTag, strconv.Itoa(i))...)
+	// Only one (or empty) `Receiver` can be set in a transformation test.
+	if transformationTest.Receiver != nil {
+		if transformationTest.Receiver.InputParser.LoggingProcessor == nil {
+			return nil, fmt.Errorf("input_parser is required with input_receiver.")
+		}
+		// Append parser to mock an "input" receiver output.
+		inputParser := transformationTest.Receiver.InputParser.LoggingProcessor
+		components = append(components, inputParser.Components(ctx, flbTag, strconv.Itoa(uidComponentsIndex))...)
+		uidComponentsIndex += 1
+
+		if transformationTest.Receiver.InputReceiver.LoggingReceiver == nil {
+			return nil, fmt.Errorf("input_receiver is required.")
+		}
+		// Append logging processors from receiver "post-processing" step.
+		receiverComponents := transformationTest.Receiver.InputReceiver.LoggingReceiver.Components(ctx, flbTag)
+		for _, rComponent := range receiverComponents {
+			// We don't add the `INPUT` component to the pipeline.
+			if rComponent.Kind != "INPUT" {
+				components = append(components, rComponent)
+			}
+		}
+	}
+
+	for _, p := range transformationTest.Processors {
+		components = append(components, p.Components(ctx, flbTag, strconv.Itoa(uidComponentsIndex))...)
+		uidComponentsIndex += 1
 	}
 
 	output := fluentbit.Component{
@@ -291,7 +373,40 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 		t.Fatal(err)
 	}
 	var components []otel.Component
-	for _, p := range transformationConfig {
+	// Only one (or empty) `Receiver` can be set in a transformation test.
+	if transformationConfig.Receiver != nil {
+		if transformationConfig.Receiver.InputParser.LoggingProcessor == nil {
+			return "", fmt.Errorf("input_parser is required with input_receiver.")
+		}
+		// Append parser to mock an input receiver.
+		inputParser, ok := transformationConfig.Receiver.InputParser.LoggingProcessor.(confgenerator.OTelProcessor)
+		if !ok {
+			return "", fmt.Errorf("not an OTel processor: %#v", inputParser)
+		}
+		processors, err := inputParser.Processors(ctx)
+		if err != nil {
+			return "", fmt.Errorf("failed generating OTel processors: %#v, err: %v", inputParser, err)
+		}
+		components = append(components, processors...)
+
+		if transformationConfig.Receiver.InputReceiver.LoggingReceiver == nil {
+			return "", fmt.Errorf("input_receiver is required.")
+		}
+		// Append logging processors from receiver "post-processing" step.
+		if op, ok := transformationConfig.Receiver.InputReceiver.LoggingReceiver.(confgenerator.OTelReceiver); ok {
+			rPipelines, err := op.Pipelines(ctx)
+			if err != nil {
+				return "", fmt.Errorf("failed generating OTel pipelines: %#v, err: %v", transformationConfig.Receiver.InputReceiver.LoggingReceiver, err)
+			}
+			for _, p := range rPipelines {
+				components = append(components, p.Processors["logs"]...)
+			}
+		} else {
+			return "", fmt.Errorf("not an OTel receiver: %#v", transformationConfig.Receiver.InputReceiver.LoggingReceiver)
+		}
+	}
+
+	for _, p := range transformationConfig.Processors {
 		if op, ok := p.LoggingProcessor.(confgenerator.OTelProcessor); ok {
 			processors, err := op.Processors(ctx)
 			if err != nil {
