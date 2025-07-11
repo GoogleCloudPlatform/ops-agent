@@ -125,6 +125,24 @@ func Interval(duration string) Component {
 	}
 }
 
+// MetricsGeneration returns a Component that creates a new metric.
+func MetricsGeneration(new_metric_name string, metric1 string, metric2 string) Component {
+	return Component{
+		Type: "metricsgeneration",
+		Config: map[string]interface{}{
+			"rules": []map[string]string{
+				map[string]string{
+					"name":      new_metric_name,
+					"unit":      "1",
+					"type":      "calculate",
+					"metric1":   metric1,
+					"metric2":   metric2,
+					"operation": "add",
+				}},
+		},
+	}
+}
+
 // AddPrefix returns a config snippet that adds a domain prefix to all metrics.
 func AddPrefix(prefix string, operations ...map[string]interface{}) map[string]interface{} {
 	return RegexpRename(
