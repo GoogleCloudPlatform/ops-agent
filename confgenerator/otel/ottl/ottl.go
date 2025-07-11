@@ -170,6 +170,10 @@ func ConvertCase(a Value, toCase string) Value {
 	return valuef(`ConvertCase(%s, %q)`, a, toCase)
 }
 
+func FormatTime(a Value, format string) Value {
+	return valuef(`FormatTime(%s, %q)`, a, format)
+}
+
 func IsMatch(target Value, pattern string) Value {
 	return valuef(`IsMatch(%s, %q)`, target, pattern)
 }
