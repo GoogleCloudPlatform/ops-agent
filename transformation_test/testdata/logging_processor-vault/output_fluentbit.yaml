@@ -1,0 +1,19 @@
+- entries:
+  - jsonPayload:
+      auth:
+        token_type: default
+      request:
+        id: aa005196-0280-381d-ebeb-1a083bdf5675
+        namespace:
+          id: root
+        operation: update
+        path: sys/audit/test
+      type: request
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2022-06-07T20:34:34.392078404Z
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance

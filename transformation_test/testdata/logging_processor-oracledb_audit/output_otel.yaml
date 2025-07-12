@@ -1,0 +1,1 @@
+- config_error: "failed generating OTel processor: &confgenerator.loggingProcessorMacroAdapter[github.com/GoogleCloudPlatform/ops-agent/apps.LoggingProcessorMacroOracleDBAudit]{ConfigComponent:confgenerator.ConfigComponent{Type:\"oracledb_audit\"}, ProcessorMacro:apps.LoggingProcessorMacroOracleDBAudit{}}, err: unimplemented"
