@@ -55,6 +55,7 @@ const (
 	transformationInput  = "input.log"
 	transformationOutput = "output_fluentbit.yaml"
 	flbTag               = "transformation_test"
+	flbINPUT             = "INPUT"
 )
 
 var (
@@ -254,7 +255,7 @@ func checkOutput(t *testing.T, name string, got []map[string]any) {
 func readTransformationConfig(dir string) (transformationTest, error) {
 	ctx := context.Background()
 	// If the test dir name has the prefix "windows" we will set a mock
-	// Windows test platform.
+	// Windows test platform. This is only to unmarshall the config correctly.
 	if strings.HasPrefix(dir, "windows") {
 		ctx = windowsTestPlatform.TestContext(context.Background())
 	}
@@ -313,8 +314,8 @@ func generateFluentBitConfigs(ctx context.Context, name string, transformationTe
 		// Append logging processors from receiver "post-processing" step.
 		receiverComponents := transformationTest.Receiver.InputReceiver.LoggingReceiver.Components(ctx, flbTag)
 		for _, rComponent := range receiverComponents {
-			// We don't add the `INPUT` component to the pipeline.
-			if rComponent.Kind != "INPUT" {
+			// We don't add the "INPUT" component to the pipeline.
+			if rComponent.Kind != flbINPUT {
 				components = append(components, rComponent)
 			}
 		}
