@@ -512,6 +512,13 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 			if ok {
 				log["stacktrace"] = sanitizeStacktrace(t, stacktrace)
 			}
+			// Set "service.instance.id" to "test-service-instance-id" since it is a generated "uuid".
+			if resource, ok := log["resource"].(map[string]any); ok {
+				if _, ok := resource["service.instance.id"].(string); ok {
+					resource["service.instance.id"] = "test-service-instance-id"
+					log["resource"] = resource
+				}
+			}
 		}
 	})
 
