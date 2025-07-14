@@ -128,7 +128,7 @@ expected_metrics:
     monitored_resources: [gce_instance]
     labels:
       - name: operation
-        value_regex: requests|waits|writes
+        value_regex: requests|waits|writes|fsyncs
   - type: workload.googleapis.com/mysql.operations
     value_type: INT64
     kind: CUMULATIVE

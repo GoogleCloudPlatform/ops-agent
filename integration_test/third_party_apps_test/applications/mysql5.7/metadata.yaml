@@ -154,7 +154,7 @@ expected_metrics:
     monitored_resources: [gce_instance]
     labels:
       - name: operation
-        value_regex: requests|waits|writes
+        value_regex: requests|waits|writes|fsyncs
       - name: instrumentation_source
         value_regex: agent.googleapis.com/mysql
   - type: workload.googleapis.com/mysql.operations
