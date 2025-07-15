@@ -24,7 +24,7 @@ import (
 	_ "google.golang.org/grpc/encoding/gzip"
 )
 
-// LoggingProcessorTestOtelWindowsEventLog is used to test
+// LoggingProcessorTestOtelWindowsEventLog is used only for testing.
 type LoggingProcessorTestOtelWindowsEventLog struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 }
