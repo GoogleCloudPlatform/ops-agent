@@ -511,7 +511,7 @@ func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.R
 		var p []otel.Component
 		if r.IsDefaultVersion() {
 			var err error
-			p, err = windowsEventLogV1Processors(ctx)
+			p, err = WindowsEventLogV1Processors(ctx)
 			if err != nil {
 				return nil, err
 			}
@@ -533,7 +533,7 @@ func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.R
 	return out, nil
 }
 
-func windowsEventLogV1Processors(ctx context.Context) ([]otel.Component, error) {
+func WindowsEventLogV1Processors(ctx context.Context) ([]otel.Component, error) {
 	// The winlog input in fluent-bit has a completely different structure, so we need to convert the OTel format into the fluent-bit format.
 	var empty string
 	p := &LoggingProcessorModifyFields{
