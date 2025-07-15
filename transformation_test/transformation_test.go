@@ -582,3 +582,7 @@ func sanitizeStacktrace(t *testing.T, input string) string {
 	result = strings.ReplaceAll(result, "\t", "  ")
 	return result
 }
+
+func init() {
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &confgenerator.LoggingProcessorWindowsEventLogV1{} })
+}
