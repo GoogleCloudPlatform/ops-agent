@@ -533,6 +533,27 @@ func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.R
 	return out, nil
 }
 
+// LoggingProcessorWindowsEventLogV1 contains the processors for the ReceiverVersion=1.
+type LoggingProcessorWindowsEventLogV1 struct {
+	ConfigComponent `yaml:",inline"`
+}
+
+func (r LoggingProcessorWindowsEventLogV1) Type() string {
+	return "windows_event_log_v1"
+}
+
+func (p LoggingProcessorWindowsEventLogV1) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
+	// TODO: Refactor LoggingReceiverWindowsEventLog into separate receiver and processor components for transformation tests.
+	// Should integrate the configuration for "ReceiverVersion" and "RenderAsXML".
+	return []fluentbit.Component{}
+}
+
+func (p LoggingProcessorWindowsEventLogV1) Processors(ctx context.Context) ([]otel.Component, error) {
+	// TODO: Refactor LoggingReceiverWindowsEventLog into separate receiver and processor components for transformation tests.
+	// Should integrate the configuration for "ReceiverVersion" and "RenderAsXML".
+	return windowsEventLogV1Processors(ctx)
+}
+
 func windowsEventLogV1Processors(ctx context.Context) ([]otel.Component, error) {
 	// The winlog input in fluent-bit has a completely different structure, so we need to convert the OTel format into the fluent-bit format.
 	var empty string
