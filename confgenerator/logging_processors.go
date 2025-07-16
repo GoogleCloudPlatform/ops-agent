@@ -155,8 +155,7 @@ func (p ParserShared) TypesStatements() (ottl.Statements, error) {
 		case "float":
 			out = out.Append(a.Set(ottl.ToFloat(a)))
 		case "hex":
-			// TODO: Not exposed in OTTL
-			fallthrough
+			out = out.Append(a.Set(ottl.ParseInt(a, 16)))
 		default:
 			return nil, fmt.Errorf("type %q not supported for field %s", fieldType, m)
 		}

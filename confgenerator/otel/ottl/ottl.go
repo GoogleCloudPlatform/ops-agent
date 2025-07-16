@@ -153,7 +153,9 @@ func ToString(a Value) Value {
 func ToInt(a Value) Value {
 	return valuef(`Int(%s)`, a)
 }
-
+func ParseInt(a Value, base int) Value {
+	return valuef(`ParseInt(%s, %d)`, a, base)
+}
 func ToFloat(a Value) Value {
 	return valuef(`Double(%s)`, a)
 }

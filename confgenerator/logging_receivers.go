@@ -628,7 +628,14 @@ func windowsEventLogV1Processors(ctx context.Context) ([]otel.Component, error) 
 				},
 			},
 			// TODO: Reformat?
-			"jsonPayload.TimeWritten": {CopyFrom: "jsonPayload.system_time"},
+			"jsonPayload.TimeWritten": {
+				CopyFrom: "jsonPayload.system_time",
+				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
+					// This uses the OTTL FormatTime function to format the timestamp.
+					// "%Y-%m-%d %T.%s +0000" is the desired format string.
+					return v.Set(ottl.FormatTime(ottl.ToTime(v, "%Y-%m-%dT%T.%sZ"), "%Y-%m-%d %T.%s +0000"))
+				},
+			},
 		}}
 	return p.Processors(ctx)
 }
