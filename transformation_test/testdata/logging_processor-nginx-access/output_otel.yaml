@@ -1,0 +1,1 @@
+- config_error: "failed generating OTel processor: &confgenerator.loggingProcessorMacroAdapter[github.com/GoogleCloudPlatform/ops-agent/apps.LoggingProcessorMacroNginxAccess]{ConfigComponent:confgenerator.ConfigComponent{Type:\"nginx_access\"}, ProcessorMacro:apps.LoggingProcessorMacroNginxAccess{}}, err: unimplemented"
