@@ -628,9 +628,11 @@ processors:
       - set(body["StringInserts"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_11"])
+      - set(cache["value"], FormatTime(Time(cache["value"], "%Y-%m-%dT%T.%sZ"), "%Y-%m-%d %T.%s +0000"))
       - set(body["TimeGenerated"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_11"])
+      - set(cache["value"], FormatTime(Time(cache["value"], "%Y-%m-%dT%T.%sZ"), "%Y-%m-%d %T.%s +0000"))
       - set(body["TimeWritten"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/windows__event__log_1:
     error_mode: ignore
@@ -733,9 +735,11 @@ processors:
       - set(body["StringInserts"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_11"])
+      - set(cache["value"], FormatTime(Time(cache["value"], "%Y-%m-%dT%T.%sZ"), "%Y-%m-%d %T.%s +0000"))
       - set(body["TimeGenerated"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_11"])
+      - set(cache["value"], FormatTime(Time(cache["value"], "%Y-%m-%dT%T.%sZ"), "%Y-%m-%d %T.%s +0000"))
       - set(body["TimeWritten"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/windows__event__log_1_1:
     error_mode: ignore
@@ -838,9 +842,11 @@ processors:
       - set(body["StringInserts"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_11"])
+      - set(cache["value"], FormatTime(Time(cache["value"], "%Y-%m-%dT%T.%sZ"), "%Y-%m-%d %T.%s +0000"))
       - set(body["TimeGenerated"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_11"])
+      - set(cache["value"], FormatTime(Time(cache["value"], "%Y-%m-%dT%T.%sZ"), "%Y-%m-%d %T.%s +0000"))
       - set(body["TimeWritten"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/windows__event__log_2_1:
     error_mode: ignore
