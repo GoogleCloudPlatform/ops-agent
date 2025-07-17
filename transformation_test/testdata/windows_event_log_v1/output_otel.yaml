@@ -47,7 +47,7 @@
     timestamp: 2025-07-02T20:39:32.339006100Z
   partialSuccess: true
 - collector_errors:
-  - caller: ottl@v0.126.0/parser.go:395
+  - caller: ottl@v0.130.0/parser.go:410
     error: "error getting value in ottl.StandardTimeGetter[github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog.TransformContext]: expected string but got nil"
     level: warn
     msg: failed to execute statement
@@ -55,9 +55,12 @@
     otelcol.component.kind: processor
     otelcol.pipeline.id: logs/input
     otelcol.signal: logs
-    resource: {}
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: ""
     statement: set(log.cache["value"], FormatTime(Time(log.cache["value"], "%Y-%m-%dT%T.%sZ"), "%Y-%m-%d %T.%s +0000"))
-  - caller: ottl@v0.126.0/parser.go:395
+  - caller: ottl@v0.130.0/parser.go:410
     error: "error getting value in ottl.StandardTimeGetter[github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog.TransformContext]: expected string but got nil"
     level: warn
     msg: failed to execute statement
@@ -65,9 +68,12 @@
     otelcol.component.kind: processor
     otelcol.pipeline.id: logs/input
     otelcol.signal: logs
-    resource: {}
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: ""
     statement: set(log.cache["value"], FormatTime(Time(log.cache["value"], "%Y-%m-%dT%T.%sZ"), "%Y-%m-%d %T.%s +0000"))
-  - caller: ottl@v0.126.0/parser.go:395
+  - caller: ottl@v0.130.0/parser.go:410
     error: "error getting value in ottl.StandardTimeGetter[github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog.TransformContext]: expected string but got nil"
     level: warn
     msg: failed to execute statement
@@ -75,9 +81,12 @@
     otelcol.component.kind: processor
     otelcol.pipeline.id: logs/input
     otelcol.signal: logs
-    resource: {}
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: ""
     statement: set(log.cache["value"], FormatTime(Time(log.cache["value"], "%Y-%m-%dT%T.%sZ"), "%Y-%m-%d %T.%s +0000"))
-  - caller: ottl@v0.126.0/parser.go:395
+  - caller: ottl@v0.130.0/parser.go:410
     error: "error getting value in ottl.StandardTimeGetter[github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog.TransformContext]: expected string but got nil"
     level: warn
     msg: failed to execute statement
@@ -85,5 +94,8 @@
     otelcol.component.kind: processor
     otelcol.pipeline.id: logs/input
     otelcol.signal: logs
-    resource: {}
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: ""
     statement: set(log.cache["value"], FormatTime(Time(log.cache["value"], "%Y-%m-%dT%T.%sZ"), "%Y-%m-%d %T.%s +0000"))
