@@ -1,95 +1,105 @@
 - entries:
   - jsonPayload:
-      level: error
-      message: 'open() "/var/www/html/forbidden.html" failed (13: Permission denied)'
-      pid: 29060
-      tid: 29060
-      connection: 2191
       client: "::1"
-      server: "_"
-      request: "GET /forbidden.html HTTP/1.1"
-      host: "localhost:8080"
+      connection: 2191.0
+      host: localhost:8080
+      level: error
+      message: "open() \"/var/www/html/forbidden.html\" failed (13: Permission denied)"
+      pid: 29060.0
+      request: GET /forbidden.html HTTP/1.1
+      server: _
+      tid: 29060.0
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
     logName: projects/my-project/logs/transformation_test
     severity: 500.0
     timestamp: 2021-08-26T16:50:17.000000000Z
   - jsonPayload:
-      level: warn
-      message: 'upstream server temporarily disabled while connecting to upstream'
-      pid: 12345
-      tid: 12345
-      connection: 1234
-      client: "192.168.1.100"
-      server: "example.com"
-      request: "GET /api/data HTTP/1.1"
-      upstream: "http://backend:8080"
+      client: 192.168.1.100
+      connection: 2192.0
+      host: example.com
+      level: error
+      message: access forbidden by rule
+      pid: 29060.0
+      request: POST /admin HTTP/1.1
+      server: example.com
+      tid: 29060.0
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
     logName: projects/my-project/logs/transformation_test
-    severity: 400.0
-    timestamp: 2021-08-26T16:51:30.000000000Z
+    severity: 500.0
+    timestamp: 2021-08-26T16:51:23.000000000Z
   - jsonPayload:
-      level: crit
-      message: 'malloc() failed (12: Cannot allocate memory)'
-      pid: 15678
-      tid: 15678
+      client: 10.0.0.50
+      connection: 2193.0
+      host: api.example.com
+      level: error
+      message: "connect() failed (111: Connection refused) while connecting to upstream"
+      pid: 29060.0
+      request: GET /api/v1/users HTTP/1.1
+      server: api.example.com
+      tid: 29060.0
+      upstream: http://127.0.0.1:8080/users
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
     logName: projects/my-project/logs/transformation_test
-    severity: 600.0
+    severity: 500.0
     timestamp: 2021-08-26T16:52:45.000000000Z
   - jsonPayload:
-      level: info
-      message: 'signal process started'
-      pid: 98765
-      tid: 98765
+      client: "::1"
+      connection: 2194.0
+      host: localhost
+      level: error
+      message: directory index of "/var/www/html/" is forbidden
+      pid: 29060.0
+      request: GET / HTTP/1.1
+      server: localhost
+      tid: 29060.0
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
     logName: projects/my-project/logs/transformation_test
-    severity: 200.0
+    severity: 500.0
     timestamp: 2021-08-26T16:53:12.000000000Z
   - jsonPayload:
-      level: notice
-      message: 'worker process 54321 exited with code 0'
-      pid: 98765
-      tid: 98765
+      client: 172.16.0.100
+      connection: 2195.0
+      level: error
+      message: "SSL_do_handshake() failed (SSL: error:1408F10B:SSL routines:ssl3_get_record:wrong version number) while SSL handshaking"
+      pid: 29060.0
+      server: secure.example.com
+      tid: 29060.0
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
     logName: projects/my-project/logs/transformation_test
-    severity: 200.0
-    timestamp: 2021-08-26T16:54:00.000000000Z
+    severity: 500.0
+    timestamp: 2021-08-26T16:54:01.000000000Z
   - jsonPayload:
-      level: emerg
-      message: 'bind() to 0.0.0.0:80 failed (98: Address already in use)'
-      pid: 11111
-      tid: 11111
+      client: 192.168.1.50
+      connection: 2196.0
+      host: www.example.com
+      level: error
+      message: "\"/var/www/html/images/logo.png\" is not found (2: No such file or directory)"
+      pid: 29060.0
+      request: GET /images/logo.png HTTP/1.1
+      server: www.example.com
+      tid: 29060.0
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
     logName: projects/my-project/logs/transformation_test
-    severity: 700.0
+    severity: 500.0
     timestamp: 2021-08-26T16:55:30.000000000Z
   - jsonPayload:
-      level: alert
-      message: 'ioctl(FIOASYNC) failed while spawning "worker process"'
-      pid: 22222
-      tid: 22222
+      message: ""
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
     logName: projects/my-project/logs/transformation_test
-    severity: 650.0
-    timestamp: 2021-08-26T16:56:15.000000000Z
+    timestamp: now
   - jsonPayload:
-      level: debug
-      message: 'accept4() failed (11: Resource temporarily unavailable)'
-      pid: 33333
-      tid: 33333
-      connection: 5678
+      message: ""
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
     logName: projects/my-project/logs/transformation_test
-    severity: 100.0
-    timestamp: 2021-08-26T16:57:22.000000000Z
+    timestamp: now
   partialSuccess: true
   resource:
     labels: {}
