@@ -23,6 +23,7 @@
         guid: "{11111111}"
         name: Service Control Manager
       record_id: 1111.0
+      system_time: 2025-07-02T20:38:45.026077400Z
       task: "0"
     logName: projects/my-project/logs/transformation_test
     timestamp: 2025-07-02T20:38:45.026077400Z
@@ -50,6 +51,7 @@
         guid: "{11111111}"
         name: Service Control Manager
       record_id: 1111.0
+      system_time: 2025-07-02T20:39:32.339006100Z
       task: "0"
     logName: projects/my-project/logs/transformation_test
     timestamp: 2025-07-02T20:39:32.339006100Z
