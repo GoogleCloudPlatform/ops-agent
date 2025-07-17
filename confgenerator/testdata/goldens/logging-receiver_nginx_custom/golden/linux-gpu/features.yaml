@@ -35,9 +35,17 @@
   key: "[2].enabled"
   value: "true"
 - module: logging
+  feature: receivers:nginx_access
+  key: "[2].include_paths.__length"
+  value: "1"
+- module: logging
   feature: receivers:nginx_error
   key: "[3].enabled"
   value: "true"
+- module: logging
+  feature: receivers:nginx_error
+  key: "[3].include_paths.__length"
+  value: "1"
 - module: logging
   feature: receivers:syslog
   key: "[4].enabled"
