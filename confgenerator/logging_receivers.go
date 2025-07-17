@@ -620,21 +620,19 @@ func windowsEventLogV1Processors(ctx context.Context) ([]otel.Component, error) 
 			// TODO: Convert from array of maps to array of strings
 			"jsonPayload.StringInserts": {CopyFrom: "jsonPayload.event_data.data"},
 			"jsonPayload.TimeGenerated": {
-				CopyFrom: "jsonPayload.system_time",
-				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
-					// "%Y-%m-%d %T.%s +0000" is the desired format string.
-					return v.Set(ottl.FormatTime(ottl.ToTime(v, "%Y-%m-%dT%T.%sZ"), "%Y-%m-%d %T.%s +0000"))
-				},
+				CopyFrom:          "jsonPayload.system_time",
+				CustomConvertFunc: formatSystemTime,
 			},
 			"jsonPayload.TimeWritten": {
-				CopyFrom: "jsonPayload.system_time",
-				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
-					// "%Y-%m-%d %T.%s +0000" is the desired format string.
-					return v.Set(ottl.FormatTime(ottl.ToTime(v, "%Y-%m-%dT%T.%sZ"), "%Y-%m-%d %T.%s +0000"))
-				},
+				CopyFrom:          "jsonPayload.system_time",
+				CustomConvertFunc: formatSystemTime,
 			},
 		}}
 	return p.Processors(ctx)
+}
+
+func formatSystemTime(v ottl.LValue) ottl.Statements {
+	return v.Set(ottl.FormatTime(ottl.ToTime(v, "%Y-%m-%dT%T.%sZ"), "%Y-%m-%d %T.%s +0000"))
 }
 
 func init() {
