@@ -13,8 +13,8 @@
       StringInserts:
       - param1: Windows Modules Installer
       - param2: running
-      TimeGenerated: 2025-07-02T20:38:45.026077400Z
-      TimeWritten: 2025-07-02T20:38:45.026077400Z
+      TimeGenerated: 2025-07-02 20:38:45.0260774 +0000
+      TimeWritten: 2025-07-02 20:38:45.0260774 +0000
     logName: projects/my-project/logs/my-log-name
     resource:
       labels:
@@ -36,8 +36,8 @@
       StringInserts:
       - param1: Software Protection
       - param2: stopped
-      TimeGenerated: 2025-07-02T20:39:32.339006100Z
-      TimeWritten: 2025-07-02T20:39:32.339006100Z
+      TimeGenerated: 2025-07-02 20:39:32.3390061 +0000
+      TimeWritten: 2025-07-02 20:39:32.3390061 +0000
     logName: projects/my-project/logs/my-log-name
     resource:
       labels:
