@@ -1,0 +1,335 @@
+- entries:
+  - jsonPayload:
+      message: 2025-07-18 15:08:05.257 | Starting Redis Server
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: 2025-07-18 15:08:05.265 | 1:C 18 Jul 2025 19:08:05.264 * oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: 2025-07-18 15:08:05.265 | 1:C 18 Jul 2025 19:08:05.264 * Redis version=8.0.3, bits=64, commit=00000000, modified=1, pid=1, just started
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: 2025-07-18 15:08:05.265 | 1:C 18 Jul 2025 19:08:05.264 * Configuration loaded
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "2025-07-18 15:08:05.265 | 1:M 18 Jul 2025 19:08:05.265 * monotonic clock: POSIX clock_gettime"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: 2025-07-18 15:08:05.265 | 1:M 18 Jul 2025 19:08:05.265 * Running mode=standalone, port=6379.
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: 2025-07-18 15:08:05.265 | 1:M 18 Jul 2025 19:08:05.265 * <bf> RedisBloom version 8.0.1 (Git=unknown)
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "2025-07-18 15:08:05.265 | 1:M 18 Jul 2025 19:08:05.265 * <bf> Registering configuration options: ["
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "2025-07-18 15:08:05.265 | 1:M 18 Jul 2025 19:08:05.265 * <bf> \t{ bf-error-rate       :      0.01 }"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "2025-07-18 15:08:05.265 | 1:M 18 Jul 2025 19:08:05.265 * <bf> \t{ bf-initial-size     :       100 }"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "2025-07-18 15:08:05.265 | 1:M 18 Jul 2025 19:08:05.265 * <bf> \t{ bf-expansion-factor :         2 }"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "2025-07-18 15:08:05.265 | 1:M 18 Jul 2025 19:08:05.265 * <bf> \t{ cf-bucket-size      :         2 }"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "2025-07-18 15:08:05.265 | 1:M 18 Jul 2025 19:08:05.265 * <bf> \t{ cf-initial-size     :      1024 }"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "2025-07-18 15:08:05.266 | 1:M 18 Jul 2025 19:08:05.265 * <bf> \t{ cf-max-iterations   :        20 }"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "2025-07-18 15:08:05.266 | 1:M 18 Jul 2025 19:08:05.265 * <bf> \t{ cf-expansion-factor :         1 }"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "2025-07-18 15:08:05.266 | 1:M 18 Jul 2025 19:08:05.265 * <bf> \t{ cf-max-expansions   :        32 }"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: 2025-07-18 15:08:05.266 | 1:M 18 Jul 2025 19:08:05.265 * <bf> ]
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: 2025-07-18 15:08:05.266 | 1:M 18 Jul 2025 19:08:05.265 * Module 'bf' loaded from /usr/local/lib/redis/modules//redisbloom.so
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "2025-07-18 15:08:05.267 | 1:M 18 Jul 2025 19:08:05.267 * <search> Redis version found by RedisSearch : 8.0.3 - oss"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: 2025-07-18 15:08:05.267 | 1:M 18 Jul 2025 19:08:05.267 * <search> RediSearch version 8.0.1 (Git=5688fcc)
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: 2025-07-18 15:08:05.267 | 1:M 18 Jul 2025 19:08:05.267 * <search> Low level api version 1 initialized successfully
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "2025-07-18 15:08:05.267 | 1:M 18 Jul 2025 19:08:05.267 * <search> gc: ON, prefix min length: 2, min word length to stem: 4, prefix max expansions: 200, query timeout (ms): 500, timeout policy: return, cursor read size: 1000, cursor max idle (ms): 300000, max doctable size: 1000000, max number of search results:  1000000, "
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: 2025-07-18 15:08:05.267 | 1:M 18 Jul 2025 19:08:05.267 * <search> Initialized thread pools!
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: 2025-07-18 15:08:05.267 | 1:M 18 Jul 2025 19:08:05.267 * <search> Disabled workers threadpool of size 0
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: 2025-07-18 15:08:05.267 | 1:M 18 Jul 2025 19:08:05.267 * <search> Subscribe to config changes
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: 2025-07-18 15:08:05.267 | 1:M 18 Jul 2025 19:08:05.267 * <search> Enabled role change notification
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "2025-07-18 15:08:05.267 | 1:M 18 Jul 2025 19:08:05.267 * <search> Cluster configuration: AUTO partitions, type: 0, coordinator timeout: 0ms"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: 2025-07-18 15:08:05.267 | 1:M 18 Jul 2025 19:08:05.267 * <search> Register write commands
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: 2025-07-18 15:08:05.267 | 1:M 18 Jul 2025 19:08:05.267 * Module 'search' loaded from /usr/local/lib/redis/modules//redisearch.so
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: 2025-07-18 15:08:05.267 | 1:M 18 Jul 2025 19:08:05.267 * <timeseries> RedisTimeSeries version 80001, git_sha=577bfa8b5909e7ee572f0b651399be8303dc6641
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "2025-07-18 15:08:05.267 | 1:M 18 Jul 2025 19:08:05.267 * <timeseries> Redis version found by RedisTimeSeries : 8.0.3 - oss"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "2025-07-18 15:08:05.267 | 1:M 18 Jul 2025 19:08:05.267 * <timeseries> Registering configuration options: ["
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "2025-07-18 15:08:05.267 | 1:M 18 Jul 2025 19:08:05.267 * <timeseries> \t{ ts-compaction-policy   :              }"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "2025-07-18 15:08:05.267 | 1:M 18 Jul 2025 19:08:05.267 * <timeseries> \t{ ts-num-threads         :            3 }"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "2025-07-18 15:08:05.267 | 1:M 18 Jul 2025 19:08:05.267 * <timeseries> \t{ ts-retention-policy    :            0 }"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "2025-07-18 15:08:05.267 | 1:M 18 Jul 2025 19:08:05.267 * <timeseries> \t{ ts-duplicate-policy    :        block }"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "2025-07-18 15:08:05.267 | 1:M 18 Jul 2025 19:08:05.267 * <timeseries> \t{ ts-chunk-size-bytes    :         4096 }"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "2025-07-18 15:08:05.267 | 1:M 18 Jul 2025 19:08:05.267 * <timeseries> \t{ ts-encoding            :   compressed }"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "2025-07-18 15:08:05.267 | 1:M 18 Jul 2025 19:08:05.267 * <timeseries> \t{ ts-ignore-max-time-diff:            0 }"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "2025-07-18 15:08:05.267 | 1:M 18 Jul 2025 19:08:05.267 * <timeseries> \t{ ts-ignore-max-val-diff :     0.000000 }"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: 2025-07-18 15:08:05.267 | 1:M 18 Jul 2025 19:08:05.267 * <timeseries> ]
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: 2025-07-18 15:08:05.267 | 1:M 18 Jul 2025 19:08:05.267 * <timeseries> Detected redis oss
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: 2025-07-18 15:08:05.267 | 1:M 18 Jul 2025 19:08:05.267 * Module 'timeseries' loaded from /usr/local/lib/redis/modules//redistimeseries.so
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: 2025-07-18 15:08:05.268 | 1:M 18 Jul 2025 19:08:05.268 * <ReJSON> Created new data type 'ReJSON-RL'
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "2025-07-18 15:08:05.268 | 1:M 18 Jul 2025 19:08:05.268 * <ReJSON> version: 80001 git sha: unknown branch: unknown"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: 2025-07-18 15:08:05.268 | 1:M 18 Jul 2025 19:08:05.268 * <ReJSON> Exported RedisJSON_V1 API
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: 2025-07-18 15:08:05.268 | 1:M 18 Jul 2025 19:08:05.268 * <ReJSON> Exported RedisJSON_V2 API
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: 2025-07-18 15:08:05.268 | 1:M 18 Jul 2025 19:08:05.268 * <ReJSON> Exported RedisJSON_V3 API
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: 2025-07-18 15:08:05.268 | 1:M 18 Jul 2025 19:08:05.268 * <ReJSON> Exported RedisJSON_V4 API
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: 2025-07-18 15:08:05.268 | 1:M 18 Jul 2025 19:08:05.268 * <ReJSON> Exported RedisJSON_V5 API
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: 2025-07-18 15:08:05.268 | 1:M 18 Jul 2025 19:08:05.268 * <ReJSON> Enabled diskless replication
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "2025-07-18 15:08:05.268 | 1:M 18 Jul 2025 19:08:05.268 * <ReJSON> Initialized shared string cache, thread safe: false."
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: 2025-07-18 15:08:05.268 | 1:M 18 Jul 2025 19:08:05.268 * Module 'ReJSON' loaded from /usr/local/lib/redis/modules//rejson.so
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: 2025-07-18 15:08:05.268 | 1:M 18 Jul 2025 19:08:05.268 * <search> Acquired RedisJSON_V5 API
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: 2025-07-18 15:08:05.268 | 1:M 18 Jul 2025 19:08:05.268 * Server initialized
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance
