@@ -27,6 +27,10 @@
   key: "[1].enabled"
   value: "true"
 - module: logging
+  feature: receivers:redis
+  key: "[1].include_paths.__length"
+  value: "5"
+- module: logging
   feature: receivers:syslog
   key: "[2].enabled"
   value: "true"
