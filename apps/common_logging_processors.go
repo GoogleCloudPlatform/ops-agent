@@ -93,7 +93,7 @@ func genericAccessLogParser(ctx context.Context, processorType, tag, uid string)
 // TODO: rename to genericAccessLogParser once the old version is removed
 // genericAccessLogParserAsInternalLoggingProcessor is an internal logging processor that parses access logs.
 // It will eventually replace genericAccessLogParser, as it returns a slice of InternalLoggingProcessor rather than fluentbit.Component, making it more flexible.
-func genericAccessLogParserAsInternalLoggingProcessor(ctx context.Context, processorType, tag, uid string) []confgenerator.InternalLoggingProcessor {
+func genericAccessLogParserAsInternalLoggingProcessor(ctx context.Context, processorType string) []confgenerator.InternalLoggingProcessor {
 	c := confgenerator.LoggingProcessorParseRegex{
 		// Documentation:
 		// https://httpd.apache.org/docs/current/logs.html#accesslog

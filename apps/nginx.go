@@ -72,7 +72,7 @@ func (LoggingProcessorMacroNginxAccess) Type() string {
 }
 
 func (p LoggingProcessorMacroNginxAccess) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
-	return genericAccessLogParserAsInternalLoggingProcessor(ctx, p.Type(), "nginx_access", "nginx_access")
+	return genericAccessLogParserAsInternalLoggingProcessor(ctx, p.Type())
 }
 
 type LoggingProcessorMacroNginxError struct {
