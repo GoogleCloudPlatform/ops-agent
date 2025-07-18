@@ -1,0 +1,8 @@
+2021/08/26 16:50:17 [error] 29060#29060: *2191 open() "/var/www/html/forbidden.html" failed (13: Permission denied), client: ::1, server: _, request: "GET /forbidden.html HTTP/1.1", host: "localhost:8080"
+2021/08/26 16:51:23 [error] 29060#29060: *2192 access forbidden by rule, client: 192.168.1.100, server: example.com, request: "POST /admin HTTP/1.1", host: "example.com"
+2021/08/26 16:52:45 [error] 29060#29060: *2193 connect() failed (111: Connection refused) while connecting to upstream, client: 10.0.0.50, server: api.example.com, request: "GET /api/v1/users HTTP/1.1", upstream: "http://127.0.0.1:8080/users", host: "api.example.com"
+2021/08/26 16:53:12 [error] 29060#29060: *2194 directory index of "/var/www/html/" is forbidden, client: ::1, server: localhost, request: "GET / HTTP/1.1", host: "localhost"
+2021/08/26 16:54:01 [error] 29060#29060: *2195 SSL_do_handshake() failed (SSL: error:1408F10B:SSL routines:ssl3_get_record:wrong version number) while SSL handshaking, client: 172.16.0.100, server: secure.example.com
+2021/08/26 16:55:30 [error] 29060#29060: *2196 "/var/www/html/images/logo.png" is not found (2: No such file or directory), client: 192.168.1.50, server: www.example.com, request: "GET /images/logo.png HTTP/1.1", host: "www.example.com"
+
+

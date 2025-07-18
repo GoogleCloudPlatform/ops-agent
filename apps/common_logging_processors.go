@@ -31,6 +31,7 @@ func instrumentationSourceValue(processorType string) *confgenerator.ModifyField
 	}
 }
 
+// TODO: Remove this once all receivers are converted to use genericAccessLogParserAsInternalLoggingProcessor
 func genericAccessLogParser(ctx context.Context, processorType, tag, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegex{
 		// Documentation:
@@ -87,4 +88,67 @@ func genericAccessLogParser(ctx context.Context, processorType, tag, uid string)
 
 	c = append(c, mf.Components(ctx, tag, uid)...)
 	return c
+}
+
+// TODO: rename to genericAccessLogParser once the old version is removed
+// genericAccessLogParserAsInternalLoggingProcessor is an internal logging processor that parses access logs.
+// It will eventually replace genericAccessLogParser, as it returns a slice of InternalLoggingProcessor rather than fluentbit.Component, making it more flexible.
+func genericAccessLogParserAsInternalLoggingProcessor(ctx context.Context, processorType string) []confgenerator.InternalLoggingProcessor {
+	c := confgenerator.LoggingProcessorParseRegex{
+		// Documentation:
+		// https://httpd.apache.org/docs/current/logs.html#accesslog
+		// https://docs.nginx.com/nginx/admin-guide/monitoring/logging/#setting-up-the-access-log
+		// Sample "common" line: 127.0.0.1 - frank [10/Oct/2000:13:55:36 -0700] "GET /apache_pb.gif HTTP/1.0" 200 2326
+		// Sample "combined" line: ::1 - - [26/Aug/2021:16:49:43 +0000] "GET / HTTP/1.1" 200 10701 "-" "curl/7.64.0" "0.5"
+		Regex: `^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<http_request_requestMethod>\S+)(?: +(?<http_request_requestUrl>[^\"]*?)(?: +(?<http_request_protocol>\S+))?)?" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*)(?: "(?<http_request_referer>[^\"]*)" "(?<http_request_userAgent>[^\"]*)")?(?: "(?<gzip_ratio>[^\"]*)")?$`,
+		ParserShared: confgenerator.ParserShared{
+			TimeKey:    "time",
+			TimeFormat: "%d/%b/%Y:%H:%M:%S %z",
+			Types: map[string]string{
+				"http_request_status": "integer",
+				// N.B. "http_request_responseSize" is a string containing an integer.
+				// https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#HttpRequest.FIELDS.response_size
+			},
+		},
+	}
+	mf := confgenerator.LoggingProcessorModifyFields{
+		Fields: map[string]*confgenerator.ModifyField{
+			InstrumentationSourceLabel: instrumentationSourceValue(processorType),
+		},
+	}
+	// apache/nginx/varnish logs "-" when a field does not have a value. Remove the field entirely when this happens.
+	for _, field := range []string{
+		"jsonPayload.host",
+		"jsonPayload.user",
+		"jsonPayload.gzip_ratio",
+	} {
+		mf.Fields[field] = &confgenerator.ModifyField{
+			OmitIf: fmt.Sprintf(`%s = "-"`, field),
+		}
+	}
+	// Generate the httpRequest structure.
+	for _, field := range []string{
+		"remoteIp",
+		"requestMethod",
+		"requestUrl",
+		"protocol",
+		"status",
+		"responseSize",
+		"referer",
+		"userAgent",
+	} {
+		dest := fmt.Sprintf("httpRequest.%s", field)
+		src := fmt.Sprintf("jsonPayload.http_request_%s", field)
+		mf.Fields[dest] = &confgenerator.ModifyField{
+			MoveFrom: src,
+		}
+		if field == "referer" {
+			mf.Fields[dest].OmitIf = fmt.Sprintf(`%s = "-"`, src)
+		}
+	}
+
+	return []confgenerator.InternalLoggingProcessor{
+		c,
+		mf,
+	}
 }
