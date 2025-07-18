@@ -320,8 +320,6 @@ func (r MetricsReceiverHostmetrics) Pipelines(ctx context.Context) ([]otel.Recei
 			otel.MetricsFilter(
 				"exclude",
 				"strict",
-				// Temporarily exclude system.cpu.time (cpu/usage_time)
-				"system.cpu.time",
 				"system.network.dropped",
 				"system.filesystem.inodes.usage",
 				"system.paging.faults",

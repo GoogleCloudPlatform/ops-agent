@@ -61,7 +61,6 @@ processors:
       exclude:
         match_type: strict
         metric_names:
-        - system.cpu.time
         - system.network.dropped
         - system.filesystem.inodes.usage
         - system.paging.faults
