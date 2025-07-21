@@ -1,1 +1,1 @@
-- config_error: "not an OTel processor: &apps.LoggingProcessorElasticsearchJson{ConfigComponent:confgenerator.ConfigComponent{Type:\"elasticsearch_json\"}}"
+- config_error: "failed generating OTel processor: &confgenerator.loggingProcessorMacroAdapter[github.com/GoogleCloudPlatform/ops-agent/apps.LoggingProcessorMacroElasticsearchJson]{ConfigComponent:confgenerator.ConfigComponent{Type:\"elasticsearch_json\"}, ProcessorMacro:apps.LoggingProcessorMacroElasticsearchJson{}}, err: unimplemented"

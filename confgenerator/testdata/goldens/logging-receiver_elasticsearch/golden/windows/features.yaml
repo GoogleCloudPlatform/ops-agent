@@ -22,3 +22,11 @@
   feature: receivers:elasticsearch_json
   key: "[1].enabled"
   value: "true"
+- module: logging
+  feature: receivers:elasticsearch_json
+  key: "[1].include_paths.__length"
+  value: "5"
+- module: logging
+  feature: receivers:elasticsearch_json
+  key: "[1].-.__length"
+  value: "2"
