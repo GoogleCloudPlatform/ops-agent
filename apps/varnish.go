@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
 
@@ -60,8 +59,7 @@ func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverVarnish{} })
 }
 
-type LoggingProcessorMacroVarnish struct {
-}
+type LoggingProcessorMacroVarnish struct {}
 
 func (LoggingProcessorMacroVarnish) Type() string {
 	return "varnish"
@@ -70,7 +68,7 @@ func (LoggingProcessorMacroVarnish) Type() string {
 func (p LoggingProcessorMacroVarnish) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
 	// Logging documentation: https://github.com/varnishcache/varnish-cache/blob/04455d6c3d8b2d810007239cb1cb2b740d7ec8ab/doc/sphinx/reference/varnishncsa.rst#format
 	// Sample line: 127.0.0.1 - - [02/Mar/2022:15:55:05 +0000] "GET http://localhost:8080/test HTTP/1.1" 404 273 "-" "curl/7.64.0"
-	return genericAccessLogParserAsInternalLoggingProcessor(ctx, p.Type()) // TODO: Wait for https://github.com/GoogleCloudPlatform/ops-agent/pull/1978 to be merged and/or any follow-up improvements to the genericAccessLogParser
+	return genericAccessLogParserAsInternalLoggingProcessor(ctx, p.Type())
 }
 
 func loggingReceiverFilesMixinVarnish() confgenerator.LoggingReceiverFilesMixin {
@@ -80,5 +78,5 @@ func loggingReceiverFilesMixinVarnish() confgenerator.LoggingReceiverFilesMixin 
 }
 
 func init() {
-	confgenerator.RegisterLoggingProcessorMacro[LoggingProcessorMacroVarnish](loggingProcessorMacroVarnish)
+	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroVarnish](loggingReceiverFilesMixinVarnish)
 }
