@@ -1,0 +1,1 @@
+- config_error: "not an OTel processor: &apps.LoggingProcessorVarnish{ConfigComponent:confgenerator.ConfigComponent{Type:\"varnish\"}}"
