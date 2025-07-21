@@ -119,6 +119,7 @@ func (p LoggingProcessorMacroPostgresql) Expand(ctx context.Context) []confgener
 	return []confgenerator.InternalLoggingProcessor{
 		confgenerator.LoggingProcessorParseMultilineRegex{
 			LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
+				// Limited logging documentation: https://www.postgresql.org/docs/10/runtime-config-logging.html
 				Parsers: []confgenerator.RegexParser{
 					{
 						// This parser matches most distributions' defaults by our testing
@@ -167,6 +168,7 @@ func (p LoggingProcessorMacroPostgresql) Expand(ctx context.Context) []confgener
 				},
 			},
 		},
+		// https://www.postgresql.org/docs/10/runtime-config-logging.html#RUNTIME-CONFIG-SEVERITY-LEVELS
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				"severity": {
