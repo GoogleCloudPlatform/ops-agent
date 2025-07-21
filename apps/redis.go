@@ -107,6 +107,7 @@ func (p LoggingProcessorMacroRedis) Expand(ctx context.Context) []confgenerator.
 				},
 			},
 		},
+		// Log levels documented: https://github.com/redis/redis/blob/6.2/src/server.c#L1124
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				"severity": {
