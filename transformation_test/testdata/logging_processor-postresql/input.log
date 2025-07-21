@@ -1,0 +1,27 @@
+2025-07-21 10:14:21.123 UTC [21763] LOG:  connection received: host=192.168.1.10 port=5432 user=admin database=mydb
+2025-07-21 10:14:21.124 UTC [21763] LOG:  connection authorized: user=admin database=mydb application_name=psql
+2025-07-21 10:14:21.125 UTC [21763] STATEMENT:  SELECT * FROM customers WHERE last_login > now() - interval '30 days';
+2025-07-21 10:14:22.301 UTC [21765] LOG:  disconnection: session time: 0:00:01.178 user=admin database=mydb host=192.168.1.10 port=5432
+2025-07-21 10:14:25.411 UTC [21767] ERROR:  syntax error at or near "FROMM" at character 15
+2025-07-21 10:14:25.411 UTC [21767] STATEMENT:  SELECT name, email FROMM users;
+2025-07-21 10:14:27.123 UTC [21770] LOG:  duration: 5.345 ms  statement: INSERT INTO orders (user_id, amount, created_at) VALUES (42, 199.99, now());
+2025-07-21 10:14:30.673 UTC [21772] WARNING:  there is already a transaction in progress
+2025-07-21 10:14:30.673 UTC [21772] STATEMENT:  BEGIN;
+2025-07-21 10:14:35.987 UTC [21775] LOG:  automatic vacuum of table "public.sessions": index scans: 1
+        pages: 1000 removed, 4323 remain
+        tuples: 12345 removed, 54232 remain
+        buffer usage: 753 hits, 945 misses, 3 dirtied
+        avg read rate: 10.45 MB/s, avg write rate: 3.32 MB/s
+2025-07-21 10:14:40.118 UTC [21778] FATAL:  password authentication failed for user "invalid_user"
+2025-07-21 10:14:40.118 UTC [21778] DETAIL:  Connection matched pg_hba.conf line 90: "host all all 0.0.0.0/0 md5"
+2025-07-21 10:14:45.721 UTC [21782] LOG:  checkpoint starting: time
+2025-07-21 10:14:46.053 UTC [21782] LOG:  checkpoint complete: wrote 1523 buffers (1.2%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.091 s, sync=0.063 s, total=0.332 s; sync files=32, longest=0.021 s, average=0.004 s
+2025-07-21 10:14:49.215 UTC [21784] LOG:  background worker "logical replication launcher" (PID 21784) started
+2025-07-21 10:14:52.800 UTC [21790] LOG:  duration: 13.212 ms  statement: UPDATE inventory SET quantity = quantity - 1 WHERE product_id = 502;
+2025-07-21 10:14:55.029 UTC [21793] PANIC:  could not write to log file: No space left on device
+2025-07-21 10:14:55.029 UTC [21793] LOG:  server process (PID 21793) was terminated by signal 6: Aborted
+2025-07-21 10:14:55.029 UTC [21793] DETAIL:  Failed process was running: COPY logs TO '/var/tmp/log_backup.csv' CSV
+2025-07-21 10:14:56.000 UTC [1] LOG:  database system is shutting down
+2025-07-21 10:14:56.650 UTC [1] LOG:  database system shut down at 2025-07-21 10:14:56 UTC
+2025-07-21 10:14:57.012 UTC [1] LOG:  database system was shut down at 2025-07-21 10:14:56 UTC
+2025-07-21 10:14:57.012 UTC [1] LOG:  database system is ready to accept connections
