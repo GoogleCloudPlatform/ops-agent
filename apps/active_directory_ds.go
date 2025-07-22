@@ -57,29 +57,42 @@ func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverActiveDirectoryDS{} }, platform.Windows)
 }
 
-type LoggingReceiverActiveDirectoryDS struct {
+type LoggingProcessorMacroActiveDirectoryDS struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 }
 
-func (r LoggingReceiverActiveDirectoryDS) Type() string {
+func (p LoggingProcessorMacroActiveDirectoryDS) Type() string {
 	return "active_directory_ds"
 }
 
-func (r LoggingReceiverActiveDirectoryDS) Components(ctx context.Context, tag string) []fluentbit.Component {
-	l := confgenerator.LoggingReceiverWindowsEventLog{
-		Channels: []string{"Directory Service", "Active Directory Web Services"},
-	}
+func (p LoggingProcessorMacroActiveDirectoryDS) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
+	return []confgenerator.InternalLoggingProcessor{}
+}
 
-	c := append(l.Components(ctx, tag),
-		confgenerator.LoggingProcessorModifyFields{
-			Fields: map[string]*confgenerator.ModifyField{
-				InstrumentationSourceLabel: instrumentationSourceValue(r.Type()),
-			},
-		}.Components(ctx, tag, "active_directory_ds")...,
-	)
-	return c
+func (p LoggingProcessorMacroActiveDirectoryDS) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
+	return []fluentbit.Component{}
+}
+
+type LoggingReceiverMacroActiveDirectoryDS struct {
+	confgenerator.ConfigComponent `yaml:",inline"`
+	Channels                      []string `yaml:"channels"`
+}
+
+func (r LoggingReceiverMacroActiveDirectoryDS) Type() string {
+	return "active_directory_ds"
+}
+
+func (r LoggingReceiverMacroActiveDirectoryDS) Expand(ctx context.Context) (confgenerator.InternalLoggingReceiver, []confgenerator.InternalLoggingProcessor) {
+	l := confgenerator.LoggingReceiverWindowsEventLog{
+		Channels: r.Channels,
+	}
+	processor := LoggingProcessorMacroActiveDirectoryDS{}
+
+	return l, processor.Expand(ctx)
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverActiveDirectoryDS{} }, platform.Windows)
+	confgenerator.RegisterLoggingReceiverMacro[LoggingReceiverMacroActiveDirectoryDS](func() LoggingReceiverMacroActiveDirectoryDS {
+		return LoggingReceiverMacroActiveDirectoryDS{}
+	})
 }
