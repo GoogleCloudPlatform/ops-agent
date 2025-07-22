@@ -27,6 +27,10 @@
   key: "[1].enabled"
   value: "true"
 - module: logging
+  feature: receivers:postgresql_general
+  key: "[1].include_paths.__length"
+  value: "3"
+- module: logging
   feature: receivers:syslog
   key: "[2].enabled"
   value: "true"
