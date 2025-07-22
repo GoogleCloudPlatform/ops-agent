@@ -1,1 +1,1 @@
-- config_error: "not an OTel processor: &apps.LoggingProcessorApacheAccess{ConfigComponent:confgenerator.ConfigComponent{Type:\"apache_access\"}}"
+- config_error: "failed generating OTel processor: &confgenerator.loggingProcessorMacroAdapter[github.com/GoogleCloudPlatform/ops-agent/apps.LoggingProcessorMacroApacheAccess]{ConfigComponent:confgenerator.ConfigComponent{Type:\"apache_access\"}, ProcessorMacro:apps.LoggingProcessorMacroApacheAccess{}}, err: unimplemented"
