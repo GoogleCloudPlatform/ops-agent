@@ -45,10 +45,6 @@ case $VERSION_ID in
     ;;
 esac
 
-curl -s \
-    https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.deb.sh | \
-    sudo bash
-
 sudo apt-get update
 
 if [[ "${VERSION_ID}" == 10 ]]; then
