@@ -1,1 +1,1 @@
-- config_error: "not an OTel processor: &apps.LoggingProcessorMysqlSlow{ConfigComponent:confgenerator.ConfigComponent{Type:\"mysql_slow\"}}"
+- config_error: "failed generating OTel processor: &confgenerator.loggingProcessorMacroAdapter[github.com/GoogleCloudPlatform/ops-agent/apps.LoggingProcessorMacroMysqlSlow]{ConfigComponent:confgenerator.ConfigComponent{Type:\"mysql_slow\"}, ProcessorMacro:apps.LoggingProcessorMacroMysqlSlow{}}, err: unimplemented"
