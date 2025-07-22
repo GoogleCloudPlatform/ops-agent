@@ -19,6 +19,14 @@
   key: "[0].enabled"
   value: "true"
 - module: logging
+  feature: receivers:apache_access
+  key: "[0].include_paths.__length"
+  value: "3"
+- module: logging
   feature: receivers:apache_error
   key: "[1].enabled"
   value: "true"
+- module: logging
+  feature: receivers:apache_error
+  key: "[1].include_paths.__length"
+  value: "3"
