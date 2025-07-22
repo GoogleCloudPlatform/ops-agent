@@ -1,1 +1,1 @@
-- config_error: "not an OTel processor: &apps.LoggingProcessorSolrSystem{ConfigComponent:confgenerator.ConfigComponent{Type:\"solr_system\"}}"
+- config_error: "failed generating OTel processor: &confgenerator.loggingProcessorMacroAdapter[github.com/GoogleCloudPlatform/ops-agent/apps.LoggingProcessorMacroSolrSystem]{ConfigComponent:confgenerator.ConfigComponent{Type:\"solr_system\"}, ProcessorMacro:apps.LoggingProcessorMacroSolrSystem{ConfigComponent:confgenerator.ConfigComponent{Type:\"solr_system\"}}}, err: unimplemented"
