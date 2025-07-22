@@ -1,103 +1,134 @@
 - entries:
   - jsonPayload:
-      client: "::1"
-      connection: 2191.0
-      host: localhost:8080
-      level: error
-      message: "open() \"/var/www/html/forbidden.html\" failed (13: Permission denied)"
-      pid: 29060.0
-      request: GET /forbidden.html HTTP/1.1
-      server: _
-      tid: 29060.0
+      message: "Jul 21 01:02:43 myhost CRON[10123]: (root) CMD (/usr/lib/sa/sa1 1 1)"
     labels:
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
-    logName: projects/my-project/logs/transformation_test
-    severity: 500.0
-    timestamp: 2021-08-26T16:50:17.000000000Z
-  - jsonPayload:
-      client: 192.168.1.100
-      connection: 2192.0
-      host: example.com
-      level: error
-      message: access forbidden by rule
-      pid: 29060.0
-      request: POST /admin HTTP/1.1
-      server: example.com
-      tid: 29060.0
-    labels:
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
-    logName: projects/my-project/logs/transformation_test
-    severity: 500.0
-    timestamp: 2021-08-26T16:51:23.000000000Z
-  - jsonPayload:
-      client: 10.0.0.50
-      connection: 2193.0
-      host: api.example.com
-      level: error
-      message: "connect() failed (111: Connection refused) while connecting to upstream"
-      pid: 29060.0
-      request: GET /api/v1/users HTTP/1.1
-      server: api.example.com
-      tid: 29060.0
-      upstream: http://127.0.0.1:8080/users
-    labels:
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
-    logName: projects/my-project/logs/transformation_test
-    severity: 500.0
-    timestamp: 2021-08-26T16:52:45.000000000Z
-  - jsonPayload:
-      client: "::1"
-      connection: 2194.0
-      host: localhost
-      level: error
-      message: directory index of "/var/www/html/" is forbidden
-      pid: 29060.0
-      request: GET / HTTP/1.1
-      server: localhost
-      tid: 29060.0
-    labels:
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
-    logName: projects/my-project/logs/transformation_test
-    severity: 500.0
-    timestamp: 2021-08-26T16:53:12.000000000Z
-  - jsonPayload:
-      client: 172.16.0.100
-      connection: 2195.0
-      level: error
-      message: "SSL_do_handshake() failed (SSL: error:1408F10B:SSL routines:ssl3_get_record:wrong version number) while SSL handshaking"
-      pid: 29060.0
-      server: secure.example.com
-      tid: 29060.0
-    labels:
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
-    logName: projects/my-project/logs/transformation_test
-    severity: 500.0
-    timestamp: 2021-08-26T16:54:01.000000000Z
-  - jsonPayload:
-      client: 192.168.1.50
-      connection: 2196.0
-      host: www.example.com
-      level: error
-      message: "\"/var/www/html/images/logo.png\" is not found (2: No such file or directory)"
-      pid: 29060.0
-      request: GET /images/logo.png HTTP/1.1
-      server: www.example.com
-      tid: 29060.0
-    labels:
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
-    logName: projects/my-project/logs/transformation_test
-    severity: 500.0
-    timestamp: 2021-08-26T16:55:30.000000000Z
-  - jsonPayload:
-      message: ""
-    labels:
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
     logName: projects/my-project/logs/transformation_test
     timestamp: now
   - jsonPayload:
-      message: ""
+      message: "Jul 21 01:17:01 myhost CRON[10234]: (root) CMD (   cd / && run-parts --report /etc/cron.hourly)"
     labels:
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "Jul 21 03:15:12 myhost systemd[1]: Starting Daily apt download activities..."
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "Jul 21 03:15:13 myhost systemd[1]: Finished Daily apt download activities."
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "Jul 21 04:00:45 myhost kernel: [64522.923400] usb 1-1: USB disconnect, device number 4"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "Jul 21 04:01:12 myhost kernel: [64550.293280] usb 1-1: new full-speed USB device number 5 using xhci_hcd"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "Jul 21 06:44:09 myhost sshd[13456]: Accepted password for alice from 203.0.113.10 port 52218 ssh2"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "Jul 21 06:44:09 myhost sshd[13456]: pam_unix(sshd:session): session opened for user alice by (uid=0)"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "Jul 21 07:00:01 myhost CRON[13567]: (root) CMD (/usr/local/bin/backup.sh)"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "Jul 21 09:22:16 myhost systemd[1]: Starting Clean php session files..."
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "Jul 21 09:22:17 myhost systemd[1]: phpsessionclean.service: Succeeded."
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "Jul 21 09:22:17 myhost systemd[1]: Finished Clean php session files."
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "Jul 21 10:33:41 myhost sshd[14567]: Failed password for invalid user test from 192.168.1.100 port 50432 ssh2"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "Jul 21 10:33:44 myhost sshd[14567]: Connection closed by invalid user test 192.168.1.100 port 50432 [preauth]"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "Jul 21 12:01:10 myhost kernel: [72390.123112] EXT4-fs (sda1): mounted filesystem with ordered data mode. Opts: (null)"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "Jul 21 14:40:00 myhost systemd[1]: Starting Rotate log files..."
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "Jul 21 14:40:01 myhost systemd[1]: logrotate.service: Succeeded."
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "Jul 21 14:40:01 myhost systemd[1]: Finished Rotate log files."
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "Jul 21 16:10:35 myhost sudo:     bob : TTY=pts/0 ; PWD=/home/bob ; USER=root ; COMMAND=/bin/systemctl restart apache2"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "Jul 21 16:10:35 myhost sudo: pam_unix(sudo:session): session opened for user root by bob(uid=0)"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "Jul 21 16:12:01 myhost sudo: pam_unix(sudo:session): session closed for user root"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "Jul 21 17:59:01 myhost CRON[15234]: (root) CMD (/usr/lib/sa/sa1 1 1)"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
     logName: projects/my-project/logs/transformation_test
     timestamp: now
   partialSuccess: true

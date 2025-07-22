@@ -1,1 +1,1 @@
-- config_error: "failed generating OTel processor: &confgenerator.loggingProcessorMacroAdapter[github.com/GoogleCloudPlatform/ops-agent/apps.LoggingProcessorMacroNginxError]{ConfigComponent:confgenerator.ConfigComponent{Type:\"nginx_error\"}, ProcessorMacro:apps.LoggingProcessorMacroNginxError{}}, err: unimplemented"
+- config_error: "not an OTel processor: &apps.LoggingProcessorTomcatSystem{ConfigComponent:confgenerator.ConfigComponent{Type:\"tomcat_system\"}}"

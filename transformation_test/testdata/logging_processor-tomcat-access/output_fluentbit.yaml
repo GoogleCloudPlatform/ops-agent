@@ -1,105 +1,207 @@
 - entries:
-  - jsonPayload:
-      client: "::1"
-      connection: 2191.0
-      host: localhost:8080
-      level: error
-      message: "open() \"/var/www/html/forbidden.html\" failed (13: Permission denied)"
-      pid: 29060.0
-      request: GET /forbidden.html HTTP/1.1
-      server: _
-      tid: 29060.0
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: ""
+      remoteIp: 127.0.0.1
+      requestMethod: GET
+      requestSize: 0.0
+      requestUrl: /myapp/home
+      responseSize: 4523.0
+      serverIp: ""
+      status: 200.0
+      userAgent: ""
+    jsonPayload: {}
     labels:
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_access
     logName: projects/my-project/logs/transformation_test
-    severity: 500.0
-    timestamp: 2021-08-26T16:50:17.000000000Z
-  - jsonPayload:
-      client: 192.168.1.100
-      connection: 2192.0
-      host: example.com
-      level: error
-      message: access forbidden by rule
-      pid: 29060.0
-      request: POST /admin HTTP/1.1
-      server: example.com
-      tid: 29060.0
+    timestamp: 2025-07-21T14:23:15.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: ""
+      remoteIp: 192.168.1.10
+      requestMethod: POST
+      requestSize: 0.0
+      requestUrl: /myapp/login
+      responseSize: 112.0
+      serverIp: ""
+      status: 302.0
+      userAgent: ""
+    jsonPayload:
+      user: john
     labels:
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_access
     logName: projects/my-project/logs/transformation_test
-    severity: 500.0
-    timestamp: 2021-08-26T16:51:23.000000000Z
-  - jsonPayload:
-      client: 10.0.0.50
-      connection: 2193.0
-      host: api.example.com
-      level: error
-      message: "connect() failed (111: Connection refused) while connecting to upstream"
-      pid: 29060.0
-      request: GET /api/v1/users HTTP/1.1
-      server: api.example.com
-      tid: 29060.0
-      upstream: http://127.0.0.1:8080/users
+    timestamp: 2025-07-21T14:24:02.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: ""
+      remoteIp: 10.0.0.23
+      requestMethod: GET
+      requestSize: 0.0
+      requestUrl: /myapp/dashboard
+      responseSize: 6741.0
+      serverIp: ""
+      status: 200.0
+      userAgent: ""
+    jsonPayload: {}
     labels:
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_access
     logName: projects/my-project/logs/transformation_test
-    severity: 500.0
-    timestamp: 2021-08-26T16:52:45.000000000Z
-  - jsonPayload:
-      client: "::1"
-      connection: 2194.0
-      host: localhost
-      level: error
-      message: directory index of "/var/www/html/" is forbidden
-      pid: 29060.0
-      request: GET / HTTP/1.1
-      server: localhost
-      tid: 29060.0
+    timestamp: 2025-07-21T14:25:44.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: ""
+      remoteIp: 203.0.113.45
+      requestMethod: GET
+      requestSize: 0.0
+      requestUrl: /myapp/profile
+      responseSize: 3589.0
+      serverIp: ""
+      status: 200.0
+      userAgent: ""
+    jsonPayload:
+      user: alice
     labels:
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_access
     logName: projects/my-project/logs/transformation_test
-    severity: 500.0
-    timestamp: 2021-08-26T16:53:12.000000000Z
-  - jsonPayload:
-      client: 172.16.0.100
-      connection: 2195.0
-      level: error
-      message: "SSL_do_handshake() failed (SSL: error:1408F10B:SSL routines:ssl3_get_record:wrong version number) while SSL handshaking"
-      pid: 29060.0
-      server: secure.example.com
-      tid: 29060.0
+    timestamp: 2025-07-21T14:27:33.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: ""
+      remoteIp: 192.168.1.15
+      requestMethod: GET
+      requestSize: 0.0
+      requestUrl: /favicon.ico
+      responseSize: 209.0
+      serverIp: ""
+      status: 404.0
+      userAgent: ""
+    jsonPayload: {}
     labels:
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_access
     logName: projects/my-project/logs/transformation_test
-    severity: 500.0
-    timestamp: 2021-08-26T16:54:01.000000000Z
-  - jsonPayload:
-      client: 192.168.1.50
-      connection: 2196.0
-      host: www.example.com
-      level: error
-      message: "\"/var/www/html/images/logo.png\" is not found (2: No such file or directory)"
-      pid: 29060.0
-      request: GET /images/logo.png HTTP/1.1
-      server: www.example.com
-      tid: 29060.0
+    timestamp: 2025-07-21T14:28:51.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: ""
+      remoteIp: 127.0.0.1
+      requestMethod: GET
+      requestSize: 0.0
+      requestUrl: /myapp/settings
+      responseSize: 723.0
+      serverIp: ""
+      status: 403.0
+      userAgent: ""
+    jsonPayload: {}
     labels:
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_access
     logName: projects/my-project/logs/transformation_test
-    severity: 500.0
-    timestamp: 2021-08-26T16:55:30.000000000Z
-  - jsonPayload:
-      message: ""
+    timestamp: 2025-07-21T15:00:01.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: ""
+      remoteIp: 172.16.0.12
+      requestMethod: GET
+      requestSize: 0.0
+      requestUrl: /myapp/home
+      responseSize: 4512.0
+      serverIp: ""
+      status: 200.0
+      userAgent: ""
+    jsonPayload: {}
     labels:
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_access
     logName: projects/my-project/logs/transformation_test
-    timestamp: now
-  - jsonPayload:
-      message: ""
+    timestamp: 2025-07-21T15:04:12.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: ""
+      remoteIp: 10.0.0.25
+      requestMethod: POST
+      requestSize: 0.0
+      requestUrl: /myapp/upload
+      responseSize: 998.0
+      serverIp: ""
+      status: 201.0
+      userAgent: ""
+    jsonPayload:
+      user: bob
     labels:
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_access
     logName: projects/my-project/logs/transformation_test
-    timestamp: now
+    timestamp: 2025-07-21T15:06:55.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: ""
+      remoteIp: 203.0.113.76
+      requestMethod: GET
+      requestSize: 0.0
+      requestUrl: /myapp/logout
+      responseSize: 88.0
+      serverIp: ""
+      status: 302.0
+      userAgent: ""
+    jsonPayload: {}
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_access
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2025-07-21T15:10:42.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: ""
+      remoteIp: 192.168.1.20
+      requestMethod: GET
+      requestSize: 0.0
+      requestUrl: /robots.txt
+      responseSize: 68.0
+      serverIp: ""
+      status: 200.0
+      userAgent: ""
+    jsonPayload: {}
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_access
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2025-07-21T15:15:33.000000000Z
   partialSuccess: true
   resource:
     labels: {}
