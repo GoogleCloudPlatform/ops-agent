@@ -1,0 +1,1 @@
+- config_error: "not an OTel processor: &apps.LoggingProcessorMysqlSlow{ConfigComponent:confgenerator.ConfigComponent{Type:\"mysql_slow\"}}"
