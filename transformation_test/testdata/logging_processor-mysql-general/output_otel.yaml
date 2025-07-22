@@ -1,1 +1,1 @@
-- config_error: "not an OTel processor: &apps.LoggingProcessorMysqlGeneral{ConfigComponent:confgenerator.ConfigComponent{Type:\"mysql_general\"}}"
+- config_error: "failed generating OTel processor: &confgenerator.loggingProcessorMacroAdapter[github.com/GoogleCloudPlatform/ops-agent/apps.LoggingProcessorMacroMysqlGeneral]{ConfigComponent:confgenerator.ConfigComponent{Type:\"mysql_general\"}, ProcessorMacro:apps.LoggingProcessorMacroMysqlGeneral{}}, err: unimplemented"
