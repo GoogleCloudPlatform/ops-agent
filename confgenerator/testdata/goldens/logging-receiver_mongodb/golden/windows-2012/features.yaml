@@ -18,7 +18,3 @@
   feature: receivers:mongodb
   key: "[0].enabled"
   value: "true"
-- module: logging
-  feature: receivers:mongodb
-  key: "[0].include_paths.__length"
-  value: "1"
