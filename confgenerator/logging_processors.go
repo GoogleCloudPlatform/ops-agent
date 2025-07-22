@@ -155,8 +155,11 @@ func (p ParserShared) TypesStatements() (ottl.Statements, error) {
 		case "float":
 			out = out.Append(a.Set(ottl.ToFloat(a)))
 		case "hex":
-			// TODO: Not exposed in OTTL
-			fallthrough
+			// The strtoull C function is used in Fluent Bit to parse hexadecimal strings: https://github.com/fluent/fluent-bit/blob/a20a127f1b5ae70706bac0dac45fbc6abde4ad27/src/flb_parser.c#L1319
+			// strtoull parses strings into an unsigned long long integer, which is equivalent to an int64 in Go. It also accepts hexadecimal strings with a leading "0x" prefix and trailing whitespace. Additionally, it accepts a leading "+" or "-" sign.
+			// However, ottl.ParseInt(a, 16) only parses hexadecimal strings without a leading "0x" prefix (e.g., "AF111", "-123F") and does not allow trailing whitespace. It does accept a leading "+" or "-" sign.
+			// ottl.ParseInt also parses the string to an int64.
+			out = out.Append(a.Set(ottl.ParseInt(a, 16)))
 		default:
 			return nil, fmt.Errorf("type %q not supported for field %s", fieldType, m)
 		}
