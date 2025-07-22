@@ -408,6 +408,58 @@ func (p LoggingProcessorNestWildcard) Components(ctx context.Context, tag, uid s
 	}
 }
 
+type LoggingProcessorRemoveField struct {
+	Field string
+}
+
+func (p LoggingProcessorRemoveField) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
+	filter := fluentbit.Component{
+		Kind: "FILTER",
+		Config: map[string]string{
+			"Name":   "modify",
+			"Match":  tag,
+			"Remove": p.Field,
+		},
+	}
+	return []fluentbit.Component{filter}
+}
+
+type LoggingProcessorHardRename struct {
+	Field   string
+	NewName string
+}
+
+func (p LoggingProcessorHardRename) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
+	c := fluentbit.Component{
+		Kind: "FILTER",
+		Config: map[string]string{
+			"Name":        "modify",
+			"Match":       tag,
+			"Hard_rename": fmt.Sprintf("%s %s", p.Field, p.NewName),
+		},
+	}
+	return []fluentbit.Component{c}
+}
+
+type LoggingProcessorNestLift struct {
+	NestedUnder string
+	AddPrefix   string
+}
+
+func (p LoggingProcessorNestLift) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
+	filter := fluentbit.Component{
+		Kind: "FILTER",
+		Config: map[string]string{
+			"Name":         "nest",
+			"Match":        tag,
+			"Operation":    "lift",
+			"Nested_under": p.NestedUnder,
+			"Add_prefix":   p.AddPrefix,
+		},
+	}
+	return []fluentbit.Component{filter}
+}
+
 var LegacyBuiltinProcessors = map[string]LoggingProcessor{
 	"lib:default_message_parser": &LoggingProcessorParseRegex{
 		Regex: `^(?<message>.*)$`,

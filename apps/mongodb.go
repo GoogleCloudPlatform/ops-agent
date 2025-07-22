@@ -16,6 +16,7 @@ package apps
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
@@ -138,90 +139,29 @@ func (p LoggingProcessorMacroMongodb) jsonParserWithTimeKey() []confgenerator.In
 
 	c = append(c, jsonParser)
 
-	// // The parserFilterComponent is the actual filter component that configures and defines
-	// // which parser to use. We need the component to determine which parser to use when
-	// // re-parsing below. Each time a parser filter is used, there are 2 filter components right
-	// // before it to account for the nest lua script (see confgenerator/fluentbit/parse_deduplication.go).
-	// // Therefore, the parse filter component is actually the third component in the list.
-	// parserFilterComponent := jpComponents[2]
-	// c = append(c, jpComponents...)
-
-	// tempPrefix := "temp_ts_"
-	// timeKey := "time"
-	// // have to bring $date to top level in order for it to be parsed as timeKey
-	// // see https://github.com/fluent/fluent-bit/issues/1013
-	// liftTs := fluentbit.Component{
-	// 	Kind: "FILTER",
-	// 	Config: map[string]string{
-	// 		"Name":         "nest",
-	// 		"Match":        tag,
-	// 		"Operation":    "lift",
-	// 		"Nested_under": "t",
-	// 		"Add_prefix":   tempPrefix,
-	// 	},
-	// }
-
-	c = append(c, &confgenerator.LoggingProcessorModifyFields{
-		Fields: map[string]*confgenerator.ModifyField{
-			"jsonPayload.time": {
-				MoveFrom: "jsonPayload.t.$date",
-			},
-		},
+	tempPrefix := "temp_ts_"
+	timeKey := "time"
+	// have to bring $date to top level in order for it to be parsed as timeKey
+	// see https://github.com/fluent/fluent-bit/issues/1013
+	c = append(c, &confgenerator.LoggingProcessorNestLift{
+		NestedUnder: "t",
+		AddPrefix:   tempPrefix,
 	})
 
-	// renameTsOption := modify.NewHardRenameOptions(fmt.Sprintf("%s$date", tempPrefix), timeKey)
-	// renameTs := renameTsOption.Component(tag)
-
-	// c = append(c, liftTs, renameTs)
-
-	// // IMPORTANT: now that we have lifted the json to top level
-	// // we need to re-parse in order to properly set time at the
-	// // parser level
-	c = append(c, &confgenerator.LoggingProcessorParseJson{
-		ParserShared: confgenerator.ParserShared{
-			TimeKey:    "time",
-			TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
-		},
+	c = append(c, &confgenerator.LoggingProcessorHardRename{
+		Field:   fmt.Sprintf("%s$date", tempPrefix),
+		NewName: timeKey,
 	})
 
-	// nestFilters := fluentbit.LuaFilterComponents(tag, fluentbit.ParserNestLuaFunction, fmt.Sprintf(fluentbit.ParserNestLuaScriptContents, "message"))
-	// parserFilter := fluentbit.Component{
-	// 	Kind: "FILTER",
-	// 	Config: map[string]string{
-	// 		"Name":         "parser",
-	// 		"Match":        tag,
-	// 		"Key_Name":     "message",
-	// 		"Reserve_Data": "True",
-	// 		"Parser":       parserFilterComponent.OrderedConfig[0][1],
-	// 	},
-	// }
-	// mergeFilters := fluentbit.LuaFilterComponents(tag, fluentbit.ParserMergeLuaFunction, fluentbit.ParserMergeLuaScriptContents)
-	// c = append(c, nestFilters...)
-	// c = append(c, parserFilter)
-	// c = append(c, mergeFilters...)
+	// IMPORTANT: now that we have lifted the json to top level
+	// we need to re-parse in order to properly set time at the
+	// parser level
+	c = append(c, jsonParser)
 
-	// removeTimestamp := fluentbit.Component{
-	// 	Kind: "FILTER",
-	// 	Config: map[string]string{
-	// 		"Name":   "modify",
-	// 		"Match":  tag,
-	// 		"Remove": timeKey,
-	// 	},
-	// }
-	// c = append(c, removeTimestamp)
-	// remove the time field
-	c = append(c, &confgenerator.LoggingProcessorModifyFields{
-		Fields: map[string]*confgenerator.ModifyField{
-			"jsonPayload.time": {
-				Remove: true,
-			},
-			"jsonPayload.t": {
-				Remove: true,
-			},
-		},
+	c = append(c, &confgenerator.LoggingProcessorRemoveField{
+		Field: timeKey,
 	})
 
-	// return c
 	return c
 }
 
@@ -265,7 +205,6 @@ func (p LoggingProcessorMacroMongodb) renames() []confgenerator.InternalLoggingP
 		{"jsonPayload.c", "jsonPayload.component"},
 		{"jsonPayload.ctx", "jsonPayload.context"},
 		{"jsonPayload.msg", "jsonPayload.message"},
-		{"jsonPayload.attr", "jsonPayload.attributes"},
 	}
 
 	for _, rename := range renames {
@@ -282,22 +221,24 @@ func (p LoggingProcessorMacroMongodb) renames() []confgenerator.InternalLoggingP
 }
 
 func (p LoggingProcessorMacroMongodb) promoteWiredTiger() []confgenerator.InternalLoggingProcessor {
+	// promote messages that are WiredTiger messages and are nested in attr.messagey
 	c := []confgenerator.InternalLoggingProcessor{}
 
-	// promote messages that are WiredTiger messages and are nested in attr.message
-	c = append(c, &confgenerator.LoggingProcessorNestWildcard{
-		Wildcard:     "jsonPayload.msg",
-		NestUnder:    "jsonPayload.message2",
-		RemovePrefix: "jsonPayload.msg",
+	addPrefix := "temp_attributes_"
+	c = append(c, &confgenerator.LoggingProcessorNestLift{
+		NestedUnder: "attr",
+		AddPrefix:   addPrefix,
 	})
 
-	// Remove the attr field if it is empty
-	c = append(c, &confgenerator.LoggingProcessorModifyFields{
-		Fields: map[string]*confgenerator.ModifyField{
-			"jsonPayload.attr": {
-				OmitIf: "jsonPayload.attr = {}",
-			},
-		},
+	c = append(c, &confgenerator.LoggingProcessorHardRename{
+		Field:   addPrefix + "message",
+		NewName: "msg",
+	})
+
+	c = append(c, &confgenerator.LoggingProcessorNestWildcard{
+		Wildcard:     addPrefix + "*",
+		NestUnder:    "attributes",
+		RemovePrefix: addPrefix,
 	})
 
 	return c
@@ -305,43 +246,22 @@ func (p LoggingProcessorMacroMongodb) promoteWiredTiger() []confgenerator.Intern
 
 func (p LoggingProcessorMacroMongodb) RegexLogComponents() []confgenerator.InternalLoggingProcessor {
 	c := []confgenerator.InternalLoggingProcessor{}
-	// parseKey := "message"
-	// parser, _ := fluentbit.ParserComponentBase("%Y-%m-%dT%H:%M:%S.%L%z", "timestamp", map[string]string{
-	// 	"message":   "string",
-	// 	"id":        "integer",
-	// 	"s":         "string",
-	// 	"component": "string",
-	// 	"context":   "string",
-	// }, "mongodb_regex", "mongodb")
-	// parser.Config["Format"] = "regex"
-	// parser.Config["Regex"] = `^(?<timestamp>[^ ]*)\s+(?<s>\w)\s+(?<component>[^ ]+)\s+\[(?<context>[^\]]+)]\s+(?<message>.*?) *(?<ms>(\d+))?(:?ms)?$`
-	// parser.Config["Key_Name"] = parseKey
-
-	// nestFilters := fluentbit.LuaFilterComponents(tag, fluentbit.ParserNestLuaFunction, fmt.Sprintf(fluentbit.ParserNestLuaScriptContents, parseKey))
-	// parserFilter := fluentbit.Component{
-	// 	Kind: "FILTER",
-	// 	Config: map[string]string{
-	// 		"Match":        tag,
-	// 		"Name":         "parser",
-	// 		"Parser":       parserName,
-	// 		"Reserve_Data": "True",
-	// 		"Key_Name":     parseKey,
-	// 	},
-	// }
-	// mergeFilters := fluentbit.LuaFilterComponents(tag, fluentbit.ParserMergeLuaFunction, fluentbit.ParserMergeLuaScriptContents)
 
 	c = append(c, &confgenerator.LoggingProcessorParseRegex{
 		ParserShared: confgenerator.ParserShared{
 			TimeKey:    "timestamp",
 			TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
+			Types: map[string]string{
+				"message":   "string",
+				"id":        "integer",
+				"s":         "string",
+				"component": "string",
+				"context":   "string",
+			},
 		},
 		Regex: `^(?<timestamp>[^ ]*)\s+(?<s>\w)\s+(?<component>[^ ]+)\s+\[(?<context>[^\]]+)]\s+(?<message>.*?) *(?<ms>(\d+))?(:?ms)?$`,
 		Field: "message",
 	})
-
-	// c = append(c, nestFilters...)
-	// c = append(c, parserFilter)
-	// c = append(c, mergeFilters...)
 
 	return c
 }
