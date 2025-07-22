@@ -29,10 +29,11 @@ import (
 
 type ModifyField struct {
 	// Source of value for this field
-	MoveFrom     string  `yaml:"move_from" validate:"omitempty,field,excluded_with=CopyFrom StaticValue"`
-	CopyFrom     string  `yaml:"copy_from" validate:"omitempty,field,excluded_with=MoveFrom StaticValue"`
-	StaticValue  *string `yaml:"static_value" validate:"excluded_with=MoveFrom CopyFrom DefaultValue"`
-	DefaultValue *string `yaml:"default_value" validate:"excluded_with=StaticValue"`
+	MoveFrom     string  `yaml:"move_from" validate:"omitempty,field,excluded_with=CopyFrom StaticValue Remove"`
+	CopyFrom     string  `yaml:"copy_from" validate:"omitempty,field,excluded_with=MoveFrom StaticValue Remove"`
+	StaticValue  *string `yaml:"static_value" validate:"excluded_with=MoveFrom CopyFrom Remove DefaultValue"`
+	DefaultValue *string `yaml:"default_value" validate:"excluded_with=StaticValue Remove"`
+	Remove       bool    `yaml:"remove" validate:"excluded_with=MoveFrom CopyFrom StaticValue DefaultValue"`
 
 	// OTTL expression with copied value
 	sourceValue ottl.Value `yaml:"-"`
@@ -94,7 +95,7 @@ function process(tag, timestamp, record)
 	omitFilters := map[string]*filter.Filter{}
 	for i, dest := range dests {
 		field := p.Fields[dest]
-		if field.MoveFrom == "" && field.CopyFrom == "" && field.StaticValue == nil {
+		if field.MoveFrom == "" && field.CopyFrom == "" && field.StaticValue == nil && !field.Remove {
 			// Default to modifying field in place
 			field.CopyFrom = dest
 		}
@@ -273,7 +274,7 @@ func (p LoggingProcessorModifyFields) statements(_ context.Context) (ottl.Statem
 
 	for i, dest := range dests {
 		field := p.Fields[dest]
-		if field.MoveFrom == "" && field.CopyFrom == "" && field.StaticValue == nil {
+		if field.MoveFrom == "" && field.CopyFrom == "" && field.StaticValue == nil && !field.Remove {
 			// Default to modifying field in place
 			field.CopyFrom = dest
 		}
