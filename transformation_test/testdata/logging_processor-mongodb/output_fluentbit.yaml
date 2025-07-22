@@ -1,12 +1,86 @@
 - entries:
   - jsonPayload:
-      attributes:
-        dbPath: /var/lib/mongodb
-        pid: 10234.0
-        port: 27017.0
       component: CONTROL
       context: main
-      id: 23352.0
+      id: 23285.0
+      message: Automatically disabling TLS 1.0, to force-enable TLS 1.0 specify --sslDisabledProtocols 'none'
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      component: CONTROL
+      context: main
+      id: 5.945603e+06
+      message: Multi threading initialized
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        relatedParameters:
+        - tcpFastOpenServer
+        - tcpFastOpenClient
+        - tcpFastOpenQueueSize
+      component: NETWORK
+      context: main
+      id: 4.648601e+06
+      message: Implicit TCP FastOpen unavailable. If TCP FastOpen is required, set at least one of the related parameters
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        spec:
+          incomingExternalClient:
+            maxWireVersion: 25.0
+            minWireVersion: 0.0
+          incomingInternalClient:
+            maxWireVersion: 25.0
+            minWireVersion: 0.0
+          isInternalClient: true
+          outgoing:
+            maxWireVersion: 25.0
+            minWireVersion: 6.0
+      component: NETWORK
+      context: main
+      id: 4.915701e+06
+      message: Initialized wire specification
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      component: TENANT_M
+      context: main
+      id: 7.0916e+06
+      message: Starting TenantMigrationAccessBlockerRegistry
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        architecture: 64-bit
+        dbPath: /data/db
+        host: 0093111b5a52
+        pid: 1.0
+        port: 27017.0
+      component: CONTROL
+      context: initandlisten
+      id: 4.615611e+06
       message: MongoDB starting
       severity: I
     labels:
@@ -15,10 +89,21 @@
     severity: 200.0
     timestamp: now
   - jsonPayload:
-      component: STORAGE
+      attributes:
+        buildInfo:
+          allocator: tcmalloc-google
+          environment:
+            distarch: aarch64
+            distmod: ubuntu2404
+            target_arch: aarch64
+          gitVersion: bed99f699da6cb2b74262aa6d473446c41476643
+          modules: []
+          openSSLVersion: OpenSSL 3.0.13 30 Jan 2024
+          version: 8.0.11
+      component: CONTROL
       context: initandlisten
-      id: 20320.0
-      message: "[1658325001:456789][10234:0x7f9dcd9f3700], txn-recover: Recovering log 1 through 2"
+      id: 23403.0
+      message: Build Info
       severity: I
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
@@ -27,10 +112,146 @@
     timestamp: now
   - jsonPayload:
       attributes:
-        durationMillis: 1234.0
+        os:
+          name: Ubuntu
+          version: "24.04"
+      component: CONTROL
+      context: initandlisten
+      id: 51765.0
+      message: Operating System
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        options:
+          net:
+            bindIp: "*"
+      component: CONTROL
+      context: initandlisten
+      id: 21951.0
+      message: Options set by command line
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
       component: STORAGE
       context: initandlisten
-      id: 22437.0
+      id: 22297.0
+      message: Using the XFS filesystem is strongly recommended with the WiredTiger storage engine. See http://dochub.mongodb.org/core/prodnotes-filesystem
+      severity: I
+      tags:
+      - startupWarnings
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        config: create,cache_size=3406M,session_max=33000,eviction=(threads_min=4,threads_max=4),config_base=false,statistics=(fast),log=(enabled=true,remove=true,path=journal,compressor=snappy),builtin_extension_config=(zstd=(compression_level=6)),file_manager=(close_idle_time=600,close_scan_interval=10,close_handle_minimum=2000),statistics_log=(wait=0),json_output=(error,message),verbose=[recovery_progress:1,checkpoint_progress:1,compact_progress:1,backup:0,checkpoint:0,compact:0,evict:0,history_store:0,recovery:0,rts:0,salvage:0,tiered:0,timestamp:0,transaction:0,verify:0,log:0],prefetch=(available=true,default=false),
+      component: STORAGE
+      context: initandlisten
+      id: 22315.0
+      message: Opening WiredTiger
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      component: WTRECOV
+      context: initandlisten
+      id: 22430.0
+      message:
+        category: WT_VERB_RECOVERY_PROGRESS
+        category_id: 34.0
+        msg: recovery log replay has successfully finished and ran for 0 milliseconds
+        session_name: txn-recover
+        thread: 1:0xffffbec76040
+        ts_sec: 1.753110028e+09
+        ts_usec: 542739.0
+        verbose_level: DEBUG_1
+        verbose_level_id: 1.0
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      component: WTRECOV
+      context: initandlisten
+      id: 22430.0
+      message:
+        category: WT_VERB_RECOVERY_PROGRESS
+        category_id: 34.0
+        msg: "Set global recovery timestamp: (0, 0)"
+        session_name: txn-recover
+        thread: 1:0xffffbec76040
+        ts_sec: 1.753110028e+09
+        ts_usec: 542790.0
+        verbose_level: DEBUG_1
+        verbose_level_id: 1.0
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      component: WTRECOV
+      context: initandlisten
+      id: 22430.0
+      message:
+        category: WT_VERB_RECOVERY_PROGRESS
+        category_id: 34.0
+        msg: "Set global oldest timestamp: (0, 0)"
+        session_name: txn-recover
+        thread: 1:0xffffbec76040
+        ts_sec: 1.753110028e+09
+        ts_usec: 542801.0
+        verbose_level: DEBUG_1
+        verbose_level_id: 1.0
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      component: WTRECOV
+      context: initandlisten
+      id: 22430.0
+      message:
+        category: WT_VERB_RECOVERY_PROGRESS
+        category_id: 34.0
+        msg: recovery was completed successfully and took 0ms, including 0ms for the log replay, 0ms for the rollback to stable, and 0ms for the checkpoint.
+        session_name: txn-recover
+        thread: 1:0xffffbec76040
+        ts_sec: 1.753110028e+09
+        ts_usec: 542814.0
+        verbose_level: DEBUG_1
+        verbose_level_id: 1.0
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        durationMillis: 235.0
+      component: STORAGE
+      context: initandlisten
+      id: 4.795906e+06
       message: WiredTiger opened
       severity: I
     labels:
@@ -40,14 +261,27 @@
     timestamp: now
   - jsonPayload:
       attributes:
-        checkpoint_ts:
+        recoveryTimestamp:
           $timestamp:
-            i: 1.0
-            t: 1.658325003e+09
+            i: 0.0
+            t: 0.0
+      component: RECOVERY
+      context: initandlisten
+      id: 23987.0
+      message: WiredTiger recoveryTimestamp
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        numRecords: 0.0
       component: STORAGE
-      context: WTCheckpointThread
-      id: 4.7959e+06
-      message: WiredTiger checkpoint
+      context: initandlisten
+      id: 9.529901e+06
+      message: Initializing durable catalog
       severity: I
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
@@ -55,12 +289,10 @@
     severity: 200.0
     timestamp: now
   - jsonPayload:
-      attributes:
-        flush_duration_ms: 21.0
       component: STORAGE
-      context: WTJournalFlusher
-      id: 5.1234e+06
-      message: WiredTiger journal flush
+      context: initandlisten
+      id: 9.529902e+06
+      message: Retrieving all idents from storage engine
       severity: I
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
@@ -69,12 +301,111 @@
     timestamp: now
   - jsonPayload:
       attributes:
-        max_pages: 100.0
-        pages_evicted: 34.0
+        numEntries: 0.0
       component: STORAGE
-      context: WTCacheEvictionWorker-0
-      id: 22438.0
-      message: WiredTiger eviction
+      context: initandlisten
+      id: 9.529903e+06
+      message: Initializing all collections in durable catalog
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      component: CONTROL
+      context: initandlisten
+      id: 22120.0
+      message: Access control is not enabled for the database. Read and write access to data and configuration is unrestricted
+      severity: W
+      tags:
+      - startupWarnings
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 400.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        allocator: tcmalloc-google
+        currentValue: madvise
+        desiredValue: defer+madvise
+        sysfsFile: /sys/kernel/mm/transparent_hugepage/defrag
+      component: CONTROL
+      context: initandlisten
+      id: 9.0689e+06
+      message: For customers running the current memory allocator, we suggest changing the contents of the following sysfsFile
+      severity: W
+      tags:
+      - startupWarnings
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 400.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        currentValue: 511.0
+        sysfsFile: /sys/kernel/mm/transparent_hugepage/khugepaged/max_ptes_none
+      component: CONTROL
+      context: initandlisten
+      id: 8.640302e+06
+      message: We suggest setting the contents of sysfsFile to 0.
+      severity: W
+      tags:
+      - startupWarnings
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 400.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        currentValue: 262144.0
+        maxConns: 838860.0
+        recommendedMinimum: 1.67772e+06
+      component: NETWORK
+      context: initandlisten
+      id: 5.1233e+06
+      message: vm.max_map_count is too low
+      severity: W
+      tags:
+      - startupWarnings
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 400.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        currentValue: 60.0
+        sysfsFile: /proc/sys/vm/swappiness
+      component: CONTROL
+      context: initandlisten
+      id: 8.3867e+06
+      message: We suggest setting swappiness to 0 or 1, as swapping can cause performance problems.
+      severity: W
+      tags:
+      - startupWarnings
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 400.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        namespace: admin.system.version
+        options:
+          uuid:
+            $uuid: d2aa3324-da83-4514-8930-750b069145f9
+        uuid:
+          uuid:
+            $uuid: d2aa3324-da83-4514-8930-750b069145f9
+        uuidDisposition: provided
+      component: STORAGE
+      context: initandlisten
+      id: 20320.0
+      message: createCollection
       severity: I
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
@@ -83,13 +414,17 @@
     timestamp: now
   - jsonPayload:
       attributes:
-        client: 127.0.0.1:37244
-        connectionCount: 1.0
-        connectionId: 1.0
-      component: COMMAND
-      context: conn1
-      id: 51803.0
-      message: Connection accepted
+        collectionIdent: collection-0-3956073341144391669
+        collectionUUID:
+          uuid:
+            $uuid: d2aa3324-da83-4514-8930-750b069145f9
+        ident: index-1-3956073341144391669
+        index: _id_
+        namespace: admin.system.version
+      component: INDEX
+      context: initandlisten
+      id: 20345.0
+      message: "Index build: done building"
       severity: I
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
@@ -98,20 +433,11 @@
     timestamp: now
   - jsonPayload:
       attributes:
-        client: conn1
-        doc:
-          driver:
-            name: PyMongo
-            version: 4.2.0
-          os:
-            architecture: x86_64
-            name: Ubuntu
-            type: Linux
-            version: "20.04"
-      component: COMMAND
-      context: conn1
-      id: 51804.0
-      message: Received client metadata
+        newVersion: "8.0"
+      component: REPL
+      context: initandlisten
+      id: 20459.0
+      message: Setting featureCompatibilityVersion
       severity: I
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
@@ -120,14 +446,12 @@
     timestamp: now
   - jsonPayload:
       attributes:
-        keysInserted: 1.0
-        millis: 2.0
-        ninserted: 1.0
-        ns: test.users
-      component: COMMAND
-      context: conn1
-      id: 51805.0
-      message: Insert command
+        context: setFCV
+        featureCompatibilityVersion: "8.0"
+      component: REPL
+      context: initandlisten
+      id: 5.8533e+06
+      message: current featureCompatibilityVersion value
       severity: I
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
@@ -136,16 +460,32 @@
     timestamp: now
   - jsonPayload:
       attributes:
-        docsReturned: 1.0
-        keysExamined: 1.0
-        millis: 1.0
-        ns: test.users
-        query:
-          name: Alice
-      component: COMMAND
-      context: conn1
-      id: 51806.0
-      message: Query executed
+        newSpec:
+          incomingExternalClient:
+            maxWireVersion: 25.0
+            minWireVersion: 0.0
+          incomingInternalClient:
+            maxWireVersion: 25.0
+            minWireVersion: 25.0
+          isInternalClient: true
+          outgoing:
+            maxWireVersion: 25.0
+            minWireVersion: 25.0
+        oldSpec:
+          incomingExternalClient:
+            maxWireVersion: 25.0
+            minWireVersion: 0.0
+          incomingInternalClient:
+            maxWireVersion: 25.0
+            minWireVersion: 0.0
+          isInternalClient: true
+          outgoing:
+            maxWireVersion: 25.0
+            minWireVersion: 6.0
+      component: NETWORK
+      context: initandlisten
+      id: 4.915702e+06
+      message: Updated wire specification
       severity: I
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
@@ -154,16 +494,325 @@
     timestamp: now
   - jsonPayload:
       attributes:
-        millis: 212.0
-        ns: test.logs
-        planSummary: COLLSCAN
-        query:
-          level: debug
-        type: query
-      component: COMMAND
-      context: conn1
-      id: 51810.0
-      message: Slow query
+        newSpec:
+          incomingExternalClient:
+            maxWireVersion: 25.0
+            minWireVersion: 0.0
+          incomingInternalClient:
+            maxWireVersion: 25.0
+            minWireVersion: 25.0
+          isInternalClient: true
+          outgoing:
+            maxWireVersion: 25.0
+            minWireVersion: 25.0
+        oldSpec:
+          incomingExternalClient:
+            maxWireVersion: 25.0
+            minWireVersion: 0.0
+          incomingInternalClient:
+            maxWireVersion: 25.0
+            minWireVersion: 25.0
+          isInternalClient: true
+          outgoing:
+            maxWireVersion: 25.0
+            minWireVersion: 25.0
+      component: NETWORK
+      context: initandlisten
+      id: 4.915702e+06
+      message: Updated wire specification
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        context: startup
+        featureCompatibilityVersion: "8.0"
+      component: REPL
+      context: initandlisten
+      id: 5.8533e+06
+      message: current featureCompatibilityVersion value
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      component: STORAGE
+      context: initandlisten
+      id: 5.0711e+06
+      message: Clearing temp directory
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      component: CONTROL
+      context: initandlisten
+      id: 6.6082e+06
+      message: Initializing cluster server parameters from disk
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      component: CONTROL
+      context: initandlisten
+      id: 20536.0
+      message: Flow Control is enabled on this deployment
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        dataDirectory: /data/db/diagnostic.data
+      component: FTDC
+      context: initandlisten
+      id: 20625.0
+      message: Initializing full-time diagnostic data capture
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        namespace: local.startup_log
+        options:
+          capped: true
+          size: 1.048576e+07
+        uuid:
+          uuid:
+            $uuid: 4db69adb-ed35-47b4-ad78-264f6bf62996
+        uuidDisposition: generated
+      component: STORAGE
+      context: initandlisten
+      id: 20320.0
+      message: createCollection
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        collectionIdent: collection-2-3956073341144391669
+        collectionUUID:
+          uuid:
+            $uuid: 4db69adb-ed35-47b4-ad78-264f6bf62996
+        ident: index-3-3956073341144391669
+        index: _id_
+        namespace: local.startup_log
+      component: INDEX
+      context: initandlisten
+      id: 20345.0
+      message: "Index build: done building"
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        newState: ConfigReplicationDisabled
+        oldState: ConfigPreStart
+      component: REPL
+      context: initandlisten
+      id: 6.015317e+06
+      message: Setting new configuration state
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      component: STORAGE
+      context: initandlisten
+      id: 22262.0
+      message: Timestamp monitor starting
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      component: STORAGE
+      context: initandlisten
+      id: 7.333401e+06
+      message: Starting the DiskSpaceMonitor
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        address: /tmp/mongodb-27017.sock
+      component: NETWORK
+      context: listener
+      id: 23015.0
+      message: Listening on
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        address: 0.0.0.0:27017
+      component: NETWORK
+      context: listener
+      id: 23015.0
+      message: Listening on
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        port: 27017.0
+        ssl: "off"
+      component: NETWORK
+      context: listener
+      id: 23016.0
+      message: Waiting for connections
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        Summary of time elapsed:
+          Startup from clean shutdown?: true
+          Statistics:
+            Build user and roles graph: 0 ms
+            Create storage engine: 238 ms
+            Create storage engine lock file in the data directory: 0 ms
+            Drop abandoned idents and get back indexes that need to be rebuilt or builds that need to be restarted: 0 ms
+            Ensure the change stream collections on startup contain consistent data: 0 ms
+            Get metadata describing storage engine: 0 ms
+            Initialize FCV before rebuilding indexes: 0 ms
+            Load cluster parameters from disk for a standalone: 0 ms
+            Rebuild indexes for collections: 0 ms
+            Run initial syncer crash recovery: 0 ms
+            Set up online certificate status protocol manager: 0 ms
+            Set up periodic runner: 0 ms
+            Set up the background thread pool responsible for waiting for opTimes to be majority committed: 0 ms
+            Start transport layer: 0 ms
+            Start up the replication coordinator: 0 ms
+            Transport layer setup: 0 ms
+            Write a new metadata for storage engine: 0 ms
+            Write current PID to file: 0 ms
+            Write startup options to the audit log: 0 ms
+            _initAndListen total elapsed time: 249 ms
+      component: CONTROL
+      context: initandlisten
+      id: 8.423403e+06
+      message: mongod startup complete
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        error: "NamespaceNotFound: config.system.sessions does not exist"
+      component: CONTROL
+      context: LogicalSessionCacheReap
+      id: 20712.0
+      message: Sessions collection is not set up; waiting until next sessions reap interval
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        namespace: config.system.sessions
+        options: {}
+        uuid:
+          uuid:
+            $uuid: cc5d7417-27c1-4110-8873-0e83b22c9de4
+        uuidDisposition: generated
+      component: STORAGE
+      context: LogicalSessionCacheRefresh
+      id: 20320.0
+      message: createCollection
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        collectionIdent: collection-4-3956073341144391669
+        collectionUUID:
+          uuid:
+            $uuid: cc5d7417-27c1-4110-8873-0e83b22c9de4
+        ident: index-5-3956073341144391669
+        index: _id_
+        namespace: config.system.sessions
+      component: INDEX
+      context: LogicalSessionCacheRefresh
+      id: 20345.0
+      message: "Index build: done building"
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        collectionIdent: collection-4-3956073341144391669
+        collectionUUID:
+          uuid:
+            $uuid: cc5d7417-27c1-4110-8873-0e83b22c9de4
+        ident: index-6-3956073341144391669
+        index: lsidTTLIndex
+        namespace: config.system.sessions
+      component: INDEX
+      context: LogicalSessionCacheRefresh
+      id: 20345.0
+      message: "Index build: done building"
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        canonicalName: internalQueryCacheMaxEntriesPerCollection
+        deprecatedName: internalQueryCacheSize
+      component: CONTROL
+      context: ftdc
+      id: 636300.0
+      message: Use of deprecated server parameter name
       severity: W
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
@@ -172,20 +821,136 @@
     timestamp: now
   - jsonPayload:
       attributes:
-        client: 127.0.0.1:37245
-        db: admin
-        mechanism: SCRAM-SHA-256
-        result: AuthenticationFailed
-        user: invalidUser
-      component: ACCESS
-      context: conn2
-      id: 20249.0
-      message: Authentication failed
-      severity: E
+        canonicalName: collectionSamplingLogIntervalSeconds
+        deprecatedName: oplogSamplingLogIntervalSeconds
+      component: CONTROL
+      context: ftdc
+      id: 636300.0
+      message: Use of deprecated server parameter name
+      severity: W
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
-    severity: 500.0
+    severity: 400.0
+    timestamp: now
+  - jsonPayload:
+      component: NETWORK
+      context: ftdc
+      id: 23803.0
+      message: Use of deprecated server parameter 'sslMode', please use 'tlsMode' instead.
+      severity: W
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 400.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        canonicalName: storageEngineConcurrentReadTransactions
+        deprecatedName: wiredTigerConcurrentReadTransactions
+      component: CONTROL
+      context: ftdc
+      id: 636300.0
+      message: Use of deprecated server parameter name
+      severity: W
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 400.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        canonicalName: storageEngineConcurrentWriteTransactions
+        deprecatedName: wiredTigerConcurrentWriteTransactions
+      component: CONTROL
+      context: ftdc
+      id: 636300.0
+      message: Use of deprecated server parameter name
+      severity: W
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 400.0
+    timestamp: now
+  - jsonPayload:
+      component: WTCHKPT
+      context: Checkpointer
+      id: 22430.0
+      message:
+        category: WT_VERB_CHECKPOINT_PROGRESS
+        category_id: 7.0
+        msg: "saving checkpoint snapshot min: 33, snapshot max: 33 snapshot count: 0, oldest timestamp: (0, 0) , meta checkpoint timestamp: (0, 0) base write gen: 1"
+        session_name: WT_SESSION.checkpoint
+        thread: 1:0xffffab20e680
+        ts_sec: 1.753110088e+09
+        ts_usec: 555981.0
+        verbose_level: DEBUG_1
+        verbose_level_id: 1.0
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      component: WTCHKPT
+      context: Checkpointer
+      id: 22430.0
+      message:
+        category: WT_VERB_CHECKPOINT_PROGRESS
+        category_id: 7.0
+        msg: "saving checkpoint snapshot min: 35, snapshot max: 35 snapshot count: 0, oldest timestamp: (0, 0) , meta checkpoint timestamp: (0, 0) base write gen: 1"
+        session_name: WT_SESSION.checkpoint
+        thread: 1:0xffffab20e680
+        ts_sec: 1.753110148e+09
+        ts_usec: 572218.0
+        verbose_level: DEBUG_1
+        verbose_level_id: 1.0
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      component: WTCHKPT
+      context: Checkpointer
+      id: 22430.0
+      message:
+        category: WT_VERB_CHECKPOINT_PROGRESS
+        category_id: 7.0
+        msg: "saving checkpoint snapshot min: 36, snapshot max: 36 snapshot count: 0, oldest timestamp: (0, 0) , meta checkpoint timestamp: (0, 0) base write gen: 1"
+        session_name: WT_SESSION.checkpoint
+        thread: 1:0xffffab20e680
+        ts_sec: 1.753110208e+09
+        ts_usec: 584957.0
+        verbose_level: DEBUG_1
+        verbose_level_id: 1.0
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      component: WTCHKPT
+      context: Checkpointer
+      id: 22430.0
+      message:
+        category: WT_VERB_CHECKPOINT_PROGRESS
+        category_id: 7.0
+        msg: "saving checkpoint snapshot min: 37, snapshot max: 37 snapshot count: 0, oldest timestamp: (0, 0) , meta checkpoint timestamp: (0, 0) base write gen: 1"
+        session_name: WT_SESSION.checkpoint
+        thread: 1:0xffffab20e680
+        ts_sec: 1.753110268e+09
+        ts_usec: 600180.0
+        verbose_level: DEBUG_1
+        verbose_level_id: 1.0
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
     timestamp: now
   partialSuccess: true
   resource:
