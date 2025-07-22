@@ -59,7 +59,8 @@ func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverVarnish{} })
 }
 
-type LoggingProcessorMacroVarnish struct {}
+type LoggingProcessorMacroVarnish struct {
+}
 
 func (LoggingProcessorMacroVarnish) Type() string {
 	return "varnish"
