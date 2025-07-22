@@ -90,10 +90,14 @@ func genericAccessLogParser(ctx context.Context, processorType, tag, uid string)
 	return c
 }
 
-// TODO: rename to genericAccessLogParser once the old version is removed
-// genericAccessLogParserAsInternalLoggingProcessor is an internal logging processor that parses access logs.
-// It will eventually replace genericAccessLogParser, as it returns a slice of InternalLoggingProcessor rather than fluentbit.Component, making it more flexible.
-func genericAccessLogParserAsInternalLoggingProcessor(ctx context.Context, processorType string) []confgenerator.InternalLoggingProcessor {
+// GenericAccessLogParser is an internal logging processor that parses access logs.
+// It implements the InternalLoggingProcessor interface.
+type GenericAccessLogParser struct {
+	ProcessorType string
+}
+
+// Components implements the InternalLoggingProcessor interface.
+func (p GenericAccessLogParser) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegex{
 		// Documentation:
 		// https://httpd.apache.org/docs/current/logs.html#accesslog
@@ -110,12 +114,14 @@ func genericAccessLogParserAsInternalLoggingProcessor(ctx context.Context, proce
 				// https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#HttpRequest.FIELDS.response_size
 			},
 		},
-	}
+	}.Components(ctx, tag, uid)
+
 	mf := confgenerator.LoggingProcessorModifyFields{
 		Fields: map[string]*confgenerator.ModifyField{
-			InstrumentationSourceLabel: instrumentationSourceValue(processorType),
+			InstrumentationSourceLabel: instrumentationSourceValue(p.ProcessorType),
 		},
 	}
+
 	// apache/nginx/varnish logs "-" when a field does not have a value. Remove the field entirely when this happens.
 	for _, field := range []string{
 		"jsonPayload.host",
@@ -126,6 +132,7 @@ func genericAccessLogParserAsInternalLoggingProcessor(ctx context.Context, proce
 			OmitIf: fmt.Sprintf(`%s = "-"`, field),
 		}
 	}
+
 	// Generate the httpRequest structure.
 	for _, field := range []string{
 		"remoteIp",
@@ -147,8 +154,15 @@ func genericAccessLogParserAsInternalLoggingProcessor(ctx context.Context, proce
 		}
 	}
 
+	c = append(c, mf.Components(ctx, tag, uid)...)
+	return c
+}
+
+// TODO: rename to genericAccessLogParser once the old version is removed
+// genericAccessLogParserAsInternalLoggingProcessor is an internal logging processor that parses access logs.
+// It will eventually replace genericAccessLogParser, as it returns a slice of InternalLoggingProcessor rather than fluentbit.Component, making it more flexible.
+func genericAccessLogParserAsInternalLoggingProcessor(ctx context.Context, processorType string) []confgenerator.InternalLoggingProcessor {
 	return []confgenerator.InternalLoggingProcessor{
-		c,
-		mf,
+		GenericAccessLogParser{ProcessorType: processorType},
 	}
 }
