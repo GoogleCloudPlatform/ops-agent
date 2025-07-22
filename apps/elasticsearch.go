@@ -268,37 +268,47 @@ func (p LoggingProcessorElasticsearchGC) Components(ctx context.Context, tag, ui
 	return c
 }
 
-func loggingReceiverFilesMixinElasticsearchJson() confgenerator.LoggingReceiverFilesMixin {
-	return confgenerator.LoggingReceiverFilesMixin{
+type LoggingReceiverMacroElasticsearchJson struct {
+	LoggingProcessorMacroElasticsearchJson  `yaml:",inline"`
+	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
+	IncludePaths                            []string                      `yaml:"include_paths,omitempty"`
+	MultilineRules                          []confgenerator.MultilineRule `yaml:"multiline_rules,omitempty"`
+}
+
+func (r LoggingReceiverMacroElasticsearchJson) Expand(ctx context.Context) (confgenerator.InternalLoggingReceiver, []confgenerator.InternalLoggingProcessor) {
+	if len(r.IncludePaths) == 0 {
 		// Default JSON logs for Elasticsearch
-		IncludePaths: []string{
+		r.IncludePaths = []string{
 			"/var/log/elasticsearch/*_server.json",
 			"/var/log/elasticsearch/*_deprecation.json",
 			"/var/log/elasticsearch/*_index_search_slowlog.json",
 			"/var/log/elasticsearch/*_index_indexing_slowlog.json",
 			"/var/log/elasticsearch/*_audit.json",
+		}
+	}
+
+	// When Elasticsearch emits stack traces, the json log may be spread across multiple lines,
+	// so we need this multiline parsing to properly parse the record.
+	// Example multiline log record:
+	// {"type": "server", "timestamp": "2022-01-20T15:46:00,131Z", "level": "ERROR", "component": "o.e.b.ElasticsearchUncaughtExceptionHandler", "cluster.name": "elasticsearch", "node.name": "brandon-testing-elasticsearch", "message": "uncaught exception in thread [main]",
+	// "stacktrace": ["org.elasticsearch.bootstrap.StartupException: java.lang.IllegalArgumentException: unknown setting [invalid.key] please check that any required plugins are installed, or check the breaking changes documentation for removed settings",
+	// -- snip --
+	// "at org.elasticsearch.bootstrap.Elasticsearch.init(Elasticsearch.java:166) ~[elasticsearch-7.16.2.jar:7.16.2]",
+	// "... 6 more"] }
+	r.MultilineRules = []confgenerator.MultilineRule{
+		{
+			StateName: "start_state",
+			NextState: "cont",
+			Regex:     `^{.*`,
 		},
-		// When Elasticsearch emits stack traces, the json log may be spread across multiple lines,
-		// so we need this multiline parsing to properly parse the record.
-		// Example multiline log record:
-		// {"type": "server", "timestamp": "2022-01-20T15:46:00,131Z", "level": "ERROR", "component": "o.e.b.ElasticsearchUncaughtExceptionHandler", "cluster.name": "elasticsearch", "node.name": "brandon-testing-elasticsearch", "message": "uncaught exception in thread [main]",
-		// "stacktrace": ["org.elasticsearch.bootstrap.StartupException: java.lang.IllegalArgumentException: unknown setting [invalid.key] please check that any required plugins are installed, or check the breaking changes documentation for removed settings",
-		// -- snip --
-		// "at org.elasticsearch.bootstrap.Elasticsearch.init(Elasticsearch.java:166) ~[elasticsearch-7.16.2.jar:7.16.2]",
-		// "... 6 more"] }
-		MultilineRules: []confgenerator.MultilineRule{
-			{
-				StateName: "start_state",
-				NextState: "cont",
-				Regex:     `^{.*`,
-			},
-			{
-				StateName: "cont",
-				NextState: "cont",
-				Regex:     `^[^{].*[,}]$`,
-			},
+		{
+			StateName: "cont",
+			NextState: "cont",
+			Regex:     `^[^{].*[,}]$`,
 		},
 	}
+
+	return &r.LoggingReceiverFilesMixin, r.LoggingProcessorMacroElasticsearchJson.Expand(ctx)
 }
 
 type LoggingReceiverElasticsearchGC struct {
@@ -319,6 +329,8 @@ func (r LoggingReceiverElasticsearchGC) Components(ctx context.Context, tag stri
 }
 
 func init() {
-	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroElasticsearchJson](loggingReceiverFilesMixinElasticsearchJson)
+	confgenerator.RegisterLoggingReceiverMacro(func() LoggingReceiverMacroElasticsearchJson {
+		return LoggingReceiverMacroElasticsearchJson{}
+	})
 	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverElasticsearchGC{} })
 }
