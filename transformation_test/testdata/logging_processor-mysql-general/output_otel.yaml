@@ -1,0 +1,1 @@
+- config_error: "not an OTel processor: &apps.LoggingProcessorMysqlGeneral{ConfigComponent:confgenerator.ConfigComponent{Type:\"mysql_general\"}}"
