@@ -269,16 +269,14 @@ func (p LoggingProcessorElasticsearchGC) Components(ctx context.Context, tag, ui
 }
 
 type LoggingReceiverMacroElasticsearchJson struct {
-	LoggingProcessorMacroElasticsearchJson  `yaml:",inline"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
-	IncludePaths                            []string                      `yaml:"include_paths,omitempty"`
-	MultilineRules                          []confgenerator.MultilineRule `yaml:"multiline_rules,omitempty"`
+	LoggingProcessorMacroElasticsearchJson `yaml:",inline"`
+	ReceiverMixin                          confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
 }
 
 func (r LoggingReceiverMacroElasticsearchJson) Expand(ctx context.Context) (confgenerator.InternalLoggingReceiver, []confgenerator.InternalLoggingProcessor) {
-	if len(r.IncludePaths) == 0 {
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
 		// Default JSON logs for Elasticsearch
-		r.IncludePaths = []string{
+		r.ReceiverMixin.IncludePaths = []string{
 			"/var/log/elasticsearch/*_server.json",
 			"/var/log/elasticsearch/*_deprecation.json",
 			"/var/log/elasticsearch/*_index_search_slowlog.json",
@@ -295,7 +293,7 @@ func (r LoggingReceiverMacroElasticsearchJson) Expand(ctx context.Context) (conf
 	// -- snip --
 	// "at org.elasticsearch.bootstrap.Elasticsearch.init(Elasticsearch.java:166) ~[elasticsearch-7.16.2.jar:7.16.2]",
 	// "... 6 more"] }
-	r.MultilineRules = []confgenerator.MultilineRule{
+	r.ReceiverMixin.MultilineRules = []confgenerator.MultilineRule{
 		{
 			StateName: "start_state",
 			NextState: "cont",
@@ -308,7 +306,7 @@ func (r LoggingReceiverMacroElasticsearchJson) Expand(ctx context.Context) (conf
 		},
 	}
 
-	return &r.LoggingReceiverFilesMixin, r.LoggingProcessorMacroElasticsearchJson.Expand(ctx)
+	return &r.ReceiverMixin, r.LoggingProcessorMacroElasticsearchJson.Expand(ctx)
 }
 
 type LoggingReceiverElasticsearchGC struct {
