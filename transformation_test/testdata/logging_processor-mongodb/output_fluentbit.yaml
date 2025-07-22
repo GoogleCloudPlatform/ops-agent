@@ -1,0 +1,193 @@
+- entries:
+  - jsonPayload:
+      attributes:
+        dbPath: /var/lib/mongodb
+        pid: 10234.0
+        port: 27017.0
+      component: CONTROL
+      context: main
+      id: 23352.0
+      message: MongoDB starting
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      component: STORAGE
+      context: initandlisten
+      id: 20320.0
+      message: "[1658325001:456789][10234:0x7f9dcd9f3700], txn-recover: Recovering log 1 through 2"
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        durationMillis: 1234.0
+      component: STORAGE
+      context: initandlisten
+      id: 22437.0
+      message: WiredTiger opened
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        checkpoint_ts:
+          $timestamp:
+            i: 1.0
+            t: 1.658325003e+09
+      component: STORAGE
+      context: WTCheckpointThread
+      id: 4.7959e+06
+      message: WiredTiger checkpoint
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        flush_duration_ms: 21.0
+      component: STORAGE
+      context: WTJournalFlusher
+      id: 5.1234e+06
+      message: WiredTiger journal flush
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        max_pages: 100.0
+        pages_evicted: 34.0
+      component: STORAGE
+      context: WTCacheEvictionWorker-0
+      id: 22438.0
+      message: WiredTiger eviction
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        client: 127.0.0.1:37244
+        connectionCount: 1.0
+        connectionId: 1.0
+      component: COMMAND
+      context: conn1
+      id: 51803.0
+      message: Connection accepted
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        client: conn1
+        doc:
+          driver:
+            name: PyMongo
+            version: 4.2.0
+          os:
+            architecture: x86_64
+            name: Ubuntu
+            type: Linux
+            version: "20.04"
+      component: COMMAND
+      context: conn1
+      id: 51804.0
+      message: Received client metadata
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        keysInserted: 1.0
+        millis: 2.0
+        ninserted: 1.0
+        ns: test.users
+      component: COMMAND
+      context: conn1
+      id: 51805.0
+      message: Insert command
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        docsReturned: 1.0
+        keysExamined: 1.0
+        millis: 1.0
+        ns: test.users
+        query:
+          name: Alice
+      component: COMMAND
+      context: conn1
+      id: 51806.0
+      message: Query executed
+      severity: I
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        millis: 212.0
+        ns: test.logs
+        planSummary: COLLSCAN
+        query:
+          level: debug
+        type: query
+      component: COMMAND
+      context: conn1
+      id: 51810.0
+      message: Slow query
+      severity: W
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 400.0
+    timestamp: now
+  - jsonPayload:
+      attributes:
+        client: 127.0.0.1:37245
+        db: admin
+        mechanism: SCRAM-SHA-256
+        result: AuthenticationFailed
+        user: invalidUser
+      component: ACCESS
+      context: conn2
+      id: 20249.0
+      message: Authentication failed
+      severity: E
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    severity: 500.0
+    timestamp: now
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance

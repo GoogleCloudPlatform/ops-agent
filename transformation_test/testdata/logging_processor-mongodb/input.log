@@ -1,0 +1,13 @@
+{"t":{"$date":"2025-07-22T08:30:01.123Z"},"s":"I","c":"CONTROL","id":23352,"ctx":"main","msg":"MongoDB starting","attr":{"pid":10234,"port":27017,"dbPath":"/var/lib/mongodb"}}
+{"t":{"$date":"2025-07-22T08:30:01.456Z"},"s":"I","c":"STORAGE","id":20320,"ctx":"initandlisten","msg":"WiredTiger message","attr":{"message":"[1658325001:456789][10234:0x7f9dcd9f3700], txn-recover: Recovering log 1 through 2"}}
+{"t":{"$date":"2025-07-22T08:30:01.789Z"},"s":"I","c":"STORAGE","id":22437,"ctx":"initandlisten","msg":"WiredTiger opened","attr":{"durationMillis":1234}}
+{"t":{"$date":"2025-07-22T08:30:03.101Z"},"s":"I","c":"STORAGE","id":4795900,"ctx":"WTCheckpointThread","msg":"WiredTiger checkpoint","attr":{"checkpoint_ts":{"$timestamp":{"t":1658325003,"i":1}}}}
+{"t":{"$date":"2025-07-22T08:30:05.234Z"},"s":"I","c":"STORAGE","id":5123400,"ctx":"WTJournalFlusher","msg":"WiredTiger journal flush","attr":{"flush_duration_ms":21}}
+{"t":{"$date":"2025-07-22T08:30:06.345Z"},"s":"I","c":"STORAGE","id":22438,"ctx":"WTCacheEvictionWorker-0","msg":"WiredTiger eviction","attr":{"pages_evicted":34,"max_pages":100}}
+{"t":{"$date":"2025-07-22T08:30:07.456Z"},"s":"I","c":"COMMAND","id":51803,"ctx":"conn1","msg":"Connection accepted","attr":{"client":"127.0.0.1:37244","connectionId":1,"connectionCount":1}}
+{"t":{"$date":"2025-07-22T08:30:08.678Z"},"s":"I","c":"COMMAND","id":51804,"ctx":"conn1","msg":"Received client metadata","attr":{"client":"conn1","doc":{"driver":{"name":"PyMongo","version":"4.2.0"},"os":{"type":"Linux","name":"Ubuntu","architecture":"x86_64","version":"20.04"}}}}
+{"t":{"$date":"2025-07-22T08:30:09.111Z"},"s":"I","c":"COMMAND","id":51805,"ctx":"conn1","msg":"Insert command","attr":{"ns":"test.users","ninserted":1,"keysInserted":1,"millis":2}}
+{"t":{"$date":"2025-07-22T08:30:09.789Z"},"s":"I","c":"COMMAND","id":51806,"ctx":"conn1","msg":"Query executed","attr":{"ns":"test.users","query":{"name":"Alice"},"docsReturned":1,"keysExamined":1,"millis":1}}
+{"t":{"$date":"2025-07-22T08:30:10.000Z"},"s":"W","c":"COMMAND","id":51810,"ctx":"conn1","msg":"Slow query","attr":{"type":"query","ns":"test.logs","query":{"level":"debug"},"planSummary":"COLLSCAN","millis":212}}
+{"t":{"$date":"2025-07-22T08:30:11.321Z"},"s":"E","c":"ACCESS","id":20249,"ctx":"conn2","msg":"Authentication failed","attr":{"mechanism":"SCRAM-SHA-256","user":"invalidUser","db":"admin","client":"127.0.0.1:37245","result":"AuthenticationFailed"}}
+{"t":{"$date":"2025-07-22T08:30:12.789Z"},"s":"E","c":"NETWORK","id":23213,"ctx":"conn2","msg":"Client metadata parsing failed","attr":{"error":"Missing required field 'driver'"}}  
