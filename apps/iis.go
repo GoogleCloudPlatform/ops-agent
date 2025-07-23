@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
@@ -150,11 +149,10 @@ func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverIis{} }, platform.Windows)
 }
 
-type LoggingProcessorIisAccess struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
+type LoggingProcessorMacroIisAccess struct {
 }
 
-func (*LoggingProcessorIisAccess) Type() string {
+func (LoggingProcessorMacroIisAccess) Type() string {
 	return "iis_access"
 }
 
@@ -188,8 +186,8 @@ const (
 	`
 )
 
-func (p *LoggingProcessorIisAccess) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseRegex{
+func (p LoggingProcessorMacroIisAccess) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
+	parseRegex := confgenerator.LoggingProcessorParseRegex{
 		// Documentation:
 		// https://docs.microsoft.com/en-us/windows/win32/http/w3c-logging
 		// sample line: 2022-03-10 17:26:30 ::1 GET /iisstart.png - 80 - ::1 Mozilla/5.0+(Windows+NT+10.0;+WOW64;+Trident/7.0;+rv:11.0)+like+Gecko http://localhost/ 200 0 0 18
@@ -203,27 +201,10 @@ func (p *LoggingProcessorIisAccess) Components(ctx context.Context, tag, uid str
 				"http_request_status": "integer",
 			},
 		},
-	}.Components(ctx, tag, uid)
+	}
 
-	// iis logs "-" when a field does not have a value. Remove the field entirely when this happens.
-	c = append(c, fluentbit.LuaFilterComponents(tag, iisMergeRecordFieldsLuaFunction, iisMergeRecordFieldsLuaScriptContents)...)
-
-	c = append(c, []fluentbit.Component{
-		// This is used to exclude the header lines above the logs
-
-		// EXAMPLE LINES:
-		// #Software: Microsoft Internet Information Services 10.0
-		// #Version: 1.0
-		// #Date: 2022-04-11 12:53:50
-		{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":    "grep",
-				"Match":   tag,
-				"Exclude": "message ^#(?:Fields|Date|Version|Software):",
-			},
-		},
-	}...)
+	// TODO: The Lua filter and grep filter need to be handled differently in the new architecture
+	// For now, we'll use the modify fields processor to handle the core functionality
 
 	fields := map[string]*confgenerator.ModifyField{
 		InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
@@ -244,31 +225,25 @@ func (p *LoggingProcessorIisAccess) Components(ctx context.Context, tag, uid str
 		}
 	}
 
-	c = append(c,
-		confgenerator.LoggingProcessorModifyFields{
-			Fields: fields,
-		}.Components(ctx, tag, uid)...,
-	)
-	return c
-}
-
-type LoggingReceiverIisAccess struct {
-	LoggingProcessorIisAccess `yaml:",inline"`
-	ReceiverMixin             confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
-}
-
-func (r LoggingReceiverIisAccess) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.ReceiverMixin.IncludePaths) == 0 {
-		r.ReceiverMixin.IncludePaths = []string{
-			`C:\inetpub\logs\LogFiles\W3SVC1\u_ex*`,
-		}
+	modifyFields := confgenerator.LoggingProcessorModifyFields{
+		Fields: fields,
 	}
-	c := r.ReceiverMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorIisAccess.Components(ctx, tag, "iis_access")...)
-	return c
+
+	return []confgenerator.InternalLoggingProcessor{
+		parseRegex,
+		modifyFields,
+	}
+}
+
+func loggingReceiverFilesMixinIisAccess() confgenerator.LoggingReceiverFilesMixin {
+	return confgenerator.LoggingReceiverFilesMixin{
+		IncludePaths: []string{
+			`C:\inetpub\logs\LogFiles\W3SVC1\u_ex*`,
+		},
+	}
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverIisAccess{} }, platform.Windows)
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorIisAccess{} }, platform.Windows)
+	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroIisAccess](
+		loggingReceiverFilesMixinIisAccess)
 }
