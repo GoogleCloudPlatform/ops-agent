@@ -1,0 +1,84 @@
+- entries:
+  - jsonPayload:
+      core: collection1
+      level: INFO
+      message: "[collection1]  webapp=/solr path=/select params={q=*:*&wt=json} hits=2435 status=0 QTime=17"
+      source: o.a.s.c.S.Request
+      thread: qtp1038934055-15
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/solr_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-21T08:03:17.987000000Z
+  - jsonPayload:
+      core: collection1
+      level: DEBUG
+      message: handleRequest start select
+      source: o.a.s.h.RequestHandlerBase
+      thread: qtp1038934055-19
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/solr_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 100.0
+    timestamp: 2025-07-21T08:03:18.123000000Z
+  - jsonPayload:
+      core: collection1
+      level: WARN
+      message: "Problem loading core: collection1"
+      source: o.a.s.c.CoreContainer
+      thread: coreLoadExecutor-7-thread-1
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/solr_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 400.0
+    timestamp: 2025-07-21T08:10:55.456000000Z
+  - jsonPayload:
+      core: collection1
+      level: ERROR
+      message: |-
+        Error initializing core: collection1
+        org.apache.solr.common.SolrException:org.apache.solr.common.SolrException: Could not load config for collection1
+      source: o.a.s.c.CoreContainer
+      thread: coreLoadExecutor-7-thread-1
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/solr_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 500.0
+    timestamp: 2025-07-21T08:10:55.458000000Z
+  - jsonPayload:
+      core: collection2
+      level: INFO
+      message: "[collection2]  webapp=/solr path=/update params={commit=true} status=0 QTime=128"
+      source: o.a.s.c.S.Request
+      thread: qtp1038934055-16
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/solr_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-21T09:22:34.122000000Z
+  - jsonPayload:
+      core: collection1
+      level: INFO
+      message: "[collection1]  webapp=/solr path=/select params={q=id:42&wt=json} hits=1 status=0 QTime=6"
+      source: o.a.s.c.S.Request
+      thread: qtp1038934055-15
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/solr_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-21T10:45:12.213000000Z
+  - jsonPayload:
+      core: collection2
+      level: INFO
+      message: "[collection2]  webapp=/solr path=/admin/metrics params={group=core&prefix=QUERY./select} status=0 QTime=4"
+      source: o.a.s.c.S.Request
+      thread: qtp1038934055-17
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/solr_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-21T12:33:45.678000000Z
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance
