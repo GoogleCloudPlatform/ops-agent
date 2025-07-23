@@ -1,0 +1,1 @@
+- config_error: "not an OTel processor: &apps.LoggingProcessorHbaseSystem{ConfigComponent:confgenerator.ConfigComponent{Type:\"hbase_system\"}}"

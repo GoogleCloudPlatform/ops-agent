@@ -1,0 +1,225 @@
+- entries:
+  - jsonPayload:
+      level: INFO
+      message: "master.HMaster: STARTING service HMaster"
+      module: main
+      source: master.HMaster
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T08:15:04.212000000Z
+  - jsonPayload:
+      level: INFO
+      message: "metrics.MetricRegistries: Loaded MetricRegistries class org.apache.hadoop.hbase.metrics.impl.MetricRegistriesImpl"
+      module: main
+      source: metrics.MetricRegistries
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T08:15:06.437000000Z
+  - jsonPayload:
+      level: WARN
+      message: "util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable"
+      module: main
+      source: util.NativeCodeLoader
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 400.0
+    timestamp: 2025-07-22T08:15:06.503000000Z
+  - jsonPayload:
+      level: INFO
+      message: "zookeeper.ZooKeeper: Initiating client connection, connectString=zookeeper1:2181 sessionTimeout=180000 watcher=org.apache.hadoop.hbase.zookeeper.RecoverableZooKeeper@24a0a5c1"
+      module: main
+      source: zookeeper.ZooKeeper
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T08:15:07.128000000Z
+  - jsonPayload:
+      level: INFO
+      message: "zookeeper.ClientCnxn: Opening socket connection to server zookeeper1/192.168.1.101:2181"
+      module: main-SendThread(zookeeper1:2181)
+      source: zookeeper.ClientCnxn
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T08:15:07.285000000Z
+  - jsonPayload:
+      level: INFO
+      message: "zookeeper.ClientCnxn: Socket connection established to zookeeper1/192.168.1.101:2181, initiating session"
+      module: main-SendThread(zookeeper1:2181)
+      source: zookeeper.ClientCnxn
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T08:15:07.378000000Z
+  - jsonPayload:
+      level: INFO
+      message: "zookeeper.ClientCnxn: Session establishment complete on server zookeeper1/192.168.1.101:2181, sessionid = 0x15f23c54a00003d, negotiated timeout = 180000"
+      module: main-SendThread(zookeeper1:2181)
+      source: zookeeper.ClientCnxn
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T08:15:07.412000000Z
+  - jsonPayload:
+      level: INFO
+      message: "master.HMaster: Active Master running"
+      module: main
+      source: master.HMaster
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T08:15:08.004000000Z
+  - jsonPayload:
+      level: INFO
+      message: "regionserver.HRegionServer: Starting RegionServer services"
+      module: master-server-0
+      source: regionserver.HRegionServer
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T08:15:08.147000000Z
+  - jsonPayload:
+      level: INFO
+      message: "util.ServerRegionReplicaUtil: Region replicas enabled: false"
+      module: master-server-0
+      source: util.ServerRegionReplicaUtil
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T08:15:08.603000000Z
+  - jsonPayload:
+      level: INFO
+      message: "wal.FSHLog: WAL initialization successful for hdfs://namenode:8020/hbase/WALs/hbase-master, replication enabled = false"
+      module: master-server-0
+      source: wal.FSHLog
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T08:15:08.981000000Z
+  - jsonPayload:
+      level: INFO
+      message: "ipc.RpcServer: IPC Server listener on 16000: starting"
+      module: RpcServer.listener.on.pool-1-thread-1
+      source: ipc.RpcServer
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T08:15:09.125000000Z
+  - jsonPayload:
+      level: WARN
+      message: "procedure.ProcedureExecutor: ProcedureExecutor load average is high: 6.3"
+      module: ProcedureExecutorThread-0
+      source: procedure.ProcedureExecutor
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 400.0
+    timestamp: 2025-07-22T08:15:09.641000000Z
+  - jsonPayload:
+      level: INFO
+      message: "master.AssignmentManager: Assigning meta region"
+      module: master-event-0
+      source: master.AssignmentManager
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T08:15:10.202000000Z
+  - jsonPayload:
+      level: INFO
+      message: "master.HMaster: Master has completed initialization"
+      module: master-event-0
+      source: master.HMaster
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T08:15:10.578000000Z
+  - jsonPayload:
+      level: INFO
+      message: "regionserver.HRegionServer: Region hbase:meta assigned to server hbase-regionserver-1,16020,1723457715211"
+      module: RS_OPEN_REGION-hbase-regionserver-1:16020-0
+      source: regionserver.HRegionServer
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T08:16:22.134000000Z
+  - jsonPayload:
+      level: INFO
+      message: "client.ScannerCallable: Scanner opened for 'test_table', start row='row1'"
+      module: Scanner-0
+      source: client.ScannerCallable
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T09:03:17.808000000Z
+  - jsonPayload:
+      level: INFO
+      message: "client.ScannerCallable: Scanner closed for 'test_table', scanned 50 rows"
+      module: Scanner-0
+      source: client.ScannerCallable
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T09:03:18.412000000Z
+  - jsonPayload:
+      level: WARN
+      message: "wal.FSHLog: Slow sync cost: 245ms, regions: [test_table,,1723457715211.abcdef1234567890]"
+      module: RS_CLOSE_REGION-hbase-regionserver-2:16020-3
+      source: wal.FSHLog
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 400.0
+    timestamp: 2025-07-22T12:30:44.182000000Z
+  - jsonPayload:
+      level: INFO
+      message: "ipc.CallRunner: Served: get from test_table in 4ms"
+      module: B.defaultRpcServer.handler=3,queue=0,port=16000
+      source: ipc.CallRunner
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T13:02:18.943000000Z
+  - jsonPayload:
+      level: INFO
+      message: "regionserver.HRegionServer: Opening region test_table,,1723457715211"
+      module: RS_OPEN_REGION-hbase-regionserver-3:16020-7
+      source: regionserver.HRegionServer
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T16:47:09.332000000Z
+  - jsonPayload:
+      level: INFO
+      message: "master.HMaster: Shutting down HMaster"
+      module: ShutdownHook
+      source: master.HMaster
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T22:19:56.721000000Z
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance
