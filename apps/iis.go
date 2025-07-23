@@ -203,11 +203,19 @@ func (p LoggingProcessorMacroIisAccess) Expand(ctx context.Context) []confgenera
 		},
 	}
 
-	// TODO: The Lua filter and grep filter need to be handled differently in the new architecture
-	// For now, we'll use the modify fields processor to handle the core functionality
-
+	// Handle IIS-specific field processing
 	fields := map[string]*confgenerator.ModifyField{
 		InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+		// Remove fields that should be null when they have "-" value
+		"jsonPayload.cs_uri_query": {
+			OmitIf: `jsonPayload.cs_uri_query = "-"`,
+		},
+		"jsonPayload.http_request_referer": {
+			OmitIf: `jsonPayload.http_request_referer = "-"`,
+		},
+		"jsonPayload.user": {
+			OmitIf: `jsonPayload.user = "-"`,
+		},
 	}
 
 	// Generate the httpRequest structure.
@@ -224,6 +232,9 @@ func (p LoggingProcessorMacroIisAccess) Expand(ctx context.Context) []confgenera
 			MoveFrom: fmt.Sprintf("jsonPayload.http_request_%s", field),
 		}
 	}
+
+	// Note: Intermediate fields like cs_uri_stem, cs_uri_query, s_port will remain in jsonPayload
+	// This is a limitation of the current refactoring - the original Lua filter handled this better
 
 	modifyFields := confgenerator.LoggingProcessorModifyFields{
 		Fields: fields,
@@ -244,6 +255,9 @@ func loggingReceiverFilesMixinIisAccess() confgenerator.LoggingReceiverFilesMixi
 }
 
 func init() {
+	// Note: The new RegisterLoggingFilesProcessorMacro system doesn't yet support
+	// platform restrictions like the previous registration system did.
+	// TODO: Add platform.Windows restriction once the macro system supports it.
 	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroIisAccess](
 		loggingReceiverFilesMixinIisAccess)
 }
