@@ -75,7 +75,6 @@ func (p LoggingProcessorMacroActiveDirectoryDS) Components(ctx context.Context, 
 
 type LoggingReceiverMacroActiveDirectoryDS struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
-	Channels                      []string `yaml:"channels"`
 }
 
 func (r LoggingReceiverMacroActiveDirectoryDS) Type() string {
@@ -84,7 +83,7 @@ func (r LoggingReceiverMacroActiveDirectoryDS) Type() string {
 
 func (r LoggingReceiverMacroActiveDirectoryDS) Expand(ctx context.Context) (confgenerator.InternalLoggingReceiver, []confgenerator.InternalLoggingProcessor) {
 	l := confgenerator.LoggingReceiverWindowsEventLog{
-		Channels: r.Channels,
+		Channels: []string{"Directory Service", "Active Directory Web Services"},
 	}
 	processor := LoggingProcessorMacroActiveDirectoryDS{}
 

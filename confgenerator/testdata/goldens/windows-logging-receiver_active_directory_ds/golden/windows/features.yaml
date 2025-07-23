@@ -18,3 +18,7 @@
   feature: receivers:active_directory_ds
   key: "[0].enabled"
   value: "true"
+- module: logging
+  feature: receivers:active_directory_ds
+  key: "[0].enabled"
+  value: "true"
