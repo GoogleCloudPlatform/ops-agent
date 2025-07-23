@@ -1,0 +1,1 @@
+- config_error: "not an OTel processor: &apps.LoggingProcessorIisAccess{ConfigComponent:confgenerator.ConfigComponent{Type:\"iis_access\"}}"
