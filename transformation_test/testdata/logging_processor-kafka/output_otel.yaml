@@ -1,0 +1,1 @@
+- config_error: "not an OTel processor: &apps.LoggingProcessorKafka{ConfigComponent:confgenerator.ConfigComponent{Type:\"kafka\"}}"
