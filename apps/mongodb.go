@@ -267,19 +267,16 @@ func (p LoggingProcessorMacroMongodb) RegexLogComponents() []confgenerator.Inter
 }
 
 type LoggingReceiverMacroMongodb struct {
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
-	LoggingProcessorMacroMongodb            `yaml:",inline"`
-	IncludePaths                            []string `yaml:"include_paths"`
+	ReceiverMixin                confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
+	LoggingProcessorMacroMongodb `yaml:",inline"`
 }
 
 func (r LoggingReceiverMacroMongodb) Expand(ctx context.Context) (confgenerator.InternalLoggingReceiver, []confgenerator.InternalLoggingProcessor) {
-	if len(r.IncludePaths) == 0 {
-		r.IncludePaths = []string{"/var/log/mongodb/mongod.log*"}
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
+		r.ReceiverMixin.IncludePaths = []string{"/var/log/mongodb/mongod.log*"}
 	}
 
-	r.LoggingReceiverFilesMixin.IncludePaths = r.IncludePaths
-
-	return &r.LoggingReceiverFilesMixin, r.LoggingProcessorMacroMongodb.Expand(ctx)
+	return &r.ReceiverMixin, r.LoggingProcessorMacroMongodb.Expand(ctx)
 }
 
 func init() {

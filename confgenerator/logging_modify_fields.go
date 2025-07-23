@@ -31,7 +31,7 @@ type ModifyField struct {
 	// Source of value for this field
 	MoveFrom     string  `yaml:"move_from" validate:"omitempty,field,excluded_with=CopyFrom StaticValue"`
 	CopyFrom     string  `yaml:"copy_from" validate:"omitempty,field,excluded_with=MoveFrom StaticValue"`
-	StaticValue  *string `yaml:"static_value" validate:"excluded_with=MoveFrom CopyFrom"`
+	StaticValue  *string `yaml:"static_value" validate:"excluded_with=MoveFrom CopyFrom DefaultValue"`
 	DefaultValue *string `yaml:"default_value" validate:"excluded_with=StaticValue"`
 
 	// OTTL expression with copied value
