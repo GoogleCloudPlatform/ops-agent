@@ -1,0 +1,1 @@
+- config_error: "failed generating OTel processor: &confgenerator.loggingProcessorMacroAdapter[github.com/GoogleCloudPlatform/ops-agent/apps.LoggingProcessorMacroJettyAccess]{ConfigComponent:confgenerator.ConfigComponent{Type:\"jetty_access\"}, ProcessorMacro:apps.LoggingProcessorMacroJettyAccess{}}, err: unimplemented"
