@@ -1,0 +1,132 @@
+- entries:
+  - jsonPayload:
+      level: INFO
+      logger: org.apache.zookeeper.ZooKeeper
+      message: Initiating client connection, connectString=zookeeper:2181 sessionTimeout=18000 watcher=kafka.zookeeper.ZooKeeperClient$ZooKeeperClientWatcher$@4b2f7dd4
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/kafka
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T08:22:15.466000000Z
+  - jsonPayload:
+      level: INFO
+      logger: kafka.zookeeper.ZooKeeperClient
+      message: Waiting until connected.
+      source: ZooKeeperClient Kafka server
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/kafka
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T08:22:15.485000000Z
+  - jsonPayload:
+      level: INFO
+      logger: org.apache.zookeeper.ZooKeeper
+      message: Client environment:java.class.path=/opt/kafka/libs/kafka-clients-3.7.0.jar:/opt/kafka/libs/slf4j-api-1.7.30.jar:/opt/kafka/libs/zookeeper-3.6.3.jar:/opt/kafka/libs/...
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/kafka
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T08:22:15.492000000Z
+  - jsonPayload:
+      level: INFO
+      logger: kafka.server.KafkaConfig
+      message: |-
+        KafkaConfig values:
+        	advertised.listeners = PLAINTEXT://localhost:9092
+        	alter.config.policy.class.name = null
+        	alter.log.dirs.replication.quota.window.num = 11
+        	alter.log.dirs.replication.quota.window.size.seconds = 1
+        	background.threads = 10
+        	broker.id = 0
+        	compression.type = producer
+        	controlled.shutdown.enable = true
+        	log.dirs = /var/lib/kafka/data
+        	num.partitions = 1
+        	(zookeeper.connect = zookeeper:2181)
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/kafka
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T08:22:16.107000000Z
+  - jsonPayload:
+      level: INFO
+      logger: kafka.server.BrokerToControllerRequestThread
+      message: "Recorded new controller, from now on will use broker kafka-controller.internal:9092 (id: 0 rack: null)"
+      source: BrokerToControllerChannelManager broker=0 name=alterIsr
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/kafka
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T08:22:17.884000000Z
+  - jsonPayload:
+      level: INFO
+      logger: kafka.server.DelayedOperationPurgatory$ExpiredOperationReaper
+      message: Starting
+      source: ExpirationReaper-0-Produce
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/kafka
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T08:22:18.230000000Z
+  - jsonPayload:
+      level: INFO
+      logger: kafka.log.Log$
+      message: Loading producer state till offset 0 with message format version 2
+      source: LogLoader partition=events-1, dir=/var/lib/kafka/data
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/kafka
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T08:22:20.063000000Z
+  - jsonPayload:
+      level: INFO
+      logger: kafka.log.Log$
+      message: Completed load. Log start offset = 0, Log end offset = 151
+      source: LogLoader partition=events-1, dir=/var/lib/kafka/data
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/kafka
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T08:22:20.075000000Z
+  - jsonPayload:
+      level: WARN
+      logger: kafka.network.Acceptor
+      message: "Unexpected exception caught by acceptor thread: java.net.SocketTimeoutException: Accept timed out"
+      source: SocketServer brokerId=0
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/kafka
+    logName: projects/my-project/logs/transformation_test
+    severity: 400.0
+    timestamp: 2025-07-22T08:24:41.123000000Z
+  - jsonPayload:
+      level: INFO
+      logger: kafka.server.ReplicaFetcherThread
+      message: |
+        Error fetching data for partition events-0 from leader kafka-broker-1:9092
+        	java.io.IOException: Connection reset by peer
+        		at sun.nio.ch.FileDispatcherImpl.read0(Native Method)
+        		at sun.nio.ch.SocketDispatcher.read(SocketDispatcher.java:39)
+        		at sun.nio.ch.IOUtil.readIntoNativeBuffer(IOUtil.java:223)
+        		at sun.nio.ch.IOUtil.read(IOUtil.java:197)
+        		at sun.nio.ch.SocketChannelImpl.read(SocketChannelImpl.java:379)
+        		... 6 more
+      source: ReplicaFetcherThread-0-1
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/kafka
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T08:25:12.901000000Z
+  - jsonPayload:
+      level: INFO
+      logger: kafka.coordinator.group.GroupCoordinator
+      message: Preparing to rebalance group consumer-group-1 in state PreparingRebalance with old generation 42
+      source: GroupCoordinator 0
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/kafka
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T09:02:11.567000000Z
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance
