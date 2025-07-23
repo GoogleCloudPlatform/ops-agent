@@ -1,0 +1,71 @@
+- entries:
+  - jsonPayload:
+      javaClass: StorageService.java
+      level: INFO
+      lineNumber: 1443.0
+      message: StorageService.java:1443 - Node starting up
+      module: main
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_debug
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T10:15:45.123000000Z
+  - jsonPayload:
+      javaClass: Gossiper.java
+      level: DEBUG
+      lineNumber: 1180.0
+      message: Gossiper.java:1180 - Adding endpoint /10.0.0.2
+      module: main
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_debug
+    logName: projects/my-project/logs/transformation_test
+    severity: 100.0
+    timestamp: 2025-07-22T10:15:45.567000000Z
+  - jsonPayload:
+      javaClass: Gossiper.java
+      level: DEBUG
+      lineNumber: 1125.0
+      message: Gossiper.java:1125 - Gossiping with /10.0.0.3
+      module: GossipStage:1
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_debug
+    logName: projects/my-project/logs/transformation_test
+    severity: 100.0
+    timestamp: 2025-07-22T10:16:01.882000000Z
+  - jsonPayload:
+      javaClass: MessagingService.java
+      level: DEBUG
+      lineNumber: 995.0
+      message: MessagingService.java:995 - Sending message to /10.0.0.3
+      module: RequestResponseStage:10
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_debug
+    logName: projects/my-project/logs/transformation_test
+    severity: 100.0
+    timestamp: 2025-07-22T10:16:05.446000000Z
+  - jsonPayload:
+      javaClass: CompactionManager.java
+      level: DEBUG
+      lineNumber: 330.0
+      message: CompactionManager.java:330 - Beginning compaction of 2 sstables
+      module: ScheduledTasks:1
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_debug
+    logName: projects/my-project/logs/transformation_test
+    severity: 100.0
+    timestamp: 2025-07-22T10:17:02.244000000Z
+  - jsonPayload:
+      javaClass: CompactionTask.java
+      level: DEBUG
+      lineNumber: 540.0
+      message: CompactionTask.java:540 - Compacted to [Data.db:2.3MB] for ks1.tbl1
+      module: ScheduledTasks:1
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_debug
+    logName: projects/my-project/logs/transformation_test
+    severity: 100.0
+    timestamp: 2025-07-22T10:17:13.688000000Z
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance

@@ -1,0 +1,19 @@
+- entries:
+  - jsonPayload:
+      message: "[GC (Allocation Failure) [PSYoungGen: 15000K->2000K(20480K)] 45000K->33000K(71680K), 0.0123456 secs] [Times: user=0.02 sys=0.00, real=0.01 secs] "
+      uptime: 9.344
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_gc
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2025-07-22T10:19:12.544000000Z
+  - jsonPayload:
+      message: "[Full GC (Ergonomics) [PSYoungGen: 20480K->0K(20480K)] [ParOldGen: 51200K->25000K(51200K)] 71680K->25000K(71680K), [Metaspace: 31000K->31000K(1064960K)], 0.4456789 secs] [Times: user=0.56 sys=0.01, real=0.45 secs] "
+      uptime: 432.693
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_gc
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2025-07-22T10:25:55.893000000Z
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance

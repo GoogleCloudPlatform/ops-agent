@@ -1,0 +1,1 @@
+- config_error: "not an OTel processor: &apps.LoggingProcessorCassandraSystem{ConfigComponent:confgenerator.ConfigComponent{Type:\"cassandra_system\"}}"
