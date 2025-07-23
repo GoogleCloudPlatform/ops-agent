@@ -1,0 +1,8 @@
+INFO  [main] 2025-07-22 10:15:44,001 CassandraDaemon.java:687 - Starting Cassandra Server...
+INFO  [main] 2025-07-22 10:15:45,005 NativeTransportService.java:65 - Netty using Java NIO event loop
+INFO  [main] 2025-07-22 10:15:45,104 HintsService.java:141 - Started HintsService with 1024 queued hints
+INFO  [main] 2025-07-22 10:15:45,123 StorageService.java:1443 - Node localhost/127.0.0.1 is now part of the ring
+WARN  [GossipTasks:1] 2025-07-22 10:20:23,334 FailureDetector.java:305 - Not enough live nodes to maintain quorum
+INFO  [MemtableFlushWriter:1] 2025-07-22 10:22:15,667 Memtable.java:353 - Writing Memtable for ks1.tbl1 (172.4 KiB)
+INFO  [MemtableFlushWriter:1] 2025-07-22 10:22:15,912 Memtable.java:376 - Completed flushing ks1.tbl1 to /var/lib/cassandra/data/ks1/tbl1-123abc
+ERROR [ScheduledTasks:1] 2025-07-22 11:10:23,801 CommitLog.java:874 - Commit log sync failed: java.io.IOException: Disk full

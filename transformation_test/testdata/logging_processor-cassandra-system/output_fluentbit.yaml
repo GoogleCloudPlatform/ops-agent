@@ -1,0 +1,82 @@
+- entries:
+  - jsonPayload:
+      javaClass: CassandraDaemon.java
+      level: INFO
+      lineNumber: 687.0
+      message: CassandraDaemon.java:687 - Starting Cassandra Server...
+      module: main
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T10:15:44.001000000Z
+  - jsonPayload:
+      javaClass: NativeTransportService.java
+      level: INFO
+      lineNumber: 65.0
+      message: NativeTransportService.java:65 - Netty using Java NIO event loop
+      module: main
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T10:15:45.005000000Z
+  - jsonPayload:
+      javaClass: HintsService.java
+      level: INFO
+      lineNumber: 141.0
+      message: HintsService.java:141 - Started HintsService with 1024 queued hints
+      module: main
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T10:15:45.104000000Z
+  - jsonPayload:
+      javaClass: StorageService.java
+      level: INFO
+      lineNumber: 1443.0
+      message: StorageService.java:1443 - Node localhost/127.0.0.1 is now part of the ring
+      module: main
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T10:15:45.123000000Z
+  - jsonPayload:
+      javaClass: FailureDetector.java
+      level: WARN
+      lineNumber: 305.0
+      message: FailureDetector.java:305 - Not enough live nodes to maintain quorum
+      module: GossipTasks:1
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 400.0
+    timestamp: 2025-07-22T10:20:23.334000000Z
+  - jsonPayload:
+      javaClass: Memtable.java
+      level: INFO
+      lineNumber: 353.0
+      message: Memtable.java:353 - Writing Memtable for ks1.tbl1 (172.4 KiB)
+      module: MemtableFlushWriter:1
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T10:22:15.667000000Z
+  - jsonPayload:
+      javaClass: Memtable.java
+      level: INFO
+      lineNumber: 376.0
+      message: Memtable.java:376 - Completed flushing ks1.tbl1 to /var/lib/cassandra/data/ks1/tbl1-123abc
+      module: MemtableFlushWriter:1
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T10:22:15.912000000Z
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance

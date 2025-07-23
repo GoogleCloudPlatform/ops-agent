@@ -1,0 +1,8 @@
+INFO  [main] 2025-07-22 10:15:45,123 StorageService.java:1443 - Node starting up
+DEBUG [main] 2025-07-22 10:15:45,567 Gossiper.java:1180 - Adding endpoint /10.0.0.2
+DEBUG [GossipStage:1] 2025-07-22 10:16:01,882 Gossiper.java:1125 - Gossiping with /10.0.0.3
+DEBUG [RequestResponseStage:10] 2025-07-22 10:16:05,446 MessagingService.java:995 - Sending message to /10.0.0.3
+DEBUG [ScheduledTasks:1] 2025-07-22 10:17:02,244 CompactionManager.java:330 - Beginning compaction of 2 sstables
+DEBUG [ScheduledTasks:1] 2025-07-22 10:17:13,688 CompactionTask.java:540 - Compacted to [Data.db:2.3MB] for ks1.tbl1
+INFO  [ScheduledTasks:1] 2025-07-22 10:17:13,690 CompactionTask.java:549 - Compaction completed (12.123s)
+DEBUG [ReadStage:4] 2025-07-22 10:18:00,102 ReadCommand.java:145 - Executing read for key: user123, column: profile
