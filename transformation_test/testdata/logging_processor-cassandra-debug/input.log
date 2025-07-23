@@ -1,8 +1,21 @@
-INFO  [main] 2025-07-22 10:15:45,123 StorageService.java:1443 - Node starting up
-DEBUG [main] 2025-07-22 10:15:45,567 Gossiper.java:1180 - Adding endpoint /10.0.0.2
-DEBUG [GossipStage:1] 2025-07-22 10:16:01,882 Gossiper.java:1125 - Gossiping with /10.0.0.3
-DEBUG [RequestResponseStage:10] 2025-07-22 10:16:05,446 MessagingService.java:995 - Sending message to /10.0.0.3
-DEBUG [ScheduledTasks:1] 2025-07-22 10:17:02,244 CompactionManager.java:330 - Beginning compaction of 2 sstables
-DEBUG [ScheduledTasks:1] 2025-07-22 10:17:13,688 CompactionTask.java:540 - Compacted to [Data.db:2.3MB] for ks1.tbl1
-INFO  [ScheduledTasks:1] 2025-07-22 10:17:13,690 CompactionTask.java:549 - Compaction completed (12.123s)
-DEBUG [ReadStage:4] 2025-07-22 10:18:00,102 ReadCommand.java:145 - Executing read for key: user123, column: profile
+DEBUG [main] 2025-07-22 08:05:12,118 CassandraDaemon.java:401 - JVM vendor/version: OpenJDK 64-Bit Server VM/17.0.9+9
+DEBUG [main] 2025-07-22 08:05:12,119 CassandraDaemon.java:402 - JVM heap size: 2.0 GiB / 8.0 GiB (young 1.0 GiB)
+DEBUG [main] 2025-07-22 08:05:13,207 YamlConfigurationLoader.java:116 - Loading settings from file:/etc/cassandra/cassandra.yaml
+DEBUG [main] 2025-07-22 08:05:13,241 Config.java:555 - Initializing keyspace system_schema
+DEBUG [main] 2025-07-22 08:05:13,249 DatabaseDescriptor.java:621 - DiskAccessMode 'mmap_index_only' selected automatically
+DEBUG [main] 2025-07-22 08:05:13,311 ColumnFamilyStore.java:402 - Initializing system.local
+DEBUG [main] 2025-07-22 08:05:13,428 SSTableReader.java:443 - Opening /var/lib/cassandra/data/system/local-7ad54392bcdd35a684174e047860b377/na-1-big-Data.db
+DEBUG [main] 2025-07-22 08:05:13,529 StorageService.java:1451 - Joined ring with token ranges: [-9223372036854775808]
+DEBUG [main] 2025-07-22 08:05:13,622 MessagingService.java:227 - Starting messaging service on 127.0.0.1:7000 (rack1)
+DEBUG [main] 2025-07-22 08:05:13,735 Gossiper.java:958 - Gossiper gossiping to 127.0.0.2
+DEBUG [main] 2025-07-22 08:05:13,822 Gossiper.java:999 - Received SYN from /127.0.0.2
+DEBUG [CompactionExecutor:1] 2025-07-22 08:10:21,409 CompactionStrategyManager.java:301 - Checking compaction candidates for ks1.tbl1
+DEBUG [MemtableFlushWriter:1] 2025-07-22 08:10:23,667 Memtable.java:320 - Flushing Memtable (172.4 KiB) for ks1.tbl1
+DEBUG [MemtableFlushWriter:1] 2025-07-22 08:10:23,912 Memtable.java:354 - Writing to /var/lib/cassandra/data/ks1/tbl1-123abc/tmp-123abc-Data.db
+DEBUG [MemtableFlushWriter:1] 2025-07-22 08:10:24,102 SSTable.java:197 - New SSTable added: ks1.tbl1-123abc-Data.db
+DEBUG [MutationStage-3] 2025-07-22 08:12:05,314 StorageProxy.java:2342 - Mutation completed in 13 ms at consistency QUORUM
+DEBUG [HintsService:1] 2025-07-22 08:13:11,011 HintsService.java:489 - Writing hint for node /127.0.0.3
+DEBUG [HintsService:1] 2025-07-22 08:13:11,018 HintsWriteExecutor.java:120 - Wrote 1 hint(s) in 4 ms
+DEBUG [GossipStage:1] 2025-07-22 08:14:55,409 Gossiper.java:1160 - Delaying status update due to peer being unreachable: /127.0.0.4
+DEBUG [AntiEntropyStage:1] 2025-07-22 08:15:42,200 RepairSession.java:238 - Starting validation for range (-9223372036854775808, 0] on ks1.tbl1
+DEBUG [ValidationExecutor:1] 2025-07-22 08:15:42,841 MerkleTree.java:197 - Generated Merkle tree for ks1.tbl1: 512 leaves, 256 KB
