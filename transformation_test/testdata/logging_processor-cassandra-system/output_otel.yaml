@@ -1,1 +1,1 @@
-- config_error: "not an OTel processor: &apps.LoggingProcessorCassandraSystem{ConfigComponent:confgenerator.ConfigComponent{Type:\"cassandra_system\"}}"
+- config_error: "failed generating OTel processor: &confgenerator.loggingProcessorMacroAdapter[github.com/GoogleCloudPlatform/ops-agent/apps.LoggingProcessorMacroCassandraSystem]{ConfigComponent:confgenerator.ConfigComponent{Type:\"cassandra_system\"}, ProcessorMacro:apps.LoggingProcessorMacroCassandraSystem{}}, err: unimplemented"
