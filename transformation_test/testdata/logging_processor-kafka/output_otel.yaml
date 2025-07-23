@@ -1,1 +1,1 @@
-- config_error: "not an OTel processor: &apps.LoggingProcessorKafka{ConfigComponent:confgenerator.ConfigComponent{Type:\"kafka\"}}"
+- config_error: "failed generating OTel processor: &confgenerator.loggingProcessorMacroAdapter[github.com/GoogleCloudPlatform/ops-agent/apps.LoggingProcessorMacroKafka]{ConfigComponent:confgenerator.ConfigComponent{Type:\"kafka\"}, ProcessorMacro:apps.LoggingProcessorMacroKafka{}}, err: unimplemented"
