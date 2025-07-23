@@ -166,7 +166,7 @@ integration_tests:
 third_party_apps_test:
 	ZONES="${ZONES}" \
 	PLATFORMS="${PLATFORMS}" \
-	go test -v ./integration_test/third_party_apps_test.go \
+	go test -v ./integration_test/third_party_apps_test/main_test.go \
 	-test.parallel=1000 \
 	-tags=integration_test \
 	-timeout=4h
