@@ -34,7 +34,6 @@ import (
 
 	logpb "cloud.google.com/go/logging/apiv2/loggingpb"
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
-	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
