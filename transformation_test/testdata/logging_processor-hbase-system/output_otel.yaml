@@ -1,1 +1,1 @@
-- config_error: "not an OTel processor: &apps.LoggingProcessorHbaseSystem{ConfigComponent:confgenerator.ConfigComponent{Type:\"hbase_system\"}}"
+- config_error: "failed generating OTel processor: &confgenerator.loggingProcessorMacroAdapter[github.com/GoogleCloudPlatform/ops-agent/apps.LoggingProcessorMacroHbaseSystem]{ConfigComponent:confgenerator.ConfigComponent{Type:\"hbase_system\"}, ProcessorMacro:apps.LoggingProcessorMacroHbaseSystem{}}, err: unimplemented"
