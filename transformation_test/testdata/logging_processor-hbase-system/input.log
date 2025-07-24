@@ -1,0 +1,24 @@
+2025-07-22 08:15:04,212 INFO  [main] master.HMaster: STARTING service HMaster
+2025-07-22 08:15:06,437 INFO  [main] metrics.MetricRegistries: Loaded MetricRegistries class org.apache.hadoop.hbase.metrics.impl.MetricRegistriesImpl
+2025-07-22 08:15:06,503 WARN  [main] util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+2025-07-22 08:15:07,128 INFO  [main] zookeeper.ZooKeeper: Initiating client connection, connectString=zookeeper1:2181 sessionTimeout=180000 watcher=org.apache.hadoop.hbase.zookeeper.RecoverableZooKeeper@24a0a5c1
+2025-07-22 08:15:07,285 INFO  [main-SendThread(zookeeper1:2181)] zookeeper.ClientCnxn: Opening socket connection to server zookeeper1/192.168.1.101:2181
+2025-07-22 08:15:07,378 INFO  [main-SendThread(zookeeper1:2181)] zookeeper.ClientCnxn: Socket connection established to zookeeper1/192.168.1.101:2181, initiating session
+2025-07-22 08:15:07,412 INFO  [main-SendThread(zookeeper1:2181)] zookeeper.ClientCnxn: Session establishment complete on server zookeeper1/192.168.1.101:2181, sessionid = 0x15f23c54a00003d, negotiated timeout = 180000
+2025-07-22 08:15:08,004 INFO  [main] master.HMaster: Active Master running
+2025-07-22 08:15:08,147 INFO  [master-server-0] regionserver.HRegionServer: Starting RegionServer services
+2025-07-22 08:15:08,603 INFO  [master-server-0] util.ServerRegionReplicaUtil: Region replicas enabled: false
+2025-07-22 08:15:08,981 INFO  [master-server-0] wal.FSHLog: WAL initialization successful for hdfs://namenode:8020/hbase/WALs/hbase-master, replication enabled = false
+2025-07-22 08:15:09,125 INFO  [RpcServer.listener.on.pool-1-thread-1] ipc.RpcServer: IPC Server listener on 16000: starting
+2025-07-22 08:15:09,641 WARN  [ProcedureExecutorThread-0] procedure.ProcedureExecutor: ProcedureExecutor load average is high: 6.3
+2025-07-22 08:15:10,202 INFO  [master-event-0] master.AssignmentManager: Assigning meta region
+2025-07-22 08:15:10,578 INFO  [master-event-0] master.HMaster: Master has completed initialization
+2025-07-22 08:16:22,134 INFO  [RS_OPEN_REGION-hbase-regionserver-1:16020-0] regionserver.HRegionServer: Region hbase:meta assigned to server hbase-regionserver-1,16020,1723457715211
+2025-07-22 09:03:17,808 INFO  [Scanner-0] client.ScannerCallable: Scanner opened for 'test_table', start row='row1'
+2025-07-22 09:03:18,412 INFO  [Scanner-0] client.ScannerCallable: Scanner closed for 'test_table', scanned 50 rows
+2025-07-22 12:30:44,182 WARN  [RS_CLOSE_REGION-hbase-regionserver-2:16020-3] wal.FSHLog: Slow sync cost: 245ms, regions: [test_table,,1723457715211.abcdef1234567890]
+2025-07-22 13:02:18,943 INFO  [B.defaultRpcServer.handler=3,queue=0,port=16000] ipc.CallRunner: Served: get from test_table in 4ms
+2025-07-22 16:47:09,332 INFO  [RS_OPEN_REGION-hbase-regionserver-3:16020-7] regionserver.HRegionServer: Opening region test_table,,1723457715211
+2025-07-22 22:19:56,721 INFO  [ShutdownHook] master.HMaster: Shutting down HMaster
+2025-07-22 22:19:58,105 INFO  [ShutdownHook] zookeeper.ZooKeeper: Session 0x15f23c54a00003d closed
+2025-07-22 22:19:58,204 INFO  [ShutdownHook] master.HMaster: HMaster shutdown completed
