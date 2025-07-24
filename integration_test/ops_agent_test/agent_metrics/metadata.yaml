@@ -91,7 +91,7 @@ expected_metrics:
         value_regex: \d*
       - name: cpu_state
         value_regex: idle|interrupt|nice|softirq|steal|system|used|user|wait
-    optional: true
+    optional: false
   - type: agent.googleapis.com/cpu/utilization
     value_type: DOUBLE
     kind: GAUGE
