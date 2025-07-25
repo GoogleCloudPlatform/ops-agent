@@ -1,0 +1,128 @@
+- entries:
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: ""
+      remoteIp: 127.0.0.1
+      requestMethod: GET
+      requestSize: 0.0
+      requestUrl: http://localhost:8080/test
+      responseSize: 273.0
+      serverIp: ""
+      status: 404.0
+      userAgent: curl/7.64.0
+    jsonPayload: {}
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/varnish
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2022-03-02T15:55:05.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: https://example.com/login
+      remoteIp: 192.168.1.10
+      requestMethod: POST
+      requestSize: 0.0
+      requestUrl: /api/v1/login
+      responseSize: 512.0
+      serverIp: ""
+      status: 200.0
+      userAgent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)
+    jsonPayload:
+      user: john
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/varnish
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2022-03-03T10:12:45.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/2.0
+      referer: ""
+      remoteIp: 10.0.0.5
+      requestMethod: GET
+      requestSize: 0.0
+      requestUrl: /static/image.png
+      responseSize: 0.0
+      serverIp: ""
+      status: 304.0
+      userAgent: curl/7.68.0
+    jsonPayload: {}
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/varnish
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2022-03-04T08:30:12.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: https://example.com/profile
+      remoteIp: 203.0.113.42
+      requestMethod: PUT
+      requestSize: 0.0
+      requestUrl: /user/profile
+      responseSize: 128.0
+      serverIp: ""
+      status: 401.0
+      userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)
+    jsonPayload:
+      user: alice
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/varnish
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2022-03-05T22:01:59.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: ""
+      remoteIp: 127.0.0.1
+      requestMethod: DELETE
+      requestSize: 0.0
+      requestUrl: /api/v1/item/123
+      responseSize: 0.0
+      serverIp: ""
+      status: 204.0
+      userAgent: PostmanRuntime/7.28.4
+    jsonPayload: {}
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/varnish
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2022-03-06T14:23:11.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: https://example.com/
+      remoteIp: 172.16.0.2
+      requestMethod: GET
+      requestSize: 0.0
+      requestUrl: /dashboard
+      responseSize: 1024.0
+      serverIp: ""
+      status: 500.0
+      userAgent: Mozilla/5.0 (X11; Linux x86_64)
+    jsonPayload:
+      user: bob
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/varnish
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2022-03-07T19:45:33.000000000Z
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance
