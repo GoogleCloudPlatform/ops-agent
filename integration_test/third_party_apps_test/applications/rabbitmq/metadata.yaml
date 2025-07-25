@@ -36,10 +36,6 @@ supported_operating_systems: linux
 platforms_to_skip:
   # RabbitMQ is not supported on various distros.
   - suse-cloud:sles-12
-  - ubuntu-os-cloud:ubuntu-2410-amd64 # Possible support in the future
-  - ubuntu-os-cloud:ubuntu-minimal-2410-amd64 # Possible support in the future
-  - ubuntu-os-cloud:ubuntu-2410-arm64 # Possible support in the future
-  - ubuntu-os-cloud:ubuntu-minimal-2410-arm64 # Possible support in the future
 supported_app_version: ["3.8", "3.9"]
 expected_metrics:
   - type: workload.googleapis.com/rabbitmq.consumer.count
