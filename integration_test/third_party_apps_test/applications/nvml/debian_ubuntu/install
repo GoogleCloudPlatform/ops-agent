@@ -35,7 +35,7 @@ case $DEVICE_CODE in
     *)
         # For newer GPUs, install the latest version
         if [[ $ID == debian && "${VERSION_ID}" == 11 ]]; then
-            # cuda-12-6 is the latest version that support Debian 11
+            # cuda-12-6 is the latest version that supports Debian 11
             sudo apt -y install cuda-12-6
         else
             sudo apt -y install cuda
