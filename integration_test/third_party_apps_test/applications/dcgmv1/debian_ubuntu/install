@@ -34,8 +34,7 @@ case $DEVICE_CODE in
         ;;
     *)
         # For newer GPUs, install the latest version
-        # TODO(b/377558109): remove the temporary fix once the repo is updated
-        sudo apt -y install cuda-12-6
+        sudo apt -y install cuda
         ;;
 esac
 
