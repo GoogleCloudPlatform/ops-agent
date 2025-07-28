@@ -5488,6 +5488,9 @@ func TestAppHubLogLabels(t *testing.T) {
 			}
 		})
 
+		// Wait after "Setup Apphub #2" to make sure Manage Instance Group is registered in AppHub.
+		time.Sleep(30 * time.Second)
+
 		if err := agents.SetupOpsAgent(ctx, logger, migVM.VM, ""); err != nil {
 			t.Fatal(err)
 		}
