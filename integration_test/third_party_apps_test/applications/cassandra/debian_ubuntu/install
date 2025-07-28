@@ -3,8 +3,9 @@ set -e
 curl https://downloads.apache.org/cassandra/KEYS --output /etc/apt/trusted.gpg.d/cassandra.asc
 
 source /etc/os-release
-if [[ "$(uname -m)" == aarch64 ]]; then
-    # cassandra doesn't have arm64 binaries for 2.2x, but does for 4.1x.
+if [[ "${VERSION_ID}" =~ ^(22|24) || "$(uname -m)" == aarch64 ]]; then
+    # Newer versions of Ubuntu can use a newer version of cassandra.
+    # Additionally, cassandra doesn't have arm64 binaries for 2.2x, but does for 4.1x.
     echo "deb https://debian.cassandra.apache.org 41x main" | sudo tee -a /etc/apt/sources.list.d/cassandra.sources.list
 
     sudo apt update
