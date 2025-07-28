@@ -270,7 +270,7 @@ func (p LoggingProcessorElasticsearchGC) Components(ctx context.Context, tag, ui
 
 type LoggingReceiverMacroElasticsearchJson struct {
 	LoggingProcessorMacroElasticsearchJson `yaml:",inline"`
-	ReceiverMixin                          confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
+	ReceiverMixin                          confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 func (r LoggingReceiverMacroElasticsearchJson) Expand(ctx context.Context) (confgenerator.InternalLoggingReceiver, []confgenerator.InternalLoggingProcessor) {

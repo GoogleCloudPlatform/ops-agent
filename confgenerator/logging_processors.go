@@ -320,9 +320,9 @@ func (p LoggingProcessorParseRegexComplex) Components(ctx context.Context, tag, 
 }
 
 type MultilineRule struct {
-	StateName string `yaml:"state_name,omitempty"`
-	Regex     string `yaml:"regex,omitempty"`
-	NextState string `yaml:"next_state,omitempty"`
+	StateName string
+	Regex     string
+	NextState string
 }
 
 func (r MultilineRule) AsString() string {
