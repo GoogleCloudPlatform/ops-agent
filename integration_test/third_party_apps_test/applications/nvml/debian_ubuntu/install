@@ -34,8 +34,12 @@ case $DEVICE_CODE in
         ;;
     *)
         # For newer GPUs, install the latest version
-        # TODO(b/377558109): remove the temporary fix once the repo is updated 
-        sudo apt -y install cuda-12-6
+        if [[ $ID == debian && "${VERSION_ID}" == 11 ]]; then
+            # cuda-12-6 is the latest version that supports Debian 11
+            sudo apt -y install cuda-12-6
+        else
+            sudo apt -y install cuda
+        fi
         ;;
 esac
 
