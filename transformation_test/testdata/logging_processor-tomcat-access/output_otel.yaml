@@ -1,0 +1,1 @@
+- config_error: "failed generating OTel processor: &confgenerator.loggingProcessorMacroAdapter[github.com/GoogleCloudPlatform/ops-agent/apps.LoggingProcessorMacroTomcatAccess]{ConfigComponent:confgenerator.ConfigComponent{Type:\"tomcat_access\"}, ProcessorMacro:apps.LoggingProcessorMacroTomcatAccess{}}, err: unimplemented"
