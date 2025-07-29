@@ -1,0 +1,15 @@
+{"type": "server", "timestamp": "2024-06-10T12:34:56,789Z", "level": "INFO", "component": "o.e.n.Node", "cluster.name": "elasticsearch", "node.name": "node-1", "message": "starting ..."}
+{"type": "server", "timestamp": "2024-06-10T12:35:00,321Z", "level": "WARN", "component": "o.e.d.z.ZenDiscovery", "node.name": "node-1", "message": "failed to connect to master", "user.run_by.name": "admin", "event.action": "connect"}
+{"type": "server", "timestamp": "2024-06-10T12:35:10,123Z", "level": "ERROR", "component": "o.e.b.Bootstrap", "node.name": "node-1", "message": "Exception", "error.type": "java.lang.IllegalStateException", "error.message": "failed to obtain node locks"}
+{"type": "server", "timestamp": "2024-06-10T12:35:15,456Z", "level": "DEBUG", "component": "o.e.n.Node", "node.name": "node-1", "message": "stopping ..."}
+{"type": "server", "timestamp": "2024-06-10T12:35:16,789Z", "level": "TRACE", "component": "o.e.n.Node", "node.name": "node-1", "message": "stopped"}
+{"type": "server", "timestamp": "2024-06-10T12:35:17,123Z", "level": "DEPRECATION", "component": "o.e.n.Node", "node.name": "node-1", "message": "deprecated setting used"}
+{"type": "server", "timestamp": "2024-06-10T12:35:18,456Z", "level": "CRITICAL", "component": "o.e.n.Node", "node.name": "node-1", "message": "critical error occurred"}
+{"type": "server", "timestamp": "2024-06-10T12:35:19,456Z", "level": "FATAL", "component": "o.e.n.Node", "node.name": "node-1", "message": "fatal error occurred"}
+{"type": "server", "timestamp": "2024-06-10T12:35:20,456Z", "level": "UNKNOWN", "component": "o.e.n.Node", "node.name": "node-1", "message": "unknown log level"}
+{"type": "server", "timestamp": "2024-06-10T12:35:21,456Z", "level": "INFO", "message": "missing component and node name"}
+{"type": "server", "timestamp": "2024-06-10T12:35:22,456Z", "level": "INFO", "component": "o.e.n.Node", "cluster.name": "elasticsearch", "message": "missing node name"}
+{"type": "server", "timestamp": "2024-06-10T12:35:23,456Z", "level": "INFO", "component": "o.e.n.Node", "node.name": "node-1", "message": "missing cluster name"}
+{"type": "server", "timestamp": "2024-06-10T12:35:24,456Z", "level": "INFO", "component": "o.e.n.Node", "node.name": "node-1", "message": "nested fields", "user.run_by.name": "testuser", "authentication.token.id": "abc123"}
+{"type": "server", "timestamp": "2024-06-10T12:35:25,456Z", "level": "ERROR", "component": "o.e.b.ElasticsearchUncaughtExceptionHandler", "node.name": "node-1", "message": "uncaught exception in thread [main]", "stacktrace": ["org.elasticsearch.bootstrap.StartupException: java.lang.IllegalArgumentException: unknown setting [invalid.key]", "at org.elasticsearch.bootstrap.Elasticsearch.init(Elasticsearch.java:166)", "... 6 more"]}
+{"type": "server", "timestamp": "2024-06-10T12:35:26,456Z", "level": "INFO", "component": "o.e.n.Node", "node.name": "node-1", "message": "invalid timestamp", "timestamp": "not-a-timestamp"} 
