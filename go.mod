@@ -46,7 +46,7 @@ require (
 require (
 	buf.build/go/protoyaml v0.3.1
 	cloud.google.com/go/secretmanager v1.14.5
-	github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20250515123458-48cf467119ac
+	github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20250729162438-fe8de74ec513
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.27.0
 	go.opentelemetry.io/collector/pdata v1.4.0
 	golang.org/x/sync v0.13.0
