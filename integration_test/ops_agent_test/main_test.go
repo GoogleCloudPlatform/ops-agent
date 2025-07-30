@@ -5472,7 +5472,7 @@ func TestAppHubLogLabels(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		// Wait after "Setup Apphub #2" to make sure Manage Instance Group is registered in AppHub.
+		// Wait after "Setup Apphub #2" to make sure the Managed Instance Group is registered in AppHub.
 		time.Sleep(15 * time.Second)
 
 		t.Cleanup(func() {
