@@ -1,4 +1,4 @@
-[16:13] value is not allowed in this context
+[16:13] value is not allowed in this context. map key-value is pre-defined
   13 | # limitations under the License.
   14 | 
   15 | logs:
