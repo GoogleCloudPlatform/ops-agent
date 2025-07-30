@@ -591,9 +591,13 @@ type Metrics struct {
 	Service   *MetricsService        `yaml:"service"`
 }
 
+type InternalOtelReceiver interface {
+	Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error)
+}
+
 type OTelReceiver interface {
 	Component
-	Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error)
+	InternalOtelReceiver
 }
 
 type MetricsProcessorMerger interface {
@@ -784,9 +788,13 @@ func (m *combinedReceiverMap) UnmarshalYAML(ctx context.Context, unmarshal func(
 	return CombinedReceiverTypes.unmarshalToMap(ctx, m, unmarshal)
 }
 
+type InternalOtelProcessor interface {
+	Processors(context.Context) ([]otel.Component, error)
+}
+
 type OTelProcessor interface {
 	Component
-	Processors(context.Context) ([]otel.Component, error)
+	InternalOtelProcessor
 }
 
 type MetricsProcessor interface {
