@@ -219,6 +219,47 @@
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
     timestamp: 2025-07-21T16:12:01.567000000Z
+  - jsonPayload:
+      level: ERROR
+      message: |-
+        org.apache.catalina.core.StandardWrapperValve Servlet.service() for servlet [dispatcher] threw exception
+        java.lang.NullPointerException: Cannot invoke "String.length()" because "input" is null
+        	at com.example.service.UserService.getUserById(UserService.java:42)
+        	at com.example.controller.UserController.handleRequest(UserController.java:28)
+        	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+        	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+        	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+        	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+        	at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:205)
+        	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1011)
+        	at org.springframework.web.servlet.FrameworkServlet.doGet(FrameworkServlet.java:895)
+        	at javax.servlet.http.HttpServlet.service(HttpServlet.java:626)
+      module: http-nio-8080-exec-7
+      source: org.apache.catalina.core.StandardWrapperValve
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2025-07-21T17:03:21.101000000Z
+  - jsonPayload:
+      level: INFO
+      message: org.apache.catalina.core.StandardService Stopping service [Catalina]
+      module: Thread-5
+      source: org.apache.catalina.core.StandardService
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-21T18:05:22.345000000Z
+  - jsonPayload:
+      level: INFO
+      message: org.apache.coyote.AbstractProtocol Stopping ProtocolHandler ["http-nio-8080"]
+      module: Thread-5
+      source: org.apache.coyote.AbstractProtocol
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-21T18:05:22.346000000Z
   partialSuccess: true
   resource:
     labels: {}

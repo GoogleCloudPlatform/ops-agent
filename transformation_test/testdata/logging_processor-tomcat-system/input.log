@@ -33,3 +33,7 @@ java.lang.NullPointerException: Cannot invoke "String.length()" because "input" 
 	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1011)
 	at org.springframework.web.servlet.FrameworkServlet.doGet(FrameworkServlet.java:895)
 	at javax.servlet.http.HttpServlet.service(HttpServlet.java:626)
+21-Jul-2025 18:05:22.345 INFO [Thread-5] org.apache.catalina.core.StandardService Stopping service [Catalina]
+21-Jul-2025 18:05:22.346 INFO [Thread-5] org.apache.coyote.AbstractProtocol Stopping ProtocolHandler ["http-nio-8080"]
+21-Jul-2025 18:05:22.347 INFO [Thread-5] org.apache.coyote.AbstractProtocol Destroying ProtocolHandler ["http-nio-8080"]
+21-Jul-2025 18:05:22.348 INFO [Thread-5] org.apache.catalina.core.StandardService Catalina service stopped.
