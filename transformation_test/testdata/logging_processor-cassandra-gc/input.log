@@ -1,43 +1,11 @@
-INFO  [main] 2025-07-22 10:15:44,001 CassandraDaemon.java:687 - Starting Cassandra Server...
-INFO  [main] 2025-07-22 10:15:45,005 NativeTransportService.java:65 - Netty using Java NIO event loop
-INFO  [main] 2025-07-22 10:15:45,104 HintsService.java:141 - Started HintsService with 1024 queued hints
-INFO  [main] 2025-07-22 10:15:45,123 StorageService.java:1443 - Node localhost/127.0.0.1 is now part of the ring
-WARN  [GossipTasks:1] 2025-07-22 10:20:23,334 FailureDetector.java:305 - Not enough live nodes to maintain quorum
-INFO  [MemtableFlushWriter:1] 2025-07-22 10:22:15,667 Memtable.java:353 - Writing Memtable for ks1.tbl1 (172.4 KiB)
-INFO  [MemtableFlushWriter:1] 2025-07-22 10:22:15,912 Memtable.java:376 - Completed flushing ks1.tbl1 to /var/lib/cassandra/data/ks1/tbl1-123abc
-2025-07-22T10:19:12.544+0000: 9.344: [GC (Allocation Failure) 
-[PSYoungGen: 15000K->2000K(20480K)] 
-45000K->33000K(71680K), 0.0123456 secs] 
-[Times: user=0.02 sys=0.00, real=0.01 secs]
-2025-07-22T10:25:55.893+0000: 432.693: [Full GC (Ergonomics) 
-[PSYoungGen: 20480K->0K(20480K)] 
-[ParOldGen: 51200K->25000K(51200K)] 
-71680K->25000K(71680K), 
-[Metaspace: 31000K->31000K(1064960K)], 0.4456789 secs] 
-[Times: user=0.56 sys=0.01, real=0.45 secs]
-ERROR [ScheduledTasks:1] 2025-07-22 11:10:23,801 CommitLog.java:874 - Commit log sync failed: java.io.IOException: Disk full
-ERROR [CompactionExecutor:2] 2025-07-22 11:25:42,154 CompactionTask.java:322 - Error during compaction
-java.lang.RuntimeException: Out of memory while compacting sstable
-	at org.apache.cassandra.db.compaction.CompactionTask.runWith(CompactionTask.java:315)
-	at org.apache.cassandra.db.compaction.CompactionTask.run(CompactionTask.java:236)
-	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
-	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
-	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
-	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
-	at java.base/java.lang.Thread.run(Thread.java:840)
-2025-07-22T11:00:02.123+0000: 962.923: [GC (G1 Humongous Allocation) 
-[G1 Young Generation: 16384K->1024K(19456K)] 
-60000K->45000K(90000K), 0.0678901 secs] 
-[Times: user=0.04 sys=0.00, real=0.07 secs]
-WARN  [GossipStage:1] 2025-07-22 11:40:00,409 Gossiper.java:1125 - Skipping status update for unreachable node /127.0.0.2
-ERROR [HintsService:1] 2025-07-22 12:00:11,991 HintsWriteExecutor.java:134 - Failed to write hint
-org.apache.cassandra.io.FSWriteError: java.io.IOException: No space left on device
-	at org.apache.cassandra.io.util.FileUtils.handleFSError(FileUtils.java:165)
-	at org.apache.cassandra.io.util.SequentialWriter.write(SequentialWriter.java:135)
-	at org.apache.cassandra.hints.HintsWriteExecutor.write(HintsWriteExecutor.java:128)
-	at org.apache.cassandra.hints.HintsWriteExecutor.writeHint(HintsWriteExecutor.java:110)
-	at org.apache.cassandra.hints.HintsService$WriteHints.run(HintsService.java:549)
-	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
-	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
-	at java.base/java.lang.Thread.run(Thread.java:840)
-
+2025-07-22T10:19:12.544+0000: 9.344: [GC (Allocation Failure) [PSYoungGen: 15000K->2000K(20480K)] 45000K->33000K(71680K), 0.0123456 secs] [Times: user=0.02 sys=0.00, real=0.01 secs]
+2025-07-22T10:25:55.893+0000: 432.693: [Full GC (Ergonomics) [PSYoungGen: 20480K->0K(20480K)] [ParOldGen: 51200K->25000K(51200K)] 71680K->25000K(71680K), [Metaspace: 31000K->31000K(1064960K)], 0.4456789 secs] [Times: user=0.56 sys=0.01, real=0.45 secs]
+2025-07-22T11:00:02.123+0000: 962.923: [GC (G1 Humongous Allocation) [G1 Young Generation: 16384K->1024K(19456K)] 60000K->45000K(90000K), 0.0678901 secs] [Times: user=0.04 sys=0.00, real=0.07 secs]
+2021-07-22T12:18:28.284+0000: 3.315: Total time for which application threads were stopped: 0.0002390 seconds, Stopping threads took: 0.0000281 seconds
+2025-07-22T13:45:30.678+0000: 1203.478: [Full GC (System.gc()) 
+[PSYoungGen: 10240K->0K(15360K)] 
+[ParOldGen: 40960K->20480K(51200K)] 
+51200K->20480K(66560K), 
+[Metaspace: 32000K->31900K(1064960K)], 0.3852345 secs] 
+[Times: user=0.50 sys=0.02, real=0.39 secs]
+2023-07-22T14:51:23.332+0000][4.595s][5195][5217][info ] Total time for which application threads were stopped: 0.0003091 seconds, Stopping threads took: 0.0000181 seconds
