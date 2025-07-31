@@ -28,7 +28,7 @@
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_gc
     logName: projects/my-project/logs/transformation_test
-    timestamp: 2021-07-22T12:18:28.284000000Z
+    timestamp: 2025-07-22T12:18:28.284000000Z
   - jsonPayload:
       message: |-
         [Full GC (System.gc()) 
