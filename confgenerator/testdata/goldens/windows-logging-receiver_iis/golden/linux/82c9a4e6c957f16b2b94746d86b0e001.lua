@@ -98,13 +98,5 @@ record["logging.googleapis.com/httpRequest"] = {}
 end
 record["logging.googleapis.com/httpRequest"]["userAgent"] = value
 end)(v)
-local v = "agent.googleapis.com/iis_access";
-(function(value)
-if record["logging.googleapis.com/labels"] == nil
-then
-record["logging.googleapis.com/labels"] = {}
-end
-record["logging.googleapis.com/labels"]["logging.googleapis.com/instrumentation_source"] = value
-end)(v)
 return 2, timestamp, record
 end
