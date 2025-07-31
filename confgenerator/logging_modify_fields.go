@@ -42,10 +42,12 @@ type ModifyField struct {
 	omitVar string `yaml:"-"`
 
 	// Operations to perform
-	Type              string                            `yaml:"type" validate:"omitempty,oneof=integer float"`
-	CustomConvertFunc func(ottl.LValue) ottl.Statements `yaml:"-"`
-	OmitIf            string                            `yaml:"omit_if" validate:"omitempty,filter"`
-	MapValues         map[string]string                 `yaml:"map_values"`
+	Type              string                                                   `yaml:"type" validate:"omitempty,oneof=integer float"`
+	CustomConvertFunc func(ottl.LValue) ottl.Statements                        `yaml:"-"`
+	CustomLuaFunc     func(tag string, sourceVars map[string]string) string    `yaml:"-"`
+	CustomOTTLFunc    func(sourceValues map[string]ottl.Value) ottl.Statements `yaml:"-"`
+	OmitIf            string                                                   `yaml:"omit_if" validate:"omitempty,filter"`
+	MapValues         map[string]string                                        `yaml:"map_values"`
 	// In case the source field's value does not match any keys specified in the map_values pairs,
 	// the destination field will be forcefully unset if map_values_exclusive is true,
 	// or left untouched if map_values_exclusive is false.
@@ -217,6 +219,19 @@ local v2 = %s
 if v2 ~= fail then v = v2
 end
 `, conv)
+		}
+
+		// NEW: Apply CustomLuaFunc
+		if field.CustomLuaFunc != nil {
+			// Build sourceVars map for this field
+			sourceVars := make(map[string]string)
+			for fieldName, varName := range fieldMappings {
+				sourceVars[fieldName] = varName
+			}
+
+			customLua := field.CustomLuaFunc(tag, sourceVars)
+			lua.WriteString(customLua)
+			lua.WriteString("\n")
 		}
 
 		// Omit if
@@ -413,6 +428,18 @@ func (p LoggingProcessorModifyFields) statements(_ context.Context) (ottl.Statem
 
 		if field.CustomConvertFunc != nil {
 			statements = statements.Append(field.CustomConvertFunc(value))
+		}
+
+		// NEW: Apply CustomOTTLFunc
+		if field.CustomOTTLFunc != nil {
+			// Build sourceValues map for this field
+			sourceValues := make(map[string]ottl.Value)
+			for fieldName, sourceValue := range fieldMappings {
+				sourceValues[fieldName] = sourceValue
+			}
+
+			customStatements := field.CustomOTTLFunc(sourceValues)
+			statements = statements.Append(customStatements)
 		}
 
 		ra, err := outM.OTTLAccessor()
