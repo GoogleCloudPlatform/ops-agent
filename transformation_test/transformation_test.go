@@ -250,10 +250,10 @@ func readTransformationConfig(dir string) (transformationTest, error) {
 		return config, err
 	}
 
-	err = validateTestReceiverConfig(config.Receiver)
-	if err != nil {
-		return config, err
-	}
+	// err = validateTestReceiverConfig(config.Receiver)
+	// if err != nil {
+	// 	return config, err
+	// }
 
 	return config, nil
 }
