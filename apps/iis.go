@@ -17,10 +17,11 @@ package apps
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
@@ -150,11 +151,10 @@ func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverIis{} }, platform.Windows)
 }
 
-type LoggingProcessorIisAccess struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
+type LoggingProcessorMacroIisAccess struct {
 }
 
-func (*LoggingProcessorIisAccess) Type() string {
+func (LoggingProcessorMacroIisAccess) Type() string {
 	return "iis_access"
 }
 
@@ -188,8 +188,8 @@ const (
 	`
 )
 
-func (p *LoggingProcessorIisAccess) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseRegex{
+func (p LoggingProcessorMacroIisAccess) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
+	parseRegex := confgenerator.LoggingProcessorParseRegex{
 		// Documentation:
 		// https://docs.microsoft.com/en-us/windows/win32/http/w3c-logging
 		// sample line: 2022-03-10 17:26:30 ::1 GET /iisstart.png - 80 - ::1 Mozilla/5.0+(Windows+NT+10.0;+WOW64;+Trident/7.0;+rv:11.0)+like+Gecko http://localhost/ 200 0 0 18
@@ -203,72 +203,191 @@ func (p *LoggingProcessorIisAccess) Components(ctx context.Context, tag, uid str
 				"http_request_status": "integer",
 			},
 		},
-	}.Components(ctx, tag, uid)
+	}
 
-	// iis logs "-" when a field does not have a value. Remove the field entirely when this happens.
-	c = append(c, fluentbit.LuaFilterComponents(tag, iisMergeRecordFieldsLuaFunction, iisMergeRecordFieldsLuaScriptContents)...)
+	// Define the complex transformation fields
+	serverIpTransform := &confgenerator.ModifyField{
+		CopyFrom: "jsonPayload.http_request_serverIp", // Read original value
+		CustomLuaFunc: func(tag string, sourceVars map[string]string) string {
+			// Find the correct variable for http_request_serverIp
+			var serverIpVar string
+			for luaExpr, varName := range sourceVars {
+				if strings.Contains(luaExpr, "http_request_serverIp") {
+					serverIpVar = varName
+					break
+				}
+			}
+			if serverIpVar == "" {
+				serverIpVar = "record[\"http_request_serverIp\"]"
+			}
 
-	c = append(c, []fluentbit.Component{
-		// This is used to exclude the header lines above the logs
+			return `
+			-- Concatenate serverIp with port
+			local serverIp = ` + serverIpVar + `
+			local port = record["s_port"]
+			if serverIp ~= nil and port ~= nil then
+				v = serverIp .. ":" .. port
+			end
+			-- Clean up intermediate field for Fluent Bit
+			record["s_port"] = nil`
+		},
+		CustomOTTLFunc: func(sourceValues map[string]ottl.Value) ottl.Statements {
+			serverIp := ottl.LValue{"jsonPayload", "http_request_serverIp"}
+			port := ottl.LValue{"jsonPayload", "s_port"}
+			return ottl.Statements{}.Append(
+				// Transform this field in place
+				ottl.LValue{"cache", "value"}.Set(
+					ottl.RValue(fmt.Sprintf(`Concat([%s, %s], ":")`, serverIp, port)),
+				),
+				// Clean up intermediate field for OTTL
+				port.Delete(),
+			)
+		},
+	}
 
-		// EXAMPLE LINES:
-		// #Software: Microsoft Internet Information Services 10.0
-		// #Version: 1.0
-		// #Date: 2022-04-11 12:53:50
-		{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":    "grep",
-				"Match":   tag,
-				"Exclude": "message ^#(?:Fields|Date|Version|Software):",
+	requestUrlTransform := &confgenerator.ModifyField{
+		CopyFrom: "jsonPayload.cs_uri_stem", // Read stem value
+		CustomLuaFunc: func(tag string, sourceVars map[string]string) string {
+			// Find the correct variable for cs_uri_stem
+			var stemVar string
+			for luaExpr, varName := range sourceVars {
+				if strings.Contains(luaExpr, "cs_uri_stem") {
+					stemVar = varName
+					break
+				}
+			}
+			if stemVar == "" {
+				stemVar = "record[\"cs_uri_stem\"]"
+			}
+
+			return `
+			-- Build URL from stem and query
+			local stem = ` + stemVar + `
+			local query = record["cs_uri_query"]
+			
+			-- Handle the case where query is "-" (IIS placeholder for empty)
+			if query == "-" then
+				query = nil
+			end
+			
+			if stem == nil then
+				v = nil
+			elseif query == nil or query == "" then
+				v = stem
+			else
+				v = stem .. "?" .. query
+			end
+			-- Clean up intermediate fields for Fluent Bit
+			record["cs_uri_stem"] = nil
+			record["cs_uri_query"] = nil`
+		},
+		CustomOTTLFunc: func(sourceValues map[string]ottl.Value) ottl.Statements {
+			stem := ottl.LValue{"jsonPayload", "cs_uri_stem"}
+			query := ottl.LValue{"jsonPayload", "cs_uri_query"}
+			cleanQuery := ottl.LValue{"cache", "clean_query"}
+
+			queryEmpty := ottl.Or(
+				ottl.Equals(query, ottl.Nil()),
+				ottl.Equals(query, ottl.StringLiteral("")),
+				ottl.Equals(query, ottl.StringLiteral("-")),
+			)
+
+			return ottl.Statements{}.Append(
+				// Clean the query value (convert "-" to nil)
+				cleanQuery.Delete(),
+				cleanQuery.SetIf(ottl.Nil(), ottl.Equals(query, ottl.StringLiteral("-"))),
+				cleanQuery.SetIf(query, ottl.Not(ottl.Or(
+					ottl.Equals(query, ottl.Nil()),
+					ottl.Equals(query, ottl.StringLiteral("")),
+					ottl.Equals(query, ottl.StringLiteral("-")),
+				))),
+
+				// Set to stem when query is empty/"-"
+				ottl.LValue{"cache", "value"}.SetIf(stem, queryEmpty),
+				// Set to stem + "?" + query when query has actual content
+				ottl.LValue{"cache", "value"}.SetIf(
+					ottl.RValue(fmt.Sprintf(`Concat([%s, %s], "?")`, stem, cleanQuery)),
+					ottl.Not(queryEmpty),
+				),
+				// Clean up intermediate fields for OTTL
+				stem.Delete(),
+				query.Delete(),
+				cleanQuery.Delete(),
+			)
+		},
+	}
+
+	// Split into two processors: transformations first, then field movements
+	transformFields := confgenerator.LoggingProcessorModifyFields{
+		Fields: map[string]*confgenerator.ModifyField{
+			InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+
+			// Simple null assignments for "-" values
+			"jsonPayload.cs_uri_query": {
+				OmitIf: `jsonPayload.cs_uri_query = "-"`,
+			},
+			"jsonPayload.http_request_referer": {
+				OmitIf: `jsonPayload.http_request_referer = "-"`,
+			},
+			"jsonPayload.user": {
+				OmitIf: `jsonPayload.user = "-"`,
+			},
+
+			// Complex transformations
+			"jsonPayload.http_request_serverIp":   serverIpTransform,
+			"jsonPayload.http_request_requestUrl": requestUrlTransform,
+		},
+	}
+
+	// Field movements happen after transformations
+	moveFields := confgenerator.LoggingProcessorModifyFields{
+		Fields: map[string]*confgenerator.ModifyField{
+			// Move the transformed fields to httpRequest structure
+			"httpRequest.serverIp": &confgenerator.ModifyField{
+				MoveFrom: "jsonPayload.http_request_serverIp",
+			},
+			"httpRequest.requestUrl": &confgenerator.ModifyField{
+				MoveFrom: "jsonPayload.http_request_requestUrl",
+			},
+
+			// Move other simple fields
+			"httpRequest.remoteIp": &confgenerator.ModifyField{
+				MoveFrom: "jsonPayload.http_request_remoteIp",
+			},
+			"httpRequest.requestMethod": &confgenerator.ModifyField{
+				MoveFrom: "jsonPayload.http_request_requestMethod",
+			},
+			"httpRequest.status": &confgenerator.ModifyField{
+				MoveFrom: "jsonPayload.http_request_status",
+			},
+			"httpRequest.referer": &confgenerator.ModifyField{
+				MoveFrom: "jsonPayload.http_request_referer",
+			},
+			"httpRequest.userAgent": &confgenerator.ModifyField{
+				MoveFrom: "jsonPayload.http_request_userAgent",
 			},
 		},
-	}...)
-
-	fields := map[string]*confgenerator.ModifyField{
-		InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 	}
 
-	// Generate the httpRequest structure.
-	for _, field := range []string{
-		"serverIp",
-		"remoteIp",
-		"requestMethod",
-		"requestUrl",
-		"status",
-		"referer",
-		"userAgent",
-	} {
-		fields[fmt.Sprintf("httpRequest.%s", field)] = &confgenerator.ModifyField{
-			MoveFrom: fmt.Sprintf("jsonPayload.http_request_%s", field),
-		}
+	return []confgenerator.InternalLoggingProcessor{
+		parseRegex,
+		transformFields, // Apply transformations first
+		moveFields,      // Then move fields to httpRequest
 	}
-
-	c = append(c,
-		confgenerator.LoggingProcessorModifyFields{
-			Fields: fields,
-		}.Components(ctx, tag, uid)...,
-	)
-	return c
 }
 
-type LoggingReceiverIisAccess struct {
-	LoggingProcessorIisAccess `yaml:",inline"`
-	ReceiverMixin             confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
-}
-
-func (r LoggingReceiverIisAccess) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.ReceiverMixin.IncludePaths) == 0 {
-		r.ReceiverMixin.IncludePaths = []string{
+func loggingReceiverFilesMixinIisAccess() confgenerator.LoggingReceiverFilesMixin {
+	return confgenerator.LoggingReceiverFilesMixin{
+		IncludePaths: []string{
 			`C:\inetpub\logs\LogFiles\W3SVC1\u_ex*`,
-		}
+		},
 	}
-	c := r.ReceiverMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorIisAccess.Components(ctx, tag, "iis_access")...)
-	return c
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverIisAccess{} }, platform.Windows)
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorIisAccess{} }, platform.Windows)
+	// Note: The new RegisterLoggingFilesProcessorMacro system doesn't yet support
+	// platform restrictions like the previous registration system did.
+	// TODO: Add platform.Windows restriction once the macro system supports it.
+	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroIisAccess](
+		loggingReceiverFilesMixinIisAccess)
 }
