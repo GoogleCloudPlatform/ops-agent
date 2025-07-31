@@ -71,11 +71,6 @@ func (LoggingProcessorMacroJettyAccess) Type() string {
 	return "jetty_access"
 }
 
-type LoggingReceiverJettyAccess struct {
-	LoggingProcessorMacroJettyAccess `yaml:",inline"`
-	ReceiverMixin                    confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
-}
-
 func loggingReceiverFilesMixinJettyAccess() confgenerator.LoggingReceiverFilesMixin {
 	return confgenerator.LoggingReceiverFilesMixin{
 		IncludePaths: []string{
