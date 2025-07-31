@@ -17,6 +17,7 @@ package apps
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -204,139 +205,174 @@ func (p LoggingProcessorMacroIisAccess) Expand(ctx context.Context) []confgenera
 		},
 	}
 
-	// Handle all IIS-specific field processing using new custom functions
-	fields := map[string]*confgenerator.ModifyField{
-		InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
-
-		// Simple null assignments for "-" values - using existing OmitIf
-		"jsonPayload.cs_uri_query": {
-			OmitIf: `jsonPayload.cs_uri_query = "-"`,
-		},
-		"jsonPayload.http_request_referer": {
-			OmitIf: `jsonPayload.http_request_referer = "-"`,
-		},
-		"jsonPayload.user": {
-			OmitIf: `jsonPayload.user = "-"`,
-		},
-
-		// Complex transformations using new custom functions
-		"jsonPayload.http_request_serverIp": {
-			CopyFrom: "jsonPayload.http_request_serverIp", // Ensure source tracking
-			CustomLuaFunc: func(tag string, sourceVars map[string]string) string {
-				// Use the source variable that was created from CopyFrom
-				var serverIpVar string
-				for _, varName := range sourceVars {
+	// Define the complex transformation fields
+	serverIpTransform := &confgenerator.ModifyField{
+		CopyFrom: "jsonPayload.http_request_serverIp", // Read original value
+		CustomLuaFunc: func(tag string, sourceVars map[string]string) string {
+			// Find the correct variable for http_request_serverIp
+			var serverIpVar string
+			for luaExpr, varName := range sourceVars {
+				if strings.Contains(luaExpr, "http_request_serverIp") {
 					serverIpVar = varName
 					break
 				}
-				if serverIpVar == "" {
-					serverIpVar = "record[\"http_request_serverIp\"]"
-				}
+			}
+			if serverIpVar == "" {
+				serverIpVar = "record[\"http_request_serverIp\"]"
+			}
 
-				return `
-				-- Concatenate serverIp with port
-				local serverIp = ` + serverIpVar + `
-				local port = record["s_port"]
-				if serverIp ~= nil and port ~= nil then
-					v = serverIp .. ":" .. port
-				end
-				-- Clean up intermediate field for Fluent Bit
-				record["s_port"] = nil`
-			},
-			CustomOTTLFunc: func(sourceValues map[string]ottl.Value) ottl.Statements {
-				serverIp := ottl.LValue{"jsonPayload", "http_request_serverIp"}
-				port := ottl.LValue{"jsonPayload", "s_port"}
-				return ottl.Statements{}.Append(
-					ottl.LValue{"cache", "value"}.Set(
-						ottl.RValue(fmt.Sprintf(`Concat([%s, %s], ":")`, serverIp, port)),
-					),
-					// Clean up intermediate field for OTTL
-					port.Delete(),
-				)
-			},
+			return `
+			-- Concatenate serverIp with port
+			local serverIp = ` + serverIpVar + `
+			local port = record["s_port"]
+			if serverIp ~= nil and port ~= nil then
+				v = serverIp .. ":" .. port
+			end
+			-- Clean up intermediate field for Fluent Bit
+			record["s_port"] = nil`
 		},
+		CustomOTTLFunc: func(sourceValues map[string]ottl.Value) ottl.Statements {
+			serverIp := ottl.LValue{"jsonPayload", "http_request_serverIp"}
+			port := ottl.LValue{"jsonPayload", "s_port"}
+			return ottl.Statements{}.Append(
+				// Transform this field in place
+				ottl.LValue{"cache", "value"}.Set(
+					ottl.RValue(fmt.Sprintf(`Concat([%s, %s], ":")`, serverIp, port)),
+				),
+				// Clean up intermediate field for OTTL
+				port.Delete(),
+			)
+		},
+	}
 
-		"jsonPayload.http_request_requestUrl": {
-			CopyFrom: "jsonPayload.cs_uri_stem",
-			CustomLuaFunc: func(tag string, sourceVars map[string]string) string {
-				// Use the source variable that was created from CopyFrom
-				var stemVar string
-				for _, varName := range sourceVars {
+	requestUrlTransform := &confgenerator.ModifyField{
+		CopyFrom: "jsonPayload.cs_uri_stem", // Read stem value
+		CustomLuaFunc: func(tag string, sourceVars map[string]string) string {
+			// Find the correct variable for cs_uri_stem
+			var stemVar string
+			for luaExpr, varName := range sourceVars {
+				if strings.Contains(luaExpr, "cs_uri_stem") {
 					stemVar = varName
 					break
 				}
-				if stemVar == "" {
-					stemVar = "record[\"cs_uri_stem\"]"
-				}
+			}
+			if stemVar == "" {
+				stemVar = "record[\"cs_uri_stem\"]"
+			}
 
-				return `
-				-- Build URL from stem and query
-				local stem = ` + stemVar + `
-				local query = record["cs_uri_query"]
-				
-				if stem == nil then
-					v = nil
-				elseif query == nil or query == "" or query == "-" then
-					v = stem
-				else
-					v = stem .. "?" .. query
-				end
-				-- Clean up intermediate fields for Fluent Bit
-				record["cs_uri_stem"] = nil
-				record["cs_uri_query"] = nil`
-			},
-			CustomOTTLFunc: func(sourceValues map[string]ottl.Value) ottl.Statements {
-				stem := ottl.LValue{"jsonPayload", "cs_uri_stem"}
-				query := ottl.LValue{"jsonPayload", "cs_uri_query"}
+			return `
+			-- Build URL from stem and query
+			local stem = ` + stemVar + `
+			local query = record["cs_uri_query"]
+			
+			-- Handle the case where query is "-" (IIS placeholder for empty)
+			if query == "-" then
+				query = nil
+			end
+			
+			if stem == nil then
+				v = nil
+			elseif query == nil or query == "" then
+				v = stem
+			else
+				v = stem .. "?" .. query
+			end
+			-- Clean up intermediate fields for Fluent Bit
+			record["cs_uri_stem"] = nil
+			record["cs_uri_query"] = nil`
+		},
+		CustomOTTLFunc: func(sourceValues map[string]ottl.Value) ottl.Statements {
+			stem := ottl.LValue{"jsonPayload", "cs_uri_stem"}
+			query := ottl.LValue{"jsonPayload", "cs_uri_query"}
+			cleanQuery := ottl.LValue{"cache", "clean_query"}
 
-				queryEmpty := ottl.Or(
+			queryEmpty := ottl.Or(
+				ottl.Equals(query, ottl.Nil()),
+				ottl.Equals(query, ottl.StringLiteral("")),
+				ottl.Equals(query, ottl.StringLiteral("-")),
+			)
+
+			return ottl.Statements{}.Append(
+				// Clean the query value (convert "-" to nil)
+				cleanQuery.Delete(),
+				cleanQuery.SetIf(ottl.Nil(), ottl.Equals(query, ottl.StringLiteral("-"))),
+				cleanQuery.SetIf(query, ottl.Not(ottl.Or(
 					ottl.Equals(query, ottl.Nil()),
 					ottl.Equals(query, ottl.StringLiteral("")),
 					ottl.Equals(query, ottl.StringLiteral("-")),
-				)
+				))),
 
-				return ottl.Statements{}.Append(
-					// Set to stem when query is empty
-					ottl.LValue{"cache", "value"}.SetIf(stem, queryEmpty),
-					// Set to stem + "?" + query when query is present
-					ottl.LValue{"cache", "value"}.SetIf(
-						ottl.RValue(fmt.Sprintf(`Concat([%s, %s], "?")`, stem, query)),
-						ottl.Not(queryEmpty),
-					),
-					// Clean up intermediate fields for OTTL
-					stem.Delete(),
-					query.Delete(),
-				)
-			},
+				// Set to stem when query is empty/"-"
+				ottl.LValue{"cache", "value"}.SetIf(stem, queryEmpty),
+				// Set to stem + "?" + query when query has actual content
+				ottl.LValue{"cache", "value"}.SetIf(
+					ottl.RValue(fmt.Sprintf(`Concat([%s, %s], "?")`, stem, cleanQuery)),
+					ottl.Not(queryEmpty),
+				),
+				// Clean up intermediate fields for OTTL
+				stem.Delete(),
+				query.Delete(),
+				cleanQuery.Delete(),
+			)
 		},
 	}
 
-	// Generate the httpRequest structure using standard field movements
-	for _, field := range []string{
-		"serverIp",
-		"remoteIp",
-		"requestMethod",
-		"requestUrl",
-		"status",
-		"referer",
-		"userAgent",
-	} {
-		fields[fmt.Sprintf("httpRequest.%s", field)] = &confgenerator.ModifyField{
-			MoveFrom: fmt.Sprintf("jsonPayload.http_request_%s", field),
-		}
+	// Split into two processors: transformations first, then field movements
+	transformFields := confgenerator.LoggingProcessorModifyFields{
+		Fields: map[string]*confgenerator.ModifyField{
+			InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+
+			// Simple null assignments for "-" values
+			"jsonPayload.cs_uri_query": {
+				OmitIf: `jsonPayload.cs_uri_query = "-"`,
+			},
+			"jsonPayload.http_request_referer": {
+				OmitIf: `jsonPayload.http_request_referer = "-"`,
+			},
+			"jsonPayload.user": {
+				OmitIf: `jsonPayload.user = "-"`,
+			},
+
+			// Complex transformations
+			"jsonPayload.http_request_serverIp":   serverIpTransform,
+			"jsonPayload.http_request_requestUrl": requestUrlTransform,
+		},
 	}
 
-	// Note: Field cleanup is handled differently:
-	// - For Fluent Bit: Added to the custom Lua functions above
-	// - For OTTL: We'll add separate cleanup operations after the main transformations
+	// Field movements happen after transformations
+	moveFields := confgenerator.LoggingProcessorModifyFields{
+		Fields: map[string]*confgenerator.ModifyField{
+			// Move the transformed fields to httpRequest structure
+			"httpRequest.serverIp": &confgenerator.ModifyField{
+				MoveFrom: "jsonPayload.http_request_serverIp",
+			},
+			"httpRequest.requestUrl": &confgenerator.ModifyField{
+				MoveFrom: "jsonPayload.http_request_requestUrl",
+			},
 
-	modifyFields := confgenerator.LoggingProcessorModifyFields{
-		Fields: fields,
+			// Move other simple fields
+			"httpRequest.remoteIp": &confgenerator.ModifyField{
+				MoveFrom: "jsonPayload.http_request_remoteIp",
+			},
+			"httpRequest.requestMethod": &confgenerator.ModifyField{
+				MoveFrom: "jsonPayload.http_request_requestMethod",
+			},
+			"httpRequest.status": &confgenerator.ModifyField{
+				MoveFrom: "jsonPayload.http_request_status",
+			},
+			"httpRequest.referer": &confgenerator.ModifyField{
+				MoveFrom: "jsonPayload.http_request_referer",
+			},
+			"httpRequest.userAgent": &confgenerator.ModifyField{
+				MoveFrom: "jsonPayload.http_request_userAgent",
+			},
+		},
 	}
 
 	return []confgenerator.InternalLoggingProcessor{
 		parseRegex,
-		modifyFields, // Now handles ALL IIS transformations!
+		transformFields, // Apply transformations first
+		moveFields,      // Then move fields to httpRequest
 	}
 }
 
