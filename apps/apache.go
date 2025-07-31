@@ -131,7 +131,7 @@ type LoggingProcessorMacroApacheAccess struct {
 }
 
 func (p LoggingProcessorMacroApacheAccess) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
-	return genericAccessLogParserAsInternalLoggingProcessor(ctx, p.Type())
+	return genericAccessLogParser(ctx, p.Type())
 }
 
 func (LoggingProcessorMacroApacheAccess) Type() string {
