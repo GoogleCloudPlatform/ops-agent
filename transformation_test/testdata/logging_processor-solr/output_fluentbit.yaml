@@ -1,8 +1,11 @@
 - entries:
   - jsonPayload:
-      core: collection1
+      collection: collection1
+      core: core1
       level: INFO
       message: "[collection1]  webapp=/solr path=/select params={q=*:*&wt=json} hits=2435 status=0 QTime=17"
+      replica: replica1
+      shard: shard1
       source: o.a.s.c.S.Request
       thread: qtp1038934055-15
     labels:
@@ -11,9 +14,12 @@
     severity: 200.0
     timestamp: 2025-07-21T08:03:17.987000000Z
   - jsonPayload:
-      core: collection1
+      collection: collection1
+      core: core1
       level: DEBUG
       message: handleRequest start select
+      replica: replica1
+      shard: shard1
       source: o.a.s.h.RequestHandlerBase
       thread: qtp1038934055-19
     labels:
@@ -22,9 +28,12 @@
     severity: 100.0
     timestamp: 2025-07-21T08:03:18.123000000Z
   - jsonPayload:
-      core: collection1
+      collection: collection1
+      core: core1
       level: WARN
       message: "Problem loading core: collection1"
+      replica: replica1
+      shard: shard1
       source: o.a.s.c.CoreContainer
       thread: coreLoadExecutor-7-thread-1
     labels:
@@ -33,11 +42,17 @@
     severity: 400.0
     timestamp: 2025-07-21T08:10:55.456000000Z
   - jsonPayload:
-      core: collection1
-      level: ERROR
-      message: |-
-        Error initializing core: collection1
+      collection: collection1
+      core: core1
+      exception: |-
+        
         org.apache.solr.common.SolrException:org.apache.solr.common.SolrException: Could not load config for collection1
+            at org.apache.solr.core.SolrCore.<init>(SolrCore.java:XXX)
+            at org.apache.solr.core.CoreContainer.load(CoreContainer.java:YYY)
+      level: ERROR
+      message: "Error initializing core: collection1"
+      replica: replica1
+      shard: shard1
       source: o.a.s.c.CoreContainer
       thread: coreLoadExecutor-7-thread-1
     labels:
@@ -46,9 +61,12 @@
     severity: 500.0
     timestamp: 2025-07-21T08:10:55.458000000Z
   - jsonPayload:
-      core: collection2
+      collection: collection2
+      core: core2
       level: INFO
       message: "[collection2]  webapp=/solr path=/update params={commit=true} status=0 QTime=128"
+      replica: replica2
+      shard: shard2
       source: o.a.s.c.S.Request
       thread: qtp1038934055-16
     labels:
@@ -57,9 +75,12 @@
     severity: 200.0
     timestamp: 2025-07-21T09:22:34.122000000Z
   - jsonPayload:
-      core: collection1
+      collection: collection1
+      core: core1
       level: INFO
       message: "[collection1]  webapp=/solr path=/select params={q=id:42&wt=json} hits=1 status=0 QTime=6"
+      replica: replica1
+      shard: shard1
       source: o.a.s.c.S.Request
       thread: qtp1038934055-15
     labels:
@@ -68,9 +89,12 @@
     severity: 200.0
     timestamp: 2025-07-21T10:45:12.213000000Z
   - jsonPayload:
-      core: collection2
+      collection: collection2
+      core: core2
       level: INFO
       message: "[collection2]  webapp=/solr path=/admin/metrics params={group=core&prefix=QUERY./select} status=0 QTime=4"
+      replica: replica2
+      shard: shard2
       source: o.a.s.c.S.Request
       thread: qtp1038934055-17
     labels:
@@ -78,6 +102,20 @@
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
     timestamp: 2025-07-21T12:33:45.678000000Z
+  - jsonPayload:
+      collection: collection1
+      core: core1
+      level: INFO
+      message: "[collection1]  webapp=/solr path=/select params={q=*:*&fq=category:electronics&wt=xml} hits=154 status=0 QTime=12"
+      replica: replica1
+      shard: shard1
+      source: o.a.s.c.S.Request
+      thread: qtp1038934055-18
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/solr_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-21T14:12:05.342000000Z
   partialSuccess: true
   resource:
     labels: {}

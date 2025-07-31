@@ -1,10 +1,13 @@
-2025-07-21 08:03:17.987 INFO  (qtp1038934055-15) [   x:collection1] o.a.s.c.S.Request [collection1]  webapp=/solr path=/select params={q=*:*&wt=json} hits=2435 status=0 QTime=17
-2025-07-21 08:03:18.123 DEBUG (qtp1038934055-19) [   x:collection1] o.a.s.h.RequestHandlerBase handleRequest start select
-2025-07-21 08:10:55.456 WARN  (coreLoadExecutor-7-thread-1) [   x:collection1] o.a.s.c.CoreContainer Problem loading core: collection1
-2025-07-21 08:10:55.458 ERROR (coreLoadExecutor-7-thread-1) [   x:collection1] o.a.s.c.CoreContainer Error initializing core: collection1
+2025-07-21 08:03:17.987 INFO  (qtp1038934055-15) [c:collection1 s:shard1 r:replica1 x:core1] o.a.s.c.S.Request [collection1]  webapp=/solr path=/select params={q=*:*&wt=json} hits=2435 status=0 QTime=17
+2025-07-21 08:03:18.123 DEBUG (qtp1038934055-19) [c:collection1 s:shard1 r:replica1 x:core1] o.a.s.h.RequestHandlerBase handleRequest start select
+2025-07-21 08:10:55.456 WARN  (coreLoadExecutor-7-thread-1) [c:collection1 s:shard1 r:replica1 x:core1] o.a.s.c.CoreContainer Problem loading core: collection1
+2025-07-21 08:10:55.458 ERROR (coreLoadExecutor-7-thread-1) [c:collection1 s:shard1 r:replica1 x:core1] o.a.s.c.CoreContainer Error initializing core: collection1 =>
 org.apache.solr.common.SolrException:org.apache.solr.common.SolrException: Could not load config for collection1
-2025-07-21 09:22:34.122 INFO  (qtp1038934055-16) [   x:collection2] o.a.s.c.S.Request [collection2]  webapp=/solr path=/update params={commit=true} status=0 QTime=128
-2025-07-21 10:45:12.213 INFO  (qtp1038934055-15) [   x:collection1] o.a.s.c.S.Request [collection1]  webapp=/solr path=/select params={q=id:42&wt=json} hits=1 status=0 QTime=6
-2025-07-21 12:33:45.678 INFO  (qtp1038934055-17) [   x:collection2] o.a.s.c.S.Request [collection2]  webapp=/solr path=/admin/metrics params={group=core&prefix=QUERY./select} status=0 QTime=4
-2025-07-21 14:12:05.342 INFO  (qtp1038934055-18) [   x:collection1] o.a.s.c.S.Request [collection1]  webapp=/solr path=/select params={q=*:*&fq=category:electronics&wt=xml} hits=154 status=0 QTime=12
-2025-07-21 16:58:55.013 INFO  (qtp1038934055-20) [   x:collection1] o.a.s.c.S.Request [collection1]  webapp=/solr path=/update params={commit=true} status=0 QTime=95
+    at org.apache.solr.core.SolrCore.<init>(SolrCore.java:XXX)
+    at org.apache.solr.core.CoreContainer.load(CoreContainer.java:YYY)
+2025-07-21 09:22:34.122 INFO  (qtp1038934055-16) [c:collection2 s:shard2 r:replica2 x:core2] o.a.s.c.S.Request [collection2]  webapp=/solr path=/update params={commit=true} status=0 QTime=128
+2025-07-21 10:45:12.213 INFO  (qtp1038934055-15) [c:collection1 s:shard1 r:replica1 x:core1] o.a.s.c.S.Request [collection1]  webapp=/solr path=/select params={q=id:42&wt=json} hits=1 status=0 QTime=6
+2025-07-21 12:33:45.678 INFO  (qtp1038934055-17) [c:collection2 s:shard2 r:replica2 x:core2] o.a.s.c.S.Request [collection2]  webapp=/solr path=/admin/metrics params={group=core&prefix=QUERY./select} status=0 QTime=4
+2025-07-21 14:12:05.342 INFO  (qtp1038934055-18) [c:collection1 s:shard1 r:replica1 x:core1] o.a.s.c.S.Request [collection1]  webapp=/solr path=/select params={q=*:*&fq=category:electronics&wt=xml} hits=154 status=0 QTime=12
+2025-07-21 16:58:55.013 INFO  (qtp1038934055-20) [c:collection1 s:shard1 r:replica1 x:core1] o.a.s.c.S.Request [collection1]  webapp=/solr path=/update params={commit=true} status=0 QTime=95
+2025-07-21 17:05:00.999 INFO  (main) [c: s: r: x:] o.a.s.SolrServer Startup complete. Ready to accept requests.
