@@ -307,12 +307,12 @@ func (p LoggingProcessorParseRegex) Processors(ctx context.Context) ([]otel.Comp
 		return nil, err
 	}
 
-	cachedRegex := ottl.LValue{"cache", "__parsed_regex"}
+	cachedParsedRegex := ottl.LValue{"cache", "__parsed_regex"}
 	statements := ottl.NewStatements(
-		cachedRegex.SetIf(ottl.ExtractPatternsRubyRegex(fromAccessor, p.Regex), fromAccessor.IsPresent()),
-		fromAccessor.DeleteIf(cachedRegex.IsPresent()),
-		ottl.LValue{"body"}.MergeMapsIf(cachedRegex, "upsert", cachedRegex.IsPresent()),
-		cachedRegex.Delete(),
+		cachedParsedRegex.SetIf(ottl.ExtractPatternsRubyRegex(fromAccessor, p.Regex), fromAccessor.IsPresent()),
+		fromAccessor.DeleteIf(cachedParsedRegex.IsPresent()),
+		ottl.LValue{"body"}.MergeMapsIf(cachedParsedRegex, "upsert", cachedParsedRegex.IsPresent()),
+		cachedParsedRegex.Delete(),
 	)
 
 	ts, err := p.TimestampStatements()
