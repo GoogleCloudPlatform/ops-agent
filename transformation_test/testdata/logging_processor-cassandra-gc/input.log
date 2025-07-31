@@ -1,11 +1,11 @@
 2025-07-22T10:19:12.544+0000: 9.344: [GC (Allocation Failure) [PSYoungGen: 15000K->2000K(20480K)] 45000K->33000K(71680K), 0.0123456 secs] [Times: user=0.02 sys=0.00, real=0.01 secs]
 2025-07-22T10:25:55.893+0000: 432.693: [Full GC (Ergonomics) [PSYoungGen: 20480K->0K(20480K)] [ParOldGen: 51200K->25000K(51200K)] 71680K->25000K(71680K), [Metaspace: 31000K->31000K(1064960K)], 0.4456789 secs] [Times: user=0.56 sys=0.01, real=0.45 secs]
 2025-07-22T11:00:02.123+0000: 962.923: [GC (G1 Humongous Allocation) [G1 Young Generation: 16384K->1024K(19456K)] 60000K->45000K(90000K), 0.0678901 secs] [Times: user=0.04 sys=0.00, real=0.07 secs]
-2021-07-22T12:18:28.284+0000: 3.315: Total time for which application threads were stopped: 0.0002390 seconds, Stopping threads took: 0.0000281 seconds
+2025-07-22T12:18:28.284+0000: 3.315: Total time for which application threads were stopped: 0.0002390 seconds, Stopping threads took: 0.0000281 seconds
 2025-07-22T13:45:30.678+0000: 1203.478: [Full GC (System.gc()) 
 [PSYoungGen: 10240K->0K(15360K)] 
 [ParOldGen: 40960K->20480K(51200K)] 
 51200K->20480K(66560K), 
 [Metaspace: 32000K->31900K(1064960K)], 0.3852345 secs] 
 [Times: user=0.50 sys=0.02, real=0.39 secs]
-2023-07-22T14:51:23.332+0000][4.595s][5195][5217][info ] Total time for which application threads were stopped: 0.0003091 seconds, Stopping threads took: 0.0000181 seconds
+2025-07-22T14:51:23.332+0000][4.595s][5195][5217][info ] Total time for which application threads were stopped: 0.0003091 seconds, Stopping threads took: 0.0000181 seconds
