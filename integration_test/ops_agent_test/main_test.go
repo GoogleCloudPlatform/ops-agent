@@ -926,7 +926,7 @@ func TestCustomLogFormat(t *testing.T) {
         receivers: [mylog_source]
         processors: [rfc5424]
         exporters: [google]
-`, logPath, "%Y-%m-%dT%H:%M:%S%z", otel)
+`, logPath, "%Y-%m-%dT%H:%M:%S.%L%z", otel)
 
 			if otel {
 				if err := setExperimentalFeatures(ctx, logger, vm, "otel_logging"); err != nil {
