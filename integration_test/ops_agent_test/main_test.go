@@ -5472,6 +5472,9 @@ func TestAppHubLogLabels(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		// Wait after "Setup Apphub #2" to make sure the Managed Instance Group is registered in AppHub.
+		time.Sleep(15 * time.Second)
+
 		t.Cleanup(func() {
 			// Setup Apphub #3 : Delete apphub workload.
 			deleteAppHubWorkloadArgs := []string{

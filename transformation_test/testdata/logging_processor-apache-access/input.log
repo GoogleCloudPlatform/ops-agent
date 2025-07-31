@@ -1,0 +1,5 @@
+127.0.0.1 - - [10/Oct/2000:13:55:36 -0700] "GET /apache_pb.gif HTTP/1.0" 200 2326
+192.168.1.100 - frank [10/Oct/2000:13:55:36 -0700] "GET /apache_pb.gif HTTP/1.0" 200 2326 "http://www.example.com/start.html" "Mozilla/4.08 [en] (Win98; I ;Nav)"
+10.0.0.1 - - [26/Aug/2021:16:50:15 +0000] "POST /api/users HTTP/1.1" 201 445 "https://example.com/register" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+203.0.113.4 - admin [26/Aug/2021:16:51:22 +0000] "GET /admin/dashboard HTTP/1.1" 403 1234 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+172.16.0.1 - - [26/Aug/2021:16:53:05 +0000] "PUT /api/data/123 HTTP/1.1" 500 789 "https://api.example.com/docs" "python-requests/2.25.1" 
