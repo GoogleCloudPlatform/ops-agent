@@ -22,7 +22,7 @@ traces:
 logging:
   processors:
     apache:
-      type: apache_access
+      type: apache
   service:
     experimental_otel_logging: true
     pipelines:
