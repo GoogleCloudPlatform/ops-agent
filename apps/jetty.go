@@ -64,7 +64,7 @@ func init() {
 type LoggingProcessorMacroJettyAccess struct{}
 
 func (p LoggingProcessorMacroJettyAccess) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
-	return genericAccessLogParserAsInternalLoggingProcessor(ctx, p.Type())
+	return genericAccessLogParser(ctx, p.Type())
 }
 
 func (LoggingProcessorMacroJettyAccess) Type() string {
