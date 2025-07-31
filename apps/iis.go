@@ -20,6 +20,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
@@ -203,10 +204,11 @@ func (p LoggingProcessorMacroIisAccess) Expand(ctx context.Context) []confgenera
 		},
 	}
 
-	// Handle IIS-specific field processing
+	// Handle all IIS-specific field processing using new custom functions
 	fields := map[string]*confgenerator.ModifyField{
 		InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
-		// Remove fields that should be null when they have "-" value
+
+		// Simple null assignments for "-" values - using existing OmitIf
 		"jsonPayload.cs_uri_query": {
 			OmitIf: `jsonPayload.cs_uri_query = "-"`,
 		},
@@ -216,9 +218,100 @@ func (p LoggingProcessorMacroIisAccess) Expand(ctx context.Context) []confgenera
 		"jsonPayload.user": {
 			OmitIf: `jsonPayload.user = "-"`,
 		},
+
+		// Complex transformations using new custom functions
+		"jsonPayload.http_request_serverIp": {
+			CopyFrom: "jsonPayload.http_request_serverIp", // Ensure source tracking
+			CustomLuaFunc: func(tag string, sourceVars map[string]string) string {
+				// Use the source variable that was created from CopyFrom
+				var serverIpVar string
+				for _, varName := range sourceVars {
+					serverIpVar = varName
+					break
+				}
+				if serverIpVar == "" {
+					serverIpVar = "record[\"http_request_serverIp\"]"
+				}
+
+				return `
+				-- Concatenate serverIp with port
+				local serverIp = ` + serverIpVar + `
+				local port = record["s_port"]
+				if serverIp ~= nil and port ~= nil then
+					v = serverIp .. ":" .. port
+				end
+				-- Clean up intermediate field for Fluent Bit
+				record["s_port"] = nil`
+			},
+			CustomOTTLFunc: func(sourceValues map[string]ottl.Value) ottl.Statements {
+				serverIp := ottl.LValue{"jsonPayload", "http_request_serverIp"}
+				port := ottl.LValue{"jsonPayload", "s_port"}
+				return ottl.Statements{}.Append(
+					ottl.LValue{"cache", "value"}.Set(
+						ottl.RValue(fmt.Sprintf(`Concat([%s, %s], ":")`, serverIp, port)),
+					),
+					// Clean up intermediate field for OTTL
+					port.Delete(),
+				)
+			},
+		},
+
+		"jsonPayload.http_request_requestUrl": {
+			CopyFrom: "jsonPayload.cs_uri_stem",
+			CustomLuaFunc: func(tag string, sourceVars map[string]string) string {
+				// Use the source variable that was created from CopyFrom
+				var stemVar string
+				for _, varName := range sourceVars {
+					stemVar = varName
+					break
+				}
+				if stemVar == "" {
+					stemVar = "record[\"cs_uri_stem\"]"
+				}
+
+				return `
+				-- Build URL from stem and query
+				local stem = ` + stemVar + `
+				local query = record["cs_uri_query"]
+				
+				if stem == nil then
+					v = nil
+				elseif query == nil or query == "" or query == "-" then
+					v = stem
+				else
+					v = stem .. "?" .. query
+				end
+				-- Clean up intermediate fields for Fluent Bit
+				record["cs_uri_stem"] = nil
+				record["cs_uri_query"] = nil`
+			},
+			CustomOTTLFunc: func(sourceValues map[string]ottl.Value) ottl.Statements {
+				stem := ottl.LValue{"jsonPayload", "cs_uri_stem"}
+				query := ottl.LValue{"jsonPayload", "cs_uri_query"}
+
+				queryEmpty := ottl.Or(
+					ottl.Equals(query, ottl.Nil()),
+					ottl.Equals(query, ottl.StringLiteral("")),
+					ottl.Equals(query, ottl.StringLiteral("-")),
+				)
+
+				return ottl.Statements{}.Append(
+					// Set to stem when query is empty
+					ottl.LValue{"cache", "value"}.SetIf(stem, queryEmpty),
+					// Set to stem + "?" + query when query is present
+					ottl.LValue{"cache", "value"}.SetIf(
+						ottl.RValue(fmt.Sprintf(`Concat([%s, %s], "?")`, stem, query)),
+						ottl.Not(queryEmpty),
+					),
+					// Clean up intermediate fields for OTTL
+					stem.Delete(),
+					query.Delete(),
+				)
+			},
+		},
 	}
 
-	// Generate the httpRequest structure.
+	// Generate the httpRequest structure using standard field movements
 	for _, field := range []string{
 		"serverIp",
 		"remoteIp",
@@ -233,8 +326,9 @@ func (p LoggingProcessorMacroIisAccess) Expand(ctx context.Context) []confgenera
 		}
 	}
 
-	// Note: Intermediate fields like cs_uri_stem, cs_uri_query, s_port will remain in jsonPayload
-	// This is a limitation of the current refactoring - the original Lua filter handled this better
+	// Note: Field cleanup is handled differently:
+	// - For Fluent Bit: Added to the custom Lua functions above
+	// - For OTTL: We'll add separate cleanup operations after the main transformations
 
 	modifyFields := confgenerator.LoggingProcessorModifyFields{
 		Fields: fields,
@@ -242,7 +336,7 @@ func (p LoggingProcessorMacroIisAccess) Expand(ctx context.Context) []confgenera
 
 	return []confgenerator.InternalLoggingProcessor{
 		parseRegex,
-		modifyFields,
+		modifyFields, // Now handles ALL IIS transformations!
 	}
 }
 

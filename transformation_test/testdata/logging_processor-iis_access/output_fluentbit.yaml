@@ -9,12 +9,15 @@
       remoteIp: "::1"
       requestMethod: GET
       requestSize: 0.0
-      requestUrl: /iisstart.png
+      requestUrl: ""
       responseSize: 0.0
-      serverIp: "::1:80"
+      serverIp: "::1"
       status: 200.0
       userAgent: Mozilla/5.0+(Windows+NT+10.0;+WOW64;+Trident/7.0;+rv:11.0)+like+Gecko
     jsonPayload:
+      http_request_referer: http://localhost/
+      http_request_requestUrl: /iisstart.png
+      http_request_serverIp: "::1:80"
       sc_substatus: "0"
       sc_win32_status: "0"
       time_taken: "18"
@@ -28,16 +31,18 @@
       cacheLookup: false
       cacheValidatedWithOriginServer: false
       protocol: ""
-      referer: ""
+      referer: -
       remoteIp: "::1"
       requestMethod: GET
       requestSize: 0.0
-      requestUrl: /
+      requestUrl: ""
       responseSize: 0.0
-      serverIp: "::1:80"
+      serverIp: "::1"
       status: 200.0
       userAgent: Mozilla/5.0+(Windows+NT+10.0;+WOW64;+Trident/7.0;+rv:11.0)+like+Gecko
     jsonPayload:
+      http_request_requestUrl: /
+      http_request_serverIp: "::1:80"
       sc_substatus: "0"
       sc_win32_status: "0"
       time_taken: "352"
