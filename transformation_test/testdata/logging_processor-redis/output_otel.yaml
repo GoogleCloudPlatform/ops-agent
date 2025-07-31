@@ -1,5 +1,10 @@
 - entries:
-  - jsonPayload: {}
+  - jsonPayload:
+      level: "*"
+      message: Starting Redis Server
+      pid: 1
+      role: RDB/AOF_writing_child
+      roleChar: C
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -8,8 +13,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.257Z
+  - jsonPayload:
+      level: "*"
+      message: oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+      pid: 1
+      role: RDB/AOF_writing_child
+      roleChar: C
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -18,8 +28,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.264Z
+  - jsonPayload:
+      level: "*"
+      message: Redis version=8.0.3, bits=64, commit=00000000, modified=1, pid=1, just started
+      pid: 1
+      role: RDB/AOF_writing_child
+      roleChar: C
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -28,8 +43,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.264Z
+  - jsonPayload:
+      level: "*"
+      message: Configuration loaded
+      pid: 1
+      role: RDB/AOF_writing_child
+      roleChar: C
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -38,8 +58,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.264Z
+  - jsonPayload:
+      level: "*"
+      message: "monotonic clock: POSIX clock_gettime"
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -48,8 +73,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.265Z
+  - jsonPayload:
+      level: "*"
+      message: Running mode=standalone, port=6379.
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -58,8 +88,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.265Z
+  - jsonPayload:
+      level: "*"
+      message: <bf> RedisBloom version 8.0.1 (Git=unknown)
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -68,8 +103,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.265Z
+  - jsonPayload:
+      level: "*"
+      message: "<bf> Registering configuration options: ["
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -78,8 +118,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.265Z
+  - jsonPayload:
+      level: "*"
+      message: "<bf> \t{ bf-error-rate       :      0.01 }"
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -88,8 +133,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.265Z
+  - jsonPayload:
+      level: "*"
+      message: "<bf> \t{ bf-initial-size     :       100 }"
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -98,8 +148,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.265Z
+  - jsonPayload:
+      level: "*"
+      message: "<bf> \t{ bf-expansion-factor :         2 }"
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -108,8 +163,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.265Z
+  - jsonPayload:
+      level: "*"
+      message: "<bf> \t{ cf-bucket-size      :         2 }"
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -118,8 +178,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.265Z
+  - jsonPayload:
+      level: "*"
+      message: "<bf> \t{ cf-initial-size     :      1024 }"
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -128,8 +193,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.265Z
+  - jsonPayload:
+      level: "*"
+      message: "<bf> \t{ cf-max-iterations   :        20 }"
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -138,8 +208,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.265Z
+  - jsonPayload:
+      level: "*"
+      message: "<bf> \t{ cf-expansion-factor :         1 }"
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -148,8 +223,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.265Z
+  - jsonPayload:
+      level: "*"
+      message: "<bf> \t{ cf-max-expansions   :        32 }"
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -158,8 +238,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.265Z
+  - jsonPayload:
+      level: "*"
+      message: <bf> ]
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -168,8 +253,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.265Z
+  - jsonPayload:
+      level: "*"
+      message: Module 'bf' loaded from /usr/local/lib/redis/modules//redisbloom.so
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -178,8 +268,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.265Z
+  - jsonPayload:
+      level: "*"
+      message: "<search> Redis version found by RedisSearch : 8.0.3 - oss"
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -188,8 +283,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.267Z
+  - jsonPayload:
+      level: "*"
+      message: <search> RediSearch version 8.0.1 (Git=5688fcc)
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -198,8 +298,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.267Z
+  - jsonPayload:
+      level: "*"
+      message: <search> Low level api version 1 initialized successfully
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -208,8 +313,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.267Z
+  - jsonPayload:
+      level: "*"
+      message: "<search> gc: ON, prefix min length: 2, min word length to stem: 4, prefix max expansions: 200, query timeout (ms): 500, timeout policy: return, cursor read size: 1000, cursor max idle (ms): 300000, max doctable size: 1000000, max number of search results:  1000000,"
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -218,8 +328,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.267Z
+  - jsonPayload:
+      level: "*"
+      message: <search> Initialized thread pools!
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -228,8 +343,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.267Z
+  - jsonPayload:
+      level: "*"
+      message: <search> Disabled workers threadpool of size 0
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -238,8 +358,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.267Z
+  - jsonPayload:
+      level: "*"
+      message: <search> Subscribe to config changes
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -248,8 +373,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.267Z
+  - jsonPayload:
+      level: "*"
+      message: <search> Enabled role change notification
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -258,8 +388,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.267Z
+  - jsonPayload:
+      level: "*"
+      message: "<search> Cluster configuration: AUTO partitions, type: 0, coordinator timeout: 0ms"
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -268,8 +403,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.267Z
+  - jsonPayload:
+      level: "*"
+      message: <search> Register write commands
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -278,8 +418,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.267Z
+  - jsonPayload:
+      level: "*"
+      message: Module 'search' loaded from /usr/local/lib/redis/modules//redisearch.so
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -288,8 +433,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.267Z
+  - jsonPayload:
+      level: "*"
+      message: <timeseries> RedisTimeSeries version 80001, git_sha=577bfa8b5909e7ee572f0b651399be8303dc6641
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -298,8 +448,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.267Z
+  - jsonPayload:
+      level: "*"
+      message: "<timeseries> Redis version found by RedisTimeSeries : 8.0.3 - oss"
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -308,8 +463,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.267Z
+  - jsonPayload:
+      level: "*"
+      message: "<timeseries> Registering configuration options: ["
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -318,8 +478,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.267Z
+  - jsonPayload:
+      level: "*"
+      message: "<timeseries> \t{ ts-compaction-policy   :              }"
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -328,8 +493,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.267Z
+  - jsonPayload:
+      level: "*"
+      message: "<timeseries> \t{ ts-num-threads         :            3 }"
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -338,8 +508,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.267Z
+  - jsonPayload:
+      level: "*"
+      message: "<timeseries> \t{ ts-retention-policy    :            0 }"
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -348,8 +523,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.267Z
+  - jsonPayload:
+      level: "*"
+      message: "<timeseries> \t{ ts-duplicate-policy    :        block }"
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -358,8 +538,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.267Z
+  - jsonPayload:
+      level: "*"
+      message: "<timeseries> \t{ ts-chunk-size-bytes    :         4096 }"
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -368,8 +553,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.267Z
+  - jsonPayload:
+      level: "*"
+      message: "<timeseries> \t{ ts-encoding            :   compressed }"
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -378,8 +568,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.267Z
+  - jsonPayload:
+      level: "*"
+      message: "<timeseries> \t{ ts-ignore-max-time-diff:            0 }"
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -388,8 +583,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.267Z
+  - jsonPayload:
+      level: "*"
+      message: "<timeseries> \t{ ts-ignore-max-val-diff :     0.000000 }"
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -398,8 +598,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.267Z
+  - jsonPayload:
+      level: "*"
+      message: <timeseries> ]
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -408,8 +613,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.267Z
+  - jsonPayload:
+      level: "*"
+      message: <timeseries> Detected redis oss
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -418,8 +628,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.267Z
+  - jsonPayload:
+      level: "*"
+      message: Module 'timeseries' loaded from /usr/local/lib/redis/modules//redistimeseries.so
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -428,8 +643,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.267Z
+  - jsonPayload:
+      level: "*"
+      message: <ReJSON> Created new data type 'ReJSON-RL'
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -438,8 +658,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.268Z
+  - jsonPayload:
+      level: "*"
+      message: "<ReJSON> version: 80001 git sha: unknown branch: unknown"
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -448,8 +673,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.268Z
+  - jsonPayload:
+      level: "*"
+      message: <ReJSON> Exported RedisJSON_V1 API
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -458,8 +688,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.268Z
+  - jsonPayload:
+      level: "*"
+      message: <ReJSON> Exported RedisJSON_V2 API
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -468,8 +703,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.268Z
+  - jsonPayload:
+      level: "*"
+      message: <ReJSON> Exported RedisJSON_V3 API
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -478,8 +718,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.268Z
+  - jsonPayload:
+      level: "*"
+      message: <ReJSON> Exported RedisJSON_V4 API
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -488,8 +733,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.268Z
+  - jsonPayload:
+      level: "*"
+      message: <ReJSON> Exported RedisJSON_V5 API
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -498,8 +748,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.268Z
+  - jsonPayload:
+      level: "*"
+      message: <ReJSON> Enabled diskless replication
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -508,8 +763,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.268Z
+  - jsonPayload:
+      level: "*"
+      message: "<ReJSON> Initialized shared string cache, thread safe: false."
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -518,8 +778,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.268Z
+  - jsonPayload:
+      level: "*"
+      message: Module 'ReJSON' loaded from /usr/local/lib/redis/modules//rejson.so
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -528,8 +793,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.268Z
+  - jsonPayload:
+      level: "*"
+      message: <search> Acquired RedisJSON_V5 API
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -538,8 +808,13 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-07-19T02:08:05.268Z
+  - jsonPayload:
+      level: "*"
+      message: Server initialized
+      pid: 1
+      role: master
+      roleChar: M
     labels:
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
@@ -548,5 +823,5 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
+    timestamp: 2025-07-19T02:08:05.268Z
   partialSuccess: true
