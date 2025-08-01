@@ -1,1 +1,93 @@
-- config_error: "failed generating OTel processor: &confgenerator.loggingProcessorMacroAdapter[github.com/GoogleCloudPlatform/ops-agent/apps.LoggingProcessorMacroNginxAccess]{ConfigComponent:confgenerator.ConfigComponent{Type:\"nginx_access\"}, ProcessorMacro:apps.LoggingProcessorMacroNginxAccess{}}, err: unimplemented"
+- entries:
+  - jsonPayload:
+      gzip_ratio: ""
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_access
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2000-10-10T20:55:36Z
+  - jsonPayload:
+      gzip_ratio: ""
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_access
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2021-08-26T16:49:43Z
+  - jsonPayload:
+      gzip_ratio: ""
+      user: frank
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_access
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2000-10-10T20:55:36Z
+  - jsonPayload:
+      gzip_ratio: ""
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_access
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2021-08-26T16:50:15Z
+  - jsonPayload:
+      gzip_ratio: ""
+      user: admin
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_access
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2021-08-26T16:51:22Z
+  - jsonPayload:
+      gzip_ratio: ""
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_access
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2021-08-26T16:52:10Z
+  - jsonPayload:
+      gzip_ratio: ""
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_access
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2021-08-26T16:53:05Z
+  - jsonPayload:
+      gzip_ratio: ""
+      user: user123
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_access
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2021-08-26T16:54:30Z
+  partialSuccess: true
