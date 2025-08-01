@@ -176,6 +176,10 @@ func FormatTime(a Value, format string) Value {
 	return valuef(`FormatTime(%s, %q)`, a, format)
 }
 
+func ToValues(a Value) Value {
+	return valuef(`ToValues(%s)`, a)
+}
+
 func IsMatch(target Value, pattern string) Value {
 	return valuef(`IsMatch(%s, %q)`, target, pattern)
 }
