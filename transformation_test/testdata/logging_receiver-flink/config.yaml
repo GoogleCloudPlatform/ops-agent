@@ -1,4 +1,2 @@
 receiver: 
   type: flink
-  include_paths:
-  - __INPUT_LOG__

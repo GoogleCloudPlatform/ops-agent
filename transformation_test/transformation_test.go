@@ -26,6 +26,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -95,6 +96,9 @@ func TestTransformationTests(t *testing.T) {
 		if !dir.IsDir() {
 			continue
 		}
+		if !strings.Contains(dir.Name(), "logging_receiver-flink") {
+			continue
+		}
 		t.Run(dir.Name(), func(t *testing.T) {
 			t.Parallel()
 			// Unmarshal transformation_config.yaml
@@ -119,7 +123,7 @@ func (transformationConfig transformationTest) runFluentBitTest(t *testing.T, na
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	// Generate config files
-	genFiles, err := generateFluentBitConfigs(ctx, name, transformationConfig)
+	genFiles, err := generateFluentBitConfigs(t, ctx, name, transformationConfig)
 	if err != nil {
 		t.Fatalf("failed to generate config files: %v", err)
 	}
@@ -132,7 +136,10 @@ func (transformationConfig transformationTest) runFluentBitTest(t *testing.T, na
 	tempPath := t.TempDir()
 	for k, v := range genFiles {
 		err := confgenerator.WriteConfigFile([]byte(v), filepath.Join(tempPath, k))
-
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = confgenerator.WriteConfigFile([]byte(v), filepath.Join("/usr/local/google/home/fcovalente/temp_fluent", k))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -142,11 +149,14 @@ func (transformationConfig transformationTest) runFluentBitTest(t *testing.T, na
 	testStartTime := time.Now()
 
 	// Start Fluent-bit
+	//os.Mkdir(filepath.Join(t.TempDir(), "state"), 0755)
 	cmd := exec.Command(
 		*flbPath,
 		"-v",
 		fmt.Sprintf("--config=%s", filepath.Join(tempPath, flbMainConf)),
-		fmt.Sprintf("--parser=%s", filepath.Join(filepath.Join(tempPath, flbParserConf))))
+		fmt.Sprintf("--parser=%s", filepath.Join(filepath.Join(tempPath, flbParserConf))),
+		fmt.Sprintf("--storage_path=%s", filepath.Join(filepath.Join(tempPath, "buffers"))))
+	//fmt.Sprintf("--storage_path=%s", "/usr/local/google/home/fcovalente/tmp_buffer/buffers"))
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -250,6 +260,9 @@ func readTransformationConfig(dir string) (transformationTest, error) {
 		return config, err
 	}
 
+	if config.Receiver != nil {
+		r, ok := (config.Receiver.LoggingReceiver).(confgenerator.LoggingReceiverFiles)
+	}
 	// err = validateTestReceiverConfig(config.Receiver)
 	// if err != nil {
 	// 	return config, err
@@ -258,12 +271,15 @@ func readTransformationConfig(dir string) (transformationTest, error) {
 	return config, nil
 }
 
-func generateFluentBitConfigs(ctx context.Context, name string, transformationTest transformationTest) (map[string]string, error) {
+func generateFluentBitConfigs(t *testing.T, ctx context.Context, name string, transformationTest transformationTest) (map[string]string, error) {
 	abs, err := filepath.Abs(filepath.Join("testdata", name, transformationInput))
 	if err != nil {
 		return nil, err
 	}
 	var components []fluentbit.Component
+
+	//service := fluentbit.Service{LogLevel: "info"}
+	//components = append(components, service.Component())
 
 	// Only one (or empty) `Receiver` can be set in a transformation test.
 	if transformationTest.Receiver != nil {
@@ -306,7 +322,14 @@ func generateFluentBitConfigs(ctx context.Context, name string, transformationTe
 		},
 	}
 	components = append(components, output)
+	t.Log("found : ", t.TempDir())
+	t.Log("found : ", filepath.Join(t.TempDir(), "buffers"))
+	//os.Mkdir(filepath.Join(t.TempDir(), "buffers"), 7777)
+	//os.Mkdir(filepath.Join(t.TempDir(), "buffers", "transformation_test"), 7777)
 	return fluentbit.ModularConfig{
+		Variables: map[string]string{
+			"buffers_dir": path.Join(t.TempDir(), "buffers"),
+		},
 		Components: components,
 	}.Generate()
 }

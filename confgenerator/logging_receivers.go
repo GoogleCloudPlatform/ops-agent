@@ -74,6 +74,7 @@ type LoggingReceiverFilesMixin struct {
 	MultilineRules          []MultilineRule `yaml:"-"`
 	BufferInMemory          bool            `yaml:"-"`
 	RecordLogFilePath       *bool           `yaml:"record_log_file_path,omitempty"`
+	ExitOnEof               bool            `yaml:"-"`
 }
 
 func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
@@ -130,6 +131,10 @@ func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) [
 
 	if r.BufferInMemory {
 		config["storage.type"] = "memory"
+	}
+
+	if r.ExitOnEof {
+		config["Exit_On_Eof"] = "True"
 	}
 
 	c := []fluentbit.Component{}
