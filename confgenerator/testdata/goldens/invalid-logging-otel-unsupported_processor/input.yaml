@@ -21,12 +21,12 @@ traces:
     pipelines:
 logging:
   processors:
-    apache:
-      type: apache
+    unsupported_processor:
+      type: unsupported
   service:
     experimental_otel_logging: true
     pipelines:
       p1:
         receivers: [sample_logs]
         processors:
-        - apache
+        - unsupported_processor
