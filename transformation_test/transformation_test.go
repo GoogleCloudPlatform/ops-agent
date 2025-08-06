@@ -85,10 +85,6 @@ func (l *loggingProcessor) UnmarshalYAML(ctx context.Context, unmarshal func(int
 	return confgenerator.LoggingProcessorTypes.UnmarshalComponentYaml(ctx, &l.LoggingProcessor, unmarshal)
 }
 
-func (transformationTest) validateReceiverConfig() {
-
-}
-
 func TestTransformationTests(t *testing.T) {
 	allTests, err := os.ReadDir("testdata")
 	if err != nil {
@@ -236,10 +232,6 @@ func readTransformationConfig(dir string) (transformationTest, error) {
 	err = yaml.UnmarshalWithOptions(transformationTestData, &config, yaml.DisallowUnknownField())
 	if err != nil {
 		return config, err
-	}
-
-	if config.Receiver != nil && config.Receiver.LoggingReceiver != nil {
-
 	}
 
 	return config, nil
