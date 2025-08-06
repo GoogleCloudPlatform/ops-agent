@@ -85,6 +85,10 @@ func (l *loggingProcessor) UnmarshalYAML(ctx context.Context, unmarshal func(int
 	return confgenerator.LoggingProcessorTypes.UnmarshalComponentYaml(ctx, &l.LoggingProcessor, unmarshal)
 }
 
+func (transformationTest) validateReceiverConfig() {
+
+}
+
 func TestTransformationTests(t *testing.T) {
 	allTests, err := os.ReadDir("testdata")
 	if err != nil {
@@ -94,9 +98,6 @@ func TestTransformationTests(t *testing.T) {
 	for _, dir := range allTests {
 		dir := dir
 		if !dir.IsDir() {
-			continue
-		}
-		if !strings.Contains(dir.Name(), "logging_receiver-flink") {
 			continue
 		}
 		t.Run(dir.Name(), func(t *testing.T) {
@@ -235,6 +236,10 @@ func readTransformationConfig(dir string) (transformationTest, error) {
 	err = yaml.UnmarshalWithOptions(transformationTestData, &config, yaml.DisallowUnknownField())
 	if err != nil {
 		return config, err
+	}
+
+	if config.Receiver != nil && config.Receiver.LoggingReceiver != nil {
+
 	}
 
 	return config, nil
