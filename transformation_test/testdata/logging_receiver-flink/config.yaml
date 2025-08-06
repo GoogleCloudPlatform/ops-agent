@@ -1,2 +1,2 @@
 receiver: 
-  type: flink
+  type: test_flink

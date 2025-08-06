@@ -138,7 +138,7 @@ func (p LoggingProcessorMacroFlink) Expand(ctx context.Context) []confgenerator.
 	}
 }
 
-func loggingReceiverFilesMixinFlink() confgenerator.LoggingReceiverFilesMixin {
+func LoggingReceiverFilesMixinFlink() confgenerator.LoggingReceiverFilesMixin {
 	return confgenerator.LoggingReceiverFilesMixin{
 		IncludePaths: []string{
 			"/opt/flink/log/flink-*-standalonesession-*.log",
@@ -150,5 +150,5 @@ func loggingReceiverFilesMixinFlink() confgenerator.LoggingReceiverFilesMixin {
 
 func init() {
 	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroFlink](
-		loggingReceiverFilesMixinFlink)
+		LoggingReceiverFilesMixinFlink)
 }
