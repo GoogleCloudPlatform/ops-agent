@@ -593,6 +593,12 @@ type Metrics struct {
 
 type OTelReceiver interface {
 	Component
+	InternalOtelReceiver
+}
+
+// InternalOtelReceiver implements all the methods required to describe a logging receiver pipeline.
+type InternalOtelReceiver interface {
+	// Pipelines returns otel pipelines that implement this receiver.
 	Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error)
 }
 
@@ -786,6 +792,12 @@ func (m *combinedReceiverMap) UnmarshalYAML(ctx context.Context, unmarshal func(
 
 type OTelProcessor interface {
 	Component
+	InternalOtelProcessor
+}
+
+// InternalOtelProcessor implements the methods required to define a logging processor pipeline.
+type InternalOtelProcessor interface {
+	// Processors returns otel components that implement this processor.
 	Processors(context.Context) ([]otel.Component, error)
 }
 
