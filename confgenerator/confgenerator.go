@@ -58,6 +58,18 @@ func googleCloudExporter(userAgent string, instrumentationLabels bool) otel.Comp
 	}
 }
 
+func otlpExporter() otel.Component {
+	return otel.Component{
+		Type: "otlphttp",
+		Config: map[string]interface{}{
+			"encoding": "proto",
+			"endpoint": "https://telemetry.googleapis.com",
+			"auth": map[string]interface{}{
+				"authenticator": "googleclientauth",
+			},
+		},
+	}
+}
 func googleManagedPrometheusExporter(userAgent string) otel.Component {
 	return otel.Component{
 		Type: "googlemanagedprometheus",
@@ -119,10 +131,12 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 		LogLevel:          uc.getOTelLogLevel(),
 		ReceiverPipelines: receiverPipelines,
 		Pipelines:         pipelines,
+		Extensions:        map[string]interface{}{"googleclientauth": map[string]interface{}{}} ,
 		Exporters: map[otel.ExporterType]otel.Component{
 			otel.System: googleCloudExporter(userAgent, false),
 			otel.OTel:   googleCloudExporter(userAgent, true),
 			otel.GMP:    googleManagedPrometheusExporter(userAgent),
+			otel.Otlp:   otlpExporter(),
 		},
 	}.Generate(ctx)
 	if err != nil {
@@ -242,7 +256,7 @@ func (p pipelineInstance) otelComponents(ctx context.Context) (map[string]otel.R
 			ReceiverPipelineName: receiverPipelineName,
 		}
 		// Check the Ops Agent receiver type.
-		if receiverPipeline.ExporterTypes[p.pipelineType] == otel.GMP {
+		if receiverPipeline.ExporterTypes[p.pipelineType] == otel.GMP || receiverPipeline.ExporterTypes[p.pipelineType] == otel.Otlp {
 			// Prometheus receivers are incompatible with processors, so we need to assert that no processors are configured.
 			if len(p.processors) > 0 {
 				return nil, nil, fmt.Errorf("prometheus receivers are incompatible with Ops Agent processors")
