@@ -137,7 +137,7 @@ func (p LoggingProcessorMacroRedis) Expand(ctx context.Context) []confgenerator.
 	}
 }
 
-func loggingReceiverFilesMixinRedis() confgenerator.LoggingReceiverFilesMixin {
+func LoggingReceiverFilesMixinRedis() confgenerator.LoggingReceiverFilesMixin {
 	return confgenerator.LoggingReceiverFilesMixin{
 		IncludePaths: []string{
 			// Default log path on Ubuntu / Debian
@@ -155,5 +155,5 @@ func loggingReceiverFilesMixinRedis() confgenerator.LoggingReceiverFilesMixin {
 }
 
 func init() {
-	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroRedis](loggingReceiverFilesMixinRedis)
+	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroRedis](LoggingReceiverFilesMixinRedis)
 }

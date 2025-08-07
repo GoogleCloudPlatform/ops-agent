@@ -675,6 +675,6 @@ func init() {
 	// The receivers and processors registered here are only meant to be used in transformation tests.
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &confgenerator.LoggingProcessorWindowsEventLogV1{} })
 	confgenerator.RegisterLoggingProcessorMacro[apps.LoggingProcessorMacroElasticsearchJson]()
-	RegisterTestLoggingFilesProcessorMacro[apps.LoggingProcessorMacroFlink](
-		"logging_receiver-flink", apps.LoggingReceiverFilesMixinFlink)
+	RegisterTestLoggingFilesProcessorMacro[apps.LoggingProcessorMacroRedis](
+		"logging_receiver-redis", apps.LoggingReceiverFilesMixinRedis)
 }
