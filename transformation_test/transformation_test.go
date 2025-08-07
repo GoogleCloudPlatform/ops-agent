@@ -237,31 +237,36 @@ func readTransformationConfig(dir string) (transformationTest, error) {
 	return config, nil
 }
 
+// generateFluentBitFileReceiverComponents generates Fluent Bit components for a file receiver for the test case.
+func generateFluentBitFileReceiverComponents(ctx context.Context, transformationTest transformationTest, inputLogPath string) []fluentbit.Component {
+	// Only one (or empty) `Receiver` can be set in a transformation test.
+	if transformationTest.Receiver != nil {
+		return transformationTest.Receiver.Components(ctx, flbTag)
+	} else {
+		// Default files receiver when no test "receiver" was set.
+		return []fluentbit.Component{
+			{
+				Kind: "INPUT",
+				Config: map[string]string{
+					"Name":           "tail",
+					"Tag":            flbTag,
+					"Read_from_Head": "True",
+					"Exit_On_Eof":    "True",
+					"Path":           inputLogPath,
+					"Key":            "message",
+				},
+			},
+		}
+	}
+}
+
 func generateFluentBitConfigs(ctx context.Context, name string, transformationTest transformationTest, tempPath string) (map[string]string, error) {
 	abs, err := filepath.Abs(filepath.Join("testdata", name, transformationInput))
 	if err != nil {
 		return nil, err
 	}
 	var components []fluentbit.Component
-
-	// Only one (or empty) `Receiver` can be set in a transformation test.
-	if transformationTest.Receiver != nil {
-		components = append(components, transformationTest.Receiver.Components(ctx, flbTag)...)
-	} else {
-		// Default files receiver when no test "receiver" was set.
-		input := fluentbit.Component{
-			Kind: "INPUT",
-			Config: map[string]string{
-				"Name":           "tail",
-				"Tag":            flbTag,
-				"Read_from_Head": "True",
-				"Exit_On_Eof":    "True",
-				"Path":           abs,
-				"Key":            "message",
-			},
-		}
-		components = append(components, input)
-	}
+	components = append(components, generateFluentBitFileReceiverComponents(ctx, transformationTest, abs)...)
 
 	for i, t := range transformationTest.Processors {
 		components = append(components, t.Components(ctx, flbTag, strconv.Itoa(i))...)
@@ -292,6 +297,36 @@ func generateFluentBitConfigs(ctx context.Context, name string, transformationTe
 		},
 		Components: components,
 	}.Generate()
+}
+
+// generateOtelFileReceiverPipeline generates an OTel receiver pipeline for the test case.
+func (transformationConfig transformationTest) generateOtelFileReceiverPipeline(ctx context.Context, inputLogPath string) (*otel.ReceiverPipeline, error) {
+	// Only one (or empty) `Receiver` can be set in a transformation test.
+	var rPipelines []otel.ReceiverPipeline
+	var err error
+	if transformationConfig.Receiver != nil && transformationConfig.Receiver.LoggingReceiver != nil {
+		if op, ok := transformationConfig.Receiver.LoggingReceiver.(confgenerator.OTelReceiver); ok {
+			rPipelines, err = op.Pipelines(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("failed generating OTel pipelines of receiver type: %s, err: %v", transformationConfig.Receiver.LoggingReceiver.Type(), err)
+			}
+		} else {
+			return nil, fmt.Errorf("receiver type: %s is not an OTel receiver", transformationConfig.Receiver.LoggingReceiver.Type())
+		}
+
+	} else {
+		// Default files receiver when no test "receiver" was set.
+		rPipelines, err = confgenerator.LoggingReceiverFilesMixin{
+			IncludePaths: []string{
+				inputLogPath,
+			},
+		}.Pipelines(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &rPipelines[0], nil
 }
 
 // generateOTelConfig attempts to generate an OTel config file for the test case.
@@ -330,28 +365,9 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 		}
 	}
 
-	// Only one (or empty) `Receiver` can be set in a transformation test.
-	var rPipelines []otel.ReceiverPipeline
-	if transformationConfig.Receiver != nil && transformationConfig.Receiver.LoggingReceiver != nil {
-		if op, ok := transformationConfig.Receiver.LoggingReceiver.(confgenerator.OTelReceiver); ok {
-			rPipelines, err = op.Pipelines(ctx)
-			if err != nil {
-				return "", fmt.Errorf("failed generating OTel pipelines of receiver type: %s, err: %v", transformationConfig.Receiver.LoggingReceiver.Type(), err)
-			}
-		} else {
-			return "", fmt.Errorf("receiver type: %s is not an OTel receiver", transformationConfig.Receiver.LoggingReceiver.Type())
-		}
-
-	} else {
-		// Default files receiver when no test "receiver" was set.
-		rPipelines, err = confgenerator.LoggingReceiverFilesMixin{
-			IncludePaths: []string{
-				abs,
-			},
-		}.Pipelines(ctx)
-		if err != nil {
-			return "", err
-		}
+	filesReceiverPipeline, err := transformationConfig.generateOtelFileReceiverPipeline(ctx, abs)
+	if err != nil {
+		return "", err
 	}
 
 	return otel.ModularConfig{
@@ -359,7 +375,7 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 		JSONLogs:       true,
 		LogLevel:       "debug",
 		ReceiverPipelines: map[string]otel.ReceiverPipeline{
-			"input": rPipelines[0],
+			"input": *filesReceiverPipeline,
 		},
 		Pipelines: map[string]otel.Pipeline{
 			"input": {
