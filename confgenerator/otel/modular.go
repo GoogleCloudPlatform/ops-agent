@@ -187,11 +187,20 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 			telemetryMap["logs"] = logs
 		}
 	}
+	if len(c.Extensions) > 0 {
+		extensionsList := []string{}
+		for extensionName := range c.Extensions {
+			extensions[extensionName] = c.Extensions[extensionName]
+			extensionsList = append(extensionsList, extensionName)
+		}
+		service["extensions"] = extensionsList
+	}
 	configMap := map[string]interface{}{
 		"receivers":  receivers,
 		"processors": processors,
 		"exporters":  exporters,
 		"service":    service,
+		"extensions": extensions,
 	}
 
 	if len(c.Extensions) > 0 {

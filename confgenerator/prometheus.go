@@ -87,6 +87,9 @@ func (r PrometheusMetrics) Pipelines(ctx context.Context) ([]otel.ReceiverPipeli
 		}
 	}
 	exp_otlp_exporter := experimentsFromContext(ctx)["otlp_exporter"]
+	exporter := map[string]otel.ExporterType{
+		"metrics": otel.GMP,
+	}
 	metrics_components := []otel.Component{otel.GroupByGMPAttrs_OTTL()}
 	exporter := map[string]otel.ExporterType{
 		"metrics": otel.GMP,

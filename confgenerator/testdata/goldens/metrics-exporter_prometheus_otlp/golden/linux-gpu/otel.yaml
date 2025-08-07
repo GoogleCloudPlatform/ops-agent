@@ -657,6 +657,9 @@ service:
       - transform/prometheus_1
       - metricstarttime/prometheus_2
       - resource/prometheus_3
+      - otlphttp/otlp
+      processors:
+      - transform/prometheus_0
       receivers:
       - prometheus/prometheus
   telemetry:
