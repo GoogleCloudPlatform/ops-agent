@@ -131,7 +131,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 		LogLevel:          uc.getOTelLogLevel(),
 		ReceiverPipelines: receiverPipelines,
 		Pipelines:         pipelines,
-		Extensions:        map[string]interface{}{"googleclientauth": map[string]interface{}{}} ,
+		Extensions:        map[string]interface{}{"googleclientauth": map[string]interface{}{}},
 		Exporters: map[otel.ExporterType]otel.Component{
 			otel.System: googleCloudExporter(userAgent, false),
 			otel.OTel:   googleCloudExporter(userAgent, true),
