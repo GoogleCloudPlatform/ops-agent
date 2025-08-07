@@ -158,19 +158,6 @@ func (r LoggingReceiverZookeeperGeneral) Components(ctx context.Context, tag str
 		}
 	}
 
-	r.ReceiverMixin.MultilineRules = []confgenerator.MultilineRule{
-		{
-			StateName: "start_state",
-			NextState: "cont",
-			Regex:     `^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2},\d{3}`,
-		},
-		{
-			StateName: "cont",
-			NextState: "cont",
-			Regex:     `^(?!\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2},\d{3})`,
-		},
-	}
-
 	c := r.ReceiverMixin.Components(ctx, tag)
 	return append(c, r.LoggingProcessorZookeeperGeneral.Components(ctx, tag, "zookeeper_general")...)
 }
