@@ -11,7 +11,7 @@ DISTRIBUTION=$(. /etc/os-release;echo $ID$VERSION_ID | sed -e 's/\.[0-9]//')
 sudo zypper --non-interactive ar http://developer.download.nvidia.com/compute/cuda/repos/${DISTRIBUTION}/x86_64/cuda-${DISTRIBUTION}.repo
 sudo zypper --gpg-auto-import-keys --non-interactive refresh
 echo "Installing latest version of NVIDIA CUDA and driver"
-sudo zypper --non-interactive install -y cuda
+sudo zypper --non-interactive install -y cuda-12-9
 
 # check NVIDIA driver installation succeeded
 nvidia-smi
