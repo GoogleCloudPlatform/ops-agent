@@ -897,12 +897,14 @@ func TestKillChildJobsWhenPluginServerProcessTerminates(t *testing.T) {
 
 func TestCustomLogFormat(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachLoggingSubagent(t, func(t *testing.T, otel bool) {
 		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+			t.Parallel()
+			ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
-		logPath := logPathForImage(vm.ImageSpec)
-		config := fmt.Sprintf(`logging:
+			logPath := logPathForImage(vm.ImageSpec)
+			config := fmt.Sprintf(`logging:
   receivers:
     mylog_source:
       type: files
@@ -918,27 +920,39 @@ func TestCustomLogFormat(t *testing.T) {
       time_key: time
       time_format: "%s"
   service:
+    experimental_otel_logging: %v
     pipelines:
       my_pipeline:
         receivers: [mylog_source]
         processors: [rfc5424]
         exporters: [google]
-`, logPath, "%Y-%m-%dT%H:%M:%S.%L%z")
+`, logPath, "%Y-%m-%dT%H:%M:%S.%L%z", otel)
 
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
-			t.Fatal(err)
-		}
+			if otel {
+				if err := setExperimentalFeatures(ctx, logger, vm, "otel_logging"); err != nil {
+					t.Fatal(err)
+				}
+			}
 
-		zone := time.FixedZone("UTC-8", int((-8 * time.Hour).Seconds()))
-		line := fmt.Sprintf("<13>1 %s %s my_app_id - - - qqqqrrrr\n", time.Now().In(zone).Format(time.RFC3339Nano), vm.Name)
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), logPath); err != nil {
-			t.Fatalf("error writing dummy log line: %v", err)
-		}
+			if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+				t.Fatal(err)
+			}
 
-		// window (1 hour) is *less than* the time zone UTC offset (8 hours) to catch time zone parse failures
-		if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, "jsonPayload.message=qqqqrrrr AND jsonPayload.ident=my_app_id"); err != nil {
-			t.Error(err)
-		}
+			zone := time.FixedZone("UTC-8", int((-8 * time.Hour).Seconds()))
+			line := fmt.Sprintf("<13>1 %s %s my_app_id - - - qqqqrrrr\n", time.Now().In(zone).Format(time.RFC3339Nano), vm.Name)
+			// TODO: b/413446913 Enable non-UTC timestamp when otel logging parsing differences are fixed.
+			if otel {
+				line = fmt.Sprintf("<13>1 %s %s my_app_id - - - qqqqrrrr\n", time.Now().UTC().Format(time.RFC3339Nano), vm.Name)
+			}
+			if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), logPath); err != nil {
+				t.Fatalf("error writing dummy log line: %v", err)
+			}
+
+			// window (1 hour) is *less than* the time zone UTC offset (8 hours) to catch time zone parse failures
+			if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, "jsonPayload.message=qqqqrrrr AND jsonPayload.ident=my_app_id"); err != nil {
+				t.Error(err)
+			}
+		})
 	})
 }
 
