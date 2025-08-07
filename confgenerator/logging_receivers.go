@@ -617,8 +617,12 @@ func windowsEventLogV1Processors(ctx context.Context) ([]otel.Component, error) 
 					)
 				},
 			},
-			// TODO: Convert from array of maps to array of strings
-			"jsonPayload.StringInserts": {CopyFrom: "jsonPayload.event_data.data"},
+			"jsonPayload.StringInserts": {
+				CopyFrom: "jsonPayload.event_data.data",
+				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
+					return v.Set(ottl.ToValues(v))
+				},
+			},
 			"jsonPayload.TimeGenerated": {
 				CopyFrom:          "jsonPayload.system_time",
 				CustomConvertFunc: formatSystemTime,
