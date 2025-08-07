@@ -596,7 +596,7 @@ type OTelReceiver interface {
 	InternalOtelReceiver
 }
 
-// InternalOtelReceiver implements all the methods required to describe a logging receiver pipeline.
+// InternalOtelReceiver implements all the methods required to describe an otel logging receiver pipeline.
 type InternalOtelReceiver interface {
 	// Pipelines returns otel pipelines that implement this receiver.
 	Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error)
@@ -795,7 +795,7 @@ type OTelProcessor interface {
 	InternalOtelProcessor
 }
 
-// InternalOtelProcessor implements the methods required to define a logging processor pipeline.
+// InternalOtelProcessor implements the methods required to define an otel logging processor pipeline.
 type InternalOtelProcessor interface {
 	// Processors returns otel components that implement this processor.
 	Processors(context.Context) ([]otel.Component, error)
