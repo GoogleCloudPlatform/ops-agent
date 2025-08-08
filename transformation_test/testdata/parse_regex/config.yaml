@@ -1,3 +1,4 @@
+processors:
 - type: parse_regex
   field: message
   regex: ^(?<time>[^ ]*) (?<severity>[^ ]*) (?<msg>[^ ]*) (?<msg1>\k<msg>)$

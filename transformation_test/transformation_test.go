@@ -25,6 +25,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -55,6 +56,7 @@ const (
 	transformationInput  = "input.log"
 	transformationOutput = "output_fluentbit.yaml"
 	flbTag               = "transformation_test"
+	buffersDir           = "buffers"
 )
 
 var (
@@ -62,9 +64,21 @@ var (
 	otelopscolPath = flag.String("otelopscol", os.Getenv("OTELOPSCOL"), "path to otelopscol")
 )
 
-type transformationTest []loggingProcessor
+type transformationTest struct {
+	Receiver   *loggingReceiver   `yaml:"receiver,omitempty"`
+	Processors []loggingProcessor `yaml:"processors,omitempty"`
+}
+
+type loggingReceiver struct {
+	confgenerator.LoggingReceiver
+}
+
 type loggingProcessor struct {
 	confgenerator.LoggingProcessor
+}
+
+func (l *loggingReceiver) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
+	return confgenerator.LoggingReceiverTypes.UnmarshalComponentYaml(ctx, &l.LoggingReceiver, unmarshal)
 }
 
 func (l *loggingProcessor) UnmarshalYAML(ctx context.Context, unmarshal func(interface{}) error) error {
@@ -105,8 +119,12 @@ func TestTransformationTests(t *testing.T) {
 func (transformationConfig transformationTest) runFluentBitTest(t *testing.T, name string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	// Temporary directory for config files and fluent-bit buffers
+	tempPath := t.TempDir()
+
 	// Generate config files
-	genFiles, err := generateFluentBitConfigs(ctx, name, transformationConfig)
+	genFiles, err := generateFluentBitConfigs(ctx, name, transformationConfig, tempPath)
 	if err != nil {
 		t.Fatalf("failed to generate config files: %v", err)
 	}
@@ -116,10 +134,8 @@ func (transformationConfig transformationTest) runFluentBitTest(t *testing.T, na
 	}
 
 	// Write config files in temp directory
-	tempPath := t.TempDir()
 	for k, v := range genFiles {
 		err := confgenerator.WriteConfigFile([]byte(v), filepath.Join(tempPath, k))
-
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -133,7 +149,8 @@ func (transformationConfig transformationTest) runFluentBitTest(t *testing.T, na
 		*flbPath,
 		"-v",
 		fmt.Sprintf("--config=%s", filepath.Join(tempPath, flbMainConf)),
-		fmt.Sprintf("--parser=%s", filepath.Join(filepath.Join(tempPath, flbParserConf))))
+		fmt.Sprintf("--parser=%s", filepath.Join(filepath.Join(tempPath, flbParserConf))),
+		fmt.Sprintf("--storage_path=%s", filepath.Join(filepath.Join(tempPath, buffersDir))))
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -201,6 +218,7 @@ func checkOutput(t *testing.T, name string, got []map[string]any) {
 		t.Fatalf("got(-)/want(+):\n%s", diff)
 	}
 }
+
 func readTransformationConfig(dir string) (transformationTest, error) {
 	var transformationTestData []byte
 	var config transformationTest
@@ -219,27 +237,38 @@ func readTransformationConfig(dir string) (transformationTest, error) {
 	return config, nil
 }
 
-func generateFluentBitConfigs(ctx context.Context, name string, transformationTest transformationTest) (map[string]string, error) {
+// generateFluentBitFileReceiverComponents generates Fluent Bit components for a file receiver for the test case.
+func generateFluentBitFileReceiverComponents(ctx context.Context, transformationTest transformationTest, inputLogPath string) []fluentbit.Component {
+	// Only one (or empty) `Receiver` can be set in a transformation test.
+	if transformationTest.Receiver != nil {
+		return transformationTest.Receiver.Components(ctx, flbTag)
+	} else {
+		// Default files receiver when no test "receiver" was set.
+		return []fluentbit.Component{
+			{
+				Kind: "INPUT",
+				Config: map[string]string{
+					"Name":           "tail",
+					"Tag":            flbTag,
+					"Read_from_Head": "True",
+					"Exit_On_Eof":    "True",
+					"Path":           inputLogPath,
+					"Key":            "message",
+				},
+			},
+		}
+	}
+}
+
+func generateFluentBitConfigs(ctx context.Context, name string, transformationTest transformationTest, tempPath string) (map[string]string, error) {
 	abs, err := filepath.Abs(filepath.Join("testdata", name, transformationInput))
 	if err != nil {
 		return nil, err
 	}
 	var components []fluentbit.Component
-	input := fluentbit.Component{
-		Kind: "INPUT",
-		Config: map[string]string{
-			"Name":           "tail",
-			"Tag":            flbTag,
-			"Read_from_Head": "True",
-			"Exit_On_Eof":    "True",
-			"Path":           abs,
-			"Key":            "message",
-		},
-	}
+	components = append(components, generateFluentBitFileReceiverComponents(ctx, transformationTest, abs)...)
 
-	components = append(components, input)
-
-	for i, t := range transformationTest {
+	for i, t := range transformationTest.Processors {
 		components = append(components, t.Components(ctx, flbTag, strconv.Itoa(i))...)
 	}
 
@@ -263,8 +292,41 @@ func generateFluentBitConfigs(ctx context.Context, name string, transformationTe
 	}
 	components = append(components, output)
 	return fluentbit.ModularConfig{
+		Variables: map[string]string{
+			"buffers_dir": path.Join(tempPath, buffersDir),
+		},
 		Components: components,
 	}.Generate()
+}
+
+// generateOtelFileReceiverPipeline generates an OTel receiver pipeline for the test case.
+func (transformationConfig transformationTest) generateOtelFileReceiverPipeline(ctx context.Context, inputLogPath string) (*otel.ReceiverPipeline, error) {
+	// Only one (or empty) `Receiver` can be set in a transformation test.
+	var rPipelines []otel.ReceiverPipeline
+	var err error
+	if transformationConfig.Receiver != nil && transformationConfig.Receiver.LoggingReceiver != nil {
+		if op, ok := transformationConfig.Receiver.LoggingReceiver.(confgenerator.OTelReceiver); ok {
+			rPipelines, err = op.Pipelines(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("failed generating OTel pipelines of receiver type: %s, err: %v", transformationConfig.Receiver.LoggingReceiver.Type(), err)
+			}
+		} else {
+			return nil, fmt.Errorf("receiver type: %s is not an OTel receiver", transformationConfig.Receiver.LoggingReceiver.Type())
+		}
+
+	} else {
+		// Default files receiver when no test "receiver" was set.
+		rPipelines, err = confgenerator.LoggingReceiverFilesMixin{
+			IncludePaths: []string{
+				inputLogPath,
+			},
+		}.Pipelines(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &rPipelines[0], nil
 }
 
 // generateOTelConfig attempts to generate an OTel config file for the test case.
@@ -291,7 +353,7 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 		t.Fatal(err)
 	}
 	var components []otel.Component
-	for _, p := range transformationConfig {
+	for _, p := range transformationConfig.Processors {
 		if op, ok := p.LoggingProcessor.(confgenerator.OTelProcessor); ok {
 			processors, err := op.Processors(ctx)
 			if err != nil {
@@ -303,11 +365,7 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 		}
 	}
 
-	rp, err := confgenerator.LoggingReceiverFilesMixin{
-		IncludePaths: []string{
-			abs,
-		},
-	}.Pipelines(ctx)
+	filesReceiverPipeline, err := transformationConfig.generateOtelFileReceiverPipeline(ctx, abs)
 	if err != nil {
 		return "", err
 	}
@@ -317,7 +375,7 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 		JSONLogs:       true,
 		LogLevel:       "debug",
 		ReceiverPipelines: map[string]otel.ReceiverPipeline{
-			"input": rp[0],
+			"input": *filesReceiverPipeline,
 		},
 		Pipelines: map[string]otel.Pipeline{
 			"input": {
@@ -590,9 +648,49 @@ func sanitizeStacktrace(t *testing.T, input string) string {
 	return result
 }
 
+// testLoggingFilesProcessorMacroAdapter is the type used to unmarshal a test configuration for a LoggingProcessorMacro
+// and a LoggingReceiverFilesMixin constructor to adapt into the LoggingReceiver interface.
+// This adapter adds the prefix "test_" to the receiver and configures to a transformation test.
+type testLoggingFilesProcessorMacroAdapter[LPM confgenerator.LoggingProcessorMacro] struct {
+	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
+	ProcessorMacro                          LPM `yaml:",inline"`
+}
+
+func (fpma testLoggingFilesProcessorMacroAdapter[LPM]) Type() string {
+	return "test_" + fpma.ProcessorMacro.Type()
+}
+
+func (fpma testLoggingFilesProcessorMacroAdapter[LPM]) Expand(ctx context.Context) (confgenerator.InternalLoggingReceiver, []confgenerator.InternalLoggingProcessor) {
+	return &fpma.LoggingReceiverFilesMixin, fpma.ProcessorMacro.Expand(ctx)
+}
+
+func RegisterTestLoggingFilesProcessorMacro[LPM confgenerator.LoggingProcessorMacro](testName string, filesMixinConstructor func() confgenerator.LoggingReceiverFilesMixin) error {
+	// File path for test input.log
+	inputLogPath, err := filepath.Abs(filepath.Join("testdata", testName, transformationInput))
+	if err != nil {
+		return err
+	}
+
+	// Enabled Exit_On_Eof setting in files input and set IncludePaths
+	testFilesMixinConstructor := func() confgenerator.LoggingReceiverFilesMixin {
+		filesMixin := filesMixinConstructor()
+		filesMixin.ExitOnEof = true
+		filesMixin.IncludePaths = []string{inputLogPath}
+		return filesMixin
+	}
+
+	confgenerator.RegisterLoggingReceiverMacro[*testLoggingFilesProcessorMacroAdapter[LPM]](func() *testLoggingFilesProcessorMacroAdapter[LPM] {
+		return &testLoggingFilesProcessorMacroAdapter[LPM]{
+			LoggingReceiverFilesMixin: testFilesMixinConstructor(),
+		}
+	})
+	return nil
+}
+
 func init() {
-	// The processors registered here are only meant to be used in transformation tests.
+	// The receivers and processors registered here are only meant to be used in transformation tests.
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &confgenerator.LoggingProcessorWindowsEventLogV1{} })
 	confgenerator.RegisterLoggingProcessorMacro[apps.LoggingProcessorMacroElasticsearchJson]()
-
+	RegisterTestLoggingFilesProcessorMacro[apps.LoggingProcessorMacroRedis](
+		"logging_receiver-redis", apps.LoggingReceiverFilesMixinRedis)
 }

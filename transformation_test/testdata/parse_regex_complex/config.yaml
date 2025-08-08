@@ -1,3 +1,4 @@
+processors:
 - type: parse_regex
   field: message
   regex: ^\<(?<pri>[0-9]{1,5})\>1 (?<time>[^ ]+) (?<host>[^ ]+) (?<ident>[^ ]+) (?<pid>[n0-9]+) (?<msgid>[^ ]+) (?<extradata>(\[(.*?)\]|n)) (?<message>.+)$
