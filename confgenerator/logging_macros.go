@@ -46,9 +46,10 @@ func (cr loggingReceiverMacroAdapter[LRM]) Type() string {
 	return cr.ReceiverMacro.Type()
 }
 
-func (cr loggingReceiverMacroAdapter[LRM]) Components(ctx context.Context, tag string) []fluentbit.Component {
+func (cr loggingReceiverMacroAdapter[LRM]) Expand(ctx context.Context) (InternalLoggingReceiver, []InternalLoggingProcessor) {
 	receiver, processors := cr.ReceiverMacro.Expand(ctx)
 
+	// Merge compatible processors into receiver.
 	notMergedProcessors := []InternalLoggingProcessor{}
 	canMerge := true
 	for _, p := range processors {
@@ -63,15 +64,21 @@ func (cr loggingReceiverMacroAdapter[LRM]) Components(ctx context.Context, tag s
 		notMergedProcessors = append(notMergedProcessors, p)
 	}
 
+	return receiver, notMergedProcessors
+}
+
+func (cr loggingReceiverMacroAdapter[LRM]) Components(ctx context.Context, tag string) []fluentbit.Component {
+	receiver, processors := cr.Expand(ctx)
+
 	c := receiver.Components(ctx, tag)
-	for _, p := range notMergedProcessors {
+	for _, p := range processors {
 		c = append(c, p.Components(ctx, tag, cr.Type())...)
 	}
 	return c
 }
 
 func (cr loggingReceiverMacroAdapter[LRM]) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
-	receiver, processors := cr.ReceiverMacro.Expand(ctx)
+	receiver, processors := cr.Expand(ctx)
 	if r, ok := any(receiver).(OTelReceiver); ok {
 		rps, err := r.Pipelines(ctx)
 		if err != nil {
