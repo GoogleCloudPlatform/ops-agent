@@ -346,6 +346,10 @@ type LoggingProcessorParseRegexComplex struct {
 }
 
 func (p LoggingProcessorParseRegexComplex) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
+	if len(p.Parsers) == 0 {
+		return []fluentbit.Component{}
+	}
+
 	components := []fluentbit.Component{}
 	parserNames := []string{}
 
@@ -372,7 +376,7 @@ func (r MultilineRule) AsString() string {
 	return fmt.Sprintf(`"%s"    "%s"    "%s"`, r.StateName, escapedRegex, r.NextState)
 }
 
-// A LoggingProcessorParseMultiline applies a set of regex rules to the specified lines, storing the named capture groups as keys in the log record.
+// A LoggingProcessorParseMultilineRegex applies a set of regex rules to the specified lines, storing the named capture groups as keys in the log record.
 //
 //	#
 //	# Regex rules for multiline parsing
