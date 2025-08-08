@@ -74,6 +74,7 @@ type LoggingReceiverFilesMixin struct {
 	MultilineRules          []MultilineRule `yaml:"-"`
 	BufferInMemory          bool            `yaml:"-"`
 	RecordLogFilePath       *bool           `yaml:"record_log_file_path,omitempty"`
+	MergeMultilineRules     bool            `yaml:"-"`
 }
 
 func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
@@ -212,6 +213,16 @@ func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.Receiv
 			"logs": otel.OTel,
 		},
 	}}, nil
+}
+
+func (r LoggingReceiverFilesMixin) MergeInternalLoggingProcessor(p InternalLoggingProcessor) (InternalLoggingReceiver, bool) {
+	if ep, ok := p.(LoggingProcessorParseMultilineRegex); ok && r.MergeMultilineRules {
+		if len(ep.Rules) > 0 {
+			r.MultilineRules = ep.Rules
+			return r, true
+		}
+	}
+	return r, false
 }
 
 func init() {

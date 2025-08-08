@@ -603,6 +603,13 @@ type MetricsProcessorMerger interface {
 	MergeMetricsProcessor(p MetricsProcessor) (MetricsReceiver, bool)
 }
 
+type InternalLoggingProcessorMerger interface {
+	// MergeInternalLoggingProcessor attempts to merge p into the current receiver.
+	// It returns the new receiver; and true if the processor has been merged
+	// into the receiver completely
+	MergeInternalLoggingProcessor(p InternalLoggingProcessor) (InternalLoggingReceiver, bool)
+}
+
 type MetricsReceiver interface {
 	OTelReceiver
 }
