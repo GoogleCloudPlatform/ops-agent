@@ -26,7 +26,3 @@
   feature: receivers:elasticsearch_json
   key: "[1].include_paths.__length"
   value: "5"
-- module: logging
-  feature: receivers:elasticsearch_json
-  key: "[1].-"
-  value: "true"

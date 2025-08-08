@@ -36,17 +36,9 @@
   value: "1"
 - module: logging
   feature: receivers:elasticsearch_json
-  key: "[2].-"
-  value: "true"
-- module: logging
-  feature: receivers:elasticsearch_json
   key: "[3].enabled"
   value: "true"
 - module: logging
   feature: receivers:elasticsearch_json
   key: "[3].include_paths.__length"
   value: "5"
-- module: logging
-  feature: receivers:elasticsearch_json
-  key: "[3].-"
-  value: "true"
