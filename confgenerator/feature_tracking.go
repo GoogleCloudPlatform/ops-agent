@@ -412,12 +412,13 @@ func getMetadata(field reflect.StructField) metadata {
 	if len(trackingTags) > 1 && trackingTags[1] == "keys" {
 		hasKeepKeys = true
 	}
-	isExcluded := trackingTag == "-"
 
 	yamlTag, ok := field.Tag.Lookup("yaml")
 	if !ok {
 		panic("field must have a yaml tag")
 	}
+	isExcluded := trackingTag == "-" || yamlTag == "-"
+
 	hasInline := false
 	yamlTags := strings.Split(yamlTag, ",")
 	for _, tag := range yamlTags {
