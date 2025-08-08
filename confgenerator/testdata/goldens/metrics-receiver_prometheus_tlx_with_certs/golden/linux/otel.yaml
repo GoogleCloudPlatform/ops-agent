@@ -11,6 +11,8 @@ exporters:
     metric:
       add_metric_suffixes: false
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
+extensions:
+  googleclientauth: {}
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
@@ -546,6 +548,8 @@ receivers:
             machine_type: test-machine-type
             namespace: test-instance-id/test-instance-name
 service:
+  extensions:
+  - googleclientauth
   pipelines:
     metrics/default__pipeline_hostmetrics:
       exporters:

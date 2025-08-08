@@ -86,7 +86,15 @@ func (r PrometheusMetrics) Pipelines(ctx context.Context) ([]otel.ReceiverPipeli
 			}
 		}
 	}
-
+	exp_otlp_exporter := experimentsFromContext(ctx)["otlp_exporter"]
+	exporter := map[string]otel.ExporterType{
+		"metrics": otel.GMP,
+	}
+	if exp_otlp_exporter {
+		exporter = map[string]otel.ExporterType{
+			"metrics": otel.Otlp,
+		}
+	}
 	return []otel.ReceiverPipeline{{
 		Receiver: prometheusToOtelComponent(r),
 		Processors: map[string][]otel.Component{
@@ -95,9 +103,7 @@ func (r PrometheusMetrics) Pipelines(ctx context.Context) ([]otel.ReceiverPipeli
 				otel.GroupByGMPAttrs_OTTL(),
 			},
 		},
-		ExporterTypes: map[string]otel.ExporterType{
-			"metrics": otel.GMP,
-		},
+		ExporterTypes: exporter,
 		ResourceDetectionModes: map[string]otel.ResourceDetectionMode{
 			"metrics": otel.None,
 		},
