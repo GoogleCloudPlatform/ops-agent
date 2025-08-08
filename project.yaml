@@ -56,6 +56,9 @@ targets:
       aarch64:
         test_distros:
           representative:
+          - rocky-linux-cloud:rocky-linux-8-arm64
+          exhaustive:
+          - rhel-cloud:rhel-8-arm64
           - rocky-linux-cloud:rocky-linux-8-optimized-gcp-arm64
   jammy:
     os_versions: [ubuntu-22.04*]
