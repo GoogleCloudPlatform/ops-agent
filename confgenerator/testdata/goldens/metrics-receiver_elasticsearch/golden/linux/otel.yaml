@@ -53,17 +53,36 @@ processors:
         metric_names:
         - otelcol_process_uptime
         - otelcol_process_memory_rss
+        - otelcol_exporter_sent_log_records
+        - otelcol_exporter_send_failed_log_records
         - grpc.client.attempt.duration
         - googlecloudmonitoring/point_count
   filter/otel_2:
+    metrics:
+      datapoint:
+      - metric.name == "grpc.client.attempt.duration.logging_count" and (not IsMatch(datapoint.attributes["grpc.target"], "logging.googleapis"))
+      - metric.name == "grpc.client.attempt.duration.monitoring_count" and (not IsMatch(datapoint.attributes["grpc.target"], "monitoring.googleapis"))
+  filter/otel_3:
     metrics:
       include:
         match_type: strict
         metric_names:
         - otelcol_process_uptime
         - otelcol_process_memory_rss
-        - grpc.client.attempt.duration_count
+        - otelcol_exporter_sent_log_records
+        - otelcol_exporter_send_failed_log_records
+        - grpc.client.attempt.duration.logging_count
+        - grpc.client.attempt.duration.monitoring_count
         - googlecloudmonitoring/point_count
+  filter/otel_5:
+    metrics:
+      include:
+        match_type: strict
+        metric_names:
+        - agent.googleapis.com/agent/memory_usage
+        - agent.googleapis.com/agent/uptime
+        - agent.googleapis.com/agent/api_request_count
+        - agent.googleapis.com/agent/monitoring/point_count
   metricstransform/elasticsearch_2:
     transforms:
     - action: update
@@ -398,8 +417,44 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/otel_3:
+  metricstransform/otel_4:
     transforms:
+    - action: insert
+      include: otelcol_exporter_send_failed_log_records
+      new_name: agent/log_entry_retry_count
+      operations:
+      - action: toggle_scalar_data_type
+      - action: add_label
+        new_label: response_code
+        new_value: "400"
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+    - action: update
+      include: otelcol_exporter_sent_log_records
+      new_name: agent/log_entry_count
+      operations:
+      - action: toggle_scalar_data_type
+      - action: add_label
+        new_label: response_code
+        new_value: "200"
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+    - action: update
+      include: otelcol_exporter_send_failed_log_records
+      new_name: agent/log_entry_count
+      operations:
+      - action: toggle_scalar_data_type
+      - action: add_label
+        new_label: response_code
+        new_value: "400"
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
     - action: update
       include: otelcol_process_uptime
       new_name: agent/uptime
@@ -420,7 +475,7 @@ processors:
         aggregation_type: sum
         label_set: []
     - action: update
-      include: grpc.client.attempt.duration_count
+      include: grpc.client.attempt.duration.monitoring_count
       new_name: agent/api_request_count
       operations:
       - action: update_label
@@ -430,6 +485,54 @@ processors:
         aggregation_type: sum
         label_set:
         - state
+    - action: update
+      include: grpc.client.attempt.duration.logging_count
+      new_name: agent/request_count
+      operations:
+      - action: update_label
+        label: grpc.status
+        new_label: response_code
+      - action: update_label
+        label: response_code
+        value_actions:
+        - new_value: "409"
+          value: ABORTED
+        - new_value: "409"
+          value: ALREADY_EXISTS
+        - new_value: "499"
+          value: CANCELLED
+        - new_value: "500"
+          value: DATA_LOSS
+        - new_value: "504"
+          value: DEADLINE_EXCEEDED
+        - new_value: "400"
+          value: FAILED_PRECONDITION
+        - new_value: "500"
+          value: INTERNAL
+        - new_value: "400"
+          value: INVALID_ARGUMENT
+        - new_value: "404"
+          value: NOT_FOUND
+        - new_value: "200"
+          value: OK
+        - new_value: "400"
+          value: OUT_OF_RANGE
+        - new_value: "403"
+          value: PERMISSION_DENIED
+        - new_value: "429"
+          value: RESOURCE_EXHAUSTED
+        - new_value: "401"
+          value: UNAUTHENTICATED
+        - new_value: "503"
+          value: UNAVAILABLE
+        - new_value: "501"
+          value: UNIMPLEMENTED
+        - new_value: "500"
+          value: UNKNOWN
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
     - action: update
       include: googlecloudmonitoring/point_count
       new_name: agent/monitoring/point_count
@@ -464,7 +567,10 @@ processors:
     metric_statements:
     - context: metric
       statements:
-      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
+      - copy_metric("grpc.client.attempt.duration.logging") where name == "grpc.client.attempt.duration"
+      - copy_metric("grpc.client.attempt.duration.monitoring") where name == "grpc.client.attempt.duration"
+      - extract_count_metric(true) where name == "grpc.client.attempt.duration.logging"
+      - extract_count_metric(true) where name == "grpc.client.attempt.duration.monitoring"
 receivers:
   elasticsearch/elasticsearch:
     collection_interval: 60s
@@ -591,7 +697,9 @@ service:
       - filter/otel_0
       - transform/otel_1
       - filter/otel_2
-      - metricstransform/otel_3
+      - filter/otel_3
+      - metricstransform/otel_4
+      - filter/otel_5
       - resourcedetection/_global_0
       receivers:
       - prometheus/otel
