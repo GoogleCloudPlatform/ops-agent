@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"sort"
-	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
@@ -89,12 +88,9 @@ func (p ParseMultiline) CombinedRules() []MultilineRule {
 func (p ParseMultiline) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	// Fluent Bit multiline parser currently can't export using `message` as key.
 	// Thus we need to add one renaming component per pipeline
-	// Remove below two lines when https://github.com/fluent/fluent-bit/issues/4795 is fixed
-	var rules []string
-	for _, r := range p.CombinedRules() {
-		rules = append(rules, r.AsString())
-	}
-	parserName, parserComponent := fluentbit.ParseMultilineComponent(tag, uid, rules)
+	// Remove the rename component when https://github.com/fluent/fluent-bit/issues/4795 is fixed
+	parserName := fmt.Sprintf("multiline.%s.%s", tag, uid)
+	parserComponent := fluentbit.ParseMultilineComponent(parserName, p.CombinedRules())
 	filter := fluentbit.Component{
 		Kind: "FILTER",
 		Config: map[string]string{
@@ -389,16 +385,7 @@ func (p LoggingProcessorParseRegexComplex) Components(ctx context.Context, tag, 
 	return components
 }
 
-type MultilineRule struct {
-	StateName string
-	Regex     string
-	NextState string
-}
-
-func (r MultilineRule) AsString() string {
-	escapedRegex := strings.ReplaceAll(r.Regex, `"`, `\"`)
-	return fmt.Sprintf(`"%s"    "%s"    "%s"`, r.StateName, escapedRegex, r.NextState)
-}
+type MultilineRule = fluentbit.MultilineRule
 
 // A LoggingProcessorParseMultilineRegex applies a set of regex rules to the specified lines, storing the named capture groups as keys in the log record.
 //
@@ -422,10 +409,6 @@ type LoggingProcessorParseMultilineRegex struct {
 
 func (p LoggingProcessorParseMultilineRegex) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	multilineParserName := fmt.Sprintf("%s.%s.multiline", tag, uid)
-	rules := [][2]string{}
-	for _, rule := range p.Rules {
-		rules = append(rules, [2]string{"rule", rule.AsString()})
-	}
 
 	filter := fluentbit.Component{
 		Kind: "FILTER",
@@ -441,16 +424,13 @@ func (p LoggingProcessorParseMultilineRegex) Components(ctx context.Context, tag
 		filter.Config["Multiline.Key_Content"] = p.Field
 	}
 
-	multilineParser := fluentbit.Component{
-		Kind: "MULTILINE_PARSER",
-		Config: map[string]string{
-			"Name": multilineParserName,
-			"Type": "regex",
+	return append(
+		[]fluentbit.Component{
+			filter,
+			fluentbit.ParseMultilineComponent(multilineParserName, p.Rules),
 		},
-		OrderedConfig: rules,
-	}
-
-	return append([]fluentbit.Component{filter, multilineParser}, p.LoggingProcessorParseRegexComplex.Components(ctx, tag, uid)...)
+		p.LoggingProcessorParseRegexComplex.Components(ctx, tag, uid)...,
+	)
 }
 
 func init() {

@@ -72,12 +72,12 @@ func (r LoggingReceiverFiles) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 }
 
 type LoggingReceiverFilesMixin struct {
-	IncludePaths            []string        `yaml:"include_paths,omitempty"`
-	ExcludePaths            []string        `yaml:"exclude_paths,omitempty"`
-	WildcardRefreshInterval *time.Duration  `yaml:"wildcard_refresh_interval,omitempty" validate:"omitempty,min=1s,multipleof_time=1s"`
-	MultilineRules          []MultilineRule `yaml:"-"`
-	BufferInMemory          bool            `yaml:"-"`
-	RecordLogFilePath       *bool           `yaml:"record_log_file_path,omitempty"`
+	IncludePaths            []string                  `yaml:"include_paths,omitempty"`
+	ExcludePaths            []string                  `yaml:"exclude_paths,omitempty"`
+	WildcardRefreshInterval *time.Duration            `yaml:"wildcard_refresh_interval,omitempty" validate:"omitempty,min=1s,multipleof_time=1s"`
+	MultilineRules          []fluentbit.MultilineRule `yaml:"-"`
+	BufferInMemory          bool                      `yaml:"-"`
+	RecordLogFilePath       *bool                     `yaml:"record_log_file_path,omitempty"`
 }
 
 func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
@@ -142,22 +142,11 @@ func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) [
 		// Configure multiline in the input component;
 		// This is necessary, since using the multiline filter will not work
 		// if a multiline message spans between two chunks.
-		rules := [][2]string{}
-		for _, rule := range r.MultilineRules {
-			rules = append(rules, [2]string{"rule", rule.AsString()})
-		}
-
 		parserName := fmt.Sprintf("multiline.%s", tag)
 
-		c = append(c, fluentbit.Component{
-			Kind: "MULTILINE_PARSER",
-			Config: map[string]string{
-				"name":          parserName,
-				"type":          "regex",
-				"flush_timeout": "5000",
-			},
-			OrderedConfig: rules,
-		})
+		c = append(c,
+			fluentbit.ParseMultilineComponent(parserName, r.MultilineRules),
+		)
 		// See https://docs.fluentbit.io/manual/pipeline/inputs/tail#multiline-core-v1.8
 		config["multiline.parser"] = parserName
 
