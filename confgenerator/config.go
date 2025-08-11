@@ -605,9 +605,8 @@ type MetricsProcessorMerger interface {
 
 type InternalLoggingProcessorMerger interface {
 	// MergeInternalLoggingProcessor attempts to merge p into the current receiver.
-	// It returns the new receiver; and true if the processor has been merged
-	// into the receiver completely
-	MergeInternalLoggingProcessor(p InternalLoggingProcessor) (InternalLoggingReceiver, bool)
+	// It returns the new receiver; and a potentially modified processor or nil.
+	MergeInternalLoggingProcessor(p InternalLoggingProcessor) (InternalLoggingReceiver, InternalLoggingProcessor)
 }
 
 type MetricsReceiver interface {
@@ -1081,6 +1080,7 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]pipelineInstan
 				Component
 			}
 			for _, prID := range p.ProcessorIDs {
+				// TODO: Support InternalLoggingProcessorMerger once we have anything that can be merged.
 				processor, ok := l.Processors[prID]
 				if !ok {
 					processor, ok = LegacyBuiltinProcessors[prID]

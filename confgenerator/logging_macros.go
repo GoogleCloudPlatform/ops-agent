@@ -47,24 +47,7 @@ func (cr loggingReceiverMacroAdapter[LRM]) Type() string {
 }
 
 func (cr loggingReceiverMacroAdapter[LRM]) Expand(ctx context.Context) (InternalLoggingReceiver, []InternalLoggingProcessor) {
-	receiver, processors := cr.ReceiverMacro.Expand(ctx)
-
-	// Merge compatible processors into receiver.
-	notMergedProcessors := []InternalLoggingProcessor{}
-	canMerge := true
-	for _, p := range processors {
-		if mr, ok := receiver.(InternalLoggingProcessorMerger); ok && canMerge {
-			receiver, ok = mr.MergeInternalLoggingProcessor(p)
-			if ok {
-				// Continue when the receiver completely merged the processor
-				continue
-			}
-		}
-		canMerge = false
-		notMergedProcessors = append(notMergedProcessors, p)
-	}
-
-	return receiver, notMergedProcessors
+	return cr.ReceiverMacro.Expand(ctx)
 }
 
 func (cr loggingReceiverMacroAdapter[LRM]) Components(ctx context.Context, tag string) []fluentbit.Component {
@@ -126,9 +109,13 @@ func (cp loggingProcessorMacroAdapter[LPM]) Type() string {
 	return cp.ProcessorMacro.Type()
 }
 
+func (cp loggingProcessorMacroAdapter[LPM]) Expand(ctx context.Context) []InternalLoggingProcessor {
+	return cp.ProcessorMacro.Expand(ctx)
+}
+
 func (cp loggingProcessorMacroAdapter[LPM]) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	var c []fluentbit.Component
-	for _, p := range cp.ProcessorMacro.Expand(ctx) {
+	for _, p := range cp.Expand(ctx) {
 		c = append(c, p.Components(ctx, tag, uid)...)
 	}
 	return c
@@ -136,7 +123,7 @@ func (cp loggingProcessorMacroAdapter[LPM]) Components(ctx context.Context, tag 
 
 func (cp loggingProcessorMacroAdapter[LPM]) Processors(ctx context.Context) ([]otel.Component, error) {
 	var processors []otel.Component
-	for _, lp := range cp.ProcessorMacro.Expand(ctx) {
+	for _, lp := range cp.Expand(ctx) {
 		if p, ok := any(lp).(OTelProcessor); ok {
 			c, err := p.Processors(ctx)
 			if err != nil {

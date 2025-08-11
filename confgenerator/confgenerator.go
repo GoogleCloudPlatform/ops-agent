@@ -131,11 +131,45 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 	return otelConfig, nil
 }
 
-func (p pipelineInstance) fluentBitComponents(ctx context.Context) (fbSource, error) {
-	receiver, ok := p.receiver.(LoggingReceiver)
+func (p pipelineInstance) simplifiedLoggingComponents(ctx context.Context) (InternalLoggingReceiver, []InternalLoggingProcessor, error) {
+	receiver, ok := p.receiver.(InternalLoggingReceiver)
 	if !ok {
-		return fbSource{}, fmt.Errorf("%q is not a logging receiver", p.rID)
+		return nil, nil, fmt.Errorf("%q is not a logging receiver", p.rID)
 	}
+	// Expand receiver and processors
+	// TODO: What if they can be recursively expanded?
+	var processors []InternalLoggingProcessor
+	if r, ok := p.receiver.(LoggingReceiverMacro); ok {
+		receiver, processors = r.Expand(ctx)
+	}
+	for _, processorItem := range p.processors {
+		processor, ok := processorItem.Component.(InternalLoggingProcessor)
+		if !ok {
+			return nil, nil, fmt.Errorf("logging processor %q is incompatible with a receiver of type %q", processorItem.id, p.receiver.Type())
+		}
+		if p, ok := processor.(LoggingProcessorMacro); ok {
+			processors = append(processors, p.Expand(ctx)...)
+			continue
+		}
+		processors = append(processors, processor)
+	}
+	// Now that receiver and processors are all expanded, try merging them.
+	mr, ok := receiver.(InternalLoggingProcessorMerger)
+	if !ok {
+		return receiver, processors, nil
+	}
+	for len(processors) > 0 {
+		receiver, processors[0] = mr.MergeInternalLoggingProcessor(processors[0])
+		if processors[0] != nil {
+			break
+		}
+		processors = processors[1:]
+	}
+	// Now receiver has been merged as much as possible.
+	return receiver, processors, nil
+}
+
+func (p pipelineInstance) fluentBitComponents(ctx context.Context) (fbSource, error) {
 	tag := fmt.Sprintf("%s.%s", p.pID, p.rID)
 
 	// For fluent_forward we create the tag in the following format:
@@ -155,7 +189,7 @@ func (p pipelineInstance) fluentBitComponents(ctx context.Context) (fbSource, er
 	// For an example testing collisions in receiver_ids, see:
 	//
 	// testdata/valid/linux/logging-receiver_forward_multiple_receivers_conflicting_id
-	if receiver.Type() == "fluent_forward" {
+	if p.receiver.Type() == "fluent_forward" {
 		hashString := getMD5Hash(tag)
 
 		// Note that we only update the tag for the tag. The LogName will still
@@ -163,6 +197,10 @@ func (p pipelineInstance) fluentBitComponents(ctx context.Context) (fbSource, er
 		pipelineIdCleaned := strings.ReplaceAll(p.pID, ".", "_")
 		receiverIdCleaned := strings.ReplaceAll(p.rID, ".", "_")
 		tag = fmt.Sprintf("%s.%s.%s", hashString, pipelineIdCleaned, receiverIdCleaned)
+	}
+	receiver, processors, err := p.simplifiedLoggingComponents(ctx)
+	if err != nil {
+		return fbSource{}, err
 	}
 	var components []fluentbit.Component
 	receiverComponents := receiver.Components(ctx, tag)
@@ -173,29 +211,22 @@ func (p pipelineInstance) fluentBitComponents(ctx context.Context) (fbSource, er
 	// of the tag.
 	globSuffix := ""
 	regexSuffix := ""
-	if receiver.Type() == "fluent_forward" {
+	if p.receiver.Type() == "fluent_forward" {
 		regexSuffix = `\..*`
 		globSuffix = `.*`
 	}
 	tagRegex := regexp.QuoteMeta(tag) + regexSuffix
 	tag = tag + globSuffix
 
-	for i, processorItem := range p.processors {
-		processor, ok := processorItem.Component.(LoggingProcessor)
-		if !ok {
-			return fbSource{}, fmt.Errorf("logging processor %q is incompatible with a receiver of type %q", processorItem.id, receiver.Type())
-		}
+	for i, processor := range processors {
 		processorComponents := processor.Components(ctx, tag, strconv.Itoa(i))
-		if err := processUserDefinedMultilineParser(i, processorItem.id, receiver, processor, receiverComponents, processorComponents); err != nil {
-			return fbSource{}, err
-		}
 		components = append(components, processorComponents...)
 	}
-	components = append(components, setLogNameComponents(ctx, tag, p.rID, receiver.Type())...)
+	components = append(components, setLogNameComponents(ctx, tag, p.rID, p.receiver.Type())...)
 
 	// Logs ingested using the fluent_forward receiver must add the existing_tag
 	// on the record to the LogName. This is done with a Lua filter.
-	if receiver.Type() == "fluent_forward" {
+	if p.receiver.Type() == "fluent_forward" {
 		components = append(components, fluentbit.LuaFilterComponents(tag, addLogNameLuaFunction, addLogNameLuaScriptContents)...)
 	}
 	return fbSource{
@@ -312,33 +343,6 @@ func contains(s []string, str string) bool {
 	}
 
 	return false
-}
-
-func processUserDefinedMultilineParser(i int, pID string, receiver LoggingReceiver, processor LoggingProcessor, receiverComponents []fluentbit.Component, processorComponents []fluentbit.Component) error {
-	var multilineParserNames []string
-	if processor.Type() != "parse_multiline" {
-		return nil
-	}
-	for _, p := range processorComponents {
-		if p.Kind == "MULTILINE_PARSER" {
-			multilineParserNames = append(multilineParserNames, p.Config["name"])
-		}
-	}
-	allowedMultilineReceiverTypes := []string{"files"}
-	for _, r := range receiverComponents {
-		if len(multilineParserNames) != 0 &&
-			!contains(allowedMultilineReceiverTypes, receiver.Type()) {
-			return fmt.Errorf(`processor %q with type "parse_multiline" can only be applied on receivers with type "files"`, pID)
-		}
-		if len(multilineParserNames) != 0 {
-			r.Config["multiline.parser"] = strings.Join(multilineParserNames, ",")
-		}
-
-	}
-	if i != 0 {
-		return fmt.Errorf(`at most one logging processor with type "parse_multiline" is allowed in the pipeline. A logging processor with type "parse_multiline" must be right after a logging receiver with type "files"`)
-	}
-	return nil
 }
 
 func sliceContains(s []string, v string) bool {

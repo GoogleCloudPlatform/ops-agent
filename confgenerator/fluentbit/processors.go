@@ -24,15 +24,14 @@ import (
 )
 
 // ParseMultilineComponent constitutes the mulltiline_parser components.
-func ParseMultilineComponent(tag string, uid string, languageRules []string) []Component {
-	var components []Component
+func ParseMultilineComponent(tag string, uid string, languageRules []string) (string, Component) {
 	multilineParserName := fmt.Sprintf("multiline.%s.%s", tag, uid)
 	rules := [][2]string{}
 	for _, rule := range languageRules {
 		rules = append(rules, [2]string{"rule", rule})
 	}
 
-	multilineParser := Component{
+	return multilineParserName, Component{
 		Kind: "MULTILINE_PARSER",
 		Config: map[string]string{
 			"name":          multilineParserName,
@@ -41,8 +40,6 @@ func ParseMultilineComponent(tag string, uid string, languageRules []string) []C
 		},
 		OrderedConfig: rules,
 	}
-	components = append(components, multilineParser)
-	return components
 }
 
 // TranslationComponents translates SrcVal on key src to DestVal on key dest, if the dest key does not exist.

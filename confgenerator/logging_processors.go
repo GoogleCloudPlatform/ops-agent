@@ -44,48 +44,72 @@ func (r ParseMultiline) Type() string {
 	return "parse_multiline"
 }
 
-var multilineRulesLanguageMap = map[string][]string{
+var multilineRulesLanguageMap = map[string][]MultilineRule{
 	// Below is the working java rules provided by fluentbit team: https://github.com/fluent/fluent-bit/issues/4611
 	// Move to built-in java support, when upstream fixes the issue
-	"java": {`"start_state, java_start_exception"  "/(?:Exception|Error|Throwable|V8 errors stack trace)[:\r\n]/" "java_after_exception"`,
-		`"java_nested_exception" "/(?:Exception|Error|Throwable|V8 errors stack trace)[:\r\n]/" "java_after_exception"`,
-		`"java_after_exception" "/^[\t ]*nested exception is:[\\t ]*/" "java_nested_exception"`,
-		`"java_after_exception" "/^[\r\n]*$/" "java_after_exception"`,
-		`"java_after_exception" "/^[\t ]+(?:eval )?at /" "java_after_exception"`,
-		`"java_after_exception" "/^[\t ]+--- End of inner exception stack trace ---$/" "java_after_exception"`,
-		`"java_after_exception" "/^--- End of stack trace from previous (?x:)location where exception was thrown ---$/" "java_after_exception"`,
-		`"java_after_exception" "/^[\t ]*(?:Caused by|Suppressed):/" "java_after_exception"`,
-		`"java_after_exception" "/^[\t ]*... \d+ (?:more|common frames omitted)/" "java_after_exception"`},
-	"python": {`"start_state, python_start_exception" "/Traceback \(most recent call last\):$/" "python"`,
-		`"python" "/^[\t ]+File /" "python_code"`,
-		`"python_code" "/[^\t ]/" "python"`,
-		`"python" "/^(?:[^\s.():]+\.)*[^\s.():]+:/" "python_start_exception"`},
-	"go": {`"start_state" "/\bpanic: /" "go_after_panic"`,
-		`"start_state" "/http: panic serving/" "go_goroutine"`,
-		`"go_after_panic" "/^$/" "go_goroutine"`,
-		`"go_after_panic, go_after_signal, go_frame_1" "/^$/" "go_goroutine"`,
-		`"go_after_panic" "/^\[signal /" "go_after_signal"`,
-		`"go_goroutine" "/^goroutine \d+ \[[^\]]+\]:$/" "go_frame_1"`,
-		`"go_frame_1" "/^(?:[^\s.:]+\.)*[^\s.():]+\(|^created by /" "go_frame_2"`,
-		`"go_frame_2" "/^\s/" "go_frame_1"`},
+	"java": []MultilineRule{
+		{"start_state, java_start_exception", `/(?:Exception|Error|Throwable|V8 errors stack trace)[:\r\n]/`, "java_after_exception"},
+		{"java_nested_exception", `/(?:Exception|Error|Throwable|V8 errors stack trace)[:\r\n]/`, "java_after_exception"},
+		{"java_after_exception", `/^[\t ]*nested exception is:[\\t ]*/`, "java_nested_exception"},
+		{"java_after_exception", `/^[\r\n]*$/`, "java_after_exception"},
+		{"java_after_exception", `/^[\t ]+(?:eval )?at /`, "java_after_exception"},
+		{"java_after_exception", `/^[\t ]+--- End of inner exception stack trace ---$/`, "java_after_exception"},
+		{"java_after_exception", `/^--- End of stack trace from previous (?x:)location where exception was thrown ---$/`, "java_after_exception"},
+		{"java_after_exception", `/^[\t ]*(?:Caused by|Suppressed):/`, "java_after_exception"},
+		{"java_after_exception", `/^[\t ]*... \d+ (?:more|common frames omitted)/`, "java_after_exception"},
+	},
+	"python": []MultilineRule{
+		{"start_state, python_start_exception", `/Traceback \(most recent call last\):$/`, "python"},
+		{"python", `/^[\t ]+File /`, "python_code"},
+		{"python_code", `/[^\t ]/`, "python"},
+		{"python", `/^(?:[^\s.():]+\.)*[^\s.():]+:/`, "python_start_exception"},
+	},
+	"go": []MultilineRule{
+		{"start_state", `/\bpanic: /`, "go_after_panic"},
+		{"start_state", `/http: panic serving/`, "go_goroutine"},
+		{"go_after_panic", `/^$/`, "go_goroutine"},
+		{"go_after_panic, go_after_signal, go_frame_1", `/^$/`, "go_goroutine"},
+		{"go_after_panic", `/^\[signal /`, "go_after_signal"},
+		{"go_goroutine", `/^goroutine \d+ \[[^\]]+\]:$/`, "go_frame_1"},
+		{"go_frame_1", `/^(?:[^\s.:]+\.)*[^\s.():]+\(|^created by /`, "go_frame_2"},
+		{"go_frame_2", `/^\s/`, "go_frame_1"},
+	},
 }
 
-func (p ParseMultiline) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	var components []fluentbit.Component
-	// Fluent Bit multiline parser currently can't export using `message` as key.
-	// Thus we need to add one renaming component per pipeline
-	// Remove below two lines when https://github.com/fluent/fluent-bit/issues/4795 is fixed
-	renameLogToMessage := modify.NewRenameOptions("log", "message")
-	components = append(components, renameLogToMessage.Component(tag))
-	var combinedRules []string
+func (p ParseMultiline) CombinedRules() []MultilineRule {
+	var combinedRules []MultilineRule
 	for _, g := range p.MultilineGroups {
 		if g.Type == "language_exceptions" {
 			combinedRules = append(combinedRules, multilineRulesLanguageMap[g.Language]...)
 		}
 	}
-	component := fluentbit.ParseMultilineComponent(tag, uid, combinedRules)
-	components = append(components, component...)
-	return components
+	return combinedRules
+}
+
+func (p ParseMultiline) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
+	// Fluent Bit multiline parser currently can't export using `message` as key.
+	// Thus we need to add one renaming component per pipeline
+	// Remove below two lines when https://github.com/fluent/fluent-bit/issues/4795 is fixed
+	var rules []string
+	for _, r := range p.CombinedRules() {
+		rules = append(rules, r.AsString())
+	}
+	parserName, parserComponent := fluentbit.ParseMultilineComponent(tag, uid, rules)
+	filter := fluentbit.Component{
+		Kind: "FILTER",
+		Config: map[string]string{
+			"Name":                  "multiline",
+			"Match":                 tag,
+			"Multiline.Key_Content": "message",
+			"Multiline.Parser":      parserName,
+		},
+	}
+	// TODO: Refactor to share an implementation with LoggingReceiverFilesMixin.Components
+	return []fluentbit.Component{
+		filter,
+		parserComponent,
+		modify.NewRenameOptions("log", "message").Component(tag),
+	}
 }
 
 func init() {

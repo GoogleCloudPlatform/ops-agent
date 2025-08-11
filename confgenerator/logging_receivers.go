@@ -59,6 +59,10 @@ func (r LoggingReceiverFiles) mixin() LoggingReceiverFilesMixin {
 	}
 }
 
+func (r LoggingReceiverFiles) Expand(_ context.Context) (InternalLoggingReceiver, []InternalLoggingProcessor) {
+	return r.mixin(), nil
+}
+
 func (r LoggingReceiverFiles) Components(ctx context.Context, tag string) []fluentbit.Component {
 	return r.mixin().Components(ctx, tag)
 }
@@ -74,7 +78,6 @@ type LoggingReceiverFilesMixin struct {
 	MultilineRules          []MultilineRule `yaml:"-"`
 	BufferInMemory          bool            `yaml:"-"`
 	RecordLogFilePath       *bool           `yaml:"record_log_file_path,omitempty"`
-	MergeMultilineRules     bool            `yaml:"-"`
 }
 
 func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
@@ -215,14 +218,24 @@ func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.Receiv
 	}}, nil
 }
 
-func (r LoggingReceiverFilesMixin) MergeInternalLoggingProcessor(p InternalLoggingProcessor) (InternalLoggingReceiver, bool) {
-	if ep, ok := p.(LoggingProcessorParseMultilineRegex); ok && r.MergeMultilineRules {
-		if len(ep.Rules) > 0 {
-			r.MultilineRules = ep.Rules
-			return r, true
-		}
+func (r LoggingReceiverFilesMixin) MergeInternalLoggingProcessor(p InternalLoggingProcessor) (InternalLoggingReceiver, InternalLoggingProcessor) {
+	if len(r.MultilineRules) > 0 {
+		// Only allow merging once.
+		return r, p
 	}
-	return r, false
+	if ep, ok := p.(LoggingProcessorParseMultilineRegex); ok {
+		r.MultilineRules = ep.Rules
+		ep.Rules = nil
+		if len(ep.LoggingProcessorParseRegexComplex.Parsers) == 0 {
+			return r, nil
+		}
+		return r, ep
+	}
+	if ep, ok := p.(*ParseMultiline); ok {
+		r.MultilineRules = ep.CombinedRules()
+		return r, nil
+	}
+	return r, p
 }
 
 func init() {

@@ -299,7 +299,6 @@ func loggingReceiverFilesMixinElasticsearchJson() confgenerator.LoggingReceiverF
 			"/var/log/elasticsearch/*_index_indexing_slowlog.json",
 			"/var/log/elasticsearch/*_audit.json",
 		},
-		MergeMultilineRules: true,
 	}
 }
 
