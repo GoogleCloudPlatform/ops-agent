@@ -11,6 +11,8 @@ exporters:
     metric:
       add_metric_suffixes: false
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
+extensions:
+  googleclientauth: {}
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
@@ -507,6 +509,8 @@ receivers:
         - targets:
           - 0.0.0.0:20201
 service:
+  extensions:
+  - googleclientauth
   pipelines:
     metrics/default__pipeline_hostmetrics:
       exporters:
@@ -557,6 +561,7 @@ service:
       receivers:
       - otlp/otlp
   telemetry:
+    logs: {}
     metrics:
       readers:
       - pull:

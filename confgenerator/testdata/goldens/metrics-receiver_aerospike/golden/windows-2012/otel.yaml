@@ -15,6 +15,8 @@ exporters:
       service_resource_labels: false
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
+extensions:
+  googleclientauth: {}
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
@@ -625,6 +627,8 @@ receivers:
       - _Total
       object: SQLServer:Databases
 service:
+  extensions:
+  - googleclientauth
   pipelines:
     metrics/aerospike_aerospike:
       exporters:
@@ -698,6 +702,7 @@ service:
       receivers:
       - prometheus/otel
   telemetry:
+    logs: {}
     metrics:
       readers:
       - pull:

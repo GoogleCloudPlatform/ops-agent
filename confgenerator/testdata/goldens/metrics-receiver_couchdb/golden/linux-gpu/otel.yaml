@@ -15,6 +15,8 @@ exporters:
       service_resource_labels: false
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
+extensions:
+  googleclientauth: {}
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
@@ -537,6 +539,8 @@ receivers:
         - targets:
           - 0.0.0.0:20201
 service:
+  extensions:
+  - googleclientauth
   pipelines:
     metrics/couchdb_couchdb:
       exporters:
@@ -597,6 +601,7 @@ service:
       receivers:
       - prometheus/otel
   telemetry:
+    logs: {}
     metrics:
       readers:
       - pull:

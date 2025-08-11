@@ -15,6 +15,8 @@ exporters:
       service_resource_labels: false
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
+extensions:
+  googleclientauth: {}
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
@@ -617,6 +619,8 @@ receivers:
     collection_interval: 60s
     endpoint: localhost:2181
 service:
+  extensions:
+  - googleclientauth
   pipelines:
     metrics/default__pipeline_hostmetrics:
       exporters:
@@ -690,6 +694,7 @@ service:
       receivers:
       - zookeeper/zookeeper
   telemetry:
+    logs: {}
     metrics:
       readers:
       - pull:

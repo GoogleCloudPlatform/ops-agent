@@ -112,8 +112,8 @@ type ModularConfig struct {
 	LogLevel          string
 	ReceiverPipelines map[string]ReceiverPipeline
 	Pipelines         map[string]Pipeline
-
-	Exporters map[ExporterType]Component
+	Extensions        map[string]interface{}
+	Exporters         map[ExporterType]Component
 
 	// Test-only options:
 	// Don't generate any self-metrics
@@ -129,20 +129,22 @@ type ModularConfig struct {
 //
 //	receivers: [hostmetrics/mypipe]
 //	processors: [filter/mypipe_1, metrics_filter/mypipe_2, resourcedetection/_global_0]
+//	extensions: [googleclientauth]
 //	exporters: [googlecloud]
 func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 	pl := platform.FromContext(ctx)
 	receivers := map[string]interface{}{}
 	processors := map[string]interface{}{}
 	exporters := map[string]interface{}{}
+	extensions := map[string]interface{}{}
 	exporterNames := map[ExporterType]string{}
 	pipelines := map[string]interface{}{}
-	service := map[string]map[string]interface{}{
+	service := map[string]interface{}{
 		// service::telemetry::metrics::address setting is ignored in otel v0.123.0.
 		// A prometheus reader needs to be explicitly configured to replace service::telemetry::metrics::address.
 		// See: https://opentelemetry.io/docs/collector/internal-telemetry/#configure-internal-metrics for details.
 		"pipelines": pipelines,
-		"telemetry": {
+		"telemetry": map[string]interface{}{
 			"metrics": map[string]interface{}{
 				"readers": []map[string]interface{}{{
 					"pull": map[string]interface{}{
@@ -164,8 +166,10 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 		},
 	}
 	if c.DisableMetrics {
-		service["telemetry"]["metrics"] = map[string]interface{}{
-			"level": "none",
+		if telemetryMap, ok := service["telemetry"].(map[string]interface{}); ok {
+			telemetryMap["metrics"] = map[string]interface{}{
+				"level": "none",
+			}
 		}
 	}
 	logs := map[string]any{}
@@ -175,15 +179,24 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 	if c.JSONLogs {
 		logs["encoding"] = "json"
 	}
-	if len(logs) > 0 {
-		service["telemetry"]["logs"] = logs
+	if telemetryMap, ok := service["telemetry"].(map[string]interface{}); ok {
+		telemetryMap["logs"] = logs
 	}
 
+	if len(c.Extensions) > 0 {
+		extensionsList := []string{}
+		for extensionName := range c.Extensions {
+			extensions[extensionName] = c.Extensions[extensionName]
+			extensionsList = append(extensionsList, extensionName)
+		}
+		service["extensions"] = extensionsList
+	}
 	configMap := map[string]interface{}{
 		"receivers":  receivers,
 		"processors": processors,
 		"exporters":  exporters,
 		"service":    service,
+		"extensions": extensions,
 	}
 
 	resourceDetectionProcessors := map[ResourceDetectionMode]Component{
