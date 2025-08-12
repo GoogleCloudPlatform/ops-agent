@@ -131,21 +131,21 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 	return otelConfig, nil
 }
 
-func (p pipelineInstance) simplifiedLoggingComponents(ctx context.Context) (InternalLoggingReceiver, []InternalLoggingProcessor, error) {
-	receiver, ok := p.receiver.(InternalLoggingReceiver)
+func (p PipelineInstance) simplifiedLoggingComponents(ctx context.Context) (InternalLoggingReceiver, []InternalLoggingProcessor, error) {
+	receiver, ok := p.Receiver.(InternalLoggingReceiver)
 	if !ok {
-		return nil, nil, fmt.Errorf("%q is not a logging receiver", p.rID)
+		return nil, nil, fmt.Errorf("%q is not a logging receiver", p.RID)
 	}
 	// Expand receiver and processors
 	// TODO: What if they can be recursively expanded?
 	var processors []InternalLoggingProcessor
-	if r, ok := p.receiver.(LoggingReceiverMacro); ok {
+	if r, ok := p.Receiver.(LoggingReceiverMacro); ok {
 		receiver, processors = r.Expand(ctx)
 	}
-	for _, processorItem := range p.processors {
+	for _, processorItem := range p.Processors {
 		processor, ok := processorItem.Component.(InternalLoggingProcessor)
 		if !ok {
-			return nil, nil, fmt.Errorf("logging processor %q is incompatible with a receiver of type %q", processorItem.id, p.receiver.Type())
+			return nil, nil, fmt.Errorf("logging processor %q is incompatible with a receiver of type %q", processorItem.ID, p.Receiver.Type())
 		}
 		if p, ok := processor.(LoggingProcessorMacro); ok {
 			processors = append(processors, p.Expand(ctx)...)
@@ -173,8 +173,8 @@ func (p pipelineInstance) simplifiedLoggingComponents(ctx context.Context) (Inte
 	return receiver, processors, nil
 }
 
-func (p pipelineInstance) fluentBitComponents(ctx context.Context) (fbSource, error) {
-	tag := fmt.Sprintf("%s.%s", p.pID, p.rID)
+func (p PipelineInstance) FluentBitComponents(ctx context.Context) (fbSource, error) {
+	tag := fmt.Sprintf("%s.%s", p.PID, p.RID)
 
 	// For fluent_forward we create the tag in the following format:
 	// <hash_string>.<pipeline_id>.<receiver_id>.<existing_tag>
@@ -193,13 +193,13 @@ func (p pipelineInstance) fluentBitComponents(ctx context.Context) (fbSource, er
 	// For an example testing collisions in receiver_ids, see:
 	//
 	// testdata/valid/linux/logging-receiver_forward_multiple_receivers_conflicting_id
-	if p.receiver.Type() == "fluent_forward" {
+	if p.Receiver.Type() == "fluent_forward" {
 		hashString := getMD5Hash(tag)
 
 		// Note that we only update the tag for the tag. The LogName will still
 		// use the user defined receiver_id without this replacement.
-		pipelineIdCleaned := strings.ReplaceAll(p.pID, ".", "_")
-		receiverIdCleaned := strings.ReplaceAll(p.rID, ".", "_")
+		pipelineIdCleaned := strings.ReplaceAll(p.PID, ".", "_")
+		receiverIdCleaned := strings.ReplaceAll(p.RID, ".", "_")
 		tag = fmt.Sprintf("%s.%s.%s", hashString, pipelineIdCleaned, receiverIdCleaned)
 	}
 	receiver, processors, err := p.simplifiedLoggingComponents(ctx)
@@ -215,7 +215,7 @@ func (p pipelineInstance) fluentBitComponents(ctx context.Context) (fbSource, er
 	// of the tag.
 	globSuffix := ""
 	regexSuffix := ""
-	if p.receiver.Type() == "fluent_forward" {
+	if p.Receiver.Type() == "fluent_forward" {
 		regexSuffix = `\..*`
 		globSuffix = `.*`
 	}
@@ -226,70 +226,70 @@ func (p pipelineInstance) fluentBitComponents(ctx context.Context) (fbSource, er
 		processorComponents := processor.Components(ctx, tag, strconv.Itoa(i))
 		components = append(components, processorComponents...)
 	}
-	components = append(components, setLogNameComponents(ctx, tag, p.rID, p.receiver.Type())...)
+	components = append(components, setLogNameComponents(ctx, tag, p.RID, p.Receiver.Type())...)
 
 	// Logs ingested using the fluent_forward receiver must add the existing_tag
 	// on the record to the LogName. This is done with a Lua filter.
-	if p.receiver.Type() == "fluent_forward" {
+	if p.Receiver.Type() == "fluent_forward" {
 		components = append(components, fluentbit.LuaFilterComponents(tag, addLogNameLuaFunction, addLogNameLuaScriptContents)...)
 	}
 	return fbSource{
-		tagRegex:   tagRegex,
-		components: components,
+		TagRegex:   tagRegex,
+		Components: components,
 	}, nil
 }
 
-func (p pipelineInstance) otelComponents(ctx context.Context) (map[string]otel.ReceiverPipeline, map[string]otel.Pipeline, error) {
+func (p PipelineInstance) OTelComponents(ctx context.Context) (map[string]otel.ReceiverPipeline, map[string]otel.Pipeline, error) {
 	outR := make(map[string]otel.ReceiverPipeline)
 	outP := make(map[string]otel.Pipeline)
-	receiver, ok := p.receiver.(OTelReceiver)
+	receiver, ok := p.Receiver.(OTelReceiver)
 	if !ok {
-		return nil, nil, fmt.Errorf("%q is not an otel receiver", p.rID)
+		return nil, nil, fmt.Errorf("%q is not an otel receiver", p.RID)
 	}
 	// TODO: Add a way for receivers or processors to decide whether they're compatible with a particular config.
 	receiverPipelines, err := receiver.Pipelines(ctx)
 	if err != nil {
-		return nil, nil, fmt.Errorf("receiver %q has invalid configuration: %w", p.rID, err)
+		return nil, nil, fmt.Errorf("receiver %q has invalid configuration: %w", p.RID, err)
 	}
 	for i, receiverPipeline := range receiverPipelines {
-		receiverPipelineName := strings.ReplaceAll(p.rID, "_", "__")
+		receiverPipelineName := strings.ReplaceAll(p.RID, "_", "__")
 		if i > 0 {
 			receiverPipelineName = fmt.Sprintf("%s_%d", receiverPipelineName, i)
 		}
 
-		prefix := fmt.Sprintf("%s_%s", strings.ReplaceAll(p.pID, "_", "__"), receiverPipelineName)
-		if p.pipelineType != "metrics" {
+		prefix := fmt.Sprintf("%s_%s", strings.ReplaceAll(p.PID, "_", "__"), receiverPipelineName)
+		if p.PipelineType != "metrics" {
 			// Don't prepend for metrics pipelines to preserve old golden configs.
-			prefix = fmt.Sprintf("%s_%s", p.pipelineType, prefix)
+			prefix = fmt.Sprintf("%s_%s", p.PipelineType, prefix)
 		}
 
 		if processors, ok := receiverPipeline.Processors["logs"]; ok {
 			receiverPipeline.Processors["logs"] = append(
 				processors,
-				otelSetLogNameComponents(ctx, p.rID)...,
+				otelSetLogNameComponents(ctx, p.RID)...,
 			)
 		}
 
 		outR[receiverPipelineName] = receiverPipeline
 
 		pipeline := otel.Pipeline{
-			Type:                 p.pipelineType,
+			Type:                 p.PipelineType,
 			ReceiverPipelineName: receiverPipelineName,
 		}
 		// Check the Ops Agent receiver type.
-		if receiverPipeline.ExporterTypes[p.pipelineType] == otel.GMP {
+		if receiverPipeline.ExporterTypes[p.PipelineType] == otel.GMP {
 			// Prometheus receivers are incompatible with processors, so we need to assert that no processors are configured.
-			if len(p.processors) > 0 {
+			if len(p.Processors) > 0 {
 				return nil, nil, fmt.Errorf("prometheus receivers are incompatible with Ops Agent processors")
 			}
 		}
-		for _, processorItem := range p.processors {
+		for _, processorItem := range p.Processors {
 			processor, ok := processorItem.Component.(OTelProcessor)
 			if !ok {
-				return nil, nil, fmt.Errorf("processor %q not supported in pipeline %q", processorItem.id, p.pID)
+				return nil, nil, fmt.Errorf("processor %q not supported in pipeline %q", processorItem.ID, p.PID)
 			}
 			if processors, err := processor.Processors(ctx); err != nil {
-				return nil, nil, fmt.Errorf("processor %q has invalid configuration: %w", processorItem.id, err)
+				return nil, nil, fmt.Errorf("processor %q has invalid configuration: %w", processorItem.ID, err)
 			} else {
 				pipeline.Processors = append(pipeline.Processors, processors...)
 			}
@@ -308,10 +308,10 @@ func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]
 		return nil, nil, err
 	}
 	for _, pipeline := range pipelines {
-		if pipeline.backend != backendOTel {
+		if pipeline.Backend != BackendOTel {
 			continue
 		}
-		pipeR, pipeP, err := pipeline.otelComponents(ctx)
+		pipeR, pipeP, err := pipeline.OTelComponents(ctx)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -401,8 +401,8 @@ func addGceMetadataAttributesComponents(ctx context.Context, attributes []string
 }
 
 type fbSource struct {
-	tagRegex   string
-	components []fluentbit.Component
+	TagRegex   string
+	Components []fluentbit.Component
 }
 
 // generateFluentbitComponents generates a slice of fluentbit config sections to represent l.
@@ -425,21 +425,21 @@ func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAg
 			return nil, err
 		}
 		for _, pipeline := range pipelines {
-			if pipeline.backend != backendFluentBit {
+			if pipeline.Backend != BackendFluentBit {
 				continue
 			}
-			source, err := pipeline.fluentBitComponents(ctx)
+			source, err := pipeline.FluentBitComponents(ctx)
 			if err != nil {
 				return nil, err
 			}
 			sources = append(sources, source)
-			tags = append(tags, source.tagRegex)
+			tags = append(tags, source.TagRegex)
 		}
-		sort.Slice(sources, func(i, j int) bool { return sources[i].tagRegex < sources[j].tagRegex })
+		sort.Slice(sources, func(i, j int) bool { return sources[i].TagRegex < sources[j].TagRegex })
 		sort.Strings(tags)
 
 		for _, s := range sources {
-			out = append(out, s.components...)
+			out = append(out, s.Components...)
 		}
 		if len(tags) > 0 {
 			out = append(out, stackdriverOutputComponent(ctx, strings.Join(tags, "|"), userAgent, "2G", l.Service.Compress))

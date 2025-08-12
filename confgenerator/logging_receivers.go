@@ -78,6 +78,8 @@ type LoggingReceiverFilesMixin struct {
 	MultilineRules          []fluentbit.MultilineRule `yaml:"-"`
 	BufferInMemory          bool                      `yaml:"-"`
 	RecordLogFilePath       *bool                     `yaml:"record_log_file_path,omitempty"`
+	// In transformation test mode, the file is read exactly once from the beginning, and then the process exits.
+	TransformationTest bool `yaml:"-" tracking:"-"`
 }
 
 func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
@@ -90,12 +92,7 @@ func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) [
 		"Name": "tail",
 		"Tag":  tag,
 		// TODO: Escaping?
-		"Path": strings.Join(r.IncludePaths, ","),
-		"DB":   DBPath(tag),
-		// DB.locking specifies that the database will be accessed only by Fluent Bit.
-		// Enabling this feature helps to increase performance when accessing the database
-		// but it restrict any external tool to query the content.
-		"DB.locking":     "true",
+		"Path":           strings.Join(r.IncludePaths, ","),
 		"Read_from_Head": "True",
 		// Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
 		"Buffer_Chunk_Size": "512k",
@@ -103,21 +100,31 @@ func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) [
 		"Buffer_Max_Size": "2M",
 		// When a message is unstructured (no parser applied), append it under a key named "message".
 		"Key": "message",
-		// Increase this to 30 seconds so log rotations are handled more gracefully.
-		"Rotate_Wait": "30",
 		// Skip long lines instead of skipping the entire file when a long line exceeds buffer size.
 		"Skip_Long_Lines": "On",
-
+	}
+	if r.TransformationTest {
+		// Transformation tests exit as soon as the log is fully processed.
+		config["Exit_On_Eof"] = "True"
+	}
+	if !r.TransformationTest {
+		config["DB"] = DBPath(tag)
+		// DB.locking specifies that the database will be accessed only by Fluent Bit.
+		// Enabling this feature helps to increase performance when accessing the database
+		// but it restrict any external tool to query the content.
+		config["DB.locking"] = "true"
+		// Increase this to 30 seconds so log rotations are handled more gracefully.
+		config["Rotate_Wait"] = "30"
 		// https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
 		// Buffer in disk to improve reliability.
-		"storage.type": "filesystem",
+		config["storage.type"] = "filesystem"
 
 		// https://docs.fluentbit.io/manual/administration/backpressure#mem_buf_limit
 		// This controls how much data the input plugin can hold in memory once the data is ingested into the core.
 		// This is used to deal with backpressure scenarios (e.g: cannot flush data for some reason).
 		// When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
 		// as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
-		"Mem_Buf_Limit": "10M",
+		config["Mem_Buf_Limit"] = "10M"
 	}
 	if len(r.ExcludePaths) > 0 {
 		// TODO: Escaping?

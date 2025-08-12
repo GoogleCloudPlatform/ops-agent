@@ -960,31 +960,31 @@ func (uc *UnifiedConfig) TracesReceivers() (map[string]TracesReceiver, error) {
 type pipelineBackend int
 
 const (
-	backendOTel pipelineBackend = iota
-	backendFluentBit
+	BackendOTel pipelineBackend = iota
+	BackendFluentBit
 )
 
-type pipelineInstance struct {
-	pID, rID     string
-	pipelineType string
-	receiver     Component
-	processors   []struct {
-		id string
+type PipelineInstance struct {
+	PID, RID     string
+	PipelineType string
+	Receiver     Component
+	Processors   []struct {
+		ID string
 		Component
 	}
-	backend pipelineBackend
+	Backend pipelineBackend
 }
 
-func (pi *pipelineInstance) Types() (string, string) {
-	return pi.pipelineType, pi.receiver.Type()
+func (pi *PipelineInstance) Types() (string, string) {
+	return pi.PipelineType, pi.Receiver.Type()
 }
 
-func (uc *UnifiedConfig) metricsPipelines(ctx context.Context) ([]pipelineInstance, error) {
+func (uc *UnifiedConfig) metricsPipelines(ctx context.Context) ([]PipelineInstance, error) {
 	receivers, err := uc.MetricsReceivers()
 	if err != nil {
 		return nil, err
 	}
-	var out []pipelineInstance
+	var out []PipelineInstance
 	if uc.Metrics != nil && uc.Metrics.Service != nil {
 		for pID, p := range uc.Metrics.Service.Pipelines {
 			for _, rID := range p.ReceiverIDs {
@@ -993,7 +993,7 @@ func (uc *UnifiedConfig) metricsPipelines(ctx context.Context) ([]pipelineInstan
 					return nil, fmt.Errorf("metrics receiver %q not found", rID)
 				}
 				var processors []struct {
-					id string
+					ID string
 					Component
 				}
 				canMerge := true
@@ -1013,16 +1013,16 @@ func (uc *UnifiedConfig) metricsPipelines(ctx context.Context) ([]pipelineInstan
 					}
 					canMerge = false
 					processors = append(processors, struct {
-						id string
+						ID string
 						Component
 					}{prID, processor})
 				}
-				out = append(out, pipelineInstance{
-					pipelineType: "metrics",
-					pID:          pID,
-					rID:          rID,
-					receiver:     receiver,
-					processors:   processors,
+				out = append(out, PipelineInstance{
+					PipelineType: "metrics",
+					PID:          pID,
+					RID:          rID,
+					Receiver:     receiver,
+					Processors:   processors,
 				})
 			}
 		}
@@ -1030,12 +1030,12 @@ func (uc *UnifiedConfig) metricsPipelines(ctx context.Context) ([]pipelineInstan
 	return out, nil
 }
 
-func (uc *UnifiedConfig) tracesPipelines(ctx context.Context) ([]pipelineInstance, error) {
+func (uc *UnifiedConfig) tracesPipelines(ctx context.Context) ([]PipelineInstance, error) {
 	receivers, err := uc.TracesReceivers()
 	if err != nil {
 		return nil, err
 	}
-	var out []pipelineInstance
+	var out []PipelineInstance
 	if uc.Traces != nil && uc.Traces.Service != nil {
 		for pID, p := range uc.Traces.Service.Pipelines {
 			for _, rID := range p.ReceiverIDs {
@@ -1043,12 +1043,12 @@ func (uc *UnifiedConfig) tracesPipelines(ctx context.Context) ([]pipelineInstanc
 				if !ok {
 					return nil, fmt.Errorf("traces receiver %q not found", rID)
 				}
-				out = append(out, pipelineInstance{
-					pipelineType: "traces",
-					pID:          pID,
-					rID:          rID,
-					receiver:     receiver,
-					processors:   nil,
+				out = append(out, PipelineInstance{
+					PipelineType: "traces",
+					PID:          pID,
+					RID:          rID,
+					Receiver:     receiver,
+					Processors:   nil,
 				})
 			}
 		}
@@ -1056,7 +1056,7 @@ func (uc *UnifiedConfig) tracesPipelines(ctx context.Context) ([]pipelineInstanc
 	return out, nil
 }
 
-func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]pipelineInstance, error) {
+func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]PipelineInstance, error) {
 	l := uc.Logging
 	if l == nil {
 		return nil, nil
@@ -1067,7 +1067,7 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]pipelineInstan
 	}
 	exp_otlp := experimentsFromContext(ctx)["otlp_logging"]
 	exp_otel := l.Service.OTelLogging
-	var out []pipelineInstance
+	var out []PipelineInstance
 	for _, pID := range sortedKeys(l.Service.Pipelines) {
 		p := l.Service.Pipelines[pID]
 		for _, rID := range p.ReceiverIDs {
@@ -1076,7 +1076,7 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]pipelineInstan
 				return nil, fmt.Errorf("logging receiver %q not found", rID)
 			}
 			var processors []struct {
-				id string
+				ID string
 				Component
 			}
 			for _, prID := range p.ProcessorIDs {
@@ -1089,20 +1089,20 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]pipelineInstan
 					return nil, fmt.Errorf("processor %q not found", prID)
 				}
 				processors = append(processors, struct {
-					id string
+					ID string
 					Component
 				}{prID, processor})
 			}
-			instance := pipelineInstance{
-				pipelineType: "logs",
-				backend:      backendFluentBit,
-				pID:          pID,
-				rID:          rID,
-				receiver:     receiver,
-				processors:   processors,
+			instance := PipelineInstance{
+				PipelineType: "logs",
+				Backend:      BackendFluentBit,
+				PID:          pID,
+				RID:          rID,
+				Receiver:     receiver,
+				Processors:   processors,
 			}
 			if exp_otel || (receiver.Type() == "otlp" && exp_otlp) {
-				instance.backend = backendOTel
+				instance.Backend = BackendOTel
 			}
 			out = append(out, instance)
 		}
@@ -1110,7 +1110,7 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]pipelineInstan
 	return out, nil
 }
 
-func (uc *UnifiedConfig) Pipelines(ctx context.Context) ([]pipelineInstance, error) {
+func (uc *UnifiedConfig) Pipelines(ctx context.Context) ([]PipelineInstance, error) {
 	metricsPipelines, err := uc.metricsPipelines(ctx)
 	if err != nil {
 		return nil, err
