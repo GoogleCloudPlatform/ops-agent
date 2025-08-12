@@ -26,9 +26,9 @@
     error: "parsing time \"unparsable time\" as \"%Y-%m-%dT%H:%M\": cannot parse \"unparsable time\" as \"%Y\""
     level: warn
     msg: failed to execute statement
-    otelcol.component.id: transform/input_0
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_0
     otelcol.component.kind: processor
-    otelcol.pipeline.id: logs/input
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
     otelcol.signal: logs
     resource:
       service.instance.id: test-service-instance-id

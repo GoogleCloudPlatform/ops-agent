@@ -82,6 +82,24 @@ type LoggingReceiverFilesMixin struct {
 	TransformationTest bool `yaml:"-" tracking:"-"`
 }
 
+const stripNewlineCode = `
+local function trim_newline(s)
+    -- Check for a Windows-style carriage return and newline (\r\n)
+    if string.sub(s, -2) == "\r\n" then
+        return string.sub(s, 1, -3)
+    -- Check for a Unix/Linux-style newline (\n)
+    elseif string.sub(s, -1) == "\n" then
+        return string.sub(s, 1, -2)
+    end
+    -- If no trailing newline is found, return the original string
+    return s
+end
+function strip_newline(tag, timestamp, record)
+  record["message"] = trim_newline(record["message"])
+  return 2, timestamp, record
+end
+`
+
 func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
 		// No files -> no input.
@@ -159,6 +177,16 @@ func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) [
 
 		// multiline parser outputs to a "log" key, but we expect "message" as the output of this pipeline
 		c = append(c, modify.NewRenameOptions("log", "message").Component(tag))
+		// N.B. multiline parsers generate a trailing newline when used with tail that they *don't* generate when used as a filter
+		// https://github.com/fluent/fluent-bit/issues/4227
+		// https://github.com/fluent/fluent-bit/issues/8914
+		// https://github.com/fluent/fluent-bit/issues/9660
+		// Using a regex to remove the newline segfaults fluent-bit (sigh)
+		c = append(c, fluentbit.LuaFilterComponents(
+			tag,
+			"strip_newline",
+			stripNewlineCode,
+		)...)
 	}
 
 	c = append(c, fluentbit.Component{
@@ -182,6 +210,9 @@ func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.Receiv
 	}
 	// TODO: Configure `storage` to store file checkpoints
 	// TODO: Configure multiline rules
+	if len(r.MultilineRules) > 0 {
+		return nil, fmt.Errorf("multiline rules are not supported in otel")
+	}
 	// TODO: Support BufferInMemory
 	// OTel parses the log to `body` by default; put it in a `message` field to match fluent-bit's behavior.
 	operators = append(operators, map[string]any{

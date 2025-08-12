@@ -28,6 +28,10 @@
         go.opentelemetry.io/collector/processor/processorhelper@v0.130.0/logs.go:66
       go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
         go.opentelemetry.io/collector/consumer@v1.36.0/logs.go:27
+      go.opentelemetry.io/collector/processor/processorhelper.NewLogs.func1
+        go.opentelemetry.io/collector/processor/processorhelper@v0.130.0/logs.go:66
+      go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
+        go.opentelemetry.io/collector/consumer@v1.36.0/logs.go:27
       go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
         go.opentelemetry.io/collector/consumer@v1.36.0/logs.go:27
       go.opentelemetry.io/collector/internal/fanoutconsumer.(*logsConsumer).ConsumeLogs
@@ -42,7 +46,7 @@
     error: "could not process attribute gcp.source_location: json: cannot unmarshal string into Go struct field LogEntrySourceLocation.line of type int64"
     level: error
     msg: ConsumeLogs() failed. Enable retry_on_failure to slow down reading logs and avoid dropping.
-    otelcol.component.id: filelog/input
+    otelcol.component.id: filelog/my-log-name
     otelcol.component.kind: receiver
     otelcol.signal: logs
     resource:
@@ -60,7 +64,7 @@
     error: "could not process attribute gcp.source_location: json: cannot unmarshal string into Go struct field LogEntrySourceLocation.line of type int64"
     level: error
     msg: ConsumeLogs() failed
-    otelcol.component.id: filelog/input
+    otelcol.component.id: filelog/my-log-name
     otelcol.component.kind: receiver
     otelcol.signal: logs
     resource:
