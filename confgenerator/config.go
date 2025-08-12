@@ -593,6 +593,9 @@ type Metrics struct {
 
 type OTelReceiver interface {
 	Component
+	InternalOTelReceiver
+}
+type InternalOTelReceiver interface {
 	Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error)
 }
 
@@ -792,6 +795,9 @@ func (m *combinedReceiverMap) UnmarshalYAML(ctx context.Context, unmarshal func(
 
 type OTelProcessor interface {
 	Component
+	InternalOTelProcessor
+}
+type InternalOTelProcessor interface {
 	Processors(context.Context) ([]otel.Component, error)
 }
 

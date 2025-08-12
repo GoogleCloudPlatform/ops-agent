@@ -35,9 +35,11 @@ func setLogNameProcessor(ctx context.Context, logName string) LoggingProcessorMo
 		"logName": {
 			DefaultValue: &logName,
 		},
-		`labels."compute.googleapis.com/resource_name"`: {
+	}
+	if hostName != "" {
+		fields[`labels."compute.googleapis.com/resource_name"`] = &ModifyField{
 			DefaultValue: &hostName,
-		},
+		}
 	}
 	r, err := p.GetResource()
 	if err == nil {

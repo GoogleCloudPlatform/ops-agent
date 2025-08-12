@@ -231,13 +231,13 @@ func (t transformationTest) pipelineInstance(path string) confgenerator.Pipeline
 		ID string
 		confgenerator.Component
 	}
-	for _, p := range t {
+	for i, p := range t {
 		processors = append(processors, struct {
 			ID string
 			confgenerator.Component
 		}{
-			"processor", // only used for error messages
-			p,
+			fmt.Sprintf("processor%d", i), // only used for error messages
+			p.LoggingProcessor,
 		})
 	}
 	return confgenerator.PipelineInstance{
@@ -293,7 +293,7 @@ func testContext() context.Context {
 	pl := platform.Platform{
 		Type: platform.Linux,
 		HostInfo: &host.InfoStat{
-			Hostname:        "hostname",
+			Hostname:        "", // To remove the resource_name label. TODO: Set to "hostname" instead.
 			OS:              "linux",
 			Platform:        "linux_platform",
 			PlatformVersion: "linux_platform_version",
@@ -315,6 +315,7 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 		t.Fatal(err)
 	}
 	pi := transformationConfig.pipelineInstance(abs)
+	pi.RID = "my-log-name"
 	pi.Backend = confgenerator.BackendOTel
 	rps, pls, err := pi.OTelComponents(ctx)
 	if err != nil {
