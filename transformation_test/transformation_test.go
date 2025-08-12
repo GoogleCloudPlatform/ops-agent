@@ -314,42 +314,19 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 	if err != nil {
 		t.Fatal(err)
 	}
-	var components []otel.Component
-	for _, p := range transformationConfig {
-		if op, ok := p.LoggingProcessor.(confgenerator.OTelProcessor); ok {
-			processors, err := op.Processors(ctx)
-			if err != nil {
-				return "", fmt.Errorf("failed generating OTel processor: %#v, err: %v", p.LoggingProcessor, err)
-			}
-			components = append(components, processors...)
-		} else {
-			return "", fmt.Errorf("not an OTel processor: %#v", p.LoggingProcessor)
-		}
-	}
-
-	rp, err := confgenerator.LoggingReceiverFilesMixin{
-		IncludePaths: []string{
-			abs,
-		},
-	}.Pipelines(ctx)
+	pi := transformationConfig.pipelineInstance(abs)
+	pi.Backend = confgenerator.BackendOTel
+	rps, pls, err := pi.OTelComponents(ctx)
 	if err != nil {
 		return "", err
 	}
 
 	return otel.ModularConfig{
-		DisableMetrics: true,
-		JSONLogs:       true,
-		LogLevel:       "debug",
-		ReceiverPipelines: map[string]otel.ReceiverPipeline{
-			"input": rp[0],
-		},
-		Pipelines: map[string]otel.Pipeline{
-			"input": {
-				Type:                 "logs",
-				ReceiverPipelineName: "input",
-				Processors:           components,
-			},
-		},
+		DisableMetrics:    true,
+		JSONLogs:          true,
+		LogLevel:          "debug",
+		ReceiverPipelines: rps,
+		Pipelines:         pls,
 		Exporters: map[otel.ExporterType]otel.Component{
 			otel.OTel: {
 				Type: "googlecloud",
