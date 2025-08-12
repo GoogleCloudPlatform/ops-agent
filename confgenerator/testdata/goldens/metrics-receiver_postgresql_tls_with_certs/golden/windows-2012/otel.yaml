@@ -719,7 +719,6 @@ service:
       receivers:
       - postgresql/postgresql
   telemetry:
-    logs: {}
     metrics:
       readers:
       - pull:

@@ -613,7 +613,6 @@ service:
       receivers:
       - saphana/saphana
   telemetry:
-    logs: {}
     metrics:
       readers:
       - pull:

@@ -619,7 +619,6 @@ service:
       receivers:
       - otlp/otlp
   telemetry:
-    logs: {}
     metrics:
       readers:
       - pull:

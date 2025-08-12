@@ -605,7 +605,6 @@ service:
       receivers:
       - jmx/wildfly
   telemetry:
-    logs: {}
     metrics:
       readers:
       - pull:

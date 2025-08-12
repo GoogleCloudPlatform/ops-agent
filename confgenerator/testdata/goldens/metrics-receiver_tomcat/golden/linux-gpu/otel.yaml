@@ -603,7 +603,6 @@ service:
       receivers:
       - jmx/tomcat
   telemetry:
-    logs: {}
     metrics:
       readers:
       - pull:

@@ -179,8 +179,10 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 	if c.JSONLogs {
 		logs["encoding"] = "json"
 	}
-	if telemetryMap, ok := service["telemetry"].(map[string]interface{}); ok {
-		telemetryMap["logs"] = logs
+	if len(logs) > 0 {
+		if telemetryMap, ok := service["telemetry"].(map[string]interface{}); ok {
+			telemetryMap["logs"] = logs
+		}
 	}
 
 	if len(c.Extensions) > 0 {

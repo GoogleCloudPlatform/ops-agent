@@ -663,7 +663,6 @@ service:
       receivers:
       - prometheus/otel
   telemetry:
-    logs: {}
     metrics:
       readers:
       - pull:

@@ -733,7 +733,6 @@ service:
       receivers:
       - prometheus/prometheus
   telemetry:
-    logs: {}
     metrics:
       readers:
       - pull:

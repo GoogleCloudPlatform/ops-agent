@@ -563,7 +563,6 @@ service:
       receivers:
       - jmx/solr
   telemetry:
-    logs: {}
     metrics:
       readers:
       - pull:

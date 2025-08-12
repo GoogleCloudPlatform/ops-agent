@@ -599,7 +599,6 @@ service:
       receivers:
       - zookeeper/zookeeper
   telemetry:
-    logs: {}
     metrics:
       readers:
       - pull:

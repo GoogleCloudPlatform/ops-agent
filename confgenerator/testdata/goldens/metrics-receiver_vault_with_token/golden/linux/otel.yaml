@@ -1249,7 +1249,6 @@ service:
       receivers:
       - prometheus/vault
   telemetry:
-    logs: {}
     metrics:
       readers:
       - pull:

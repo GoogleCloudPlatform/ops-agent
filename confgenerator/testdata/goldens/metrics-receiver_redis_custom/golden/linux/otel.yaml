@@ -571,7 +571,6 @@ service:
       receivers:
       - redis/redis
   telemetry:
-    logs: {}
     metrics:
       readers:
       - pull:

@@ -600,7 +600,6 @@ service:
       receivers:
       - varnish/varnish
   telemetry:
-    logs: {}
     metrics:
       readers:
       - pull:

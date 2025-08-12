@@ -703,7 +703,6 @@ service:
       receivers:
       - rabbitmq/rabbitmq
   telemetry:
-    logs: {}
     metrics:
       readers:
       - pull:
