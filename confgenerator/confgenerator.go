@@ -154,11 +154,14 @@ func (p pipelineInstance) simplifiedLoggingComponents(ctx context.Context) (Inte
 		processors = append(processors, processor)
 	}
 	// Now that receiver and processors are all expanded, try merging them.
-	mr, ok := receiver.(InternalLoggingProcessorMerger)
-	if !ok {
-		return receiver, processors, nil
-	}
 	for len(processors) > 0 {
+		// Check if current receiver can merge processors.
+		mr, ok := receiver.(InternalLoggingProcessorMerger)
+		if !ok {
+			return receiver, processors, nil
+		}
+
+		// Attempt processor merge.
 		receiver, processors[0] = mr.MergeInternalLoggingProcessor(processors[0])
 		if processors[0] != nil {
 			break
