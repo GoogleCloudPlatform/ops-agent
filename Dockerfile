@@ -155,7 +155,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/rpm/build.sh || true &> /dev/null
+RUN ./pkg/rpm/build.sh &> /dev/null || true
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -260,7 +260,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/rpm/build.sh || true &> /dev/null
+RUN ./pkg/rpm/build.sh &> /dev/null || true
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -360,7 +360,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/deb/build.sh || true &> /dev/null
+RUN ./pkg/deb/build.sh &> /dev/null || true
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -460,7 +460,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/deb/build.sh || true &> /dev/null
+RUN ./pkg/deb/build.sh &> /dev/null || true
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -579,7 +579,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/rpm/build.sh || true &> /dev/null
+RUN ./pkg/rpm/build.sh &> /dev/null || true
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -684,7 +684,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/rpm/build.sh || true &> /dev/null
+RUN ./pkg/rpm/build.sh &> /dev/null || true
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -784,7 +784,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/deb/build.sh || true &> /dev/null
+RUN ./pkg/deb/build.sh &> /dev/null || true
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -884,7 +884,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/deb/build.sh || true &> /dev/null
+RUN ./pkg/deb/build.sh &> /dev/null || true
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -984,7 +984,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN ./pkg/deb/build.sh || true &> /dev/null
+RUN ./pkg/deb/build.sh &> /dev/null || true
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
