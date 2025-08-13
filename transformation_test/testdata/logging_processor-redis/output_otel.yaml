@@ -13,6 +13,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.257Z
   - jsonPayload:
       level: "*"
@@ -28,6 +29,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.264Z
   - jsonPayload:
       level: "*"
@@ -43,6 +45,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.264Z
   - jsonPayload:
       level: "*"
@@ -58,6 +61,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.264Z
   - jsonPayload:
       level: "*"
@@ -73,6 +77,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.265Z
   - jsonPayload:
       level: "*"
@@ -88,6 +93,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.265Z
   - jsonPayload:
       level: "*"
@@ -103,6 +109,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.265Z
   - jsonPayload:
       level: "*"
@@ -118,6 +125,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.265Z
   - jsonPayload:
       level: "*"
@@ -133,6 +141,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.265Z
   - jsonPayload:
       level: "*"
@@ -148,6 +157,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.265Z
   - jsonPayload:
       level: "*"
@@ -163,6 +173,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.265Z
   - jsonPayload:
       level: "*"
@@ -178,6 +189,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.265Z
   - jsonPayload:
       level: "*"
@@ -193,6 +205,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.265Z
   - jsonPayload:
       level: "*"
@@ -208,6 +221,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.265Z
   - jsonPayload:
       level: "*"
@@ -223,6 +237,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.265Z
   - jsonPayload:
       level: "*"
@@ -238,6 +253,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.265Z
   - jsonPayload:
       level: "*"
@@ -253,6 +269,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.265Z
   - jsonPayload:
       level: "*"
@@ -268,6 +285,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.265Z
   - jsonPayload:
       level: "*"
@@ -283,6 +301,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.267Z
   - jsonPayload:
       level: "*"
@@ -298,6 +317,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.267Z
   - jsonPayload:
       level: "*"
@@ -313,6 +333,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.267Z
   - jsonPayload:
       level: "*"
@@ -328,6 +349,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.267Z
   - jsonPayload:
       level: "*"
@@ -343,6 +365,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.267Z
   - jsonPayload:
       level: "*"
@@ -358,6 +381,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.267Z
   - jsonPayload:
       level: "*"
@@ -373,6 +397,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.267Z
   - jsonPayload:
       level: "*"
@@ -388,6 +413,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.267Z
   - jsonPayload:
       level: "*"
@@ -403,6 +429,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.267Z
   - jsonPayload:
       level: "*"
@@ -418,6 +445,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.267Z
   - jsonPayload:
       level: "*"
@@ -433,6 +461,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.267Z
   - jsonPayload:
       level: "*"
@@ -448,6 +477,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.267Z
   - jsonPayload:
       level: "*"
@@ -463,6 +493,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.267Z
   - jsonPayload:
       level: "*"
@@ -478,6 +509,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.267Z
   - jsonPayload:
       level: "*"
@@ -493,6 +525,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.267Z
   - jsonPayload:
       level: "*"
@@ -508,6 +541,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.267Z
   - jsonPayload:
       level: "*"
@@ -523,6 +557,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.267Z
   - jsonPayload:
       level: "*"
@@ -538,6 +573,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.267Z
   - jsonPayload:
       level: "*"
@@ -553,6 +589,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.267Z
   - jsonPayload:
       level: "*"
@@ -568,6 +605,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.267Z
   - jsonPayload:
       level: "*"
@@ -583,6 +621,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.267Z
   - jsonPayload:
       level: "*"
@@ -598,6 +637,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.267Z
   - jsonPayload:
       level: "*"
@@ -613,6 +653,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.267Z
   - jsonPayload:
       level: "*"
@@ -628,6 +669,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.267Z
   - jsonPayload:
       level: "*"
@@ -643,6 +685,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.267Z
   - jsonPayload:
       level: "*"
@@ -658,6 +701,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.268Z
   - jsonPayload:
       level: "*"
@@ -673,6 +717,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.268Z
   - jsonPayload:
       level: "*"
@@ -688,6 +733,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.268Z
   - jsonPayload:
       level: "*"
@@ -703,6 +749,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.268Z
   - jsonPayload:
       level: "*"
@@ -718,6 +765,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.268Z
   - jsonPayload:
       level: "*"
@@ -733,6 +781,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.268Z
   - jsonPayload:
       level: "*"
@@ -748,6 +797,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.268Z
   - jsonPayload:
       level: "*"
@@ -763,6 +813,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.268Z
   - jsonPayload:
       level: "*"
@@ -778,6 +829,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.268Z
   - jsonPayload:
       level: "*"
@@ -793,6 +845,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.268Z
   - jsonPayload:
       level: "*"
@@ -808,6 +861,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.268Z
   - jsonPayload:
       level: "*"
@@ -823,5 +877,6 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: NOTICE
     timestamp: 2025-07-19T02:08:05.268Z
   partialSuccess: true
