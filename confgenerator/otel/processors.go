@@ -589,3 +589,10 @@ func ResourceTransform(attributes map[string]string, override bool) Component {
 		Config: config,
 	}
 }
+
+func MetricStartTime() Component {
+	return Component{
+		Type:   "metricstarttime",
+		Config: map[string]string{"strategy": "subtract_initial_point"},
+	}
+}

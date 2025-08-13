@@ -64,6 +64,8 @@ processors:
         - otelcol_process_memory_rss
         - grpc.client.attempt.duration_count
         - googlecloudmonitoring/point_count
+  metricstarttime/prometheus_1:
+    strategy: subtract_initial_point
   metricstransform/fluentbit_1:
     transforms:
     - action: update
@@ -638,6 +640,7 @@ service:
       - otlphttp/otlp
       processors:
       - transform/prometheus_0
+      - metricstarttime/prometheus_1
       receivers:
       - prometheus/prometheus
   telemetry:
