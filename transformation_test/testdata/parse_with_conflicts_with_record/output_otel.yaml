@@ -15,6 +15,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
+    severity: WARNING
     sourceLocation:
       file: overwritten-file-path
     timestamp: now
