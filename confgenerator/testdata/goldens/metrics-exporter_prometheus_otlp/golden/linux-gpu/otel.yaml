@@ -660,6 +660,7 @@ service:
       - otlphttp/otlp
       processors:
       - transform/prometheus_0
+      - metricstarttime/prometheus_1
       receivers:
       - prometheus/prometheus
   telemetry:
