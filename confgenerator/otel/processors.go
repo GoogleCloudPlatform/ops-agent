@@ -597,8 +597,8 @@ func MetricStartTime() Component {
 	}
 }
 
-func GCEProjectID(projectID string) Component {
-	return MetricsTransform(
-		AddLabel("gce.project_id", projectID),
+func CloudAccountID(projectID string) Component {
+	return ResourceTransform(
+		map[string]string{"cloud.account.id": projectID}, false,
 	)
 }

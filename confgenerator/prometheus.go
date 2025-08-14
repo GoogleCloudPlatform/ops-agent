@@ -91,7 +91,7 @@ func (r PrometheusMetrics) Pipelines(ctx context.Context) ([]otel.ReceiverPipeli
 	metrics_components := []otel.Component{otel.GroupByGMPAttrs_OTTL()}
 	if exp_otlp_exporter {
 		metrics_components = append(metrics_components, otel.MetricStartTime())
-		metrics_components = append(metrics_components, otel.GCEProjectID(resource.ProjectName()))
+		metrics_components = append(metrics_components, otel.CloudAccountID(resource.ProjectName()))
 	}
 	return []otel.ReceiverPipeline{{
 		Receiver: prometheusToOtelComponent(r),
