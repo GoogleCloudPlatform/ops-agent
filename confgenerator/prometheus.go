@@ -97,7 +97,6 @@ func (r PrometheusMetrics) Pipelines(ctx context.Context) ([]otel.ReceiverPipeli
 			"metrics": otel.Otlp,
 		}
 	}
-
 	return []otel.ReceiverPipeline{{
 		Receiver: prometheusToOtelComponent(r),
 		Processors: map[string][]otel.Component{
