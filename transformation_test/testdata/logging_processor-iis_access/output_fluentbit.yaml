@@ -1,0 +1,72 @@
+- entries:
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: ""
+      referer: http://localhost/
+      remoteIp: "::1"
+      requestMethod: GET
+      requestSize: 0.0
+      requestUrl: /iisstart.png
+      responseSize: 0.0
+      serverIp: "::1:80"
+      status: 200.0
+      userAgent: Mozilla/5.0+(Windows+NT+10.0;+WOW64;+Trident/7.0;+rv:11.0)+like+Gecko
+    jsonPayload:
+      sc_substatus: "0"
+      sc_win32_status: "0"
+      time_taken: "18"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/iis_access
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2022-03-10T17:26:30.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: ""
+      referer: ""
+      remoteIp: "::1"
+      requestMethod: GET
+      requestSize: 0.0
+      requestUrl: /
+      responseSize: 0.0
+      serverIp: "::1:80"
+      status: 200.0
+      userAgent: Mozilla/5.0+(Windows+NT+10.0;+WOW64;+Trident/7.0;+rv:11.0)+like+Gecko
+    jsonPayload:
+      sc_substatus: "0"
+      sc_win32_status: "0"
+      time_taken: "352"
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/iis_access
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2022-03-10T17:26:30.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: ""
+      referer: ""
+      remoteIp: ""
+      requestMethod: ""
+      requestSize: 0.0
+      requestUrl: ""
+      responseSize: 0.0
+      serverIp: ""
+      status: 0.0
+      userAgent: ""
+    jsonPayload:
+      message: "2022-03-10 17:26:32 ::1 GET /favicon.ico - 80 - ::1 Mozilla/5.0+(Windows+NT+10.0;+WOW64;+Trident/7.0;+rv:11.0)+like+Gecko - 404 0 2 49 "
+    labels:
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/iis_access
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance
