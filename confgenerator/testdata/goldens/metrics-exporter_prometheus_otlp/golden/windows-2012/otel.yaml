@@ -498,6 +498,11 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  metricstransform/prometheus_2:
+    transforms:
+    - action: add_label
+      new_label: gce.project_id
+      new_value: test-project
   normalizesums/iis_2: {}
   resourcedetection/_global_0:
     detectors:
@@ -735,6 +740,7 @@ service:
       processors:
       - transform/prometheus_0
       - metricstarttime/prometheus_1
+      - metricstransform/prometheus_2
       receivers:
       - prometheus/prometheus
   telemetry:

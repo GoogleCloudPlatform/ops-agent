@@ -596,3 +596,9 @@ func MetricStartTime() Component {
 		Config: map[string]string{"strategy": "subtract_initial_point"},
 	}
 }
+
+func GCEProjectID(projectID string) Component {
+	return MetricsTransform(
+		AddLabel("gce.project_id", projectID),
+	)
+}
