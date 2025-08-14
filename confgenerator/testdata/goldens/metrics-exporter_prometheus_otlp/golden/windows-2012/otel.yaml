@@ -738,7 +738,6 @@ service:
       - metricstarttime/prometheus_1
       receivers:
       - prometheus/prometheus
-      - metricstarttime/prometheus_1
   telemetry:
     metrics:
       readers:
