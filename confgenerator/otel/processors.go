@@ -597,8 +597,8 @@ func MetricStartTime() Component {
 	}
 }
 
-func CloudAccountID(projectID string) Component {
+func GCPProjectID(projectID string) Component {
 	return ResourceTransform(
-		map[string]string{"cloud.account.id": projectID}, false,
+		map[string]string{"gcp.project_id": projectID}, false,
 	)
 }
