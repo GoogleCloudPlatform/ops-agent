@@ -256,7 +256,7 @@ func (r LoggingReceiverFilesMixin) MergeInternalLoggingProcessor(p InternalLoggi
 		if len(ep.LoggingProcessorParseRegexComplex.Parsers) == 0 {
 			return r, nil
 		}
-		return r, ep
+		return r, ep.LoggingProcessorParseRegexComplex
 	}
 	if ep, ok := p.(*ParseMultiline); ok {
 		r.MultilineRules = ep.CombinedRules()
