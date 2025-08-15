@@ -11,6 +11,8 @@ exporters:
     metric:
       add_metric_suffixes: false
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
+extensions:
+  googleclientauth: {}
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
@@ -56,6 +58,8 @@ processors:
         - otelcol_process_memory_rss
         - grpc.client.attempt.duration_count
         - googlecloudmonitoring/point_count
+  metricstarttime/prometheus_1:
+    strategy: subtract_initial_point
   metricstransform/fluentbit_1:
     transforms:
     - action: update
@@ -429,6 +433,11 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  resource/prometheus_2:
+    attributes:
+    - action: insert
+      key: gcp.project_id
+      value: test-project
   resourcedetection/_global_0:
     detectors:
     - gcp
@@ -548,6 +557,8 @@ receivers:
             machine_type: test-machine-type
             namespace: test-instance-id/test-instance-name
 service:
+  extensions:
+  - googleclientauth
   pipelines:
     metrics/default__pipeline_hostmetrics:
       exporters:
@@ -593,6 +604,8 @@ service:
       - googlemanagedprometheus
       processors:
       - transform/prometheus_0
+      - metricstarttime/prometheus_1
+      - resource/prometheus_2
       receivers:
       - prometheus/prometheus
   telemetry:
