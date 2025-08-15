@@ -72,12 +72,12 @@ func (r LoggingReceiverFiles) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 }
 
 type LoggingReceiverFilesMixin struct {
-	IncludePaths            []string                  `yaml:"include_paths,omitempty"`
-	ExcludePaths            []string                  `yaml:"exclude_paths,omitempty"`
-	WildcardRefreshInterval *time.Duration            `yaml:"wildcard_refresh_interval,omitempty" validate:"omitempty,min=1s,multipleof_time=1s"`
-	MultilineRules          []fluentbit.MultilineRule `yaml:"-"`
-	BufferInMemory          bool                      `yaml:"-"`
-	RecordLogFilePath       *bool                     `yaml:"record_log_file_path,omitempty"`
+	IncludePaths            []string        `yaml:"include_paths,omitempty"`
+	ExcludePaths            []string        `yaml:"exclude_paths,omitempty"`
+	WildcardRefreshInterval *time.Duration  `yaml:"wildcard_refresh_interval,omitempty" validate:"omitempty,min=1s,multipleof_time=1s"`
+	MultilineRules          []MultilineRule `yaml:"-"`
+	BufferInMemory          bool            `yaml:"-"`
+	RecordLogFilePath       *bool           `yaml:"record_log_file_path,omitempty"`
 	// In transformation test mode, the file is read exactly once from the beginning, and then the process exits.
 	TransformationTest bool `yaml:"-" tracking:"-"`
 }
