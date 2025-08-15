@@ -137,19 +137,14 @@ func (cp loggingProcessorMacroAdapter[LPM]) Processors(ctx context.Context) ([]o
 	return processors, nil
 }
 
-// RegisterLoggingFilesReceiverMacro registers a receiver that combines a LoggingReceiverFilesMixin with that LoggingProcessorMacro.
-func RegisterLoggingFilesReceiverMacro[LPM LoggingProcessorMacro](filesMixinConstructor func() LoggingReceiverFilesMixin) {
+// RegisterLoggingFilesProcessorMacro registers a LoggingProcessorMacro as a processor type and also registers a receiver that combines a LoggingReceiverFilesMixin with that LoggingProcessorMacro.
+func RegisterLoggingFilesProcessorMacro[LPM LoggingProcessorMacro](filesMixinConstructor func() LoggingReceiverFilesMixin) {
+	RegisterLoggingProcessorMacro[LPM]()
 	RegisterLoggingReceiverMacro[*loggingFilesProcessorMacroAdapter[LPM]](func() *loggingFilesProcessorMacroAdapter[LPM] {
 		return &loggingFilesProcessorMacroAdapter[LPM]{
 			LoggingReceiverFilesMixin: filesMixinConstructor(),
 		}
 	})
-}
-
-// RegisterLoggingFilesProcessorMacro registers a LoggingProcessorMacro as a processor type and also registers a receiver that combines a LoggingReceiverFilesMixin with that LoggingProcessorMacro.
-func RegisterLoggingFilesProcessorMacro[LPM LoggingProcessorMacro](filesMixinConstructor func() LoggingReceiverFilesMixin) {
-	RegisterLoggingProcessorMacro[LPM]()
-	RegisterLoggingFilesReceiverMacro[LPM](filesMixinConstructor)
 }
 
 type loggingFilesProcessorMacroAdapter[LPM LoggingProcessorMacro] struct {

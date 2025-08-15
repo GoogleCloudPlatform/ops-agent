@@ -320,6 +320,6 @@ func (r LoggingReceiverElasticsearchGC) Components(ctx context.Context, tag stri
 }
 
 func init() {
-	confgenerator.RegisterLoggingFilesReceiverMacro[LoggingProcessorMacroElasticsearchJson](loggingReceiverFilesMixinElasticsearchJson)
+	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroElasticsearchJson](loggingReceiverFilesMixinElasticsearchJson)
 	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverElasticsearchGC{} })
 }

@@ -222,6 +222,7 @@ App,Field,Override,
 *confgenerator.PrometheusMetrics,config.[].scrape_configs.static_config_target_groups
 *confgenerator.loggingProcessorMacroAdapter[github.com/GoogleCloudPlatform/ops-agent/apps.LoggingProcessorMacroApacheAccess],confgenerator.ConfigComponent.Type,
 *confgenerator.loggingProcessorMacroAdapter[github.com/GoogleCloudPlatform/ops-agent/apps.LoggingProcessorMacroApacheError],confgenerator.ConfigComponent.Type,
+*confgenerator.loggingProcessorMacroAdapter[github.com/GoogleCloudPlatform/ops-agent/apps.LoggingProcessorMacroElasticsearchJson],confgenerator.ConfigComponent.Type,
 *confgenerator.loggingProcessorMacroAdapter[github.com/GoogleCloudPlatform/ops-agent/apps.LoggingProcessorMacroFlink],confgenerator.ConfigComponent.Type,
 *confgenerator.loggingProcessorMacroAdapter[github.com/GoogleCloudPlatform/ops-agent/apps.LoggingProcessorMacroNginxAccess],confgenerator.ConfigComponent.Type,
 *confgenerator.loggingProcessorMacroAdapter[github.com/GoogleCloudPlatform/ops-agent/apps.LoggingProcessorMacroNginxError],confgenerator.ConfigComponent.Type,
