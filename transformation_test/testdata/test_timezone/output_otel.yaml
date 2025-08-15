@@ -2,6 +2,8 @@
   - jsonPayload:
       key1: 12345
       key2: abc
+    labels:
+      compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/my-log-name
     resource:
       labels:
@@ -13,6 +15,8 @@
       key1: 12345
       key2: abc
       time: unparsable time
+    labels:
+      compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/my-log-name
     resource:
       labels:

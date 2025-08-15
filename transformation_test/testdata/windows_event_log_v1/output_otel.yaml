@@ -15,6 +15,8 @@
       - running
       TimeGenerated: 2025-07-02 20:38:45.0260774 +0000
       TimeWritten: 2025-07-02 20:38:45.0260774 +0000
+    labels:
+      compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/my-log-name
     resource:
       labels:
@@ -38,6 +40,8 @@
       - stopped
       TimeGenerated: 2025-07-02 20:39:32.3390061 +0000
       TimeWritten: 2025-07-02 20:39:32.3390061 +0000
+    labels:
+      compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/my-log-name
     resource:
       labels:

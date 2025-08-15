@@ -2,6 +2,7 @@
   - jsonPayload:
       gzip_ratio: ""
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/varnish
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -14,6 +15,7 @@
       gzip_ratio: ""
       user: john
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/varnish
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -25,6 +27,7 @@
   - jsonPayload:
       gzip_ratio: ""
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/varnish
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -37,6 +40,7 @@
       gzip_ratio: ""
       user: alice
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/varnish
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -48,6 +52,7 @@
   - jsonPayload:
       gzip_ratio: ""
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/varnish
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -60,6 +65,7 @@
       gzip_ratio: ""
       user: bob
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/varnish
     logName: projects/my-project/logs/my-log-name
     resource:

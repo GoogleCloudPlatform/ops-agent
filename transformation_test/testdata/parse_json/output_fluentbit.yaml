@@ -2,6 +2,8 @@
   - jsonPayload:
       level: info
       message: start
+    labels:
+      compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/transformation_test
     timestamp: 2023-10-17T14:55:59.683530289Z
   partialSuccess: true

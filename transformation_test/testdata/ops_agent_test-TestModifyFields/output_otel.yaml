@@ -8,6 +8,7 @@
       mapped_field: field value
       spanId: facefeedb0bacafe
     labels:
+      compute.googleapis.com/resource_name: hostname
       label2: label1 value
       my.cool.service/foo: field value
       static: hello world
@@ -29,6 +30,7 @@
       mapped_field: field value
       spanId: facefeedb0bacafe
     labels:
+      compute.googleapis.com/resource_name: hostname
       label2: label1 value
       my.cool.service/foo: field value
       static: hello world
