@@ -8,6 +8,7 @@
       pid: 35708
       tid: 4328636416
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_error
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -26,6 +27,7 @@
       pid: 2451
       tid: 140169666050176
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_error
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -44,6 +46,7 @@
       pid: 35708
       tid: 4328636416
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_error
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -62,6 +65,7 @@
       pid: ""
       tid: ""
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_error
     logName: projects/my-project/logs/my-log-name
     resource:

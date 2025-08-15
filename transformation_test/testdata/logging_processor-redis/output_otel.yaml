@@ -6,6 +6,7 @@
       role: RDB/AOF_writing_child
       roleChar: C
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -22,6 +23,7 @@
       role: RDB/AOF_writing_child
       roleChar: C
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -38,6 +40,7 @@
       role: RDB/AOF_writing_child
       roleChar: C
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -54,6 +57,7 @@
       role: RDB/AOF_writing_child
       roleChar: C
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -70,6 +74,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -86,6 +91,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -102,6 +108,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -118,6 +125,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -134,6 +142,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -150,6 +159,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -166,6 +176,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -182,6 +193,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -198,6 +210,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -214,6 +227,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -230,6 +244,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -246,6 +261,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -262,6 +278,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -278,6 +295,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -294,6 +312,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -310,6 +329,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -326,6 +346,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -342,6 +363,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -358,6 +380,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -374,6 +397,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -390,6 +414,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -406,6 +431,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -422,6 +448,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -438,6 +465,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -454,6 +482,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -470,6 +499,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -486,6 +516,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -502,6 +533,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -518,6 +550,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -534,6 +567,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -550,6 +584,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -566,6 +601,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -582,6 +618,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -598,6 +635,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -614,6 +652,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -630,6 +669,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -646,6 +686,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -662,6 +703,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -678,6 +720,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -694,6 +737,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -710,6 +754,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -726,6 +771,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -742,6 +788,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -758,6 +805,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -774,6 +822,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -790,6 +839,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -806,6 +856,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -822,6 +873,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -838,6 +890,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -854,6 +907,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -870,6 +924,7 @@
       role: master
       roleChar: M
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
     logName: projects/my-project/logs/my-log-name
     resource:
