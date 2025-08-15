@@ -293,7 +293,7 @@ func testContext() context.Context {
 	pl := platform.Platform{
 		Type: platform.Linux,
 		HostInfo: &host.InfoStat{
-			Hostname:        "", // To remove the resource_name label. TODO: Set to "hostname" instead.
+			Hostname:        "hostname",
 			OS:              "linux",
 			Platform:        "linux_platform",
 			PlatformVersion: "linux_platform_version",
