@@ -4,6 +4,8 @@
       message: start
       overwritten: "yes"
       preserved: "yes"
+    labels:
+      compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/my-log-name
     resource:
       labels:

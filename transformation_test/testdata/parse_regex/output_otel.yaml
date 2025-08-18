@@ -3,6 +3,8 @@
       msg: start
       msg1: start
       severity: INFO
+    labels:
+      compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/my-log-name
     resource:
       labels:
@@ -14,6 +16,8 @@
       msg: end
       msg1: end
       severity: INFO
+    labels:
+      compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/my-log-name
     resource:
       labels:

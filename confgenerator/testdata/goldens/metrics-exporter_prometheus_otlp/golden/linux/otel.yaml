@@ -434,6 +434,11 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  resource/prometheus_2:
+    attributes:
+    - action: insert
+      key: gcp.project_id
+      value: test-project
   resourcedetection/_global_0:
     detectors:
     - gcp
@@ -601,6 +606,7 @@ service:
       processors:
       - transform/prometheus_0
       - metricstarttime/prometheus_1
+      - resource/prometheus_2
       receivers:
       - prometheus/prometheus
   telemetry:
