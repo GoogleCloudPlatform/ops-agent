@@ -371,10 +371,7 @@ func loggingReceiverFilesMixinCouchbaseHTTPAccess() confgenerator.LoggingReceive
 }
 
 // LoggingProcessorCouchbaseGOXDCR is a struct that iwll generate the fluentbit components for the goxdcr logs
-type LoggingProcessorMacroCouchbaseGOXDCR struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
-	ReceiverMixin                 confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
-}
+type LoggingProcessorMacroCouchbaseGOXDCR struct{}
 
 // Type returns the type string for the cross datacenter logs of couchbase
 func (p LoggingProcessorMacroCouchbaseGOXDCR) Type() string {

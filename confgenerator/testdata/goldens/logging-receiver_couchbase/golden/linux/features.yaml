@@ -31,10 +31,6 @@
   key: "[1].include_paths.__length"
   value: "1"
 - module: logging
-  feature: receivers:couchbase_goxdcr
-  key: "[1].enabled"
-  value: "true"
-- module: logging
   feature: receivers:couchbase_http_access
   key: "[2].enabled"
   value: "true"
