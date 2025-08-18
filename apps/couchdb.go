@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
@@ -71,7 +70,7 @@ func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverCouchdb{} })
 }
 
-type LoggingProcessorMacroCouchdb struct {}
+type LoggingProcessorMacroCouchdb struct{}
 
 func (LoggingProcessorMacroCouchdb) Type() string {
 	return "couchdb"
@@ -146,6 +145,13 @@ func (p LoggingProcessorMacroCouchdb) Expand(ctx context.Context) []confgenerato
 					},
 				},
 			},
+			Rules: []confgenerator.MultilineRule{
+				{
+					StateName: "start_state",
+					NextState: "cont",
+					Regex:     `^\[\w+\]`,
+				},
+			},
 		},
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: fields,
@@ -155,54 +161,18 @@ func (p LoggingProcessorMacroCouchdb) Expand(ctx context.Context) []confgenerato
 
 type LoggingReceiverCouchdb struct {
 	LoggingProcessorMacroCouchdb `yaml:",inline"`
-	ReceiverMixin           confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+	ReceiverMixin                confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
-// func (r LoggingReceiverCouchdb) Components(ctx context.Context, tag string) []fluentbit.Component {
 func loggingReceiverFilesMixinCouchdb() confgenerator.LoggingReceiverFilesMixin {
-	filesMixin := confgenerator.LoggingReceiverFilesMixin{
+	return confgenerator.LoggingReceiverFilesMixin{
 		IncludePaths: []string{
 			// Default log file
 			"/var/log/couchdb/couchdb.log",
 		},
 	}
-	filesMixin.MultilineRules = []confgenerator.MultilineRule{
-		{
-			StateName: "start_state",
-			NextState: "cont",
-			Regex:     `^\[\w+\]`,
-		},
-		{
-			StateName: "cont",
-			NextState: "cont",
-			Regex:     `^(?!\[\w+\])`,
-		},
-	}
-	// if len(r.ReceiverMixin.IncludePaths) == 0 {
-	// 	r.ReceiverMixin.IncludePaths = []string{
-	// 		// Default log file
-	// 		"/var/log/couchdb/couchdb.log",
-	// 	}
-	// }
-	// r.ReceiverMixin.MultilineRules = []confgenerator.MultilineRule{
-	// 	{
-	// 		StateName: "start_state",
-	// 		NextState: "cont",
-	// 		Regex:     `^\[\w+\]`,
-	// 	},
-	// 	{
-	// 		StateName: "cont",
-	// 		NextState: "cont",
-	// 		Regex:     `^(?!\[\w+\])`,
-	// 	},
-	// }
-
-	// c := r.ReceiverMixin.Components(ctx, tag)
-	// c = append(c, r.LoggingProcessorMacroCouchdb.Components(ctx, tag, "couchdb")...)
-	// return c
 }
 
 func init() {
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorMacroCouchdb{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverCouchdb{} })
+	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroCouchdb](loggingReceiverFilesMixinCouchdb)
 }
