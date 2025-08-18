@@ -1,0 +1,31 @@
+[2025-07-22 08:22:15,466] INFO Initiating client connection, connectString=zookeeper:2181 sessionTimeout=18000 watcher=kafka.zookeeper.ZooKeeperClient$ZooKeeperClientWatcher$@4b2f7dd4 (org.apache.zookeeper.ZooKeeper)
+[2025-07-22 08:22:15,485] INFO [ZooKeeperClient Kafka server] Waiting until connected. (kafka.zookeeper.ZooKeeperClient)
+[2025-07-22 08:22:15,492] INFO Client environment:java.class.path=/opt/kafka/libs/kafka-clients-3.7.0.jar:/opt/kafka/libs/slf4j-api-1.7.30.jar:/opt/kafka/libs/zookeeper-3.6.3.jar:/opt/kafka/libs/... (org.apache.zookeeper.ZooKeeper)
+[2025-07-22 08:22:16,107] INFO KafkaConfig values:
+	advertised.listeners = PLAINTEXT://localhost:9092
+	alter.config.policy.class.name = null
+	alter.log.dirs.replication.quota.window.num = 11
+	alter.log.dirs.replication.quota.window.size.seconds = 1
+	background.threads = 10
+	broker.id = 0
+	compression.type = producer
+	controlled.shutdown.enable = true
+	log.dirs = /var/lib/kafka/data
+	num.partitions = 1
+	(zookeeper.connect = zookeeper:2181) (kafka.server.KafkaConfig)
+[2025-07-22 08:22:17,884] INFO [BrokerToControllerChannelManager broker=0 name=alterIsr]: Recorded new controller, from now on will use broker kafka-controller.internal:9092 (id: 0 rack: null) (kafka.server.BrokerToControllerRequestThread)
+[2025-07-22 08:22:18,230] INFO [ExpirationReaper-0-Produce]: Starting (kafka.server.DelayedOperationPurgatory$ExpiredOperationReaper)
+[2025-07-22 08:22:20,063] INFO [LogLoader partition=events-1, dir=/var/lib/kafka/data] Loading producer state till offset 0 with message format version 2 (kafka.log.Log$)
+[2025-07-22 08:22:20,075] INFO [LogLoader partition=events-1, dir=/var/lib/kafka/data] Completed load. Log start offset = 0, Log end offset = 151 (kafka.log.Log$)
+[2025-07-22 08:24:41,123] WARN [SocketServer brokerId=0] Unexpected exception caught by acceptor thread: java.net.SocketTimeoutException: Accept timed out (kafka.network.Acceptor)
+[2025-07-22 08:25:12,901] INFO [ReplicaFetcherThread-0-1]: Error fetching data for partition events-0 from leader kafka-broker-1:9092
+	java.io.IOException: Connection reset by peer
+		at sun.nio.ch.FileDispatcherImpl.read0(Native Method)
+		at sun.nio.ch.SocketDispatcher.read(SocketDispatcher.java:39)
+		at sun.nio.ch.IOUtil.readIntoNativeBuffer(IOUtil.java:223)
+		at sun.nio.ch.IOUtil.read(IOUtil.java:197)
+		at sun.nio.ch.SocketChannelImpl.read(SocketChannelImpl.java:379)
+		... 6 more
+ (kafka.server.ReplicaFetcherThread)
+[2025-07-22 09:02:11,567] INFO [GroupCoordinator 0]: Preparing to rebalance group consumer-group-1 in state PreparingRebalance with old generation 42 (kafka.coordinator.group.GroupCoordinator)
+[2025-07-22 09:02:11,984] INFO [GroupCoordinator 0]: Stabilized group consumer-group-1 generation 43 (kafka.coordinator.group.GroupCoordinator)
