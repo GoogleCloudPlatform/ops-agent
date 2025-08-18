@@ -20,7 +20,6 @@ import (
 	"sort"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
@@ -239,56 +238,40 @@ func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverCouchbase{} })
 }
 
-// LoggingReceiverCouchbase is a struct used for generating the fluentbit component for couchbase logs
-type LoggingReceiverCouchbase struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
-	ReceiverMixin                 confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
-}
+type LoggingProcessorMacroCouchbase struct{}
 
 // Type returns the string identifier for the general couchbase logs
-func (lr LoggingReceiverCouchbase) Type() string {
+func (p LoggingProcessorMacroCouchbase) Type() string {
 	return "couchbase_general"
 }
 
-// Components returns the logging components of the couchbase access logs
-func (lr LoggingReceiverCouchbase) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(lr.ReceiverMixin.IncludePaths) == 0 {
-		lr.ReceiverMixin.IncludePaths = []string{
-			"/opt/couchbase/var/lib/couchbase/logs/couchdb.log",
-			"/opt/couchbase/var/lib/couchbase/logs/info.log",
-			"/opt/couchbase/var/lib/couchbase/logs/debug.log",
-			"/opt/couchbase/var/lib/couchbase/logs/error.log",
-			"/opt/couchbase/var/lib/couchbase/logs/babysitter.log",
-		}
-	}
-	components := lr.ReceiverMixin.Components(ctx, tag)
-	components = append(components, confgenerator.LoggingProcessorParseMultilineRegex{
-		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
-			Parsers: []confgenerator.RegexParser{
-				{
-					Regex: `^\[(?<type>[^:]*):(?<level>[^,]*),(?<timestamp>\d+-\d+-\d+T\d+:\d+:\d+.\d+Z),(?<node_name>[^:]*):([^:]+):(?<source>[^\]]+)\](?<message>.*)$`,
-					Parser: confgenerator.ParserShared{
-						TimeKey:    "timestamp",
-						TimeFormat: "%Y-%m-%dT%H:%M:%S.%L",
+func (p LoggingProcessorMacroCouchbase) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
+	return []confgenerator.InternalLoggingProcessor{
+		confgenerator.LoggingProcessorParseMultilineRegex{
+			LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
+				Parsers: []confgenerator.RegexParser{
+					{
+						Regex: `^\[(?<type>[^:]*):(?<level>[^,]*),(?<timestamp>\d+-\d+-\d+T\d+:\d+:\d+.\d+Z),(?<node_name>[^:]*):([^:]+):(?<source>[^\]]+)\](?<message>.*)$`,
+						Parser: confgenerator.ParserShared{
+							TimeKey:    "timestamp",
+							TimeFormat: "%Y-%m-%dT%H:%M:%S.%L",
+						},
 					},
 				},
 			},
-		},
-		Rules: []confgenerator.MultilineRule{
-			{
-				StateName: "start_state",
-				NextState: "cont",
-				Regex:     `^\[([^\s+:]*):`,
+			Rules: []confgenerator.MultilineRule{
+				{
+					StateName: "start_state",
+					NextState: "cont",
+					Regex:     `^\[([^\s+:]*):`,
+				},
+				{
+					StateName: "cont",
+					NextState: "cont",
+					Regex:     `^(?!\[([^\s+:]*):).*$`,
+				},
 			},
-			{
-				StateName: "cont",
-				NextState: "cont",
-				Regex:     `^(?!\[([^\s+:]*):).*$`,
-			},
 		},
-	}.Components(ctx, tag, lr.Type())...)
-
-	components = append(components,
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				"severity": {
@@ -301,53 +284,40 @@ func (lr LoggingReceiverCouchbase) Components(ctx context.Context, tag string) [
 					},
 					MapValuesExclusive: true,
 				},
-				InstrumentationSourceLabel: instrumentationSourceValue(lr.Type()),
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(ctx, tag, lr.Type())...)
-	return components
+		},
+	}
+}
+
+// Components returns the logging components of the couchbase access logs
+func loggingReceiverFilesMixinCouchbase() confgenerator.LoggingReceiverFilesMixin {
+	return confgenerator.LoggingReceiverFilesMixin{
+		IncludePaths: []string{
+			"/opt/couchbase/var/lib/couchbase/logs/couchdb.log",
+			"/opt/couchbase/var/lib/couchbase/logs/info.log",
+			"/opt/couchbase/var/lib/couchbase/logs/debug.log",
+			"/opt/couchbase/var/lib/couchbase/logs/error.log",
+			"/opt/couchbase/var/lib/couchbase/logs/babysitter.log",
+		},
+	}
 }
 
 // LoggingProcessorCouchbaseHTTPAccess is a struct that will generate the fluentbit components for the http access logs
-type LoggingProcessorCouchbaseHTTPAccess struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
-	ReceiverMixin                 confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
-}
+type LoggingProcessorMacroCouchbaseHTTPAccess struct{}
 
 // Type returns the string for the couchbase http access logs
-func (lp LoggingProcessorCouchbaseHTTPAccess) Type() string {
+func (p LoggingProcessorMacroCouchbaseHTTPAccess) Type() string {
 	return "couchbase_http_access"
 }
 
 // Components returns the fluentbit components for the http access logs of couchbase
-func (lp LoggingProcessorCouchbaseHTTPAccess) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(lp.ReceiverMixin.IncludePaths) == 0 {
-		lp.ReceiverMixin.IncludePaths = []string{
-			"/opt/couchbase/var/lib/couchbase/logs/http_access.log",
-			"/opt/couchbase/var/lib/couchbase/logs/http_access_internal.log",
-		}
-	}
-	c := lp.ReceiverMixin.Components(ctx, tag)
-	// TODO: Harden the genericAccessLogParser so it can be used. It didn't work here since there are some minor differences with the
-	// referer fields and there are additional fields after the user agent here but not in the other apps.
-	c = append(c,
-		confgenerator.LoggingProcessorParseRegex{
-			Regex: `^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<timestamp>[^\]]*)\] "(?<http_request_requestMethod>\S+) (?<http_request_requestUrl>\S+) (?<http_request_protocol>\S+)" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*\S+) (?<http_request_referer>[^ ]*) "(?<http_request_userAgent>[^\"]*)" (?<message>.*)$`,
-			ParserShared: confgenerator.ParserShared{
-				TimeKey:    "timestamp",
-				TimeFormat: `%d/%b/%Y:%H:%M:%S %z`,
-				Types: map[string]string{
-					"size": "integer",
-					"code": "integer",
-				},
-			},
-		}.Components(ctx, tag, lp.Type())...,
-	)
+func (p LoggingProcessorMacroCouchbaseHTTPAccess) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
 	mf := confgenerator.LoggingProcessorModifyFields{
 		Fields: map[string]*confgenerator.ModifyField{
-			InstrumentationSourceLabel: instrumentationSourceValue(lp.Type()),
+			InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 		},
 	}
-	// Generate the httpRequest structure.
 	for _, field := range []string{
 		"remoteIp",
 		"requestMethod",
@@ -367,56 +337,78 @@ func (lp LoggingProcessorCouchbaseHTTPAccess) Components(ctx context.Context, ta
 			mf.Fields[dest].OmitIf = fmt.Sprintf(`%s = "-"`, src)
 		}
 	}
-	c = append(c, mf.Components(ctx, tag, lp.Type())...)
-	return c
+
+	return []confgenerator.InternalLoggingProcessor{
+		// TODO: Harden the genericAccessLogParser so it can be used. It didn't work here since there are some minor differences with the
+		// referer fields and there are additional fields after the user agent here but not in the other apps.
+		confgenerator.LoggingProcessorParseRegex{
+			Regex: `^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<timestamp>[^\]]*)\] "(?<http_request_requestMethod>\S+) (?<http_request_requestUrl>\S+) (?<http_request_protocol>\S+)" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*\S+) (?<http_request_referer>[^ ]*) "(?<http_request_userAgent>[^\"]*)" (?<message>.*)$`,
+			ParserShared: confgenerator.ParserShared{
+				TimeKey:    "timestamp",
+				TimeFormat: `%d/%b/%Y:%H:%M:%S %z`,
+				Types: map[string]string{
+					"size": "integer",
+					"code": "integer",
+				},
+			},
+		},
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+			},
+		},
+		mf,
+	}
+}
+
+func loggingReceiverFilesMixinCouchbaseHTTPAccess() confgenerator.LoggingReceiverFilesMixin {
+	return confgenerator.LoggingReceiverFilesMixin{
+		IncludePaths: []string{
+			"/opt/couchbase/var/lib/couchbase/logs/http_access.log",
+			"/opt/couchbase/var/lib/couchbase/logs/http_access_internal.log",
+		},
+	}
 }
 
 // LoggingProcessorCouchbaseGOXDCR is a struct that iwll generate the fluentbit components for the goxdcr logs
-type LoggingProcessorCouchbaseGOXDCR struct {
+type LoggingProcessorMacroCouchbaseGOXDCR struct {
 	confgenerator.ConfigComponent `yaml:",inline"`
 	ReceiverMixin                 confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 }
 
 // Type returns the type string for the cross datacenter logs of couchbase
-func (lg LoggingProcessorCouchbaseGOXDCR) Type() string {
+func (p LoggingProcessorMacroCouchbaseGOXDCR) Type() string {
 	return "couchbase_goxdcr"
 }
 
 // Components returns the fluentbit components for the couchbase goxdcr logs
-func (lg LoggingProcessorCouchbaseGOXDCR) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(lg.ReceiverMixin.IncludePaths) == 0 {
-		lg.ReceiverMixin.IncludePaths = []string{
-			"/opt/couchbase/var/lib/couchbase/logs/goxdcr.log",
-		}
-	}
-
-	c := lg.ReceiverMixin.Components(ctx, tag)
-	c = append(c, confgenerator.LoggingProcessorParseMultilineRegex{
-		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
-			Parsers: []confgenerator.RegexParser{
-				{
-					Regex: `^(?<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d*Z) (?<level>\w+) (?<log_type>\w+.\w+): (?<message>.*)$`,
-					Parser: confgenerator.ParserShared{
-						TimeKey:    "timestamp",
-						TimeFormat: "%Y-%m-%dT%H:%M:%S.%L",
+func (p LoggingProcessorMacroCouchbaseGOXDCR) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
+	return []confgenerator.InternalLoggingProcessor{
+		confgenerator.LoggingProcessorParseMultilineRegex{
+			LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
+				Parsers: []confgenerator.RegexParser{
+					{
+						Regex: `^(?<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d*Z) (?<level>\w+) (?<log_type>\w+.\w+): (?<message>.*)$`,
+						Parser: confgenerator.ParserShared{
+							TimeKey:    "timestamp",
+							TimeFormat: "%Y-%m-%dT%H:%M:%S.%L",
+						},
 					},
 				},
 			},
-		},
-		Rules: []confgenerator.MultilineRule{
-			{
-				StateName: "start_state",
-				NextState: "cont",
-				Regex:     `^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}`,
+			Rules: []confgenerator.MultilineRule{
+				{
+					StateName: "start_state",
+					NextState: "cont",
+					Regex:     `^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}`,
+				},
+				{
+					StateName: "cont",
+					NextState: "cont",
+					Regex:     `^(?!\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})`,
+				},
 			},
-			{
-				StateName: "cont",
-				NextState: "cont",
-				Regex:     `^(?!\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})`,
-			},
 		},
-	}.Components(ctx, tag, lg.Type())...)
-	c = append(c,
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				"severity": {
@@ -429,15 +421,22 @@ func (lg LoggingProcessorCouchbaseGOXDCR) Components(ctx context.Context, tag st
 					},
 					MapValuesExclusive: true,
 				},
-				InstrumentationSourceLabel: instrumentationSourceValue(lg.Type()),
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(ctx, tag, lg.Type())...,
-	)
-	return c
+		},
+	}
+}
+
+func loggingReceiverFilesMixinCouchbaseGOXDCR() confgenerator.LoggingReceiverFilesMixin {
+	return confgenerator.LoggingReceiverFilesMixin{
+		IncludePaths: []string{
+			"/opt/couchbase/var/lib/couchbase/logs/goxdcr.log",
+		},
+	}
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverCouchbase{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingProcessorCouchbaseHTTPAccess{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingProcessorCouchbaseGOXDCR{} })
+	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroCouchbase](loggingReceiverFilesMixinCouchbase)
+	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroCouchbaseHTTPAccess](loggingReceiverFilesMixinCouchbaseHTTPAccess)
+	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroCouchbaseGOXDCR](loggingReceiverFilesMixinCouchbaseGOXDCR)
 }

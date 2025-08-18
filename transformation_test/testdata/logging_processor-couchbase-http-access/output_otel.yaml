@@ -1,77 +1,79 @@
 - entries:
-  - jsonPayload:
-      gzip_ratio: ""
+  - jsonPayload: {}
     labels:
       compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/varnish
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
     logName: projects/my-project/logs/my-log-name
     resource:
       labels:
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: 2022-03-02T15:55:05Z
-  - jsonPayload:
-      gzip_ratio: ""
-      user: john
+    timestamp: now
+  - jsonPayload: {}
     labels:
       compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/varnish
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
     logName: projects/my-project/logs/my-log-name
     resource:
       labels:
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: 2022-03-03T10:12:45Z
-  - jsonPayload:
-      gzip_ratio: ""
+    timestamp: now
+  - jsonPayload: {}
     labels:
       compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/varnish
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
     logName: projects/my-project/logs/my-log-name
     resource:
       labels:
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: 2022-03-04T08:30:12Z
-  - jsonPayload:
-      gzip_ratio: ""
-      user: alice
+    timestamp: now
+  - jsonPayload: {}
     labels:
       compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/varnish
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
     logName: projects/my-project/logs/my-log-name
     resource:
       labels:
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: 2022-03-05T22:01:59Z
-  - jsonPayload:
-      gzip_ratio: ""
+    timestamp: now
+  - jsonPayload: {}
     labels:
       compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/varnish
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
     logName: projects/my-project/logs/my-log-name
     resource:
       labels:
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: 2022-03-06T14:23:11Z
-  - jsonPayload:
-      gzip_ratio: ""
-      user: bob
+    timestamp: now
+  - jsonPayload: {}
     labels:
       compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/varnish
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
     logName: projects/my-project/logs/my-log-name
     resource:
       labels:
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: 2022-03-07T19:45:33Z
+    timestamp: now
+  - jsonPayload: {}
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
   partialSuccess: true
