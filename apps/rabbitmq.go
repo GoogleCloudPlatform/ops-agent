@@ -31,6 +31,28 @@ func (LoggingProcessorMacroRabbitmq) Type() string {
 func (p LoggingProcessorMacroRabbitmq) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
 	return []confgenerator.InternalLoggingProcessor{
 		confgenerator.LoggingProcessorParseMultilineRegex{
+			LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
+				Parsers: []confgenerator.RegexParser{
+					{
+						// Sample log line:
+						// 2022-01-31 18:01:20.441571+00:00 [erro] <0.692.0> ** Connection attempt from node 'rabbit_ctl_17@keith-testing-rabbitmq' rejected. Invalid challenge reply. **
+						Regex: `^(?<timestamp>\d+-\d+-\d+\s+\d+:\d+:\d+[.,]\d+\+\d+:\d+) \[(?<severity>\w+)\] \<(?<process_id>\d+\.\d+\.\d+)\> (?<message>.*)$`,
+						Parser: confgenerator.ParserShared{
+							TimeKey:    "timestamp",
+							TimeFormat: "%Y-%m-%d %H:%M:%S.%L%z",
+						},
+					},
+					{
+						// Sample log line:
+						// 2023-02-01 12:45:14.705 [info] <0.801.0> Successfully set user tags for user 'admin' to [administrator]
+						Regex: `^(?<timestamp>\d+-\d+-\d+\s+\d+:\d+:\d+[.,]\d+\d+\d+) \[(?<severity>\w+)\] \<(?<process_id>\d+\.\d+\.\d+)\> (?<message>.*)$`,
+						Parser: confgenerator.ParserShared{
+							TimeKey:    "timestamp",
+							TimeFormat: "%Y-%m-%d %H:%M:%S.%L",
+						},
+					},
+				},
+			},
 			// Some multiline entries related to crash logs are important to capture and end in
 			//
 			// 2022-01-31 18:07:43.557042+00:00 [erro] <0.130.0>
@@ -48,28 +70,6 @@ func (p LoggingProcessorMacroRabbitmq) Expand(ctx context.Context) []confgenerat
 					StateName: "cont",
 					NextState: "cont",
 					Regex:     `^(?!\d+-\d+-\d+ \d+:\d+:\d+\.\d+\+\d+:\d+)`,
-				},
-			},
-		},
-		confgenerator.LoggingProcessorParseRegexComplex{
-			Parsers: []confgenerator.RegexParser{
-				{
-					// Sample log line:
-					// 2022-01-31 18:01:20.441571+00:00 [erro] <0.692.0> ** Connection attempt from node 'rabbit_ctl_17@keith-testing-rabbitmq' rejected. Invalid challenge reply. **
-					Regex: `^(?<timestamp>\d+-\d+-\d+\s+\d+:\d+:\d+[.,]\d+\+\d+:\d+) \[(?<severity>\w+)\] \<(?<process_id>\d+\.\d+\.\d+)\> (?<message>.*)$`,
-					Parser: confgenerator.ParserShared{
-						TimeKey:    "timestamp",
-						TimeFormat: "%Y-%m-%d %H:%M:%S.%L%z",
-					},
-				},
-				{
-					// Sample log line:
-					// 2023-02-01 12:45:14.705 [info] <0.801.0> Successfully set user tags for user 'admin' to [administrator]
-					Regex: `^(?<timestamp>\d+-\d+-\d+\s+\d+:\d+:\d+[.,]\d+\d+\d+) \[(?<severity>\w+)\] \<(?<process_id>\d+\.\d+\.\d+)\> (?<message>.*)$`,
-					Parser: confgenerator.ParserShared{
-						TimeKey:    "timestamp",
-						TimeFormat: "%Y-%m-%d %H:%M:%S.%L",
-					},
 				},
 			},
 		},
