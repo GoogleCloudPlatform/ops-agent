@@ -2,30 +2,30 @@
   - jsonPayload:
       host: localhost
       lockTime: 0.00015
-      message: |+
+      message: |
         SET timestamp=1753065661;
         SELECT * FROM transactions WHERE amount > 10000;
-
       queryTime: 3.103221
       rowsExamined: 10000.0
       rowsSent: 1.0
       user: admin
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_slow
     logName: projects/my-project/logs/transformation_test
     timestamp: now
   - jsonPayload:
       host: 172.18.0.1
       lockTime: 0.000221
-      message: |+
+      message: |
         SET timestamp=1753065663;
         SELECT * FROM logs ORDER BY created_at DESC LIMIT 100;
-
       queryTime: 2.504332
       rowsExamined: 100000.0
       rowsSent: 100.0
       user: root
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_slow
     logName: projects/my-project/logs/transformation_test
     timestamp: now
