@@ -232,12 +232,12 @@ func (p LoggingProcessorMacroIisAccess) Expand(ctx context.Context) []confgenera
 			record["s_port"] = nil`
 		},
 		CustomOTTLFunc: func(sourceValues map[string]ottl.Value) ottl.Statements {
-			serverIp := ottl.LValue{"jsonPayload", "http_request_serverIp"}
-			port := ottl.LValue{"jsonPayload", "s_port"}
+			serverIp := ottl.LValue{"body", "http_request_serverIp"}
+			port := ottl.LValue{"body", "s_port"}
 			return ottl.Statements{}.Append(
 				// Transform this field in place
 				ottl.LValue{"cache", "value"}.Set(
-					ottl.RValue(fmt.Sprintf(`Concat([%s, %s], ":")`, serverIp, port)),
+					ottl.RValue(fmt.Sprintf(`Concat([%s, %s], ":")`, serverIp.String(), port.String())),
 				),
 				// Clean up intermediate field for OTTL
 				port.Delete(),
@@ -282,8 +282,8 @@ func (p LoggingProcessorMacroIisAccess) Expand(ctx context.Context) []confgenera
 			record["cs_uri_query"] = nil`
 		},
 		CustomOTTLFunc: func(sourceValues map[string]ottl.Value) ottl.Statements {
-			stem := ottl.LValue{"jsonPayload", "cs_uri_stem"}
-			query := ottl.LValue{"jsonPayload", "cs_uri_query"}
+			stem := ottl.LValue{"body", "cs_uri_stem"}
+			query := ottl.LValue{"body", "cs_uri_query"}
 			cleanQuery := ottl.LValue{"cache", "clean_query"}
 
 			queryEmpty := ottl.Or(
@@ -306,7 +306,7 @@ func (p LoggingProcessorMacroIisAccess) Expand(ctx context.Context) []confgenera
 				ottl.LValue{"cache", "value"}.SetIf(stem, queryEmpty),
 				// Set to stem + "?" + query when query has actual content
 				ottl.LValue{"cache", "value"}.SetIf(
-					ottl.RValue(fmt.Sprintf(`Concat([%s, %s], "?")`, stem, cleanQuery)),
+					ottl.RValue(fmt.Sprintf(`Concat([%s, %s], "?")`, stem.String(), cleanQuery.String())),
 					ottl.Not(queryEmpty),
 				),
 				// Clean up intermediate fields for OTTL
