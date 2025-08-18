@@ -1,5 +1,16 @@
 - entries:
-  - jsonPayload: {}
+  - httpRequest:
+      protocol: HTTP/1.1
+      remoteIp: 192.168.1.10
+      requestMethod: GET
+      requestUrl: /pools/default/buckets/travel-data
+      responseSize: "512"
+      status: 200
+      userAgent: curl/7.68.0
+    jsonPayload:
+      host: couchbase.local
+      message: Request took 5ms
+      user: -
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
@@ -9,8 +20,19 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-08-18T09:20:11Z
+  - httpRequest:
+      protocol: HTTP/1.1
+      remoteIp: 192.168.1.12
+      requestMethod: POST
+      requestUrl: /pools/default/buckets/travel-data/docs
+      responseSize: "123"
+      status: 201
+      userAgent: python-requests/2.26.0
+    jsonPayload:
+      host: couchbase.local
+      message: Request took 12ms
+      user: -
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
@@ -20,8 +42,18 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-08-18T09:20:42Z
+  - httpRequest:
+      protocol: HTTP/1.1
+      remoteIp: 192.168.1.13
+      requestMethod: GET
+      requestUrl: /pools/default/buckets/missing-data
+      status: 404
+      userAgent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)
+    jsonPayload:
+      host: couchbase.local
+      message: Request took 2ms
+      user: -
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
@@ -31,8 +63,19 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-08-18T09:21:10Z
+  - httpRequest:
+      protocol: HTTP/1.1
+      remoteIp: 192.168.1.14
+      requestMethod: PUT
+      requestUrl: /pools/default/buckets/travel-data/docs/user:123
+      responseSize: "64"
+      status: 500
+      userAgent: node-fetch/1.0
+    jsonPayload:
+      host: couchbase.local
+      message: Internal Server Error
+      user: -
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
@@ -42,8 +85,19 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-08-18T09:21:25Z
+  - httpRequest:
+      protocol: HTTP/1.1
+      remoteIp: 192.168.1.15
+      requestMethod: DELETE
+      requestUrl: /pools/default/buckets/old-data
+      responseSize: "64"
+      status: 403
+      userAgent: curl/7.88.1
+    jsonPayload:
+      host: couchbase.local
+      message: Unauthorized delete attempt
+      user: -
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
@@ -53,8 +107,19 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-08-18T09:22:00Z
+  - httpRequest:
+      protocol: HTTP/1.1
+      referer: http://referrer.example.com
+      remoteIp: 192.168.1.16
+      requestMethod: GET
+      requestUrl: /pools/default/buckets/travel-data/docs?include_docs=true
+      status: 302
+      userAgent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36
+    jsonPayload:
+      host: couchbase.local
+      message: Redirected to login
+      user: -
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
@@ -64,8 +129,18 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
-  - jsonPayload: {}
+    timestamp: 2025-08-18T09:22:35Z
+  - httpRequest:
+      protocol: HTTP/1.1
+      remoteIp: 192.168.1.17
+      requestMethod: HEAD
+      requestUrl: /pools/default/buckets/travel-data/docs/user:999
+      status: 304
+      userAgent: Go-http-client/1.1
+    jsonPayload:
+      host: couchbase.local
+      message: Not modified
+      user: -
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
@@ -75,5 +150,47 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
+    timestamp: 2025-08-18T09:23:01Z
+  - httpRequest:
+      protocol: HTTP/1.1
+      remoteIp: 192.168.1.18
+      requestMethod: OPTIONS
+      requestUrl: /pools/default/buckets/travel-data
+      status: 204
+      userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)
+    jsonPayload:
+      host: couchbase.local
+      message: Preflight check passed
+      user: -
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2025-08-18T09:23:40Z
+  - httpRequest:
+      protocol: HTTP/1.1
+      remoteIp: 192.168.1.19
+      requestMethod: GET
+      requestUrl: /pools/default/buckets/travel-data/docs?limit=1000
+      status: 413
+      userAgent: curl/8.0.1
+    jsonPayload:
+      host: couchbase.local
+      message: Payload too large
+      user: -
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2025-08-18T09:24:15Z
   partialSuccess: true
