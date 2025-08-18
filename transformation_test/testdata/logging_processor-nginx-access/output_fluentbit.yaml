@@ -16,6 +16,7 @@
       userAgent: ""
     jsonPayload: {}
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_access
     logName: projects/my-project/logs/transformation_test
     timestamp: 2000-10-10T20:55:36.000000000Z
@@ -36,6 +37,7 @@
       userAgent: curl/7.64.0
     jsonPayload: {}
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_access
     logName: projects/my-project/logs/transformation_test
     timestamp: 2021-08-26T16:49:43.000000000Z
@@ -57,6 +59,7 @@
     jsonPayload:
       user: frank
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_access
     logName: projects/my-project/logs/transformation_test
     timestamp: 2000-10-10T20:55:36.000000000Z
@@ -77,6 +80,7 @@
       userAgent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
     jsonPayload: {}
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_access
     logName: projects/my-project/logs/transformation_test
     timestamp: 2021-08-26T16:50:15.000000000Z
@@ -98,6 +102,7 @@
     jsonPayload:
       user: admin
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_access
     logName: projects/my-project/logs/transformation_test
     timestamp: 2021-08-26T16:51:22.000000000Z
@@ -118,6 +123,7 @@
       userAgent: Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X) AppleWebKit/605.1.15
     jsonPayload: {}
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_access
     logName: projects/my-project/logs/transformation_test
     timestamp: 2021-08-26T16:52:10.000000000Z
@@ -138,6 +144,7 @@
       userAgent: python-requests/2.25.1
     jsonPayload: {}
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_access
     logName: projects/my-project/logs/transformation_test
     timestamp: 2021-08-26T16:53:05.000000000Z
@@ -159,6 +166,7 @@
     jsonPayload:
       user: user123
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_access
     logName: projects/my-project/logs/transformation_test
     timestamp: 2021-08-26T16:54:30.000000000Z

@@ -16,6 +16,7 @@
       userAgent: ""
     jsonPayload: {}
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_access
     logName: projects/my-project/logs/transformation_test
     timestamp: 2025-07-21T14:23:15.000000000Z
@@ -37,6 +38,7 @@
     jsonPayload:
       user: john
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_access
     logName: projects/my-project/logs/transformation_test
     timestamp: 2025-07-21T14:24:02.000000000Z
@@ -57,6 +59,7 @@
       userAgent: ""
     jsonPayload: {}
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_access
     logName: projects/my-project/logs/transformation_test
     timestamp: 2025-07-21T14:25:44.000000000Z
@@ -78,6 +81,7 @@
     jsonPayload:
       user: alice
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_access
     logName: projects/my-project/logs/transformation_test
     timestamp: 2025-07-21T14:27:33.000000000Z
@@ -98,6 +102,7 @@
       userAgent: ""
     jsonPayload: {}
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_access
     logName: projects/my-project/logs/transformation_test
     timestamp: 2025-07-21T14:28:51.000000000Z
@@ -118,6 +123,7 @@
       userAgent: ""
     jsonPayload: {}
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_access
     logName: projects/my-project/logs/transformation_test
     timestamp: 2025-07-21T15:00:01.000000000Z
@@ -138,6 +144,7 @@
       userAgent: ""
     jsonPayload: {}
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_access
     logName: projects/my-project/logs/transformation_test
     timestamp: 2025-07-21T15:04:12.000000000Z
@@ -159,6 +166,7 @@
     jsonPayload:
       user: bob
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_access
     logName: projects/my-project/logs/transformation_test
     timestamp: 2025-07-21T15:06:55.000000000Z
@@ -179,6 +187,7 @@
       userAgent: ""
     jsonPayload: {}
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_access
     logName: projects/my-project/logs/transformation_test
     timestamp: 2025-07-21T15:10:42.000000000Z
@@ -199,6 +208,7 @@
       userAgent: ""
     jsonPayload: {}
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_access
     logName: projects/my-project/logs/transformation_test
     timestamp: 2025-07-21T15:15:33.000000000Z

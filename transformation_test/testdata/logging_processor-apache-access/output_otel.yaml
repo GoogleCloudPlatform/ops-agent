@@ -1,1 +1,64 @@
-- config_error: "failed generating OTel processor: &confgenerator.loggingProcessorMacroAdapter[github.com/GoogleCloudPlatform/ops-agent/apps.LoggingProcessorMacroApacheAccess]{ConfigComponent:confgenerator.ConfigComponent{Type:\"apache_access\"}, ProcessorMacro:apps.LoggingProcessorMacroApacheAccess{}}, err: unimplemented"
+- entries:
+  - jsonPayload:
+      gzip_ratio: ""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_access
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2000-10-10T20:55:36Z
+  - jsonPayload:
+      gzip_ratio: ""
+      user: frank
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_access
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2000-10-10T20:55:36Z
+  - jsonPayload:
+      gzip_ratio: ""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_access
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2021-08-26T16:50:15Z
+  - jsonPayload:
+      gzip_ratio: ""
+      user: admin
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_access
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2021-08-26T16:51:22Z
+  - jsonPayload:
+      gzip_ratio: ""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_access
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2021-08-26T16:53:05Z
+  partialSuccess: true

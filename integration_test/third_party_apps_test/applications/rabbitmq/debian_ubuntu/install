@@ -17,22 +17,13 @@ curl -1sLf "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xf77f1eda57eb
 source /etc/os-release
 case $VERSION_ID in
   # ubuntu
-  20.04)
-    echo "deb http://ppa.launchpad.net/rabbitmq/rabbitmq-erlang/ubuntu focal main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
-    ;;
   22.04)
     echo "deb http://ppa.launchpad.net/rabbitmq/rabbitmq-erlang/ubuntu jammy main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
     ;;
   24.04)
     echo "deb http://ppa.launchpad.net/rabbitmq/rabbitmq-erlang/ubuntu noble main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
     ;;
-  24.10)
-    echo "deb http://ppa.launchpad.net/rabbitmq/rabbitmq-erlang/ubuntu noble main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
-    ;;
   # debian
-  10)
-    echo "deb http://ppa.launchpad.net/rabbitmq/rabbitmq-erlang/ubuntu bionic main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
-    ;;
   11)
     echo "deb http://ppa.launchpad.net/rabbitmq/rabbitmq-erlang/ubuntu focal main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
     ;;
@@ -45,8 +36,8 @@ case $VERSION_ID in
     ;;
 esac
 
-if [[ "${VERSION_ID}" != 24.04 ]]; then
-  # Ubuntu Noble does not require the extra repo, and adding the extra repo 
+if [[ "${VERSION_ID}" != "24.04" && "${VERSION_ID}" != "22.04" && "${VERSION_ID}" != "12" ]]; then
+  # Ubuntu Noble, Jammy and Debian 12 do not require the extra repo, and adding the extra repo 
   # would sometime cause package conflicts - b/433254435 
   curl -s \
       https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.deb.sh | \
