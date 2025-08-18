@@ -1,1 +1,1 @@
-- config_error: "not an OTel processor: &apps.LoggingProcessorMacroActiveDirectoryDS{ConfigComponent:confgenerator.ConfigComponent{Type:\"active_directory_ds\"}}"
+- config_error: processor "processor0" not supported in pipeline "transformation_test"
