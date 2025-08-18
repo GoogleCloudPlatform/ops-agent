@@ -297,7 +297,7 @@ func (p PipelineInstance) OTelComponents(ctx context.Context) (map[string]otel.R
 			ReceiverPipelineName: receiverPipelineName,
 		}
 		// Check the Ops Agent receiver type.
-		if receiverPipeline.ExporterTypes[p.PipelineType] == otel.GMP || receiverPipeline.ExporterTypes[p.PipelineType] == otel.Otlp {
+		if receiverPipeline.Receiver.Type == "prometheus" {
 			// Prometheus receivers are incompatible with processors, so we need to assert that no processors are configured.
 			if len(p.Processors) > 0 {
 				return nil, nil, fmt.Errorf("prometheus receivers are incompatible with Ops Agent processors")
