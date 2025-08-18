@@ -1,0 +1,64 @@
+- entries:
+  - jsonPayload:
+      level: INFO
+      message: "ELY00001: WildFly Elytron version 1.18.1.Final"
+      messageCode: ELY00001
+      source: org.wildfly.security
+      thread: ServerService Thread Pool -- 27
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/wildfly_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2022-01-18T13:44:35.372000000Z
+  - jsonPayload:
+      level: DEBUG
+      message: "VM Arguments: -D[Standalone] -Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true  --add-exports=java.desktop/sun.awt=ALL-UNNAMED --add-exports=java.naming/com.sun.jndi.ldap=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.security=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.management/javax.management=ALL-UNNAMED --add-opens=java.naming/javax.naming=ALL-UNNAMED -Dlogging.configuration=file:/opt/wildfly/standalone/configuration/logging.properties"
+      source: org.jboss.as.config
+      thread: MSC service thread 1-1
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/wildfly_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 100.0
+    timestamp: 2022-02-03T15:38:01.509000000Z
+  - jsonPayload:
+      level: INFO
+      message: "WFLYSRV0039: Creating http management service using socket-binding (management-http)"
+      messageCode: WFLYSRV0039
+      source: org.jboss.as.server
+      thread: Controller Boot Thread
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/wildfly_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2022-02-03T15:38:03.548000000Z
+  - jsonPayload:
+      level: INFO
+      message: "WFLYPC0018: Starting process 'Server:server-one'"
+      messageCode: WFLYPC0018
+      source: org.jboss.as.process.Server:server-one.status
+      thread: ProcessController-threads - 3
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/wildfly_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2022-02-11T14:29:56.734000000Z
+  - jsonPayload:
+      level: INFO
+      message: "WFLYPC0018: Starting process 'Host Controller'"
+      messageCode: WFLYPC0018
+      source: org.jboss.as.process.Host Controller.status
+      thread: main
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/wildfly_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2022-02-11T14:29:52.217000000Z
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance
