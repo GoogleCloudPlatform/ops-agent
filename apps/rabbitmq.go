@@ -18,45 +18,41 @@ import (
 	"context"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
 
-type LoggingProcessorRabbitmq struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
-}
+type LoggingProcessorMacroRabbitmq struct{}
 
-func (*LoggingProcessorRabbitmq) Type() string {
+func (LoggingProcessorMacroRabbitmq) Type() string {
 	return "rabbitmq"
 }
 
-func (p *LoggingProcessorRabbitmq) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseRegexComplex{
-		Parsers: []confgenerator.RegexParser{
-			{
-				// Sample log line:
-				// 2022-01-31 18:01:20.441571+00:00 [erro] <0.692.0> ** Connection attempt from node 'rabbit_ctl_17@keith-testing-rabbitmq' rejected. Invalid challenge reply. **
-				Regex: `^(?<timestamp>\d+-\d+-\d+\s+\d+:\d+:\d+[.,]\d+\+\d+:\d+) \[(?<severity>\w+)\] \<(?<process_id>\d+\.\d+\.\d+)\> (?<message>.*)$`,
-				Parser: confgenerator.ParserShared{
-					TimeKey:    "timestamp",
-					TimeFormat: "%Y-%m-%d %H:%M:%S.%L%z",
+func (p LoggingProcessorMacroRabbitmq) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
+	return []confgenerator.InternalLoggingProcessor{
+		confgenerator.LoggingProcessorParseRegexComplex{
+			Parsers: []confgenerator.RegexParser{
+				{
+					// Sample log line:
+					// 2022-01-31 18:01:20.441571+00:00 [erro] <0.692.0> ** Connection attempt from node 'rabbit_ctl_17@keith-testing-rabbitmq' rejected. Invalid challenge reply. **
+					Regex: `^(?<timestamp>\d+-\d+-\d+\s+\d+:\d+:\d+[.,]\d+\+\d+:\d+) \[(?<severity>\w+)\] \<(?<process_id>\d+\.\d+\.\d+)\> (?<message>.*)$`,
+					Parser: confgenerator.ParserShared{
+						TimeKey:    "timestamp",
+						TimeFormat: "%Y-%m-%d %H:%M:%S.%L%z",
+					},
 				},
-			},
-			{
-				// Sample log line:
-				// 2023-02-01 12:45:14.705 [info] <0.801.0> Successfully set user tags for user 'admin' to [administrator]
-				Regex: `^(?<timestamp>\d+-\d+-\d+\s+\d+:\d+:\d+[.,]\d+\d+\d+) \[(?<severity>\w+)\] \<(?<process_id>\d+\.\d+\.\d+)\> (?<message>.*)$`,
-				Parser: confgenerator.ParserShared{
-					TimeKey:    "timestamp",
-					TimeFormat: "%Y-%m-%d %H:%M:%S.%L",
+				{
+					// Sample log line:
+					// 2023-02-01 12:45:14.705 [info] <0.801.0> Successfully set user tags for user 'admin' to [administrator]
+					Regex: `^(?<timestamp>\d+-\d+-\d+\s+\d+:\d+:\d+[.,]\d+\d+\d+) \[(?<severity>\w+)\] \<(?<process_id>\d+\.\d+\.\d+)\> (?<message>.*)$`,
+					Parser: confgenerator.ParserShared{
+						TimeKey:    "timestamp",
+						TimeFormat: "%Y-%m-%d %H:%M:%S.%L",
+					},
 				},
 			},
 		},
-	}.Components(ctx, tag, uid)
-
-	// severities documented here: https://www.rabbitmq.com/logging.html#log-levels
-	c = append(c,
+		// severities documented here: https://www.rabbitmq.com/logging.html#log-levels
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				"severity": {
@@ -72,49 +68,41 @@ func (p *LoggingProcessorRabbitmq) Components(ctx context.Context, tag, uid stri
 				},
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(ctx, tag, uid)...,
-	)
-
-	return c
+		},
+	}
 }
 
-type LoggingReceiverRabbitmq struct {
-	LoggingProcessorRabbitmq `yaml:",inline"`
-	ReceiverMixin            confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
-}
+type LoggingReceiverMacroRabbitmq struct{}
 
-func (r LoggingReceiverRabbitmq) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.ReceiverMixin.IncludePaths) == 0 {
-		r.ReceiverMixin.IncludePaths = []string{
+func loggingReceiverFilesMixinRabbitmq() confgenerator.LoggingReceiverFilesMixin {
+	return confgenerator.LoggingReceiverFilesMixin{
+		IncludePaths: []string{
 			"/var/log/rabbitmq/rabbit*.log",
-		}
-	}
-	// Some multiline entries related to crash logs are important to capture and end in
-	//
-	// 2022-01-31 18:07:43.557042+00:00 [erro] <0.130.0>
-	// BOOT FAILED
-	// ===========
-	// ERROR: could not bind to distribution port 25672, it is in use by another node: rabbit@keith-testing-rabbitmq
-	//
-	r.ReceiverMixin.MultilineRules = []confgenerator.MultilineRule{
-		{
-			StateName: "start_state",
-			NextState: "cont",
-			Regex:     `^\d+-\d+-\d+ \d+:\d+:\d+\.\d+\+\d+:\d+`,
 		},
-		{
-			StateName: "cont",
-			NextState: "cont",
-			Regex:     `^(?!\d+-\d+-\d+ \d+:\d+:\d+\.\d+\+\d+:\d+)`,
+		// Some multiline entries related to crash logs are important to capture and end in
+		//
+		// 2022-01-31 18:07:43.557042+00:00 [erro] <0.130.0>
+		// BOOT FAILED
+		// ===========
+		// ERROR: could not bind to distribution port 25672, it is in use by another node: rabbit@keith-testing-rabbitmq
+		//
+		MultilineRules: []confgenerator.MultilineRule{
+			{
+				StateName: "start_state",
+				NextState: "cont",
+				Regex:     `^\d+-\d+-\d+ \d+:\d+:\d+\.\d+\+\d+:\d+`,
+			},
+			{
+				StateName: "cont",
+				NextState: "cont",
+				Regex:     `^(?!\d+-\d+-\d+ \d+:\d+:\d+\.\d+\+\d+:\d+)`,
+			},
 		},
 	}
-	c := r.ReceiverMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorRabbitmq.Components(ctx, tag, "rabbitmq")...)
-	return c
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverRabbitmq{} })
+	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroRabbitmq](loggingReceiverFilesMixinRabbitmq)
 }
 
 type MetricsReceiverRabbitmq struct {
