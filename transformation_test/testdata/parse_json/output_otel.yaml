@@ -2,6 +2,8 @@
   - jsonPayload:
       level: info
       message: start
+    labels:
+      compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/my-log-name
     resource:
       labels:

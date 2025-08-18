@@ -8,6 +8,7 @@
       pid: 35708.0
       tid: 4.328636416e+09
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_error
     logName: projects/my-project/logs/transformation_test
     severity: 500.0
@@ -20,6 +21,7 @@
       pid: 2451.0
       tid: 1.40169666050176e+14
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_error
     logName: projects/my-project/logs/transformation_test
     severity: 500.0
@@ -31,6 +33,7 @@
       pid: 35708.0
       tid: 4.328636416e+09
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_error
     logName: projects/my-project/logs/transformation_test
     severity: 500.0
@@ -40,6 +43,7 @@
       level: error
       message: "client denied by server configuration: /export/home/live/ap/htdocs/test "
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_error
     logName: projects/my-project/logs/transformation_test
     severity: 500.0

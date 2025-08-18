@@ -2,6 +2,7 @@
   - jsonPayload:
       normal_field: value
     labels:
+      compute.googleapis.com/resource_name: hostname
       label1: value1
       label2: value2
     logName: projects/my-project/logs/transformation_test

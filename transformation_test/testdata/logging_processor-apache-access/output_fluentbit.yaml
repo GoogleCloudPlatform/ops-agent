@@ -16,6 +16,7 @@
       userAgent: ""
     jsonPayload: {}
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_access
     logName: projects/my-project/logs/transformation_test
     timestamp: 2000-10-10T20:55:36.000000000Z
@@ -37,6 +38,7 @@
     jsonPayload:
       user: frank
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_access
     logName: projects/my-project/logs/transformation_test
     timestamp: 2000-10-10T20:55:36.000000000Z
@@ -57,6 +59,7 @@
       userAgent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
     jsonPayload: {}
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_access
     logName: projects/my-project/logs/transformation_test
     timestamp: 2021-08-26T16:50:15.000000000Z
@@ -78,6 +81,7 @@
     jsonPayload:
       user: admin
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_access
     logName: projects/my-project/logs/transformation_test
     timestamp: 2021-08-26T16:51:22.000000000Z
@@ -99,6 +103,7 @@
     jsonPayload:
       message: "172.16.0.1 - - [26/Aug/2021:16:53:05 +0000] \"PUT /api/data/123 HTTP/1.1\" 500 789 \"https://api.example.com/docs\" \"python-requests/2.25.1\" "
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_access
     logName: projects/my-project/logs/transformation_test
     timestamp: now

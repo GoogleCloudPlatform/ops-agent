@@ -1,1 +1,1 @@
-- config_error: "failed generating OTel processor: &confgenerator.loggingProcessorMacroAdapter[github.com/GoogleCloudPlatform/ops-agent/apps.LoggingProcessorMacroCassandraDebug]{ConfigComponent:confgenerator.ConfigComponent{Type:\"cassandra_debug\"}, ProcessorMacro:apps.LoggingProcessorMacroCassandraDebug{}}, err: unimplemented"
+- config_error: "processor \"processor0\" has invalid configuration: unimplemented"

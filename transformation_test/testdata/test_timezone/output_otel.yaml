@@ -2,6 +2,8 @@
   - jsonPayload:
       key1: 12345
       key2: abc
+    labels:
+      compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/my-log-name
     resource:
       labels:
@@ -13,6 +15,8 @@
       key1: 12345
       key2: abc
       time: unparsable time
+    labels:
+      compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/my-log-name
     resource:
       labels:
@@ -22,13 +26,13 @@
     timestamp: now
   partialSuccess: true
 - collector_errors:
-  - caller: ottl@v0.130.0/parser.go:410
+  - caller: ottl@v0.131.0/parser.go:410
     error: "parsing time \"unparsable time\" as \"%Y-%m-%dT%H:%M\": cannot parse \"unparsable time\" as \"%Y\""
     level: warn
     msg: failed to execute statement
-    otelcol.component.id: transform/input_0
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_0
     otelcol.component.kind: processor
-    otelcol.pipeline.id: logs/input
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
     otelcol.signal: logs
     resource:
       service.instance.id: test-service-instance-id

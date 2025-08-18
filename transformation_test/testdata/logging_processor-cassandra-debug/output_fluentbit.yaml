@@ -6,6 +6,7 @@
       message: "CassandraDaemon.java:401 - JVM vendor/version: OpenJDK 64-Bit Server VM/17.0.9+9"
       module: main
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_debug
     logName: projects/my-project/logs/transformation_test
     severity: 100.0
@@ -17,6 +18,7 @@
       message: "CassandraDaemon.java:402 - JVM heap size: 2.0 GiB / 8.0 GiB (young 1.0 GiB)"
       module: main
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_debug
     logName: projects/my-project/logs/transformation_test
     severity: 100.0
@@ -28,6 +30,7 @@
       message: YamlConfigurationLoader.java:116 - Loading settings from file:/etc/cassandra/cassandra.yaml
       module: main
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_debug
     logName: projects/my-project/logs/transformation_test
     severity: 100.0
@@ -39,6 +42,7 @@
       message: Config.java:555 - Initializing keyspace system_schema
       module: main
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_debug
     logName: projects/my-project/logs/transformation_test
     severity: 100.0
@@ -50,6 +54,7 @@
       message: DatabaseDescriptor.java:621 - DiskAccessMode 'mmap_index_only' selected automatically
       module: main
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_debug
     logName: projects/my-project/logs/transformation_test
     severity: 100.0
@@ -61,6 +66,7 @@
       message: ColumnFamilyStore.java:402 - Initializing system.local
       module: main
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_debug
     logName: projects/my-project/logs/transformation_test
     severity: 100.0
@@ -72,6 +78,7 @@
       message: SSTableReader.java:443 - Opening /var/lib/cassandra/data/system/local-7ad54392bcdd35a684174e047860b377/na-1-big-Data.db
       module: main
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_debug
     logName: projects/my-project/logs/transformation_test
     severity: 100.0
@@ -83,6 +90,7 @@
       message: "StorageService.java:1451 - Joined ring with token ranges: [-9223372036854775808]"
       module: main
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_debug
     logName: projects/my-project/logs/transformation_test
     severity: 100.0
@@ -94,6 +102,7 @@
       message: MessagingService.java:227 - Starting messaging service on 127.0.0.1:7000 (rack1)
       module: main
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_debug
     logName: projects/my-project/logs/transformation_test
     severity: 100.0
@@ -105,6 +114,7 @@
       message: Gossiper.java:958 - Gossiper gossiping to 127.0.0.2
       module: main
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_debug
     logName: projects/my-project/logs/transformation_test
     severity: 100.0
@@ -116,6 +126,7 @@
       message: Gossiper.java:999 - Received SYN from /127.0.0.2
       module: main
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_debug
     logName: projects/my-project/logs/transformation_test
     severity: 100.0
@@ -127,6 +138,7 @@
       message: CompactionStrategyManager.java:301 - Checking compaction candidates for ks1.tbl1
       module: CompactionExecutor:1
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_debug
     logName: projects/my-project/logs/transformation_test
     severity: 100.0
@@ -138,6 +150,7 @@
       message: Memtable.java:320 - Flushing Memtable (172.4 KiB) for ks1.tbl1
       module: MemtableFlushWriter:1
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_debug
     logName: projects/my-project/logs/transformation_test
     severity: 100.0
@@ -149,6 +162,7 @@
       message: Memtable.java:354 - Writing to /var/lib/cassandra/data/ks1/tbl1-123abc/tmp-123abc-Data.db
       module: MemtableFlushWriter:1
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_debug
     logName: projects/my-project/logs/transformation_test
     severity: 100.0
@@ -160,6 +174,7 @@
       message: "SSTable.java:197 - New SSTable added: ks1.tbl1-123abc-Data.db"
       module: MemtableFlushWriter:1
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_debug
     logName: projects/my-project/logs/transformation_test
     severity: 100.0
@@ -171,6 +186,7 @@
       message: StorageProxy.java:2342 - Mutation completed in 13 ms at consistency QUORUM
       module: MutationStage-3
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_debug
     logName: projects/my-project/logs/transformation_test
     severity: 100.0
@@ -182,6 +198,7 @@
       message: HintsService.java:489 - Writing hint for node /127.0.0.3
       module: HintsService:1
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_debug
     logName: projects/my-project/logs/transformation_test
     severity: 100.0
@@ -193,6 +210,7 @@
       message: HintsWriteExecutor.java:120 - Wrote 1 hint(s) in 4 ms
       module: HintsService:1
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_debug
     logName: projects/my-project/logs/transformation_test
     severity: 100.0
@@ -204,6 +222,7 @@
       message: "Gossiper.java:1160 - Delaying status update due to peer being unreachable: /127.0.0.4"
       module: GossipStage:1
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_debug
     logName: projects/my-project/logs/transformation_test
     severity: 100.0
@@ -215,6 +234,7 @@
       message: RepairSession.java:238 - Starting validation for range (-9223372036854775808, 0] on ks1.tbl1
       module: AntiEntropyStage:1
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_debug
     logName: projects/my-project/logs/transformation_test
     severity: 100.0
