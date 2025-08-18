@@ -1,0 +1,6 @@
+192.168.1.10 couchbase.local - [18/Aug/2025:09:20:11 +0000] "GET /pools/default/buckets/travel-data HTTP/1.1" 200 512 "-" "curl/7.68.0" Request took 5ms
+192.168.1.12 couchbase.local - [18/Aug/2025:09:20:42 +0000] "POST /pools/default/buckets/travel-data/docs HTTP/1.1" 201 123 "-" "python-requests/2.26.0" Request took 12ms
+192.168.1.13 couchbase.local - [18/Aug/2025:09:21:10 +0000] "GET /pools/default/buckets/missing-data HTTP/1.1" 404 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" Request took 2ms
+192.168.1.14 couchbase.local - [18/Aug/2025:09:21:25 +0000] "PUT /pools/default/buckets/travel-data/docs/user:123 HTTP/1.1" 500 64 "-" "node-fetch/1.0" Request took 18ms
+192.168.1.15 couchbase.local - [18/Aug/2025:09:22:00 +0000] "DELETE /pools/default/buckets/old-data HTTP/1.1" 403 64 "-" "curl/7.88.1" Request took 7ms
+192.168.1.16 couchbase.local - [18/Aug/2025:09:22:35 +0000] "GET /pools/default/buckets/travel-data/docs?include_docs=true HTTP/1.1" 302 0 http://referrer.example.com "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36" Request took 3ms
