@@ -322,10 +322,10 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 			t.Fatal(err)
 		}
 
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="Jul 09, 2015 3:23:29 PM com.google.devtools.search.cloud.feeder.MakeLog: RuntimeException: Run from this message!\n  at com.my.app.Object.do$a1(MakeLog.java:50)\n  at java.lang.Thing.call(Thing.java:10)\n"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="Jul 09, 2015 3:23:29 PM com.google.devtools.search.cloud.feeder.MakeLog: RuntimeException: Run from this message!\n  at com.my.app.Object.do$a1(MakeLog.java:50)\n  at java.lang.Thing.call(Thing.java:10)"`); err != nil {
 			t.Error(err)
 		}
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="javax.servlet.ServletException: Something bad happened\n    at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:60)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at com.example.myproject.ExceptionHandlerFilter.doFilter(ExceptionHandlerFilter.java:28)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at com.example.myproject.OutputBufferFilter.doFilter(OutputBufferFilter.java:33)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at org.mortbay.jetty.servlet.ServletHandler.handle(ServletHandler.java:388)\n    at org.mortbay.jetty.security.SecurityHandler.handle(SecurityHandler.java:216)\n    at org.mortbay.jetty.servlet.SessionHandler.handle(SessionHandler.java:182)\n    at org.mortbay.jetty.handler.ContextHandler.handle(ContextHandler.java:765)\n    at org.mortbay.jetty.webapp.WebAppContext.handle(WebAppContext.java:418)\n    at org.mortbay.jetty.handler.HandlerWrapper.handle(HandlerWrapper.java:152)\n    at org.mortbay.jetty.Server.handle(Server.java:326)\n    at org.mortbay.jetty.HttpConnection.handleRequest(HttpConnection.java:542)\n    at org.mortbay.jetty.HttpConnection$RequestHandler.content(HttpConnection.java:943)\n    at org.mortbay.jetty.HttpParser.parseNext(HttpParser.java:756)\n    at org.mortbay.jetty.HttpParser.parseAvailable(HttpParser.java:218)\n    at org.mortbay.jetty.HttpConnection.handle(HttpConnection.java:404)\n    at org.mortbay.jetty.bio.SocketConnector$Connection.run(SocketConnector.java:228)\n    at org.mortbay.thread.QueuedThreadPool$PoolThread.run(QueuedThreadPool.java:582)\nCaused by: com.example.myproject.MyProjectServletException\n    at com.example.myproject.MyServlet.doPost(MyServlet.java:169)\n    at javax.servlet.http.HttpServlet.service(HttpServlet.java:727)\n    at javax.servlet.http.HttpServlet.service(HttpServlet.java:820)\n    at org.mortbay.jetty.servlet.ServletHolder.handle(ServletHolder.java:511)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1166)\n    at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:30)\n    ... 27 common frames omitted\n"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="javax.servlet.ServletException: Something bad happened\n    at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:60)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at com.example.myproject.ExceptionHandlerFilter.doFilter(ExceptionHandlerFilter.java:28)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at com.example.myproject.OutputBufferFilter.doFilter(OutputBufferFilter.java:33)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at org.mortbay.jetty.servlet.ServletHandler.handle(ServletHandler.java:388)\n    at org.mortbay.jetty.security.SecurityHandler.handle(SecurityHandler.java:216)\n    at org.mortbay.jetty.servlet.SessionHandler.handle(SessionHandler.java:182)\n    at org.mortbay.jetty.handler.ContextHandler.handle(ContextHandler.java:765)\n    at org.mortbay.jetty.webapp.WebAppContext.handle(WebAppContext.java:418)\n    at org.mortbay.jetty.handler.HandlerWrapper.handle(HandlerWrapper.java:152)\n    at org.mortbay.jetty.Server.handle(Server.java:326)\n    at org.mortbay.jetty.HttpConnection.handleRequest(HttpConnection.java:542)\n    at org.mortbay.jetty.HttpConnection$RequestHandler.content(HttpConnection.java:943)\n    at org.mortbay.jetty.HttpParser.parseNext(HttpParser.java:756)\n    at org.mortbay.jetty.HttpParser.parseAvailable(HttpParser.java:218)\n    at org.mortbay.jetty.HttpConnection.handle(HttpConnection.java:404)\n    at org.mortbay.jetty.bio.SocketConnector$Connection.run(SocketConnector.java:228)\n    at org.mortbay.thread.QueuedThreadPool$PoolThread.run(QueuedThreadPool.java:582)\nCaused by: com.example.myproject.MyProjectServletException\n    at com.example.myproject.MyServlet.doPost(MyServlet.java:169)\n    at javax.servlet.http.HttpServlet.service(HttpServlet.java:727)\n    at javax.servlet.http.HttpServlet.service(HttpServlet.java:820)\n    at org.mortbay.jetty.servlet.ServletHolder.handle(ServletHolder.java:511)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1166)\n    at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:30)\n    ... 27 common frames omitted"`); err != nil {
 			t.Error(err)
 		}
 	})
@@ -457,32 +457,32 @@ TypeError: can only concatenate str (not "int") to str
 		}
 
 		// 1st one is Java
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="Jul 09, 2015 3:23:29 PM com.google.devtools.search.cloud.feeder.MakeLog: RuntimeException: Run from this message!\n  at com.my.app.Object.do$a1(MakeLog.java:50)\n  at java.lang.Thing.call(Thing.java:10)\n"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="Jul 09, 2015 3:23:29 PM com.google.devtools.search.cloud.feeder.MakeLog: RuntimeException: Run from this message!\n  at com.my.app.Object.do$a1(MakeLog.java:50)\n  at java.lang.Thing.call(Thing.java:10)"`); err != nil {
 			t.Error(err)
 		}
 
 		// 2nd Python
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="Traceback (most recent call last):\n  File \"/base/data/home/runtimes/python27/python27_lib/versions/third_party/webapp2-2.5.2/webapp2.py\", line 1535, in __call__\n    rv = self.handle_exception(request, response, e)\n  File \"/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py\", line 17, in start\n    return get()\n  File \"/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py\", line 5, in get\n    raise Exception('spam', 'eggs')\nException: ('spam', 'eggs')\n"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="Traceback (most recent call last):\n  File \"/base/data/home/runtimes/python27/python27_lib/versions/third_party/webapp2-2.5.2/webapp2.py\", line 1535, in __call__\n    rv = self.handle_exception(request, response, e)\n  File \"/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py\", line 17, in start\n    return get()\n  File \"/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py\", line 5, in get\n    raise Exception('spam', 'eggs')\nException: ('spam', 'eggs')"`); err != nil {
 			t.Error(err)
 		}
 
 		// 3rd Java
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="javax.servlet.ServletException: Something bad happened\n    at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:60)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at com.example.myproject.ExceptionHandlerFilter.doFilter(ExceptionHandlerFilter.java:28)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at com.example.myproject.OutputBufferFilter.doFilter(OutputBufferFilter.java:33)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at org.mortbay.jetty.servlet.ServletHandler.handle(ServletHandler.java:388)\n    at org.mortbay.jetty.security.SecurityHandler.handle(SecurityHandler.java:216)\n    at org.mortbay.jetty.servlet.SessionHandler.handle(SessionHandler.java:182)\n    at org.mortbay.jetty.handler.ContextHandler.handle(ContextHandler.java:765)\n    at org.mortbay.jetty.webapp.WebAppContext.handle(WebAppContext.java:418)\n    at org.mortbay.jetty.handler.HandlerWrapper.handle(HandlerWrapper.java:152)\n    at org.mortbay.jetty.Server.handle(Server.java:326)\n    at org.mortbay.jetty.HttpConnection.handleRequest(HttpConnection.java:542)\n    at org.mortbay.jetty.HttpConnection$RequestHandler.content(HttpConnection.java:943)\n    at org.mortbay.jetty.HttpParser.parseNext(HttpParser.java:756)\n    at org.mortbay.jetty.HttpParser.parseAvailable(HttpParser.java:218)\n    at org.mortbay.jetty.HttpConnection.handle(HttpConnection.java:404)\n    at org.mortbay.jetty.bio.SocketConnector$Connection.run(SocketConnector.java:228)\n    at org.mortbay.thread.QueuedThreadPool$PoolThread.run(QueuedThreadPool.java:582)\nCaused by: com.example.myproject.MyProjectServletException\n    at com.example.myproject.MyServlet.doPost(MyServlet.java:169)\n    at javax.servlet.http.HttpServlet.service(HttpServlet.java:727)\n    at javax.servlet.http.HttpServlet.service(HttpServlet.java:820)\n    at org.mortbay.jetty.servlet.ServletHolder.handle(ServletHolder.java:511)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1166)\n    at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:30)\n    ... 27 common frames omitted\n"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="javax.servlet.ServletException: Something bad happened\n    at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:60)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at com.example.myproject.ExceptionHandlerFilter.doFilter(ExceptionHandlerFilter.java:28)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at com.example.myproject.OutputBufferFilter.doFilter(OutputBufferFilter.java:33)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)\n    at org.mortbay.jetty.servlet.ServletHandler.handle(ServletHandler.java:388)\n    at org.mortbay.jetty.security.SecurityHandler.handle(SecurityHandler.java:216)\n    at org.mortbay.jetty.servlet.SessionHandler.handle(SessionHandler.java:182)\n    at org.mortbay.jetty.handler.ContextHandler.handle(ContextHandler.java:765)\n    at org.mortbay.jetty.webapp.WebAppContext.handle(WebAppContext.java:418)\n    at org.mortbay.jetty.handler.HandlerWrapper.handle(HandlerWrapper.java:152)\n    at org.mortbay.jetty.Server.handle(Server.java:326)\n    at org.mortbay.jetty.HttpConnection.handleRequest(HttpConnection.java:542)\n    at org.mortbay.jetty.HttpConnection$RequestHandler.content(HttpConnection.java:943)\n    at org.mortbay.jetty.HttpParser.parseNext(HttpParser.java:756)\n    at org.mortbay.jetty.HttpParser.parseAvailable(HttpParser.java:218)\n    at org.mortbay.jetty.HttpConnection.handle(HttpConnection.java:404)\n    at org.mortbay.jetty.bio.SocketConnector$Connection.run(SocketConnector.java:228)\n    at org.mortbay.thread.QueuedThreadPool$PoolThread.run(QueuedThreadPool.java:582)\nCaused by: com.example.myproject.MyProjectServletException\n    at com.example.myproject.MyServlet.doPost(MyServlet.java:169)\n    at javax.servlet.http.HttpServlet.service(HttpServlet.java:727)\n    at javax.servlet.http.HttpServlet.service(HttpServlet.java:820)\n    at org.mortbay.jetty.servlet.ServletHolder.handle(ServletHolder.java:511)\n    at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1166)\n    at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:30)\n    ... 27 common frames omitted"`); err != nil {
 			t.Error(err)
 		}
 
 		// 4th Java
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="java.lang.RuntimeException: javax.mail.SendFailedException: Invalid Addresses;\n  nested exception is:\ncom.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:236)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:285)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.lambda$sendSingleEmail$3(AutomaticEmailFacade.java:254)\n	at java.util.Optional.ifPresent(Optional.java:159)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:253)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:249)\n	at com.nethunt.crm.api.email.EmailSender.lambda$notifyPerson$0(EmailSender.java:80)\n	at com.nethunt.crm.api.util.ManagedExecutor.lambda$execute$0(ManagedExecutor.java:36)\n	at com.nethunt.crm.api.util.RequestContextActivator.lambda$withRequestContext$0(RequestContextActivator.java:36)\n	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)\n	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)\n	at java.base/java.lang.Thread.run(Thread.java:748)\nCaused by: javax.mail.SendFailedException: Invalid Addresses;\n  nested exception is:\ncom.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied\n	at com.sun.mail.smtp.SMTPTransport.rcptTo(SMTPTransport.java:2064)\n	at com.sun.mail.smtp.SMTPTransport.sendMessage(SMTPTransport.java:1286)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:229)\n	... 12 more\nCaused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied\n"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="java.lang.RuntimeException: javax.mail.SendFailedException: Invalid Addresses;\n  nested exception is:\ncom.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:236)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:285)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.lambda$sendSingleEmail$3(AutomaticEmailFacade.java:254)\n	at java.util.Optional.ifPresent(Optional.java:159)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:253)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:249)\n	at com.nethunt.crm.api.email.EmailSender.lambda$notifyPerson$0(EmailSender.java:80)\n	at com.nethunt.crm.api.util.ManagedExecutor.lambda$execute$0(ManagedExecutor.java:36)\n	at com.nethunt.crm.api.util.RequestContextActivator.lambda$withRequestContext$0(RequestContextActivator.java:36)\n	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)\n	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)\n	at java.base/java.lang.Thread.run(Thread.java:748)\nCaused by: javax.mail.SendFailedException: Invalid Addresses;\n  nested exception is:\ncom.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied\n	at com.sun.mail.smtp.SMTPTransport.rcptTo(SMTPTransport.java:2064)\n	at com.sun.mail.smtp.SMTPTransport.sendMessage(SMTPTransport.java:1286)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:229)\n	... 12 more\nCaused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied"`); err != nil {
 			t.Error(err)
 		}
 
 		// 5th Python
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="Traceback (most recent call last):\n  File \"/test/exception.py\", line 21, in <module>\n    conn.request(\"GET\", \"/\")\n  File \"/usr/lib/python3.10/http/client.py\", line 1282, in request\n    self._send_request(method, url, body, headers, encode_chunked)\n  File \"/usr/lib/python3.10/http/client.py\", line 1328, in _send_request\n    self.endheaders(body, encode_chunked=encode_chunked)\n  File \"/usr/lib/python3.10/http/client.py\", line 1277, in endheaders\n    self._send_output(message_body, encode_chunked=encode_chunked)\n  File \"/usr/lib/python3.10/http/client.py\", line 1037, in _send_output\n    self.send(msg)\n  File \"/usr/lib/python3.10/http/client.py\", line 975, in send\n    self.connect()\n  File \"/usr/lib/python3.10/http/client.py\", line 941, in connect\n    self.sock = self._create_connection(\n  File \"/usr/lib/python3.10/socket.py\", line 824, in create_connection\n    for res in getaddrinfo(host, port, 0, SOCK_STREAM):\n  File \"/usr/lib/python3.10/socket.py\", line 955, in getaddrinfo\n    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):\nsocket.gaierror: [Errno -2] Name or service not known\n"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="Traceback (most recent call last):\n  File \"/test/exception.py\", line 21, in <module>\n    conn.request(\"GET\", \"/\")\n  File \"/usr/lib/python3.10/http/client.py\", line 1282, in request\n    self._send_request(method, url, body, headers, encode_chunked)\n  File \"/usr/lib/python3.10/http/client.py\", line 1328, in _send_request\n    self.endheaders(body, encode_chunked=encode_chunked)\n  File \"/usr/lib/python3.10/http/client.py\", line 1277, in endheaders\n    self._send_output(message_body, encode_chunked=encode_chunked)\n  File \"/usr/lib/python3.10/http/client.py\", line 1037, in _send_output\n    self.send(msg)\n  File \"/usr/lib/python3.10/http/client.py\", line 975, in send\n    self.connect()\n  File \"/usr/lib/python3.10/http/client.py\", line 941, in connect\n    self.sock = self._create_connection(\n  File \"/usr/lib/python3.10/socket.py\", line 824, in create_connection\n    for res in getaddrinfo(host, port, 0, SOCK_STREAM):\n  File \"/usr/lib/python3.10/socket.py\", line 955, in getaddrinfo\n    for res in _socket.getaddrinfo(host, port, family, type, proto, flags):\nsocket.gaierror: [Errno -2] Name or service not known"`); err != nil {
 			t.Error(err)
 		}
 
 		// 6th Python
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="Traceback (most recent call last):\n  File \"/usr/local/google/home/lujieduan/source/test/exception.py\", line 11, in <module>\n    '2' + 2\nTypeError: can only concatenate str (not \"int\") to str\n"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="Traceback (most recent call last):\n  File \"/usr/local/google/home/lujieduan/source/test/exception.py\", line 11, in <module>\n    '2' + 2\nTypeError: can only concatenate str (not \"int\") to str"`); err != nil {
 			t.Error(err)
 		}
 	})
@@ -586,22 +586,22 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 		}
 
 		// 1st one is Golang
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="2019/01/15 07:48:05 http: panic serving [::1]:54143: test panic\ngoroutine 24 [running]:\nnet/http.(*conn).serve.func1(0xc00007eaa0)\n	/usr/local/go/src/net/http/server.go:1746 +0xd0\npanic(0x12472a0, 0x12ece10)\n	/usr/local/go/src/runtime/panic.go:513 +0x1b9\nmain.doPanic(0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/Users/ingvar/src/go/src/httppanic.go:8 +0x39\nnet/http.HandlerFunc.ServeHTTP(0x12be2e8, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/usr/local/go/src/net/http/server.go:1964 +0x44\nnet/http.(*ServeMux).ServeHTTP(0x14a17a0, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/usr/local/go/src/net/http/server.go:2361 +0x127\nnet/http.serverHandler.ServeHTTP(0xc000085040, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/usr/local/go/src/net/http/server.go:2741 +0xab\nnet/http.(*conn).serve(0xc00007eaa0, 0x12f10a0, 0xc00008a780)\n	/usr/local/go/src/net/http/server.go:1847 +0x646\ncreated by net/http.(*Server).Serve\n	/usr/local/go/src/net/http/server.go:2851 +0x2f5\n"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="2019/01/15 07:48:05 http: panic serving [::1]:54143: test panic\ngoroutine 24 [running]:\nnet/http.(*conn).serve.func1(0xc00007eaa0)\n	/usr/local/go/src/net/http/server.go:1746 +0xd0\npanic(0x12472a0, 0x12ece10)\n	/usr/local/go/src/runtime/panic.go:513 +0x1b9\nmain.doPanic(0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/Users/ingvar/src/go/src/httppanic.go:8 +0x39\nnet/http.HandlerFunc.ServeHTTP(0x12be2e8, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/usr/local/go/src/net/http/server.go:1964 +0x44\nnet/http.(*ServeMux).ServeHTTP(0x14a17a0, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/usr/local/go/src/net/http/server.go:2361 +0x127\nnet/http.serverHandler.ServeHTTP(0xc000085040, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/usr/local/go/src/net/http/server.go:2741 +0xab\nnet/http.(*conn).serve(0xc00007eaa0, 0x12f10a0, 0xc00008a780)\n	/usr/local/go/src/net/http/server.go:1847 +0x646\ncreated by net/http.(*Server).Serve\n	/usr/local/go/src/net/http/server.go:2851 +0x2f5"`); err != nil {
 			t.Error(err)
 		}
 
 		// 2nd Python
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="Traceback (most recent call last):\n  File \"/base/data/home/runtimes/python27/python27_lib/versions/third_party/webapp2-2.5.2/webapp2.py\", line 1535, in __call__\n    rv = self.handle_exception(request, response, e)\n  File \"/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py\", line 17, in start\n    return get()\n  File \"/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py\", line 5, in get\n    raise Exception('spam', 'eggs')\nException: ('spam', 'eggs')\n"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="Traceback (most recent call last):\n  File \"/base/data/home/runtimes/python27/python27_lib/versions/third_party/webapp2-2.5.2/webapp2.py\", line 1535, in __call__\n    rv = self.handle_exception(request, response, e)\n  File \"/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py\", line 17, in start\n    return get()\n  File \"/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py\", line 5, in get\n    raise Exception('spam', 'eggs')\nException: ('spam', 'eggs')"`); err != nil {
 			t.Error(err)
 		}
 
 		// 3nd Python - With custom string prefix, common when using https://docs.python.org/3/library/logging.html#logging.Logger.exception
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="2023-07-09 00:00:00,000 ERROR    some_app custom string prefix to the exception: Traceback (most recent call last):\n  File \"/base/data/home/runtimes/python27/python27_lib/versions/third_party/webapp2-2.5.2/webapp2.py\", line 1535, in __call__\n    rv = self.handle_exception(request, response, e)\n  File \"/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py\", line 17, in start\n    return get()\n  File \"/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py\", line 5, in get\n    raise Exception('spam', 'eggs')\nException: ('spam', 'eggs')\n"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="2023-07-09 00:00:00,000 ERROR    some_app custom string prefix to the exception: Traceback (most recent call last):\n  File \"/base/data/home/runtimes/python27/python27_lib/versions/third_party/webapp2-2.5.2/webapp2.py\", line 1535, in __call__\n    rv = self.handle_exception(request, response, e)\n  File \"/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py\", line 17, in start\n    return get()\n  File \"/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py\", line 5, in get\n    raise Exception('spam', 'eggs')\nException: ('spam', 'eggs')"`); err != nil {
 			t.Error(err)
 		}
 
 		// 3rd Java
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="java.lang.RuntimeException: javax.mail.SendFailedException: Invalid Addresses;\n  nested exception is:\ncom.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:236)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:285)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.lambda$sendSingleEmail$3(AutomaticEmailFacade.java:254)\n	at java.util.Optional.ifPresent(Optional.java:159)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:253)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:249)\n	at com.nethunt.crm.api.email.EmailSender.lambda$notifyPerson$0(EmailSender.java:80)\n	at com.nethunt.crm.api.util.ManagedExecutor.lambda$execute$0(ManagedExecutor.java:36)\n	at com.nethunt.crm.api.util.RequestContextActivator.lambda$withRequestContext$0(RequestContextActivator.java:36)\n	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)\n	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)\n	at java.base/java.lang.Thread.run(Thread.java:748)\nCaused by: javax.mail.SendFailedException: Invalid Addresses;\n  nested exception is:\ncom.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied\n	at com.sun.mail.smtp.SMTPTransport.rcptTo(SMTPTransport.java:2064)\n	at com.sun.mail.smtp.SMTPTransport.sendMessage(SMTPTransport.java:1286)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:229)\n	... 12 more\nCaused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied\n"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="java.lang.RuntimeException: javax.mail.SendFailedException: Invalid Addresses;\n  nested exception is:\ncom.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:236)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:285)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.lambda$sendSingleEmail$3(AutomaticEmailFacade.java:254)\n	at java.util.Optional.ifPresent(Optional.java:159)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:253)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:249)\n	at com.nethunt.crm.api.email.EmailSender.lambda$notifyPerson$0(EmailSender.java:80)\n	at com.nethunt.crm.api.util.ManagedExecutor.lambda$execute$0(ManagedExecutor.java:36)\n	at com.nethunt.crm.api.util.RequestContextActivator.lambda$withRequestContext$0(RequestContextActivator.java:36)\n	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)\n	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)\n	at java.base/java.lang.Thread.run(Thread.java:748)\nCaused by: javax.mail.SendFailedException: Invalid Addresses;\n  nested exception is:\ncom.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied\n	at com.sun.mail.smtp.SMTPTransport.rcptTo(SMTPTransport.java:2064)\n	at com.sun.mail.smtp.SMTPTransport.sendMessage(SMTPTransport.java:1286)\n	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:229)\n	... 12 more\nCaused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied"`); err != nil {
 			t.Error(err)
 		}
 	})
@@ -694,25 +694,25 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 		}
 
 		// 1st one is Golang
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="2019/01/15 07:48:05 http: panic serving [::1]:54143: test panic\ngoroutine 24 [running]:\nnet/http.(*conn).serve.func1(0xc00007eaa0)\n	/usr/local/go/src/net/http/server.go:1746 +0xd0\npanic(0x12472a0, 0x12ece10)\n	/usr/local/go/src/runtime/panic.go:513 +0x1b9\nmain.doPanic(0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/Users/ingvar/src/go/src/httppanic.go:8 +0x39\nnet/http.HandlerFunc.ServeHTTP(0x12be2e8, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/usr/local/go/src/net/http/server.go:1964 +0x44\nnet/http.(*ServeMux).ServeHTTP(0x14a17a0, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/usr/local/go/src/net/http/server.go:2361 +0x127\nnet/http.serverHandler.ServeHTTP(0xc000085040, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/usr/local/go/src/net/http/server.go:2741 +0xab\nnet/http.(*conn).serve(0xc00007eaa0, 0x12f10a0, 0xc00008a780)\n	/usr/local/go/src/net/http/server.go:1847 +0x646\ncreated by net/http.(*Server).Serve\n	/usr/local/go/src/net/http/server.go:2851 +0x2f5\n"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="2019/01/15 07:48:05 http: panic serving [::1]:54143: test panic\ngoroutine 24 [running]:\nnet/http.(*conn).serve.func1(0xc00007eaa0)\n	/usr/local/go/src/net/http/server.go:1746 +0xd0\npanic(0x12472a0, 0x12ece10)\n	/usr/local/go/src/runtime/panic.go:513 +0x1b9\nmain.doPanic(0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/Users/ingvar/src/go/src/httppanic.go:8 +0x39\nnet/http.HandlerFunc.ServeHTTP(0x12be2e8, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/usr/local/go/src/net/http/server.go:1964 +0x44\nnet/http.(*ServeMux).ServeHTTP(0x14a17a0, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/usr/local/go/src/net/http/server.go:2361 +0x127\nnet/http.serverHandler.ServeHTTP(0xc000085040, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)\n	/usr/local/go/src/net/http/server.go:2741 +0xab\nnet/http.(*conn).serve(0xc00007eaa0, 0x12f10a0, 0xc00008a780)\n	/usr/local/go/src/net/http/server.go:1847 +0x646\ncreated by net/http.(*Server).Serve\n	/usr/local/go/src/net/http/server.go:2851 +0x2f5"`); err != nil {
 			t.Error(err)
 		}
 
 		// 2nd one is Python - the golang parser will send those lines as single-line logs
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="Traceback (most recent call last):\n"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="Traceback (most recent call last):"`); err != nil {
 			t.Error(err)
 		}
 
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="    raise Exception('spam', 'eggs')\n"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="    raise Exception('spam', 'eggs')"`); err != nil {
 			t.Error(err)
 		}
 
 		// 3rd one is Java - the golang parser will send those lines as single-line logs
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="java.lang.RuntimeException: javax.mail.SendFailedException: Invalid Addresses;\n"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="java.lang.RuntimeException: javax.mail.SendFailedException: Invalid Addresses;"`); err != nil {
 			t.Error(err)
 		}
 
-		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied\n"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied"`); err != nil {
 			t.Error(err)
 		}
 	})
@@ -897,12 +897,14 @@ func TestKillChildJobsWhenPluginServerProcessTerminates(t *testing.T) {
 
 func TestCustomLogFormat(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachLoggingSubagent(t, func(t *testing.T, otel bool) {
 		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+			t.Parallel()
+			ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
-		logPath := logPathForImage(vm.ImageSpec)
-		config := fmt.Sprintf(`logging:
+			logPath := logPathForImage(vm.ImageSpec)
+			config := fmt.Sprintf(`logging:
   receivers:
     mylog_source:
       type: files
@@ -918,27 +920,39 @@ func TestCustomLogFormat(t *testing.T) {
       time_key: time
       time_format: "%s"
   service:
+    experimental_otel_logging: %v
     pipelines:
       my_pipeline:
         receivers: [mylog_source]
         processors: [rfc5424]
         exporters: [google]
-`, logPath, "%Y-%m-%dT%H:%M:%S.%L%z")
+`, logPath, "%Y-%m-%dT%H:%M:%S.%L%z", otel)
 
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
-			t.Fatal(err)
-		}
+			if otel {
+				if err := setExperimentalFeatures(ctx, logger, vm, "otel_logging"); err != nil {
+					t.Fatal(err)
+				}
+			}
 
-		zone := time.FixedZone("UTC-8", int((-8 * time.Hour).Seconds()))
-		line := fmt.Sprintf("<13>1 %s %s my_app_id - - - qqqqrrrr\n", time.Now().In(zone).Format(time.RFC3339Nano), vm.Name)
-		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), logPath); err != nil {
-			t.Fatalf("error writing dummy log line: %v", err)
-		}
+			if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+				t.Fatal(err)
+			}
 
-		// window (1 hour) is *less than* the time zone UTC offset (8 hours) to catch time zone parse failures
-		if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, "jsonPayload.message=qqqqrrrr AND jsonPayload.ident=my_app_id"); err != nil {
-			t.Error(err)
-		}
+			zone := time.FixedZone("UTC-8", int((-8 * time.Hour).Seconds()))
+			line := fmt.Sprintf("<13>1 %s %s my_app_id - - - qqqqrrrr\n", time.Now().In(zone).Format(time.RFC3339Nano), vm.Name)
+			// TODO: b/413446913 Enable non-UTC timestamp when otel logging parsing differences are fixed.
+			if otel {
+				line = fmt.Sprintf("<13>1 %s %s my_app_id - - - qqqqrrrr\n", time.Now().UTC().Format(time.RFC3339Nano), vm.Name)
+			}
+			if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), logPath); err != nil {
+				t.Fatalf("error writing dummy log line: %v", err)
+			}
+
+			// window (1 hour) is *less than* the time zone UTC offset (8 hours) to catch time zone parse failures
+			if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, "jsonPayload.message=qqqqrrrr AND jsonPayload.ident=my_app_id"); err != nil {
+				t.Error(err)
+			}
+		})
 	})
 }
 

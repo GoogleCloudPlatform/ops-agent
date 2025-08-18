@@ -4,6 +4,7 @@
       process_id: 0.692.0
       severity: erro
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/rabbitmq
     logName: projects/my-project/logs/transformation_test
     timestamp: 2025-08-18T01:01:20.441571000Z
@@ -12,6 +13,7 @@
       process_id: 0.801.0
       severity: info
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/rabbitmq
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -19,6 +21,7 @@
   - jsonPayload:
       message: 2025-08-18 01:06:33.987654-07:00 [warning] <0.550.0> Queue 'task_queue' is nearing memory threshold.
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/rabbitmq
     logName: projects/my-project/logs/transformation_test
     timestamp: now
@@ -27,6 +30,7 @@
       process_id: 0.801.0
       severity: info
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/rabbitmq
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -36,6 +40,7 @@
       process_id: 0.200.0
       severity: debug
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/rabbitmq
     logName: projects/my-project/logs/transformation_test
     severity: 100.0
@@ -45,6 +50,7 @@
       process_id: 0.310.0
       severity: error
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/rabbitmq
     logName: projects/my-project/logs/transformation_test
     severity: 500.0
@@ -54,6 +60,7 @@
       process_id: 0.312.0
       severity: warning
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/rabbitmq
     logName: projects/my-project/logs/transformation_test
     severity: 400.0
@@ -63,6 +70,7 @@
       process_id: 0.400.0
       severity: noti
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/rabbitmq
     logName: projects/my-project/logs/transformation_test
     severity: 0.0
@@ -72,6 +80,7 @@
       process_id: 0.401.0
       severity: info
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/rabbitmq
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -81,6 +90,7 @@
       process_id: 0.500.0
       severity: warning
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/rabbitmq
     logName: projects/my-project/logs/transformation_test
     severity: 400.0
@@ -90,6 +100,7 @@
       process_id: 0.501.0
       severity: erro
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/rabbitmq
     logName: projects/my-project/logs/transformation_test
     timestamp: 2025-08-18T03:56:01.456000000Z
@@ -98,6 +109,7 @@
       process_id: 0.600.0
       severity: erro
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/rabbitmq
     logName: projects/my-project/logs/transformation_test
     timestamp: 2025-08-18T04:06:06.789000000Z
@@ -106,6 +118,7 @@
       process_id: 0.601.0
       severity: debug
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/rabbitmq
     logName: projects/my-project/logs/transformation_test
     severity: 100.0
@@ -115,6 +128,7 @@
       process_id: 123.456.789
       severity: noti
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/rabbitmq
     logName: projects/my-project/logs/transformation_test
     severity: 0.0
@@ -124,24 +138,28 @@
       process_id: 0.999.0
       severity: erro
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/rabbitmq
     logName: projects/my-project/logs/transformation_test
     timestamp: 2025-08-18T04:07:08.888000000Z
   - jsonPayload:
       message: 2025-08-18 05:07:43.557042+00:00 [erro] <0.130.0>
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/rabbitmq
     logName: projects/my-project/logs/transformation_test
     timestamp: now
   - jsonPayload:
       message: BOOT FAILED
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/rabbitmq
     logName: projects/my-project/logs/transformation_test
     timestamp: now
   - jsonPayload:
       message: ===========
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/rabbitmq
     logName: projects/my-project/logs/transformation_test
     timestamp: now

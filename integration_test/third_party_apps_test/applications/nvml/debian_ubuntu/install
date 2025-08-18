@@ -38,7 +38,8 @@ case $DEVICE_CODE in
             # cuda-12-6 is the latest version that supports Debian 11
             sudo apt -y install cuda-12-6
         else
-            sudo apt -y install cuda
+            sudo apt -y install nvidia-driver-575
+            sudo apt -y install cuda-12-9
         fi
         ;;
 esac

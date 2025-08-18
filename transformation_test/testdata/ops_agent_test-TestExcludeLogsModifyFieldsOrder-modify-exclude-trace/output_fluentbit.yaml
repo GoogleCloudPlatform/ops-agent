@@ -1,6 +1,8 @@
 - entries:
   - jsonPayload:
       query_field: value
+    labels:
+      compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/transformation_test
     spanId: facefeedb0bacafe
     timestamp: now

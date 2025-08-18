@@ -5,6 +5,7 @@
       overwritten-field: overwritten
       parsed-field: parsed-value
     labels:
+      compute.googleapis.com/resource_name: hostname
       non-overwritten-label: non-overwritten
       original-label: original-label
       overwritten-label: overwritten

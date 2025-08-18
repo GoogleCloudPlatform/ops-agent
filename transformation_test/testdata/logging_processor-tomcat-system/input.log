@@ -1,22 +1,39 @@
-Jul 21 01:02:43 myhost CRON[10123]: (root) CMD (/usr/lib/sa/sa1 1 1)
-Jul 21 01:17:01 myhost CRON[10234]: (root) CMD (   cd / && run-parts --report /etc/cron.hourly)
-Jul 21 03:15:12 myhost systemd[1]: Starting Daily apt download activities...
-Jul 21 03:15:13 myhost systemd[1]: Finished Daily apt download activities.
-Jul 21 04:00:45 myhost kernel: [64522.923400] usb 1-1: USB disconnect, device number 4
-Jul 21 04:01:12 myhost kernel: [64550.293280] usb 1-1: new full-speed USB device number 5 using xhci_hcd
-Jul 21 06:44:09 myhost sshd[13456]: Accepted password for alice from 203.0.113.10 port 52218 ssh2
-Jul 21 06:44:09 myhost sshd[13456]: pam_unix(sshd:session): session opened for user alice by (uid=0)
-Jul 21 07:00:01 myhost CRON[13567]: (root) CMD (/usr/local/bin/backup.sh)
-Jul 21 09:22:16 myhost systemd[1]: Starting Clean php session files...
-Jul 21 09:22:17 myhost systemd[1]: phpsessionclean.service: Succeeded.
-Jul 21 09:22:17 myhost systemd[1]: Finished Clean php session files.
-Jul 21 10:33:41 myhost sshd[14567]: Failed password for invalid user test from 192.168.1.100 port 50432 ssh2
-Jul 21 10:33:44 myhost sshd[14567]: Connection closed by invalid user test 192.168.1.100 port 50432 [preauth]
-Jul 21 12:01:10 myhost kernel: [72390.123112] EXT4-fs (sda1): mounted filesystem with ordered data mode. Opts: (null)
-Jul 21 14:40:00 myhost systemd[1]: Starting Rotate log files...
-Jul 21 14:40:01 myhost systemd[1]: logrotate.service: Succeeded.
-Jul 21 14:40:01 myhost systemd[1]: Finished Rotate log files.
-Jul 21 16:10:35 myhost sudo:     bob : TTY=pts/0 ; PWD=/home/bob ; USER=root ; COMMAND=/bin/systemctl restart apache2
-Jul 21 16:10:35 myhost sudo: pam_unix(sudo:session): session opened for user root by bob(uid=0)
-Jul 21 16:12:01 myhost sudo: pam_unix(sudo:session): session closed for user root
-Jul 21 17:59:01 myhost CRON[15234]: (root) CMD (/usr/lib/sa/sa1 1 1)
+21-Jul-2025 01:02:43.123 INFO [main] org.apache.catalina.startup.VersionLoggerListener Server version: Apache Tomcat/9.0.82
+21-Jul-2025 01:02:43.124 INFO [main] org.apache.catalina.startup.VersionLoggerListener Server built:   Jun 27 2025 18:12:34 UTC
+21-Jul-2025 01:02:43.124 INFO [main] org.apache.catalina.startup.VersionLoggerListener Server number:  9.0.82.0
+21-Jul-2025 01:02:43.124 INFO [main] org.apache.catalina.startup.VersionLoggerListener OS Name:        Linux
+21-Jul-2025 01:02:43.124 INFO [main] org.apache.catalina.startup.VersionLoggerListener OS Version:     5.15.0-86-generic
+21-Jul-2025 01:02:43.124 INFO [main] org.apache.catalina.startup.VersionLoggerListener Architecture:   amd64
+21-Jul-2025 01:02:43.125 INFO [main] org.apache.catalina.startup.VersionLoggerListener Java Home:      /usr/lib/jvm/java-17-openjdk
+21-Jul-2025 01:02:43.125 INFO [main] org.apache.catalina.startup.VersionLoggerListener JVM Version:    17.0.8+7
+21-Jul-2025 01:02:43.125 INFO [main] org.apache.catalina.startup.VersionLoggerListener JVM Vendor:     Eclipse Adoptium
+21-Jul-2025 01:02:43.221 INFO [main] org.apache.coyote.AbstractProtocol Initializing ProtocolHandler ["http-nio-8080"]
+21-Jul-2025 01:02:43.250 INFO [main] org.apache.catalina.core.StandardService Starting service [Catalina]
+21-Jul-2025 01:02:43.250 INFO [main] org.apache.catalina.core.StandardEngine Starting Servlet engine: [Apache Tomcat/9.0.82]
+21-Jul-2025 01:02:43.262 INFO [main] org.apache.catalina.core.AprLifecycleListener Loaded APR based Apache Tomcat Native library [1.2.32] using APR version [1.7.4].
+21-Jul-2025 01:02:43.330 INFO [main] org.apache.catalina.loader.WebappLoader Deploying web application directory [/var/lib/tomcat9/webapps/ROOT]
+21-Jul-2025 01:02:43.456 INFO [main] org.apache.catalina.core.ApplicationContext.log No Spring WebApplicationInitializer types detected on classpath
+21-Jul-2025 01:02:43.555 INFO [main] org.apache.catalina.startup.HostConfig Deployment of web application directory [/var/lib/tomcat9/webapps/ROOT] has finished in [225] ms
+21-Jul-2025 01:02:43.565 INFO [main] org.apache.coyote.AbstractProtocol Starting ProtocolHandler ["http-nio-8080"]
+21-Jul-2025 01:02:43.565 INFO [main] org.apache.catalina.startup.Catalina Server startup in 356 ms
+21-Jul-2025 10:33:41.123 WARN [http-nio-8080-exec-2] org.apache.catalina.authenticator.AuthenticatorBase Security checking request failed for /admin/
+21-Jul-2025 10:33:44.234 ERROR [http-nio-8080-exec-4] org.apache.catalina.core.StandardWrapperValve Servlet.service() for servlet [dispatcher] threw exception
+21-Jul-2025 14:40:01.456 INFO [ContainerBackgroundProcessor[StandardEngine[Catalina]]] org.apache.catalina.core.StandardContext Reloading Context [/myapp] has started
+21-Jul-2025 14:40:01.789 INFO [ContainerBackgroundProcessor[StandardEngine[Catalina]]] org.apache.catalina.core.StandardContext Reloading Context [/myapp] has completed
+21-Jul-2025 16:12:01.567 INFO [http-nio-8080-exec-3] org.apache.catalina.session.ManagerBase Session timeout set to 30 minutes
+21-Jul-2025 17:03:21.101 ERROR [http-nio-8080-exec-7] org.apache.catalina.core.StandardWrapperValve Servlet.service() for servlet [dispatcher] threw exception
+java.lang.NullPointerException: Cannot invoke "String.length()" because "input" is null
+	at com.example.service.UserService.getUserById(UserService.java:42)
+	at com.example.controller.UserController.handleRequest(UserController.java:28)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+	at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:205)
+	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1011)
+	at org.springframework.web.servlet.FrameworkServlet.doGet(FrameworkServlet.java:895)
+	at javax.servlet.http.HttpServlet.service(HttpServlet.java:626)
+21-Jul-2025 18:05:22.345 INFO [Thread-5] org.apache.catalina.core.StandardService Stopping service [Catalina]
+21-Jul-2025 18:05:22.346 INFO [Thread-5] org.apache.coyote.AbstractProtocol Stopping ProtocolHandler ["http-nio-8080"]
+21-Jul-2025 18:05:22.347 INFO [Thread-5] org.apache.coyote.AbstractProtocol Destroying ProtocolHandler ["http-nio-8080"]
+21-Jul-2025 18:05:22.348 INFO [Thread-5] org.apache.catalina.core.StandardService Catalina service stopped.

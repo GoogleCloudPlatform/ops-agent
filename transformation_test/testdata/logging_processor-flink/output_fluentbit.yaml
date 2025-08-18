@@ -4,6 +4,7 @@
       message: "    [] - Initializing heap keyed state backend with stream factory."
       source: org.apache.flink.runtime.state.heap.HeapKeyedStateBackend
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/flink
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -13,6 +14,7 @@
       message: " [] - Start SessionDispatcherLeaderProcess."
       source: org.apache.flink.runtime.dispatcher.runner.SessionDispatcherLeaderProcess
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/flink
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -22,6 +24,7 @@
       message: " [] - Starting resource manager service."
       source: org.apache.flink.runtime.resourcemanager.ResourceManagerServiceImpl
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/flink
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -31,6 +34,7 @@
       message: " [] - Recover all persisted job graphs."
       source: org.apache.flink.runtime.dispatcher.runner.SessionDispatcherLeaderProcess
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/flink
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -40,6 +44,7 @@
       message: " [] - Successfully recovered 0 persisted job graphs."
       source: org.apache.flink.runtime.dispatcher.runner.SessionDispatcherLeaderProcess
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/flink
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -49,6 +54,7 @@
       message: " [] - Resource manager service is granted leadership with session id 00000000-0000-0000-0000-000000000000."
       source: org.apache.flink.runtime.resourcemanager.ResourceManagerServiceImpl
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/flink
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -58,6 +64,7 @@
       message: "             [] - Starting RPC endpoint for org.apache.flink.runtime.dispatcher.StandaloneDispatcher at akka://flink/user/rpc/dispatcher_0 ."
       source: org.apache.flink.runtime.rpc.akka.AkkaRpcService
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/flink
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -67,6 +74,7 @@
       message: "             [] - Starting RPC endpoint for org.apache.flink.runtime.resourcemanager.StandaloneResourceManager at akka://flink/user/rpc/resourcemanager_1 ."
       source: org.apache.flink.runtime.rpc.akka.AkkaRpcService
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/flink
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -76,6 +84,7 @@
       message: " [] - Starting the resource manager."
       source: org.apache.flink.runtime.resourcemanager.StandaloneResourceManager
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/flink
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -85,6 +94,7 @@
       message: "    [] - Initializing heap keyed state backend with stream factory."
       source: org.apache.flink.runtime.state.heap.HeapKeyedStateBackend
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/flink
     logName: projects/my-project/logs/transformation_test
     severity: 600.0
@@ -94,6 +104,7 @@
       message: " [] - Start SessionDispatcherLeaderProcess."
       source: org.apache.flink.runtime.dispatcher.runner.SessionDispatcherLeaderProcess
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/flink
     logName: projects/my-project/logs/transformation_test
     severity: 400.0
@@ -103,6 +114,7 @@
       message: " [] - Starting resource manager service."
       source: org.apache.flink.runtime.resourcemanager.ResourceManagerServiceImpl
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/flink
     logName: projects/my-project/logs/transformation_test
     severity: 500.0

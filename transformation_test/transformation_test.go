@@ -27,13 +27,12 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	logpb "cloud.google.com/go/logging/apiv2/loggingpb"
-	"github.com/GoogleCloudPlatform/ops-agent/apps"
+	apps "github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -103,7 +102,7 @@ func TestTransformationTests(t *testing.T) {
 }
 
 func (transformationConfig transformationTest) runFluentBitTest(t *testing.T, name string) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(testContext())
 	defer cancel()
 	// Generate config files
 	genFiles, err := generateFluentBitConfigs(ctx, name, transformationConfig)
@@ -219,28 +218,52 @@ func readTransformationConfig(dir string) (transformationTest, error) {
 	return config, nil
 }
 
+type inputReceiver struct {
+	confgenerator.LoggingReceiverFilesMixin
+}
+
+func (inputReceiver) Type() string {
+	return "transformation_test"
+}
+
+func (t transformationTest) pipelineInstance(path string) confgenerator.PipelineInstance {
+	var processors []struct {
+		ID string
+		confgenerator.Component
+	}
+	for i, p := range t {
+		processors = append(processors, struct {
+			ID string
+			confgenerator.Component
+		}{
+			fmt.Sprintf("processor%d", i), // only used for error messages
+			p.LoggingProcessor,
+		})
+	}
+	return confgenerator.PipelineInstance{
+		PipelineType: "logs",
+		PID:          flbTag,
+		RID:          flbTag,
+		Receiver: &inputReceiver{confgenerator.LoggingReceiverFilesMixin{
+			IncludePaths: []string{
+				path,
+			},
+			TransformationTest: true,
+		}},
+		Processors: processors,
+	}
+}
+
 func generateFluentBitConfigs(ctx context.Context, name string, transformationTest transformationTest) (map[string]string, error) {
 	abs, err := filepath.Abs(filepath.Join("testdata", name, transformationInput))
 	if err != nil {
 		return nil, err
 	}
-	var components []fluentbit.Component
-	input := fluentbit.Component{
-		Kind: "INPUT",
-		Config: map[string]string{
-			"Name":           "tail",
-			"Tag":            flbTag,
-			"Read_from_Head": "True",
-			"Exit_On_Eof":    "True",
-			"Path":           abs,
-			"Key":            "message",
-		},
-	}
 
-	components = append(components, input)
-
-	for i, t := range transformationTest {
-		components = append(components, t.Components(ctx, flbTag, strconv.Itoa(i))...)
+	pi := transformationTest.pipelineInstance(abs)
+	fbSource, err := pi.FluentBitComponents(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	output := fluentbit.Component{
@@ -261,15 +284,12 @@ func generateFluentBitConfigs(ctx context.Context, name string, transformationTe
 			"export_to_project_id":          "my-project",
 		},
 	}
-	components = append(components, output)
 	return fluentbit.ModularConfig{
-		Components: components,
+		Components: append(fbSource.Components, output),
 	}.Generate()
 }
 
-// generateOTelConfig attempts to generate an OTel config file for the test case.
-// It calls t.Fatal if there is something wrong with the test case, or returns an error if the config is invalid.
-func (transformationConfig transformationTest) generateOTelConfig(ctx context.Context, t *testing.T, name string, addr string) (string, error) {
+func testContext() context.Context {
 	pl := platform.Platform{
 		Type: platform.Linux,
 		HostInfo: &host.InfoStat{
@@ -284,48 +304,30 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 			InstanceID: "test-instance-id",
 		},
 	}
-	ctx = pl.TestContext(ctx)
+	return pl.TestContext(context.Background())
+}
 
+// generateOTelConfig attempts to generate an OTel config file for the test case.
+// It calls t.Fatal if there is something wrong with the test case, or returns an error if the config is invalid.
+func (transformationConfig transformationTest) generateOTelConfig(ctx context.Context, t *testing.T, name string, addr string) (string, error) {
 	abs, err := filepath.Abs(filepath.Join("testdata", name, transformationInput))
 	if err != nil {
 		t.Fatal(err)
 	}
-	var components []otel.Component
-	for _, p := range transformationConfig {
-		if op, ok := p.LoggingProcessor.(confgenerator.OTelProcessor); ok {
-			processors, err := op.Processors(ctx)
-			if err != nil {
-				return "", fmt.Errorf("failed generating OTel processor: %#v, err: %v", p.LoggingProcessor, err)
-			}
-			components = append(components, processors...)
-		} else {
-			return "", fmt.Errorf("not an OTel processor: %#v", p.LoggingProcessor)
-		}
-	}
-
-	rp, err := confgenerator.LoggingReceiverFilesMixin{
-		IncludePaths: []string{
-			abs,
-		},
-	}.Pipelines(ctx)
+	pi := transformationConfig.pipelineInstance(abs)
+	pi.RID = "my-log-name"
+	pi.Backend = confgenerator.BackendOTel
+	rps, pls, err := pi.OTelComponents(ctx)
 	if err != nil {
 		return "", err
 	}
 
 	return otel.ModularConfig{
-		DisableMetrics: true,
-		JSONLogs:       true,
-		LogLevel:       "debug",
-		ReceiverPipelines: map[string]otel.ReceiverPipeline{
-			"input": rp[0],
-		},
-		Pipelines: map[string]otel.Pipeline{
-			"input": {
-				Type:                 "logs",
-				ReceiverPipelineName: "input",
-				Processors:           components,
-			},
-		},
+		DisableMetrics:    true,
+		JSONLogs:          true,
+		LogLevel:          "debug",
+		ReceiverPipelines: rps,
+		Pipelines:         pls,
 		Exporters: map[otel.ExporterType]otel.Component{
 			otel.OTel: {
 				Type: "googlecloud",
@@ -388,7 +390,7 @@ func (transformationConfig transformationTest) runOTelTest(t *testing.T, name st
 }
 
 func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, name string) []map[string]any {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(testContext())
 	defer cancel()
 
 	// Start an OTLP-compatible receiver.
@@ -593,6 +595,5 @@ func sanitizeStacktrace(t *testing.T, input string) string {
 func init() {
 	// The processors registered here are only meant to be used in transformation tests.
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &confgenerator.LoggingProcessorWindowsEventLogV1{} })
-	confgenerator.RegisterLoggingProcessorMacro[apps.LoggingProcessorMacroElasticsearchJson]()
 	confgenerator.RegisterLoggingProcessorMacro[apps.LoggingProcessorMacroRabbitmq]()
 }

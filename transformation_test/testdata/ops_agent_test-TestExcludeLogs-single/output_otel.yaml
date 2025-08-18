@@ -1,6 +1,8 @@
 - entries:
   - jsonPayload:
       field: other
+    labels:
+      compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/my-log-name
     resource:
       labels:
