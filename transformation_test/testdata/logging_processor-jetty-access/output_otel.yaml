@@ -2,6 +2,7 @@
   - jsonPayload:
       gzip_ratio: ""
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/jetty_access
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -13,6 +14,7 @@
   - jsonPayload:
       gzip_ratio: ""
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/jetty_access
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -25,6 +27,7 @@
       gzip_ratio: ""
       user: frank
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/jetty_access
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -36,6 +39,7 @@
   - jsonPayload:
       gzip_ratio: ""
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/jetty_access
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -48,6 +52,7 @@
       gzip_ratio: ""
       user: admin
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/jetty_access
     logName: projects/my-project/logs/my-log-name
     resource:
