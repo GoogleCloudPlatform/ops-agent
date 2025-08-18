@@ -295,25 +295,15 @@ func loggingReceiverFilesMixinElasticsearchJson() confgenerator.LoggingReceiverF
 	}
 }
 
-type LoggingReceiverMacroElasticsearchGC struct {
-	LoggingProcessorMacroElasticsearchGC `yaml:",inline"`
-	ReceiverMixin                        confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
-}
-
-func (r LoggingReceiverMacroElasticsearchGC) Expand(ctx context.Context) (confgenerator.InternalLoggingReceiver, []confgenerator.InternalLoggingProcessor) {
-	if len(r.ReceiverMixin.IncludePaths) == 0 {
-		// Default GC log for Elasticsearch
-		r.ReceiverMixin.IncludePaths = []string{
+func loggingReceiverFilesMixinElasticsearchGC() confgenerator.LoggingReceiverFilesMixin {
+	return confgenerator.LoggingReceiverFilesMixin{
+		IncludePaths: []string{
 			"/var/log/elasticsearch/gc.log",
-		}
+		},
 	}
-
-	return &r.ReceiverMixin, r.LoggingProcessorMacroElasticsearchGC.Expand(ctx)
 }
 
 func init() {
 	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroElasticsearchJson](loggingReceiverFilesMixinElasticsearchJson)
-	confgenerator.RegisterLoggingReceiverMacro(func() LoggingReceiverMacroElasticsearchGC {
-		return LoggingReceiverMacroElasticsearchGC{}
-	})
+	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroElasticsearchGC](loggingReceiverFilesMixinElasticsearchGC)
 }

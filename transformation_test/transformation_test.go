@@ -32,7 +32,7 @@ import (
 	"time"
 
 	logpb "cloud.google.com/go/logging/apiv2/loggingpb"
-	apps "github.com/GoogleCloudPlatform/ops-agent/apps"
+	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -595,5 +595,4 @@ func sanitizeStacktrace(t *testing.T, input string) string {
 func init() {
 	// The processors registered here are only meant to be used in transformation tests.
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &confgenerator.LoggingProcessorWindowsEventLogV1{} })
-	confgenerator.RegisterLoggingProcessorMacro[apps.LoggingProcessorMacroElasticsearchGC]()
 }
