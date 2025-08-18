@@ -1,39 +1,34 @@
 - entries:
   - jsonPayload:
-      message: 192.168.1.10 couchbase.local - [18/Aug/2025:09:20:11 +0000] "GET /pools/default/buckets/travel-data HTTP/1.1" 200 512 "-" "curl/7.68.0" Request took 5ms
+      level: INFO
+      log_type: PipelineManager
+      message: Starting replication pipeline for bucket travel-data
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_goxdcr
     logName: projects/my-project/logs/transformation_test
-    timestamp: now
+    severity: 200.0
+    timestamp: 2025-08-18T14:27:02.452000000Z
   - jsonPayload:
-      message: 192.168.1.12 couchbase.local - [18/Aug/2025:09:20:42 +0000] "POST /pools/default/buckets/travel-data/docs HTTP/1.1" 201 123 "-" "python-requests/2.26.0" Request took 12ms
+      level: WARN
+      log_type: XDCR.CheckpointService
+      message: Failed to save checkpoint due to timeout
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_goxdcr
     logName: projects/my-project/logs/transformation_test
-    timestamp: now
+    severity: 400.0
+    timestamp: 2025-08-18T14:27:10.874000000Z
   - jsonPayload:
-      message: 192.168.1.13 couchbase.local - [18/Aug/2025:09:21:10 +0000] "GET /pools/default/buckets/missing-data HTTP/1.1" 404 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" Request took 2ms
+      level: ERROR
+      log_type: Router
+      message: Failed to route mutation for key "user:12345", retrying...
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_goxdcr
     logName: projects/my-project/logs/transformation_test
-    timestamp: now
-  - jsonPayload:
-      message: 192.168.1.14 couchbase.local - [18/Aug/2025:09:21:25 +0000] "PUT /pools/default/buckets/travel-data/docs/user:123 HTTP/1.1" 500 64 "-" "node-fetch/1.0" Request took 18ms
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_goxdcr
-    logName: projects/my-project/logs/transformation_test
-    timestamp: now
-  - jsonPayload:
-      message: 192.168.1.15 couchbase.local - [18/Aug/2025:09:22:00 +0000] "DELETE /pools/default/buckets/old-data HTTP/1.1" 403 64 "-" "curl/7.88.1" Request took 7ms
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_goxdcr
-    logName: projects/my-project/logs/transformation_test
-    timestamp: now
+    severity: 500.0
+    timestamp: 2025-08-18T14:27:22.345000000Z
   partialSuccess: true
   resource:
     labels: {}
