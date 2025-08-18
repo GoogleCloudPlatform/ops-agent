@@ -72,37 +72,44 @@ func (p LoggingProcessorMacroRabbitmq) Expand(ctx context.Context) []confgenerat
 	}
 }
 
-type LoggingReceiverMacroRabbitmq struct{}
+type LoggingReceiverMacroRabbitmq struct {
+	LoggingProcessorMacroRabbitmq `yaml:",inline"`
+	ReceiverMixin                 confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+}
 
-func loggingReceiverFilesMixinRabbitmq() confgenerator.LoggingReceiverFilesMixin {
-	return confgenerator.LoggingReceiverFilesMixin{
-		IncludePaths: []string{
+func (r LoggingReceiverMacroRabbitmq) Expand(ctx context.Context) (confgenerator.InternalLoggingReceiver, []confgenerator.InternalLoggingProcessor) {
+	if len(r.ReceiverMixin.IncludePaths) == 0 {
+		r.ReceiverMixin.IncludePaths = []string{
 			"/var/log/rabbitmq/rabbit*.log",
+		}
+	}
+	// Some multiline entries related to crash logs are important to capture and end in
+	//
+	// 2022-01-31 18:07:43.557042+00:00 [erro] <0.130.0>
+	// BOOT FAILED
+	// ===========
+	// ERROR: could not bind to distribution port 25672, it is in use by another node: rabbit@keith-testing-rabbitmq
+	//
+	r.ReceiverMixin.MultilineRules = []confgenerator.MultilineRule{
+		{
+			StateName: "start_state",
+			NextState: "cont",
+			Regex:     `^\d+-\d+-\d+ \d+:\d+:\d+\.\d+\+\d+:\d+`,
 		},
-		// Some multiline entries related to crash logs are important to capture and end in
-		//
-		// 2022-01-31 18:07:43.557042+00:00 [erro] <0.130.0>
-		// BOOT FAILED
-		// ===========
-		// ERROR: could not bind to distribution port 25672, it is in use by another node: rabbit@keith-testing-rabbitmq
-		//
-		MultilineRules: []confgenerator.MultilineRule{
-			{
-				StateName: "start_state",
-				NextState: "cont",
-				Regex:     `^\d+-\d+-\d+ \d+:\d+:\d+\.\d+\+\d+:\d+`,
-			},
-			{
-				StateName: "cont",
-				NextState: "cont",
-				Regex:     `^(?!\d+-\d+-\d+ \d+:\d+:\d+\.\d+\+\d+:\d+)`,
-			},
+		{
+			StateName: "cont",
+			NextState: "cont",
+			Regex:     `^(?!\d+-\d+-\d+ \d+:\d+:\d+\.\d+\+\d+:\d+)`,
 		},
 	}
+
+	return &r.ReceiverMixin, r.LoggingProcessorMacroRabbitmq.Expand(ctx)
 }
 
 func init() {
-	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroRabbitmq](loggingReceiverFilesMixinRabbitmq)
+	confgenerator.RegisterLoggingReceiverMacro(func() LoggingReceiverMacroRabbitmq {
+		return LoggingReceiverMacroRabbitmq{}
+	})
 }
 
 type MetricsReceiverRabbitmq struct {

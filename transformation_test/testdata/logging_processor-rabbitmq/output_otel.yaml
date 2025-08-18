@@ -1,1 +1,1 @@
-- config_error: "not an OTel processor: &apps.LoggingProcessorRabbitmq{ConfigComponent:confgenerator.ConfigComponent{Type:\"rabbitmq\"}}"
+- config_error: "failed generating OTel processor: &confgenerator.loggingProcessorMacroAdapter[github.com/GoogleCloudPlatform/ops-agent/apps.LoggingProcessorMacroRabbitmq]{ConfigComponent:confgenerator.ConfigComponent{Type:\"rabbitmq\"}, ProcessorMacro:apps.LoggingProcessorMacroRabbitmq{}}, err: unimplemented"
