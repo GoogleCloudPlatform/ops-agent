@@ -19,33 +19,6 @@
     severity: 200.0
     timestamp: 2025-08-17T23:05:10.000123000Z
   - jsonPayload:
-      message: 2025-08-18 01:06:33.987654-07:00 [warning] <0.550.0> Queue 'task_queue' is nearing memory threshold.
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/rabbitmq
-    logName: projects/my-project/logs/transformation_test
-    timestamp: now
-  - jsonPayload:
-      message: Successfully set user tags for user 'guest' to []
-      process_id: 0.801.0
-      severity: info
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/rabbitmq
-    logName: projects/my-project/logs/transformation_test
-    severity: 200.0
-    timestamp: 2025-08-18T01:45:14.705000000Z
-  - jsonPayload:
-      message: Accepting AMQP connection <0.200.0> from 127.0.0.1:5672
-      process_id: 0.200.0
-      severity: debug
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/rabbitmq
-    logName: projects/my-project/logs/transformation_test
-    severity: 100.0
-    timestamp: 2025-08-18T01:46:00.123000000Z
-  - jsonPayload:
       message: "Login failed for user 'guest': invalid credentials"
       process_id: 0.310.0
       severity: error
@@ -133,36 +106,6 @@
     logName: projects/my-project/logs/transformation_test
     severity: 0.0
     timestamp: 2025-08-18T04:07:07.777000000Z
-  - jsonPayload:
-      message: "Unexpected exception: {'EXIT',{{badmatch,{error,enoent}},[{rabbit_misc,read_config,1,[]}]}}"
-      process_id: 0.999.0
-      severity: erro
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/rabbitmq
-    logName: projects/my-project/logs/transformation_test
-    timestamp: 2025-08-18T04:07:08.888000000Z
-  - jsonPayload:
-      message: 2025-08-18 05:07:43.557042+00:00 [erro] <0.130.0>
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/rabbitmq
-    logName: projects/my-project/logs/transformation_test
-    timestamp: now
-  - jsonPayload:
-      message: BOOT FAILED
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/rabbitmq
-    logName: projects/my-project/logs/transformation_test
-    timestamp: now
-  - jsonPayload:
-      message: ===========
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/rabbitmq
-    logName: projects/my-project/logs/transformation_test
-    timestamp: now
   partialSuccess: true
   resource:
     labels: {}
