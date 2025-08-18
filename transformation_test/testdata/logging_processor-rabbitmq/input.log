@@ -1,0 +1,19 @@
+2025-08-18 01:01:20.441571+00:00 [erro] <0.692.0> ** Connection attempt from node 'rabbit_ctl_17@keith-testing-rabbitmq' rejected. Invalid challenge reply. **
+2025-08-18 01:05:10.000123+02:00 [info] <0.801.0> Successfully set user tags for user 'admin' to [administrator]
+2025-08-18 01:06:33.987654-07:00 [warning] <0.550.0> Queue 'task_queue' is nearing memory threshold.
+2025-08-18 01:45:14.705 [info] <0.801.0> Successfully set user tags for user 'guest' to []
+2025-08-18 01:46:00.123 [debug] <0.200.0> Accepting AMQP connection <0.200.0> from 127.0.0.1:5672
+2025-08-18 02:15:45.987+00:00 [error] <0.310.0> Login failed for user 'guest': invalid credentials
+2025-08-18 02:16:01.001+00:00 [warning] <0.312.0> User 'guest' attempted to access vhost '/' but was denied
+2025-08-18 02:22:33.444+00:00 [noti] <0.400.0> Node rabbit@node1 down: lost connection
+2025-08-18 02:23:00.999+00:00 [info] <0.401.0> Node rabbit@node1 recovered and rejoined cluster
+2025-08-18 02:55:55.123+00:00 [warning] <0.500.0> Memory high watermark reached (used: 2048MB, limit: 2000MB)
+2025-08-18 03:56:01.456+00:00 [erro] <0.501.0> Disk free space too low. Free bytes: 500000, limit: 1000000
+2025-08-18 04:06:06.789+00:00 [erro] <0.600.0> AMQP connection <0.600.0> (10.0.0.1:5672 -> 10.0.0.2:5672): connection closed unexpectedly
+2025-08-18 04:06:10.101+00:00 [debug] <0.601.0> Re-establishing connection to peer rabbit@node2
+2025-08-18 04:07:07.777+00:00 [noti] <123.456.789> {shutdown,{connection_closed, "Broken pipe"}}
+2025-08-18 04:07:08.888 [erro] <0.999.0> Unexpected exception: {'EXIT',{{badmatch,{error,enoent}},[{rabbit_misc,read_config,1,[]}]}}
+2025-08-18 05:07:43.557042+00:00 [erro] <0.130.0>
+BOOT FAILED
+===========
+ERROR: could not bind to distribution port 25672, it is in use by another node: rabbit@keith-testing-rabbitmq
