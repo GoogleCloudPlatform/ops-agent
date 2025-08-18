@@ -18,7 +18,6 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    severity: WARNING
     spanId: facefeedb0bacafe
     timestamp: now
     trace: projects/my-project/traces/deadcafedeadc0defacefeedb0bacafe
@@ -41,7 +40,6 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    severity: WARNING
     spanId: facefeedb0bacafe
     timestamp: now
     trace: projects/my-project/traces/deadcafedeadc0defacefeedb0bacafe

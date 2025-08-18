@@ -1,1 +1,1 @@
-- config_error: "not an OTel processor: &apps.LoggingProcessorCouchdb{ConfigComponent:confgenerator.ConfigComponent{Type:\"couchdb\"}}"
+- config_error: "processor \"processor0\" has invalid configuration: unimplemented"

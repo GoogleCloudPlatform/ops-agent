@@ -151,6 +151,11 @@ func (p LoggingProcessorMacroCouchdb) Expand(ctx context.Context) []confgenerato
 					NextState: "cont",
 					Regex:     `^\[\w+\]`,
 				},
+				{
+					StateName: "cont",
+					NextState: "cont",
+					Regex:     `^(?!\[\w+\])`,
+				},
 			},
 		},
 		confgenerator.LoggingProcessorModifyFields{
