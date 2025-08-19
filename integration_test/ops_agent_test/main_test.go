@@ -225,6 +225,17 @@ func RunForEachLoggingSubagent(t *testing.T, testBody func(t *testing.T, otel bo
 	})
 }
 
+func RunForEachPrometheusExporter(t *testing.T, testBody func(t *testing.T, isOtlpHttp bool)) {
+	t.Helper()
+	t.Run("googlemanagedprometheus", func(t *testing.T) {
+		testBody(t, false)
+	})
+
+	t.Run("otlphttp", func(t *testing.T) {
+		testBody(t, true)
+	})
+}
+
 // setExperimentalFeatures sets the EXPERIMENTAL_FEATURES environment variable.
 func setExperimentalFeatures(ctx context.Context, logger *log.Logger, vm *gce.VM, feature string) error {
 	return gce.SetEnvironmentVariables(ctx, logger, vm, map[string]string{"EXPERIMENTAL_FEATURES": feature})
@@ -2908,11 +2919,13 @@ func TestGoogleSecretManagerProvider(t *testing.T) {
 }
 func TestPrometheusMetrics(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachPrometheusExporter(t, func(t *testing.T, isOtlpHttp bool) {
 		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+			t.Parallel()
+			ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
-		promConfig := `metrics:
+			promConfig := `metrics:
   receivers:
     prometheus:
       type: prometheus
@@ -2921,7 +2934,7 @@ func TestPrometheusMetrics(t *testing.T) {
           - job_name: 'prometheus'
             scrape_interval: 10s
             static_configs:
-              - targets: ['localhost:20202']
+              - targets: ['127.0.0.1:20202']
             relabel_configs:
               - source_labels: [__meta_gce_instance_id]
                 regex: '(.+)'
@@ -2961,147 +2974,154 @@ func TestPrometheusMetrics(t *testing.T) {
         receivers:
           - prometheus
 `
+			if isOtlpHttp {
+				if err := setExperimentalFeatures(ctx, logger, vm, "otlp_exporter"); err != nil {
+					t.Fatal(err)
+				}
+			}
 
-		if err := agents.SetupOpsAgent(ctx, logger, vm, promConfig); err != nil {
-			t.Fatal(err)
-		}
+			if err := agents.SetupOpsAgent(ctx, logger, vm, promConfig); err != nil {
+				t.Fatal(err)
+			}
 
-		// Wait long enough for the data to percolate through the backends
-		// under normal circumstances. Based on some experiments, 2 minutes
-		// is normal; wait a bit longer to be on the safe side.
-		time.Sleep(3 * time.Minute)
+			// Wait long enough for the data to percolate through the backends
+			// under normal circumstances. Based on some experiments, 2 minutes
+			// is normal; wait a bit longer to be on the safe side.
+			time.Sleep(3 * time.Minute)
 
-		existingMetric := "prometheus.googleapis.com/fluentbit_uptime/counter"
-		window := time.Minute
-		metric, err := gce.WaitForMetric(ctx, logger, vm, existingMetric, window, nil, true)
-		if err != nil {
-			t.Fatal(fmt.Errorf("failed to find metric %q in VM %q: %w", existingMetric, vm.Name, err))
-		}
+			existingMetric := "prometheus.googleapis.com/fluentbit_uptime/counter"
+			window := time.Minute
+			metric, err := gce.WaitForMetric(ctx, logger, vm, existingMetric, window, nil, true)
+			if err != nil {
+				t.Fatal(fmt.Errorf("failed to find metric %q in VM %q: %w", existingMetric, vm.Name, err))
+			}
 
-		var multiErr error
-		metricValueType := metric.ValueType.String()
-		metricKind := metric.MetricKind.String()
-		metricResource := metric.Resource.Type
-		metricLabels := metric.Metric.Labels
+			var multiErr error
+			metricValueType := metric.ValueType.String()
+			metricKind := metric.MetricKind.String()
+			metricResource := metric.Resource.Type
+			metricLabels := metric.Metric.Labels
 
-		if metricValueType != "DOUBLE" {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected value type %q", existingMetric, metricValueType))
-		}
-		if metricKind != "CUMULATIVE" {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected kind %q", existingMetric, metricKind))
-		}
-		if metricResource != "prometheus_target" {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected resource type %q", existingMetric, metricResource))
-		}
-		if metricLabels["instance_name"] != vm.Name {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected instance_name label %q. But expected %q", existingMetric, metricLabels["instance_name"], vm.Name))
-		}
-		if metricLabels["instance_id"] != fmt.Sprintf("%d", vm.ID) {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected instance_id label %q. But expected %q", existingMetric, metricLabels["instance_id"], fmt.Sprintf("%d", vm.ID)))
-		}
-		expectedMachineType := regexp.MustCompile(fmt.Sprintf("^projects/[0-9]+/machineTypes/%s$", vm.MachineType))
-		if !expectedMachineType.MatchString(metricLabels["machine_type"]) {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected machine_type label %q. But expected %q", existingMetric, metricLabels["machine_type"], vm.MachineType))
-		}
-		if metricLabels["instance_project_id"] != vm.Project {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected instance_project_id label %q. But expected %q", existingMetric, metricLabels["instance_project_id"], vm.Project))
-		}
-		if metricLabels["zone"] != vm.Zone {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected zone label %q. But expected %q", existingMetric, metricLabels["zone"], vm.Zone))
-		}
-		expectedNetworkURL := regexp.MustCompile(fmt.Sprintf("^projects/[0-9]+/networks/%s$", vm.Network))
-		if !expectedNetworkURL.MatchString(metricLabels["network"]) {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected network label %q. But expected %q", existingMetric, metricLabels["network"], vm.Network))
-		}
-		if metricLabels["public_ip"] != vm.IPAddress && metricLabels["private_ip"] != vm.IPAddress {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q doesn't hace VM IP %q. Public IP %q Private IP %q", existingMetric, vm.IPAddress, metricLabels["public_ip"], metricLabels["private_ip"]))
-		}
-		if multiErr != nil {
-			t.Error(multiErr)
-		}
+			if metricValueType != "DOUBLE" {
+				multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected value type %q", existingMetric, metricValueType))
+			}
+			if metricKind != "CUMULATIVE" {
+				multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected kind %q", existingMetric, metricKind))
+			}
+			if metricResource != "prometheus_target" {
+				multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected resource type %q", existingMetric, metricResource))
+			}
+			if metricLabels["instance_name"] != vm.Name {
+				multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected instance_name label %q. But expected %q", existingMetric, metricLabels["instance_name"], vm.Name))
+			}
+			if metricLabels["instance_id"] != fmt.Sprintf("%d", vm.ID) {
+				multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected instance_id label %q. But expected %q", existingMetric, metricLabels["instance_id"], fmt.Sprintf("%d", vm.ID)))
+			}
+			expectedMachineType := regexp.MustCompile(fmt.Sprintf("^projects/[0-9]+/machineTypes/%s$", vm.MachineType))
+			if !expectedMachineType.MatchString(metricLabels["machine_type"]) {
+				multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected machine_type label %q. But expected %q", existingMetric, metricLabels["machine_type"], vm.MachineType))
+			}
+			if metricLabels["instance_project_id"] != vm.Project {
+				multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected instance_project_id label %q. But expected %q", existingMetric, metricLabels["instance_project_id"], vm.Project))
+			}
+			if metricLabels["zone"] != vm.Zone {
+				multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected zone label %q. But expected %q", existingMetric, metricLabels["zone"], vm.Zone))
+			}
+			expectedNetworkURL := regexp.MustCompile(fmt.Sprintf("^projects/[0-9]+/networks/%s$", vm.Network))
+			if !expectedNetworkURL.MatchString(metricLabels["network"]) {
+				multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected network label %q. But expected %q", existingMetric, metricLabels["network"], vm.Network))
+			}
+			if metricLabels["public_ip"] != vm.IPAddress && metricLabels["private_ip"] != vm.IPAddress {
+				multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q doesn't hace VM IP %q. Public IP %q Private IP %q", existingMetric, vm.IPAddress, metricLabels["public_ip"], metricLabels["private_ip"]))
+			}
+			if multiErr != nil {
+				t.Error(multiErr)
+			}
 
-		expectedFeatures := []*feature_tracking_metadata.FeatureTracking{
-			{
-				Module:  "logging",
-				Feature: "service:pipelines",
-				Key:     "default_pipeline_overridden",
-				Value:   "false",
-			},
-			{
-				Module:  "metrics",
-				Feature: "service:pipelines",
-				Key:     "default_pipeline_overridden",
-				Value:   "false",
-			},
-			{
-				Module:  "metrics",
-				Feature: "receivers:prometheus",
-				Key:     "[0].enabled",
-				Value:   "true",
-			},
-			{
-				Module:  "metrics",
-				Feature: "receivers:prometheus",
-				Key:     "[0].config.[0].scrape_configs.relabel_configs",
-				Value:   "8",
-			},
-			{
-				Module:  "metrics",
-				Feature: "receivers:prometheus",
-				Key:     "[0].config.[0].scrape_configs.honor_timestamps",
-				Value:   "true",
-			},
-			{
-				Module:  "metrics",
-				Feature: "receivers:prometheus",
-				Key:     "[0].config.[0].scrape_configs.scheme",
-				Value:   "http",
-			},
-			{
-				Module:  "metrics",
-				Feature: "receivers:prometheus",
-				Key:     "[0].config.[0].scrape_configs.scrape_interval",
-				Value:   "10s",
-			},
-			{
-				Module:  "metrics",
-				Feature: "receivers:prometheus",
-				Key:     "[0].config.[0].scrape_configs.scrape_interval",
-				Value:   "10s",
-			},
-			{
-				Module:  "metrics",
-				Feature: "receivers:prometheus",
-				Key:     "[0].config.[0].scrape_configs.static_config_target_groups",
-				Value:   "1",
-			},
-		}
+			expectedFeatures := []*feature_tracking_metadata.FeatureTracking{
+				{
+					Module:  "logging",
+					Feature: "service:pipelines",
+					Key:     "default_pipeline_overridden",
+					Value:   "false",
+				},
+				{
+					Module:  "metrics",
+					Feature: "service:pipelines",
+					Key:     "default_pipeline_overridden",
+					Value:   "false",
+				},
+				{
+					Module:  "metrics",
+					Feature: "receivers:prometheus",
+					Key:     "[0].enabled",
+					Value:   "true",
+				},
+				{
+					Module:  "metrics",
+					Feature: "receivers:prometheus",
+					Key:     "[0].config.[0].scrape_configs.relabel_configs",
+					Value:   "8",
+				},
+				{
+					Module:  "metrics",
+					Feature: "receivers:prometheus",
+					Key:     "[0].config.[0].scrape_configs.honor_timestamps",
+					Value:   "true",
+				},
+				{
+					Module:  "metrics",
+					Feature: "receivers:prometheus",
+					Key:     "[0].config.[0].scrape_configs.scheme",
+					Value:   "http",
+				},
+				{
+					Module:  "metrics",
+					Feature: "receivers:prometheus",
+					Key:     "[0].config.[0].scrape_configs.scrape_interval",
+					Value:   "10s",
+				},
+				{
+					Module:  "metrics",
+					Feature: "receivers:prometheus",
+					Key:     "[0].config.[0].scrape_configs.scrape_interval",
+					Value:   "10s",
+				},
+				{
+					Module:  "metrics",
+					Feature: "receivers:prometheus",
+					Key:     "[0].config.[0].scrape_configs.static_config_target_groups",
+					Value:   "1",
+				},
+			}
 
-		series, err := gce.WaitForMetricSeries(ctx, logger, vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", time.Hour, nil, false, len(expectedFeatures))
-		if err != nil {
-			t.Error(err)
-			return
-		}
+			series, err := gce.WaitForMetricSeries(ctx, logger, vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", time.Hour, nil, false, len(expectedFeatures))
+			if err != nil {
+				t.Error(err)
+				return
+			}
 
-		err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, expectedFeatures)
-		if err != nil {
-			t.Error(err)
-			return
-		}
+			err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, expectedFeatures)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+		})
 	})
 }
 
 func TestPrometheusMetricsWithMetadata(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-		t.Parallel()
-		metadataKey, metadataValue := "test", "${test:value}"
-		escapedMetadataValue := "_{test:value}"
-		ctx, logger, vm := agents.CommonSetupWithExtraCreateArgumentsAndMetadata(t, imageSpec, nil, map[string]string{
-			metadataKey: metadataValue,
-		})
+	RunForEachPrometheusExporter(t, func(t *testing.T, isOtlpHttp bool) {
+		gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+			t.Parallel()
+			metadataKey, metadataValue := "test", "${test:value}"
+			escapedMetadataValue := "_{test:value}"
+			ctx, logger, vm := agents.CommonSetupWithExtraCreateArgumentsAndMetadata(t, imageSpec, nil, map[string]string{
+				metadataKey: metadataValue,
+			})
 
-		promConfig := fmt.Sprintf(`metrics:
+			promConfig := fmt.Sprintf(`metrics:
   receivers:
     prometheus:
       type: prometheus
@@ -3110,7 +3130,7 @@ func TestPrometheusMetricsWithMetadata(t *testing.T) {
           - job_name: 'prometheus'
             scrape_interval: 10s
             static_configs:
-              - targets: ['localhost:20202']
+              - targets: ['127.0.0.1:20202']
             relabel_configs:
               - source_labels: [__meta_gce_metadata_%s]
                 regex: '(.+)'
@@ -3122,27 +3142,32 @@ func TestPrometheusMetricsWithMetadata(t *testing.T) {
         receivers:
           - prometheus
 `, metadataKey, metadataKey)
+			if isOtlpHttp {
+				if err := setExperimentalFeatures(ctx, logger.ToMainLog(), vm, "otlp_exporter"); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, promConfig); err != nil {
+				t.Fatal(err)
+			}
 
-		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, promConfig); err != nil {
-			t.Fatal(err)
-		}
+			// Wait long enough for the data to percolate through the backends
+			// under normal circumstances. Based on some experiments, 2 minutes
+			// is normal; wait a bit longer to be on the safe side.
+			time.Sleep(3 * time.Minute)
 
-		// Wait long enough for the data to percolate through the backends
-		// under normal circumstances. Based on some experiments, 2 minutes
-		// is normal; wait a bit longer to be on the safe side.
-		time.Sleep(3 * time.Minute)
+			existingMetric := "prometheus.googleapis.com/fluentbit_uptime/counter"
+			window := time.Minute
+			metric, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, existingMetric, window, nil, true)
+			if err != nil {
+				t.Fatal(fmt.Errorf("failed to find metric %q in VM %q: %w", existingMetric, vm.Name, err))
+			}
 
-		existingMetric := "prometheus.googleapis.com/fluentbit_uptime/counter"
-		window := time.Minute
-		metric, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, existingMetric, window, nil, true)
-		if err != nil {
-			t.Fatal(fmt.Errorf("failed to find metric %q in VM %q: %w", existingMetric, vm.Name, err))
-		}
-
-		metricLabels := metric.Metric.Labels
-		if metricLabels[metadataKey] != escapedMetadataValue {
-			t.Errorf("metric %q has VM metadata %q set to %q instead of %q", existingMetric, metadataKey, metricLabels[metadataKey], escapedMetadataValue)
-		}
+			metricLabels := metric.Metric.Labels
+			if metricLabels[metadataKey] != escapedMetadataValue {
+				t.Errorf("metric %q has VM metadata %q set to %q instead of %q", existingMetric, metadataKey, metricLabels[metadataKey], escapedMetadataValue)
+			}
+		})
 	})
 }
 
@@ -3150,84 +3175,90 @@ func TestPrometheusMetricsWithMetadata(t *testing.T) {
 // The JSON exporter will connect to a http server that serve static JSON files
 func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-		t.Parallel()
-		// TODO: Set up JSON exporter stuff on Windows
-		if gce.IsWindows(imageSpec) {
-			t.SkipNow()
-		}
-		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-		prometheusTestdata := path.Join("testdata", "prometheus")
-		filesToUpload := []fileToUpload{
-			{
-				local:  path.Join(prometheusTestdata, "http_server.go"),
-				remote: path.Join("/opt", "go-http-server", "http_server.go"),
-			},
-			{
-				local:  path.Join(prometheusTestdata, "data.json"),
-				remote: path.Join("/opt", "go-http-server", "data.json"),
-			},
-			{
-				local:  path.Join(prometheusTestdata, "json_exporter_config.yaml"),
-				remote: path.Join("/opt", "json_exporter", "json_exporter_config.yaml"),
-			},
-			{
-				local:  path.Join(prometheusTestdata, "http-server-for-prometheus-test.service"),
-				remote: path.Join("/etc", "systemd", "system", "http-server-for-prometheus-test.service"),
-			},
-			{
-				local:  path.Join(prometheusTestdata, "json-exporter-for-prometheus-test.service"),
-				remote: path.Join("/etc", "systemd", "system", "json-exporter-for-prometheus-test.service"),
-			},
-		}
+	RunForEachPrometheusExporter(t, func(t *testing.T, isOtlpHttp bool) {
+		gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+			t.Parallel()
+			// TODO: Set up JSON exporter stuff on Windows
+			if gce.IsWindows(imageSpec) {
+				t.SkipNow()
+			}
+			ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+			if isOtlpHttp {
+				if err := setExperimentalFeatures(ctx, logger, vm, "otlp_exporter"); err != nil {
+					t.Fatal(err)
+				}
+			}
+			prometheusTestdata := path.Join("testdata", "prometheus")
+			filesToUpload := []fileToUpload{
+				{
+					local:  path.Join(prometheusTestdata, "http_server.go"),
+					remote: path.Join("/opt", "go-http-server", "http_server.go"),
+				},
+				{
+					local:  path.Join(prometheusTestdata, "data.json"),
+					remote: path.Join("/opt", "go-http-server", "data.json"),
+				},
+				{
+					local:  path.Join(prometheusTestdata, "json_exporter_config.yaml"),
+					remote: path.Join("/opt", "json_exporter", "json_exporter_config.yaml"),
+				},
+				{
+					local:  path.Join(prometheusTestdata, "http-server-for-prometheus-test.service"),
+					remote: path.Join("/etc", "systemd", "system", "http-server-for-prometheus-test.service"),
+				},
+				{
+					local:  path.Join(prometheusTestdata, "json-exporter-for-prometheus-test.service"),
+					remote: path.Join("/etc", "systemd", "system", "json-exporter-for-prometheus-test.service"),
+				},
+			}
 
-		err := uploadFiles(ctx, logger, vm, testdataDir, filesToUpload)
-		if err != nil {
-			t.Fatal(err)
-		}
+			err := uploadFiles(ctx, logger, vm, testdataDir, filesToUpload)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-		if err := installGolang(ctx, logger, vm); err != nil {
-			t.Fatal(err)
-		}
+			if err := installGolang(ctx, logger, vm); err != nil {
+				t.Fatal(err)
+			}
 
-		if err := buildGoBinary(ctx, logger, vm, filesToUpload[0].remote, "/opt/go-http-server/"); err != nil {
-			t.Fatal(err)
-		}
+			if err := buildGoBinary(ctx, logger, vm, filesToUpload[0].remote, "/opt/go-http-server/"); err != nil {
+				t.Fatal(err)
+			}
 
-		// Run the setup script to run the http server and the JSON exporter
-		setupScript, err := testdataDir.ReadFile(path.Join(prometheusTestdata, "setup_json_exporter.sh"))
-		if err != nil {
-			t.Fatalf("failed to open setup script: %s", err)
-		}
-		setupOut, err := gce.RunRemotely(ctx, logger, vm, string(setupScript))
-		if err != nil {
-			t.Fatalf("failed to run json exporter in VM with err: %v, stderr: %s", err, setupOut.Stderr)
-		}
-		// Wait until both are ready
-		time.Sleep(30 * time.Second)
-		liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger, vm, `curl "http://localhost:7979/probe?module=default&target=http://localhost:8000/data.json"`)
-		// We will abort when:
-		// 1. JSON exporter is not started: in this case the stderr will have:
-		// "curl: (7) Failed to connect to localhost port 7979 after 1 ms: Connection refused"
-		// 2. The HTTP server is not started: in this case the stdout will not
-		// have the expected Prometheus style metrics
-		if liveCheckErr != nil || strings.Contains(liveCheckOut.Stderr, "Connection refused") || !strings.Contains(liveCheckOut.Stdout, `test_counter_value{test_label="counter_label"} 1234`) {
-			t.Fatal("Json Exporter failed to start")
-		}
-		// Initially, __address__ is the target[0] which is
-		// "http://localhost:8000/data.json";
-		// The first relabeling moves __address__ to __param_target, so we have
-		// "target=http://localhost:8000/data.json" of the final url;
-		// The params: module: [default] adds the module=default so we have
-		// "module=default&target=http://localhost:8000/data.json"
-		// The metric_path: /probe adds that to url:
-		// "probe?module=default&target=http://localhost:8000/data.json";
-		// And the last relabeling changes the __address__ to localhost:7979:
-		// "http://localhost:7979/probe?module=default&target=http://localhost:8000/data.json"
-		// which is the URL needed to query metrics hosted by the JSON exporter
-		// This is the usual way of using the exporter as this allows us to
-		// specify multiple `targets` within one `scrape_configs`
-		config := `metrics:
+			// Run the setup script to run the http server and the JSON exporter
+			setupScript, err := testdataDir.ReadFile(path.Join(prometheusTestdata, "setup_json_exporter.sh"))
+			if err != nil {
+				t.Fatalf("failed to open setup script: %s", err)
+			}
+			setupOut, err := gce.RunRemotely(ctx, logger, vm, string(setupScript))
+			if err != nil {
+				t.Fatalf("failed to run json exporter in VM with err: %v, stderr: %s", err, setupOut.Stderr)
+			}
+			// Wait until both are ready
+			time.Sleep(30 * time.Second)
+			liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger, vm, `curl "http://localhost:7979/probe?module=default&target=http://localhost:8000/data.json"`)
+			// We will abort when:
+			// 1. JSON exporter is not started: in this case the stderr will have:
+			// "curl: (7) Failed to connect to localhost port 7979 after 1 ms: Connection refused"
+			// 2. The HTTP server is not started: in this case the stdout will not
+			// have the expected Prometheus style metrics
+			if liveCheckErr != nil || strings.Contains(liveCheckOut.Stderr, "Connection refused") || !strings.Contains(liveCheckOut.Stdout, `test_counter_value{test_label="counter_label"} 1234`) {
+				t.Fatal("Json Exporter failed to start")
+			}
+			// Initially, __address__ is the target[0] which is
+			// "http://127.0.0.1:8000/data.json";
+			// The first relabeling moves __address__ to __param_target, so we have
+			// "target=http://127.0.0.1:8000/data.json" of the final url;
+			// The params: module: [default] adds the module=default so we have
+			// "module=default&target=http://127.0.0.1:8000/data.json"
+			// The metric_path: /probe adds that to url:
+			// "probe?module=default&target=http://127.0.0.1:8000/data.json";
+			// And the last relabeling changes the __address__ to 127.0.0.1:7979:
+			// "http://127.0.0.1:7979/probe?module=default&target=http://127.0.0.1:8000/data.json"
+			// which is the URL needed to query metrics hosted by the JSON exporter
+			// This is the usual way of using the exporter as this allows us to
+			// specify multiple `targets` within one `scrape_configs`
+			config := `metrics:
   receivers:
     prom_app:
       type: prometheus
@@ -3239,7 +3270,7 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
             module: [default]
           static_configs:
             - targets:
-              - http://localhost:8000/data.json
+              - http://127.0.0.1:8000/data.json
           relabel_configs:
             - source_labels: [__address__]
               target_label: __param_target
@@ -3248,43 +3279,49 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
               target_label: instance
               replacement: '$1'
             - target_label: __address__
-              replacement: localhost:7979
+              replacement: 127.0.0.1:7979
   service:
     pipelines:
       prom_pipeline:
         receivers: [prom_app]
 `
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
-			t.Fatal(err)
-		}
+			if isOtlpHttp {
+				if err := setExperimentalFeatures(ctx, logger, vm, "otlp_exporter"); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+				t.Fatal(err)
+			}
 
-		// Wait long enough for the data to percolate through the backends
-		// under normal circumstances. Based on some experiments, 2 minutes
-		// is normal; wait a bit longer to be on the safe side.
-		time.Sleep(3 * time.Minute)
-		window := time.Minute
+			// Wait long enough for the data to percolate through the backends
+			// under normal circumstances. Based on some experiments, 2 minutes
+			// is normal; wait a bit longer to be on the safe side.
+			time.Sleep(3 * time.Minute)
+			window := time.Minute
 
-		tests := []prometheusMetricTest{
-			{"prometheus.googleapis.com/test_gauge_value/gauge", nil,
-				metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 789.0},
-			// Since we are sending the same number at every time point,
-			// the cumulative counter metric will return 0 as no change in values
-			{"prometheus.googleapis.com/test_counter_value/counter", nil,
-				metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 0.0},
-			// Untyped type - GCM will have untyped metrics double written as a gauge AND a cumulative
-			{"prometheus.googleapis.com/test_untyped_value/unknown", nil,
-				metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 56.0},
-			{"prometheus.googleapis.com/test_untyped_value/unknown:counter", nil,
-				metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 0.0},
-		}
+			tests := []prometheusMetricTest{
+				{"prometheus.googleapis.com/test_gauge_value/gauge", nil,
+					metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 789.0},
+				// Since we are sending the same number at every time point,
+				// the cumulative counter metric will return 0 as no change in values
+				{"prometheus.googleapis.com/test_counter_value/counter", nil,
+					metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 0.0},
+				// Untyped type - GCM will have untyped metrics double written as a gauge AND a cumulative
+				{"prometheus.googleapis.com/test_untyped_value/unknown", nil,
+					metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 56.0},
+				{"prometheus.googleapis.com/test_untyped_value/unknown:counter", nil,
+					metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 0.0},
+			}
 
-		var multiErr error
-		for _, test := range tests {
-			multiErr = multierr.Append(multiErr, assertPrometheusMetric(ctx, logger, vm, window, test))
-		}
-		if multiErr != nil {
-			t.Error(multiErr)
-		}
+			var multiErr error
+			for _, test := range tests {
+				multiErr = multierr.Append(multiErr, assertPrometheusMetric(ctx, logger, vm, window, test))
+			}
+			if multiErr != nil {
+				t.Error(multiErr)
+			}
+		})
 	})
 }
 
@@ -3300,7 +3337,7 @@ func TestPrometheusRelabelConfigs(t *testing.T) {
           scrape_interval: 10s
           static_configs:
             - targets:
-              - localhost:8000
+              - 127.0.0.1:8000
           metric_relabel_configs:
           - source_labels: [test_label]
             regex: "(.*)@(.*)"
@@ -3349,7 +3386,7 @@ func TestPrometheusUntypedMetrics(t *testing.T) {
           scrape_interval: 10s
           static_configs:
             - targets:
-              - localhost:8000
+              - 127.0.0.1:8000
   service:
     pipelines:
       prom_pipeline:
@@ -3410,7 +3447,7 @@ func TestPrometheusUntypedMetricsReset(t *testing.T) {
           scrape_interval: 10s
           static_configs:
             - targets:
-              - localhost:8000
+              - 127.0.0.1:8000
   service:
     pipelines:
       prom_pipeline:
@@ -3533,7 +3570,7 @@ func TestPrometheusHistogramMetrics(t *testing.T) {
           scrape_interval: 10s
           static_configs:
             - targets:
-              - localhost:8000
+              - 127.0.0.1:8000
   service:
     pipelines:
       prom_pipeline:
@@ -3636,7 +3673,7 @@ func TestPrometheusSummaryMetrics(t *testing.T) {
           scrape_interval: 10s
           static_configs:
             - targets:
-              - localhost:8000
+              - 127.0.0.1:8000
   service:
     pipelines:
       prom_pipeline:
@@ -3722,88 +3759,92 @@ func buildGoBinary(ctx context.Context, logger *log.Logger, vm *gce.VM, source, 
 // correctly received and processed
 func testPrometheusMetrics(t *testing.T, opsAgentConfig string, testChecks []mockPrometheusCheck) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+
+	RunForEachPrometheusExporter(t, func(t *testing.T, isOtlpHttp bool) {
 		t.Parallel()
-		if gce.IsWindows(imageSpec) {
-			t.SkipNow()
-		}
-		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+			t.Parallel()
+			if gce.IsWindows(imageSpec) {
+				t.SkipNow()
+			}
+			ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
-		prometheusTestdata := path.Join("testdata", "prometheus")
-		remoteWorkDir := path.Join("/opt", "go-http-server")
-		serviceFiles := []fileToUpload{
-			{local: path.Join(prometheusTestdata, "http_server.go"),
-				remote: path.Join(remoteWorkDir, "http_server.go")},
-			{local: path.Join(prometheusTestdata, "http-server-for-prometheus-test.service"),
-				remote: path.Join("/etc", "systemd", "system", "http-server-for-prometheus-test.service")},
-		}
+			prometheusTestdata := path.Join("testdata", "prometheus")
+			remoteWorkDir := path.Join("/opt", "go-http-server")
+			serviceFiles := []fileToUpload{
+				{local: path.Join(prometheusTestdata, "http_server.go"),
+					remote: path.Join(remoteWorkDir, "http_server.go")},
+				{local: path.Join(prometheusTestdata, "http-server-for-prometheus-test.service"),
+					remote: path.Join("/etc", "systemd", "system", "http-server-for-prometheus-test.service")},
+			}
 
-		if len(testChecks) == 0 {
-			return
-		}
+			if len(testChecks) == 0 {
+				return
+			}
 
-		firstTest := testChecks[0]
-		restTests := testChecks[1:]
-		// 1. Upload the step one files and files used to setup the http service
-		err := uploadFiles(ctx, logger, vm, testdataDir, append(serviceFiles, firstTest.fileToUpload))
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		// 2. Setup the golang
-		if err := installGolang(ctx, logger, vm); err != nil {
-			t.Fatal(err)
-		}
-
-		// 3. Build the http server
-		if err := buildGoBinary(ctx, logger, vm, serviceFiles[0].remote, remoteWorkDir); err != nil {
-			t.Fatal(err)
-		}
-
-		// 4. Start the go http server
-		setupScript := `sudo systemctl daemon-reload && sudo systemctl enable http-server-for-prometheus-test && sudo systemctl restart http-server-for-prometheus-test`
-		_, err = gce.RunRemotely(ctx, logger, vm, setupScript)
-		if err != nil {
-			t.Fatalf("failed to start the http server in VM via systemctl with err: %v", err)
-		}
-		// Wait until the http server is ready
-		time.Sleep(20 * time.Second)
-		liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger, vm, `curl "http://localhost:8000/data"`)
-		if liveCheckErr != nil || strings.Contains(liveCheckOut.Stderr, "Connection refused") {
-			t.Fatalf("Http server failed to start with stdout %s and stderr %s", liveCheckOut.Stdout, liveCheckOut.Stderr)
-		}
-		// 3. Config and start the agent
-		if err := agents.SetupOpsAgent(ctx, logger, vm, opsAgentConfig); err != nil {
-			t.Fatal(err)
-		}
-
-		// Wait long enough for the data to percolate through the backends
-		// under normal circumstances. Based on some experiments, 2 minutes
-		// is normal; wait a bit longer to be on the safe side.
-		//
-		// We perform the first test seperately since it requires an agent configuration
-		//  and setup. All subsequest tests, can just replace the served file and have its
-		// own checks.
-		time.Sleep(3 * time.Minute)
-		window := time.Minute
-		var multiErr error
-		multiErr = multierr.Append(multiErr, firstTest.check(ctx, logger, vm, window))
-
-		for _, test := range restTests {
-			// Replace the text file with the next step metrics
-			err = uploadFiles(ctx, logger, vm, testdataDir, []fileToUpload{test.fileToUpload})
+			firstTest := testChecks[0]
+			restTests := testChecks[1:]
+			// 1. Upload the step one files and files used to setup the http service
+			err := uploadFiles(ctx, logger, vm, testdataDir, append(serviceFiles, firstTest.fileToUpload))
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			// Wait until the new points have arrived and complete the check for this test input.
-			time.Sleep(3 * time.Minute)
-			multiErr = multierr.Append(multiErr, test.check(ctx, logger, vm, window))
-
-			if multiErr != nil {
-				t.Error(multiErr)
+			// 2. Setup the golang
+			if err := installGolang(ctx, logger, vm); err != nil {
+				t.Fatal(err)
 			}
-		}
+
+			// 3. Build the http server
+			if err := buildGoBinary(ctx, logger, vm, serviceFiles[0].remote, remoteWorkDir); err != nil {
+				t.Fatal(err)
+			}
+
+			// 4. Start the go http server
+			setupScript := `sudo systemctl daemon-reload && sudo systemctl enable http-server-for-prometheus-test && sudo systemctl restart http-server-for-prometheus-test`
+			_, err = gce.RunRemotely(ctx, logger, vm, setupScript)
+			if err != nil {
+				t.Fatalf("failed to start the http server in VM via systemctl with err: %v", err)
+			}
+			// Wait until the http server is ready
+			time.Sleep(20 * time.Second)
+			liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger, vm, `curl "http://localhost:8000/data"`)
+			if liveCheckErr != nil || strings.Contains(liveCheckOut.Stderr, "Connection refused") {
+				t.Fatalf("Http server failed to start with stdout %s and stderr %s", liveCheckOut.Stdout, liveCheckOut.Stderr)
+			}
+			// 3. Config and start the agent
+			if err := agents.SetupOpsAgent(ctx, logger, vm, opsAgentConfig); err != nil {
+				t.Fatal(err)
+			}
+
+			// Wait long enough for the data to percolate through the backends
+			// under normal circumstances. Based on some experiments, 2 minutes
+			// is normal; wait a bit longer to be on the safe side.
+			//
+			// We perform the first test seperately since it requires an agent configuration
+			//  and setup. All subsequest tests, can just replace the served file and have its
+			// own checks.
+			time.Sleep(3 * time.Minute)
+			window := time.Minute
+			var multiErr error
+			multiErr = multierr.Append(multiErr, firstTest.check(ctx, logger, vm, window))
+
+			for _, test := range restTests {
+				// Replace the text file with the next step metrics
+				err = uploadFiles(ctx, logger, vm, testdataDir, []fileToUpload{test.fileToUpload})
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				// Wait until the new points have arrived and complete the check for this test input.
+				time.Sleep(3 * time.Minute)
+				multiErr = multierr.Append(multiErr, test.check(ctx, logger, vm, window))
+
+				if multiErr != nil {
+					t.Error(multiErr)
+				}
+			}
+		})
 	})
 }
 
