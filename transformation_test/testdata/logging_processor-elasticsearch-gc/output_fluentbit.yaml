@@ -305,6 +305,15 @@
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_gc
     logName: projects/my-project/logs/transformation_test
     timestamp: 2025-08-18T11:02:10.349000000Z
+  - jsonPayload:
+      gc_run: 3.0
+      message: Pause Full (System.gc()) 100M->15M(1024M) 8.765ms
+      type: gc
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_gc
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2025-08-18T11:02:10.350000000Z
   partialSuccess: true
   resource:
     labels: {}
