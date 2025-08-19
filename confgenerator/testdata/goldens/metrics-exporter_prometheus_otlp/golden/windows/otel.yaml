@@ -12,6 +12,8 @@ exporters:
       authenticator: googleclientauth
     encoding: proto
     endpoint: https://telemetry.googleapis.com
+    headers:
+      User-Agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
 extensions:
   googleclientauth: {}
 processors:
