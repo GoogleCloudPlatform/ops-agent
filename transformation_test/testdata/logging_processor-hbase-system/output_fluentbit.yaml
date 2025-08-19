@@ -5,6 +5,7 @@
       module: main
       source: master.HMaster
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -15,6 +16,7 @@
       module: main
       source: metrics.MetricRegistries
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -25,6 +27,7 @@
       module: main
       source: util.NativeCodeLoader
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
     logName: projects/my-project/logs/transformation_test
     severity: 400.0
@@ -35,6 +38,7 @@
       module: main
       source: zookeeper.ZooKeeper
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -45,6 +49,7 @@
       module: main-SendThread(zookeeper1:2181)
       source: zookeeper.ClientCnxn
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -55,6 +60,7 @@
       module: main-SendThread(zookeeper1:2181)
       source: zookeeper.ClientCnxn
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -65,6 +71,7 @@
       module: main-SendThread(zookeeper1:2181)
       source: zookeeper.ClientCnxn
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -75,6 +82,7 @@
       module: main
       source: master.HMaster
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -85,6 +93,7 @@
       module: master-server-0
       source: regionserver.HRegionServer
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -95,6 +104,7 @@
       module: master-server-0
       source: util.ServerRegionReplicaUtil
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -105,6 +115,7 @@
       module: master-server-0
       source: wal.FSHLog
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -115,6 +126,7 @@
       module: RpcServer.listener.on.pool-1-thread-1
       source: ipc.RpcServer
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -125,6 +137,7 @@
       module: ProcedureExecutorThread-0
       source: procedure.ProcedureExecutor
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
     logName: projects/my-project/logs/transformation_test
     severity: 400.0
@@ -135,6 +148,7 @@
       module: master-event-0
       source: master.AssignmentManager
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -145,6 +159,7 @@
       module: master-event-0
       source: master.HMaster
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -155,6 +170,7 @@
       module: RS_OPEN_REGION-hbase-regionserver-1:16020-0
       source: regionserver.HRegionServer
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -165,6 +181,7 @@
       module: Scanner-0
       source: client.ScannerCallable
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -175,6 +192,7 @@
       module: Scanner-0
       source: client.ScannerCallable
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -185,6 +203,7 @@
       module: RS_CLOSE_REGION-hbase-regionserver-2:16020-3
       source: wal.FSHLog
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
     logName: projects/my-project/logs/transformation_test
     severity: 400.0
@@ -195,6 +214,7 @@
       module: B.defaultRpcServer.handler=3,queue=0,port=16000
       source: ipc.CallRunner
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -205,6 +225,7 @@
       module: RS_OPEN_REGION-hbase-regionserver-3:16020-7
       source: regionserver.HRegionServer
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -215,10 +236,22 @@
       module: ShutdownHook
       source: master.HMaster
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
     timestamp: 2025-07-22T22:19:56.721000000Z
+  - jsonPayload:
+      level: INFO
+      message: "zookeeper.ZooKeeper: Session 0x15f23c54a00003d closed"
+      module: ShutdownHook
+      source: zookeeper.ZooKeeper
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-22T22:19:58.105000000Z
   partialSuccess: true
   resource:
     labels: {}
