@@ -9,6 +9,7 @@
       source: o.a.s.c.S.Request
       thread: qtp1038934055-15
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/solr_system
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -23,6 +24,7 @@
       source: o.a.s.h.RequestHandlerBase
       thread: qtp1038934055-19
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/solr_system
     logName: projects/my-project/logs/transformation_test
     severity: 100.0
@@ -37,6 +39,7 @@
       source: o.a.s.c.CoreContainer
       thread: coreLoadExecutor-7-thread-1
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/solr_system
     logName: projects/my-project/logs/transformation_test
     severity: 400.0
@@ -56,6 +59,7 @@
       source: o.a.s.c.CoreContainer
       thread: coreLoadExecutor-7-thread-1
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/solr_system
     logName: projects/my-project/logs/transformation_test
     severity: 500.0
@@ -70,6 +74,7 @@
       source: o.a.s.c.S.Request
       thread: qtp1038934055-16
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/solr_system
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -84,6 +89,7 @@
       source: o.a.s.c.S.Request
       thread: qtp1038934055-15
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/solr_system
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -98,6 +104,7 @@
       source: o.a.s.c.S.Request
       thread: qtp1038934055-17
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/solr_system
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
@@ -112,10 +119,26 @@
       source: o.a.s.c.S.Request
       thread: qtp1038934055-18
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/solr_system
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
     timestamp: 2025-07-21T14:12:05.342000000Z
+  - jsonPayload:
+      collection: collection1
+      core: core1
+      level: INFO
+      message: "[collection1]  webapp=/solr path=/update params={commit=true} status=0 QTime=95"
+      replica: replica1
+      shard: shard1
+      source: o.a.s.c.S.Request
+      thread: qtp1038934055-20
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/solr_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-21T16:58:55.013000000Z
   partialSuccess: true
   resource:
     labels: {}
