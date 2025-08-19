@@ -106,6 +106,26 @@
     logName: projects/my-project/logs/transformation_test
     severity: 0.0
     timestamp: 2025-08-18T04:07:07.777000000Z
+  - jsonPayload:
+      message: |-
+        2025-08-18 05:07:43.557042+00:00 [erro] <0.130.0>
+        BOOT FAILED
+        ===========
+        ERROR: could not bind to distribution port 25672, it is in use by another node: rabbit@keith-testing-rabbitmq
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/rabbitmq
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "Disk free space too low. Free bytes: 500000, limit: 1000000"
+      process_id: 0.501.0
+      severity: erro
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/rabbitmq
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2025-08-18T06:56:01.456000000Z
   partialSuccess: true
   resource:
     labels: {}

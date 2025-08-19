@@ -17,3 +17,5 @@
 BOOT FAILED
 ===========
 ERROR: could not bind to distribution port 25672, it is in use by another node: rabbit@keith-testing-rabbitmq
+2025-08-18 06:56:01.456+00:00 [erro] <0.501.0> Disk free space too low. Free bytes: 500000, limit: 1000000
+2025-08-18 07:07:07.777+00:00 [noti] <123.456.789> {shutdown,{connection_closed, "Broken pipe"}}
