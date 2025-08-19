@@ -62,6 +62,15 @@
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_general
     logName: projects/my-project/logs/transformation_test
     timestamp: 2025-07-22T16:00:07.789012000Z
+  - jsonPayload:
+      command: Query
+      message: SHOW TABLES;
+      tid: 21.0
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_general
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2025-07-22T16:00:08.890123000Z
   partialSuccess: true
   resource:
     labels: {}

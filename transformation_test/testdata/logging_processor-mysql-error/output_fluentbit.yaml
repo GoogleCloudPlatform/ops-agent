@@ -67,6 +67,18 @@
     logName: projects/my-project/logs/transformation_test
     severity: 400.0
     timestamp: 2025-07-22T16:02:05.000005000Z
+  - jsonPayload:
+      errorCode: MY-012345
+      level: ERROR
+      message: Cannot allocate memory for the buffer pool
+      subsystem: InnoDB
+      tid: 15.0
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_error
+    logName: projects/my-project/logs/transformation_test
+    severity: 500.0
+    timestamp: 2025-07-22T16:02:06.000006000Z
   partialSuccess: true
   resource:
     labels: {}
