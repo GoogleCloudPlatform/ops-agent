@@ -10,14 +10,8 @@ exporters:
   otlphttp/otlp:
     auth:
       authenticator: googleclientauth
-<<<<<<< HEAD
-    endpoint: https://telemetry.googleapis.com
-    headers:
-      User-Agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
-=======
     encoding: proto
     endpoint: https://telemetry.googleapis.com
->>>>>>> ed5d97926 (Generating otlphttp endpoint when feature flag is enabled)
 extensions:
   googleclientauth: {}
 processors:
@@ -616,10 +610,6 @@ service:
       - prometheus/otel
     metrics/prometheus__pipeline_prometheus:
       exporters:
-<<<<<<< HEAD
-=======
-      - googlemanagedprometheus
->>>>>>> ed5d97926 (Generating otlphttp endpoint when feature flag is enabled)
       - otlphttp/otlp
       processors:
       - transform/prometheus_0
