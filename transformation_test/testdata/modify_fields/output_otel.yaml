@@ -2,6 +2,8 @@
   - jsonPayload:
       hello: world
       message: foo
+    labels:
+      compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/my-log-name
     resource:
       labels:
@@ -12,6 +14,8 @@
   - jsonPayload:
       hello: world
       message: goo
+    labels:
+      compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/my-log-name
     resource:
       labels:
@@ -22,6 +26,8 @@
   - jsonPayload:
       hello: world
       message: yes maybe no
+    labels:
+      compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/my-log-name
     resource:
       labels:

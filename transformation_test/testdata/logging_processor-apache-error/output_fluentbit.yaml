@@ -1,0 +1,54 @@
+- entries:
+  - jsonPayload:
+      client: 72.15.99.187
+      errorCode: (13)Permission denied
+      level: error
+      message: "File does not exist: /usr/local/apache2/htdocs/favicon.ico"
+      module: core
+      pid: 35708.0
+      tid: 4.328636416e+09
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_error
+    logName: projects/my-project/logs/transformation_test
+    severity: 500.0
+    timestamp: 2011-09-09T10:42:29.902022000Z
+  - jsonPayload:
+      errorCode: AH02217
+      level: error
+      message: "ssl_stapling_init_cert: Can't retrieve issuer certificate!"
+      module: ssl
+      pid: 2451.0
+      tid: 1.40169666050176e+14
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_error
+    logName: projects/my-project/logs/transformation_test
+    severity: 500.0
+    timestamp: 2021-09-30T03:18:29.239182000Z
+  - jsonPayload:
+      client: 72.15.99.187
+      level: error
+      message: "File does not exist: /usr/local/apache2/htdocs/favicon.ico"
+      pid: 35708.0
+      tid: 4.328636416e+09
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_error
+    logName: projects/my-project/logs/transformation_test
+    severity: 500.0
+    timestamp: 2011-09-09T10:42:29.902022000Z
+  - jsonPayload:
+      client: 127.0.0.1
+      level: error
+      message: "client denied by server configuration: /export/home/live/ap/htdocs/test "
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_error
+    logName: projects/my-project/logs/transformation_test
+    severity: 500.0
+    timestamp: now
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance
