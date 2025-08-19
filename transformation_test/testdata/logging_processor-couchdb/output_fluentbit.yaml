@@ -56,6 +56,62 @@
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
     timestamp: 2022-01-12T16:52:56.998128000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: ""
+      referer: ""
+      remoteIp: ""
+      requestMethod: ""
+      requestSize: 0.0
+      requestUrl: ""
+      responseSize: 0.0
+      serverIp: ""
+      status: 0.0
+      userAgent: ""
+    jsonPayload:
+      host: nohost
+      level: error
+      message: |-
+        emulator -------- Error in process <0.463.0> with exit value:
+        					{database_does_not_exist,[{mem3_shards,load_shards_from_db,"_users",[{file,"src/mem3_shards.erl"},{line,399}]},{mem3_shards,load_shards_from_disk,1,[{file,"src/mem3_shards.erl"},{line,374}]},{mem3_shards,load_shards_from_disk,2,[{file,"src/mem3_shards.erl"},{line,403}]},{mem3_shards,for_docid,3,[{file,"src/mem3_shards.erl"},{line,96}]},{fabric_doc_open,go,3,[{file,"src/fabric_doc_open.erl"},{line,39}]},{chttpd_auth_cache,ensure_auth_ddoc_exists,2,[{file,"src/chttpd_auth_cache.erl"},{line,198}]},{chttpd_auth_cache,listen_for_changes,1,[{file,"src/chttpd_auth_cache.erl"},{line,145}]}]}
+      node: nonode
+      pid: 0.463.0
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchdb
+    logName: projects/my-project/logs/transformation_test
+    severity: 500.0
+    timestamp: 2022-01-12T16:53:03.094488000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: ""
+      referer: ""
+      remoteIp: ""
+      requestMethod: ""
+      requestSize: 0.0
+      requestUrl: ""
+      responseSize: 0.0
+      serverIp: ""
+      status: 0.0
+      userAgent: ""
+    jsonPayload:
+      host: nohost
+      level: warning
+      message: <0.892.0> 3d2f1a8bc7 localhost:5984 192.168.1.100 GET /myapp/_design/users/_view/by_email 404 not_found 8
+      node: nonode
+      pid: 0.892.0
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchdb
+    logName: projects/my-project/logs/transformation_test
+    severity: 400.0
+    timestamp: 2022-01-12T16:55:21.782456000Z
   partialSuccess: true
   resource:
     labels: {}
