@@ -1,0 +1,21 @@
+- entries:
+  - jsonPayload:
+      msg: start
+      msg1: start
+      severity: INFO
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2023-10-17T14:55:59.683530289Z
+  - jsonPayload:
+      msg: end
+      msg1: end
+      severity: INFO
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2023-10-17T15:55:59.683530289Z
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance

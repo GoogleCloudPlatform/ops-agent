@@ -132,7 +132,7 @@ func mainErr() error {
 			// periodically.
 			"osconfig-disabled-features": "tasks",
 		},
-		ExtraCreateArguments: []string{"--boot-disk-size=4000GB"},
+		ExtraCreateArguments: []string{"--boot-disk-size=200GB"},
 	}
 	vm, err := gce.CreateInstance(ctx, logger, options)
 	if err != nil {

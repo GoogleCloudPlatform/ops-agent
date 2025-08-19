@@ -53,7 +53,6 @@ processors:
       exclude:
         match_type: strict
         metric_names:
-        - system.cpu.time
         - system.network.dropped
         - system.filesystem.inodes.usage
         - system.paging.faults
@@ -625,6 +624,7 @@ processors:
       - set(body["SourceName"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_10"])
+      - set(cache["value"], ToValues(cache["value"]))
       - set(body["StringInserts"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_11"])
@@ -732,6 +732,7 @@ processors:
       - set(body["SourceName"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_10"])
+      - set(cache["value"], ToValues(cache["value"]))
       - set(body["StringInserts"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_11"])
@@ -839,6 +840,7 @@ processors:
       - set(body["SourceName"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_10"])
+      - set(cache["value"], ToValues(cache["value"]))
       - set(body["StringInserts"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_11"])

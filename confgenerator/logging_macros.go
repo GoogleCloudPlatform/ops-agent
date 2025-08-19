@@ -46,8 +46,13 @@ func (cr loggingReceiverMacroAdapter[LRM]) Type() string {
 	return cr.ReceiverMacro.Type()
 }
 
+func (cr loggingReceiverMacroAdapter[LRM]) Expand(ctx context.Context) (InternalLoggingReceiver, []InternalLoggingProcessor) {
+	return cr.ReceiverMacro.Expand(ctx)
+}
+
 func (cr loggingReceiverMacroAdapter[LRM]) Components(ctx context.Context, tag string) []fluentbit.Component {
-	receiver, processors := cr.ReceiverMacro.Expand(ctx)
+	receiver, processors := cr.Expand(ctx)
+
 	c := receiver.Components(ctx, tag)
 	for _, p := range processors {
 		c = append(c, p.Components(ctx, tag, cr.Type())...)
@@ -56,7 +61,7 @@ func (cr loggingReceiverMacroAdapter[LRM]) Components(ctx context.Context, tag s
 }
 
 func (cr loggingReceiverMacroAdapter[LRM]) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
-	receiver, processors := cr.ReceiverMacro.Expand(ctx)
+	receiver, processors := cr.Expand(ctx)
 	if r, ok := any(receiver).(OTelReceiver); ok {
 		rps, err := r.Pipelines(ctx)
 		if err != nil {
@@ -104,9 +109,13 @@ func (cp loggingProcessorMacroAdapter[LPM]) Type() string {
 	return cp.ProcessorMacro.Type()
 }
 
+func (cp loggingProcessorMacroAdapter[LPM]) Expand(ctx context.Context) []InternalLoggingProcessor {
+	return cp.ProcessorMacro.Expand(ctx)
+}
+
 func (cp loggingProcessorMacroAdapter[LPM]) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
 	var c []fluentbit.Component
-	for _, p := range cp.ProcessorMacro.Expand(ctx) {
+	for _, p := range cp.Expand(ctx) {
 		c = append(c, p.Components(ctx, tag, uid)...)
 	}
 	return c
@@ -114,7 +123,7 @@ func (cp loggingProcessorMacroAdapter[LPM]) Components(ctx context.Context, tag 
 
 func (cp loggingProcessorMacroAdapter[LPM]) Processors(ctx context.Context) ([]otel.Component, error) {
 	var processors []otel.Component
-	for _, lp := range cp.ProcessorMacro.Expand(ctx) {
+	for _, lp := range cp.Expand(ctx) {
 		if p, ok := any(lp).(OTelProcessor); ok {
 			c, err := p.Processors(ctx)
 			if err != nil {

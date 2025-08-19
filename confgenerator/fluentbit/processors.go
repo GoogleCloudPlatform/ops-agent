@@ -23,26 +23,33 @@ import (
 	"strings"
 )
 
+type MultilineRule struct {
+	StateName string
+	Regex     string
+	NextState string
+}
+
+func (r MultilineRule) AsString() string {
+	escapedRegex := strings.ReplaceAll(r.Regex, `"`, `\"`)
+	return fmt.Sprintf(`"%s"    "%s"    "%s"`, r.StateName, escapedRegex, r.NextState)
+}
+
 // ParseMultilineComponent constitutes the mulltiline_parser components.
-func ParseMultilineComponent(tag string, uid string, languageRules []string) []Component {
-	var components []Component
-	multilineParserName := fmt.Sprintf("multiline.%s.%s", tag, uid)
+func ParseMultilineComponent(name string, languageRules []MultilineRule) Component {
 	rules := [][2]string{}
 	for _, rule := range languageRules {
-		rules = append(rules, [2]string{"rule", rule})
+		rules = append(rules, [2]string{"rule", rule.AsString()})
 	}
 
-	multilineParser := Component{
+	return Component{
 		Kind: "MULTILINE_PARSER",
 		Config: map[string]string{
-			"name":          multilineParserName,
+			"name":          name,
 			"type":          "regex",
 			"flush_timeout": "1000",
 		},
 		OrderedConfig: rules,
 	}
-	components = append(components, multilineParser)
-	return components
 }
 
 // TranslationComponents translates SrcVal on key src to DestVal on key dest, if the dest key does not exist.

@@ -44,13 +44,11 @@ build:
 rebuild_submodules: fluent_bit_local otelopscol_local
 
 .PHONY: fluent_bit_local
-fluent_bit_local:
-	bash ./builds/fluent_bit.sh $(PWD)/dist
+fluent_bit_local: dist/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit
 
 SKIP_JAVA ?= true
 .PHONY: otelopscol_local
-otelopscol_local:
-	SKIP_OTEL_JAVA=${SKIP_JAVA} bash ./builds/otel.sh $(PWD)/dist
+otelopscol_local: dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol
 
 ############
 # Tools
@@ -123,10 +121,10 @@ endif
 	touch ./confgenerator/testdata/goldens/$(TEST_NAME)/input.yaml
 
 dist/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit:
-	$(MAKE) fluent_bit_local
+	bash ./builds/fluent_bit.sh $(PWD)/dist
 
 dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol:
-	$(MAKE) otelopscol_local
+	SKIP_OTEL_JAVA=${SKIP_JAVA} bash ./builds/otel.sh $(PWD)/dist
 
 .PHONY: transformation_test
 transformation_test: dist/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol
