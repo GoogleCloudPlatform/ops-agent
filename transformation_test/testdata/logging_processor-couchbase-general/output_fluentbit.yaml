@@ -47,6 +47,18 @@
     logName: projects/my-project/logs/transformation_test
     severity: 100.0
     timestamp: 2025-08-18T09:16:55.987000000Z
+  - jsonPayload:
+      level: info
+      message: Node 'ns_1@127.0.0.1' added to cluster
+      node_name: ns_1@127.0.0.1
+      source: cluster_manager
+      type: ns_server
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_general
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-08-18T09:17:30.333000000Z
   partialSuccess: true
   resource:
     labels: {}

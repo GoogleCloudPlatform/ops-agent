@@ -193,4 +193,26 @@
         zone: test-zone
       type: gce_instance
     timestamp: 2025-08-18T09:24:15Z
+  - httpRequest:
+      protocol: HTTP/1.1
+      remoteIp: 192.168.1.20
+      requestMethod: PATCH
+      requestUrl: /pools/default/buckets/travel-data/docs/user:321
+      responseSize: "128"
+      status: 409
+      userAgent: python-requests/2.31.0
+    jsonPayload:
+      host: couchbase.local
+      message: Document conflict
+      user: -
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2025-08-18T09:25:00Z
   partialSuccess: true

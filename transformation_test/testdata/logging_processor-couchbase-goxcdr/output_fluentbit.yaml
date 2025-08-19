@@ -29,6 +29,16 @@
     logName: projects/my-project/logs/transformation_test
     severity: 500.0
     timestamp: 2025-08-18T14:27:22.345000000Z
+  - jsonPayload:
+      level: DEBUG
+      log_type: BackfillManager
+      message: Backfill task created for vbucket 102
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_goxdcr
+    logName: projects/my-project/logs/transformation_test
+    severity: 100.0
+    timestamp: 2025-08-18T14:27:45.657000000Z
   partialSuccess: true
   resource:
     labels: {}
