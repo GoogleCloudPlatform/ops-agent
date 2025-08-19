@@ -138,7 +138,7 @@ type LoggingProcessorMacroTomcatAccess struct {
 }
 
 func (p LoggingProcessorMacroTomcatAccess) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
-	return genericAccessLogParserAsInternalLoggingProcessor(ctx, p.Type())
+	return genericAccessLogParser(ctx, p.Type())
 }
 
 func (LoggingProcessorMacroTomcatAccess) Type() string {
