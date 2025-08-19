@@ -1,0 +1,17 @@
+# Time: 2025-07-22T16:01:01.111111Z
+# User@Host: admin[admin] @ localhost []
+# Query_time: 3.103221  Lock_time: 0.000150 Rows_sent: 1  Rows_examined: 10000
+SET timestamp=1753065661;
+SELECT * FROM transactions WHERE amount > 10000;
+
+# Time: 2025-07-22T16:01:03.222222Z
+# User@Host: root[root] @ 172.18.0.1 []
+# Query_time: 2.504332  Lock_time: 0.000221 Rows_sent: 100  Rows_examined: 100000
+SET timestamp=1753065663;
+SELECT * FROM logs ORDER BY created_at DESC LIMIT 100;
+
+# Time: 2025-07-22T16:01:05.333333Z
+# User@Host: user1[user1] @ 172.18.0.2 []
+# Query_time: 5.875439  Lock_time: 0.000311 Rows_sent: 0  Rows_examined: 50000
+SET timestamp=1753065665;
+SELECT COUNT(*) FROM sessions WHERE last_active < NOW() - INTERVAL 1 MONTH;
