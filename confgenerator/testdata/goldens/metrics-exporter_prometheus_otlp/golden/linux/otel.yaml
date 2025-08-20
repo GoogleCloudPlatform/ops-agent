@@ -434,7 +434,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  resource/prometheus_2:
+  resource/prometheus_3:
     attributes:
     - action: insert
       key: gcp.project_id
@@ -464,6 +464,14 @@ processors:
       - delete_key(attributes, "location")
       - delete_key(attributes, "cluster")
       - delete_key(attributes, "namespace")
+  transform/prometheus_2:
+    error_mode: ignore
+    metric_statements:
+    - context: metric
+      statements:
+      - copy_metric(Concat([metric.name, "unknowncounter"], ":")) where metric.metadata["prometheus.type"] == "unknown" and not HasSuffix(metric.name, ":unknowncounter")
+      - convert_gauge_to_sum("cumulative", true) where HasSuffix(metric.name, ":unknowncounter")
+      - set(metric.name, Substring(metric.name, 0, Len(metric.name)-Len(":unknowncounter"))) where HasSuffix(metric.name, ":unknowncounter")
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
@@ -606,7 +614,8 @@ service:
       processors:
       - transform/prometheus_0
       - metricstarttime/prometheus_1
-      - resource/prometheus_2
+      - transform/prometheus_2
+      - resource/prometheus_3
       receivers:
       - prometheus/prometheus
   telemetry:
