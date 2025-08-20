@@ -16,8 +16,10 @@ package confgenerator
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
@@ -41,6 +43,20 @@ type ParseMultiline struct {
 
 func (r ParseMultiline) Type() string {
 	return "parse_multiline"
+}
+
+// This map lists regexes that apply to any line that is part of a previous line.
+var otelMultilineMap = map[string][]string{
+	"java": []string{
+		// Line starts with a java exception class name
+		`^(?:[a-zA-Z$_][a-zA-Z$_0-9]*\.)+[a-zA-Z$_][a-zA-Z$_0-9]*: `,
+		`^[\t ]*nested exception is:[\\t ]*`,
+		`^[\t ]+(?:eval ?)?at `,
+		`^[\t ]+--- End of inner exception stack trace ---$`,
+		`^--- End of stack trace from previous location where exception was thrown ---$`,
+		`^[\t ]*(?:Caused by|Suppressed):`,
+		`^[\t ]*... \d+ (?:more|common frames omitted)`,
+	},
 }
 
 var multilineRulesLanguageMap = map[string][]MultilineRule{
@@ -106,6 +122,58 @@ func (p ParseMultiline) Components(ctx context.Context, tag, uid string) []fluen
 		parserComponent,
 		modify.NewRenameOptions("log", "message").Component(tag),
 	}
+}
+
+func (p ParseMultiline) Processors(ctx context.Context) ([]otel.Component, error) {
+	var secondLines []string
+	for _, g := range p.MultilineGroups {
+		if g.Type == "language_exceptions" {
+			r := otelMultilineMap[g.Language]
+			if len(r) > 0 {
+				secondLines = append(secondLines, r...)
+				continue
+			}
+		}
+		return nil, errors.New("unsupported in otel")
+	}
+
+	var exprParts []string
+	for _, r := range secondLines {
+		exprParts = append(exprParts, fmt.Sprintf("body.message matches %q", r))
+	}
+
+	expr := fmt.Sprintf("not (%s)", strings.Join(exprParts, " or "))
+
+	return []otel.Component{{
+		Type: "logstransform",
+		Config: map[string]any{
+			"operators": []map[string]any{
+				{
+					"type":  "add",
+					"field": "attributes.__source_identifier",
+					"value": `EXPR(attributes["agent.googleapis.com/log_file_path"] ?? "")`,
+				},
+				{
+					"type":          "recombine",
+					"combine_field": "body.message",
+					// N.B. We cannot specify "combine_with" because it is not serialized correctly by our yaml library.
+					//"combine_with":   "\n",
+					"is_first_entry": expr,
+					// Take the timestamp and other attributes from the first entry.
+					"overwrite_with": "oldest",
+					// Use the log file path to disambiguate if present.
+					"source_identifier": `attributes.__source_identifier`,
+					// How long to wait for more log lines.
+					// Set to half of the file receiver's poll_interval to guarantee it is flushed every poll.
+					"force_flush_period": "100ms",
+				},
+				{
+					"type":  "remove",
+					"field": "attributes.__source_identifier",
+				},
+			},
+		},
+	}}, nil
 }
 
 func init() {
