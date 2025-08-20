@@ -62,7 +62,6 @@ func otlpExporter(userAgent string) otel.Component {
 	return otel.Component{
 		Type: "otlphttp",
 		Config: map[string]interface{}{
-			"encoding": "proto",
 			"endpoint": "https://telemetry.googleapis.com",
 			"auth": map[string]interface{}{
 				"authenticator": "googleclientauth",
