@@ -18,3 +18,11 @@
   feature: receivers:saphana
   key: "[0].enabled"
   value: "true"
+- module: logging
+  feature: receivers:saphana
+  key: "[0].include_paths.__length"
+  value: "1"
+- module: logging
+  feature: receivers:saphana
+  key: "[0].exclude_paths.__length"
+  value: "3"
