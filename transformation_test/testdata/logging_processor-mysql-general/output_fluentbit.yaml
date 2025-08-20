@@ -1,0 +1,77 @@
+- entries:
+  - jsonPayload:
+      command: Query
+      message: SELECT * FROM users;
+      tid: 14.0
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_general
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2025-07-22T16:00:01.123456000Z
+  - jsonPayload:
+      command: Query
+      message: SELECT id, name FROM products WHERE price > 100;
+      tid: 15.0
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_general
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2025-07-22T16:00:02.234567000Z
+  - jsonPayload:
+      command: Query
+      message: UPDATE orders SET status = 'processing' WHERE id = 101;
+      tid: 16.0
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_general
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2025-07-22T16:00:03.345678000Z
+  - jsonPayload:
+      command: Query
+      message: DELETE FROM logs WHERE created_at < NOW() - INTERVAL 30 DAY;
+      tid: 17.0
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_general
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2025-07-22T16:00:04.456789000Z
+  - jsonPayload:
+      command: Query
+      message: INSERT INTO users (name, email) VALUES ('Alice', 'alice@example.com');
+      tid: 18.0
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_general
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2025-07-22T16:00:05.567890000Z
+  - jsonPayload:
+      command: Query
+      message: CREATE INDEX idx_name ON users(name);
+      tid: 19.0
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_general
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2025-07-22T16:00:06.678901000Z
+  - jsonPayload:
+      command: Query
+      message: ALTER TABLE products ADD COLUMN stock INT DEFAULT 0;
+      tid: 20.0
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_general
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2025-07-22T16:00:07.789012000Z
+  - jsonPayload:
+      command: Query
+      message: SHOW TABLES;
+      tid: 21.0
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_general
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2025-07-22T16:00:08.890123000Z
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance
