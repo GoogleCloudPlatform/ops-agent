@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
@@ -255,39 +254,33 @@ func (p LoggingProcessorMacroElasticsearchJson) nestingProcessors() []confgenera
 	return processors
 }
 
-type LoggingProcessorElasticsearchGC struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
+type LoggingProcessorMacroElasticsearchGC struct {
 }
 
-func (LoggingProcessorElasticsearchGC) Type() string {
+func (LoggingProcessorMacroElasticsearchGC) Type() string {
 	return "elasticsearch_gc"
 }
 
-func (p LoggingProcessorElasticsearchGC) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	c := []fluentbit.Component{}
-
-	regexParser := confgenerator.LoggingProcessorParseRegex{
-		// Sample log line:
-		// [2022-01-17T18:31:37.240+0000][652141][gc,start    ] GC(0) Pause Young (Normal) (G1 Evacuation Pause)
-		Regex: `\[(?<time>\d+-\d+-\d+T\d+:\d+:\d+.\d+\+\d+)\]\[\d+\]\[(?<type>[A-z,]+)\s*\]\s*(?:GC\((?<gc_run>\d+)\))?\s*(?<message>.*)`,
-		ParserShared: confgenerator.ParserShared{
-			TimeKey:    "time",
-			TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
-			Types: map[string]string{
-				"gc_run": "integer",
+func (p LoggingProcessorMacroElasticsearchGC) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
+	return []confgenerator.InternalLoggingProcessor{
+		confgenerator.LoggingProcessorParseRegex{
+			// Sample log line:
+			// [2022-01-17T18:31:37.240+0000][652141][gc,start    ] GC(0) Pause Young (Normal) (G1 Evacuation Pause)
+			Regex: `\[(?<time>\d+-\d+-\d+T\d+:\d+:\d+.\d+\+\d+)\]\[\d+\]\[(?<type>[A-z,]+)\s*\]\s*(?:GC\((?<gc_run>\d+)\))?\s*(?<message>.*)`,
+			ParserShared: confgenerator.ParserShared{
+				TimeKey:    "time",
+				TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
+				Types: map[string]string{
+					"gc_run": "integer",
+				},
 			},
 		},
-	}
-
-	c = append(c, regexParser.Components(ctx, tag, uid)...)
-	c = append(c,
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(ctx, tag, uid)...,
-	)
-	return c
+		},
+	}
 }
 
 func loggingReceiverFilesMixinElasticsearchJson() confgenerator.LoggingReceiverFilesMixin {
@@ -302,24 +295,15 @@ func loggingReceiverFilesMixinElasticsearchJson() confgenerator.LoggingReceiverF
 	}
 }
 
-type LoggingReceiverElasticsearchGC struct {
-	LoggingProcessorElasticsearchGC `yaml:",inline"`
-	ReceiverMixin                   confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
-}
-
-func (r LoggingReceiverElasticsearchGC) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.ReceiverMixin.IncludePaths) == 0 {
-		// Default GC log for Elasticsearch
-		r.ReceiverMixin.IncludePaths = []string{
+func loggingReceiverFilesMixinElasticsearchGC() confgenerator.LoggingReceiverFilesMixin {
+	return confgenerator.LoggingReceiverFilesMixin{
+		IncludePaths: []string{
 			"/var/log/elasticsearch/gc.log",
-		}
+		},
 	}
-
-	c := r.ReceiverMixin.Components(ctx, tag)
-	return append(c, r.LoggingProcessorElasticsearchGC.Components(ctx, tag, "elasticsearch_gc")...)
 }
 
 func init() {
 	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroElasticsearchJson](loggingReceiverFilesMixinElasticsearchJson)
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverElasticsearchGC{} })
+	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroElasticsearchGC](loggingReceiverFilesMixinElasticsearchGC)
 }
