@@ -1,0 +1,35 @@
+[2025-08-18T10:14:37.240+0000][31245][gc,start    ] GC(0) Pause Young (Normal) (G1 Evacuation Pause)
+[2025-08-18T10:14:37.242+0000][31245][gc,heap     ] GC(0) Eden regions: 48->0(47)
+[2025-08-18T10:14:37.242+0000][31245][gc,heap     ] GC(0) Survivor regions: 0->1(7)
+[2025-08-18T10:14:37.242+0000][31245][gc,heap     ] GC(0) Old regions: 0->2
+[2025-08-18T10:14:37.242+0000][31245][gc,metaspace] GC(0) Metaspace: 18000K->18000K(1064960K)
+[2025-08-18T10:14:37.243+0000][31245][gc          ] GC(0) Pause Young (Normal) (G1 Evacuation Pause) 48M->10M(1024M) 3.456ms
+[2025-08-18T10:20:12.555+0000][31245][gc,start    ] GC(1) Pause Young (Concurrent Start) (G1 Evacuation Pause)
+[2025-08-18T10:20:12.559+0000][31245][gc,heap     ] GC(1) Eden regions: 47->0(45)
+[2025-08-18T10:20:12.559+0000][31245][gc,heap     ] GC(1) Survivor regions: 1->2(7)
+[2025-08-18T10:20:12.559+0000][31245][gc,heap     ] GC(1) Old regions: 2->3
+[2025-08-18T10:20:12.559+0000][31245][gc,metaspace] GC(1) Metaspace: 18250K->18250K(1064960K)
+[2025-08-18T10:20:12.561+0000][31245][gc          ] GC(1) Pause Young (Concurrent Start) (G1 Evacuation Pause) 58M->15M(1024M) 5.623ms
+[2025-08-18T10:20:12.561+0000][31245][gc          ] GC(1) Concurrent Cycle
+[2025-08-18T10:20:12.561+0000][31245][gc,marking  ] GC(1) Concurrent Clear Claimed Marks
+[2025-08-18T10:20:12.561+0000][31245][gc,marking  ] GC(1) Concurrent Scan Root Regions
+[2025-08-18T10:20:12.563+0000][31245][gc,marking  ] GC(1) Concurrent Mark
+[2025-08-18T10:20:12.567+0000][31245][gc,marking  ] GC(1) Concurrent Preclean
+[2025-08-18T10:20:12.568+0000][31245][gc,start    ] GC(1) Pause Remark
+[2025-08-18T10:20:12.569+0000][31245][gc          ] GC(1) Pause Remark 20M->20M(1024M) 1.234ms
+[2025-08-18T10:20:12.569+0000][31245][gc,marking  ] GC(1) Concurrent Mark Cleanup
+[2025-08-18T10:20:12.570+0000][31245][gc,start    ] GC(1) Pause Cleanup
+[2025-08-18T10:20:12.570+0000][31245][gc          ] GC(1) Pause Cleanup 20M->20M(1024M) 0.234ms
+[2025-08-18T10:20:12.571+0000][31245][gc          ] GC(1) Concurrent Cycle 10.123ms
+[2025-08-18T10:45:45.125+0000][31245][gc,start    ] GC(2) Pause Young (Normal) (G1 Evacuation Pause)
+[2025-08-18T10:45:45.129+0000][31245][gc,heap     ] GC(2) Eden regions: 46->0(48)
+[2025-08-18T10:45:45.129+0000][31245][gc,heap     ] GC(2) Survivor regions: 2->3(7)
+[2025-08-18T10:45:45.129+0000][31245][gc,heap     ] GC(2) Old regions: 3->3
+[2025-08-18T10:45:45.129+0000][31245][gc,metaspace] GC(2) Metaspace: 18500K->18500K(1064960K)
+[2025-08-18T10:45:45.130+0000][31245][gc          ] GC(2) Pause Young (Normal) (G1 Evacuation Pause) 75M->25M(1024M) 4.543ms
+[2025-08-18T11:02:10.341+0000][31245][gc,start    ] GC(3) Pause Full (System.gc())
+[2025-08-18T11:02:10.348+0000][31245][gc,heap     ] GC(3) Eden regions: 45->0(45)
+[2025-08-18T11:02:10.348+0000][31245][gc,heap     ] GC(3) Survivor regions: 3->0(7)
+[2025-08-18T11:02:10.348+0000][31245][gc,heap     ] GC(3) Old regions: 3->1
+[2025-08-18T11:02:10.349+0000][31245][gc,metaspace] GC(3) Metaspace: 18700K->18650K(1064960K)
+[2025-08-18T11:02:10.350+0000][31245][gc          ] GC(3) Pause Full (System.gc()) 100M->15M(1024M) 8.765ms
