@@ -37,6 +37,7 @@ const (
 	OTel ExporterType = iota
 	System
 	GMP
+	Otlp
 )
 const (
 	Override ResourceDetectionMode = iota
@@ -50,6 +51,8 @@ func (t ExporterType) Name() string {
 		return ""
 	} else if t == OTel {
 		return "otel"
+	} else if t == Otlp {
+		return "otlp"
 	} else {
 		panic("unknown ExporterType")
 	}
