@@ -90,8 +90,8 @@ func (r PrometheusMetrics) Pipelines(ctx context.Context) ([]otel.ReceiverPipeli
 	exp_otlp_exporter := experimentsFromContext(ctx)["otlp_exporter"]
 	metrics_components := []otel.Component{otel.GroupByGMPAttrs_OTTL()}
 	if exp_otlp_exporter {
-		metrics_components = append(metrics_components, otel.MetricStartTime())
 		metrics_components = append(metrics_components, otel.MetricUnknownCounter())
+		metrics_components = append(metrics_components, otel.MetricStartTime())
 		metrics_components = append(metrics_components, otel.GCPProjectID(resource.ProjectName()))
 	}
 	return []otel.ReceiverPipeline{{

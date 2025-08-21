@@ -73,7 +73,7 @@ processors:
         - otelcol_process_memory_rss
         - grpc.client.attempt.duration_count
         - googlecloudmonitoring/point_count
-  metricstarttime/prometheus_1:
+  metricstarttime/prometheus_2:
     strategy: subtract_initial_point
   metricstransform/fluentbit_1:
     transforms:
@@ -541,7 +541,7 @@ processors:
       - delete_key(attributes, "location")
       - delete_key(attributes, "cluster")
       - delete_key(attributes, "namespace")
-  transform/prometheus_2:
+  transform/prometheus_1:
     error_mode: ignore
     metric_statements:
     - context: metric
@@ -747,8 +747,8 @@ service:
       - googlemanagedprometheus
       processors:
       - transform/prometheus_0
-      - metricstarttime/prometheus_1
-      - transform/prometheus_2
+      - transform/prometheus_1
+      - metricstarttime/prometheus_2
       - resource/prometheus_3
       receivers:
       - prometheus/prometheus
