@@ -2553,7 +2553,7 @@ func TestSystemdLog(t *testing.T) {
 				t.Fatalf("Error writing dummy Systemd log line: %v", err)
 			}
 
-			querySystemdInfoLog := fmt.Sprintf(`severity="INFO" AND jsonPayload.MESSAGE="my_systemd_info_log_message" AND jsonPayload.PRIORITY="6"`)
+			querySystemdInfoLog := `severity="INFO" AND jsonPayload.MESSAGE="my_systemd_info_log_message" AND jsonPayload.PRIORITY="6"`
 			if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdInfoLog); err != nil {
 				t.Error(err)
 			}
@@ -2562,20 +2562,19 @@ func TestSystemdLog(t *testing.T) {
 				t.Fatalf("Error writing dummy Systemd log line: %v", err)
 			}
 
-			querySystemdErrorLog := fmt.Sprintf(`severity="ERROR" AND jsonPayload.MESSAGE="my_systemd_error_log_message" AND jsonPayload.PRIORITY="3"`)
+			querySystemdErrorLog := `severity="ERROR" AND jsonPayload.MESSAGE="my_systemd_error_log_message" AND jsonPayload.PRIORITY="3"`
 			if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdErrorLog); err != nil {
 				t.Error(err)
 			}
 
-			// TODO: b/400435104 - Re-enable when the `googlecloudexporter` supports all LogSeverity levels.
-			// if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_notice_log_message' | systemd-cat --priority=notice"); err != nil {
-			// 	t.Fatalf("Error writing dummy Systemd log line: %v", err)
-			// }
+			if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_notice_log_message' | systemd-cat --priority=notice"); err != nil {
+				t.Fatalf("Error writing dummy Systemd log line: %v", err)
+			}
 
-			// querySystemdNoticeLog := fmt.Sprintf(`severity="NOTICE" AND jsonPayload.MESSAGE="my_systemd_notice_log_message" AND jsonPayload.PRIORITY="5"`)
-			// if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdNoticeLog); err != nil {
-			// 	t.Error(err)
-			// }
+			querySystemdNoticeLog := `severity="NOTICE" AND jsonPayload.MESSAGE="my_systemd_notice_log_message" AND jsonPayload.PRIORITY="5"`
+			if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdNoticeLog); err != nil {
+				t.Error(err)
+			}
 		})
 	})
 }

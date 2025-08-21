@@ -1,0 +1,9 @@
+{"message":"message with DEFAULT severity", "severity": "DEFAULT"}
+{"message":"message with DEBUG severity", "severity": "DEBUG"}
+{"message":"message with INFO severity", "severity": "INFO"}
+{"message":"message with NOTICE severity", "severity": "NOTICE"}
+{"message":"message with WARNING severity", "severity": "WARNING"}
+{"message":"message with ERROR severity", "severity": "ERROR"}
+{"message":"message with CRITICAL severity", "severity": "CRITICAL"}
+{"message":"message with ALERT severity", "severity": "ALERT"}
+{"message":"message with EMERGENCY severity", "severity": "EMERGENCY"}
