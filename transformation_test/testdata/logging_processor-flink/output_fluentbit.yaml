@@ -119,6 +119,16 @@
     logName: projects/my-project/logs/transformation_test
     severity: 500.0
     timestamp: 2025-05-20T21:34:14.087000000Z
+  - jsonPayload:
+      level: DEBUG
+      message: " [] - Recover all persisted job graphs."
+      source: org.apache.flink.runtime.dispatcher.runner.SessionDispatcherLeaderProcess
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/flink
+    logName: projects/my-project/logs/transformation_test
+    severity: 100.0
+    timestamp: 2025-05-20T21:34:14.094000000Z
   partialSuccess: true
   resource:
     labels: {}

@@ -279,7 +279,7 @@ func generateFluentBitConfigs(ctx context.Context, name string, transformationTe
 			"storage.total_limit_size":      "2G",
 			"tls":                           "On",
 			"tls.verify":                    "Off",
-			"workers":                       "8",
+			"workers":                       "1",
 			"test_log_entry_format":         "true",
 			"export_to_project_id":          "my-project",
 		},

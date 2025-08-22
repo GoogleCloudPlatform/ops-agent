@@ -46,7 +46,7 @@ func ParseMultilineComponent(name string, languageRules []MultilineRule) Compone
 		Config: map[string]string{
 			"name":          name,
 			"type":          "regex",
-			"flush_timeout": "1000",
+			"flush_timeout": "500",
 		},
 		OrderedConfig: rules,
 	}
