@@ -16,7 +16,6 @@ package apps
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
@@ -126,45 +125,36 @@ func (p LoggingProcessorMacroMongodb) JsonLogComponents(ctx context.Context) []c
 func (p LoggingProcessorMacroMongodb) jsonParserWithTimeKey() []confgenerator.InternalLoggingProcessor {
 	c := []confgenerator.InternalLoggingProcessor{}
 
-	jsonParser := &confgenerator.LoggingProcessorParseJson{
+	c = append(c, &confgenerator.LoggingProcessorParseJson{
 		ParserShared: confgenerator.ParserShared{
-			TimeKey:    "time",
-			TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
 			Types: map[string]string{
 				"id":      "integer",
 				"message": "string",
 			},
 		},
-	}
-
-	c = append(c, jsonParser)
-
-	tempPrefix := "temp_ts_"
-	timeKey := "time"
-	// have to bring $date to top level in order for it to be parsed as timeKey
-	// see https://github.com/fluent/fluent-bit/issues/1013
-	c = append(c, &confgenerator.LoggingProcessorNestLift{
-		NestedUnder: "t",
-		AddPrefix:   tempPrefix,
 	})
 
-	c = append(c, &confgenerator.LoggingProcessorHardRename{
-		Field:   fmt.Sprintf("%s$date", tempPrefix),
-		NewName: timeKey,
+	// have to bring $date to top level in order for it to be parsed as timeKey
+	// see https://github.com/fluent/fluent-bit/issues/1013
+	c = append(c, &confgenerator.LoggingProcessorModifyFields{
+		Fields: map[string]*confgenerator.ModifyField{
+			"jsonPayload.time": {
+				MoveFrom: "jsonPayload.t.$date",
+			},
+		},
+	})
+
+	c = append(c, &confgenerator.LoggingProcessorRemoveField{
+		Field: "t",
 	})
 
 	// IMPORTANT: now that we have lifted the json to top level
 	// we need to re-parse in order to properly set time at the
 	// parser level
-	c = append(c, jsonParser)
-
-	timePath := fmt.Sprintf("jsonPayload.%s", timeKey)
-	c = append(c, &confgenerator.LoggingProcessorModifyFields{
-		Fields: map[string]*confgenerator.ModifyField{
-			timePath: {
-				MoveFrom: timePath,
-				OmitIf:   fmt.Sprintf(`%s =~ ".*"`, timePath),
-			},
+	c = append(c, &confgenerator.LoggingProcessorParseTimestamp{
+		ParserShared: confgenerator.ParserShared{
+			TimeKey:    "time",
+			TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
 		},
 	})
 

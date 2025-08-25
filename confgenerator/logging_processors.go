@@ -477,6 +477,27 @@ func (p LoggingProcessorRemoveField) Components(ctx context.Context, tag, uid st
 	return []fluentbit.Component{filter}
 }
 
+type LoggingProcessorParseTimestamp struct {
+	ConfigComponent `yaml:",inline"`
+	ParserShared    `yaml:",inline"`
+}
+
+func (p LoggingProcessorParseTimestamp) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
+	parser, parserName := p.ParserShared.Component(tag, uid)
+
+	parser.Config["Format"] = "regex"
+	parser.Config["Regex"] = fmt.Sprintf("^(?<%s>.*)$", p.TimeKey)
+
+	components := []fluentbit.Component{}
+	components = append(components, parser)
+
+	components = append(components,
+		fluentbit.ParserFilterComponents(tag, p.TimeKey, []string{parserName}, false)...,
+	)
+
+	return components
+}
+
 type LoggingProcessorHardRename struct {
 	Field   string
 	NewName string

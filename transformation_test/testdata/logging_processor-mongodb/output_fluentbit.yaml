@@ -6,13 +6,12 @@
       id: 23285.0
       message: Automatically disabling TLS 1.0, to force-enable TLS 1.0 specify --sslDisabledProtocols 'none'
       severity: I
-      time: 2025-07-21T15:00:28.308+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.308000000Z
   - jsonPayload:
       attributes: {}
       component: CONTROL
@@ -20,13 +19,12 @@
       id: 5.945603e+06
       message: Multi threading initialized
       severity: I
-      time: 2025-07-21T15:00:28.309+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.309000000Z
   - jsonPayload:
       attributes:
         relatedParameters:
@@ -38,13 +36,12 @@
       id: 4.648601e+06
       message: Implicit TCP FastOpen unavailable. If TCP FastOpen is required, set at least one of the related parameters
       severity: I
-      time: 2025-07-21T15:00:28.309+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.309000000Z
   - jsonPayload:
       attributes:
         spec:
@@ -63,13 +60,12 @@
       id: 4.915701e+06
       message: Initialized wire specification
       severity: I
-      time: 2025-07-21T15:00:28.310+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.310000000Z
   - jsonPayload:
       attributes: {}
       component: TENANT_M
@@ -77,13 +73,12 @@
       id: 7.0916e+06
       message: Starting TenantMigrationAccessBlockerRegistry
       severity: I
-      time: 2025-07-21T15:00:28.310+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.310000000Z
   - jsonPayload:
       attributes:
         architecture: 64-bit
@@ -96,13 +91,12 @@
       id: 4.615611e+06
       message: MongoDB starting
       severity: I
-      time: 2025-07-21T15:00:28.310+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.310000000Z
   - jsonPayload:
       attributes:
         buildInfo:
@@ -120,13 +114,12 @@
       id: 23403.0
       message: Build Info
       severity: I
-      time: 2025-07-21T15:00:28.310+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.310000000Z
   - jsonPayload:
       attributes:
         os:
@@ -137,13 +130,12 @@
       id: 51765.0
       message: Operating System
       severity: I
-      time: 2025-07-21T15:00:28.310+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.310000000Z
   - jsonPayload:
       attributes:
         options:
@@ -154,13 +146,12 @@
       id: 21951.0
       message: Options set by command line
       severity: I
-      time: 2025-07-21T15:00:28.310+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.310000000Z
   - jsonPayload:
       attributes: {}
       component: STORAGE
@@ -170,13 +161,12 @@
       severity: I
       tags:
       - startupWarnings
-      time: 2025-07-21T15:00:28.311+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.311000000Z
   - jsonPayload:
       attributes:
         config: create,cache_size=3406M,session_max=33000,eviction=(threads_min=4,threads_max=4),config_base=false,statistics=(fast),log=(enabled=true,remove=true,path=journal,compressor=snappy),builtin_extension_config=(zstd=(compression_level=6)),file_manager=(close_idle_time=600,close_scan_interval=10,close_handle_minimum=2000),statistics_log=(wait=0),json_output=(error,message),verbose=[recovery_progress:1,checkpoint_progress:1,compact_progress:1,backup:0,checkpoint:0,compact:0,evict:0,history_store:0,recovery:0,rts:0,salvage:0,tiered:0,timestamp:0,transaction:0,verify:0,log:0],prefetch=(available=true,default=false),
@@ -185,13 +175,12 @@
       id: 22315.0
       message: Opening WiredTiger
       severity: I
-      time: 2025-07-21T15:00:28.311+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.311000000Z
   - jsonPayload:
       attributes: {}
       component: WTRECOV
@@ -208,13 +197,12 @@
         verbose_level: DEBUG_1
         verbose_level_id: 1.0
       severity: I
-      time: 2025-07-21T15:00:28.542+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.542000000Z
   - jsonPayload:
       attributes: {}
       component: WTRECOV
@@ -231,13 +219,12 @@
         verbose_level: DEBUG_1
         verbose_level_id: 1.0
       severity: I
-      time: 2025-07-21T15:00:28.542+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.542000000Z
   - jsonPayload:
       attributes: {}
       component: WTRECOV
@@ -254,13 +241,12 @@
         verbose_level: DEBUG_1
         verbose_level_id: 1.0
       severity: I
-      time: 2025-07-21T15:00:28.542+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.542000000Z
   - jsonPayload:
       attributes: {}
       component: WTRECOV
@@ -277,13 +263,12 @@
         verbose_level: DEBUG_1
         verbose_level_id: 1.0
       severity: I
-      time: 2025-07-21T15:00:28.542+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.542000000Z
   - jsonPayload:
       attributes:
         durationMillis: 235.0
@@ -292,13 +277,12 @@
       id: 4.795906e+06
       message: WiredTiger opened
       severity: I
-      time: 2025-07-21T15:00:28.546+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.546000000Z
   - jsonPayload:
       attributes:
         recoveryTimestamp:
@@ -310,13 +294,12 @@
       id: 23987.0
       message: WiredTiger recoveryTimestamp
       severity: I
-      time: 2025-07-21T15:00:28.546+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.546000000Z
   - jsonPayload:
       attributes:
         numRecords: 0.0
@@ -325,13 +308,12 @@
       id: 9.529901e+06
       message: Initializing durable catalog
       severity: I
-      time: 2025-07-21T15:00:28.549+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.549000000Z
   - jsonPayload:
       attributes: {}
       component: STORAGE
@@ -339,13 +321,12 @@
       id: 9.529902e+06
       message: Retrieving all idents from storage engine
       severity: I
-      time: 2025-07-21T15:00:28.549+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.549000000Z
   - jsonPayload:
       attributes:
         numEntries: 0.0
@@ -354,13 +335,12 @@
       id: 9.529903e+06
       message: Initializing all collections in durable catalog
       severity: I
-      time: 2025-07-21T15:00:28.549+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.549000000Z
   - jsonPayload:
       attributes: {}
       component: CONTROL
@@ -370,13 +350,12 @@
       severity: W
       tags:
       - startupWarnings
-      time: 2025-07-21T15:00:28.550+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 400.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.550000000Z
   - jsonPayload:
       attributes:
         allocator: tcmalloc-google
@@ -390,13 +369,12 @@
       severity: W
       tags:
       - startupWarnings
-      time: 2025-07-21T15:00:28.551+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 400.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.551000000Z
   - jsonPayload:
       attributes:
         currentValue: 511.0
@@ -408,13 +386,12 @@
       severity: W
       tags:
       - startupWarnings
-      time: 2025-07-21T15:00:28.551+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 400.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.551000000Z
   - jsonPayload:
       attributes:
         currentValue: 262144.0
@@ -427,13 +404,12 @@
       severity: W
       tags:
       - startupWarnings
-      time: 2025-07-21T15:00:28.551+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 400.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.551000000Z
   - jsonPayload:
       attributes:
         currentValue: 60.0
@@ -445,13 +421,12 @@
       severity: W
       tags:
       - startupWarnings
-      time: 2025-07-21T15:00:28.551+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 400.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.551000000Z
   - jsonPayload:
       attributes:
         namespace: admin.system.version
@@ -467,13 +442,12 @@
       id: 20320.0
       message: createCollection
       severity: I
-      time: 2025-07-21T15:00:28.551+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.551000000Z
   - jsonPayload:
       attributes:
         collectionIdent: collection-0-3956073341144391669
@@ -488,13 +462,12 @@
       id: 20345.0
       message: "Index build: done building"
       severity: I
-      time: 2025-07-21T15:00:28.554+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.554000000Z
   - jsonPayload:
       attributes:
         newVersion: "8.0"
@@ -503,13 +476,12 @@
       id: 20459.0
       message: Setting featureCompatibilityVersion
       severity: I
-      time: 2025-07-21T15:00:28.554+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.554000000Z
   - jsonPayload:
       attributes:
         context: setFCV
@@ -519,13 +491,12 @@
       id: 5.8533e+06
       message: current featureCompatibilityVersion value
       severity: I
-      time: 2025-07-21T15:00:28.554+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.554000000Z
   - jsonPayload:
       attributes:
         newSpec:
@@ -555,13 +526,12 @@
       id: 4.915702e+06
       message: Updated wire specification
       severity: I
-      time: 2025-07-21T15:00:28.554+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.554000000Z
   - jsonPayload:
       attributes:
         newSpec:
@@ -591,13 +561,12 @@
       id: 4.915702e+06
       message: Updated wire specification
       severity: I
-      time: 2025-07-21T15:00:28.554+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.554000000Z
   - jsonPayload:
       attributes:
         context: startup
@@ -607,13 +576,12 @@
       id: 5.8533e+06
       message: current featureCompatibilityVersion value
       severity: I
-      time: 2025-07-21T15:00:28.554+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.554000000Z
   - jsonPayload:
       attributes: {}
       component: STORAGE
@@ -621,13 +589,12 @@
       id: 5.0711e+06
       message: Clearing temp directory
       severity: I
-      time: 2025-07-21T15:00:28.554+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.554000000Z
   - jsonPayload:
       attributes: {}
       component: CONTROL
@@ -635,13 +602,12 @@
       id: 6.6082e+06
       message: Initializing cluster server parameters from disk
       severity: I
-      time: 2025-07-21T15:00:28.554+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.554000000Z
   - jsonPayload:
       attributes: {}
       component: CONTROL
@@ -649,13 +615,12 @@
       id: 20536.0
       message: Flow Control is enabled on this deployment
       severity: I
-      time: 2025-07-21T15:00:28.554+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.554000000Z
   - jsonPayload:
       attributes:
         dataDirectory: /data/db/diagnostic.data
@@ -664,13 +629,12 @@
       id: 20625.0
       message: Initializing full-time diagnostic data capture
       severity: I
-      time: 2025-07-21T15:00:28.554+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.554000000Z
   - jsonPayload:
       attributes:
         namespace: local.startup_log
@@ -686,13 +650,12 @@
       id: 20320.0
       message: createCollection
       severity: I
-      time: 2025-07-21T15:00:28.555+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.555000000Z
   - jsonPayload:
       attributes:
         collectionIdent: collection-2-3956073341144391669
@@ -707,13 +670,12 @@
       id: 20345.0
       message: "Index build: done building"
       severity: I
-      time: 2025-07-21T15:00:28.558+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.558000000Z
   - jsonPayload:
       attributes:
         newState: ConfigReplicationDisabled
@@ -723,13 +685,12 @@
       id: 6.015317e+06
       message: Setting new configuration state
       severity: I
-      time: 2025-07-21T15:00:28.558+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.558000000Z
   - jsonPayload:
       attributes: {}
       component: STORAGE
@@ -737,13 +698,12 @@
       id: 22262.0
       message: Timestamp monitor starting
       severity: I
-      time: 2025-07-21T15:00:28.558+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.558000000Z
   - jsonPayload:
       attributes: {}
       component: STORAGE
@@ -751,13 +711,12 @@
       id: 7.333401e+06
       message: Starting the DiskSpaceMonitor
       severity: I
-      time: 2025-07-21T15:00:28.558+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.558000000Z
   - jsonPayload:
       attributes:
         address: /tmp/mongodb-27017.sock
@@ -766,13 +725,12 @@
       id: 23015.0
       message: Listening on
       severity: I
-      time: 2025-07-21T15:00:28.559+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.559000000Z
   - jsonPayload:
       attributes:
         address: 0.0.0.0:27017
@@ -781,13 +739,12 @@
       id: 23015.0
       message: Listening on
       severity: I
-      time: 2025-07-21T15:00:28.559+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.559000000Z
   - jsonPayload:
       attributes:
         port: 27017.0
@@ -797,13 +754,12 @@
       id: 23016.0
       message: Waiting for connections
       severity: I
-      time: 2025-07-21T15:00:28.559+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.559000000Z
   - jsonPayload:
       attributes:
         Summary of time elapsed:
@@ -834,13 +790,12 @@
       id: 8.423403e+06
       message: mongod startup complete
       severity: I
-      time: 2025-07-21T15:00:28.559+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.559000000Z
   - jsonPayload:
       attributes:
         error: "NamespaceNotFound: config.system.sessions does not exist"
@@ -849,13 +804,12 @@
       id: 20712.0
       message: Sessions collection is not set up; waiting until next sessions reap interval
       severity: I
-      time: 2025-07-21T15:00:28.559+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.559000000Z
   - jsonPayload:
       attributes:
         namespace: config.system.sessions
@@ -869,13 +823,12 @@
       id: 20320.0
       message: createCollection
       severity: I
-      time: 2025-07-21T15:00:28.559+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.559000000Z
   - jsonPayload:
       attributes:
         collectionIdent: collection-4-3956073341144391669
@@ -890,13 +843,12 @@
       id: 20345.0
       message: "Index build: done building"
       severity: I
-      time: 2025-07-21T15:00:28.564+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.564000000Z
   - jsonPayload:
       attributes:
         collectionIdent: collection-4-3956073341144391669
@@ -911,13 +863,12 @@
       id: 20345.0
       message: "Index build: done building"
       severity: I
-      time: 2025-07-21T15:00:28.564+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:28.564000000Z
   - jsonPayload:
       attributes:
         canonicalName: internalQueryCacheMaxEntriesPerCollection
@@ -927,13 +878,12 @@
       id: 636300.0
       message: Use of deprecated server parameter name
       severity: W
-      time: 2025-07-21T15:00:29.004+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 400.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:29.004000000Z
   - jsonPayload:
       attributes:
         canonicalName: collectionSamplingLogIntervalSeconds
@@ -943,13 +893,12 @@
       id: 636300.0
       message: Use of deprecated server parameter name
       severity: W
-      time: 2025-07-21T15:00:29.004+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 400.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:29.004000000Z
   - jsonPayload:
       attributes: {}
       component: NETWORK
@@ -957,13 +906,12 @@
       id: 23803.0
       message: Use of deprecated server parameter 'sslMode', please use 'tlsMode' instead.
       severity: W
-      time: 2025-07-21T15:00:29.004+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 400.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:29.004000000Z
   - jsonPayload:
       attributes:
         canonicalName: storageEngineConcurrentReadTransactions
@@ -973,13 +921,12 @@
       id: 636300.0
       message: Use of deprecated server parameter name
       severity: W
-      time: 2025-07-21T15:00:29.004+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 400.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:29.004000000Z
   - jsonPayload:
       attributes:
         canonicalName: storageEngineConcurrentWriteTransactions
@@ -989,13 +936,12 @@
       id: 636300.0
       message: Use of deprecated server parameter name
       severity: W
-      time: 2025-07-21T15:00:29.004+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 400.0
-    timestamp: now
+    timestamp: 2025-07-21T15:00:29.004000000Z
   - jsonPayload:
       attributes: {}
       component: WTCHKPT
@@ -1012,13 +958,12 @@
         verbose_level: DEBUG_1
         verbose_level_id: 1.0
       severity: I
-      time: 2025-07-21T15:01:28.556+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:01:28.556000000Z
   - jsonPayload:
       attributes: {}
       component: WTCHKPT
@@ -1035,13 +980,12 @@
         verbose_level: DEBUG_1
         verbose_level_id: 1.0
       severity: I
-      time: 2025-07-21T15:02:28.572+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:02:28.572000000Z
   - jsonPayload:
       attributes: {}
       component: WTCHKPT
@@ -1058,13 +1002,12 @@
         verbose_level: DEBUG_1
         verbose_level_id: 1.0
       severity: I
-      time: 2025-07-21T15:03:28.585+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:03:28.585000000Z
   - jsonPayload:
       attributes: {}
       component: WTCHKPT
@@ -1081,13 +1024,12 @@
         verbose_level: DEBUG_1
         verbose_level_id: 1.0
       severity: I
-      time: 2025-07-21T15:04:28.600+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:04:28.600000000Z
   - jsonPayload:
       attributes: {}
       component: WTCHKPT
@@ -1104,13 +1046,12 @@
         verbose_level: DEBUG_1
         verbose_level_id: 1.0
       severity: I
-      time: 2025-07-21T15:05:28.612+00:00
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: now
+    timestamp: 2025-07-21T15:05:28.612000000Z
   partialSuccess: true
   resource:
     labels: {}
