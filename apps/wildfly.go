@@ -126,11 +126,6 @@ func (p LoggingProcessorMacroWildflySystem) Expand(ctx context.Context) []confge
 	}
 }
 
-type LoggingReceiverWildflySystem struct {
-	LoggingProcessorMacroWildflySystem `yaml:",inline"`
-	ReceiverMixin                      confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
-}
-
 func loggingReceiverFilesMixinWildflySystem() confgenerator.LoggingReceiverFilesMixin {
 	return confgenerator.LoggingReceiverFilesMixin{
 		IncludePaths: []string{
