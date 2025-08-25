@@ -158,8 +158,14 @@ func (p LoggingProcessorMacroMongodb) jsonParserWithTimeKey() []confgenerator.In
 	// parser level
 	c = append(c, jsonParser)
 
-	c = append(c, &confgenerator.LoggingProcessorRemoveField{
-		Field: timeKey,
+	timePath := fmt.Sprintf("jsonPayload.%s", timeKey)
+	c = append(c, &confgenerator.LoggingProcessorModifyFields{
+		Fields: map[string]*confgenerator.ModifyField{
+			timePath: {
+				MoveFrom: timePath,
+				OmitIf:   fmt.Sprintf(`%s =~ ".*"`, timePath),
+			},
+		},
 	})
 
 	return c
@@ -205,6 +211,7 @@ func (p LoggingProcessorMacroMongodb) renames() []confgenerator.InternalLoggingP
 		{"jsonPayload.c", "jsonPayload.component"},
 		{"jsonPayload.ctx", "jsonPayload.context"},
 		{"jsonPayload.msg", "jsonPayload.message"},
+		{"jsonPayload.attr", "jsonPayload.attributes"},
 	}
 
 	for _, rename := range renames {
@@ -221,24 +228,22 @@ func (p LoggingProcessorMacroMongodb) renames() []confgenerator.InternalLoggingP
 }
 
 func (p LoggingProcessorMacroMongodb) promoteWiredTiger() []confgenerator.InternalLoggingProcessor {
-	// promote messages that are WiredTiger messages and are nested in attr.messagey
+	// promote messages that are WiredTiger messages and are nested in attr.message
 	c := []confgenerator.InternalLoggingProcessor{}
 
 	addPrefix := "temp_attributes_"
-	c = append(c, &confgenerator.LoggingProcessorNestLift{
-		NestedUnder: "attr",
-		AddPrefix:   addPrefix,
+
+	c = append(c, &confgenerator.LoggingProcessorModifyFields{
+		Fields: map[string]*confgenerator.ModifyField{
+			"jsonPayload.temp_attributes_message": {
+				MoveFrom: "jsonPayload.attr.message",
+			},
+		},
 	})
 
 	c = append(c, &confgenerator.LoggingProcessorHardRename{
 		Field:   addPrefix + "message",
 		NewName: "msg",
-	})
-
-	c = append(c, &confgenerator.LoggingProcessorNestWildcard{
-		Wildcard:     addPrefix + "*",
-		NestUnder:    "attributes",
-		RemovePrefix: addPrefix,
 	})
 
 	return c
