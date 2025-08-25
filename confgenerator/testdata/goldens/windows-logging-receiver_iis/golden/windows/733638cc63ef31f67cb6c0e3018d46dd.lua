@@ -21,6 +21,21 @@ end)();
 local __field_6 = (function()
 return record["http_request_userAgent"]
 end)();
+local __field_7 = (function()
+return record["cs_uri_query"]
+end)();
+local __field_9 = (function()
+return record["user"]
+end)();
+local omit7 = (function(v) if v == nil then return false end return (string.lower(tostring(v)) == string.lower("-")) end)((function()
+return record["cs_uri_query"]
+end)());
+local omit8 = (function(v) if v == nil then return false end return (string.lower(tostring(v)) == string.lower("-")) end)((function()
+return record["http_request_referer"]
+end)());
+local omit9 = (function(v) if v == nil then return false end return (string.lower(tostring(v)) == string.lower("-")) end)((function()
+return record["user"]
+end)());
 (function(value)
 record["http_request_referer"] = value
 end)(nil);
@@ -97,6 +112,29 @@ then
 record["logging.googleapis.com/httpRequest"] = {}
 end
 record["logging.googleapis.com/httpRequest"]["userAgent"] = value
+end)(v)
+local v = __field_7;
+if omit7 then v = nil end;
+(function(value)
+record["cs_uri_query"] = value
+end)(v)
+local v = __field_0;
+if omit8 then v = nil end;
+(function(value)
+record["http_request_referer"] = value
+end)(v)
+local v = __field_9;
+if omit9 then v = nil end;
+(function(value)
+record["user"] = value
+end)(v)
+local v = "agent.googleapis.com/iis_access";
+(function(value)
+if record["logging.googleapis.com/labels"] == nil
+then
+record["logging.googleapis.com/labels"] = {}
+end
+record["logging.googleapis.com/labels"]["logging.googleapis.com/instrumentation_source"] = value
 end)(v)
 return 2, timestamp, record
 end

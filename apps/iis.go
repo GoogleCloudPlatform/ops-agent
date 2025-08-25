@@ -17,9 +17,9 @@ package apps
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
@@ -158,12 +158,14 @@ func (LoggingProcessorMacroIisAccess) Type() string {
 	return "iis_access"
 }
 
-const (
-	iisMergeRecordFieldsLuaFunction       = `iis_merge_fields`
-	iisMergeRecordFieldsLuaScriptContents = `
-	function iis_merge_fields(tag, timestamp, record)
+// IISConcatFields handles field concatenation for IIS logs
+type IISConcatFields struct{}
 
-	  if (record["cs_uri_query"] == "-") then
+// Components implements the Fluent-bit concatenation using Lua
+func (IISConcatFields) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
+	luaScript := `
+	function iis_concat_fields(tag, timestamp, record)
+		if (record["cs_uri_query"] == "-") then
 	    record["cs_uri_query"] = nil
 	  end
 	  if (record["http_request_referer"] == "-") then
@@ -172,21 +174,84 @@ const (
 	  if (record["user"] == "-") then
 	    record["user"] = nil
 	  end
-
-	  record["http_request_serverIp"] = table.concat({record["http_request_serverIp"], ":", record["s_port"]})
-	  if (record["cs_uri_query"] == nil or record["cs_uri_query"] == '') then
-		record["http_request_requestUrl"] = record["cs_uri_stem"]
-	  else
-		record["http_request_requestUrl"] = table.concat({record["cs_uri_stem"], "?", record["cs_uri_query"]})
+		
+	  -- Concatenate serverIp with port
+	  if record["http_request_serverIp"] ~= nil and record["s_port"] ~= nil then
+		record["http_request_serverIp"] = table.concat({record["http_request_serverIp"], ":", record["s_port"]})
 	  end
-
-	  record["cs_uri_query"] = nil
+	  
+	  -- Build requestUrl from stem and query
+	  if record["cs_uri_stem"] ~= nil then
+		if record["cs_uri_query"] == nil or record["cs_uri_query"] == "" or record["cs_uri_query"] == "-" then
+		  record["http_request_requestUrl"] = record["cs_uri_stem"]
+		else
+		  record["http_request_requestUrl"] = table.concat({record["cs_uri_stem"], "?", record["cs_uri_query"]})
+		end
+	  end
+	  
+	  -- Clean up intermediate fields
 	  record["cs_uri_stem"] = nil
+	  record["cs_uri_query"] = nil
 	  record["s_port"] = nil
+	  
 	  return 2, timestamp, record
 	end
 	`
-)
+
+	return fluentbit.LuaFilterComponents(tag, "iis_concat_fields", luaScript)
+}
+
+// Processors implements the OTEL concatenation using ModifyFields + CustomConvertFunc
+func (IISConcatFields) Processors(ctx context.Context) []confgenerator.InternalLoggingProcessor {
+	modifyFields := confgenerator.LoggingProcessorModifyFields{
+		Fields: map[string]*confgenerator.ModifyField{
+			// Concatenate serverIp with port
+			"jsonPayload.http_request_serverIp": {
+				CopyFrom: "jsonPayload.http_request_serverIp",
+				CustomConvertFunc: func(value ottl.LValue) ottl.Statements {
+					return ottl.Statements{}.Append(
+						value.Set(ottl.RValue(`Concat([body["http_request_serverIp"], body["s_port"]], ":")`)),
+						ottl.LValue{"body", "s_port"}.Delete(),
+					)
+				},
+			},
+			// Build requestUrl from stem and query
+			"jsonPayload.http_request_requestUrl": {
+				CopyFrom: "jsonPayload.cs_uri_stem",
+				CustomConvertFunc: func(value ottl.LValue) ottl.Statements {
+					return ottl.Statements{}.Append(
+						// Check if query is valid (not empty, not "-")
+						ottl.LValue{"cache", "clean_query"}.Delete(),
+						ottl.LValue{"cache", "clean_query"}.SetIf(
+							ottl.LValue{"body", "cs_uri_query"},
+							ottl.And(
+								ottl.LValue{"body", "cs_uri_query"}.IsPresent(),
+								ottl.Not(ottl.Equals(ottl.LValue{"body", "cs_uri_query"}, ottl.StringLiteral(""))),
+								ottl.Not(ottl.Equals(ottl.LValue{"body", "cs_uri_query"}, ottl.StringLiteral("-"))),
+							),
+						),
+						// Set requestUrl to stem when query is empty/"-"
+						value.SetIf(
+							ottl.LValue{"body", "cs_uri_stem"},
+							ottl.Not(ottl.LValue{"cache", "clean_query"}.IsPresent()),
+						),
+						// Set requestUrl to stem + "?" + query when query has content
+						value.SetIf(
+							ottl.RValue(`Concat([body["cs_uri_stem"], cache["clean_query"]], "?")`),
+							ottl.LValue{"cache", "clean_query"}.IsPresent(),
+						),
+						// Clean up intermediate fields
+						ottl.LValue{"body", "cs_uri_stem"}.Delete(),
+						ottl.LValue{"body", "cs_uri_query"}.Delete(),
+						ottl.LValue{"cache", "clean_query"}.Delete(),
+					)
+				},
+			},
+		},
+	}
+
+	return []confgenerator.InternalLoggingProcessor{modifyFields}
+}
 
 func (p LoggingProcessorMacroIisAccess) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
 	parseRegex := confgenerator.LoggingProcessorParseRegex{
@@ -205,174 +270,37 @@ func (p LoggingProcessorMacroIisAccess) Expand(ctx context.Context) []confgenera
 		},
 	}
 
-	// Define the complex transformation fields
-	serverIpTransform := &confgenerator.ModifyField{
-		CopyFrom: "jsonPayload.http_request_serverIp", // Read original value
-		CustomLuaFunc: func(tag string, sourceVars map[string]string) string {
-			// Find the correct variable for http_request_serverIp
-			var serverIpVar string
-			for luaExpr, varName := range sourceVars {
-				if strings.Contains(luaExpr, "http_request_serverIp") {
-					serverIpVar = varName
-					break
-				}
-			}
-			if serverIpVar == "" {
-				serverIpVar = "record[\"http_request_serverIp\"]"
-			}
+	// Handle field concatenation (serverIp+port, requestUrl)
+	concatFields := IISConcatFields{}
 
-			return `
-			-- Concatenate serverIp with port
-			local serverIp = ` + serverIpVar + `
-			local port = record["s_port"]
-			if serverIp ~= nil and port ~= nil then
-				v = serverIp .. ":" .. port
-			end
-			-- Clean up intermediate field for Fluent Bit
-			record["s_port"] = nil`
-		},
-		CustomOTTLFunc: func(sourceValues map[string]ottl.Value) ottl.Statements {
-			serverIp := ottl.LValue{"body", "http_request_serverIp"}
-			port := ottl.LValue{"body", "s_port"}
-			return ottl.Statements{}.Append(
-				// Transform this field in place
-				ottl.LValue{"cache", "value"}.Set(
-					ottl.RValue(fmt.Sprintf(`Concat([%s, %s], ":")`, serverIp.String(), port.String())),
-				),
-				// Clean up intermediate field for OTTL
-				port.Delete(),
-			)
-		},
+	// Create fields map for simple field operations and moves
+	fields := map[string]*confgenerator.ModifyField{
+		InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 	}
 
-	requestUrlTransform := &confgenerator.ModifyField{
-		CopyFrom: "jsonPayload.cs_uri_stem", // Read stem value
-		CustomLuaFunc: func(tag string, sourceVars map[string]string) string {
-			// Find the correct variable for cs_uri_stem
-			var stemVar string
-			for luaExpr, varName := range sourceVars {
-				if strings.Contains(luaExpr, "cs_uri_stem") {
-					stemVar = varName
-					break
-				}
-			}
-			if stemVar == "" {
-				stemVar = "record[\"cs_uri_stem\"]"
-			}
-
-			return `
-			-- Build URL from stem and query
-			local stem = ` + stemVar + `
-			local query = record["cs_uri_query"]
-			
-			-- Handle the case where query is "-" (IIS placeholder for empty)
-			if query == "-" then
-				query = nil
-			end
-			
-			if stem == nil then
-				v = nil
-			elseif query == nil or query == "" then
-				v = stem
-			else
-				v = stem .. "?" .. query
-			end
-			-- Clean up intermediate fields for Fluent Bit
-			record["cs_uri_stem"] = nil
-			record["cs_uri_query"] = nil`
-		},
-		CustomOTTLFunc: func(sourceValues map[string]ottl.Value) ottl.Statements {
-			stem := ottl.LValue{"body", "cs_uri_stem"}
-			query := ottl.LValue{"body", "cs_uri_query"}
-			cleanQuery := ottl.LValue{"cache", "clean_query"}
-
-			queryEmpty := ottl.Or(
-				ottl.Equals(query, ottl.Nil()),
-				ottl.Equals(query, ottl.StringLiteral("")),
-				ottl.Equals(query, ottl.StringLiteral("-")),
-			)
-
-			return ottl.Statements{}.Append(
-				// Clean the query value (convert "-" to nil)
-				cleanQuery.Delete(),
-				cleanQuery.SetIf(ottl.Nil(), ottl.Equals(query, ottl.StringLiteral("-"))),
-				cleanQuery.SetIf(query, ottl.Not(ottl.Or(
-					ottl.Equals(query, ottl.Nil()),
-					ottl.Equals(query, ottl.StringLiteral("")),
-					ottl.Equals(query, ottl.StringLiteral("-")),
-				))),
-
-				// Set to stem when query is empty/"-"
-				ottl.LValue{"cache", "value"}.SetIf(stem, queryEmpty),
-				// Set to stem + "?" + query when query has actual content
-				ottl.LValue{"cache", "value"}.SetIf(
-					ottl.RValue(fmt.Sprintf(`Concat([%s, %s], "?")`, stem.String(), cleanQuery.String())),
-					ottl.Not(queryEmpty),
-				),
-				// Clean up intermediate fields for OTTL
-				stem.Delete(),
-				query.Delete(),
-				cleanQuery.Delete(),
-			)
-		},
+	// Generate the httpRequest structure field moves
+	for _, field := range []string{
+		"serverIp",
+		"remoteIp",
+		"requestMethod",
+		"requestUrl",
+		"status",
+		"referer",
+		"userAgent",
+	} {
+		fields[fmt.Sprintf("httpRequest.%s", field)] = &confgenerator.ModifyField{
+			MoveFrom: fmt.Sprintf("jsonPayload.http_request_%s", field),
+		}
 	}
 
-	// Split into two processors: transformations first, then field movements
-	transformFields := confgenerator.LoggingProcessorModifyFields{
-		Fields: map[string]*confgenerator.ModifyField{
-			InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
-
-			// Simple null assignments for "-" values
-			"jsonPayload.cs_uri_query": {
-				OmitIf: `jsonPayload.cs_uri_query = "-"`,
-			},
-			"jsonPayload.http_request_referer": {
-				OmitIf: `jsonPayload.http_request_referer = "-"`,
-			},
-			"jsonPayload.user": {
-				OmitIf: `jsonPayload.user = "-"`,
-			},
-
-			// Complex transformations
-			"jsonPayload.http_request_serverIp":   serverIpTransform,
-			"jsonPayload.http_request_requestUrl": requestUrlTransform,
-		},
-	}
-
-	// Field movements happen after transformations
-	moveFields := confgenerator.LoggingProcessorModifyFields{
-		Fields: map[string]*confgenerator.ModifyField{
-			// Move the transformed fields to httpRequest structure
-			"httpRequest.serverIp": {
-				MoveFrom: "jsonPayload.http_request_serverIp",
-			},
-			"httpRequest.requestUrl": {
-				MoveFrom: "jsonPayload.http_request_requestUrl",
-			},
-
-			// Move other simple fields
-			"httpRequest.remoteIp": {
-				MoveFrom: "jsonPayload.http_request_remoteIp",
-			},
-			"httpRequest.requestMethod": {
-				MoveFrom: "jsonPayload.http_request_requestMethod",
-			},
-			"httpRequest.status": {
-				MoveFrom: "jsonPayload.http_request_status",
-			},
-			"httpRequest.referer": {
-				MoveFrom: "jsonPayload.http_request_referer",
-			},
-			"httpRequest.userAgent": {
-				MoveFrom: "jsonPayload.http_request_userAgent",
-			},
-		},
+	modifyFields := confgenerator.LoggingProcessorModifyFields{
+		Fields: fields,
 	}
 
 	return []confgenerator.InternalLoggingProcessor{
 		parseRegex,
-		transformFields, // Apply transformations first
-		moveFields,      // Then move fields to httpRequest
+		concatFields,
+		modifyFields,
 	}
 }
 
