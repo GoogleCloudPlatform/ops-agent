@@ -1,0 +1,334 @@
+- entries:
+  - jsonPayload:
+      auth:
+        token_type: default
+      request:
+        id: req-001
+        namespace:
+          id: root
+        operation: update
+        path: sys/audit/test
+      type: request
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2025-08-25T14:00:00.123456789Z
+  - jsonPayload:
+      message: "{"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "  \"time\":\"2025-08-25T14:01:00.987654321Z\","
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "  \"type\":\"request\","
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "  \"auth\":{"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "    \"token_type\":\"root\""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "  },"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "  \"request\":{"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "    \"id\":\"req-002\","
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "    \"operation\":\"delete\","
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "    \"namespace\":{"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "      \"id\":\"root\""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "    },"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "    \"path\":\"sys/secrets/data\""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "  }"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "}"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      auth:
+        token_type: default
+      response:
+        id: res-001
+        status: success
+      type: response
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2025-08-25T14:02:00.111213141Z
+  - jsonPayload:
+      message: "{"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "  \"time\":\"2025-08-25T14:03:00.999888777Z\","
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "  \"type\":\"response\","
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "  \"auth\":{"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "    \"token_type\":\"default\""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "  },"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "  \"response\":{"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "    \"id\":\"res-002\","
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "    \"status\":\"failure\","
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "    \"error\":\"permission denied\""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "  }"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "}"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      auth:
+        token_type: default
+      request:
+        id: req-003
+        namespace:
+          id: root
+        operation: create
+        path: sys/audit/new
+      type: request
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2025-08-25T14:04:00.222333444Z
+  - jsonPayload:
+      message: "{"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "  \"time\":\"2025-08-25T14:05:00.555666777Z\","
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "  \"type\":\"request\","
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "  \"auth\":{"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "    \"token_type\":\"default\""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "  },"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "  \"request\":{"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "    \"id\":\"req-004\","
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "    \"operation\":\"update\","
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "    \"namespace\":{"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "    \"id\":\"root\""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "    },"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "    \"path\":\"sys/audit/multi\""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "   }"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance
