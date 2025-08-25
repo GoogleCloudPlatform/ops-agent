@@ -18,3 +18,7 @@
   feature: receivers:iis_access
   key: "[0].enabled"
   value: "true"
+- module: logging
+  feature: receivers:iis_access
+  key: "[0].include_paths.__length"
+  value: "1"
