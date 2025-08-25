@@ -1,0 +1,5 @@
+- type: parse_json
+- type: modify_fields
+  fields:
+    severity:
+      move_from: jsonPayload.severity
