@@ -155,11 +155,6 @@ func (p LoggingProcessorMacroZookeeperGeneral) Expand(ctx context.Context) []con
 	}
 }
 
-type LoggingReceiverZookeeperGeneral struct {
-	LoggingProcessorMacroZookeeperGeneral `yaml:",inline"`
-	ReceiverMixin                         confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
-}
-
 func loggingReceiverFilesMixinZookeeperGeneral() confgenerator.LoggingReceiverFilesMixin {
 	return confgenerator.LoggingReceiverFilesMixin{
 		IncludePaths: []string{
