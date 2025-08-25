@@ -266,21 +266,12 @@ func (p LoggingProcessorMacroMongodb) RegexLogComponents() []confgenerator.Inter
 	return c
 }
 
-type LoggingReceiverMacroMongodb struct {
-	ReceiverMixin                confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
-	LoggingProcessorMacroMongodb `yaml:",inline"`
-}
-
-func (r LoggingReceiverMacroMongodb) Expand(ctx context.Context) (confgenerator.InternalLoggingReceiver, []confgenerator.InternalLoggingProcessor) {
-	if len(r.ReceiverMixin.IncludePaths) == 0 {
-		r.ReceiverMixin.IncludePaths = []string{"/var/log/mongodb/mongod.log*"}
+func loggingReceiverFilesMixinMongodb() confgenerator.LoggingReceiverFilesMixin {
+	return confgenerator.LoggingReceiverFilesMixin{
+		IncludePaths: []string{"/var/log/mongodb/mongod.log*"},
 	}
-
-	return &r.ReceiverMixin, r.LoggingProcessorMacroMongodb.Expand(ctx)
 }
 
 func init() {
-	confgenerator.RegisterLoggingReceiverMacro(func() LoggingReceiverMacroMongodb {
-		return LoggingReceiverMacroMongodb{}
-	})
+	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroMongodb](loggingReceiverFilesMixinMongodb)
 }
