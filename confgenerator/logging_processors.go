@@ -497,12 +497,12 @@ func (p LoggingProcessorParseTimestamp) Components(ctx context.Context, tag, uid
 	return components
 }
 
-type LoggingProcessorHardRename struct {
+type LoggingProcessorRenameIfExists struct {
 	Field   string
 	NewName string
 }
 
-func (p LoggingProcessorHardRename) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorRenameIfExists) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	c := fluentbit.Component{
 		Kind: "FILTER",
 		Config: map[string]string{
@@ -512,6 +512,38 @@ func (p LoggingProcessorHardRename) Components(ctx context.Context, tag, uid str
 		},
 	}
 	return []fluentbit.Component{c}
+}
+
+func (p LoggingProcessorRenameIfExists) Processors(ctx context.Context) ([]otel.Component, error) {
+	fromMember, err := filter.NewMemberLegacy(p.Field)
+	if err != nil {
+		return nil, err
+	}
+	fromAccessor, err := fromMember.OTTLAccessor()
+	if err != nil {
+		return nil, err
+	}
+
+	toMember, err := filter.NewMemberLegacy(p.NewName)
+	if err != nil {
+		return nil, err
+	}
+	toAccessor, err := toMember.OTTLAccessor()
+	if err != nil {
+		return nil, err
+	}
+
+	// Rename only if the source field exists
+	statements := ottl.NewStatements(
+		toAccessor.SetIf(fromAccessor, fromAccessor.IsPresent()),
+		fromAccessor.DeleteIf(fromAccessor.IsPresent()),
+	)
+
+	return []otel.Component{otel.Transform(
+		"log", "log",
+		statements,
+	)}, nil
+
 }
 
 var LegacyBuiltinProcessors = map[string]LoggingProcessor{

@@ -231,7 +231,7 @@ func (p LoggingProcessorMacroMongodb) promoteWiredTiger() []confgenerator.Intern
 		},
 	})
 
-	c = append(c, &confgenerator.LoggingProcessorHardRename{
+	c = append(c, &confgenerator.LoggingProcessorRenameIfExists{
 		Field:   addPrefix + "message",
 		NewName: "msg",
 	})
