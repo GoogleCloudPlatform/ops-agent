@@ -313,9 +313,6 @@ func loggingReceiverFilesMixinIisAccess() confgenerator.LoggingReceiverFilesMixi
 }
 
 func init() {
-	// Note: The new RegisterLoggingFilesProcessorMacro system doesn't yet support
-	// platform restrictions like the previous registration system did.
-	// TODO: Add platform.Windows restriction once the macro system supports it.
 	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroIisAccess](
 		loggingReceiverFilesMixinIisAccess,
 		platform.Windows,
