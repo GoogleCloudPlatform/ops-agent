@@ -378,8 +378,8 @@ func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallD
 	// Starting Otel
 	runOtelCmd := exec.CommandContext(ctx,
 		path.Join(pluginInstallDirectory, OtelBinary),
-		"--config", path.Join(pluginStateDirectory, GeneratedConfigsOutDir, "otel/otel.yaml",
-			"--feature-gates=receiver.prometheusreceiver.RemoveStartTimeAdjustment"),
+		"--config", path.Join(pluginStateDirectory, GeneratedConfigsOutDir, "otel/otel.yaml"),
+		"--feature-gates=receiver.prometheusreceiver.RemoveStartTimeAdjustment",
 	)
 	wg.Add(1)
 	go runSubAgentCommand(ctx, cancel, runOtelCmd, runCommand, &wg)

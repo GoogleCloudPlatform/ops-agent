@@ -132,8 +132,8 @@ func initServices() error {
 			fmt.Sprintf("%s - Metrics Agent", serviceDisplayName),
 			filepath.Join(base, "google-cloud-metrics-agent_windows_amd64.exe"),
 			[]string{
-				"--config=" + filepath.Join(configOutDir, `otel\otel.yaml`,
-					"--feature-gates=receiver.prometheusreceiver.RemoveStartTimeAdjustment"),
+				"--config=" + filepath.Join(configOutDir, `otel\otel.yaml`),
+				"--feature-gates=receiver.prometheusreceiver.RemoveStartTimeAdjustment",
 			},
 		},
 		{
