@@ -198,7 +198,7 @@ func (p LoggingProcessorMacroIisAccess) Expand(ctx context.Context) []confgenera
 		Regex: `^(?<timestamp>\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2})\s(?<http_request_serverIp>[^\s]+)\s(?<http_request_requestMethod>[^\s]+)\s(?<cs_uri_stem>\/[^\s]*)\s(?<cs_uri_query>[^\s]*)\s(?<s_port>\d*)\s(?<user>[^\s]+)\s(?<http_request_remoteIp>[^\s]+)\s(?<http_request_userAgent>[^\s]+)\s(?<http_request_referer>[^\s]+)\s(?<http_request_status>\d{3})\s(?<sc_substatus>\d+)\s(?<sc_win32_status>\d+)\s(?<time_taken>\d+)$`,
 		ParserShared: confgenerator.ParserShared{
 			TimeKey:    "timestamp",
-			TimeFormat: " %Y-%m-%d %H:%M:%S",
+			TimeFormat: "%Y-%m-%d %H:%M:%S",
 			Types: map[string]string{
 				"http_request_status": "integer",
 			},
@@ -343,27 +343,27 @@ func (p LoggingProcessorMacroIisAccess) Expand(ctx context.Context) []confgenera
 	moveFields := confgenerator.LoggingProcessorModifyFields{
 		Fields: map[string]*confgenerator.ModifyField{
 			// Move the transformed fields to httpRequest structure
-			"httpRequest.serverIp": &confgenerator.ModifyField{
+			"httpRequest.serverIp": {
 				MoveFrom: "jsonPayload.http_request_serverIp",
 			},
-			"httpRequest.requestUrl": &confgenerator.ModifyField{
+			"httpRequest.requestUrl": {
 				MoveFrom: "jsonPayload.http_request_requestUrl",
 			},
 
 			// Move other simple fields
-			"httpRequest.remoteIp": &confgenerator.ModifyField{
+			"httpRequest.remoteIp": {
 				MoveFrom: "jsonPayload.http_request_remoteIp",
 			},
-			"httpRequest.requestMethod": &confgenerator.ModifyField{
+			"httpRequest.requestMethod": {
 				MoveFrom: "jsonPayload.http_request_requestMethod",
 			},
-			"httpRequest.status": &confgenerator.ModifyField{
+			"httpRequest.status": {
 				MoveFrom: "jsonPayload.http_request_status",
 			},
-			"httpRequest.referer": &confgenerator.ModifyField{
+			"httpRequest.referer": {
 				MoveFrom: "jsonPayload.http_request_referer",
 			},
-			"httpRequest.userAgent": &confgenerator.ModifyField{
+			"httpRequest.userAgent": {
 				MoveFrom: "jsonPayload.http_request_userAgent",
 			},
 		},
