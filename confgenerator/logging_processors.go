@@ -478,8 +478,7 @@ func (p LoggingProcessorRemoveField) Components(ctx context.Context, tag, uid st
 }
 
 type LoggingProcessorParseTimestamp struct {
-	ConfigComponent `yaml:",inline"`
-	ParserShared    `yaml:",inline"`
+	ParserShared `yaml:",inline"`
 }
 
 func (p LoggingProcessorParseTimestamp) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
