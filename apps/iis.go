@@ -202,7 +202,7 @@ func (IISConcatFields) Components(ctx context.Context, tag, uid string) []fluent
 }
 
 // Processors implements the OTEL concatenation using ModifyFields + CustomConvertFunc
-func (IISConcatFields) Processors(ctx context.Context) []confgenerator.InternalLoggingProcessor {
+func (IISConcatFields) Processors(ctx context.Context) ([]otel.Component, error) {
 	modifyFields := confgenerator.LoggingProcessorModifyFields{
 		Fields: map[string]*confgenerator.ModifyField{
 			// Concatenate serverIp with port
@@ -250,7 +250,7 @@ func (IISConcatFields) Processors(ctx context.Context) []confgenerator.InternalL
 		},
 	}
 
-	return []confgenerator.InternalLoggingProcessor{modifyFields}
+	return modifyFields.Processors(ctx)
 }
 
 func (p LoggingProcessorMacroIisAccess) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
