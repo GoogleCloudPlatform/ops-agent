@@ -1,5 +1,15 @@
 
 	function iis_concat_fields(tag, timestamp, record)
+		if (record["cs_uri_query"] == "-") then
+	    record["cs_uri_query"] = nil
+	  end
+	  if (record["http_request_referer"] == "-") then
+	    record["http_request_referer"] = nil
+	  end
+	  if (record["user"] == "-") then
+	    record["user"] = nil
+	  end
+		
 	  -- Concatenate serverIp with port
 	  if record["http_request_serverIp"] ~= nil and record["s_port"] ~= nil then
 		record["http_request_serverIp"] = table.concat({record["http_request_serverIp"], ":", record["s_port"]})
