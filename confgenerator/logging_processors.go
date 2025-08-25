@@ -515,25 +515,6 @@ func (p LoggingProcessorHardRename) Components(ctx context.Context, tag, uid str
 	return []fluentbit.Component{c}
 }
 
-type LoggingProcessorNestLift struct {
-	NestedUnder string
-	AddPrefix   string
-}
-
-func (p LoggingProcessorNestLift) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	filter := fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":         "nest",
-			"Match":        tag,
-			"Operation":    "lift",
-			"Nested_under": p.NestedUnder,
-			"Add_prefix":   p.AddPrefix,
-		},
-	}
-	return []fluentbit.Component{filter}
-}
-
 var LegacyBuiltinProcessors = map[string]LoggingProcessor{
 	"lib:default_message_parser": &LoggingProcessorParseRegex{
 		Regex: `^(?<message>.*)$`,
