@@ -2,3 +2,11 @@
 2022-02-01 18:09:48,200 WARN org.apache.hadoop.hdfs.server.datanode.DataNode: Warning message here
 2022-02-01 18:09:49,300 ERROR org.apache.hadoop.hdfs.server.namenode.FSNamesystem: Error occurred
 2022-02-01 18:09:50,400 DEBUG org.apache.hadoop.hdfs.server.datanode.DataNode: Debug message
+2022-02-01 18:09:51,500 ERROR org.apache.hadoop.hdfs.server.namenode.NameNode: Failed to start namenode
+java.io.IOException: Cannot create directory /hadoop/logs/hdfs
+	at org.apache.hadoop.hdfs.server.common.Storage.createDir(Storage.java:157)
+	at org.apache.hadoop.hdfs.server.namenode.FSImage.format(FSImage.java:183)
+	at org.apache.hadoop.hdfs.server.namenode.NameNode.format(NameNode.java:977)
+	at org.apache.hadoop.hdfs.server.namenode.NameNode.createNameNode(NameNode.java:1421)
+	at org.apache.hadoop.hdfs.server.namenode.NameNode.main(NameNode.java:1540)
+2022-02-01 18:09:52,600 INFO org.apache.hadoop.hdfs.server.datanode.DataNode: Successfully started datanode on port 9866
