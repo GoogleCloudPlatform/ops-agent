@@ -317,5 +317,7 @@ func init() {
 	// platform restrictions like the previous registration system did.
 	// TODO: Add platform.Windows restriction once the macro system supports it.
 	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroIisAccess](
-		loggingReceiverFilesMixinIisAccess)
+		loggingReceiverFilesMixinIisAccess,
+		platform.Windows,
+	)
 }
