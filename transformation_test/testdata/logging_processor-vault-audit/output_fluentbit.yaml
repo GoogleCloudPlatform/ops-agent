@@ -328,6 +328,40 @@
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
     logName: projects/my-project/logs/transformation_test
     timestamp: now
+  - jsonPayload:
+      message: "}"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      auth:
+        token_type: default
+      response:
+        id: res-001
+        status: success
+      type: response
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2025-08-25T15:02:00.111213141Z
+  - jsonPayload:
+      auth:
+        token_type: default
+      request:
+        id: req-003
+        namespace:
+          id: root
+        operation: create
+        path: sys/audit/new
+      type: request
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/vault_audit
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2025-08-25T16:04:00.222333444Z
   partialSuccess: true
   resource:
     labels: {}

@@ -43,3 +43,5 @@
     "path":"sys/audit/multi"
    }
 }
+{"time":"2025-08-25T15:02:00.111213141Z","type":"response","auth":{"token_type":"default"},"response":{"id":"res-001","status":"success"}}
+{"time":"2025-08-25T16:04:00.222333444Z","type":"request","auth":{"token_type":"default"},"request":{"id":"req-003","operation":"create","namespace":{"id":"root"},"path":"sys/audit/new"}}
