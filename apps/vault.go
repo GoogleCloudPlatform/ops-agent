@@ -319,6 +319,20 @@ func (LoggingProcessorMacroVaultJson) Type() string {
 
 func (p LoggingProcessorMacroVaultJson) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
 	return []confgenerator.InternalLoggingProcessor{
+		confgenerator.LoggingProcessorParseMultilineRegex{
+			Rules: []confgenerator.MultilineRule{
+				{
+					StateName: "start_state",
+					NextState: "cont",
+					Regex:     `^{.*`,
+				},
+				{
+					StateName: "cont",
+					NextState: "cont",
+					Regex:     `^(?!{.*)`,
+				},
+			},
+		},
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
@@ -343,20 +357,6 @@ type LoggingReceiverMacroVaultAuditJson struct {
 
 func (r LoggingReceiverMacroVaultAuditJson) Expand(ctx context.Context) (confgenerator.InternalLoggingReceiver, []confgenerator.InternalLoggingProcessor) {
 	r.ReceiverMixin.IncludePaths = r.IncludePaths
-
-	r.ReceiverMixin.MultilineRules = []confgenerator.MultilineRule{
-		{
-			StateName: "start_state",
-			NextState: "cont",
-			Regex:     `^{.*`,
-		},
-		{
-			StateName: "cont",
-			NextState: "cont",
-			Regex:     `^(?!{.*)`,
-		},
-	}
-
 	return &r.ReceiverMixin, r.LoggingProcessorMacroVaultJson.Expand(ctx)
 }
 
