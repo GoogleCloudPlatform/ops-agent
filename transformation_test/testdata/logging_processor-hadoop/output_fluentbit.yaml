@@ -1,0 +1,62 @@
+- entries:
+  - jsonPayload:
+      message: Edit logging is async:true
+      severity: INFO
+      source: org.apache.hadoop.hdfs.server.namenode.FSEditLog
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hadoop
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2022-02-01T18:09:47.136000000Z
+  - jsonPayload:
+      message: Warning message here
+      severity: WARN
+      source: org.apache.hadoop.hdfs.server.datanode.DataNode
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hadoop
+    logName: projects/my-project/logs/transformation_test
+    severity: 400.0
+    timestamp: 2022-02-01T18:09:48.200000000Z
+  - jsonPayload:
+      message: Error occurred
+      severity: ERROR
+      source: org.apache.hadoop.hdfs.server.namenode.FSNamesystem
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hadoop
+    logName: projects/my-project/logs/transformation_test
+    severity: 500.0
+    timestamp: 2022-02-01T18:09:49.300000000Z
+  - jsonPayload:
+      message: Debug message
+      severity: DEBUG
+      source: org.apache.hadoop.hdfs.server.datanode.DataNode
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hadoop
+    logName: projects/my-project/logs/transformation_test
+    severity: 100.0
+    timestamp: 2022-02-01T18:09:50.400000000Z
+  - jsonPayload:
+      message: |-
+        Failed to start namenode
+        java.io.IOException: Cannot create directory /hadoop/logs/hdfs
+        	at org.apache.hadoop.hdfs.server.common.Storage.createDir(Storage.java:157)
+        	at org.apache.hadoop.hdfs.server.namenode.FSImage.format(FSImage.java:183)
+        	at org.apache.hadoop.hdfs.server.namenode.NameNode.format(NameNode.java:977)
+        	at org.apache.hadoop.hdfs.server.namenode.NameNode.createNameNode(NameNode.java:1421)
+        	at org.apache.hadoop.hdfs.server.namenode.NameNode.main(NameNode.java:1540)
+      severity: ERROR
+      source: org.apache.hadoop.hdfs.server.namenode.NameNode
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hadoop
+    logName: projects/my-project/logs/transformation_test
+    severity: 500.0
+    timestamp: 2022-02-01T18:09:51.500000000Z
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance
