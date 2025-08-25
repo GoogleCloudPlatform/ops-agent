@@ -89,23 +89,23 @@
       cacheHit: false
       cacheLookup: false
       cacheValidatedWithOriginServer: false
-      protocol: ""
+      protocol: HTTP/1.1
       referer: ""
-      remoteIp: ""
-      requestMethod: ""
+      remoteIp: 203.0.113.4
+      requestMethod: GET
       requestSize: 0.0
-      requestUrl: ""
-      responseSize: 0.0
+      requestUrl: /admin/dashboard
+      responseSize: 1234.0
       serverIp: ""
-      status: 0.0
-      userAgent: ""
+      status: 403.0
+      userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
     jsonPayload:
-      message: "203.0.113.4 - admin [26/Aug/2021:16:51:22 +0000] \"GET /admin/dashboard HTTP/1.1\" 403 1234 \"-\" \"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36\" "
+      user: admin
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/jetty_access
     logName: projects/my-project/logs/transformation_test
-    timestamp: now
+    timestamp: 2021-08-26T16:51:22.000000000Z
   partialSuccess: true
   resource:
     labels: {}
