@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
@@ -57,24 +56,26 @@ func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverActiveDirectoryDS{} }, platform.Windows)
 }
 
-type LoggingProcessorMacroActiveDirectoryDS struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
-}
+type LoggingProcessorMacroActiveDirectoryDS struct{}
 
 func (p LoggingProcessorMacroActiveDirectoryDS) Type() string {
 	return "active_directory_ds"
 }
 
 func (p LoggingProcessorMacroActiveDirectoryDS) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
-	return []confgenerator.InternalLoggingProcessor{}
-}
-
-func (p LoggingProcessorMacroActiveDirectoryDS) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	return []fluentbit.Component{}
+	return []confgenerator.InternalLoggingProcessor{
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+			},
+		},
+	}
 }
 
 type LoggingReceiverMacroActiveDirectoryDS struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
+	confgenerator.ConfigComponent                `yaml:",inline"`
+	confgenerator.LoggingReceiverWindowsEventLog `yaml:",inline"`
+	LoggingProcessorMacroActiveDirectoryDS       `yaml:",inline"`
 }
 
 func (r LoggingReceiverMacroActiveDirectoryDS) Type() string {
@@ -82,15 +83,12 @@ func (r LoggingReceiverMacroActiveDirectoryDS) Type() string {
 }
 
 func (r LoggingReceiverMacroActiveDirectoryDS) Expand(ctx context.Context) (confgenerator.InternalLoggingReceiver, []confgenerator.InternalLoggingProcessor) {
-	l := confgenerator.LoggingReceiverWindowsEventLog{
-		Channels: []string{"Directory Service", "Active Directory Web Services"},
-	}
-	processor := LoggingProcessorMacroActiveDirectoryDS{}
-
-	return l, processor.Expand(ctx)
+	r.Channels = []string{"Directory Service", "Active Directory Web Services"}
+	return &r.LoggingReceiverWindowsEventLog, r.LoggingProcessorMacroActiveDirectoryDS.Expand(ctx)
 }
 
 func init() {
+	// TODO: Add windows platform param once the IIS PR is merged
 	confgenerator.RegisterLoggingReceiverMacro[LoggingReceiverMacroActiveDirectoryDS](func() LoggingReceiverMacroActiveDirectoryDS {
 		return LoggingReceiverMacroActiveDirectoryDS{}
 	})
