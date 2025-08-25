@@ -602,3 +602,14 @@ func GCPProjectID(projectID string) Component {
 		map[string]string{"gcp.project_id": projectID}, false,
 	)
 }
+
+func MetricUnknownCounter() Component {
+	return Transform("metric", "metric", []ottl.Statement{
+		// Copy the unknown metric, but add a suffix so we can distinguish the copy from the original.
+		"copy_metric(Concat([metric.name, \"unknowncounter\"], \":\")) where metric.metadata[\"prometheus.type\"] == \"unknown\" and not HasSuffix(metric.name, \":unknowncounter\")",
+		// Change the copy to a monotonic, cumulative sum.
+		"convert_gauge_to_sum(\"cumulative\", true) where HasSuffix(metric.name, \":unknowncounter\")",
+		// Delete the extra suffix once we are done.
+		"set(metric.name, Substring(metric.name, 0, Len(metric.name)-Len(\":unknowncounter\"))) where HasSuffix(metric.name, \":unknowncounter\")",
+	})
+}
