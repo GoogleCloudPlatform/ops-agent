@@ -58,6 +58,22 @@
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
     timestamp: 2022-02-11T14:29:52.217000000Z
+  - jsonPayload:
+      level: DEBUG
+      message: |-
+        Configured system properties:
+                          [Standalone] = 
+                          awt.toolkit = sun.awt.X11.XToolkit
+                          file.encoding = UTF-8
+                          file.separator = /
+      source: org.jboss.as.config
+      thread: MSC service thread 1-1
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/wildfly_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 100.0
+    timestamp: 2022-02-03T15:38:01.506000000Z
   partialSuccess: true
   resource:
     labels: {}

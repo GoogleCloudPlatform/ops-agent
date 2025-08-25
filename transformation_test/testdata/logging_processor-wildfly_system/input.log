@@ -8,3 +8,4 @@
                   awt.toolkit = sun.awt.X11.XToolkit
                   file.encoding = UTF-8
                   file.separator = /
+2022-02-11 14:30:15,892 INFO  [org.jboss.as.server] (ServerService Thread Pool -- 34) WFLYSRV0010: Deployed "example.war" (runtime-name : "example.war")
