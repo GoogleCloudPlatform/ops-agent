@@ -1,0 +1,6 @@
+2025-08-18T14:27:02.452Z INFO PipelineManager: Starting replication pipeline for bucket travel-data
+2025-08-18T14:27:10.874Z WARN XDCR.CheckpointService: Failed to save checkpoint due to timeout
+2025-08-18T14:27:22.345Z ERROR Router: Failed to route mutation for key "user:12345", retrying...
+Additional detail: document size exceeded configured threshold
+2025-08-18T14:27:45.657Z DEBUG BackfillManager: Backfill task created for vbucket 102
+2025-08-18T14:28:00.998Z INFO PipelineManager: Replication pipeline stopped successfully
