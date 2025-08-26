@@ -200,7 +200,6 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 		"processors": processors,
 		"exporters":  exporters,
 		"service":    service,
-		"extensions": extensions,
 	}
 
 	if len(c.Extensions) > 0 {
