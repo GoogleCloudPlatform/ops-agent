@@ -22,7 +22,9 @@
   - jsonPayload:
       level: ERROR
       log_type: Router
-      message: Failed to route mutation for key "user:12345", retrying...
+      message: |-
+        Failed to route mutation for key "user:12345", retrying...
+        Additional detail: document size exceeded configured threshold
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_goxdcr
