@@ -230,6 +230,21 @@ func ExtractCountMetric(monotonic bool, metricName string) Statement {
 	return statementf(`extract_count_metric(%s) where name == "%s"`, monotonicStr, metricName)
 }
 
+// SetMetricUnitAll sets the unit for all metrics.
+func SetMetricUnitAll(unit string) Statement {
+	return statementf(`set(unit, "%s")`, unit)
+}
+
+// TruncateTimeAll truncates time given a duration for all signals.
+func TruncateTimeAll(duration string) Statement {
+	return statementf(`set(time, TruncateTime(time, Duration("%s")))`, duration)
+}
+
+// TruncateStartTimeAll truncates start_time given a duration for all signals.
+func TruncateStartTimeAll(duration string) Statement {
+	return statementf(`set(start_time, TruncateTime(start_time, Duration("%s")))`, duration)
+}
+
 func (a LValue) SetToBool(b Value) Statements {
 	// https://github.com/fluent/fluent-bit/blob/fd402681ad0ca0427395b07bb8a37c7c1c846cca/src/flb_parser.c#L1261
 	// "true" = true, "false" = false, else error
