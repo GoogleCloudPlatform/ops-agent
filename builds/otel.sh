@@ -49,7 +49,7 @@ fi
 
 cd submodules/opentelemetry-operations-collector/otelopscol
 ARCH=$(/usr/local/go/bin/go env GOARCH)
-GO_BIN=/usr/local/go/bin/go \
+GO_BIN=${USE_GO_BIN:-/usr/local/go/bin/go} \
 BUILDARCH=$ARCH \
 TARGETARCH=$ARCH \
 COLLECTOR_LD_FLAGS="$LDFLAGS" \
