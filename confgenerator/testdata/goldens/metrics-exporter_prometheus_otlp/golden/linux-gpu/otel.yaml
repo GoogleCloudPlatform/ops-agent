@@ -662,6 +662,8 @@ service:
       processors:
       - transform/prometheus_0
       - metricstarttime/prometheus_1
+      - transform/prometheus_2
+      - resource/prometheus_3
       receivers:
       - prometheus/prometheus
   telemetry:
