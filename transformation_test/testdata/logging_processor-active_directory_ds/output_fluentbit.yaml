@@ -3,24 +3,28 @@
       message: "2023-01-15T10:30:45.123456Z INFO Directory Service: Successful authentication for user DOMAIN\\user1 from workstation WS001"
     labels:
       compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/active_directory_ds
     logName: projects/my-project/logs/transformation_test
     timestamp: now
   - jsonPayload:
       message: "2023-01-15T10:31:12.654321Z WARNING Active Directory Web Services: LDAP search operation took longer than expected (2.5 seconds)"
     labels:
       compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/active_directory_ds
     logName: projects/my-project/logs/transformation_test
     timestamp: now
   - jsonPayload:
       message: "2023-01-15T10:32:05.789012Z ERROR Directory Service: Failed authentication attempt for user DOMAIN\\user2 from IP 192.168.1.100"
     labels:
       compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/active_directory_ds
     logName: projects/my-project/logs/transformation_test
     timestamp: now
   - jsonPayload:
       message: "2023-01-15T10:33:18.345678Z INFO Active Directory Web Services: Certificate renewal completed successfully for domain controller DC01 "
     labels:
       compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/active_directory_ds
     logName: projects/my-project/logs/transformation_test
     timestamp: now
   partialSuccess: true
