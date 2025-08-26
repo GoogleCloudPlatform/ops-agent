@@ -614,7 +614,7 @@ service:
       - hostmetrics/hostmetrics
     metrics/default__pipeline_hostmetrics_1:
       exporters:
-      - googlecloud
+      - otlphttp/otlp
       processors:
       - metricstransform/hostmetrics_1_0
       - filter/default__pipeline_hostmetrics_1_0

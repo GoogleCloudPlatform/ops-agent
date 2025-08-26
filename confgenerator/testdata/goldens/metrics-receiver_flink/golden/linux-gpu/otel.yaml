@@ -15,6 +15,12 @@ exporters:
       service_resource_labels: false
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
+  otlphttp/otlp:
+    auth:
+      authenticator: googleclientauth
+    endpoint: https://telemetry.googleapis.com
+    headers:
+      User-Agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
@@ -581,7 +587,7 @@ service:
       - hostmetrics/hostmetrics
     metrics/default__pipeline_hostmetrics_1:
       exporters:
-      - googlecloud
+      - otlphttp/otlp
       processors:
       - metricstransform/hostmetrics_1_0
       - filter/default__pipeline_hostmetrics_1_0
