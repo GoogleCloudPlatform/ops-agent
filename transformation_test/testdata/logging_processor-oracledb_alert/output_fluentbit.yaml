@@ -1,0 +1,16 @@
+- entries:
+  - jsonPayload:
+      message: |-
+        Thread 1 opened at log sequence 1
+        Current log# 1 seq# 1 mem# 0: /u01/oracle/oradata/DB19C/redo01.log
+        Successful open of redo thread 1
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/oracledb_alert
+    logName: projects/my-project/logs/transformation_test
+    severity: 700.0
+    timestamp: 2021-12-21T15:19:47.339827000Z
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance
