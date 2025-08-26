@@ -503,15 +503,7 @@ type LoggingProcessorRenameIfExists struct {
 }
 
 func (p LoggingProcessorRenameIfExists) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	c := fluentbit.Component{
-		Kind: "FILTER",
-		Config: map[string]string{
-			"Name":        "modify",
-			"Match":       tag,
-			"Hard_rename": fmt.Sprintf("%s %s", p.Field, p.NewName),
-		},
-	}
-	return []fluentbit.Component{c}
+	return []fluentbit.Component{modify.NewHardRenameOptions(p.Field, p.NewName).Component(tag)}
 }
 
 func (p LoggingProcessorRenameIfExists) Processors(ctx context.Context) ([]otel.Component, error) {
