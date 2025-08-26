@@ -35,11 +35,16 @@ expected_metrics:
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: service_name
+        value_regex: activemq
   - type: workload.googleapis.com/activemq.consumer.count
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: activemq
       - name: broker
         value_regex: .*
       - name: destination
@@ -49,15 +54,23 @@ expected_metrics:
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: service_name
+        value_regex: activemq
   - type: workload.googleapis.com/activemq.disk.temp_usage
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: service_name
+        value_regex: activemq
   - type: workload.googleapis.com/activemq.memory.usage
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: activemq
       - name: broker
         value_regex: .*
       - name: destination
@@ -67,6 +80,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: activemq
       - name: broker
         value_regex: .*
       - name: destination
@@ -76,6 +91,8 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: activemq
       - name: broker
         value_regex: .*
       - name: destination
@@ -85,6 +102,8 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: activemq
       - name: broker
         value_regex: .*
       - name: destination
@@ -94,6 +113,8 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: activemq
       - name: broker
         value_regex: .*
       - name: destination
@@ -103,6 +124,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: activemq
       - name: broker
         value_regex: .*
       - name: destination
@@ -112,6 +135,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: activemq
       - name: broker
         value_regex: .*
       - name: destination

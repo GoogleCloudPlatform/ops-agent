@@ -38,6 +38,7 @@ func (r MetricsReceiverKafka) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 	targetSystem := "kafka"
 	return r.MetricsReceiverSharedJVM.
 		WithDefaultEndpoint(defaultKafkaEndpoint).
+		WithServiceName(targetSystem).
 		ConfigurePipelines(
 			r.TargetSystemString(targetSystem),
 			[]otel.Component{

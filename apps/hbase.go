@@ -42,6 +42,7 @@ func (r MetricsReceiverHbase) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 
 	return r.MetricsReceiverSharedJVM.
 		WithDefaultEndpoint(defaultHbaseEndpoint).
+		WithServiceName(targetSystem).
 		ConfigurePipelines(
 			targetSystem,
 			[]otel.Component{

@@ -497,6 +497,8 @@ receivers:
     endpoint: localhost:39999
     jar_path: /path/to/executables/opentelemetry-java-contrib-jmx-metrics.jar
     password: otelp
+    resource_attributes:
+      service.name: kafka
     target_system: kafka
     username: otelu
   otlpjsonfile/ops_agent:

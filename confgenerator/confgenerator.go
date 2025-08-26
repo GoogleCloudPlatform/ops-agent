@@ -246,12 +246,26 @@ func (p PipelineInstance) FluentBitComponents(ctx context.Context) (fbSource, er
 	}, nil
 }
 
+var receiverIDKey = "receiver_id"
+
+func ContextWithReceiverID(ctx context.Context, rID string) context.Context {
+	return context.WithValue(ctx, receiverIDKey, rID)
+}
+
+func ReceiverIDFromContext(ctx context.Context) (string, bool) {
+	rId, ok := ctx.Value(receiverIDKey).(string)
+	return rId, ok
+}
+
 func (p PipelineInstance) OTelComponents(ctx context.Context) (map[string]otel.ReceiverPipeline, map[string]otel.Pipeline, error) {
 	outR := make(map[string]otel.ReceiverPipeline)
 	outP := make(map[string]otel.Pipeline)
 	receiver, ok := p.Receiver.(OTelReceiver)
 	if !ok {
 		return nil, nil, fmt.Errorf("%q is not an otel receiver", p.RID)
+	}
+	if p.Receiver.Type() == "jvm" {
+		ctx = ContextWithReceiverID(ctx, p.RID)
 	}
 	// TODO: Add a way for receivers or processors to decide whether they're compatible with a particular config.
 	receiverPipelines, err := receiver.Pipelines(ctx)

@@ -526,6 +526,8 @@ receivers:
     endpoint: localhost:9999
     jar_path: /path/to/executables/opentelemetry-java-contrib-jmx-metrics.jar
     password: otelp
+    resource_attributes:
+      service.name: kafka
     target_system: kafka,jvm
     username: otelu
   nvml/hostmetrics_1:

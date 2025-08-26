@@ -511,6 +511,8 @@ receivers:
     endpoint: localhost:1099
     jar_path: /path/to/executables/opentelemetry-java-contrib-jmx-metrics.jar
     password: otelp
+    resource_attributes:
+      service.name: activemq
     target_system: activemq
     username: otelu
   nvml/hostmetrics_1:

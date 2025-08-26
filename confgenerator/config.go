@@ -673,6 +673,8 @@ type MetricsReceiverSharedJVM struct {
 	Username       string        `yaml:"username" validate:"required_with=Password"`
 	Password       secret.String `yaml:"password" validate:"required_with=Username"`
 	AdditionalJars []string      `yaml:"additional_jars" validate:"omitempty,dive,file"`
+
+	serviceName string `yaml:"-"`
 }
 
 // WithDefaultEndpoint overrides the MetricReceiverSharedJVM's Endpoint if it is empty.
@@ -682,6 +684,13 @@ func (m MetricsReceiverSharedJVM) WithDefaultEndpoint(defaultEndpoint string) Me
 		m.Endpoint = defaultEndpoint
 	}
 
+	return m
+}
+
+// WithServiceName adds a service name to the receiver to be used as the `service_name` label
+// in the resulting metrics.
+func (m MetricsReceiverSharedJVM) WithServiceName(serviceName string) MetricsReceiverSharedJVM {
+	m.serviceName = serviceName
 	return m
 }
 
@@ -721,6 +730,12 @@ func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, proces
 	secretPassword := m.Password.SecretValue()
 	if secretPassword != "" {
 		config["password"] = secretPassword
+	}
+
+	if m.serviceName != "" {
+		config["resource_attributes"] = map[string]string{
+			"service.name": m.serviceName,
+		}
 	}
 
 	return []otel.ReceiverPipeline{{

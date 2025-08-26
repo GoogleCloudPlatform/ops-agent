@@ -562,6 +562,8 @@ receivers:
     collection_interval: 60s
     endpoint: localhost:1099
     jar_path: /path/to/executables/opentelemetry-java-contrib-jmx-metrics.jar
+    resource_attributes:
+      service.name: jetty,jvm
     target_system: jetty,jvm
   otlpjsonfile/ops_agent:
     include:

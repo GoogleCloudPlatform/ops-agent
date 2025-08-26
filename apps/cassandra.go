@@ -40,6 +40,7 @@ func (r MetricsReceiverCassandra) Pipelines(_ context.Context) ([]otel.ReceiverP
 
 	return r.MetricsReceiverSharedJVM.
 		WithDefaultEndpoint(defaultCassandraEndpoint).
+		WithServiceName(targetSystem).
 		ConfigurePipelines(
 			r.TargetSystemString(targetSystem),
 			[]otel.Component{

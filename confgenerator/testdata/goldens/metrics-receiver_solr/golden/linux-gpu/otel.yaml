@@ -511,6 +511,8 @@ receivers:
     endpoint: localhost:18983
     jar_path: /path/to/executables/opentelemetry-java-contrib-jmx-metrics.jar
     password: otelp
+    resource_attributes:
+      service.name: solr
     target_system: solr
     username: otelu
   nvml/hostmetrics_1:
