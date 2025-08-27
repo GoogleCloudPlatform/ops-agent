@@ -100,16 +100,12 @@ processors:
         - otelcol_process_memory_rss
         - grpc.client.attempt.duration_count
         - googlecloudmonitoring/point_count
-<<<<<<< HEAD
-  metricstarttime/prometheus_2:
-=======
   groupbyattrs/logging_metrics_7: {}
   interval/logging_metrics_11:
     interval: 1m
   interval/logging_metrics_6:
     interval: 1m
-  metricstarttime/prometheus_1:
->>>>>>> 3b4e3def6 (Update goldens.)
+  metricstarttime/prometheus_2:
     strategy: subtract_initial_point
   metricstransform/fluentbit_1:
     transforms:
@@ -745,7 +741,6 @@ processors:
       - delete_key(attributes, "location")
       - delete_key(attributes, "cluster")
       - delete_key(attributes, "namespace")
-<<<<<<< HEAD
   transform/prometheus_1:
     error_mode: ignore
     metric_statements:
@@ -754,7 +749,6 @@ processors:
       - copy_metric(Concat([metric.name, "unknowncounter"], ":")) where metric.metadata["prometheus.type"] == "unknown" and not HasSuffix(metric.name, ":unknowncounter")
       - convert_gauge_to_sum("cumulative", true) where HasSuffix(metric.name, ":unknowncounter")
       - set(metric.name, Substring(metric.name, 0, Len(metric.name)-Len(":unknowncounter"))) where HasSuffix(metric.name, ":unknowncounter")
-=======
   transform/prometheus_metrics_0:
     metric_statements:
     - context: metric
@@ -763,7 +757,6 @@ processors:
       - delete_key(resource.attributes, "service.instance.id")
       - delete_key(resource.attributes, "server.port")
       - delete_key(resource.attributes, "url.scheme")
->>>>>>> 3b4e3def6 (Update goldens.)
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
