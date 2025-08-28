@@ -52,14 +52,14 @@ func init() {
 
 type experimentsKeyType struct{}
 
-var experimentsKey = experimentsKeyType{}
+var ExperimentsKey = experimentsKeyType{}
 
 func ContextWithExperiments(ctx context.Context, experiments map[string]bool) context.Context {
-	return context.WithValue(ctx, experimentsKey, experiments)
+	return context.WithValue(ctx,ExperimentsKey, experiments)
 }
 
 func experimentsFromContext(ctx context.Context) map[string]bool {
-	if features := ctx.Value(experimentsKey); features != nil {
+	if features := ctx.Value(ExperimentsKey); features != nil {
 		return features.(map[string]bool)
 	}
 	return enabledExperimentalFeatures
