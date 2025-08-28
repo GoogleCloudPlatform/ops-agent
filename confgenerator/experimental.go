@@ -55,7 +55,7 @@ type experimentsKeyType struct{}
 var ExperimentsKey = experimentsKeyType{}
 
 func ContextWithExperiments(ctx context.Context, experiments map[string]bool) context.Context {
-	return context.WithValue(ctx,ExperimentsKey, experiments)
+	return context.WithValue(ctx, ExperimentsKey, experiments)
 }
 
 func experimentsFromContext(ctx context.Context) map[string]bool {
