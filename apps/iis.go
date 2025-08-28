@@ -21,6 +21,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
@@ -150,20 +151,21 @@ func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverIis{} }, platform.Windows)
 }
 
-type LoggingProcessorIisAccess struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
+type LoggingProcessorMacroIisAccess struct {
 }
 
-func (*LoggingProcessorIisAccess) Type() string {
+func (LoggingProcessorMacroIisAccess) Type() string {
 	return "iis_access"
 }
 
-const (
-	iisMergeRecordFieldsLuaFunction       = `iis_merge_fields`
-	iisMergeRecordFieldsLuaScriptContents = `
-	function iis_merge_fields(tag, timestamp, record)
+// IISConcatFields handles field concatenation for IIS logs
+type IISConcatFields struct{}
 
-	  if (record["cs_uri_query"] == "-") then
+// Components implements the Fluent-bit concatenation using Lua
+func (IISConcatFields) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
+	luaScript := `
+	function iis_concat_fields(tag, timestamp, record)
+		if (record["cs_uri_query"] == "-") then
 	    record["cs_uri_query"] = nil
 	  end
 	  if (record["http_request_referer"] == "-") then
@@ -172,24 +174,87 @@ const (
 	  if (record["user"] == "-") then
 	    record["user"] = nil
 	  end
-
-	  record["http_request_serverIp"] = table.concat({record["http_request_serverIp"], ":", record["s_port"]})
-	  if (record["cs_uri_query"] == nil or record["cs_uri_query"] == '') then
-		record["http_request_requestUrl"] = record["cs_uri_stem"]
-	  else
-		record["http_request_requestUrl"] = table.concat({record["cs_uri_stem"], "?", record["cs_uri_query"]})
+		
+	  -- Concatenate serverIp with port
+	  if record["http_request_serverIp"] ~= nil and record["s_port"] ~= nil then
+		record["http_request_serverIp"] = table.concat({record["http_request_serverIp"], ":", record["s_port"]})
 	  end
-
-	  record["cs_uri_query"] = nil
+	  
+	  -- Build requestUrl from stem and query
+	  if record["cs_uri_stem"] ~= nil then
+		if record["cs_uri_query"] == nil or record["cs_uri_query"] == "" or record["cs_uri_query"] == "-" then
+		  record["http_request_requestUrl"] = record["cs_uri_stem"]
+		else
+		  record["http_request_requestUrl"] = table.concat({record["cs_uri_stem"], "?", record["cs_uri_query"]})
+		end
+	  end
+	  
+	  -- Clean up intermediate fields
 	  record["cs_uri_stem"] = nil
+	  record["cs_uri_query"] = nil
 	  record["s_port"] = nil
+	  
 	  return 2, timestamp, record
 	end
 	`
-)
 
-func (p *LoggingProcessorIisAccess) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseRegex{
+	return fluentbit.LuaFilterComponents(tag, "iis_concat_fields", luaScript)
+}
+
+// Processors implements the OTEL concatenation using ModifyFields + CustomConvertFunc
+func (IISConcatFields) Processors(ctx context.Context) ([]otel.Component, error) {
+	modifyFields := confgenerator.LoggingProcessorModifyFields{
+		Fields: map[string]*confgenerator.ModifyField{
+			// Concatenate serverIp with port
+			"jsonPayload.http_request_serverIp": {
+				CopyFrom: "jsonPayload.http_request_serverIp",
+				CustomConvertFunc: func(value ottl.LValue) ottl.Statements {
+					return ottl.Statements{}.Append(
+						value.Set(ottl.RValue(`Concat([body["http_request_serverIp"], body["s_port"]], ":")`)),
+						ottl.LValue{"body", "s_port"}.Delete(),
+					)
+				},
+			},
+			// Build requestUrl from stem and query
+			"jsonPayload.http_request_requestUrl": {
+				CopyFrom: "jsonPayload.cs_uri_stem",
+				CustomConvertFunc: func(value ottl.LValue) ottl.Statements {
+					return ottl.Statements{}.Append(
+						// Check if query is valid (not empty, not "-")
+						ottl.LValue{"cache", "clean_query"}.Delete(),
+						ottl.LValue{"cache", "clean_query"}.SetIf(
+							ottl.LValue{"body", "cs_uri_query"},
+							ottl.And(
+								ottl.LValue{"body", "cs_uri_query"}.IsPresent(),
+								ottl.Not(ottl.Equals(ottl.LValue{"body", "cs_uri_query"}, ottl.StringLiteral(""))),
+								ottl.Not(ottl.Equals(ottl.LValue{"body", "cs_uri_query"}, ottl.StringLiteral("-"))),
+							),
+						),
+						// Set requestUrl to stem when query is empty/"-"
+						value.SetIf(
+							ottl.LValue{"body", "cs_uri_stem"},
+							ottl.Not(ottl.LValue{"cache", "clean_query"}.IsPresent()),
+						),
+						// Set requestUrl to stem + "?" + query when query has content
+						value.SetIf(
+							ottl.RValue(`Concat([body["cs_uri_stem"], cache["clean_query"]], "?")`),
+							ottl.LValue{"cache", "clean_query"}.IsPresent(),
+						),
+						// Clean up intermediate fields
+						ottl.LValue{"body", "cs_uri_stem"}.Delete(),
+						ottl.LValue{"body", "cs_uri_query"}.Delete(),
+						ottl.LValue{"cache", "clean_query"}.Delete(),
+					)
+				},
+			},
+		},
+	}
+
+	return modifyFields.Processors(ctx)
+}
+
+func (p LoggingProcessorMacroIisAccess) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
+	parseRegex := confgenerator.LoggingProcessorParseRegex{
 		// Documentation:
 		// https://docs.microsoft.com/en-us/windows/win32/http/w3c-logging
 		// sample line: 2022-03-10 17:26:30 ::1 GET /iisstart.png - 80 - ::1 Mozilla/5.0+(Windows+NT+10.0;+WOW64;+Trident/7.0;+rv:11.0)+like+Gecko http://localhost/ 200 0 0 18
@@ -198,38 +263,22 @@ func (p *LoggingProcessorIisAccess) Components(ctx context.Context, tag, uid str
 		Regex: `^(?<timestamp>\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2})\s(?<http_request_serverIp>[^\s]+)\s(?<http_request_requestMethod>[^\s]+)\s(?<cs_uri_stem>\/[^\s]*)\s(?<cs_uri_query>[^\s]*)\s(?<s_port>\d*)\s(?<user>[^\s]+)\s(?<http_request_remoteIp>[^\s]+)\s(?<http_request_userAgent>[^\s]+)\s(?<http_request_referer>[^\s]+)\s(?<http_request_status>\d{3})\s(?<sc_substatus>\d+)\s(?<sc_win32_status>\d+)\s(?<time_taken>\d+)$`,
 		ParserShared: confgenerator.ParserShared{
 			TimeKey:    "timestamp",
-			TimeFormat: " %Y-%m-%d %H:%M:%S",
+			TimeFormat: "%Y-%m-%d %H:%M:%S",
 			Types: map[string]string{
 				"http_request_status": "integer",
 			},
 		},
-	}.Components(ctx, tag, uid)
+	}
 
-	// iis logs "-" when a field does not have a value. Remove the field entirely when this happens.
-	c = append(c, fluentbit.LuaFilterComponents(tag, iisMergeRecordFieldsLuaFunction, iisMergeRecordFieldsLuaScriptContents)...)
+	// Handle field concatenation (serverIp+port, requestUrl)
+	concatFields := IISConcatFields{}
 
-	c = append(c, []fluentbit.Component{
-		// This is used to exclude the header lines above the logs
-
-		// EXAMPLE LINES:
-		// #Software: Microsoft Internet Information Services 10.0
-		// #Version: 1.0
-		// #Date: 2022-04-11 12:53:50
-		{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":    "grep",
-				"Match":   tag,
-				"Exclude": "message ^#(?:Fields|Date|Version|Software):",
-			},
-		},
-	}...)
-
+	// Create fields map for simple field operations and moves
 	fields := map[string]*confgenerator.ModifyField{
 		InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 	}
 
-	// Generate the httpRequest structure.
+	// Generate the httpRequest structure field moves
 	for _, field := range []string{
 		"serverIp",
 		"remoteIp",
@@ -244,31 +293,28 @@ func (p *LoggingProcessorIisAccess) Components(ctx context.Context, tag, uid str
 		}
 	}
 
-	c = append(c,
-		confgenerator.LoggingProcessorModifyFields{
-			Fields: fields,
-		}.Components(ctx, tag, uid)...,
-	)
-	return c
-}
-
-type LoggingReceiverIisAccess struct {
-	LoggingProcessorIisAccess `yaml:",inline"`
-	ReceiverMixin             confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
-}
-
-func (r LoggingReceiverIisAccess) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.ReceiverMixin.IncludePaths) == 0 {
-		r.ReceiverMixin.IncludePaths = []string{
-			`C:\inetpub\logs\LogFiles\W3SVC1\u_ex*`,
-		}
+	modifyFields := confgenerator.LoggingProcessorModifyFields{
+		Fields: fields,
 	}
-	c := r.ReceiverMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorIisAccess.Components(ctx, tag, "iis_access")...)
-	return c
+
+	return []confgenerator.InternalLoggingProcessor{
+		parseRegex,
+		concatFields,
+		modifyFields,
+	}
+}
+
+func loggingReceiverFilesMixinIisAccess() confgenerator.LoggingReceiverFilesMixin {
+	return confgenerator.LoggingReceiverFilesMixin{
+		IncludePaths: []string{
+			`C:\inetpub\logs\LogFiles\W3SVC1\u_ex*`,
+		},
+	}
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverIisAccess{} }, platform.Windows)
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorIisAccess{} }, platform.Windows)
+	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroIisAccess](
+		loggingReceiverFilesMixinIisAccess,
+		platform.Windows,
+	)
 }
