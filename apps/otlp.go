@@ -17,6 +17,8 @@ package apps
 import (
 	"context"
 	"fmt"
+	"log"
+	"os"
 	"regexp"
 	"strings"
 
@@ -43,6 +45,19 @@ func (r ReceiverOTLP) Type() string {
 	return "otlp"
 }
 
+func (ReceiverOTLP) otlpPrometheusResourceProcessors(ctx context.Context) []otel.Component {
+	resource, err := platform.FromContext(ctx).GetResource()
+	if err != nil {
+		log.Printf("can't get resource metadata: %v", err)
+		return nil
+	}
+	metrics_components := []otel.Component{otel.GroupByGMPAttrs_OTTL()}
+
+	metrics_components = append(metrics_components, otel.MetricUnknownCounter())
+	metrics_components = append(metrics_components, otel.MetricStartTime())
+	metrics_components = append(metrics_components, otel.GCPProjectID(resource.ProjectName()))
+	return metrics_components
+}
 func (ReceiverOTLP) gmpResourceProcessors(ctx context.Context) []otel.Component {
 	// Keep in sync with logic in confgenerator/prometheus.go
 	stmt := func(target, source, platform string) string {
@@ -82,10 +97,24 @@ func (ReceiverOTLP) gmpResourceProcessors(ctx context.Context) []otel.Component 
 		otel.GroupByGMPAttrs(),
 	}
 }
+func experimentsFromContext(ctx context.Context) map[string]bool {
+	if features := ctx.Value(confgenerator.ExperimentsKey); features != nil {
+		return features.(map[string]bool)
+	}
+	return confgenerator.ParseExperimentalFeatures(os.Getenv("EXPERIMENTAL_FEATURES"))
+}
 
 func (r ReceiverOTLP) metricsProcessors(ctx context.Context) (otel.ExporterType, otel.ResourceDetectionMode, []otel.Component) {
 	if r.MetricsMode != "googlecloudmonitoring" {
+		exp_otlp_exporter := experimentsFromContext(ctx)["otlp_exporter"]
+		if exp_otlp_exporter {
+			return otel.Otlp, otel.None, r.otlpPrometheusResourceProcessors(ctx)
+		}
 		return otel.GMP, otel.None, r.gmpResourceProcessors(ctx)
+	}
+	exp_otlp_exporter := experimentsFromContext(ctx)["otlp_exporter"]
+	if exp_otlp_exporter {
+		return otel.Otlp, otel.None, []otel.Component{}
 	}
 	var knownDomainsRegexEscaped []string
 	for _, knownDomain := range knownDomains {

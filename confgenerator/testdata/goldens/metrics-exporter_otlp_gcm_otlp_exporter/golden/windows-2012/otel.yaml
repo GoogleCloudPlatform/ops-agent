@@ -7,6 +7,14 @@ exporters:
       service_resource_labels: false
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
+  googlecloud/otel:
+    metric:
+      instrumentation_library_labels: true
+      prefix: ""
+      resource_filters: []
+      service_resource_labels: false
+      skip_create_descriptor: true
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
   otlphttp/otlp:
     auth:
       authenticator: googleclientauth
@@ -75,8 +83,6 @@ processors:
         - otelcol_process_memory_rss
         - grpc.client.attempt.duration_count
         - googlecloudmonitoring/point_count
-  metricstarttime/prometheus_2:
-    strategy: subtract_initial_point
   metricstransform/fluentbit_1:
     transforms:
     - action: update
@@ -501,14 +507,13 @@ processors:
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
   normalizesums/iis_2: {}
-  resource/prometheus_3:
-    attributes:
-    - action: insert
-      key: gcp.project_id
-      value: test-project
   resourcedetection/_global_0:
     detectors:
     - gcp
+  resourcedetection/_global_1:
+    detectors:
+    - gcp
+    override: false
   transform/iis_3:
     metric_statements:
     - context: scope
@@ -533,24 +538,6 @@ processors:
     - context: metric
       statements:
       - extract_count_metric(true) where name == "grpc.client.attempt.duration"
-  transform/prometheus_0:
-    metric_statements:
-    - context: datapoint
-      statements:
-      - set(resource.attributes["location"], attributes["location"])
-      - set(resource.attributes["cluster"], attributes["cluster"])
-      - set(resource.attributes["namespace"], attributes["namespace"])
-      - delete_key(attributes, "location")
-      - delete_key(attributes, "cluster")
-      - delete_key(attributes, "namespace")
-  transform/prometheus_1:
-    error_mode: ignore
-    metric_statements:
-    - context: metric
-      statements:
-      - copy_metric(Concat([metric.name, "unknowncounter"], ":")) where metric.metadata["prometheus.type"] == "unknown" and not HasSuffix(metric.name, ":unknowncounter")
-      - convert_gauge_to_sum("cumulative", true) where HasSuffix(metric.name, ":unknowncounter")
-      - set(metric.name, Substring(metric.name, 0, Len(metric.name)-Len(":unknowncounter"))) where HasSuffix(metric.name, ":unknowncounter")
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
@@ -570,6 +557,10 @@ receivers:
         mute_process_exe_error: true
         mute_process_name_error: true
       processes: {}
+  otlp/otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
   otlpjsonfile/ops_agent:
     include:
     - enabled_receivers_otlp.json
@@ -593,60 +584,6 @@ receivers:
         static_configs:
         - targets:
           - 0.0.0.0:20201
-  prometheus/prometheus:
-    config:
-      global:
-        scrape_interval: 1m
-        scrape_timeout: 10s
-        scrape_protocols:
-        - OpenMetricsText1.0.0
-        - OpenMetricsText0.0.1
-        - PrometheusText0.0.4
-        evaluation_interval: 1m
-      scrape_configs:
-      - job_name: node
-        honor_timestamps: true
-        track_timestamps_staleness: false
-        scrape_interval: 10s
-        scrape_timeout: 10s
-        scrape_protocols:
-        - OpenMetricsText1.0.0
-        - OpenMetricsText0.0.1
-        - PrometheusText0.0.4
-        metrics_path: /metrics
-        scheme: http
-        enable_compression: true
-        follow_redirects: true
-        enable_http2: true
-        relabel_configs:
-        - source_labels: [__meta_gce_machine_type]
-          separator: ;
-          regex: (.+)
-          target_label: machine_type
-          replacement: $${1}
-          action: replace
-        static_configs:
-        - targets:
-          - localhost:1234
-          labels:
-            __meta_gce_instance_id: test-instance-id
-            __meta_gce_instance_name: test-instance-name
-            __meta_gce_interface_ipv4_nictest_interface: test-interface-ipv4
-            __meta_gce_machine_type: test-machine-type
-            __meta_gce_metadata_test_escape: $$foo
-            __meta_gce_metadata_test_escape_parentheses: _{foo:bar}
-            __meta_gce_metadata_test_key: test-value
-            __meta_gce_network: test-network
-            __meta_gce_private_ip: test-private-ip
-            __meta_gce_project: test-project
-            __meta_gce_public_ip: test-public-ip
-            __meta_gce_tags: test-tag
-            __meta_gce_zone: test-zone
-            cluster: __gce__
-            instance_name: test-instance-name
-            location: test-zone
-            machine_type: test-machine-type
-            namespace: test-instance-id/test-instance-name
   windowsperfcounters/iis:
     collection_interval: 60s
     perfcounters:
@@ -744,16 +681,19 @@ service:
       - resourcedetection/_global_0
       receivers:
       - prometheus/otel
-    metrics/prometheus__pipeline_prometheus:
+    metrics/otlp_otlp:
       exporters:
       - otlphttp/otlp
-      processors:
-      - transform/prometheus_0
-      - transform/prometheus_1
-      - metricstarttime/prometheus_2
-      - resource/prometheus_3
+      processors: []
       receivers:
-      - prometheus/prometheus
+      - otlp/otlp
+    traces/traces_otlp_otlp:
+      exporters:
+      - googlecloud/otel
+      processors:
+      - resourcedetection/_global_1
+      receivers:
+      - otlp/otlp
   telemetry:
     metrics:
       readers:
