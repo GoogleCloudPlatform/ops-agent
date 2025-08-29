@@ -216,15 +216,33 @@ func IsNotNil(a Value) Value {
 	return valuef(`%s != nil`, a)
 }
 
+// CopyMetric creates a copy of a given metric with a new name
+func CopyMetric(metricName string, condition string) Statement {
+	return statementf(`copy_metric(%q) where name == "%s"`, metricName, condition)
+}
+
 // ExtractCountMetric creates a new metric based on the count value of a Histogram metric
-func ExtractCountMetric(monotonic bool, metricName string) Statements {
+func ExtractCountMetric(monotonic bool, metricName string) Statement {
 	monotonicStr := "false"
 	if monotonic {
 		monotonicStr = "true"
 	}
-	return Statements{
-		statementf(`extract_count_metric(%s) where name == "%s"`, monotonicStr, metricName),
-	}
+	return statementf(`extract_count_metric(%s) where name == "%s"`, monotonicStr, metricName)
+}
+
+// SetMetricUnitAll sets the unit for all metrics.
+func SetMetricUnitAll(unit string) Statement {
+	return statementf(`set(unit, "%s")`, unit)
+}
+
+// TruncateTimeAll truncates time given a duration for all signals.
+func TruncateTimeAll(duration string) Statement {
+	return statementf(`set(time, TruncateTime(time, Duration("%s")))`, duration)
+}
+
+// TruncateStartTimeAll truncates start_time given a duration for all signals.
+func TruncateStartTimeAll(duration string) Statement {
+	return statementf(`set(start_time, TruncateTime(start_time, Duration("%s")))`, duration)
 }
 
 func (a LValue) SetToBool(b Value) Statements {

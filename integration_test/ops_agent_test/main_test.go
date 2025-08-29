@@ -210,6 +210,18 @@ func retrieveOtelConfig(ctx context.Context, logger *log.Logger, vm *gce.VM) (co
 	return gce.RetrieveContent(ctx, logger, vm, agents.GetOtelConfigPath(vm.ImageSpec))
 }
 
+// defaultConfigForLoggingSubagent returns the default config that is required to choose a logging subagent.
+func defaultConfigForLoggingSubagent(otel bool) string {
+	if otel {
+		// otel logging needs to be enabled explicitly
+		return fmt.Sprintf(`logging:
+  service:
+    experimental_otel_logging: %v`, otel)
+	}
+	// fluent-bit is used by default
+	return ""
+}
+
 // RunForEachLoggingSubagent runs a subtest for the logging subagent fluent-bit and otel.
 func RunForEachLoggingSubagent(t *testing.T, testBody func(t *testing.T, otel bool)) {
 	t.Helper()
@@ -2718,52 +2730,67 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 
 func TestDefaultMetricsNoProxy(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachLoggingSubagent(t, func(t *testing.T, otel bool) {
 		t.Parallel()
+		gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+			t.Parallel()
+			ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+			if otel {
+				if err := setExperimentalFeatures(ctx, logger, vm, "otel_logging"); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err := agents.SetupOpsAgent(ctx, logger, vm, defaultConfigForLoggingSubagent(otel)); err != nil {
+				t.Fatal(err)
+			}
 
-		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
-			t.Fatal(err)
-		}
+			// Wait at least a minute since feature_tracking and enabled_receivers
+			// metrics are sent one minute after agent startup
+			time.Sleep(2 * time.Minute)
 
-		// Wait at least a minute since feature_tracking and enabled_receivers
-		// metrics are sent one minute after agent startup
-		time.Sleep(2 * time.Minute)
-
-		testDefaultMetrics(ctx, t, logger, vm, time.Hour)
+			testDefaultMetrics(ctx, t, logger, vm, time.Hour)
+		})
 	})
 }
 
 // go/sdi-integ-test#proxy-testing
 func TestDefaultMetricsWithProxy(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachLoggingSubagent(t, func(t *testing.T, otel bool) {
 		t.Parallel()
-		if !gce.IsWindows(imageSpec) {
-			t.Skip("Proxy test is currently only supported on windows.")
-		}
-		proxySettingsVal, proxySettingsPresent := os.LookupEnv("PROXY_SETTINGS")
-		if !proxySettingsPresent {
-			t.Skip("No proxy settings were set in the global PROXY_SETTINGS variable.")
-		}
-		settings := make(map[string]string)
-		if err := json.Unmarshal([]byte(proxySettingsVal), &settings); err != nil {
-			t.Fatal(err)
-		}
-		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-		if err := gce.SetEnvironmentVariables(ctx, logger, vm, settings); err != nil {
-			t.Fatal(err)
-		}
-		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
-			t.Fatal(err)
-		}
+		gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+			t.Parallel()
+			if !gce.IsWindows(imageSpec) {
+				t.Skip("Proxy test is currently only supported on windows.")
+			}
+			proxySettingsVal, proxySettingsPresent := os.LookupEnv("PROXY_SETTINGS")
+			if !proxySettingsPresent {
+				t.Skip("No proxy settings were set in the global PROXY_SETTINGS variable.")
+			}
+			settings := make(map[string]string)
+			if err := json.Unmarshal([]byte(proxySettingsVal), &settings); err != nil {
+				t.Fatal(err)
+			}
+			ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+			if err := gce.SetEnvironmentVariables(ctx, logger, vm, settings); err != nil {
+				t.Fatal(err)
+			}
+			if otel {
+				if err := setExperimentalFeatures(ctx, logger, vm, "otel_logging"); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err := agents.SetupOpsAgent(ctx, logger, vm, defaultConfigForLoggingSubagent(otel)); err != nil {
+				t.Fatal(err)
+			}
 
-		if err := gce.RemoveExternalIP(ctx, logger, vm); err != nil {
-			t.Fatal(err)
-		}
-		// Sleep for 3 minutes to make sure that if any metrics were sent between agent install and removal of the IP address, then they will fall out of the 2 minute window.
-		time.Sleep(3 * time.Minute)
-		testDefaultMetrics(ctx, t, logger, vm, 2*time.Minute)
+			if err := gce.RemoveExternalIP(ctx, logger, vm); err != nil {
+				t.Fatal(err)
+			}
+			// Sleep for 3 minutes to make sure that if any metrics were sent between agent install and removal of the IP address, then they will fall out of the 2 minute window.
+			time.Sleep(3 * time.Minute)
+			testDefaultMetrics(ctx, t, logger, vm, 2*time.Minute)
+		})
 	})
 }
 
