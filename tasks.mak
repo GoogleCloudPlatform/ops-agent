@@ -124,10 +124,10 @@ dist/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit:
 	bash ./builds/fluent_bit.sh $(PWD)/dist
 
 dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol:
-	SKIP_OTEL_JAVA=${SKIP_JAVA} bash ./builds/otel.sh $(PWD)/dist
+	SKIP_OTEL_JAVA=${SKIP_JAVA} USE_GO_BIN=$(shell which go) bash ./builds/otel.sh $(PWD)/dist
 
 .PHONY: transformation_test
-transformation_test: dist/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol
+transformation_test: dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol dist/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit
 	FLB=$(PWD)/dist/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit \
 	OTELOPSCOL=$(PWD)/dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol \
 	go test ./transformation_test $(if $(UPDATE),-update,)

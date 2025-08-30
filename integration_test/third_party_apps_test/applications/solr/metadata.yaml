@@ -52,6 +52,8 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: solr
       - name: cache
         value_regex: .*
       - name: core

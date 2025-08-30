@@ -56,25 +56,38 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: state
         value_regex: .*
   - type: workload.googleapis.com/hbase.master.regions_in_transition.count
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: service_name
+        value_regex: hbase
   - type: workload.googleapis.com/hbase.master.regions_in_transition.oldest_age
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: service_name
+        value_regex: hbase
   - type: workload.googleapis.com/hbase.master.regions_in_transition.over_threshold
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: service_name
+        value_regex: hbase
   - type: workload.googleapis.com/hbase.region_server.active_handler.count
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.authentication.count
@@ -82,6 +95,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
       - name: state
@@ -91,6 +106,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
       - name: state
@@ -100,6 +117,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.disk.store_file.count
@@ -107,6 +126,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.disk.store_file.size
@@ -114,6 +135,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.files.local
@@ -121,6 +144,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.gc.old_gen.time
@@ -128,6 +153,8 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
     optional: true
@@ -136,6 +163,8 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.gc.young_gen.time
@@ -143,6 +172,8 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
     optional: true
@@ -151,6 +182,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.operation.append.latency.max
@@ -158,6 +191,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.operation.append.latency.mean
@@ -165,6 +200,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.operation.append.latency.median
@@ -172,6 +209,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.operation.append.latency.min
@@ -179,6 +218,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.operation.append.latency.p99
@@ -186,6 +227,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
     representative: true
@@ -194,6 +237,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.operation.delete.latency.mean
@@ -201,6 +246,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.operation.delete.latency.median
@@ -208,6 +255,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.operation.delete.latency.min
@@ -215,6 +264,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.operation.delete.latency.p99
@@ -222,6 +273,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.operation.get.latency.max
@@ -229,6 +282,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.operation.get.latency.mean
@@ -236,6 +291,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.operation.get.latency.median
@@ -243,6 +300,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.operation.get.latency.min
@@ -250,6 +309,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.operation.get.latency.p99
@@ -257,6 +318,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.operation.increment.latency.max
@@ -264,6 +327,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.operation.increment.latency.mean
@@ -271,6 +336,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.operation.increment.latency.median
@@ -278,6 +345,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.operation.increment.latency.min
@@ -285,6 +354,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.operation.increment.latency.p99
@@ -292,6 +363,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.operation.put.latency.max
@@ -299,6 +372,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.operation.put.latency.mean
@@ -306,6 +381,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.operation.put.latency.median
@@ -313,6 +390,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.operation.put.latency.min
@@ -320,6 +399,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.operation.put.latency.p99
@@ -327,6 +408,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.operation.replay.latency.max
@@ -334,6 +417,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.operation.replay.latency.mean
@@ -341,6 +426,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.operation.replay.latency.median
@@ -348,6 +435,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.operation.replay.latency.min
@@ -355,6 +444,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.operation.replay.latency.p99
@@ -362,6 +453,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.operations.slow
@@ -369,6 +462,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: operation
         value_regex: .*
       - name: region_server
@@ -378,6 +473,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
       - name: state
@@ -387,6 +484,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
       - name: state
@@ -396,6 +495,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
   - type: workload.googleapis.com/hbase.region_server.request.count
@@ -403,6 +504,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
       - name: state
@@ -412,6 +515,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: hbase
       - name: region_server
         value_regex: .*
 expected_logs:
