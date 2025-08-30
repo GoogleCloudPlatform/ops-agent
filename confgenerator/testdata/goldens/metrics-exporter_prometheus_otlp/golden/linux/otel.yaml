@@ -7,10 +7,12 @@ exporters:
       service_resource_labels: false
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
-  googlemanagedprometheus:
-    metric:
-      add_metric_suffixes: false
-    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
+  otlphttp/otlp:
+    auth:
+      authenticator: googleclientauth
+    endpoint: https://telemetry.googleapis.com
+    headers:
+      User-Agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
 extensions:
   googleclientauth: {}
 processors:
@@ -609,7 +611,7 @@ service:
       - prometheus/otel
     metrics/prometheus__pipeline_prometheus:
       exporters:
-      - googlemanagedprometheus
+      - otlphttp/otlp
       processors:
       - transform/prometheus_0
       - transform/prometheus_1
