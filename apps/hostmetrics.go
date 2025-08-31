@@ -338,7 +338,7 @@ func (r MetricsReceiverHostmetrics) Pipelines(ctx context.Context) ([]otel.Recei
 				},
 			},
 			ExporterTypes: map[string]otel.ExporterType{
-				"metrics": otel.System,
+				"metrics": otel.Otlp,
 			},
 			Processors: map[string][]otel.Component{"metrics": {
 				otel.MetricsTransform(
