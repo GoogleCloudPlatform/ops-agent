@@ -1306,12 +1306,11 @@ func validatePrometheusReceiver(receivers metricsReceiverMap, receiverIDs, proce
 		}
 		receiverPipelines, err := receiver.Pipelines(ctx)
 		if err != nil {
-			continue
+			return err
 		}
 		for _, receiverPipeline := range receiverPipelines {
 			// Check the Ops Agent receiver type.
 			if receiverPipeline.ExporterTypes[subagent] == otel.GMP {
-				fmt.Println("processorIDs", processorIDs)
 				if len(processorIDs) > 0 {
 					return fmt.Errorf("prometheus receivers are incompatible with Ops Agent processors")
 				}
