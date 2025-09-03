@@ -1223,6 +1223,9 @@ func (uc *UnifiedConfig) ValidateMetrics(ctx context.Context) error {
 		if len(p.ExporterIDs) > 0 {
 			log.Printf(`The "metrics.service.pipelines.%s.exporters" field is deprecated and will be ignored. Please remove it from your configuration.`, id)
 		}
+		if err := validatePrometheusReceiver(receivers, p.ReceiverIDs, p.ProcessorIDs, subagent, ctx); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -1290,6 +1293,29 @@ func validateComponentKeys[V any](components map[string]V, refs []string, subage
 	for _, componentRef := range refs {
 		if !componentSet.Contains(componentRef) {
 			return fmt.Errorf("%s %s %q from pipeline %q is not defined.", subagent, kind, componentRef, pipeline)
+		}
+	}
+	return nil
+}
+
+func validatePrometheusReceiver(receivers metricsReceiverMap, receiverIDs, processorIDs []string, subagent string, ctx context.Context) error {
+	for _, ID := range receiverIDs {
+		receiver, ok := receivers[ID]
+		if !ok {
+			continue // Some receivers might not be used.
+		}
+		receiverPipelines, err := receiver.Pipelines(ctx)
+		if err != nil {
+			continue
+		}
+		for _, receiverPipeline := range receiverPipelines {
+			// Check the Ops Agent receiver type.
+			if receiverPipeline.ExporterTypes[subagent] == otel.GMP {
+				fmt.Println("processorIDs", processorIDs)
+				if len(processorIDs) > 0 {
+					return fmt.Errorf("prometheus receivers are incompatible with Ops Agent processors")
+				}
+			}
 		}
 	}
 	return nil
