@@ -1303,7 +1303,7 @@ func validateNoCustomGMPProcessors(receivers metricsReceiverMap, receiverIDs, pr
 	for _, ID := range receiverIDs {
 		receiver, ok := receivers[ID]
 		if !ok {
-			continue // Some receivers might not be used.
+			return fmt.Errorf("metric receiver %q is not defined.", ID)
 		}
 		receiverPipelines, err := receiver.Pipelines(ctx)
 		if err != nil {
