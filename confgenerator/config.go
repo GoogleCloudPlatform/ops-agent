@@ -1223,7 +1223,7 @@ func (uc *UnifiedConfig) ValidateMetrics(ctx context.Context) error {
 		if len(p.ExporterIDs) > 0 {
 			log.Printf(`The "metrics.service.pipelines.%s.exporters" field is deprecated and will be ignored. Please remove it from your configuration.`, id)
 		}
-		if err := validatePrometheusReceiver(receivers, p.ReceiverIDs, p.ProcessorIDs, subagent, ctx); err != nil {
+		if err := validateNoCustomGMPProcessors(receivers, p.ReceiverIDs, p.ProcessorIDs, subagent, ctx); err != nil {
 			return err
 		}
 	}
@@ -1298,7 +1298,8 @@ func validateComponentKeys[V any](components map[string]V, refs []string, subage
 	return nil
 }
 
-func validatePrometheusReceiver(receivers metricsReceiverMap, receiverIDs, processorIDs []string, subagent string, ctx context.Context) error {
+// Pipelines that export prometheus metrics are not allowed to have Ops Agent processors
+func validateNoCustomGMPProcessors(receivers metricsReceiverMap, receiverIDs, processorIDs []string, subagent string, ctx context.Context) error {
 	for _, ID := range receiverIDs {
 		receiver, ok := receivers[ID]
 		if !ok {
