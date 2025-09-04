@@ -76,22 +76,40 @@ expected_metrics:
     labels:
       - name: cluster
         value_regex: .*
+      - name: service_name
+        value_regex: vault
+      - name: service_instance_id
+        value_regex: 127.0.0.1:8200
   - type: workload.googleapis.com/vault.core.leader.duration
     optional: true
     kind: GAUGE
     monitored_resources: [gce_instance]
     value_type: DOUBLE
+    labels:
+      - name: service_name
+        value_regex: vault
+      - name: service_instance_id
+        value_regex: 127.0.0.1:8200
   - type: workload.googleapis.com/vault.token.lease.count
     optional: true
     kind: GAUGE
     monitored_resources: [gce_instance]
     value_type: INT64
+    labels:
+      - name: service_name
+        value_regex: vault
+      - name: service_instance_id
+        value_regex: 127.0.0.1:8200
   - type: workload.googleapis.com/vault.token.count
     optional: true
     kind: GAUGE
     monitored_resources: [gce_instance]
     value_type: INT64
     labels:
+      - name: service_name
+        value_regex: vault
+      - name: service_instance_id
+        value_regex: 127.0.0.1:8200
       - name: namespace
         value_regex: .*
       - name: cluster
@@ -101,30 +119,59 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     value_type: INT64
+    labels:
+      - name: service_name
+        value_regex: vault
+      - name: service_instance_id
+        value_regex: 127.0.0.1:8200
   - type: workload.googleapis.com/vault.token.renew.time
     optional: true
     kind: GAUGE
     monitored_resources: [gce_instance]
     value_type: INT64
+    labels:
+      - name: service_name
+        value_regex: vault
+      - name: service_instance_id
+        value_regex: 127.0.0.1:8200
   - type: workload.googleapis.com/vault.audit.request.failed
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     value_type: INT64
+    labels:
+      - name: service_name
+        value_regex: vault
+      - name: service_instance_id
+        value_regex: 127.0.0.1:8200
   - type: workload.googleapis.com/vault.audit.response.failed
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     value_type: INT64
+    labels:
+      - name: service_name
+        value_regex: vault
+      - name: service_instance_id
+        value_regex: 127.0.0.1:8200
   - type: workload.googleapis.com/vault.memory.usage
     representative: true
     kind: GAUGE
     monitored_resources: [gce_instance]
     value_type: DOUBLE
+    labels:
+      - name: service_name
+        value_regex: vault
+      - name: service_instance_id
+        value_regex: 127.0.0.1:8200
   - type: workload.googleapis.com/vault.storage.operation.put.time
     optional: true
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     value_type: DOUBLE
     labels:
+      - name: service_name
+        value_regex: vault
+      - name: service_instance_id
+        value_regex: 127.0.0.1:8200
       - name: storage
         value_regex: .*
   - type: workload.googleapis.com/vault.storage.operation.delete.time
@@ -133,6 +180,10 @@ expected_metrics:
     monitored_resources: [gce_instance]
     value_type: DOUBLE
     labels:
+      - name: service_name
+        value_regex: vault
+      - name: service_instance_id
+        value_regex: 127.0.0.1:8200
       - name: storage
         value_regex: .*
   - type: workload.googleapis.com/vault.storage.operation.list.time
@@ -141,6 +192,10 @@ expected_metrics:
     monitored_resources: [gce_instance]
     value_type: DOUBLE
     labels:
+      - name: service_name
+        value_regex: vault
+      - name: service_instance_id
+        value_regex: 127.0.0.1:8200
       - name: storage
         value_regex: .*
   - type: workload.googleapis.com/vault.storage.operation.get.time
@@ -149,6 +204,10 @@ expected_metrics:
     monitored_resources: [gce_instance]
     value_type: DOUBLE
     labels:
+      - name: service_name
+        value_regex: vault
+      - name: service_instance_id
+        value_regex: 127.0.0.1:8200
       - name: storage
         value_regex: .*
   - type: workload.googleapis.com/vault.storage.operation.put.count
@@ -157,6 +216,10 @@ expected_metrics:
     monitored_resources: [gce_instance]
     value_type: INT64
     labels:
+      - name: service_name
+        value_regex: vault
+      - name: service_instance_id
+        value_regex: 127.0.0.1:8200
       - name: storage
         value_regex: .*
   - type: workload.googleapis.com/vault.storage.operation.delete.count
@@ -165,6 +228,10 @@ expected_metrics:
     monitored_resources: [gce_instance]
     value_type: INT64
     labels:
+      - name: service_name
+        value_regex: vault
+      - name: service_instance_id
+        value_regex: 127.0.0.1:8200
       - name: storage
         value_regex: .*
   - type: workload.googleapis.com/vault.storage.operation.list.count
@@ -173,6 +240,10 @@ expected_metrics:
     monitored_resources: [gce_instance]
     value_type: INT64
     labels:
+      - name: service_name
+        value_regex: vault
+      - name: service_instance_id
+        value_regex: 127.0.0.1:8200
       - name: storage
         value_regex: .*
   - type: workload.googleapis.com/vault.storage.operation.get.count
@@ -181,6 +252,10 @@ expected_metrics:
     monitored_resources: [gce_instance]
     value_type: INT64
     labels:
+      - name: service_name
+        value_regex: vault
+      - name: service_instance_id
+        value_regex: 127.0.0.1:8200
       - name: storage
         value_regex: .*
 expected_logs:
