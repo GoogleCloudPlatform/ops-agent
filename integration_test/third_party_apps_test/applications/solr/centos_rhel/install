@@ -1,6 +1,7 @@
 set -e
 
 sudo setenforce 0
+source /etc/os-release
 
 cat <<EOF | sudo tee /etc/selinux/config
 SELINUX=disabled
@@ -26,6 +27,9 @@ sudo chown -R solr:solr /opt/solr*
 
 sudo sed -i '/ENABLE_REMOTE_JMX_OPTS/s/false/true/' /etc/default/solr.in.sh
 sudo sed -i '/ENABLE_REMOTE_JMX_OPTS/s/^# *//' /etc/default/solr.in.sh
+if [[ "$ID" == "rocky" && "$MAJOR_VERSION_ID" == "8" && "$(uname -m)" == "aarch64" ]]; then
+    sudo sed -i '$a\SOLR_JAVA_STACK_SIZE="-Xss512k"' /etc/default/solr.in.sh
+fi
 
 sudo systemctl daemon-reload
 sudo systemctl enable solr

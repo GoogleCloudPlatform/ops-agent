@@ -11,6 +11,7 @@ elif [[ "$ID" == "rocky" && "$MAJOR_VERSION_ID" == "8" ]]; then
     # If OS is Rocky Linux 8, legacy crypto isn't enough; need to disable GPG check
     # b/397661945
     GPGCHECK=0
+    sudo sed -i 's/-Xss256k/-Xss512k/' /etc/cassandra/default.conf/jvm-server.options
 fi
 
 sudo cat <<EOF > cassandra.repo
