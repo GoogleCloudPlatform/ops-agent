@@ -2,6 +2,7 @@ set -e
 
 sudo setenforce 0
 source /etc/os-release
+MAJOR_VERSION_ID=${VERSION_ID%%.*}
 
 cat <<EOF | sudo tee /etc/selinux/config
 SELINUX=disabled
