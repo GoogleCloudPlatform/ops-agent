@@ -207,6 +207,7 @@ supported_operating_systems: linux
 platforms_to_skip:
   # couchbase is not supported on various distros.
   # https://docs.couchbase.com/server/current/install/install-platforms.html
+  - rocky-linux-cloud:rocky-linux-8-arm64
   - rocky-linux-cloud:rocky-linux-9
   - rocky-linux-cloud:rocky-linux-9-optimized-gcp
   - debian-cloud:debian-12
