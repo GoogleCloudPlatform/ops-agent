@@ -16,6 +16,7 @@
       userAgent: curl/7.64.0
     jsonPayload: {}
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/varnish
     logName: projects/my-project/logs/transformation_test
     timestamp: 2022-03-02T15:55:05.000000000Z
@@ -37,6 +38,7 @@
     jsonPayload:
       user: john
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/varnish
     logName: projects/my-project/logs/transformation_test
     timestamp: 2022-03-03T10:12:45.000000000Z
@@ -57,6 +59,7 @@
       userAgent: curl/7.68.0
     jsonPayload: {}
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/varnish
     logName: projects/my-project/logs/transformation_test
     timestamp: 2022-03-04T08:30:12.000000000Z
@@ -78,6 +81,7 @@
     jsonPayload:
       user: alice
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/varnish
     logName: projects/my-project/logs/transformation_test
     timestamp: 2022-03-05T22:01:59.000000000Z
@@ -98,6 +102,7 @@
       userAgent: PostmanRuntime/7.28.4
     jsonPayload: {}
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/varnish
     logName: projects/my-project/logs/transformation_test
     timestamp: 2022-03-06T14:23:11.000000000Z
@@ -119,6 +124,7 @@
     jsonPayload:
       user: bob
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/varnish
     logName: projects/my-project/logs/transformation_test
     timestamp: 2022-03-07T19:45:33.000000000Z

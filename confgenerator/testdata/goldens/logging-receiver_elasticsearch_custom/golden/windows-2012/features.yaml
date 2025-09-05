@@ -27,6 +27,10 @@
   key: "[1].enabled"
   value: "true"
 - module: logging
+  feature: receivers:elasticsearch_gc
+  key: "[1].include_paths.__length"
+  value: "1"
+- module: logging
   feature: receivers:elasticsearch_json
   key: "[2].enabled"
   value: "true"
@@ -38,3 +42,7 @@
   feature: receivers:elasticsearch_json
   key: "[3].enabled"
   value: "true"
+- module: logging
+  feature: receivers:elasticsearch_json
+  key: "[3].include_paths.__length"
+  value: "5"

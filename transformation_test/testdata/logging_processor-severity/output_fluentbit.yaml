@@ -1,0 +1,68 @@
+- entries:
+  - jsonPayload:
+      message: message with DEFAULT severity
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/transformation_test
+    severity: 0.0
+    timestamp: now
+  - jsonPayload:
+      message: message with DEBUG severity
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/transformation_test
+    severity: 100.0
+    timestamp: now
+  - jsonPayload:
+      message: message with INFO severity
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  - jsonPayload:
+      message: message with NOTICE severity
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/transformation_test
+    severity: 300.0
+    timestamp: now
+  - jsonPayload:
+      message: message with WARNING severity
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/transformation_test
+    severity: 400.0
+    timestamp: now
+  - jsonPayload:
+      message: message with ERROR severity
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/transformation_test
+    severity: 500.0
+    timestamp: now
+  - jsonPayload:
+      message: message with CRITICAL severity
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/transformation_test
+    severity: 600.0
+    timestamp: now
+  - jsonPayload:
+      message: message with ALERT severity
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/transformation_test
+    severity: 700.0
+    timestamp: now
+  - jsonPayload:
+      message: message with EMERGENCY severity
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/transformation_test
+    severity: 800.0
+    timestamp: now
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance

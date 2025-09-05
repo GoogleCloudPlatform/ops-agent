@@ -2,6 +2,8 @@
   - jsonPayload:
       field1: nope, include me!
       field2: second
+    labels:
+      compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/my-log-name
     resource:
       labels:

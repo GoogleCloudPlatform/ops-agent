@@ -589,3 +589,29 @@ func ResourceTransform(attributes map[string]string, override bool) Component {
 		Config: config,
 	}
 }
+
+func MetricStartTime() Component {
+	return Component{
+		Type:   "metricstarttime",
+		Config: map[string]string{"strategy": "subtract_initial_point"},
+	}
+}
+
+func GCPProjectID(projectID string) Component {
+	return ResourceTransform(
+		map[string]string{"gcp.project_id": projectID}, false,
+	)
+}
+
+// MetricUnknownCounter is necessary to handle prometheus unknown type metrics
+// go/ops-agent-otlp-migration
+func MetricUnknownCounter() Component {
+	return Transform("metric", "metric", []ottl.Statement{
+		// Copy the unknown metric, but add a suffix so we can distinguish the copy from the original.
+		"copy_metric(Concat([metric.name, \"unknowncounter\"], \":\")) where metric.metadata[\"prometheus.type\"] == \"unknown\" and not HasSuffix(metric.name, \":unknowncounter\")",
+		// Change the copy to a monotonic, cumulative sum.
+		"convert_gauge_to_sum(\"cumulative\", true) where HasSuffix(metric.name, \":unknowncounter\")",
+		// Delete the extra suffix once we are done.
+		"set(metric.name, Substring(metric.name, 0, Len(metric.name)-Len(\":unknowncounter\"))) where HasSuffix(metric.name, \":unknowncounter\")",
+	})
+}

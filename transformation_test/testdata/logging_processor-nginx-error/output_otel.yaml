@@ -13,6 +13,7 @@
       tid: 29060
       upstream: ""
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -36,6 +37,7 @@
       tid: 29060
       upstream: ""
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -59,6 +61,7 @@
       tid: 29060
       upstream: http://127.0.0.1:8080/users
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -82,6 +85,7 @@
       tid: 29060
       upstream: ""
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -105,6 +109,7 @@
       tid: 29060
       upstream: ""
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
     logName: projects/my-project/logs/my-log-name
     resource:
@@ -128,6 +133,7 @@
       tid: 29060
       upstream: ""
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
     logName: projects/my-project/logs/my-log-name
     resource:

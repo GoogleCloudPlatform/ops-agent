@@ -10,6 +10,7 @@
       server: _
       tid: 29060.0
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
     logName: projects/my-project/logs/transformation_test
     severity: 500.0
@@ -25,6 +26,7 @@
       server: example.com
       tid: 29060.0
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
     logName: projects/my-project/logs/transformation_test
     severity: 500.0
@@ -41,6 +43,7 @@
       tid: 29060.0
       upstream: http://127.0.0.1:8080/users
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
     logName: projects/my-project/logs/transformation_test
     severity: 500.0
@@ -56,6 +59,7 @@
       server: localhost
       tid: 29060.0
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
     logName: projects/my-project/logs/transformation_test
     severity: 500.0
@@ -69,6 +73,7 @@
       server: secure.example.com
       tid: 29060.0
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
     logName: projects/my-project/logs/transformation_test
     severity: 500.0
@@ -84,6 +89,7 @@
       server: www.example.com
       tid: 29060.0
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
     logName: projects/my-project/logs/transformation_test
     severity: 500.0
@@ -91,12 +97,14 @@
   - jsonPayload:
       message: ""
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
     logName: projects/my-project/logs/transformation_test
     timestamp: now
   - jsonPayload:
       message: ""
     labels:
+      compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_error
     logName: projects/my-project/logs/transformation_test
     timestamp: now
