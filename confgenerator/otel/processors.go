@@ -53,7 +53,7 @@ func MetricsOTTLFilter(metricQueries []string, datapointQueries []string) Compon
 		metricsConfig["metric"] = metricQueries
 	}
 	if len(datapointQueries) > 0 {
-		metricsConfig["datapoint"] = metricQueries
+		metricsConfig["datapoint"] = datapointQueries
 	}
 
 	return Component{
@@ -111,6 +111,34 @@ func DeltaToRate(metrics ...string) Component {
 		Type: "deltatorate",
 		Config: map[string]interface{}{
 			"metrics": metrics,
+		},
+	}
+}
+
+// Interval returns a Component that aggregates metrics within an interval.
+func Interval(duration string) Component {
+	return Component{
+		Type: "interval",
+		Config: map[string]interface{}{
+			"interval": duration,
+		},
+	}
+}
+
+// MetricsGeneration returns a Component that creates a new metric.
+func MetricsGeneration(new_metric_name string, metric1 string, metric2 string) Component {
+	return Component{
+		Type: "metricsgeneration",
+		Config: map[string]interface{}{
+			"rules": []map[string]string{
+				map[string]string{
+					"name":      new_metric_name,
+					"unit":      "1",
+					"type":      "calculate",
+					"metric1":   metric1,
+					"metric2":   metric2,
+					"operation": "add",
+				}},
 		},
 	}
 }
@@ -266,6 +294,14 @@ func GroupByAttribute(attribute string) TransformQuery {
 	}
 }
 
+// DeleteMetricResourceAttribute returns an expression that removes the metric resource attribute specified.
+func DeleteMetricResourceAttribute(metricAttribute string) TransformQuery {
+	return TransformQuery{
+		Context:   Metric,
+		Statement: fmt.Sprintf(`delete_key(resource.attributes, "%s")`, metricAttribute),
+	}
+}
+
 // DeleteMetricAttribute returns an expression that removes the metric attribute specified.
 func DeleteMetricAttribute(metricAttribute string) TransformQuery {
 	return TransformQuery{
@@ -416,11 +452,12 @@ func DuplicateMetric(old, new string, operations ...map[string]interface{}) map[
 // CombineMetrics returns a config snippet that renames metrics matching the regex old to new, applying zero or more transformations.
 func CombineMetrics(old, new string, operations ...map[string]interface{}) map[string]interface{} {
 	out := map[string]interface{}{
-		"include":       old,
-		"match_type":    "regexp",
-		"action":        "combine",
-		"new_name":      new,
-		"submatch_case": "lower",
+		"include":          old,
+		"match_type":       "regexp",
+		"action":           "combine",
+		"new_name":         new,
+		"aggregation_type": "sum",
+		"submatch_case":    "lower",
 	}
 	if len(operations) > 0 {
 		out["operations"] = operations

@@ -10,7 +10,7 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: ""
+      service.version: v0.131.0
     stacktrace: |-
       go.opentelemetry.io/collector/exporter/exporterhelper/internal.(*BaseExporter).Send
         go.opentelemetry.io/collector/exporter@v0.131.0/exporterhelper/internal/base_exporter.go:117
@@ -52,7 +52,7 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: ""
+      service.version: v0.131.0
     stacktrace: |-
       github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry.(*logsConsumer).ConsumeLogs
         github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.131.0/consumerretry/logs.go:39
@@ -70,7 +70,7 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: ""
+      service.version: v0.131.0
     stacktrace: |-
       github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.(*receiver).consumeEntries
         github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.131.0/adapter/receiver.go:61
