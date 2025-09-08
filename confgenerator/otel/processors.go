@@ -94,14 +94,32 @@ func CastToSum(metrics ...string) Component {
 
 // CumulativeToDelta returns a Component that converts each cumulative metric to delta.
 func CumulativeToDelta(metrics ...string) Component {
-	return Component{
-		Type: "cumulativetodelta",
-		Config: map[string]interface{}{
-			"include": map[string]interface{}{
-				"metrics":    metrics,
-				"match_type": "strict",
-			},
+	return CumulativeToDeltaWithOptions("", metrics...)
+}
+
+// CumulativeToDeltaWithOptions returns a Component that converts each cumulative metric to delta
+// with the possibility to set the "initial_value" option.
+func CumulativeToDeltaWithOptions(initial_value string, metrics ...string) Component {
+	config := map[string]interface{}{
+		"include": map[string]interface{}{
+			"metrics":    metrics,
+			"match_type": "strict",
 		},
+	}
+	if initial_value != "" {
+		config["initial_value"] = initial_value
+	}
+	return Component{
+		Type:   "cumulativetodelta",
+		Config: config,
+	}
+}
+
+// DeltaToCumulative returns a Component that converts each delta metric to cumulative.
+func DeltaToCumulative() Component {
+	return Component{
+		Type:   "deltatocumulative",
+		Config: map[string]interface{}{},
 	}
 }
 

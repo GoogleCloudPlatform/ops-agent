@@ -32,6 +32,7 @@ type AgentSelfMetrics struct {
 	FluentBitPort       int
 	OtelPort            int
 	OtelRuntimeDir      string
+	OtelLogging         bool
 }
 
 var grpcToHTTPStatus = map[string]string{
@@ -52,6 +53,34 @@ var grpcToHTTPStatus = map[string]string{
 	"UNIMPLEMENTED":       "501",
 	"UNAVAILABLE":         "503",
 	"DEADLINE_EXCEEDED":   "504",
+}
+
+func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]otel.ReceiverPipeline, pipelines map[string]otel.Pipeline) {
+	receiverPipelines["prometheus_metrics"] = r.PrometheusMetricsPipeline()
+
+	pipelines["otel"] = otel.Pipeline{
+		Type:                 "metrics",
+		ReceiverPipelineName: "prometheus_metrics",
+		Processors:           r.OtelPipelineProcessors(),
+	}
+
+	pipelines["fluentbit"] = otel.Pipeline{
+		Type:                 "metrics",
+		ReceiverPipelineName: "prometheus_metrics",
+		Processors:           r.FluentBitPipelineProcessors(),
+	}
+
+	pipelines["logging_metrics"] = otel.Pipeline{
+		Type:                 "metrics",
+		ReceiverPipelineName: "prometheus_metrics",
+		Processors:           r.LoggingMetricsPipelineProcessors(),
+	}
+
+	receiverPipelines["ops_agent"] = r.OpsAgentPipeline()
+	pipelines["ops_agent"] = otel.Pipeline{
+		Type:                 "metrics",
+		ReceiverPipelineName: "ops_agent",
+	}
 }
 
 func (r AgentSelfMetrics) PrometheusMetricsPipeline() otel.ReceiverPipeline {
@@ -89,6 +118,7 @@ func (r AgentSelfMetrics) PrometheusMetricsPipeline() otel.ReceiverPipeline {
 			"metrics": {
 				otel.TransformationMetrics(
 					otel.DeleteMetricResourceAttribute("service.name"),
+					otel.DeleteMetricResourceAttribute("service.version"),
 					otel.DeleteMetricResourceAttribute("service.instance.id"),
 					otel.DeleteMetricResourceAttribute("server.port"),
 					otel.DeleteMetricResourceAttribute("url.scheme"),
@@ -174,6 +204,13 @@ func (r AgentSelfMetrics) FluentBitPipelineProcessors() []otel.Component {
 }
 
 func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors() []otel.Component {
+	if r.OtelLogging {
+		return r.OtelAndFluentbitLoggingMetricsPipelineProcessors()
+	}
+	return r.FluentBitLoggingMetricsPipelineProcessors()
+}
+
+func (r AgentSelfMetrics) OtelAndFluentbitLoggingMetricsPipelineProcessors() []otel.Component {
 	return []otel.Component{
 		otel.MetricsFilter(
 			"include",
@@ -204,19 +241,23 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors() []otel.Component {
 			"otelcol_exporter_send_failed_log_records",
 			"grpc.client.attempt.duration_count",
 		),
+		// Truncate all timestamps of fluent-bit and otel metrics to align for aggregation.
 		otel.Transform("metric", "datapoint",
 			[]ottl.Statement{
 				ottl.TruncateTimeAll("1m"),
 				ottl.TruncateStartTimeAll("1m"),
 			},
 		),
+		// Some metrics are missing metric unit. Needed to combine metrics.
 		otel.Transform("metric", "metric",
 			[]ottl.Statement{
 				ottl.SetMetricUnitAll("1"),
 			},
 		),
+		// The processors "interval" and "groupbyattrs" batch metrics in a 1 minute interval.
 		otel.Interval("1m"),
 		otel.CondenseResourceMetrics(),
+		// Format fluentbit and otel logging metrics before aggregation.
 		otel.MetricsTransform(
 			otel.RenameMetric("fluentbit_stackdriver_retried_records_total", "fluentbit_log_entry_retry_count",
 				// change data type from double -> int64
@@ -263,16 +304,38 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors() []otel.Component {
 			otel.CombineMetrics("^otel_log_entry_count$$", "otel_log_entry_count",
 				otel.AggregateLabels("sum", "response_code")),
 		),
-		otel.Transform("metric", "metric",
+		// TODO: Remove before merging. Having a copy of the original metrics helps debug the sum calculations.
+		// otel.Transform("metric", "metric",
+		// 	[]ottl.Statement{
+		// 		ottl.CopyMetric("otel_log_entry_count_original", "otel_log_entry_count"),
+		// 		ottl.CopyMetric("otel_log_entry_retry_count_original", "otel_log_entry_retry_count"),
+		// 		ottl.CopyMetric("otel_request_count_original", "otel_request_count"),
+		// 		ottl.CopyMetric("fluentbit_log_entry_count_original", "fluentbit_log_entry_count"),
+		// 		ottl.CopyMetric("fluentbit_log_entry_retry_count_original", "fluentbit_log_entry_retry_count"),
+		// 		ottl.CopyMetric("fluentbit_request_count_original", "fluentbit_request_count"),
+		// 	},
+		// ),
+		// Aggregating delta metrics from fluent-bit and otel logging will.
+		// Keep the initial value so the resulting cumulative metric at the end of the pipeline.
+		otel.CumulativeToDeltaWithOptions("keep",
+			"otel_log_entry_count", "otel_log_entry_retry_count", "otel_request_count",
+			"fluentbit_log_entry_count", "fluentbit_log_entry_retry_count", "fluentbit_request_count",
+		),
+		// Make sure all delta datapoints consist of a 1 minute inteval from "start_time" to "time".
+		// This standarizes all datapoints for the aggregation which groups by "start_time", "time" and "labels".
+		otel.Transform("metric", "datapoint",
 			[]ottl.Statement{
-				ottl.CopyMetric("otel_log_entry_count_original", "otel_log_entry_count"),
-				ottl.CopyMetric("otel_log_entry_retry_count_original", "otel_log_entry_retry_count"),
-				ottl.CopyMetric("otel_request_count_original", "otel_request_count"),
-				ottl.CopyMetric("fluentbit_log_entry_count_original", "fluentbit_log_entry_count"),
-				ottl.CopyMetric("fluentbit_log_entry_retry_count_original", "fluentbit_log_entry_retry_count"),
-				ottl.CopyMetric("fluentbit_request_count_original", "fluentbit_request_count"),
+				`set(start_time, time - Duration("1m"))`,
+				// TODO: Remove before merging per metric statements which are used for debugging.
+				// `set(start_time, time - Duration("1m")) where metric.name == "otel_log_entry_count"`,
+				// `set(start_time, time - Duration("1m")) where metric.name == "otel_log_entry_retry_count"`,
+				// `set(start_time, time - Duration("1m")) where metric.name == "otel_request_count"`,
+				// `set(start_time, time - Duration("1m")) where metric.name == "fluentbit_log_entry_count"`,
+				// `set(start_time, time - Duration("1m")) where metric.name == "fluentbit_log_entry_retry_count"`,
+				// `set(start_time, time - Duration("1m")) where metric.name == "fluentbit_request_count"`,
 			},
 		),
+		// Combine fluent-bit and otel logging metric and sum their values per label.
 		otel.MetricsTransform(
 			otel.CombineMetrics("^.*_log_entry_retry_count$$", "agent/log_entry_retry_count",
 				otel.AggregateLabels("sum", "response_code")),
@@ -280,9 +343,45 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors() []otel.Component {
 				otel.AggregateLabels("sum", "response_code")),
 			otel.CombineMetrics("^.*_log_entry_count$$", "agent/log_entry_count",
 				otel.AggregateLabels("sum", "response_code")),
+		),
+		// DeltaToCumulative keeps in memory information of previous delta points
+		// to generate a valid cumulative monotonic metric.
+		otel.DeltaToCumulative(),
+		otel.MetricsTransform(otel.AddPrefix("agent.googleapis.com")),
+	}
+}
+
+func (r AgentSelfMetrics) FluentBitLoggingMetricsPipelineProcessors() []otel.Component {
+	return []otel.Component{
+		otel.MetricsFilter(
+			"include",
+			"strict",
+			"fluentbit_stackdriver_requests_total",
+			"fluentbit_stackdriver_proc_records_total",
+			"fluentbit_stackdriver_retried_records_total",
+		),
+		// General transformations of metrics.
+		otel.MetricsTransform(
+			otel.RenameMetric("fluentbit_stackdriver_retried_records_total", "agent/log_entry_retry_count",
+				// change data type from double -> int64
+				otel.ToggleScalarDataType,
+				otel.RenameLabel("status", "response_code"),
+				otel.AggregateLabels("sum", "response_code"),
+			),
+			otel.RenameMetric("fluentbit_stackdriver_requests_total", "agent/request_count",
+				// change data type from double -> int64
+				otel.ToggleScalarDataType,
+				otel.RenameLabel("status", "response_code"),
+				otel.AggregateLabels("sum", "response_code"),
+			),
+			otel.RenameMetric("fluentbit_stackdriver_proc_records_total", "agent/log_entry_count",
+				// change data type from double -> int64
+				otel.ToggleScalarDataType,
+				otel.RenameLabel("status", "response_code"),
+				otel.AggregateLabels("sum", "response_code"),
+			),
 			otel.AddPrefix("agent.googleapis.com"),
 		),
-		otel.Interval("1m"),
 	}
 }
 
