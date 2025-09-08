@@ -42,11 +42,16 @@ processors:
         - system.filesystem.inodes.usage
         - system.paging.faults
         - system.disk.operation_time
+<<<<<<< HEAD
   filter/otel_0:
+=======
+  filter/logging_metrics_0:
+>>>>>>> c1440b139 (Update goldens.)
     metrics:
       include:
         match_type: strict
         metric_names:
+<<<<<<< HEAD
         - otelcol_process_uptime
         - otelcol_process_memory_rss
         - otelcol_exporter_sent_log_records
@@ -59,6 +64,16 @@ processors:
       - metric.name == "grpc.client.attempt.duration.logging_count" and (not IsMatch(datapoint.attributes["grpc.target"], "logging.googleapis"))
       - metric.name == "grpc.client.attempt.duration.monitoring_count" and (not IsMatch(datapoint.attributes["grpc.target"], "monitoring.googleapis"))
   filter/otel_3:
+=======
+        - fluentbit_stackdriver_requests_total
+        - fluentbit_stackdriver_proc_records_total
+        - fluentbit_stackdriver_retried_records_total
+  filter/otel_1:
+    metrics:
+      datapoint:
+      - metric.name == "grpc.client.attempt.duration_count" and (not IsMatch(datapoint.attributes["grpc.target"], "monitoring.googleapis"))
+  filter/otel_2:
+>>>>>>> c1440b139 (Update goldens.)
     metrics:
       include:
         match_type: strict
@@ -440,6 +455,7 @@ processors:
         label_set:
         - response_code
     - action: update
+<<<<<<< HEAD
       include: otelcol_exporter_send_failed_log_records
       new_name: agent/log_entry_count
       operations:
@@ -451,6 +467,13 @@ processors:
         aggregation_type: sum
         label_set:
         - response_code
+=======
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: agent.googleapis.com/$${1}
+  metricstransform/otel_3:
+    transforms:
+>>>>>>> c1440b139 (Update goldens.)
     - action: update
       include: otelcol_process_uptime
       new_name: agent/uptime
@@ -571,7 +594,7 @@ processors:
     - context: datapoint
       statements:
       - set(time, Now())
-  transform/otel_1:
+  transform/otel_0:
     error_mode: ignore
     metric_statements:
     - context: metric
@@ -671,12 +694,20 @@ service:
       exporters:
       - googlecloud
       processors:
+<<<<<<< HEAD
       - filter/otel_0
       - transform/otel_1
       - filter/otel_2
       - filter/otel_3
       - metricstransform/otel_4
       - filter/otel_5
+=======
+      - transform/prometheus_metrics_0
+      - transform/otel_0
+      - filter/otel_1
+      - filter/otel_2
+      - metricstransform/otel_3
+>>>>>>> c1440b139 (Update goldens.)
       - resourcedetection/_global_0
       receivers:
       - prometheus/otel

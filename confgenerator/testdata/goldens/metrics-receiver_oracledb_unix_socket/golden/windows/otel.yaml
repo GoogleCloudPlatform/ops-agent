@@ -62,20 +62,11 @@ processors:
         - fluentbit_stackdriver_requests_total
         - fluentbit_stackdriver_proc_records_total
         - fluentbit_stackdriver_retried_records_total
-  filter/otel_0:
-    metrics:
-      include:
-        match_type: strict
-        metric_names:
-        - otelcol_process_uptime
-        - otelcol_process_memory_rss
-        - grpc.client.attempt.duration
-        - googlecloudmonitoring/point_count
-  filter/otel_2:
+  filter/otel_1:
     metrics:
       datapoint:
       - metric.name == "grpc.client.attempt.duration_count" and (not IsMatch(datapoint.attributes["grpc.target"], "monitoring.googleapis"))
-  filter/otel_3:
+  filter/otel_2:
     metrics:
       include:
         match_type: strict
@@ -501,7 +492,7 @@ processors:
       - action: update_label
         label: WAIT_CLASS
         new_label: wait_class
-  metricstransform/otel_4:
+  metricstransform/otel_3:
     transforms:
     - action: update
       include: otelcol_process_uptime
@@ -575,6 +566,7 @@ processors:
       statements:
       - set(name, "agent.googleapis.com/oracledb")
       - set(version, "1.0")
+<<<<<<< HEAD
   transform/oracledb_3:
     metric_statements:
     - context: resource
@@ -585,6 +577,9 @@ processors:
       - delete_key(attributes, "service.namespace")
       - delete_key(attributes, "service.version")
   transform/otel_1:
+=======
+  transform/otel_0:
+>>>>>>> c1440b139 (Update goldens.)
     error_mode: ignore
     metric_statements:
     - context: metric
@@ -1344,11 +1339,10 @@ service:
       - googlecloud
       processors:
       - transform/prometheus_metrics_0
-      - filter/otel_0
-      - transform/otel_1
+      - transform/otel_0
+      - filter/otel_1
       - filter/otel_2
-      - filter/otel_3
-      - metricstransform/otel_4
+      - metricstransform/otel_3
       - resourcedetection/_global_0
       receivers:
       - prometheus/prometheus_metrics

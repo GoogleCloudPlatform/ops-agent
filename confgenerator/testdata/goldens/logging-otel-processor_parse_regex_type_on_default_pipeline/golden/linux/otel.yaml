@@ -19,7 +19,7 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  cumulativetodelta/logging_metrics_9:
+  cumulativetodelta/logging_metrics_12:
     include:
       match_type: strict
       metrics:
@@ -30,7 +30,7 @@ processors:
       - fluentbit_log_entry_retry_count
       - fluentbit_request_count
     initial_value: keep
-  deltatocumulative/logging_metrics_12: {}
+  deltatocumulative/logging_metrics_15: {}
   filter/default__pipeline_hostmetrics_0:
     metrics:
       exclude:
@@ -51,22 +51,11 @@ processors:
         - system.filesystem.inodes.usage
         - system.paging.faults
         - system.disk.operation_time
-  filter/logging_metrics_0:
-    metrics:
-      include:
-        match_type: strict
-        metric_names:
-        - fluentbit_stackdriver_requests_total
-        - fluentbit_stackdriver_proc_records_total
-        - fluentbit_stackdriver_retried_records_total
-        - otelcol_exporter_sent_log_records
-        - otelcol_exporter_send_failed_log_records
-        - grpc.client.attempt.duration
-  filter/logging_metrics_2:
+  filter/logging_metrics_1:
     metrics:
       datapoint:
       - metric.name == "grpc.client.attempt.duration_count" and (not IsMatch(datapoint.attributes["grpc.target"], "logging.googleapis"))
-  filter/logging_metrics_3:
+  filter/logging_metrics_2:
     metrics:
       include:
         match_type: strict
@@ -77,20 +66,11 @@ processors:
         - otelcol_exporter_sent_log_records
         - otelcol_exporter_send_failed_log_records
         - grpc.client.attempt.duration_count
-  filter/otel_0:
-    metrics:
-      include:
-        match_type: strict
-        metric_names:
-        - otelcol_process_uptime
-        - otelcol_process_memory_rss
-        - grpc.client.attempt.duration
-        - googlecloudmonitoring/point_count
-  filter/otel_2:
+  filter/otel_1:
     metrics:
       datapoint:
       - metric.name == "grpc.client.attempt.duration_count" and (not IsMatch(datapoint.attributes["grpc.target"], "monitoring.googleapis"))
-  filter/otel_3:
+  filter/otel_2:
     metrics:
       include:
         match_type: strict
@@ -99,8 +79,11 @@ processors:
         - otelcol_process_memory_rss
         - grpc.client.attempt.duration_count
         - googlecloudmonitoring/point_count
-  groupbyattrs/logging_metrics_7: {}
-  interval/logging_metrics_6:
+  groupbyattrs/logging_metrics_6: {}
+  groupbyattrs/logging_metrics_9: {}
+  interval/logging_metrics_5:
+    interval: 1m
+  interval/logging_metrics_8:
     interval: 1m
   metricstransform/fluentbit_1:
     transforms:
@@ -394,7 +377,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/logging_metrics_11:
+  metricstransform/logging_metrics_14:
     transforms:
     - action: combine
       aggregation_type: sum
@@ -429,13 +412,13 @@ processors:
         label_set:
         - response_code
       submatch_case: lower
-  metricstransform/logging_metrics_13:
+  metricstransform/logging_metrics_16:
     transforms:
     - action: update
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/logging_metrics_8:
+  metricstransform/logging_metrics_7:
     transforms:
     - action: update
       include: fluentbit_stackdriver_retried_records_total
@@ -568,7 +551,7 @@ processors:
         label_set:
         - response_code
       submatch_case: lower
-  metricstransform/otel_4:
+  metricstransform/otel_3:
     transforms:
     - action: update
       include: otelcol_process_uptime
@@ -616,7 +599,7 @@ processors:
   resourcedetection/_global_0:
     detectors:
     - gcp
-  transform/logging_metrics_1:
+  transform/logging_metrics_0:
     error_mode: ignore
     metric_statements:
     - context: metric
@@ -627,15 +610,28 @@ processors:
     metric_statements:
     - context: datapoint
       statements:
+      - set(time, TruncateTime(Now(), Duration("1m")))
+      - set(start_time, TruncateTime(start_time, Duration("1m")))
+  transform/logging_metrics_11:
+    error_mode: ignore
+    metric_statements:
+    - context: metric
+      statements:
+      - set(unit, "1")
+  transform/logging_metrics_13:
+    error_mode: ignore
+    metric_statements:
+    - context: datapoint
+      statements:
       - set(start_time, time - Duration("1m"))
-  transform/logging_metrics_4:
+  transform/logging_metrics_3:
     error_mode: ignore
     metric_statements:
     - context: datapoint
       statements:
       - set(time, TruncateTime(time, Duration("1m")))
       - set(start_time, TruncateTime(start_time, Duration("1m")))
-  transform/logging_metrics_5:
+  transform/logging_metrics_4:
     error_mode: ignore
     metric_statements:
     - context: metric
@@ -702,7 +698,7 @@ processors:
     - context: datapoint
       statements:
       - set(time, Now())
-  transform/otel_1:
+  transform/otel_0:
     error_mode: ignore
     metric_statements:
     - context: metric
@@ -831,20 +827,23 @@ service:
       - googlecloud
       processors:
       - transform/prometheus_metrics_0
-      - filter/logging_metrics_0
-      - transform/logging_metrics_1
+      - transform/logging_metrics_0
+      - filter/logging_metrics_1
       - filter/logging_metrics_2
-      - filter/logging_metrics_3
+      - transform/logging_metrics_3
       - transform/logging_metrics_4
-      - transform/logging_metrics_5
-      - interval/logging_metrics_6
-      - groupbyattrs/logging_metrics_7
-      - metricstransform/logging_metrics_8
-      - cumulativetodelta/logging_metrics_9
+      - interval/logging_metrics_5
+      - groupbyattrs/logging_metrics_6
+      - metricstransform/logging_metrics_7
+      - interval/logging_metrics_8
+      - groupbyattrs/logging_metrics_9
       - transform/logging_metrics_10
-      - metricstransform/logging_metrics_11
-      - deltatocumulative/logging_metrics_12
-      - metricstransform/logging_metrics_13
+      - transform/logging_metrics_11
+      - cumulativetodelta/logging_metrics_12
+      - transform/logging_metrics_13
+      - metricstransform/logging_metrics_14
+      - deltatocumulative/logging_metrics_15
+      - metricstransform/logging_metrics_16
       - resourcedetection/_global_0
       receivers:
       - prometheus/prometheus_metrics
@@ -861,11 +860,10 @@ service:
       - googlecloud
       processors:
       - transform/prometheus_metrics_0
-      - filter/otel_0
-      - transform/otel_1
+      - transform/otel_0
+      - filter/otel_1
       - filter/otel_2
-      - filter/otel_3
-      - metricstransform/otel_4
+      - metricstransform/otel_3
       - resourcedetection/_global_0
       receivers:
       - prometheus/prometheus_metrics
