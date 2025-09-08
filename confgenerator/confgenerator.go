@@ -111,33 +111,9 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 		FluentBitPort:       fluentbit.MetricsPort,
 		OtelPort:            otel.MetricsPort,
 		OtelRuntimeDir:      outDir,
+		OtelLogging:         uc.Logging.Service.OTelLogging,
 	}
-
-	receiverPipelines["prometheus_metrics"] = agentSelfMetrics.PrometheusMetricsPipeline()
-
-	pipelines["otel"] = otel.Pipeline{
-		Type:                 "metrics",
-		ReceiverPipelineName: "prometheus_metrics",
-		Processors:           agentSelfMetrics.OtelPipelineProcessors(),
-	}
-
-	pipelines["fluentbit"] = otel.Pipeline{
-		Type:                 "metrics",
-		ReceiverPipelineName: "prometheus_metrics",
-		Processors:           agentSelfMetrics.FluentBitPipelineProcessors(),
-	}
-
-	pipelines["logging_metrics"] = otel.Pipeline{
-		Type:                 "metrics",
-		ReceiverPipelineName: "prometheus_metrics",
-		Processors:           agentSelfMetrics.LoggingMetricsPipelineProcessors(),
-	}
-
-	receiverPipelines["ops_agent"] = agentSelfMetrics.OpsAgentPipeline()
-	pipelines["ops_agent"] = otel.Pipeline{
-		Type:                 "metrics",
-		ReceiverPipelineName: "ops_agent",
-	}
+	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines)
 
 	exp_otlp_exporter := experimentsFromContext(ctx)["otlp_exporter"]
 	extensions := map[string]interface{}{}
