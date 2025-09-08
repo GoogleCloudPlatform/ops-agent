@@ -257,22 +257,6 @@ func (r AgentSelfMetrics) OtelAndFluentbitLoggingMetricsPipelineProcessors() []o
 			"otelcol_exporter_send_failed_log_records",
 			"grpc.client.attempt.duration_count",
 		),
-		// Truncate all timestamps of fluent-bit and otel metrics to align for aggregation.
-		otel.Transform("metric", "datapoint",
-			[]ottl.Statement{
-				ottl.TruncateTimeAll("1m"),
-				ottl.TruncateStartTimeAll("1m"),
-			},
-		),
-		// Some metrics are missing metric unit. Needed to combine metrics.
-		otel.Transform("metric", "metric",
-			[]ottl.Statement{
-				ottl.SetMetricUnitAll("1"),
-			},
-		),
-		// The processors "interval" and "groupbyattrs" batch metrics in a 1 minute interval.
-		otel.Interval("1m"),
-		otel.CondenseResourceMetrics(),
 		// Format fluentbit and otel logging metrics before aggregation.
 		otel.MetricsTransform(
 			otel.RenameMetric("fluentbit_stackdriver_retried_records_total", "fluentbit_log_entry_retry_count",
