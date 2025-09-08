@@ -320,8 +320,25 @@ func (r AgentSelfMetrics) OtelAndFluentbitLoggingMetricsPipelineProcessors() []o
 			otel.CombineMetrics("^otel_log_entry_count$$", "otel_log_entry_count",
 				otel.AggregateLabels("sum", "response_code")),
 		),
-		// Aggregating delta metrics from fluent-bit and otel logging will.
-		// Keep the initial value so the resulting cumulative metric at the end of the pipeline.
+		// The processors "interval" and "groupbyattrs" batch metrics in a 1 minute interval.
+		otel.Interval("1m"),
+		otel.CondenseResourceMetrics(),
+		// Truncate all timestamps of fluent-bit and otel metrics to align for aggregation.
+		otel.Transform("metric", "datapoint",
+			[]ottl.Statement{
+				`set(time, TruncateTime(Now(), Duration("1m")))`,
+				// ottl.TruncateTimeAll("1m"),
+				ottl.TruncateStartTimeAll("1m"),
+			},
+		),
+		// Some metrics are missing metric unit. Needed to combine metrics.
+		otel.Transform("metric", "metric",
+			[]ottl.Statement{
+				ottl.SetMetricUnitAll("1"),
+			},
+		),
+		// Aggregating as delta metrics isolates data for the current 1m interval only.
+		// Keep the initial value so the resulting cumulative metric has all data.
 		otel.CumulativeToDeltaWithOptions("keep",
 			"otel_log_entry_count", "otel_log_entry_retry_count", "otel_request_count",
 			"fluentbit_log_entry_count", "fluentbit_log_entry_retry_count", "fluentbit_request_count",
