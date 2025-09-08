@@ -109,6 +109,23 @@ targets:
           - ubuntu-os-cloud:ubuntu-2404-lts-arm64
           exhaustive:
           - ubuntu-os-cloud:ubuntu-minimal-2404-lts-arm64
+  plucky:
+    os_versions: [ubuntu-25.04*]
+    package_extension:
+      deb
+    architectures:
+      x86_64:
+        test_distros:
+          representative:
+          - ubuntu-os-cloud:ubuntu-2504-amd64
+          exhaustive:
+          - ubuntu-os-cloud:ubuntu-minimal-2504-amd64
+      aarch64:
+        test_distros:
+          representative:
+          - ubuntu-os-cloud:ubuntu-2504-arm64
+          exhaustive:
+          - ubuntu-os-cloud:ubuntu-minimal-2504-arm64
   rockylinux9:
     os_versions: [centos-9*,rocky-9*,rhel-9*]
     package_extension:
