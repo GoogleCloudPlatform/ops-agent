@@ -28,6 +28,8 @@ sudo chown -R solr:solr /opt/solr*
 
 sudo sed -i '/ENABLE_REMOTE_JMX_OPTS/s/false/true/' /etc/default/solr.in.sh
 sudo sed -i '/ENABLE_REMOTE_JMX_OPTS/s/^# *//' /etc/default/solr.in.sh
+
+# Adjust stack size due to bigger page size on aarch64 architecture
 if [[ "$ID" == "rocky" && "$MAJOR_VERSION_ID" == "8" && "$(uname -m)" == "aarch64" ]]; then
     sudo sed -i '$a\SOLR_JAVA_STACK_SIZE="-Xss512k"' /etc/default/solr.in.sh
 fi
