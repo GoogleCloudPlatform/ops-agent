@@ -19,6 +19,18 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
+  cumulativetodelta/logging_metrics_9:
+    include:
+      match_type: strict
+      metrics:
+      - otel_log_entry_count
+      - otel_log_entry_retry_count
+      - otel_request_count
+      - fluentbit_log_entry_count
+      - fluentbit_log_entry_retry_count
+      - fluentbit_request_count
+    initial_value: keep
+  deltatocumulative/logging_metrics_12: {}
   filter/default__pipeline_hostmetrics_0:
     metrics:
       exclude:
@@ -88,8 +100,6 @@ processors:
         - grpc.client.attempt.duration_count
         - googlecloudmonitoring/point_count
   groupbyattrs/logging_metrics_7: {}
-  interval/logging_metrics_11:
-    interval: 1m
   interval/logging_metrics_6:
     interval: 1m
   metricstransform/fluentbit_1:
@@ -384,7 +394,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/logging_metrics_10:
+  metricstransform/logging_metrics_11:
     transforms:
     - action: combine
       aggregation_type: sum
@@ -419,6 +429,8 @@ processors:
         label_set:
         - response_code
       submatch_case: lower
+  metricstransform/logging_metrics_13:
+    transforms:
     - action: update
       include: ^(.*)$$
       match_type: regexp
@@ -610,6 +622,12 @@ processors:
     - context: metric
       statements:
       - extract_count_metric(true) where name == "grpc.client.attempt.duration"
+  transform/logging_metrics_10:
+    error_mode: ignore
+    metric_statements:
+    - context: datapoint
+      statements:
+      - set(start_time, time - Duration("1m"))
   transform/logging_metrics_4:
     error_mode: ignore
     metric_statements:
@@ -623,17 +641,6 @@ processors:
     - context: metric
       statements:
       - set(unit, "1")
-  transform/logging_metrics_9:
-    error_mode: ignore
-    metric_statements:
-    - context: metric
-      statements:
-      - copy_metric("otel_log_entry_count_original") where name == "otel_log_entry_count"
-      - copy_metric("otel_log_entry_retry_count_original") where name == "otel_log_entry_retry_count"
-      - copy_metric("otel_request_count_original") where name == "otel_request_count"
-      - copy_metric("fluentbit_log_entry_count_original") where name == "fluentbit_log_entry_count"
-      - copy_metric("fluentbit_log_entry_retry_count_original") where name == "fluentbit_log_entry_retry_count"
-      - copy_metric("fluentbit_request_count_original") where name == "fluentbit_request_count"
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
@@ -651,6 +658,7 @@ processors:
     - context: metric
       statements:
       - delete_key(resource.attributes, "service.name")
+      - delete_key(resource.attributes, "service.version")
       - delete_key(resource.attributes, "service.instance.id")
       - delete_key(resource.attributes, "server.port")
       - delete_key(resource.attributes, "url.scheme")
@@ -853,9 +861,11 @@ service:
       - interval/logging_metrics_6
       - groupbyattrs/logging_metrics_7
       - metricstransform/logging_metrics_8
-      - transform/logging_metrics_9
-      - metricstransform/logging_metrics_10
-      - interval/logging_metrics_11
+      - cumulativetodelta/logging_metrics_9
+      - transform/logging_metrics_10
+      - metricstransform/logging_metrics_11
+      - deltatocumulative/logging_metrics_12
+      - metricstransform/logging_metrics_13
       - resourcedetection/_global_0
       receivers:
       - prometheus/prometheus_metrics
