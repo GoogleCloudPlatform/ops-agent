@@ -2,8 +2,10 @@ import 'common.gcl' as common
 
 config build = common.third_party_apps_test {
   params {
-    platforms = []
-
+    platforms = [ubuntu-2504-amd64,ubuntu-2504-arm64]
+    // DO NOT MERGE: Temporarily disable smart test skipping for
+    // this distro so that all apps actually run.
+    SHORT = 'false'
     environment {
       // The release builds run as a different service account.
       TRANSFERS_BUCKET = 'stackdriver-test-143416-file-transfers'
