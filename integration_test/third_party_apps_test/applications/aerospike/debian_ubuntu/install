@@ -42,6 +42,7 @@ case $ID in
         case "$VERSION_ID" in
             22*) ubuntu_version="ubuntu22.04";;
             24*) ubuntu_version="ubuntu24.04";;
+            24*) ubuntu_version="ubuntu25.04";;
             *) echo "Found version: $VERSION_ID, supported versions are 18/20/22"
         esac
         os_version=$ubuntu_version
@@ -51,7 +52,7 @@ esac
 case $os_version in
     debian11|ubuntu22.04)
         install_6;;
-    ubuntu24.04)
+    ubuntu24.04|ubuntu25.04)
         install_7;;
     *)  echo "Found os_version: $os_version, not in supported list";;
 esac
