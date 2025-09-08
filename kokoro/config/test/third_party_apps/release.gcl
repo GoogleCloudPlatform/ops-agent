@@ -2,10 +2,10 @@ import 'common.gcl' as common
 
 config build = common.third_party_apps_test {
   params {
-    // DO NOT MERGE: Temporarily disable smart test skipping for
-    // this distro so that all apps actually run.
-    SHORT = 'false'
     environment {
+      // DO NOT MERGE: Temporarily disable smart test skipping for
+      // this distro so that all apps actually run.
+      SHORT = 'false'
       // The release builds run as a different service account.
       TRANSFERS_BUCKET = 'stackdriver-test-143416-file-transfers'
       SERVICE_EMAIL =
