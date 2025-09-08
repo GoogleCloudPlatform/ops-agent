@@ -1,0 +1,176 @@
+- entries:
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: ""
+      remoteIp: 127.0.0.1
+      requestMethod: GET
+      requestSize: 0.0
+      requestUrl: /index.html
+      responseSize: 2326.0
+      serverIp: ""
+      status: 200.0
+      userAgent: ""
+    jsonPayload: {}
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_access
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2000-10-10T20:55:36.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: ""
+      remoteIp: "::1"
+      requestMethod: GET
+      requestSize: 0.0
+      requestUrl: /
+      responseSize: 10701.0
+      serverIp: ""
+      status: 200.0
+      userAgent: curl/7.64.0
+    jsonPayload: {}
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_access
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2021-08-26T16:49:43.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.0
+      referer: http://www.example.com/start.html
+      remoteIp: 192.168.1.100
+      requestMethod: GET
+      requestSize: 0.0
+      requestUrl: /apache_pb.gif
+      responseSize: 2326.0
+      serverIp: ""
+      status: 200.0
+      userAgent: Mozilla/4.08 [en] (Win98; I ;Nav)
+    jsonPayload:
+      user: frank
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_access
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2000-10-10T20:55:36.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: https://example.com/register
+      remoteIp: 10.0.0.1
+      requestMethod: POST
+      requestSize: 0.0
+      requestUrl: /api/users
+      responseSize: 445.0
+      serverIp: ""
+      status: 201.0
+      userAgent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
+    jsonPayload: {}
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_access
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2021-08-26T16:50:15.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: ""
+      remoteIp: 203.0.113.4
+      requestMethod: GET
+      requestSize: 0.0
+      requestUrl: /admin/dashboard
+      responseSize: 1234.0
+      serverIp: ""
+      status: 403.0
+      userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
+    jsonPayload:
+      user: admin
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_access
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2021-08-26T16:51:22.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: https://example.com/
+      remoteIp: 192.168.0.50
+      requestMethod: GET
+      requestSize: 0.0
+      requestUrl: /images/logo.png
+      responseSize: 512.0
+      serverIp: ""
+      status: 404.0
+      userAgent: Mozilla/5.0 (iPhone; CPU iPhone OS 14_6 like Mac OS X) AppleWebKit/605.1.15
+    jsonPayload: {}
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_access
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2021-08-26T16:52:10.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: https://api.example.com/docs
+      remoteIp: 172.16.0.1
+      requestMethod: PUT
+      requestSize: 0.0
+      requestUrl: /api/data/123
+      responseSize: 789.0
+      serverIp: ""
+      status: 500.0
+      userAgent: python-requests/2.25.1
+    jsonPayload: {}
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_access
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2021-08-26T16:53:05.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: ""
+      remoteIp: 10.1.1.1
+      requestMethod: DELETE
+      requestSize: 0.0
+      requestUrl: /api/items/456
+      responseSize: 0.0
+      serverIp: ""
+      status: 204.0
+      userAgent: PostmanRuntime/7.28.0
+    jsonPayload:
+      user: user123
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/nginx_access
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2021-08-26T16:54:30.000000000Z
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance

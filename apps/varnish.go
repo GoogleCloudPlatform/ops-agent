@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
 
@@ -48,7 +47,10 @@ func (r MetricsReceiverVarnish) Pipelines(_ context.Context) ([]otel.ReceiverPip
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+			otel.TransformationMetrics(
+				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+				otel.SetScopeVersion("1.0"),
+			),
 		}},
 	}}, nil
 }
@@ -57,36 +59,25 @@ func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverVarnish{} })
 }
 
-type LoggingProcessorVarnish struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
+type LoggingProcessorMacroVarnish struct {
 }
 
-func (LoggingProcessorVarnish) Type() string {
+func (LoggingProcessorMacroVarnish) Type() string {
 	return "varnish"
 }
 
-func (p LoggingProcessorVarnish) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
+func (p LoggingProcessorMacroVarnish) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
 	// Logging documentation: https://github.com/varnishcache/varnish-cache/blob/04455d6c3d8b2d810007239cb1cb2b740d7ec8ab/doc/sphinx/reference/varnishncsa.rst#format
 	// Sample line: 127.0.0.1 - - [02/Mar/2022:15:55:05 +0000] "GET http://localhost:8080/test HTTP/1.1" 404 273 "-" "curl/7.64.0"
-	return genericAccessLogParser(ctx, p.Type(), tag, uid)
+	return genericAccessLogParser(ctx, p.Type())
 }
 
-type LoggingReceiverVarnish struct {
-	LoggingProcessorVarnish `yaml:",inline"`
-	ReceiverMixin           confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
-}
-
-func (r LoggingReceiverVarnish) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.ReceiverMixin.IncludePaths) == 0 {
-		r.ReceiverMixin.IncludePaths = []string{"/var/log/varnish/varnishncsa.log"}
+func loggingReceiverFilesMixinVarnish() confgenerator.LoggingReceiverFilesMixin {
+	return confgenerator.LoggingReceiverFilesMixin{
+		IncludePaths: []string{"/var/log/varnish/varnishncsa.log"},
 	}
-
-	c := r.ReceiverMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorVarnish.Components(ctx, tag, "varnish")...)
-	return c
 }
 
 func init() {
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorVarnish{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverVarnish{} })
+	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroVarnish](loggingReceiverFilesMixinVarnish)
 }

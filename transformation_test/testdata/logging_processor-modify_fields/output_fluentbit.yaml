@@ -1,0 +1,26 @@
+- entries:
+  - jsonPayload:
+      hello: world
+      message: foo
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      hello: world
+      message: goo
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      hello: world
+      message: yes maybe no
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance

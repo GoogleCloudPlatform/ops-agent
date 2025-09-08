@@ -1,0 +1,6 @@
+127.0.0.1 - - [02/Mar/2022:15:55:05 +0000] "GET http://localhost:8080/test HTTP/1.1" 404 273 "-" "curl/7.64.0"
+192.168.1.10 - john [03/Mar/2022:10:12:45 +0000] "POST /api/v1/login HTTP/1.1" 200 512 "https://example.com/login" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+10.0.0.5 - - [04/Mar/2022:08:30:12 +0000] "GET /static/image.png HTTP/2.0" 304 0 "-" "curl/7.68.0"
+203.0.113.42 - alice [05/Mar/2022:22:01:59 +0000] "PUT /user/profile HTTP/1.1" 401 128 "https://example.com/profile" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"
+127.0.0.1 - - [06/Mar/2022:14:23:11 +0000] "DELETE /api/v1/item/123 HTTP/1.1" 204 0 "-" "PostmanRuntime/7.28.4"
+172.16.0.2 - bob [07/Mar/2022:19:45:33 +0000] "GET /dashboard HTTP/1.1" 500 1024 "https://example.com/" "Mozilla/5.0 (X11; Linux x86_64)"

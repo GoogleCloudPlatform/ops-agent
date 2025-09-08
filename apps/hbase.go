@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
 
@@ -53,7 +52,10 @@ func (r MetricsReceiverHbase) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 						otel.AggregateLabels("max", "state"),
 					),
 				),
-				otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+				otel.TransformationMetrics(
+					otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+					otel.SetScopeVersion("1.0"),
+				),
 			},
 		)
 }
@@ -62,47 +64,45 @@ func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverHbase{} })
 }
 
-type LoggingProcessorHbaseSystem struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
+type LoggingProcessorMacroHbaseSystem struct {
 }
 
-func (LoggingProcessorHbaseSystem) Type() string {
+func (LoggingProcessorMacroHbaseSystem) Type() string {
 	return "hbase_system"
 }
 
-func (p LoggingProcessorHbaseSystem) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseMultilineRegex{
-		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
-			Parsers: []confgenerator.RegexParser{
-				{
-					// Sample line: 2022-01-20 20:38:18,856 INFO  [main] master.HMaster: STARTING service HMaster
-					// Sample line: 2022-01-20 20:38:20,304 INFO  [main] metrics.MetricRegistries: Loaded MetricRegistries class org.apache.hadoop.hbase.metrics.impl.MetricRegistriesImpl
-					// Sample line: 2022-01-20 20:38:20,385 WARN  [main] util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
-					Regex: `^(?<time>\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\,\d{3,6})\s(?<level>[A-Z]+)\s{2}\[(?<module>[^\]]+)\]\s(?<message>(?<source>[\w\.]+)[^\n]+)`,
-					Parser: confgenerator.ParserShared{
-						TimeKey: "time",
-						//
-						TimeFormat: "%Y-%m-%d %H:%M:%S,%L",
+func (p LoggingProcessorMacroHbaseSystem) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
+	return []confgenerator.InternalLoggingProcessor{
+		confgenerator.LoggingProcessorParseMultilineRegex{
+			LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
+				Parsers: []confgenerator.RegexParser{
+					{
+						// Sample line: 2022-01-20 20:38:18,856 INFO  [main] master.HMaster: STARTING service HMaster
+						// Sample line: 2022-01-20 20:38:20,304 INFO  [main] metrics.MetricRegistries: Loaded MetricRegistries class org.apache.hadoop.hbase.metrics.impl.MetricRegistriesImpl
+						// Sample line: 2022-01-20 20:38:20,385 WARN  [main] util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+						Regex: `^(?<time>\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\,\d{3,6})\s(?<level>[A-Z]+)\s{2}\[(?<module>[^\]]+)\]\s(?<message>(?<source>[\w\.]+)[^\n]+)`,
+						Parser: confgenerator.ParserShared{
+							TimeKey: "time",
+							//
+							TimeFormat: "%Y-%m-%d %H:%M:%S,%L",
+						},
 					},
 				},
 			},
-		},
-		Rules: []confgenerator.MultilineRule{
-			{
-				StateName: "start_state",
-				NextState: "cont",
-				Regex:     `^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\,\d{3,6}`,
+			Rules: []confgenerator.MultilineRule{
+				{
+					StateName: "start_state",
+					NextState: "cont",
+					Regex:     `^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\,\d{3,6}`,
+				},
+				{
+					StateName: "cont",
+					NextState: "cont",
+					Regex:     `^(?!\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\,\d{3,6})`,
+				},
 			},
-			{
-				StateName: "cont",
-				NextState: "cont",
-				Regex:     `^(?!\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\,\d{3,6})`,
-			},
 		},
-	}.Components(ctx, tag, uid)
-
-	// https://hadoop.apache.org/docs/r2.7.0/hadoop-project-dist/hadoop-common/CommandsManual.html
-	c = append(c,
+		// https://hadoop.apache.org/docs/r2.7.0/hadoop-project-dist/hadoop-common/CommandsManual.html
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				"severity": {
@@ -119,30 +119,19 @@ func (p LoggingProcessorHbaseSystem) Components(ctx context.Context, tag string,
 				},
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(ctx, tag, uid)...,
-	)
-
-	return c
+		},
+	}
 }
 
-type SystemLoggingReceiverHbase struct {
-	LoggingProcessorHbaseSystem `yaml:",inline"`
-	ReceiverMixin               confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
-}
-
-func (r SystemLoggingReceiverHbase) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.ReceiverMixin.IncludePaths) == 0 {
-		r.ReceiverMixin.IncludePaths = []string{
+func loggingReceiverFilesMixinHbaseSystem() confgenerator.LoggingReceiverFilesMixin {
+	return confgenerator.LoggingReceiverFilesMixin{
+		IncludePaths: []string{
 			"/opt/hbase/logs/hbase-*-regionserver-*.log",
 			"/opt/hbase/logs/hbase-*-master-*.log",
-		}
+		},
 	}
-	c := r.ReceiverMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorHbaseSystem.Components(ctx, tag, "hbase_system")...)
-	return c
 }
 
 func init() {
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorHbaseSystem{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &SystemLoggingReceiverHbase{} })
+	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroHbaseSystem](loggingReceiverFilesMixinHbaseSystem)
 }

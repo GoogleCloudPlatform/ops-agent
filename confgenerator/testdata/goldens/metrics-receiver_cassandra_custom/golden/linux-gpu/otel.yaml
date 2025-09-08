@@ -43,7 +43,6 @@ processors:
       exclude:
         match_type: strict
         metric_names:
-        - system.cpu.time
         - system.network.dropped
         - system.filesystem.inodes.usage
         - system.paging.faults
@@ -469,13 +468,16 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  modifyscope/cassandra_2:
-    override_scope_name: agent.googleapis.com/cassandra
-    override_scope_version: "1.0"
   normalizesums/cassandra_0: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
+  transform/cassandra_2:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "agent.googleapis.com/cassandra")
+      - set(version, "1.0")
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
@@ -544,7 +546,7 @@ service:
       processors:
       - normalizesums/cassandra_0
       - metricstransform/cassandra_1
-      - modifyscope/cassandra_2
+      - transform/cassandra_2
       - resourcedetection/_global_0
       receivers:
       - jmx/cassandra
@@ -598,4 +600,12 @@ service:
       - prometheus/otel
   telemetry:
     metrics:
-      address: 0.0.0.0:20201
+      readers:
+      - pull:
+          exporter:
+            prometheus:
+              host: 0.0.0.0
+              port: 20201
+              without_scope_info: true
+              without_type_suffix: true
+              without_units: true

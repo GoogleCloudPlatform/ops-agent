@@ -188,11 +188,15 @@ func Filter(dataType, context string, expressions []ottl.Value) Component {
 func TransformationMetrics(queries ...TransformQuery) Component {
 	metricQueryStrings := []string{}
 	datapointQueryStrings := []string{}
+	scopeQueryStrings := []string{}
+
 	for _, q := range queries {
 		switch q.Context {
 		case Metric:
 			metricQueryStrings = append(metricQueryStrings, string(q.Statement))
-		default:
+		case Scope:
+			scopeQueryStrings = append(scopeQueryStrings, string(q.Statement))
+		case Datapoint:
 			datapointQueryStrings = append(datapointQueryStrings, string(q.Statement))
 		}
 	}
@@ -213,6 +217,14 @@ func TransformationMetrics(queries ...TransformQuery) Component {
 		}
 		metricStatements = append(metricStatements, datapointMetricStatement)
 	}
+	if len(scopeQueryStrings) != 0 {
+		scopeMetricStatement := map[string]any{
+			"context":    "scope",
+			"statements": scopeQueryStrings,
+		}
+		metricStatements = append(metricStatements, scopeMetricStatement)
+	}
+
 	return Component{
 		Type: "transform",
 		Config: map[string]any{
@@ -227,6 +239,7 @@ type TransformQueryContext string
 const (
 	Metric    TransformQueryContext = "metric"
 	Datapoint TransformQueryContext = "datapoint"
+	Scope     TransformQueryContext = "scope"
 )
 
 // TransformQuery is a type wrapper for query expressions supported by the transform
@@ -329,6 +342,22 @@ func RetainResource(resourceAttributeKeys ...string) TransformQuery {
 	return TransformQuery{
 		Context:   Datapoint,
 		Statement: fmt.Sprintf(`keep_keys(resource.attributes, [%s])`, strings.Join(resourceAttributeKeys[:], ",")),
+	}
+}
+
+// SetScopeName returns a metrics transform that sets the name of the instrumentation scope
+func SetScopeName(newName string) TransformQuery {
+	return TransformQuery{
+		Context:   Scope,
+		Statement: fmt.Sprintf(`set(name, "%s")`, newName),
+	}
+}
+
+// SetScopeVersion returns a metrics transform that sets the version of the instrumentation scope
+func SetScopeVersion(newVersion string) TransformQuery {
+	return TransformQuery{
+		Context:   Scope,
+		Statement: fmt.Sprintf(`set(version, "%s")`, newVersion),
 	}
 }
 
@@ -486,19 +515,6 @@ func CondenseResourceMetrics() Component {
 	}
 }
 
-// ModifyInstrumentationScope sets the instrumentation scope name and version
-// fields which will later be exported to Cloud Monitoring metric labels.
-// The name will always be prefixed with "agent.googleapis.com/".
-func ModifyInstrumentationScope(name string, version string) Component {
-	return Component{
-		Type: "modifyscope",
-		Config: map[string]interface{}{
-			"override_scope_name":    "agent.googleapis.com/" + name,
-			"override_scope_version": version,
-		},
-	}
-}
-
 // GroupByGMPAttrs moves the "namespace", "cluster", and "location"
 // metric attributes to resource attributes. The
 // googlemanagedprometheus exporter will use these resource attributes
@@ -572,4 +588,30 @@ func ResourceTransform(attributes map[string]string, override bool) Component {
 		Type:   "resource",
 		Config: config,
 	}
+}
+
+func MetricStartTime() Component {
+	return Component{
+		Type:   "metricstarttime",
+		Config: map[string]string{"strategy": "subtract_initial_point"},
+	}
+}
+
+func GCPProjectID(projectID string) Component {
+	return ResourceTransform(
+		map[string]string{"gcp.project_id": projectID}, false,
+	)
+}
+
+// MetricUnknownCounter is necessary to handle prometheus unknown type metrics
+// go/ops-agent-otlp-migration
+func MetricUnknownCounter() Component {
+	return Transform("metric", "metric", []ottl.Statement{
+		// Copy the unknown metric, but add a suffix so we can distinguish the copy from the original.
+		"copy_metric(Concat([metric.name, \"unknowncounter\"], \":\")) where metric.metadata[\"prometheus.type\"] == \"unknown\" and not HasSuffix(metric.name, \":unknowncounter\")",
+		// Change the copy to a monotonic, cumulative sum.
+		"convert_gauge_to_sum(\"cumulative\", true) where HasSuffix(metric.name, \":unknowncounter\")",
+		// Delete the extra suffix once we are done.
+		"set(metric.name, Substring(metric.name, 0, Len(metric.name)-Len(\":unknowncounter\"))) where HasSuffix(metric.name, \":unknowncounter\")",
+	})
 }

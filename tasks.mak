@@ -28,6 +28,7 @@ makefile_symlink:
 install_tools:
 	go install github.com/google/yamlfmt/cmd/yamlfmt@latest
 	go install github.com/google/addlicense@master
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 
 ############
 # Build
@@ -43,13 +44,11 @@ build:
 rebuild_submodules: fluent_bit_local otelopscol_local
 
 .PHONY: fluent_bit_local
-fluent_bit_local:
-	bash ./builds/fluent_bit.sh $(PWD)/dist
+fluent_bit_local: dist/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit
 
 SKIP_JAVA ?= true
 .PHONY: otelopscol_local
-otelopscol_local:
-	SKIP_OTEL_JAVA=${SKIP_JAVA} bash ./builds/otel.sh $(PWD)/dist
+otelopscol_local: dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol
 
 ############
 # Tools
@@ -78,6 +77,15 @@ yaml_lint:
 .PHONY: compile_dockerfile
 compile_dockerfile:
 	go run ./dockerfiles
+
+# TODO: Enable more linters in the future
+.PHONY: lint
+lint:
+	golangci-lint run --allow-parallel-runners --enable-only=gci --timeout=20m
+
+.PHONY: lint-fix
+lint-fix:
+	golangci-lint run --fix --allow-parallel-runners --enable-only=gci --timeout=20m
 
 ############
 # Unit Tests
@@ -113,10 +121,10 @@ endif
 	touch ./confgenerator/testdata/goldens/$(TEST_NAME)/input.yaml
 
 dist/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit:
-	$(MAKE) fluent_bit_local
+	bash ./builds/fluent_bit.sh $(PWD)/dist
 
 dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol:
-	$(MAKE) otelopscol_local
+	SKIP_OTEL_JAVA=${SKIP_JAVA} bash ./builds/otel.sh $(PWD)/dist
 
 .PHONY: transformation_test
 transformation_test: dist/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol
@@ -156,7 +164,7 @@ integration_tests:
 third_party_apps_test:
 	ZONES="${ZONES}" \
 	PLATFORMS="${PLATFORMS}" \
-	go test -v ./integration_test/third_party_apps_test.go \
+	go test -v ./integration_test/third_party_apps_test/main_test.go \
 	-test.parallel=1000 \
 	-tags=integration_test \
 	-timeout=4h

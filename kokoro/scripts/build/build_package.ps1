@@ -1,3 +1,19 @@
+<#
+ Copyright 2025 Google LLC
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+#>
+
 Set-PSDebug -Trace 1
 $ErrorActionPreference = 'Stop'
 $global:ProgressPreference = 'SilentlyContinue'
@@ -83,6 +99,7 @@ Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/*.goo" -Destination "$env:KOKORO_
 Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/*.pdb" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
 Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/*.dll" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
 # Copy Ops Agent UAP Plugin tarball to the result directory.
+(Get-FileHash -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/google-cloud-ops-agent-plugin*.tar.gz" -Algorithm SHA256).Hash.ToLower() | Out-File -FilePath "$env:KOKORO_ARTIFACTS_DIR/result/google-cloud-ops-agent-plugin-sha256.txt" -Encoding ascii
 Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/google-cloud-ops-agent-plugin*.tar.gz" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
 
 # If Kokoro is being triggered by Louhi, then Louhi needs to be able to
@@ -99,4 +116,5 @@ if ($env:_LOUHI_TAG_NAME -ne $null) {
   $gcs_bucket="gs://${env:_STAGING_ARTIFACTS_PROJECT_ID}-ops-agent-releases/${ver}/${ref}/${target}/${arch}/"
   gsutil cp "$env:KOKORO_ARTIFACTS_DIR/result/*.goo"  "${gcs_bucket}"
   gsutil cp "$env:KOKORO_ARTIFACTS_DIR/result/google-cloud-ops-agent-plugin*.tar.gz"  "${gcs_bucket}"
+  gsutil cp "$env:KOKORO_ARTIFACTS_DIR/result/google-cloud-ops-agent-plugin-sha256.txt"  "${gcs_bucket}"
 }

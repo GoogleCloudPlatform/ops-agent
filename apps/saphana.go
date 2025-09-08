@@ -18,45 +18,55 @@ import (
 	"context"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
 
-type LoggingProcessorSapHanaTrace struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
-}
+type LoggingProcessorMacroSapHanaTrace struct{}
 
-func (LoggingProcessorSapHanaTrace) Type() string {
+func (LoggingProcessorMacroSapHanaTrace) Type() string {
 	return "saphana"
 }
 
-func (p LoggingProcessorSapHanaTrace) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseRegex{
-		// Undocumented Format: [thread_id]{connection_id}[transaction_id/update_transaction_id] timestamp severity_flag component source_file : message
-		// Sample line: [7893]{200068}[20/40637286] 2021-11-04 13:13:25.025767 w FileIO           FileSystem.cpp(00085) : Unsupported file system "ext4" for "/usr/sap/MMM/SYS/global/hdb/data/mnt00001"
-		// Sample line: [18048]{-1}[-1/-1] 2020-11-10 12:24:23.424024 i Crypto           RootKeyStoreAccessor.cpp(00818) : Created new root key /usr/sap/MMM/SYS/global/hdb/security/ssfs:HDB_SERVER/3/PERSISTENCE
-		// Sample line: [18048]{-1}[-1/-1] 2020-11-10 12:24:20.988943 e commlib          commlibImpl.cpp(00986) : ERROR: comm::connect to Host: 127.0.0.1, port: 30001, Error: exception  1: no.2110017  (Basis/IO/Stream/impl/NetworkChannel.cpp:2989)
-		// 				System error: SO_ERROR has pending error for socket. rc=111: Connection refused. channel={<NetworkChannel>={<NetworkChannelBase>={this=139745749931736, fd=21, refCnt=1, local=127.0.0.1/58654_tcp, remote=127.0.0.1/30001_tcp, state=ConnectWait, pending=[----]}}}
-		// 				exception throw location:
-		// 				 1: 0x00007f1937d9095c in .LTHUNK27.lto_priv.2256+0x558 (libhdbbasis.so)
-		// 				 ...
-		//				 25: 0x0000563f44888831 in _GLOBAL__sub_I_setServiceStarting.cpp.lto_priv.239+0x520 (hdbnsutil)
-		Regex: `^\[(?<thread_id>\d+)\]\{(?<connection_id>-?\d+)\}\[(?<transaction_id>-?\d+)\/(?<update_transaction_id>-?\d+)\]\s+(?<time>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d{3,6}\d+)\s+(?<severity_flag>\w+)\s+(?<component>\w+)\s+(?<source_file>[\w\.]+)(?:\((?<source_line>\d+)\))\s+:\s+(?<message>[\s\S]+)`,
-		ParserShared: confgenerator.ParserShared{
-			TimeKey:    "time",
-			TimeFormat: "%Y-%m-%d %H:%M:%S.%L",
-			Types: map[string]string{
-				"thread_id":             "int",
-				"connection_id":         "int",
-				"transaction_id":        "int",
-				"update_transaction_id": "int",
-				"source_line":           "int",
+func (p LoggingProcessorMacroSapHanaTrace) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
+	return []confgenerator.InternalLoggingProcessor{
+		confgenerator.LoggingProcessorParseMultilineRegex{
+			Rules: []confgenerator.MultilineRule{
+				{
+					StateName: "start_state",
+					NextState: "cont",
+					Regex:     `^\[\d+\]\{-?\d+\}`,
+				},
+				{
+					StateName: "cont",
+					NextState: "cont",
+					Regex:     `^(?!\[\d+\]\{-?\d+\})`,
+				},
 			},
 		},
-	}.Components(ctx, tag, uid)
-
-	c = append(c,
+		confgenerator.LoggingProcessorParseRegex{
+			// Undocumented Format: [thread_id]{connection_id}[transaction_id/update_transaction_id] timestamp severity_flag component source_file : message
+			// Sample line: [7893]{200068}[20/40637286] 2021-11-04 13:13:25.025767 w FileIO           FileSystem.cpp(00085) : Unsupported file system "ext4" for "/usr/sap/MMM/SYS/global/hdb/data/mnt00001"
+			// Sample line: [18048]{-1}[-1/-1] 2020-11-10 12:24:23.424024 i Crypto           RootKeyStoreAccessor.cpp(00818) : Created new root key /usr/sap/MMM/SYS/global/hdb/security/ssfs:HDB_SERVER/3/PERSISTENCE
+			// Sample line: [18048]{-1}[-1/-1] 2020-11-10 12:24:20.988943 e commlib          commlibImpl.cpp(00986) : ERROR: comm::connect to Host: 127.0.0.1, port: 30001, Error: exception  1: no.2110017  (Basis/IO/Stream/impl/NetworkChannel.cpp:2989)
+			// 				System error: SO_ERROR has pending error for socket. rc=111: Connection refused. channel={<NetworkChannel>={<NetworkChannelBase>={this=139745749931736, fd=21, refCnt=1, local=127.0.0.1/58654_tcp, remote=127.0.0.1/30001_tcp, state=ConnectWait, pending=[----]}}}
+			// 				exception throw location:
+			// 				 1: 0x00007f1937d9095c in .LTHUNK27.lto_priv.2256+0x558 (libhdbbasis.so)
+			// 				 ...
+			//				 25: 0x0000563f44888831 in _GLOBAL__sub_I_setServiceStarting.cpp.lto_priv.239+0x520 (hdbnsutil)
+			Regex: `^\[(?<thread_id>\d+)\]\{(?<connection_id>-?\d+)\}\[(?<transaction_id>-?\d+)\/(?<update_transaction_id>-?\d+)\]\s+(?<time>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d{3,6}\d+)\s+(?<severity_flag>\w+)\s+(?<component>\w+)\s+(?<source_file>[\w\.]+)(?:\((?<source_line>\d+)\))\s+:\s+(?<message>[\s\S]+)`,
+			ParserShared: confgenerator.ParserShared{
+				TimeKey:    "time",
+				TimeFormat: "%Y-%m-%d %H:%M:%S.%L",
+				Types: map[string]string{
+					"thread_id":             "int",
+					"connection_id":         "int",
+					"transaction_id":        "int",
+					"update_transaction_id": "int",
+					"source_line":           "int",
+				},
+			},
+		},
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				"severity": {
@@ -89,52 +99,25 @@ func (p LoggingProcessorSapHanaTrace) Components(ctx context.Context, tag string
 				},
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(ctx, tag, uid)...,
-	)
-
-	return c
-}
-
-type LoggingReceiverSapHanaTrace struct {
-	LoggingProcessorSapHanaTrace `yaml:",inline"`
-	ReceiverMixin                confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
-}
-
-func (r LoggingReceiverSapHanaTrace) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.ReceiverMixin.IncludePaths) == 0 {
-		r.ReceiverMixin.IncludePaths = []string{
-			"/usr/sap/*/HDB*/${HOSTNAME}/trace/*.trc",
-		}
+		},
 	}
-	if len(r.ReceiverMixin.ExcludePaths) == 0 {
-		r.ReceiverMixin.ExcludePaths = []string{
+}
+
+func loggingReceiverFilesMixinSapHanaTrace() confgenerator.LoggingReceiverFilesMixin {
+	return confgenerator.LoggingReceiverFilesMixin{
+		IncludePaths: []string{
+			"/usr/sap/*/HDB*/${HOSTNAME}/trace/*.trc",
+		},
+		ExcludePaths: []string{
 			"/usr/sap/*/HDB*/${HOSTNAME}/trace/nameserver_history*.trc",
 			"/usr/sap/*/HDB*/${HOSTNAME}/trace/nameserver*loads*.trc",
 			"/usr/sap/*/HDB*/${HOSTNAME}/trace/nameserver*executed_statements*.trc",
-		}
-	}
-
-	r.ReceiverMixin.MultilineRules = []confgenerator.MultilineRule{
-		{
-			StateName: "start_state",
-			NextState: "cont",
-			Regex:     `^\[\d+\]\{-?\d+\}`,
-		},
-		{
-			StateName: "cont",
-			NextState: "cont",
-			Regex:     `^(?!\[\d+\]\{-?\d+\})`,
 		},
 	}
-
-	c := r.ReceiverMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorSapHanaTrace.Components(ctx, tag, r.Type())...)
-	return c
 }
 
 func init() {
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorSapHanaTrace{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverSapHanaTrace{} })
+	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroSapHanaTrace](loggingReceiverFilesMixinSapHanaTrace)
 }
 
 type MetricsReceiverSapHana struct {
@@ -182,8 +165,9 @@ func (s MetricsReceiverSapHana) Pipelines(_ context.Context) ([]otel.ReceiverPip
 			),
 			otel.TransformationMetrics(
 				otel.FlattenResourceAttribute("saphana.host", "host"),
+				otel.SetScopeName("agent.googleapis.com/"+s.Type()),
+				otel.SetScopeVersion("1.0"),
 			),
-			otel.ModifyInstrumentationScope(s.Type(), "1.0"),
 		}},
 	}}, nil
 }

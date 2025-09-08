@@ -511,6 +511,13 @@ type Logging struct {
 
 type LoggingReceiver interface {
 	Component
+	InternalLoggingReceiver
+}
+
+// InternalLoggingReceiver implements all the methods required to describe a logging receiver pipeline.
+type InternalLoggingReceiver interface {
+	// Components returns fluentbit components that implement this receiver.
+	// tag is the log tag that is assigned to the collected logs.
 	Components(ctx context.Context, tag string) []fluentbit.Component
 }
 
@@ -541,6 +548,11 @@ func (m *loggingReceiverMap) GetListenPorts() map[string]uint16 {
 
 type LoggingProcessor interface {
 	Component
+	InternalLoggingProcessor
+}
+
+// InternalLoggingProcessor implements the methods required to define a logging processor pipeline.
+type InternalLoggingProcessor interface {
 	// Components returns fluentbit components that implement this processor.
 	// tag is the log tag that should be matched by those components, and uid is a string which should be used when needed to generate unique names.
 	Components(ctx context.Context, tag string, uid string) []fluentbit.Component
@@ -581,6 +593,9 @@ type Metrics struct {
 
 type OTelReceiver interface {
 	Component
+	InternalOTelReceiver
+}
+type InternalOTelReceiver interface {
 	Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error)
 }
 
@@ -589,6 +604,12 @@ type MetricsProcessorMerger interface {
 	// It returns the new receiver; and true if the processor has been merged
 	// into the receiver completely
 	MergeMetricsProcessor(p MetricsProcessor) (MetricsReceiver, bool)
+}
+
+type InternalLoggingProcessorMerger interface {
+	// MergeInternalLoggingProcessor attempts to merge p into the current receiver.
+	// It returns the new receiver; and a potentially modified processor or nil.
+	MergeInternalLoggingProcessor(p InternalLoggingProcessor) (InternalLoggingReceiver, InternalLoggingProcessor)
 }
 
 type MetricsReceiver interface {
@@ -774,6 +795,9 @@ func (m *combinedReceiverMap) UnmarshalYAML(ctx context.Context, unmarshal func(
 
 type OTelProcessor interface {
 	Component
+	InternalOTelProcessor
+}
+type InternalOTelProcessor interface {
 	Processors(context.Context) ([]otel.Component, error)
 }
 
@@ -942,31 +966,31 @@ func (uc *UnifiedConfig) TracesReceivers() (map[string]TracesReceiver, error) {
 type pipelineBackend int
 
 const (
-	backendOTel pipelineBackend = iota
-	backendFluentBit
+	BackendOTel pipelineBackend = iota
+	BackendFluentBit
 )
 
-type pipelineInstance struct {
-	pID, rID     string
-	pipelineType string
-	receiver     Component
-	processors   []struct {
-		id string
+type PipelineInstance struct {
+	PID, RID     string
+	PipelineType string
+	Receiver     Component
+	Processors   []struct {
+		ID string
 		Component
 	}
-	backend pipelineBackend
+	Backend pipelineBackend
 }
 
-func (pi *pipelineInstance) Types() (string, string) {
-	return pi.pipelineType, pi.receiver.Type()
+func (pi *PipelineInstance) Types() (string, string) {
+	return pi.PipelineType, pi.Receiver.Type()
 }
 
-func (uc *UnifiedConfig) metricsPipelines(ctx context.Context) ([]pipelineInstance, error) {
+func (uc *UnifiedConfig) metricsPipelines(ctx context.Context) ([]PipelineInstance, error) {
 	receivers, err := uc.MetricsReceivers()
 	if err != nil {
 		return nil, err
 	}
-	var out []pipelineInstance
+	var out []PipelineInstance
 	if uc.Metrics != nil && uc.Metrics.Service != nil {
 		for pID, p := range uc.Metrics.Service.Pipelines {
 			for _, rID := range p.ReceiverIDs {
@@ -975,7 +999,7 @@ func (uc *UnifiedConfig) metricsPipelines(ctx context.Context) ([]pipelineInstan
 					return nil, fmt.Errorf("metrics receiver %q not found", rID)
 				}
 				var processors []struct {
-					id string
+					ID string
 					Component
 				}
 				canMerge := true
@@ -995,16 +1019,16 @@ func (uc *UnifiedConfig) metricsPipelines(ctx context.Context) ([]pipelineInstan
 					}
 					canMerge = false
 					processors = append(processors, struct {
-						id string
+						ID string
 						Component
 					}{prID, processor})
 				}
-				out = append(out, pipelineInstance{
-					pipelineType: "metrics",
-					pID:          pID,
-					rID:          rID,
-					receiver:     receiver,
-					processors:   processors,
+				out = append(out, PipelineInstance{
+					PipelineType: "metrics",
+					PID:          pID,
+					RID:          rID,
+					Receiver:     receiver,
+					Processors:   processors,
 				})
 			}
 		}
@@ -1012,12 +1036,12 @@ func (uc *UnifiedConfig) metricsPipelines(ctx context.Context) ([]pipelineInstan
 	return out, nil
 }
 
-func (uc *UnifiedConfig) tracesPipelines(ctx context.Context) ([]pipelineInstance, error) {
+func (uc *UnifiedConfig) tracesPipelines(ctx context.Context) ([]PipelineInstance, error) {
 	receivers, err := uc.TracesReceivers()
 	if err != nil {
 		return nil, err
 	}
-	var out []pipelineInstance
+	var out []PipelineInstance
 	if uc.Traces != nil && uc.Traces.Service != nil {
 		for pID, p := range uc.Traces.Service.Pipelines {
 			for _, rID := range p.ReceiverIDs {
@@ -1025,12 +1049,12 @@ func (uc *UnifiedConfig) tracesPipelines(ctx context.Context) ([]pipelineInstanc
 				if !ok {
 					return nil, fmt.Errorf("traces receiver %q not found", rID)
 				}
-				out = append(out, pipelineInstance{
-					pipelineType: "traces",
-					pID:          pID,
-					rID:          rID,
-					receiver:     receiver,
-					processors:   nil,
+				out = append(out, PipelineInstance{
+					PipelineType: "traces",
+					PID:          pID,
+					RID:          rID,
+					Receiver:     receiver,
+					Processors:   nil,
 				})
 			}
 		}
@@ -1038,7 +1062,7 @@ func (uc *UnifiedConfig) tracesPipelines(ctx context.Context) ([]pipelineInstanc
 	return out, nil
 }
 
-func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]pipelineInstance, error) {
+func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]PipelineInstance, error) {
 	l := uc.Logging
 	if l == nil {
 		return nil, nil
@@ -1049,7 +1073,7 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]pipelineInstan
 	}
 	exp_otlp := experimentsFromContext(ctx)["otlp_logging"]
 	exp_otel := l.Service.OTelLogging
-	var out []pipelineInstance
+	var out []PipelineInstance
 	for _, pID := range sortedKeys(l.Service.Pipelines) {
 		p := l.Service.Pipelines[pID]
 		for _, rID := range p.ReceiverIDs {
@@ -1058,10 +1082,11 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]pipelineInstan
 				return nil, fmt.Errorf("logging receiver %q not found", rID)
 			}
 			var processors []struct {
-				id string
+				ID string
 				Component
 			}
 			for _, prID := range p.ProcessorIDs {
+				// TODO: Support InternalLoggingProcessorMerger once we have anything that can be merged.
 				processor, ok := l.Processors[prID]
 				if !ok {
 					processor, ok = LegacyBuiltinProcessors[prID]
@@ -1070,20 +1095,20 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]pipelineInstan
 					return nil, fmt.Errorf("processor %q not found", prID)
 				}
 				processors = append(processors, struct {
-					id string
+					ID string
 					Component
 				}{prID, processor})
 			}
-			instance := pipelineInstance{
-				pipelineType: "logs",
-				backend:      backendFluentBit,
-				pID:          pID,
-				rID:          rID,
-				receiver:     receiver,
-				processors:   processors,
+			instance := PipelineInstance{
+				PipelineType: "logs",
+				Backend:      BackendFluentBit,
+				PID:          pID,
+				RID:          rID,
+				Receiver:     receiver,
+				Processors:   processors,
 			}
 			if exp_otel || (receiver.Type() == "otlp" && exp_otlp) {
-				instance.backend = backendOTel
+				instance.Backend = BackendOTel
 			}
 			out = append(out, instance)
 		}
@@ -1091,7 +1116,7 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]pipelineInstan
 	return out, nil
 }
 
-func (uc *UnifiedConfig) Pipelines(ctx context.Context) ([]pipelineInstance, error) {
+func (uc *UnifiedConfig) Pipelines(ctx context.Context) ([]PipelineInstance, error) {
 	metricsPipelines, err := uc.metricsPipelines(ctx)
 	if err != nil {
 		return nil, err
@@ -1198,6 +1223,9 @@ func (uc *UnifiedConfig) ValidateMetrics(ctx context.Context) error {
 		if len(p.ExporterIDs) > 0 {
 			log.Printf(`The "metrics.service.pipelines.%s.exporters" field is deprecated and will be ignored. Please remove it from your configuration.`, id)
 		}
+		if err := validateNoCustomGMPProcessors(receivers, p.ReceiverIDs, p.ProcessorIDs, subagent, ctx); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -1265,6 +1293,29 @@ func validateComponentKeys[V any](components map[string]V, refs []string, subage
 	for _, componentRef := range refs {
 		if !componentSet.Contains(componentRef) {
 			return fmt.Errorf("%s %s %q from pipeline %q is not defined.", subagent, kind, componentRef, pipeline)
+		}
+	}
+	return nil
+}
+
+// Pipelines that export prometheus metrics are not allowed to have Ops Agent processors
+func validateNoCustomGMPProcessors(receivers metricsReceiverMap, receiverIDs, processorIDs []string, subagent string, ctx context.Context) error {
+	for _, ID := range receiverIDs {
+		receiver, ok := receivers[ID]
+		if !ok {
+			return fmt.Errorf("metric receiver %q is not defined.", ID)
+		}
+		receiverPipelines, err := receiver.Pipelines(ctx)
+		if err != nil {
+			return err
+		}
+		for _, receiverPipeline := range receiverPipelines {
+			// Check the Ops Agent receiver type.
+			if receiverPipeline.ExporterTypes[subagent] == otel.GMP {
+				if len(processorIDs) > 0 {
+					return fmt.Errorf("prometheus receivers are incompatible with Ops Agent processors")
+				}
+			}
 		}
 	}
 	return nil

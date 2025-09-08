@@ -43,7 +43,6 @@ processors:
       exclude:
         match_type: strict
         metric_names:
-        - system.cpu.time
         - system.network.dropped
         - system.filesystem.inodes.usage
         - system.paging.faults
@@ -476,9 +475,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: workload.googleapis.com/$${1}
-  modifyscope/redis_3:
-    override_scope_name: agent.googleapis.com/redis
-    override_scope_version: "1.0"
   normalizesums/redis_1: {}
   resourcedetection/_global_0:
     detectors:
@@ -495,6 +491,12 @@ processors:
     - context: metric
       statements:
       - extract_count_metric(true) where name == "grpc.client.attempt.duration"
+  transform/redis_3:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "agent.googleapis.com/redis")
+      - set(version, "1.0")
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
@@ -600,10 +602,18 @@ service:
       - filter/redis_0
       - normalizesums/redis_1
       - metricstransform/redis_2
-      - modifyscope/redis_3
+      - transform/redis_3
       - resourcedetection/_global_0
       receivers:
       - redis/redis
   telemetry:
     metrics:
-      address: 0.0.0.0:20201
+      readers:
+      - pull:
+          exporter:
+            prometheus:
+              host: 0.0.0.0
+              port: 20201
+              without_scope_info: true
+              without_type_suffix: true
+              without_units: true

@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 )
 
 const InstrumentationSourceLabel = confgenerator.InstrumentationSourceLabel
@@ -31,7 +30,8 @@ func instrumentationSourceValue(processorType string) *confgenerator.ModifyField
 	}
 }
 
-func genericAccessLogParser(ctx context.Context, processorType, tag, uid string) []fluentbit.Component {
+// genericAccessLogParser is an internal logging processor that parses access logs.
+func genericAccessLogParser(ctx context.Context, processorType string) []confgenerator.InternalLoggingProcessor {
 	c := confgenerator.LoggingProcessorParseRegex{
 		// Documentation:
 		// https://httpd.apache.org/docs/current/logs.html#accesslog
@@ -48,7 +48,7 @@ func genericAccessLogParser(ctx context.Context, processorType, tag, uid string)
 				// https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#HttpRequest.FIELDS.response_size
 			},
 		},
-	}.Components(ctx, tag, uid)
+	}
 	mf := confgenerator.LoggingProcessorModifyFields{
 		Fields: map[string]*confgenerator.ModifyField{
 			InstrumentationSourceLabel: instrumentationSourceValue(processorType),
@@ -85,6 +85,8 @@ func genericAccessLogParser(ctx context.Context, processorType, tag, uid string)
 		}
 	}
 
-	c = append(c, mf.Components(ctx, tag, uid)...)
-	return c
+	return []confgenerator.InternalLoggingProcessor{
+		c,
+		mf,
+	}
 }

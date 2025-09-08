@@ -38,7 +38,6 @@ processors:
       exclude:
         match_type: strict
         metric_names:
-        - system.cpu.time
         - system.network.dropped
         - system.filesystem.inodes.usage
         - system.paging.faults
@@ -572,4 +571,12 @@ service:
       - otlp/otlp
   telemetry:
     metrics:
-      address: 0.0.0.0:20201
+      readers:
+      - pull:
+          exporter:
+            prometheus:
+              host: 0.0.0.0
+              port: 20201
+              without_scope_info: true
+              without_type_suffix: true
+              without_units: true

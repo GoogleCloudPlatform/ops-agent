@@ -16,6 +16,7 @@ package apps
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"path"
@@ -78,6 +79,9 @@ func (r MetricsReceiverOracleDB) Pipelines(_ context.Context) ([]otel.ReceiverPi
 	auth := url.QueryEscape(r.Username)
 	secretPassword := r.Password.SecretValue()
 	if len(secretPassword) > 0 {
+		if strings.Contains(secretPassword, "${") {
+			return nil, errors.New("using OpenTelemetry providers in OracleDB metric receiver configuration is not supported yet")
+		}
 		auth = fmt.Sprintf("%s:%s", auth, url.QueryEscape(secretPassword))
 	}
 
@@ -115,7 +119,10 @@ func (r MetricsReceiverOracleDB) Pipelines(_ context.Context) ([]otel.ReceiverPi
 					otel.RenameLabel("WAIT_CLASS", "wait_class"),
 				),
 			),
-			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+			otel.TransformationMetrics(
+				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+				otel.SetScopeVersion("1.0"),
+			),
 		}},
 	}}, nil
 }

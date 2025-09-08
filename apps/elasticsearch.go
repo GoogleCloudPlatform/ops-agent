@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
@@ -89,7 +88,10 @@ func (r MetricsReceiverElasticsearch) Pipelines(_ context.Context) ([]otel.Recei
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
-			otel.ModifyInstrumentationScope(r.Type(), "1.0"),
+			otel.TransformationMetrics(
+				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+				otel.SetScopeVersion("1.0"),
+			),
 		}},
 	}}, nil
 }
@@ -146,38 +148,57 @@ func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverElasticsearch{} })
 }
 
-type LoggingProcessorElasticsearchJson struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
+type LoggingProcessorMacroElasticsearchJson struct {
 }
 
-func (LoggingProcessorElasticsearchJson) Type() string {
+func (LoggingProcessorMacroElasticsearchJson) Type() string {
 	return "elasticsearch_json"
 }
 
-func (p LoggingProcessorElasticsearchJson) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	c := []fluentbit.Component{}
-
+func (p LoggingProcessorMacroElasticsearchJson) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
 	// sample log line:
 	// {"type": "server", "timestamp": "2022-01-17T18:31:47,365Z", "level": "INFO", "component": "o.e.n.Node", "cluster.name": "elasticsearch", "node.name": "ubuntu-jammy", "message": "initialized" }
 	// Logs are formatted based on configuration (log4j);
 	// See https://artifacts.elastic.co/javadoc/org/elasticsearch/elasticsearch/7.16.2/org/elasticsearch/common/logging/ESJsonLayout.html
 	// for general layout, and https://www.elastic.co/guide/en/elasticsearch/reference/current/logging.html for general configuration of logging
-
-	jsonParser := &confgenerator.LoggingProcessorParseJson{
-		ParserShared: confgenerator.ParserShared{
-			TimeKey:    "timestamp",
-			TimeFormat: "%Y-%m-%dT%H:%M:%S,%L%z",
+	processors := []confgenerator.InternalLoggingProcessor{
+		// When Elasticsearch emits stack traces, the json log may be spread across multiple lines,
+		// so we need this multiline parsing to properly parse the record.
+		// Example multiline log record:
+		// {"type": "server", "timestamp": "2022-01-20T15:46:00,131Z", "level": "ERROR", "component": "o.e.b.ElasticsearchUncaughtExceptionHandler", "cluster.name": "elasticsearch", "node.name": "brandon-testing-elasticsearch", "message": "uncaught exception in thread [main]",
+		// "stacktrace": ["org.elasticsearch.bootstrap.StartupException: java.lang.IllegalArgumentException: unknown setting [invalid.key] please check that any required plugins are installed, or check the breaking changes documentation for removed settings",
+		// -- snip --
+		// "at org.elasticsearch.bootstrap.Elasticsearch.init(Elasticsearch.java:166) ~[elasticsearch-7.16.2.jar:7.16.2]",
+		// "... 6 more"] }
+		confgenerator.LoggingProcessorParseMultilineRegex{
+			Rules: []confgenerator.MultilineRule{
+				{
+					StateName: "start_state",
+					NextState: "cont",
+					Regex:     `^{.*`,
+				},
+				{
+					StateName: "cont",
+					NextState: "cont",
+					Regex:     `^[^{].*[,}]$`,
+				},
+			},
 		},
+		confgenerator.LoggingProcessorParseJson{
+			ParserShared: confgenerator.ParserShared{
+				TimeKey:    "timestamp",
+				TimeFormat: "%Y-%m-%dT%H:%M:%S,%L%z",
+			},
+		},
+		p.severityParser(),
 	}
 
-	c = append(c, jsonParser.Components(ctx, tag, uid)...)
-	c = append(c, p.severityParser(ctx, tag, uid)...)
-	c = append(c, p.nestingProcessors(ctx, tag, uid)...)
+	processors = append(processors, p.nestingProcessors()...)
 
-	return c
+	return processors
 }
 
-func (p LoggingProcessorElasticsearchJson) severityParser(ctx context.Context, tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorMacroElasticsearchJson) severityParser() confgenerator.InternalLoggingProcessor {
 	return confgenerator.LoggingProcessorModifyFields{
 		Fields: map[string]*confgenerator.ModifyField{
 			"severity": {
@@ -196,10 +217,10 @@ func (p LoggingProcessorElasticsearchJson) severityParser(ctx context.Context, t
 			},
 			InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 		},
-	}.Components(ctx, tag, uid)
+	}
 }
 
-func (p LoggingProcessorElasticsearchJson) nestingProcessors(ctx context.Context, tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorMacroElasticsearchJson) nestingProcessors() []confgenerator.InternalLoggingProcessor {
 	// The majority of these prefixes come from here:
 	// https://www.elastic.co/guide/en/elasticsearch/reference/7.16/audit-event-types.html#audit-event-attributes
 	// Non-audit logs are formatted using the layout documented here, giving the "cluster" prefix:
@@ -220,115 +241,69 @@ func (p LoggingProcessorElasticsearchJson) nestingProcessors(ctx context.Context
 		"cluster",
 	}
 
-	c := make([]fluentbit.Component, 0, len(prefixes))
+	processors := make([]confgenerator.InternalLoggingProcessor, 0, len(prefixes))
 	for _, prefix := range prefixes {
 		nestProcessor := confgenerator.LoggingProcessorNestWildcard{
 			Wildcard:     fmt.Sprintf("%s.*", prefix),
 			NestUnder:    prefix,
 			RemovePrefix: fmt.Sprintf("%s.", prefix),
 		}
-		c = append(c, nestProcessor.Components(ctx, tag, uid)...)
+		processors = append(processors, nestProcessor)
 	}
 
-	return c
+	return processors
 }
 
-type LoggingProcessorElasticsearchGC struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
+type LoggingProcessorMacroElasticsearchGC struct {
 }
 
-func (LoggingProcessorElasticsearchGC) Type() string {
+func (LoggingProcessorMacroElasticsearchGC) Type() string {
 	return "elasticsearch_gc"
 }
 
-func (p LoggingProcessorElasticsearchGC) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	c := []fluentbit.Component{}
-
-	regexParser := confgenerator.LoggingProcessorParseRegex{
-		// Sample log line:
-		// [2022-01-17T18:31:37.240+0000][652141][gc,start    ] GC(0) Pause Young (Normal) (G1 Evacuation Pause)
-		Regex: `\[(?<time>\d+-\d+-\d+T\d+:\d+:\d+.\d+\+\d+)\]\[\d+\]\[(?<type>[A-z,]+)\s*\]\s*(?:GC\((?<gc_run>\d+)\))?\s*(?<message>.*)`,
-		ParserShared: confgenerator.ParserShared{
-			TimeKey:    "time",
-			TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
-			Types: map[string]string{
-				"gc_run": "integer",
+func (p LoggingProcessorMacroElasticsearchGC) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
+	return []confgenerator.InternalLoggingProcessor{
+		confgenerator.LoggingProcessorParseRegex{
+			// Sample log line:
+			// [2022-01-17T18:31:37.240+0000][652141][gc,start    ] GC(0) Pause Young (Normal) (G1 Evacuation Pause)
+			Regex: `\[(?<time>\d+-\d+-\d+T\d+:\d+:\d+.\d+\+\d+)\]\[\d+\]\[(?<type>[A-z,]+)\s*\]\s*(?:GC\((?<gc_run>\d+)\))?\s*(?<message>.*)`,
+			ParserShared: confgenerator.ParserShared{
+				TimeKey:    "time",
+				TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
+				Types: map[string]string{
+					"gc_run": "integer",
+				},
 			},
 		},
-	}
-
-	c = append(c, regexParser.Components(ctx, tag, uid)...)
-	c = append(c,
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(ctx, tag, uid)...,
-	)
-	return c
+		},
+	}
 }
 
-type LoggingReceiverElasticsearchJson struct {
-	LoggingProcessorElasticsearchJson `yaml:",inline"`
-	ReceiverMixin                     confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
-}
-
-func (r LoggingReceiverElasticsearchJson) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.ReceiverMixin.IncludePaths) == 0 {
-		// Default JSON logs for Elasticsearch
-		r.ReceiverMixin.IncludePaths = []string{
+func loggingReceiverFilesMixinElasticsearchJson() confgenerator.LoggingReceiverFilesMixin {
+	return confgenerator.LoggingReceiverFilesMixin{
+		IncludePaths: []string{
 			"/var/log/elasticsearch/*_server.json",
 			"/var/log/elasticsearch/*_deprecation.json",
 			"/var/log/elasticsearch/*_index_search_slowlog.json",
 			"/var/log/elasticsearch/*_index_indexing_slowlog.json",
 			"/var/log/elasticsearch/*_audit.json",
-		}
-	}
-
-	// When Elasticsearch emits stack traces, the json log may be spread across multiple lines,
-	// so we need this multiline parsing to properly parse the record.
-	// Example multiline log record:
-	// {"type": "server", "timestamp": "2022-01-20T15:46:00,131Z", "level": "ERROR", "component": "o.e.b.ElasticsearchUncaughtExceptionHandler", "cluster.name": "elasticsearch", "node.name": "brandon-testing-elasticsearch", "message": "uncaught exception in thread [main]",
-	// "stacktrace": ["org.elasticsearch.bootstrap.StartupException: java.lang.IllegalArgumentException: unknown setting [invalid.key] please check that any required plugins are installed, or check the breaking changes documentation for removed settings",
-	// -- snip --
-	// "at org.elasticsearch.bootstrap.Elasticsearch.init(Elasticsearch.java:166) ~[elasticsearch-7.16.2.jar:7.16.2]",
-	// "... 6 more"] }
-
-	r.ReceiverMixin.MultilineRules = []confgenerator.MultilineRule{
-		{
-			StateName: "start_state",
-			NextState: "cont",
-			Regex:     `^{.*`,
-		},
-		{
-			StateName: "cont",
-			NextState: "cont",
-			Regex:     `^[^{].*[,}]$`,
 		},
 	}
-
-	c := r.ReceiverMixin.Components(ctx, tag)
-	return append(c, r.LoggingProcessorElasticsearchJson.Components(ctx, tag, "elasticsearch_json")...)
 }
 
-type LoggingReceiverElasticsearchGC struct {
-	LoggingProcessorElasticsearchGC `yaml:",inline"`
-	ReceiverMixin                   confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
-}
-
-func (r LoggingReceiverElasticsearchGC) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.ReceiverMixin.IncludePaths) == 0 {
-		// Default GC log for Elasticsearch
-		r.ReceiverMixin.IncludePaths = []string{
+func loggingReceiverFilesMixinElasticsearchGC() confgenerator.LoggingReceiverFilesMixin {
+	return confgenerator.LoggingReceiverFilesMixin{
+		IncludePaths: []string{
 			"/var/log/elasticsearch/gc.log",
-		}
+		},
 	}
-
-	c := r.ReceiverMixin.Components(ctx, tag)
-	return append(c, r.LoggingProcessorElasticsearchGC.Components(ctx, tag, "elasticsearch_gc")...)
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverElasticsearchJson{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverElasticsearchGC{} })
+	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroElasticsearchJson](loggingReceiverFilesMixinElasticsearchJson)
+	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroElasticsearchGC](loggingReceiverFilesMixinElasticsearchGC)
 }

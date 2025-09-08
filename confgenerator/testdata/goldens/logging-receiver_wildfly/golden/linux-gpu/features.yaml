@@ -18,3 +18,7 @@
   feature: receivers:wildfly_system
   key: "[0].enabled"
   value: "true"
+- module: logging
+  feature: receivers:wildfly_system
+  key: "[0].include_paths.__length"
+  value: "3"
