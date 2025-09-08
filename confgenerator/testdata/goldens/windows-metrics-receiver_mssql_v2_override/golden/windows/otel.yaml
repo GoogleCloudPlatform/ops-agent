@@ -514,8 +514,8 @@ processors:
       - set(version, "2.0")
   transform/mssql_2:
     metric_statements:
-      context: resource
-      error_mode: ignore
+    - context: resource
+      error_mode: silent
       statements:
       - delete_key(attributes, "service.name")
       - delete_key(attributes, "service.instance.id")

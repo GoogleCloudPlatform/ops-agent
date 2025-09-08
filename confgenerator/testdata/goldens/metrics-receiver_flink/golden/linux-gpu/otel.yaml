@@ -512,8 +512,8 @@ processors:
       - set(version, "1.0")
   transform/flink_3:
     metric_statements:
-      context: resource
-      error_mode: ignore
+    - context: resource
+      error_mode: silent
       statements:
       - delete_key(attributes, "service.name")
       - delete_key(attributes, "service.instance.id")

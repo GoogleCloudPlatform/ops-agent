@@ -241,14 +241,16 @@ func MetricsRemoveServiceAttributes() Component {
 	return Component{
 		Type: "transform",
 		Config: map[string]any{
-			"metric_statements": map[string]any{
-				"context":    "resource",
-				"error_mode": "ignore",
-				"statements": []string{
-					`delete_key(attributes, "service.name")`,
-					`delete_key(attributes, "service.instance.id")`,
-					`delete_key(attributes, "service.namespace")`,
-					`delete_key(attributes, "service.version")`,
+			"metric_statements": []map[string]any{
+				{
+					"context":    "resource",
+					"error_mode": "silent",
+					"statements": []string{
+						`delete_key(attributes, "service.name")`,
+						`delete_key(attributes, "service.instance.id")`,
+						`delete_key(attributes, "service.namespace")`,
+						`delete_key(attributes, "service.version")`,
+					},
 				},
 			},
 		},
