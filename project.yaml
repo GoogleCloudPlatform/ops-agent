@@ -13,6 +13,23 @@
 # limitations under the License.
 
 targets:
+  plucky:
+    os_versions: [ubuntu-25.04*]
+    package_extension:
+      deb
+    architectures:
+      x86_64:
+        test_distros:
+          representative:
+          - ubuntu-os-cloud:ubuntu-2504-amd64
+          exhaustive:
+          - ubuntu-os-cloud:ubuntu-minimal-2504-amd64
+      aarch64:
+        test_distros:
+          representative:
+          - ubuntu-os-cloud:ubuntu-2504-arm64
+          exhaustive:
+          - ubuntu-os-cloud:ubuntu-minimal-2504-arm64
   bookworm:
     os_versions: [debian-12*]
     package_extension:
