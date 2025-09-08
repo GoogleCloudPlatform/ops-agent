@@ -2,7 +2,7 @@ import 'common.gcl' as common
 
 config build = common.third_party_apps_test {
   params {
-    platforms = [ubuntu-2504]
+    platforms = [ubuntu-os-cloud:ubuntu-2504-amd64]
     // DO NOT MERGE: Temporarily disable smart test skipping for
     // this distro so that all apps actually run.
     SHORT = 'false'
