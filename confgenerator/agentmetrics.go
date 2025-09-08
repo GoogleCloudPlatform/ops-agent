@@ -130,14 +130,6 @@ func (r AgentSelfMetrics) PrometheusMetricsPipeline() otel.ReceiverPipeline {
 
 func (r AgentSelfMetrics) OtelPipelineProcessors() []otel.Component {
 	return []otel.Component{
-		otel.MetricsFilter(
-			"include",
-			"strict",
-			"otelcol_process_uptime",
-			"otelcol_process_memory_rss",
-			"grpc.client.attempt.duration",
-			"googlecloudmonitoring/point_count",
-		),
 		otel.Transform("metric", "metric",
 			[]ottl.Statement{
 				ottl.ExtractCountMetric(true, "grpc.client.attempt.duration"),
@@ -246,16 +238,6 @@ func (r AgentSelfMetrics) FluentBitLoggingMetricsPipelineProcessors() []otel.Com
 
 func (r AgentSelfMetrics) OtelAndFluentbitLoggingMetricsPipelineProcessors() []otel.Component {
 	return []otel.Component{
-		otel.MetricsFilter(
-			"include",
-			"strict",
-			"fluentbit_stackdriver_requests_total",
-			"fluentbit_stackdriver_proc_records_total",
-			"fluentbit_stackdriver_retried_records_total",
-			"otelcol_exporter_sent_log_records",
-			"otelcol_exporter_send_failed_log_records",
-			"grpc.client.attempt.duration",
-		),
 		otel.Transform("metric", "metric",
 			[]ottl.Statement{
 				ottl.ExtractCountMetric(true, "grpc.client.attempt.duration"),
