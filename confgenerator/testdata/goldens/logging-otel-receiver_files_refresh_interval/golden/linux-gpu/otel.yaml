@@ -19,7 +19,7 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  cumulativetodelta/logging_metrics_12:
+  cumulativetodelta/logging_metrics_8:
     include:
       match_type: strict
       metrics:
@@ -30,7 +30,7 @@ processors:
       - fluentbit_log_entry_retry_count
       - fluentbit_request_count
     initial_value: keep
-  deltatocumulative/logging_metrics_15: {}
+  deltatocumulative/logging_metrics_11: {}
   filter/default__pipeline_hostmetrics_0:
     metrics:
       exclude:
@@ -84,11 +84,8 @@ processors:
         - otelcol_process_memory_rss
         - grpc.client.attempt.duration_count
         - googlecloudmonitoring/point_count
-  groupbyattrs/logging_metrics_6: {}
-  groupbyattrs/logging_metrics_9: {}
-  interval/logging_metrics_5:
-    interval: 1m
-  interval/logging_metrics_8:
+  groupbyattrs/logging_metrics_5: {}
+  interval/logging_metrics_4:
     interval: 1m
   metricstransform/fluentbit_1:
     transforms:
@@ -406,7 +403,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/logging_metrics_14:
+  metricstransform/logging_metrics_10:
     transforms:
     - action: combine
       aggregation_type: sum
@@ -441,13 +438,13 @@ processors:
         label_set:
         - response_code
       submatch_case: lower
-  metricstransform/logging_metrics_16:
+  metricstransform/logging_metrics_12:
     transforms:
     - action: update
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/logging_metrics_7:
+  metricstransform/logging_metrics_3:
     transforms:
     - action: update
       include: fluentbit_stackdriver_retried_records_total
@@ -663,38 +660,25 @@ processors:
     - context: metric
       statements:
       - extract_count_metric(true) where name == "grpc.client.attempt.duration"
-  transform/logging_metrics_10:
+  transform/logging_metrics_6:
     error_mode: ignore
     metric_statements:
     - context: datapoint
       statements:
       - set(time, TruncateTime(Now(), Duration("1m")))
       - set(start_time, TruncateTime(start_time, Duration("1m")))
-  transform/logging_metrics_11:
+  transform/logging_metrics_7:
     error_mode: ignore
     metric_statements:
     - context: metric
       statements:
       - set(unit, "1")
-  transform/logging_metrics_13:
+  transform/logging_metrics_9:
     error_mode: ignore
     metric_statements:
     - context: datapoint
       statements:
       - set(start_time, time - Duration("1m"))
-  transform/logging_metrics_3:
-    error_mode: ignore
-    metric_statements:
-    - context: datapoint
-      statements:
-      - set(time, TruncateTime(time, Duration("1m")))
-      - set(start_time, TruncateTime(start_time, Duration("1m")))
-  transform/logging_metrics_4:
-    error_mode: ignore
-    metric_statements:
-    - context: metric
-      statements:
-      - set(unit, "1")
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
@@ -863,20 +847,16 @@ service:
       - transform/logging_metrics_0
       - filter/logging_metrics_1
       - filter/logging_metrics_2
-      - transform/logging_metrics_3
-      - transform/logging_metrics_4
-      - interval/logging_metrics_5
-      - groupbyattrs/logging_metrics_6
-      - metricstransform/logging_metrics_7
-      - interval/logging_metrics_8
-      - groupbyattrs/logging_metrics_9
-      - transform/logging_metrics_10
-      - transform/logging_metrics_11
-      - cumulativetodelta/logging_metrics_12
-      - transform/logging_metrics_13
-      - metricstransform/logging_metrics_14
-      - deltatocumulative/logging_metrics_15
-      - metricstransform/logging_metrics_16
+      - metricstransform/logging_metrics_3
+      - interval/logging_metrics_4
+      - groupbyattrs/logging_metrics_5
+      - transform/logging_metrics_6
+      - transform/logging_metrics_7
+      - cumulativetodelta/logging_metrics_8
+      - transform/logging_metrics_9
+      - metricstransform/logging_metrics_10
+      - deltatocumulative/logging_metrics_11
+      - metricstransform/logging_metrics_12
       - resourcedetection/_global_0
       receivers:
       - prometheus/prometheus_metrics
