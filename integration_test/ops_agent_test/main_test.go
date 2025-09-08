@@ -4579,7 +4579,7 @@ func goPathCommandForImage(imageSpec string) string {
 	return "export PATH=/usr/local/go/bin:$PATH"
 }
 
-func runGoCode(ctx context.Context, logger *log.Logger, vm *gce.VM, content io.Reader) error {
+func runGoCode(ctx context.Context, logger *log.Logger, vm *gce.VM, content io.Reader, programArgs ...string) error {
 	workDir := path.Join(workDirForImage(vm.ImageSpec), "gocode")
 	if err := makeDirectory(ctx, logger, vm, workDir); err != nil {
 		return err
@@ -4592,7 +4592,8 @@ func runGoCode(ctx context.Context, logger *log.Logger, vm *gce.VM, content io.R
 		cd %s
 		go mod init main
 		go get ./...
-		go run main.go`, goPathCommandForImage(vm.ImageSpec), workDir)
+		go run main.go %s`,
+		goPathCommandForImage(vm.ImageSpec), workDir, strings.Join(programArgs, " "))
 	_, err := gce.RunRemotely(ctx, logger, vm, goInitAndRun)
 	return err
 }
@@ -4636,7 +4637,7 @@ traces:
 		if err := installGolang(ctx, logger, vm); err != nil {
 			t.Fatal(err)
 		}
-		if err = runGoCode(ctx, logger, vm, metricFile); err != nil {
+		if err = runGoCode(ctx, logger, vm, metricFile, "-with_service_attributes"); err != nil {
 			t.Fatal(err)
 		}
 
@@ -4650,8 +4651,12 @@ traces:
 			"workload.googleapis.com/WORKLOAD.GOOGLEAPIS.COM/otlp.test.prefix4",
 			"workload.googleapis.com/WORKLOAD.googleapis.com/otlp.test.prefix5",
 		} {
-			if _, err = gce.WaitForMetric(ctx, logger, vm, name, time.Hour, nil, false); err != nil {
+			ts, err := gce.WaitForMetric(ctx, logger, vm, name, time.Hour, nil, false)
+			if err != nil {
 				t.Error(err)
+			}
+			if _, ok := ts.Metric.Labels["service_name"]; !ok {
+				t.Errorf("metric %s missing expected label `service_name`", name)
 			}
 		}
 

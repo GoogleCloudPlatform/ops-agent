@@ -12,7 +12,7 @@ exporters:
       instrumentation_library_labels: true
       prefix: ""
       resource_filters: []
-      service_resource_labels: false
+      service_resource_labels: true
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
 processors:
@@ -508,7 +508,7 @@ processors:
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
   normalizesums/iis_2: {}
-  normalizesums/mssql__v2_2: {}
+  normalizesums/mssql__v2_3: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
@@ -533,6 +533,15 @@ processors:
       statements:
       - set(name, "agent.googleapis.com/mssql")
       - set(version, "2.0")
+  transform/mssql__v2_2:
+    metric_statements:
+      context: resource
+      error_mode: ignore
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
@@ -671,7 +680,8 @@ service:
       processors:
       - metricstransform/mssql__v2_0
       - transform/mssql__v2_1
-      - normalizesums/mssql__v2_2
+      - transform/mssql__v2_2
+      - normalizesums/mssql__v2_3
       - resourcedetection/_global_0
       receivers:
       - sqlserver/mssql__v2

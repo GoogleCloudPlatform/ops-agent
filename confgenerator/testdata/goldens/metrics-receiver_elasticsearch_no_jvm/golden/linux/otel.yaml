@@ -12,7 +12,7 @@ exporters:
       instrumentation_library_labels: true
       prefix: ""
       resource_filters: []
-      service_resource_labels: false
+      service_resource_labels: true
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
 processors:
@@ -453,6 +453,15 @@ processors:
       statements:
       - set(name, "agent.googleapis.com/elasticsearch")
       - set(version, "1.0")
+  transform/elasticsearch_4:
+    metric_statements:
+      context: resource
+      error_mode: ignore
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
@@ -586,6 +595,7 @@ service:
       - filter/elasticsearch_1
       - metricstransform/elasticsearch_2
       - transform/elasticsearch_3
+      - transform/elasticsearch_4
       - resourcedetection/_global_0
       receivers:
       - elasticsearch/elasticsearch

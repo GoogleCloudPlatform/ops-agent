@@ -12,7 +12,7 @@ exporters:
       instrumentation_library_labels: true
       prefix: ""
       resource_filters: []
-      service_resource_labels: false
+      service_resource_labels: true
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
 processors:
@@ -75,7 +75,7 @@ processors:
         - otelcol_process_memory_rss
         - grpc.client.attempt.duration_count
         - googlecloudmonitoring/point_count
-  groupbyattrs/iis__v2_2: {}
+  groupbyattrs/iis__v2_3: {}
   metricstransform/fluentbit_1:
     transforms:
     - action: update
@@ -439,7 +439,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/iis__v2_3:
+  metricstransform/iis__v2_4:
     transforms:
     - action: update
       include: ^iis
@@ -515,7 +515,7 @@ processors:
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
   normalizesums/iis_2: {}
-  normalizesums/iis__v2_4: {}
+  normalizesums/iis__v2_5: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
@@ -536,6 +536,15 @@ processors:
       - set(name, "agent.googleapis.com/iis")
       - set(version, "2.0")
   transform/iis__v2_1:
+    metric_statements:
+      context: resource
+      error_mode: ignore
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
+  transform/iis__v2_2:
     metric_statements:
     - context: datapoint
       statements:
@@ -684,9 +693,10 @@ service:
       processors:
       - transform/iis__v2_0
       - transform/iis__v2_1
-      - groupbyattrs/iis__v2_2
-      - metricstransform/iis__v2_3
-      - normalizesums/iis__v2_4
+      - transform/iis__v2_2
+      - groupbyattrs/iis__v2_3
+      - metricstransform/iis__v2_4
+      - normalizesums/iis__v2_5
       - resourcedetection/_global_0
       receivers:
       - iis/iis__v2
