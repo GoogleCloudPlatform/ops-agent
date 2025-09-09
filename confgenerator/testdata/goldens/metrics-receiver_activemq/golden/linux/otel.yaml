@@ -840,8 +840,12 @@ processors:
 >>>>>>> e0882b40e (Update goldens.)
 =======
       - set(time, TruncateTime(Now(), Duration("1m")))
+<<<<<<< HEAD
       - set(start_time, TruncateTime(time - Duration("1m")))
 >>>>>>> 4e9013ad7 (Improve timestamp alignment logic. Test `auto` for `initial_value`.)
+=======
+      - set(start_time, time - Duration("1m"))
+>>>>>>> 322312037 (Simplify `start_time` logic further.)
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:

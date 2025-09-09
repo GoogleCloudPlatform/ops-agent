@@ -697,7 +697,7 @@ processors:
     - context: datapoint
       statements:
       - set(time, TruncateTime(Now(), Duration("1m")))
-      - set(start_time, TruncateTime(time - Duration("1m")))
+      - set(start_time, time - Duration("1m"))
   transform/logs_default__pipeline_windows__event__log_0:
     error_mode: ignore
     log_statements:
