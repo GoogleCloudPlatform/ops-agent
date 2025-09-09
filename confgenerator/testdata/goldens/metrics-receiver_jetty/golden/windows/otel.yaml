@@ -24,7 +24,7 @@ processors:
     - agent.googleapis.com/iis/network/transferred_bytes_count
     - agent.googleapis.com/iis/new_connection_count
     - agent.googleapis.com/iis/request_count
-  cumulativetodelta/logging_metrics_8:
+  cumulativetodelta/logging_metrics_7:
     include:
       match_type: strict
       metrics:
@@ -34,8 +34,8 @@ processors:
       - fluentbit_log_entry_count
       - fluentbit_log_entry_retry_count
       - fluentbit_request_count
-    initial_value: keep
-  deltatocumulative/logging_metrics_11: {}
+    initial_value: auto
+  deltatocumulative/logging_metrics_10: {}
   filter/default__pipeline_hostmetrics_0:
     metrics:
       exclude:
@@ -508,6 +508,7 @@ processors:
       match_type: regexp
       new_name: workload.googleapis.com/$${1}
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   metricstransform/logging_metrics_10:
     transforms:
@@ -545,6 +546,9 @@ processors:
         - response_code
       submatch_case: lower
   metricstransform/logging_metrics_12:
+=======
+  metricstransform/logging_metrics_11:
+>>>>>>> 4e9013ad7 (Improve timestamp alignment logic. Test `auto` for `initial_value`.)
     transforms:
     - action: update
       include: ^(.*)$$
@@ -683,7 +687,45 @@ processors:
         label_set:
         - response_code
       submatch_case: lower
+<<<<<<< HEAD
 >>>>>>> e0882b40e (Update goldens.)
+=======
+  metricstransform/logging_metrics_9:
+    transforms:
+    - action: combine
+      aggregation_type: sum
+      include: ^.*_log_entry_retry_count$$
+      match_type: regexp
+      new_name: agent/log_entry_retry_count
+      operations:
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+      submatch_case: lower
+    - action: combine
+      aggregation_type: sum
+      include: ^.*_request_count$$
+      match_type: regexp
+      new_name: agent/request_count
+      operations:
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+      submatch_case: lower
+    - action: combine
+      aggregation_type: sum
+      include: ^.*_log_entry_count$$
+      match_type: regexp
+      new_name: agent/log_entry_count
+      operations:
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+      submatch_case: lower
+>>>>>>> 4e9013ad7 (Improve timestamp alignment logic. Test `auto` for `initial_value`.)
   metricstransform/mssql_0:
     transforms:
     - action: update
@@ -874,23 +916,21 @@ processors:
   transform/logging_metrics_6:
     error_mode: ignore
     metric_statements:
-    - context: datapoint
-      statements:
-      - set(time, TruncateTime(Now(), Duration("1m")))
-      - set(start_time, TruncateTime(start_time, Duration("1m")))
-  transform/logging_metrics_7:
-    error_mode: ignore
-    metric_statements:
     - context: metric
       statements:
       - set(unit, "1")
-  transform/logging_metrics_9:
+  transform/logging_metrics_8:
     error_mode: ignore
     metric_statements:
     - context: datapoint
       statements:
+<<<<<<< HEAD
       - set(start_time, time - Duration("1m"))
 >>>>>>> e0882b40e (Update goldens.)
+=======
+      - set(time, TruncateTime(Now(), Duration("1m")))
+      - set(start_time, TruncateTime(time - Duration("1m")))
+>>>>>>> 4e9013ad7 (Improve timestamp alignment logic. Test `auto` for `initial_value`.)
   transform/mssql_1:
     metric_statements:
     - context: scope
@@ -1076,12 +1116,11 @@ service:
       - interval/logging_metrics_4
       - groupbyattrs/logging_metrics_5
       - transform/logging_metrics_6
-      - transform/logging_metrics_7
-      - cumulativetodelta/logging_metrics_8
-      - transform/logging_metrics_9
-      - metricstransform/logging_metrics_10
-      - deltatocumulative/logging_metrics_11
-      - metricstransform/logging_metrics_12
+      - cumulativetodelta/logging_metrics_7
+      - transform/logging_metrics_8
+      - metricstransform/logging_metrics_9
+      - deltatocumulative/logging_metrics_10
+      - metricstransform/logging_metrics_11
       - resourcedetection/_global_0
       receivers:
       - prometheus/agent_prometheus_metrics
