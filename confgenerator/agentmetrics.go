@@ -56,23 +56,23 @@ var grpcToHTTPStatus = map[string]string{
 }
 
 func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]otel.ReceiverPipeline, pipelines map[string]otel.Pipeline) {
-	receiverPipelines["prometheus_metrics"] = r.PrometheusMetricsPipeline()
+	receiverPipelines["agent_prometheus_metrics"] = r.PrometheusMetricsPipeline()
 
 	pipelines["otel"] = otel.Pipeline{
 		Type:                 "metrics",
-		ReceiverPipelineName: "prometheus_metrics",
+		ReceiverPipelineName: "agent_prometheus_metrics",
 		Processors:           r.OtelPipelineProcessors(),
 	}
 
 	pipelines["fluentbit"] = otel.Pipeline{
 		Type:                 "metrics",
-		ReceiverPipelineName: "prometheus_metrics",
+		ReceiverPipelineName: "agent_prometheus_metrics",
 		Processors:           r.FluentBitPipelineProcessors(),
 	}
 
 	pipelines["logging_metrics"] = otel.Pipeline{
 		Type:                 "metrics",
-		ReceiverPipelineName: "prometheus_metrics",
+		ReceiverPipelineName: "agent_prometheus_metrics",
 		Processors:           r.LoggingMetricsPipelineProcessors(),
 	}
 
