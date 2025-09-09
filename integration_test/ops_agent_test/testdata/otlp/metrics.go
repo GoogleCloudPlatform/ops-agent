@@ -57,6 +57,7 @@ func installMetricExportPipeline(ctx context.Context) (func(context.Context) err
 }
 
 func main() {
+	flag.Parse()
 	ctx := context.Background()
 
 	shutdown, err := installMetricExportPipeline(ctx)
