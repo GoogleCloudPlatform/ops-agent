@@ -267,15 +267,7 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors() []otel.Component {
 		// The processors "interval" and "groupbyattrs" batch metrics in a 1 minute interval.
 		otel.Interval("1m"),
 		otel.CondenseResourceMetrics(),
-		// Align all datapoints timestamps within the batch to Now().
-		// Truncate all timestamps to align for aggregation.
-		otel.Transform("metric", "datapoint",
-			[]ottl.Statement{
-				`set(time, TruncateTime(Now(), Duration("1m")))`,
-				`set(start_time, TruncateTime(start_time, Duration("1m")))`,
-			},
-		),
-		// Some metrics are missing metric unit. Needed to combine metrics.
+		// Some metrics are missing "unit". Needed to combine metrics.
 		otel.Transform("metric", "metric",
 			[]ottl.Statement{
 				ottl.SetMetricUnitAll("1"),
@@ -283,15 +275,18 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors() []otel.Component {
 		),
 		// Aggregating as delta metrics isolates data for the current 1m interval only.
 		// Keep the initial value so the resulting cumulative metric has all data.
-		otel.CumulativeToDeltaWithInitialValue("keep",
+		otel.CumulativeToDeltaWithInitialValue("auto",
 			"otel_log_entry_count", "otel_log_entry_retry_count", "otel_request_count",
 			"fluentbit_log_entry_count", "fluentbit_log_entry_retry_count", "fluentbit_request_count",
 		),
-		// Make sure all delta datapoints consist of a 1 minute inteval from "start_time" to "time".
-		// This standarizes all datapoints for the aggregation which groups by "start_time", "time" and "labels".
+		// This standarizes all datapoints for aggregation which groups by "start_time", "time" and "labels".
+		// 1) Align all datapoints timestamps within the batch to Now().
+		// 2) Make sure all delta datapoints consist of a 1 minute inteval from "start_time" to "time".
+		// 3) Truncate all timestamps to align for aggregation.
 		otel.Transform("metric", "datapoint",
 			[]ottl.Statement{
-				`set(start_time, time - Duration("1m"))`,
+				`set(time, TruncateTime(Now(), Duration("1m")))`,
+				`set(start_time, TruncateTime(time - Duration("1m")))`,
 			},
 		),
 		// Combine fluent-bit and otel logging metric and sum their values per label.
