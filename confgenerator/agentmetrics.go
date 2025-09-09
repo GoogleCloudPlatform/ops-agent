@@ -286,7 +286,7 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors() []otel.Component {
 		otel.Transform("metric", "datapoint",
 			[]ottl.Statement{
 				`set(time, TruncateTime(Now(), Duration("1m")))`,
-				`set(start_time, TruncateTime(time - Duration("1m")))`,
+				`set(start_time, time - Duration("1m"))`,
 			},
 		),
 		// Combine fluent-bit and otel logging metric and sum their values per label.

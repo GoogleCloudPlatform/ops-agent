@@ -643,7 +643,7 @@ processors:
     - context: datapoint
       statements:
       - set(time, TruncateTime(Now(), Duration("1m")))
-      - set(start_time, TruncateTime(time - Duration("1m")))
+      - set(start_time, time - Duration("1m"))
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
