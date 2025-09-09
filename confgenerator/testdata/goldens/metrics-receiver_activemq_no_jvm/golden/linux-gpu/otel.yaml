@@ -19,6 +19,18 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
+  cumulativetodelta/logging_metrics_8:
+    include:
+      match_type: strict
+      metrics:
+      - otel_log_entry_count
+      - otel_log_entry_retry_count
+      - otel_request_count
+      - fluentbit_log_entry_count
+      - fluentbit_log_entry_retry_count
+      - fluentbit_request_count
+    initial_value: keep
+  deltatocumulative/logging_metrics_11: {}
   filter/default__pipeline_hostmetrics_0:
     metrics:
       exclude:
@@ -48,10 +60,18 @@ processors:
         - system.paging.faults
         - system.disk.operation_time
 <<<<<<< HEAD
+<<<<<<< HEAD
   filter/otel_0:
 =======
   filter/logging_metrics_0:
 >>>>>>> c1440b139 (Update goldens.)
+=======
+  filter/logging_metrics_1:
+    metrics:
+      datapoint:
+      - metric.name == "grpc.client.attempt.duration_count" and (not IsMatch(datapoint.attributes["grpc.target"], "logging.googleapis"))
+  filter/logging_metrics_2:
+>>>>>>> e0882b40e (Update goldens.)
     metrics:
       include:
         match_type: strict
@@ -73,6 +93,9 @@ processors:
         - fluentbit_stackdriver_requests_total
         - fluentbit_stackdriver_proc_records_total
         - fluentbit_stackdriver_retried_records_total
+        - otelcol_exporter_sent_log_records
+        - otelcol_exporter_send_failed_log_records
+        - grpc.client.attempt.duration_count
   filter/otel_1:
     metrics:
       datapoint:
@@ -90,6 +113,7 @@ processors:
         - grpc.client.attempt.duration.logging_count
         - grpc.client.attempt.duration.monitoring_count
         - googlecloudmonitoring/point_count
+<<<<<<< HEAD
   filter/otel_5:
     metrics:
       include:
@@ -99,6 +123,11 @@ processors:
         - agent.googleapis.com/agent/uptime
         - agent.googleapis.com/agent/api_request_count
         - agent.googleapis.com/agent/monitoring/point_count
+=======
+  groupbyattrs/logging_metrics_5: {}
+  interval/logging_metrics_4:
+    interval: 1m
+>>>>>>> e0882b40e (Update goldens.)
   metricstransform/activemq_1:
     transforms:
     - action: update
@@ -457,11 +486,72 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+<<<<<<< HEAD
   metricstransform/otel_4:
     transforms:
     - action: insert
       include: otelcol_exporter_send_failed_log_records
       new_name: agent/log_entry_retry_count
+=======
+  metricstransform/logging_metrics_10:
+    transforms:
+    - action: combine
+      aggregation_type: sum
+      include: ^.*_log_entry_retry_count$$
+      match_type: regexp
+      new_name: agent/log_entry_retry_count
+      operations:
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+      submatch_case: lower
+    - action: combine
+      aggregation_type: sum
+      include: ^.*_request_count$$
+      match_type: regexp
+      new_name: agent/request_count
+      operations:
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+      submatch_case: lower
+    - action: combine
+      aggregation_type: sum
+      include: ^.*_log_entry_count$$
+      match_type: regexp
+      new_name: agent/log_entry_count
+      operations:
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+      submatch_case: lower
+  metricstransform/logging_metrics_12:
+    transforms:
+    - action: update
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: agent.googleapis.com/$${1}
+  metricstransform/logging_metrics_3:
+    transforms:
+    - action: update
+      include: fluentbit_stackdriver_retried_records_total
+      new_name: fluentbit_log_entry_retry_count
+>>>>>>> e0882b40e (Update goldens.)
+      operations:
+      - action: toggle_scalar_data_type
+      - action: add_label
+        new_label: response_code
+        new_value: "400"
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+    - action: insert
+      include: otelcol_exporter_send_failed_log_records
+      new_name: otel_log_entry_retry_count
       operations:
       - action: toggle_scalar_data_type
       - action: add_label
@@ -472,8 +562,73 @@ processors:
         label_set:
         - response_code
     - action: update
+<<<<<<< HEAD
       include: otelcol_exporter_sent_log_records
       new_name: agent/log_entry_count
+=======
+      include: fluentbit_stackdriver_requests_total
+      new_name: fluentbit_request_count
+      operations:
+      - action: toggle_scalar_data_type
+      - action: update_label
+        label: status
+        new_label: response_code
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+    - action: update
+      include: grpc.client.attempt.duration_count
+      new_name: otel_request_count
+      operations:
+      - action: update_label
+        label: grpc.status
+        new_label: response_code
+      - action: update_label
+        label: response_code
+        value_actions:
+        - new_value: "409"
+          value: ABORTED
+        - new_value: "409"
+          value: ALREADY_EXISTS
+        - new_value: "499"
+          value: CANCELLED
+        - new_value: "500"
+          value: DATA_LOSS
+        - new_value: "504"
+          value: DEADLINE_EXCEEDED
+        - new_value: "400"
+          value: FAILED_PRECONDITION
+        - new_value: "500"
+          value: INTERNAL
+        - new_value: "400"
+          value: INVALID_ARGUMENT
+        - new_value: "404"
+          value: NOT_FOUND
+        - new_value: "200"
+          value: OK
+        - new_value: "400"
+          value: OUT_OF_RANGE
+        - new_value: "403"
+          value: PERMISSION_DENIED
+        - new_value: "429"
+          value: RESOURCE_EXHAUSTED
+        - new_value: "401"
+          value: UNAUTHENTICATED
+        - new_value: "503"
+          value: UNAVAILABLE
+        - new_value: "501"
+          value: UNIMPLEMENTED
+        - new_value: "500"
+          value: UNKNOWN
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+    - action: update
+      include: fluentbit_stackdriver_proc_records_total
+      new_name: fluentbit_log_entry_count
+>>>>>>> e0882b40e (Update goldens.)
       operations:
       - action: toggle_scalar_data_type
       - action: add_label
@@ -485,8 +640,25 @@ processors:
         - response_code
     - action: update
 <<<<<<< HEAD
+<<<<<<< HEAD
       include: otelcol_exporter_send_failed_log_records
       new_name: agent/log_entry_count
+=======
+      include: otelcol_exporter_sent_log_records
+      new_name: otel_log_entry_count
+      operations:
+      - action: toggle_scalar_data_type
+      - action: add_label
+        new_label: response_code
+        new_value: "200"
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+    - action: update
+      include: otelcol_exporter_send_failed_log_records
+      new_name: otel_log_entry_count
+>>>>>>> e0882b40e (Update goldens.)
       operations:
       - action: toggle_scalar_data_type
       - action: add_label
@@ -496,10 +668,22 @@ processors:
         aggregation_type: sum
         label_set:
         - response_code
+<<<<<<< HEAD
 =======
       include: ^(.*)$$
+=======
+    - action: combine
+      aggregation_type: sum
+      include: ^otel_log_entry_count$$
+>>>>>>> e0882b40e (Update goldens.)
       match_type: regexp
-      new_name: agent.googleapis.com/$${1}
+      new_name: otel_log_entry_count
+      operations:
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+      submatch_case: lower
   metricstransform/otel_3:
     transforms:
 >>>>>>> c1440b139 (Update goldens.)
@@ -604,6 +788,7 @@ processors:
       statements:
       - set(name, "agent.googleapis.com/activemq")
       - set(version, "1.0")
+<<<<<<< HEAD
   transform/activemq_3:
     metric_statements:
     - context: resource
@@ -613,6 +798,42 @@ processors:
       - delete_key(attributes, "service.instance.id")
       - delete_key(attributes, "service.namespace")
       - delete_key(attributes, "service.version")
+=======
+  transform/agent_prometheus_metrics_0:
+    metric_statements:
+    - context: metric
+      statements:
+      - delete_key(resource.attributes, "service.name")
+      - delete_key(resource.attributes, "service.version")
+      - delete_key(resource.attributes, "service.instance.id")
+      - delete_key(resource.attributes, "server.port")
+      - delete_key(resource.attributes, "url.scheme")
+  transform/logging_metrics_0:
+    error_mode: ignore
+    metric_statements:
+    - context: metric
+      statements:
+      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
+  transform/logging_metrics_6:
+    error_mode: ignore
+    metric_statements:
+    - context: datapoint
+      statements:
+      - set(time, TruncateTime(Now(), Duration("1m")))
+      - set(start_time, TruncateTime(start_time, Duration("1m")))
+  transform/logging_metrics_7:
+    error_mode: ignore
+    metric_statements:
+    - context: metric
+      statements:
+      - set(unit, "1")
+  transform/logging_metrics_9:
+    error_mode: ignore
+    metric_statements:
+    - context: datapoint
+      statements:
+      - set(start_time, time - Duration("1m"))
+>>>>>>> e0882b40e (Update goldens.)
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
@@ -624,10 +845,14 @@ processors:
     metric_statements:
     - context: metric
       statements:
+<<<<<<< HEAD
       - copy_metric("grpc.client.attempt.duration.logging") where name == "grpc.client.attempt.duration"
       - copy_metric("grpc.client.attempt.duration.monitoring") where name == "grpc.client.attempt.duration"
       - extract_count_metric(true) where name == "grpc.client.attempt.duration.logging"
       - extract_count_metric(true) where name == "grpc.client.attempt.duration.monitoring"
+=======
+      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
+>>>>>>> e0882b40e (Update goldens.)
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
@@ -659,7 +884,11 @@ receivers:
     - feature_tracking_otlp.json
     poll_interval: 1m0s
     replay_file: true
+<<<<<<< HEAD
   prometheus/fluentbit:
+=======
+  prometheus/agent_prometheus_metrics:
+>>>>>>> e0882b40e (Update goldens.)
     config:
       scrape_configs:
       - job_name: logging-collector
@@ -713,11 +942,40 @@ service:
       exporters:
       - googlecloud
       processors:
+<<<<<<< HEAD
+=======
+      - transform/agent_prometheus_metrics_0
+>>>>>>> e0882b40e (Update goldens.)
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
       - resourcedetection/_global_0
       receivers:
+<<<<<<< HEAD
       - prometheus/fluentbit
+=======
+      - prometheus/agent_prometheus_metrics
+    metrics/logging_metrics:
+      exporters:
+      - googlecloud
+      processors:
+      - transform/agent_prometheus_metrics_0
+      - transform/logging_metrics_0
+      - filter/logging_metrics_1
+      - filter/logging_metrics_2
+      - metricstransform/logging_metrics_3
+      - interval/logging_metrics_4
+      - groupbyattrs/logging_metrics_5
+      - transform/logging_metrics_6
+      - transform/logging_metrics_7
+      - cumulativetodelta/logging_metrics_8
+      - transform/logging_metrics_9
+      - metricstransform/logging_metrics_10
+      - deltatocumulative/logging_metrics_11
+      - metricstransform/logging_metrics_12
+      - resourcedetection/_global_0
+      receivers:
+      - prometheus/agent_prometheus_metrics
+>>>>>>> e0882b40e (Update goldens.)
     metrics/ops_agent:
       exporters:
       - googlecloud
@@ -731,6 +989,7 @@ service:
       - googlecloud
       processors:
 <<<<<<< HEAD
+<<<<<<< HEAD
       - filter/otel_0
       - transform/otel_1
       - filter/otel_2
@@ -739,6 +998,9 @@ service:
       - filter/otel_5
 =======
       - transform/prometheus_metrics_0
+=======
+      - transform/agent_prometheus_metrics_0
+>>>>>>> e0882b40e (Update goldens.)
       - transform/otel_0
       - filter/otel_1
       - filter/otel_2
@@ -746,7 +1008,11 @@ service:
 >>>>>>> c1440b139 (Update goldens.)
       - resourcedetection/_global_0
       receivers:
+<<<<<<< HEAD
       - prometheus/otel
+=======
+      - prometheus/agent_prometheus_metrics
+>>>>>>> e0882b40e (Update goldens.)
   telemetry:
     metrics:
       readers:

@@ -625,6 +625,15 @@ processors:
   resourcedetection/_global_0:
     detectors:
     - gcp
+  transform/agent_prometheus_metrics_0:
+    metric_statements:
+    - context: metric
+      statements:
+      - delete_key(resource.attributes, "service.name")
+      - delete_key(resource.attributes, "service.version")
+      - delete_key(resource.attributes, "service.instance.id")
+      - delete_key(resource.attributes, "server.port")
+      - delete_key(resource.attributes, "url.scheme")
   transform/logging_metrics_0:
     error_mode: ignore
     metric_statements:
@@ -662,15 +671,6 @@ processors:
     - context: metric
       statements:
       - extract_count_metric(true) where name == "grpc.client.attempt.duration"
-  transform/prometheus_metrics_0:
-    metric_statements:
-    - context: metric
-      statements:
-      - delete_key(resource.attributes, "service.name")
-      - delete_key(resource.attributes, "service.version")
-      - delete_key(resource.attributes, "service.instance.id")
-      - delete_key(resource.attributes, "server.port")
-      - delete_key(resource.attributes, "url.scheme")
   transform/syslog_0:
     error_mode: ignore
     log_statements:
@@ -804,7 +804,7 @@ receivers:
     - feature_tracking_otlp.json
     poll_interval: 1m0s
     replay_file: true
-  prometheus/prometheus_metrics:
+  prometheus/agent_prometheus_metrics:
     config:
       scrape_configs:
       - job_name: logging-collector
@@ -861,17 +861,17 @@ service:
       exporters:
       - googlecloud
       processors:
-      - transform/prometheus_metrics_0
+      - transform/agent_prometheus_metrics_0
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
       - resourcedetection/_global_0
       receivers:
-      - prometheus/prometheus_metrics
+      - prometheus/agent_prometheus_metrics
     metrics/logging_metrics:
       exporters:
       - googlecloud
       processors:
-      - transform/prometheus_metrics_0
+      - transform/agent_prometheus_metrics_0
       - transform/logging_metrics_0
       - filter/logging_metrics_1
       - filter/logging_metrics_2
@@ -887,7 +887,7 @@ service:
       - metricstransform/logging_metrics_12
       - resourcedetection/_global_0
       receivers:
-      - prometheus/prometheus_metrics
+      - prometheus/agent_prometheus_metrics
     metrics/ops_agent:
       exporters:
       - googlecloud
@@ -900,14 +900,14 @@ service:
       exporters:
       - googlecloud
       processors:
-      - transform/prometheus_metrics_0
+      - transform/agent_prometheus_metrics_0
       - transform/otel_0
       - filter/otel_1
       - filter/otel_2
       - metricstransform/otel_3
       - resourcedetection/_global_0
       receivers:
-      - prometheus/prometheus_metrics
+      - prometheus/agent_prometheus_metrics
   telemetry:
     metrics:
       readers:
