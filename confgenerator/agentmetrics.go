@@ -267,12 +267,12 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors() []otel.Component {
 		// The processors "interval" and "groupbyattrs" batch metrics in a 1 minute interval.
 		otel.Interval("1m"),
 		otel.CondenseResourceMetrics(),
-		// Truncate all timestamps of fluent-bit and otel metrics to align for aggregation.
+		// Align all datapoints timestamps within the batch to Now().
+		// Truncate all timestamps to align for aggregation.
 		otel.Transform("metric", "datapoint",
 			[]ottl.Statement{
 				`set(time, TruncateTime(Now(), Duration("1m")))`,
-				// ottl.TruncateTimeAll("1m"),
-				ottl.TruncateStartTimeAll("1m"),
+				`set(start_time, TruncateTime(start_time, Duration("1m")))`,
 			},
 		),
 		// Some metrics are missing metric unit. Needed to combine metrics.
