@@ -35,6 +35,7 @@ type AgentSelfMetrics struct {
 	OtelLogging         bool
 }
 
+// Following reference : https://github.com/googleapis/googleapis/blob/master/google/rpc/code.proto
 var grpcToHTTPStatus = map[string]string{
 	"OK":                  "200",
 	"INVALID_ARGUMENT":    "400",
