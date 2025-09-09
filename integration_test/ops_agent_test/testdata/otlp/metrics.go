@@ -31,7 +31,13 @@ func installMetricExportPipeline(ctx context.Context) (func(context.Context) err
 	}
 	metricResource := resource.Default()
 	if *flagServiceAttributes {
-		metricResource = resource.NewWithAttributes("", semconv.ServiceNameKey.String("ops-agent-test-otlp"))
+		metricResource = resource.NewWithAttributes(
+			"",
+			semconv.ServiceNameKey.String("ops-agent-test-otlp"),
+			semconv.ServiceInstanceIDKey.String("ops-agent-test-otlp-instance-x"),
+			semconv.ServiceNamespaceKey.String("ops-agent-test-otlp-instances"),
+			semconv.ServiceVersionKey.String("ops-agent-test-otlp-v1"),
+		)
 	}
 	metricProvider := metricsdk.NewMeterProvider(
 		metricsdk.WithReader(metricsdk.NewPeriodicReader(exporter)),

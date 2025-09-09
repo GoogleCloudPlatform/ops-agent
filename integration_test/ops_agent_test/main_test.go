@@ -4655,8 +4655,19 @@ traces:
 			if err != nil {
 				t.Error(err)
 			}
-			if _, ok := ts.Metric.Labels["service_name"]; !ok {
-				t.Errorf("metric %s missing expected label `service_name`", name)
+
+			expectedServiceAttributes := []string{
+				"service_name",
+				"service_instance_id",
+				"service_namespace",
+				// TODO: If/when https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/pull/1065 is merged and
+				// released in our exporter, add this to the expected attributes.
+				// "service_version",
+			}
+			for _, serviceAttribute := range expectedServiceAttributes {
+				if _, ok := ts.Metric.Labels[serviceAttribute]; !ok {
+					t.Errorf("metric %s missing expected label `%s`", name, serviceAttribute)
+				}
 			}
 		}
 
