@@ -237,6 +237,12 @@ func TransformationMetrics(queries ...TransformQuery) Component {
 // googlecloudexporter attempts to promote from resource to metric attributes.
 // The attributes it removes are specified at:
 // https://opentelemetry.io/docs/specs/semconv/registry/attributes/service/
+//
+// This does not use the typical TransformQuery API because it needs to have
+// a silent error_mode and use the resource context. The latter would have been
+// easily fixable, but the error_mode would have required a major refactor for
+// this to be the only TransformQuery making use of it.
+// - @braydonk
 func MetricsRemoveServiceAttributes() Component {
 	return Component{
 		Type: "transform",
