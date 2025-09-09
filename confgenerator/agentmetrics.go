@@ -196,47 +196,6 @@ func (r AgentSelfMetrics) FluentBitPipelineProcessors() []otel.Component {
 }
 
 func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors() []otel.Component {
-	if r.OtelLogging {
-		return r.OtelAndFluentbitLoggingMetricsPipelineProcessors()
-	}
-	return r.FluentBitLoggingMetricsPipelineProcessors()
-}
-
-func (r AgentSelfMetrics) FluentBitLoggingMetricsPipelineProcessors() []otel.Component {
-	return []otel.Component{
-		otel.MetricsFilter(
-			"include",
-			"strict",
-			"fluentbit_stackdriver_requests_total",
-			"fluentbit_stackdriver_proc_records_total",
-			"fluentbit_stackdriver_retried_records_total",
-		),
-		// General transformations of metrics.
-		otel.MetricsTransform(
-			otel.RenameMetric("fluentbit_stackdriver_retried_records_total", "agent/log_entry_retry_count",
-				// change data type from double -> int64
-				otel.ToggleScalarDataType,
-				otel.RenameLabel("status", "response_code"),
-				otel.AggregateLabels("sum", "response_code"),
-			),
-			otel.RenameMetric("fluentbit_stackdriver_requests_total", "agent/request_count",
-				// change data type from double -> int64
-				otel.ToggleScalarDataType,
-				otel.RenameLabel("status", "response_code"),
-				otel.AggregateLabels("sum", "response_code"),
-			),
-			otel.RenameMetric("fluentbit_stackdriver_proc_records_total", "agent/log_entry_count",
-				// change data type from double -> int64
-				otel.ToggleScalarDataType,
-				otel.RenameLabel("status", "response_code"),
-				otel.AggregateLabels("sum", "response_code"),
-			),
-			otel.AddPrefix("agent.googleapis.com"),
-		),
-	}
-}
-
-func (r AgentSelfMetrics) OtelAndFluentbitLoggingMetricsPipelineProcessors() []otel.Component {
 	return []otel.Component{
 		otel.Transform("metric", "metric",
 			[]ottl.Statement{
