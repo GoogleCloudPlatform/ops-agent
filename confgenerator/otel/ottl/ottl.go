@@ -217,8 +217,8 @@ func IsNotNil(a Value) Value {
 }
 
 // CopyMetric creates a copy of a given metric with a new name
-func CopyMetric(metricName string, condition string) Statement {
-	return statementf(`copy_metric(%q) where name == "%s"`, metricName, condition)
+func CopyMetric(newMetricName string, oldMetricName string) Statement {
+	return statementf(`copy_metric(%s) where name == "%s"`, newMetricName, oldMetricName)
 }
 
 // ExtractCountMetric creates a new metric based on the count value of a Histogram metric
