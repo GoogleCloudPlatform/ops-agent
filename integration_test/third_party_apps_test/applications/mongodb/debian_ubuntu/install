@@ -22,6 +22,9 @@ case $osname in
   Ubuntu)
     if [[ "${VERSION_ID}" =~ ^(24) || "${VERSION_ID}" =~ ^(25) ]]; then
       MONGO_VERSION=8.0.0
+      if [[ "${oscode}" == "plucky" ]]; then
+        oscode="focal"
+      fi
       curl -fsSL https://www.mongodb.org/static/pgp/server-8.0.asc | \
         sudo gpg -o /usr/share/keyrings/mongodb-server-8.0.gpg \
         --dearmor
