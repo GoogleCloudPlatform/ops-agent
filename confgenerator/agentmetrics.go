@@ -275,7 +275,7 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors() []otel.Component {
 		),
 		// Aggregating as delta metrics isolates data for the current 1m interval only.
 		// Keep the initial value so the resulting cumulative metric has all data.
-		otel.CumulativeToDeltaWithInitialValue("auto",
+		otel.CumulativeToDeltaWithInitialValue("keep",
 			"otel_log_entry_count", "otel_log_entry_retry_count", "otel_request_count",
 			"fluentbit_log_entry_count", "fluentbit_log_entry_retry_count", "fluentbit_request_count",
 		),
