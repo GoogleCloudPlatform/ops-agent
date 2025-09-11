@@ -57,8 +57,10 @@ var grpcToHTTPStatus = map[string]string{
 }
 
 func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]otel.ReceiverPipeline, pipelines map[string]otel.Pipeline) {
+	// Receiver pipelines names should have 1 underscore to avoid collision with user configurations.
 	receiverPipelines["agent_prometheus"] = r.PrometheusMetricsPipeline()
 
+	// Pipeline names should have no underscores to avoid collision with user configurations.
 	pipelines["otel"] = otel.Pipeline{
 		Type:                 "metrics",
 		ReceiverPipelineName: "agent_prometheus",

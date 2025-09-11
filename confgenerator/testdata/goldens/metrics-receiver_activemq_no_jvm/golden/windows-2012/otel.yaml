@@ -24,7 +24,7 @@ processors:
     - agent.googleapis.com/iis/network/transferred_bytes_count
     - agent.googleapis.com/iis/new_connection_count
     - agent.googleapis.com/iis/request_count
-  cumulativetodelta/logging_metrics_7:
+  cumulativetodelta/loggingmetrics_7:
     include:
       match_type: strict
       metrics:
@@ -35,7 +35,7 @@ processors:
       - fluentbit_log_entry_retry_count
       - fluentbit_request_count
     initial_value: keep
-  deltatocumulative/logging_metrics_10: {}
+  deltatocumulative/loggingmetrics_10: {}
   filter/default__pipeline_hostmetrics_0:
     metrics:
       exclude:
@@ -66,11 +66,11 @@ processors:
         - system.filesystem.inodes.usage
         - system.paging.faults
         - system.disk.operation_time
-  filter/logging_metrics_1:
+  filter/loggingmetrics_1:
     metrics:
       datapoint:
       - metric.name == "grpc.client.attempt.duration_count" and (not IsMatch(datapoint.attributes["grpc.target"], "logging.googleapis"))
-  filter/logging_metrics_2:
+  filter/loggingmetrics_2:
     metrics:
       include:
         match_type: strict
@@ -94,8 +94,8 @@ processors:
         - otelcol_process_memory_rss
         - grpc.client.attempt.duration_count
         - googlecloudmonitoring/point_count
-  groupbyattrs/logging_metrics_5: {}
-  interval/logging_metrics_4:
+  groupbyattrs/loggingmetrics_5: {}
+  interval/loggingmetrics_4:
     interval: 1m
   metricstransform/activemq_1:
     transforms:
@@ -432,13 +432,13 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/logging_metrics_11:
+  metricstransform/loggingmetrics_11:
     transforms:
     - action: update
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/logging_metrics_3:
+  metricstransform/loggingmetrics_3:
     transforms:
     - action: update
       include: fluentbit_stackdriver_retried_records_total
@@ -571,7 +571,7 @@ processors:
         label_set:
         - response_code
       submatch_case: lower
-  metricstransform/logging_metrics_9:
+  metricstransform/loggingmetrics_9:
     transforms:
     - action: combine
       aggregation_type: sum
@@ -677,7 +677,7 @@ processors:
       statements:
       - set(name, "agent.googleapis.com/activemq")
       - set(version, "1.0")
-  transform/agent_prometheus_metrics_0:
+  transform/agent_prometheus_0:
     metric_statements:
     - context: metric
       statements:
@@ -692,19 +692,19 @@ processors:
       statements:
       - set(name, "agent.googleapis.com/iis")
       - set(version, "1.0")
-  transform/logging_metrics_0:
+  transform/loggingmetrics_0:
     error_mode: ignore
     metric_statements:
     - context: metric
       statements:
       - extract_count_metric(true) where name == "grpc.client.attempt.duration"
-  transform/logging_metrics_6:
+  transform/loggingmetrics_6:
     error_mode: ignore
     metric_statements:
     - context: metric
       statements:
       - set(unit, "1")
-  transform/logging_metrics_8:
+  transform/loggingmetrics_8:
     error_mode: ignore
     metric_statements:
     - context: datapoint
@@ -761,7 +761,7 @@ receivers:
     - feature_tracking_otlp.json
     poll_interval: 1m0s
     replay_file: true
-  prometheus/agent_prometheus_metrics:
+  prometheus/agent_prometheus:
     config:
       scrape_configs:
       - job_name: logging-collector
@@ -856,33 +856,33 @@ service:
       exporters:
       - googlecloud
       processors:
-      - transform/agent_prometheus_metrics_0
+      - transform/agent_prometheus_0
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
       - resourcedetection/_global_0
       receivers:
-      - prometheus/agent_prometheus_metrics
-    metrics/logging_metrics:
+      - prometheus/agent_prometheus
+    metrics/loggingmetrics:
       exporters:
       - googlecloud
       processors:
-      - transform/agent_prometheus_metrics_0
-      - transform/logging_metrics_0
-      - filter/logging_metrics_1
-      - filter/logging_metrics_2
-      - metricstransform/logging_metrics_3
-      - interval/logging_metrics_4
-      - groupbyattrs/logging_metrics_5
-      - transform/logging_metrics_6
-      - cumulativetodelta/logging_metrics_7
-      - transform/logging_metrics_8
-      - metricstransform/logging_metrics_9
-      - deltatocumulative/logging_metrics_10
-      - metricstransform/logging_metrics_11
+      - transform/agent_prometheus_0
+      - transform/loggingmetrics_0
+      - filter/loggingmetrics_1
+      - filter/loggingmetrics_2
+      - metricstransform/loggingmetrics_3
+      - interval/loggingmetrics_4
+      - groupbyattrs/loggingmetrics_5
+      - transform/loggingmetrics_6
+      - cumulativetodelta/loggingmetrics_7
+      - transform/loggingmetrics_8
+      - metricstransform/loggingmetrics_9
+      - deltatocumulative/loggingmetrics_10
+      - metricstransform/loggingmetrics_11
       - resourcedetection/_global_0
       receivers:
-      - prometheus/agent_prometheus_metrics
-    metrics/ops_agent:
+      - prometheus/agent_prometheus
+    metrics/opsagent:
       exporters:
       - googlecloud
       processors:
@@ -894,14 +894,14 @@ service:
       exporters:
       - googlecloud
       processors:
-      - transform/agent_prometheus_metrics_0
+      - transform/agent_prometheus_0
       - transform/otel_0
       - filter/otel_1
       - filter/otel_2
       - metricstransform/otel_3
       - resourcedetection/_global_0
       receivers:
-      - prometheus/agent_prometheus_metrics
+      - prometheus/agent_prometheus
   telemetry:
     metrics:
       readers:
