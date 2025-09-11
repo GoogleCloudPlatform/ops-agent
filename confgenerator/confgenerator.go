@@ -58,6 +58,21 @@ func googleCloudExporter(userAgent string, instrumentationLabels bool) otel.Comp
 	}
 }
 
+func otlpExporter(userAgent string) otel.Component {
+	return otel.Component{
+		Type: "otlphttp",
+		Config: map[string]interface{}{
+			"endpoint": "https://telemetry.googleapis.com",
+			"auth": map[string]interface{}{
+				"authenticator": "googleclientauth",
+			},
+			"headers": map[string]string{
+				"User-Agent": userAgent,
+			},
+		},
+	}
+}
+
 func googleManagedPrometheusExporter(userAgent string) otel.Component {
 	return otel.Component{
 		Type: "googlemanagedprometheus",
@@ -130,6 +145,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 			otel.System: googleCloudExporter(userAgent, false),
 			otel.OTel:   googleCloudExporter(userAgent, true),
 			otel.GMP:    googleManagedPrometheusExporter(userAgent),
+			otel.Otlp:   otlpExporter(userAgent),
 		},
 	}.Generate(ctx)
 	if err != nil {
