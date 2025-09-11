@@ -24,7 +24,7 @@ processors:
     - agent.googleapis.com/iis/network/transferred_bytes_count
     - agent.googleapis.com/iis/new_connection_count
     - agent.googleapis.com/iis/request_count
-  cumulativetodelta/logging_metrics_7:
+  cumulativetodelta/loggingmetrics_7:
     include:
       match_type: strict
       metrics:
@@ -35,7 +35,7 @@ processors:
       - fluentbit_log_entry_retry_count
       - fluentbit_request_count
     initial_value: keep
-  deltatocumulative/logging_metrics_10: {}
+  deltatocumulative/loggingmetrics_10: {}
   filter/default__pipeline_hostmetrics_0:
     metrics:
       exclude:
@@ -71,6 +71,7 @@ processors:
         - system.disk.operation_time
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   filter/otel_0:
 =======
   filter/logging_metrics_0:
@@ -82,6 +83,13 @@ processors:
       - metric.name == "grpc.client.attempt.duration_count" and (not IsMatch(datapoint.attributes["grpc.target"], "logging.googleapis"))
   filter/logging_metrics_2:
 >>>>>>> e0882b40e (Update goldens.)
+=======
+  filter/loggingmetrics_1:
+    metrics:
+      datapoint:
+      - metric.name == "grpc.client.attempt.duration_count" and (not IsMatch(datapoint.attributes["grpc.target"], "logging.googleapis"))
+  filter/loggingmetrics_2:
+>>>>>>> 84f338530 (Add comments and update goldens.)
     metrics:
       include:
         match_type: strict
@@ -124,6 +132,7 @@ processors:
         - grpc.client.attempt.duration.monitoring_count
         - googlecloudmonitoring/point_count
 <<<<<<< HEAD
+<<<<<<< HEAD
   filter/otel_5:
     metrics:
       include:
@@ -136,6 +145,10 @@ processors:
 =======
   groupbyattrs/logging_metrics_5: {}
   interval/logging_metrics_4:
+=======
+  groupbyattrs/loggingmetrics_5: {}
+  interval/loggingmetrics_4:
+>>>>>>> 84f338530 (Add comments and update goldens.)
     interval: 1m
 >>>>>>> e0882b40e (Update goldens.)
   metricstransform/fluentbit_1:
@@ -503,6 +516,7 @@ processors:
       new_name: agent.googleapis.com/$${1}
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   metricstransform/logging_metrics_10:
     transforms:
@@ -543,12 +557,15 @@ processors:
 =======
   metricstransform/logging_metrics_11:
 >>>>>>> 4e9013ad7 (Improve timestamp alignment logic. Test `auto` for `initial_value`.)
+=======
+  metricstransform/loggingmetrics_11:
+>>>>>>> 84f338530 (Add comments and update goldens.)
     transforms:
     - action: update
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/logging_metrics_3:
+  metricstransform/loggingmetrics_3:
     transforms:
     - action: update
       include: fluentbit_stackdriver_retried_records_total
@@ -682,9 +699,13 @@ processors:
         - response_code
       submatch_case: lower
 <<<<<<< HEAD
+<<<<<<< HEAD
 >>>>>>> e0882b40e (Update goldens.)
 =======
   metricstransform/logging_metrics_9:
+=======
+  metricstransform/loggingmetrics_9:
+>>>>>>> 84f338530 (Add comments and update goldens.)
     transforms:
     - action: combine
       aggregation_type: sum
@@ -879,7 +900,7 @@ processors:
   resourcedetection/_global_0:
     detectors:
     - gcp
-  transform/agent_prometheus_metrics_0:
+  transform/agent_prometheus_0:
     metric_statements:
     - context: metric
       statements:
@@ -894,19 +915,19 @@ processors:
       statements:
       - set(name, "agent.googleapis.com/iis")
       - set(version, "1.0")
-  transform/logging_metrics_0:
+  transform/loggingmetrics_0:
     error_mode: ignore
     metric_statements:
     - context: metric
       statements:
       - extract_count_metric(true) where name == "grpc.client.attempt.duration"
-  transform/logging_metrics_6:
+  transform/loggingmetrics_6:
     error_mode: ignore
     metric_statements:
     - context: metric
       statements:
       - set(unit, "1")
-  transform/logging_metrics_8:
+  transform/loggingmetrics_8:
     error_mode: ignore
     metric_statements:
     - context: datapoint
@@ -999,10 +1020,14 @@ receivers:
     transport: tcp
     username: usr
 <<<<<<< HEAD
+<<<<<<< HEAD
   prometheus/fluentbit:
 =======
   prometheus/agent_prometheus_metrics:
 >>>>>>> e0882b40e (Update goldens.)
+=======
+  prometheus/agent_prometheus:
+>>>>>>> 84f338530 (Add comments and update goldens.)
     config:
       scrape_configs:
       - job_name: logging-collector
@@ -1091,39 +1116,53 @@ service:
       - googlecloud
       processors:
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
       - transform/agent_prometheus_metrics_0
 >>>>>>> e0882b40e (Update goldens.)
+=======
+      - transform/agent_prometheus_0
+>>>>>>> 84f338530 (Add comments and update goldens.)
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
       - resourcedetection/_global_0
       receivers:
 <<<<<<< HEAD
+<<<<<<< HEAD
       - prometheus/fluentbit
 =======
       - prometheus/agent_prometheus_metrics
     metrics/logging_metrics:
+=======
+      - prometheus/agent_prometheus
+    metrics/loggingmetrics:
+>>>>>>> 84f338530 (Add comments and update goldens.)
       exporters:
       - googlecloud
       processors:
-      - transform/agent_prometheus_metrics_0
-      - transform/logging_metrics_0
-      - filter/logging_metrics_1
-      - filter/logging_metrics_2
-      - metricstransform/logging_metrics_3
-      - interval/logging_metrics_4
-      - groupbyattrs/logging_metrics_5
-      - transform/logging_metrics_6
-      - cumulativetodelta/logging_metrics_7
-      - transform/logging_metrics_8
-      - metricstransform/logging_metrics_9
-      - deltatocumulative/logging_metrics_10
-      - metricstransform/logging_metrics_11
+      - transform/agent_prometheus_0
+      - transform/loggingmetrics_0
+      - filter/loggingmetrics_1
+      - filter/loggingmetrics_2
+      - metricstransform/loggingmetrics_3
+      - interval/loggingmetrics_4
+      - groupbyattrs/loggingmetrics_5
+      - transform/loggingmetrics_6
+      - cumulativetodelta/loggingmetrics_7
+      - transform/loggingmetrics_8
+      - metricstransform/loggingmetrics_9
+      - deltatocumulative/loggingmetrics_10
+      - metricstransform/loggingmetrics_11
       - resourcedetection/_global_0
       receivers:
+<<<<<<< HEAD
       - prometheus/agent_prometheus_metrics
 >>>>>>> e0882b40e (Update goldens.)
     metrics/ops_agent:
+=======
+      - prometheus/agent_prometheus
+    metrics/opsagent:
+>>>>>>> 84f338530 (Add comments and update goldens.)
       exporters:
       - googlecloud
       processors:
@@ -1137,6 +1176,7 @@ service:
       processors:
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
       - filter/otel_0
       - transform/otel_1
       - filter/otel_2
@@ -1148,6 +1188,9 @@ service:
 =======
       - transform/agent_prometheus_metrics_0
 >>>>>>> e0882b40e (Update goldens.)
+=======
+      - transform/agent_prometheus_0
+>>>>>>> 84f338530 (Add comments and update goldens.)
       - transform/otel_0
       - filter/otel_1
       - filter/otel_2
@@ -1156,10 +1199,14 @@ service:
       - resourcedetection/_global_0
       receivers:
 <<<<<<< HEAD
+<<<<<<< HEAD
       - prometheus/otel
 =======
       - prometheus/agent_prometheus_metrics
 >>>>>>> e0882b40e (Update goldens.)
+=======
+      - prometheus/agent_prometheus
+>>>>>>> 84f338530 (Add comments and update goldens.)
     metrics/postgresql_postgresql:
       exporters:
       - googlecloud/otel
