@@ -53,7 +53,7 @@ func MetricsOTTLFilter(metricQueries []string, datapointQueries []string) Compon
 		metricsConfig["metric"] = metricQueries
 	}
 	if len(datapointQueries) > 0 {
-		metricsConfig["datapoint"] = metricQueries
+		metricsConfig["datapoint"] = datapointQueries
 	}
 
 	return Component{
@@ -94,14 +94,32 @@ func CastToSum(metrics ...string) Component {
 
 // CumulativeToDelta returns a Component that converts each cumulative metric to delta.
 func CumulativeToDelta(metrics ...string) Component {
-	return Component{
-		Type: "cumulativetodelta",
-		Config: map[string]interface{}{
-			"include": map[string]interface{}{
-				"metrics":    metrics,
-				"match_type": "strict",
-			},
+	return CumulativeToDeltaWithInitialValue("", metrics...)
+}
+
+// CumulativeToDeltaWithInitialValue returns a Component that converts each cumulative metric to delta
+// with the possibility to set the "initial_value" option.
+func CumulativeToDeltaWithInitialValue(initial_value string, metrics ...string) Component {
+	config := map[string]interface{}{
+		"include": map[string]interface{}{
+			"metrics":    metrics,
+			"match_type": "strict",
 		},
+	}
+	if initial_value != "" {
+		config["initial_value"] = initial_value
+	}
+	return Component{
+		Type:   "cumulativetodelta",
+		Config: config,
+	}
+}
+
+// DeltaToCumulative returns a Component that converts each delta metric to cumulative.
+func DeltaToCumulative() Component {
+	return Component{
+		Type:   "deltatocumulative",
+		Config: map[string]interface{}{},
 	}
 }
 
@@ -111,6 +129,16 @@ func DeltaToRate(metrics ...string) Component {
 		Type: "deltatorate",
 		Config: map[string]interface{}{
 			"metrics": metrics,
+		},
+	}
+}
+
+// Interval returns a Component that aggregates metrics within an interval.
+func Interval(duration string) Component {
+	return Component{
+		Type: "interval",
+		Config: map[string]interface{}{
+			"interval": duration,
 		},
 	}
 }
@@ -266,6 +294,14 @@ func GroupByAttribute(attribute string) TransformQuery {
 	}
 }
 
+// DeleteMetricResourceAttribute returns an expression that removes the metric resource attribute specified.
+func DeleteMetricResourceAttribute(metricAttribute string) TransformQuery {
+	return TransformQuery{
+		Context:   Metric,
+		Statement: fmt.Sprintf(`delete_key(resource.attributes, "%s")`, metricAttribute),
+	}
+}
+
 // DeleteMetricAttribute returns an expression that removes the metric attribute specified.
 func DeleteMetricAttribute(metricAttribute string) TransformQuery {
 	return TransformQuery{
@@ -416,11 +452,12 @@ func DuplicateMetric(old, new string, operations ...map[string]interface{}) map[
 // CombineMetrics returns a config snippet that renames metrics matching the regex old to new, applying zero or more transformations.
 func CombineMetrics(old, new string, operations ...map[string]interface{}) map[string]interface{} {
 	out := map[string]interface{}{
-		"include":       old,
-		"match_type":    "regexp",
-		"action":        "combine",
-		"new_name":      new,
-		"submatch_case": "lower",
+		"include":          old,
+		"match_type":       "regexp",
+		"action":           "combine",
+		"new_name":         new,
+		"aggregation_type": "sum",
+		"submatch_case":    "lower",
 	}
 	if len(operations) > 0 {
 		out["operations"] = operations
