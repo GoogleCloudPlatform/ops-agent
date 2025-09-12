@@ -56,6 +56,7 @@ func (m MetricsReceiverMssql) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 					otel.SetScopeName("agent.googleapis.com/"+m.Type()),
 					otel.SetScopeVersion("2.0"),
 				),
+				otel.MetricsRemoveServiceAttributes(),
 				otel.NormalizeSums(),
 			}},
 		}}, nil

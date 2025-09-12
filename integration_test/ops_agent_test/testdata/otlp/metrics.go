@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	metricsdk "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
+	semconv "go.opentelemetry.io/otel/semconv/v1.20.0"
 )
 
 var renameMap = map[string]string{
@@ -20,14 +22,26 @@ var renameMap = map[string]string{
 	"otlp.test.prefix5": "WORKLOAD.googleapis.com/otlp.test.prefix5",
 }
 
+var flagServiceAttributes = flag.Bool("with_service_attributes", false, "Include service resource attributes in meter resource")
+
 func installMetricExportPipeline(ctx context.Context) (func(context.Context) error, error) {
 	exporter, err := otlpmetricgrpc.New(ctx, otlpmetricgrpc.WithInsecure())
 	if err != nil {
 		log.Fatal(err)
 	}
+	metricResource := resource.Default()
+	if *flagServiceAttributes {
+		metricResource = resource.NewWithAttributes(
+			"",
+			semconv.ServiceNameKey.String("ops-agent-test-otlp"),
+			semconv.ServiceInstanceIDKey.String("ops-agent-test-otlp-instance-x"),
+			semconv.ServiceNamespaceKey.String("ops-agent-test-otlp-instances"),
+			semconv.ServiceVersionKey.String("ops-agent-test-otlp-v1"),
+		)
+	}
 	metricProvider := metricsdk.NewMeterProvider(
 		metricsdk.WithReader(metricsdk.NewPeriodicReader(exporter)),
-		metricsdk.WithResource(resource.Default()),
+		metricsdk.WithResource(metricResource),
 		metricsdk.WithView(func(i metricsdk.Instrument) (metricsdk.Stream, bool) {
 			s := metricsdk.Stream{Name: i.Name, Description: i.Description, Unit: i.Unit}
 			newName, ok := renameMap[i.Name]
@@ -43,6 +57,7 @@ func installMetricExportPipeline(ctx context.Context) (func(context.Context) err
 }
 
 func main() {
+	flag.Parse()
 	ctx := context.Background()
 
 	shutdown, err := installMetricExportPipeline(ctx)

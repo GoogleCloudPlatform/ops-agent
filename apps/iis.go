@@ -52,6 +52,7 @@ func (r MetricsReceiverIis) Pipelines(_ context.Context) ([]otel.ReceiverPipelin
 					otel.SetScopeName("agent.googleapis.com/"+r.Type()),
 					otel.SetScopeVersion("2.0"),
 				),
+				otel.MetricsRemoveServiceAttributes(),
 				// Drop all resource keys; Must be done in a separate transform,
 				// otherwise the above flatten resource attribute queries will only
 				// work for the first datapoint
