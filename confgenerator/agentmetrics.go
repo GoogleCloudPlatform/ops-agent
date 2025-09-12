@@ -276,8 +276,11 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors() []otel.Component {
 			},
 		),
 		// Aggregating as delta metrics isolates data for the current 1m interval only.
-		// Keep the initial value so the resulting cumulative metric has all data.
-		otel.CumulativeToDeltaWithInitialValue("keep",
+		// Set `initial_value: auto" to store first observed or reset points as "anchors" of the cumulative sum.
+		// - "first observed point" : First scrape of cumulative metric.
+		// - "reset points" : startTime == 0 or startTime == endTime or currValue < prevValue
+		// - "anchor" : Substract "anchor" value from subsequent points, e.g. deltaValue = currValue - anchorValue
+		otel.CumulativeToDeltaWithInitialValue("auto",
 			"otel_log_entry_count", "otel_log_entry_retry_count", "otel_request_count",
 			"fluentbit_log_entry_count", "fluentbit_log_entry_retry_count", "fluentbit_request_count",
 		),
