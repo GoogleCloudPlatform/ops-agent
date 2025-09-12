@@ -42,6 +42,7 @@ func (r MetricsReceiverJetty) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 
 	return r.MetricsReceiverSharedJVM.
 		WithDefaultEndpoint(defaultJettyEndpoint).
+		WithServiceName(targetSystem).
 		ConfigurePipelines(
 			targetSystem,
 			[]otel.Component{
