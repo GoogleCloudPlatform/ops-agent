@@ -30,7 +30,7 @@ processors:
       - fluentbit_log_entry_count
       - fluentbit_log_entry_retry_count
       - fluentbit_request_count
-    initial_value: keep
+    initial_value: auto
   deltatocumulative/loggingmetrics_10: {}
   filter/default__pipeline_hostmetrics_0:
     metrics:
