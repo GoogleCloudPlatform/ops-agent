@@ -19,7 +19,7 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  cumulativetodelta/loggingmetrics_5:
+  cumulativetodelta/loggingmetrics_4:
     include:
       match_type: strict
       metrics:
@@ -29,8 +29,8 @@ processors:
       - fluentbit_log_entry_count
       - fluentbit_log_entry_retry_count
       - fluentbit_request_count
-    initial_value: auto
-  deltatocumulative/loggingmetrics_8: {}
+    initial_value: drop
+  deltatocumulative/loggingmetrics_7: {}
   filter/default__pipeline_hostmetrics_0:
     metrics:
       exclude:
@@ -79,7 +79,7 @@ processors:
         - otelcol_process_memory_rss
         - grpc.client.attempt.duration_count
         - googlecloudmonitoring/point_count
-  interval/loggingmetrics_9:
+  interval/loggingmetrics_8:
     interval: 1m
   metricstransform/fluentbit_1:
     transforms:
@@ -373,12 +373,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/loggingmetrics_10:
-    transforms:
-    - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: agent.googleapis.com/$${1}
   metricstransform/loggingmetrics_3:
     transforms:
     - action: update
@@ -512,26 +506,12 @@ processors:
         label_set:
         - response_code
       submatch_case: lower
-  metricstransform/loggingmetrics_7:
+  metricstransform/loggingmetrics_9:
     transforms:
     - action: update
-      include: fluentbit_log_entry_count
-      new_name: agent/log_entry_retry_count
-    - action: update
-      include: otel_log_entry_count
-      new_name: agent/log_entry_count
-    - action: update
-      include: fluentbit_log_entry_retry_count
-      new_name: agent/log_entry_retry_count
-    - action: update
-      include: otel_log_entry_retry_count
-      new_name: agent/log_entry_retry_count
-    - action: update
-      include: fluentbit_request_count
-      new_name: agent/request_count
-    - action: update
-      include: otel_request_count
-      new_name: agent/request_count
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: agent.googleapis.com/$${1}
   metricstransform/otel_3:
     transforms:
     - action: update
@@ -602,19 +582,25 @@ processors:
     - context: metric
       statements:
       - extract_count_metric(true) where name == "grpc.client.attempt.duration"
-  transform/loggingmetrics_4:
+  transform/loggingmetrics_5:
     error_mode: ignore
     metric_statements:
     - context: metric
       statements:
       - set(unit, "1")
+      - set(name, agent/log_entry_count) where name == "fluentbit_log_entry_count"
+      - set(name, agent/log_entry_count) where name == "otel_log_entry_count"
+      - set(name, agent/log_entry_retry_count) where name == "fluentbit_log_entry_retry_count"
+      - set(name, agent/log_entry_retry_count) where name == "otel_log_entry_retry_count"
+      - set(name, agent/request_count) where name == "fluentbit_request_count"
+      - set(name, agent/request_count) where name == "otel_request_count"
   transform/loggingmetrics_6:
     error_mode: ignore
     metric_statements:
     - context: datapoint
       statements:
       - set(time, Now())
-      - set(start_time, 0)
+      - set(start_time_unix_nano, 0)
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
@@ -714,13 +700,12 @@ service:
       - filter/loggingmetrics_1
       - filter/loggingmetrics_2
       - metricstransform/loggingmetrics_3
-      - transform/loggingmetrics_4
-      - cumulativetodelta/loggingmetrics_5
+      - cumulativetodelta/loggingmetrics_4
+      - transform/loggingmetrics_5
       - transform/loggingmetrics_6
-      - metricstransform/loggingmetrics_7
-      - deltatocumulative/loggingmetrics_8
-      - interval/loggingmetrics_9
-      - metricstransform/loggingmetrics_10
+      - deltatocumulative/loggingmetrics_7
+      - interval/loggingmetrics_8
+      - metricstransform/loggingmetrics_9
       - resourcedetection/_global_0
       receivers:
       - prometheus/agent_prometheus
