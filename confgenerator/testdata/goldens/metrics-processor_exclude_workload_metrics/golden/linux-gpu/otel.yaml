@@ -19,7 +19,7 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  cumulativetodelta/loggingmetrics_7:
+  cumulativetodelta/loggingmetrics_5:
     include:
       match_type: strict
       metrics:
@@ -30,7 +30,7 @@ processors:
       - fluentbit_log_entry_retry_count
       - fluentbit_request_count
     initial_value: auto
-  deltatocumulative/loggingmetrics_10: {}
+  deltatocumulative/loggingmetrics_8: {}
   filter/default__pipeline_hostmetrics_0:
     metrics:
       exclude:
@@ -95,8 +95,7 @@ processors:
         metric_names:
         - "^workload\\.googleapis\\.com/otlp\\.test\\.gauge$$"
         - "^workload\\.googleapis\\.com/otlp\\.test\\.prefix.*$$"
-  groupbyattrs/loggingmetrics_5: {}
-  interval/loggingmetrics_4:
+  interval/loggingmetrics_9:
     interval: 1m
   metricstransform/fluentbit_1:
     transforms:
@@ -414,7 +413,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/loggingmetrics_11:
+  metricstransform/loggingmetrics_10:
     transforms:
     - action: update
       include: ^(.*)$$
@@ -553,41 +552,26 @@ processors:
         label_set:
         - response_code
       submatch_case: lower
-  metricstransform/loggingmetrics_9:
+  metricstransform/loggingmetrics_7:
     transforms:
-    - action: combine
-      aggregation_type: sum
-      include: ^.*_log_entry_retry_count$$
-      match_type: regexp
+    - action: update
+      include: fluentbit_log_entry_count
       new_name: agent/log_entry_retry_count
-      operations:
-      - action: aggregate_labels
-        aggregation_type: sum
-        label_set:
-        - response_code
-      submatch_case: lower
-    - action: combine
-      aggregation_type: sum
-      include: ^.*_request_count$$
-      match_type: regexp
-      new_name: agent/request_count
-      operations:
-      - action: aggregate_labels
-        aggregation_type: sum
-        label_set:
-        - response_code
-      submatch_case: lower
-    - action: combine
-      aggregation_type: sum
-      include: ^.*_log_entry_count$$
-      match_type: regexp
+    - action: update
+      include: otel_log_entry_count
       new_name: agent/log_entry_count
-      operations:
-      - action: aggregate_labels
-        aggregation_type: sum
-        label_set:
-        - response_code
-      submatch_case: lower
+    - action: update
+      include: fluentbit_log_entry_retry_count
+      new_name: agent/log_entry_retry_count
+    - action: update
+      include: otel_log_entry_retry_count
+      new_name: agent/log_entry_retry_count
+    - action: update
+      include: fluentbit_request_count
+      new_name: agent/request_count
+    - action: update
+      include: otel_request_count
+      new_name: agent/request_count
   metricstransform/otel_3:
     transforms:
     - action: update
@@ -673,19 +657,19 @@ processors:
     - context: metric
       statements:
       - extract_count_metric(true) where name == "grpc.client.attempt.duration"
-  transform/loggingmetrics_6:
+  transform/loggingmetrics_4:
     error_mode: ignore
     metric_statements:
     - context: metric
       statements:
       - set(unit, "1")
-  transform/loggingmetrics_8:
+  transform/loggingmetrics_6:
     error_mode: ignore
     metric_statements:
     - context: datapoint
       statements:
-      - set(time, TruncateTime(Now(), Duration("1m")))
-      - set(start_time, time - Duration("1m"))
+      - set(time, Now())
+      - set(start_time, 0)
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
@@ -781,14 +765,13 @@ service:
       - filter/loggingmetrics_1
       - filter/loggingmetrics_2
       - metricstransform/loggingmetrics_3
-      - interval/loggingmetrics_4
-      - groupbyattrs/loggingmetrics_5
+      - transform/loggingmetrics_4
+      - cumulativetodelta/loggingmetrics_5
       - transform/loggingmetrics_6
-      - cumulativetodelta/loggingmetrics_7
-      - transform/loggingmetrics_8
-      - metricstransform/loggingmetrics_9
-      - deltatocumulative/loggingmetrics_10
-      - metricstransform/loggingmetrics_11
+      - metricstransform/loggingmetrics_7
+      - deltatocumulative/loggingmetrics_8
+      - interval/loggingmetrics_9
+      - metricstransform/loggingmetrics_10
       - resourcedetection/_global_0
       receivers:
       - prometheus/agent_prometheus
