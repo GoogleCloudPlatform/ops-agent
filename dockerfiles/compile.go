@@ -2,7 +2,8 @@
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
+// You may obtain a copy of the License atfv
+
 //
 //      http://www.apache.org/licenses/LICENSE-2.0
 //
@@ -99,6 +100,23 @@ var dockerfileArguments = []templateArguments{
 		ENV JAVA_HOME /usr/lib/jvm/java-${OPENJDK_MAJOR_VERSION}-openjdk/`,
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "rockylinux-9",
+		package_extension: "rpm",
+	},
+	{
+		from_image:  "rockylinux/rockylinux:10",
+		target_name: "rockylinux10",
+		install_packages: `RUN set -x; dnf -y update && \
+		dnf -y install 'dnf-command(config-manager)' && \
+		dnf config-manager --set-enabled crb && \
+		dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm && \
+		dnf -y install git systemd \
+		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel \
+		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros \
+		expect rpm-sign zip tzdata-java
+
+		ENV JAVA_HOME /usr/lib/jvm/java-${OPENJDK_MAJOR_VERSION}-openjdk/` + installJava,
+		package_build:     "RUN ./pkg/rpm/build.sh",
+		tar_distro_name:   "rockylinux-10",
 		package_extension: "rpm",
 	},
 	{
