@@ -30,7 +30,7 @@ processors:
       - fluentbit_log_entry_retry_count
       - fluentbit_request_count
     initial_value: drop
-  deltatocumulative/loggingmetrics_7: {}
+  deltatocumulative/loggingmetrics_6: {}
   filter/default__pipeline_hostmetrics_0:
     metrics:
       exclude:
@@ -84,7 +84,7 @@ processors:
         - otelcol_process_memory_rss
         - grpc.client.attempt.duration_count
         - googlecloudmonitoring/point_count
-  interval/loggingmetrics_8:
+  interval/loggingmetrics_7:
     interval: 1m
   metricstransform/dcgm_0:
     transforms:
@@ -575,7 +575,6 @@ processors:
         label_set:
         - response_code
     - action: combine
-      aggregation_type: sum
       include: ^otel_log_entry_count$$
       match_type: regexp
       new_name: otel_log_entry_count
@@ -585,7 +584,7 @@ processors:
         label_set:
         - response_code
       submatch_case: lower
-  metricstransform/loggingmetrics_9:
+  metricstransform/loggingmetrics_8:
     transforms:
     - action: update
       include: ^(.*)$$
@@ -666,24 +665,18 @@ processors:
       statements:
       - extract_count_metric(true) where name == "grpc.client.attempt.duration"
   transform/loggingmetrics_5:
-    error_mode: ignore
-    metric_statements:
-    - context: metric
-      statements:
-      - set(unit, "1")
-      - set(name, agent/log_entry_count) where name == "fluentbit_log_entry_count"
-      - set(name, agent/log_entry_count) where name == "otel_log_entry_count"
-      - set(name, agent/log_entry_retry_count) where name == "fluentbit_log_entry_retry_count"
-      - set(name, agent/log_entry_retry_count) where name == "otel_log_entry_retry_count"
-      - set(name, agent/request_count) where name == "fluentbit_request_count"
-      - set(name, agent/request_count) where name == "otel_request_count"
-  transform/loggingmetrics_6:
-    error_mode: ignore
     metric_statements:
     - context: datapoint
       statements:
       - set(time, Now())
       - set(start_time_unix_nano, 0)
+      - set(unit, "1")
+      - set(metric.name, "agent/log_entry_count") where metric.name == "fluentbit_log_entry_count"
+      - set(metric.name, "agent/log_entry_retry_count") where metric.name == "fluentbit_log_entry_retry_count"
+      - set(metric.name, "agent/request_count") where metric.name == "fluentbit_request_count"
+      - set(metric.name, "agent/log_entry_count") where metric.name == "otel_log_entry_count"
+      - set(metric.name, "agent/log_entry_retry_count") where metric.name == "otel_log_entry_retry_count"
+      - set(metric.name, "agent/request_count") where metric.name == "otel_request_count"
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
@@ -790,10 +783,9 @@ service:
       - metricstransform/loggingmetrics_3
       - cumulativetodelta/loggingmetrics_4
       - transform/loggingmetrics_5
-      - transform/loggingmetrics_6
-      - deltatocumulative/loggingmetrics_7
-      - interval/loggingmetrics_8
-      - metricstransform/loggingmetrics_9
+      - deltatocumulative/loggingmetrics_6
+      - interval/loggingmetrics_7
+      - metricstransform/loggingmetrics_8
       - resourcedetection/_global_0
       receivers:
       - prometheus/agent_prometheus
