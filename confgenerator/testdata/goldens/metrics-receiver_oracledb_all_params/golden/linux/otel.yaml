@@ -608,11 +608,13 @@ processors:
       - extract_count_metric(true) where name == "grpc.client.attempt.duration"
   transform/loggingmetrics_5:
     metric_statements:
+    - context: metric
+      statements:
+      - set(unit, "1")
     - context: datapoint
       statements:
       - set(time, Now())
       - set(start_time_unix_nano, 0)
-      - set(unit, "1")
       - set(metric.name, "agent/log_entry_count") where metric.name == "fluentbit_log_entry_count"
       - set(metric.name, "agent/log_entry_retry_count") where metric.name == "fluentbit_log_entry_retry_count"
       - set(metric.name, "agent/request_count") where metric.name == "fluentbit_request_count"

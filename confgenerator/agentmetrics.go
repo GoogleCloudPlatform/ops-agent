@@ -284,7 +284,7 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors() []otel.Component {
 				},
 				// Set unit = "1" to metrics who may not have it.
 				{
-					Context:   otel.Datapoint,
+					Context:   otel.Metric,
 					Statement: `set(unit, "1")`,
 				},
 				// Rename metrics for aggregation by "deltatocumulative".
