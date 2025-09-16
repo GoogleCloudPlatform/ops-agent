@@ -217,12 +217,14 @@ func IsNotNil(a Value) Value {
 }
 
 // ExtractCountMetric creates a new metric based on the count value of a Histogram metric
-func ExtractCountMetric(monotonic bool, metricName string) Statement {
+func ExtractCountMetric(monotonic bool, metricName string) Statements {
 	monotonicStr := "false"
 	if monotonic {
 		monotonicStr = "true"
 	}
-	return statementf(`extract_count_metric(%s) where name == "%s"`, monotonicStr, metricName)
+	return Statements{
+		statementf(`extract_count_metric(%s) where name == "%s"`, monotonicStr, metricName),
+	}
 }
 
 func (a LValue) SetToBool(b Value) Statements {
