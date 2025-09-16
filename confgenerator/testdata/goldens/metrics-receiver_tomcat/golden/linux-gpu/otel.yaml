@@ -796,10 +796,22 @@ processors:
   transform/loggingmetrics_6:
     error_mode: ignore
     metric_statements:
+    - context: metric
+      statements:
+      - set(unit, "1")
     - context: datapoint
       statements:
       - set(time, Now())
       - set(start_time_unix_nano, 0)
+<<<<<<< HEAD
+=======
+      - set(metric.name, "agent/log_entry_count") where metric.name == "fluentbit_log_entry_count"
+      - set(metric.name, "agent/log_entry_retry_count") where metric.name == "fluentbit_log_entry_retry_count"
+      - set(metric.name, "agent/request_count") where metric.name == "fluentbit_request_count"
+      - set(metric.name, "agent/log_entry_count") where metric.name == "otel_log_entry_count"
+      - set(metric.name, "agent/log_entry_retry_count") where metric.name == "otel_log_entry_retry_count"
+      - set(metric.name, "agent/request_count") where metric.name == "otel_request_count"
+>>>>>>> d06421de4 (Set `metric` context.)
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
