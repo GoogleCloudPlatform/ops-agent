@@ -134,9 +134,7 @@ func (r AgentSelfMetrics) PrometheusMetricsPipeline() otel.ReceiverPipeline {
 func (r AgentSelfMetrics) OtelPipelineProcessors() []otel.Component {
 	return []otel.Component{
 		otel.Transform("metric", "metric",
-			[]ottl.Statement{
-				ottl.ExtractCountMetric(true, "grpc.client.attempt.duration"),
-			},
+			ottl.ExtractCountMetric(true, "grpc.client.attempt.duration"),
 		),
 		otel.MetricsOTTLFilter([]string{}, []string{
 			// Filter out histogram datapoints where the grpc.target is not related to monitoring.
@@ -201,9 +199,7 @@ func (r AgentSelfMetrics) FluentBitPipelineProcessors() []otel.Component {
 func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors() []otel.Component {
 	return []otel.Component{
 		otel.Transform("metric", "metric",
-			[]ottl.Statement{
-				ottl.ExtractCountMetric(true, "grpc.client.attempt.duration"),
-			},
+			ottl.ExtractCountMetric(true, "grpc.client.attempt.duration"),
 		),
 		otel.MetricsOTTLFilter([]string{}, []string{
 			// Filter out histogram datapoints where the grpc.target is not related to logging.
