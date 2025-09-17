@@ -24,10 +24,10 @@ var renameMap = map[string]string{
 }
 
 var (
-	flagServiceName       = flag.String("service.name", "", "service.name attribute value")
-	flagServiceNamespace  = flag.String("service.namespace", "", "service.namespace attribute value")
-	flagServiceInstanceID = flag.String("service.instance.id", "", "service.instance.id attribute value")
-	flagServiceVersion    = flag.String("service.version", "", "service.version attribute value")
+	flagServiceName       = flag.String("service_name", "", "service.name attribute value")
+	flagServiceNamespace  = flag.String("service_namespace", "", "service.namespace attribute value")
+	flagServiceInstanceID = flag.String("service_instance_id", "", "service.instance.id attribute value")
+	flagServiceVersion    = flag.String("service_version", "", "service.version attribute value")
 )
 
 func getServiceAttributes() []attribute.KeyValue {

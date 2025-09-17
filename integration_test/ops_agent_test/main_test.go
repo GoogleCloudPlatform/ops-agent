@@ -4643,10 +4643,10 @@ traces:
 		serviceInstanceID := "localhost"
 		if err = runGoCode(
 			ctx, logger, vm, metricFile,
-			"-service.name", serviceName,
-			"-service.namespace", serviceNamespace,
-			"-service.instance.id", serviceInstanceID,
-			"-service.version", serviceVersion,
+			"-service_name", serviceName,
+			"-service_namespace", serviceNamespace,
+			"-service_instance_id", serviceInstanceID,
+			"-service_version", serviceVersion,
 		); err != nil {
 			t.Fatal(err)
 		}
