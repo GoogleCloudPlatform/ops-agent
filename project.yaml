@@ -129,7 +129,7 @@ targets:
           exhaustive:
           - suse-sap-cloud:sles-12-sp5-sap
   sles15:
-    os_versions: [sles-15*]
+    os_versions: [sles-15*, opensuse-leap-15*]
     package_extension:
       rpm
     architectures:
