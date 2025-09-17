@@ -293,7 +293,7 @@ RUN set -x; dnf -y update && \
 		dnf config-manager --set-enabled crb && \
 		dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm && \
 		dnf -y install git systemd \
-		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel \
+		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel libyaml-devel \
 		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros \
 		expect rpm-sign zip tzdata-java
 
