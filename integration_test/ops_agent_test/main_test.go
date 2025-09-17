@@ -4637,7 +4637,17 @@ traces:
 		if err := installGolang(ctx, logger, vm); err != nil {
 			t.Fatal(err)
 		}
-		if err = runGoCode(ctx, logger, vm, metricFile, "-with_service_attributes"); err != nil {
+		serviceName := "otlp-metric-googlecloudmonitoring-test"
+		serviceNamespace := "otlp-metric-googlecloudmonitoring"
+		serviceVersion := "0.0"
+		serviceInstanceID := "localhost"
+		if err = runGoCode(
+			ctx, logger, vm, metricFile,
+			"-service.name", serviceName,
+			"-service.namespace", serviceNamespace,
+			"-service.instance.id", serviceInstanceID,
+			"-service.version", serviceVersion,
+		); err != nil {
 			t.Fatal(err)
 		}
 
@@ -4656,17 +4666,26 @@ traces:
 				t.Error(err)
 			}
 
-			expectedServiceAttributes := []string{
-				"service_name",
-				"service_instance_id",
-				"service_namespace",
+			expectedServiceAttributes := map[string]string{
+				"service_name":        serviceName,
+				"service_namespace":   serviceNamespace,
+				"service_instance_id": serviceInstanceID,
 				// TODO: If/when https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/pull/1065 is merged and
 				// released in our exporter, add this to the expected attributes.
-				// "service_version",
+				// {"service_version", serviceVersion},
 			}
-			for _, serviceAttribute := range expectedServiceAttributes {
-				if _, ok := ts.Metric.Labels[serviceAttribute]; !ok {
-					t.Errorf("metric %s missing expected label `%s`", name, serviceAttribute)
+			for serviceLabelKey, expectedValue := range expectedServiceAttributes {
+				serviceLabelValue, ok := ts.Metric.Labels[serviceLabelKey]
+				if !ok {
+					t.Errorf(`metric %s missing expected label "%s"`, name, serviceLabelKey)
+				}
+				if serviceLabelValue != expectedValue {
+					t.Errorf(
+						`metric label %s expected value "%s" but got "%s"`,
+						serviceLabelKey,
+						expectedValue,
+						serviceLabelValue,
+					)
 				}
 			}
 		}

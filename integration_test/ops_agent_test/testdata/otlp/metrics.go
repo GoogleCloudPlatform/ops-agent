@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/metric"
 	metricsdk "go.opentelemetry.io/otel/sdk/metric"
@@ -22,23 +23,36 @@ var renameMap = map[string]string{
 	"otlp.test.prefix5": "WORKLOAD.googleapis.com/otlp.test.prefix5",
 }
 
-var flagServiceAttributes = flag.Bool("with_service_attributes", false, "Include service resource attributes in meter resource")
+var (
+	flagServiceName       = flag.String("service.name", "", "service.name attribute value")
+	flagServiceNamespace  = flag.String("service.namespace", "", "service.namespace attribute value")
+	flagServiceInstanceID = flag.String("service.instance.id", "", "service.instance.id attribute value")
+	flagServiceVersion    = flag.String("service.version", "", "service.version attribute value")
+)
+
+func getServiceAttributes() []attribute.KeyValue {
+	attrs := []attribute.KeyValue{}
+	if *flagServiceName != "" {
+		attrs = append(attrs, semconv.ServiceNameKey.String(*flagServiceName))
+	}
+	if *flagServiceNamespace != "" {
+		attrs = append(attrs, semconv.ServiceNamespaceKey.String(*flagServiceNamespace))
+	}
+	if *flagServiceInstanceID != "" {
+		attrs = append(attrs, semconv.ServiceInstanceIDKey.String(*flagServiceInstanceID))
+	}
+	if *flagServiceVersion != "" {
+		attrs = append(attrs, semconv.ServiceVersionKey.String(*flagServiceVersion))
+	}
+	return attrs
+}
 
 func installMetricExportPipeline(ctx context.Context) (func(context.Context) error, error) {
 	exporter, err := otlpmetricgrpc.New(ctx, otlpmetricgrpc.WithInsecure())
 	if err != nil {
 		log.Fatal(err)
 	}
-	metricResource := resource.Default()
-	if *flagServiceAttributes {
-		metricResource = resource.NewWithAttributes(
-			"",
-			semconv.ServiceNameKey.String("ops-agent-test-otlp"),
-			semconv.ServiceInstanceIDKey.String("ops-agent-test-otlp-instance-x"),
-			semconv.ServiceNamespaceKey.String("ops-agent-test-otlp-instances"),
-			semconv.ServiceVersionKey.String("ops-agent-test-otlp-v1"),
-		)
-	}
+	metricResource := resource.NewWithAttributes("", getServiceAttributes()...)
 	metricProvider := metricsdk.NewMeterProvider(
 		metricsdk.WithReader(metricsdk.NewPeriodicReader(exporter)),
 		metricsdk.WithResource(metricResource),
