@@ -271,7 +271,7 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors() []otel.Component {
 		),
 		otel.TransformationMetrics(
 			[]otel.TransformQuery{
-				// Set "start_time_unix_nano = 0" and "time = Now()"" so "deltatocumulative" can sum all points
+				// Set "start_time_unix_nano = 0" and "time = Now()" so "deltatocumulative" can sum all points
 				// without "out of order" or "older start" errors.
 				// TODO: b/445233472 - Update "deltatocumulative" processor with a new "strategy" for point aggreagation.
 				{
