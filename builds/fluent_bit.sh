@@ -17,7 +17,6 @@ set -x -e
 DESTDIR=$1
 mkdir -p $DESTDIR
 fluent_bit_dir=/opt/google-cloud-ops-agent/subagents/fluent-bit
-
 cd submodules/fluent-bit
 mkdir -p build
 cd build
