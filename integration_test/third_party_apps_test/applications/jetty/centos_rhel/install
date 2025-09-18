@@ -7,11 +7,12 @@ set -e
 source /etc/os-release
 MAJOR_VERSION_ID=${VERSION_ID%%.*}
 
+JAVA_VERSION=11
 if [[ "$ID" == "rocky" && "$MAJOR_VERSION_ID" == "10" ]]; then
-  sudo yum install -y java-21-openjdk-devel
-elif
-  sudo yum install -y java-11-openjdk-devel
+  JAVA_VERSION=21
 fi
+
+sudo yum install -y java-${JAVA_VERSION}-openjdk-devel
 
 sudo yum install -y wget tzdata-java
 sudo wget -O jetty.tar.gz https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-home/11.0.9/jetty-home-11.0.9.tar.gz

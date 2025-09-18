@@ -3,14 +3,12 @@ set -e
 source /etc/os-release
 MAJOR_VERSION_ID=${VERSION_ID%%.*}
 
-
+JAVA_VERSION=1.8.0
 if [[ "$ID" == "rocky" && "$MAJOR_VERSION_ID" == "10" ]]; then
-  sudo yum install -y \
-    curl java-21-openjdk java-21-openjdk-devel wget
-elif
-  sudo yum install -y \
-    curl java-1.8.0-openjdk java-1.8.0-openjdk-devel wget
+  JAVA_VERSION=21
 fi
+
+sudo yum install -y java-${JAVA_VERSION}openjdk java-${JAVA_VERSION}-openjdk-devel wget
 
 sudo mkdir -p \
     /opt/hadoop/logs \
