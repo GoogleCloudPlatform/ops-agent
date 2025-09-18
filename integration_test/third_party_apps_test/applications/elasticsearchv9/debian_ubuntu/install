@@ -1,0 +1,22 @@
+set -e
+
+sudo apt-get update
+# Debian 12 very specifically wants openjdk-17-jdk for installing Java via apt
+source /etc/os-release
+if [[ $ID == debian && "${VERSION_ID}" == 12 ]]; then
+    sudo apt-get install -y apt-transport-https wget openjdk-17-jdk
+else
+    sudo apt-get install -y apt-transport-https wget default-jre
+fi
+
+wget --no-verbose --output-document=/etc/apt/trusted.gpg.d/elasticsearch.asc https://artifacts.elastic.co/GPG-KEY-elasticsearch
+echo "deb https://artifacts.elastic.co/packages/9.x/apt stable main" | \
+    sudo tee /etc/apt/sources.list.d/elastic-9.x.list
+
+sudo apt-get update
+sudo apt-get install -y elasticsearch
+
+sudo systemctl daemon-reload
+sudo systemctl enable elasticsearch
+
+sudo systemctl restart elasticsearch
