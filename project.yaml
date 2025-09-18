@@ -97,7 +97,7 @@ targets:
           exhaustive:
           - ubuntu-os-cloud:ubuntu-minimal-2404-lts-arm64
   rockylinux9:
-    os_versions: [rocky-9*,rhel-9*]
+    os_versions: [centos-9*,rocky-9*,rhel-9*]
     package_extension:
       rpm
     repo_name:
