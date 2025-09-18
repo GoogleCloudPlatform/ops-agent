@@ -102,6 +102,23 @@ var dockerfileArguments = []templateArguments{
 		package_extension: "rpm",
 	},
 	{
+		from_image:  "rockylinux/rockylinux:10",
+		target_name: "rockylinux10",
+		install_packages: `RUN set -x; dnf -y update && \
+		dnf -y install 'dnf-command(config-manager)' && \
+		dnf config-manager --set-enabled crb && \
+		dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm && \
+		dnf -y install git systemd \
+		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel \
+		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros \
+		expect rpm-sign zip tzdata-java
+
+		ENV JAVA_HOME /usr/lib/jvm/java-${OPENJDK_MAJOR_VERSION}-openjdk/` + installJava,
+		package_build:     "RUN ./pkg/rpm/build.sh",
+		tar_distro_name:   "rockylinux-10",
+		package_extension: "rpm",
+	},
+	{
 		from_image:  "debian:bookworm",
 		target_name: "bookworm",
 		install_packages: `RUN set -x; apt-get update && \
