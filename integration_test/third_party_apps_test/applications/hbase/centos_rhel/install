@@ -11,7 +11,7 @@ if [[ "$ID" == "rocky" && "$MAJOR_VERSION_ID" == "10" ]]; then
   JAVA_VERSION=21
 fi
 
-sudo yum install -y java-${JAVA_VERSION}openjdk java-${JAVA_VERSION}-openjdk-devel wget
+sudo yum install -y java-${JAVA_VERSION}-openjdk java-${JAVA_VERSION}-openjdk-devel wget
 
 sudo mkdir /opt/hbase
 # https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/README.md#vendored-dependencies

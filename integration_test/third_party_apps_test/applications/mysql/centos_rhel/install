@@ -1,7 +1,7 @@
 set -e
 
 source /etc/os-release
-VERSION_ID=${VERSION_ID%%.*}
+MAJOR_VERSION_ID=${VERSION_ID%%.*}
 
 sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2023
 sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2022
