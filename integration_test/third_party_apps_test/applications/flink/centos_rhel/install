@@ -8,7 +8,7 @@ if [[ "$ID" == "rocky" && "$MAJOR_VERSION_ID" == "10" ]]; then
   JAVA_VERSION=21
 fi
 
-sudo yum install -y java-${JAVA_VERSION}openjdk java-${JAVA_VERSION}-openjdk-devel curl
+sudo yum install -y java-${JAVA_VERSION}-openjdk java-${JAVA_VERSION}-openjdk-devel curl
 
 # https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/README.md#vendored-dependencies
 curl -L -o flink.tgz https://storage.googleapis.com/ops-agents-public-buckets-vendored-deps/mirrored-content/archive.apache.org/dist/flink/flink-1.14.4/flink-1.14.4-bin-scala_2.11.tgz
