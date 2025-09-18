@@ -1,1 +1,1 @@
-prometheus receivers are incompatible with Ops Agent processors
+otlp receiver are incompatible with Ops Agent processors

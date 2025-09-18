@@ -57,6 +57,10 @@ func (r PrometheusMetrics) Type() string {
 	return "prometheus"
 }
 
+func (r PrometheusMetrics) AllowCustomProcessors() bool {
+	return false
+}
+
 func (r PrometheusMetrics) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	resource, err := platform.FromContext(ctx).GetResource()
 	if err != nil {
