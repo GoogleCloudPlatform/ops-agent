@@ -1314,7 +1314,7 @@ func validateNoCustomGMPProcessors(receivers metricsReceiverMap, receiverIDs, pr
 		}
 
 		if len(processorIDs) > 0 {
-			return fmt.Errorf("%s receiver are incompatible with Ops Agent processors", ID)
+			return fmt.Errorf("%s receiver is incompatible with Ops Agent processors", ID)
 		}
 	}
 	return nil
