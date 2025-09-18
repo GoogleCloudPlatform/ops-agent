@@ -3,8 +3,16 @@ set -o pipefail
 
 HBASE_VERSION=2.4.11
 
-sudo yum -y install \
-    java-1.8.0-openjdk java-1.8.0-openjdk-devel wget
+source /etc/os-release
+MAJOR_VERSION_ID=${VERSION_ID%%.*}
+
+if [[ "$ID" == "rocky" && "$MAJOR_VERSION_ID" == "10" ]]; then
+  sudo yum install -y \
+    curl java-21-openjdk java-21-openjdk-devel wget
+elif
+  sudo yum install -y \
+    curl java-1.8.0-openjdk java-1.8.0-openjdk-devel wget
+fi
 
 sudo mkdir /opt/hbase
 # https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/README.md#vendored-dependencies

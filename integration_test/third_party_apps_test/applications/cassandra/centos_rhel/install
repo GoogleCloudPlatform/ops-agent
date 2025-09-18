@@ -26,7 +26,14 @@ sudo mv cassandra.repo /etc/yum.repos.d/cassandra.repo
 
 sudo yum -y update
 
-sudo yum -y install java-1.8.0-openjdk java-1.8.0-openjdk-devel cassandra
+
+if [[ "$ID" == "rocky" && "$MAJOR_VERSION_ID" == "10" ]]; then
+  sudo yum install -y \
+    curl java-21-openjdk java-21-openjdk-devel cassandra
+elif
+  sudo yum install -y \
+    curl java-1.8.0-openjdk java-1.8.0-openjdk-devel cassandra
+fi
 
 # Adjust stack size due to bigger page size on aarch64 architecture
 if [[ "$ID" == "rocky" && "$MAJOR_VERSION_ID" == "8" && "$(uname -m)" == "aarch64" ]]; then

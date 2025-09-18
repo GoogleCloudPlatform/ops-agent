@@ -1,7 +1,16 @@
 set -e
 
+source /etc/os-release
+MAJOR_VERSION_ID=${VERSION_ID%%.*}
+
+if [[ "$ID" == "rocky" && "$MAJOR_VERSION_ID" == "10" ]]; then
+  sudo yum install -y \
+    curl java-21-openjdk java-21-openjdk-devel curl
+elif
 sudo yum install -y \
     curl java-1.8.0-openjdk java-1.8.0-openjdk-devel curl
+
+fi
 
 # https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/README.md#vendored-dependencies
 curl -L -o \
@@ -37,4 +46,4 @@ sudo sed -i "s/$before/$after/g" /opt/activemq/bin/env
 
 sudo systemctl daemon-reload
 sudo systemctl enable activemq
-sudo systemctl restart activemq 
+sudo systemctl restart activemq
