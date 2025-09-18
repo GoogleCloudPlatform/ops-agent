@@ -3,11 +3,12 @@ set -e
 source /etc/os-release
 MAJOR_VERSION_ID=${VERSION_ID%%.*}
 
+JAVA_VERSION=1.8.0
 if [[ "$ID" == "rocky" && "$MAJOR_VERSION_ID" == "10" ]]; then
-  sudo yum install -y java-21-openjdk java-21-openjdk-devel curl
-elif
-  sudo yum install -y java-1.8.0-openjdk java-1.8.0-openjdk-devel curl
+  JAVA_VERSION=21
 fi
+
+sudo yum install -y java-${JAVA_VERSION}openjdk java-${JAVA_VERSION}-openjdk-devel curl
 
 # https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/README.md#vendored-dependencies
 curl -L -o flink.tgz https://storage.googleapis.com/ops-agents-public-buckets-vendored-deps/mirrored-content/archive.apache.org/dist/flink/flink-1.14.4/flink-1.14.4-bin-scala_2.11.tgz
