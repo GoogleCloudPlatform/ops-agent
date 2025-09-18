@@ -1,7 +1,16 @@
 set -e
 
-sudo yum -y install \
-    java-1.8.0-openjdk java-1.8.0-openjdk-devel wget
+source /etc/os-release
+MAJOR_VERSION_ID=${VERSION_ID%%.*}
+
+
+if [[ "$ID" == "rocky" && "$MAJOR_VERSION_ID" == "10" ]]; then
+  sudo yum install -y \
+    curl java-21-openjdk java-21-openjdk-devel wget
+elif
+  sudo yum install -y \
+    curl java-1.8.0-openjdk java-1.8.0-openjdk-devel wget
+fi
 
 sudo mkdir -p \
     /opt/hadoop/logs \
@@ -143,5 +152,5 @@ sudo -u hadoop bash -c "source /opt/hadoop/env && hdfs namenode -format"
 
 sudo systemctl daemon-reload
 sudo systemctl enable hadoop
-sudo systemctl restart hadoop 
+sudo systemctl restart hadoop
 sleep 60
