@@ -51,6 +51,7 @@ func (r MetricsReceiverCassandra) Pipelines(_ context.Context) ([]otel.ReceiverP
 					otel.SetScopeName("agent.googleapis.com/"+r.Type()),
 					otel.SetScopeVersion("1.0"),
 				),
+				otel.MetricsRemoveServiceAttributes(),
 			},
 		)
 }
