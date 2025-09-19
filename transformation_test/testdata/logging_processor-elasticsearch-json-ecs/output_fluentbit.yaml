@@ -4,7 +4,8 @@
       ecs.version: "1.2.0"
       elasticsearch.cluster.name: elasticsearch
       elasticsearch.node.name: es-test-3
-      event.dataset: elasticsearch.server
+      event:
+        dataset: elasticsearch.server
       log.level: INFO
       log.logger: org.elasticsearch.node.Node
       message: initialized
@@ -21,7 +22,8 @@
       ecs.version: "1.2.0"
       elasticsearch.cluster.name: elasticsearch
       elasticsearch.node.name: es-test-3
-      event.dataset: elasticsearch.server
+      event:
+        dataset: elasticsearch.server
       log.level: WARN
       log.logger: org.elasticsearch.discovery.zen.ZenDiscovery
       message: failed to connect to master
@@ -40,7 +42,8 @@
       elasticsearch.node.name: es-test-3
       error.message: failed to obtain node locks
       error.type: java.lang.IllegalStateException
-      event.dataset: elasticsearch.server
+      event:
+        dataset: elasticsearch.server
       log.level: ERROR
       log.logger: org.elasticsearch.bootstrap.Bootstrap
       message: Exception occurred
@@ -57,7 +60,8 @@
       ecs.version: "1.2.0"
       elasticsearch.cluster.name: elasticsearch
       elasticsearch.node.name: es-test-3
-      event.dataset: elasticsearch.server
+      event:
+        dataset: elasticsearch.server
       log.level: DEBUG
       log.logger: org.elasticsearch.node.Node
       message: stopping node
@@ -73,7 +77,8 @@
       ecs.version: "1.2.0"
       elasticsearch.cluster.name: elasticsearch
       elasticsearch.node.name: es-test-3
-      event.dataset: elasticsearch.server
+      event:
+        dataset: elasticsearch.server
       log.level: TRACE
       log.logger: org.elasticsearch.node.Node
       message: node stopped
@@ -89,7 +94,8 @@
       ecs.version: "1.2.0"
       elasticsearch.cluster.name: elasticsearch
       elasticsearch.node.name: es-test-3
-      event.dataset: elasticsearch.deprecation
+      event:
+        dataset: elasticsearch.deprecation
       log.level: DEPRECATION
       log.logger: org.elasticsearch.node.Node
       message: deprecated setting used
@@ -105,7 +111,8 @@
       ecs.version: "1.2.0"
       elasticsearch.cluster.name: elasticsearch
       elasticsearch.node.name: es-test-3
-      event.dataset: elasticsearch.server
+      event:
+        dataset: elasticsearch.server
       log.level: FATAL
       log.logger: org.elasticsearch.node.Node
       message: fatal error occurred
@@ -121,7 +128,8 @@
       ecs.version: "1.2.0"
       elasticsearch.cluster.name: elasticsearch
       elasticsearch.node.name: es-test-3
-      event.dataset: elasticsearch.server
+      event:
+        dataset: elasticsearch.server
       log.level: UNKNOWN
       log.logger: org.elasticsearch.node.Node
       message: unknown log level
@@ -134,7 +142,8 @@
   - jsonPayload:
       "@timestamp": 2025-09-19T02:20:25.920Z
       ecs.version: "1.2.0"
-      event.dataset: elasticsearch.server
+      event:
+        dataset: elasticsearch.server
       log.level: INFO
       log.logger: org.elasticsearch.node.Node
       message: missing some fields
@@ -150,13 +159,15 @@
       ecs.version: "1.2.0"
       elasticsearch.cluster.name: elasticsearch
       elasticsearch.node.name: es-test-3
-      event.action: authentication_success
-      event.dataset: elasticsearch.audit
+      event:
+        action: authentication_success
+        dataset: elasticsearch.audit
       log.level: INFO
       log.logger: org.elasticsearch.xpack.security.audit.AuditTrail
       message: audit event
       service.name: ES_ECS
-      user.name: elastic
+      user:
+        name: elastic
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
