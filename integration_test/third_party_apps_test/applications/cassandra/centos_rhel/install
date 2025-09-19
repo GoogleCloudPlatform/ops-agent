@@ -7,10 +7,12 @@ GPGCHECK=1
 if [[ "$ID" == "rhel" && "$MAJOR_VERSION_ID" == "9" ]]; then
     # If OS is RHEL 9, support for legacy crypto is required to install GPG key
     sudo update-crypto-policies --set LEGACY
-elif [[ "$ID" == "rocky" && "$MAJOR_VERSION_ID" == "8" ]]; then
-    # If OS is Rocky Linux 8, legacy crypto isn't enough; need to disable GPG check
+elif [[ "$ID" == "rocky" ]]; then
+    if [[ "$MAJOR_VERSION_ID" == "8" || "$MAJOR_VERSION_ID" == "10" ]]
+    # If OS is Rocky Linux 8 or 10, legacy crypto isn't enough; need to disable GPG check
     # b/397661945
     GPGCHECK=0
+    fi
 fi
 
 sudo cat <<EOF > cassandra.repo
