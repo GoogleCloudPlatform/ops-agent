@@ -184,6 +184,16 @@ func (p LoggingProcessorMacroElasticsearchJson) Expand(ctx context.Context) []co
 				},
 			},
 		},
+		// Try parsing with new ECS format first (ES 8.x/9.x)
+		// New format uses @timestamp with format like: 2025-09-19T02:20:17.920Z
+		confgenerator.LoggingProcessorParseJson{
+			ParserShared: confgenerator.ParserShared{
+				TimeKey:    "@timestamp",
+				TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
+			},
+		},
+		// Fallback to old format parsing (ES 7.x and earlier)
+		// Old format uses timestamp with format like: 2022-01-17T18:31:47,365Z
 		confgenerator.LoggingProcessorParseJson{
 			ParserShared: confgenerator.ParserShared{
 				TimeKey:    "timestamp",
@@ -191,6 +201,7 @@ func (p LoggingProcessorMacroElasticsearchJson) Expand(ctx context.Context) []co
 			},
 		},
 		p.severityParser(),
+		p.ecsSeverityParser(),
 	}
 
 	processors = append(processors, p.nestingProcessors()...)
@@ -216,6 +227,27 @@ func (p LoggingProcessorMacroElasticsearchJson) severityParser() confgenerator.I
 				MapValuesExclusive: true,
 			},
 			InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+		},
+	}
+}
+
+func (p LoggingProcessorMacroElasticsearchJson) ecsSeverityParser() confgenerator.InternalLoggingProcessor {
+	return confgenerator.LoggingProcessorModifyFields{
+		Fields: map[string]*confgenerator.ModifyField{
+			"severity": {
+				CopyFrom: "jsonPayload.log.level",
+				MapValues: map[string]string{
+					"TRACE":       "DEBUG",
+					"DEBUG":       "DEBUG",
+					"INFO":        "INFO",
+					"WARN":        "WARNING",
+					"DEPRECATION": "WARNING",
+					"ERROR":       "ERROR",
+					"CRITICAL":    "ERROR",
+					"FATAL":       "FATAL",
+				},
+				MapValuesExclusive: true,
+			},
 		},
 	}
 }
