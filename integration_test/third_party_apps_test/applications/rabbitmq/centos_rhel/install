@@ -1,6 +1,7 @@
 set -e
 
 source /etc/os-release
+MAJOR_VERSION_ID=${VERSION_ID%%.*}
 
 # if os is rhel 9, crb is required to access epel
 case "$VERSION_ID" in
@@ -18,12 +19,12 @@ if [[ "$(uname -m)" == aarch64 ]]; then
 else
   curl -s https://packagecloud.io/install/repositories/rabbitmq/erlang/script.rpm.sh --output erlang.rpm.sh
   chmod +x  erlang.rpm.sh
-  sudo os=el dist=8 ./erlang.rpm.sh
+  sudo os=el dist=${MAJOR_VERSION_ID} ./erlang.rpm.sh
 fi
 
 curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.rpm.sh --output rabbitmq-server.rpm.sh
 chmod +x  rabbitmq-server.rpm.sh
-sudo os=el dist=8 ./rabbitmq-server.rpm.sh
+sudo os=el dist=${MAJOR_VERSION_ID} ./rabbitmq-server.rpm.sh
 
 sudo yum makecache -y \
     --disablerepo='*' --enablerepo='rabbitmq_rabbitmq-server'
