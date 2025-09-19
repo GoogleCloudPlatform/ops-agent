@@ -48,6 +48,11 @@ platforms_to_skip:
   # Hbase only supports Java 11, which has no installation candidate for Debian 12
   - debian-cloud:debian-12
   - debian-cloud:debian-12-arm64
+  # Non-retryable error: representative metric workload.googleapis.com/hbase.region_server.operation.append.latency.p99 not found, skipping remaining metrics
+  - rocky-linux-cloud:rocky-linux-10
+  - rocky-linux-cloud:rocky-linux-10-optimized-gcp
+  - rocky-linux-cloud:rocky-linux-10-arm64
+  - rocky-linux-cloud:rocky-linux-10-optimized-gcp-arm64
 supported_operating_systems: linux
 supported_app_version: ["1.7.x", "2.3.x", "2.4.x"]
 expected_metrics:

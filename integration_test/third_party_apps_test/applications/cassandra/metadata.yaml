@@ -50,6 +50,11 @@ supported_operating_systems: linux
 platforms_to_skip:
   - debian-cloud:debian-12 # QueryLog() failed: cassandra_system not found, exhausted retries; QueryLog() failed: cassandra_debug not found, exhausted retries; QueryLog() failed: cassandra_gc not found, exhausted retries
   - debian-cloud:debian-12-arm64 # QueryLog() failed: cassandra_system not found, exhausted retries; QueryLog() failed: cassandra_debug not found, exhausted retries; QueryLog() failed: cassandra_gc not found, exhausted retries
+  # rocky-linux-10 - nothing provides (java-1.8.0-headless or java-11-headless) needed by cassandra-4.1.10-1.noarch from cassandra
+  - rocky-linux-cloud:rocky-linux-10
+  - rocky-linux-cloud:rocky-linux-10-optimized-gcp
+  - rocky-linux-cloud:rocky-linux-10-arm64
+  - rocky-linux-cloud:rocky-linux-10-optimized-gcp-arm64
 supported_app_version: ["3.11", "4.0"]
 expected_metrics:
   - type: workload.googleapis.com/cassandra.client.request.count
