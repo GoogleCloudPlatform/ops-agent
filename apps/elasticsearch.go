@@ -156,8 +156,10 @@ func (LoggingProcessorMacroElasticsearchJson) Type() string {
 }
 
 func (p LoggingProcessorMacroElasticsearchJson) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
-	// sample log line:
+	// sample log line (ES 7.x):
 	// {"type": "server", "timestamp": "2022-01-17T18:31:47,365Z", "level": "INFO", "component": "o.e.n.Node", "cluster.name": "elasticsearch", "node.name": "ubuntu-jammy", "message": "initialized" }
+	// sample log line (ES 8.x):
+	// {"@timestamp":"2025-09-19T02:20:17.920Z", "log.level": "INFO", "message":"initialized", "ecs.version": "1.2.0","service.name":"ES_ECS","event.dataset":"elasticsearch.server","process.thread.name":"main","log.logger":"org.elasticsearch.node.Node","elasticsearch.node.name":"es-test-3","elasticsearch.cluster.name":"elasticsearch"}
 	// Logs are formatted based on configuration (log4j);
 	// See https://artifacts.elastic.co/javadoc/org/elasticsearch/elasticsearch/7.16.2/org/elasticsearch/common/logging/ESJsonLayout.html
 	// for general layout, and https://www.elastic.co/guide/en/elasticsearch/reference/current/logging.html for general configuration of logging
@@ -184,6 +186,28 @@ func (p LoggingProcessorMacroElasticsearchJson) Expand(ctx context.Context) []co
 				},
 			},
 		},
+		// Normalize field names: move @timestamp to timestamp, for consistent parsing
+		// This handles both ES 8.x/9.x (@timestamp) and ES 7.x (timestamp) formats
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				"jsonPayload.timestamp": {
+					MoveFrom: "jsonPayload.@timestamp",
+				},
+				"jsonPayload.level": {
+					MoveFrom: "jsonPayload.log.level",
+				},
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+			},
+		},
+
+		// Parse the normalized timestamp field (works for both formats after normalization)
+		confgenerator.LoggingProcessorParseJson{
+			ParserShared: confgenerator.ParserShared{
+				TimeKey:    "timestamp",
+				TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
+			},
+		},
+		// Fallback parser for ES 7.x format (comma instead of dot for milliseconds)
 		confgenerator.LoggingProcessorParseJson{
 			ParserShared: confgenerator.ParserShared{
 				TimeKey:    "timestamp",

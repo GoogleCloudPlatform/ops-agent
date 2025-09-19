@@ -343,41 +343,41 @@ expected_logs:
         value_regex: initialized
         type: string
         description: 'Log message'
-      - name: jsonPayload.component
-        value_regex: o.e.n.Node
+      - name: jsonPayload.log.logger
+        value_regex: org.elasticsearch.node.Node
         type: string
-        description: 'The component of Elasticsearch that emitted the log'
-      - name: jsonPayload.type
-        value_regex: server
+        description: 'The logger component that emitted the log in ECS format'
+      - name: jsonPayload.event.dataset
+        value_regex: elasticsearch.server
         type: string
-        description: 'The type of log, indicating which log the record came from (e.g. *server* indicates this LogEntry came from the server log)'
-      - name: jsonPayload.cluster.name
+        description: 'The event dataset in ECS format, indicating which log the record came from'
+      - name: jsonPayload.elasticsearch.cluster.name
         type: string
-        description: 'The name of the cluster emitting the log record'
+        description: 'The name of the cluster emitting the log record in ECS format'
         optional: true
-      - name: jsonPayload.cluster.uuid
+      - name: jsonPayload.elasticsearch.cluster.uuid
         type: string
-        description: 'The UUID of the cluster emitting the log record'
+        description: 'The UUID of the cluster emitting the log record in ECS format'
         optional: true
-      - name: jsonPayload.node.name
+      - name: jsonPayload.elasticsearch.node.name
         type: string
-        description: 'The name of the node emitting the log record'
+        description: 'The name of the node emitting the log record in ECS format'
         optional: true
-      - name: jsonPayload.node.uuid
+      - name: jsonPayload.elasticsearch.node.uuid
         type: string
-        description: 'The UUID of the node emitting the log record'
+        description: 'The UUID of the node emitting the log record in ECS format'
         optional: true
-      - name: jsonPayload.cluster
+      - name: jsonPayload.log.level
         type: string
-        description: 'The cluster emitting the log record'
+        description: 'Log entry level in ECS format'
         optional: true
-      - name: jsonPayload.node
+      - name: jsonPayload.ecs.version
         type: string
-        description: 'The node emitting the log record'
+        description: 'ECS version'
         optional: true
-      - name: jsonPayload.level
+      - name: jsonPayload.service.name
         type: string
-        description: Log entry level
+        description: 'Service name in ECS format'
         optional: true
       - name: severity
         type: string
@@ -442,23 +442,23 @@ configuration_options:
           default: null
           description: This value must be `elasticsearch`.
         - name: endpoint
-          default: http://localhost:92002
-          description: The base URL for the Elasticsearch REST API.
+          default: https://localhost:9200
+          description: The base URL for the Elasticsearch REST API. Elasticsearch 9.0+ uses HTTPS by default.
         - name: collection_interval
           default: 60s
           description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
         - name: username
-          default: null
-          description: Username for authentication with Elasticsearch. Required if `password` is set.
+          default: elastic
+          description: Username for authentication with Elasticsearch. Required for Elasticsearch 9.0+.
         - name: password
           default: null
-          description: Password for authentication with Elasticsearch. Required if `username` is set.
+          description: Password for authentication with Elasticsearch. Required for Elasticsearch 9.0+.
         - name: insecure
-          default: true
-          description: Sets whether or not to use a secure TLS connection. If set to `false`, then TLS is enabled.
-        - name: insecure_skip_verify
           default: false
-          description: Sets whether or not to skip verifying the certificate. If `insecure` is set to `true`, then the `insecure_skip_verify` value is not used.
+          description: Sets whether or not to use a secure TLS connection. Elasticsearch 9.0+ uses HTTPS by default.
+        - name: insecure_skip_verify
+          default: true
+          description: Sets whether or not to skip verifying the certificate. Set to `true` for self-signed certificates (common in test environments).
         - name: cert_file
           default: null
           description: Path to the TLS certificate to use for mTLS-required connections.

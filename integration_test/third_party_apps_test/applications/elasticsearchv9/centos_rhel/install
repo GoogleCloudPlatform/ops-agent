@@ -1,0 +1,62 @@
+set -e
+
+source /etc/os-release
+
+# if os is rhel 9, support for legacy crypto is required to install gpg key
+case "$VERSION_ID" in
+    9*) sudo update-crypto-policies --set LEGACY;;
+esac
+
+sudo yum install -y java-1.8.0-openjdk
+
+sudo rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
+
+cat << EOF > elasticsearch.repo
+[elasticsearch]
+name=Elasticsearch repository for 9.x packages
+baseurl=https://artifacts.elastic.co/packages/9.x/yum
+gpgcheck=1
+gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
+enabled=0
+autorefresh=1
+type=rpm-md
+EOF
+
+sudo mv elasticsearch.repo /etc/yum.repos.d/elasticsearch.repo
+sudo chown root:root /etc/yum.repos.d/elasticsearch.repo
+sudo chmod 0644 /etc/yum.repos.d/elasticsearch.repo
+
+sudo yum install -y --enablerepo=elasticsearch elasticsearch 
+
+ELASTIC_PASSWORD="elastic_test_password_123"
+echo "$ELASTIC_PASSWORD" | sudo /usr/share/elasticsearch/bin/elasticsearch-keystore add --stdin --force bootstrap.password
+
+sudo systemctl daemon-reload
+sudo systemctl enable elasticsearch
+sudo systemctl restart elasticsearch
+
+echo "Waiting for Elasticsearch to start..."
+wait_for_elasticsearch() {
+    local service="elasticsearch"
+    local retries=30
+    local wait=2
+    local i=0
+
+    while ! sudo systemctl is-active --quiet "$service"; do
+        if [ "$i" -ge "$retries" ]; then
+            echo "Timed out waiting for $service to start"
+            return 1
+        fi
+        sleep "$wait"
+        i=$((i+1))
+    done
+    return 0
+}
+
+wait_for_elasticsearch
+
+if ! sudo systemctl is-active --quiet elasticsearch; then
+    echo "Warning: Elasticsearch failed to start properly"
+    exit 1
+fi
+
