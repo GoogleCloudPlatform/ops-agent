@@ -1,12 +1,6 @@
 set -e
 
-source /etc/os-release
-MAJOR_VERSION_ID=${VERSION_ID%%.*}
-
 JAVA_VERSION=1.8.0
-if [[ "$ID" == "rocky" && "$MAJOR_VERSION_ID" == "10" ]]; then
-  JAVA_VERSION=21
-fi
 
 sudo yum install -y java-${JAVA_VERSION}-openjdk java-${JAVA_VERSION}-openjdk-devel curl
 

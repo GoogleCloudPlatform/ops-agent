@@ -11,9 +11,9 @@ if [[ "$ID" == "rocky" && "$MAJOR_VERSION_ID" == "10" ]]; then
   MYSQL_VERSION=mysql84
 fi
 
-sudo yum -y install https://repo.mysql.com/${MYSQL_VERSION}-community-release-el${VERSION_ID}.rpm
+sudo yum -y install https://repo.mysql.com/${MYSQL_VERSION}-community-release-el${MAJOR_VERSION_ID}.rpm
 
-if [ ${VERSION_ID} == 8 ]; then
+if [ ${MAJOR_VERSION_ID} == 8 ]; then
   sudo yum -y module disable mysql
 fi
 sudo yum -y install mysql-community-server
