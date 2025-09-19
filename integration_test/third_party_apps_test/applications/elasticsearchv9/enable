@@ -18,6 +18,9 @@ metrics:
   receivers:
     elasticsearch:
       type: elasticsearch
+      username: elastic
+      password: elastic_test_password_123
+      insecure_skip_verify: true
   service:
     pipelines:
       elasticsearch:
