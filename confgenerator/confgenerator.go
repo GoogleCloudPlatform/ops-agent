@@ -34,7 +34,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
-func googleCloudExporter(userAgent string, instrumentationLabels bool) otel.Component {
+func googleCloudExporter(userAgent string, instrumentationLabels bool, serviceResourceLabels bool) otel.Component {
 	return otel.Component{
 		Type: "googlecloud",
 		Config: map[string]interface{}{
@@ -51,7 +51,7 @@ func googleCloudExporter(userAgent string, instrumentationLabels bool) otel.Comp
 				"instrumentation_library_labels": instrumentationLabels,
 				// Omit service labels, which break agent metrics.
 				// TODO: Enable with instrumentationLabels when values are sane.
-				"service_resource_labels": false,
+				"service_resource_labels": serviceResourceLabels,
 				"resource_filters":        []map[string]interface{}{},
 			},
 		},
@@ -127,8 +127,8 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 		Pipelines:         pipelines,
 		Extensions:        extensions,
 		Exporters: map[otel.ExporterType]otel.Component{
-			otel.System: googleCloudExporter(userAgent, false),
-			otel.OTel:   googleCloudExporter(userAgent, true),
+			otel.System: googleCloudExporter(userAgent, false, false),
+			otel.OTel:   googleCloudExporter(userAgent, true, true),
 			otel.GMP:    googleManagedPrometheusExporter(userAgent),
 		},
 	}.Generate(ctx)
@@ -246,12 +246,26 @@ func (p PipelineInstance) FluentBitComponents(ctx context.Context) (fbSource, er
 	}, nil
 }
 
+var receiverIDKey = "receiver_id"
+
+func ContextWithReceiverID(ctx context.Context, rID string) context.Context {
+	return context.WithValue(ctx, receiverIDKey, rID)
+}
+
+func ReceiverIDFromContext(ctx context.Context) (string, bool) {
+	rId, ok := ctx.Value(receiverIDKey).(string)
+	return rId, ok
+}
+
 func (p PipelineInstance) OTelComponents(ctx context.Context) (map[string]otel.ReceiverPipeline, map[string]otel.Pipeline, error) {
 	outR := make(map[string]otel.ReceiverPipeline)
 	outP := make(map[string]otel.Pipeline)
 	receiver, ok := p.Receiver.(OTelReceiver)
 	if !ok {
 		return nil, nil, fmt.Errorf("%q is not an otel receiver", p.RID)
+	}
+	if p.Receiver.Type() == "jvm" {
+		ctx = ContextWithReceiverID(ctx, p.RID)
 	}
 	// TODO: Add a way for receivers or processors to decide whether they're compatible with a particular config.
 	receiverPipelines, err := receiver.Pipelines(ctx)

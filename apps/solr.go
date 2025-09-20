@@ -38,6 +38,7 @@ func (r MetricsReceiverSolr) Pipelines(_ context.Context) ([]otel.ReceiverPipeli
 
 	return r.MetricsReceiverSharedJVM.
 		WithDefaultEndpoint(defaultSolrEndpoint).
+		WithServiceName(targetSystem).
 		ConfigurePipelines(
 			targetSystem,
 			[]otel.Component{

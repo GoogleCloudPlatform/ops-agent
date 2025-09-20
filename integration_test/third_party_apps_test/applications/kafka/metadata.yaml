@@ -51,37 +51,55 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: kafka
       - name: operation
         value_regex: .*
   - type: workload.googleapis.com/kafka.message.count
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
+    labels:
+      - name: service_name
+        value_regex: kafka
     representative: true
   - type: workload.googleapis.com/kafka.network.io
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: kafka
       - name: state
         value_regex: .*
   - type: workload.googleapis.com/kafka.partition.count
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: service_name
+        value_regex: kafka
   - type: workload.googleapis.com/kafka.partition.offline
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: service_name
+        value_regex: kafka
   - type: workload.googleapis.com/kafka.partition.under_replicated
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: service_name
+        value_regex: kafka
   - type: workload.googleapis.com/kafka.purgatory.size
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: kafka
       - name: type
         value_regex: .*
   - type: workload.googleapis.com/kafka.request.count
@@ -89,6 +107,8 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: kafka
       - name: type
         value_regex: .*
   - type: workload.googleapis.com/kafka.request.failed
@@ -96,6 +116,8 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: kafka
       - name: type
         value_regex: .*
   - type: workload.googleapis.com/kafka.request.time.total
@@ -103,6 +125,8 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
+      - name: service_name
+        value_regex: kafka
       - name: type
         value_regex: .*
 expected_logs:

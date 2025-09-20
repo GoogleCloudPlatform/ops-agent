@@ -42,6 +42,7 @@ func (r MetricsReceiverHadoop) Pipelines(_ context.Context) ([]otel.ReceiverPipe
 
 	return r.MetricsReceiverSharedJVM.
 		WithDefaultEndpoint(defaultHadoopEndpoint).
+		WithServiceName(targetSystem).
 		ConfigurePipelines(
 			targetSystem,
 			[]otel.Component{

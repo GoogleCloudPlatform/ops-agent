@@ -40,6 +40,7 @@ func (r MetricsReceiverActivemq) Pipelines(_ context.Context) ([]otel.ReceiverPi
 
 	return r.MetricsReceiverSharedJVM.
 		WithDefaultEndpoint(defaultActivemqEndpoint).
+		WithServiceName(targetSystem).
 		ConfigurePipelines(
 			targetSystem,
 			[]otel.Component{

@@ -14,12 +14,12 @@ sudo cp /etc/google-cloud-ops-agent/config.yaml /etc/google-cloud-ops-agent/conf
 sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
 metrics:
   receivers:
-    jvm:
+    my_java_app:
       type: jvm
       endpoint: service:jmx:rmi:///jndi/rmi://127.0.0.1:9010/jmxrmi
   service:
     pipelines:
       jvm:
         receivers:
-          - jvm
+          - my_java_app
 EOF
