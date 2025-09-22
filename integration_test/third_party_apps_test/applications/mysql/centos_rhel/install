@@ -18,8 +18,9 @@ if [ ${MAJOR_VERSION_ID} == 8 ]; then
 fi
 sudo yum -y install mysql-community-server
 
-echo "default-authentication-plugin=mysql_native_password" | sudo tee -a /etc/my.cnf
-
+if [ ${MAJOR_VERSION_ID} != 10 ]; then
+  echo "default-authentication-plugin=mysql_native_password" | sudo tee -a /etc/my.cnf
+fi
 sudo service mysqld start
 
 password=$(sudo grep -oP '(?<=temporary password is generated for root@localhost: ).*$' /var/log/mysqld.log)
