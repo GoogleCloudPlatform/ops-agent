@@ -343,14 +343,18 @@ expected_logs:
         value_regex: initialized
         type: string
         description: 'Log message'
+      - name: jsonPayload.log.level
+        type: string
+        description: 'Log entry level in ECS format'
+        optional: true
       - name: jsonPayload.log.logger
-        value_regex: org.elasticsearch.node.Node
         type: string
         description: 'The logger component that emitted the log in ECS format'
-      - name: jsonPayload.event.dataset
-        value_regex: elasticsearch.server
+        optional: true
+      - name: jsonPayload.ecs.version
         type: string
-        description: 'The event dataset in ECS format, indicating which log the record came from'
+        description: 'ECS version'
+        optional: true
       - name: jsonPayload.elasticsearch.cluster.name
         type: string
         description: 'The name of the cluster emitting the log record in ECS format'
@@ -358,22 +362,6 @@ expected_logs:
       - name: jsonPayload.elasticsearch.cluster.uuid
         type: string
         description: 'The UUID of the cluster emitting the log record in ECS format'
-        optional: true
-      - name: jsonPayload.elasticsearch.node.name
-        type: string
-        description: 'The name of the node emitting the log record in ECS format'
-        optional: true
-      - name: jsonPayload.elasticsearch.node.uuid
-        type: string
-        description: 'The UUID of the node emitting the log record in ECS format'
-        optional: true
-      - name: jsonPayload.log.level
-        type: string
-        description: 'Log entry level in ECS format'
-        optional: true
-      - name: jsonPayload.ecs.version
-        type: string
-        description: 'ECS version'
         optional: true
   - log_name: elasticsearch_gc
     fields:
