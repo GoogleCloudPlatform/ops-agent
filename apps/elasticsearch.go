@@ -274,23 +274,7 @@ func elasticsearchNestingProcessors() []confgenerator.InternalLoggingProcessor {
 		"host",
 		"apikey",
 		"cluster",
-		// ECS fields
 		"log",
-		"labels",
-		"ecs",
-		"elasticsearch",
-		"elasticsearch.cluster",
-		"elasticsearch.node",
-		"elasticsearch.index",
-		"elasticsearch.shard",
-		"elasticsearch.http",
-		"elasticsearch.http",
-		"elasticsearch.event",
-		"elasticsearch.audit",
-		"elasticsearch.audit.url",
-		"elasticsearch.audit.request",
-		"process",
-		"service",
 	}
 
 	processors := make([]confgenerator.InternalLoggingProcessor, 0, len(prefixes))
