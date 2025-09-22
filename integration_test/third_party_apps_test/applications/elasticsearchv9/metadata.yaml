@@ -339,10 +339,18 @@ expected_metrics:
 expected_logs:
   - log_name: elasticsearch_json_ecs
     fields:
+      - name: severity
+        type: string
+        description: 'Log entry severity level'
+        optional: true
       - name: jsonPayload.message
         value_regex: initialized
         type: string
         description: 'Log message'
+      - name: jsonPayload.service.name
+        type: string
+        description: 'The name of the service emitting the log in ECS format'
+        optional: true
       - name: jsonPayload.log.level
         type: string
         description: 'Log entry level in ECS format'
@@ -350,6 +358,22 @@ expected_logs:
       - name: jsonPayload.log.logger
         type: string
         description: 'The logger component that emitted the log in ECS format'
+        optional: true
+      - name: jsonPayload.log
+        type: string
+        description: 'Log details in ECS format'
+        optional: true
+      - name: jsonPayload.process.thread.name
+        type: string
+        description: 'The name of the thread that emitted the log in ECS format'
+        optional: true
+      - name: jsonPayload.elasticsearch.node.name
+        type: string
+        description: 'The name of the node emitting the log record in ECS format'
+        optional: true
+      - name: jsonPayload.event
+        type: string
+        description: 'Event information in ECS format'
         optional: true
       - name: jsonPayload.ecs.version
         type: string
