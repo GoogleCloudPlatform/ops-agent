@@ -31,7 +31,7 @@ minimum_supported_agent_version:
   metrics: 2.21.0
   logging: 2.9.0
 supported_operating_systems: linux
-supported_app_version: ["7.9+", "8.0+", "9.0+"]
+supported_app_version: ["8.0+", "9.0+"]
 expected_metrics:
   - type: workload.googleapis.com/elasticsearch.cluster.data_nodes
     value_type: INT64
@@ -337,7 +337,7 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
 expected_logs:
-  - log_name: elasticsearch_json
+  - log_name: elasticsearch_json_ecs
     fields:
       - name: jsonPayload.message
         value_regex: initialized
@@ -375,13 +375,6 @@ expected_logs:
         type: string
         description: 'ECS version'
         optional: true
-      - name: jsonPayload.service.name
-        type: string
-        description: 'Service name in ECS format'
-        optional: true
-      - name: severity
-        type: string
-        description: ''
   - log_name: elasticsearch_gc
     fields:
       - name: jsonPayload.message
@@ -401,7 +394,7 @@ expected_logs:
         description: ''
 configuration_options:
   logs:
-    - type: elasticsearch_json
+    - type: elasticsearch_json_ecs
       fields:
         - name: type
           default: null

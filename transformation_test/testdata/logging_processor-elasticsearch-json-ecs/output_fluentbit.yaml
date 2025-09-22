@@ -1,179 +1,127 @@
 - entries:
   - jsonPayload:
-      "@timestamp": 2025-09-19T02:20:17.920Z
-      ecs.version: "1.2.0"
-      elasticsearch.cluster.name: elasticsearch
-      elasticsearch.node.name: es-test-3
+      ecs:
+        version: 1.2.0
+      elasticsearch:
+        cluster.name: elasticsearch
+        node.name: es-test-3
       event:
         dataset: elasticsearch.server
-      log.level: INFO
-      log.logger: org.elasticsearch.node.Node
+      log:
+        level: INFO
+        logger: org.elasticsearch.node.Node
       message: initialized
-      process.thread.name: main
-      service.name: ES_ECS
+      process:
+        thread.name: main
+      service:
+        name: ES_ECS
     labels:
       compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json_ecs
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
     timestamp: 2025-09-19T02:20:17.920000000Z
   - jsonPayload:
-      "@timestamp": 2025-09-19T02:20:18.920Z
-      ecs.version: "1.2.0"
-      elasticsearch.cluster.name: elasticsearch
-      elasticsearch.node.name: es-test-3
+      data_stream.dataset: elasticsearch.deprecation
+      data_stream.namespace: default
+      data_stream.type: logs
+      ecs:
+        version: 1.2.0
+      elasticsearch:
+        cluster.name: elasticsearch
+        cluster.uuid: NW0tZXo-QwCNcoz9ddkWmg
+        event.category: indices
+        node.id: ZbYZl1Y6SpKVarJF5O44qA
+        node.name: es-test-3
       event:
-        dataset: elasticsearch.server
-      log.level: WARN
-      log.logger: org.elasticsearch.discovery.zen.ZenDiscovery
-      message: failed to connect to master
-      process.thread.name: discovery
-      service.name: ES_ECS
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
-    logName: projects/my-project/logs/transformation_test
-    severity: 400.0
-    timestamp: 2025-09-19T02:20:18.920000000Z
-  - jsonPayload:
-      "@timestamp": 2025-09-19T02:20:19.920Z
-      ecs.version: "1.2.0"
-      elasticsearch.cluster.name: elasticsearch
-      elasticsearch.node.name: es-test-3
-      error.message: failed to obtain node locks
-      error.type: java.lang.IllegalStateException
-      event:
-        dataset: elasticsearch.server
-      log.level: ERROR
-      log.logger: org.elasticsearch.bootstrap.Bootstrap
-      message: Exception occurred
-      process.thread.name: main
-      service.name: ES_ECS
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
-    logName: projects/my-project/logs/transformation_test
-    severity: 500.0
-    timestamp: 2025-09-19T02:20:19.920000000Z
-  - jsonPayload:
-      "@timestamp": 2025-09-19T02:20:20.920Z
-      ecs.version: "1.2.0"
-      elasticsearch.cluster.name: elasticsearch
-      elasticsearch.node.name: es-test-3
-      event:
-        dataset: elasticsearch.server
-      log.level: DEBUG
-      log.logger: org.elasticsearch.node.Node
-      message: stopping node
-      service.name: ES_ECS
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
-    logName: projects/my-project/logs/transformation_test
-    severity: 100.0
-    timestamp: 2025-09-19T02:20:20.920000000Z
-  - jsonPayload:
-      "@timestamp": 2025-09-19T02:20:21.920Z
-      ecs.version: "1.2.0"
-      elasticsearch.cluster.name: elasticsearch
-      elasticsearch.node.name: es-test-3
-      event:
-        dataset: elasticsearch.server
-      log.level: TRACE
-      log.logger: org.elasticsearch.node.Node
-      message: node stopped
-      service.name: ES_ECS
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
-    logName: projects/my-project/logs/transformation_test
-    severity: 100.0
-    timestamp: 2025-09-19T02:20:21.920000000Z
-  - jsonPayload:
-      "@timestamp": 2025-09-19T02:20:22.920Z
-      ecs.version: "1.2.0"
-      elasticsearch.cluster.name: elasticsearch
-      elasticsearch.node.name: es-test-3
-      event:
+        code: dot-prefix
         dataset: elasticsearch.deprecation
-      log.level: DEPRECATION
-      log.logger: org.elasticsearch.node.Node
-      message: deprecated setting used
-      service.name: ES_ECS
+      log:
+        level: WARN
+        logger: org.elasticsearch.deprecation.validation.DotPrefixValidator
+      message: Index [.search-acl-filter-*] name begins with a dot (.), which is deprecated, and will not be allowed in a future Elasticsearch version.
+      process:
+        thread.name: "elasticsearch[es-test-3][generic][T#5]"
+      service:
+        name: ES_ECS
     labels:
       compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json_ecs
     logName: projects/my-project/logs/transformation_test
     severity: 400.0
-    timestamp: 2025-09-19T02:20:22.920000000Z
+    timestamp: 2025-09-19T02:20:25.607000000Z
   - jsonPayload:
-      "@timestamp": 2025-09-19T02:20:23.920Z
-      ecs.version: "1.2.0"
-      elasticsearch.cluster.name: elasticsearch
-      elasticsearch.node.name: es-test-3
+      ecs:
+        version: 1.2.0
+      elasticsearch:
+        cluster.name: elasticsearch
+        cluster.uuid: NW0tZXo-QwCNcoz9ddkWmg
+        node.id: ZbYZl1Y6SpKVarJF5O44qA
+        node.name: es-test-3
       event:
         dataset: elasticsearch.server
-      log.level: FATAL
-      log.logger: org.elasticsearch.node.Node
-      message: fatal error occurred
-      service.name: ES_ECS
+      log:
+        level: WARN
+        logger: org.elasticsearch.threadpool.ThreadPool
+      message: timer thread slept for [6.1s/6178ms] on absolute clock which is above the warn threshold of [5000ms]
+      process:
+        thread.name: elasticsearch[es-test-3][[timer]]
+      service:
+        name: ES_ECS
     labels:
       compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json_ecs
     logName: projects/my-project/logs/transformation_test
-    severity: 600.0
-    timestamp: 2025-09-19T02:20:23.920000000Z
+    severity: 400.0
+    timestamp: 2025-09-22T13:02:00.960000000Z
   - jsonPayload:
-      "@timestamp": 2025-09-19T02:20:24.920Z
-      ecs.version: "1.2.0"
-      elasticsearch.cluster.name: elasticsearch
-      elasticsearch.node.name: es-test-3
+      ecs:
+        version: 1.2.0
+      elasticsearch:
+        cluster.name: elasticsearch
+        cluster.uuid: NW0tZXo-QwCNcoz9ddkWmg
+        node.id: ZbYZl1Y6SpKVarJF5O44qA
+        node.name: es-test-3
       event:
         dataset: elasticsearch.server
-      log.level: UNKNOWN
-      log.logger: org.elasticsearch.node.Node
-      message: unknown log level
-      service.name: ES_ECS
+      log:
+        level: WARN
+        logger: org.elasticsearch.threadpool.ThreadPool
+      message: timer thread slept for [6.1s/6178309887ns] on relative clock which is above the warn threshold of [5000ms]
+      process:
+        thread.name: elasticsearch[es-test-3][[timer]]
+      service:
+        name: ES_ECS
     labels:
       compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json_ecs
     logName: projects/my-project/logs/transformation_test
-    timestamp: 2025-09-19T02:20:24.920000000Z
+    severity: 400.0
+    timestamp: 2025-09-22T13:02:00.970000000Z
   - jsonPayload:
-      "@timestamp": 2025-09-19T02:20:25.920Z
-      ecs.version: "1.2.0"
+      ecs:
+        version: 1.2.0
+      elasticsearch:
+        cluster.name: elasticsearch
+        cluster.uuid: NW0tZXo-QwCNcoz9ddkWmg
+        node.id: ZbYZl1Y6SpKVarJF5O44qA
+        node.name: es-test-3
       event:
         dataset: elasticsearch.server
-      log.level: INFO
-      log.logger: org.elasticsearch.node.Node
-      message: missing some fields
-      service.name: ES_ECS
+      log:
+        level: INFO
+        logger: org.elasticsearch.monitor.jvm.JvmGcMonitorService
+      message: "[gc][5546] overhead, spent [274ms] collecting in the last [1s]"
+      process:
+        thread.name: "elasticsearch[es-test-3][scheduler][T#1]"
+      service:
+        name: ES_ECS
     labels:
       compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json_ecs
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: 2025-09-19T02:20:25.920000000Z
-  - jsonPayload:
-      "@timestamp": 2025-09-19T02:20:26.920Z
-      ecs.version: "1.2.0"
-      elasticsearch.cluster.name: elasticsearch
-      elasticsearch.node.name: es-test-3
-      event:
-        action: authentication_success
-        dataset: elasticsearch.audit
-      log.level: INFO
-      log.logger: org.elasticsearch.xpack.security.audit.AuditTrail
-      message: audit event
-      service.name: ES_ECS
-      user:
-        name: elastic
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
-    logName: projects/my-project/logs/transformation_test
-    severity: 200.0
-    timestamp: 2025-09-19T02:20:26.920000000Z
+    timestamp: 2025-09-19T03:55:37.893000000Z
   partialSuccess: true
   resource:
     labels: {}
