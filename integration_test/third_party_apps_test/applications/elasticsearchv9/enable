@@ -18,6 +18,7 @@ metrics:
   receivers:
     elasticsearch:
       type: elasticsearch
+      endpoint: https://localhost:9200
       username: elastic
       password: elastic_test_password_123
       insecure: true
