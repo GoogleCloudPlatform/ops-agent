@@ -26,7 +26,7 @@ import (
 	"testing"
 	"time"
 
-	pb "github.com/GoogleCloudPlatform/google-guest-agent/tree/main/pkg/proto/plugin_comm"
+	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
 )
 
 func Test_runCommand(t *testing.T) {
