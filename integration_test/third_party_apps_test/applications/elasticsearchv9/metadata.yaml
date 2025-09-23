@@ -37,6 +37,9 @@ expected_metrics:
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.cluster.health
     value_type: INT64
     kind: GAUGE
@@ -44,10 +47,15 @@ expected_metrics:
     labels:
       - name: status
         value_regex: .*
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.cluster.nodes
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.cluster.shards
     value_type: INT64
     kind: GAUGE
@@ -55,6 +63,8 @@ expected_metrics:
     labels:
       - name: state
         value_regex: .*
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.node.cache.evictions
     value_type: INT64
     kind: CUMULATIVE
@@ -62,6 +72,8 @@ expected_metrics:
     labels:
       - name: cache_name
         value_regex: .*
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.node.cache.memory.usage
     value_type: INT64
     kind: GAUGE
@@ -69,10 +81,15 @@ expected_metrics:
     labels:
       - name: cache_name
         value_regex: .*
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.node.cluster.connections
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.node.cluster.io
     value_type: INT64
     kind: CUMULATIVE
@@ -80,6 +97,8 @@ expected_metrics:
     labels:
       - name: direction
         value_regex: .*
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.node.documents
     value_type: INT64
     kind: GAUGE
@@ -87,18 +106,29 @@ expected_metrics:
     labels:
       - name: state
         value_regex: .*
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.node.fs.disk.available
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.node.http.connections
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.node.open_files
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
     representative: true
   - type: workload.googleapis.com/elasticsearch.node.operations.completed
     value_type: INT64
@@ -107,6 +137,8 @@ expected_metrics:
     labels:
       - name: operation
         value_regex: .*
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.node.operations.time
     value_type: INT64
     kind: CUMULATIVE
@@ -114,10 +146,15 @@ expected_metrics:
     labels:
       - name: operation
         value_regex: .*
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.node.shards.size
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.node.thread_pool.tasks.finished
     value_type: INT64
     kind: CUMULATIVE
@@ -127,11 +164,15 @@ expected_metrics:
         value_regex: .*
       - name: thread_pool_name
         value_regex: .*
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.node.thread_pool.tasks.queued
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
       - name: thread_pool_name
         value_regex: .*
   - type: workload.googleapis.com/elasticsearch.node.thread_pool.threads
@@ -141,6 +182,8 @@ expected_metrics:
     labels:
       - name: state
         value_regex: .*
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
       - name: thread_pool_name
         value_regex: .*
   - type: workload.googleapis.com/elasticsearch.breaker.memory.estimated
@@ -148,6 +191,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
       - name: name
         value_regex: .*
   - type: workload.googleapis.com/elasticsearch.breaker.memory.limit
@@ -155,6 +200,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
       - name: name
         value_regex: .*
   - type: workload.googleapis.com/elasticsearch.breaker.tripped
@@ -162,6 +209,8 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
       - name: name
         value_regex: .*
   - type: workload.googleapis.com/elasticsearch.cluster.published_states.differences
@@ -169,17 +218,24 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
       - name: state
         value_regex: incompatible|compatible
   - type: workload.googleapis.com/elasticsearch.cluster.published_states.full
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.cluster.state_queue
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
       - name: state
         value_regex: pending|committed
   - type: workload.googleapis.com/elasticsearch.cluster.state_update.count
@@ -187,6 +243,8 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
       - name: state
         value_regex: .*
   - type: workload.googleapis.com/elasticsearch.cluster.state_update.time
@@ -194,6 +252,8 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
       - name: state
         value_regex: .*
       - name: type
@@ -202,14 +262,23 @@ expected_metrics:
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.indexing_pressure.memory.total.primary_rejections
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.indexing_pressure.memory.total.replica_rejections
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.memory.indexing_pressure
     value_type: INT64
     kind: GAUGE
@@ -217,31 +286,50 @@ expected_metrics:
     labels:
       - name: stage
         value_regex: coordinating|primary|replica
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.node.disk.io.read
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.node.disk.io.write
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.node.ingest.documents
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.node.ingest.documents.current
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.node.ingest.operations.failed
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.node.pipeline.ingest.documents.current
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
       - name: name
         value_regex: .*
   - type: workload.googleapis.com/elasticsearch.node.pipeline.ingest.documents.preprocessed
@@ -249,6 +337,8 @@ expected_metrics:
     kind: GAUGE
     monitored_resources: [gce_instance]
     labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
       - name: name
         value_regex: .*
   - type: workload.googleapis.com/elasticsearch.node.pipeline.ingest.operations.failed
@@ -256,56 +346,94 @@ expected_metrics:
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
     labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
       - name: name
         value_regex: .*
   - type: workload.googleapis.com/elasticsearch.node.script.cache_evictions
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.node.script.compilation_limit_triggered
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.node.script.compilations
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.node.shards.data_set.size
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.node.shards.reserved.size
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.node.translog.operations
     value_type: INT64
     kind: CUMULATIVE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.node.translog.size
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.node.translog.uncommitted.size
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.os.cpu.load_avg.15m
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.os.cpu.load_avg.1m
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.os.cpu.load_avg.5m
     value_type: DOUBLE
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.os.cpu.usage
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.os.memory
     value_type: INT64
     kind: GAUGE
@@ -313,14 +441,22 @@ expected_metrics:
     labels:
       - name: state
         value_regex: free|used
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.cluster.in_flight_fetch
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.cluster.pending_tasks
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.node.cache.count
     value_type: INT64
     kind: GAUGE
@@ -328,14 +464,22 @@ expected_metrics:
     labels:
       - name: type
         value_regex: hit|miss
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.node.fs.disk.free
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
   - type: workload.googleapis.com/elasticsearch.node.fs.disk.total
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
 expected_logs:
   - log_name: elasticsearch_json_ecs
     fields:
