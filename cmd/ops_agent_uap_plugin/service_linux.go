@@ -30,8 +30,9 @@ import (
 	"sync"
 	"syscall"
 
-	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
 	"google.golang.org/grpc/status"
+
+	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
 )
 
 const (
@@ -57,14 +58,6 @@ var (
 // primarily to facilitate testing by allowing the injection of mock
 // implementations.
 type RunSubAgentCommandFunc func(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup)
-
-// Apply applies the config sent or performs the work defined in the message.
-// ApplyRequest is opaque to the agent and is expected to be well known contract
-// between Plugin and the server itself. For e.g. service might want to update
-// plugin config to enable/disable feature here plugins can react to such requests.
-func (ps *OpsAgentPluginServer) Apply(ctx context.Context, msg *pb.ApplyRequest) (*pb.ApplyResponse, error) {
-	return &pb.ApplyResponse{}, nil
-}
 
 // Start starts the plugin and initiates the plugin functionality.
 // Until plugin receives Start request plugin is expected to be not functioning

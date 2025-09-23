@@ -22,9 +22,10 @@ import (
 
 	"buf.build/go/protoyaml" // Import the protoyaml-go package
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
-	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
+
+	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
 	spb "google.golang.org/protobuf/types/known/structpb"
 )
 
