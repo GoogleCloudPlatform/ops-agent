@@ -25,7 +25,7 @@ import (
 	"sync"
 
 	"buf.build/go/protoyaml"
-	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
+	pb "github.com/GoogleCloudPlatform/google-guest-agent/tree/main/pkg/proto/plugin_comm"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )

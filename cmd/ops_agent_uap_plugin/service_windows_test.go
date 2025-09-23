@@ -26,7 +26,7 @@ import (
 	"testing"
 	"time"
 
-	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
+	pb "github.com/GoogleCloudPlatform/google-guest-agent/tree/main/pkg/proto/plugin_comm"
 )
 
 // serviceManager is a mock implementation of the serviceManager interface. This is used to test the findPreExistentAgents function.
