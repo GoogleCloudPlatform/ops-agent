@@ -22,6 +22,7 @@ metrics:
       username: elastic
       password: elastic_test_password_123
       insecure_skip_verify: true
+      insecure: false
   service:
     pipelines:
       elasticsearch:
