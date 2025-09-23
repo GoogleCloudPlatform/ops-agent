@@ -18,12 +18,12 @@ install_cuda_from_runfile() {
     # Remove existing installation before using the runfile
     remove_cuda_package
     remove_driver_package
-    # For Rocky Linux 9: when a new OS version becomes available, the default 
+    # For Rocky Linux 9: when a new OS version becomes available, the default
     # repo setting (/etc/yum.repos.d/rocky.repo) will automatically point to the
     # new version's repo. This is problematic since the new OS is not available
-    # right away on GCE. Set up the matched repo to install the correct 
+    # right away on GCE. Set up the matched repo to install the correct
     # kernel-devel-$(uname -r)
-    # Not needed for RL8 since 8.10 is already the last RL8 release.  
+    # Not needed for RL8 since 8.10 is already the last RL8 release.
     REPO_URL="https://dl.rockylinux.org/vault/rocky/$VERSION_ID/AppStream/x86_64/os/"
     REPO_METADATA="$REPO_URL/repodata/repomd.xml"
     STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$REPO_METADATA")
@@ -120,9 +120,7 @@ remove_driver_package() {
     sudo yum -y module remove --all nvidia-driver
 }
 
-case "$MAJOR_VERSION_ID" in
-    9) handle_rhel9;;
-    *) handle_common;;
-esac
+handle_common
+
 try_install install_cuda_from_package_manager install_cuda_from_runfile
 install_dcgm
