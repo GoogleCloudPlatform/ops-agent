@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"buf.build/go/protoyaml" // Import the protoyaml-go package
-	pb "github.com/GoogleCloudPlatform/google-guest-agent/tree/main/pkg/proto/plugin_comm"
+	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"

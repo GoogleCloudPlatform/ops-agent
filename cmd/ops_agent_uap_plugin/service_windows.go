@@ -40,7 +40,7 @@ import (
 	"golang.org/x/sys/windows/svc/mgr"
 	"google.golang.org/grpc/status"
 
-	pb "github.com/GoogleCloudPlatform/google-guest-agent/tree/main/pkg/proto/plugin_comm"
+	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
 )
 
 const (
