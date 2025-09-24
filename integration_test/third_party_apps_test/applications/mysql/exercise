@@ -29,20 +29,9 @@ sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse
 # Dump data from replica source
 sudo mysqldump --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock --all-databases --source-data > /tmp/dbdump.sql
 
-STATUS_COMMAND="SHOW MASTER STATUS;"
-VERSION_STRING=$(sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "SELECT VERSION();" 2>/dev/null)
-VERSION_MAJOR=$(echo "$VERSION_STRING" | cut -d'.' -f1)
-VERSION_MINOR=$(echo "$VERSION_STRING" | cut -d'.' -f2)
-VERSION_PATCH=$(echo "$VERSION_STRING" | cut -d'.' -f3 | tr -d -c 0-9)
-# Logic to check if version is 8.0.22 or newer.
-if (( VERSION_MAJOR > 8 )) || (( VERSION_MAJOR == 8 && VERSION_MINOR > 0 )) ||
-    (( VERSION_MAJOR == 8 && VERSION_MINOR == 0 && VERSION_PATCH >= 22 )); then
-    STATUS_COMMAND="SHOW BINARY LOG STATUS;"
-fi
-
 # Capture status to seed replica
-raw_status=$(sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "${STATUS_COMMAND};")
-raw_status=$(sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "${STATUS_COMMAND};")
+raw_status=$(sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "SHOW MASTER STATUS;") || raw_status=$(sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "SHOW BINARY LOG STATUS;")
+raw_status=$(sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "SHOW MASTER STATUS;") || raw_status=$(sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "SHOW BINARY LOG STATUS;")
 read -r logfile logpos <<< $raw_status
 
 # Dump data from source into replica
