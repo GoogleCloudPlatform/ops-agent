@@ -100,6 +100,7 @@ func (r MetricsReceiverPostgresql) Pipelines(_ context.Context) ([]otel.Receiver
 				),
 				otel.AddPrefix("workload.googleapis.com"),
 			),
+			otel.MetricsRemoveServiceAttributes(),
 		}},
 	}}, nil
 }

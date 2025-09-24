@@ -12,7 +12,7 @@ exporters:
       instrumentation_library_labels: true
       prefix: ""
       resource_filters: []
-      service_resource_labels: false
+      service_resource_labels: true
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
 processors:
@@ -70,7 +70,7 @@ processors:
         - otelcol_process_memory_rss
         - grpc.client.attempt.duration_count
         - googlecloudmonitoring/point_count
-  groupbyattrs/iis_2: {}
+  groupbyattrs/iis_3: {}
   metricstransform/fluentbit_1:
     transforms:
     - action: update
@@ -406,7 +406,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/iis_3:
+  metricstransform/iis_4:
     transforms:
     - action: update
       include: ^iis
@@ -481,7 +481,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  normalizesums/iis_4: {}
+  normalizesums/iis_5: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
@@ -496,6 +496,15 @@ processors:
       - set(name, "agent.googleapis.com/iis")
       - set(version, "2.0")
   transform/iis_1:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
+  transform/iis_2:
     metric_statements:
     - context: datapoint
       statements:
@@ -595,9 +604,10 @@ service:
       processors:
       - transform/iis_0
       - transform/iis_1
-      - groupbyattrs/iis_2
-      - metricstransform/iis_3
-      - normalizesums/iis_4
+      - transform/iis_2
+      - groupbyattrs/iis_3
+      - metricstransform/iis_4
+      - normalizesums/iis_5
       - filter/default__pipeline_iis_0
       - resourcedetection/_global_0
       receivers:
@@ -627,9 +637,10 @@ service:
       processors:
       - transform/iis_0
       - transform/iis_1
-      - groupbyattrs/iis_2
-      - metricstransform/iis_3
-      - normalizesums/iis_4
+      - transform/iis_2
+      - groupbyattrs/iis_3
+      - metricstransform/iis_4
+      - normalizesums/iis_5
       - resourcedetection/_global_0
       receivers:
       - iis/iis
