@@ -10,7 +10,7 @@ PROJECT=my_project \
   ZONES=us-central1-b \
   TTL=100m \
   LOG_SIZE_IN_BYTES=1000 \
-  LOG_RATE=1000 \ 
+  LOG_RATE=1000 \
   go run -tags=integration_test ./integration_test/soak_test/cmd/launcher
 ```
 
