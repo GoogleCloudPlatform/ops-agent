@@ -20,6 +20,18 @@ user=root
 password='$password'
 EOF
 
+STATUS_COMMAND="SHOW MASTER STATUS;"
+VERSION_STRING=$(sudo mysql -sN -e "SELECT VERSION();" 2>/dev/null)
+VERSION_MAJOR=$(echo "$VERSION_STRING" | cut -d'.' -f1)
+VERSION_MINOR=$(echo "$VERSION_STRING" | cut -d'.' -f2)
+VERSION_PATCH=$(echo "$VERSION_STRING" | cut -d'.' -f3 | tr -d -c 0-9)
+
+# Logic to check if version is 8.0.22 or newer.
+if (( VERSION_MAJOR > 8 )) || (( VERSION_MAJOR == 8 && VERSION_MINOR > 0 )) ||
+    (( VERSION_MAJOR == 8 && VERSION_MINOR == 0 && VERSION_PATCH >= 22 )); then
+    STATUS_COMMAND="SHOW BINARY LOG STATUS;"
+fi
+
 sudo mysql --defaults-extra-file=config-user-2 -S /var/run/mysqld/mysql2.sock -Bse "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Ss123%321'; FLUSH PRIVILEGES;" --connect-expired-password
 
 # Create replication user
@@ -30,7 +42,8 @@ sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse
 sudo mysqldump --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock --all-databases --source-data > /tmp/dbdump.sql
 
 # Capture status to seed replica
-raw_status=$(sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "SHOW MASTER STATUS;")
+raw_status=$(sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "${STATUS_COMMAND};")
+raw_status=$(sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "${STATUS_COMMAND};")
 read -r logfile logpos <<< $raw_status
 
 # Dump data from source into replica
