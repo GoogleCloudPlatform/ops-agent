@@ -46,7 +46,7 @@ EOF
       KERNEL_PACKAGE=${KERNEL_PACKAGE}.rpm
     fi
 
-    sudo yum install $KERNEL_PACKAGE
+    sudo yum install -y $KERNEL_PACKAGE
     # Installing latest version of NVIDIA CUDA and driver
     local CUDA_VERSION=12.8.0
     local CUDA_BUNDLED_DRIVER_VERSION=570.86.10
