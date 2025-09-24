@@ -30,8 +30,7 @@ sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse
 sudo mysqldump --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock --all-databases --source-data > /tmp/dbdump.sql
 
 STATUS_COMMAND="SHOW MASTER STATUS;"
-VERSION_STRING=$(sudo mysql -sN -e "SELECT VERSION();" 2>/dev/null)
-sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "SELECT VERSION();"
+VERSION_STRING=$(sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "SELECT VERSION();" 2>/dev/null)
 VERSION_MAJOR=$(echo "$VERSION_STRING" | cut -d'.' -f1)
 VERSION_MINOR=$(echo "$VERSION_STRING" | cut -d'.' -f2)
 VERSION_PATCH=$(echo "$VERSION_STRING" | cut -d'.' -f3 | tr -d -c 0-9)
