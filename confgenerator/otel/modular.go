@@ -37,7 +37,7 @@ const (
 	OTel ExporterType = iota
 	System
 	GMP
-	Otlp
+	OTLP
 )
 const (
 	Override ResourceDetectionMode = iota
@@ -51,7 +51,7 @@ func (t ExporterType) Name() string {
 		return ""
 	} else if t == OTel {
 		return "otel"
-	} else if t == Otlp {
+	} else if t == OTLP {
 		return "otlp"
 	} else {
 		panic("unknown ExporterType")
@@ -187,14 +187,7 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 			telemetryMap["logs"] = logs
 		}
 	}
-	if len(c.Extensions) > 0 {
-		extensionsList := []string{}
-		for extensionName := range c.Extensions {
-			extensions[extensionName] = c.Extensions[extensionName]
-			extensionsList = append(extensionsList, extensionName)
-		}
-		service["extensions"] = extensionsList
-	}
+
 	configMap := map[string]interface{}{
 		"receivers":  receivers,
 		"processors": processors,
@@ -203,7 +196,7 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 	}
 
 	if len(c.Extensions) > 0 {
-		extensionsList := []string{}
+		var extensionsList []string
 		for extensionName := range c.Extensions {
 			extensions[extensionName] = c.Extensions[extensionName]
 			extensionsList = append(extensionsList, extensionName)

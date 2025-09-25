@@ -1223,7 +1223,7 @@ func (uc *UnifiedConfig) ValidateMetrics(ctx context.Context) error {
 		if len(p.ExporterIDs) > 0 {
 			log.Printf(`The "metrics.service.pipelines.%s.exporters" field is deprecated and will be ignored. Please remove it from your configuration.`, id)
 		}
-		if err := validateNoCustomGMPProcessors(receivers, p.ReceiverIDs, p.ProcessorIDs); err != nil {
+		if err := validateAllowCustomProcessors(receivers, p.ReceiverIDs, p.ProcessorIDs, subagent, ctx); err != nil {
 			return err
 		}
 	}
@@ -1298,23 +1298,31 @@ func validateComponentKeys[V any](components map[string]V, refs []string, subage
 	return nil
 }
 
-type CustomValidator interface {
+// CustomProcessorValidator checks if receiver or pipeline allows Ops Agent to have processors
+// Ops Agent cannot have processors if the receiver is of prometheus type, or if it
+// is an OTLP receiver that exports metrics to googlemanagedprometheus
+type CustomProcessorValidator interface {
 	AllowCustomProcessors() bool
 }
 
 // Pipelines that export prometheus metrics are not allowed to have Ops Agent processors
-func validateNoCustomGMPProcessors(receivers metricsReceiverMap, receiverIDs, processorIDs []string) error {
+func validateAllowCustomProcessors(receivers metricsReceiverMap, receiverIDs, processorIDs []string, subagent string, ctx context.Context) error {
 	for _, ID := range receiverIDs {
 		receiver, ok := receivers[ID]
 		if !ok {
-			return fmt.Errorf("metric receiver %q is not defined", ID)
+			return fmt.Errorf("metric receiver %q is not defined.", ID)
 		}
-		if v, ok := receiver.(CustomValidator); !ok || v.AllowCustomProcessors() {
-			continue
+		receiverPipelines, err := receiver.Pipelines(ctx)
+		if err != nil {
+			return err
 		}
-
-		if len(processorIDs) > 0 {
-			return fmt.Errorf("%s receiver is incompatible with Ops Agent processors", ID)
+		for _, receiverPipeline := range receiverPipelines {
+			// Check the Ops Agent receiver type.
+			if receiverPipeline.ExporterTypes[subagent] == otel.GMP {
+				if len(processorIDs) > 0 {
+					return fmt.Errorf("prometheus receivers are incompatible with Ops Agent processors")
+				}
+			}
 		}
 	}
 	return nil

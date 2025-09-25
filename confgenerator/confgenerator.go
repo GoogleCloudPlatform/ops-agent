@@ -145,7 +145,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 			otel.System: googleCloudExporter(userAgent, false),
 			otel.OTel:   googleCloudExporter(userAgent, true),
 			otel.GMP:    googleManagedPrometheusExporter(userAgent),
-			otel.Otlp:   otlpExporter(userAgent),
+			otel.OTLP:   otlpExporter(userAgent),
 		},
 	}.Generate(ctx)
 	if err != nil {
