@@ -34,7 +34,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
-func googleCloudExporter(userAgent string, instrumentationLabels bool) otel.Component {
+func googleCloudExporter(userAgent string, instrumentationLabels bool, serviceResourceLabels bool) otel.Component {
 	return otel.Component{
 		Type: "googlecloud",
 		Config: map[string]interface{}{
@@ -50,8 +50,7 @@ func googleCloudExporter(userAgent string, instrumentationLabels bool) otel.Comp
 				// Omit instrumentation labels, which break agent metrics.
 				"instrumentation_library_labels": instrumentationLabels,
 				// Omit service labels, which break agent metrics.
-				// TODO: Enable with instrumentationLabels when values are sane.
-				"service_resource_labels": false,
+				"service_resource_labels": serviceResourceLabels,
 				"resource_filters":        []map[string]interface{}{},
 			},
 		},
@@ -127,8 +126,8 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 		Pipelines:         pipelines,
 		Extensions:        extensions,
 		Exporters: map[otel.ExporterType]otel.Component{
-			otel.System: googleCloudExporter(userAgent, false),
-			otel.OTel:   googleCloudExporter(userAgent, true),
+			otel.System: googleCloudExporter(userAgent, false, false),
+			otel.OTel:   googleCloudExporter(userAgent, true, true),
 			otel.GMP:    googleManagedPrometheusExporter(userAgent),
 		},
 	}.Generate(ctx)
@@ -283,13 +282,7 @@ func (p PipelineInstance) OTelComponents(ctx context.Context) (map[string]otel.R
 			Type:                 p.PipelineType,
 			ReceiverPipelineName: receiverPipelineName,
 		}
-		// Check the Ops Agent receiver type.
-		if receiverPipeline.ExporterTypes[p.PipelineType] == otel.GMP {
-			// Prometheus receivers are incompatible with processors, so we need to assert that no processors are configured.
-			if len(p.Processors) > 0 {
-				return nil, nil, fmt.Errorf("prometheus receivers are incompatible with Ops Agent processors")
-			}
-		}
+
 		for _, processorItem := range p.Processors {
 			processor, ok := processorItem.Component.(OTelProcessor)
 			if !ok {

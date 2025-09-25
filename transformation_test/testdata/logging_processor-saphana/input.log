@@ -1,0 +1,9 @@
+[12034]{-1}[-1/-1] 2025-08-18 09:12:45.123456 i indexserver           Main.cpp(00123) : Started indexserver successfully.
+[12035]{200001}[15/40637290] 2025-08-18 09:13:12.654321 w backup                BackupManager.cpp(00245) : Backup duration exceeded expected threshold.
+[12036]{-1}[-1/-1] 2025-08-18 09:14:33.987654 e commlib               commlibImpl.cpp(00456) : ERROR: comm::connect to Host: 127.0.0.1, port: 30015, Error: exception  1: no.2110021  (Basis/IO/Stream/impl/NetworkChannel.cpp:2991)
+System error: SO_ERROR has pending error for socket. rc=111: Connection refused. channel={<NetworkChannel>={<NetworkChannelBase>={this=139745749931800, fd=22, refCnt=1, local=127.0.0.1/58700_tcp, remote=127.0.0.1/30015_tcp, state=ConnectWait, pending=[----]}}}
+exception throw location:
+ 1: 0x00007f1937d9095c in .LTHUNK27.lto_priv.2256+0x558 (libhdbbasis.so)
+ 2: 0x0000563f44888831 in _GLOBAL__sub_I_setServiceStarting.cpp.lto_priv.239+0x520 (hdbnsutil)
+[12037]{-1}[-1/-1] 2025-08-18 09:15:10.555432 d statistics           StatCollector.cpp(00333) : Collected performance metrics.
+[12038]{200002}[16/40637291] 2025-08-18 09:16:20.111111 i indexserver           Main.cpp(00130) : New client connection established. thread_id=12038
