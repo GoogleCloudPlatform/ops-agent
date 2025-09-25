@@ -27,6 +27,7 @@ echo '^cos-
 ^rocky-linux-[0-9]+-optimized-gcp
 ^sql-
 ^ubuntu-pro-
+^ubuntu-accelerator
 ^ubuntu-minimal-' > "${PATTERNS_FILE}"
 
 # Remove families that require no action on our part. This consists of both

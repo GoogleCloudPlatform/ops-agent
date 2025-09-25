@@ -168,6 +168,7 @@ func (s MetricsReceiverSapHana) Pipelines(_ context.Context) ([]otel.ReceiverPip
 				otel.SetScopeName("agent.googleapis.com/"+s.Type()),
 				otel.SetScopeVersion("1.0"),
 			),
+			otel.MetricsRemoveServiceAttributes(),
 		}},
 	}}, nil
 }
