@@ -1,7 +1,8 @@
 set -e
 
-sudo yum -y install \
-    java-1.8.0-openjdk java-1.8.0-openjdk-devel curl
+JAVA_VERSION=1.8.0
+
+sudo yum install -y java-${JAVA_VERSION}-openjdk java-${JAVA_VERSION}-openjdk-devel curl
 
 # https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/README.md#vendored-dependencies
 curl -L -o flink.tgz https://storage.googleapis.com/ops-agents-public-buckets-vendored-deps/mirrored-content/archive.apache.org/dist/flink/flink-1.14.4/flink-1.14.4-bin-scala_2.11.tgz
@@ -12,7 +13,7 @@ sudo tar -xzf flink.tgz -C /opt/flink --strip-components 1
 cat <<EOF | sudo tee /etc/systemd/system/flink.service
 [Unit]
 Description=Apache Flink
-           
+
 [Service]
 Type=forking
 User=root
@@ -20,7 +21,7 @@ Group=root
 ExecStart=/opt/flink/bin/start-cluster.sh
 ExecStop=/opt/flink/bin/stop-cluster.sh
 Restart=always
-           
+
 [Install]
 WantedBy=default.target
 EOF
