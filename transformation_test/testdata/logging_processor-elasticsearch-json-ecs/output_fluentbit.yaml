@@ -13,7 +13,7 @@
       service.name: ES_ECS
     labels:
       compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json_ecs
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_ecs
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
     timestamp: 2025-09-19T02:20:17.920000000Z
@@ -38,7 +38,7 @@
       service.name: ES_ECS
     labels:
       compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json_ecs
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_ecs
     logName: projects/my-project/logs/transformation_test
     severity: 400.0
     timestamp: 2025-09-19T02:20:25.607000000Z
@@ -58,7 +58,7 @@
       service.name: ES_ECS
     labels:
       compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json_ecs
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_ecs
     logName: projects/my-project/logs/transformation_test
     severity: 400.0
     timestamp: 2025-09-22T13:02:00.960000000Z
@@ -78,7 +78,7 @@
       service.name: ES_ECS
     labels:
       compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json_ecs
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_ecs
     logName: projects/my-project/logs/transformation_test
     severity: 400.0
     timestamp: 2025-09-22T13:02:00.970000000Z
@@ -98,7 +98,7 @@
       service.name: ES_ECS
     labels:
       compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json_ecs
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_ecs
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
     timestamp: 2025-09-19T03:55:37.893000000Z

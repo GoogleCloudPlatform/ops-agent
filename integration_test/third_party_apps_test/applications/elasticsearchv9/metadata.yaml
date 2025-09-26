@@ -484,7 +484,7 @@ expected_metrics:
       - name: instrumentation_source
         value_regex: agent.googleapis.com/elasticsearch
 expected_logs:
-  - log_name: elasticsearch_json_ecs
+  - log_name: elasticsearch_ecs
     fields:
       - name: severity
         type: string
@@ -553,7 +553,7 @@ expected_logs:
         description: ''
 configuration_options:
   logs:
-    - type: elasticsearch_json_ecs
+    - type: elasticsearch_ecs
       fields:
         - name: type
           default: null

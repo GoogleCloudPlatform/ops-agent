@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
@@ -199,39 +198,12 @@ func (p LoggingProcessorMacroElasticsearchJson) Expand(ctx context.Context) []co
 				TimeFormat: "%Y-%m-%dT%H:%M:%S,%L%z",
 			},
 		},
-		newElasticsearchFilterOffTimeKey("@timestamp"),
 		elasticsearchSeverityParser("jsonPayload.level", p.Type()),
 	}
 
 	processors = append(processors, elasticsearchNestingProcessors()...)
 
 	return processors
-}
-
-// This is a workaround to filter out logs that don't have the time key, since the time key is not always present in the log.
-// Since parsing requires the correct time key, this filter is used to remove logs that don't have the correct time key as to properly
-// support both ES 7.x and ECS logs.
-type elasticsearchGrepFilter struct {
-	timeKey string
-}
-
-func newElasticsearchFilterOffTimeKey(timeKey string) elasticsearchGrepFilter {
-	return elasticsearchGrepFilter{
-		timeKey: timeKey,
-	}
-}
-
-func (p elasticsearchGrepFilter) Components(_ context.Context, _ string, _ string) []fluentbit.Component {
-	return []fluentbit.Component{
-		{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":    "grep",
-				"Match":   fmt.Sprintf(" %s .+", p.timeKey),
-				"Exclude": fmt.Sprintf(" %s .+", p.timeKey),
-			},
-		},
-	}
 }
 
 func elasticsearchSeverityParser(copyFromField string, processorType string) confgenerator.InternalLoggingProcessor {
@@ -297,7 +269,7 @@ func elasticsearchNestingProcessors() []confgenerator.InternalLoggingProcessor {
 type LoggingProcessorMacroElasticsearchJsonV8 struct{}
 
 func (p LoggingProcessorMacroElasticsearchJsonV8) Type() string {
-	return "elasticsearch_json_ecs"
+	return "elasticsearch_ecs"
 }
 
 func (p LoggingProcessorMacroElasticsearchJsonV8) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
@@ -311,7 +283,6 @@ func (p LoggingProcessorMacroElasticsearchJsonV8) Expand(ctx context.Context) []
 				TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
 			},
 		},
-		newElasticsearchFilterOffTimeKey("timestamp"),
 	}
 	processors = append(processors, elasticsearchNestingProcessors()...)
 	processors = append(processors, elasticsearchSeverityParser("jsonPayload.log.level", p.Type()))

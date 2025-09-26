@@ -21,7 +21,7 @@ features:
   module: logging
   key: "[0].enabled"
   value: true
-- feature: receivers:elasticsearch_json_ecs
+- feature: receivers:elasticsearch_ecs
   module: logging
   key: "[1].enabled"
   value: true
