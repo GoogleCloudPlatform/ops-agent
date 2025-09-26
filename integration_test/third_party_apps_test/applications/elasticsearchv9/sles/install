@@ -1,0 +1,64 @@
+set -e
+
+source /etc/os-release
+SUSE_VERSION="${VERSION_ID%%.*}"
+SERVICE_PACK="${VERSION_ID##*.}"
+
+# SLES 15 SP6 moved Java 11 to a legacy module
+if [[ "$SUSE_VERSION" == 15 ]] && (( $SERVICE_PACK >= 6 )); then
+  sudo SUSEConnect --product sle-module-legacy/${VERSION_ID}/$(uname -m)
+fi
+
+sudo zypper install -y curl java-11-openjdk insserv-compat
+
+sudo rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
+
+cat << EOF > elasticsearch.repo
+[elasticsearch]
+name=Elasticsearch repository for 9.x packages
+baseurl=https://artifacts.elastic.co/packages/9.x/yum
+gpgcheck=1
+gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
+enabled=0
+autorefresh=1
+type=rpm-md
+EOF
+
+sudo mv elasticsearch.repo /etc/zypp/repos.d/elasticsearch.repo
+sudo chown root:root /etc/zypp/repos.d/elasticsearch.repo
+sudo chmod 0644 /etc/zypp/repos.d/elasticsearch.repo
+
+sudo zypper modifyrepo --enable elasticsearch
+sudo zypper install -y elasticsearch
+sudo zypper modifyrepo --disable elasticsearch
+
+ELASTIC_PASSWORD="elastic_test_password_123"
+echo "$ELASTIC_PASSWORD" | sudo /usr/share/elasticsearch/bin/elasticsearch-keystore add --stdin --force bootstrap.password
+
+sudo chkconfig elasticsearch on
+sudo systemctl restart elasticsearch
+
+echo "Waiting for Elasticsearch to start..."
+wait_for_elasticsearch() {
+    local service="elasticsearch"
+    local retries=30
+    local wait=2
+    local i=0
+
+    while ! sudo systemctl is-active --quiet "$service"; do
+        if [ "$i" -ge "$retries" ]; then
+            echo "Timed out waiting for $service to start"
+            return 1
+        fi
+        sleep "$wait"
+        i=$((i+1))
+    done
+    return 0
+}
+
+wait_for_elasticsearch
+
+if ! sudo systemctl is-active --quiet elasticsearch; then
+    echo "Warning: Elasticsearch failed to start properly"
+    exit 1
+fi
