@@ -68,7 +68,7 @@ configure_integration: |-
   ```
 supported_operating_systems: linux
 platforms_to_skip:
-  # hashcorp repo not available for rh10
+  # hashicorp repo not available for rh10
   - rocky-linux-cloud:rocky-linux-10
   - rocky-linux-cloud:rocky-linux-10-optimized-gcp
   - rocky-linux-cloud:rocky-linux-10-arm64
