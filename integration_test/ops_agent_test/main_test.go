@@ -2243,6 +2243,10 @@ func TestWindowsEventLogV2(t *testing.T) {
 		}
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
+		if _, err := gce.RunRemotely(ctx, logger, vm, `Set-TimeZone -Id "W. Europe Standard Time"`); err != nil {
+			t.Fatal(err)
+		}
+
 		// There is a limitation on custom event log sources that requires their associated
 		// log names to have a unique eight-character prefix, so unfortunately we can only test
 		// at most one "Microsoft-*" log.
@@ -2310,6 +2314,14 @@ func TestWindowsEventLogV2(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		// Get-WinEvent -LogName Application -MaxEvents 20 | Format-Table TimeCreated, ProviderName, Id, Message -AutoSize
+
+		if local, err := gce.RunRemotely(ctx, logger, vm, `Get-WinEvent -LogName Application -MaxEvents 20 | Format-Table TimeCreated, ProviderName, Id, Message -AutoSize`); err != nil {
+			t.Fatal(err)
+		} else {
+			logger.Printf("local log results %v", local.Stdout)
+		}
+
 		// For winlog2_space, we simply check that the logs were ingested.
 		for _, payload := range payloads["winlog2_space"] {
 			if err := gce.WaitForLog(ctx, logger, vm, "winlog2_space", time.Hour, logMessageQueryForImage(vm.ImageSpec, payload)); err != nil {
@@ -2334,6 +2346,19 @@ func TestWindowsEventLogV2(t *testing.T) {
 		// Verify that the warning message has the correct severity.
 		if err := gce.WaitForLog(ctx, logger, vm, "winlog2_default", time.Hour, logMessageQueryForImage(vm.ImageSpec, "warning_msg")+` AND severity="WARNING"`); err != nil {
 			t.Fatal(err)
+		}
+
+		eventTime := time.Now()
+
+		// Validate that the log written to Cloud Logging has a timestamp that's
+		// close to eventTime. Use 24*time.Hour to cover all possible time zones.
+		logEntry, err := gce.QueryLog(ctx, logger, vm, "winlog2_default", 24*time.Hour, logMessageQueryForImage(vm.ImageSpec, "warning_msg")+` AND severity="WARNING"`, gce.LogQueryMaxAttempts)
+		if err != nil {
+			t.Fatal(err)
+		}
+		timeDiff := eventTime.Sub(logEntry.Timestamp).Abs()
+		if timeDiff.Minutes() > 5 {
+			t.Fatalf("timestamp differs by %v minutes", timeDiff.Minutes())
 		}
 
 		// For winlog2_xml, verify the following:
