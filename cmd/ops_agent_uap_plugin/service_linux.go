@@ -30,7 +30,7 @@ import (
 	"sync"
 	"syscall"
 
-	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
+	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
 	"google.golang.org/grpc/status"
 )
 
