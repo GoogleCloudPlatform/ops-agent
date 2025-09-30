@@ -57,6 +57,10 @@ func (r PrometheusMetrics) Type() string {
 	return "prometheus"
 }
 
+func (r PrometheusMetrics) AllowCustomProcessors() bool {
+	return false
+}
+
 func (r PrometheusMetrics) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	resource, err := platform.FromContext(ctx).GetResource()
 	if err != nil {
@@ -95,9 +99,7 @@ func (r PrometheusMetrics) Pipelines(ctx context.Context) ([]otel.ReceiverPipeli
 		metrics_components = append(metrics_components, otel.MetricUnknownCounter())
 		metrics_components = append(metrics_components, otel.MetricStartTime())
 		metrics_components = append(metrics_components, otel.GCPProjectID(resource.ProjectName()))
-		exporter = map[string]otel.ExporterType{
-			"metrics": otel.Otlp,
-		}
+		exporter["metrics"] = otel.OTLP
 	}
 	return []otel.ReceiverPipeline{{
 		Receiver: prometheusToOtelComponent(r),

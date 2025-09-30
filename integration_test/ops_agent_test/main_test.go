@@ -2564,7 +2564,7 @@ func TestSystemdLog(t *testing.T) {
 				t.Fatalf("Error writing dummy Systemd log line: %v", err)
 			}
 
-			querySystemdInfoLog := fmt.Sprintf(`severity="INFO" AND jsonPayload.MESSAGE="my_systemd_info_log_message" AND jsonPayload.PRIORITY="6"`)
+			querySystemdInfoLog := `severity="INFO" AND jsonPayload.MESSAGE="my_systemd_info_log_message" AND jsonPayload.PRIORITY="6"`
 			if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdInfoLog); err != nil {
 				t.Error(err)
 			}
@@ -2573,20 +2573,19 @@ func TestSystemdLog(t *testing.T) {
 				t.Fatalf("Error writing dummy Systemd log line: %v", err)
 			}
 
-			querySystemdErrorLog := fmt.Sprintf(`severity="ERROR" AND jsonPayload.MESSAGE="my_systemd_error_log_message" AND jsonPayload.PRIORITY="3"`)
+			querySystemdErrorLog := `severity="ERROR" AND jsonPayload.MESSAGE="my_systemd_error_log_message" AND jsonPayload.PRIORITY="3"`
 			if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdErrorLog); err != nil {
 				t.Error(err)
 			}
 
-			// TODO: b/400435104 - Re-enable when the `googlecloudexporter` supports all LogSeverity levels.
-			// if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_notice_log_message' | systemd-cat --priority=notice"); err != nil {
-			// 	t.Fatalf("Error writing dummy Systemd log line: %v", err)
-			// }
+			if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_notice_log_message' | systemd-cat --priority=notice"); err != nil {
+				t.Fatalf("Error writing dummy Systemd log line: %v", err)
+			}
 
-			// querySystemdNoticeLog := fmt.Sprintf(`severity="NOTICE" AND jsonPayload.MESSAGE="my_systemd_notice_log_message" AND jsonPayload.PRIORITY="5"`)
-			// if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdNoticeLog); err != nil {
-			// 	t.Error(err)
-			// }
+			querySystemdNoticeLog := `severity="NOTICE" AND jsonPayload.MESSAGE="my_systemd_notice_log_message" AND jsonPayload.PRIORITY="5"`
+			if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdNoticeLog); err != nil {
+				t.Error(err)
+			}
 		})
 	})
 }
@@ -4621,7 +4620,7 @@ func goPathCommandForImage(imageSpec string) string {
 	return "export PATH=/usr/local/go/bin:$PATH"
 }
 
-func runGoCode(ctx context.Context, logger *log.Logger, vm *gce.VM, content io.Reader) error {
+func runGoCode(ctx context.Context, logger *log.Logger, vm *gce.VM, content io.Reader, programArgs ...string) error {
 	workDir := path.Join(workDirForImage(vm.ImageSpec), "gocode")
 	if err := makeDirectory(ctx, logger, vm, workDir); err != nil {
 		return err
@@ -4634,7 +4633,8 @@ func runGoCode(ctx context.Context, logger *log.Logger, vm *gce.VM, content io.R
 		cd %s
 		go mod init main
 		go get ./...
-		go run main.go`, goPathCommandForImage(vm.ImageSpec), workDir)
+		go run main.go %s`,
+		goPathCommandForImage(vm.ImageSpec), workDir, strings.Join(programArgs, " "))
 	_, err := gce.RunRemotely(ctx, logger, vm, goInitAndRun)
 	return err
 }
@@ -4678,7 +4678,17 @@ traces:
 		if err := installGolang(ctx, logger, vm); err != nil {
 			t.Fatal(err)
 		}
-		if err = runGoCode(ctx, logger, vm, metricFile); err != nil {
+		serviceName := "otlp-metric-googlecloudmonitoring-test"
+		serviceNamespace := "otlp-metric-googlecloudmonitoring"
+		serviceVersion := "0.0"
+		serviceInstanceID := "localhost"
+		if err = runGoCode(
+			ctx, logger, vm, metricFile,
+			"-service_name", serviceName,
+			"-service_namespace", serviceNamespace,
+			"-service_instance_id", serviceInstanceID,
+			"-service_version", serviceVersion,
+		); err != nil {
 			t.Fatal(err)
 		}
 
@@ -4692,8 +4702,32 @@ traces:
 			"workload.googleapis.com/WORKLOAD.GOOGLEAPIS.COM/otlp.test.prefix4",
 			"workload.googleapis.com/WORKLOAD.googleapis.com/otlp.test.prefix5",
 		} {
-			if _, err = gce.WaitForMetric(ctx, logger, vm, name, time.Hour, nil, false); err != nil {
+			ts, err := gce.WaitForMetric(ctx, logger, vm, name, time.Hour, nil, false)
+			if err != nil {
 				t.Error(err)
+			}
+
+			expectedServiceAttributes := map[string]string{
+				"service_name":        serviceName,
+				"service_namespace":   serviceNamespace,
+				"service_instance_id": serviceInstanceID,
+				// TODO: If/when https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/pull/1065 is merged and
+				// released in our exporter, add this to the expected attributes.
+				// {"service_version", serviceVersion},
+			}
+			for serviceLabelKey, expectedValue := range expectedServiceAttributes {
+				serviceLabelValue, ok := ts.Metric.Labels[serviceLabelKey]
+				if !ok {
+					t.Errorf(`metric %s missing expected label "%s"`, name, serviceLabelKey)
+				}
+				if serviceLabelValue != expectedValue {
+					t.Errorf(
+						`metric label %s expected value "%s" but got "%s"`,
+						serviceLabelKey,
+						expectedValue,
+						serviceLabelValue,
+					)
+				}
 			}
 		}
 
@@ -5528,7 +5562,7 @@ func TestAppHubLogLabels(t *testing.T) {
 		}
 
 		// Wait after "Setup Apphub #2" to make sure the Managed Instance Group is registered in AppHub.
-		time.Sleep(15 * time.Second)
+		time.Sleep(60 * time.Second)
 
 		t.Cleanup(func() {
 			// Setup Apphub #3 : Delete apphub workload.

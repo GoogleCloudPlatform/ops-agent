@@ -19,7 +19,6 @@ import (
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 )
 
@@ -56,6 +55,7 @@ func (r MetricsReceiverWildfly) Pipelines(_ context.Context) ([]otel.ReceiverPip
 					otel.SetScopeName("agent.googleapis.com/"+r.Type()),
 					otel.SetScopeVersion("1.0"),
 				),
+				otel.MetricsRemoveServiceAttributes(),
 			},
 		)
 }
@@ -64,35 +64,50 @@ func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverWildfly{} })
 }
 
-type LoggingProcessorWildflySystem struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
-}
+type LoggingProcessorMacroWildflySystem struct{}
 
-func (LoggingProcessorWildflySystem) Type() string {
+func (LoggingProcessorMacroWildflySystem) Type() string {
 	return "wildfly_system"
 }
 
-func (p LoggingProcessorWildflySystem) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseRegex{
-		// Logging documentation: https://docs.wildfly.org/26/Admin_Guide.html#Logging
-		// Sample line: 2022-01-18 13:44:35,372 INFO  [org.wildfly.security] (ServerService Thread Pool -- 27) ELY00001: WildFly Elytron version 1.18.1.Final
-		// Sample line: 2022-02-03 15:38:01,509 DEBUG [org.jboss.as.config] (MSC service thread 1-1) VM Arguments: -D[Standalone] -Xms64m -Xmx512m -XX:MetaspaceSize=96M ...Dlogging.configuration=file:/opt/wildfly/standalone/configuration/logging.properties
-		// Sample line: 2022-02-03 15:38:03,548 INFO  [org.jboss.as.server] (Controller Boot Thread) WFLYSRV0039: Creating http management service using socket-binding (management-http)
-		// Sample line: 2022-02-11 14:29:56,734 INFO  [org.jboss.as.process.Server:server-one.status] (ProcessController-threads - 3) WFLYPC0018: Starting process 'Server:server-one'
-		// Sample line: 2022-02-11 14:29:52,217 INFO  [org.jboss.as.process.Host Controller.status] (main) WFLYPC0018: Starting process 'Host Controller'
-		// Sample line: 2022-02-03 15:38:01,506 DEBUG [org.jboss.as.config] (MSC service thread 1-1) Configured system properties:
-		//                   [Standalone] =
-		//                   awt.toolkit = sun.awt.X11.XToolkit
-		//                   file.encoding = UTF-8
-		//                   file.separator = /
-		Regex: `^(?<time>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d{3})\s+(?<level>\w+)(?:\s+\[(?<source>.+?)\])?(?:\s+\((?<thread>.+?)\))?\s+(?<message>(?:(?<messageCode>[\d\w]+):)?[\s\S]*)`,
-		ParserShared: confgenerator.ParserShared{
-			TimeKey:    "time",
-			TimeFormat: "%Y-%m-%d %H:%M:%S,%L",
+func (p LoggingProcessorMacroWildflySystem) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
+	return []confgenerator.InternalLoggingProcessor{
+		confgenerator.LoggingProcessorParseMultilineRegex{
+			LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
+				Parsers: []confgenerator.RegexParser{
+					{
+						// Logging documentation: https://docs.wildfly.org/26/Admin_Guide.html#Logging
+						// Sample line: 2022-01-18 13:44:35,372 INFO  [org.wildfly.security] (ServerService Thread Pool -- 27) ELY00001: WildFly Elytron version 1.18.1.Final
+						// Sample line: 2022-02-03 15:38:01,509 DEBUG [org.jboss.as.config] (MSC service thread 1-1) VM Arguments: -D[Standalone] -Xms64m -Xmx512m -XX:MetaspaceSize=96M ...Dlogging.configuration=file:/opt/wildfly/standalone/configuration/logging.properties
+						// Sample line: 2022-02-03 15:38:03,548 INFO  [org.jboss.as.server] (Controller Boot Thread) WFLYSRV0039: Creating http management service using socket-binding (management-http)
+						// Sample line: 2022-02-11 14:29:56,734 INFO  [org.jboss.as.process.Server:server-one.status] (ProcessController-threads - 3) WFLYPC0018: Starting process 'Server:server-one'
+						// Sample line: 2022-02-11 14:29:52,217 INFO  [org.jboss.as.process.Host Controller.status] (main) WFLYPC0018: Starting process 'Host Controller'
+						// Sample line: 2022-02-03 15:38:01,506 DEBUG [org.jboss.as.config] (MSC service thread 1-1) Configured system properties:
+						//                   [Standalone] =
+						//                   awt.toolkit = sun.awt.X11.XToolkit
+						//                   file.encoding = UTF-8
+						//                   file.separator = /
+						Regex: `^(?<time>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d{3})\s+(?<level>\w+)(?:\s+\[(?<source>.+?)\])?(?:\s+\((?<thread>.+?)\))?\s+(?<message>(?:(?<messageCode>[\d\w]+):)?[\s\S]*)`,
+						Parser: confgenerator.ParserShared{
+							TimeKey:    "time",
+							TimeFormat: "%Y-%m-%d %H:%M:%S,%L",
+						},
+					},
+				},
+			},
+			Rules: []confgenerator.MultilineRule{
+				{
+					StateName: "start_state",
+					NextState: "cont",
+					Regex:     `^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}`,
+				},
+				{
+					StateName: "cont",
+					NextState: "cont",
+					Regex:     `^(?!\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3})`,
+				},
+			},
 		},
-	}.Components(ctx, tag, uid)
-
-	c = append(c,
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				"severity": {
@@ -108,20 +123,13 @@ func (p LoggingProcessorWildflySystem) Components(ctx context.Context, tag strin
 				},
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(ctx, tag, uid)...,
-	)
-
-	return c
+		},
+	}
 }
 
-type LoggingReceiverWildflySystem struct {
-	LoggingProcessorWildflySystem `yaml:",inline"`
-	ReceiverMixin                 confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
-}
-
-func (r LoggingReceiverWildflySystem) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.ReceiverMixin.IncludePaths) == 0 {
-		r.ReceiverMixin.IncludePaths = []string{
+func loggingReceiverFilesMixinWildflySystem() confgenerator.LoggingReceiverFilesMixin {
+	return confgenerator.LoggingReceiverFilesMixin{
+		IncludePaths: []string{
 			// no package installers, default installation usually provides the following
 			// Standalone server log
 			"/opt/wildfly/standalone/log/server.log",
@@ -129,28 +137,10 @@ func (r LoggingReceiverWildflySystem) Components(ctx context.Context, tag string
 			"/opt/wildfly/domain/servers/*/log/server.log",
 			// Managed Domain controller log(s)
 			"/opt/wildfly/domain/log/*.log",
-		}
-	}
-
-	r.ReceiverMixin.MultilineRules = []confgenerator.MultilineRule{
-		{
-			StateName: "start_state",
-			NextState: "cont",
-			Regex:     `^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}`,
-		},
-		{
-			StateName: "cont",
-			NextState: "cont",
-			Regex:     `^(?!\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3})`,
 		},
 	}
-
-	c := r.ReceiverMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorWildflySystem.Components(ctx, tag, "wildfly_system")...)
-	return c
 }
 
 func init() {
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorWildflySystem{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverWildflySystem{} })
+	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroWildflySystem](loggingReceiverFilesMixinWildflySystem)
 }

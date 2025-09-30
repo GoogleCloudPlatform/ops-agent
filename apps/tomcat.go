@@ -51,6 +51,7 @@ func (r MetricsReceiverTomcat) Pipelines(_ context.Context) ([]otel.ReceiverPipe
 					otel.SetScopeName("agent.googleapis.com/"+r.Type()),
 					otel.SetScopeVersion("1.0"),
 				),
+				otel.MetricsRemoveServiceAttributes(),
 			},
 		)
 }
