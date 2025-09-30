@@ -125,7 +125,7 @@ func mainErr() error {
 		ImageSpec:   distro,
 		TimeToLive:  ttl,
 		Name:        vmName,
-		MachineType: "c4-standard-16",
+		MachineType: "c4-standard-8",
 		Metadata: map[string]string{
 			// This is to avoid Windows updates and reboots (b/295165549), and
 			// also to avoid throughput blips when the OS Config agent runs
