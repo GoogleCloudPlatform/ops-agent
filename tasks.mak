@@ -97,7 +97,7 @@ lint-fix:
 
 .PHONY: test
 test:
-	go test ./...
+	go test $(go list ./... | grep -v /submodules/)
 
 .PHONY: test_confgenerator
 test_confgenerator:
@@ -201,9 +201,9 @@ sync_fork:
 
 .PHONY: update_go_modules
 update_go_modules:
-	go get -t -u ./...
+	go get -t -u $$(go list ./... | grep -v /submodules/)
 
 .PHONY: go_vet
 go_vet:
-	go list ./... | grep -v "generated" | grep -v "/vendor/" | xargs go vet
-	GOOS=windows go list ./... | grep -v "generated" | grep -v "/vendor/" | GOOS=windows xargs go vet
+	go list ./... | grep -v "generated" | grep -v "/vendor/" | grep -v "/submodules/" | xargs go vet
+	GOOS=windows go list ./... | grep -v "generated" | grep -v "/vendor/" | grep -v "/submodules/" | GOOS=windows xargs go vet
