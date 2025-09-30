@@ -11,7 +11,7 @@ PROJECT=my_project \
   TTL=100m \
   LOG_SIZE_IN_BYTES=1000 \
   LOG_RATE=1000 \
-  go run -tags=integration_test ./integration_test/soak_test/cmd/launcher
+  go run -tags=integration_test ./cmd/launcher
 ```
 
 The VM will be cleaned up after 100 minutes (because `TTL=100m` above) if you
