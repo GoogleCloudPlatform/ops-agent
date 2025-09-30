@@ -142,7 +142,6 @@ func (r MetricsReceiverElasticsearch) disableIndexMetrics(metricsConfig map[stri
 			"enabled": false,
 		}
 	}
-
 }
 
 func init() {
@@ -156,54 +155,62 @@ func (LoggingProcessorMacroElasticsearchJson) Type() string {
 	return "elasticsearch_json"
 }
 
+func loggingProcessorElasticsearchJsonMultilineRules() []confgenerator.MultilineRule {
+	// When Elasticsearch emits stack traces, the json log may be spread across multiple lines,
+	// so we need this multiline parsing to properly parse the record.
+	// Example multiline log record:
+	// {"type": "server", "timestamp": "2022-01-20T15:46:00,131Z", "level": "ERROR", "component": "o.e.b.ElasticsearchUncaughtExceptionHandler", "cluster.name": "elasticsearch", "node.name": "brandon-testing-elasticsearch", "message": "uncaught exception in thread [main]",
+	// "stacktrace": ["org.elasticsearch.bootstrap.StartupException: java.lang.IllegalArgumentException: unknown setting [invalid.key] please check that any required plugins are installed, or check the breaking changes documentation for removed settings",
+	// -- snip --
+	// "at org.elasticsearch.bootstrap.Elasticsearch.init(Elasticsearch.java:166) ~[elasticsearch-7.16.2.jar:7.16.2]",
+	// "... 6 more"] }
+	return []confgenerator.MultilineRule{
+		{
+			StateName: "start_state",
+			NextState: "cont",
+			Regex:     `^{.*`,
+		},
+		{
+			StateName: "cont",
+			NextState: "cont",
+			Regex:     `^[^{].*[,}]$`,
+		},
+	}
+}
+
 func (p LoggingProcessorMacroElasticsearchJson) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
-	// sample log line:
+	// sample log line (ES 7.x):
 	// {"type": "server", "timestamp": "2022-01-17T18:31:47,365Z", "level": "INFO", "component": "o.e.n.Node", "cluster.name": "elasticsearch", "node.name": "ubuntu-jammy", "message": "initialized" }
+	// sample log line (ES 8.x):
+	// {"@timestamp":"2025-09-19T02:20:17.920Z", "log.level": "INFO", "message":"initialized", "ecs.version": "1.2.0","service.name":"ES_ECS","event.dataset":"elasticsearch.server","process.thread.name":"main","log.logger":"org.elasticsearch.node.Node","elasticsearch.node.name":"es-test-3","elasticsearch.cluster.name":"elasticsearch"}
 	// Logs are formatted based on configuration (log4j);
 	// See https://artifacts.elastic.co/javadoc/org/elasticsearch/elasticsearch/7.16.2/org/elasticsearch/common/logging/ESJsonLayout.html
 	// for general layout, and https://www.elastic.co/guide/en/elasticsearch/reference/current/logging.html for general configuration of logging
 	processors := []confgenerator.InternalLoggingProcessor{
-		// When Elasticsearch emits stack traces, the json log may be spread across multiple lines,
-		// so we need this multiline parsing to properly parse the record.
-		// Example multiline log record:
-		// {"type": "server", "timestamp": "2022-01-20T15:46:00,131Z", "level": "ERROR", "component": "o.e.b.ElasticsearchUncaughtExceptionHandler", "cluster.name": "elasticsearch", "node.name": "brandon-testing-elasticsearch", "message": "uncaught exception in thread [main]",
-		// "stacktrace": ["org.elasticsearch.bootstrap.StartupException: java.lang.IllegalArgumentException: unknown setting [invalid.key] please check that any required plugins are installed, or check the breaking changes documentation for removed settings",
-		// -- snip --
-		// "at org.elasticsearch.bootstrap.Elasticsearch.init(Elasticsearch.java:166) ~[elasticsearch-7.16.2.jar:7.16.2]",
-		// "... 6 more"] }
+
 		confgenerator.LoggingProcessorParseMultilineRegex{
-			Rules: []confgenerator.MultilineRule{
-				{
-					StateName: "start_state",
-					NextState: "cont",
-					Regex:     `^{.*`,
-				},
-				{
-					StateName: "cont",
-					NextState: "cont",
-					Regex:     `^[^{].*[,}]$`,
-				},
-			},
+			Rules: loggingProcessorElasticsearchJsonMultilineRules(),
 		},
+
 		confgenerator.LoggingProcessorParseJson{
 			ParserShared: confgenerator.ParserShared{
 				TimeKey:    "timestamp",
 				TimeFormat: "%Y-%m-%dT%H:%M:%S,%L%z",
 			},
 		},
-		p.severityParser(),
+		elasticsearchSeverityParser("jsonPayload.level", p.Type()),
 	}
 
-	processors = append(processors, p.nestingProcessors()...)
+	processors = append(processors, elasticsearchNestingProcessors()...)
 
 	return processors
 }
 
-func (p LoggingProcessorMacroElasticsearchJson) severityParser() confgenerator.InternalLoggingProcessor {
+func elasticsearchSeverityParser(copyFromField string, processorType string) confgenerator.InternalLoggingProcessor {
 	return confgenerator.LoggingProcessorModifyFields{
 		Fields: map[string]*confgenerator.ModifyField{
 			"severity": {
-				CopyFrom: "jsonPayload.level",
+				CopyFrom: copyFromField,
 				MapValues: map[string]string{
 					"TRACE":       "DEBUG",
 					"DEBUG":       "DEBUG",
@@ -216,12 +223,12 @@ func (p LoggingProcessorMacroElasticsearchJson) severityParser() confgenerator.I
 				},
 				MapValuesExclusive: true,
 			},
-			InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+			InstrumentationSourceLabel: instrumentationSourceValue(processorType),
 		},
 	}
 }
 
-func (p LoggingProcessorMacroElasticsearchJson) nestingProcessors() []confgenerator.InternalLoggingProcessor {
+func elasticsearchNestingProcessors() []confgenerator.InternalLoggingProcessor {
 	// The majority of these prefixes come from here:
 	// https://www.elastic.co/guide/en/elasticsearch/reference/7.16/audit-event-types.html#audit-event-attributes
 	// Non-audit logs are formatted using the layout documented here, giving the "cluster" prefix:
@@ -240,6 +247,7 @@ func (p LoggingProcessorMacroElasticsearchJson) nestingProcessors() []confgenera
 		"host",
 		"apikey",
 		"cluster",
+		"log",
 	}
 
 	processors := make([]confgenerator.InternalLoggingProcessor, 0, len(prefixes))
@@ -251,6 +259,33 @@ func (p LoggingProcessorMacroElasticsearchJson) nestingProcessors() []confgenera
 		}
 		processors = append(processors, nestProcessor)
 	}
+
+	return processors
+}
+
+// This is a workaround to support ECS logs from Elasticsearch 8.x alongside Elasticsearch 7.x.
+// It's not apparent how we are supposed to parse the JSON first with indeterminate time keys, so we're creating two separate log
+// types to support being able to read from both formats.
+type LoggingProcessorMacroElasticsearchJsonV8 struct{}
+
+func (p LoggingProcessorMacroElasticsearchJsonV8) Type() string {
+	return "elasticsearch_ecs"
+}
+
+func (p LoggingProcessorMacroElasticsearchJsonV8) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
+	processors := []confgenerator.InternalLoggingProcessor{
+		confgenerator.LoggingProcessorParseMultilineRegex{
+			Rules: loggingProcessorElasticsearchJsonMultilineRules(),
+		},
+		confgenerator.LoggingProcessorParseJson{
+			ParserShared: confgenerator.ParserShared{
+				TimeKey:    "@timestamp",
+				TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
+			},
+		},
+	}
+	processors = append(processors, elasticsearchNestingProcessors()...)
+	processors = append(processors, elasticsearchSeverityParser("jsonPayload.log.level", p.Type()))
 
 	return processors
 }
@@ -284,15 +319,22 @@ func (p LoggingProcessorMacroElasticsearchGC) Expand(ctx context.Context) []conf
 	}
 }
 
+var elasticsearchIncludePaths = []string{
+	"/var/log/elasticsearch/*_server.json",
+	"/var/log/elasticsearch/*_deprecation.json",
+	"/var/log/elasticsearch/*_index_search_slowlog.json",
+	"/var/log/elasticsearch/*_index_indexing_slowlog.json",
+	"/var/log/elasticsearch/*_audit.json",
+}
+
 func loggingReceiverFilesMixinElasticsearchJson() confgenerator.LoggingReceiverFilesMixin {
 	return confgenerator.LoggingReceiverFilesMixin{
-		IncludePaths: []string{
-			"/var/log/elasticsearch/*_server.json",
-			"/var/log/elasticsearch/*_deprecation.json",
-			"/var/log/elasticsearch/*_index_search_slowlog.json",
-			"/var/log/elasticsearch/*_index_indexing_slowlog.json",
-			"/var/log/elasticsearch/*_audit.json",
-		},
+		IncludePaths: elasticsearchIncludePaths,
+	}
+}
+func loggingReceiverFilesMixinElasticsearchJsonV8() confgenerator.LoggingReceiverFilesMixin {
+	return confgenerator.LoggingReceiverFilesMixin{
+		IncludePaths: elasticsearchIncludePaths,
 	}
 }
 
@@ -306,5 +348,6 @@ func loggingReceiverFilesMixinElasticsearchGC() confgenerator.LoggingReceiverFil
 
 func init() {
 	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroElasticsearchJson](loggingReceiverFilesMixinElasticsearchJson)
+	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroElasticsearchJsonV8](loggingReceiverFilesMixinElasticsearchJsonV8)
 	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroElasticsearchGC](loggingReceiverFilesMixinElasticsearchGC)
 }

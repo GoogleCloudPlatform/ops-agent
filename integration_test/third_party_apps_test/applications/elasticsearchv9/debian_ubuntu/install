@@ -1,0 +1,51 @@
+set -e
+
+sudo apt-get update
+# Debian 12 very specifically wants openjdk-17-jdk for installing Java via apt
+source /etc/os-release
+if [[ $ID == debian && "${VERSION_ID}" == 12 ]]; then
+    sudo apt-get install -y apt-transport-https wget openjdk-17-jdk
+else
+    sudo apt-get install -y apt-transport-https wget default-jre
+fi
+
+wget --no-verbose --output-document=/etc/apt/trusted.gpg.d/elasticsearch.asc https://artifacts.elastic.co/GPG-KEY-elasticsearch
+echo "deb https://artifacts.elastic.co/packages/9.x/apt stable main" | \
+    sudo tee /etc/apt/sources.list.d/elastic-9.x.list
+
+sudo apt-get update
+sudo apt-get install -y elasticsearch
+
+ELASTIC_PASSWORD="elastic_test_password_123"
+echo "$ELASTIC_PASSWORD" | sudo /usr/share/elasticsearch/bin/elasticsearch-keystore add --stdin --force bootstrap.password
+
+sudo systemctl daemon-reload
+sudo systemctl enable elasticsearch
+sudo systemctl restart elasticsearch
+
+# Wait for Elasticsearch to start up
+echo "Waiting for Elasticsearch to start..."
+wait_for_elasticsearch() {
+    local service="elasticsearch"
+    local retries=30
+    local wait=2
+    local i=0
+
+    while ! sudo systemctl is-active --quiet "$service"; do
+        if [ "$i" -ge "$retries" ]; then
+            echo "Timed out waiting for $service to start"
+            return 1
+        fi
+        sleep "$wait"
+        i=$((i+1))
+    done
+    return 0
+}
+
+wait_for_elasticsearch
+
+if ! sudo systemctl is-active --quiet elasticsearch; then
+    echo "Warning: Elasticsearch failed to start properly"
+    exit 1
+fi
+
