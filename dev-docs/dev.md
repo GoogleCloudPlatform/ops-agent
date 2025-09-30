@@ -83,7 +83,7 @@ ops-agent$ make lint-fix
 #### Run all unit tests
 
 ```shell
-ops-agent$ go test -mod=mod $(go list ./... | grep -v /submodules/)
+ops-agent$ go test -mod=mod ./...
 ```
 
 #### Only run unified agent config generator tests

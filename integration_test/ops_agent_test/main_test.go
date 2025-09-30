@@ -4591,7 +4591,7 @@ func runGoCode(ctx context.Context, logger *log.Logger, vm *gce.VM, content io.R
 		%s
 		cd %s
 		go mod init main
-		go get $(go list ./... | grep -v /submodules/)
+		go get ./...
 		go run main.go %s`,
 		goPathCommandForImage(vm.ImageSpec), workDir, strings.Join(programArgs, " "))
 	_, err := gce.RunRemotely(ctx, logger, vm, goInitAndRun)
