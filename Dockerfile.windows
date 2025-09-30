@@ -116,6 +116,7 @@ RUN cmake -G "'Visual Studio 16 2019'" -DCMAKE_BUILD_TYPE=RELWITHDEBINFO `
     -DFLB_METRICS=On `
     -DFLB_WASM=Off `
     -DFLB_WAMRC=Off `
+    -DFLB_KAFKA=OFF `
     -DFLB_IN_CPU=Off `
     -DFLB_IN_DISK=Off `
     -DFLB_IN_EXEC=On `
