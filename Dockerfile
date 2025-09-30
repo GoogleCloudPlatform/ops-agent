@@ -607,7 +607,7 @@ RUN set -x; \
 		# The 'OSS Update' repo signature is no longer valid, so verify the checksum instead.
 		zypper --no-gpg-check refresh 'OSS Update' && \
 		(echo '6dd0b89202b19dae873434c5f2ba01164205071581fc02365712be801e304b3b /var/cache/zypp/raw/OSS Update/repodata/repomd.xml' | sha256sum --check) && \
-		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc8 gcc8-c++ zlib-devel rpm-build expect systemd-devel systemd-rpm-macros unzip zip && \
+		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip && \
 		# Remove expired root certificate.
 		mv /var/lib/ca-certificates/pem/DST_Root_CA_X3.pem /etc/pki/trust/blacklist/ && \
 		update-ca-certificates && \
@@ -658,9 +658,6 @@ FROM sles12-build-base AS sles12-build-fluent-bit
 WORKDIR /work
 COPY ./submodules/fluent-bit submodules/fluent-bit
 COPY ./builds/fluent_bit.sh .
-# Set explicitly a newer GCC version.
-ENV CC=/usr/bin/gcc-8
-ENV CXX=/usr/bin/g++-8
 RUN ./fluent_bit.sh /work/cache/
 
 
