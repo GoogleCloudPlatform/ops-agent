@@ -124,8 +124,8 @@ var dockerfileArguments = []templateArguments{
 		install_packages: `RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-		build-essential bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip` + installCMake,
+		build-essential cmake bison flex file libsystemd-dev \
+		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "debian-bookworm",
 		package_extension: "deb",
