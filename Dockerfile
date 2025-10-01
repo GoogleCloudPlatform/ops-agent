@@ -832,11 +832,8 @@ ARG OPENJDK_MAJOR_VERSION
 RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-		build-essential bison flex file libsystemd-dev tzdata \
+		build-essential cmake bison flex file libsystemd-dev tzdata \
 		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip
-COPY --from=cmake-install-recent /cmake.sh /cmake.sh
-RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
-
 
 SHELL ["/bin/bash", "-c"]
 
@@ -935,11 +932,8 @@ ARG OPENJDK_MAJOR_VERSION
 RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-		build-essential bison flex file libsystemd-dev tzdata \
+		build-essential cmake bison flex file libsystemd-dev tzdata \
 		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip debhelper
-COPY --from=cmake-install-recent /cmake.sh /cmake.sh
-RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
-
 
 SHELL ["/bin/bash", "-c"]
 
@@ -1038,11 +1032,8 @@ ARG OPENJDK_MAJOR_VERSION
 RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-		build-essential bison flex file systemd-dev debhelper libsystemd-dev tzdata \
+		build-essential cmake bison flex file systemd-dev debhelper libsystemd-dev tzdata \
 		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip
-COPY --from=cmake-install-recent /cmake.sh /cmake.sh
-RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
-
 
 SHELL ["/bin/bash", "-c"]
 

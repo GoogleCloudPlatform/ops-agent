@@ -192,8 +192,8 @@ RUN ln -fs /usr/lib/systemd /lib/systemd` + installJava + installCMake,
 		install_packages: `RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-		build-essential bison flex file libsystemd-dev tzdata \
-		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip` + installCMake,
+		build-essential cmake bison flex file libsystemd-dev tzdata \
+		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "ubuntu-jammy",
 		package_extension: "deb",
@@ -204,8 +204,8 @@ RUN ln -fs /usr/lib/systemd /lib/systemd` + installJava + installCMake,
 		install_packages: `RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-		build-essential bison flex file libsystemd-dev tzdata \
-		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip debhelper` + installCMake,
+		build-essential cmake bison flex file libsystemd-dev tzdata \
+		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip debhelper`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "ubuntu-noble",
 		package_extension: "deb",
@@ -216,8 +216,8 @@ RUN ln -fs /usr/lib/systemd /lib/systemd` + installJava + installCMake,
 		install_packages: `RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-		build-essential bison flex file systemd-dev debhelper libsystemd-dev tzdata \
-		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip` + installCMake,
+		build-essential cmake bison flex file systemd-dev debhelper libsystemd-dev tzdata \
+		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "ubuntu-plucky",
 		package_extension: "deb",
