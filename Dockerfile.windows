@@ -1,6 +1,6 @@
 # escape=`
 
-ARG WINDOWS_VERSION=ltsc2019
+ARG WINDOWS_VERSION=ltsc2022
 
 #
 # Builder Image - Windows Server Core
@@ -28,7 +28,7 @@ RUN Write-Host ('Creating folders'); `
 WORKDIR /local
 
 #
-# Install Visual Studio 2019
+# Install Visual Studio 2022
 #
 ADD https://aka.ms/vs/17/release/vs_buildtools.exe /local/vs_buildtools.exe
 ADD https://aka.ms/vs/17/release/channel /local/VisualStudio.chman
@@ -103,7 +103,7 @@ COPY submodules/fluent-bit /work/submodules/fluent-bit
 
 WORKDIR /work/submodules/fluent-bit/build
 
-RUN cmake -G "'Visual Studio 17 2019'" -DCMAKE_BUILD_TYPE=RELWITHDEBINFO `
+RUN cmake -G "'Visual Studio 17 2022'" -DCMAKE_BUILD_TYPE=RELWITHDEBINFO `
     -DFLB_WINDOWS_DEFAULTS=Off `
     -DFLB_REGEX=On `
     -DFLB_BACKTRACE=Off `
