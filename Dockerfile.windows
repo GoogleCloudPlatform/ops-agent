@@ -30,8 +30,8 @@ WORKDIR /local
 #
 # Install Visual Studio 2019
 #
-ADD https://aka.ms/vs/16/release/vs_buildtools.exe /local/vs_buildtools.exe
-ADD https://aka.ms/vs/16/release/channel /local/VisualStudio.chman
+ADD https://aka.ms/vs/17/release/vs_buildtools.exe /local/vs_buildtools.exe
+ADD https://aka.ms/vs/17/release/channel /local/VisualStudio.chman
 
 RUN Start-Process /local/vs_buildtools.exe `
     -ArgumentList '--quiet ', '--wait ', '--norestart ', '--nocache', `
@@ -44,7 +44,7 @@ RUN Start-Process /local/vs_buildtools.exe `
 #
 # Technique from https://github.com/StefanScherer/dockerfiles-windows/blob/master/mongo/3.6/Dockerfile
 #
-ADD https://aka.ms/vs/15/release/vc_redist.x64.exe /local/vc_redist.x64.exe
+ADD https://aka.ms/vs/17/release/vc_redist.x64.exe /local/vc_redist.x64.exe
 
 RUN Write-Host ('Installing Visual C++ Redistributable Package'); `
     Start-Process /local/vc_redist.x64.exe -ArgumentList '/install', '/quiet', '/norestart' -NoNewWindow -Wait; `
@@ -103,7 +103,7 @@ COPY submodules/fluent-bit /work/submodules/fluent-bit
 
 WORKDIR /work/submodules/fluent-bit/build
 
-RUN cmake -G "'Visual Studio 16 2019'" -DCMAKE_BUILD_TYPE=RELWITHDEBINFO `
+RUN cmake -G "'Visual Studio 17 2019'" -DCMAKE_BUILD_TYPE=RELWITHDEBINFO `
     -DFLB_WINDOWS_DEFAULTS=Off `
     -DFLB_REGEX=On `
     -DFLB_BACKTRACE=Off `
