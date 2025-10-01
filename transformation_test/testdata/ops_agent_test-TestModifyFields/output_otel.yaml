@@ -1,48 +1,35 @@
 - entries:
   - jsonPayload:
-      default_absent: default
       default_present: original
-      field2: field value
-      float: 10.5
-      integer: 15
-      mapped_field: field value
+      exist: value
+      field: field value
       spanId: facefeedb0bacafe
+      temp: value
+      trace: projects/my-project/traces/deadcafedeadc0defacefeedb0bacafe
     labels:
       compute.googleapis.com/resource_name: hostname
-      label2: label1 value
-      my.cool.service/foo: field value
-      static: hello world
+      label1: label1 value
     logName: projects/my-project/logs/my-log-name
     resource:
       labels:
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    severity: WARNING
-    spanId: facefeedb0bacafe
     timestamp: now
-    trace: projects/my-project/traces/deadcafedeadc0defacefeedb0bacafe
   - jsonPayload:
-      default_absent: default
       default_present: original
-      field2: field value
-      float: 10.5
-      integer: 15
-      mapped_field: field value
+      field: field value
+      no_exist: value
       spanId: facefeedb0bacafe
+      trace: deadcafedeadc0defacefeedb0bacafe
     labels:
       compute.googleapis.com/resource_name: hostname
-      label2: label1 value
-      my.cool.service/foo: field value
-      static: hello world
+      label1: label1 value
     logName: projects/my-project/logs/my-log-name
     resource:
       labels:
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    severity: WARNING
-    spanId: facefeedb0bacafe
     timestamp: now
-    trace: projects/my-project/traces/deadcafedeadc0defacefeedb0bacafe
   partialSuccess: true
