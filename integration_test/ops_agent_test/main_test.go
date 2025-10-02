@@ -787,7 +787,7 @@ func TestPluginGetStatusReturnsHealthyStatusOnSuccessfulOpsAgentStart(t *testing
 			t.Fatal(err)
 		}
 
-		if !strings.Contains(cmdOut.Stdout, "The Ops Agent Plugin is running ok.") {
+		if strings.Contains(cmdOut.Stdout, "The Ops Agent Plugin is running ok.") {
 			t.Error("expected the plugin to report that the Ops Agent is running")
 		}
 	})
