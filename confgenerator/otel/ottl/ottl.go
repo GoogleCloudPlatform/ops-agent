@@ -212,6 +212,10 @@ func Or(conditions ...Value) Value {
 	return valuef(`(%s)`, strings.Join(out, " or "))
 }
 
+func IsNil(a Value) Value {
+	return valuef(`%s == nil`, a)
+}
+
 func IsNotNil(a Value) Value {
 	return valuef(`%s != nil`, a)
 }
@@ -254,6 +258,11 @@ func (a LValue) Delete() Statements {
 func (a LValue) DeleteIf(cond Value) Statements {
 	parent := a[:len(a)-1]
 	child := a[len(a)-1]
+	if len(a) == 1 {
+		return Statements{
+			statementf(`set(%s, nil) where %s`, child, And(a.IsPresent(), cond)),
+		}
+	}
 	return Statements{
 		statementf(`delete_key(%s, %q) where %s`, parent, child, And(a.IsPresent(), cond)),
 	}

@@ -50,6 +50,9 @@ type ModifyField struct {
 	// the destination field will be forcefully unset if map_values_exclusive is true,
 	// or left untouched if map_values_exclusive is false.
 	MapValuesExclusive bool `yaml:"map_values_exclusive" validate:"excluded_without=MapValues"`
+	// In case the resulting source field is unset after all mutations are applied,
+	// the destination field will be left untouched.
+	SkipIfEmptySource bool `yaml:"skip_if_empty_source" validate:"excluded_without=OmitIf"`
 }
 
 type LoggingProcessorModifyFields struct {
@@ -228,7 +231,12 @@ end
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert %v to Lua accessor: %w", outM, err)
 		}
-		fmt.Fprintf(&lua, "%s(v)\n", ra)
+
+		if field.SkipIfEmptySource {
+			fmt.Fprintf(&lua, "if v then %s(v) end\n", ra)
+		} else {
+			fmt.Fprintf(&lua, "%s(v)\n", ra)
+		}
 	}
 
 	lua.WriteString("return 2, timestamp, record\n")
@@ -423,6 +431,10 @@ func (p LoggingProcessorModifyFields) statements(_ context.Context) (ottl.Statem
 
 		if field.omitVar != "" {
 			statements = statements.Append(ra.DeleteIf(ottl.Equals(ottl.LValue{"cache", field.omitVar}, ottl.True())))
+		}
+
+		if !field.SkipIfEmptySource {
+			statements = statements.Append(ra.DeleteIf(ottl.Equals(value, ottl.Nil())))
 		}
 	}
 	return statements, nil
