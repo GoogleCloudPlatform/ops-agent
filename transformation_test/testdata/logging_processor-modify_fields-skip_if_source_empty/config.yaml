@@ -1,0 +1,11 @@
+- type: parse_json
+- type: modify_fields
+  fields:
+    severity:
+      copy_from: jsonPayload.sev1
+      skip_if_empty_source: false
+- type: modify_fields
+  fields:
+    severity:
+      copy_from: jsonPayload.sev2
+      skip_if_empty_source: false

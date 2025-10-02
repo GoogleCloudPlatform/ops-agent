@@ -1,0 +1,2 @@
+{"sev1":"INFO", "field":"field value", "default_present":"original", "logging.googleapis.com/labels": {"label1":"label1 value"}, "trace":"projects/my-project/traces/deadcafedeadc0defacefeedb0bacafe", "spanId": "facefeedb0bacafe"}
+{"sev2":"ERROR", "field":"field value", "default_present":"original", "logging.googleapis.com/labels": {"label1":"label1 value"}, "trace":"deadcafedeadc0defacefeedb0bacafe", "spanId": "facefeedb0bacafe"}

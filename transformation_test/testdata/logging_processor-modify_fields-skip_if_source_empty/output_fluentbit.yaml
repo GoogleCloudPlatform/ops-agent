@@ -1,0 +1,28 @@
+- entries:
+  - jsonPayload:
+      default_present: original
+      field: field value
+      sev1: INFO
+      spanId: facefeedb0bacafe
+      trace: projects/my-project/traces/deadcafedeadc0defacefeedb0bacafe
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      label1: label1 value
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      default_present: original
+      field: field value
+      sev2: ERROR
+      spanId: facefeedb0bacafe
+      trace: deadcafedeadc0defacefeedb0bacafe
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      label1: label1 value
+    logName: projects/my-project/logs/transformation_test
+    severity: 500.0
+    timestamp: now
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance
