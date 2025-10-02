@@ -3,7 +3,7 @@ import 'common.gcl' as common
 config build = common.ops_agent_test {
   params {
     environment {
-      TARGET = 'bookworm'
+      TARGET = 'trixie'
       ARCH = 'aarch64'
       IS_OPS_AGENT_UAP_PLUGIN = 'true'
     }
