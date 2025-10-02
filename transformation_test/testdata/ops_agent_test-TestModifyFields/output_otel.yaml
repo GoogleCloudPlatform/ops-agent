@@ -4,7 +4,6 @@
       exist: value
       field: field value
       spanId: facefeedb0bacafe
-      temp: value
       trace: projects/my-project/traces/deadcafedeadc0defacefeedb0bacafe
     labels:
       compute.googleapis.com/resource_name: hostname

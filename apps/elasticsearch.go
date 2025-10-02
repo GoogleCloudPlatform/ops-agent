@@ -185,38 +185,98 @@ func (p LoggingProcessorMacroElasticsearchJson) Expand(ctx context.Context) []co
 				},
 			},
 		},
-		confgenerator.LoggingProcessorParseJson{
+		confgenerator.LoggingProcessorParseJson{},
+		confgenerator.LoggingProcessorParseRegex{
+			Regex:       `(?<temp_time_key>.*)`,
+			Field:       "timestamp",
+			PreserveKey: true,
 			ParserShared: confgenerator.ParserShared{
-				TimeKey:    "timestamp",
+				TimeKey:    "temp_time_key",
 				TimeFormat: "%Y-%m-%dT%H:%M:%S,%L%z",
 			},
 		},
-		p.severityParser(),
+		confgenerator.LoggingProcessorParseRegex{
+			Regex:       `(?<temp_time_key>.*)`,
+			Field:       "@timestamp",
+			PreserveKey: true,
+			ParserShared: confgenerator.ParserShared{
+				TimeKey:    "temp_time_key",
+				TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
+			},
+		},
+		confgenerator.LoggingProcessorParseRegex{
+			Regex:       `(?<temp_level>.*)`,
+			Field:       "log.level",
+			PreserveKey: true,
+		},
+		confgenerator.LoggingProcessorParseRegex{
+			Regex:       `(?<temp_level>.*)`,
+			Field:       "level",
+			PreserveKey: true,
+		},
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				"severity": {
+					CopyFrom: "jsonPayload.temp_level",
+					MapValues: map[string]string{
+						"TRACE":       "DEBUG",
+						"DEBUG":       "DEBUG",
+						"INFO":        "INFO",
+						"WARN":        "WARNING",
+						"DEPRECATION": "WARNING",
+						"ERROR":       "ERROR",
+						"CRITICAL":    "ERROR",
+						"FATAL":       "FATAL",
+					},
+					MapValuesExclusive: true,
+				},
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+			},
+		},
 	}
 
+	// processors = append(processors, p.severityParser()...)
 	processors = append(processors, p.nestingProcessors()...)
 
 	return processors
 }
 
-func (p LoggingProcessorMacroElasticsearchJson) severityParser() confgenerator.InternalLoggingProcessor {
-	return confgenerator.LoggingProcessorModifyFields{
-		Fields: map[string]*confgenerator.ModifyField{
-			"severity": {
-				CopyFrom: "jsonPayload.level",
-				MapValues: map[string]string{
-					"TRACE":       "DEBUG",
-					"DEBUG":       "DEBUG",
-					"INFO":        "INFO",
-					"WARN":        "WARNING",
-					"DEPRECATION": "WARNING",
-					"ERROR":       "ERROR",
-					"CRITICAL":    "ERROR",
-					"FATAL":       "FATAL",
+func (p LoggingProcessorMacroElasticsearchJson) severityParser() []confgenerator.InternalLoggingProcessor {
+	return []confgenerator.InternalLoggingProcessor{
+		// confgenerator.LoggingProcessorModifyFields{
+		// 	Fields: map[string]*confgenerator.ModifyField{
+		// 		"jsonPayload.severity": {
+		// 			CopyFrom:          `jsonPayload."log.level"`,
+		// 			SkipIfEmptySource: true,
+		// 		},
+		// 	},
+		// },
+		// confgenerator.LoggingProcessorModifyFields{
+		// 	Fields: map[string]*confgenerator.ModifyField{
+		// 		"jsonPayload.severity": {
+		// 			CopyFrom:          `jsonPayload."level"`,
+		// 			SkipIfEmptySource: true,
+		// 		},
+		// 	},
+		// },
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				"severity": {
+					CopyFrom: "jsonPayload.temp_level",
+					MapValues: map[string]string{
+						"TRACE":       "DEBUG",
+						"DEBUG":       "DEBUG",
+						"INFO":        "INFO",
+						"WARN":        "WARNING",
+						"DEPRECATION": "WARNING",
+						"ERROR":       "ERROR",
+						"CRITICAL":    "ERROR",
+						"FATAL":       "FATAL",
+					},
+					MapValuesExclusive: true,
 				},
-				MapValuesExclusive: true,
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-			InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 		},
 	}
 }

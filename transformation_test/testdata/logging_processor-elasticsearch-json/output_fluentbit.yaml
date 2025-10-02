@@ -1,215 +1,38 @@
 - entries:
   - jsonPayload:
-      cluster:
-        name: elasticsearch
+      "@timestamp": 2024-08-10T12:35:26.456Z
       component: o.e.n.Node
       level: INFO
-      message: starting ...
-      node:
-        name: node-1
-      type: server
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
-    logName: projects/my-project/logs/transformation_test
-    severity: 200.0
-    timestamp: 2024-06-10T12:34:56.789000000Z
-  - jsonPayload:
-      component: o.e.d.z.ZenDiscovery
-      event:
-        action: connect
-      level: WARN
-      message: failed to connect to master
-      node:
-        name: node-1
-      type: server
-      user:
-        run_by:
-          name: admin
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
-    logName: projects/my-project/logs/transformation_test
-    severity: 400.0
-    timestamp: 2024-06-10T12:35:00.321000000Z
-  - jsonPayload:
-      component: o.e.b.Bootstrap
-      error.message: failed to obtain node locks
-      error.type: java.lang.IllegalStateException
-      level: ERROR
-      message: Exception
-      node:
-        name: node-1
-      type: server
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
-    logName: projects/my-project/logs/transformation_test
-    severity: 500.0
-    timestamp: 2024-06-10T12:35:10.123000000Z
-  - jsonPayload:
-      component: o.e.n.Node
-      level: DEBUG
-      message: stopping ...
-      node:
-        name: node-1
-      type: server
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
-    logName: projects/my-project/logs/transformation_test
-    severity: 100.0
-    timestamp: 2024-06-10T12:35:15.456000000Z
-  - jsonPayload:
-      component: o.e.n.Node
-      level: TRACE
-      message: stopped
-      node:
-        name: node-1
-      type: server
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
-    logName: projects/my-project/logs/transformation_test
-    severity: 100.0
-    timestamp: 2024-06-10T12:35:16.789000000Z
-  - jsonPayload:
-      component: o.e.n.Node
-      level: DEPRECATION
-      message: deprecated setting used
-      node:
-        name: node-1
-      type: server
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
-    logName: projects/my-project/logs/transformation_test
-    severity: 400.0
-    timestamp: 2024-06-10T12:35:17.123000000Z
-  - jsonPayload:
-      component: o.e.n.Node
-      level: CRITICAL
-      message: critical error occurred
-      node:
-        name: node-1
-      type: server
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
-    logName: projects/my-project/logs/transformation_test
-    severity: 500.0
-    timestamp: 2024-06-10T12:35:18.456000000Z
-  - jsonPayload:
-      component: o.e.n.Node
-      level: FATAL
-      message: fatal error occurred
-      node:
-        name: node-1
-      type: server
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
-    logName: projects/my-project/logs/transformation_test
-    severity: 600.0
-    timestamp: 2024-06-10T12:35:19.456000000Z
-  - jsonPayload:
-      component: o.e.n.Node
-      level: UNKNOWN
-      message: unknown log level
-      node:
-        name: node-1
-      type: server
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
-    logName: projects/my-project/logs/transformation_test
-    timestamp: 2024-06-10T12:35:20.456000000Z
-  - jsonPayload:
-      level: INFO
-      message: missing component and node name
-      type: server
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
-    logName: projects/my-project/logs/transformation_test
-    severity: 200.0
-    timestamp: 2024-06-10T12:35:21.456000000Z
-  - jsonPayload:
-      cluster:
-        name: elasticsearch
-      component: o.e.n.Node
-      level: INFO
-      message: missing node name
-      type: server
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
-    logName: projects/my-project/logs/transformation_test
-    severity: 200.0
-    timestamp: 2024-06-10T12:35:22.456000000Z
-  - jsonPayload:
-      component: o.e.n.Node
-      level: INFO
-      message: missing cluster name
-      node:
-        name: node-1
-      type: server
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
-    logName: projects/my-project/logs/transformation_test
-    severity: 200.0
-    timestamp: 2024-06-10T12:35:23.456000000Z
-  - jsonPayload:
-      authentication:
-        token:
-          id: abc123
-      component: o.e.n.Node
-      level: INFO
-      message: nested fields
-      node:
-        name: node-1
-      type: server
-      user:
-        run_by:
-          name: testuser
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
-    logName: projects/my-project/logs/transformation_test
-    severity: 200.0
-    timestamp: 2024-06-10T12:35:24.456000000Z
-  - jsonPayload:
-      component: o.e.b.ElasticsearchUncaughtExceptionHandler
-      level: ERROR
-      message: uncaught exception in thread [main]
-      node:
-        name: node-1
-      stacktrace:
-      - "org.elasticsearch.bootstrap.StartupException: java.lang.IllegalArgumentException: unknown setting [invalid.key]"
-      - at org.elasticsearch.bootstrap.Elasticsearch.init(Elasticsearch.java:166)
-      - ... 6 more
-      type: server
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
-    logName: projects/my-project/logs/transformation_test
-    severity: 500.0
-    timestamp: 2024-06-10T12:35:25.456000000Z
-  - jsonPayload:
-      component: o.e.n.Node
-      level: INFO
+      log.level: DEPRECATION
       message: invalid timestamp
       node:
         name: node-1
-      timestamp: not-a-timestamp
+      temp_level: INFO
+      timestamp: 2024-06-10T12:35:26,456Z
       type: server
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: 2024-06-10T12:35:26.456000000Z
+    timestamp: 2024-08-10T12:35:26.456000000Z
+  - jsonPayload:
+      "@timestamp": 2024-07-10T12:35:26.456Z
+      component: o.e.n.Node
+      level: INFO
+      log.level: DEPRECATION
+      message: invalid timestamp
+      node:
+        name: node-1
+      temp_level: INFO
+      timestamp: 2024-06-10T12:35:26,456Z
+      type: server
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2024-07-10T12:35:26.456000000Z
   partialSuccess: true
   resource:
     labels: {}

@@ -482,18 +482,22 @@ processors:
       - set(cache["value"], cache["__field_0"])
       - set(cache["value"], "test-mig") where cache["value"] == nil
       - set(attributes["compute.googleapis.com/instance_group_manager/name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(attributes, "compute.googleapis.com/instance_group_manager/name") where ((attributes != nil and attributes["compute.googleapis.com/instance_group_manager/name"] != nil) and cache["value"] == nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_1"])
       - set(cache["value"], "test-zone") where cache["value"] == nil
       - set(attributes["compute.googleapis.com/instance_group_manager/zone"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(attributes, "compute.googleapis.com/instance_group_manager/zone") where ((attributes != nil and attributes["compute.googleapis.com/instance_group_manager/zone"] != nil) and cache["value"] == nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_2"])
       - set(cache["value"], "") where cache["value"] == nil
       - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(attributes, "compute.googleapis.com/resource_name") where ((attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil) and cache["value"] == nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_3"])
       - set(cache["value"], "log_source_id1") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(attributes, "gcp.log_name") where ((attributes != nil and attributes["gcp.log_name"] != nil) and cache["value"] == nil)
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
@@ -523,18 +527,22 @@ processors:
       - set(cache["value"], cache["__field_0"])
       - set(cache["value"], "test-mig") where cache["value"] == nil
       - set(attributes["compute.googleapis.com/instance_group_manager/name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(attributes, "compute.googleapis.com/instance_group_manager/name") where ((attributes != nil and attributes["compute.googleapis.com/instance_group_manager/name"] != nil) and cache["value"] == nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_1"])
       - set(cache["value"], "test-zone") where cache["value"] == nil
       - set(attributes["compute.googleapis.com/instance_group_manager/zone"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(attributes, "compute.googleapis.com/instance_group_manager/zone") where ((attributes != nil and attributes["compute.googleapis.com/instance_group_manager/zone"] != nil) and cache["value"] == nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_2"])
       - set(cache["value"], "") where cache["value"] == nil
       - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(attributes, "compute.googleapis.com/resource_name") where ((attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil) and cache["value"] == nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_3"])
       - set(cache["value"], "syslog") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(attributes, "gcp.log_name") where ((attributes != nil and attributes["gcp.log_name"] != nil) and cache["value"] == nil)
 receivers:
   filelog/log__source__id1:
     exclude: []
