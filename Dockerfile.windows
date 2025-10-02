@@ -1,6 +1,6 @@
 # escape=`
 
-ARG WINDOWS_VERSION=ltsc2022
+ARG WINDOWS_VERSION=ltsc2019
 
 #
 # Builder Image - Windows Server Core
@@ -10,7 +10,7 @@ FROM mcr.microsoft.com/windows/servercore:$WINDOWS_VERSION as base
 #
 # Basic setup
 #
-RUN setx /M PATH "%PATH%;C:\WinFlexBison;C:\Go\bin;C:\Java\bin;C:\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin"
+RUN setx /M PATH "%PATH%;C:\Go\bin;C:\Java\bin"
 
 RUN setx /M JAVA_HOME "C:\Java"
 
@@ -27,52 +27,137 @@ RUN Write-Host ('Creating folders'); `
 
 WORKDIR /local
 
-#
-# Install Visual Studio 2022
-#
-ADD https://aka.ms/vs/17/release/vs_buildtools.exe /local/vs_buildtools.exe
-ADD https://aka.ms/vs/17/release/channel /local/VisualStudio.chman
+# Install Visual Studio Build Tools 2019
+ENV MSVS_BUILD_TOOLS_VERSION="16" `
+    MSVS_BUILD_TOOLS_DOWNLOAD_URL="https://aka.ms/vs" `
+    MSVS_HOME="C:\BuildTools"
+RUN $msvs_build_tools_dist_name=\"vs_buildtools.exe\"; `
+    $msvs_build_tools_dist=\"${env:TMP}\${msvs_build_tools_dist_name}\"; `
+    $msvs_build_tools_channel=\"C:\local\VisualStudio.chman\"; `
+    $msvs_build_tools_dist_url=\"${env:MSVS_BUILD_TOOLS_DOWNLOAD_URL}/${env:MSVS_BUILD_TOOLS_VERSION}/release/${msvs_build_tools_dist_name}\"; `
+    $msvs_build_tools_channel_url=\"${env:MSVS_BUILD_TOOLS_DOWNLOAD_URL}/${env:MSVS_BUILD_TOOLS_VERSION}/release/channel\"; `
+    Write-Host \"Downloading Visual Studio Build Tools...\"; `
+    Write-Host \"${msvs_build_tools_dist_url} -> ${msvs_build_tools_dist}\"; `
+    Write-Host \"${msvs_build_tools_channel_url} -> ${msvs_build_tools_channel}\"; `
+    Invoke-WebRequest -OutFile \"${msvs_build_tools_dist}\" \"${msvs_build_tools_dist_url}\"; `
+    Invoke-WebRequest -OutFile \"${msvs_build_tools_channel}\" \"${msvs_build_tools_channel_url}\"; `
+    Write-Host \"Installing Visual Studio Build Tools into ${env:MSVS_HOME}...\"; `
+    Start-Process \"${msvs_build_tools_dist}\" `
+      -ArgumentList '--quiet ', '--wait ', '--norestart ', '--nocache', `
+      \"--installPath ${env:MSVS_HOME}\", `
+      \"--channelUri ${msvs_build_tools_channel}\", `
+      \"--installChannelUri ${msvs_build_tools_channel}\", `
+      '--add Microsoft.VisualStudio.Workload.VCTools', `
+      '--includeRecommended'  -NoNewWindow -Wait; `
+    Remove-Item -Force \"${msvs_build_tools_dist}\";
 
-RUN Start-Process /local/vs_buildtools.exe `
-    -ArgumentList '--quiet ', '--wait ', '--norestart ', '--nocache', `
-    '--installPath C:\BuildTools', `
-    '--channelUri C:\local\VisualStudio.chman', `
-    '--installChannelUri C:\local\VisualStudio.chman', `
-    '--add Microsoft.VisualStudio.Workload.VCTools', `
-    '--includeRecommended'  -NoNewWindow -Wait;
+ENV MSVC_RUNTIME_VERSION="15" `
+    MSVC_RUNTIME_DOWNLOAD_URL="https://aka.ms/vs"
+RUN $msvc_runtime_dist_name=\"vc_redist.x64.exe\"; `
+    $msvc_runtime_dist=\"${env:TMP}\${msvc_runtime_dist_name}\"; `
+    $msvc_runtime_url=\"${env:MSVC_RUNTIME_DOWNLOAD_URL}/${env:MSVC_RUNTIME_VERSION}/release/${msvc_runtime_dist_name}\"; `
+    Write-Host \"Downloading Microsoft Visual C++ Redistributable...\"; `
+    Write-Host \"${msvc_runtime_url} -> ${msvc_runtime_dist}\"; `
+    Invoke-WebRequest -OutFile \"${msvc_runtime_dist}\" \"${msvc_runtime_url}\"; `
+    Write-Host \"Installing Microsoft Visual C++ runtime libraries...\"; `
+    Start-Process \"${msvc_runtime_dist}\" -ArgumentList '/install', '/quiet', '/norestart' -NoNewWindow -Wait; `
+    Remove-Item -Force \"${msvc_runtime_dist}\";
 
-#
-# Technique from https://github.com/StefanScherer/dockerfiles-windows/blob/master/mongo/3.6/Dockerfile
-#
-ADD https://aka.ms/vs/17/release/vc_redist.x64.exe /local/vc_redist.x64.exe
+ENV CMAKE_HOME="C:\cmake"
+ARG CMAKE_VERSION="3.31.6"
+ARG CMAKE_URL="https://github.com/Kitware/CMake/releases/download"
 
-RUN Write-Host ('Installing Visual C++ Redistributable Package'); `
-    Start-Process /local/vc_redist.x64.exe -ArgumentList '/install', '/quiet', '/norestart' -NoNewWindow -Wait; `
-    Copy-Item -Path /Windows/System32/msvcp140.dll -Destination /work/out/bin/; `
-    Copy-Item -Path /Windows/System32/vccorlib140.dll -Destination /work/out/bin/; `
-    Copy-Item -Path /Windows/System32/vcruntime140.dll -Destination /work/out/bin/;
-
-#
-# Install OpenSSL
-# This must be done after installing Visual Studio
-
-RUN $files = (iwr -UseBasicParsing https://raw.githubusercontent.com/slproweb/opensslhashes/master/win32_openssl_hashes.json | ConvertFrom-Json).files.psobject.properties.value; `
-    $installer = $files | ? {$_.arch -eq \"INTEL\" -and $_.bits -eq 64 -and $_.installer -eq \"msi\" -and -not $_.light -and $_.basever -like \"1.*\" }; `
-    iwr -UseBasicParsing -Uri \"$($installer.url)\" -OutFile /local/openssl.msi; `
-    $ActualHash = $(Get-FileHash /local/openssl.msi -Algorithm SHA256).Hash.ToLower(); `
-    if ($ActualHash -ne \"$($installer.sha256)\") { `
-      throw \"OpenSSL hash mismatch. Expected: $($installer.sha256), Actual: $ActualHash\" `
+RUN if ([System.Version] \"${env:CMAKE_VERSION}\" -ge [System.Version] \"3.20.0\") { `
+      $cmake_dist_base_name=\"cmake-${env:CMAKE_VERSION}-windows-x86_64\" `
+    } else { `
+      if ([System.Version] \"${env:CMAKE_VERSION}\" -ge [System.Version] \"3.6.0\") { `
+        $cmake_dist_base_name=\"cmake-${env:CMAKE_VERSION}-win64-x64\" `
+      } else { `
+        $cmake_dist_base_name=\"cmake-${env:CMAKE_VERSION}-win32-x86\" `
+      } `
     }; `
-    Start-Process msiexec.exe -Wait -ArgumentList \"/i C:\local\openssl.msi /quiet\";
+    $cmake_dist_name=\"${cmake_dist_base_name}.zip\"; `
+    $cmake_dist=\"${env:TMP}\${cmake_dist_name}\"; `
+    $cmake_download_url=\"${env:CMAKE_URL}/v${env:CMAKE_VERSION}/${cmake_dist_name}\"; `
+    Write-Host \"Downloading CMake...\"; `
+    Write-Host \"${cmake_download_url} -> ${cmake_dist}\"; `
+    Invoke-WebRequest -OutFile \"${cmake_dist}\" \"${cmake_download_url}\"; `
+    $cmake_temp_dir=\"${env:TMP}\${cmake_dist_base_name}\"; `
+    Write-Host \"Extracting CMake...\"; `
+    Write-Host \"${cmake_dist} -> ${cmake_temp_dir}\"; `
+    Expand-Archive \"${cmake_dist}\" -Destination \"${env:TMP}\"; `
+    Remove-Item -Force \"${cmake_dist}\"; `
+    Write-Host \"Moving CMake...\"; `
+    Write-Host \"${cmake_temp_dir} -> ${env:CMAKE_HOME}\"; `
+    [System.IO.Directory]::Move(\"${cmake_temp_dir}\", \"${env:CMAKE_HOME}\"); `
+    $env:PATH=\"${env:PATH};${env:CMAKE_HOME}\bin\"; `
+    Write-Host \"Setting PATH...\"; `
+    Write-Host \"${env:PATH}\"; `
+    [Environment]::SetEnvironmentVariable(\"PATH\", \"${env:PATH}\", [EnvironmentVariableTarget]::Machine);
 
-#
-# Install winflexbison
-#
-ADD https://github.com/lexxmark/winflexbison/releases/download/v2.5.22/win_flex_bison-2.5.22.zip /local/win_flex_bison.zip
+ENV WIN_FLEX_BISON_VERSION="2.5.22" `
+    WIN_FLEX_BISON_HOME="C:\WinFlexBison" `
+    WIN_FLEX_BISON_DOWNLOAD_URL="https://github.com/lexxmark/winflexbison/releases/download"
 
-RUN Expand-Archive /local/win_flex_bison.zip -Destination /WinFlexBison; `
-    Copy-Item -Path /WinFlexBison/win_bison.exe /WinFlexBison/bison.exe; `
-    Copy-Item -Path /WinFlexBison/win_flex.exe /WinFlexBison/flex.exe;
+RUN $win_flex_bison_dist_base_name=\"win_flex_bison-${env:WIN_FLEX_BISON_VERSION}\"; `
+    $win_flex_bison_dist_name=\"${win_flex_bison_dist_base_name}.zip\"; `
+    $win_flex_bison_dist=\"${env:TMP}\${win_flex_bison_dist_name}\"; `
+    $win_flex_bison_url=\"${env:WIN_FLEX_BISON_DOWNLOAD_URL}/v${env:WIN_FLEX_BISON_VERSION}/${win_flex_bison_dist_name}\"; `
+    Write-Host \"Downloading WinFlexBison...\"; `
+    Write-Host \"${win_flex_bison_url} -> ${win_flex_bison_dist}\"; `
+    Invoke-WebRequest -OutFile \"${win_flex_bison_dist}\" \"${win_flex_bison_url}\"; `
+    Write-Host \"Extracting WinFlexBison...\"; `
+    Write-Host \"${win_flex_bison_dist} -> ${env:WIN_FLEX_BISON_HOME}\"; `
+    Expand-Archive \"${win_flex_bison_dist}\" -Destination \"${env:WIN_FLEX_BISON_HOME}\"; `
+    Remove-Item -Force \"${win_flex_bison_dist}\"; `
+    Write-Host \"Copying...\"; `
+    Write-Host \"${env:WIN_FLEX_BISON_HOME}\win_bison.exe -> ${env:WIN_FLEX_BISON_HOME}\bison.exe\"; `
+    Copy-Item -Path \"${env:WIN_FLEX_BISON_HOME}\win_bison.exe\" \"${env:WIN_FLEX_BISON_HOME}\bison.exe\"; `
+    Write-Host \"Copying...\"; `
+    Write-Host \"${env:WIN_FLEX_BISON_HOME}\win_flex.exe -> ${env:WIN_FLEX_BISON_HOME}\flex.exe\"; `
+    Copy-Item -Path \"${env:WIN_FLEX_BISON_HOME}\win_flex.exe\" \"${env:WIN_FLEX_BISON_HOME}\flex.exe\"; `
+    $env:PATH=\"${env:PATH}${env:WIN_FLEX_BISON_HOME}\"; `
+    Write-Host \"Setting PATH...\"; `
+    Write-Host \"${env:PATH}\"; `
+    [Environment]::SetEnvironmentVariable(\"PATH\", \"${env:PATH}\", [EnvironmentVariableTarget]::Machine);
+
+# https://github.com/microsoft/vcpkg/blob/2024.05.24/scripts/bootstrap.ps1
+ENV VCPKG_VERSION=2024.05.24 `
+    VCPKG_DOWNLOAD_URL="https://github.com/microsoft/vcpkg/archive/refs/tags" `
+    VCPKG_DISABLE_METRICS="ON" `
+    VCPKG_ROOT=/dev/vcpkg
+
+WORKDIR /dev
+
+RUN $vcpkg_dist_base_name=\"vcpkg-${env:VCPKG_VERSION}\"; `
+    $vcpkg_dist=\"${env:TMP}\${vcpkg_dist_base_name}.zip\"; `
+    $vcpkg_url=\"${env:VCPKG_DOWNLOAD_URL}/${env:VCPKG_VERSION}.zip\"; `
+    Write-Host \"Downloading vcpkg...\"; `
+    Write-Host \"${vcpkg_url} -> ${vcpkg_dist}\"; `
+    Invoke-WebRequest -OutFile \"${vcpkg_dist}\" \"${vcpkg_url}\"; `
+    $vcpkg_temp_dir=\"${env:TMP}\${vcpkg_dist_base_name}\"; `
+    Write-Host \"Extracting vcpkg...\"; `
+    Write-Host \"${vcpkg_dist} -> ${vcpkg_temp_dir}\"; `
+    Expand-Archive \"${vcpkg_dist}\" -Destination \"${env:TMP}\"; `
+    Remove-Item -Force \"${vcpkg_dist}\"; `
+    $vcpkg_home_dir=\"${env:VCPKG_ROOT}\" -replace \"/\", \"\\\"; `
+    $vcpkg_home_dir=\"C:${vcpkg_home_dir}\"; `
+    Write-Host \"Moving vcpkg...\"; `
+    Write-Host \"${vcpkg_temp_dir} -> ${vcpkg_home_dir}\"; `
+    [System.IO.Directory]::Move(\"${vcpkg_temp_dir}\", \"${vcpkg_home_dir}\"); `
+    $env:PATH=\"${env:PATH}${vcpkg_home_dir}\"; `
+    Write-Host \"Setting PATH...\"; `
+    Write-Host \"${env:PATH}\"; `
+    [Environment]::SetEnvironmentVariable(\"PATH\", \"${env:PATH}\", [EnvironmentVariableTarget]::Machine); `
+    Write-Host \"Bootstrapping vcpkg...\"; `
+    & \"${vcpkg_home_dir}\bootstrap-vcpkg.bat\";
+
+# Ensure we only attempt to build release and static linking
+ENV VCPKG_BUILD_TYPE=release `
+    VCPKG_LIBRARY_LINKAGE=static
+
+RUN vcpkg install --recurse openssl --triplet x64-windows-static; `
+    vcpkg install --recurse libyaml --triplet x64-windows-static;
 
 #
 # Install Golang
@@ -103,7 +188,7 @@ COPY submodules/fluent-bit /work/submodules/fluent-bit
 
 WORKDIR /work/submodules/fluent-bit/build
 
-RUN cmake -G "'Visual Studio 17 2022'" -DCMAKE_BUILD_TYPE=RELWITHDEBINFO `
+RUN cmake -G "'Visual Studio 16 2019'" -DCMAKE_BUILD_TYPE=RELWITHDEBINFO `
     -DFLB_WINDOWS_DEFAULTS=Off `
     -DFLB_REGEX=On `
     -DFLB_BACKTRACE=Off `
