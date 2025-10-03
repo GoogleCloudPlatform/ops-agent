@@ -270,9 +270,10 @@ func generateFluentBitConfigs(ctx context.Context, name string, transformationTe
 			// - https://github.com/fluent/fluent-bit/issues/3926
 			// Some attempts of a solution have been implemented :
 			// - https://github.com/fluent/fluent-bit/pull/8545
-			// In fluent-bit 4.0.x, last log in a file maybe dropped or sent (non-deterministicaly) causing flaky tests.
+			// On newer fluent-bit 4.0.x versions, last log in a file maybe (non-deterministically)
+			// dropped (~%85 retries) or sent (~15% retries) causing flaky tests.
 			// Set shutdown "Grace" period to 0s to avoid any unreliable logs to be sent after Exit_On_Eof.
-			// This forces the last log from an multiline parser to always be dropped.
+			// This forces the last log line from an multiline parser to always be dropped.
 			"Grace": "0",
 		},
 	}
