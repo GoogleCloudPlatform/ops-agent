@@ -29,6 +29,7 @@ WORKDIR /local
 
 #
 # Install Visual Studio Build Tools 2019 (MSVS_VERSION=16) / 2022 (MSVS_VERSION=17, requires WINDOWS_VERSION=ltsc2022)
+# Based on https://github.com/fluent/fluent-bit/blob/v4.0.7/dockerfiles/Dockerfile.windows
 #
 ARG MSVS_VERSION="17"
 ENV MSVS_BUILD_TOOLS_VERSION="$MSVS_VERSION" `
@@ -203,7 +204,6 @@ RUN cmake --version;
 
 SHELL ["cmd", "/S", "/C"]
 RUN call "%MSVS_HOME%\VC\Auxiliary\Build\vcvars64.bat" && `
-    dir ..\ && `
     cmake -G "NMake Makefiles" `
     -DOPENSSL_ROOT_DIR='C:\dev\vcpkg\packages\openssl_x64-windows-static' `
     -DFLB_LIBYAML_DIR='C:\dev\vcpkg\packages\libyaml_x64-windows-static' `
