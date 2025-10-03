@@ -27,7 +27,9 @@ RUN Write-Host ('Creating folders'); `
 
 WORKDIR /local
 
+#
 # Install Visual Studio Build Tools 2019 (MSVS_VERSION=16) / 2022 (MSVS_VERSION=17, requires WINDOWS_VERSION=ltsc2022)
+#
 ARG MSVS_VERSION="17"
 ENV MSVS_BUILD_TOOLS_VERSION="$MSVS_VERSION" `
     MSVS_BUILD_TOOLS_DOWNLOAD_URL="https://aka.ms/vs" `
@@ -54,6 +56,9 @@ RUN $msvs_build_tools_dist_name=\"vs_buildtools.exe\"; `
     Remove-Item -Force \"${msvs_build_tools_dist}\"; `
     Remove-Item -Path \"${msvs_build_tools_channel}\" -Force;
 
+#
+# Install compatible CMake
+#
 ENV CMAKE_HOME="C:\cmake"
 ARG CMAKE_VERSION="3.31.6"
 ARG CMAKE_URL="https://github.com/Kitware/CMake/releases/download"
@@ -86,6 +91,9 @@ RUN if ([System.Version] \"${env:CMAKE_VERSION}\" -ge [System.Version] \"3.20.0\
     Write-Host \"${env:PATH}\"; `
     [Environment]::SetEnvironmentVariable(\"PATH\", \"${env:PATH}\", [EnvironmentVariableTarget]::Machine);
 
+#
+# Install WinFlexBison
+#
 ENV WIN_FLEX_BISON_VERSION="2.5.22" `
     WIN_FLEX_BISON_HOME="C:\WinFlexBison" `
     WIN_FLEX_BISON_DOWNLOAD_URL="https://github.com/lexxmark/winflexbison/releases/download"
@@ -112,6 +120,9 @@ RUN $win_flex_bison_dist_base_name=\"win_flex_bison-${env:WIN_FLEX_BISON_VERSION
     Write-Host \"${env:PATH}\"; `
     [Environment]::SetEnvironmentVariable(\"PATH\", \"${env:PATH}\", [EnvironmentVariableTarget]::Machine);
 
+#
+# Install VCPKG
+#
 # https://github.com/microsoft/vcpkg/blob/2024.05.24/scripts/bootstrap.ps1
 ENV VCPKG_VERSION=2024.05.24 `
     VCPKG_DOWNLOAD_URL="https://github.com/microsoft/vcpkg/archive/refs/tags" `
@@ -147,6 +158,9 @@ RUN $vcpkg_dist_base_name=\"vcpkg-${env:VCPKG_VERSION}\"; `
 ENV VCPKG_BUILD_TYPE=release `
     VCPKG_LIBRARY_LINKAGE=static
 
+#
+# Install OpenSSL and LibYAML
+#
 RUN vcpkg install --recurse openssl --triplet x64-windows-static; `
     vcpkg install --recurse libyaml --triplet x64-windows-static;
 
@@ -266,10 +280,12 @@ RUN call "%MSVS_HOME%\VC\Auxiliary\Build\vcvars64.bat" && `
     -DFLB_FILTER_WASM=Off ..\ && `
     cmake --build . --config Release
 
-RUN Copy-Item -Path bin/Release/fluent-bit.exe -Destination /work/out/bin/; `
-    Copy-Item -Path bin/Release/fluent-bit.dll -Destination /work/out/bin/; `
-    Copy-Item -Path bin/Release/fluent-bit.pdb -Destination /work/out/bin/; `
-    Copy-Item -Path bin/Release/fluent-bit.dll.pdb -Destination /work/out/bin/;
+SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
+
+RUN Copy-Item -Path bin/fluent-bit.exe -Destination /work/out/bin/; `
+    Copy-Item -Path bin/fluent-bit.dll -Destination /work/out/bin/; `
+    Copy-Item -Path bin/fluent-bit.pdb -Destination /work/out/bin/; `
+    Copy-Item -Path bin/fluent-bit.dll.pdb -Destination /work/out/bin/;
 
 # TODO: Do something with /work/out/bin/fluent-bit.{exe,dll}
 
