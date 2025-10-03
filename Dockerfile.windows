@@ -27,10 +27,12 @@ RUN Write-Host ('Creating folders'); `
 
 WORKDIR /local
 
-# Install Visual Studio Build Tools 2019
-ENV MSVS_BUILD_TOOLS_VERSION="16" `
+# Install Visual Studio Build Tools 2019 (MSVS_VERSION=16) / 2022 (MSVS_VERSION=17, requires WINDOWS_VERSION=ltsc2022)
+ARG MSVS_VERSION="17"
+ENV MSVS_BUILD_TOOLS_VERSION="$MSVS_VERSION" `
     MSVS_BUILD_TOOLS_DOWNLOAD_URL="https://aka.ms/vs" `
     MSVS_HOME="C:\BuildTools"
+
 RUN $msvs_build_tools_dist_name=\"vs_buildtools.exe\"; `
     $msvs_build_tools_dist=\"${env:TMP}\${msvs_build_tools_dist_name}\"; `
     $msvs_build_tools_channel=\"C:\local\VisualStudio.chman\"; `
@@ -49,19 +51,8 @@ RUN $msvs_build_tools_dist_name=\"vs_buildtools.exe\"; `
       \"--installChannelUri ${msvs_build_tools_channel}\", `
       '--add Microsoft.VisualStudio.Workload.VCTools', `
       '--includeRecommended'  -NoNewWindow -Wait; `
-    Remove-Item -Force \"${msvs_build_tools_dist}\";
-
-ENV MSVC_RUNTIME_VERSION="15" `
-    MSVC_RUNTIME_DOWNLOAD_URL="https://aka.ms/vs"
-RUN $msvc_runtime_dist_name=\"vc_redist.x64.exe\"; `
-    $msvc_runtime_dist=\"${env:TMP}\${msvc_runtime_dist_name}\"; `
-    $msvc_runtime_url=\"${env:MSVC_RUNTIME_DOWNLOAD_URL}/${env:MSVC_RUNTIME_VERSION}/release/${msvc_runtime_dist_name}\"; `
-    Write-Host \"Downloading Microsoft Visual C++ Redistributable...\"; `
-    Write-Host \"${msvc_runtime_url} -> ${msvc_runtime_dist}\"; `
-    Invoke-WebRequest -OutFile \"${msvc_runtime_dist}\" \"${msvc_runtime_url}\"; `
-    Write-Host \"Installing Microsoft Visual C++ runtime libraries...\"; `
-    Start-Process \"${msvc_runtime_dist}\" -ArgumentList '/install', '/quiet', '/norestart' -NoNewWindow -Wait; `
-    Remove-Item -Force \"${msvc_runtime_dist}\";
+    Remove-Item -Force \"${msvs_build_tools_dist}\"; `
+    Remove-Item -Path \"${msvs_build_tools_channel}\" -Force;
 
 ENV CMAKE_HOME="C:\cmake"
 ARG CMAKE_VERSION="3.31.6"
@@ -116,7 +107,7 @@ RUN $win_flex_bison_dist_base_name=\"win_flex_bison-${env:WIN_FLEX_BISON_VERSION
     Write-Host \"Copying...\"; `
     Write-Host \"${env:WIN_FLEX_BISON_HOME}\win_flex.exe -> ${env:WIN_FLEX_BISON_HOME}\flex.exe\"; `
     Copy-Item -Path \"${env:WIN_FLEX_BISON_HOME}\win_flex.exe\" \"${env:WIN_FLEX_BISON_HOME}\flex.exe\"; `
-    $env:PATH=\"${env:PATH}${env:WIN_FLEX_BISON_HOME}\"; `
+    $env:PATH=\"${env:PATH};${env:WIN_FLEX_BISON_HOME}\"; `
     Write-Host \"Setting PATH...\"; `
     Write-Host \"${env:PATH}\"; `
     [Environment]::SetEnvironmentVariable(\"PATH\", \"${env:PATH}\", [EnvironmentVariableTarget]::Machine);
@@ -145,7 +136,7 @@ RUN $vcpkg_dist_base_name=\"vcpkg-${env:VCPKG_VERSION}\"; `
     Write-Host \"Moving vcpkg...\"; `
     Write-Host \"${vcpkg_temp_dir} -> ${vcpkg_home_dir}\"; `
     [System.IO.Directory]::Move(\"${vcpkg_temp_dir}\", \"${vcpkg_home_dir}\"); `
-    $env:PATH=\"${env:PATH}${vcpkg_home_dir}\"; `
+    $env:PATH=\"${env:PATH};${vcpkg_home_dir}\"; `
     Write-Host \"Setting PATH...\"; `
     Write-Host \"${env:PATH}\"; `
     [Environment]::SetEnvironmentVariable(\"PATH\", \"${env:PATH}\", [EnvironmentVariableTarget]::Machine); `
@@ -160,10 +151,10 @@ RUN vcpkg install --recurse openssl --triplet x64-windows-static; `
     vcpkg install --recurse libyaml --triplet x64-windows-static;
 
 # Technique from https://github.com/StefanScherer/dockerfiles-windows/blob/master/mongo/3.6/Dockerfile
-WORKDIR /fluent-bit/bin
-RUN Copy-Item -Path C:\Windows\System32\msvcp140.dll -Destination /fluent-bit/bin/; `
-    Copy-Item -Path C:\Windows\System32\vccorlib140.dll -Destination /fluent-bit/bin/; `
-    Copy-Item -Path C:\Windows\System32\vcruntime140.dll -Destination /fluent-bit/bin/;
+WORKDIR /work/out/bin/
+RUN Copy-Item -Path C:\Windows\System32\msvcp140.dll -Destination /work/out/bin/; `
+    Copy-Item -Path C:\Windows\System32\vccorlib140.dll -Destination /work/out/bin/; `
+    Copy-Item -Path C:\Windows\System32\vcruntime140.dll -Destination /work/out/bin/;
 
 #
 # Install Golang
@@ -194,7 +185,12 @@ COPY submodules/fluent-bit /work/submodules/fluent-bit
 
 WORKDIR /work/submodules/fluent-bit/build
 
-RUN cmake -G "'Visual Studio 16 2019'" `
+RUN cmake --version;
+
+SHELL ["cmd", "/S", "/C"]
+RUN call "%MSVS_HOME%\VC\Auxiliary\Build\vcvars64.bat" && `
+    dir ..\ && `
+    cmake -G "NMake Makefiles" `
     -DOPENSSL_ROOT_DIR='C:\dev\vcpkg\packages\openssl_x64-windows-static' `
     -DFLB_LIBYAML_DIR='C:\dev\vcpkg\packages\libyaml_x64-windows-static' `
     -DCMAKE_BUILD_TYPE=RELWITHDEBINFO `
@@ -267,10 +263,10 @@ RUN cmake -G "'Visual Studio 16 2019'" `
     -DFLB_FILTER_LUA=On `
     -DFLB_FILTER_RECORD_MODIFIER=On `
     -DFLB_FILTER_REWRITE_TAG=On `
-    -DFLB_FILTER_WASM=Off ../;
+    -DFLB_FILTER_WASM=Off ..\ && `
+    cmake --build . --config Release
 
-RUN cmake --build . --config Release; `
-    Copy-Item -Path bin/Release/fluent-bit.exe -Destination /work/out/bin/; `
+RUN Copy-Item -Path bin/Release/fluent-bit.exe -Destination /work/out/bin/; `
     Copy-Item -Path bin/Release/fluent-bit.dll -Destination /work/out/bin/; `
     Copy-Item -Path bin/Release/fluent-bit.pdb -Destination /work/out/bin/; `
     Copy-Item -Path bin/Release/fluent-bit.dll.pdb -Destination /work/out/bin/;
