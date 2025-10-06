@@ -155,7 +155,7 @@ func (LoggingProcessorMacroElasticsearchJson) Type() string {
 	return "elasticsearch_json"
 }
 
-func loggingProcessorElasticsearchJsonMultilineRules() []confgenerator.MultilineRule {
+func (p LoggingProcessorMacroElasticsearchJson) loggingProcessorElasticsearchJsonMultilineRules() []confgenerator.MultilineRule {
 	// When Elasticsearch emits stack traces, the json log may be spread across multiple lines,
 	// so we need this multiline parsing to properly parse the record.
 	// Example multiline log record:
@@ -188,7 +188,7 @@ func (p LoggingProcessorMacroElasticsearchJson) Expand(ctx context.Context) []co
 	// for general layout, and https://www.elastic.co/guide/en/elasticsearch/reference/current/logging.html for general configuration of logging
 	processors := []confgenerator.InternalLoggingProcessor{
 		confgenerator.LoggingProcessorParseMultilineRegex{
-			Rules: loggingProcessorElasticsearchJsonMultilineRules(),
+			Rules: p.loggingProcessorElasticsearchJsonMultilineRules(),
 		},
 
 		confgenerator.LoggingProcessorParseJson{},
@@ -239,11 +239,11 @@ func (p LoggingProcessorMacroElasticsearchJson) Expand(ctx context.Context) []co
 			},
 		},
 	}
-	processors = append(processors, elasticsearchNestingProcessors()...)
+	processors = append(processors, p.elasticsearchNestingProcessors()...)
 	return processors
 }
 
-func elasticsearchNestingProcessors() []confgenerator.InternalLoggingProcessor {
+func (p LoggingProcessorMacroElasticsearchJson) elasticsearchNestingProcessors() []confgenerator.InternalLoggingProcessor {
 	// The majority of these prefixes come from here:
 	// https://www.elastic.co/guide/en/elasticsearch/reference/7.16/audit-event-types.html#audit-event-attributes
 	// Non-audit logs are formatted using the layout documented here, giving the "cluster" prefix:
@@ -307,17 +307,15 @@ func (p LoggingProcessorMacroElasticsearchGC) Expand(ctx context.Context) []conf
 	}
 }
 
-var elasticsearchJSONIncludePaths = []string{
-	"/var/log/elasticsearch/*_server.json",
-	"/var/log/elasticsearch/*_deprecation.json",
-	"/var/log/elasticsearch/*_index_search_slowlog.json",
-	"/var/log/elasticsearch/*_index_indexing_slowlog.json",
-	"/var/log/elasticsearch/*_audit.json",
-}
-
 func loggingReceiverFilesMixinElasticsearchJson() confgenerator.LoggingReceiverFilesMixin {
 	return confgenerator.LoggingReceiverFilesMixin{
-		IncludePaths: elasticsearchJSONIncludePaths,
+		IncludePaths: []string{
+			"/var/log/elasticsearch/*_server.json",
+			"/var/log/elasticsearch/*_deprecation.json",
+			"/var/log/elasticsearch/*_index_search_slowlog.json",
+			"/var/log/elasticsearch/*_index_indexing_slowlog.json",
+			"/var/log/elasticsearch/*_audit.json",
+		},
 	}
 }
 
