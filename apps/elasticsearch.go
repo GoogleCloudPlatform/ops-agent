@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
@@ -223,7 +222,7 @@ func (p LoggingProcessorMacroElasticsearchJson) Expand(ctx context.Context) []co
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				"severity": {
-					CopyFrom: "jsonPayload.temp_level",
+					MoveFrom: "jsonPayload.temp_level",
 					MapValues: map[string]string{
 						"TRACE":       "DEBUG",
 						"DEBUG":       "DEBUG",
@@ -240,28 +239,8 @@ func (p LoggingProcessorMacroElasticsearchJson) Expand(ctx context.Context) []co
 			},
 		},
 	}
-	lp := LoggingProcessorMacroElasticsearchJsonRemoveTempLevel{}
-	processors = append(processors, lp)
 	processors = append(processors, elasticsearchNestingProcessors()...)
 	return processors
-}
-
-// LoggingProcessorMacroElasticsearchJsonRemoveTempLevel is a processor that removes the temp_level field from the json payload.
-type LoggingProcessorMacroElasticsearchJsonRemoveTempLevel struct {
-}
-
-// Components returns the fluentbit components for the LoggingProcessorMacroElasticsearchJsonRemoveTempLevel processor which is responsible for removing a temp_level field from the json payload.
-func (l LoggingProcessorMacroElasticsearchJsonRemoveTempLevel) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	return []fluentbit.Component{
-		{
-			Kind: "FILTER",
-			Config: map[string]string{
-				"Name":   "modify",
-				"Match":  tag,
-				"Remove": "temp_level",
-			},
-		},
-	}
 }
 
 func elasticsearchNestingProcessors() []confgenerator.InternalLoggingProcessor {

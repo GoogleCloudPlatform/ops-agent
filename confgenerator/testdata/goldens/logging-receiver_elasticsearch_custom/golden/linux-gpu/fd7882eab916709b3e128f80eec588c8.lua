@@ -3,6 +3,9 @@ function process(tag, timestamp, record)
 local __field_1 = (function()
 return record["temp_level"]
 end)();
+(function(value)
+record["temp_level"] = value
+end)(nil);
 local v = "agent.googleapis.com/elasticsearch_json";
 (function(value)
 if record["logging.googleapis.com/labels"] == nil
