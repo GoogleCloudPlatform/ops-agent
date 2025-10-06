@@ -155,7 +155,7 @@ func (LoggingProcessorMacroElasticsearchJson) Type() string {
 	return "elasticsearch_json"
 }
 
-func (p LoggingProcessorMacroElasticsearchJson) loggingProcessorElasticsearchJsonMultilineRules() []confgenerator.MultilineRule {
+func (p LoggingProcessorMacroElasticsearchJson) parseMultilineRegex() confgenerator.LoggingProcessorParseMultilineRegex {
 	// When Elasticsearch emits stack traces, the json log may be spread across multiple lines,
 	// so we need this multiline parsing to properly parse the record.
 	// Example multiline log record:
@@ -164,16 +164,18 @@ func (p LoggingProcessorMacroElasticsearchJson) loggingProcessorElasticsearchJso
 	// -- snip --
 	// "at org.elasticsearch.bootstrap.Elasticsearch.init(Elasticsearch.java:166) ~[elasticsearch-7.16.2.jar:7.16.2]",
 	// "... 6 more"] }
-	return []confgenerator.MultilineRule{
-		{
-			StateName: "start_state",
-			NextState: "cont",
-			Regex:     `^{.*`,
-		},
-		{
-			StateName: "cont",
-			NextState: "cont",
-			Regex:     `^[^{].*[,}]$`,
+	return confgenerator.LoggingProcessorParseMultilineRegex{
+		Rules: []confgenerator.MultilineRule{
+			{
+				StateName: "start_state",
+				NextState: "cont",
+				Regex:     `^{.*`,
+			},
+			{
+				StateName: "cont",
+				NextState: "cont",
+				Regex:     `^[^{].*[,}]$`,
+			},
 		},
 	}
 }
@@ -187,9 +189,7 @@ func (p LoggingProcessorMacroElasticsearchJson) Expand(ctx context.Context) []co
 	// See https://artifacts.elastic.co/javadoc/org/elasticsearch/elasticsearch/7.16.2/org/elasticsearch/common/logging/ESJsonLayout.html
 	// for general layout, and https://www.elastic.co/guide/en/elasticsearch/reference/current/logging.html for general configuration of logging
 	processors := []confgenerator.InternalLoggingProcessor{
-		confgenerator.LoggingProcessorParseMultilineRegex{
-			Rules: p.loggingProcessorElasticsearchJsonMultilineRules(),
-		},
+		p.parseMultilineRegex(),
 
 		confgenerator.LoggingProcessorParseJson{},
 		confgenerator.LoggingProcessorParseRegex{
@@ -239,11 +239,11 @@ func (p LoggingProcessorMacroElasticsearchJson) Expand(ctx context.Context) []co
 			},
 		},
 	}
-	processors = append(processors, p.elasticsearchNestingProcessors()...)
+	processors = append(processors, p.nestingProcessors()...)
 	return processors
 }
 
-func (p LoggingProcessorMacroElasticsearchJson) elasticsearchNestingProcessors() []confgenerator.InternalLoggingProcessor {
+func (p LoggingProcessorMacroElasticsearchJson) nestingProcessors() []confgenerator.InternalLoggingProcessor {
 	// The majority of these prefixes come from here:
 	// https://www.elastic.co/guide/en/elasticsearch/reference/7.16/audit-event-types.html#audit-event-attributes
 	// Non-audit logs are formatted using the layout documented here, giving the "cluster" prefix:
