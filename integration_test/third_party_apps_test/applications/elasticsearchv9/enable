@@ -33,13 +33,13 @@ logging:
   receivers:
     elasticsearch_gc:
       type: elasticsearch_gc
-    elasticsearch_ecs:
-      type: elasticsearch_ecs
+    elasticsearch_json:
+      type: elasticsearch_json
   service:
     pipelines:
       elasticsearch:
         receivers:
           - elasticsearch_gc
-          - elasticsearch_ecs
+          - elasticsearch_json
 EOF
 

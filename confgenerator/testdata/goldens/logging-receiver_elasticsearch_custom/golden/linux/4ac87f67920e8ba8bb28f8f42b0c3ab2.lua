@@ -1,7 +1,7 @@
 
 function process(tag, timestamp, record)
 local __field_1 = (function()
-return record["level"]
+return record["temp_level"]
 end)();
 local v = "agent.googleapis.com/elasticsearch_json";
 (function(value)

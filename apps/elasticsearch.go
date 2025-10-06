@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
@@ -187,43 +188,78 @@ func (p LoggingProcessorMacroElasticsearchJson) Expand(ctx context.Context) []co
 	// See https://artifacts.elastic.co/javadoc/org/elasticsearch/elasticsearch/7.16.2/org/elasticsearch/common/logging/ESJsonLayout.html
 	// for general layout, and https://www.elastic.co/guide/en/elasticsearch/reference/current/logging.html for general configuration of logging
 	processors := []confgenerator.InternalLoggingProcessor{
-
 		confgenerator.LoggingProcessorParseMultilineRegex{
 			Rules: loggingProcessorElasticsearchJsonMultilineRules(),
 		},
 
-		confgenerator.LoggingProcessorParseJson{
+		confgenerator.LoggingProcessorParseJson{},
+		confgenerator.LoggingProcessorParseRegex{
+			Regex: `(?<temp_time_key>.*)`,
+			Field: "timestamp", // Custom ES 7.x format
 			ParserShared: confgenerator.ParserShared{
-				TimeKey:    "timestamp",
+				TimeKey:    "temp_time_key",
 				TimeFormat: "%Y-%m-%dT%H:%M:%S,%L%z",
 			},
 		},
-		elasticsearchSeverityParser("jsonPayload.level", p.Type()),
+		confgenerator.LoggingProcessorParseRegex{
+			Regex: `(?<temp_time_key>.*)`,
+			Field: "@timestamp", // ECS format
+			ParserShared: confgenerator.ParserShared{
+				TimeKey:    "temp_time_key",
+				TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
+			},
+		},
+		confgenerator.LoggingProcessorParseRegex{
+			Regex:       `(?<temp_level>.*)`,
+			Field:       "log.level", // ECS format
+			PreserveKey: true,
+		},
+		confgenerator.LoggingProcessorParseRegex{
+			Regex:       `(?<temp_level>.*)`,
+			Field:       "level", // Custom ES 7.x format
+			PreserveKey: true,
+		},
+
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				"severity": {
+					CopyFrom: "jsonPayload.temp_level",
+					MapValues: map[string]string{
+						"TRACE":       "DEBUG",
+						"DEBUG":       "DEBUG",
+						"INFO":        "INFO",
+						"WARN":        "WARNING",
+						"DEPRECATION": "WARNING",
+						"ERROR":       "ERROR",
+						"CRITICAL":    "ERROR",
+						"FATAL":       "FATAL",
+					},
+					MapValuesExclusive: true,
+				},
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+			},
+		},
 	}
-
+	lp := LoggingProcessorMacroElasticsearchJsonRemoveTempLevel{}
+	processors = append(processors, lp)
 	processors = append(processors, elasticsearchNestingProcessors()...)
-
 	return processors
 }
 
-func elasticsearchSeverityParser(copyFromField string, processorType string) confgenerator.InternalLoggingProcessor {
-	return confgenerator.LoggingProcessorModifyFields{
-		Fields: map[string]*confgenerator.ModifyField{
-			"severity": {
-				CopyFrom: copyFromField,
-				MapValues: map[string]string{
-					"TRACE":       "DEBUG",
-					"DEBUG":       "DEBUG",
-					"INFO":        "INFO",
-					"WARN":        "WARNING",
-					"DEPRECATION": "WARNING",
-					"ERROR":       "ERROR",
-					"CRITICAL":    "ERROR",
-					"FATAL":       "FATAL",
-				},
-				MapValuesExclusive: true,
+// LoggingProcessorMacroElasticsearchJsonRemoveTempLevel is a processor that removes the temp_level field from the json payload.
+type LoggingProcessorMacroElasticsearchJsonRemoveTempLevel struct {
+}
+
+// Components returns the fluentbit components for the LoggingProcessorMacroElasticsearchJsonRemoveTempLevel processor which is responsible for removing a temp_level field from the json payload.
+func (l LoggingProcessorMacroElasticsearchJsonRemoveTempLevel) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
+	return []fluentbit.Component{
+		{
+			Kind: "FILTER",
+			Config: map[string]string{
+				"Name":   "modify",
+				"Match":  tag,
+				"Remove": "temp_level",
 			},
-			InstrumentationSourceLabel: instrumentationSourceValue(processorType),
 		},
 	}
 }
@@ -263,33 +299,6 @@ func elasticsearchNestingProcessors() []confgenerator.InternalLoggingProcessor {
 	return processors
 }
 
-// This is a workaround to support ECS logs from Elasticsearch 8.x alongside Elasticsearch 7.x.
-// It's not apparent how we are supposed to parse the JSON first with indeterminate time keys, so we're creating two separate log
-// types to support being able to read from both formats.
-type LoggingProcessorMacroElasticsearchJsonV8 struct{}
-
-func (p LoggingProcessorMacroElasticsearchJsonV8) Type() string {
-	return "elasticsearch_ecs"
-}
-
-func (p LoggingProcessorMacroElasticsearchJsonV8) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
-	processors := []confgenerator.InternalLoggingProcessor{
-		confgenerator.LoggingProcessorParseMultilineRegex{
-			Rules: loggingProcessorElasticsearchJsonMultilineRules(),
-		},
-		confgenerator.LoggingProcessorParseJson{
-			ParserShared: confgenerator.ParserShared{
-				TimeKey:    "@timestamp",
-				TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
-			},
-		},
-	}
-	processors = append(processors, elasticsearchNestingProcessors()...)
-	processors = append(processors, elasticsearchSeverityParser("jsonPayload.log.level", p.Type()))
-
-	return processors
-}
-
 type LoggingProcessorMacroElasticsearchGC struct {
 }
 
@@ -319,7 +328,7 @@ func (p LoggingProcessorMacroElasticsearchGC) Expand(ctx context.Context) []conf
 	}
 }
 
-var elasticsearchIncludePaths = []string{
+var elasticsearchJSONIncludePaths = []string{
 	"/var/log/elasticsearch/*_server.json",
 	"/var/log/elasticsearch/*_deprecation.json",
 	"/var/log/elasticsearch/*_index_search_slowlog.json",
@@ -329,12 +338,7 @@ var elasticsearchIncludePaths = []string{
 
 func loggingReceiverFilesMixinElasticsearchJson() confgenerator.LoggingReceiverFilesMixin {
 	return confgenerator.LoggingReceiverFilesMixin{
-		IncludePaths: elasticsearchIncludePaths,
-	}
-}
-func loggingReceiverFilesMixinElasticsearchJsonV8() confgenerator.LoggingReceiverFilesMixin {
-	return confgenerator.LoggingReceiverFilesMixin{
-		IncludePaths: elasticsearchIncludePaths,
+		IncludePaths: elasticsearchJSONIncludePaths,
 	}
 }
 
@@ -348,6 +352,5 @@ func loggingReceiverFilesMixinElasticsearchGC() confgenerator.LoggingReceiverFil
 
 func init() {
 	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroElasticsearchJson](loggingReceiverFilesMixinElasticsearchJson)
-	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroElasticsearchJsonV8](loggingReceiverFilesMixinElasticsearchJsonV8)
 	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroElasticsearchGC](loggingReceiverFilesMixinElasticsearchGC)
 }
