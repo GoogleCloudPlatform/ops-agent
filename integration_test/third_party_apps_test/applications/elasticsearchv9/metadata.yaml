@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/elasticsearch"
+public_url: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/elasticsearchv9"
 app_url: "http://elasticsearch.org/"
 short_name: Elasticsearch
 long_name: Elasticsearch
