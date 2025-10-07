@@ -176,6 +176,8 @@ expected_metrics:
     unavailable_on:
       - ubuntu-os-cloud:ubuntu-2404-lts-amd64
       - ubuntu-os-cloud:ubuntu-2404-lts-arm64
+      - ubuntu-os-cloud:ubuntu-2504-amd64
+      - ubuntu-os-cloud:ubuntu-2504-arm64
       - debian-cloud:debian-12-arm64
       - debian-cloud:debian-13
       - debian-cloud:debian-13-arm64
