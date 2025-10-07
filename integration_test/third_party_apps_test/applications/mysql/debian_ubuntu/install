@@ -27,11 +27,8 @@ sudo service mysql start
 # set up replication source to validate replica metrics
 # set main target (replica) to use binary logging for replication to work
 sudo tee -a /etc/mysql/mysql.conf.d/mysqld.cnf >/dev/null <<EOF
-[mysqld]
 server-id = 1
 log-bin = /var/log/mysql/mysql-bin.log
-# Explicitly load the native password plugin
-plugin-load-add=mysql_native_password.so
 
 [mysqld2]
 pid-file = /var/run/mysqld/mysql2.pid
@@ -42,10 +39,7 @@ datadir = /var/lib/mysql2/
 log-error = /var/log/mysql/error2.log
 server-id = 2
 log-bin = /var/log/mysql/mysql2-bin.log
-# Explicitly load the native password plugin
-plugin-load-add=mysql_native_password.so
 EOF
-
 
 # Disable apparmor for mysql
 if [[ "${ID}" == ubuntu ]]; then
