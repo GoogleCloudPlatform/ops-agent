@@ -14,8 +14,8 @@
 
 public_url: ""
 app_url: "http://elasticsearch.org/"
-short_name: Elasticsearch
-long_name: Elasticsearch
+short_name: Elasticsearch 9.0
+long_name: Elasticsearch 9.0
 logo_path: /stackdriver/images/elasticsearch.png # supplied by google technical writer
 description: |-
   Elasticsearch is an open-source search server, based on the
@@ -24,9 +24,9 @@ description: |-
   collects node- and cluster-level telemetry from your Elasticsearch instances.
 configure_integration: |-
   If you enable [Elasticsearch security
-  features](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/secure-cluster.html),
+  features](https://www.elastic.co/guide/en/elasticsearch/reference/9.0/secure-cluster.html),
   you must configure a user with the `monitor` or `manage` [cluster
-  privilege](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/security-privileges.html#privileges-list-cluster).
+  privilege](https://www.elastic.co/guide/en/elasticsearch/reference/9.0/security-privileges.html#privileges-list-cluster).
 minimum_supported_agent_version:
   metrics: 2.59.0
   logging: 2.59.0
