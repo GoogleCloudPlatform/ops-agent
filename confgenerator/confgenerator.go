@@ -34,7 +34,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
-func googleCloudExporter(userAgent string, instrumentationLabels bool) otel.Component {
+func googleCloudExporter(userAgent string, instrumentationLabels bool, serviceResourceLabels bool) otel.Component {
 	return otel.Component{
 		Type: "googlecloud",
 		Config: map[string]interface{}{
@@ -50,9 +50,23 @@ func googleCloudExporter(userAgent string, instrumentationLabels bool) otel.Comp
 				// Omit instrumentation labels, which break agent metrics.
 				"instrumentation_library_labels": instrumentationLabels,
 				// Omit service labels, which break agent metrics.
-				// TODO: Enable with instrumentationLabels when values are sane.
-				"service_resource_labels": false,
+				"service_resource_labels": serviceResourceLabels,
 				"resource_filters":        []map[string]interface{}{},
+			},
+		},
+	}
+}
+
+func otlpExporter(userAgent string) otel.Component {
+	return otel.Component{
+		Type: "otlphttp",
+		Config: map[string]interface{}{
+			"endpoint": "https://telemetry.googleapis.com",
+			"auth": map[string]interface{}{
+				"authenticator": "googleclientauth",
+			},
+			"headers": map[string]string{
+				"User-Agent": userAgent,
 			},
 		},
 	}
@@ -127,9 +141,10 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 		Pipelines:         pipelines,
 		Extensions:        extensions,
 		Exporters: map[otel.ExporterType]otel.Component{
-			otel.System: googleCloudExporter(userAgent, false),
-			otel.OTel:   googleCloudExporter(userAgent, true),
+			otel.System: googleCloudExporter(userAgent, false, false),
+			otel.OTel:   googleCloudExporter(userAgent, true, true),
 			otel.GMP:    googleManagedPrometheusExporter(userAgent),
+			otel.OTLP:   otlpExporter(userAgent),
 		},
 	}.Generate(ctx)
 	if err != nil {
