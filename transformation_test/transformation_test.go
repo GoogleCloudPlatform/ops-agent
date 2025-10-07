@@ -260,6 +260,24 @@ func generateFluentBitConfigs(ctx context.Context, name string, transformationTe
 		return nil, err
 	}
 
+	service := fluentbit.Component{
+		Kind: "SERVICE",
+		Config: map[string]string{
+			// The combination of Exit_On_Eof on a tail receiver with a multiline parser causes
+			// the last log in a file to be dropped. See :
+			// - https://github.com/fluent/fluent-bit/issues/8623
+			// - https://github.com/fluent/fluent-bit/issues/8353
+			// - https://github.com/fluent/fluent-bit/issues/3926
+			// Some attempts of a solution have been implemented :
+			// - https://github.com/fluent/fluent-bit/pull/8545
+			// On newer fluent-bit 4.0.x versions, last log in a file maybe (non-deterministically)
+			// dropped (~%85 retries) or sent (~15% retries) causing flaky tests.
+			// Set shutdown "Grace" period to 0s to avoid any unreliable logs to be sent after Exit_On_Eof.
+			// This forces the last log line from an multiline parser to always be dropped.
+			"Grace": "0",
+		},
+	}
+
 	pi := transformationTest.pipelineInstance(abs)
 	fbSource, err := pi.FluentBitComponents(ctx)
 	if err != nil {
@@ -284,8 +302,11 @@ func generateFluentBitConfigs(ctx context.Context, name string, transformationTe
 			"export_to_project_id":          "my-project",
 		},
 	}
+	components := []fluentbit.Component{service}
+	components = append(components, fbSource.Components...)
+	components = append(components, output)
 	return fluentbit.ModularConfig{
-		Components: append(fbSource.Components, output),
+		Components: components,
 	}.Generate()
 }
 
