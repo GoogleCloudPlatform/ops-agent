@@ -225,15 +225,13 @@ func RunForEachLoggingSubagent(t *testing.T, testBody func(t *testing.T, otel bo
 	})
 }
 
-func RunForEachPrometheusExporter(t *testing.T, testBody func(t *testing.T, isOtlpHttp bool)) {
+func RunForEachExporter(t *testing.T, exporterList []string, testBody func(t *testing.T, exporter string)) {
 	t.Helper()
-	t.Run("googlemanagedprometheus", func(t *testing.T) {
-		testBody(t, false)
-	})
-
-	t.Run("otlphttp", func(t *testing.T) {
-		testBody(t, true)
-	})
+	for _, exporter := range exporterList {
+		t.Run(exporter, func(t *testing.T) {
+			testBody(t, exporter)
+		})
+	}
 }
 
 // setExperimentalFeatures sets the EXPERIMENTAL_FEATURES environment variable.
@@ -2918,7 +2916,7 @@ func TestGoogleSecretManagerProvider(t *testing.T) {
 }
 func TestPrometheusMetrics(t *testing.T) {
 	t.Parallel()
-	RunForEachPrometheusExporter(t, func(t *testing.T, isOtlpHttp bool) {
+	RunForEachExporter(t, []string{"googlemanagedprometheus", "otlphttp"}, func(t *testing.T, exporter string) {
 		t.Parallel()
 		gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 			t.Parallel()
@@ -2973,7 +2971,7 @@ func TestPrometheusMetrics(t *testing.T) {
         receivers:
           - prometheus
 `
-			if isOtlpHttp {
+			if exporter == "otlphttp" {
 				if err := setExperimentalFeatures(ctx, logger, vm, "otlp_exporter"); err != nil {
 					t.Fatal(err)
 				}
@@ -3111,7 +3109,7 @@ func TestPrometheusMetrics(t *testing.T) {
 
 func TestPrometheusMetricsWithMetadata(t *testing.T) {
 	t.Parallel()
-	RunForEachPrometheusExporter(t, func(t *testing.T, isOtlpHttp bool) {
+	RunForEachExporter(t, []string{"googlemanagedprometheus", "otlphttp"}, func(t *testing.T, exporter string) {
 		gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 			t.Parallel()
 			metadataKey, metadataValue := "test", "${test:value}"
@@ -3141,7 +3139,7 @@ func TestPrometheusMetricsWithMetadata(t *testing.T) {
         receivers:
           - prometheus
 `, metadataKey, metadataKey)
-			if isOtlpHttp {
+			if exporter == "otlphttp" {
 				if err := setExperimentalFeatures(ctx, logger.ToMainLog(), vm, "otlp_exporter"); err != nil {
 					t.Fatal(err)
 				}
@@ -3174,7 +3172,7 @@ func TestPrometheusMetricsWithMetadata(t *testing.T) {
 // The JSON exporter will connect to a http server that serve static JSON files
 func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 	t.Parallel()
-	RunForEachPrometheusExporter(t, func(t *testing.T, isOtlpHttp bool) {
+	RunForEachExporter(t, []string{"googlemanagedprometheus", "otlphttp"}, func(t *testing.T, exporter string) {
 		gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 			t.Parallel()
 			// TODO: Set up JSON exporter stuff on Windows
@@ -3182,7 +3180,7 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 				t.SkipNow()
 			}
 			ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-			if isOtlpHttp {
+			if exporter == "otlphttp" {
 				if err := setExperimentalFeatures(ctx, logger, vm, "otlp_exporter"); err != nil {
 					t.Fatal(err)
 				}
@@ -3758,8 +3756,7 @@ func buildGoBinary(ctx context.Context, logger *log.Logger, vm *gce.VM, source, 
 // correctly received and processed
 func testPrometheusMetrics(t *testing.T, opsAgentConfig string, testChecks []mockPrometheusCheck) {
 	t.Parallel()
-
-	RunForEachPrometheusExporter(t, func(t *testing.T, isOtlpHttp bool) {
+	RunForEachExporter(t, []string{"googlemanagedprometheus", "otlphttp"}, func(t *testing.T, exporter string) {
 		t.Parallel()
 		gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 			t.Parallel()
@@ -3810,6 +3807,12 @@ func testPrometheusMetrics(t *testing.T, opsAgentConfig string, testChecks []moc
 			liveCheckOut, liveCheckErr := gce.RunRemotely(ctx, logger, vm, `curl "http://localhost:8000/data"`)
 			if liveCheckErr != nil || strings.Contains(liveCheckOut.Stderr, "Connection refused") {
 				t.Fatalf("Http server failed to start with stdout %s and stderr %s", liveCheckOut.Stdout, liveCheckOut.Stderr)
+			}
+
+			if exporter == "otlphttp" {
+				if err := setExperimentalFeatures(ctx, logger, vm, "otlp_exporter"); err != nil {
+					t.Fatal(err)
+				}
 			}
 			// 3. Config and start the agent
 			if err := agents.SetupOpsAgent(ctx, logger, vm, opsAgentConfig); err != nil {
@@ -4661,6 +4664,11 @@ traces:
   service:
     pipelines:
 `
+		if exporter == "otlphttp" {
+			if err := setExperimentalFeatures(ctx, logger, vm, "otlp_exporter"); err != nil {
+				t.Fatal(err)
+			}
+		}
 		if err := agents.SetupOpsAgent(ctx, logger, vm, otlpConfig); err != nil {
 			t.Fatal(err)
 		}
@@ -4776,6 +4784,7 @@ traces:
 			return
 		}
 	})
+
 }
 
 func TestOTLPMetricsGMP(t *testing.T) {
