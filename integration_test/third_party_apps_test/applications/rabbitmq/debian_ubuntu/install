@@ -46,6 +46,7 @@ fi
 
 if [[ "${VERSION_ID}" == "25.04" ]]; then
   curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.deb.sh > install_rabbitmq.sh
+  chmod +x install_rabbitmq.sh
   sudo PLUGINS_DIR="/usr/lib/rabbitmq/lib/rabbitmq_server-4.0.5/plugins"  os=ubuntu dist=noble ./install_rabbitmq.sh
 fi
 
