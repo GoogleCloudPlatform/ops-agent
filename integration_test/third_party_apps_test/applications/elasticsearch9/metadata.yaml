@@ -1,0 +1,622 @@
+# Copyright 2022 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+public_url: ""
+app_url: "http://elasticsearch.org/"
+short_name: Elasticsearch 9.0
+long_name: Elasticsearch 9.0
+logo_path: /stackdriver/images/elasticsearch.png # supplied by google technical writer
+description: |-
+  Elasticsearch is an open-source search server, based on the
+  [Lucene](https://lucene.apache.org/) search library. It runs in a Java virtual
+  machine on top of a number of operating systems. The `elasticsearch` receiver
+  collects node- and cluster-level telemetry from your Elasticsearch instances.
+configure_integration: |-
+  If you enable [Elasticsearch security
+  features](https://www.elastic.co/guide/en/elasticsearch/reference/9.0/secure-cluster.html),
+  you must configure a user with the `monitor` or `manage` [cluster
+  privilege](https://www.elastic.co/guide/en/elasticsearch/reference/9.0/security-privileges.html#privileges-list-cluster).
+minimum_supported_agent_version:
+  metrics: 2.59.0
+  logging: 2.59.0
+platforms_to_skip:
+  # elasticsearch 9.x is not supported on SLES 12 https://www.elastic.co/support/matrix
+  - suse-cloud:sles-12
+supported_operating_systems: linux
+supported_app_version: ["8.0+", "9.0+"]
+expected_metrics:
+  - type: workload.googleapis.com/elasticsearch.cluster.data_nodes
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.cluster.health
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: status
+        value_regex: .*
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.cluster.nodes
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.cluster.shards
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: state
+        value_regex: .*
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.node.cache.evictions
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: cache_name
+        value_regex: .*
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.node.cache.memory.usage
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: cache_name
+        value_regex: .*
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.node.cluster.connections
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.node.cluster.io
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: direction
+        value_regex: .*
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.node.documents
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: state
+        value_regex: .*
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.node.fs.disk.available
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.node.http.connections
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.node.open_files
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+    representative: true
+  - type: workload.googleapis.com/elasticsearch.node.operations.completed
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: operation
+        value_regex: .*
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.node.operations.time
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: operation
+        value_regex: .*
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.node.shards.size
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.node.thread_pool.tasks.finished
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: state
+        value_regex: .*
+      - name: thread_pool_name
+        value_regex: .*
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.node.thread_pool.tasks.queued
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+      - name: thread_pool_name
+        value_regex: .*
+  - type: workload.googleapis.com/elasticsearch.node.thread_pool.threads
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: state
+        value_regex: .*
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+      - name: thread_pool_name
+        value_regex: .*
+  - type: workload.googleapis.com/elasticsearch.breaker.memory.estimated
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+      - name: name
+        value_regex: .*
+  - type: workload.googleapis.com/elasticsearch.breaker.memory.limit
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+      - name: name
+        value_regex: .*
+  - type: workload.googleapis.com/elasticsearch.breaker.tripped
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+      - name: name
+        value_regex: .*
+  - type: workload.googleapis.com/elasticsearch.cluster.published_states.differences
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+      - name: state
+        value_regex: incompatible|compatible
+  - type: workload.googleapis.com/elasticsearch.cluster.published_states.full
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.cluster.state_queue
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+      - name: state
+        value_regex: pending|committed
+  - type: workload.googleapis.com/elasticsearch.cluster.state_update.count
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+      - name: state
+        value_regex: .*
+  - type: workload.googleapis.com/elasticsearch.cluster.state_update.time
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+      - name: state
+        value_regex: .*
+      - name: type
+        value_regex: computation|context_construction|commit|completion|master_apply|notification
+  - type: workload.googleapis.com/elasticsearch.indexing_pressure.memory.limit
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.indexing_pressure.memory.total.primary_rejections
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.indexing_pressure.memory.total.replica_rejections
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.memory.indexing_pressure
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: stage
+        value_regex: coordinating|primary|replica
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.node.disk.io.read
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.node.disk.io.write
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.node.ingest.documents
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.node.ingest.documents.current
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.node.ingest.operations.failed
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.node.pipeline.ingest.documents.current
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+      - name: name
+        value_regex: .*
+  - type: workload.googleapis.com/elasticsearch.node.pipeline.ingest.documents.preprocessed
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+      - name: name
+        value_regex: .*
+  - type: workload.googleapis.com/elasticsearch.node.pipeline.ingest.operations.failed
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+      - name: name
+        value_regex: .*
+  - type: workload.googleapis.com/elasticsearch.node.script.cache_evictions
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.node.script.compilation_limit_triggered
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.node.script.compilations
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.node.shards.data_set.size
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.node.shards.reserved.size
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.node.translog.operations
+    value_type: INT64
+    kind: CUMULATIVE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.node.translog.size
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.node.translog.uncommitted.size
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.os.cpu.load_avg.15m
+    value_type: DOUBLE
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.os.cpu.load_avg.1m
+    value_type: DOUBLE
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.os.cpu.load_avg.5m
+    value_type: DOUBLE
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.os.cpu.usage
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.os.memory
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: state
+        value_regex: free|used
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.cluster.in_flight_fetch
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.cluster.pending_tasks
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.node.cache.count
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: type
+        value_regex: hit|miss
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.node.fs.disk.free
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+  - type: workload.googleapis.com/elasticsearch.node.fs.disk.total
+    value_type: INT64
+    kind: GAUGE
+    monitored_resources: [gce_instance]
+    labels:
+      - name: instrumentation_source
+        value_regex: agent.googleapis.com/elasticsearch
+expected_logs:
+  - log_name: elasticsearch_json
+    fields:
+      - name: severity
+        type: string
+        description: 'Log entry severity level'
+        optional: true
+      - name: jsonPayload.message
+        value_regex: initialized
+        type: string
+        description: 'Log message'
+      - name: jsonPayload.service.name
+        type: string
+        description: 'The name of the service emitting the log in ECS format'
+        optional: true
+      - name: jsonPayload.log.level
+        type: string
+        description: 'Log entry level in ECS format'
+        optional: true
+      - name: jsonPayload.log.logger
+        type: string
+        description: 'The logger component that emitted the log in ECS format'
+        optional: true
+      - name: jsonPayload.log
+        type: string
+        description: 'Log details in ECS format'
+        optional: true
+      - name: jsonPayload.process.thread.name
+        type: string
+        description: 'The name of the thread that emitted the log in ECS format'
+        optional: true
+      - name: jsonPayload.elasticsearch.node.name
+        type: string
+        description: 'The name of the node emitting the log record in ECS format'
+        optional: true
+      - name: jsonPayload.event
+        type: string
+        description: 'Event information in ECS format'
+        optional: true
+      - name: jsonPayload.ecs.version
+        type: string
+        description: 'ECS version'
+        optional: true
+      - name: jsonPayload.elasticsearch.cluster.name
+        type: string
+        description: 'The name of the cluster emitting the log record in ECS format'
+        optional: true
+      - name: jsonPayload.elasticsearch.cluster.uuid
+        type: string
+        description: 'The UUID of the cluster emitting the log record in ECS format'
+        optional: true
+  - log_name: elasticsearch_gc
+    fields:
+      - name: jsonPayload.message
+        value_regex: Using G1
+        type: string
+        description: 'Log message'
+      - name: jsonPayload.type
+        value_regex: gc
+        type: string
+        description: 'The type of the log record'
+      - name: jsonPayload.gc_run
+        type: number
+        description: 'The run of the garbage collector'
+        optional: true
+      - name: severity
+        type: string
+        description: ''
+configuration_options:
+  logs:
+    - type: elasticsearch_json
+      fields:
+        - name: type
+          default: null
+          description: This value must be `elasticsearch_json`.
+        - name: include_paths
+          default: '[/var/log/elasticsearch/*_server.json, /var/log/elasticsearch/*_deprecation.json, /var/log/elasticsearch/*_index_search_slowlog.json, /var/log/elasticsearch/*_index_indexing_slowlog.json, /var/log/elasticsearch/*_audit.json]'
+          description: A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths.
+        - name: exclude_paths
+          default: null
+          description: A list of filesystem path patterns to exclude from the set matched by `include_paths`.
+        - name: record_log_file_path
+          default: false
+          description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
+        - name: wildcard_refresh_interval
+          default: 60s
+          description: The interval at which wildcard file paths in `include_paths` are refreshed. Given as a [time duration](https://pkg.go.dev/time#ParseDuration), for example `30s` or `2m`. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+    - type: elasticsearch_gc
+      fields:
+        - name: type
+          default: null
+          description: This value must be `elasticsearch_gc`.
+        - name: include_paths
+          default: '[/var/log/elasticsearch/gc.log]'
+          description: A list of filesystem paths to read by tailing each file. A wild card (`*`) can be used in the paths.
+        - name: exclude_paths
+          default: null
+          description: A list of filesystem path patterns to exclude from the set matched by `include_paths`.
+        - name: record_log_file_path
+          default: false
+          description: If set to `true`, then the path to the specific file from which the log record was obtained appears in the output log entry as the value of the `agent.googleapis.com/log_file_path` label. When using a wildcard, only the path of the file from which the record was obtained is recorded.
+        - name: wildcard_refresh_interval
+          default: 60s
+          description: The interval at which wildcard file paths in `include_paths` are refreshed. Given as a [time duration](https://pkg.go.dev/time#ParseDuration), for example `30s` or `2m`. This property might be useful under high logging throughputs where log files are rotated faster than the default interval.
+  metrics:
+    - type: elasticsearch
+      fields:
+        - name: type
+          default: null
+          description: This value must be `elasticsearch`.
+        - name: endpoint
+          default: https://localhost:9200
+          description: The base URL for the Elasticsearch REST API. Elasticsearch 9.0+ uses HTTPS by default.
+        - name: collection_interval
+          default: 60s
+          description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
+        - name: username
+          default: elastic
+          description: Username for authentication with Elasticsearch. Required for Elasticsearch 9.0+.
+        - name: password
+          default: null
+          description: Password for authentication with Elasticsearch. Required for Elasticsearch 9.0+.
+        - name: insecure
+          default: false
+          description: Sets whether or not to use a secure TLS connection. Elasticsearch 9.0+ uses HTTPS by default.
+        - name: insecure_skip_verify
+          default: true
+          description: Sets whether or not to skip verifying the certificate. Set to `true` for self-signed certificates (common in test environments).
+        - name: cert_file
+          default: null
+          description: Path to the TLS certificate to use for mTLS-required connections.
+        - name: key_file
+          default: null
+          description: Path to the TLS key to use for mTLS-required connections.
+        - name: ca_file
+          default: null
+          description: Path to the CA certificate. As a client, this verifies the server certificate. If empty, the receiver uses the system root CA.

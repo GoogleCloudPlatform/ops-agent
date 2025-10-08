@@ -12,7 +12,7 @@ exporters:
       instrumentation_library_labels: true
       prefix: ""
       resource_filters: []
-      service_resource_labels: false
+      service_resource_labels: true
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
 processors:
@@ -515,6 +515,15 @@ processors:
       statements:
       - set(name, "agent.googleapis.com/active_directory_ds")
       - set(version, "1.0")
+  transform/active__directory__ds_3:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
   transform/iis_3:
     metric_statements:
     - context: scope
@@ -624,6 +633,7 @@ service:
       - normalizesums/active__directory__ds_0
       - metricstransform/active__directory__ds_1
       - transform/active__directory__ds_2
+      - transform/active__directory__ds_3
       - resourcedetection/_global_0
       receivers:
       - active_directory_ds/active__directory__ds

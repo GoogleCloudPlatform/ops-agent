@@ -41,6 +41,10 @@ type ReceiverOTLP struct {
 	MetricsMode  string `yaml:"metrics_mode" validate:"omitempty,oneof=googlecloudmonitoring googlemanagedprometheus" tracking:""`
 }
 
+func (r ReceiverOTLP) AllowCustomProcessors() bool {
+	return r.MetricsMode == "googlecloudmonitoring"
+}
+
 func (r ReceiverOTLP) Type() string {
 	return "otlp"
 }

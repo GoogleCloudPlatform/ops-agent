@@ -31,7 +31,7 @@ minimum_supported_agent_version:
   metrics: 2.21.0
   logging: 2.9.0
 supported_operating_systems: linux
-supported_app_version: ["7.9+"]
+supported_app_version: ["7.9+", "8.0+", "9.0+"]
 expected_metrics:
   - type: workload.googleapis.com/elasticsearch.cluster.data_nodes
     value_type: INT64

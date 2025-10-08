@@ -178,6 +178,7 @@ func (r MetricsReceiverVault) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
+			otel.MetricsRemoveServiceAttributes(),
 		}},
 	}}, nil
 }
