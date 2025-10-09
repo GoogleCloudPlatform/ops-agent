@@ -97,8 +97,19 @@ func main() {
 	testGaugeMetric(meter, "otlp.test.prefix4")
 	testGaugeMetric(meter, "otlp.test.prefix5")
 
+	// Test histogram metrics
+	testHistogramMetric(ctx, meter, "otlp.test.histogram")
+
+	// Expected to be seen in cloud monitoring as a gauge
+	testUpDownCounterMetric(ctx, meter, "otlp.test.updowncounter")
+
+
 	// Test cumulative metrics
-	counter, err := meter.Float64Counter("otlp.test.cumulative")
+	testCumulativeMetric(ctx, meter, "otlp.test.cumulative")
+}
+
+func testCumulativeMetric(ctx context.Context, meter metric.Meter, name string) {
+	counter, err := meter.Float64Counter(name)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -108,11 +119,25 @@ func main() {
 	counter.Add(ctx, 10)
 }
 
+// Test Histogram Metric
+func testHistogramMetric(ctx context.Context, meter metric.Meter, name string) {
+	histogram, err := meter.Float64Histogram(name)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	histogram.Record(ctx, 1.0)
+	histogram.Record(ctx, 2.0)
+	histogram.Record(ctx, 3.0)
+}
+
+// test Gauge Metric
 func testGaugeMetric(meter metric.Meter, name string) {
 	gauge, err := meter.Float64ObservableGauge(name)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	_, err = meter.RegisterCallback(func(c context.Context, observer metric.Observer) error {
 		observer.ObserveFloat64(gauge, 5)
 		return nil
@@ -120,4 +145,17 @@ func testGaugeMetric(meter metric.Meter, name string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+// updowncounter metric
+func testUpDownCounterMetric(ctx context.Context, meter metric.Meter, name string) {
+	upDownCounter, err := meter.Int64UpDownCounter(name)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// adds and subtracts values from the UpDownCounter
+	upDownCounter.Add(ctx, 5)
+	time.Sleep(1 * time.Second)
+	upDownCounter.Add(ctx, -2)
 }
