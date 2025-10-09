@@ -1,4 +1,4 @@
-# Copyright 2022 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,8 +28,8 @@ configure_integration: |-
   you must configure a user with the `monitor` or `manage` [cluster
   privilege](https://www.elastic.co/guide/en/elasticsearch/reference/9.0/security-privileges.html#privileges-list-cluster).
 minimum_supported_agent_version:
-  metrics: 2.59.0
-  logging: 2.59.0
+  metrics: 2.60.0
+  logging: 2.60.0
 platforms_to_skip:
   # elasticsearch 9.x is not supported on SLES 12 https://www.elastic.co/support/matrix
   - suse-cloud:sles-12
