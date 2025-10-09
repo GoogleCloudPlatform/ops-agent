@@ -22,6 +22,10 @@ description: |-
   [Lucene](https://lucene.apache.org/) search library. It runs in a Java virtual
   machine on top of a number of operating systems. The `elasticsearch` receiver
   collects node- and cluster-level telemetry from your Elasticsearch instances.
+
+  Note: This page only refers to the support for Elasticsearch 7.9+ versions. Please refer to
+  [Elasticsearch 8.0+ and 9.0+](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/elasticsearch9)
+  for other versions documentation.
 configure_integration: |-
   If you enable [Elasticsearch security
   features](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/secure-cluster.html),
