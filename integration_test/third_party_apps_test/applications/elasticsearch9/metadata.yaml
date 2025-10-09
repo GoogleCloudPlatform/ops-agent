@@ -14,8 +14,8 @@
 
 public_url: ""
 app_url: "http://elasticsearch.org/"
-short_name: Elasticsearch 9.0
-long_name: Elasticsearch 9.0
+short_name: Elasticsearch 8.0+ and 9.0+ 
+long_name: Elasticsearch 8.0+ and 9.0+
 logo_path: /stackdriver/images/elasticsearch.png # supplied by google technical writer
 description: |-
   Elasticsearch is an open-source search server, based on the
