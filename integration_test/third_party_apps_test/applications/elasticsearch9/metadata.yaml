@@ -14,7 +14,7 @@
 
 public_url: ""
 app_url: "http://elasticsearch.org/"
-short_name: Elasticsearch 8.0+ and 9.0+
+short_name: Elasticsearch
 long_name: Elasticsearch 8.0+ and 9.0+
 logo_path: /stackdriver/images/elasticsearch.png # supplied by google technical writer
 description: |-
@@ -23,9 +23,9 @@ description: |-
   machine on top of a number of operating systems. The `elasticsearch` receiver
   collects node- and cluster-level telemetry from your Elasticsearch instances.
 
-  Note: This page only refers to the support for Elasticsearch 8.0+ and 9.0+ versions. Please refer to
-  [Elasticsearch 7.9+](https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/third-party/elasticsearch)
-  for other versions documentation.
+  Note: This document refers only to the support for Elasticsearch 8.0+ and 9.0+ versions.
+  For information about earlier versions, see
+  [Elasticsearch 7.9+](/stackdriver/docs/solutions/agents/ops-agent/third-party/elasticsearch).
 configure_integration: |-
   If you enable [Elasticsearch security
   features](https://www.elastic.co/guide/en/elasticsearch/reference/9.0/secure-cluster.html),
