@@ -26,6 +26,7 @@ description: |-
   Note: This document refers only to the support for Elasticsearch 8.0+ and 9.0+ versions.
   For information about earlier versions, see
   [Elasticsearch 7.9+](/stackdriver/docs/solutions/agents/ops-agent/third-party/elasticsearch).
+  The most significant difference between the two documents is in the names of some of the log fields.
 configure_integration: |-
   If you enable [Elasticsearch security
   features](https://www.elastic.co/guide/en/elasticsearch/reference/9.0/secure-cluster.html),
