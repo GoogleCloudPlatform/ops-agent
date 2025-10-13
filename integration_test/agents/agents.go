@@ -895,7 +895,7 @@ func StartOpsAgentViaUAPCommand(imageSpec string, config string) string {
 		grpcurlExecutable = `C:\grpcurl.exe`
 	}
 	if len(config) > 0 {
-		return fmt.Sprintf("%s -plaintext -d '{%s}' localhost:1234 plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable, config)
+		return fmt.Sprintf("%s -plaintext -d \"{%s}\" localhost:1234 plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable, config)
 	}
 	return fmt.Sprintf("%s -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable)
 }
