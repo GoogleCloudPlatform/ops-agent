@@ -895,15 +895,10 @@ func StartOpsAgentViaUAPCommand(imageSpec string, config string) string {
 		grpcurlExecutable = `C:\grpcurl.exe`
 	}
 	if len(config) > 0 {
-		var dArg string
-		wrappedConfig := fmt.Sprintf("{%s}", config)
 		if gce.IsWindows(imageSpec) {
-			escapedConfig := strings.ReplaceAll(wrappedConfig, `"`, `\"`)
-			dArg = fmt.Sprintf("\"%s\"", escapedConfig)
-		} else {
-			dArg = fmt.Sprintf("'%s'", wrappedConfig)
+			return fmt.Sprintf("echo '{%s}' | %s -plaintext -d @ localhost:1234 plugin_comm.GuestAgentPlugin/Start", config, grpcurlExecutable)
 		}
-		return fmt.Sprintf("%s -plaintext -d %s localhost:1234 plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable, dArg)
+		return fmt.Sprintf("%s -plaintext -d '{%s}' localhost:1234 plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable, config)
 	}
 	return fmt.Sprintf("%s -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable)
 }
