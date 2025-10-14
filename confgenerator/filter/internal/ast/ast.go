@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"strings"
 
+	rubex "github.com/GoogleCloudPlatform/opentelemetry-operations-collector/third_party/go-oniguruma"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/generated/token"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
@@ -502,13 +503,11 @@ func (r Restriction) OTTLExpression() (ottl.Value, error) {
 	case "=~", "!~":
 		// regex match, case sensitive
 
-		if _, err := regexp.Compile(r.RHS); err != nil {
+		if _, err := rubex.Compile(r.RHS); err != nil {
 			return nil, fmt.Errorf("unsupported regex %q: %w", r.RHS, err)
 		}
 
 		expr = ottl.IsMatchRubyRegex(lhs, r.RHS)
-		// TODO: Support Ruby regex syntax
-
 		if r.Operator == "!~" {
 			expr = ottl.Not(expr)
 		}
