@@ -896,7 +896,7 @@ func StartOpsAgentViaUAPCommand(imageSpec string, config string) string {
 	}
 	if len(config) > 0 {
 		if gce.IsWindows(imageSpec) {
-			return fmt.Sprintf("echo '{%s}' | %s -plaintext -d @ localhost:1234 plugin_comm.GuestAgentPlugin/Start", config, grpcurlExecutable)
+			return fmt.Sprintf("echo '{%s}' | %s -plaintext -d \"@\" localhost:1234 plugin_comm.GuestAgentPlugin/Start", config, grpcurlExecutable)
 		}
 		return fmt.Sprintf("%s -plaintext -d '{%s}' localhost:1234 plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable, config)
 	}
