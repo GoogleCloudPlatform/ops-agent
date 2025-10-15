@@ -590,11 +590,12 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 			return nonRetryable, err
 		}
 	}
-	// if exporter == "otlphttp" {
-	if err := setExperimentalFeatures(ctx, logger.ToMainLog(), vm, "otlp_exporter"); err != nil {
-		return nonRetryable, fmt.Errorf("error setting EXPERIMENTAL_FEATURES: %v", err)
+	if exporter == "otlphttp" {
+		if err := setExperimentalFeatures(ctx, logger.ToMainLog(), vm, "otlp_exporter"); err != nil {
+			// t.Fatal(err)
+			return nonRetryable, fmt.Errorf("error setting EXPERIMENTAL_FEATURES: %v", err)
+		}
 	}
-	// }
 	if err := agents.InstallOpsAgent(ctx, logger.ToMainLog(), vm, agents.LocationFromEnvVars()); err != nil {
 		// InstallOpsAgent does its own retries.
 		return nonRetryable, fmt.Errorf("error installing agent: %v", err)
@@ -697,7 +698,6 @@ func getExpectedFeatures(app string) (*feature_tracking_metadata.FeatureTracking
 	if err != nil {
 		return nil, err
 	}
-
 
 	return &fc, nil
 }
@@ -948,7 +948,7 @@ func getAcceleratorCount(machineType string) string {
 	return matches[1]
 }
 
-func runForEachExporter(t *testing.T, testName string, exporterList []string, testBody func(t *testing.T, exporter string)) {
+func runForEachExporter(t *testing.T, exporterList []string, testBody func(t *testing.T, exporter string)) {
 	t.Helper()
 	for _, exporter := range exporterList {
 		t.Run(exporter, func(t *testing.T) {
@@ -1045,79 +1045,79 @@ func TestThirdPartyApps(t *testing.T) {
 		if tc.gpu != nil {
 			testName = testName + "/" + tc.gpu.fullName
 		}
-		// runForEachExporter(t, testName, []string{"otlphttp", "googlecloudmonitoring"}, func(t *testing.T, exporter string) {
-		// t.Parallel()
-		t.Run(testName, func(t *testing.T) {
+		runForEachExporter(t, []string{"otlphttp", "googlecloudmonitoring"}, func(t *testing.T, exporter string) {
 			t.Parallel()
+			t.Run(testName, func(t *testing.T) {
+				t.Parallel()
 
-			if tc.skipReason != "" {
-				t.Skip(tc.skipReason)
-			}
+				if tc.skipReason != "" {
+					t.Skip(tc.skipReason)
+				}
 
-			ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
-			defer cancel()
-			gcloudConfigDir := t.TempDir()
-			if err := gce.SetupGcloudConfigDir(ctx, gcloudConfigDir); err != nil {
-				t.Fatalf("Unable to set up a gcloud config directory: %v", err)
-			}
-			ctx = gce.WithGcloudConfigDir(ctx, gcloudConfigDir)
+				ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
+				defer cancel()
+				gcloudConfigDir := t.TempDir()
+				if err := gce.SetupGcloudConfigDir(ctx, gcloudConfigDir); err != nil {
+					t.Fatalf("Unable to set up a gcloud config directory: %v", err)
+				}
+				ctx = gce.WithGcloudConfigDir(ctx, gcloudConfigDir)
 
-			var err error
-			for attempt := 1; attempt <= 4; attempt++ {
-				logger := gce.SetupLogger(t)
-				logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
-				options := gce.VMOptions{
-					ImageSpec:            tc.imageSpec,
-					TimeToLive:           "3h",
-					MachineType:          agents.RecommendedMachineType(tc.imageSpec),
-					ExtraCreateArguments: nil,
-				}
-				if tc.gpu != nil {
-					options.ExtraCreateArguments = append(
-						options.ExtraCreateArguments,
-						fmt.Sprintf("--accelerator=count=%s,type=%s", getAcceleratorCount(tc.gpu.machineType), tc.gpu.fullName),
-						"--maintenance-policy=TERMINATE")
-					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-size=100GB")
-					options.MachineType = tc.gpu.machineType
-					options.Zone = tc.gpu.availableZone
-				}
-				if tc.imageSpec == SAPHANAImageSpec {
-					// This image needs an SSD in order to be performant enough.
-					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-type=pd-ssd")
-				}
-				if tc.app == OracleDBApp {
-					options.MachineType = "e2-highmem-8"
-					if gce.IsARM(tc.imageSpec) {
-						// T2A doesn't have a highmem line, so pick the standard machine that's specced at least
-						// as well as e2-highmem-8.
-						options.MachineType = "t2a-standard-16"
+				var err error
+				for attempt := 1; attempt <= 4; attempt++ {
+					logger := gce.SetupLogger(t)
+					logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
+					options := gce.VMOptions{
+						ImageSpec:            tc.imageSpec,
+						TimeToLive:           "3h",
+						MachineType:          agents.RecommendedMachineType(tc.imageSpec),
+						ExtraCreateArguments: nil,
 					}
-					options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-size=150GB", "--boot-disk-type=pd-ssd")
-				}
+					if tc.gpu != nil {
+						options.ExtraCreateArguments = append(
+							options.ExtraCreateArguments,
+							fmt.Sprintf("--accelerator=count=%s,type=%s", getAcceleratorCount(tc.gpu.machineType), tc.gpu.fullName),
+							"--maintenance-policy=TERMINATE")
+						options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-size=100GB")
+						options.MachineType = tc.gpu.machineType
+						options.Zone = tc.gpu.availableZone
+					}
+					if tc.imageSpec == SAPHANAImageSpec {
+						// This image needs an SSD in order to be performant enough.
+						options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-type=pd-ssd")
+					}
+					if tc.app == OracleDBApp {
+						options.MachineType = "e2-highmem-8"
+						if gce.IsARM(tc.imageSpec) {
+							// T2A doesn't have a highmem line, so pick the standard machine that's specced at least
+							// as well as e2-highmem-8.
+							options.MachineType = "t2a-standard-16"
+						}
+						options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-size=150GB", "--boot-disk-type=pd-ssd")
+					}
 
-				vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), options)
-				logger.ToMainLog().Printf("VM is ready: %#v", vm)
+					vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), options)
+					logger.ToMainLog().Printf("VM is ready: %#v", vm)
 
-				var retryable bool
-				retryable, err = runSingleTest(ctx, logger, vm, tc.app, tc.metadata, "otlphttp")
-				t.Logf("Attempt %v of %s test of %s finished with err=%v, retryable=%v", attempt, tc.imageSpec, tc.app, err, retryable)
-				if err == nil {
-					return
+					var retryable bool
+					retryable, err = runSingleTest(ctx, logger, vm, tc.app, tc.metadata, exporter)
+					t.Logf("Attempt %v of %s test of %s finished with err=%v, retryable=%v", attempt, tc.imageSpec, tc.app, err, retryable)
+					if err == nil {
+						return
+					}
+					agents.RunOpsAgentDiagnostics(ctx, logger, vm)
+					if !retryable {
+						t.Fatalf("Non-retryable error: %v", err)
+					}
+					// If we got here, we're going to retry runSingleTest(). The VM we spawned
+					// won't be deleted until the end of t.Run(), (SetupVM() registers it for cleanup
+					// at the end of t.Run()), so to avoid accumulating too many idle VMs while we
+					// do our retries, we preemptively delete the VM now.
+					if deleteErr := gce.DeleteInstance(logger.ToMainLog(), vm); deleteErr != nil {
+						t.Errorf("Deleting VM %v failed: %v", vm.Name, deleteErr)
+					}
 				}
-				agents.RunOpsAgentDiagnostics(ctx, logger, vm)
-				if !retryable {
-					t.Fatalf("Non-retryable error: %v", err)
-				}
-				// If we got here, we're going to retry runSingleTest(). The VM we spawned
-				// won't be deleted until the end of t.Run(), (SetupVM() registers it for cleanup
-				// at the end of t.Run()), so to avoid accumulating too many idle VMs while we
-				// do our retries, we preemptively delete the VM now.
-				if deleteErr := gce.DeleteInstance(logger.ToMainLog(), vm); deleteErr != nil {
-					t.Errorf("Deleting VM %v failed: %v", vm.Name, deleteErr)
-				}
-			}
-			t.Errorf("Final attempt failed: %v", err)
-			// })
+				t.Errorf("Final attempt failed: %v", err)
+			})
 		})
 	}
 }
