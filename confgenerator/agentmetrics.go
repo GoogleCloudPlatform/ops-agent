@@ -270,36 +270,34 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors() []otel.Component {
 			"fluentbit_log_entry_count", "fluentbit_log_entry_retry_count", "fluentbit_request_count",
 		),
 		otel.TransformationMetrics(
-			[]otel.TransformQuery{
-				// Set "start_time_unix_nano = 0" and "time = Now()" so "deltatocumulative" can sum all points
-				// without "out of order" or "older start" errors.
-				// TODO: b/445233472 - Update "deltatocumulative" processor with a new "strategy" for point aggreagation.
-				{
-					Context:   otel.Datapoint,
-					Statement: `set(time, Now())`,
-				},
-				{
-					Context:   otel.Datapoint,
-					Statement: `set(start_time_unix_nano, 0)`,
-				},
-				// Set unit = "1" to metrics who may not have it.
-				{
-					Context:   otel.Metric,
-					Statement: `set(unit, "1")`,
-				},
-				// Rename metrics for aggregation by "deltatocumulative".
-				otel.SetName("fluentbit_log_entry_count", "agent/log_entry_count"),
-				otel.SetName("fluentbit_log_entry_retry_count", "agent/log_entry_retry_count"),
-				otel.SetName("fluentbit_request_count", "agent/request_count"),
-				otel.SetName("otel_log_entry_count", "agent/log_entry_count"),
-				otel.SetName("otel_log_entry_retry_count", "agent/log_entry_retry_count"),
-				otel.SetName("otel_request_count", "agent/request_count"),
-			}...,
+			// Set "start_time_unix_nano = 0" and "time = Now()" so "deltatocumulative" can sum all points
+			// without "out of order" or "older start" errors.
+			// TODO: b/445233472 - Update "deltatocumulative" processor with a new "strategy" for point aggreagation.
+			otel.TransformQuery{
+				Context:   otel.Datapoint,
+				Statement: `set(time, Now())`,
+			},
+			otel.TransformQuery{
+				Context:   otel.Datapoint,
+				Statement: `set(start_time_unix_nano, 0)`,
+			},
+			// Set unit = "1" to metrics who may not have it.
+			otel.TransformQuery{
+				Context:   otel.Metric,
+				Statement: `set(unit, "1")`,
+			},
+			// Rename metrics for aggregation by "deltatocumulative".
+			otel.SetName("fluentbit_log_entry_count", "agent/log_entry_count"),
+			otel.SetName("fluentbit_log_entry_retry_count", "agent/log_entry_retry_count"),
+			otel.SetName("fluentbit_request_count", "agent/request_count"),
+			otel.SetName("otel_log_entry_count", "agent/log_entry_count"),
+			otel.SetName("otel_log_entry_retry_count", "agent/log_entry_retry_count"),
+			otel.SetName("otel_request_count", "agent/request_count"),
 		),
 		// DeltaToCumulative keeps in memory information of previous delta points
 		// to generate a valid cumulative monotonic metric.
 		otel.DeltaToCumulative(),
-		// The processor "interval" batches metrics into a 1 minute interval.
+		// The processor "interval" outputs the last point in each 1 minute interval.
 		otel.Interval("1m"),
 		otel.MetricsTransform(otel.AddPrefix("agent.googleapis.com")),
 	}
