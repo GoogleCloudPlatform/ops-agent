@@ -633,7 +633,6 @@ processors:
       statements:
       - set(name, "agent.googleapis.com/oracledb")
       - set(version, "1.0")
-<<<<<<< HEAD
   transform/oracledb_3:
     metric_statements:
     - context: resource
@@ -643,10 +642,7 @@ processors:
       - delete_key(attributes, "service.instance.id")
       - delete_key(attributes, "service.namespace")
       - delete_key(attributes, "service.version")
-  transform/otel_1:
-=======
   transform/otel_0:
->>>>>>> c1440b139 (Update goldens.)
     error_mode: ignore
     metric_statements:
     - context: metric

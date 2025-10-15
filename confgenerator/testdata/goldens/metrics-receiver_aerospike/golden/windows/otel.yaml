@@ -642,8 +642,6 @@ processors:
       statements:
       - set(name, "agent.googleapis.com/aerospike")
       - set(version, "1.0")
-<<<<<<< HEAD
-<<<<<<< HEAD
   transform/aerospike_3:
     metric_statements:
     - context: resource
@@ -653,11 +651,7 @@ processors:
       - delete_key(attributes, "service.instance.id")
       - delete_key(attributes, "service.namespace")
       - delete_key(attributes, "service.version")
-=======
-  transform/agent_prometheus_metrics_0:
-=======
   transform/agent_prometheus_0:
->>>>>>> 84f338530 (Add comments and update goldens.)
     metric_statements:
     - context: metric
       statements:
@@ -666,7 +660,6 @@ processors:
       - delete_key(resource.attributes, "service.instance.id")
       - delete_key(resource.attributes, "server.port")
       - delete_key(resource.attributes, "url.scheme")
->>>>>>> e0882b40e (Update goldens.)
   transform/iis_3:
     metric_statements:
     - context: scope
