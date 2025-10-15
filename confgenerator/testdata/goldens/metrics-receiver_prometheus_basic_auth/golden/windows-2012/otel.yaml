@@ -11,6 +11,12 @@ exporters:
     metric:
       add_metric_suffixes: false
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
+  otlphttp/otlp:
+    auth:
+      authenticator: googleclientauth
+    endpoint: https://telemetry.googleapis.com
+    headers:
+      User-Agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
@@ -700,7 +706,7 @@ service:
       - windowsperfcounters/mssql
     metrics/fluentbit:
       exporters:
-      - googlecloud
+      - otlphttp/otlp
       processors:
       - filter/fluentbit_0
       - metricstransform/fluentbit_1

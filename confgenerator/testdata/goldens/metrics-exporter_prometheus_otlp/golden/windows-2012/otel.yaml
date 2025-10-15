@@ -718,7 +718,7 @@ service:
       - windowsperfcounters/mssql
     metrics/fluentbit:
       exporters:
-      - googlecloud
+      - otlphttp/otlp
       processors:
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
@@ -735,7 +735,7 @@ service:
       - otlpjsonfile/ops_agent
     metrics/otel:
       exporters:
-      - googlecloud
+      - otlphttp/otlp
       processors:
       - filter/otel_0
       - transform/otel_1

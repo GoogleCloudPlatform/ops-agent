@@ -32,7 +32,11 @@ type AgentSelfMetrics struct {
 	Port    int
 }
 
-func (r AgentSelfMetrics) MetricsSubmodulePipeline() otel.ReceiverPipeline {
+func (r AgentSelfMetrics) MetricsSubmodulePipeline(expOtlpExporter bool) otel.ReceiverPipeline {
+	exporter := otel.System
+	if expOtlpExporter {
+		exporter = otel.OTLP
+	}
 	return otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "prometheus",
@@ -50,7 +54,7 @@ func (r AgentSelfMetrics) MetricsSubmodulePipeline() otel.ReceiverPipeline {
 			},
 		},
 		ExporterTypes: map[string]otel.ExporterType{
-			"metrics": otel.System,
+			"metrics": exporter,
 		},
 		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsFilter(
@@ -107,7 +111,11 @@ func (r AgentSelfMetrics) MetricsSubmodulePipeline() otel.ReceiverPipeline {
 	}
 }
 
-func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.ReceiverPipeline {
+func (r AgentSelfMetrics) LoggingSubmodulePipeline(expOtlpExporter bool) otel.ReceiverPipeline {
+	// exporter := otel.System
+	// if expOtlpExporter {
+	exporter := otel.OTLP
+	// }
 	return otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "prometheus",
@@ -126,7 +134,7 @@ func (r AgentSelfMetrics) LoggingSubmodulePipeline() otel.ReceiverPipeline {
 			},
 		},
 		ExporterTypes: map[string]otel.ExporterType{
-			"metrics": otel.System,
+			"metrics": exporter,
 		},
 		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsFilter(
