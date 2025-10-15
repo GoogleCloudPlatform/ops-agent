@@ -1,4 +1,4 @@
-# Copyright 2022 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,22 +14,27 @@
 
 public_url: ""
 app_url: "http://elasticsearch.org/"
-short_name: Elasticsearch 9.0
-long_name: Elasticsearch 9.0
+short_name: Elasticsearch
+long_name: Elasticsearch 8.0+ and 9.0+
 logo_path: /stackdriver/images/elasticsearch.png # supplied by google technical writer
 description: |-
   Elasticsearch is an open-source search server, based on the
   [Lucene](https://lucene.apache.org/) search library. It runs in a Java virtual
   machine on top of a number of operating systems. The `elasticsearch` receiver
   collects node- and cluster-level telemetry from your Elasticsearch instances.
+
+  Note: This document refers only to the support for Elasticsearch 8.0+ and 9.0+ versions.
+  For information about earlier versions, see
+  [Elasticsearch 7.9+](/stackdriver/docs/solutions/agents/ops-agent/third-party/elasticsearch).
+  The most significant difference between the two documents is in the names of some of the log fields.
 configure_integration: |-
   If you enable [Elasticsearch security
   features](https://www.elastic.co/guide/en/elasticsearch/reference/9.0/secure-cluster.html),
   you must configure a user with the `monitor` or `manage` [cluster
   privilege](https://www.elastic.co/guide/en/elasticsearch/reference/9.0/security-privileges.html#privileges-list-cluster).
 minimum_supported_agent_version:
-  metrics: 2.59.0
-  logging: 2.59.0
+  metrics: 2.60.0
+  logging: 2.60.0
 platforms_to_skip:
   # elasticsearch 9.x is not supported on SLES 12 https://www.elastic.co/support/matrix
   - suse-cloud:sles-12
