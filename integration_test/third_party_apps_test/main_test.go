@@ -592,7 +592,6 @@ func runSingleTest(ctx context.Context, logger *logging.DirectoryLogger, vm *gce
 	}
 	if exporter == "otlphttp" {
 		if err := setExperimentalFeatures(ctx, logger.ToMainLog(), vm, "otlp_exporter"); err != nil {
-			// t.Fatal(err)
 			return nonRetryable, fmt.Errorf("error setting EXPERIMENTAL_FEATURES: %v", err)
 		}
 	}
@@ -948,15 +947,6 @@ func getAcceleratorCount(machineType string) string {
 	return matches[1]
 }
 
-func runForEachExporter(t *testing.T, exporterList []string, testBody func(t *testing.T, exporter string)) {
-	t.Helper()
-	for _, exporter := range exporterList {
-		t.Run(exporter, func(t *testing.T) {
-			testBody(t, exporter)
-		})
-	}
-}
-
 // When in `-short` test mode, mark some tests for skipping, based on
 // test_config and impacted apps.
 //   - For all impacted apps, test on all images.
@@ -1040,13 +1030,12 @@ func TestThirdPartyApps(t *testing.T) {
 	// Execute tests
 	for _, tc := range tests {
 		tc := tc // https://golang.org/doc/faq#closures_and_goroutines
+		for _, exporter := range []string{"otlphttp", "googlecloudmonitoring"} {
+			testName := tc.imageSpec + "/" + exporter + "/" + tc.app
+			if tc.gpu != nil {
+				testName = testName + "/" + tc.gpu.fullName
+			}
 
-		testName := tc.imageSpec + "/" + tc.app
-		if tc.gpu != nil {
-			testName = testName + "/" + tc.gpu.fullName
-		}
-		runForEachExporter(t, []string{"otlphttp", "googlecloudmonitoring"}, func(t *testing.T, exporter string) {
-			t.Parallel()
 			t.Run(testName, func(t *testing.T) {
 				t.Parallel()
 
@@ -1118,6 +1107,6 @@ func TestThirdPartyApps(t *testing.T) {
 				}
 				t.Errorf("Final attempt failed: %v", err)
 			})
-		})
+		}
 	}
 }
