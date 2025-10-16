@@ -68,21 +68,20 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 		ps.mu.Unlock()
 		return &pb.StartResponse{}, nil
 	}
-	ps.mu.Unlock()
 
 	log.Printf("Received a Start request: %s. Starting the Ops Agent", msg)
 	pContext, cancel := context.WithCancel(context.Background())
+	ps.cancel = cancel
+	ps.mu.Unlock()
 
 	pluginInstallPath, err := os.Executable()
 	if err != nil {
-		ps.logAndSetPluginError(&OpsAgentPluginError{Message: fmt.Sprintf("Start() failed, because it cannot determine the plugin install location: %s", err), IsFatal: false})
-		cancel()
+		ps.cancelAndSetPluginError(&OpsAgentPluginError{Message: fmt.Sprintf("Start() failed, because it cannot determine the plugin install location: %s", err), ShouldRestart: false})
 		return &pb.StartResponse{}, nil
 	}
 	pluginInstallPath, err = filepath.EvalSymlinks(pluginInstallPath)
 	if err != nil {
-		ps.logAndSetPluginError(&OpsAgentPluginError{Message: fmt.Sprintf("Start() failed, because it cannot determine the plugin install location: %s", err), IsFatal: false})
-		cancel()
+		ps.cancelAndSetPluginError(&OpsAgentPluginError{Message: fmt.Sprintf("Start() failed, because it cannot determine the plugin install location: %s", err), ShouldRestart: false})
 		return &pb.StartResponse{}, nil
 	}
 
@@ -95,28 +94,25 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	// Find existing ops agent installation, and conflicting legacy agent installation.
 	foundConflictingInstallations, err := findPreExistentAgents(pContext, ps.runCommand, AgentSystemdServiceNames)
 	if foundConflictingInstallations || err != nil {
-		ps.logAndSetPluginError(&OpsAgentPluginError{Message: fmt.Sprintf("Start() failed, because it detected agent installations unmanaged by the VM Extension Manager: %s", err), IsFatal: false})
-		cancel()
+		ps.cancelAndSetPluginError(&OpsAgentPluginError{Message: fmt.Sprintf("Start() failed, because it detected agent installations unmanaged by the VM Extension Manager: %s", err), ShouldRestart: false})
 		return &pb.StartResponse{}, nil
 	}
 
 	// Receive config from the Start request and write it to the Ops Agent config file.
 	if err := writeCustomConfigToFile(msg, OpsAgentConfigLocationLinux); err != nil {
-		ps.logAndSetPluginError(&OpsAgentPluginError{Message: fmt.Sprintf("Start() failed to write the custom Ops Agent config to file: %s", err), IsFatal: false})
-		cancel()
+		ps.cancelAndSetPluginError(&OpsAgentPluginError{Message: fmt.Sprintf("Start() failed to write the custom Ops Agent config to file: %s", err), ShouldRestart: false})
 		return &pb.StartResponse{}, nil
 	}
 
 	// Ops Agent config validation
 	if err := validateOpsAgentConfig(pContext, pluginInstallDir, pluginStateDir, ps.runCommand); err != nil {
-		ps.logAndSetPluginError(&OpsAgentPluginError{Message: fmt.Sprintf("Start() failed to validate the Ops Agent config: %s", err), IsFatal: false})
-		cancel()
+		ps.cancelAndSetPluginError(&OpsAgentPluginError{Message: fmt.Sprintf("Start() failed to validate the Ops Agent config: %s", err), ShouldRestart: false})
+
 		return &pb.StartResponse{}, nil
 	}
 	// Subagent config generation
 	if err := generateSubagentConfigs(pContext, ps.runCommand, pluginInstallDir, pluginStateDir); err != nil {
-		ps.logAndSetPluginError(&OpsAgentPluginError{Message: fmt.Sprintf("Start() failed to generate subagent configs: %s", err), IsFatal: false})
-		cancel()
+		ps.cancelAndSetPluginError(&OpsAgentPluginError{Message: fmt.Sprintf("Start() failed to generate subagent configs: %s", err), ShouldRestart: false})
 		return &pb.StartResponse{}, nil
 	}
 
@@ -139,17 +135,8 @@ func (ps *OpsAgentPluginServer) cancelAndSetPluginError(e *OpsAgentPluginError) 
 	}
 	if e != nil {
 		ps.pluginError = e
+		log.Print(e.Message)
 	}
-}
-
-// logAndSetPluginError records the latest error that occurred during the current attempt to run the Ops Agent and logs the error message.
-func (ps *OpsAgentPluginServer) logAndSetPluginError(e *OpsAgentPluginError) {
-	ps.mu.Lock()
-	defer ps.mu.Unlock()
-	if e != nil {
-		ps.pluginError = e
-	}
-	log.Print(e.Message)
 }
 
 // Stop is the stop hook and implements any cleanup if required.
@@ -186,7 +173,7 @@ func (ps *OpsAgentPluginServer) GetStatus(ctx context.Context, msg *pb.GetStatus
 	}
 	if ps.pluginError != nil {
 		log.Printf("The Ops Agent plugin is not running, last error: %s", ps.pluginError.Message)
-		if ps.pluginError.IsFatal {
+		if ps.pluginError.ShouldRestart {
 			return nil, errors.New(ps.pluginError.Message)
 		}
 		return &pb.Status{Code: 1, Results: []string{fmt.Sprintf("The Ops Agent Plugin is not running: %s", ps.pluginError.Message)}}, nil
@@ -207,7 +194,7 @@ func (ps *OpsAgentPluginServer) GetStatus(ctx context.Context, msg *pb.GetStatus
 func runSubagents(ctx context.Context, cancelAndSetError CancelContextAndSetPluginErrorFunc, pluginInstallDirectory string, pluginStateDirectory string, runSubAgentCommand RunSubAgentCommandFunc, runCommand RunCommandFunc) {
 	// Register signal handler and implements its callback.
 	sigHandler(ctx, func(s os.Signal) {
-		cancelAndSetError(&OpsAgentPluginError{Message: fmt.Sprintf("Received signal: %s, stopping the Ops Agent", s.String()), IsFatal: true})
+		cancelAndSetError(&OpsAgentPluginError{Message: fmt.Sprintf("Received signal: %s, stopping the Ops Agent", s.String()), ShouldRestart: true})
 	})
 
 	var wg sync.WaitGroup
@@ -253,7 +240,7 @@ func runSubAgentCommand(ctx context.Context, cancelAndSetError CancelContextAndS
 	if err != nil {
 		fullErr := fmt.Sprintf("command: %s exited with errors, not restarting.\nCommand output: %s\n Command error:%s", cmd.Args, string(output), err)
 		log.Print(fullErr)
-		pluginErr = &OpsAgentPluginError{Message: fullErr, IsFatal: true}
+		pluginErr = &OpsAgentPluginError{Message: fullErr, ShouldRestart: true}
 	} else {
 		log.Printf("command: %s %s exited successfully.\nCommand output: %s", cmd.Path, cmd.Args, string(output))
 	}

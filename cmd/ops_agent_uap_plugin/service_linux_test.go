@@ -227,7 +227,7 @@ func TestStop(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			ps := &OpsAgentPluginServer{cancel: tc.cancel, pluginError: &OpsAgentPluginError{Message: "error", IsFatal: false}}
+			ps := &OpsAgentPluginServer{cancel: tc.cancel, pluginError: &OpsAgentPluginError{Message: "error", ShouldRestart: false}}
 			_, err := ps.Stop(context.Background(), &pb.StopRequest{})
 			if err != nil {
 				t.Errorf("got error from Stop(): %v, wanted nil", err)
@@ -254,12 +254,12 @@ func TestGetStatus(t *testing.T) {
 	}{
 		{
 			name:         "Plugin not running and has fatal error",
-			pluginServer: &OpsAgentPluginServer{cancel: nil, pluginError: &OpsAgentPluginError{Message: "error", IsFatal: true}},
+			pluginServer: &OpsAgentPluginServer{cancel: nil, pluginError: &OpsAgentPluginError{Message: "error", ShouldRestart: true}},
 			wantError:    true,
 		},
 		{
 			name:           "Plugin not running and has non-fatal error",
-			pluginServer:   &OpsAgentPluginServer{cancel: nil, pluginError: &OpsAgentPluginError{Message: "error", IsFatal: false}},
+			pluginServer:   &OpsAgentPluginServer{cancel: nil, pluginError: &OpsAgentPluginError{Message: "error", ShouldRestart: false}},
 			wantStatusCode: 1,
 		},
 		{
@@ -311,8 +311,8 @@ func Test_runSubAgentCommand_CancelContextAndSetPluginErrorWhenCmdExitsWithError
 	if pluginServer.pluginError == nil {
 		t.Error("runSubAgentCommand() did not set pluginError but should")
 	}
-	if !pluginServer.pluginError.IsFatal {
-		t.Error("runSubAgentCommand() set pluginError.IsFatal to false, want true")
+	if !pluginServer.pluginError.ShouldRestart {
+		t.Error("runSubAgentCommand() set pluginError.ShouldRestart to false, want true")
 	}
 }
 
@@ -361,8 +361,8 @@ func Test_runSubAgentCommand_CancelContextWhenCmdTerminatedBySignals(t *testing.
 	if pluginServer.pluginError == nil {
 		t.Errorf("runSubAgentCommand() did not set pluginError but should")
 	}
-	if !pluginServer.pluginError.IsFatal {
-		t.Error("runSubAgentCommand() set pluginError.IsFatal to false, want true")
+	if !pluginServer.pluginError.ShouldRestart {
+		t.Error("runSubAgentCommand() set pluginError.ShouldRestart to false, want true")
 	}
 }
 

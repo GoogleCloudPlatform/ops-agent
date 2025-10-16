@@ -49,8 +49,8 @@ type RunCommandFunc func(cmd *exec.Cmd) (string, error)
 // This abstraction is introduced primarily to facilitate testing by allowing the injection of mock implementations.
 type CancelContextAndSetPluginErrorFunc func(err *OpsAgentPluginError)
 type OpsAgentPluginError struct {
-	Message string
-	IsFatal bool
+	Message       string
+	ShouldRestart bool
 }
 
 // PluginServer implements the plugin RPC server interface.
