@@ -60,6 +60,10 @@ processors:
         - otelcol_process_memory_rss
         - grpc.client.attempt.duration_count
         - googlecloudmonitoring/point_count
+  metricstarttime/fluentbit_2:
+    strategy: subtract_initial_point
+  metricstarttime/otel_4:
+    strategy: subtract_initial_point
   metricstarttime/prometheus_2:
     strategy: subtract_initial_point
   metricstransform/fluentbit_1:
@@ -435,6 +439,16 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  resource/fluentbit_3:
+    attributes:
+    - action: insert
+      key: gcp.project_id
+      value: test-project
+  resource/otel_5:
+    attributes:
+    - action: insert
+      key: gcp.project_id
+      value: test-project
   resource/prometheus_3:
     attributes:
     - action: insert
@@ -443,6 +457,12 @@ processors:
   resourcedetection/_global_0:
     detectors:
     - gcp
+  transform/fluentbit_4:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
@@ -455,6 +475,12 @@ processors:
     - context: metric
       statements:
       - extract_count_metric(true) where name == "grpc.client.attempt.duration"
+  transform/otel_6:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
   transform/prometheus_0:
     metric_statements:
     - context: datapoint
@@ -587,6 +613,9 @@ service:
       processors:
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
+      - metricstarttime/fluentbit_2
+      - resource/fluentbit_3
+      - transform/fluentbit_4
       - resourcedetection/_global_0
       receivers:
       - prometheus/fluentbit
@@ -606,6 +635,9 @@ service:
       - transform/otel_1
       - filter/otel_2
       - metricstransform/otel_3
+      - metricstarttime/otel_4
+      - resource/otel_5
+      - transform/otel_6
       - resourcedetection/_global_0
       receivers:
       - prometheus/otel

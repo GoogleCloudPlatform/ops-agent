@@ -96,6 +96,11 @@ func (uc *UnifiedConfig) getOTelLogLevel() string {
 
 func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) (string, error) {
 	p := platform.FromContext(ctx)
+	resource, err := p.GetResource()
+	if err != nil {
+		log.Printf("can't get resource metadata: %v", err)
+		return "", nil
+	}
 	userAgent, _ := p.UserAgent("Google-Cloud-Ops-Agent-Metrics")
 	metricVersionLabel, _ := p.VersionLabel("google-cloud-ops-agent-metrics")
 	loggingVersionLabel, _ := p.VersionLabel("google-cloud-ops-agent-logging")
@@ -109,7 +114,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 	receiverPipelines["otel"] = AgentSelfMetrics{
 		Version: metricVersionLabel,
 		Port:    otel.MetricsPort,
-	}.MetricsSubmodulePipeline(expOtlpExporter)
+	}.MetricsSubmodulePipeline(resource.ProjectName(), expOtlpExporter)
 	pipelines["otel"] = otel.Pipeline{
 		Type:                 "metrics",
 		ReceiverPipelineName: "otel",
@@ -124,16 +129,16 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 	receiverPipelines["fluentbit"] = AgentSelfMetrics{
 		Version: loggingVersionLabel,
 		Port:    fluentbit.MetricsPort,
-	}.LoggingSubmodulePipeline(expOtlpExporter)
+	}.LoggingSubmodulePipeline(resource.ProjectName(), expOtlpExporter)
 	pipelines["fluentbit"] = otel.Pipeline{
 		Type:                 "metrics",
 		ReceiverPipelineName: "fluentbit",
 	}
 
 	extensions := map[string]interface{}{}
-	if expOtlpExporter {
-		extensions["googleclientauth"] = map[string]interface{}{}
-	}
+	// if expOtlpExporter {
+	extensions["googleclientauth"] = map[string]interface{}{}
+	// }
 
 	otelConfig, err := otel.ModularConfig{
 		LogLevel:          uc.getOTelLogLevel(),

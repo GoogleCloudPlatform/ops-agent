@@ -15,12 +15,8 @@ exporters:
       service_resource_labels: true
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
-  otlphttp/otlp:
-    auth:
-      authenticator: googleclientauth
-    endpoint: https://telemetry.googleapis.com
-    headers:
-      User-Agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
+extensions:
+  googleclientauth: {}
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
@@ -528,6 +524,8 @@ receivers:
       insecure: false
     username: usr
 service:
+  extensions:
+  - googleclientauth
   pipelines:
     metrics/default__pipeline_hostmetrics:
       exporters:
@@ -542,7 +540,7 @@ service:
       - hostmetrics/hostmetrics
     metrics/fluentbit:
       exporters:
-      - otlphttp/otlp
+      - googlecloud
       processors:
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
