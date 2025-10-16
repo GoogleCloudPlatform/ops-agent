@@ -227,7 +227,7 @@ func TestStop(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			ps := &OpsAgentPluginServer{cancel: tc.cancel}
+			ps := &OpsAgentPluginServer{cancel: tc.cancel, pluginError: &OpsAgentPluginError{Message: "error", IsFatal: false}}
 			_, err := ps.Stop(context.Background(), &pb.StopRequest{})
 			if err != nil {
 				t.Errorf("got error from Stop(): %v, wanted nil", err)
@@ -236,6 +236,9 @@ func TestStop(t *testing.T) {
 			if ps.cancel != nil {
 				t.Error("got non-nil cancel function after calling Stop(), want nil")
 			}
+			if ps.pluginError != nil {
+				t.Error("got non-nil pluginError after calling Stop(), want nil")
+			}
 		})
 	}
 }
@@ -243,18 +246,25 @@ func TestStop(t *testing.T) {
 func TestGetStatus(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
-		name           string
-		cancel         context.CancelFunc
+		name      string
+		wantError bool
+
+		pluginServer   *OpsAgentPluginServer
 		wantStatusCode int32
 	}{
 		{
-			name:           "PluginNotRunning",
-			cancel:         nil,
+			name:         "Plugin not running and has fatal error",
+			pluginServer: &OpsAgentPluginServer{cancel: nil, pluginError: &OpsAgentPluginError{Message: "error", IsFatal: true}},
+			wantError:    true,
+		},
+		{
+			name:           "Plugin not running and has non-fatal error",
+			pluginServer:   &OpsAgentPluginServer{cancel: nil, pluginError: &OpsAgentPluginError{Message: "error", IsFatal: false}},
 			wantStatusCode: 1,
 		},
 		{
 			name:           "PluginRunning",
-			cancel:         func() {}, // Non-nil function
+			pluginServer:   &OpsAgentPluginServer{cancel: func() {}, pluginError: nil},
 			wantStatusCode: 0,
 		},
 	}
@@ -263,46 +273,68 @@ func TestGetStatus(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			ps := &OpsAgentPluginServer{cancel: tc.cancel}
-			status, err := ps.GetStatus(context.Background(), &pb.GetStatusRequest{})
+			status, err := tc.pluginServer.GetStatus(context.Background(), &pb.GetStatusRequest{})
 			if err != nil {
-				t.Errorf("got error from GetStatus: %v, wanted nil", err)
+				if !tc.wantError {
+					t.Errorf("got unexpected error from GetStatus: %v, wanted nil error", err)
+				}
+				return
 			}
+
 			gotStatusCode := status.Code
 			if gotStatusCode != tc.wantStatusCode {
 				t.Errorf("Got status code %d from GetStatus(), wanted %d", gotStatusCode, tc.wantStatusCode)
 			}
-
 		})
 	}
 }
 
-func Test_runSubAgentCommand_CancelContextWhenCmdExitsWithErrors(t *testing.T) {
+func Test_runSubAgentCommand_CancelContextAndSetPluginErrorWhenCmdExitsWithErrors(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", "GO_HELPER_FAILURE=1"}
 	var wg sync.WaitGroup
 	wg.Add(1)
-	runSubAgentCommand(ctx, cancel, cmd, runCommand, &wg)
+
+	pluginServer := &OpsAgentPluginServer{}
+	pluginServer.cancel = cancel
+
+	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, runCommand, &wg)
 	if ctx.Err() == nil {
 		t.Error("runSubAgentCommand() did not cancel context but should")
+	}
+	if pluginServer.pluginError == nil {
+		t.Error("runSubAgentCommand() did not set pluginError but should")
+	}
+	if !pluginServer.pluginError.IsFatal {
+		t.Error("runSubAgentCommand() set pluginError.IsFatal to false, want true")
 	}
 }
 
 func Test_runSubAgentCommand_CancelContextWhenCmdExitsSuccessfully(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
+	pluginServer := &OpsAgentPluginServer{}
+	pluginServer.cancel = cancel
+
 	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
 	var wg sync.WaitGroup
 	wg.Add(1)
-	runSubAgentCommand(ctx, cancel, cmd, runCommand, &wg)
+
+	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, runCommand, &wg)
 	if ctx.Err() == nil {
 		t.Error("runSubAgentCommand() did not cancel context but should")
+	}
+	if pluginServer.pluginError != nil {
+		t.Errorf("runSubAgentCommand() set pluginError: %v, want nil", pluginServer.pluginError)
 	}
 }
 
 func Test_runSubAgentCommand_CancelContextWhenCmdTerminatedBySignals(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
+	pluginServer := &OpsAgentPluginServer{}
+	pluginServer.cancel = cancel
+
 	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", "GO_HELPER_KILL_BY_SIGNALS=1"}
 	var wg sync.WaitGroup
@@ -316,23 +348,31 @@ func Test_runSubAgentCommand_CancelContextWhenCmdTerminatedBySignals(t *testing.
 		err := cmd.Wait()
 		return "", err
 	}
-	runSubAgentCommand(ctx, cancel, cmd, mockRunCommandFunc, &wg)
+
+	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, mockRunCommandFunc, &wg)
 	if ctx.Err() == nil {
 		t.Error("runSubAgentCommand() didn't cancel the context but should")
+	}
+	if pluginServer.pluginError == nil {
+		t.Errorf("runSubAgentCommand() did not set pluginError but should")
+	}
+	if !pluginServer.pluginError.IsFatal {
+		t.Error("runSubAgentCommand() set pluginError.IsFatal to false, want true")
 	}
 }
 
 func Test_runSubagents_TerminatesWhenSpawnedGoRoutinesReturn(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
+	pluginServer := &OpsAgentPluginServer{}
+	pluginServer.cancel = cancel
+
 	mockCmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
 	mockCmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", "GO_HELPER_FAILURE=1"}
 
-	mockRestartCommandFunc := func(ctx context.Context, cancel context.CancelFunc, _ *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup) {
+	mockRunSubAgentCmd := func(ctx context.Context, cancel CancelContextAndSetPluginErrorFunc, _ *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup) {
 		runSubAgentCommand(ctx, cancel, mockCmd, runCommand, wg)
 	}
-	cancel() // child go routines return immediately, because the parent context has been cancelled.
-	// the test times out and fails if runSubagents does not returns
-	runSubagents(ctx, cancel, "", "", mockRestartCommandFunc, runCommand)
+	runSubagents(ctx, pluginServer.cancelAndSetPluginError, "", "", mockRunSubAgentCmd, runCommand)
 }
 
 // TestHelperProcess isn't a real test. It's used as a helper process to mock

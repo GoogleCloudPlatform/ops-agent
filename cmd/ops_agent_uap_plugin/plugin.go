@@ -92,8 +92,7 @@ func main() {
 	server := grpc.NewServer()
 	defer server.GracefulStop()
 
-	ps := &OpsAgentPluginServer{server: server, runCommand: runCommand,
-		pluginError: nil}
+	ps := &OpsAgentPluginServer{server: server, runCommand: runCommand}
 	// Successfully registering the server and starting to listen on the address
 	// offered mean Guest Agent was successful in installing/launching the plugin
 	// & will manage the lifecycle (start, stop, or revision change) here onwards.

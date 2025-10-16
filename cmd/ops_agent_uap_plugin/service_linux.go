@@ -68,6 +68,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 		ps.mu.Unlock()
 		return &pb.StartResponse{}, nil
 	}
+	ps.mu.Unlock()
 
 	log.Printf("Received a Start request: %s. Starting the Ops Agent", msg)
 	pContext, cancel := context.WithCancel(context.Background())
@@ -124,20 +125,21 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	ps.cancel = cancel
 
 	// the subagent startups
-	cancelAndSetError := func(e *OpsAgentPluginError) {
-		ps.mu.Lock()
-		defer ps.mu.Unlock()
-		if ps.cancel != nil {
-			cancel()
-			ps.cancel = nil
-			if e != nil {
-				ps.pluginError = e
-			}
-		}
-	}
+	cancelAndSetError := ps.cancelAndSetPluginError
 
 	go runSubagents(pContext, cancelAndSetError, pluginInstallDir, pluginStateDir, runSubAgentCommand, ps.runCommand)
 	return &pb.StartResponse{}, nil
+}
+func (ps *OpsAgentPluginServer) cancelAndSetPluginError(e *OpsAgentPluginError) {
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
+	if ps.cancel != nil {
+		ps.cancel()
+		ps.cancel = nil
+	}
+	if e != nil {
+		ps.pluginError = e
+	}
 }
 
 func (ps *OpsAgentPluginServer) logAndSetPluginError(errMsg string, isFatal bool) {
@@ -246,15 +248,15 @@ func runSubAgentCommand(ctx context.Context, cancelAndSetError CancelContextAndS
 	}
 
 	output, err := runCommand(cmd)
-
+	var pluginErr *OpsAgentPluginError
 	if err != nil {
-		errMsg := fmt.Sprintf("command: %s exited with errors, not restarting.\nCommand output: %s\n Command error:%s", cmd.Args, string(output), err)
-		log.Print(errMsg)
-		cancelAndSetError(&OpsAgentPluginError{Message: errMsg, IsFatal: true})
+		fullErr := fmt.Sprintf("command: %s exited with errors, not restarting.\nCommand output: %s\n Command error:%s", cmd.Args, string(output), err)
+		log.Print(fullErr)
+		pluginErr = &OpsAgentPluginError{Message: fullErr, IsFatal: true}
 	} else {
 		log.Printf("command: %s %s exited successfully.\nCommand output: %s", cmd.Path, cmd.Args, string(output))
-		cancelAndSetError(nil)
 	}
+	cancelAndSetError(pluginErr)
 	return
 }
 
