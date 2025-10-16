@@ -264,9 +264,9 @@ func MetricsRemoveServiceAttributes() Component {
 }
 
 func MetricsRemoveInstrumentationLibraryLabelsAttributes() Component {
-		return TransformationMetrics(
-			SetScopeName(""),
-			SetScopeVersion(""),
+	return TransformationMetrics(
+		SetScopeName(""),
+		SetScopeVersion(""),
 	)
 }
 

@@ -136,9 +136,9 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 	}
 
 	extensions := map[string]interface{}{}
-	// if expOtlpExporter {
-	extensions["googleclientauth"] = map[string]interface{}{}
-	// }
+	if expOtlpExporter {
+		extensions["googleclientauth"] = map[string]interface{}{}
+	}
 
 	otelConfig, err := otel.ModularConfig{
 		LogLevel:          uc.getOTelLogLevel(),

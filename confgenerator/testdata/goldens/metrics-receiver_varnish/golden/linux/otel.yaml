@@ -15,8 +15,6 @@ exporters:
       service_resource_labels: true
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
-extensions:
-  googleclientauth: {}
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
@@ -516,8 +514,6 @@ receivers:
     collection_interval: 60s
     exec_dir: ""
 service:
-  extensions:
-  - googleclientauth
   pipelines:
     metrics/default__pipeline_hostmetrics:
       exporters:
