@@ -263,6 +263,11 @@ func TestGetStatus(t *testing.T) {
 			wantStatusCode: 1,
 		},
 		{
+			name:           "Plugin not running and has no error",
+			wantStatusCode: 1,
+			pluginServer:   &OpsAgentPluginServer{},
+		},
+		{
 			name:           "PluginRunning",
 			pluginServer:   &OpsAgentPluginServer{cancel: func() {}, pluginError: nil},
 			wantStatusCode: 0,

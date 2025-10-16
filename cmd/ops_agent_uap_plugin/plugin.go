@@ -45,6 +45,8 @@ var (
 // implementations.
 type RunCommandFunc func(cmd *exec.Cmd) (string, error)
 
+// CancelContextAndSetPluginErrorFunc defines a function type that terminates the Ops Agent from running and records the latest error that occurred.
+// This abstraction is introduced primarily to facilitate testing by allowing the injection of mock implementations.
 type CancelContextAndSetPluginErrorFunc func(err *OpsAgentPluginError)
 type OpsAgentPluginError struct {
 	Message string
@@ -56,7 +58,7 @@ type OpsAgentPluginServer struct {
 	pb.UnimplementedGuestAgentPluginServer
 	server *grpc.Server
 
-	// mu protects the cancel field.
+	// mu protects the cancel and the pluginError field.
 	mu          sync.Mutex
 	cancel      context.CancelFunc
 	pluginError *OpsAgentPluginError

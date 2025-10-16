@@ -75,13 +75,13 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 
 	pluginInstallPath, err := os.Executable()
 	if err != nil {
-		ps.logAndSetPluginError(fmt.Sprintf("Start() failed, because it cannot determine the plugin install location: %s", err), false)
+		ps.logAndSetPluginError(&OpsAgentPluginError{Message: fmt.Sprintf("Start() failed, because it cannot determine the plugin install location: %s", err), IsFatal: false})
 		cancel()
 		return &pb.StartResponse{}, nil
 	}
 	pluginInstallPath, err = filepath.EvalSymlinks(pluginInstallPath)
 	if err != nil {
-		ps.logAndSetPluginError(fmt.Sprintf("Start() failed, because it cannot determine the plugin install location: %s", err), false)
+		ps.logAndSetPluginError(&OpsAgentPluginError{Message: fmt.Sprintf("Start() failed, because it cannot determine the plugin install location: %s", err), IsFatal: false})
 		cancel()
 		return &pb.StartResponse{}, nil
 	}
@@ -95,27 +95,27 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	// Find existing ops agent installation, and conflicting legacy agent installation.
 	foundConflictingInstallations, err := findPreExistentAgents(pContext, ps.runCommand, AgentSystemdServiceNames)
 	if foundConflictingInstallations || err != nil {
-		ps.logAndSetPluginError(fmt.Sprintf("Start() failed, because it detected agent installations unmanaged by the VM Extension Manager: %s", err), false)
+		ps.logAndSetPluginError(&OpsAgentPluginError{Message: fmt.Sprintf("Start() failed, because it detected agent installations unmanaged by the VM Extension Manager: %s", err), IsFatal: false})
 		cancel()
 		return &pb.StartResponse{}, nil
 	}
 
 	// Receive config from the Start request and write it to the Ops Agent config file.
 	if err := writeCustomConfigToFile(msg, OpsAgentConfigLocationLinux); err != nil {
-		ps.logAndSetPluginError(fmt.Sprintf("Start() failed to write the custom Ops Agent config to file: %s", err), false)
+		ps.logAndSetPluginError(&OpsAgentPluginError{Message: fmt.Sprintf("Start() failed to write the custom Ops Agent config to file: %s", err), IsFatal: false})
 		cancel()
 		return &pb.StartResponse{}, nil
 	}
 
 	// Ops Agent config validation
 	if err := validateOpsAgentConfig(pContext, pluginInstallDir, pluginStateDir, ps.runCommand); err != nil {
-		ps.logAndSetPluginError(fmt.Sprintf("Start() failed to validate the Ops Agent config: %s", err), false)
+		ps.logAndSetPluginError(&OpsAgentPluginError{Message: fmt.Sprintf("Start() failed to validate the Ops Agent config: %s", err), IsFatal: false})
 		cancel()
 		return &pb.StartResponse{}, nil
 	}
 	// Subagent config generation
 	if err := generateSubagentConfigs(pContext, ps.runCommand, pluginInstallDir, pluginStateDir); err != nil {
-		ps.logAndSetPluginError(fmt.Sprintf("Start() failed to generate subagent configs: %s", err), false)
+		ps.logAndSetPluginError(&OpsAgentPluginError{Message: fmt.Sprintf("Start() failed to generate subagent configs: %s", err), IsFatal: false})
 		cancel()
 		return &pb.StartResponse{}, nil
 	}
@@ -128,6 +128,8 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	go runSubagents(pContext, ps.cancelAndSetPluginError, pluginInstallDir, pluginStateDir, runSubAgentCommand, ps.runCommand)
 	return &pb.StartResponse{}, nil
 }
+
+// cancelAndSetPluginError terminates the current attempt of running the Ops Agent and records the latest error that occurred.
 func (ps *OpsAgentPluginServer) cancelAndSetPluginError(e *OpsAgentPluginError) {
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
@@ -140,15 +142,14 @@ func (ps *OpsAgentPluginServer) cancelAndSetPluginError(e *OpsAgentPluginError) 
 	}
 }
 
-func (ps *OpsAgentPluginServer) logAndSetPluginError(errMsg string, isFatal bool) {
+// logAndSetPluginError records the latest error that occurred during the current attempt to run the Ops Agent and logs the error message.
+func (ps *OpsAgentPluginServer) logAndSetPluginError(e *OpsAgentPluginError) {
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
-
-	ps.pluginError = &OpsAgentPluginError{
-		Message: errMsg,
-		IsFatal: isFatal,
+	if e != nil {
+		ps.pluginError = e
 	}
-	log.Print(errMsg)
+	log.Print(e.Message)
 }
 
 // Stop is the stop hook and implements any cleanup if required.
@@ -178,16 +179,19 @@ func (ps *OpsAgentPluginServer) GetStatus(ctx context.Context, msg *pb.GetStatus
 	log.Println("Received a GetStatus request")
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
-	if ps.cancel == nil {
-		if ps.pluginError != nil {
-			if ps.pluginError.IsFatal {
-				return nil, errors.New(ps.pluginError.Message)
-			}
-			return &pb.Status{Code: 1, Results: []string{fmt.Sprintf("The Ops Agent Plugin is not running: %s", ps.pluginError.Message)}}, nil
-		}
+	if ps.cancel != nil {
+		log.Println("The Ops Agent plugin is running")
+		return &pb.Status{Code: 0, Results: []string{"The Ops Agent Plugin is running ok."}}, nil
+
 	}
-	log.Println("The Ops Agent plugin is running")
-	return &pb.Status{Code: 0, Results: []string{"The Ops Agent Plugin is running ok."}}, nil
+	if ps.pluginError != nil {
+		log.Printf("The Ops Agent plugin is not running, last error: %s", ps.pluginError.Message)
+		if ps.pluginError.IsFatal {
+			return nil, errors.New(ps.pluginError.Message)
+		}
+		return &pb.Status{Code: 1, Results: []string{fmt.Sprintf("The Ops Agent Plugin is not running: %s", ps.pluginError.Message)}}, nil
+	}
+	return &pb.Status{Code: 1, Results: []string{"The Ops Agent Plugin is not running."}}, nil
 }
 
 // runSubagents starts up otel and fluent bit subagents in separate goroutines.
@@ -199,8 +203,7 @@ func (ps *OpsAgentPluginServer) GetStatus(ctx context.Context, msg *pb.GetStatus
 //
 // ctx: the parent context that all child goroutines share.
 //
-// cancel: the cancel function for the parent context. By calling this function, the parent context is canceled,
-// and GetStatus() returns a non-healthy status, signaling UAP to re-trigger Start().
+// cancelAndSetError: should be called by subagents from within go routines. It cancels the parent context, and collects the runtime errors from subagents and record them. The recorded errors are surfaced to users via GetStatus().
 func runSubagents(ctx context.Context, cancelAndSetError CancelContextAndSetPluginErrorFunc, pluginInstallDirectory string, pluginStateDirectory string, runSubAgentCommand RunSubAgentCommandFunc, runCommand RunCommandFunc) {
 	// Register signal handler and implements its callback.
 	sigHandler(ctx, func(s os.Signal) {
@@ -255,7 +258,6 @@ func runSubAgentCommand(ctx context.Context, cancelAndSetError CancelContextAndS
 		log.Printf("command: %s %s exited successfully.\nCommand output: %s", cmd.Path, cmd.Args, string(output))
 	}
 	cancelAndSetError(pluginErr)
-	return
 }
 
 // sigHandler handles SIGTERM, SIGINT etc signals. The function provided in the
