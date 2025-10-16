@@ -1,11 +1,11 @@
 # escape=`
 
-ARG WINDOWS_VERSION=ltsc2025
+ARG WINDOWS_VERSION=ltsc2022
 
 #
 # Builder Image - Windows Server Core
 #
-FROM mcr.microsoft.com/windows/servercore:$WINDOWS_VERSION as base
+FROM mcr.microsoft.com/windows/nanoserver:$WINDOWS_VERSION as base
 
 #
 # Basic setup
