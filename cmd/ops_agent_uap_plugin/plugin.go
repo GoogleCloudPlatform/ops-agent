@@ -44,6 +44,7 @@ var (
 // primarily to facilitate testing by allowing the injection of mock
 // implementations.
 type RunCommandFunc func(cmd *exec.Cmd) (string, error)
+
 type CancelContextAndSetPluginErrorFunc func(err *OpsAgentPluginError)
 type OpsAgentPluginError struct {
 	Message string

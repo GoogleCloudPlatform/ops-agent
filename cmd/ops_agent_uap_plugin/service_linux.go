@@ -125,9 +125,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	ps.cancel = cancel
 
 	// the subagent startups
-	cancelAndSetError := ps.cancelAndSetPluginError
-
-	go runSubagents(pContext, cancelAndSetError, pluginInstallDir, pluginStateDir, runSubAgentCommand, ps.runCommand)
+	go runSubagents(pContext, ps.cancelAndSetPluginError, pluginInstallDir, pluginStateDir, runSubAgentCommand, ps.runCommand)
 	return &pb.StartResponse{}, nil
 }
 func (ps *OpsAgentPluginServer) cancelAndSetPluginError(e *OpsAgentPluginError) {
