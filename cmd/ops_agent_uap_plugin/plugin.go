@@ -44,6 +44,11 @@ var (
 // primarily to facilitate testing by allowing the injection of mock
 // implementations.
 type RunCommandFunc func(cmd *exec.Cmd) (string, error)
+type CancelContextAndSetPluginErrorFunc func(err *OpsAgentPluginError)
+type OpsAgentPluginError struct {
+	Message string
+	IsFatal bool
+}
 
 // PluginServer implements the plugin RPC server interface.
 type OpsAgentPluginServer struct {
@@ -51,8 +56,9 @@ type OpsAgentPluginServer struct {
 	server *grpc.Server
 
 	// mu protects the cancel field.
-	mu     sync.Mutex
-	cancel context.CancelFunc
+	mu          sync.Mutex
+	cancel      context.CancelFunc
+	pluginError *OpsAgentPluginError
 
 	runCommand RunCommandFunc
 }
@@ -86,7 +92,8 @@ func main() {
 	server := grpc.NewServer()
 	defer server.GracefulStop()
 
-	ps := &OpsAgentPluginServer{server: server, runCommand: runCommand}
+	ps := &OpsAgentPluginServer{server: server, runCommand: runCommand,
+		pluginError: nil}
 	// Successfully registering the server and starting to listen on the address
 	// offered mean Guest Agent was successful in installing/launching the plugin
 	// & will manage the lifecycle (start, stop, or revision change) here onwards.
