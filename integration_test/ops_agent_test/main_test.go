@@ -1194,7 +1194,7 @@ func TestInvalidStringConfigReceivedFromUAP(t *testing.T) {
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
 		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
-			t.Fatal("Expected agent to reject bad config.")
+			t.Fatal(err)
 		}
 		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StopCommandForImage(imageSpec)); err != nil {
 			t.Fatalf("Failed to stop the Ops Agent: %v", err)
@@ -1204,9 +1204,16 @@ func TestInvalidStringConfigReceivedFromUAP(t *testing.T) {
 		// https://github.com/GoogleCloudPlatform/ops-agent/blob/master/confgenerator/testdata/invalid/linux/logging-receiver_reserved_id_prefix/input.yaml
 		config := `invalid_config`
 		singleLineYaml := stringifyYaml(config)
-		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartOpsAgentViaUAPCommand(imageSpec, fmt.Sprintf("\"string_config\":\"%s\"", singleLineYaml))); err == nil {
-			// We expect this to fail because the config is invalid.
-			t.Fatal("Expected starting the Ops Agent with invalid config to fail.")
+		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartOpsAgentViaUAPCommand(imageSpec, fmt.Sprintf("\"string_config\":\"%s\"", singleLineYaml))); err != nil {
+			t.Fatal(err)
+		}
+		cmdOut, err := gce.RunRemotely(ctx, logger, vm, agents.GetUAPPluginStatusForImage(vm.ImageSpec))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if !strings.Contains(cmdOut.Stdout, "The Ops Agent Plugin is not running.") {
+			t.Error("the UAP plugin should not have started the Ops Agent with an invalid config")
 		}
 	})
 }

@@ -24,6 +24,7 @@ $global:ProgressPreference = 'SilentlyContinue'
 #   Example: Invoke-Program git submodule update --init
 function Invoke-Program() {
   $outpluserr = cmd /c $Args 2`>`&1
+  $outpluserr = $outpluserr -join [Environment]::NewLine
   if ( $LastExitCode -ne 0 ) {
     throw "failed: $Args, output: $outpluserr"
   }
