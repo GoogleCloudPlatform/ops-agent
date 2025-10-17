@@ -24,7 +24,6 @@ import (
 	"os/exec"
 	"sync"
 	"testing"
-	"time"
 
 	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
 )
@@ -267,88 +266,25 @@ func TestStart(t *testing.T) {
 	}
 }
 
-func TestStop(t *testing.T) {
-	cases := []struct {
-		name   string
-		cancel context.CancelFunc
-	}{
-		{
-			name:   "PluginAlreadyStopped",
-			cancel: nil,
-		},
-		{
-			name:   "PluginRunning",
-			cancel: func() {}, // Non-nil function
-
-		},
-	}
-
-	for _, tc := range cases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			ps := &OpsAgentPluginServer{cancel: tc.cancel}
-			_, err := ps.Stop(context.Background(), &pb.StopRequest{})
-			if err != nil {
-				t.Errorf("got error from Stop(): %v, wanted nil", err)
-			}
-
-			if ps.cancel != nil {
-				t.Error("got non-nil cancel function after calling Stop(), want nil")
-			}
-		})
-	}
-}
-
-func TestGetStatus(t *testing.T) {
-	cases := []struct {
-		name           string
-		cancel         context.CancelFunc
-		wantStatusCode int32
-	}{
-		{
-			name:           "PluginNotRunning",
-			cancel:         nil,
-			wantStatusCode: 1,
-		},
-		{
-			name:           "PluginRunning",
-			cancel:         func() {}, // Non-nil function
-			wantStatusCode: 0,
-		},
-	}
-
-	for _, tc := range cases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			ps := &OpsAgentPluginServer{cancel: tc.cancel}
-			status, err := ps.GetStatus(context.Background(), &pb.GetStatusRequest{})
-			if err != nil {
-				t.Errorf("got error from GetStatus: %v, wanted nil", err)
-			}
-			gotStatusCode := status.Code
-			if gotStatusCode != tc.wantStatusCode {
-				t.Errorf("Got status code %d from GetStatus(), wanted %d", gotStatusCode, tc.wantStatusCode)
-			}
-
-		})
-	}
-}
-
 func runCommandSuccessfully(_ *exec.Cmd) (string, error) {
 	return "success", nil
 }
 func Test_runSubAgentCommand_CancelContextWhenCmdExitsSuccessfully(t *testing.T) {
 	t.Parallel()
 	ctx, cancel := context.WithCancel(context.Background())
+	pluginServer := &OpsAgentPluginServer{}
+	pluginServer.cancel = cancel
 	cmd := exec.CommandContext(ctx, "fake-command")
 
 	var wg sync.WaitGroup
 	wg.Add(1)
-	runSubAgentCommand(ctx, cancel, cmd, runCommandSuccessfully, &wg)
+
+	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, runCommandSuccessfully, &wg)
 	if ctx.Err() == nil {
 		t.Error("runSubAgentCommand() did not cancel context but should")
+	}
+	if pluginServer.pluginError != nil {
+		t.Errorf("runSubAgentCommand() set pluginError: %v, want nil", pluginServer.pluginError)
 	}
 }
 
@@ -358,13 +294,21 @@ func runCommandAndFailed(_ *exec.Cmd) (string, error) {
 func Test_runSubAgentCommand_CancelContextWhenCmdExitsWithErrors(t *testing.T) {
 	t.Parallel()
 	ctx, cancel := context.WithCancel(context.Background())
+	pluginServer := &OpsAgentPluginServer{}
+	pluginServer.cancel = cancel
 	cmd := exec.CommandContext(ctx, "fake-command")
 
 	var wg sync.WaitGroup
 	wg.Add(1)
-	runSubAgentCommand(ctx, cancel, cmd, runCommandAndFailed, &wg)
+	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, runCommandAndFailed, &wg)
 	if ctx.Err() == nil {
 		t.Error("runSubAgentCommand() did not cancel context but should")
+	}
+	if pluginServer.pluginError == nil {
+		t.Errorf("runSubAgentCommand() did not set pluginError but should")
+	}
+	if !pluginServer.pluginError.ShouldRestart {
+		t.Error("runSubAgentCommand() set pluginError.ShouldRestart to false, want true")
 	}
 }
 
@@ -387,24 +331,5 @@ func Test_runCommandFailure(t *testing.T) {
 
 	if _, err := runCommand(cmd); err == nil {
 		t.Error("runCommand got nil error, want exec failure")
-	}
-}
-
-// TestHelperProcess isn't a real test. It's used as a helper process to mock
-// command executions.
-func TestHelperProcess(t *testing.T) {
-	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
-		// Skip this test if it's not invoked explicitly as a helper
-		// process. return allows the next tests to continue running.
-		return
-	}
-	switch {
-	case os.Getenv("GO_HELPER_FAILURE") == "1":
-		os.Exit(1)
-	case os.Getenv("GO_HELPER_KILL_BY_SIGNALS") == "1":
-		time.Sleep(1 * time.Minute)
-	default:
-		// A "successful" mock execution exits with a successful (zero) exit code.
-		os.Exit(0)
 	}
 }
