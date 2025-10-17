@@ -1,11 +1,11 @@
 # escape=`
 
-ARG WINDOWS_VERSION=ltsc2022
+ARG WINDOWS_VERSION=lts-nanoserver-ltsc2022
 
 #
 # Builder Image - Windows Server Core
 #
-FROM mcr.microsoft.com/windows/servercore:$WINDOWS_VERSION as base
+FROM mcr.microsoft.com/powershell:$WINDOWS_VERSION as base
 
 #
 # Basic setup
@@ -14,7 +14,7 @@ ENV PATH="${PATH};C:\Go\bin;C:\Java\bin"
 
 ENV JAVA_HOME="C:\Java"
 
-SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
+SHELL ["powershell.exe", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
 
 RUN Write-Host ('Creating folders'); `
     New-Item -Type Directory -Path /local; `
@@ -280,7 +280,7 @@ RUN call "%MSVS_HOME%\VC\Auxiliary\Build\vcvars64.bat" && `
     -DFLB_FILTER_WASM=Off ..\ && `
     cmake --build . --config Release
 
-SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
+SHELL ["powershell.exe", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
 
 RUN Copy-Item -Path bin/fluent-bit.exe -Destination /work/out/bin/; `
     Copy-Item -Path bin/fluent-bit.dll -Destination /work/out/bin/; `
