@@ -116,7 +116,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	if err := writeCustomConfigToFile(msg, OpsAgentConfigLocationWindows); err != nil {
 		windowsEventLogger.Close()
 		ps.cancelAndSetPluginError(&OpsAgentPluginError{
-			Message:       fmt.Sprintf("Start() failed, because it failed to write the custom Ops Agent config to file: %s", err),
+			Message:       fmt.Sprintf("Start() failed to write the custom Ops Agent config to file: %s", err),
 			ShouldRestart: false,
 		})
 		return &pb.StartResponse{}, nil
@@ -126,7 +126,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	if err := generateSubAgentConfigs(ctx, OpsAgentConfigLocationWindows, pluginStateDir, windowsEventLogger); err != nil {
 		windowsEventLogger.Close()
 		ps.cancelAndSetPluginError(&OpsAgentPluginError{
-			Message:       fmt.Sprintf("Start() failed to validate custom ops agent config, and generate sub-agents config: %s", err),
+			Message:       fmt.Sprintf("Start() failed to validate the custom ops agent config, and generate sub-agents config: %s", err),
 			ShouldRestart: false,
 		})
 		return &pb.StartResponse{}, nil
