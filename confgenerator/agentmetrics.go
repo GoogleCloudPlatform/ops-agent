@@ -187,7 +187,7 @@ func (r AgentSelfMetrics) LoggingSubmodulePipeline(projectName string, expOtlpEx
 func OpsAgentSelfMetricsPipeline(ctx context.Context, outDir string, projectName string, expOtlpExporter bool) otel.ReceiverPipeline {
 	exporter := otel.System
 	processors := map[string][]otel.Component{"metrics": {
-		otel.MetricStartTime(),
+		otel.Transform("metric", "datapoint", []ottl.Statement{"set(time, Now())"}),
 	}}
 	if expOtlpExporter {
 		exporter = otel.OTLP

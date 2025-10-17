@@ -510,6 +510,11 @@ processors:
     - action: insert
       key: gcp.project_id
       value: test-project
+  resource/ops_agent_1:
+    attributes:
+    - action: insert
+      key: gcp.project_id
+      value: test-project
   resource/otel_5:
     attributes:
     - action: insert
@@ -547,6 +552,12 @@ processors:
     - context: datapoint
       statements:
       - set(time, Now())
+  transform/ops_agent_2:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
   transform/otel_1:
     error_mode: ignore
     metric_statements:
@@ -756,9 +767,11 @@ service:
       - prometheus/fluentbit
     metrics/ops_agent:
       exporters:
-      - googlecloud
+      - otlphttp/otlp
       processors:
       - transform/ops_agent_0
+      - resource/ops_agent_1
+      - transform/ops_agent_2
       - resourcedetection/_global_0
       receivers:
       - otlpjsonfile/ops_agent
