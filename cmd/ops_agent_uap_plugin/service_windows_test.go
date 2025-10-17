@@ -237,7 +237,6 @@ func TestStart(t *testing.T) {
 		name               string
 		cancel             context.CancelFunc
 		mockRunCommandFunc RunCommandFunc
-		wantError          bool
 	}{
 		{
 			name:   "Happy path: plugin not already started, Start() exits successfully",
@@ -260,10 +259,9 @@ func TestStart(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			ps := &OpsAgentPluginServer{cancel: tc.cancel, runCommand: tc.mockRunCommandFunc}
-			_, err := ps.Start(context.Background(), &pb.StartRequest{})
-			gotError := (err != nil)
-			if gotError != tc.wantError {
-				t.Errorf("%v: Start() got error: %v, err msg: %v, want error:%v", tc.name, gotError, err, tc.wantError)
+			ps.Start(context.Background(), &pb.StartRequest{})
+			if ps.cancel == nil {
+				t.Errorf("%v: Start() got nil cancel function, want non-nil", tc.name)
 			}
 		})
 	}
