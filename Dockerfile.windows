@@ -10,9 +10,9 @@ FROM mcr.microsoft.com/powershell:$WINDOWS_VERSION as base
 #
 # Basic setup
 #
-RUN setx /M PATH "%PATH%;C:\Go\bin;C:\Java\bin"
+ENV PATH="${PATH};C:\Go\bin;C:\Java\bin"
 
-RUN setx /M JAVA_HOME "C:\Java"
+ENV JAVA_HOME="C:\Java"
 
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
 
