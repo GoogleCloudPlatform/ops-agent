@@ -85,12 +85,12 @@ func TestGetStatus(t *testing.T) {
 		wantStatusCode int32
 	}{
 		{
-			name:         "Plugin not running and has fatal error",
+			name:         "Plugin not running and has error that requires restart",
 			pluginServer: &OpsAgentPluginServer{cancel: nil, pluginError: &OpsAgentPluginError{Message: "error", ShouldRestart: true}},
 			wantRPCError: true,
 		},
 		{
-			name:           "Plugin not running and has non-fatal error",
+			name:           "Plugin not running and has error that does not require restart",
 			pluginServer:   &OpsAgentPluginServer{cancel: nil, pluginError: &OpsAgentPluginError{Message: "error", ShouldRestart: false}},
 			wantStatusCode: 1,
 		},
@@ -102,6 +102,11 @@ func TestGetStatus(t *testing.T) {
 		{
 			name:           "Plugin running",
 			pluginServer:   &OpsAgentPluginServer{cancel: func() {}, pluginError: nil},
+			wantStatusCode: 0,
+		},
+		{
+			name:           "Plugin running and has error that does not require restart",
+			pluginServer:   &OpsAgentPluginServer{cancel: func() {}, pluginError: &OpsAgentPluginError{Message: "error", ShouldRestart: false}},
 			wantStatusCode: 0,
 		},
 	}

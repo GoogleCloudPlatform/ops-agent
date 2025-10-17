@@ -103,9 +103,12 @@ func (ps *OpsAgentPluginServer) GetStatus(ctx context.Context, msg *pb.GetStatus
 	defer ps.mu.Unlock()
 	if ps.cancel != nil {
 		log.Println("The Ops Agent plugin is running")
+		if ps.pluginError != nil {
+			return &pb.Status{Code: 0, Results: []string{"The Ops Agent Plugin is running ok, but has error: %s", ps.pluginError.Message}}, nil
+		}
 		return &pb.Status{Code: 0, Results: []string{"The Ops Agent Plugin is running ok."}}, nil
-
 	}
+
 	if ps.pluginError != nil {
 		log.Printf("The Ops Agent plugin is not running, last error: %s", ps.pluginError.Message)
 		if ps.pluginError.ShouldRestart {
