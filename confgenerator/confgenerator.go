@@ -96,9 +96,15 @@ func (uc *UnifiedConfig) getOTelLogLevel() string {
 
 func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) (string, error) {
 	p := platform.FromContext(ctx)
+	resource, err := p.GetResource()
+	if err != nil {
+		log.Printf("can't get resource metadata: %v", err)
+		return "", nil
+	}
 	userAgent, _ := p.UserAgent("Google-Cloud-Ops-Agent-Metrics")
 	metricVersionLabel, _ := p.VersionLabel("google-cloud-ops-agent-metrics")
 	loggingVersionLabel, _ := p.VersionLabel("google-cloud-ops-agent-logging")
+	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
 
 	receiverPipelines, pipelines, err := uc.generateOtelPipelines(ctx)
 	if err != nil {
@@ -108,13 +114,13 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 	receiverPipelines["otel"] = AgentSelfMetrics{
 		Version: metricVersionLabel,
 		Port:    otel.MetricsPort,
-	}.MetricsSubmodulePipeline()
+	}.MetricsSubmodulePipeline(resource.ProjectName(), expOtlpExporter)
 	pipelines["otel"] = otel.Pipeline{
 		Type:                 "metrics",
 		ReceiverPipelineName: "otel",
 	}
 
-	receiverPipelines["ops_agent"] = OpsAgentSelfMetricsPipeline(ctx, outDir)
+	receiverPipelines["ops_agent"] = OpsAgentSelfMetricsPipeline(ctx, outDir, resource.ProjectName(), expOtlpExporter)
 	pipelines["ops_agent"] = otel.Pipeline{
 		Type:                 "metrics",
 		ReceiverPipelineName: "ops_agent",
@@ -123,15 +129,14 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 	receiverPipelines["fluentbit"] = AgentSelfMetrics{
 		Version: loggingVersionLabel,
 		Port:    fluentbit.MetricsPort,
-	}.LoggingSubmodulePipeline()
+	}.LoggingSubmodulePipeline(resource.ProjectName(), expOtlpExporter)
 	pipelines["fluentbit"] = otel.Pipeline{
 		Type:                 "metrics",
 		ReceiverPipelineName: "fluentbit",
 	}
 
-	exp_otlp_exporter := experimentsFromContext(ctx)["otlp_exporter"]
 	extensions := map[string]interface{}{}
-	if exp_otlp_exporter {
+	if expOtlpExporter {
 		extensions["googleclientauth"] = map[string]interface{}{}
 	}
 
