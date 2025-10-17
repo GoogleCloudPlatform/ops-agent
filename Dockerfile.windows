@@ -14,6 +14,8 @@ ENV PATH="${PATH};C:\Go\bin;C:\Java\bin"
 
 ENV JAVA_HOME="C:\Java"
 
+RUN where powershell.exe;
+
 SHELL ["powershell.exe", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
 
 RUN Write-Host ('Creating folders'); `
