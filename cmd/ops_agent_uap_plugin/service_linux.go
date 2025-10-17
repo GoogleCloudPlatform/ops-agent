@@ -31,7 +31,6 @@ import (
 	"syscall"
 
 	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
-	"google.golang.org/grpc/status"
 )
 
 const (
@@ -78,13 +77,13 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	if err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		log.Printf("Start() failed, because it cannot determine the plugin install location: %s", err)
-		return nil, status.Error(13, err.Error()) // Internal
+		return &pb.StartResponse{}, nil
 	}
 	pluginInstallPath, err = filepath.EvalSymlinks(pluginInstallPath)
 	if err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		log.Printf("Start() failed, because it cannot determine the plugin install location: %s", err)
-		return nil, status.Error(13, err.Error()) // Internal
+		return &pb.StartResponse{}, nil
 	}
 	pluginInstallDir := filepath.Dir(pluginInstallPath)
 
@@ -98,27 +97,30 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	if foundConflictingInstallations || err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		log.Printf("Start() failed: %s", err)
-		return nil, status.Error(9, err.Error()) // FailedPrecondition
+		return &pb.StartResponse{}, nil
 	}
 
 	// Receive config from the Start request and write it to the Ops Agent config file.
 	if err := writeCustomConfigToFile(msg, OpsAgentConfigLocationLinux); err != nil {
 		log.Printf("Start() failed: %s", err)
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
-		return nil, status.Errorf(13, "failed to write the custom Ops Agent config to file: %s", err) // Internal
+		log.Printf("Start() failed to write the custom Ops Agent config to file: %s", err)
+		return &pb.StartResponse{}, nil
 	}
 
 	// Ops Agent config validation
 	if err := validateOpsAgentConfig(pContext, pluginInstallDir, pluginStateDir, ps.runCommand); err != nil {
 		log.Printf("Start() failed: %s", err)
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
-		return nil, status.Errorf(9, "failed to validate Ops Agent config: %s", err) // FailedPrecondition
+		log.Printf("Start() failed to validate the Ops Agent config: %s", err)
+		return &pb.StartResponse{}, nil
 	}
 	// Subagent config generation
 	if err := generateSubagentConfigs(pContext, ps.runCommand, pluginInstallDir, pluginStateDir); err != nil {
 		log.Printf("Start() failed: %s", err)
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
-		return nil, status.Errorf(9, "failed to generate subagent configs: %s", err) // FailedPrecondition
+		log.Printf("Start() failed to generate subagent configs: %s", err)
+		return &pb.StartResponse{}, nil
 	}
 
 	// the subagent startups
