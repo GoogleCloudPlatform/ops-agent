@@ -164,10 +164,11 @@ func Test_generateSubagentConfigs(t *testing.T) {
 func TestStart(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
-		name               string
-		cancel             context.CancelFunc
-		mockRunCommandFunc RunCommandFunc
-		wantCancelNil      bool
+		name                    string
+		cancel                  context.CancelFunc
+		mockRunCommandFunc      RunCommandFunc
+		wantCancelNil           bool
+		wantOpsAgentPluginError bool
 	}{
 		{
 			name:   "Happy path: plugin not already started, Start() exits successfully",
@@ -189,7 +190,8 @@ func TestStart(t *testing.T) {
 			mockRunCommandFunc: func(cmd *exec.Cmd) (string, error) {
 				return "", fmt.Errorf("error")
 			},
-			wantCancelNil: true,
+			wantCancelNil:           true,
+			wantOpsAgentPluginError: true,
 		},
 	}
 
@@ -201,6 +203,9 @@ func TestStart(t *testing.T) {
 			ps.Start(context.Background(), &pb.StartRequest{})
 			if (ps.cancel == nil) != tc.wantCancelNil {
 				t.Errorf("%v: Start() got cancel function: %v, want cancel function to be reset to nil: %v", tc.name, ps.cancel, tc.wantCancelNil)
+			}
+			if (ps.pluginError != nil) != tc.wantOpsAgentPluginError {
+				t.Errorf("%v: Start() got pluginError: %v, want pluginError to be set: %v", tc.name, ps.pluginError, tc.wantOpsAgentPluginError)
 			}
 		})
 	}

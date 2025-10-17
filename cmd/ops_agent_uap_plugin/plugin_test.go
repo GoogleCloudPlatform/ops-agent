@@ -40,17 +40,18 @@ func customLogPathByOsType(ctx context.Context) string {
 func TestStop(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
-		name   string
-		cancel context.CancelFunc
+		name                string
+		cancel              context.CancelFunc
+		opsAgentPluginError *OpsAgentPluginError
 	}{
 		{
-			name:   "PluginAlreadyStopped",
+			name:   "Plugin already stopped",
 			cancel: nil,
 		},
 		{
-			name:   "PluginRunning",
-			cancel: func() {}, // Non-nil function
-
+			name:                "Plugin running",
+			cancel:              func() {}, // Non-nil function
+			opsAgentPluginError: &OpsAgentPluginError{Message: "error", ShouldRestart: false},
 		},
 	}
 
@@ -58,7 +59,7 @@ func TestStop(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			ps := &OpsAgentPluginServer{cancel: tc.cancel, pluginError: &OpsAgentPluginError{Message: "error", ShouldRestart: false}}
+			ps := &OpsAgentPluginServer{cancel: tc.cancel, pluginError: tc.opsAgentPluginError}
 			_, err := ps.Stop(context.Background(), &pb.StopRequest{})
 			if err != nil {
 				t.Errorf("got error from Stop(): %v, wanted nil", err)
@@ -77,8 +78,8 @@ func TestStop(t *testing.T) {
 func TestGetStatus(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
-		name      string
-		wantError bool
+		name         string
+		wantRPCError bool
 
 		pluginServer   *OpsAgentPluginServer
 		wantStatusCode int32
@@ -86,7 +87,7 @@ func TestGetStatus(t *testing.T) {
 		{
 			name:         "Plugin not running and has fatal error",
 			pluginServer: &OpsAgentPluginServer{cancel: nil, pluginError: &OpsAgentPluginError{Message: "error", ShouldRestart: true}},
-			wantError:    true,
+			wantRPCError: true,
 		},
 		{
 			name:           "Plugin not running and has non-fatal error",
@@ -99,7 +100,7 @@ func TestGetStatus(t *testing.T) {
 			pluginServer:   &OpsAgentPluginServer{},
 		},
 		{
-			name:           "PluginRunning",
+			name:           "Plugin running",
 			pluginServer:   &OpsAgentPluginServer{cancel: func() {}, pluginError: nil},
 			wantStatusCode: 0,
 		},
@@ -110,16 +111,12 @@ func TestGetStatus(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			status, err := tc.pluginServer.GetStatus(context.Background(), &pb.GetStatusRequest{})
-			if err != nil {
-				if !tc.wantError {
-					t.Errorf("got unexpected error from GetStatus: %v, wanted nil error", err)
-				}
-				return
-			}
 
-			gotStatusCode := status.Code
-			if gotStatusCode != tc.wantStatusCode {
-				t.Errorf("Got status code %d from GetStatus(), wanted %d", gotStatusCode, tc.wantStatusCode)
+			if (err != nil) != tc.wantRPCError {
+				t.Errorf("got error from GetStatus: %v, wanted error: %v", err, tc.wantRPCError)
+			}
+			if !tc.wantRPCError && (status.Code != tc.wantStatusCode) {
+				t.Errorf("Got status code %d from GetStatus(), wanted %d", status.Code, tc.wantStatusCode)
 			}
 		})
 	}

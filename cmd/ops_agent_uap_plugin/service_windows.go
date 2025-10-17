@@ -334,7 +334,7 @@ func createWindowsJobHandle() (windows.Handle, error) {
 //
 // cancel: the cancel function for the parent context. By calling this function, the parent context is canceled,
 // and GetStatus() returns a non-healthy status, signaling UAP to re-trigger Start().
-func runSubagents(ctx context.Context, cancel CancelContextAndSetPluginErrorFunc, pluginInstallDirectory string, pluginStateDirectory string, runSubAgentCommand RunSubAgentCommandFunc, runCommand RunCommandFunc) {
+func runSubagents(ctx context.Context, cancelAndSetError CancelContextAndSetPluginErrorFunc, pluginInstallDirectory string, pluginStateDirectory string, runSubAgentCommand RunSubAgentCommandFunc, runCommand RunCommandFunc) {
 
 	var wg sync.WaitGroup
 
@@ -345,7 +345,7 @@ func runSubagents(ctx context.Context, cancel CancelContextAndSetPluginErrorFunc
 		"--feature-gates=receiver.prometheusreceiver.RemoveStartTimeAdjustment",
 	)
 	wg.Add(1)
-	go runSubAgentCommand(ctx, cancel, runOtelCmd, runCommand, &wg)
+	go runSubAgentCommand(ctx, cancelAndSetError, runOtelCmd, runCommand, &wg)
 
 	// Starting Fluentbit
 	runFluentBitCmd := exec.CommandContext(ctx,
@@ -358,7 +358,7 @@ func runSubagents(ctx context.Context, cancel CancelContextAndSetPluginErrorFunc
 		"--storage_path", path.Join(pluginStateDirectory, "run/buffers"),
 	)
 	wg.Add(1)
-	go runSubAgentCommand(ctx, cancel, runFluentBitCmd, runCommand, &wg)
+	go runSubAgentCommand(ctx, cancelAndSetError, runFluentBitCmd, runCommand, &wg)
 
 	wg.Wait()
 }
