@@ -1200,7 +1200,7 @@ func TestInvalidStringConfigReceivedFromUAP(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if !strings.Contains(cmdOut.Stdout, "The Ops Agent Plugin is not running") {
+		if !strings.Contains(cmdOut.Stdout, "failed to validate the custom Ops Agent config") {
 			t.Error("the UAP plugin should not have started the Ops Agent with an invalid config")
 		}
 	})

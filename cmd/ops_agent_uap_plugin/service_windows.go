@@ -126,7 +126,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	if err := generateSubAgentConfigs(ctx, OpsAgentConfigLocationWindows, pluginStateDir, windowsEventLogger); err != nil {
 		windowsEventLogger.Close()
 		ps.cancelAndSetPluginError(&OpsAgentPluginError{
-			Message:       fmt.Sprintf("Start() failed to validate the custom ops agent config, and generate sub-agents config: %s", err),
+			Message:       fmt.Sprintf("Start() failed to validate the custom Ops Agent config, and generate sub-agents config: %s", err),
 			ShouldRestart: false,
 		})
 		return &pb.StartResponse{}, nil
