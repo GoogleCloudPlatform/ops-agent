@@ -184,7 +184,16 @@ func (r AgentSelfMetrics) LoggingSubmodulePipeline(projectName string, expOtlpEx
 	}
 }
 
-func OpsAgentSelfMetricsPipeline(ctx context.Context, outDir string) otel.ReceiverPipeline {
+func OpsAgentSelfMetricsPipeline(ctx context.Context, outDir string, projectName string, expOtlpExporter bool) otel.ReceiverPipeline {
+	exporter := otel.System
+	processors := map[string][]otel.Component{"metrics": {
+		otel.MetricStartTime(),
+	}}
+	if expOtlpExporter {
+		exporter = otel.OTLP
+		processors["metrics"] = append(processors["metrics"], otel.GCPProjectID(projectName))
+		processors["metrics"] = append(processors["metrics"], otel.MetricsRemoveInstrumentationLibraryLabelsAttributes())
+	}
 	receiver_config := map[string]any{
 		"include": []string{
 			filepath.Join(outDir, "enabled_receivers_otlp.json"),
@@ -198,13 +207,9 @@ func OpsAgentSelfMetricsPipeline(ctx context.Context, outDir string) otel.Receiv
 			Config: receiver_config,
 		},
 		ExporterTypes: map[string]otel.ExporterType{
-			"metrics": otel.System,
+			"metrics": exporter,
 		},
-		Processors: map[string][]otel.Component{
-			"metrics": {
-				otel.Transform("metric", "datapoint", []ottl.Statement{"set(time, Now())"}),
-			},
-		},
+		Processors: processors,
 	}
 }
 

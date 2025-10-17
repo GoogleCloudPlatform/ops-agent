@@ -120,7 +120,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 		ReceiverPipelineName: "otel",
 	}
 
-	receiverPipelines["ops_agent"] = OpsAgentSelfMetricsPipeline(ctx, outDir)
+	receiverPipelines["ops_agent"] = OpsAgentSelfMetricsPipeline(ctx, outDir, resource.ProjectName(), expOtlpExporter)
 	pipelines["ops_agent"] = otel.Pipeline{
 		Type:                 "metrics",
 		ReceiverPipelineName: "ops_agent",
