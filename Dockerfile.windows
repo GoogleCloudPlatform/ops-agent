@@ -1,22 +1,20 @@
 # escape=`
 
-ARG WINDOWS_VERSION=lts-nanoserver-ltsc2022
+ARG WINDOWS_VERSION=ltsc2022
 
 #
 # Builder Image - Windows Server Core
 #
-FROM mcr.microsoft.com/powershell:$WINDOWS_VERSION as base
+FROM mcr.microsoft.com/windows/servercore:$WINDOWS_VERSION as base
 
 #
 # Basic setup
 #
-ENV PATH="${PATH};C:\Go\bin;C:\Java\bin"
+RUN setx /M PATH "%PATH%;C:\Go\bin;C:\Java\bin"
 
-ENV JAVA_HOME="C:\Java"
+RUN setx /M JAVA_HOME "C:\Java"
 
-RUN where powershell.exe;
-
-SHELL ["powershell.exe", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
+SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
 
 RUN Write-Host ('Creating folders'); `
     New-Item -Type Directory -Path /local; `
@@ -126,8 +124,8 @@ RUN $win_flex_bison_dist_base_name=\"win_flex_bison-${env:WIN_FLEX_BISON_VERSION
 #
 # Install VCPKG
 #
-# https://github.com/microsoft/vcpkg/blob/2024.05.24/scripts/bootstrap.ps1
-ENV VCPKG_VERSION=2024.05.24 `
+# https://github.com/microsoft/vcpkg/blob/2024.12.16/scripts/bootstrap.ps1
+ENV VCPKG_VERSION=2024.12.16 `
     VCPKG_DOWNLOAD_URL="https://github.com/microsoft/vcpkg/archive/refs/tags" `
     VCPKG_DISABLE_METRICS="ON" `
     VCPKG_ROOT=/dev/vcpkg
@@ -282,7 +280,7 @@ RUN call "%MSVS_HOME%\VC\Auxiliary\Build\vcvars64.bat" && `
     -DFLB_FILTER_WASM=Off ..\ && `
     cmake --build . --config Release
 
-SHELL ["powershell.exe", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
+SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
 
 RUN Copy-Item -Path bin/fluent-bit.exe -Destination /work/out/bin/; `
     Copy-Item -Path bin/fluent-bit.dll -Destination /work/out/bin/; `
