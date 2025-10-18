@@ -436,95 +436,21 @@ processors:
   resourcedetection/_global_0:
     detectors:
     - gcp
+  resourcedetection/_global_1:
+    detectors:
+    - gcp
+    override: false
   transform/logs_p1_sample__logs_0:
     error_mode: ignore
     log_statements:
     - context: log
       statements:
-      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["__field_0"], body["source"]) where (body != nil and body["source"] != nil)
-      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
-      - set(cache["__field_1"], body["default"]) where (body != nil and body["default"] != nil)
-      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
-      - set(cache["__field_2"], body["float"]) where (body != nil and body["float"] != nil)
-      - delete_key(cache, "__field_4") where (cache != nil and cache["__field_4"] != nil)
-      - set(cache["__field_4"], body["integer"]) where (body != nil and body["integer"] != nil)
-      - delete_key(cache, "__field_5") where (cache != nil and cache["__field_5"] != nil)
-      - set(cache["__field_5"], body["move_source"]) where (body != nil and body["move_source"] != nil)
-      - delete_key(cache, "__field_6") where (cache != nil and cache["__field_6"] != nil)
-      - set(cache["__field_6"], body["unnested"]) where (body != nil and body["unnested"] != nil)
-      - delete_key(cache, "__field_7") where (cache != nil and cache["__field_7"] != nil)
-      - set(cache["__field_7"], body["omitted"]) where (body != nil and body["omitted"] != nil)
-      - delete_key(cache, "__field_8") where (cache != nil and cache["__field_8"] != nil)
-      - set(cache["__field_8"], attributes["label1"]) where (attributes != nil and attributes["label1"] != nil)
-      - delete_key(cache, "__field_9") where (cache != nil and cache["__field_9"] != nil)
-      - set(cache["__field_9"], attributes["label3"]) where (attributes != nil and attributes["label3"] != nil)
-      - delete_key(cache, "__field_10") where (cache != nil and cache["__field_10"] != nil)
-      - set(cache["__field_10"], body) where (body != nil)
-      - delete_key(cache, "__field_11") where (cache != nil and cache["__field_11"] != nil)
-      - set(cache["__field_11"], body["level"]) where (body != nil and body["level"] != nil)
-      - delete_key(cache, "__field_13") where (cache != nil and cache["__field_13"] != nil)
-      - set(cache["__field_13"], body["trace"]) where (body != nil and body["trace"] != nil)
       - set(cache["__omit_0"], false)
-      - set(cache["__omit_0"], true) where ((body != nil and body["omitted"] != nil) and IsMatchRubyRegex(body["omitted"], "(?i)^-$"))
-      - delete_key(body, "move_source") where (body != nil and body["move_source"] != nil)
-      - delete_key(body, "trace") where (body != nil and body["trace"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_0"])
-      - set(body["copied"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_1"])
-      - set(cache["value"], "this field was missing") where cache["value"] == nil
-      - set(body["default"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_2"])
-      - set(cache["value"], Double(cache["value"]))
-      - set(body["float"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - set(cache["__omit_0"], true) where ((body != nil and body["omitted"] != nil) and IsMatchRubyRegex(body["omitted"], "(?!foo)bar"))
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], "world")
       - set(body["hello"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_4"])
-      - set(cache["value"], Int(cache["value"]))
-      - set(body["integer"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_5"])
-      - set(body["moved"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_6"])
-      - set(body["nested"]["structure"]["field"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_7"])
-      - set(body["omitted"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(body, "omitted") where ((body != nil and body["omitted"] != nil) and cache["__omit_0"] == true)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_8"])
-      - set(attributes["label2"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_9"])
-      - set(cache["value"], "default") where cache["value"] == nil
-      - set(attributes["label3"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_10"])
-      - set(attributes["text"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_11"])
-      - delete_key(cache, "mapped_value") where (cache != nil and cache["mapped_value"] != nil)
-      - set(cache["mapped_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - set(cache["mapped_value"], "WARNING") where cache["value"] == "CAUTION"
-      - set(cache["mapped_value"], "INFO") where cache["value"] == "I"
-      - set(cache["mapped_value"], "WARNING") where cache["value"] == "W"
-      - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
-      - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], "spanValue")
-      - set(span_id.string, cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_13"])
-      - delete_key(cache, "__setif_value") where (cache != nil and cache["__setif_value"] != nil)
-      - set(cache["__setif_value"], cache["value"])
-      - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "")
-      - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(body, "hello") where ((body != nil and body["hello"] != nil) and cache["__omit_0"] == true)
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
@@ -596,17 +522,6 @@ processors:
       - set(cache["value"], "syslog") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
 receivers:
-  filelog/sample__logs:
-    exclude: []
-    include:
-    - /tmp/*.log
-    include_file_name: false
-    operators:
-    - from: body
-      id: body
-      to: body.message
-      type: move
-    start_at: beginning
   filelog/syslog:
     exclude: []
     include:
@@ -634,6 +549,10 @@ receivers:
         mute_process_exe_error: true
         mute_process_name_error: true
       processes: {}
+  otlp/sample__logs:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
   otlpjsonfile/ops_agent:
     include:
     - enabled_receivers_otlp.json
@@ -673,9 +592,9 @@ service:
       processors:
       - transform/sample__logs_0
       - transform/logs_p1_sample__logs_0
-      - resourcedetection/_global_0
+      - resourcedetection/_global_1
       receivers:
-      - filelog/sample__logs
+      - otlp/sample__logs
     metrics/default__pipeline_hostmetrics:
       exporters:
       - googlecloud

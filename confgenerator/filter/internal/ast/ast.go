@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"strings"
 
+	rubex "github.com/GoogleCloudPlatform/opentelemetry-operations-collector/third_party/go-oniguruma"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter/internal/generated/token"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
@@ -498,23 +499,21 @@ func (r Restriction) OTTLExpression() (ottl.Value, error) {
 		return nil, fmt.Errorf("unimplemented operator: %s", r.Operator)
 	case ":":
 		// substring match, case insensitive
-		expr = ottl.IsMatch(lhs, fmt.Sprintf(`(?i)%s`, regexp.QuoteMeta(r.RHS)))
+		expr = ottl.IsMatchRubyRegex(lhs, fmt.Sprintf(`(?i)%s`, regexp.QuoteMeta(r.RHS)))
 	case "=~", "!~":
 		// regex match, case sensitive
 
-		if _, err := regexp.Compile(r.RHS); err != nil {
+		if _, err := rubex.Compile(r.RHS); err != nil {
 			return nil, fmt.Errorf("unsupported regex %q: %w", r.RHS, err)
 		}
 
-		expr = ottl.IsMatch(lhs, r.RHS)
-		// TODO: Support Ruby regex syntax
-
+		expr = ottl.IsMatchRubyRegex(lhs, r.RHS)
 		if r.Operator == "!~" {
 			expr = ottl.Not(expr)
 		}
 	case "=", "!=":
 		// equality, case insensitive
-		expr = ottl.IsMatch(lhs, fmt.Sprintf(`(?i)^%s$`, regexp.QuoteMeta(r.RHS)))
+		expr = ottl.IsMatchRubyRegex(lhs, fmt.Sprintf(`(?i)^%s$`, regexp.QuoteMeta(r.RHS)))
 		if r.Operator == "!=" {
 			expr = ottl.Not(expr)
 		}
