@@ -321,7 +321,7 @@ func Test_runSubAgentCommand_WhenCmdExitsBecauseCtxIsCancelled(t *testing.T) {
 	cmd := exec.CommandContext(ctx, "fake-command")
 	mockRunCommand := func(cmd *exec.Cmd) (string, error) {
 		time.Sleep(2 * time.Minute)
-		return runCommand(cmd)
+		return "", errors.New("command failed.")
 	}
 
 	var wg sync.WaitGroup
