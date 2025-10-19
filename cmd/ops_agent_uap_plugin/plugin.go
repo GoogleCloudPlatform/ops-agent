@@ -179,18 +179,16 @@ func runSubAgentCommand(ctx context.Context, cancelAndSetError CancelContextAndS
 	if cmd == nil {
 		return
 	}
-	if ctx.Err() != nil {
-		// context has been cancelled
-		log.Printf("cannot execute command: %s, because the context has been cancelled", cmd.Args)
-		return
-	}
 
 	output, err := runCommand(cmd)
 	var pluginErr *OpsAgentPluginError
 	if err != nil {
-		fullErr := fmt.Sprintf("command: %s exited with errors, not restarting.\nCommand output: %s\n Command error:%s", cmd.Args, string(output), err)
-		log.Print(fullErr)
-		pluginErr = &OpsAgentPluginError{Message: fullErr, ShouldRestart: true}
+		// The command exits with errors might be due to context cancellation, e.g: Stop has been called.
+		if ctx.Err() != context.Canceled {
+			fullErr := fmt.Sprintf("command: %s exited with errors, not restarting.\nCommand output: %s\n Command error:%s", cmd.Args, string(output), err)
+			log.Print(fullErr)
+			pluginErr = &OpsAgentPluginError{Message: fullErr, ShouldRestart: true}
+		}
 	} else {
 		log.Printf("command: %s %s exited successfully.\nCommand output: %s", cmd.Path, cmd.Args, string(output))
 	}

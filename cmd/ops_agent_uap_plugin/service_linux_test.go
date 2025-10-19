@@ -24,6 +24,7 @@ import (
 	"sync"
 	"syscall"
 	"testing"
+	"time"
 
 	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
 )
@@ -222,7 +223,7 @@ func Test_runSubAgentCommand_CancelContextAndSetPluginErrorWhenCmdExitsWithError
 	pluginServer.cancel = cancel
 
 	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, runCommand, &wg)
-	if ctx.Err() == nil {
+	if ctx.Err() != context.Canceled {
 		t.Error("runSubAgentCommand() did not cancel context but should")
 	}
 	if pluginServer.pluginError == nil {
@@ -244,7 +245,7 @@ func Test_runSubAgentCommand_CancelContextWhenCmdExitsSuccessfully(t *testing.T)
 	wg.Add(1)
 
 	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, runCommand, &wg)
-	if ctx.Err() == nil {
+	if ctx.Err() != context.Canceled {
 		t.Error("runSubAgentCommand() did not cancel context but should")
 	}
 	if pluginServer.pluginError != nil {
@@ -272,7 +273,7 @@ func Test_runSubAgentCommand_CancelContextWhenCmdTerminatedBySignals(t *testing.
 	}
 
 	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, mockRunCommandFunc, &wg)
-	if ctx.Err() == nil {
+	if ctx.Err() != context.Canceled {
 		t.Error("runSubAgentCommand() didn't cancel the context but should")
 	}
 	if pluginServer.pluginError == nil {
@@ -280,6 +281,28 @@ func Test_runSubAgentCommand_CancelContextWhenCmdTerminatedBySignals(t *testing.
 	}
 	if !pluginServer.pluginError.ShouldRestart {
 		t.Error("runSubAgentCommand() set pluginError.ShouldRestart to false, want true")
+	}
+}
+
+func Test_runSubAgentCommand_WhenCmdExitsBecauseCtxIsCancelled(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	pluginServer := &OpsAgentPluginServer{}
+	pluginServer.cancel = cancel
+
+	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
+	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, runCommand, &wg)
+	time.Sleep(3 * time.Second)
+	cancel()
+
+	if ctx.Err() != context.Canceled {
+		t.Error("runSubAgentCommand() didn't cancel the context but should")
+	}
+	if pluginServer.pluginError != nil {
+		t.Errorf("runSubAgentCommand() set pluginError %v, want nil", pluginServer.pluginError)
 	}
 }
 

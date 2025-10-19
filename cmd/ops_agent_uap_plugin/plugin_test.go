@@ -254,6 +254,8 @@ func TestHelperProcess(t *testing.T) {
 		os.Exit(1)
 	case os.Getenv("GO_HELPER_KILL_BY_SIGNALS") == "1":
 		time.Sleep(1 * time.Minute)
+	case os.Getenv("GO_HELPER_LONG_RUNNING") == "1":
+		time.Sleep(2 * time.Minute)
 	default:
 		// A "successful" mock execution exits with a successful (zero) exit code.
 		os.Exit(0)

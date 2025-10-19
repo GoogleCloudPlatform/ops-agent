@@ -24,6 +24,7 @@ import (
 	"os/exec"
 	"sync"
 	"testing"
+	"time"
 
 	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
 )
@@ -280,7 +281,7 @@ func Test_runSubAgentCommand_CancelContextWhenCmdExitsSuccessfully(t *testing.T)
 	wg.Add(1)
 
 	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, runCommandSuccessfully, &wg)
-	if ctx.Err() == nil {
+	if ctx.Err() != context.Canceled {
 		t.Error("runSubAgentCommand() did not cancel context but should")
 	}
 	if pluginServer.pluginError != nil {
@@ -301,7 +302,7 @@ func Test_runSubAgentCommand_CancelContextWhenCmdExitsWithErrors(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, runCommandAndFailed, &wg)
-	if ctx.Err() == nil {
+	if ctx.Err() != context.Canceled {
 		t.Error("runSubAgentCommand() did not cancel context but should")
 	}
 	if pluginServer.pluginError == nil {
@@ -309,6 +310,31 @@ func Test_runSubAgentCommand_CancelContextWhenCmdExitsWithErrors(t *testing.T) {
 	}
 	if !pluginServer.pluginError.ShouldRestart {
 		t.Error("runSubAgentCommand() set pluginError.ShouldRestart to false, want true")
+	}
+}
+
+func Test_runSubAgentCommand_WhenCmdExitsBecauseCtxIsCancelled(t *testing.T) {
+	t.Parallel()
+	ctx, cancel := context.WithCancel(context.Background())
+	pluginServer := &OpsAgentPluginServer{}
+	pluginServer.cancel = cancel
+	cmd := exec.CommandContext(ctx, "fake-command")
+	mockRunCommand := func(cmd *exec.Cmd) (string, error) {
+		time.Sleep(2 * time.Minute)
+		return runCommand(cmd)
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, mockRunCommand, &wg)
+	time.Sleep(3 * time.Second)
+	cancel()
+
+	if ctx.Err() != context.Canceled {
+		t.Error("runSubAgentCommand() didn't cancel the context but should")
+	}
+	if pluginServer.pluginError != nil {
+		t.Errorf("runSubAgentCommand() set pluginError %v, want nil", pluginServer.pluginError)
 	}
 }
 
