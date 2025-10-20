@@ -167,6 +167,7 @@ func (r MetricsReceiverCouchbase) Pipelines(_ context.Context) ([]otel.ReceiverP
 					otel.SetScopeVersion("1.0"),
 				)...,
 			),
+			otel.MetricsRemoveServiceAttributes(),
 		}},
 	}}, nil
 }

@@ -102,6 +102,23 @@ var dockerfileArguments = []templateArguments{
 		package_extension: "rpm",
 	},
 	{
+		from_image:  "rockylinux/rockylinux:10",
+		target_name: "rockylinux10",
+		install_packages: `RUN set -x; dnf -y update && \
+		dnf -y install 'dnf-command(config-manager)' && \
+		dnf config-manager --set-enabled crb && \
+		dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm && \
+		dnf -y install git systemd \
+		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel \
+		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros \
+		expect rpm-sign zip tzdata-java
+
+		ENV JAVA_HOME /usr/lib/jvm/java-${OPENJDK_MAJOR_VERSION}-openjdk/` + installJava,
+		package_build:     "RUN ./pkg/rpm/build.sh",
+		tar_distro_name:   "rockylinux-10",
+		package_extension: "rpm",
+	},
+	{
 		from_image:  "debian:bookworm",
 		target_name: "bookworm",
 		install_packages: `RUN set -x; apt-get update && \
@@ -119,8 +136,8 @@ var dockerfileArguments = []templateArguments{
 		install_packages: `RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip`,
+		build-essential bison flex file libsystemd-dev \
+		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip` + installCMake,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "debian-bullseye",
 		package_extension: "deb",
@@ -136,7 +153,7 @@ RUN set -x; \
 		# The 'OSS Update' repo signature is no longer valid, so verify the checksum instead.
 		zypper --no-gpg-check refresh 'OSS Update' && \
 		(echo '6dd0b89202b19dae873434c5f2ba01164205071581fc02365712be801e304b3b /var/cache/zypp/raw/OSS Update/repodata/repomd.xml' | sha256sum --check) && \
-		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip && \
+		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc8 gcc8-c++ zlib-devel rpm-build expect systemd-devel systemd-rpm-macros unzip zip && \
 		# Remove expired root certificate.
 		mv /var/lib/ca-certificates/pem/DST_Root_CA_X3.pem /etc/pki/trust/blacklist/ && \
 		update-ca-certificates && \
@@ -148,7 +165,11 @@ RUN set -x; \
 		# If this bug happens to trigger in the future, adding a "zypper -n download" of a subset of the packages can avoid the segfault.
 		zypper -n install 'bison>3' && \
 		# Allow fluent-bit to find systemd
-		ln -fs /usr/lib/systemd /lib/systemd` + installJava + installCMake,
+		ln -fs /usr/lib/systemd /lib/systemd && \
+		# Set newer GCC as default with priority 1
+		update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 1 \
+    		--slave /usr/bin/g++ g++ /usr/bin/g++-8 && \
+		update-alternatives --set gcc /usr/bin/gcc-8` + installJava + installCMake,
 		package_build:     "RUN ./pkg/rpm/build.sh",
 		tar_distro_name:   "sles-12",
 		package_extension: "rpm",
@@ -166,24 +187,12 @@ RUN ln -fs /usr/lib/systemd /lib/systemd` + installJava + installCMake,
 		package_extension: "rpm",
 	},
 	{
-		from_image:  "ubuntu:focal",
-		target_name: "focal",
-		install_packages: `RUN set -x; apt-get update && \
-		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-		build-essential cmake bison flex file libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip`,
-		package_build:     "RUN ./pkg/deb/build.sh",
-		tar_distro_name:   "ubuntu-focal",
-		package_extension: "deb",
-	},
-	{
 		from_image:  "ubuntu:jammy",
 		target_name: "jammy",
 		install_packages: `RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-		build-essential cmake bison flex file libsystemd-dev \
+		build-essential cmake bison flex file libsystemd-dev tzdata \
 		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "ubuntu-jammy",
@@ -195,22 +204,10 @@ RUN ln -fs /usr/lib/systemd /lib/systemd` + installJava + installCMake,
 		install_packages: `RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-		build-essential cmake bison flex file libsystemd-dev \
+		build-essential cmake bison flex file libsystemd-dev tzdata \
 		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip debhelper`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "ubuntu-noble",
-		package_extension: "deb",
-	},
-	{
-		from_image:  "ubuntu:oracular",
-		target_name: "oracular",
-		install_packages: `RUN set -x; apt-get update && \
-		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-		build-essential cmake bison flex file systemd-dev debhelper libsystemd-dev \
-		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip`,
-		package_build:     "RUN ./pkg/deb/build.sh",
-		tar_distro_name:   "ubuntu-oracular",
 		package_extension: "deb",
 	},
 	{
@@ -219,7 +216,7 @@ RUN ln -fs /usr/lib/systemd /lib/systemd` + installJava + installCMake,
 		install_packages: `RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-		build-essential cmake bison flex file systemd-dev debhelper libsystemd-dev \
+		build-essential cmake bison flex file systemd-dev debhelper libsystemd-dev tzdata \
 		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip`,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "ubuntu-plucky",

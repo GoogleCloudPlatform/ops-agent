@@ -30,8 +30,7 @@ import (
 	"sync"
 	"syscall"
 
-	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
-	"google.golang.org/grpc/status"
+	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
 )
 
 const (
@@ -58,14 +57,6 @@ var (
 // implementations.
 type RunSubAgentCommandFunc func(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup)
 
-// Apply applies the config sent or performs the work defined in the message.
-// ApplyRequest is opaque to the agent and is expected to be well known contract
-// between Plugin and the server itself. For e.g. service might want to update
-// plugin config to enable/disable feature here plugins can react to such requests.
-func (ps *OpsAgentPluginServer) Apply(ctx context.Context, msg *pb.ApplyRequest) (*pb.ApplyResponse, error) {
-	return &pb.ApplyResponse{}, nil
-}
-
 // Start starts the plugin and initiates the plugin functionality.
 // Until plugin receives Start request plugin is expected to be not functioning
 // and just listening on the address handed off waiting for the request.
@@ -86,13 +77,13 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	if err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		log.Printf("Start() failed, because it cannot determine the plugin install location: %s", err)
-		return nil, status.Error(13, err.Error()) // Internal
+		return &pb.StartResponse{}, nil
 	}
 	pluginInstallPath, err = filepath.EvalSymlinks(pluginInstallPath)
 	if err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		log.Printf("Start() failed, because it cannot determine the plugin install location: %s", err)
-		return nil, status.Error(13, err.Error()) // Internal
+		return &pb.StartResponse{}, nil
 	}
 	pluginInstallDir := filepath.Dir(pluginInstallPath)
 
@@ -106,27 +97,30 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	if foundConflictingInstallations || err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		log.Printf("Start() failed: %s", err)
-		return nil, status.Error(9, err.Error()) // FailedPrecondition
+		return &pb.StartResponse{}, nil
 	}
 
 	// Receive config from the Start request and write it to the Ops Agent config file.
 	if err := writeCustomConfigToFile(msg, OpsAgentConfigLocationLinux); err != nil {
 		log.Printf("Start() failed: %s", err)
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
-		return nil, status.Errorf(13, "failed to write the custom Ops Agent config to file: %s", err) // Internal
+		log.Printf("Start() failed to write the custom Ops Agent config to file: %s", err)
+		return &pb.StartResponse{}, nil
 	}
 
 	// Ops Agent config validation
 	if err := validateOpsAgentConfig(pContext, pluginInstallDir, pluginStateDir, ps.runCommand); err != nil {
 		log.Printf("Start() failed: %s", err)
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
-		return nil, status.Errorf(9, "failed to validate Ops Agent config: %s", err) // FailedPrecondition
+		log.Printf("Start() failed to validate the Ops Agent config: %s", err)
+		return &pb.StartResponse{}, nil
 	}
 	// Subagent config generation
 	if err := generateSubagentConfigs(pContext, ps.runCommand, pluginInstallDir, pluginStateDir); err != nil {
 		log.Printf("Start() failed: %s", err)
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
-		return nil, status.Errorf(9, "failed to generate subagent configs: %s", err) // FailedPrecondition
+		log.Printf("Start() failed to generate subagent configs: %s", err)
+		return &pb.StartResponse{}, nil
 	}
 
 	// the subagent startups
@@ -194,6 +188,7 @@ func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallD
 	runOtelCmd := exec.CommandContext(ctx,
 		path.Join(pluginInstallDirectory, OtelBinary),
 		"--config", path.Join(pluginStateDirectory, OtelRuntimeDirectory, "otel.yaml"),
+		"--feature-gates=receiver.prometheusreceiver.RemoveStartTimeAdjustment",
 	)
 	wg.Add(1)
 	go runSubAgentCommand(ctx, cancel, runOtelCmd, runCommand, &wg)

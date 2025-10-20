@@ -41,16 +41,18 @@ build:
 	DOCKER_BUILDKIT=1 docker build -o /tmp/google-cloud-ops-agent . $(ARGS)
 
 .PHONY: rebuild_submodules
-rebuild_submodules: fluent_bit_local otelopscol_local
+rebuild_submodules: clean_submodules fluent_bit_local otelopscol_local
 
 .PHONY: fluent_bit_local
-fluent_bit_local:
-	bash ./builds/fluent_bit.sh $(PWD)/dist
+fluent_bit_local: dist/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit
 
 SKIP_JAVA ?= true
 .PHONY: otelopscol_local
-otelopscol_local:
-	SKIP_OTEL_JAVA=${SKIP_JAVA} bash ./builds/otel.sh $(PWD)/dist
+otelopscol_local: dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol
+
+.PHONY: clean_submodules
+clean_submodules:
+	rm -rf dist
 
 ############
 # Tools
@@ -123,10 +125,10 @@ endif
 	touch ./confgenerator/testdata/goldens/$(TEST_NAME)/input.yaml
 
 dist/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit:
-	$(MAKE) fluent_bit_local
+	bash ./builds/fluent_bit.sh $(PWD)/dist
 
 dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol:
-	$(MAKE) otelopscol_local
+	SKIP_OTEL_JAVA=${SKIP_JAVA} bash ./builds/otel.sh $(PWD)/dist
 
 .PHONY: transformation_test
 transformation_test: dist/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol
@@ -166,7 +168,7 @@ integration_tests:
 third_party_apps_test:
 	ZONES="${ZONES}" \
 	PLATFORMS="${PLATFORMS}" \
-	go test -v ./integration_test/third_party_apps_test.go \
+	go test -v ./integration_test/third_party_apps_test/main_test.go \
 	-test.parallel=1000 \
 	-tags=integration_test \
 	-timeout=4h

@@ -59,6 +59,10 @@ func (r LoggingReceiverFiles) mixin() LoggingReceiverFilesMixin {
 	}
 }
 
+func (r LoggingReceiverFiles) Expand(_ context.Context) (InternalLoggingReceiver, []InternalLoggingProcessor) {
+	return r.mixin(), nil
+}
+
 func (r LoggingReceiverFiles) Components(ctx context.Context, tag string) []fluentbit.Component {
 	return r.mixin().Components(ctx, tag)
 }
@@ -74,7 +78,27 @@ type LoggingReceiverFilesMixin struct {
 	MultilineRules          []MultilineRule `yaml:"-"`
 	BufferInMemory          bool            `yaml:"-"`
 	RecordLogFilePath       *bool           `yaml:"record_log_file_path,omitempty"`
+	// In transformation test mode, the file is read exactly once from the beginning, and then the process exits.
+	TransformationTest bool `yaml:"-" tracking:"-"`
 }
+
+const stripNewlineCode = `
+local function trim_newline(s)
+    -- Check for a Windows-style carriage return and newline (\r\n)
+    if string.sub(s, -2) == "\r\n" then
+        return string.sub(s, 1, -3)
+    -- Check for a Unix/Linux-style newline (\n)
+    elseif string.sub(s, -1) == "\n" then
+        return string.sub(s, 1, -2)
+    end
+    -- If no trailing newline is found, return the original string
+    return s
+end
+function strip_newline(tag, timestamp, record)
+  record["message"] = trim_newline(record["message"])
+  return 2, timestamp, record
+end
+`
 
 func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) []fluentbit.Component {
 	if len(r.IncludePaths) == 0 {
@@ -86,12 +110,7 @@ func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) [
 		"Name": "tail",
 		"Tag":  tag,
 		// TODO: Escaping?
-		"Path": strings.Join(r.IncludePaths, ","),
-		"DB":   DBPath(tag),
-		// DB.locking specifies that the database will be accessed only by Fluent Bit.
-		// Enabling this feature helps to increase performance when accessing the database
-		// but it restrict any external tool to query the content.
-		"DB.locking":     "true",
+		"Path":           strings.Join(r.IncludePaths, ","),
 		"Read_from_Head": "True",
 		// Set the chunk limit conservatively to avoid exceeding the recommended chunk size of 5MB per write request.
 		"Buffer_Chunk_Size": "512k",
@@ -99,21 +118,31 @@ func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) [
 		"Buffer_Max_Size": "2M",
 		// When a message is unstructured (no parser applied), append it under a key named "message".
 		"Key": "message",
-		// Increase this to 30 seconds so log rotations are handled more gracefully.
-		"Rotate_Wait": "30",
 		// Skip long lines instead of skipping the entire file when a long line exceeds buffer size.
 		"Skip_Long_Lines": "On",
-
+	}
+	if r.TransformationTest {
+		// Transformation tests exit as soon as the log is fully processed.
+		config["Exit_On_Eof"] = "True"
+	}
+	if !r.TransformationTest {
+		config["DB"] = DBPath(tag)
+		// DB.locking specifies that the database will be accessed only by Fluent Bit.
+		// Enabling this feature helps to increase performance when accessing the database
+		// but it restrict any external tool to query the content.
+		config["DB.locking"] = "true"
+		// Increase this to 30 seconds so log rotations are handled more gracefully.
+		config["Rotate_Wait"] = "30"
 		// https://docs.fluentbit.io/manual/administration/buffering-and-storage#input-section-configuration
 		// Buffer in disk to improve reliability.
-		"storage.type": "filesystem",
+		config["storage.type"] = "filesystem"
 
 		// https://docs.fluentbit.io/manual/administration/backpressure#mem_buf_limit
 		// This controls how much data the input plugin can hold in memory once the data is ingested into the core.
 		// This is used to deal with backpressure scenarios (e.g: cannot flush data for some reason).
 		// When the input plugin hits "mem_buf_limit", because we have enabled filesystem storage type, mem_buf_limit acts
 		// as a hint to set "how much data can be up in memory", once the limit is reached it continues writing to disk.
-		"Mem_Buf_Limit": "10M",
+		config["Mem_Buf_Limit"] = "10M"
 	}
 	if len(r.ExcludePaths) > 0 {
 		// TODO: Escaping?
@@ -138,27 +167,26 @@ func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) [
 		// Configure multiline in the input component;
 		// This is necessary, since using the multiline filter will not work
 		// if a multiline message spans between two chunks.
-		rules := [][2]string{}
-		for _, rule := range r.MultilineRules {
-			rules = append(rules, [2]string{"rule", rule.AsString()})
-		}
-
 		parserName := fmt.Sprintf("multiline.%s", tag)
 
-		c = append(c, fluentbit.Component{
-			Kind: "MULTILINE_PARSER",
-			Config: map[string]string{
-				"name":          parserName,
-				"type":          "regex",
-				"flush_timeout": "5000",
-			},
-			OrderedConfig: rules,
-		})
+		c = append(c,
+			fluentbit.ParseMultilineComponent(parserName, r.MultilineRules),
+		)
 		// See https://docs.fluentbit.io/manual/pipeline/inputs/tail#multiline-core-v1.8
 		config["multiline.parser"] = parserName
 
 		// multiline parser outputs to a "log" key, but we expect "message" as the output of this pipeline
 		c = append(c, modify.NewRenameOptions("log", "message").Component(tag))
+		// N.B. multiline parsers generate a trailing newline when used with tail that they *don't* generate when used as a filter
+		// https://github.com/fluent/fluent-bit/issues/4227
+		// https://github.com/fluent/fluent-bit/issues/8914
+		// https://github.com/fluent/fluent-bit/issues/9660
+		// Using a regex to remove the newline segfaults fluent-bit (sigh)
+		c = append(c, fluentbit.LuaFilterComponents(
+			tag,
+			"strip_newline",
+			stripNewlineCode,
+		)...)
 	}
 
 	c = append(c, fluentbit.Component{
@@ -182,6 +210,9 @@ func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.Receiv
 	}
 	// TODO: Configure `storage` to store file checkpoints
 	// TODO: Configure multiline rules
+	if len(r.MultilineRules) > 0 {
+		return nil, fmt.Errorf("multiline rules are not supported in otel")
+	}
 	// TODO: Support BufferInMemory
 	// OTel parses the log to `body` by default; put it in a `message` field to match fluent-bit's behavior.
 	operators = append(operators, map[string]any{
@@ -212,6 +243,26 @@ func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.Receiv
 			"logs": otel.OTel,
 		},
 	}}, nil
+}
+
+func (r LoggingReceiverFilesMixin) MergeInternalLoggingProcessor(p InternalLoggingProcessor) (InternalLoggingReceiver, InternalLoggingProcessor) {
+	if len(r.MultilineRules) > 0 {
+		// Only allow merging once.
+		return r, p
+	}
+	if ep, ok := p.(LoggingProcessorParseMultilineRegex); ok {
+		r.MultilineRules = ep.Rules
+		ep.Rules = nil
+		if len(ep.LoggingProcessorParseRegexComplex.Parsers) == 0 {
+			return r, nil
+		}
+		return r, ep.LoggingProcessorParseRegexComplex
+	}
+	if ep, ok := p.(*ParseMultiline); ok {
+		r.MultilineRules = ep.CombinedRules()
+		return r, nil
+	}
+	return r, p
 }
 
 func init() {
@@ -617,14 +668,26 @@ func windowsEventLogV1Processors(ctx context.Context) ([]otel.Component, error) 
 					)
 				},
 			},
-			// TODO: Convert from array of maps to array of strings
-			"jsonPayload.StringInserts": {CopyFrom: "jsonPayload.event_data.data"},
-			// TODO: Reformat? (v1 was "YYYY-MM-DD hh:mm:ss +0000", OTel is "YYYY-MM-DDThh:mm:ssZ")
-			"jsonPayload.TimeGenerated": {CopyFrom: "jsonPayload.system_time"},
-			// TODO: Reformat?
-			"jsonPayload.TimeWritten": {CopyFrom: "jsonPayload.system_time"},
+			"jsonPayload.StringInserts": {
+				CopyFrom: "jsonPayload.event_data.data",
+				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
+					return v.Set(ottl.ToValues(v))
+				},
+			},
+			"jsonPayload.TimeGenerated": {
+				CopyFrom:          "jsonPayload.system_time",
+				CustomConvertFunc: formatSystemTime,
+			},
+			"jsonPayload.TimeWritten": {
+				CopyFrom:          "jsonPayload.system_time",
+				CustomConvertFunc: formatSystemTime,
+			},
 		}}
 	return p.Processors(ctx)
+}
+
+func formatSystemTime(v ottl.LValue) ottl.Statements {
+	return v.Set(ottl.FormatTime(ottl.ToTime(v, "%Y-%m-%dT%T.%sZ"), "%Y-%m-%d %T.%s +0000"))
 }
 
 func init() {

@@ -20,7 +20,6 @@ import (
 	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
@@ -124,6 +123,7 @@ func (r MetricsReceiverMySql) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 					otel.SetScopeName("agent.googleapis.com/"+r.Type()),
 					otel.SetScopeVersion("1.0"),
 				),
+				otel.MetricsRemoveServiceAttributes(),
 			}},
 		},
 	}, nil
@@ -145,65 +145,63 @@ const (
 	timeFormatMariaDBNew = "%Y-%m-%d %H:%M:%S"
 )
 
-type LoggingProcessorMysqlError struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
+type LoggingProcessorMacroMysqlError struct {
 }
 
-func (LoggingProcessorMysqlError) Type() string {
+func (LoggingProcessorMacroMysqlError) Type() string {
 	return "mysql_error"
 }
 
-func (p LoggingProcessorMysqlError) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseRegexComplex{
-		Parsers: []confgenerator.RegexParser{
-			{
-				// MySql >=5.7 documented: https://dev.mysql.com/doc/refman/8.0/en/error-log-format.html
-				// Sample Line: 2020-08-06T14:25:02.936146Z 0 [Warning] [MY-010068] [Server] CA certificate /var/mysql/sslinfo/cacert.pem is self signed.
-				// Sample Line: 2020-08-06T14:25:03.109022Z 5 [Note] Event Scheduler: scheduler thread started with id 5
-				Regex: fmt.Sprintf(
-					`^(?<time>%s)\s+(?<tid>\d+)\s+\[(?<level>[^\]]+)](?:\s+\[(?<errorCode>[^\]]+)])?(?:\s+\[(?<subsystem>[^\]]+)])?\s+(?<message>.*)$`,
-					timeRegexMySQLNew,
-				),
-				Parser: confgenerator.ParserShared{
-					TimeKey:    "time",
-					TimeFormat: timeFormatMySQLNew,
-					Types: map[string]string{
-						"tid": "integer",
+func (p LoggingProcessorMacroMysqlError) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
+	return []confgenerator.InternalLoggingProcessor{
+		confgenerator.LoggingProcessorParseRegexComplex{
+			Parsers: []confgenerator.RegexParser{
+				{
+					// MySql >=5.7 documented: https://dev.mysql.com/doc/refman/8.0/en/error-log-format.html
+					// Sample Line: 2020-08-06T14:25:02.936146Z 0 [Warning] [MY-010068] [Server] CA certificate /var/mysql/sslinfo/cacert.pem is self signed.
+					// Sample Line: 2020-08-06T14:25:03.109022Z 5 [Note] Event Scheduler: scheduler thread started with id 5
+					Regex: fmt.Sprintf(
+						`^(?<time>%s)\s+(?<tid>\d+)\s+\[(?<level>[^\]]+)](?:\s+\[(?<errorCode>[^\]]+)])?(?:\s+\[(?<subsystem>[^\]]+)])?\s+(?<message>.*)$`,
+						timeRegexMySQLNew,
+					),
+					Parser: confgenerator.ParserShared{
+						TimeKey:    "time",
+						TimeFormat: timeFormatMySQLNew,
+						Types: map[string]string{
+							"tid": "integer",
+						},
 					},
 				},
-			},
-			{
-				// Mysql <5.7, MariaDB <10.1.4, documented: https://mariadb.com/kb/en/error-log/#format
-				// Sample Line: 160615 16:53:08 [Note] InnoDB: The InnoDB memory heap is disabled
-				// TODO - time is in system time, not UTC, is there a way to resolve this in fluent bit?
-				Regex: fmt.Sprintf(
-					`^(?<time>%s)\s+\[(?<level>[^\]]+)]\s+(?<message>.*)$`,
-					timeRegexOld,
-				),
-				Parser: confgenerator.ParserShared{
-					TimeKey:    "time",
-					TimeFormat: timeFormatOld,
+				{
+					// Mysql <5.7, MariaDB <10.1.4, documented: https://mariadb.com/kb/en/error-log/#format
+					// Sample Line: 160615 16:53:08 [Note] InnoDB: The InnoDB memory heap is disabled
+					// TODO - time is in system time, not UTC, is there a way to resolve this in fluent bit?
+					Regex: fmt.Sprintf(
+						`^(?<time>%s)\s+\[(?<level>[^\]]+)]\s+(?<message>.*)$`,
+						timeRegexOld,
+					),
+					Parser: confgenerator.ParserShared{
+						TimeKey:    "time",
+						TimeFormat: timeFormatOld,
+					},
 				},
-			},
-			{
-				// MariaDB >=10.1.5, documented: https://mariadb.com/kb/en/error-log/#format
-				// Sample Line: 2016-06-15  1:53:33 139651251140544 [Note] InnoDB: The InnoDB memory heap is disabled
-				Regex: fmt.Sprintf(
-					`^(?<time>%s)(?:\s+(?<tid>\d+))?(?:\s+\[(?<level>[^\]]+)])?\s+(?<message>.*)$`,
-					timeRegexMariaDBNew,
-				),
-				Parser: confgenerator.ParserShared{
-					TimeKey:    "time",
-					TimeFormat: timeFormatMariaDBNew,
-					Types: map[string]string{
-						"tid": "integer",
+				{
+					// MariaDB >=10.1.5, documented: https://mariadb.com/kb/en/error-log/#format
+					// Sample Line: 2016-06-15  1:53:33 139651251140544 [Note] InnoDB: The InnoDB memory heap is disabled
+					Regex: fmt.Sprintf(
+						`^(?<time>%s)(?:\s+(?<tid>\d+))?(?:\s+\[(?<level>[^\]]+)])?\s+(?<message>.*)$`,
+						timeRegexMariaDBNew,
+					),
+					Parser: confgenerator.ParserShared{
+						TimeKey:    "time",
+						TimeFormat: timeFormatMariaDBNew,
+						Types: map[string]string{
+							"tid": "integer",
+						},
 					},
 				},
 			},
 		},
-	}.Components(ctx, tag, uid)
-
-	c = append(c,
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				"severity": {
@@ -222,102 +220,96 @@ func (p LoggingProcessorMysqlError) Components(ctx context.Context, tag string, 
 				},
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(ctx, tag, uid)...,
-	)
-
-	return c
+		},
+	}
 }
 
-type LoggingProcessorMysqlGeneral struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
+type LoggingProcessorMacroMysqlGeneral struct {
 }
 
-func (LoggingProcessorMysqlGeneral) Type() string {
+func (LoggingProcessorMacroMysqlGeneral) Type() string {
 	return "mysql_general"
 }
 
-func (p LoggingProcessorMysqlGeneral) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseMultilineRegex{
-		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
-			Parsers: []confgenerator.RegexParser{
-				{
-					// Limited documentation: https://dev.mysql.com/doc/refman/8.0/en/query-log.html
-					// Sample line: 2021-10-12T01:12:37.732966Z        14 Connect   root@localhost on  using Socket
-					// Sample line: 2021-10-12T01:12:37.733135Z        14 Query     select @@version_comment limit 1
-					Regex: fmt.Sprintf(
-						`^(?<time>%s)\s+(?<tid>\d+)\s+(?<command>\w+)(\s+(?<message>[\s|\S]*))?`,
-						timeRegexMySQLNew,
-					),
-					Parser: confgenerator.ParserShared{
-						TimeKey:    "time",
-						TimeFormat: timeFormatMySQLNew,
-						Types: map[string]string{
-							"tid": "integer",
+func (p LoggingProcessorMacroMysqlGeneral) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
+	return []confgenerator.InternalLoggingProcessor{
+		confgenerator.LoggingProcessorParseMultilineRegex{
+			LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
+				Parsers: []confgenerator.RegexParser{
+					{
+						// Limited documentation: https://dev.mysql.com/doc/refman/8.0/en/query-log.html
+						// Sample line: 2021-10-12T01:12:37.732966Z        14 Connect   root@localhost on  using Socket
+						// Sample line: 2021-10-12T01:12:37.733135Z        14 Query     select @@version_comment limit 1
+						Regex: fmt.Sprintf(
+							`^(?<time>%s)\s+(?<tid>\d+)\s+(?<command>\w+)(\s+(?<message>[\s|\S]*))?`,
+							timeRegexMySQLNew,
+						),
+						Parser: confgenerator.ParserShared{
+							TimeKey:    "time",
+							TimeFormat: timeFormatMySQLNew,
+							Types: map[string]string{
+								"tid": "integer",
+							},
+						},
+					},
+					{
+						// MariaDB uses the same timestamp format here as old versions do for the error log:
+						// https://mariadb.com/kb/en/error-log/#format
+						// Sample line: 230707  1:41:38     40 Query    select table_catalog, table_schema, table_name from information_schema.tables
+						// Sample line:                      5 Connect  root@localhost on  using Socket
+						// When a timestamp is present, it is followed by a single tab character.
+						// When it is not, it means the timestamp is the same as a previous line, and it is replaced by another tab character.
+						Regex: fmt.Sprintf(
+							`^((?<time>%s)|\t)\s+(?<tid>\d+)\s+(?<command>\w+)(\s+(?<message>[\s|\S]*))?`,
+							timeRegexOld,
+						),
+						Parser: confgenerator.ParserShared{
+							TimeKey:    "time",
+							TimeFormat: timeFormatOld,
+							Types: map[string]string{
+								"tid": "integer",
+							},
 						},
 					},
 				},
+			},
+			Rules: []confgenerator.MultilineRule{
 				{
-					// MariaDB uses the same timestamp format here as old versions do for the error log:
-					// https://mariadb.com/kb/en/error-log/#format
-					// Sample line: 230707  1:41:38     40 Query    select table_catalog, table_schema, table_name from information_schema.tables
-					// Sample line:                      5 Connect  root@localhost on  using Socket
-					// When a timestamp is present, it is followed by a single tab character.
-					// When it is not, it means the timestamp is the same as a previous line, and it is replaced by another tab character.
+					StateName: "start_state",
+					NextState: "cont",
 					Regex: fmt.Sprintf(
-						`^((?<time>%s)|\t)\s+(?<tid>\d+)\s+(?<command>\w+)(\s+(?<message>[\s|\S]*))?`,
+						`^(%s|%s|\t\t)`,
+						timeRegexMySQLNew,
 						timeRegexOld,
 					),
-					Parser: confgenerator.ParserShared{
-						TimeKey:    "time",
-						TimeFormat: timeFormatOld,
-						Types: map[string]string{
-							"tid": "integer",
-						},
-					},
+				},
+				{
+					StateName: "cont",
+					NextState: "cont",
+					Regex: fmt.Sprintf(
+						`^(?!(%s|%s|\t\t))`,
+						timeRegexMySQLNew,
+						timeRegexOld,
+					),
 				},
 			},
 		},
-		Rules: []confgenerator.MultilineRule{
-			{
-				StateName: "start_state",
-				NextState: "cont",
-				Regex: fmt.Sprintf(
-					`^(%s|%s|\t\t)`,
-					timeRegexMySQLNew,
-					timeRegexOld,
-				),
-			},
-			{
-				StateName: "cont",
-				NextState: "cont",
-				Regex: fmt.Sprintf(
-					`^(?!(%s|%s|\t\t))`,
-					timeRegexMySQLNew,
-					timeRegexOld,
-				),
-			},
-		},
-	}.Components(ctx, tag, uid)
-
-	c = append(c,
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(ctx, tag, uid)...,
-	)
-	return c
+		},
+	}
 }
 
-type LoggingProcessorMysqlSlow struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
+type LoggingProcessorMacroMysqlSlow struct {
 }
 
-func (LoggingProcessorMysqlSlow) Type() string {
+func (LoggingProcessorMacroMysqlSlow) Type() string {
 	return "mysql_slow"
 }
 
-func (p LoggingProcessorMysqlSlow) Components(ctx context.Context, tag string, uid string) []fluentbit.Component {
+func (p LoggingProcessorMacroMysqlSlow) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
 	modifyFields := map[string]*confgenerator.ModifyField{
 		InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 	}
@@ -528,90 +520,67 @@ func (p LoggingProcessorMysqlSlow) Components(ctx context.Context, tag string, u
 		},
 	})
 
-	c := confgenerator.LoggingProcessorParseMultilineRegex{
-		LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
-			Parsers: parsers,
+	return []confgenerator.InternalLoggingProcessor{
+		confgenerator.LoggingProcessorParseMultilineRegex{
+			LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
+				Parsers: parsers,
+			},
+			Rules: []confgenerator.MultilineRule{
+				// Logs start with Time: or User@Host: (omitting time if it's the same as the previous entry).
+				{
+					StateName: "start_state",
+					NextState: "comment",
+					Regex: fmt.Sprintf(
+						`^# (User@Host: |Time: (%s|%s))`,
+						timeRegexMySQLNew,
+						timeRegexOld,
+					),
+				},
+				// Explicitly consume the next line, which might be User@Host.
+				{
+					StateName: "comment",
+					NextState: "cont",
+					Regex:     `^# `,
+				},
+				// Then consume everything until the next Time or User@Host.
+				{
+					StateName: "cont",
+					NextState: "cont",
+					Regex: fmt.Sprintf(
+						`^(?!# (User@Host: |Time: (%s|%s)))`,
+						timeRegexMySQLNew,
+						timeRegexOld,
+					),
+				},
+			},
 		},
-		Rules: []confgenerator.MultilineRule{
-			// Logs start with Time: or User@Host: (omitting time if it's the same as the previous entry).
-			{
-				StateName: "start_state",
-				NextState: "comment",
-				Regex: fmt.Sprintf(
-					`^# (User@Host: |Time: (%s|%s))`,
-					timeRegexMySQLNew,
-					timeRegexOld,
-				),
-			},
-			// Explicitly consume the next line, which might be User@Host.
-			{
-				StateName: "comment",
-				NextState: "cont",
-				Regex:     `^# `,
-			},
-			// Then consume everything until the next Time or User@Host.
-			{
-				StateName: "cont",
-				NextState: "cont",
-				Regex: fmt.Sprintf(
-					`^(?!# (User@Host: |Time: (%s|%s)))`,
-					timeRegexMySQLNew,
-					timeRegexOld,
-				),
-			},
-		},
-	}.Components(ctx, tag, uid)
-
-	c = append(c,
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: modifyFields,
-		}.Components(ctx, tag, uid)...,
-	)
-	return c
+		},
+	}
 }
 
-type LoggingReceiverMysqlGeneral struct {
-	LoggingProcessorMysqlGeneral `yaml:",inline"`
-	ReceiverMixin                confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
-}
-
-func (r LoggingReceiverMysqlGeneral) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.ReceiverMixin.IncludePaths) == 0 {
-		r.ReceiverMixin.IncludePaths = []string{
+func loggingReceiverFilesMixinMysqlGeneral() confgenerator.LoggingReceiverFilesMixin {
+	return confgenerator.LoggingReceiverFilesMixin{
+		IncludePaths: []string{
 			// Default log path for CentOS / RHEL / SLES / Debain / Ubuntu
 			"/var/lib/mysql/${HOSTNAME}.log",
-		}
+		},
 	}
-	c := r.ReceiverMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorMysqlGeneral.Components(ctx, tag, "mysql_general")...)
-	return c
 }
 
-type LoggingReceiverMysqlSlow struct {
-	LoggingProcessorMysqlSlow `yaml:",inline"`
-	ReceiverMixin             confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
-}
-
-func (r LoggingReceiverMysqlSlow) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.ReceiverMixin.IncludePaths) == 0 {
-		r.ReceiverMixin.IncludePaths = []string{
+func loggingReceiverFilesMixinMysqlSlow() confgenerator.LoggingReceiverFilesMixin {
+	return confgenerator.LoggingReceiverFilesMixin{
+		IncludePaths: []string{
 			// Default log path for CentOS / RHEL / SLES / Debain / Ubuntu
 			"/var/lib/mysql/${HOSTNAME}-slow.log",
-		}
+		},
 	}
-	c := r.ReceiverMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorMysqlSlow.Components(ctx, tag, "mysql_slow")...)
-	return c
 }
 
-type LoggingReceiverMysqlError struct {
-	LoggingProcessorMysqlError `yaml:",inline"`
-	ReceiverMixin              confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
-}
-
-func (r LoggingReceiverMysqlError) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.ReceiverMixin.IncludePaths) == 0 {
-		r.ReceiverMixin.IncludePaths = []string{
+func loggingReceiverFilesMixinMysqlError() confgenerator.LoggingReceiverFilesMixin {
+	return confgenerator.LoggingReceiverFilesMixin{
+		IncludePaths: []string{
 			// Default log path for CentOS / RHEL
 			"/var/log/mysqld.log",
 			// Default log path for SLES
@@ -623,18 +592,12 @@ func (r LoggingReceiverMysqlError) Components(ctx context.Context, tag string) [
 			// Default log path for MariaDB upstream
 			// https://mariadb.com/kb/en/error-log/#writing-the-error-log-to-a-file
 			"/var/lib/mysql/${HOSTNAME}.err",
-		}
+		},
 	}
-	c := r.ReceiverMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorMysqlError.Components(ctx, tag, "mysql_error")...)
-	return c
 }
 
 func init() {
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorMysqlError{} })
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorMysqlGeneral{} })
-	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &LoggingProcessorMysqlSlow{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverMysqlError{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverMysqlGeneral{} })
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverMysqlSlow{} })
+	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroMysqlGeneral](loggingReceiverFilesMixinMysqlGeneral)
+	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroMysqlSlow](loggingReceiverFilesMixinMysqlSlow)
+	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroMysqlError](loggingReceiverFilesMixinMysqlError)
 }

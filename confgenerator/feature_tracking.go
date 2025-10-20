@@ -418,6 +418,7 @@ func getMetadata(field reflect.StructField) metadata {
 	if !ok {
 		panic("field must have a yaml tag")
 	}
+
 	hasInline := false
 	yamlTags := strings.Split(yamlTag, ",")
 	for _, tag := range yamlTags {

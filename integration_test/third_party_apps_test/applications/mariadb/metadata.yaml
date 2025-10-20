@@ -49,6 +49,8 @@ platforms_to_skip:
   - rocky-linux-cloud:rocky-linux-8
   - rocky-linux-cloud:rocky-linux-8-optimized-gcp
   - rocky-linux-cloud:rocky-linux-8-optimized-gcp-arm64
+  - rocky-linux-cloud:rocky-linux-8-arm64
+  - rhel-cloud:rhel-8-arm64
   - rocky-linux-cloud:rocky-linux-9
   - rocky-linux-cloud:rocky-linux-9-optimized-gcp
   - rocky-linux-cloud:rocky-linux-9-arm64
@@ -128,7 +130,7 @@ expected_metrics:
     monitored_resources: [gce_instance]
     labels:
       - name: operation
-        value_regex: requests|waits|writes
+        value_regex: requests|waits|writes|fsyncs
   - type: workload.googleapis.com/mysql.operations
     value_type: INT64
     kind: CUMULATIVE
@@ -168,10 +170,6 @@ expected_metrics:
     unavailable_on:
       - ubuntu-os-cloud:ubuntu-2404-lts-amd64
       - ubuntu-os-cloud:ubuntu-2404-lts-arm64
-      - ubuntu-os-cloud:ubuntu-2410-amd64
-      - ubuntu-os-cloud:ubuntu-minimal-2410-amd64
-      - ubuntu-os-cloud:ubuntu-2410-arm64
-      - ubuntu-os-cloud:ubuntu-minimal-2410-arm64
       - debian-cloud:debian-12-arm64
   - type: workload.googleapis.com/mysql.sorts
     value_type: INT64

@@ -71,6 +71,9 @@ expected_metrics:
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    labels:
+      - name: performance_counter_object_name
+        value_regex: .*
   - type: workload.googleapis.com/sqlserver.page.split.rate
     value_type: DOUBLE
     kind: GAUGE

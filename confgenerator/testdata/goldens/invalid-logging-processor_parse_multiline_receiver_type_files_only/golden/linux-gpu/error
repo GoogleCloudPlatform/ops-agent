@@ -1,1 +1,0 @@
-processor "multiline_parser_1" with type "parse_multiline" can only be applied on receivers with type "files"

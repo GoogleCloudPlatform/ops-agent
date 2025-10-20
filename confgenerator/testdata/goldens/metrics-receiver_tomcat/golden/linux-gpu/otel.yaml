@@ -12,7 +12,7 @@ exporters:
       instrumentation_library_labels: true
       prefix: ""
       resource_filters: []
-      service_resource_labels: false
+      service_resource_labels: true
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
 processors:
@@ -43,7 +43,6 @@ processors:
       exclude:
         match_type: strict
         metric_names:
-        - system.cpu.time
         - system.network.dropped
         - system.filesystem.inodes.usage
         - system.paging.faults
@@ -491,6 +490,15 @@ processors:
       statements:
       - set(name, "agent.googleapis.com/tomcat")
       - set(version, "1.0")
+  transform/tomcat_3:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
@@ -596,6 +604,7 @@ service:
       - normalizesums/tomcat_0
       - metricstransform/tomcat_1
       - transform/tomcat_2
+      - transform/tomcat_3
       - resourcedetection/_global_0
       receivers:
       - jmx/tomcat

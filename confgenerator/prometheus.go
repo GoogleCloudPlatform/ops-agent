@@ -57,6 +57,10 @@ func (r PrometheusMetrics) Type() string {
 	return "prometheus"
 }
 
+func (r PrometheusMetrics) AllowCustomProcessors() bool {
+	return false
+}
+
 func (r PrometheusMetrics) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	resource, err := platform.FromContext(ctx).GetResource()
 	if err != nil {
@@ -86,18 +90,24 @@ func (r PrometheusMetrics) Pipelines(ctx context.Context) ([]otel.ReceiverPipeli
 			}
 		}
 	}
-
+	exp_otlp_exporter := experimentsFromContext(ctx)["otlp_exporter"]
+	metrics_components := []otel.Component{otel.GroupByGMPAttrs_OTTL()}
+	exporter := map[string]otel.ExporterType{
+		"metrics": otel.GMP,
+	}
+	if exp_otlp_exporter {
+		metrics_components = append(metrics_components, otel.MetricUnknownCounter())
+		metrics_components = append(metrics_components, otel.MetricStartTime())
+		metrics_components = append(metrics_components, otel.GCPProjectID(resource.ProjectName()))
+		exporter["metrics"] = otel.OTLP
+	}
 	return []otel.ReceiverPipeline{{
 		Receiver: prometheusToOtelComponent(r),
 		Processors: map[string][]otel.Component{
 			// Expect metrics, without any additional processing.
-			"metrics": {
-				otel.GroupByGMPAttrs_OTTL(),
-			},
+			"metrics": metrics_components,
 		},
-		ExporterTypes: map[string]otel.ExporterType{
-			"metrics": otel.GMP,
-		},
+		ExporterTypes: exporter,
 		ResourceDetectionModes: map[string]otel.ResourceDetectionMode{
 			"metrics": otel.None,
 		},

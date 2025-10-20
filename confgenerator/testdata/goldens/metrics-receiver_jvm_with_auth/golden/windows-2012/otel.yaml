@@ -12,7 +12,7 @@ exporters:
       instrumentation_library_labels: true
       prefix: ""
       resource_filters: []
-      service_resource_labels: false
+      service_resource_labels: true
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
 processors:
@@ -53,7 +53,6 @@ processors:
       exclude:
         match_type: strict
         metric_names:
-        - system.cpu.time
         - system.network.dropped
         - system.filesystem.inodes.usage
         - system.paging.faults
@@ -522,6 +521,15 @@ processors:
       statements:
       - set(name, "agent.googleapis.com/jvm")
       - set(version, "1.0")
+  transform/jvm_3:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
   transform/mssql_1:
     metric_statements:
     - context: scope
@@ -672,6 +680,7 @@ service:
       - normalizesums/jvm_0
       - metricstransform/jvm_1
       - transform/jvm_2
+      - transform/jvm_3
       - resourcedetection/_global_0
       receivers:
       - jmx/jvm

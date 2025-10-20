@@ -12,7 +12,7 @@ exporters:
       instrumentation_library_labels: true
       prefix: ""
       resource_filters: []
-      service_resource_labels: false
+      service_resource_labels: true
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
 processors:
@@ -53,7 +53,6 @@ processors:
       exclude:
         match_type: strict
         metric_names:
-        - system.cpu.time
         - system.network.dropped
         - system.filesystem.inodes.usage
         - system.paging.faults
@@ -548,6 +547,15 @@ processors:
       statements:
       - set(name, "agent.googleapis.com/mysql")
       - set(version, "1.0")
+  transform/mysqlmetrics_3:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
@@ -714,6 +722,7 @@ service:
       - normalizesums/mysqlmetrics_0
       - metricstransform/mysqlmetrics_1
       - transform/mysqlmetrics_2
+      - transform/mysqlmetrics_3
       - resourcedetection/_global_0
       receivers:
       - mysql/mysqlmetrics

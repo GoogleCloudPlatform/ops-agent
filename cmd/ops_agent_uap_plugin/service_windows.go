@@ -38,9 +38,8 @@ import (
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
 	"golang.org/x/sys/windows/svc/mgr"
-	"google.golang.org/grpc/status"
 
-	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
+	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
 )
 
 const (
@@ -66,14 +65,6 @@ var (
 // implementations.
 type RunSubAgentCommandFunc func(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup)
 
-// Apply applies the config sent or performs the work defined in the message.
-// ApplyRequest is opaque to the agent and is expected to be well known contract
-// between Plugin and the server itself. For e.g. service might want to update
-// plugin config to enable/disable feature here plugins can react to such requests.
-func (ps *OpsAgentPluginServer) Apply(ctx context.Context, msg *pb.ApplyRequest) (*pb.ApplyResponse, error) {
-	panic("Apply method is not implemented on Windows yet")
-}
-
 // Start starts the plugin and initiates the plugin functionality.
 // Until plugin receives Start request plugin is expected to be not functioning
 // and just listening on the address handed off waiting for the request.
@@ -95,7 +86,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	if len(preInstalledAgents) != 0 || err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		log.Printf("Start() failed: %s", err)
-		return nil, status.Error(9, err.Error()) // FailedPrecondition
+		return &pb.StartResponse{}, nil
 	}
 
 	// Calculate plugin install and state dirs.
@@ -103,7 +94,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	if err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		log.Printf("Start() failed, because it cannot determine the plugin install location: %s", err)
-		return nil, status.Error(13, err.Error()) // Internal
+		return &pb.StartResponse{}, nil
 	}
 
 	pluginStateDir := msg.GetConfig().GetStateDirectoryPath()
@@ -117,7 +108,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	if err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		log.Printf("Start() failed, because it failed to create Windows event logger: %s", err)
-		return nil, status.Error(13, err.Error()) // Internal
+		return &pb.StartResponse{}, nil
 	}
 
 	// Receive config from the Start request and write it to the Ops Agent config file.
@@ -125,7 +116,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		windowsEventLogger.Close()
 		log.Printf("Start() failed, because it failed to write the custom Ops Agent config to file: %s", err)
-		return nil, status.Errorf(13, "failed to write the custom Ops Agent config to file: %s", err) // Internal
+		return &pb.StartResponse{}, nil
 	}
 
 	// Subagents config validation and generation.
@@ -133,7 +124,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		windowsEventLogger.Close()
 		log.Printf("Start() failed at the subagent config validation and generation step: %s", err)
-		return nil, status.Error(9, err.Error()) // FailedPrecondition
+		return &pb.StartResponse{}, nil
 	}
 
 	// Trigger Healthchecks.
@@ -146,7 +137,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		windowsEventLogger.Close()
 		log.Printf("Start() failed, because it failed to create a Windows Job object: %s", err)
-		return nil, status.Error(13, err.Error()) // Internal
+		return &pb.StartResponse{}, nil
 	}
 
 	cancelFunc := func() {
@@ -379,6 +370,7 @@ func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallD
 	runOtelCmd := exec.CommandContext(ctx,
 		path.Join(pluginInstallDirectory, OtelBinary),
 		"--config", path.Join(pluginStateDirectory, GeneratedConfigsOutDir, "otel/otel.yaml"),
+		"--feature-gates=receiver.prometheusreceiver.RemoveStartTimeAdjustment",
 	)
 	wg.Add(1)
 	go runSubAgentCommand(ctx, cancel, runOtelCmd, runCommand, &wg)

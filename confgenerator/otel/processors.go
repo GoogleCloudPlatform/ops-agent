@@ -233,6 +233,36 @@ func TransformationMetrics(queries ...TransformQuery) Component {
 	}
 }
 
+// MetricsRemoveServiceAttributes will remove any service attributes that the
+// googlecloudexporter attempts to promote from resource to metric attributes.
+// The attributes it removes are specified at:
+// https://opentelemetry.io/docs/specs/semconv/registry/attributes/service/
+//
+// This does not use the typical TransformQuery API because it needs to have
+// a silent error_mode and use the resource context. The latter would have been
+// easily fixable, but the error_mode would have required a major refactor for
+// this to be the only TransformQuery making use of it.
+// - @braydonk
+func MetricsRemoveServiceAttributes() Component {
+	return Component{
+		Type: "transform",
+		Config: map[string]any{
+			"metric_statements": []map[string]any{
+				{
+					"context":    "resource",
+					"error_mode": "silent",
+					"statements": []string{
+						`delete_key(attributes, "service.name")`,
+						`delete_key(attributes, "service.instance.id")`,
+						`delete_key(attributes, "service.namespace")`,
+						`delete_key(attributes, "service.version")`,
+					},
+				},
+			},
+		},
+	}
+}
+
 // TransformQueryContext is a type wrapper for the context of a query expression within the transoform processor
 type TransformQueryContext string
 
@@ -588,4 +618,30 @@ func ResourceTransform(attributes map[string]string, override bool) Component {
 		Type:   "resource",
 		Config: config,
 	}
+}
+
+func MetricStartTime() Component {
+	return Component{
+		Type:   "metricstarttime",
+		Config: map[string]string{"strategy": "subtract_initial_point"},
+	}
+}
+
+func GCPProjectID(projectID string) Component {
+	return ResourceTransform(
+		map[string]string{"gcp.project_id": projectID}, false,
+	)
+}
+
+// MetricUnknownCounter is necessary to handle prometheus unknown type metrics
+// go/ops-agent-otlp-migration
+func MetricUnknownCounter() Component {
+	return Transform("metric", "metric", []ottl.Statement{
+		// Copy the unknown metric, but add a suffix so we can distinguish the copy from the original.
+		"copy_metric(Concat([metric.name, \"unknowncounter\"], \":\")) where metric.metadata[\"prometheus.type\"] == \"unknown\" and not HasSuffix(metric.name, \":unknowncounter\")",
+		// Change the copy to a monotonic, cumulative sum.
+		"convert_gauge_to_sum(\"cumulative\", true) where HasSuffix(metric.name, \":unknowncounter\")",
+		// Delete the extra suffix once we are done.
+		"set(metric.name, Substring(metric.name, 0, Len(metric.name)-Len(\":unknowncounter\"))) where HasSuffix(metric.name, \":unknowncounter\")",
+	})
 }
