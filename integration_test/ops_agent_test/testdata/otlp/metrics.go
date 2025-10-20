@@ -56,7 +56,7 @@ func installMetricExportPipeline(ctx context.Context) (func(context.Context) err
 	metricProvider := metricsdk.NewMeterProvider(
 		metricsdk.WithReader(metricsdk.NewPeriodicReader(exporter)),
 		metricsdk.WithView(metricsdk.NewView(
-			metricsdk.Instrument{Name: "otlp.test.exponential_histogram"},
+			metricsdk.Instrument{Name: "otlp.test.exponential"},
 			metricsdk.Stream{Aggregation: metricsdk.AggregationBase2ExponentialHistogram{
 				MaxSize: 160,
 			}},
@@ -106,7 +106,7 @@ func main() {
 	testHistogramMetric(ctx, meter, "otlp.test.histogram")
 	testUpDownCounterMetric(ctx, meter, "otlp.test.updowncounter")
 	testCumulativeMetric(ctx, meter, "otlp.test.cumulative")
-	testExponentialHistogramMetric(ctx, meter, "otlp.test.exponential_histogram")
+	testExponentialHistogramMetric(ctx, meter, "otlp.test.exponential")
 }
 
 func testCumulativeMetric(ctx context.Context, meter metric.Meter, name string) {
