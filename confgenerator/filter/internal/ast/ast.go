@@ -502,12 +502,12 @@ func (r Restriction) OTTLExpression() (ottl.Value, error) {
 	case "=~", "!~":
 		// regex match, case sensitive
 
-		if _, err := regexp.Compile(r.RHS); err != nil {
-			return nil, fmt.Errorf("unsupported regex %q: %w", r.RHS, err)
-		}
-
+		// TODO: b/436898109 - Enable regex validity config checks when Ruby Regex library
+		// is added to the Ops Agent build. This requires "CGO_ENABLED=1".
+		// if _, err := regexp.Compile(r.RHS); err != nil {
+		//	return nil, fmt.Errorf("unsupported regex %q: %w", r.RHS, err)
+		//}
 		expr = ottl.IsMatchRubyRegex(lhs, r.RHS)
-		// TODO: Support Ruby regex syntax
 
 		if r.Operator == "!~" {
 			expr = ottl.Not(expr)
