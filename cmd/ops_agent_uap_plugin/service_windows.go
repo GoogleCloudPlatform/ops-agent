@@ -38,7 +38,6 @@ import (
 	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
 	"golang.org/x/sys/windows/svc/mgr"
-	"google.golang.org/grpc/status"
 
 	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
 )
@@ -87,7 +86,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	if len(preInstalledAgents) != 0 || err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		log.Printf("Start() failed: %s", err)
-		return nil, status.Error(9, err.Error()) // FailedPrecondition
+		return &pb.StartResponse{}, nil
 	}
 
 	// Calculate plugin install and state dirs.
@@ -95,7 +94,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	if err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		log.Printf("Start() failed, because it cannot determine the plugin install location: %s", err)
-		return nil, status.Error(13, err.Error()) // Internal
+		return &pb.StartResponse{}, nil
 	}
 
 	pluginStateDir := msg.GetConfig().GetStateDirectoryPath()
@@ -109,7 +108,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	if err != nil {
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		log.Printf("Start() failed, because it failed to create Windows event logger: %s", err)
-		return nil, status.Error(13, err.Error()) // Internal
+		return &pb.StartResponse{}, nil
 	}
 
 	// Receive config from the Start request and write it to the Ops Agent config file.
@@ -117,7 +116,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		windowsEventLogger.Close()
 		log.Printf("Start() failed, because it failed to write the custom Ops Agent config to file: %s", err)
-		return nil, status.Errorf(13, "failed to write the custom Ops Agent config to file: %s", err) // Internal
+		return &pb.StartResponse{}, nil
 	}
 
 	// Subagents config validation and generation.
@@ -125,7 +124,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		windowsEventLogger.Close()
 		log.Printf("Start() failed at the subagent config validation and generation step: %s", err)
-		return nil, status.Error(9, err.Error()) // FailedPrecondition
+		return &pb.StartResponse{}, nil
 	}
 
 	// Trigger Healthchecks.
@@ -138,7 +137,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
 		windowsEventLogger.Close()
 		log.Printf("Start() failed, because it failed to create a Windows Job object: %s", err)
-		return nil, status.Error(13, err.Error()) // Internal
+		return &pb.StartResponse{}, nil
 	}
 
 	cancelFunc := func() {
@@ -371,6 +370,7 @@ func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallD
 	runOtelCmd := exec.CommandContext(ctx,
 		path.Join(pluginInstallDirectory, OtelBinary),
 		"--config", path.Join(pluginStateDirectory, GeneratedConfigsOutDir, "otel/otel.yaml"),
+		"--feature-gates=receiver.prometheusreceiver.RemoveStartTimeAdjustment",
 	)
 	wg.Add(1)
 	go runSubAgentCommand(ctx, cancel, runOtelCmd, runCommand, &wg)

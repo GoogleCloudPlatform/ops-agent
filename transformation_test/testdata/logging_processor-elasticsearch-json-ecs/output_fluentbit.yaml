@@ -1,0 +1,120 @@
+- entries:
+  - jsonPayload:
+      ecs.version: 1.2.0
+      elasticsearch.cluster.name: elasticsearch
+      elasticsearch.node.name: es-test-3
+      event:
+        dataset: elasticsearch.server
+      log:
+        level: INFO
+        logger: org.elasticsearch.node.Node
+      message: initialized
+      process.thread.name: main
+      service.name: ES_ECS
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-09-19T02:20:17.920000000Z
+  - jsonPayload:
+      data_stream.dataset: elasticsearch.deprecation
+      data_stream.namespace: default
+      data_stream.type: logs
+      ecs.version: 1.2.0
+      elasticsearch.cluster.name: elasticsearch
+      elasticsearch.cluster.uuid: NW0tZXo-QwCNcoz9ddkWmg
+      elasticsearch.event.category: indices
+      elasticsearch.node.id: ZbYZl1Y6SpKVarJF5O44qA
+      elasticsearch.node.name: es-test-3
+      event:
+        code: dot-prefix
+        dataset: elasticsearch.deprecation
+      log:
+        level: WARN
+        logger: org.elasticsearch.deprecation.validation.DotPrefixValidator
+      message: Index [.search-acl-filter-*] name begins with a dot (.), which is deprecated, and will not be allowed in a future Elasticsearch version.
+      process.thread.name: "elasticsearch[es-test-3][generic][T#5]"
+      service.name: ES_ECS
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
+    logName: projects/my-project/logs/transformation_test
+    severity: 400.0
+    timestamp: 2025-09-19T02:20:25.607000000Z
+  - jsonPayload:
+      ecs.version: 1.2.0
+      elasticsearch.cluster.name: elasticsearch
+      elasticsearch.cluster.uuid: NW0tZXo-QwCNcoz9ddkWmg
+      elasticsearch.node.id: ZbYZl1Y6SpKVarJF5O44qA
+      elasticsearch.node.name: es-test-3
+      event:
+        dataset: elasticsearch.server
+      log:
+        level: WARN
+        logger: org.elasticsearch.threadpool.ThreadPool
+      message: timer thread slept for [6.1s/6178ms] on absolute clock which is above the warn threshold of [5000ms]
+      process.thread.name: elasticsearch[es-test-3][[timer]]
+      service.name: ES_ECS
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
+    logName: projects/my-project/logs/transformation_test
+    severity: 400.0
+    timestamp: 2025-09-22T13:02:00.960000000Z
+  - jsonPayload:
+      ecs.version: 1.2.0
+      elasticsearch.cluster.name: elasticsearch
+      elasticsearch.cluster.uuid: NW0tZXo-QwCNcoz9ddkWmg
+      elasticsearch.node.id: ZbYZl1Y6SpKVarJF5O44qA
+      elasticsearch.node.name: es-test-3
+      event:
+        dataset: elasticsearch.server
+      log:
+        level: WARN
+        logger: org.elasticsearch.threadpool.ThreadPool
+      message: timer thread slept for [6.1s/6178309887ns] on relative clock which is above the warn threshold of [5000ms]
+      process.thread.name: elasticsearch[es-test-3][[timer]]
+      service.name: ES_ECS
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
+    logName: projects/my-project/logs/transformation_test
+    severity: 400.0
+    timestamp: 2025-09-22T13:02:00.970000000Z
+  - jsonPayload:
+      ecs.version: 1.2.0
+      elasticsearch.cluster.name: elasticsearch
+      elasticsearch.cluster.uuid: NW0tZXo-QwCNcoz9ddkWmg
+      elasticsearch.node.id: ZbYZl1Y6SpKVarJF5O44qA
+      elasticsearch.node.name: es-test-3
+      event:
+        dataset: elasticsearch.server
+      log:
+        level: INFO
+        logger: org.elasticsearch.monitor.jvm.JvmGcMonitorService
+      message: "[gc][5546] overhead, spent [274ms] collecting in the last [1s]"
+      process.thread.name: "elasticsearch[es-test-3][scheduler][T#1]"
+      service.name: ES_ECS
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-09-19T03:55:37.893000000Z
+  - jsonPayload:
+      elasticsearch.node.name: es-test-3
+      log:
+        level: FATAL
+      message: fatal error occurred
+      type: server
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
+    logName: projects/my-project/logs/transformation_test
+    severity: 600.0
+    timestamp: 2025-09-22T13:02:00.970000000Z
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance
