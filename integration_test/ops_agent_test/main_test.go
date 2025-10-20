@@ -4751,7 +4751,7 @@ traces:
 				},
 
 				{
-					"workload.googleapis.com/otlp.test.exponential_histogram", nil,
+					"workload.googleapis.com/otlp.test.exponential", nil,
 					metric.MetricDescriptor_CUMULATIVE,
 					metric.MetricDescriptor_DISTRIBUTION,
 					&distribution.Distribution{
@@ -4835,52 +4835,54 @@ traces:
 				if multiErr != nil {
 					t.Error(multiErr)
 				}
+
 			}
 
-		// expectedFeatures := []*feature_tracking_metadata.FeatureTracking{
-		// 	{
-		// 		Module:  "logging",
-		// 		Feature: "service:pipelines",
-		// 		Key:     "default_pipeline_overridden",
-		// 		Value:   "false",
-		// 	},
-		// 	{
-		// 		Module:  "metrics",
-		// 		Feature: "service:pipelines",
-		// 		Key:     "default_pipeline_overridden",
-		// 		Value:   "false",
-		// 	},
-		// 	{
-		// 		Module:  "combined",
-		// 		Feature: "receivers:otlp",
-		// 		Key:     "[0].metrics_mode",
-		// 		Value:   "googlecloudmonitoring",
-		// 	},
-		// 	{
-		// 		Module:  "combined",
-		// 		Feature: "receivers:otlp",
-		// 		Key:     "[0].enabled",
-		// 		Value:   "true",
-		// 	},
-		// 	{
-		// 		Module:  "combined",
-		// 		Feature: "receivers:otlp",
-		// 		Key:     "[0].grpc_endpoint",
-		// 		Value:   "endpoint",
-		// 	},
-		// }
+			expectedFeatures := []*feature_tracking_metadata.FeatureTracking{
+				{
+					Module:  "logging",
+					Feature: "service:pipelines",
+					Key:     "default_pipeline_overridden",
+					Value:   "false",
+				},
+				{
+					Module:  "metrics",
+					Feature: "service:pipelines",
+					Key:     "default_pipeline_overridden",
+					Value:   "false",
+				},
+				{
+					Module:  "combined",
+					Feature: "receivers:otlp",
+					Key:     "[0].metrics_mode",
+					Value:   "googlecloudmonitoring",
+				},
+				{
+					Module:  "combined",
+					Feature: "receivers:otlp",
+					Key:     "[0].enabled",
+					Value:   "true",
+				},
+				{
+					Module:  "combined",
+					Feature: "receivers:otlp",
+					Key:     "[0].grpc_endpoint",
+					Value:   "endpoint",
+				},
+			}
 
-		// series, err := gce.WaitForMetricSeries(ctx, logger, vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", time.Hour, nil, false, len(expectedFeatures))
-		// if err != nil {
-		// 	t.Error(err)
-		// 	return
-		// }
+			series, err := gce.WaitForMetricSeries(ctx, logger, vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", time.Hour, nil, false, len(expectedFeatures))
+			if err != nil {
+				t.Error(err)
+				return
+			}
 
-		// err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, expectedFeatures)
-		// if err != nil {
-		// 	t.Error(err)
-		// 	return
-		// }
+			err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, expectedFeatures)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+		})
 	})
 }
 
@@ -4949,7 +4951,7 @@ traces:
 					nil,
 				},
 				{
-					"prometheus.googleapis.com/otlp_test_exponential_histogram/histogram", nil,
+					"prometheus.googleapis.com/otlp_test_exponential/histogram", nil,
 					metric.MetricDescriptor_CUMULATIVE,
 					metric.MetricDescriptor_DISTRIBUTION,
 					&distribution.Distribution{
