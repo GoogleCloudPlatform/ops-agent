@@ -1815,61 +1815,61 @@ func TestModifyFields(t *testing.T) {
 			file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
 
 			config := fmt.Sprintf(`logging:
-	receivers:
-		f1:
-		type: files
-		include_paths:
-		- %s
-	processors:
-		modify:
-		type: modify_fields
-		fields:
-			labels."my.cool.service/foo":
-			copy_from: jsonPayload.field
-			labels."static":
-			static_value: hello world
-			labels."label2":
-			move_from: labels."label1"
-			severity:
-			static_value: WARNING
-			jsonPayload.field2:
-			move_from: jsonPayload.field
-			omit_if: jsonPayload.missing_field = "present"
-			jsonPayload.default_present:
-			default_value: default
-			jsonPayload.default_absent:
-			default_value: default
-			jsonPayload.integer:
-			static_value: 15
-			type: integer
-			jsonPayload.float:
-			static_value: 10.5
-			type: float
-			jsonPayload.mapped_field:
-			copy_from: jsonPayload.field
-			map_values:
-				value: new_value
-				value2: wrong_value
-			jsonPayload.omitted:
-			static_value: broken
-			omit_if: jsonPayload.field = "value"
-			trace:
-			move_from: jsonPayload.trace
-			spanId:
-			copy_from: jsonPayload.spanId
-		json:
-		type: parse_json
-	exporters:
-		google:
-		type: google_cloud_logging
-	service:
-		experimental_otel_logging: %v
-		pipelines:
-		p1:
-			receivers: [f1]
-			processors: [json, modify]
-			exporters: [google]
-	`, file1, otel)
+  receivers:
+    f1:
+    type: files
+    include_paths:
+    - %s
+  processors:
+    modify:
+    type: modify_fields
+    fields:
+      labels."my.cool.service/foo":
+      copy_from: jsonPayload.field
+      labels."static":
+      static_value: hello world
+      labels."label2":
+      move_from: labels."label1"
+      severity:
+      static_value: WARNING
+      jsonPayload.field2:
+      move_from: jsonPayload.field
+      omit_if: jsonPayload.missing_field = "present"
+      jsonPayload.default_present:
+      default_value: default
+      jsonPayload.default_absent:
+      default_value: default
+      jsonPayload.integer:
+      static_value: 15
+      type: integer
+      jsonPayload.float:
+      static_value: 10.5
+      type: float
+      jsonPayload.mapped_field:
+      copy_from: jsonPayload.field
+      map_values:
+        value: new_value
+        value2: wrong_value
+      jsonPayload.omitted:
+      static_value: broken
+      omit_if: jsonPayload.field = "value"
+      trace:
+      move_from: jsonPayload.trace
+      spanId:
+      copy_from: jsonPayload.spanId
+    json:
+    type: parse_json
+  exporters:
+    google:
+    type: google_cloud_logging
+  service:
+    experimental_otel_logging: %v
+    pipelines:
+    p1:
+      receivers: [f1]
+      processors: [json, modify]
+      exporters: [google]
+`, file1, otel)
 
 			if otel {
 				if err := setExperimentalFeatures(ctx, logger, vm, "otel_logging"); err != nil {
