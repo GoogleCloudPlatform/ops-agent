@@ -111,29 +111,16 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 		return "", err
 	}
 
-	receiverPipelines["otel"] = AgentSelfMetrics{
-		Version: metricVersionLabel,
-		Port:    otel.MetricsPort,
-	}.MetricsSubmodulePipeline(resource.ProjectName(), expOtlpExporter)
-	pipelines["otel"] = otel.Pipeline{
-		Type:                 "metrics",
-		ReceiverPipelineName: "otel",
+	agentSelfMetrics := AgentSelfMetrics{
+		MetricsVersionLabel: metricVersionLabel,
+		LoggingVersionLabel: loggingVersionLabel,
+		FluentBitPort:       fluentbit.MetricsPort,
+		OtelPort:            otel.MetricsPort,
+		OtelRuntimeDir:      outDir,
+		OtelLogging:         uc.Logging.Service.OTelLogging,
+    ProjectName:         resource.ProjectName()
 	}
-
-	receiverPipelines["ops_agent"] = OpsAgentSelfMetricsPipeline(ctx, outDir, resource.ProjectName(), expOtlpExporter)
-	pipelines["ops_agent"] = otel.Pipeline{
-		Type:                 "metrics",
-		ReceiverPipelineName: "ops_agent",
-	}
-
-	receiverPipelines["fluentbit"] = AgentSelfMetrics{
-		Version: loggingVersionLabel,
-		Port:    fluentbit.MetricsPort,
-	}.LoggingSubmodulePipeline(resource.ProjectName(), expOtlpExporter)
-	pipelines["fluentbit"] = otel.Pipeline{
-		Type:                 "metrics",
-		ReceiverPipelineName: "fluentbit",
-	}
+	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines, expOtlpExporter)
 
 	extensions := map[string]interface{}{}
 	if expOtlpExporter {
@@ -465,13 +452,13 @@ func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAg
 		if len(tags) > 0 {
 			out = append(out, stackdriverOutputComponent(ctx, strings.Join(tags, "|"), userAgent, "2G", l.Service.Compress))
 		}
-		out = append(out, uc.generateSelfLogsComponents(ctx, userAgent)...)
 		out = append(out, addGceMetadataAttributesComponents(ctx, []string{
 			"dataproc-cluster-name",
 			"dataproc-cluster-uuid",
 			"dataproc-region",
 		}, "*", "default-dataproc")...)
 	}
+	out = append(out, uc.generateSelfLogsComponents(ctx, userAgent)...)
 	out = append(out, fluentbit.MetricsOutputComponent())
 
 	return out, nil
