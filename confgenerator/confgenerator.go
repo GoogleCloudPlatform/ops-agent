@@ -105,29 +105,15 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 		return "", err
 	}
 
-	receiverPipelines["otel"] = AgentSelfMetrics{
-		Version: metricVersionLabel,
-		Port:    otel.MetricsPort,
-	}.MetricsSubmodulePipeline()
-	pipelines["otel"] = otel.Pipeline{
-		Type:                 "metrics",
-		ReceiverPipelineName: "otel",
+	agentSelfMetrics := AgentSelfMetrics{
+		MetricsVersionLabel: metricVersionLabel,
+		LoggingVersionLabel: loggingVersionLabel,
+		FluentBitPort:       fluentbit.MetricsPort,
+		OtelPort:            otel.MetricsPort,
+		OtelRuntimeDir:      outDir,
+		OtelLogging:         uc.Logging.Service.OTelLogging,
 	}
-
-	receiverPipelines["ops_agent"] = OpsAgentSelfMetricsPipeline(ctx, outDir)
-	pipelines["ops_agent"] = otel.Pipeline{
-		Type:                 "metrics",
-		ReceiverPipelineName: "ops_agent",
-	}
-
-	receiverPipelines["fluentbit"] = AgentSelfMetrics{
-		Version: loggingVersionLabel,
-		Port:    fluentbit.MetricsPort,
-	}.LoggingSubmodulePipeline()
-	pipelines["fluentbit"] = otel.Pipeline{
-		Type:                 "metrics",
-		ReceiverPipelineName: "fluentbit",
-	}
+	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines)
 
 	exp_otlp_exporter := experimentsFromContext(ctx)["otlp_exporter"]
 	extensions := map[string]interface{}{}
@@ -460,13 +446,13 @@ func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAg
 		if len(tags) > 0 {
 			out = append(out, stackdriverOutputComponent(ctx, strings.Join(tags, "|"), userAgent, "2G", l.Service.Compress))
 		}
-		out = append(out, uc.generateSelfLogsComponents(ctx, userAgent)...)
 		out = append(out, addGceMetadataAttributesComponents(ctx, []string{
 			"dataproc-cluster-name",
 			"dataproc-cluster-uuid",
 			"dataproc-region",
 		}, "*", "default-dataproc")...)
 	}
+	out = append(out, uc.generateSelfLogsComponents(ctx, userAgent)...)
 	out = append(out, fluentbit.MetricsOutputComponent())
 
 	return out, nil
