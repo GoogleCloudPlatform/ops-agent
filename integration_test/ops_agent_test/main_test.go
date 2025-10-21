@@ -4751,7 +4751,7 @@ traces:
 				},
 
 				{
-					"workload.googleapis.com/otlp.test.exponential", nil,
+					"workload.googleapis.com/otlp.test.exponential_histogram", nil,
 					metric.MetricDescriptor_CUMULATIVE,
 					metric.MetricDescriptor_DISTRIBUTION,
 					&distribution.Distribution{

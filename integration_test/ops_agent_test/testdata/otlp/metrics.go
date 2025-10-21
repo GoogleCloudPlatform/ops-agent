@@ -21,6 +21,10 @@ var renameMap = map[string]string{
 	"abc":               "otlp.test.prefix3/workload.googleapis.com/abc",
 	"otlp.test.prefix4": "WORKLOAD.GOOGLEAPIS.COM/otlp.test.prefix4",
 	"otlp.test.prefix5": "WORKLOAD.googleapis.com/otlp.test.prefix5",
+	"otlp.test.histogram": "workload.googleapis.com/otlp.test.histogram",
+	"otlp.test.updowncounter": "workload.googleapis.com/otlp.test.updowncounter",
+	"otlp.test.cumulative": "workload.googleapis.com/otlp.test.cumulative",
+	histogramName: "workload.googleapis.com/otlp.test.exponential_histogram",
 }
 
 var (
@@ -29,6 +33,8 @@ var (
 	flagServiceInstanceID = flag.String("service_instance_id", "", "service.instance.id attribute value")
 	flagServiceVersion    = flag.String("service_version", "", "service.version attribute value")
 )
+
+var histogramName = "otlp.test.exponential_histogram"
 
 func getServiceAttributes() []attribute.KeyValue {
 	attrs := []attribute.KeyValue{}
@@ -56,7 +62,7 @@ func installMetricExportPipeline(ctx context.Context) (func(context.Context) err
 	metricProvider := metricsdk.NewMeterProvider(
 		metricsdk.WithReader(metricsdk.NewPeriodicReader(exporter)),
 		metricsdk.WithView(metricsdk.NewView(
-			metricsdk.Instrument{Name: "otlp.test.exponential"},
+			metricsdk.Instrument{Name: histogramName },
 			metricsdk.Stream{Aggregation: metricsdk.AggregationBase2ExponentialHistogram{
 				MaxSize: 160,
 			}},
@@ -106,7 +112,7 @@ func main() {
 	testHistogramMetric(ctx, meter, "otlp.test.histogram")
 	testUpDownCounterMetric(ctx, meter, "otlp.test.updowncounter")
 	testCumulativeMetric(ctx, meter, "otlp.test.cumulative")
-	testExponentialHistogramMetric(ctx, meter, "otlp.test.exponential")
+	testExponentialHistogramMetric(ctx, meter, histogramName )
 }
 
 func testCumulativeMetric(ctx context.Context, meter metric.Meter, name string) {
