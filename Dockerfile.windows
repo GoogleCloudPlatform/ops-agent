@@ -1,6 +1,6 @@
 # escape=`
 
-ARG WINDOWS_VERSION=ltsc2019
+ARG WINDOWS_VERSION=ltsc2022
 
 #
 # Builder Image - Windows Server Core
@@ -124,8 +124,8 @@ RUN $win_flex_bison_dist_base_name=\"win_flex_bison-${env:WIN_FLEX_BISON_VERSION
 #
 # Install VCPKG
 #
-# https://github.com/microsoft/vcpkg/blob/2024.05.24/scripts/bootstrap.ps1
-ENV VCPKG_VERSION=2024.05.24 `
+# https://github.com/microsoft/vcpkg/blob/2024.12.16/scripts/bootstrap.ps1
+ENV VCPKG_VERSION=2024.12.16 `
     VCPKG_DOWNLOAD_URL="https://github.com/microsoft/vcpkg/archive/refs/tags" `
     VCPKG_DISABLE_METRICS="ON" `
     VCPKG_ROOT=/dev/vcpkg
