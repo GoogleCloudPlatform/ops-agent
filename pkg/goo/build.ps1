@@ -19,6 +19,8 @@ Param(
     [Parameter(Mandatory=$false)][string]$Arch
 )
 
+echo "DestDir is $DestDir"
+
 if (!$DestDir) {
   $DestDir = '.'
 }
@@ -47,4 +49,4 @@ switch ($Arch) {
   -var:ARCH=$Arch `
   -var:GOOS=$Goos `
   -var:GOARCH=$GoArch `
-  pkg/goo/google-cloud-ops-agent.goospec
+  pkg/goo/presubmit.goospec

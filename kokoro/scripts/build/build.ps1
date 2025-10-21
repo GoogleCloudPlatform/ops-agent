@@ -76,7 +76,7 @@ if ($env:KOKORO_JOB_TYPE -eq 'RELEASE') {
 }
 $cache_location="${artifact_registry}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:windows-${arch}${suffix}"
 Invoke-Program docker pull $cache_location
-Invoke-Program docker build --cache-from="${cache_location}" -t $tag -f './Dockerfile.windows' .
+Invoke-Program docker build --cache-from="${cache_location}" --build-arg PACKAGE="$env:PACKAGE" -t $tag -f './Dockerfile.windows' .
 Invoke-Program docker create --name $name $tag
 Invoke-Program docker cp "${name}:/work/out" $env:KOKORO_ARTIFACTS_DIR
 
@@ -98,12 +98,17 @@ New-Item -Path $env:KOKORO_ARTIFACTS_DIR -Name 'result' -ItemType 'directory'
 Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/google-cloud-ops-agent-plugin*.tar.gz" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
 
 Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
-Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/git/unified_agents/pkg" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
+Move-Item -Path "./pkg" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
+
+if ($env:PACKAGE -ne $null) {
+  Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/result/out/*.goo" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
+}
+
 # Copy the .pdb and .dll files from $env:KOKORO_ARTIFACTS_DIR/out/bin to $env:KOKORO_ARTIFACTS_DIR/result.
 # The .pdb and .dll files are saved so the team can use them in the event that we have to debug this Ops Agent build.
 # They are not distributed to customers.
-# Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/*.pdb" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
-# Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/*.dll" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
+Copy-Item -Path "$env:KOKORO_ARTIFACTS_DIR/result/out/bin/*.pdb" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
+Copy-Item -Path "$env:KOKORO_ARTIFACTS_DIR/result/out/bin/*.dll" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
 
 # If Kokoro is being triggered by Louhi, then Louhi needs to be able to
 # reconstruct the path where the artifacts are placed. Louhi does not have

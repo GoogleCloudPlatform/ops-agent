@@ -357,6 +357,20 @@ RUN Get-Content VERSION | Where-Object length | ForEach-Object { Invoke-Expressi
     $env:PKG_VERSION | Out-File -FilePath /work/out/bin/OPS_AGENT_VERSION -Encoding UTF8;
 
 ###############################################################################
+# Packaging
+###############################################################################
+
+WORKDIR /work
+
+COPY . /work
+
+ARG PACKAGE="false"
+RUN if ($env:PACKAGE -eq 'true') { `
+      & .\pkg\goo\build.ps1 -DestDir /work/out; `
+      ls /work/out; `
+    }
+
+###############################################################################
 # Packaging for the Ops Agent Plugin
 ###############################################################################
 

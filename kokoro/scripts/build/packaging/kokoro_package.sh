@@ -41,5 +41,7 @@ gcs_bucket="gs://${_STAGING_ARTIFACTS_PROJECT_ID}-ops-agent-releases/${ver}/${re
 
 echo "Copying *.goo files to ${gcs_bucket}"
 gsutil cp "${OUTPUT_DIR}"/*.goo "${gcs_bucket}"
+gsutil cp "${INPUT_DIR}"/result/google-cloud-ops-agent-plugin*.tar.gz "${gcs_bucket}"
+gsutil cp "${INPUT_DIR}"/result/google-cloud-ops-agent-plugin-sha256.txt "${gcs_bucket}"
 
 echo "Script finished successfully."
