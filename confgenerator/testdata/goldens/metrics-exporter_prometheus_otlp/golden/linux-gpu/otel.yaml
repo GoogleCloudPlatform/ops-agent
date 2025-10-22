@@ -86,6 +86,8 @@ processors:
         - googlecloudmonitoring/point_count
   interval/loggingmetrics_7:
     interval: 1m
+  metricstarttime/agent_prometheus_1:
+    strategy: subtract_initial_point
   metricstarttime/prometheus_2:
     strategy: subtract_initial_point
   metricstransform/fluentbit_1:
@@ -587,17 +589,12 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  resource/fluentbit_3:
+  resource/agent_prometheus_2:
     attributes:
     - action: insert
       key: gcp.project_id
       value: test-project
   resource/ops_agent_1:
-    attributes:
-    - action: insert
-      key: gcp.project_id
-      value: test-project
-  resource/otel_5:
     attributes:
     - action: insert
       key: gcp.project_id
@@ -619,6 +616,12 @@ processors:
       - delete_key(resource.attributes, "service.instance.id")
       - delete_key(resource.attributes, "server.port")
       - delete_key(resource.attributes, "url.scheme")
+  transform/agent_prometheus_3:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
   transform/loggingmetrics_0:
     error_mode: ignore
     metric_statements:
@@ -646,18 +649,18 @@ processors:
     - context: datapoint
       statements:
       - set(time, Now())
+  transform/ops_agent_2:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
   transform/otel_0:
     error_mode: ignore
     metric_statements:
     - context: metric
       statements:
       - extract_count_metric(true) where name == "grpc.client.attempt.duration"
-  transform/otel_6:
-    metric_statements:
-    - context: scope
-      statements:
-      - set(name, "")
-      - set(version, "")
   transform/prometheus_0:
     metric_statements:
     - context: datapoint
@@ -797,19 +800,22 @@ service:
       - otlphttp/otlp
       processors:
       - transform/agent_prometheus_0
+      - metricstarttime/agent_prometheus_1
+      - resource/agent_prometheus_2
+      - transform/agent_prometheus_3
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
-      - metricstarttime/fluentbit_2
-      - resource/fluentbit_3
-      - transform/fluentbit_4
       - resourcedetection/_global_0
       receivers:
       - prometheus/agent_prometheus
     metrics/loggingmetrics:
       exporters:
-      - googlecloud
+      - otlphttp/otlp
       processors:
       - transform/agent_prometheus_0
+      - metricstarttime/agent_prometheus_1
+      - resource/agent_prometheus_2
+      - transform/agent_prometheus_3
       - transform/loggingmetrics_0
       - filter/loggingmetrics_1
       - filter/loggingmetrics_2
@@ -837,13 +843,13 @@ service:
       - otlphttp/otlp
       processors:
       - transform/agent_prometheus_0
+      - metricstarttime/agent_prometheus_1
+      - resource/agent_prometheus_2
+      - transform/agent_prometheus_3
       - transform/otel_0
       - filter/otel_1
       - filter/otel_2
       - metricstransform/otel_3
-      - metricstarttime/otel_4
-      - resource/otel_5
-      - transform/otel_6
       - resourcedetection/_global_0
       receivers:
       - prometheus/agent_prometheus
