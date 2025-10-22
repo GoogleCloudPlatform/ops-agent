@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
@@ -389,6 +390,27 @@ func (p LoggingProcessorParseRegexComplex) Components(ctx context.Context, tag, 
 	return components
 }
 
+func (p LoggingProcessorParseRegexComplex) Processors(ctx context.Context) ([]otel.Component, error) {
+	if len(p.Parsers) == 0 {
+		return []otel.Component{}, nil
+	}
+	processors := []otel.Component{}
+
+	for _, parserConfig := range p.Parsers {
+		parseRegex := LoggingProcessorParseRegex{
+			ParserShared: parserConfig.Parser,
+			Regex:        parserConfig.Regex,
+			Field:        p.Field,
+		}
+		parseRegexProcessors, err := parseRegex.Processors(ctx)
+		if err != nil {
+			return nil, err
+		}
+		processors = append(processors, parseRegexProcessors...)
+	}
+	return processors, nil
+}
+
 type MultilineRule = fluentbit.MultilineRule
 
 // A LoggingProcessorParseMultilineRegex applies a set of regex rules to the specified lines, storing the named capture groups as keys in the log record.
@@ -435,6 +457,63 @@ func (p LoggingProcessorParseMultilineRegex) Components(ctx context.Context, tag
 		},
 		p.LoggingProcessorParseRegexComplex.Components(ctx, tag, uid)...,
 	)
+}
+
+func (p LoggingProcessorParseMultilineRegex) Processors(ctx context.Context) ([]otel.Component, error) {
+	var firstLines []string
+	for _, r := range p.Rules {
+		if r.StateName == "start_state" {
+			firstLines = append(firstLines, r.Regex)
+		}
+	}
+
+	var exprParts []string
+	for _, r := range firstLines {
+		exprParts = append(exprParts, fmt.Sprintf("body.message matches %q", r))
+	}
+	expr := strings.Join(exprParts, " or ")
+
+	logsTransform := []otel.Component{
+		{
+			Type: "logstransform",
+			Config: map[string]any{
+				"operators": []map[string]any{
+					{
+						"type":  "add",
+						"field": "attributes.__source_identifier",
+						"value": `EXPR(attributes["agent.googleapis.com/log_file_path"] ?? "")`,
+					},
+					{
+						"type":          "recombine",
+						"combine_field": "body.message",
+						// N.B. We cannot specify "combine_with" because it is not serialized correctly by our yaml library.
+						//"combine_with":   "\n",
+						"is_first_entry": expr,
+						// Take the timestamp and other attributes from the first entry.
+						"overwrite_with": "oldest",
+						// Use the log file path to disambiguate if present.
+						"source_identifier": `attributes.__source_identifier`,
+						// How long to wait for more log lines.
+						// Set to half of the file receiver's poll_interval to guarantee it is flushed every poll.
+						"force_flush_period": "500ms",
+					},
+					{
+						"type":  "remove",
+						"field": "attributes.__source_identifier",
+					},
+				},
+			},
+		},
+	}
+
+	parseRegexComplexComponents, err := p.LoggingProcessorParseRegexComplex.Processors(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// return logsTransform, nil
+
+	return append(logsTransform, parseRegexComplexComponents...), nil
 }
 
 func init() {
