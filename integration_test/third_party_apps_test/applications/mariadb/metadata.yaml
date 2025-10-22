@@ -148,11 +148,17 @@ expected_metrics:
   - type: workload.googleapis.com/mysql.replica.time_behind_source
     value_type: INT64
     kind: GAUGE
+    unavailable_on: 
+      - debian-cloud:debian-13
+      - debian-cloud:debian-13-arm64
     monitored_resources: [gce_instance]
   - type: workload.googleapis.com/mysql.replica.sql_delay
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    unavailable_on:
+      - debian-cloud:debian-13
+      - debian-cloud:debian-13-arm64
   - type: workload.googleapis.com/mysql.row_locks
     value_type: INT64
     kind: CUMULATIVE
@@ -171,6 +177,8 @@ expected_metrics:
       - ubuntu-os-cloud:ubuntu-2404-lts-amd64
       - ubuntu-os-cloud:ubuntu-2404-lts-arm64
       - debian-cloud:debian-12-arm64
+      - debian-cloud:debian-13
+      - debian-cloud:debian-13-arm64
   - type: workload.googleapis.com/mysql.sorts
     value_type: INT64
     kind: CUMULATIVE
