@@ -31,6 +31,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"github.com/goccy/go-yaml"
+	"github.com/google/go-cmp/cmp"
 	"github.com/shirou/gopsutil/host"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/golden"
@@ -45,11 +46,10 @@ const (
 )
 
 type platformConfig struct {
-	name               string
-	defaultLogsDir     string
-	defaultStateDir    string
-	platform           platform.Platform
-	otelLoggingEnabled bool
+	name            string
+	defaultLogsDir  string
+	defaultStateDir string
+	platform        platform.Platform
 }
 
 var winlogv1channels = []string{
@@ -81,7 +81,7 @@ var (
 			Location: "test-zone",
 		},
 	}
-	defaultLinuxTestPlatform = platformConfig{
+	linuxTestPlatform = platformConfig{
 		name:            "linux",
 		defaultLogsDir:  "/var/log/google-cloud-ops-agent",
 		defaultStateDir: "/var/lib/google-cloud-ops-agent/fluent-bit",
@@ -95,8 +95,8 @@ var (
 			TestGCEResourceOverride: testResource,
 		},
 	}
-	linuxTestPlatforms = []platformConfig{
-		defaultLinuxTestPlatform,
+	testPlatforms = []platformConfig{
+		linuxTestPlatform,
 		{
 			name:            "linux-gpu",
 			defaultLogsDir:  "/var/log/google-cloud-ops-agent",
@@ -112,24 +112,6 @@ var (
 				HasNvidiaGpu:            true,
 			},
 		},
-		{
-			name:            "linux-otel-logging",
-			defaultLogsDir:  "/var/log/google-cloud-ops-agent",
-			defaultStateDir: "/var/lib/google-cloud-ops-agent/fluent-bit",
-			platform: platform.Platform{
-				Type: platform.Linux,
-				HostInfo: &host.InfoStat{
-					OS:              "linux",
-					Platform:        "linux_platform",
-					PlatformVersion: "linux_platform_version",
-				},
-				TestGCEResourceOverride: testResource,
-				HasNvidiaGpu:            false,
-			},
-			otelLoggingEnabled: true,
-		},
-	}
-	windowsTestPlatforms = []platformConfig{
 		{
 			name:            "windows",
 			defaultLogsDir:  `C:\ProgramData\Google\Cloud Operations\Ops Agent\log`,
@@ -162,25 +144,7 @@ var (
 				TestGCEResourceOverride: testResource,
 			},
 		},
-		{
-			name:            "windows-otel-logging",
-			defaultLogsDir:  `C:\ProgramData\Google\Cloud Operations\Ops Agent\log`,
-			defaultStateDir: `C:\ProgramData\Google\Cloud Operations\Ops Agent\run`,
-			platform: platform.Platform{
-				Type:               platform.Windows,
-				WindowsBuildNumber: "1", // Is2012 == false, Is2016 == false
-				WinlogV1Channels:   winlogv1channels,
-				HostInfo: &host.InfoStat{
-					OS:              "windows",
-					Platform:        "win_platform",
-					PlatformVersion: "win_platform_version",
-				},
-				TestGCEResourceOverride: testResource,
-			},
-			otelLoggingEnabled: true,
-		},
 	}
-	testPlatforms = append(linuxTestPlatforms, windowsTestPlatforms...)
 )
 
 func TestGoldens(t *testing.T) {
@@ -192,6 +156,9 @@ func TestGoldens(t *testing.T) {
 	for _, testName := range testNames {
 		// https://github.com/golang/go/wiki/CommonMistakes#using-goroutines-on-loop-iterator-variables
 		testName := testName
+		// if !strings.Contains(testName, "aerospike") {
+		// 	continue
+		// }
 		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
 			for _, pc := range testPlatforms {
@@ -227,7 +194,7 @@ func TestDataprocDefaults(t *testing.T) {
 
 	t.Run(testName, func(t *testing.T) {
 		t.Parallel()
-		pc := defaultLinuxTestPlatform
+		pc := linuxTestPlatform
 		// Update mocked resource to include Dataproc labels.
 		dataprocResource := testResource
 		newMetadata := map[string]string{}
@@ -281,19 +248,10 @@ func generateConfigs(pc platformConfig, testDir string) (got map[string]string, 
 	ctx := pc.platform.TestContext(context.Background())
 
 	// Experimental Features
-	experimentalFeatures := map[string]bool{}
-
 	if features, err := os.ReadFile(filepath.Join("testdata", testDir, "EXPERIMENTAL_FEATURES")); err == nil {
-		experimentalFeatures = confgenerator.ParseExperimentalFeatures(string(features))
+		ctx = confgenerator.ContextWithExperiments(ctx, confgenerator.ParseExperimentalFeatures(string(features)))
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return nil, err
-	}
-
-	if pc.otelLoggingEnabled {
-		experimentalFeatures["otel_logging"] = true
-	}
-	if len(experimentalFeatures) > 0 {
-		ctx = confgenerator.ContextWithExperiments(ctx, experimentalFeatures)
 	}
 
 	got = make(map[string]string)
@@ -304,17 +262,10 @@ func generateConfigs(pc platformConfig, testDir string) (got map[string]string, 
 	}()
 
 	// Merge test config with built-in config
-	mergedUc, err := confgenerator.MergeConfFiles(
-		ctx,
-		filepath.Join("testdata", testDir, inputFileName),
-		apps.BuiltInConfStructs,
-	)
+	inputFilePath := filepath.Join("testdata", testDir, inputFileName)
+	mergedUc, err := confgenerator.MergeConfFiles(ctx, inputFilePath, apps.BuiltInConfStructs)
 	if err != nil {
 		return
-	}
-
-	if pc.otelLoggingEnabled {
-		mergedUc.Logging.Service.OTelLogging = true
 	}
 
 	got[builtinConfigFileName] = apps.BuiltInConfStructs[pc.platform.Name()].String()
@@ -338,6 +289,19 @@ func generateConfigs(pc platformConfig, testDir string) (got map[string]string, 
 	}
 	got["otel.yaml"] = otelGeneratedConfig
 
+	// Otel Logging configs
+	mergedUcOtelLogging, err := confgenerator.MergeConfFiles(ctx, inputFilePath, apps.BuiltInConfStructs)
+	if err != nil {
+		return
+	}
+	mergedUcOtelLogging.Logging.Service.OTelLogging = true
+	otelLoggingGeneratedConfig, err := mergedUcOtelLogging.GenerateOtelConfig(ctx, "")
+	if err != nil {
+		otelGeneratedConfig = err.Error()
+	}
+	got["otel_logging_diff.yaml"] = cmp.Diff(otelGeneratedConfig, otelLoggingGeneratedConfig)
+
+	// Feature Tracking
 	inputBytes, err := os.ReadFile(filepath.Join("testdata", testDir, inputFileName))
 
 	userUc, err := confgenerator.UnmarshalYamlToUnifiedConfig(ctx, inputBytes)
@@ -345,7 +309,6 @@ func generateConfigs(pc platformConfig, testDir string) (got map[string]string, 
 		return
 	}
 
-	// Feature Tracking
 	extractedFeatures, err := confgenerator.ExtractFeatures(ctx, userUc, mergedUc)
 	if err != nil {
 		return
