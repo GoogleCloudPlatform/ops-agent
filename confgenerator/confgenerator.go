@@ -118,7 +118,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 		OtelPort:            otel.MetricsPort,
 		OtelRuntimeDir:      outDir,
 		OtelLogging:         uc.Logging.Service.OTelLogging,
-    ProjectName:         resource.ProjectName(),
+		ProjectName:         resource.ProjectName(),
 	}
 	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines, expOtlpExporter)
 
