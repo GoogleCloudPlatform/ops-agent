@@ -1,4 +1,0 @@
-  string(
-- 	`"active_directory_ds" is not an otel receiver`,
-+ 	"",
-  )

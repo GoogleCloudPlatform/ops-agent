@@ -1,4 +1,0 @@
-  string(
-- 	`receiver "varnish" has invalid configuration: unimplemented`,
-+ 	"",
-  )

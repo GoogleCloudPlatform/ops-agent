@@ -1,4 +1,0 @@
-  string(
-- 	`"test_syslog_source_id_tcp" is not an otel receiver`,
-+ 	"",
-  )

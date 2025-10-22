@@ -1,4 +1,0 @@
-  string(
-- 	`"fluent_logs" is not an otel receiver`,
-+ 	"",
-  )

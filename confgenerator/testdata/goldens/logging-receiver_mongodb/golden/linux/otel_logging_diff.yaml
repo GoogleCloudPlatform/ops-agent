@@ -1,4 +1,0 @@
-  string(
-- 	`"mongodb" is not an otel receiver`,
-+ 	"",
-  )

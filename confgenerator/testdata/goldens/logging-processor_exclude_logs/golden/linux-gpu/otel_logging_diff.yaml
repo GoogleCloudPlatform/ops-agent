@@ -1,4 +1,0 @@
-  string(
-- 	"processor \"regex_unicode_escaped\" has invalid configuration: failed to process condition \"jsonPayload.message =~ \\\"\\\\☃\\\"\": unsupported regex \"\\\\☃\": error parsing regexp: invalid escape sequence: `\\☃`",
-+ 	"",
-  )

@@ -1,4 +1,0 @@
-  string(
-- 	`"vault_audit" is not an otel receiver`,
-+ 	"",
-  )

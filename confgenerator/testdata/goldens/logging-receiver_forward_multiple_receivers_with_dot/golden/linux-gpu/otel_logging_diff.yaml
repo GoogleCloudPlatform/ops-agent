@@ -1,4 +1,0 @@
-  string(
-- 	`"fluent_forward" is not an otel receiver`,
-+ 	"",
-  )

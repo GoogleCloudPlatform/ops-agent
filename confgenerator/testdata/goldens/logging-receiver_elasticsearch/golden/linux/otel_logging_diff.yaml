@@ -1,4 +1,0 @@
-  string(
-- 	`receiver "elasticsearch_json" has invalid configuration: unimplemented`,
-+ 	"",
-  )

@@ -1,4 +1,0 @@
-  string(
-- 	`receiver "tomcat_system" has invalid configuration: unimplemented`,
-+ 	"",
-  )

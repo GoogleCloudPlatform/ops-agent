@@ -1,4 +1,0 @@
-  string(
-- 	`receiver "apache_access" has invalid configuration: unimplemented`,
-+ 	"",
-  )

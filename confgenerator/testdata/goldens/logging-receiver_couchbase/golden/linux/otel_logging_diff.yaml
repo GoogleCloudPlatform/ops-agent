@@ -1,4 +1,0 @@
-  string(
-- 	`"couchbase_general" is not an otel receiver`,
-+ 	"",
-  )

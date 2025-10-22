@@ -1,4 +1,0 @@
-  string(
-- 	`receiver "nginx_access" has invalid configuration: unimplemented`,
-+ 	"",
-  )

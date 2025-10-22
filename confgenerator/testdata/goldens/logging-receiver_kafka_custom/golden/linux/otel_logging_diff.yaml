@@ -1,4 +1,0 @@
-  string(
-- 	`receiver "kafka_custom" has invalid configuration: unimplemented`,
-+ 	"",
-  )

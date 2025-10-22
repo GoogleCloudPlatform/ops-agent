@@ -1,4 +1,0 @@
-  string(
-- 	`receiver "couchdb" has invalid configuration: unimplemented`,
-+ 	"",
-  )

@@ -1,4 +1,0 @@
-  string(
-- 	`receiver "zookeeper_general" has invalid configuration: unimplemented`,
-+ 	"",
-  )

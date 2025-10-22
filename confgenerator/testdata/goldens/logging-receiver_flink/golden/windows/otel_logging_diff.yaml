@@ -1,4 +1,0 @@
-  string(
-- 	`receiver "flink" has invalid configuration: unimplemented`,
-+ 	"",
-  )
