@@ -4,6 +4,17 @@
         Jul 09, 2015 3:23:29 PM com.google.devtools.search.cloud.feeder.MakeLog: RuntimeException: Run from this message!
           at com.my.app.Object.do$a1(MakeLog.java:50)
           at java.lang.Thing.call(Thing.java:10)
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
+  - jsonPayload:
+      message: |-
         javax.servlet.ServletException: Something bad happened
             at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:60)
             at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1157)
@@ -33,8 +44,30 @@
             at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1166)
             at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:30)
             ... 27 common frames omitted
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
+  - jsonPayload:
+      message: |-
         java.lang.RuntimeException: javax.mail.SendFailedException: Invalid Addresses;
           nested exception is:
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
+  - jsonPayload:
+      message: |-
         com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
         	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:236)
         	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:285)
@@ -50,12 +83,35 @@
         	at java.base/java.lang.Thread.run(Thread.java:748)
         Caused by: javax.mail.SendFailedException: Invalid Addresses;
           nested exception is:
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
+  - jsonPayload:
+      message: |-
         com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
         	at com.sun.mail.smtp.SMTPTransport.rcptTo(SMTPTransport.java:2064)
         	at com.sun.mail.smtp.SMTPTransport.sendMessage(SMTPTransport.java:1286)
         	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:229)
         	... 12 more
         Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
+        Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
+  - jsonPayload:
+      message: "Jul 09, 2015 3:23:29 PM com.google.devtools.search.cloud.feeder.MakeLog: RuntimeException: Run from this message!"
     labels:
       compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/my-log-name

@@ -49,7 +49,7 @@ func (r ParseMultiline) Type() string {
 var otelMultilineMap = map[string][]string{
 	"java": []string{
 		// Line starts with a java exception class name
-		`^(?:[a-zA-Z$_][a-zA-Z$_0-9]*\.)+[a-zA-Z$_][a-zA-Z$_0-9]*: `,
+		// `^(?:[a-zA-Z$_][a-zA-Z$_0-9]*\.)+[a-zA-Z$_][a-zA-Z$_0-9]*: `,
 		`^[\t ]*nested exception is:[\\t ]*`,
 		`^[\t ]+(?:eval ?)?at `,
 		`^[\t ]+--- End of inner exception stack trace ---$`,

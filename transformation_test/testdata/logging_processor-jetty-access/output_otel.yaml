@@ -48,7 +48,9 @@
         zone: test-zone
       type: gce_instance
     timestamp: 2021-08-26T16:50:15Z
-  - jsonPayload: {}
+  - jsonPayload:
+      gzip_ratio: ""
+      user: admin
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/jetty_access
@@ -58,5 +60,5 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: now
+    timestamp: 2021-08-26T16:51:22Z
   partialSuccess: true
