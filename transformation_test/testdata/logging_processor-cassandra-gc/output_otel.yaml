@@ -1,1 +1,216 @@
-- config_error: "processor \"processor0\" has invalid configuration: unimplemented"
+- entries:
+  - jsonPayload:
+      timeStopped: ""
+      timeStopping: ""
+      uptime: 9.344
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_gc
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2025-07-22T10:19:12.544Z
+  - jsonPayload:
+      timeStopped: ""
+      timeStopping: ""
+      uptime: 432.693
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_gc
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2025-07-22T10:25:55.893Z
+  - jsonPayload:
+      timeStopped: ""
+      timeStopping: ""
+      uptime: 962.923
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_gc
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2025-07-22T11:00:02.123Z
+  - jsonPayload:
+      timeStopped: 0.000239
+      timeStopping: 2.81e-05
+      uptime: 3.315
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_gc
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2025-07-22T12:18:28.284Z
+  - jsonPayload:
+      timeStopped: ""
+      timeStopping: ""
+      uptime: 1203.478
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_gc
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2025-07-22T13:45:30.678Z
+  partialSuccess: true
+- entries:
+  - jsonPayload: {}
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_gc
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
+  partialSuccess: true
+- collector_errors:
+  - caller: ottl@v0.136.0/parser.go:410
+    error: "strconv.ParseFloat: parsing \"\": invalid syntax"
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.136.0
+    statement: set(log.body["timeStopped"], Double(log.body["timeStopped"]))
+  - caller: ottl@v0.136.0/parser.go:410
+    error: "strconv.ParseFloat: parsing \"\": invalid syntax"
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.136.0
+    statement: set(log.body["timeStopping"], Double(log.body["timeStopping"]))
+  - caller: ottl@v0.136.0/parser.go:410
+    error: "strconv.ParseFloat: parsing \"\": invalid syntax"
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.136.0
+    statement: set(log.body["timeStopped"], Double(log.body["timeStopped"]))
+  - caller: ottl@v0.136.0/parser.go:410
+    error: "strconv.ParseFloat: parsing \"\": invalid syntax"
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.136.0
+    statement: set(log.body["timeStopping"], Double(log.body["timeStopping"]))
+  - caller: ottl@v0.136.0/parser.go:410
+    error: "strconv.ParseFloat: parsing \"\": invalid syntax"
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.136.0
+    statement: set(log.body["timeStopped"], Double(log.body["timeStopped"]))
+  - caller: ottl@v0.136.0/parser.go:410
+    error: "strconv.ParseFloat: parsing \"\": invalid syntax"
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.136.0
+    statement: set(log.body["timeStopping"], Double(log.body["timeStopping"]))
+  - caller: ottl@v0.136.0/parser.go:410
+    error: "strconv.ParseFloat: parsing \"\": invalid syntax"
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.136.0
+    statement: set(log.body["timeStopped"], Double(log.body["timeStopped"]))
+  - caller: ottl@v0.136.0/parser.go:410
+    error: "strconv.ParseFloat: parsing \"\": invalid syntax"
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.136.0
+    statement: set(log.body["timeStopping"], Double(log.body["timeStopping"]))
+  - caller: ottl@v0.136.0/parser.go:410
+    error: "strconv.ParseFloat: parsing \"\": invalid syntax"
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_2
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.136.0
+    statement: set(log.body["timeStopping"], Double(log.body["timeStopping"]))
+  - caller: ottl@v0.136.0/parser.go:410
+    error: "strconv.ParseFloat: parsing \"\": invalid syntax"
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_2
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.136.0
+    statement: set(log.body["timeStopped"], Double(log.body["timeStopped"]))

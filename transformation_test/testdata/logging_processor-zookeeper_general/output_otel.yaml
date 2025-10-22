@@ -1,1 +1,81 @@
-- config_error: "processor \"processor0\" has invalid configuration: unimplemented"
+- entries:
+  - jsonPayload:
+      level: INFO
+      line: 514
+      myid: 1
+      source: NIOServerCnxn
+      thread: NIOWorkerThread-3
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/zookeeper_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2022-02-01T01:51:45.451Z
+  - jsonPayload:
+      level: WARN
+      line: 1283
+      myid: 1
+      source: QuorumCnxManager$SendWorker
+      thread: SendWorker:2
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/zookeeper_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: WARNING
+    timestamp: 2022-02-01T08:46:33.626Z
+  - jsonPayload:
+      source: <nil>
+      thread: <nil>
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/zookeeper_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
+  - jsonPayload:
+      source: <nil>
+      thread: <nil>
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/zookeeper_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
+  partialSuccess: true
+- entries:
+  - jsonPayload:
+      level: ERROR
+      line: 1520
+      myid: 2
+      source: QuorumPeer
+      thread: QuorumPeer[myid=2](plain=0.0.0.0:2181)(secure=disabled)
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/zookeeper_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: ERROR
+    timestamp: 2022-02-01T16:15:22.789Z
+  partialSuccess: true

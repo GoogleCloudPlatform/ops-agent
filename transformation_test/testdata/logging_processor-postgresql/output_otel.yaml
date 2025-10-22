@@ -1,1 +1,526 @@
-- config_error: "processor \"processor0\" has invalid configuration: unimplemented"
+- entries:
+  - jsonPayload:
+      database: ""
+      level: LOG
+      tid: 21763
+      time: 2025-07-21 10:14:21.123 UTC
+      user: ""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: now
+  - jsonPayload:
+      database: ""
+      level: LOG
+      tid: 21763
+      time: 2025-07-21 10:14:21.124 UTC
+      user: ""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: now
+  - jsonPayload:
+      database: ""
+      level: STATEMENT
+      tid: 21763
+      time: 2025-07-21 10:14:21.125 UTC
+      user: ""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: DEBUG
+    timestamp: now
+  - jsonPayload:
+      database: ""
+      level: LOG
+      tid: 21765
+      time: 2025-07-21 10:14:22.301 UTC
+      user: ""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: now
+  - jsonPayload:
+      database: ""
+      level: ERROR
+      tid: 21767
+      time: 2025-07-21 10:14:25.411 UTC
+      user: ""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: ERROR
+    timestamp: now
+  - jsonPayload:
+      database: ""
+      level: STATEMENT
+      tid: 21767
+      time: 2025-07-21 10:14:25.411 UTC
+      user: ""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: DEBUG
+    timestamp: now
+  - jsonPayload:
+      database: ""
+      level: LOG
+      tid: 21770
+      time: 2025-07-21 10:14:27.123 UTC
+      user: ""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: now
+  - jsonPayload:
+      database: ""
+      level: WARNING
+      tid: 21772
+      time: 2025-07-21 10:14:30.673 UTC
+      user: ""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: WARNING
+    timestamp: now
+  - jsonPayload:
+      database: ""
+      level: STATEMENT
+      tid: 21772
+      time: 2025-07-21 10:14:30.673 UTC
+      user: ""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: DEBUG
+    timestamp: now
+  - jsonPayload:
+      database: ""
+      level: LOG
+      tid: 21775
+      time: 2025-07-21 10:14:35.987 UTC
+      user: ""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: now
+  - jsonPayload:
+      database: ""
+      level: FATAL
+      tid: 21778
+      time: 2025-07-21 10:14:40.118 UTC
+      user: ""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: CRITICAL
+    timestamp: now
+  - jsonPayload:
+      database: ""
+      level: DETAIL
+      tid: 21778
+      time: 2025-07-21 10:14:40.118 UTC
+      user: ""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: DEBUG
+    timestamp: now
+  - jsonPayload:
+      database: ""
+      level: LOG
+      tid: 21782
+      time: 2025-07-21 10:14:45.721 UTC
+      user: ""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: now
+  - jsonPayload:
+      database: ""
+      level: LOG
+      tid: 21782
+      time: 2025-07-21 10:14:46.053 UTC
+      user: ""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: now
+  - jsonPayload:
+      database: ""
+      level: LOG
+      tid: 21784
+      time: 2025-07-21 10:14:49.215 UTC
+      user: ""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: now
+  - jsonPayload:
+      database: ""
+      level: LOG
+      tid: 21790
+      time: 2025-07-21 10:14:52.800 UTC
+      user: ""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: now
+  - jsonPayload:
+      database: ""
+      level: PANIC
+      tid: 21793
+      time: 2025-07-21 10:14:55.029 UTC
+      user: ""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: CRITICAL
+    timestamp: now
+  - jsonPayload:
+      database: ""
+      level: LOG
+      tid: 21793
+      time: 2025-07-21 10:14:55.029 UTC
+      user: ""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: now
+  - jsonPayload:
+      database: ""
+      level: DETAIL
+      tid: 21793
+      time: 2025-07-21 10:14:55.029 UTC
+      user: ""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: DEBUG
+    timestamp: now
+  - jsonPayload:
+      database: ""
+      level: LOG
+      tid: 1
+      time: 2025-07-21 10:14:56.000 UTC
+      user: ""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: now
+  - jsonPayload:
+      database: ""
+      level: LOG
+      tid: 1
+      time: 2025-07-21 10:14:56.650 UTC
+      user: ""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: now
+  - jsonPayload:
+      database: ""
+      level: LOG
+      tid: 1
+      time: 2025-07-21 10:14:57.012 UTC
+      user: ""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: now
+  partialSuccess: true
+- entries:
+  - jsonPayload:
+      database: ""
+      level: LOG
+      tid: 1
+      time: 2025-07-21 10:14:57.012 UTC
+      user: ""
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: now
+  partialSuccess: true
+- collector_errors:
+  - caller: ottl@v0.136.0/parser.go:410
+    error: "parsing time \"2025-07-21 10:14:21.123 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.136.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
+  - caller: ottl@v0.136.0/parser.go:410
+    error: "parsing time \"2025-07-21 10:14:21.124 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.136.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
+  - caller: ottl@v0.136.0/parser.go:410
+    error: "parsing time \"2025-07-21 10:14:21.125 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.136.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
+  - caller: ottl@v0.136.0/parser.go:410
+    error: "parsing time \"2025-07-21 10:14:22.301 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.136.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
+  - caller: ottl@v0.136.0/parser.go:410
+    error: "parsing time \"2025-07-21 10:14:25.411 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.136.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
+  - caller: ottl@v0.136.0/parser.go:410
+    error: "parsing time \"2025-07-21 10:14:25.411 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.136.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
+  - caller: ottl@v0.136.0/parser.go:410
+    error: "parsing time \"2025-07-21 10:14:27.123 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.136.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
+  - caller: ottl@v0.136.0/parser.go:410
+    error: "parsing time \"2025-07-21 10:14:30.673 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.136.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
+  - caller: ottl@v0.136.0/parser.go:410
+    error: "parsing time \"2025-07-21 10:14:30.673 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.136.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
+  - caller: ottl@v0.136.0/parser.go:410
+    error: "parsing time \"2025-07-21 10:14:35.987 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.136.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)

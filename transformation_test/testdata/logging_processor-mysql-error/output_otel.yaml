@@ -1,1 +1,114 @@
-- config_error: "processor \"processor0\" has invalid configuration: unimplemented"
+- entries:
+  - jsonPayload:
+      errorCode: ""
+      level: Note
+      subsystem: ""
+      tid: 0
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_error
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: NOTICE
+    timestamp: 2025-07-22T16:02:00Z
+  - jsonPayload:
+      errorCode: MY-010055
+      level: ERROR
+      subsystem: Server
+      tid: 10
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_error
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: ERROR
+    timestamp: 2025-07-22T16:02:01.000001Z
+  - jsonPayload:
+      errorCode: MY-010068
+      level: Warning
+      subsystem: Server
+      tid: 11
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_error
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: WARNING
+    timestamp: 2025-07-22T16:02:02.000002Z
+  - jsonPayload:
+      errorCode: MY-013360
+      level: ERROR
+      subsystem: Server
+      tid: 12
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_error
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: ERROR
+    timestamp: 2025-07-22T16:02:03.000003Z
+  - jsonPayload:
+      errorCode: MY-010123
+      level: ERROR
+      subsystem: Server
+      tid: 13
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_error
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: ERROR
+    timestamp: 2025-07-22T16:02:04.000004Z
+  - jsonPayload:
+      errorCode: ""
+      level: Warning
+      subsystem: ""
+      tid: 14
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_error
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: WARNING
+    timestamp: 2025-07-22T16:02:05.000005Z
+  - jsonPayload:
+      errorCode: MY-012345
+      level: ERROR
+      subsystem: InnoDB
+      tid: 15
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_error
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: ERROR
+    timestamp: 2025-07-22T16:02:06.000006Z
+  partialSuccess: true

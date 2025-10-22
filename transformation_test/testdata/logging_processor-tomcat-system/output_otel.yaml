@@ -1,1 +1,453 @@
-- config_error: "processor \"processor0\" has invalid configuration: unimplemented"
+- entries:
+  - jsonPayload:
+      level: INFO
+      message: "org.apache.catalina.startup.VersionLoggerListener Server version: Apache Tomcat/9.0.82"
+      module: main
+      source: org.apache.catalina.startup.VersionLoggerListener
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-07-21T08:02:43.123Z
+  - jsonPayload:
+      level: INFO
+      message: "org.apache.catalina.startup.VersionLoggerListener Server built:   Jun 27 2025 18:12:34 UTC"
+      module: main
+      source: org.apache.catalina.startup.VersionLoggerListener
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-07-21T08:02:43.124Z
+  - jsonPayload:
+      level: INFO
+      message: "org.apache.catalina.startup.VersionLoggerListener Server number:  9.0.82.0"
+      module: main
+      source: org.apache.catalina.startup.VersionLoggerListener
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-07-21T08:02:43.124Z
+  - jsonPayload:
+      level: INFO
+      message: "org.apache.catalina.startup.VersionLoggerListener OS Name:        Linux"
+      module: main
+      source: org.apache.catalina.startup.VersionLoggerListener
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-07-21T08:02:43.124Z
+  - jsonPayload:
+      level: INFO
+      message: "org.apache.catalina.startup.VersionLoggerListener OS Version:     5.15.0-86-generic"
+      module: main
+      source: org.apache.catalina.startup.VersionLoggerListener
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-07-21T08:02:43.124Z
+  - jsonPayload:
+      level: INFO
+      message: "org.apache.catalina.startup.VersionLoggerListener Architecture:   amd64"
+      module: main
+      source: org.apache.catalina.startup.VersionLoggerListener
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-07-21T08:02:43.124Z
+  - jsonPayload:
+      level: INFO
+      message: "org.apache.catalina.startup.VersionLoggerListener Java Home:      /usr/lib/jvm/java-17-openjdk"
+      module: main
+      source: org.apache.catalina.startup.VersionLoggerListener
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-07-21T08:02:43.125Z
+  - jsonPayload:
+      level: INFO
+      message: "org.apache.catalina.startup.VersionLoggerListener JVM Version:    17.0.8+7"
+      module: main
+      source: org.apache.catalina.startup.VersionLoggerListener
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-07-21T08:02:43.125Z
+  - jsonPayload:
+      level: INFO
+      message: "org.apache.catalina.startup.VersionLoggerListener JVM Vendor:     Eclipse Adoptium"
+      module: main
+      source: org.apache.catalina.startup.VersionLoggerListener
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-07-21T08:02:43.125Z
+  - jsonPayload:
+      level: INFO
+      message: org.apache.coyote.AbstractProtocol Initializing ProtocolHandler ["http-nio-8080"]
+      module: main
+      source: org.apache.coyote.AbstractProtocol
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-07-21T08:02:43.221Z
+  - jsonPayload:
+      level: INFO
+      message: org.apache.catalina.core.StandardService Starting service [Catalina]
+      module: main
+      source: org.apache.catalina.core.StandardService
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-07-21T08:02:43.250Z
+  - jsonPayload:
+      level: INFO
+      message: "org.apache.catalina.core.StandardEngine Starting Servlet engine: [Apache Tomcat/9.0.82]"
+      module: main
+      source: org.apache.catalina.core.StandardEngine
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-07-21T08:02:43.250Z
+  - jsonPayload:
+      level: INFO
+      message: org.apache.catalina.core.AprLifecycleListener Loaded APR based Apache Tomcat Native library [1.2.32] using APR version [1.7.4].
+      module: main
+      source: org.apache.catalina.core.AprLifecycleListener
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-07-21T08:02:43.262Z
+  - jsonPayload:
+      level: INFO
+      message: org.apache.catalina.loader.WebappLoader Deploying web application directory [/var/lib/tomcat9/webapps/ROOT]
+      module: main
+      source: org.apache.catalina.loader.WebappLoader
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-07-21T08:02:43.330Z
+  - jsonPayload:
+      level: INFO
+      message: org.apache.catalina.core.ApplicationContext.log No Spring WebApplicationInitializer types detected on classpath
+      module: main
+      source: org.apache.catalina.core.ApplicationContext.log
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-07-21T08:02:43.456Z
+  - jsonPayload:
+      level: INFO
+      message: org.apache.catalina.startup.HostConfig Deployment of web application directory [/var/lib/tomcat9/webapps/ROOT] has finished in [225] ms
+      module: main
+      source: org.apache.catalina.startup.HostConfig
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-07-21T08:02:43.555Z
+  - jsonPayload:
+      level: INFO
+      message: org.apache.coyote.AbstractProtocol Starting ProtocolHandler ["http-nio-8080"]
+      module: main
+      source: org.apache.coyote.AbstractProtocol
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-07-21T08:02:43.565Z
+  - jsonPayload:
+      level: INFO
+      message: org.apache.catalina.startup.Catalina Server startup in 356 ms
+      module: main
+      source: org.apache.catalina.startup.Catalina
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-07-21T08:02:43.565Z
+  - jsonPayload:
+      level: WARN
+      message: org.apache.catalina.authenticator.AuthenticatorBase Security checking request failed for /admin/
+      module: http-nio-8080-exec-2
+      source: org.apache.catalina.authenticator.AuthenticatorBase
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2025-07-21T17:33:41.123Z
+  - jsonPayload:
+      level: ERROR
+      message: org.apache.catalina.core.StandardWrapperValve Servlet.service() for servlet [dispatcher] threw exception
+      module: http-nio-8080-exec-4
+      source: org.apache.catalina.core.StandardWrapperValve
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2025-07-21T17:33:44.234Z
+  - jsonPayload: {}
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
+  - jsonPayload: {}
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
+  - jsonPayload:
+      level: INFO
+      message: org.apache.catalina.session.ManagerBase Session timeout set to 30 minutes
+      module: http-nio-8080-exec-3
+      source: org.apache.catalina.session.ManagerBase
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-07-21T23:12:01.567Z
+  - jsonPayload:
+      level: ERROR
+      message: |-
+        org.apache.catalina.core.StandardWrapperValve Servlet.service() for servlet [dispatcher] threw exception
+        java.lang.NullPointerException: Cannot invoke "String.length()" because "input" is null
+        at com.example.service.UserService.getUserById(UserService.java:42)
+        at com.example.controller.UserController.handleRequest(UserController.java:28)
+        at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+        at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+        at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+        at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+        at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:205)
+        at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1011)
+        at org.springframework.web.servlet.FrameworkServlet.doGet(FrameworkServlet.java:895)
+        at javax.servlet.http.HttpServlet.service(HttpServlet.java:626)
+      module: http-nio-8080-exec-7
+      source: org.apache.catalina.core.StandardWrapperValve
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2025-07-22T00:03:21.101Z
+  - jsonPayload:
+      level: INFO
+      message: org.apache.catalina.core.StandardService Stopping service [Catalina]
+      module: Thread-5
+      source: org.apache.catalina.core.StandardService
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-07-22T01:05:22.345Z
+  - jsonPayload:
+      level: INFO
+      message: org.apache.coyote.AbstractProtocol Stopping ProtocolHandler ["http-nio-8080"]
+      module: Thread-5
+      source: org.apache.coyote.AbstractProtocol
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-07-22T01:05:22.346Z
+  partialSuccess: true
+- entries:
+  - jsonPayload:
+      level: INFO
+      message: org.apache.coyote.AbstractProtocol Destroying ProtocolHandler ["http-nio-8080"]
+      module: Thread-5
+      source: org.apache.coyote.AbstractProtocol
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-07-22T01:05:22.347Z
+  partialSuccess: true
+- entries:
+  - jsonPayload:
+      level: INFO
+      message: org.apache.catalina.core.StandardService Catalina service stopped.
+      module: Thread-5
+      source: org.apache.catalina.core.StandardService
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-07-22T01:05:22.348Z
+  partialSuccess: true
