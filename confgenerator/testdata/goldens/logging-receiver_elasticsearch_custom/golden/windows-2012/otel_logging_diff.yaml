@@ -1,0 +1,4 @@
+  string(
+- 	`receiver "elasticsearch_json_custom" has invalid configuration: unimplemented`,
++ 	"",
+  )

@@ -1,0 +1,4 @@
+  string(
+- 	`receiver "hadoop" has invalid configuration: unimplemented`,
++ 	"",
+  )

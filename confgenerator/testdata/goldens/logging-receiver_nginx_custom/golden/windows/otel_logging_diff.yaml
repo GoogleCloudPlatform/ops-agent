@@ -1,0 +1,4 @@
+  string(
+- 	`receiver "nginx_custom_access" has invalid configuration: unimplemented`,
++ 	"",
+  )

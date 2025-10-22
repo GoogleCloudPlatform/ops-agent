@@ -1,0 +1,4 @@
+  string(
+- 	`processor "multiline_parser_1" not supported in pipeline "p1"`,
++ 	"",
+  )

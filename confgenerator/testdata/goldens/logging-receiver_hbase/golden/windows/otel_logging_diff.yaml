@@ -1,0 +1,4 @@
+  string(
+- 	`receiver "hbase_system" has invalid configuration: unimplemented`,
++ 	"",
+  )

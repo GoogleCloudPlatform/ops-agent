@@ -1,0 +1,4 @@
+  string(
+- 	`receiver "redis_custom" has invalid configuration: unimplemented`,
++ 	"",
+  )

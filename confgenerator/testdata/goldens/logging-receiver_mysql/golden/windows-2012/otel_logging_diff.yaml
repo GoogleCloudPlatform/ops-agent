@@ -1,0 +1,4 @@
+  string(
+- 	`receiver "mysql_error" has invalid configuration: unimplemented`,
++ 	"",
+  )

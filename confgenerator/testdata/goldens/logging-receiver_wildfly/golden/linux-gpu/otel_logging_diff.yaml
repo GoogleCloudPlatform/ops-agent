@@ -1,0 +1,4 @@
+  string(
+- 	`receiver "wildfly_system" has invalid configuration: unimplemented`,
++ 	"",
+  )

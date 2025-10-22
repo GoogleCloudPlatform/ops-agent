@@ -1,0 +1,4 @@
+  string(
+- 	`receiver "cassandra_system" has invalid configuration: unimplemented`,
++ 	"",
+  )

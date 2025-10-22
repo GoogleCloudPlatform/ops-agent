@@ -1,0 +1,4 @@
+  string(
+- 	`receiver "postgresql_general" has invalid configuration: unimplemented`,
++ 	"",
+  )

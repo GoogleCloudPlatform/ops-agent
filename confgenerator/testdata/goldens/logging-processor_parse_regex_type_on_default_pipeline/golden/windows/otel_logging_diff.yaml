@@ -1,0 +1,83 @@
+  (
+  	"""
+  	... // 7 identical lines
+  	      skip_create_descriptor: true
+  	    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
++ 	  googlecloud/otel:
++ 	    metric:
++ 	      instrumentation_library_labels: true
++ 	      prefix: ""
++ 	      resource_filters: []
++ 	      service_resource_labels: true
++ 	      skip_create_descriptor: true
++ 	    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
+  	processors:
+  	  agentmetrics/hostmetrics_0:
+  	... // 642 identical lines
+  	      - set(metric.name, "agent/log_entry_retry_count") where metric.name == "otel_log_entry_retry_count"
+  	      - set(metric.name, "agent/request_count") where metric.name == "otel_request_count"
+- 	  transform/mssql_1:
+- 	    metric_statements:
+- 	    - context: scope
++ 	  transform/logs_default__pipeline_windows__event__log_0:
++ 	    error_mode: ignore
++ 	    log_statements:
++ 	    - context: log
+  	      statements:
+- 	      - set(name, "agent.googleapis.com/mssql")
+- 	      - set(version, "1.0")
+- 	  transform/ops_agent_0:
++ 	      - set(cache["__parsed_regex"], ExtractPatternsRubyRegex(body["key_1"], "regex_pattern_1")) where (body != nil and body["key_1"] != nil)
++ 	      - delete_key(body, "key_1") where ((body != nil and body["key_1"] != nil) and (cache != nil and cache["__parsed_regex"] != nil))
++ 	      - merge_maps(body, cache["__parsed_regex"], "upsert") where (cache != nil and cache["__parsed_regex"] != nil)
++ 	      - delete_key(cache, "__parsed_regex") where (cache != nil and cache["__parsed_regex"] != nil)
++ 	      - set(cache["__time_valid"], false)
++ 	      - set(cache["__time_valid"], true) where ((body != nil and body["time_key_1"] != nil) and Time(body["time_key_1"], "time_format_1") != nil)
++ 	      - set(time, Time(body["time_key_1"], "time_format_1")) where cache["__time_valid"] == true
++ 	      - delete_key(body, "time_key_1") where ((body != nil and body["time_key_1"] != nil) and cache["__time_valid"] == true)
++ 	      - merge_maps(attributes, body["logging.googleapis.com/labels"], "upsert") where body["logging.googleapis.com/labels"] != nil
++ 	      - delete_key(body, "logging.googleapis.com/labels") where (body != nil and body["logging.googleapis.com/labels"] != nil)
++ 	      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
++ 	      - set(cache["__field_0"], body["logging.googleapis.com/httpRequest"]) where (body != nil and body["logging.googleapis.com/httpRequest"] != nil)
++ 	      - delete_key(body, "logging.googleapis.com/httpRequest") where (body != nil and body["logging.googleapis.com/httpRequest"] != nil)
++ 	      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
++ 	      - set(cache["value"], cache["__field_0"])
++ 	      - set(attributes["gcp.http_request"], cache["value"]) where (cache != nil and cache["value"] != nil)
++ 	      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
++ 	      - set(cache["__field_0"], body["logging.googleapis.com/logName"]) where (body != nil and body["logging.googleapis.com/logName"] != nil)
++ 	      - delete_key(body, "logging.googleapis.com/logName") where (body != nil and body["logging.googleapis.com/logName"] != nil)
++ 	      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
++ 	      - set(cache["value"], cache["__field_0"])
++ 	      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
++ 	      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
++ 	      - set(cache["__field_0"], body["logging.googleapis.com/severity"]) where (body != nil and body["logging.googleapis.com/severity"] != nil)
++ 	      - delete_key(body, "logging.googleapis.com/severity") where (body != nil and body["logging.googleapis.com/severity"] != nil)
++ 	      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
++ 	      - set(cache["value"], cache["__field_0"])
++ 	      - set(severity_text, cache["value"]) where (cache != nil and cache["value"] != nil)
++ 	      - set(severity_number, 0) where (cache != nil and cache["value"] != nil)
++ 	      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
++ 	      - set(cache["__field_0"], body["logging.googleapis.com/sourceLocation"]) where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil)
++ 	      - delete_key(body, "logging.googleapis.com/sourceLocation") where (body != nil and body["logging.googleapis.com/sourceLocation"] != nil)
++ 	      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
++ 	      - set(cache["value"], cache["__field_0"])
++ 	      - set(attributes["gcp.source_location"], cache["value"]) where (cache != nil and cache["value"] != nil)
++ 	      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
++ 	      - set(cache["__field_0"], body["logging.googleapis.com/spanId"]) where (body != nil and body["logging.googleapis.com/spanId"] != nil)
++ 	      - delete_key(body, "logging.googleapis.com/spanId") where (body != nil and body["logging.googleapis.com/spanId"] != nil)
++ 	      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
++ 	      - set(cache["value"], cache["__field_0"])
++ 	      - set(span_id.string, cache["value"]) where (cache != nil and cache["value"] != nil)
++ 	      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
++ 	      - set(cache["__field_0"], body["logging.googleapis.com/trace"]) where (body != nil and body["logging.googleapis.com/trace"] != nil)
++ 	      - delete_key(body, "logging.googleapis.com/trace") where (body != nil and body["logging.googleapis.com/trace"] != nil)
++ 	      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
++ 	      - set(cache["value"], cache["__field_0"])
++ 	      - delete_key(cache, "__setif_value") where (cache != nil and cache["__setif_value"] != nil)
++ 	      - set(cache["__setif_value"], cache["value"])
++ 	      - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "")
++ 	      - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
++ 	  transform/logs_default__pipeline_windows__event__log_1_0:
+  	... // 171 identical, 5 removed, and 487 inserted lines
+  	"""
+  )

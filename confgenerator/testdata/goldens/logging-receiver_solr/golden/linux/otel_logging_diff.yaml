@@ -1,0 +1,4 @@
+  string(
+- 	`receiver "solr_system" has invalid configuration: unimplemented`,
++ 	"",
+  )

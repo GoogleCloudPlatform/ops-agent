@@ -1,0 +1,4 @@
+  string(
+- 	`receiver "rabbitmq" has invalid configuration: unimplemented`,
++ 	"",
+  )

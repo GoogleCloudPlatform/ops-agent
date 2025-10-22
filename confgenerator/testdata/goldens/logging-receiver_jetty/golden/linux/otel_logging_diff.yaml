@@ -1,0 +1,4 @@
+  string(
+- 	`receiver "jetty_access" has invalid configuration: unimplemented`,
++ 	"",
+  )

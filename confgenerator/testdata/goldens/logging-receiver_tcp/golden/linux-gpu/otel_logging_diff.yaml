@@ -1,0 +1,4 @@
+  string(
+- 	`"tcp_logs" is not an otel receiver`,
++ 	"",
+  )

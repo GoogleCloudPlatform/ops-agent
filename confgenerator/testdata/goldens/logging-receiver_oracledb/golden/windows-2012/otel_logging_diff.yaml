@@ -1,0 +1,4 @@
+  string(
+- 	`"oracledb_audit" is not an otel receiver`,
++ 	"",
+  )

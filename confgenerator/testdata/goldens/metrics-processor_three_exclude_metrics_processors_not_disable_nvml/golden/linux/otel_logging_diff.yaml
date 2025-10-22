@@ -1,0 +1,50 @@
+  (
+  	"""
+  	... // 7 identical lines
+  	      skip_create_descriptor: true
+  	    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
++ 	  googlecloud/otel:
++ 	    metric:
++ 	      instrumentation_library_labels: true
++ 	      prefix: ""
++ 	      resource_filters: []
++ 	      service_resource_labels: true
++ 	      skip_create_descriptor: true
++ 	    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
+  	processors:
+  	  agentmetrics/hostmetrics_0:
+  	... // 595 identical lines
+  	      statements:
+  	      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
++ 	  transform/syslog_0:
++ 	    error_mode: ignore
++ 	    log_statements:
++ 	    - context: log
++ 	      statements:
++ 	      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
++ 	      - set(cache["__field_0"], attributes["compute.googleapis.com/instance_group_manager/name"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/name"] != nil)
++ 	      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
++ 	      - set(cache["__field_1"], attributes["compute.googleapis.com/instance_group_manager/zone"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/zone"] != nil)
++ 	      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
++ 	      - set(cache["__field_2"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
++ 	      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
++ 	      - set(cache["__field_3"], attributes["gcp.log_name"]) where (attributes != nil and attributes["gcp.log_name"] != nil)
++ 	      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
++ 	      - set(cache["value"], cache["__field_0"])
++ 	      - set(cache["value"], "test-mig") where cache["value"] == nil
++ 	      - set(attributes["compute.googleapis.com/instance_group_manager/name"], cache["value"]) where (cache != nil and cache["value"] != nil)
++ 	      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
++ 	      - set(cache["value"], cache["__field_1"])
++ 	      - set(cache["value"], "test-zone") where cache["value"] == nil
++ 	      - set(attributes["compute.googleapis.com/instance_group_manager/zone"], cache["value"]) where (cache != nil and cache["value"] != nil)
++ 	      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
++ 	      - set(cache["value"], cache["__field_2"])
++ 	      - set(cache["value"], "") where cache["value"] == nil
++ 	      - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
++ 	      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
++ 	      - set(cache["value"], cache["__field_3"])
++ 	      - set(cache["value"], "syslog") where cache["value"] == nil
++ 	      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+  	... // 110 identical and 20 inserted lines
+  	"""
+  )
