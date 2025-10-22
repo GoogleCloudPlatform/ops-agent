@@ -127,22 +127,6 @@ var (
 				TestGCEResourceOverride: testResource,
 			},
 		},
-		{
-			name:            "windows-2012",
-			defaultLogsDir:  `C:\ProgramData\Google\Cloud Operations\Ops Agent\log`,
-			defaultStateDir: `C:\ProgramData\Google\Cloud Operations\Ops Agent\run`,
-			platform: platform.Platform{
-				Type:               platform.Windows,
-				WindowsBuildNumber: "9200", // Windows Server 2012
-				WinlogV1Channels:   winlogv1channels,
-				HostInfo: &host.InfoStat{
-					OS:              "windows",
-					Platform:        "win_platform",
-					PlatformVersion: "win_platform_version",
-				},
-				TestGCEResourceOverride: testResource,
-			},
-		},
 	}
 )
 
