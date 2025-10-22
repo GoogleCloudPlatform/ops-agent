@@ -156,9 +156,6 @@ func TestGoldens(t *testing.T) {
 	for _, testName := range testNames {
 		// https://github.com/golang/go/wiki/CommonMistakes#using-goroutines-on-loop-iterator-variables
 		testName := testName
-		// if !strings.Contains(testName, "aerospike") {
-		// 	continue
-		// }
 		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
 			for _, pc := range testPlatforms {
@@ -267,7 +264,6 @@ func generateConfigs(pc platformConfig, testDir string) (got map[string]string, 
 	if err != nil {
 		return
 	}
-
 	got[builtinConfigFileName] = apps.BuiltInConfStructs[pc.platform.Name()].String()
 
 	// Fluent Bit configs
