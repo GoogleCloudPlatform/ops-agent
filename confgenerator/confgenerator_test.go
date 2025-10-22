@@ -31,7 +31,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"github.com/goccy/go-yaml"
-	"github.com/google/go-cmp/cmp"
 	"github.com/shirou/gopsutil/host"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/golden"
@@ -295,7 +294,7 @@ func generateConfigs(pc platformConfig, testDir string) (got map[string]string, 
 	if err != nil {
 		otelGeneratedConfig = err.Error()
 	}
-	got["otel_logging_diff.yaml"] = cmp.Diff(otelGeneratedConfig, otelLoggingGeneratedConfig)
+	got["otel_logging.yaml"] = otelLoggingGeneratedConfig
 
 	// Feature Tracking
 	inputBytes, err := os.ReadFile(filepath.Join("testdata", testDir, inputFileName))
