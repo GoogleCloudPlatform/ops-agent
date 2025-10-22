@@ -98,7 +98,7 @@ New-Item -Path $env:KOKORO_ARTIFACTS_DIR -Name 'result' -ItemType 'directory'
 Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/google-cloud-ops-agent-plugin*.tar.gz" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
 
 Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
-Move-Item -Path "$gitOnBorgLocation/pkg" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
+Move-Item -Path "./pkg" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
 # Copy the .pdb and .dll files from $env:KOKORO_ARTIFACTS_DIR/out/bin to $env:KOKORO_ARTIFACTS_DIR/result.
 # The .pdb and .dll files are saved so the team can use them in the event that we have to debug this Ops Agent build.
 # They are not distributed to customers.
