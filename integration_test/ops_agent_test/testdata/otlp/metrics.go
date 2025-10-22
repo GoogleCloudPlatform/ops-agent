@@ -16,15 +16,14 @@ import (
 )
 
 var renameMap = map[string]string{
-	"otlp.test.prefix1": "workload.googleapis.com/otlp.test.prefix1",
-	"otlp.test.prefix2": ".invalid.googleapis.com/otlp.test.prefix2",
-	"abc":               "otlp.test.prefix3/workload.googleapis.com/abc",
-	"otlp.test.prefix4": "WORKLOAD.GOOGLEAPIS.COM/otlp.test.prefix4",
-	"otlp.test.prefix5": "WORKLOAD.googleapis.com/otlp.test.prefix5",
-	"otlp.test.histogram": "workload.googleapis.com/otlp.test.histogram",
+	"otlp.test.prefix1":       "workload.googleapis.com/otlp.test.prefix1",
+	"otlp.test.prefix2":       ".invalid.googleapis.com/otlp.test.prefix2",
+	"abc":                     "otlp.test.prefix3/workload.googleapis.com/abc",
+	"otlp.test.prefix4":       "WORKLOAD.GOOGLEAPIS.COM/otlp.test.prefix4",
+	"otlp.test.prefix5":       "WORKLOAD.googleapis.com/otlp.test.prefix5",
+	"otlp.test.histogram":     "workload.googleapis.com/otlp.test.histogram",
 	"otlp.test.updowncounter": "workload.googleapis.com/otlp.test.updowncounter",
-	"otlp.test.cumulative": "workload.googleapis.com/otlp.test.cumulative",
-	histogramName: "workload.googleapis.com/otlp.test.exponential_histogram",
+	"otlp.test.cumulative":    "workload.googleapis.com/otlp.test.cumulative",
 }
 
 var (
@@ -33,8 +32,6 @@ var (
 	flagServiceInstanceID = flag.String("service_instance_id", "", "service.instance.id attribute value")
 	flagServiceVersion    = flag.String("service_version", "", "service.version attribute value")
 )
-
-var histogramName = "otlp.test.exponential_histogram"
 
 func getServiceAttributes() []attribute.KeyValue {
 	attrs := []attribute.KeyValue{}
@@ -61,12 +58,6 @@ func installMetricExportPipeline(ctx context.Context) (func(context.Context) err
 	metricResource := resource.NewWithAttributes("", getServiceAttributes()...)
 	metricProvider := metricsdk.NewMeterProvider(
 		metricsdk.WithReader(metricsdk.NewPeriodicReader(exporter)),
-		metricsdk.WithView(metricsdk.NewView(
-			metricsdk.Instrument{Name: histogramName },
-			metricsdk.Stream{Aggregation: metricsdk.AggregationBase2ExponentialHistogram{
-				MaxSize: 160,
-			}},
-		)),
 		metricsdk.WithResource(metricResource),
 		metricsdk.WithView(func(i metricsdk.Instrument) (metricsdk.Stream, bool) {
 			s := metricsdk.Stream{Name: i.Name, Description: i.Description, Unit: i.Unit}
@@ -112,7 +103,6 @@ func main() {
 	testHistogramMetric(ctx, meter, "otlp.test.histogram")
 	testUpDownCounterMetric(ctx, meter, "otlp.test.updowncounter")
 	testCumulativeMetric(ctx, meter, "otlp.test.cumulative")
-	testExponentialHistogramMetric(ctx, meter, histogramName )
 }
 
 func testCumulativeMetric(ctx context.Context, meter metric.Meter, name string) {
@@ -159,14 +149,4 @@ func testUpDownCounterMetric(ctx context.Context, meter metric.Meter, name strin
 	upDownCounter.Add(ctx, 5)
 	time.Sleep(1 * time.Second)
 	upDownCounter.Add(ctx, -2)
-}
-
-func testExponentialHistogramMetric(ctx context.Context, meter metric.Meter, name string) {
-	histogram, err := meter.Float64Histogram(name)
-	if err != nil {
-		log.Fatal(err)
-	}
-	histogram.Record(ctx, 10.0)
-	histogram.Record(ctx, 100.0)
-	histogram.Record(ctx, 1000.0)
 }
