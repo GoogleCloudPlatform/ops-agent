@@ -48,6 +48,8 @@ minimum_supported_agent_version:
 supported_operating_systems: linux
 # TODO: Fix errors and enable tests on all platforms.
 platforms_to_skip:
+  - debian-cloud:debian-13 # openjdk-11-jre not available on Debian 13. 
+  - debian-cloud:debian-13-arm64  # openjdk-11-jre not available on Debian 13. 
   - debian-cloud:debian-12 # QueryLog() failed: cassandra_system not found, exhausted retries; QueryLog() failed: cassandra_debug not found, exhausted retries; QueryLog() failed: cassandra_gc not found, exhausted retries
   - debian-cloud:debian-12-arm64 # QueryLog() failed: cassandra_system not found, exhausted retries; QueryLog() failed: cassandra_debug not found, exhausted retries; QueryLog() failed: cassandra_gc not found, exhausted retries
 supported_app_version: ["3.11", "4.0"]
