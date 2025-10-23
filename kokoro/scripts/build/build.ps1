@@ -31,6 +31,22 @@ function Invoke-Program() {
   return $outpluserr
 }
 
+# Invokes a PowerShell script and throws an error if the script finishes
+# with a nonzero exit code.
+function Invoke-PowerShellScript {
+  # We use -NonInteractive to ensure it runs without user prompts
+  # We use $Args to pass all arguments (like -File, -DestDir)
+  $outpluserr = powershell.exe -NonInteractive $Args 2>&1
+
+  if ($LastExitCode -ne 0) {
+    # The script failed. Throw an error to stop the parent script.
+    $outStr = $outpluserr -join [Environment]::NewLine
+    throw "PowerShell script failed: powershell.exe $Args, output: $outStr"
+  }
+
+  Write-Output ($outpluserr -join [Environment]::NewLine)
+}
+
 $tag = 'build'
 $name = 'build-result'
 
@@ -101,7 +117,9 @@ Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out" -Destination "$env:KOKORO_ARTIFA
 Move-Item -Path "./pkg" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
 
 if ($env:PACKAGE -ne $null) {
-  powershell.exe -File "$env:KOKORO_ARTIFACTS_DIR/result/pkg/goo/build.ps1" -DestDir "$env:KOKORO_ARTIFACTS_DIR/result"
+  echo "Installing goopack..."
+  go install -trimpath -ldflags="-s -w" github.com/google/googet/v2/goopack@latest
+  Invoke-PowerShellScript -File "$env:KOKORO_ARTIFACTS_DIR/result/pkg/goo/build.ps1" -DestDir "$env:KOKORO_ARTIFACTS_DIR/result"
 }
 
 # Copy the .pdb and .dll files from $env:KOKORO_ARTIFACTS_DIR/out/bin to $env:KOKORO_ARTIFACTS_DIR/result.

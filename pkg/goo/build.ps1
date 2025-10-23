@@ -19,8 +19,6 @@ Param(
     [Parameter(Mandatory=$false)][string]$Arch
 )
 
-echo "DestDir is $DestDir"
-
 if (!$DestDir) {
   $DestDir = '.'
 }
