@@ -1,5 +1,6 @@
 - entries:
   - jsonPayload:
+      message: "[GC (Allocation Failure) [PSYoungGen: 15000K->2000K(20480K)] 45000K->33000K(71680K), 0.0123456 secs] [Times: user=0.02 sys=0.00, real=0.01 secs]"
       timeStopped: ""
       timeStopping: ""
       uptime: 9.344
@@ -14,6 +15,7 @@
       type: gce_instance
     timestamp: 2025-07-22T10:19:12.544Z
   - jsonPayload:
+      message: "[Full GC (Ergonomics) [PSYoungGen: 20480K->0K(20480K)] [ParOldGen: 51200K->25000K(51200K)] 71680K->25000K(71680K), [Metaspace: 31000K->31000K(1064960K)], 0.4456789 secs] [Times: user=0.56 sys=0.01, real=0.45 secs]"
       timeStopped: ""
       timeStopping: ""
       uptime: 432.693
@@ -28,6 +30,7 @@
       type: gce_instance
     timestamp: 2025-07-22T10:25:55.893Z
   - jsonPayload:
+      message: "[GC (G1 Humongous Allocation) [G1 Young Generation: 16384K->1024K(19456K)] 60000K->45000K(90000K), 0.0678901 secs] [Times: user=0.04 sys=0.00, real=0.07 secs]"
       timeStopped: ""
       timeStopping: ""
       uptime: 962.923
@@ -42,6 +45,7 @@
       type: gce_instance
     timestamp: 2025-07-22T11:00:02.123Z
   - jsonPayload:
+      message: "Total time for which application threads were stopped: 0.0002390 seconds, Stopping threads took: 0.0000281 seconds"
       timeStopped: 0.000239
       timeStopping: 2.81e-05
       uptime: 3.315
@@ -56,6 +60,13 @@
       type: gce_instance
     timestamp: 2025-07-22T12:18:28.284Z
   - jsonPayload:
+      message: |-
+        [Full GC (System.gc())
+        [PSYoungGen: 10240K->0K(15360K)]
+        [ParOldGen: 40960K->20480K(51200K)]
+        51200K->20480K(66560K),
+        [Metaspace: 32000K->31900K(1064960K)], 0.3852345 secs]
+        [Times: user=0.50 sys=0.02, real=0.39 secs]
       timeStopped: ""
       timeStopping: ""
       uptime: 1203.478
@@ -71,7 +82,8 @@
     timestamp: 2025-07-22T13:45:30.678Z
   partialSuccess: true
 - entries:
-  - jsonPayload: {}
+  - jsonPayload:
+      message: "2025-07-22T14:51:23.332+0000][4.595s][5195][5217][info ] Total time for which application threads were stopped: 0.0003091 seconds, Stopping threads took: 0.0000181 seconds"
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/cassandra_gc
@@ -200,7 +212,7 @@
       service.instance.id: test-service-instance-id
       service.name: otelopscol
       service.version: v0.136.0
-    statement: set(log.body["timeStopping"], Double(log.body["timeStopping"]))
+    statement: set(log.body["timeStopped"], Double(log.body["timeStopped"]))
   - caller: ottl@v0.136.0/parser.go:410
     error: "strconv.ParseFloat: parsing \"\": invalid syntax"
     level: warn
@@ -213,4 +225,4 @@
       service.instance.id: test-service-instance-id
       service.name: otelopscol
       service.version: v0.136.0
-    statement: set(log.body["timeStopped"], Double(log.body["timeStopped"]))
+    statement: set(log.body["timeStopping"], Double(log.body["timeStopping"]))
