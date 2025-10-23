@@ -357,6 +357,22 @@ RUN Get-Content VERSION | Where-Object length | ForEach-Object { Invoke-Expressi
     $env:PKG_VERSION | Out-File -FilePath /work/out/bin/OPS_AGENT_VERSION -Encoding UTF8;
 
 ###############################################################################
+# Packaging
+###############################################################################
+
+ARG PACKAGE="false"
+WORKDIR /work
+COPY . /work
+
+RUN if ($env:PACKAGE -eq "true") { \
+        Write-Host "--- Running optional build step: .\pkg\goo\build.ps1 ---"; \
+        & .\pkg\goo\build.ps1 -DestDir /work/out; \
+        Write-Host "--- Optional step complete ---"; \
+    } else { \
+        Write-Host "--- Skipping optional build step: .\pkg\goo\build.ps1 ---"; \
+    }
+
+###############################################################################
 # Packaging for the Ops Agent Plugin
 ###############################################################################
 
