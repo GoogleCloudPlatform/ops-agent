@@ -239,35 +239,6 @@ func setExperimentalFeatures(ctx context.Context, logger *log.Logger, vm *gce.VM
 	return gce.SetEnvironmentVariables(ctx, logger, vm, map[string]string{"EXPERIMENTAL_FEATURES": feature})
 }
 
-// RunForEachImageAndFeatureFlag runs a subtest for each image and provide feature flags.
-func RunForEachImageAndFeatureFlag(t *testing.T, features []string, testBody func(t *testing.T, imageSpec string, feature string)) {
-	t.Helper()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-		t.Parallel()
-		t.Run(DefaultFeatureFlag, func(t *testing.T) {
-			testBody(t, imageSpec, DefaultFeatureFlag)
-		})
-		for _, feature := range features {
-			t.Run(feature, func(t *testing.T) {
-				if gce.IsOpsAgentUAPPlugin() {
-					t.SkipNow()
-				}
-				testBody(t, imageSpec, feature)
-			})
-		}
-	})
-}
-
-const (
-	OtelLoggingFeatureFlag = "otel_logging"
-	DefaultFeatureFlag     = "default"
-)
-
-// setExperimentalFeatures sets the EXPERIMENTAL_FEATURES environment variable.
-func setExperimentalFeatures(ctx context.Context, logger *log.Logger, vm *gce.VM, feature string) error {
-	return gce.SetEnvironmentVariables(ctx, logger, vm, map[string]string{"EXPERIMENTAL_FEATURES": feature})
-}
-
 // defaultOtelLoggingConfig returns the default config that is required to use otel_logging.
 func defaultOtelLoggingConfig() string {
 	return `logging:
