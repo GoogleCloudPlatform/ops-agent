@@ -210,6 +210,29 @@ func retrieveOtelConfig(ctx context.Context, logger *log.Logger, vm *gce.VM) (co
 	return gce.RetrieveContent(ctx, logger, vm, agents.GetOtelConfigPath(vm.ImageSpec))
 }
 
+// RunForEachImageAndLoggingSubagent runs a subtest for each image and logging subagent (fluent-bit, otel).
+func RunForEachImageAndLoggingSubagent(t *testing.T, testBody func(t *testing.T, imageSpec string, otel bool)) {
+	t.Helper()
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+		t.Run("fluent-bit", func(t *testing.T) {
+			testBody(t, imageSpec, false)
+		})
+
+		t.Run("otel", func(t *testing.T) {
+			if gce.IsOpsAgentUAPPlugin() {
+				t.SkipNow()
+			}
+			testBody(t, imageSpec, true)
+		})
+	})
+}
+
+// setExperimentalFeatures sets the EXPERIMENTAL_FEATURES environment variable.
+func setExperimentalFeatures(ctx context.Context, logger *log.Logger, vm *gce.VM, feature string) error {
+	return gce.SetEnvironmentVariables(ctx, logger, vm, map[string]string{"EXPERIMENTAL_FEATURES": feature})
+}
+
 // RunForEachImageAndFeatureFlag runs a subtest for each image and provide feature flags.
 func RunForEachImageAndFeatureFlag(t *testing.T, features []string, testBody func(t *testing.T, imageSpec string, feature string)) {
 	t.Helper()
