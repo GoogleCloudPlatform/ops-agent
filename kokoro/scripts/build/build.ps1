@@ -101,7 +101,7 @@ Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out" -Destination "$env:KOKORO_ARTIFA
 Move-Item -Path "./pkg" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
 
 if ($env:PACKAGE -ne $null) {
-  Invoke-Program "./pkg/goo/build.ps1" -DestDir "$env:KOKORO_ARTIFACTS_DIR/result"
+  powershell.exe -File "./pkg/goo/build.ps1" -DestDir "$env:KOKORO_ARTIFACTS_DIR/result"
 }
 
 # Copy the .pdb and .dll files from $env:KOKORO_ARTIFACTS_DIR/out/bin to $env:KOKORO_ARTIFACTS_DIR/result.
