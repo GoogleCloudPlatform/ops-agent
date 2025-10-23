@@ -210,6 +210,29 @@ func retrieveOtelConfig(ctx context.Context, logger *log.Logger, vm *gce.VM) (co
 	return gce.RetrieveContent(ctx, logger, vm, agents.GetOtelConfigPath(vm.ImageSpec))
 }
 
+// RunForEachImageAndLoggingSubagent runs a subtest for each image and logging subagent (fluent-bit, otel).
+func RunForEachImageAndLoggingSubagent(t *testing.T, testBody func(t *testing.T, imageSpec string, otel bool)) {
+	t.Helper()
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+		t.Run("fluent-bit", func(t *testing.T) {
+			testBody(t, imageSpec, false)
+		})
+
+		t.Run("otel", func(t *testing.T) {
+			if gce.IsOpsAgentUAPPlugin() {
+				t.SkipNow()
+			}
+			testBody(t, imageSpec, true)
+		})
+	})
+}
+
+// setExperimentalFeatures sets the EXPERIMENTAL_FEATURES environment variable.
+func setExperimentalFeatures(ctx context.Context, logger *log.Logger, vm *gce.VM, feature string) error {
+	return gce.SetEnvironmentVariables(ctx, logger, vm, map[string]string{"EXPERIMENTAL_FEATURES": feature})
+}
+
 // defaultConfigForLoggingSubagent returns the default config that is required to choose a logging subagent.
 func defaultConfigForLoggingSubagent(otel bool) string {
 	if otel {
@@ -222,24 +245,29 @@ func defaultConfigForLoggingSubagent(otel bool) string {
 	return ""
 }
 
-// RunForEachLoggingSubagent runs a subtest for the logging subagent fluent-bit and otel.
-func RunForEachLoggingSubagent(t *testing.T, testBody func(t *testing.T, otel bool)) {
-	t.Helper()
-	t.Run("fluent-bit", func(t *testing.T) {
-		testBody(t, false)
-	})
-
-	t.Run("otel", func(t *testing.T) {
-		if gce.IsOpsAgentUAPPlugin() {
-			t.SkipNow()
-		}
-		testBody(t, true)
-	})
+// setExperimentalOtelLoggingInConfig in an Ops Agent config
+func setExperimentalOtelLoggingInConfig(config string) string {
+	return strings.Replace(
+		config,
+		"service:\n",
+		"service:\n    experimental_otel_logging: true\n",
+		1,
+	)
 }
 
-// setExperimentalFeatures sets the EXPERIMENTAL_FEATURES environment variable.
-func setExperimentalFeatures(ctx context.Context, logger *log.Logger, vm *gce.VM, feature string) error {
-	return gce.SetEnvironmentVariables(ctx, logger, vm, map[string]string{"EXPERIMENTAL_FEATURES": feature})
+// SetupOpsAgentForLoggingSubagent configures the VM and the config depending on the selected logging subagent (fluent-bit, otel)
+func SetupOpsAgentForLoggingSubagent(ctx context.Context, logger *log.Logger, vm *gce.VM, config string, otel bool) error {
+	if otel {
+		if err := setExperimentalFeatures(ctx, logger, vm, "otel_logging"); err != nil {
+			return err
+		}
+		if config == "" {
+			config = defaultConfigForLoggingSubagent(otel)
+		} else {
+			config = setExperimentalOtelLoggingInConfig(config)
+		}
+	}
+	return agents.SetupOpsAgent(ctx, logger, vm, config)
 }
 
 func TestParseMultilineFileJava(t *testing.T) {
@@ -909,14 +937,12 @@ func TestKillChildJobsWhenPluginServerProcessTerminates(t *testing.T) {
 
 func TestCustomLogFormat(t *testing.T) {
 	t.Parallel()
-	RunForEachLoggingSubagent(t, func(t *testing.T, otel bool) {
+	RunForEachImageAndLoggingSubagent(t, func(t *testing.T, imageSpec string, otel bool) {
 		t.Parallel()
-		gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-			t.Parallel()
-			ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
-			logPath := logPathForImage(vm.ImageSpec)
-			config := fmt.Sprintf(`logging:
+		logPath := logPathForImage(vm.ImageSpec)
+		config := fmt.Sprintf(`logging:
   receivers:
     mylog_source:
       type: files
@@ -932,39 +958,31 @@ func TestCustomLogFormat(t *testing.T) {
       time_key: time
       time_format: "%s"
   service:
-    experimental_otel_logging: %v
     pipelines:
       my_pipeline:
         receivers: [mylog_source]
         processors: [rfc5424]
         exporters: [google]
-`, logPath, "%Y-%m-%dT%H:%M:%S.%L%z", otel)
+`, logPath, "%Y-%m-%dT%H:%M:%S.%L%z")
 
-			if otel {
-				if err := setExperimentalFeatures(ctx, logger, vm, "otel_logging"); err != nil {
-					t.Fatal(err)
-				}
-			}
+		if err := SetupOpsAgentForLoggingSubagent(ctx, logger, vm, config, otel); err != nil {
+			t.Fatal(err)
+		}
 
-			if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
-				t.Fatal(err)
-			}
+		zone := time.FixedZone("UTC-8", int((-8 * time.Hour).Seconds()))
+		line := fmt.Sprintf("<13>1 %s %s my_app_id - - - qqqqrrrr\n", time.Now().In(zone).Format(time.RFC3339Nano), vm.Name)
+		// TODO: b/413446913 Enable non-UTC timestamp when otel logging parsing differences are fixed.
+		if otel {
+			line = fmt.Sprintf("<13>1 %s %s my_app_id - - - qqqqrrrr\n", time.Now().UTC().Format(time.RFC3339Nano), vm.Name)
+		}
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), logPath); err != nil {
+			t.Fatalf("error writing dummy log line: %v", err)
+		}
 
-			zone := time.FixedZone("UTC-8", int((-8 * time.Hour).Seconds()))
-			line := fmt.Sprintf("<13>1 %s %s my_app_id - - - qqqqrrrr\n", time.Now().In(zone).Format(time.RFC3339Nano), vm.Name)
-			// TODO: b/413446913 Enable non-UTC timestamp when otel logging parsing differences are fixed.
-			if otel {
-				line = fmt.Sprintf("<13>1 %s %s my_app_id - - - qqqqrrrr\n", time.Now().UTC().Format(time.RFC3339Nano), vm.Name)
-			}
-			if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), logPath); err != nil {
-				t.Fatalf("error writing dummy log line: %v", err)
-			}
-
-			// window (1 hour) is *less than* the time zone UTC offset (8 hours) to catch time zone parse failures
-			if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, "jsonPayload.message=qqqqrrrr AND jsonPayload.ident=my_app_id"); err != nil {
-				t.Error(err)
-			}
-		})
+		// window (1 hour) is *less than* the time zone UTC offset (8 hours) to catch time zone parse failures
+		if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, "jsonPayload.message=qqqqrrrr AND jsonPayload.ident=my_app_id"); err != nil {
+			t.Error(err)
+		}
 	})
 }
 
@@ -1901,14 +1919,12 @@ func TestResourceNameLabel(t *testing.T) {
 
 func TestLogFilePathLabel(t *testing.T) {
 	t.Parallel()
-	RunForEachLoggingSubagent(t, func(t *testing.T, otel bool) {
+	RunForEachImageAndLoggingSubagent(t, func(t *testing.T, imageSpec string, otel bool) {
 		t.Parallel()
-		gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-			t.Parallel()
-			ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-			file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
 
-			config := fmt.Sprintf(`logging:
+		config := fmt.Sprintf(`logging:
   receivers:
     f1:
       type: files
@@ -1919,41 +1935,33 @@ func TestLogFilePathLabel(t *testing.T) {
     json:
       type: parse_json
   service:
-    experimental_otel_logging: %v
     pipelines:
       p1:
         receivers: [f1]
         processors: [json]
-`, file1, otel)
+`, file1)
 
-			if otel {
-				if err := setExperimentalFeatures(ctx, logger, vm, "otel_logging"); err != nil {
-					t.Fatal(err)
-				}
-			}
+		if err := SetupOpsAgentForLoggingSubagent(ctx, logger, vm, config, otel); err != nil {
+			t.Fatal(err)
+		}
 
-			if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
-				t.Fatal(err)
-			}
+		line := `{"default_present":"original"}` + "\n"
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
+			t.Fatalf("error uploading log: %v", err)
+		}
 
-			line := `{"default_present":"original"}` + "\n"
-			if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
-				t.Fatalf("error uploading log: %v", err)
-			}
+		// In Windows the generated log_file_path "C:\mylog_1" uses a backslash.
+		// When constructing the query in WaithForLog the backslashes are escaped so
+		// replacing with two backslahes correctly queries for "C:\mylog_1" label.
+		if gce.IsWindows(imageSpec) {
+			file1 = strings.Replace(file1, `\`, `\\`, 1)
+		}
 
-			// In Windows the generated log_file_path "C:\mylog_1" uses a backslash.
-			// When constructing the query in WaithForLog the backslashes are escaped so
-			// replacing with two backslahes correctly queries for "C:\mylog_1" label.
-			if gce.IsWindows(imageSpec) {
-				file1 = strings.Replace(file1, `\`, `\\`, 1)
-			}
-
-			// Expect to see log with label added.
-			check := fmt.Sprintf(`labels."agent.googleapis.com/log_file_path"="%s" AND jsonPayload.default_present="original"`, file1)
-			if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, check); err != nil {
-				t.Error(err)
-			}
-		})
+		// Expect to see log with label added.
+		check := fmt.Sprintf(`labels."agent.googleapis.com/log_file_path"="%s" AND jsonPayload.default_present="original"`, file1)
+		if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, check); err != nil {
+			t.Error(err)
+		}
 	})
 }
 
@@ -2538,63 +2546,53 @@ func TestWindowsEventLogWithNonDefaultTimeZone(t *testing.T) {
 
 func TestSystemdLog(t *testing.T) {
 	t.Parallel()
-	RunForEachLoggingSubagent(t, func(t *testing.T, otel bool) {
+	RunForEachImageAndLoggingSubagent(t, func(t *testing.T, imageSpec string, otel bool) {
 		t.Parallel()
-		gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-			t.Parallel()
-			if gce.IsWindows(imageSpec) {
-				t.SkipNow()
-			}
-			ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		if gce.IsWindows(imageSpec) {
+			t.SkipNow()
+		}
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
-			config := fmt.Sprintf(`logging:
+		config := `logging:
   receivers:
     systemd_logs:
       type: systemd_journald
   service:
-    experimental_otel_logging: %v
     pipelines:
       systemd_pipeline:
         receivers: [systemd_logs]
-`, otel)
+`
 
-			if otel {
-				if err := setExperimentalFeatures(ctx, logger, vm, "otel_logging"); err != nil {
-					t.Fatal(err)
-				}
-			}
+		if err := SetupOpsAgentForLoggingSubagent(ctx, logger, vm, config, otel); err != nil {
+			t.Fatal(err)
+		}
 
-			if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
-				t.Fatal(err)
-			}
+		if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_info_log_message' | systemd-cat --priority=info"); err != nil {
+			t.Fatalf("Error writing dummy Systemd log line: %v", err)
+		}
 
-			if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_info_log_message' | systemd-cat --priority=info"); err != nil {
-				t.Fatalf("Error writing dummy Systemd log line: %v", err)
-			}
+		querySystemdInfoLog := `severity="INFO" AND jsonPayload.MESSAGE="my_systemd_info_log_message" AND jsonPayload.PRIORITY="6"`
+		if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdInfoLog); err != nil {
+			t.Error(err)
+		}
 
-			querySystemdInfoLog := `severity="INFO" AND jsonPayload.MESSAGE="my_systemd_info_log_message" AND jsonPayload.PRIORITY="6"`
-			if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdInfoLog); err != nil {
-				t.Error(err)
-			}
+		if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_error_log_message' | systemd-cat --priority=err"); err != nil {
+			t.Fatalf("Error writing dummy Systemd log line: %v", err)
+		}
 
-			if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_error_log_message' | systemd-cat --priority=err"); err != nil {
-				t.Fatalf("Error writing dummy Systemd log line: %v", err)
-			}
+		querySystemdErrorLog := `severity="ERROR" AND jsonPayload.MESSAGE="my_systemd_error_log_message" AND jsonPayload.PRIORITY="3"`
+		if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdErrorLog); err != nil {
+			t.Error(err)
+		}
 
-			querySystemdErrorLog := `severity="ERROR" AND jsonPayload.MESSAGE="my_systemd_error_log_message" AND jsonPayload.PRIORITY="3"`
-			if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdErrorLog); err != nil {
-				t.Error(err)
-			}
+		if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_notice_log_message' | systemd-cat --priority=notice"); err != nil {
+			t.Fatalf("Error writing dummy Systemd log line: %v", err)
+		}
 
-			if _, err := gce.RunRemotely(ctx, logger, vm, "echo 'my_systemd_notice_log_message' | systemd-cat --priority=notice"); err != nil {
-				t.Fatalf("Error writing dummy Systemd log line: %v", err)
-			}
-
-			querySystemdNoticeLog := `severity="NOTICE" AND jsonPayload.MESSAGE="my_systemd_notice_log_message" AND jsonPayload.PRIORITY="5"`
-			if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdNoticeLog); err != nil {
-				t.Error(err)
-			}
-		})
+		querySystemdNoticeLog := `severity="NOTICE" AND jsonPayload.MESSAGE="my_systemd_notice_log_message" AND jsonPayload.PRIORITY="5"`
+		if err := gce.WaitForLog(ctx, logger, vm, "systemd_logs", time.Hour, querySystemdNoticeLog); err != nil {
+			t.Error(err)
+		}
 	})
 }
 
@@ -2737,67 +2735,51 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 
 func TestDefaultMetricsNoProxy(t *testing.T) {
 	t.Parallel()
-	RunForEachLoggingSubagent(t, func(t *testing.T, otel bool) {
+	RunForEachImageAndLoggingSubagent(t, func(t *testing.T, imageSpec string, otel bool) {
 		t.Parallel()
-		gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-			t.Parallel()
-			ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-			if otel {
-				if err := setExperimentalFeatures(ctx, logger, vm, "otel_logging"); err != nil {
-					t.Fatal(err)
-				}
-			}
-			if err := agents.SetupOpsAgent(ctx, logger, vm, defaultConfigForLoggingSubagent(otel)); err != nil {
-				t.Fatal(err)
-			}
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		if err := SetupOpsAgentForLoggingSubagent(ctx, logger, vm, "", otel); err != nil {
+			t.Fatal(err)
+		}
 
-			// Wait at least a minute since feature_tracking and enabled_receivers
-			// metrics are sent one minute after agent startup
-			time.Sleep(2 * time.Minute)
+		// Wait at least a minute since feature_tracking and enabled_receivers
+		// metrics are sent one minute after agent startup
+		time.Sleep(2 * time.Minute)
 
-			testDefaultMetrics(ctx, t, logger, vm, time.Hour)
-		})
+		testDefaultMetrics(ctx, t, logger, vm, time.Hour)
 	})
 }
 
 // go/sdi-integ-test#proxy-testing
 func TestDefaultMetricsWithProxy(t *testing.T) {
 	t.Parallel()
-	RunForEachLoggingSubagent(t, func(t *testing.T, otel bool) {
+	RunForEachImageAndLoggingSubagent(t, func(t *testing.T, imageSpec string, otel bool) {
 		t.Parallel()
-		gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-			t.Parallel()
-			if !gce.IsWindows(imageSpec) {
-				t.Skip("Proxy test is currently only supported on windows.")
-			}
-			proxySettingsVal, proxySettingsPresent := os.LookupEnv("PROXY_SETTINGS")
-			if !proxySettingsPresent {
-				t.Skip("No proxy settings were set in the global PROXY_SETTINGS variable.")
-			}
-			settings := make(map[string]string)
-			if err := json.Unmarshal([]byte(proxySettingsVal), &settings); err != nil {
-				t.Fatal(err)
-			}
-			ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-			if err := gce.SetEnvironmentVariables(ctx, logger, vm, settings); err != nil {
-				t.Fatal(err)
-			}
-			if otel {
-				if err := setExperimentalFeatures(ctx, logger, vm, "otel_logging"); err != nil {
-					t.Fatal(err)
-				}
-			}
-			if err := agents.SetupOpsAgent(ctx, logger, vm, defaultConfigForLoggingSubagent(otel)); err != nil {
-				t.Fatal(err)
-			}
+		if !gce.IsWindows(imageSpec) {
+			t.Skip("Proxy test is currently only supported on windows.")
+		}
+		proxySettingsVal, proxySettingsPresent := os.LookupEnv("PROXY_SETTINGS")
+		if !proxySettingsPresent {
+			t.Skip("No proxy settings were set in the global PROXY_SETTINGS variable.")
+		}
+		settings := make(map[string]string)
+		if err := json.Unmarshal([]byte(proxySettingsVal), &settings); err != nil {
+			t.Fatal(err)
+		}
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		if err := gce.SetEnvironmentVariables(ctx, logger, vm, settings); err != nil {
+			t.Fatal(err)
+		}
+		if err := SetupOpsAgentForLoggingSubagent(ctx, logger, vm, "", otel); err != nil {
+			t.Fatal(err)
+		}
 
-			if err := gce.RemoveExternalIP(ctx, logger, vm); err != nil {
-				t.Fatal(err)
-			}
-			// Sleep for 3 minutes to make sure that if any metrics were sent between agent install and removal of the IP address, then they will fall out of the 2 minute window.
-			time.Sleep(3 * time.Minute)
-			testDefaultMetrics(ctx, t, logger, vm, 2*time.Minute)
-		})
+		if err := gce.RemoveExternalIP(ctx, logger, vm); err != nil {
+			t.Fatal(err)
+		}
+		// Sleep for 3 minutes to make sure that if any metrics were sent between agent install and removal of the IP address, then they will fall out of the 2 minute window.
+		time.Sleep(3 * time.Minute)
+		testDefaultMetrics(ctx, t, logger, vm, 2*time.Minute)
 	})
 }
 
