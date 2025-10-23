@@ -1747,13 +1747,13 @@ func TestExcludeLogsModifyFieldsOrder(t *testing.T) {
     exclude_span_id:
       type: exclude_logs
       match_any:
-      - spanId =~ "value2"
+      - spanId =~ "facefeedb0bacafe"
     modify:
       type: modify_fields
       fields:
         trace:
           move_from: jsonPayload.none
-          default_value: value1
+          default_value: deadcafedeadc0defacefeedb0bacafe
     json:
       type: parse_json
   service:
@@ -1881,13 +1881,13 @@ func TestModifyFields(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			line := `{"field":"value", "default_present":"original", "logging.googleapis.com/labels": {"label1":"value"}, "trace":"trace_value", "spanId": "facefeedb0bacafe"}` + "\n"
+			line := `{"field":"value", "default_present":"original", "logging.googleapis.com/labels": {"label1":"value"}, "trace":"deadcafedeadc0defacefeedb0bacafe", "spanId": "facefeedb0bacafe"}` + "\n"
 			if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
 				t.Fatalf("error uploading log: %v", err)
 			}
 
 			// Expect to see the log with the modifications applied
-			if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, `jsonPayload.field2="value" AND labels.static="hello world" AND labels.label2="value" AND NOT labels.label1:* AND labels."my.cool.service/foo"="value" AND severity="WARNING" AND NOT jsonPayload.field:* AND jsonPayload.default_present="original" AND jsonPayload.default_absent="default" AND jsonPayload.integer > 5 AND jsonPayload.float > 5 AND jsonPayload.mapped_field="new_value" AND (NOT jsonPayload.omitted = "broken") AND trace = "trace_value" AND NOT jsonPayload.trace:* AND spanId = "span_id_value" AND jsonPayload.spanId = "span_id_value"`); err != nil {
+			if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, `jsonPayload.field2="value" AND labels.static="hello world" AND labels.label2="value" AND NOT labels.label1:* AND labels."my.cool.service/foo"="value" AND severity="WARNING" AND NOT jsonPayload.field:* AND jsonPayload.default_present="original" AND jsonPayload.default_absent="default" AND jsonPayload.integer > 5 AND jsonPayload.float > 5 AND jsonPayload.mapped_field="new_value" AND (NOT jsonPayload.omitted = "broken") AND trace = "deadcafedeadc0defacefeedb0bacafe" AND NOT jsonPayload.trace:* AND spanId = "facefeedb0bacafe" AND jsonPayload.spanId = "facefeedb0bacafe"`); err != nil {
 				t.Error(err)
 			}
 		})
