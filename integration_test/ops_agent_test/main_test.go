@@ -794,13 +794,11 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 
 func TestCustomLogFile(t *testing.T) {
 	t.Parallel()
-	RunForEachLoggingSubagent(t, func(t *testing.T, otel bool) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
-		gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-			t.Parallel()
-			ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-			logPath := logPathForImage(vm.ImageSpec)
-			config := fmt.Sprintf(`logging:
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		logPath := logPathForImage(vm.ImageSpec)
+		config := fmt.Sprintf(`logging:
   receivers:
     mylog_source:
       type: files
@@ -816,39 +814,31 @@ func TestCustomLogFile(t *testing.T) {
       - jsonPayload.missing_field = "value"
       - jsonPayload.message =~ "test pattern"
   service:
-    experimental_otel_logging: %v
     pipelines:
       my_pipeline:
         receivers: [mylog_source]
         processors: [my_exclude]
         exporters: [google]
-`, logPath, otel)
+`, logPath)
 
-			if otel {
-				if err := setExperimentalFeatures(ctx, logger, vm, "otel_logging"); err != nil {
-					t.Fatal(err)
-				}
-			}
+		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+			t.Fatal(err)
+		}
 
-			if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
-				t.Fatal(err)
-			}
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader("abc test pattern xyz\n7654321\n"), logPath); err != nil {
+			t.Fatalf("error writing dummy log line: %v", err)
+		}
 
-			if err := gce.UploadContent(ctx, logger, vm, strings.NewReader("abc test pattern xyz\n7654321\n"), logPath); err != nil {
-				t.Fatalf("error writing dummy log line: %v", err)
-			}
-
-			if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, "jsonPayload.message=7654321"); err != nil {
-				t.Error(err)
-			}
-			time.Sleep(60 * time.Second)
-			_, err := gce.QueryLog(ctx, logger, vm, "mylog_source", time.Hour, `jsonPayload.message="abc test pattern xyz"`, 5)
-			if err == nil {
-				t.Error("expected log to be excluded but was included")
-			} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
-				t.Fatalf("unexpected error: %v", err)
-			}
-		})
+		if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, "jsonPayload.message=7654321"); err != nil {
+			t.Error(err)
+		}
+		time.Sleep(60 * time.Second)
+		_, err := gce.QueryLog(ctx, logger, vm, "mylog_source", time.Hour, `jsonPayload.message="abc test pattern xyz"`, 5)
+		if err == nil {
+			t.Error("expected log to be excluded but was included")
+		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
+			t.Fatalf("unexpected error: %v", err)
+		}
 	})
 }
 
@@ -1515,18 +1505,16 @@ func TestSyslogUDP(t *testing.T) {
 
 func TestExcludeLogs(t *testing.T) {
 	t.Parallel()
-	RunForEachLoggingSubagent(t, func(t *testing.T, otel bool) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
-		gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-			t.Parallel()
-			ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-			file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
-			file2 := fmt.Sprintf("%s_2", logPathForImage(vm.ImageSpec))
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
+		file2 := fmt.Sprintf("%s_2", logPathForImage(vm.ImageSpec))
 
-			// p1: validate the contains operator
-			// p2: validate that a rule which doesn't exclude a log but still matches
-			//     an individual regex pattern cleans up the temporary __match fields
-			config := fmt.Sprintf(`logging:
+		// p1: validate the contains operator
+		// p2: validate that a rule which doesn't exclude a log but still matches
+		//     an individual regex pattern cleans up the temporary __match fields
+		config := fmt.Sprintf(`logging:
   receivers:
     f1:
       type: files
@@ -1548,7 +1536,6 @@ func TestExcludeLogs(t *testing.T) {
     json:
       type: parse_json
   service:
-    experimental_otel_logging: %v
     pipelines:
       p1:
         receivers: [f1]
@@ -1556,85 +1543,76 @@ func TestExcludeLogs(t *testing.T) {
       p2:
         receivers: [f2]
         processors: [json, exclude2]
-`, file1, file2, otel)
+`, file1, file2)
 
-			if otel {
-				if err := setExperimentalFeatures(ctx, logger, vm, "otel_logging"); err != nil {
-					t.Fatal(err)
-				}
-			}
+		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+			t.Fatal(err)
+		}
 
-			if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
-				t.Fatal(err)
-			}
+		logContents1 := `{"field":"string containing pattern"}` + "\n"
+		logContents1 += `{"field":"other"}` + "\n"
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(logContents1), file1); err != nil {
+			t.Fatalf("error uploading log: %v", err)
+		}
 
-			logContents1 := `{"field":"string containing pattern"}` + "\n"
-			logContents1 += `{"field":"other"}` + "\n"
-			if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(logContents1), file1); err != nil {
-				t.Fatalf("error uploading log: %v", err)
-			}
+		logContents2 := `{"field1":"nope, include me!", "field2":"second"}` + "\n"
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(logContents2), file2); err != nil {
+			t.Fatalf("error uploading log: %v", err)
+		}
 
-			logContents2 := `{"field1":"nope, include me!", "field2":"second"}` + "\n"
-			if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(logContents2), file2); err != nil {
-				t.Fatalf("error uploading log: %v", err)
-			}
+		// p1: Expect to see the log that doesn't have pattern in it.
+		if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, `jsonPayload.field:"other"`); err != nil {
+			t.Error(err)
+		}
+		// p1: Give the excluded log some time to show up.
+		time.Sleep(60 * time.Second)
+		_, err := gce.QueryLog(ctx, logger, vm, "f1", time.Hour, `jsonPayload.field:"pattern"`, 5)
+		if err == nil {
+			t.Error("expected log to be excluded but was included")
+		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
+			t.Fatalf("unexpected error: %v", err)
+		}
 
-			// p1: Expect to see the log that doesn't have pattern in it.
-			if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, `jsonPayload.field:"other"`); err != nil {
-				t.Error(err)
-			}
-			// p1: Give the excluded log some time to show up.
-			time.Sleep(60 * time.Second)
-			_, err := gce.QueryLog(ctx, logger, vm, "f1", time.Hour, `jsonPayload.field:"pattern"`, 5)
-			if err == nil {
-				t.Error("expected log to be excluded but was included")
-			} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
-				t.Fatalf("unexpected error: %v", err)
-			}
+		// p2: Expect to see the log.
+		resultingLog2, err := gce.QueryLog(ctx, logger, vm, "f2", time.Hour, `jsonPayload.field1:*`, gce.LogQueryMaxAttempts)
+		if err != nil {
+			t.Error(err)
+		}
+		// p2: Verify that there are no vestigial __match_ fields.
+		payload := &structpb.Struct{}
+		if resultingLog2 != nil && resultingLog2.Payload != nil {
+			payload = resultingLog2.Payload.(*structpb.Struct)
+		}
 
-			// p2: Expect to see the log.
-			resultingLog2, err := gce.QueryLog(ctx, logger, vm, "f2", time.Hour, `jsonPayload.field1:*`, gce.LogQueryMaxAttempts)
-			if err != nil {
-				t.Error(err)
+		for k := range payload.GetFields() {
+			if strings.HasPrefix(k, "__match_") {
+				t.Errorf("unexpected vestigial field: %s", k)
 			}
-			// p2: Verify that there are no vestigial __match_ fields.
-			payload := &structpb.Struct{}
-			if resultingLog2 != nil && resultingLog2.Payload != nil {
-				payload = resultingLog2.Payload.(*structpb.Struct)
-			}
-
-			for k := range payload.GetFields() {
-				if strings.HasPrefix(k, "__match_") {
-					t.Errorf("unexpected vestigial field: %s", k)
-				}
-			}
-		})
+		}
 	})
 }
 
 func TestExcludeLogsParseJsonOrder(t *testing.T) {
 	t.Parallel()
-	RunForEachLoggingSubagent(t, func(t *testing.T, otel bool) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
-		gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-			t.Parallel()
-			ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-			file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
-			file2 := fmt.Sprintf("%s_2", logPathForImage(vm.ImageSpec))
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
+		file2 := fmt.Sprintf("%s_2", logPathForImage(vm.ImageSpec))
 
-			// This exclude_logs processor operates on a non-default field which is
-			// present if and only if the log is structured accordingly.
-			// The intended mechanism for inputting structured logs from a file is to
-			// use a parse_json processor. Since processors operate in the order in
-			// which they're written, the expectation is that if a parse_json processor
-			// comes before the exclude_logs processor then the log is
-			// excluded. (pipeline p1)
-			// Conversely, if a parse_json processor comes after the exclude_logs
-			// processor then the log is not excluded: the log inputted to exclude_logs
-			// is unstructured, and unstructured logs do not contain non-default
-			// fields, so it cannot be matched by the match_any expression
-			// below. (pipeline p2)
-			config := fmt.Sprintf(`logging:
+		// This exclude_logs processor operates on a non-default field which is
+		// present if and only if the log is structured accordingly.
+		// The intended mechanism for inputting structured logs from a file is to
+		// use a parse_json processor. Since processors operate in the order in
+		// which they're written, the expectation is that if a parse_json processor
+		// comes before the exclude_logs processor then the log is
+		// excluded. (pipeline p1)
+		// Conversely, if a parse_json processor comes after the exclude_logs
+		// processor then the log is not excluded: the log inputted to exclude_logs
+		// is unstructured, and unstructured logs do not contain non-default
+		// fields, so it cannot be matched by the match_any expression
+		// below. (pipeline p2)
+		config := fmt.Sprintf(`logging:
   receivers:
     f1:
       type: files
@@ -1655,7 +1633,6 @@ func TestExcludeLogsParseJsonOrder(t *testing.T) {
     google:
       type: google_cloud_logging
   service:
-    experimental_otel_logging: %v
     pipelines:
       p1:
         receivers: [f1]
@@ -1665,67 +1642,58 @@ func TestExcludeLogsParseJsonOrder(t *testing.T) {
         receivers: [f2]
         processors: [json, exclude]
         exporters: [google]
-`, file1, file2, otel)
+`, file1, file2)
 
-			if otel {
-				if err := setExperimentalFeatures(ctx, logger, vm, "otel_logging"); err != nil {
-					t.Fatal(err)
-				}
-			}
+		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+			t.Fatal(err)
+		}
 
-			if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
-				t.Fatal(err)
-			}
+		line := `{"field":"value"}` + "\n"
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file2); err != nil {
+			t.Fatalf("error uploading log: %v", err)
+		}
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
+			t.Fatalf("error uploading log: %v", err)
+		}
 
-			line := `{"field":"value"}` + "\n"
-			if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file2); err != nil {
-				t.Fatalf("error uploading log: %v", err)
-			}
-			if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
-				t.Fatalf("error uploading log: %v", err)
-			}
-
-			// Expect to see the log included in p1 but not p2.
-			if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, `jsonPayload.field="value"`); err != nil {
-				t.Error(err)
-			}
-			// Give the excluded log some time to show up.
-			time.Sleep(60 * time.Second)
-			_, err := gce.QueryLog(ctx, logger, vm, "f2", time.Hour, `jsonPayload.field="value"`, 5)
-			if err == nil {
-				t.Error("expected log to be excluded but was included")
-			} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
-				t.Fatalf("unexpected error: %v", err)
-			}
-		})
+		// Expect to see the log included in p1 but not p2.
+		if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, `jsonPayload.field="value"`); err != nil {
+			t.Error(err)
+		}
+		// Give the excluded log some time to show up.
+		time.Sleep(60 * time.Second)
+		_, err := gce.QueryLog(ctx, logger, vm, "f2", time.Hour, `jsonPayload.field="value"`, 5)
+		if err == nil {
+			t.Error("expected log to be excluded but was included")
+		} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
+			t.Fatalf("unexpected error: %v", err)
+		}
 	})
 }
 
 func TestExcludeLogsModifyFieldsOrder(t *testing.T) {
 	t.Parallel()
-	RunForEachLoggingSubagent(t, func(t *testing.T, otel bool) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
-		gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-			t.Parallel()
-			ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-			file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
-			file2 := fmt.Sprintf("%s_2", logPathForImage(vm.ImageSpec))
-			file3 := fmt.Sprintf("%s_3", logPathForImage(vm.ImageSpec))
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
+		file2 := fmt.Sprintf("%s_2", logPathForImage(vm.ImageSpec))
+		file3 := fmt.Sprintf("%s_3", logPathForImage(vm.ImageSpec))
 
-			// This exclude_logs processor operates on a non-default field which is
-			// present if and only if the log is structured accordingly.
-			// The intended mechanism for inputting structured logs from a file is
-			// to use a parse_json processor, and the processor will automatically
-			// recongnize special fields for the LogEntry and place them at the top
-			// level and can be used by the exclude_logs processor to filter logs.
-			// (pipeline p1)
-			// For top level fields that set by modify_fields, since processors
-			// operate in the order in which they're written, the expectation is
-			// that if a modify_fields processor comes before the exclude_logs
-			// processor then the log is excluded. (pipeline p2)
-			// Conversely, if a modify_fields processor comes after the exclude_logs
-			// processor then the log is not excluded. (pipeline p3)
-			config := fmt.Sprintf(`logging:
+		// This exclude_logs processor operates on a non-default field which is
+		// present if and only if the log is structured accordingly.
+		// The intended mechanism for inputting structured logs from a file is
+		// to use a parse_json processor, and the processor will automatically
+		// recongnize special fields for the LogEntry and place them at the top
+		// level and can be used by the exclude_logs processor to filter logs.
+		// (pipeline p1)
+		// For top level fields that set by modify_fields, since processors
+		// operate in the order in which they're written, the expectation is
+		// that if a modify_fields processor comes before the exclude_logs
+		// processor then the log is excluded. (pipeline p2)
+		// Conversely, if a modify_fields processor comes after the exclude_logs
+		// processor then the log is not excluded. (pipeline p3)
+		config := fmt.Sprintf(`logging:
   receivers:
     f1:
       type: files
@@ -1743,7 +1711,7 @@ func TestExcludeLogsModifyFieldsOrder(t *testing.T) {
     exclude_trace:
       type: exclude_logs
       match_any:
-      - trace =~ "value1"
+      - trace =~ "deadcafedeadc0defacefeedb0bacafe"
     exclude_span_id:
       type: exclude_logs
       match_any:
@@ -1757,7 +1725,6 @@ func TestExcludeLogsModifyFieldsOrder(t *testing.T) {
     json:
       type: parse_json
   service:
-    experimental_otel_logging: %v
     pipelines:
       p1:
         receivers: [f1]
@@ -1768,53 +1735,44 @@ func TestExcludeLogsModifyFieldsOrder(t *testing.T) {
       p3:
         receivers: [f3]
         processors: [json, exclude_trace, modify]
-`, file1, file2, file3, otel)
+`, file1, file2, file3)
 
-			if otel {
-				if err := setExperimentalFeatures(ctx, logger, vm, "otel_logging"); err != nil {
-					t.Fatal(err)
-				}
-			}
+		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+			t.Fatal(err)
+		}
 
-			if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
-				t.Fatal(err)
+		line := `{"logging.googleapis.com/spanId":"facefeedb0bacafe", "query_field": "value"}` + "\n"
+		for _, file := range []string{file1, file2, file3} {
+			if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file); err != nil {
+				t.Fatalf("error uploading log: %v", err)
 			}
+		}
 
-			line := `{"logging.googleapis.com/spanId":"facefeedb0bacafe", "query_field": "value"}` + "\n"
-			for _, file := range []string{file1, file2, file3} {
-				if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file); err != nil {
-					t.Fatalf("error uploading log: %v", err)
-				}
+		// Expect to see the log included in p3 but not p1 and p2.
+		if err := gce.WaitForLog(ctx, logger, vm, "f3", time.Hour, `jsonPayload.query_field="value"`); err != nil {
+			t.Error(err)
+		}
+		// Give the excluded log some time to show up.
+		time.Sleep(60 * time.Second)
+		for _, name := range []string{"f1", "f2"} {
+			_, err := gce.QueryLog(ctx, logger, vm, name, time.Hour, `jsonPayload.query_field="value"`, 5)
+			if err == nil {
+				t.Error("expected log to be excluded but was included")
+			} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
+				t.Fatalf("unexpected error: %v", err)
 			}
-
-			// Expect to see the log included in p3 but not p1 and p2.
-			if err := gce.WaitForLog(ctx, logger, vm, "f3", time.Hour, `jsonPayload.query_field="value"`); err != nil {
-				t.Error(err)
-			}
-			// Give the excluded log some time to show up.
-			time.Sleep(60 * time.Second)
-			for _, name := range []string{"f1", "f2"} {
-				_, err := gce.QueryLog(ctx, logger, vm, name, time.Hour, `jsonPayload.query_field="value"`, 5)
-				if err == nil {
-					t.Error("expected log to be excluded but was included")
-				} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
-					t.Fatalf("unexpected error: %v", err)
-				}
-			}
-		})
+		}
 	})
 }
 
 func TestModifyFields(t *testing.T) {
 	t.Parallel()
-	RunForEachLoggingSubagent(t, func(t *testing.T, otel bool) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
-		gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-			t.Parallel()
-			ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-			file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
 
-			config := fmt.Sprintf(`logging:
+		config := fmt.Sprintf(`logging:
   receivers:
     f1:
       type: files
@@ -1863,34 +1821,26 @@ func TestModifyFields(t *testing.T) {
     google:
       type: google_cloud_logging
   service:
-    experimental_otel_logging: %v
     pipelines:
       p1:
         receivers: [f1]
         processors: [json, modify]
         exporters: [google]
-`, file1, otel)
+`, file1)
 
-			if otel {
-				if err := setExperimentalFeatures(ctx, logger, vm, "otel_logging"); err != nil {
-					t.Fatal(err)
-				}
-			}
+		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+			t.Fatal(err)
+		}
 
-			if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
-				t.Fatal(err)
-			}
+		line := `{"field":"value", "default_present":"original", "logging.googleapis.com/labels": {"label1":"value"}, "trace":"deadcafedeadc0defacefeedb0bacafe", "spanId": "facefeedb0bacafe"}` + "\n"
+		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
+			t.Fatalf("error uploading log: %v", err)
+		}
 
-			line := `{"field":"value", "default_present":"original", "logging.googleapis.com/labels": {"label1":"value"}, "trace":"deadcafedeadc0defacefeedb0bacafe", "spanId": "facefeedb0bacafe"}` + "\n"
-			if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
-				t.Fatalf("error uploading log: %v", err)
-			}
-
-			// Expect to see the log with the modifications applied
-			if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, `jsonPayload.field2="value" AND labels.static="hello world" AND labels.label2="value" AND NOT labels.label1:* AND labels."my.cool.service/foo"="value" AND severity="WARNING" AND NOT jsonPayload.field:* AND jsonPayload.default_present="original" AND jsonPayload.default_absent="default" AND jsonPayload.integer > 5 AND jsonPayload.float > 5 AND jsonPayload.mapped_field="new_value" AND (NOT jsonPayload.omitted = "broken") AND trace = "deadcafedeadc0defacefeedb0bacafe" AND NOT jsonPayload.trace:* AND spanId = "facefeedb0bacafe" AND jsonPayload.spanId = "facefeedb0bacafe"`); err != nil {
-				t.Error(err)
-			}
-		})
+		// Expect to see the log with the modifications applied
+		if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, `jsonPayload.field2="value" AND labels.static="hello world" AND labels.label2="value" AND NOT labels.label1:* AND labels."my.cool.service/foo"="value" AND severity="WARNING" AND NOT jsonPayload.field:* AND jsonPayload.default_present="original" AND jsonPayload.default_absent="default" AND jsonPayload.integer > 5 AND jsonPayload.float > 5 AND jsonPayload.mapped_field="new_value" AND (NOT jsonPayload.omitted = "broken") AND trace =~ "deadcafedeadc0defacefeedb0bacafe" AND NOT jsonPayload.trace:* AND spanId = "facefeedb0bacafe" AND jsonPayload.spanId = "facefeedb0bacafe"`); err != nil {
+			t.Error(err)
+		}
 	})
 }
 

@@ -134,17 +134,19 @@ func (transformationConfig transformationTest) runFluentBitTest(t *testing.T, na
 		fmt.Sprintf("--config=%s", filepath.Join(tempPath, flbMainConf)),
 		fmt.Sprintf("--parser=%s", filepath.Join(filepath.Join(tempPath, flbParserConf))))
 
+	// unmarshal output
+	data := []map[string]any{}
+
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
 		t.Log(stderr.String())
-		t.Fatal("Failed to run command:", err)
+		t.Log("Failed to run command:", err)
+		data = append(data, map[string]any{"exit_error": err.Error()})
+		data = append(data, map[string]any{"collector_errors": map[string]any{"stderr": stderr.String()}})
 	}
 	t.Logf("stderr: %s\n", stderr.Bytes())
-
-	// unmarshal output
-	data := []map[string]any{}
 
 	dec := json.NewDecoder(strings.NewReader(stdout.String()))
 	for {

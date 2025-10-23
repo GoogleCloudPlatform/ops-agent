@@ -1,1 +1,5 @@
-[]
+- exit_error: exit status 1
+- collector_errors:
+  - stderr: |
+      Error: invalid configuration: processors::filter/logs_transformation__test_my-log-name_2: unable to parse OTTL condition "((trace_id.string != nil) and IsMatchRubyRegex(trace_id.string, \"*\"))": couldn't create function: the pattern supplied to IsMatchRubyRegex is not a valid regexp pattern: target of repeat operator is not specified
+      2025/10/22 19:10:15 collector server run finished with error: invalid configuration: processors::filter/logs_transformation__test_my-log-name_2: unable to parse OTTL condition "((trace_id.string != nil) and IsMatchRubyRegex(trace_id.string, \"*\"))": couldn't create function: the pattern supplied to IsMatchRubyRegex is not a valid regexp pattern: target of repeat operator is not specified
