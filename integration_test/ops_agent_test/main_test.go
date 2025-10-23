@@ -1780,7 +1780,7 @@ func TestExcludeLogsModifyFieldsOrder(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			line := `{"logging.googleapis.com/spanId":"value2", "query_field": "value"}` + "\n"
+			line := `{"logging.googleapis.com/spanId":"facefeedb0bacafe", "query_field": "value"}` + "\n"
 			for _, file := range []string{file1, file2, file3} {
 				if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file); err != nil {
 					t.Fatalf("error uploading log: %v", err)
@@ -1881,7 +1881,7 @@ func TestModifyFields(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			line := `{"field":"value", "default_present":"original", "logging.googleapis.com/labels": {"label1":"value"}, "trace":"trace_value", "spanId": "span_id_value"}` + "\n"
+			line := `{"field":"value", "default_present":"original", "logging.googleapis.com/labels": {"label1":"value"}, "trace":"trace_value", "spanId": "facefeedb0bacafe"}` + "\n"
 			if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
 				t.Fatalf("error uploading log: %v", err)
 			}
