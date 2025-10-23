@@ -33,6 +33,7 @@ type AgentSelfMetrics struct {
 	OtelPort            int
 	OtelRuntimeDir      string
 	OtelLogging         bool
+	ProjectName         string
 }
 
 // Following reference : https://github.com/googleapis/googleapis/blob/master/google/rpc/code.proto
@@ -56,9 +57,9 @@ var grpcToHTTPStatus = map[string]string{
 	"DEADLINE_EXCEEDED":   "504",
 }
 
-func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]otel.ReceiverPipeline, pipelines map[string]otel.Pipeline) {
+func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]otel.ReceiverPipeline, pipelines map[string]otel.Pipeline, expOtlpExporter bool) {
 	// Receiver pipelines names should have 1 underscore to avoid collision with user configurations.
-	receiverPipelines["agent_prometheus"] = r.PrometheusMetricsPipeline()
+	receiverPipelines["agent_prometheus"] = r.PrometheusMetricsPipeline(expOtlpExporter)
 
 	// Pipeline names should have no underscores to avoid collision with user configurations.
 	pipelines["otel"] = otel.Pipeline{
@@ -79,14 +80,30 @@ func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]o
 		Processors:           r.LoggingMetricsPipelineProcessors(),
 	}
 
-	receiverPipelines["ops_agent"] = r.OpsAgentPipeline()
+	receiverPipelines["ops_agent"] = r.OpsAgentPipeline(expOtlpExporter)
 	pipelines["opsagent"] = otel.Pipeline{
 		Type:                 "metrics",
 		ReceiverPipelineName: "ops_agent",
 	}
 }
 
-func (r AgentSelfMetrics) PrometheusMetricsPipeline() otel.ReceiverPipeline {
+func (r AgentSelfMetrics) PrometheusMetricsPipeline(expOtlpExporter bool) otel.ReceiverPipeline {
+	exporter := otel.System
+	processors := []otel.Component{otel.TransformationMetrics(
+		otel.DeleteMetricResourceAttribute("service.name"),
+		otel.DeleteMetricResourceAttribute("service.version"),
+		otel.DeleteMetricResourceAttribute("service.instance.id"),
+		otel.DeleteMetricResourceAttribute("server.port"),
+		otel.DeleteMetricResourceAttribute("url.scheme"),
+	),
+	}
+	if expOtlpExporter {
+		exporter = otel.OTLP
+		processors = append(processors, otel.MetricStartTime())
+		processors = append(processors, otel.GCPProjectID(r.ProjectName))
+		processors = append(processors, otel.MetricsRemoveInstrumentationLibraryLabelsAttributes())
+
+	}
 	return otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "prometheus",
@@ -115,24 +132,16 @@ func (r AgentSelfMetrics) PrometheusMetricsPipeline() otel.ReceiverPipeline {
 			},
 		},
 		ExporterTypes: map[string]otel.ExporterType{
-			"metrics": otel.System,
+			"metrics": exporter,
 		},
 		Processors: map[string][]otel.Component{
-			"metrics": {
-				otel.TransformationMetrics(
-					otel.DeleteMetricResourceAttribute("service.name"),
-					otel.DeleteMetricResourceAttribute("service.version"),
-					otel.DeleteMetricResourceAttribute("service.instance.id"),
-					otel.DeleteMetricResourceAttribute("server.port"),
-					otel.DeleteMetricResourceAttribute("url.scheme"),
-				),
-			},
+			"metrics": processors,
 		},
 	}
 }
 
 func (r AgentSelfMetrics) OtelPipelineProcessors() []otel.Component {
-	return []otel.Component{
+	processors := []otel.Component{
 		otel.Transform("metric", "metric",
 			ottl.ExtractCountMetric(true, "grpc.client.attempt.duration"),
 		),
@@ -174,6 +183,7 @@ func (r AgentSelfMetrics) OtelPipelineProcessors() []otel.Component {
 			otel.AddPrefix("agent.googleapis.com"),
 		),
 	}
+	return processors
 }
 
 func (r AgentSelfMetrics) FluentBitPipelineProcessors() []otel.Component {
@@ -303,8 +313,17 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors() []otel.Component {
 	}
 }
 
-func (r AgentSelfMetrics) OpsAgentPipeline() otel.ReceiverPipeline {
-	receiver_config := map[string]any{
+func (r AgentSelfMetrics) OpsAgentPipeline(expOtlpExporter bool) otel.ReceiverPipeline {
+	exporter := otel.System
+	processors := []otel.Component{
+		otel.Transform("metric", "datapoint", []ottl.Statement{"set(time, Now())"}),
+	}
+	if expOtlpExporter {
+		exporter = otel.OTLP
+		processors = append(processors, otel.GCPProjectID(r.ProjectName))
+		processors = append(processors, otel.MetricsRemoveInstrumentationLibraryLabelsAttributes())
+	}
+	receiverConfig := map[string]any{
 		"include": []string{
 			filepath.Join(r.OtelRuntimeDir, "enabled_receivers_otlp.json"),
 			filepath.Join(r.OtelRuntimeDir, "feature_tracking_otlp.json")},
@@ -314,15 +333,13 @@ func (r AgentSelfMetrics) OpsAgentPipeline() otel.ReceiverPipeline {
 	return otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type:   "otlpjsonfile",
-			Config: receiver_config,
+			Config: receiverConfig,
 		},
 		ExporterTypes: map[string]otel.ExporterType{
-			"metrics": otel.System,
+			"metrics": exporter,
 		},
 		Processors: map[string][]otel.Component{
-			"metrics": {
-				otel.Transform("metric", "datapoint", []ottl.Statement{"set(time, Now())"}),
-			},
+			"metrics": processors,
 		},
 	}
 }

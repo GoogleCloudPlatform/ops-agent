@@ -96,9 +96,15 @@ func (uc *UnifiedConfig) getOTelLogLevel() string {
 
 func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) (string, error) {
 	p := platform.FromContext(ctx)
+	resource, err := p.GetResource()
+	if err != nil {
+		log.Printf("can't get resource metadata: %v", err)
+		return "", nil
+	}
 	userAgent, _ := p.UserAgent("Google-Cloud-Ops-Agent-Metrics")
 	metricVersionLabel, _ := p.VersionLabel("google-cloud-ops-agent-metrics")
 	loggingVersionLabel, _ := p.VersionLabel("google-cloud-ops-agent-logging")
+	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
 
 	receiverPipelines, pipelines, err := uc.generateOtelPipelines(ctx)
 	if err != nil {
@@ -112,12 +118,12 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 		OtelPort:            otel.MetricsPort,
 		OtelRuntimeDir:      outDir,
 		OtelLogging:         uc.Logging.Service.OTelLogging,
+		ProjectName:         resource.ProjectName(),
 	}
-	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines)
+	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines, expOtlpExporter)
 
-	exp_otlp_exporter := experimentsFromContext(ctx)["otlp_exporter"]
 	extensions := map[string]interface{}{}
-	if exp_otlp_exporter {
+	if expOtlpExporter {
 		extensions["googleclientauth"] = map[string]interface{}{}
 	}
 
