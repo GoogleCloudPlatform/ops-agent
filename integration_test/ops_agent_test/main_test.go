@@ -259,17 +259,17 @@ func setExperimentalOtelLoggingInConfig(config string) string {
 
 // SetupOpsAgentWithFeatureFlag configures the VM and the config depending on the selected feature flag.
 func SetupOpsAgentWithFeatureFlag(ctx context.Context, logger *log.Logger, vm *gce.VM, config string, feature string) error {
-	if feature != DefaultFeatureFlag {
+	switch feature {
+	case OtelLoggingFeatureFlag:
+		// Set feature flag in config.
+		if config == "" {
+			config = defaultOtelLoggingConfig()
+		} else {
+			config = setExperimentalOtelLoggingInConfig(config)
+		}
+		// Set experimental feature environment variable.
 		if err := setExperimentalFeatures(ctx, logger, vm, feature); err != nil {
 			return err
-		}
-		switch feature {
-		case OtelLoggingFeatureFlag:
-			if config == "" {
-				config = defaultOtelLoggingConfig()
-			} else {
-				config = setExperimentalOtelLoggingInConfig(config)
-			}
 		}
 	}
 	return agents.SetupOpsAgent(ctx, logger, vm, config)
