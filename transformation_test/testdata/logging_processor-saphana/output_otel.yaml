@@ -1,1 +1,110 @@
-- config_error: "processor \"processor0\" has invalid configuration: type \"int\" not supported for field jsonPayload.transaction_id"
+- entries:
+  - jsonPayload:
+      component: indexserver
+      message: Started indexserver successfully.
+      severity_flag: i
+      thread_id: 12034
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/saphana
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    sourceLocation:
+      file: Main.cpp
+      line: "123"
+    timestamp: 2025-08-18T16:12:45.123456Z
+  - jsonPayload:
+      component: backup
+      connection_id: 200001
+      message: Backup duration exceeded expected threshold.
+      severity_flag: w
+      thread_id: 12035
+      transaction_id: 15
+      update_transaction_id: 40637290
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/saphana
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: WARNING
+    sourceLocation:
+      file: BackupManager.cpp
+      line: "245"
+    timestamp: 2025-08-18T16:13:12.654321Z
+  - jsonPayload:
+      component: commlib
+      message: |-
+        ERROR: comm::connect to Host: 127.0.0.1, port: 30015, Error: exception  1: no.2110021  (Basis/IO/Stream/impl/NetworkChannel.cpp:2991)
+        System error: SO_ERROR has pending error for socket. rc=111: Connection refused. channel={<NetworkChannel>={<NetworkChannelBase>={this=139745749931800, fd=22, refCnt=1, local=127.0.0.1/58700_tcp, remote=127.0.0.1/30015_tcp, state=ConnectWait, pending=[----]}}}
+        exception throw location:
+        1: 0x00007f1937d9095c in .LTHUNK27.lto_priv.2256+0x558 (libhdbbasis.so)
+        2: 0x0000563f44888831 in _GLOBAL__sub_I_setServiceStarting.cpp.lto_priv.239+0x520 (hdbnsutil)
+      severity_flag: e
+      thread_id: 12036
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/saphana
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: ERROR
+    sourceLocation:
+      file: commlibImpl.cpp
+      line: "456"
+    timestamp: 2025-08-18T16:14:33.987654Z
+  - jsonPayload:
+      component: statistics
+      message: Collected performance metrics.
+      severity_flag: d
+      thread_id: 12037
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/saphana
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: DEBUG
+    sourceLocation:
+      file: StatCollector.cpp
+      line: "333"
+    timestamp: 2025-08-18T16:15:10.555432Z
+  partialSuccess: true
+- entries:
+  - jsonPayload:
+      component: indexserver
+      connection_id: 200002
+      message: New client connection established. thread_id=12038
+      severity_flag: i
+      thread_id: 12038
+      transaction_id: 16
+      update_transaction_id: 40637291
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/saphana
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    sourceLocation:
+      file: Main.cpp
+      line: "130"
+    timestamp: 2025-08-18T16:16:20.111111Z
+  partialSuccess: true

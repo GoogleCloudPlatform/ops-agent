@@ -317,7 +317,8 @@
         zone: test-zone
       type: gce_instance
     timestamp: 2025-07-21T17:33:44.234Z
-  - jsonPayload: {}
+  - jsonPayload:
+      message: 21-Jul-2025 14:40:01.456 INFO [ContainerBackgroundProcessor[StandardEngine[Catalina]]] org.apache.catalina.core.StandardContext Reloading Context [/myapp] has started
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
@@ -328,7 +329,8 @@
         zone: test-zone
       type: gce_instance
     timestamp: now
-  - jsonPayload: {}
+  - jsonPayload:
+      message: 21-Jul-2025 14:40:01.789 INFO [ContainerBackgroundProcessor[StandardEngine[Catalina]]] org.apache.catalina.core.StandardContext Reloading Context [/myapp] has completed
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
@@ -414,8 +416,6 @@
       type: gce_instance
     severity: INFO
     timestamp: 2025-07-22T01:05:22.346Z
-  partialSuccess: true
-- entries:
   - jsonPayload:
       level: INFO
       message: org.apache.coyote.AbstractProtocol Destroying ProtocolHandler ["http-nio-8080"]

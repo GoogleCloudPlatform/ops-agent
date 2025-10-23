@@ -179,8 +179,6 @@
       type: gce_instance
     severity: ERROR
     timestamp: 2025-05-21T04:34:14.087Z
-  partialSuccess: true
-- entries:
   - jsonPayload:
       level: DEBUG
       message: " [] - Recover all persisted job graphs."
