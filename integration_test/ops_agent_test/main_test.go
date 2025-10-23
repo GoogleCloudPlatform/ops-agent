@@ -210,39 +210,41 @@ func retrieveOtelConfig(ctx context.Context, logger *log.Logger, vm *gce.VM) (co
 	return gce.RetrieveContent(ctx, logger, vm, agents.GetOtelConfigPath(vm.ImageSpec))
 }
 
-// RunForEachImageAndLoggingSubagent runs a subtest for each image and logging subagent (fluent-bit, otel).
-func RunForEachImageAndLoggingSubagent(t *testing.T, testBody func(t *testing.T, imageSpec string, otel bool)) {
+// RunForEachImageAndFeatureFlag runs a subtest for each image and provide feature flags.
+func RunForEachImageAndFeatureFlag(t *testing.T, features []string, testBody func(t *testing.T, imageSpec string, feature string)) {
 	t.Helper()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		t.Run("fluent-bit", func(t *testing.T) {
-			testBody(t, imageSpec, false)
+		t.Run(DefaultFeatureFlag, func(t *testing.T) {
+			testBody(t, imageSpec, DefaultFeatureFlag)
 		})
-
-		t.Run("otel", func(t *testing.T) {
-			if gce.IsOpsAgentUAPPlugin() {
-				t.SkipNow()
-			}
-			testBody(t, imageSpec, true)
-		})
+		for _, feature := range features {
+			t.Run(feature, func(t *testing.T) {
+				if gce.IsOpsAgentUAPPlugin() {
+					t.SkipNow()
+				}
+				testBody(t, imageSpec, feature)
+			})
+		}
 	})
 }
+
+const (
+	OtelLoggingFeatureFlag = "otel_logging"
+	DefaultFeatureFlag     = "default"
+)
 
 // setExperimentalFeatures sets the EXPERIMENTAL_FEATURES environment variable.
 func setExperimentalFeatures(ctx context.Context, logger *log.Logger, vm *gce.VM, feature string) error {
 	return gce.SetEnvironmentVariables(ctx, logger, vm, map[string]string{"EXPERIMENTAL_FEATURES": feature})
 }
 
-// defaultConfigForLoggingSubagent returns the default config that is required to choose a logging subagent.
-func defaultConfigForLoggingSubagent(otel bool) string {
-	if otel {
-		// otel logging needs to be enabled explicitly
-		return fmt.Sprintf(`logging:
+// defaultOtelLoggingConfig returns the default config that is required to use otel_logging.
+func defaultOtelLoggingConfig() string {
+	return `logging:
   service:
-    experimental_otel_logging: %v`, otel)
-	}
-	// fluent-bit is used by default
-	return ""
+    experimental_otel_logging: true
+`
 }
 
 // setExperimentalOtelLoggingInConfig in an Ops Agent config
@@ -255,16 +257,19 @@ func setExperimentalOtelLoggingInConfig(config string) string {
 	)
 }
 
-// SetupOpsAgentForLoggingSubagent configures the VM and the config depending on the selected logging subagent (fluent-bit, otel)
-func SetupOpsAgentForLoggingSubagent(ctx context.Context, logger *log.Logger, vm *gce.VM, config string, otel bool) error {
-	if otel {
-		if err := setExperimentalFeatures(ctx, logger, vm, "otel_logging"); err != nil {
+// SetupOpsAgentWithFeatureFlag configures the VM and the config depending on the selected feature flag.
+func SetupOpsAgentWithFeatureFlag(ctx context.Context, logger *log.Logger, vm *gce.VM, config string, feature string) error {
+	if feature != DefaultFeatureFlag {
+		if err := setExperimentalFeatures(ctx, logger, vm, feature); err != nil {
 			return err
 		}
-		if config == "" {
-			config = defaultConfigForLoggingSubagent(otel)
-		} else {
-			config = setExperimentalOtelLoggingInConfig(config)
+		switch feature {
+		case OtelLoggingFeatureFlag:
+			if config == "" {
+				config = defaultOtelLoggingConfig()
+			} else {
+				config = setExperimentalOtelLoggingInConfig(config)
+			}
 		}
 	}
 	return agents.SetupOpsAgent(ctx, logger, vm, config)
@@ -937,7 +942,7 @@ func TestKillChildJobsWhenPluginServerProcessTerminates(t *testing.T) {
 
 func TestCustomLogFormat(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndLoggingSubagent(t, func(t *testing.T, imageSpec string, otel bool) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
@@ -965,14 +970,14 @@ func TestCustomLogFormat(t *testing.T) {
         exporters: [google]
 `, logPath, "%Y-%m-%dT%H:%M:%S.%L%z")
 
-		if err := SetupOpsAgentForLoggingSubagent(ctx, logger, vm, config, otel); err != nil {
+		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
 		zone := time.FixedZone("UTC-8", int((-8 * time.Hour).Seconds()))
 		line := fmt.Sprintf("<13>1 %s %s my_app_id - - - qqqqrrrr\n", time.Now().In(zone).Format(time.RFC3339Nano), vm.Name)
 		// TODO: b/413446913 Enable non-UTC timestamp when otel logging parsing differences are fixed.
-		if otel {
+		if feature == OtelLoggingFeatureFlag {
 			line = fmt.Sprintf("<13>1 %s %s my_app_id - - - qqqqrrrr\n", time.Now().UTC().Format(time.RFC3339Nano), vm.Name)
 		}
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), logPath); err != nil {
@@ -1919,7 +1924,7 @@ func TestResourceNameLabel(t *testing.T) {
 
 func TestLogFilePathLabel(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndLoggingSubagent(t, func(t *testing.T, imageSpec string, otel bool) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
@@ -1941,7 +1946,7 @@ func TestLogFilePathLabel(t *testing.T) {
         processors: [json]
 `, file1)
 
-		if err := SetupOpsAgentForLoggingSubagent(ctx, logger, vm, config, otel); err != nil {
+		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2546,7 +2551,7 @@ func TestWindowsEventLogWithNonDefaultTimeZone(t *testing.T) {
 
 func TestSystemdLog(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndLoggingSubagent(t, func(t *testing.T, imageSpec string, otel bool) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -2563,7 +2568,7 @@ func TestSystemdLog(t *testing.T) {
         receivers: [systemd_logs]
 `
 
-		if err := SetupOpsAgentForLoggingSubagent(ctx, logger, vm, config, otel); err != nil {
+		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2735,10 +2740,10 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 
 func TestDefaultMetricsNoProxy(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndLoggingSubagent(t, func(t *testing.T, imageSpec string, otel bool) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-		if err := SetupOpsAgentForLoggingSubagent(ctx, logger, vm, "", otel); err != nil {
+		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, "", feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2753,7 +2758,7 @@ func TestDefaultMetricsNoProxy(t *testing.T) {
 // go/sdi-integ-test#proxy-testing
 func TestDefaultMetricsWithProxy(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndLoggingSubagent(t, func(t *testing.T, imageSpec string, otel bool) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if !gce.IsWindows(imageSpec) {
 			t.Skip("Proxy test is currently only supported on windows.")
@@ -2770,7 +2775,7 @@ func TestDefaultMetricsWithProxy(t *testing.T) {
 		if err := gce.SetEnvironmentVariables(ctx, logger, vm, settings); err != nil {
 			t.Fatal(err)
 		}
-		if err := SetupOpsAgentForLoggingSubagent(ctx, logger, vm, "", otel); err != nil {
+		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, "", feature); err != nil {
 			t.Fatal(err)
 		}
 
