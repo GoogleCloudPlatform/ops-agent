@@ -101,14 +101,14 @@ Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out" -Destination "$env:KOKORO_ARTIFA
 Move-Item -Path "./pkg" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
 
 if ($env:PACKAGE -ne $null) {
-  powershell.exe -File "./pkg/goo/build.ps1" -DestDir "$env:KOKORO_ARTIFACTS_DIR/result"
+  powershell.exe -File "$env:KOKORO_ARTIFACTS_DIR/result/pkg/goo/build.ps1" -DestDir "$env:KOKORO_ARTIFACTS_DIR/result"
 }
 
 # Copy the .pdb and .dll files from $env:KOKORO_ARTIFACTS_DIR/out/bin to $env:KOKORO_ARTIFACTS_DIR/result.
 # The .pdb and .dll files are saved so the team can use them in the event that we have to debug this Ops Agent build.
 # They are not distributed to customers.
-Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/*.pdb" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
-Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/*.dll" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
+# Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/*.pdb" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
+# Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/*.dll" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
 
 # If Kokoro is being triggered by Louhi, then Louhi needs to be able to
 # reconstruct the path where the artifacts are placed. Louhi does not have
