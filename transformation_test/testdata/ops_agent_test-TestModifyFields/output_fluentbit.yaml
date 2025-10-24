@@ -6,8 +6,6 @@
       float: 10.5
       integer: 15.0
       mapped_field: field value
-      omitted: broken
-      omitted2: broken
       spanId: facefeedb0bacafe
     labels:
       compute.googleapis.com/resource_name: hostname
@@ -26,8 +24,6 @@
       float: 10.5
       integer: 15.0
       mapped_field: field value
-      omitted: broken
-      omitted2: broken
       spanId: facefeedb0bacafe
     labels:
       compute.googleapis.com/resource_name: hostname
