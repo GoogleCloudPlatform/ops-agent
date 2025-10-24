@@ -57,17 +57,6 @@
       message: |-
         java.lang.RuntimeException: javax.mail.SendFailedException: Invalid Addresses;
           nested exception is:
-    labels:
-      compute.googleapis.com/resource_name: hostname
-    logName: projects/my-project/logs/my-log-name
-    resource:
-      labels:
-        instance_id: test-instance-id
-        zone: test-zone
-      type: gce_instance
-    timestamp: now
-  - jsonPayload:
-      message: |-
         com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
         	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:236)
         	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:285)
@@ -83,17 +72,6 @@
         	at java.base/java.lang.Thread.run(Thread.java:748)
         Caused by: javax.mail.SendFailedException: Invalid Addresses;
           nested exception is:
-    labels:
-      compute.googleapis.com/resource_name: hostname
-    logName: projects/my-project/logs/my-log-name
-    resource:
-      labels:
-        instance_id: test-instance-id
-        zone: test-zone
-      type: gce_instance
-    timestamp: now
-  - jsonPayload:
-      message: |-
         com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
         	at com.sun.mail.smtp.SMTPTransport.rcptTo(SMTPTransport.java:2064)
         	at com.sun.mail.smtp.SMTPTransport.sendMessage(SMTPTransport.java:1286)
