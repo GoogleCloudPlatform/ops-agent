@@ -52,7 +52,8 @@ var otelFirstMultilineMap = map[string][]string{
 		`(?:Exception|Error|Throwable|V8 errors stack trace)[:\r\n]`,
 	},
 	"python": []string{
-		`Traceback \(most recent call last\):$`,
+		`Traceback \(most recent call last\):`,
+		// `^Exception:\s*\(.*\)$`,
 	},
 	"go": []string{
 		`\bpanic: `,
@@ -72,10 +73,25 @@ var otelSecondMultilineMap = map[string][]string{
 		`^[\t ]*... \d+ (?:more|common frames omitted)`,
 	},
 	"python": []string{
-		//`^[\t ]+File`,
+		`^[\t ]+File`,
 		//`[^\t ]`,
+		`^\s*return\s+[\w\.]+\(.*\)$`,
+		`raise Exception\(.*\)$`,
+		`^\s*[\w\.]+ = [\w\.]+\(.*\)$`,
 		//`^(?:[^\s.():]+\.)*[^\s.():]+:`,
+		`^\s*for\s+[\w, \s]+ in\s+[\w\.]+\(.*\):$`,
+		`^\s*([\w\.]+) = ([\w\.]+)\($`,
+		//`^\s*self\.[\w]+\(.*\)$`,
+		`^\s*[\w\.]+\.[\w]+\(.*\)$`,
+		`^\s*.*[+\-*/%|&^~<>].*$`,
 		//`^Traceback \(most recent call last\):$`,
+	},
+	"go": []string{
+		//`^$`,
+		`^\[signal `,
+		`^goroutine \d+ \[[^\]]+\]:$`,
+		`^(?:[^\s.:]+\.)*[^\s.():]+\(|^created by `,
+		`^(.+):(\d+) (\+0x[0-9a-fA-F]+)$`,
 	},
 }
 
@@ -193,20 +209,19 @@ func (p ParseMultiline) Processors(ctx context.Context) ([]otel.Component, error
 		return nil, errors.New("unsupported in otel")
 	}
 
-	javaExpr := strings.Join(firstLinesExpr["java"], " and ") + " and " + strings.Join(secondLinesExpr["java"], " and ")
-	pythonExpr := strings.Join(firstLinesExpr["python"], " and ") // + " and " + strings.Join(secondLinesExpr["python"], " and ")
-	goExpr := strings.Join(firstLinesExpr["go"], " and ")
 	firstExprSlice := []string{}
-	if len(firstLinesExpr["java"]) > 0 {
-		firstExprSlice = append(firstExprSlice, javaExpr)
+	for lang, expr := range firstLinesExpr {
+		if len(expr) > 0 {
+			firstExprSlice = append(firstExprSlice, "( ("+strings.Join(expr, " or ")+") and ("+strings.Join(secondLinesExpr[lang], "and ")+") )")
+		}
 	}
-	if len(firstLinesExpr["python"]) > 0 {
-		firstExprSlice = append(firstExprSlice, pythonExpr)
+	secondExprSlice := []string{}
+	for _, expr := range secondLinesExpr {
+		if len(expr) > 0 {
+			secondExprSlice = append(secondExprSlice, "("+strings.Join(expr, " and ")+")")
+		}
 	}
-	if len(firstLinesExpr["go"]) > 0 {
-		firstExprSlice = append(firstExprSlice, goExpr)
-	}
-	firstExpr := strings.Join(firstExprSlice, " or ")
+	firstExpr := strings.Join(firstExprSlice, "  or ") + " or (" + strings.Join(secondExprSlice, " and ") + ")"
 
 	javaTransitionsExpr := strings.Join(transitionLinesExpr["java"], " and ")
 	pythonTransitionsExpr := strings.Join(transitionLinesExpr["python"], " and ")
@@ -217,7 +232,11 @@ func (p ParseMultiline) Processors(ctx context.Context) ([]otel.Component, error
 	if len(transitionLinesExpr["python"]) > 0 {
 		transitionsExprSlice = append(transitionsExprSlice, pythonTransitionsExpr)
 	}
-	//transitionExpr := strings.Join(transitionsExprSlice, " and ")
+	transitionExpr := strings.Join(transitionsExprSlice, " and ")
+
+	if transitionExpr == "" {
+		transitionExpr = `body.message matches ".*"`
+	}
 
 	return []otel.Component{{
 		Type: "logstransform",
@@ -242,20 +261,20 @@ func (p ParseMultiline) Processors(ctx context.Context) ([]otel.Component, error
 					// Set to half of the file receiver's poll_interval to guarantee it is flushed every poll.
 					"force_flush_period": "100ms",
 				},
-				// {
-				// 	"type":          "recombine",
-				// 	"combine_field": "body.message",
-				// 	// N.B. We cannot specify "combine_with" because it is not serialized correctly by our yaml library.
-				// 	//"combine_with":   "\n",
-				// 	"is_last_entry": transitionExpr,
-				// 	// Take the timestamp and other attributes from the first entry.
-				// 	"overwrite_with": "oldest",
-				// 	// Use the log file path to disambiguate if present.
-				// 	"source_identifier": `attributes.__source_identifier`,
-				// 	// How long to wait for more log lines.
-				// 	// Set to half of the file receiver's poll_interval to guarantee it is flushed every poll.
-				// 	"force_flush_period": "100ms",
-				// },
+				{
+					"type":          "recombine",
+					"combine_field": "body.message",
+					// N.B. We cannot specify "combine_with" because it is not serialized correctly by our yaml library.
+					//"combine_with":   "\n",
+					"is_last_entry": transitionExpr,
+					// Take the timestamp and other attributes from the first entry.
+					"overwrite_with": "oldest",
+					// Use the log file path to disambiguate if present.
+					"source_identifier": `attributes.__source_identifier`,
+					// How long to wait for more log lines.
+					// Set to half of the file receiver's poll_interval to guarantee it is flushed every poll.
+					"force_flush_period": "100ms",
+				},
 				{
 					"type":  "remove",
 					"field": "attributes.__source_identifier",
