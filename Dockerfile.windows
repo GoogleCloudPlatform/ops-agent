@@ -364,7 +364,7 @@ ARG PACKAGE="false"
 WORKDIR /work
 COPY . /work
 
-RUN if ($env:PACKAGE -eq "true") { `
+RUN if ($env:PACKAGE -eq 'true') { `
       & .\pkg\goo\build.ps1 -DestDir /work/out; `
     }
 
