@@ -2,6 +2,3 @@
   fields:
     jsonPayload.hello:
       static_value: world
-    jsonPayload.test:
-      default_value: test
-      omit_if: jsonPayload.message =~ "*"

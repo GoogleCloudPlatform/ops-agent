@@ -144,7 +144,8 @@ func (transformationConfig transformationTest) runFluentBitTest(t *testing.T, na
 		t.Log(stderr.String())
 		t.Log("Failed to run command:", err)
 		data = append(data, map[string]any{"exit_error": err.Error()})
-		data = append(data, map[string]any{"collector_errors": map[string]any{"stderr": stderr.String()}})
+		sanitizedStderr := sanitizeFluentBitStderr(t, stderr.String())
+		data = append(data, map[string]any{"collector_errors": map[string]any{"stderr": sanitizedStderr}})
 	}
 	t.Logf("stderr: %s\n", stderr.Bytes())
 
@@ -508,7 +509,7 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 				}
 				stderr := fmt.Sprintf("%s%s", string(buf), string(buf2))
 				t.Logf("collector stderr:\n%s", stderr)
-				stderr = sanitizeStacktrace(t, stderr)
+				stderr = sanitizeOtelStacktrace(t, stderr)
 				errors = append(errors, map[string]any{"stderr": stderr})
 				return nil
 			}
@@ -535,7 +536,7 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 			}
 			stacktrace, ok := log["stacktrace"].(string)
 			if ok {
-				log["stacktrace"] = sanitizeStacktrace(t, stacktrace)
+				log["stacktrace"] = sanitizeOtelStacktrace(t, stacktrace)
 			}
 			// Set "service.instance.id" to "test-service-instance-id" since it is a generated "uuid".
 			if resource, ok := log["resource"].(map[string]any); ok {
@@ -600,7 +601,18 @@ func sanitizeWriteLogEntriesRequest(t *testing.T, r *logpb.WriteLogEntriesReques
 	return req
 }
 
-func sanitizeStacktrace(t *testing.T, input string) string {
+func sanitizeFluentBitStderr(t *testing.T, input string) string {
+	// We need to remove non-deterministic information from fluent-bit stderr so the goldens don't keep changing.
+	// Only keep "[error]" lines.
+	result := strings.Join(regexp.MustCompile(`(?m)^.*\[error\].*$`).FindAllString(input, -1), "\n")
+	// Remove timestamps
+	result = regexp.MustCompile(`\d{4}/\d{2}/\d{2}\s\d{2}:\d{2}:\d{2}`).ReplaceAllString(result, "timestamp")
+
+	result = strings.ReplaceAll(result, "\t", "  ")
+	return result
+}
+
+func sanitizeOtelStacktrace(t *testing.T, input string) string {
 	// We need to remove non-deterministic information from stacktraces so the goldens don't keep changing.
 	// Remove $GOPATH
 	result := regexp.MustCompile(`(?m)^\t(.*?)pkg/mod/`).ReplaceAllString(input, "  ")
@@ -610,6 +622,8 @@ func sanitizeStacktrace(t *testing.T, input string) string {
 	result = regexp.MustCompile(`0x[0-9a-f]+`).ReplaceAllString(result, "0xX")
 	// Remove goroutine numbers
 	result = regexp.MustCompile(`goroutine \d+`).ReplaceAllString(result, "goroutine N")
+	// Remove timestamps
+	result = regexp.MustCompile(`\d{4}/\d{2}/\d{2}\s\d{2}:\d{2}:\d{2}`).ReplaceAllString(result, "timestamp")
 
 	result = strings.ReplaceAll(result, "\t", "  ")
 	return result

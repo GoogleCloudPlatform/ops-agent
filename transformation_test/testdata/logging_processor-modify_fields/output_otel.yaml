@@ -1,5 +1,38 @@
-- exit_error: exit status 1
-- collector_errors:
-  - stderr: |
-      Error: invalid configuration: processors::transform/logs_transformation__test_my-log-name_0: unable to parse OTTL statement "set(log.cache[\"__omit_0\"], true) where ((log.body != nil and log.body[\"message\"] != nil) and IsMatchRubyRegex(log.body[\"message\"], \"*\"))": couldn't create function: the pattern supplied to IsMatchRubyRegex is not a valid regexp pattern: target of repeat operator is not specified
-      2025/10/22 19:10:15 collector server run finished with error: invalid configuration: processors::transform/logs_transformation__test_my-log-name_0: unable to parse OTTL statement "set(log.cache[\"__omit_0\"], true) where ((log.body != nil and log.body[\"message\"] != nil) and IsMatchRubyRegex(log.body[\"message\"], \"*\"))": couldn't create function: the pattern supplied to IsMatchRubyRegex is not a valid regexp pattern: target of repeat operator is not specified
+- entries:
+  - jsonPayload:
+      hello: world
+      message: foo
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
+  - jsonPayload:
+      hello: world
+      message: goo
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
+  - jsonPayload:
+      hello: world
+      message: yes maybe no
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
+  partialSuccess: true

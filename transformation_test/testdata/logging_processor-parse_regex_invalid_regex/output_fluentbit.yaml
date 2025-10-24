@@ -1,57 +1,8 @@
 - exit_error: exit status 255
 - collector_errors:
-    stderr: |
-      Fluent Bit v4.0.7
-      * Copyright (C) 2015-2025 The Fluent Bit Authors
-      * Fluent Bit is a CNCF sub-project under the umbrella of Fluentd
-      * https://fluentbit.io
-      
-      ______ _                  _    ______ _ _             ___  _____ 
-      |  ___| |                | |   | ___ (_) |           /   ||  _  |
-      | |_  | |_   _  ___ _ __ | |_  | |_/ /_| |_  __   __/ /| || |/' |
-      |  _| | | | | |/ _ \ '_ \| __| | ___ \ | __| \ \ / / /_| ||  /| |
-      | |   | | |_| |  __/ | | | |_  | |_/ / | |_   \ V /\___  |\ |_/ /
-      \_|   |_|\__,_|\___|_| |_|\__| \____/|_|\__|   \_/     |_(_)___/ 
-      
-      
-      [2025/10/23 02:10:15] [error] [parser:transformation_test.transformation_test.0] Invalid regex pattern ^(?<time>[^ ]*) (?<severity>[^ ]*) (?<msg>[^ ]*) (?<msg1>\k<m]sg>)$
-      [2025/10/23 02:10:15] [ info] Configuration:
-      [2025/10/23 02:10:15] [ info]  flush time     | 1.000000 seconds
-      [2025/10/23 02:10:15] [ info]  grace          | 0 seconds
-      [2025/10/23 02:10:15] [ info]  daemon         | 0
-      [2025/10/23 02:10:15] [ info] ___________
-      [2025/10/23 02:10:15] [ info]  inputs:
-      [2025/10/23 02:10:15] [ info]      tail
-      [2025/10/23 02:10:15] [ info] ___________
-      [2025/10/23 02:10:15] [ info]  filters:
-      [2025/10/23 02:10:15] [ info]      lua.0
-      [2025/10/23 02:10:15] [ info]      parser.1
-      [2025/10/23 02:10:15] [ info]      lua.2
-      [2025/10/23 02:10:15] [ info]      lua.3
-      [2025/10/23 02:10:15] [ info] ___________
-      [2025/10/23 02:10:15] [ info]  outputs:
-      [2025/10/23 02:10:15] [ info]      stackdriver.0
-      [2025/10/23 02:10:15] [ info] ___________
-      [2025/10/23 02:10:15] [ info]  collectors:
-      [2025/10/23 02:10:15] [ info] [fluent bit] version=4.0.7, commit=8c5cbc1bd8, pid=3999307
-      [2025/10/23 02:10:15] [debug] [engine] coroutine stack size: 24576 bytes (24.0K)
-      [2025/10/23 02:10:15] [ info] [storage] ver=1.5.2, type=memory, sync=normal, checksum=off, max_chunks_up=128
-      [2025/10/23 02:10:15] [ info] [simd    ] disabled
-      [2025/10/23 02:10:15] [ info] [cmetrics] version=1.0.5
-      [2025/10/23 02:10:15] [ info] [ctraces ] version=0.6.6
-      [2025/10/23 02:10:15] [ info] [input:tail:tail.0] initializing
-      [2025/10/23 02:10:15] [ info] [input:tail:tail.0] storage_strategy='memory' (memory only)
-      [2025/10/23 02:10:15] [debug] [tail:tail.0] created event channels: read=29 write=30
-      [2025/10/23 02:10:15] [debug] [input:tail:tail.0] flb_tail_fs_inotify_init() initializing inotify tail input
-      [2025/10/23 02:10:15] [debug] [input:tail:tail.0] inotify watch fd=35
-      [2025/10/23 02:10:15] [debug] [input:tail:tail.0] scanning path /usr/local/google/home/fcovalente/Github/ops-agent/transformation_test/testdata/logging_processor-parse_regex_invalid_regex/input.log
-      [2025/10/23 02:10:15] [debug] [input:tail:tail.0] file will be read in POSIX_FADV_DONTNEED mode /usr/local/google/home/fcovalente/Github/ops-agent/transformation_test/testdata/logging_processor-parse_regex_invalid_regex/input.log
-      [2025/10/23 02:10:15] [debug] [input:tail:tail.0] inode=118392902 with offset=0 appended as /usr/local/google/home/fcovalente/Github/ops-agent/transformation_test/testdata/logging_processor-parse_regex_invalid_regex/input.log
-      [2025/10/23 02:10:15] [debug] [input:tail:tail.0] scan_glob add(): /usr/local/google/home/fcovalente/Github/ops-agent/transformation_test/testdata/logging_processor-parse_regex_invalid_regex/input.log, inode 118392902
-      [2025/10/23 02:10:15] [debug] [input:tail:tail.0] 1 new files found on path '/usr/local/google/home/fcovalente/Github/ops-agent/transformation_test/testdata/logging_processor-parse_regex_invalid_regex/input.log'
-      [2025/10/23 02:10:15] [error] [filter:parser:parser.1] requested parser 'transformation_test.transformation_test.0' not found
-      [2025/10/23 02:10:15] [error] [filter:parser:parser.1] Invalid 'parser'
-      [2025/10/23 02:10:15] [error] Failed initialize filter parser.1
-      [2025/10/23 02:10:15] [error] [engine] filter initialization failed
-      [2025/10/23 02:10:16] [ info] [input] pausing tail.0
-      [2025/10/23 02:10:16] [debug] [input:tail:tail.0] inode=118392902 removing file name /usr/local/google/home/fcovalente/Github/ops-agent/transformation_test/testdata/logging_processor-parse_regex_invalid_regex/input.log
+    stderr: |-
+      [timestamp] [error] [parser:transformation_test.transformation_test.0] Invalid regex pattern ^(?<time>[^ ]*) (?<severity>[^ ]*) (?<msg>[^ ]*) (?<msg1>\k<m]sg>)$
+      [timestamp] [error] [filter:parser:parser.1] requested parser 'transformation_test.transformation_test.0' not found
+      [timestamp] [error] [filter:parser:parser.1] Invalid 'parser'
+      [timestamp] [error] Failed initialize filter parser.1
+      [timestamp] [error] [engine] filter initialization failed
