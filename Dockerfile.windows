@@ -365,7 +365,9 @@ WORKDIR /work
 COPY . /work
 
 RUN if ($env:PACKAGE -eq 'true') { `
+      echo packaging started `
       & .\pkg\goo\build.ps1 -DestDir /work/out; `
+      echo packaging completed `
     }
 
 ###############################################################################
