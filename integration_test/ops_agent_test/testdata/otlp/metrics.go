@@ -16,11 +16,14 @@ import (
 )
 
 var renameMap = map[string]string{
-	"otlp.test.prefix1": "workload.googleapis.com/otlp.test.prefix1",
-	"otlp.test.prefix2": ".invalid.googleapis.com/otlp.test.prefix2",
-	"abc":               "otlp.test.prefix3/workload.googleapis.com/abc",
-	"otlp.test.prefix4": "WORKLOAD.GOOGLEAPIS.COM/otlp.test.prefix4",
-	"otlp.test.prefix5": "WORKLOAD.googleapis.com/otlp.test.prefix5",
+	"otlp.test.prefix1":       "workload.googleapis.com/otlp.test.prefix1",
+	"otlp.test.prefix2":       ".invalid.googleapis.com/otlp.test.prefix2",
+	"abc":                     "otlp.test.prefix3/workload.googleapis.com/abc",
+	"otlp.test.prefix4":       "WORKLOAD.GOOGLEAPIS.COM/otlp.test.prefix4",
+	"otlp.test.prefix5":       "WORKLOAD.googleapis.com/otlp.test.prefix5",
+	"otlp.test.histogram":     "workload.googleapis.com/otlp.test.histogram",
+	"otlp.test.updowncounter": "workload.googleapis.com/otlp.test.updowncounter",
+	"otlp.test.cumulative":    "workload.googleapis.com/otlp.test.cumulative",
 }
 
 var (
@@ -97,8 +100,13 @@ func main() {
 	testGaugeMetric(meter, "otlp.test.prefix4")
 	testGaugeMetric(meter, "otlp.test.prefix5")
 
-	// Test cumulative metrics
-	counter, err := meter.Float64Counter("otlp.test.cumulative")
+	testHistogramMetric(ctx, meter, "otlp.test.histogram")
+	testUpDownCounterMetric(ctx, meter, "otlp.test.updowncounter")
+	testCumulativeMetric(ctx, meter, "otlp.test.cumulative")
+}
+
+func testCumulativeMetric(ctx context.Context, meter metric.Meter, name string) {
+	counter, err := meter.Float64Counter(name)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -106,6 +114,16 @@ func main() {
 	counter.Add(ctx, 5)
 	time.Sleep(1 * time.Second)
 	counter.Add(ctx, 10)
+}
+
+func testHistogramMetric(ctx context.Context, meter metric.Meter, name string) {
+	histogram, err := meter.Float64Histogram(name)
+	if err != nil {
+		log.Fatal(err)
+	}
+	histogram.Record(ctx, 1.0)
+	histogram.Record(ctx, 2.0)
+	histogram.Record(ctx, 3.0)
 }
 
 func testGaugeMetric(meter metric.Meter, name string) {
@@ -120,4 +138,15 @@ func testGaugeMetric(meter metric.Meter, name string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func testUpDownCounterMetric(ctx context.Context, meter metric.Meter, name string) {
+	upDownCounter, err := meter.Int64UpDownCounter(name)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// adds and subtracts values from the UpDownCounter
+	upDownCounter.Add(ctx, 5)
+	time.Sleep(1 * time.Second)
+	upDownCounter.Add(ctx, -2)
 }
