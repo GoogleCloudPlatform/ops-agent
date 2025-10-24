@@ -188,6 +188,10 @@ func IsMatch(target Value, pattern string) Value {
 	return valuef(`IsMatch(%s, %q)`, target, pattern)
 }
 
+func IsMatchRubyRegex(target Value, pattern string) Value {
+	return valuef(`IsMatchRubyRegex(%s, %q)`, target, pattern)
+}
+
 func Equals(a, b Value) Value {
 	return valuef(`%s == %s`, a, b)
 }
