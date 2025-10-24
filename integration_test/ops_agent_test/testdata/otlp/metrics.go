@@ -21,9 +21,6 @@ var renameMap = map[string]string{
 	"abc":                     "otlp.test.prefix3/workload.googleapis.com/abc",
 	"otlp.test.prefix4":       "WORKLOAD.GOOGLEAPIS.COM/otlp.test.prefix4",
 	"otlp.test.prefix5":       "WORKLOAD.googleapis.com/otlp.test.prefix5",
-	"otlp.test.histogram":     "workload.googleapis.com/otlp.test.histogram",
-	"otlp.test.updowncounter": "workload.googleapis.com/otlp.test.updowncounter",
-	"otlp.test.cumulative":    "workload.googleapis.com/otlp.test.cumulative",
 }
 
 var (
