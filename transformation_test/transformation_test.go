@@ -240,6 +240,7 @@ func (t transformationTest) pipelineInstance(path string) confgenerator.Pipeline
 			p.LoggingProcessor,
 		})
 	}
+	pollInterval := time.Second
 	return confgenerator.PipelineInstance{
 		PipelineType: "logs",
 		PID:          flbTag,
@@ -248,7 +249,8 @@ func (t transformationTest) pipelineInstance(path string) confgenerator.Pipeline
 			IncludePaths: []string{
 				path,
 			},
-			TransformationTest: true,
+			TransformationTest:      true,
+			WildcardRefreshInterval: &pollInterval,
 		}},
 		Processors: processors,
 	}

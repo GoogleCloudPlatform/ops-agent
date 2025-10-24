@@ -1,1 +1,218 @@
-- config_error: "processor \"processor0\" has invalid configuration: unimplemented"
+- entries:
+  - jsonPayload:
+      collection: collection1
+      core: core1
+      exception: ""
+      level: INFO
+      message: "[collection1]  webapp=/solr path=/select params={q=*:*&wt=json} hits=2435 status=0 QTime=17"
+      replica: replica1
+      shard: shard1
+      source: o.a.s.c.S.Request
+      thread: qtp1038934055-15
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/solr_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-07-21T15:03:17.987Z
+  - jsonPayload:
+      collection: collection1
+      core: core1
+      exception: ""
+      level: DEBUG
+      message: handleRequest start select
+      replica: replica1
+      shard: shard1
+      source: o.a.s.h.RequestHandlerBase
+      thread: qtp1038934055-19
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/solr_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: DEBUG
+    timestamp: 2025-07-21T15:03:18.123Z
+  - jsonPayload:
+      collection: collection1
+      core: core1
+      exception: ""
+      level: WARN
+      message: "Problem loading core: collection1"
+      replica: replica1
+      shard: shard1
+      source: o.a.s.c.CoreContainer
+      thread: coreLoadExecutor-7-thread-1
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/solr_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: WARNING
+    timestamp: 2025-07-21T15:10:55.456Z
+  - jsonPayload:
+      collection: collection1
+      core: core1
+      exception: |-
+        
+        org.apache.solr.common.SolrException:org.apache.solr.common.SolrException: Could not load config for collection1
+        at org.apache.solr.core.SolrCore.<init>(SolrCore.java:XXX)
+        at org.apache.solr.core.CoreContainer.load(CoreContainer.java:YYY)
+      level: ERROR
+      message: "Error initializing core: collection1"
+      replica: replica1
+      shard: shard1
+      source: o.a.s.c.CoreContainer
+      thread: coreLoadExecutor-7-thread-1
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/solr_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: ERROR
+    timestamp: 2025-07-21T15:10:55.458Z
+  - jsonPayload:
+      collection: collection2
+      core: core2
+      exception: ""
+      level: INFO
+      message: "[collection2]  webapp=/solr path=/update params={commit=true} status=0 QTime=128"
+      replica: replica2
+      shard: shard2
+      source: o.a.s.c.S.Request
+      thread: qtp1038934055-16
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/solr_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-07-21T16:22:34.122Z
+  - jsonPayload:
+      collection: collection1
+      core: core1
+      exception: ""
+      level: INFO
+      message: "[collection1]  webapp=/solr path=/select params={q=id:42&wt=json} hits=1 status=0 QTime=6"
+      replica: replica1
+      shard: shard1
+      source: o.a.s.c.S.Request
+      thread: qtp1038934055-15
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/solr_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-07-21T17:45:12.213Z
+  - jsonPayload:
+      collection: collection2
+      core: core2
+      exception: ""
+      level: INFO
+      message: "[collection2]  webapp=/solr path=/admin/metrics params={group=core&prefix=QUERY./select} status=0 QTime=4"
+      replica: replica2
+      shard: shard2
+      source: o.a.s.c.S.Request
+      thread: qtp1038934055-17
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/solr_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-07-21T19:33:45.678Z
+  - jsonPayload:
+      collection: collection1
+      core: core1
+      exception: ""
+      level: INFO
+      message: "[collection1]  webapp=/solr path=/select params={q=*:*&fq=category:electronics&wt=xml} hits=154 status=0 QTime=12"
+      replica: replica1
+      shard: shard1
+      source: o.a.s.c.S.Request
+      thread: qtp1038934055-18
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/solr_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-07-21T21:12:05.342Z
+  - jsonPayload:
+      collection: collection1
+      core: core1
+      exception: ""
+      level: INFO
+      message: "[collection1]  webapp=/solr path=/update params={commit=true} status=0 QTime=95"
+      replica: replica1
+      shard: shard1
+      source: o.a.s.c.S.Request
+      thread: qtp1038934055-20
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/solr_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-07-21T23:58:55.013Z
+  partialSuccess: true
+- entries:
+  - jsonPayload:
+      collection: ""
+      core: ""
+      exception: ""
+      level: INFO
+      message: Startup complete. Ready to accept requests.
+      replica: ""
+      shard: ""
+      source: o.a.s.SolrServer
+      thread: main
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/solr_system
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-07-22T00:05:00.999Z
+  partialSuccess: true

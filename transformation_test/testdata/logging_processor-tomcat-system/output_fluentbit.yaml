@@ -286,6 +286,17 @@
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
     timestamp: 2025-07-21T18:05:22.346000000Z
+  - jsonPayload:
+      level: INFO
+      message: org.apache.coyote.AbstractProtocol Destroying ProtocolHandler ["http-nio-8080"]
+      module: Thread-5
+      source: org.apache.coyote.AbstractProtocol
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_system
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-07-21T18:05:22.347000000Z
   partialSuccess: true
   resource:
     labels: {}
