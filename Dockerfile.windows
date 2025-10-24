@@ -365,11 +365,7 @@ WORKDIR /work
 COPY . /work
 
 RUN if ($env:PACKAGE -eq "true") { \
-        Write-Host "--- Running optional build step: .\pkg\goo\build.ps1 ---"; \
         & .\pkg\goo\build.ps1 -DestDir /work/out; \
-        Write-Host "--- Optional step complete ---"; \
-    } else { \
-        Write-Host "--- Skipping optional build step: .\pkg\goo\build.ps1 ---"; \
     }
 
 ###############################################################################
