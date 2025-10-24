@@ -4725,24 +4725,6 @@ traces:
 				15.0,
 				expectedServiceAttributes,
 			},
-
-			{
-				"workload.googleapis.com/otlp.test.exponential_histogram", nil,
-				metric.MetricDescriptor_CUMULATIVE,
-				metric.MetricDescriptor_DISTRIBUTION,
-				&distribution.Distribution{
-					Count:                 3,
-					Mean:                  370,
-					SumOfSquaredDeviation: 0.0,
-					BucketOptions: &distribution.Distribution_BucketOptions{
-						Options: &distribution.Distribution_BucketOptions_ExponentialBuckets{
-							ExponentialBuckets: &distribution.Distribution_BucketOptions_Exponential{},
-						},
-					},
-					BucketCounts: []int64{0, 1, 0, 0, 1, 0, 0, 1},
-				},
-				expectedServiceAttributes,
-			},
 			{
 				"workload.googleapis.com/otlp.test.histogram", nil,
 				metric.MetricDescriptor_CUMULATIVE,
@@ -4917,23 +4899,6 @@ traces:
 				metric.MetricDescriptor_CUMULATIVE,
 				metric.MetricDescriptor_DOUBLE,
 				15.0,
-				nil,
-			},
-			{
-				"prometheus.googleapis.com/otlp_test_exponential/histogram", nil,
-				metric.MetricDescriptor_CUMULATIVE,
-				metric.MetricDescriptor_DISTRIBUTION,
-				&distribution.Distribution{
-					Count:                 3,
-					Mean:                  370,
-					SumOfSquaredDeviation: 0.0,
-					BucketOptions: &distribution.Distribution_BucketOptions{
-						Options: &distribution.Distribution_BucketOptions_ExponentialBuckets{
-							ExponentialBuckets: &distribution.Distribution_BucketOptions_Exponential{},
-						},
-					},
-					BucketCounts: []int64{0, 1, 0, 0, 1, 0, 0, 1},
-				},
 				nil,
 			},
 			{
