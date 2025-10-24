@@ -839,7 +839,7 @@ func TestPluginGetStatusReturnsHealthyStatusOnSuccessfulOpsAgentStart(t *testing
 
 }
 
-func TestPluginGetStatusReturnsUnhealthyStatusOnSubAgentTermination(t *testing.T) {
+func TestPluginGetStatusReturnsRPCErrorOnSubAgentTermination(t *testing.T) {
 	t.Parallel()
 	if !gce.IsOpsAgentUAPPlugin() {
 		t.SkipNow()
@@ -875,13 +875,10 @@ func TestPluginGetStatusReturnsUnhealthyStatusOnSubAgentTermination(t *testing.T
 		time.Sleep(10 * time.Second)
 
 		cmdOut, err = gce.RunRemotely(ctx, logger, vm, agents.GetUAPPluginStatusForImage(vm.ImageSpec))
-		if err != nil {
-			t.Fatal(err)
-		}
 
-		// A subagent termination should terminate the entire Ops Agent. In this case, the plugin is expected to return a non-healthy status for the Ops Agent.
-		if !strings.Contains(cmdOut.Stdout, "\"code\": 1") {
-			t.Error("expected the plugin to report that the Ops Agent is not running")
+		// A subagent termination should terminate the entire Ops Agent. In this case, the plugin GetStatus() call should return an RPC error.
+		if err == nil {
+			t.Errorf("expected the plugin GetStatus() call to return an error, got nil")
 		}
 
 		pid, _, err := fetchPIDAndProcessName(ctx, logger, vm, metricsAgentProcessNamesForImage(vm.ImageSpec))
@@ -1238,7 +1235,7 @@ func TestInvalidStringConfigReceivedFromUAP(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if !strings.Contains(cmdOut.Stdout, "The Ops Agent Plugin is not running.") {
+		if !strings.Contains(cmdOut.Stdout, "failed to validate the custom Ops Agent config") {
 			t.Error("the UAP plugin should not have started the Ops Agent with an invalid config")
 		}
 	})
