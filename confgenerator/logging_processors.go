@@ -46,16 +46,47 @@ func (r ParseMultiline) Type() string {
 }
 
 // This map lists regexes that apply to any line that is part of a previous line.
-var otelMultilineMap = map[string][]string{
+var otelFirstMultilineMap = map[string][]string{
 	"java": []string{
 		// Line starts with a java exception class name
-		// `^(?:[a-zA-Z$_][a-zA-Z$_0-9]*\.)+[a-zA-Z$_][a-zA-Z$_0-9]*: `,
+		`(?:Exception|Error|Throwable|V8 errors stack trace)[:\r\n]`,
+	},
+	"python": []string{
+		`Traceback \(most recent call last\):$`,
+	},
+	"go": []string{
+		`\bpanic: `,
+		`http: panic serving`,
+	},
+}
+
+var otelSecondMultilineMap = map[string][]string{
+	"java": []string{
+		// Line starts with a java exception class name
+		//`^(?:[a-zA-Z$_][a-zA-Z$_0-9]*\.)+[a-zA-Z$_][a-zA-Z$_0-9]*: `,
 		`^[\t ]*nested exception is:[\\t ]*`,
 		`^[\t ]+(?:eval ?)?at `,
 		`^[\t ]+--- End of inner exception stack trace ---$`,
 		`^--- End of stack trace from previous location where exception was thrown ---$`,
 		`^[\t ]*(?:Caused by|Suppressed):`,
 		`^[\t ]*... \d+ (?:more|common frames omitted)`,
+	},
+	"python": []string{
+		//`^[\t ]+File`,
+		//`[^\t ]`,
+		//`^(?:[^\s.():]+\.)*[^\s.():]+:`,
+		//`^Traceback \(most recent call last\):$`,
+	},
+}
+
+var otelTransitionMultilineMap = map[string][]string{
+	"java": []string{
+		// Line transitions
+		`nested exception is:[\\t ]*$`,
+	},
+	"python": []string{
+		// Line transitions
+		`raise Exception\(.*\)$`,
 	},
 }
 
@@ -125,24 +156,68 @@ func (p ParseMultiline) Components(ctx context.Context, tag, uid string) []fluen
 }
 
 func (p ParseMultiline) Processors(ctx context.Context) ([]otel.Component, error) {
-	var secondLines []string
+	var firstLinesExpr map[string][]string = map[string][]string{
+		"java":   []string{},
+		"python": []string{},
+	}
+	var secondLinesExpr map[string][]string = map[string][]string{
+		"java":   []string{},
+		"python": []string{},
+	}
+	var transitionLinesExpr map[string][]string = map[string][]string{
+		"java":   []string{},
+		"python": []string{},
+	}
 	for _, g := range p.MultilineGroups {
 		if g.Type == "language_exceptions" {
-			r := otelMultilineMap[g.Language]
-			if len(r) > 0 {
-				secondLines = append(secondLines, r...)
-				continue
+			a := otelFirstMultilineMap[g.Language]
+			if len(a) > 0 {
+				for _, r := range a {
+					firstLinesExpr[g.Language] = append(firstLinesExpr[g.Language], fmt.Sprintf("body.message matches %q", r))
+				}
 			}
+			b := otelSecondMultilineMap[g.Language]
+			if len(b) > 0 {
+				for _, r := range b {
+					secondLinesExpr[g.Language] = append(secondLinesExpr[g.Language], fmt.Sprintf("not(body.message matches %q)", r))
+				}
+			}
+			c := otelTransitionMultilineMap[g.Language]
+			if len(c) > 0 {
+				for _, r := range c {
+					transitionLinesExpr[g.Language] = append(transitionLinesExpr[g.Language], fmt.Sprintf("not(body.message matches %q)", r))
+				}
+			}
+			continue
 		}
 		return nil, errors.New("unsupported in otel")
 	}
 
-	var exprParts []string
-	for _, r := range secondLines {
-		exprParts = append(exprParts, fmt.Sprintf("body.message matches %q", r))
+	javaExpr := strings.Join(firstLinesExpr["java"], " and ") + " and " + strings.Join(secondLinesExpr["java"], " and ")
+	pythonExpr := strings.Join(firstLinesExpr["python"], " and ") // + " and " + strings.Join(secondLinesExpr["python"], " and ")
+	goExpr := strings.Join(firstLinesExpr["go"], " and ")
+	firstExprSlice := []string{}
+	if len(firstLinesExpr["java"]) > 0 {
+		firstExprSlice = append(firstExprSlice, javaExpr)
 	}
+	if len(firstLinesExpr["python"]) > 0 {
+		firstExprSlice = append(firstExprSlice, pythonExpr)
+	}
+	if len(firstLinesExpr["go"]) > 0 {
+		firstExprSlice = append(firstExprSlice, goExpr)
+	}
+	firstExpr := strings.Join(firstExprSlice, " or ")
 
-	expr := fmt.Sprintf("not (%s)", strings.Join(exprParts, " or "))
+	javaTransitionsExpr := strings.Join(transitionLinesExpr["java"], " and ")
+	pythonTransitionsExpr := strings.Join(transitionLinesExpr["python"], " and ")
+	transitionsExprSlice := []string{}
+	if len(transitionLinesExpr["java"]) > 0 {
+		transitionsExprSlice = append(transitionsExprSlice, javaTransitionsExpr)
+	}
+	if len(transitionLinesExpr["python"]) > 0 {
+		transitionsExprSlice = append(transitionsExprSlice, pythonTransitionsExpr)
+	}
+	//transitionExpr := strings.Join(transitionsExprSlice, " and ")
 
 	return []otel.Component{{
 		Type: "logstransform",
@@ -158,7 +233,7 @@ func (p ParseMultiline) Processors(ctx context.Context) ([]otel.Component, error
 					"combine_field": "body.message",
 					// N.B. We cannot specify "combine_with" because it is not serialized correctly by our yaml library.
 					//"combine_with":   "\n",
-					"is_first_entry": expr,
+					"is_first_entry": firstExpr,
 					// Take the timestamp and other attributes from the first entry.
 					"overwrite_with": "oldest",
 					// Use the log file path to disambiguate if present.
@@ -167,6 +242,20 @@ func (p ParseMultiline) Processors(ctx context.Context) ([]otel.Component, error
 					// Set to half of the file receiver's poll_interval to guarantee it is flushed every poll.
 					"force_flush_period": "100ms",
 				},
+				// {
+				// 	"type":          "recombine",
+				// 	"combine_field": "body.message",
+				// 	// N.B. We cannot specify "combine_with" because it is not serialized correctly by our yaml library.
+				// 	//"combine_with":   "\n",
+				// 	"is_last_entry": transitionExpr,
+				// 	// Take the timestamp and other attributes from the first entry.
+				// 	"overwrite_with": "oldest",
+				// 	// Use the log file path to disambiguate if present.
+				// 	"source_identifier": `attributes.__source_identifier`,
+				// 	// How long to wait for more log lines.
+				// 	// Set to half of the file receiver's poll_interval to guarantee it is flushed every poll.
+				// 	"force_flush_period": "100ms",
+				// },
 				{
 					"type":  "remove",
 					"field": "attributes.__source_identifier",
