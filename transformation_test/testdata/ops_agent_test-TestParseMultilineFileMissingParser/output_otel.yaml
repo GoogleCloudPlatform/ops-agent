@@ -1,1 +1,62 @@
-- config_error: "processor \"processor0\" has invalid configuration: unsupported in otel"
+- entries:
+  - jsonPayload:
+      message: |-
+        2019/01/15 07:48:05 http: panic serving [::1]:54143: test panic
+        goroutine 24 [running]:
+        net/http.(*conn).serve.func1(0xc00007eaa0)
+        	/usr/local/go/src/net/http/server.go:1746 +0xd0
+        panic(0x12472a0, 0x12ece10)
+        	/usr/local/go/src/runtime/panic.go:513 +0x1b9
+        main.doPanic(0x12f0ea0, 0xc00010e1c0, 0xc000104400)
+        	/Users/ingvar/src/go/src/httppanic.go:8 +0x39
+        net/http.HandlerFunc.ServeHTTP(0x12be2e8, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)
+        	/usr/local/go/src/net/http/server.go:1964 +0x44
+        net/http.(*ServeMux).ServeHTTP(0x14a17a0, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)
+        	/usr/local/go/src/net/http/server.go:2361 +0x127
+        net/http.serverHandler.ServeHTTP(0xc000085040, 0x12f0ea0, 0xc00010e1c0, 0xc000104400)
+        	/usr/local/go/src/net/http/server.go:2741 +0xab
+        net/http.(*conn).serve(0xc00007eaa0, 0x12f10a0, 0xc00008a780)
+        	/usr/local/go/src/net/http/server.go:1847 +0x646
+        created by net/http.(*Server).Serve
+        	/usr/local/go/src/net/http/server.go:2851 +0x2f5
+        Traceback (most recent call last):
+          File "/base/data/home/runtimes/python27/python27_lib/versions/third_party/webapp2-2.5.2/webapp2.py", line 1535, in __call__
+            rv = self.handle_exception(request, response, e)
+          File "/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py", line 17, in start
+            return get()
+          File "/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py", line 5, in get
+            raise Exception('spam', 'eggs')
+        Exception: ('spam', 'eggs')
+        java.lang.RuntimeException: javax.mail.SendFailedException: Invalid Addresses;
+          nested exception is:
+        com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
+        	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:236)
+        	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:285)
+        	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.lambda$sendSingleEmail$3(AutomaticEmailFacade.java:254)
+        	at java.util.Optional.ifPresent(Optional.java:159)
+        	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:253)
+        	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendSingleEmail(AutomaticEmailFacade.java:249)
+        	at com.nethunt.crm.api.email.EmailSender.lambda$notifyPerson$0(EmailSender.java:80)
+        	at com.nethunt.crm.api.util.ManagedExecutor.lambda$execute$0(ManagedExecutor.java:36)
+        	at com.nethunt.crm.api.util.RequestContextActivator.lambda$withRequestContext$0(RequestContextActivator.java:36)
+        	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+        	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+        	at java.base/java.lang.Thread.run(Thread.java:748)
+        Caused by: javax.mail.SendFailedException: Invalid Addresses;
+          nested exception is:
+        com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
+        	at com.sun.mail.smtp.SMTPTransport.rcptTo(SMTPTransport.java:2064)
+        	at com.sun.mail.smtp.SMTPTransport.sendMessage(SMTPTransport.java:1286)
+        	at com.nethunt.crm.api.server.adminsync.AutomaticEmailFacade.sendWithSmtp(AutomaticEmailFacade.java:229)
+        	... 12 more
+        Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EMAIL_ADDRESS]>... Relaying denied
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
+  partialSuccess: true
