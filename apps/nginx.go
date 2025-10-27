@@ -35,10 +35,15 @@ func (r MetricsReceiverNginx) Type() string {
 	return "nginx"
 }
 
-func (r MetricsReceiverNginx) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (r MetricsReceiverNginx) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	if r.StubStatusURL == "" {
 		r.StubStatusURL = defaultStubStatusURL
 	}
+	exporter := otel.OTel
+	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
+		exporter = otel.OTLP
+	}
+
 	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "nginx",
@@ -58,6 +63,7 @@ func (r MetricsReceiverNginx) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
+		ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
 	}}, nil
 }
 

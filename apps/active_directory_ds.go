@@ -32,7 +32,11 @@ func (r MetricsReceiverActiveDirectoryDS) Type() string {
 	return "active_directory_ds"
 }
 
-func (r MetricsReceiverActiveDirectoryDS) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (r MetricsReceiverActiveDirectoryDS) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
+	exporter := otel.OTel
+	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
+		exporter = otel.OTLP
+	}
 	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "active_directory_ds",
@@ -51,6 +55,7 @@ func (r MetricsReceiverActiveDirectoryDS) Pipelines(_ context.Context) ([]otel.R
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
+		ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
 	}}, nil
 }
 

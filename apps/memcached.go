@@ -35,11 +35,14 @@ func (r MetricsReceiverMemcached) Type() string {
 	return "memcached"
 }
 
-func (r MetricsReceiverMemcached) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (r MetricsReceiverMemcached) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultMemcachedTCPEndpoint
 	}
-
+	exporter := otel.OTel
+	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
+		exporter = otel.OTLP
+	}
 	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "memcached",
@@ -65,6 +68,7 @@ func (r MetricsReceiverMemcached) Pipelines(_ context.Context) ([]otel.ReceiverP
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
+		ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
 	}}, nil
 }
 

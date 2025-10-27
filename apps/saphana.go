@@ -137,11 +137,14 @@ func (s MetricsReceiverSapHana) Type() string {
 	return "saphana"
 }
 
-func (s MetricsReceiverSapHana) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (s MetricsReceiverSapHana) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	if s.Endpoint == "" {
 		s.Endpoint = defaultSapHanaEndpoint
 	}
-
+	exporter := otel.OTel
+	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
+		exporter = otel.OTLP
+	}
 	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "saphana",
@@ -170,6 +173,7 @@ func (s MetricsReceiverSapHana) Pipelines(_ context.Context) ([]otel.ReceiverPip
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
+		ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
 	}}, nil
 }
 

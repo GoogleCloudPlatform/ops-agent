@@ -44,7 +44,7 @@ func (r MetricsReceiverElasticsearch) Type() string {
 	return "elasticsearch"
 }
 
-func (r MetricsReceiverElasticsearch) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (r MetricsReceiverElasticsearch) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultElasticsearchEndpoint
 	}
@@ -71,7 +71,10 @@ func (r MetricsReceiverElasticsearch) Pipelines(_ context.Context) ([]otel.Recei
 		"skip_cluster_metrics": !r.ShouldCollectClusterMetrics(),
 		"metrics":              metricsConfig,
 	}
-
+	exporter := otel.OTel
+	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
+		exporter = otel.OTLP
+	}
 	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type:   "elasticsearch",
@@ -94,6 +97,8 @@ func (r MetricsReceiverElasticsearch) Pipelines(_ context.Context) ([]otel.Recei
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
+				ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
+
 	}}, nil
 }
 

@@ -34,7 +34,7 @@ func (MetricsReceiverMssql) Type() string {
 	return "mssql"
 }
 
-func (m MetricsReceiverMssql) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (m MetricsReceiverMssql) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	if m.ReceiverVersion == "2" {
 		return []otel.ReceiverPipeline{{
 			Receiver: otel.Component{
@@ -61,6 +61,10 @@ func (m MetricsReceiverMssql) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 			}},
 		}}, nil
 	}
+	exporter := otel.System
+	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
+		exporter = otel.OTLP
+	}
 
 	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
@@ -85,7 +89,7 @@ func (m MetricsReceiverMssql) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 			},
 		},
 		ExporterTypes: map[string]otel.ExporterType{
-			"metrics": otel.System,
+			"metrics": exporter,
 		},
 		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsTransform(

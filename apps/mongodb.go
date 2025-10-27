@@ -46,7 +46,7 @@ func (r MetricsReceiverMongoDB) Type() string {
 	return "mongodb"
 }
 
-func (r MetricsReceiverMongoDB) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (r MetricsReceiverMongoDB) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	transport := "tcp"
 	if r.Endpoint == "" {
 		r.Endpoint = defaultMongodbEndpoint
@@ -71,6 +71,10 @@ func (r MetricsReceiverMongoDB) Pipelines(_ context.Context) ([]otel.ReceiverPip
 	if transport != "unix" {
 		config["tls"] = r.TLSConfig(false)
 	}
+	exporter := otel.OTel
+	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
+		exporter = otel.OTLP
+	}
 
 	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
@@ -88,6 +92,7 @@ func (r MetricsReceiverMongoDB) Pipelines(_ context.Context) ([]otel.ReceiverPip
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
+		ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
 	}}, nil
 }
 

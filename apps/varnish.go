@@ -32,7 +32,11 @@ func (MetricsReceiverVarnish) Type() string {
 	return "varnish"
 }
 
-func (r MetricsReceiverVarnish) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (r MetricsReceiverVarnish) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
+	exporter := otel.OTel
+	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
+		exporter = otel.OTLP
+	}
 	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "varnish",
@@ -53,6 +57,7 @@ func (r MetricsReceiverVarnish) Pipelines(_ context.Context) ([]otel.ReceiverPip
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
+		ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
 	}}, nil
 }
 

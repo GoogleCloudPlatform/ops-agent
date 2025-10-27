@@ -41,7 +41,7 @@ func (r MetricsReceiverMySql) Type() string {
 	return "mysql"
 }
 
-func (r MetricsReceiverMySql) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (r MetricsReceiverMySql) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	transport := "tcp"
 	if r.Endpoint == "" {
 		transport = "unix"
@@ -52,6 +52,10 @@ func (r MetricsReceiverMySql) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 
 	if r.Username == "" {
 		r.Username = "root"
+	}
+	exporter := otel.OTel
+	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
+		exporter = otel.OTLP
 	}
 
 	return []otel.ReceiverPipeline{
@@ -125,6 +129,7 @@ func (r MetricsReceiverMySql) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 				),
 				otel.MetricsRemoveServiceAttributes(),
 			}},
+			ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
 		},
 	}, nil
 }

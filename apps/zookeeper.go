@@ -39,9 +39,13 @@ func (MetricsReceiverZookeeper) Type() string {
 	return "zookeeper"
 }
 
-func (r MetricsReceiverZookeeper) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (r MetricsReceiverZookeeper) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultZookeeperEndpoint
+	}
+	exporter := otel.OTel
+	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
+		exporter = otel.OTLP
 	}
 
 	return []otel.ReceiverPipeline{{
@@ -63,6 +67,7 @@ func (r MetricsReceiverZookeeper) Pipelines(_ context.Context) ([]otel.ReceiverP
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
+		ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
 	}}, nil
 }
 

@@ -50,10 +50,14 @@ func (r MetricsReceiverOracleDB) Type() string {
 	return "oracledb"
 }
 
-func (r MetricsReceiverOracleDB) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (r MetricsReceiverOracleDB) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	endpoint := r.Endpoint
 	if r.Endpoint == "" {
 		endpoint = defaultOracleDBEndpoint
+	}
+	exporter := otel.OTel
+	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
+		exporter = otel.OTLP
 	}
 
 	// put all parameters that are provided to the datasource as query params
@@ -125,6 +129,7 @@ func (r MetricsReceiverOracleDB) Pipelines(_ context.Context) ([]otel.ReceiverPi
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
+		ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
 	}}, nil
 }
 

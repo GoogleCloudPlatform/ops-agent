@@ -44,7 +44,7 @@ func (r MetricsReceiverPostgresql) Type() string {
 	return "postgresql"
 }
 
-func (r MetricsReceiverPostgresql) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (r MetricsReceiverPostgresql) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	transport := "tcp"
 	if r.Endpoint == "" {
 		transport = "unix"
@@ -53,6 +53,11 @@ func (r MetricsReceiverPostgresql) Pipelines(_ context.Context) ([]otel.Receiver
 		transport = "unix"
 		endpointParts := strings.Split(r.Endpoint, ".")
 		r.Endpoint = strings.TrimLeft(endpointParts[0], "/") + ":" + endpointParts[len(endpointParts)-1]
+	}
+
+	exporter := otel.OTel
+	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
+		exporter = otel.OTLP
 	}
 
 	cfg := map[string]interface{}{
@@ -102,6 +107,7 @@ func (r MetricsReceiverPostgresql) Pipelines(_ context.Context) ([]otel.Receiver
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
+		ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
 	}}, nil
 }
 

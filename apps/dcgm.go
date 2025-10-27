@@ -36,7 +36,7 @@ func (r MetricsReceiverDcgm) Type() string {
 	return "dcgm"
 }
 
-func (r MetricsReceiverDcgm) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (r MetricsReceiverDcgm) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultDcgmEndpoint
 	}
@@ -94,7 +94,10 @@ func (r MetricsReceiverDcgm) Pipelines(_ context.Context) ([]otel.ReceiverPipeli
 			}},
 		}}, nil
 	}
-
+	exporter := otel.OTel
+	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
+		exporter = otel.OTLP
+	}
 	disabledV1Metrics := []string{
 		"gpu.dcgm.utilization",
 		"gpu.dcgm.codec.encoder.utilization",
@@ -204,6 +207,7 @@ func (r MetricsReceiverDcgm) Pipelines(_ context.Context) ([]otel.ReceiverPipeli
 				otel.SetScopeVersion("1.0"),
 			),
 		}},
+		ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
 	}}, nil
 }
 

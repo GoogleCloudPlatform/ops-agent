@@ -123,11 +123,14 @@ func (r MetricsReceiverRabbitmq) Type() string {
 	return "rabbitmq"
 }
 
-func (r MetricsReceiverRabbitmq) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (r MetricsReceiverRabbitmq) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultRabbitmqTCPEndpoint
 	}
-
+	exporter := otel.OTel
+	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
+		exporter = otel.OTLP
+	}
 	cfg := map[string]interface{}{
 		"collection_interval": r.CollectionIntervalString(),
 		"endpoint":            r.Endpoint,
@@ -155,6 +158,7 @@ func (r MetricsReceiverRabbitmq) Pipelines(_ context.Context) ([]otel.ReceiverPi
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
+		ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
 	}}, nil
 }
 

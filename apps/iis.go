@@ -36,7 +36,7 @@ func (r MetricsReceiverIis) Type() string {
 	return "iis"
 }
 
-func (r MetricsReceiverIis) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (r MetricsReceiverIis) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	if r.ReceiverVersion == "2" {
 		return []otel.ReceiverPipeline{{
 			Receiver: otel.Component{
@@ -74,6 +74,10 @@ func (r MetricsReceiverIis) Pipelines(_ context.Context) ([]otel.ReceiverPipelin
 			}},
 		}}, nil
 	}
+	exporter := otel.System
+	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
+		exporter = otel.OTLP
+	}
 
 	// Return version 1 if version is anything other than 2
 	return []otel.ReceiverPipeline{{
@@ -103,7 +107,7 @@ func (r MetricsReceiverIis) Pipelines(_ context.Context) ([]otel.ReceiverPipelin
 			},
 		},
 		ExporterTypes: map[string]otel.ExporterType{
-			"metrics": otel.System,
+			"metrics": exporter,
 		},
 		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsTransform(

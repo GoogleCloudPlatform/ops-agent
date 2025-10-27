@@ -35,10 +35,15 @@ func (r MetricsReceiverApache) Type() string {
 	return "apache"
 }
 
-func (r MetricsReceiverApache) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (r MetricsReceiverApache) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	if r.ServerStatusURL == "" {
 		r.ServerStatusURL = defaultServerStatusURL
 	}
+	exporter := otel.OTel
+	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
+		exporter = otel.OTLP
+	}
+
 	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "apache",
@@ -64,6 +69,7 @@ func (r MetricsReceiverApache) Pipelines(_ context.Context) ([]otel.ReceiverPipe
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
+		ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
 	}}, nil
 }
 

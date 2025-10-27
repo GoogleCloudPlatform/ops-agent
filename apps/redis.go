@@ -39,11 +39,14 @@ func (r MetricsReceiverRedis) Type() string {
 	return "redis"
 }
 
-func (r MetricsReceiverRedis) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (r MetricsReceiverRedis) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	if r.Address == "" {
 		r.Address = defaultRedisEndpoint
 	}
-
+	exporter := otel.OTel
+	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
+		exporter = otel.OTLP
+	}
 	var transport string
 	if strings.HasPrefix(r.Address, "/") {
 		transport = "unix"
@@ -79,6 +82,7 @@ func (r MetricsReceiverRedis) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
+		ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
 	}}, nil
 }
 
