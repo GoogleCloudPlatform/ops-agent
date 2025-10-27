@@ -37,7 +37,7 @@ func (r MetricsReceiverFlink) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 	if r.Endpoint == "" {
 		r.Endpoint = defaultFlinkEndpoint
 	}
-		exporter := otel.OTel
+	exporter := otel.OTel
 	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
 		exporter = otel.OTLP
 	}

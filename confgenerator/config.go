@@ -732,7 +732,7 @@ func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, proces
 			Type:   "jmx",
 			Config: config,
 		},
-		Processors: map[string][]otel.Component{"metrics": processors},
+		Processors:    map[string][]otel.Component{"metrics": processors},
 		ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
 	}}, nil
 }

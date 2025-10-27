@@ -97,8 +97,7 @@ func (r MetricsReceiverElasticsearch) Pipelines(ctx context.Context) ([]otel.Rec
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
-				ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
-
+		ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
 	}}, nil
 }
 
