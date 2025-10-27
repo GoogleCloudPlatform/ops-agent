@@ -25,7 +25,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -705,7 +704,7 @@ func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, proces
 	}
 
 	exporter := otel.OTel
-	if confgenerator.ExperimentsFromContext(context.Background())["otlp_exporter"] {
+	if ExperimentsFromContext(context.Background())["otlp_exporter"] {
 		exporter = otel.OTLP
 	}
 	config := map[string]interface{}{

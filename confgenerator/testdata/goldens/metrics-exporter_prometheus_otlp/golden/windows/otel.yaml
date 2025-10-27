@@ -846,7 +846,7 @@ service:
       - hostmetrics/hostmetrics
     metrics/default__pipeline_iis:
       exporters:
-      - googlecloud
+      - otlphttp/otlp
       processors:
       - metricstransform/iis_0
       - casttosum/iis_1
@@ -858,7 +858,7 @@ service:
       - windowsperfcounters/iis
     metrics/default__pipeline_mssql:
       exporters:
-      - googlecloud
+      - otlphttp/otlp
       processors:
       - metricstransform/mssql_0
       - transform/mssql_1
