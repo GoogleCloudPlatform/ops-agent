@@ -72,23 +72,23 @@ func (r MetricsReceiverElasticsearch) Pipelines(ctx context.Context) ([]otel.Rec
 		"skip_cluster_metrics": !r.ShouldCollectClusterMetrics(),
 		"metrics":              metricsConfig,
 	}
-		processors := []otel.Component{
-			otel.NormalizeSums(),
-			// Elasticsearch Cluster metrics come with a summary JVM heap memory that is not useful && causes DuplicateTimeSeries errors
-			otel.MetricsOTTLFilter(
-				[]string{
-					`name == "jvm.memory.heap.used" and resource.attributes["elasticsearch.node.name"] == nil`,
-				},
-				[]string{}),
-			otel.MetricsTransform(
-				otel.AddPrefix("workload.googleapis.com"),
-			),
-			otel.TransformationMetrics(
-				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
-				otel.SetScopeVersion("1.0"),
-			),
-			otel.MetricsRemoveServiceAttributes(),
-		}
+	processors := []otel.Component{
+		otel.NormalizeSums(),
+		// Elasticsearch Cluster metrics come with a summary JVM heap memory that is not useful && causes DuplicateTimeSeries errors
+		otel.MetricsOTTLFilter(
+			[]string{
+				`name == "jvm.memory.heap.used" and resource.attributes["elasticsearch.node.name"] == nil`,
+			},
+			[]string{}),
+		otel.MetricsTransform(
+			otel.AddPrefix("workload.googleapis.com"),
+		),
+		otel.TransformationMetrics(
+			otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+			otel.SetScopeVersion("1.0"),
+		),
+		otel.MetricsRemoveServiceAttributes(),
+	}
 	resource, _ := platform.FromContext(ctx).GetResource()
 	exporter := otel.OTel
 	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
@@ -100,7 +100,7 @@ func (r MetricsReceiverElasticsearch) Pipelines(ctx context.Context) ([]otel.Rec
 			Type:   "elasticsearch",
 			Config: cfg,
 		},
-		Processors: map[string][]otel.Component{"metrics": processors},
+		Processors:    map[string][]otel.Component{"metrics": processors},
 		ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
 	}}, nil
 }
