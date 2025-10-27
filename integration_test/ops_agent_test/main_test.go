@@ -1803,13 +1803,13 @@ func TestModifyFields(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		line := `{"field":"value", "default_present":"original", "logging.googleapis.com/labels": {"label1":"value"}, "trace":"projects/my-project/traces/deadcafedeadc0defacefeedb0bacafe", "spanId": "facefeedb0bacafe"}` + "\n"
+		line := `{"field":"value", "default_present":"original", "logging.googleapis.com/labels": {"label1":"value"}, "trace":"deadcafedeadc0defacefeedb0bacafe", "spanId": "facefeedb0bacafe"}` + "\n"
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
 			t.Fatalf("error uploading log: %v", err)
 		}
 
 		// Expect to see the log with the modifications applied
-		if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, `jsonPayload.field2="value" AND labels.static="hello world" AND labels.label2="value" AND NOT labels.label1:* AND labels."my.cool.service/foo"="value" AND severity="WARNING" AND NOT jsonPayload.field:* AND jsonPayload.default_present="original" AND jsonPayload.default_absent="default" AND jsonPayload.integer > 5 AND jsonPayload.float > 5 AND jsonPayload.mapped_field="new_value" AND (NOT jsonPayload.omitted = "broken") AND trace = "projects/my-project/traces/deadcafedeadc0defacefeedb0bacafe" AND NOT jsonPayload.trace:* AND spanId = "facefeedb0bacafe" AND jsonPayload.spanId = "facefeedb0bacafe"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, `jsonPayload.field2="value" AND labels.static="hello world" AND labels.label2="value" AND NOT labels.label1:* AND labels."my.cool.service/foo"="value" AND severity="WARNING" AND NOT jsonPayload.field:* AND jsonPayload.default_present="original" AND jsonPayload.default_absent="default" AND jsonPayload.integer > 5 AND jsonPayload.float > 5 AND jsonPayload.mapped_field="new_value" AND (NOT jsonPayload.omitted = "broken") AND trace =~ "deadcafedeadc0defacefeedb0bacafe" AND NOT jsonPayload.trace:* AND spanId = "facefeedb0bacafe" AND jsonPayload.spanId = "facefeedb0bacafe"`); err != nil {
 			t.Error(err)
 		}
 	})
