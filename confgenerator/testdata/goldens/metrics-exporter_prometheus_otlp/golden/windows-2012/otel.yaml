@@ -624,6 +624,16 @@ processors:
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
   normalizesums/iis_2: {}
+  resource/iis_4:
+    attributes:
+    - action: insert
+      key: gcp.project_id
+      value: test-project
+  resource/mssql_2:
+    attributes:
+    - action: insert
+      key: gcp.project_id
+      value: test-project
   resource/prometheus_3:
     attributes:
     - action: insert
@@ -852,6 +862,7 @@ service:
       - casttosum/iis_1
       - normalizesums/iis_2
       - transform/iis_3
+      - resource/iis_4
       - filter/default__pipeline_iis_0
       - resourcedetection/_global_0
       receivers:
@@ -862,6 +873,7 @@ service:
       processors:
       - metricstransform/mssql_0
       - transform/mssql_1
+      - resource/mssql_2
       - filter/default__pipeline_mssql_0
       - resourcedetection/_global_0
       receivers:

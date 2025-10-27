@@ -20,6 +20,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
 
@@ -71,16 +72,7 @@ func (r MetricsReceiverElasticsearch) Pipelines(ctx context.Context) ([]otel.Rec
 		"skip_cluster_metrics": !r.ShouldCollectClusterMetrics(),
 		"metrics":              metricsConfig,
 	}
-	exporter := otel.OTel
-	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
-		exporter = otel.OTLP
-	}
-	return []otel.ReceiverPipeline{{
-		Receiver: otel.Component{
-			Type:   "elasticsearch",
-			Config: cfg,
-		},
-		Processors: map[string][]otel.Component{"metrics": {
+		processors := []otel.Component{
 			otel.NormalizeSums(),
 			// Elasticsearch Cluster metrics come with a summary JVM heap memory that is not useful && causes DuplicateTimeSeries errors
 			otel.MetricsOTTLFilter(
@@ -96,7 +88,19 @@ func (r MetricsReceiverElasticsearch) Pipelines(ctx context.Context) ([]otel.Rec
 				otel.SetScopeVersion("1.0"),
 			),
 			otel.MetricsRemoveServiceAttributes(),
-		}},
+		}
+	resource, _ := platform.FromContext(ctx).GetResource()
+	exporter := otel.OTel
+	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
+		exporter = otel.OTLP
+		processors = append(processors, otel.GCPProjectID(resource.ProjectName()))
+	}
+	return []otel.ReceiverPipeline{{
+		Receiver: otel.Component{
+			Type:   "elasticsearch",
+			Config: cfg,
+		},
+		Processors: map[string][]otel.Component{"metrics": processors},
 		ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
 	}}, nil
 }

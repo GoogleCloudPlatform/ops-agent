@@ -20,6 +20,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
 
@@ -43,17 +44,37 @@ func (r MetricsReceiverRedis) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 	if r.Address == "" {
 		r.Address = defaultRedisEndpoint
 	}
-	exporter := otel.OTel
-	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
-		exporter = otel.OTLP
-	}
+
 	var transport string
 	if strings.HasPrefix(r.Address, "/") {
 		transport = "unix"
 	} else {
 		transport = "tcp"
 	}
+	processors := []otel.Component{
+		otel.MetricsFilter(
+			"exclude",
+			"strict",
+			"redis.commands",
+			"redis.uptime",
+		),
+		otel.NormalizeSums(),
+		otel.MetricsTransform(
+			otel.AddPrefix("workload.googleapis.com"),
+		),
+		otel.TransformationMetrics(
+			otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+			otel.SetScopeVersion("1.0"),
+		),
+		otel.MetricsRemoveServiceAttributes(),
+	}
+	resource, _ := platform.FromContext(ctx).GetResource()
+	exporter := otel.OTel
+	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
+		exporter = otel.OTLP
+		processors = append(processors, otel.GCPProjectID(resource.ProjectName()))
 
+	}
 	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "redis",
@@ -65,23 +86,7 @@ func (r MetricsReceiverRedis) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 				"transport":           transport,
 			},
 		},
-		Processors: map[string][]otel.Component{"metrics": {
-			otel.MetricsFilter(
-				"exclude",
-				"strict",
-				"redis.commands",
-				"redis.uptime",
-			),
-			otel.NormalizeSums(),
-			otel.MetricsTransform(
-				otel.AddPrefix("workload.googleapis.com"),
-			),
-			otel.TransformationMetrics(
-				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
-				otel.SetScopeVersion("1.0"),
-			),
-			otel.MetricsRemoveServiceAttributes(),
-		}},
+		Processors:    map[string][]otel.Component{"metrics": processors},
 		ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
 	}}, nil
 }

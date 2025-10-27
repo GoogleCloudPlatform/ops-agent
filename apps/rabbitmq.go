@@ -19,6 +19,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
 
@@ -127,10 +128,7 @@ func (r MetricsReceiverRabbitmq) Pipelines(ctx context.Context) ([]otel.Receiver
 	if r.Endpoint == "" {
 		r.Endpoint = defaultRabbitmqTCPEndpoint
 	}
-	exporter := otel.OTel
-	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
-		exporter = otel.OTLP
-	}
+
 	cfg := map[string]interface{}{
 		"collection_interval": r.CollectionIntervalString(),
 		"endpoint":            r.Endpoint,
@@ -138,26 +136,34 @@ func (r MetricsReceiverRabbitmq) Pipelines(ctx context.Context) ([]otel.Receiver
 		"password":            r.Password.SecretValue(),
 		"tls":                 r.TLSConfig(true),
 	}
+	processors := []otel.Component{
+		otel.NormalizeSums(),
+		otel.MetricsTransform(
+			otel.AddPrefix("workload.googleapis.com"),
+		),
+		otel.TransformationMetrics(
+			otel.FlattenResourceAttribute("rabbitmq.queue.name", "queue_name"),
+			otel.FlattenResourceAttribute("rabbitmq.node.name", "node_name"),
+			otel.FlattenResourceAttribute("rabbitmq.vhost.name", "vhost_name"),
+			otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+			otel.SetScopeVersion("1.0"),
+		),
+		otel.MetricsRemoveServiceAttributes(),
+	}
 
+	exporter := otel.OTel
+	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
+		exporter = otel.OTLP
+		resource, _ := platform.FromContext(ctx).GetResource()
+		processors = append(processors, otel.GCPProjectID(resource.ProjectName()))
+
+	}
 	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type:   "rabbitmq",
 			Config: cfg,
 		},
-		Processors: map[string][]otel.Component{"metrics": {
-			otel.NormalizeSums(),
-			otel.MetricsTransform(
-				otel.AddPrefix("workload.googleapis.com"),
-			),
-			otel.TransformationMetrics(
-				otel.FlattenResourceAttribute("rabbitmq.queue.name", "queue_name"),
-				otel.FlattenResourceAttribute("rabbitmq.node.name", "node_name"),
-				otel.FlattenResourceAttribute("rabbitmq.vhost.name", "vhost_name"),
-				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
-				otel.SetScopeVersion("1.0"),
-			),
-			otel.MetricsRemoveServiceAttributes(),
-		}},
+		Processors:    map[string][]otel.Component{"metrics": processors},
 		ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
 	}}, nil
 }

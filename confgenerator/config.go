@@ -702,10 +702,12 @@ func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, proces
 	if err != nil {
 		return nil, fmt.Errorf("failed to discover the location of the JMX metrics exporter: %w", err)
 	}
-
+	ctx := context.Background()
+	resource, _ := platform.FromContext(ctx).GetResource()
 	exporter := otel.OTel
 	if ExperimentsFromContext(context.Background())["otlp_exporter"] {
 		exporter = otel.OTLP
+		processors = append(processors, otel.GCPProjectID(resource.ProjectName()))
 	}
 	config := map[string]interface{}{
 		"target_system":       targetSystem,

@@ -74,9 +74,52 @@ func (r MetricsReceiverIis) Pipelines(ctx context.Context) ([]otel.ReceiverPipel
 			}},
 		}}, nil
 	}
+	processors := []otel.Component{
+		otel.MetricsTransform(
+			otel.RenameMetric(
+				`\Web Service(_Total)\Current Connections`,
+				"iis/current_connections",
+			),
+			// $ needs to be escaped because reasons.
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/metricstransformprocessor#rename-multiple-metrics-using-substitution
+			otel.CombineMetrics(
+				`^\\Web Service\(_Total\)\\Total Bytes (?P<direction>.*)$$`,
+				"iis/network/transferred_bytes_count",
+				// change data type from double -> int64
+				otel.ToggleScalarDataType,
+			),
+			otel.RenameMetric(
+				`\Web Service(_Total)\Total Connection Attempts (all instances)`,
+				"iis/new_connection_count",
+				// change data type from double -> int64
+				otel.ToggleScalarDataType,
+			),
+			otel.CombineMetrics(
+				`^\\Web Service\(_Total\)\\Total (?P<http_method>.*) Requests$$`,
+				"iis/request_count",
+				// change data type from double -> int64
+				otel.ToggleScalarDataType,
+			),
+			otel.AddPrefix("agent.googleapis.com"),
+		),
+		otel.CastToSum(
+			"agent.googleapis.com/iis/network/transferred_bytes_count",
+			"agent.googleapis.com/iis/new_connection_count",
+			"agent.googleapis.com/iis/request_count",
+		),
+		otel.NormalizeSums(),
+		otel.TransformationMetrics(
+			otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+			otel.SetScopeVersion("1.0"),
+		),
+	}
+
+	resource, _ := platform.FromContext(ctx).GetResource()
 	exporter := otel.System
 	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
 		exporter = otel.OTLP
+		processors = append(processors, otel.GCPProjectID(resource.ProjectName()))
+
 	}
 
 	// Return version 1 if version is anything other than 2
@@ -109,45 +152,7 @@ func (r MetricsReceiverIis) Pipelines(ctx context.Context) ([]otel.ReceiverPipel
 		ExporterTypes: map[string]otel.ExporterType{
 			"metrics": exporter,
 		},
-		Processors: map[string][]otel.Component{"metrics": {
-			otel.MetricsTransform(
-				otel.RenameMetric(
-					`\Web Service(_Total)\Current Connections`,
-					"iis/current_connections",
-				),
-				// $ needs to be escaped because reasons.
-				// https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/metricstransformprocessor#rename-multiple-metrics-using-substitution
-				otel.CombineMetrics(
-					`^\\Web Service\(_Total\)\\Total Bytes (?P<direction>.*)$$`,
-					"iis/network/transferred_bytes_count",
-					// change data type from double -> int64
-					otel.ToggleScalarDataType,
-				),
-				otel.RenameMetric(
-					`\Web Service(_Total)\Total Connection Attempts (all instances)`,
-					"iis/new_connection_count",
-					// change data type from double -> int64
-					otel.ToggleScalarDataType,
-				),
-				otel.CombineMetrics(
-					`^\\Web Service\(_Total\)\\Total (?P<http_method>.*) Requests$$`,
-					"iis/request_count",
-					// change data type from double -> int64
-					otel.ToggleScalarDataType,
-				),
-				otel.AddPrefix("agent.googleapis.com"),
-			),
-			otel.CastToSum(
-				"agent.googleapis.com/iis/network/transferred_bytes_count",
-				"agent.googleapis.com/iis/new_connection_count",
-				"agent.googleapis.com/iis/request_count",
-			),
-			otel.NormalizeSums(),
-			otel.TransformationMetrics(
-				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
-				otel.SetScopeVersion("1.0"),
-			),
-		}},
+		Processors: map[string][]otel.Component{"metrics": processors},
 	}}, nil
 }
 

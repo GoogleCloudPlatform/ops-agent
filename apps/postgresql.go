@@ -20,6 +20,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
 
@@ -55,11 +56,6 @@ func (r MetricsReceiverPostgresql) Pipelines(ctx context.Context) ([]otel.Receiv
 		r.Endpoint = strings.TrimLeft(endpointParts[0], "/") + ":" + endpointParts[len(endpointParts)-1]
 	}
 
-	exporter := otel.OTel
-	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
-		exporter = otel.OTLP
-	}
-
 	cfg := map[string]interface{}{
 		"collection_interval": r.CollectionIntervalString(),
 		"endpoint":            r.Endpoint,
@@ -80,33 +76,41 @@ func (r MetricsReceiverPostgresql) Pipelines(ctx context.Context) ([]otel.Receiv
 		cfg["tls"] = r.TLSConfig(true)
 	}
 
+	processors := []otel.Component{
+		otel.NormalizeSums(),
+		otel.TransformationMetrics(
+			otel.FlattenResourceAttribute("postgresql.database.name", "database"),
+			otel.FlattenResourceAttribute("postgresql.table.name", "table"),
+			otel.FlattenResourceAttribute("postgresql.index.name", "index"),
+			// As of version 0.89, the postgresql receiver supports a double-precision wal.lag metric replacement
+			// the following two transforms convert it back to integer-precision wal.lag for backwards compatibility.
+			// The two metrics are mutually exclusive so we do not need to worry about overwriting or removing the original wal.lag.
+			otel.ConvertFloatToInt("postgresql.wal.delay"),
+			otel.SetName("postgresql.wal.delay", "postgresql.wal.lag"),
+			otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+			otel.SetScopeVersion("1.0"),
+		),
+		otel.MetricsTransform(
+			otel.UpdateMetric("postgresql.bgwriter.duration",
+				otel.ToggleScalarDataType,
+			),
+			otel.AddPrefix("workload.googleapis.com"),
+		),
+		otel.MetricsRemoveServiceAttributes(),
+	}
+	resource, _ := platform.FromContext(ctx).GetResource()
+	exporter := otel.OTel
+	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
+		exporter = otel.OTLP
+		processors = append(processors, otel.GCPProjectID(resource.ProjectName()))
+
+	}
 	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type:   "postgresql",
 			Config: cfg,
 		},
-		Processors: map[string][]otel.Component{"metrics": {
-			otel.NormalizeSums(),
-			otel.TransformationMetrics(
-				otel.FlattenResourceAttribute("postgresql.database.name", "database"),
-				otel.FlattenResourceAttribute("postgresql.table.name", "table"),
-				otel.FlattenResourceAttribute("postgresql.index.name", "index"),
-				// As of version 0.89, the postgresql receiver supports a double-precision wal.lag metric replacement
-				// the following two transforms convert it back to integer-precision wal.lag for backwards compatibility.
-				// The two metrics are mutually exclusive so we do not need to worry about overwriting or removing the original wal.lag.
-				otel.ConvertFloatToInt("postgresql.wal.delay"),
-				otel.SetName("postgresql.wal.delay", "postgresql.wal.lag"),
-				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
-				otel.SetScopeVersion("1.0"),
-			),
-			otel.MetricsTransform(
-				otel.UpdateMetric("postgresql.bgwriter.duration",
-					otel.ToggleScalarDataType,
-				),
-				otel.AddPrefix("workload.googleapis.com"),
-			),
-			otel.MetricsRemoveServiceAttributes(),
-		}},
+		Processors:    map[string][]otel.Component{"metrics": processors},
 		ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
 	}}, nil
 }

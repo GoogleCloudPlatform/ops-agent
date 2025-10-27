@@ -20,6 +20,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
 
@@ -43,9 +44,22 @@ func (r MetricsReceiverCouchdb) Pipelines(ctx context.Context) ([]otel.ReceiverP
 	if r.Endpoint == "" {
 		r.Endpoint = defaultCouchdbEndpoint
 	}
+	processors := []otel.Component{
+		otel.NormalizeSums(),
+		otel.MetricsTransform(
+			otel.AddPrefix("workload.googleapis.com"),
+		),
+		otel.TransformationMetrics(
+			otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+			otel.SetScopeVersion("1.0"),
+		),
+		otel.MetricsRemoveServiceAttributes(),
+	}
+	resource, _ := platform.FromContext(ctx).GetResource()
 	exporter := otel.OTel
 	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
 		exporter = otel.OTLP
+		processors = append(processors, otel.GCPProjectID(resource.ProjectName()))
 	}
 
 	return []otel.ReceiverPipeline{{
@@ -58,17 +72,7 @@ func (r MetricsReceiverCouchdb) Pipelines(ctx context.Context) ([]otel.ReceiverP
 				"password":            r.Password.SecretValue(),
 			},
 		},
-		Processors: map[string][]otel.Component{"metrics": {
-			otel.NormalizeSums(),
-			otel.MetricsTransform(
-				otel.AddPrefix("workload.googleapis.com"),
-			),
-			otel.TransformationMetrics(
-				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
-				otel.SetScopeVersion("1.0"),
-			),
-			otel.MetricsRemoveServiceAttributes(),
-		}},
+		Processors:    map[string][]otel.Component{"metrics": processors},
 		ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
 	}}, nil
 }
