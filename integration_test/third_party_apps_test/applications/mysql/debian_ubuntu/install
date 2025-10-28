@@ -4,10 +4,12 @@ sudo apt update
 sudo apt install -y wget
 
 wget --no-verbose https://dev.mysql.com/get/mysql-apt-config_0.8.35-1_all.deb
+sudo debconf-set-selections <<< 'mysql-apt-config mysql-apt-config/select-server select mysql-8.0'
+sudo debconf-set-selections <<< 'mysql-apt-config mysql-apt-config/select-product select Ok'
+sudo debconf-show mysql-apt-config
 sudo dpkg -i mysql-apt-config_0.8.35-1_all.deb
 sudo apt update
 sudo debconf-set-selections <<< 'mysql-community-server mysql-server/default-auth-override select Use Legacy Authentication Method (Retain MySQL 5.x Compatibility)'
-sudo debconf-set-selections <<< 'mysql-apt-config mysql-apt-config/select-server select mysql-8.0'
 
 source /etc/os-release
 
