@@ -1221,6 +1221,106 @@ COPY --from=plucky-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent
 COPY --from=plucky-build /google-cloud-ops-agent*.deb /
 COPY --from=plucky-build /google-cloud-ops-agent-plugin*.tar.gz /
 
+# ======================================
+# Build Ops Agent for ubuntu-questing
+# ======================================
+
+FROM ubuntu:questing AS questing-build-base
+ARG OPENJDK_MAJOR_VERSION
+
+RUN set -x; apt-get update && \
+		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
+		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
+		build-essential cmake bison flex file systemd-dev debhelper libsystemd-dev tzdata \
+		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip
+
+SHELL ["/bin/bash", "-c"]
+
+# Install golang
+ARG TARGETARCH
+ARG GO_VERSION
+ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
+ENV PATH="${PATH}:/usr/local/go/bin"
+
+
+FROM questing-build-base AS questing-build-otel
+WORKDIR /work
+# Download golang deps
+COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
+RUN cd submodules/opentelemetry-operations-collector && go mod download
+
+COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
+# Install gradle. The first invocation of gradlew does this
+RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
+COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
+COPY ./builds/otel.sh .
+RUN \
+    unset OTEL_TRACES_EXPORTER && \
+    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
+    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
+    ./otel.sh /work/cache/
+
+FROM questing-build-base AS questing-build-fluent-bit
+WORKDIR /work
+COPY ./submodules/fluent-bit submodules/fluent-bit
+COPY ./builds/fluent_bit.sh .
+RUN ./fluent_bit.sh /work/cache/
+
+
+FROM questing-build-base AS questing-build-systemd
+WORKDIR /work
+COPY ./systemd systemd
+COPY ./builds/systemd.sh .
+RUN ./systemd.sh /work/cache/
+
+
+FROM questing-build-base AS questing-build-golang-base
+WORKDIR /work
+COPY go.mod go.sum ./
+# Fetch dependencies
+RUN go mod download
+COPY confgenerator confgenerator
+COPY apps apps
+COPY internal internal
+
+
+FROM questing-build-golang-base AS questing-build-wrapper
+WORKDIR /work
+COPY cmd/agent_wrapper cmd/agent_wrapper
+COPY ./builds/agent_wrapper.sh .
+RUN ./agent_wrapper.sh /work/cache/
+
+
+FROM questing-build-golang-base AS questing-build
+WORKDIR /work
+COPY . /work
+
+# Run the build script once to build the ops agent engine to a cache
+RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
+WORKDIR /tmp/cache_run/golang
+RUN ./pkg/deb/build.sh &> /dev/null || true
+WORKDIR /work
+
+COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
+COPY --from=questing-build-otel /work/cache /work/cache
+COPY --from=questing-build-fluent-bit /work/cache /work/cache
+COPY --from=questing-build-systemd /work/cache /work/cache
+COPY --from=questing-build-wrapper /work/cache /work/cache
+RUN ./pkg/deb/build.sh
+
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache/
+RUN ./pkg/plugin/build.sh /work/cache questing
+
+
+FROM scratch AS questing
+COPY --from=questing-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-questing.tgz
+COPY --from=questing-build /google-cloud-ops-agent*.deb /
+COPY --from=questing-build /google-cloud-ops-agent-plugin*.tar.gz /
+
 FROM scratch
 COPY --from=centos8 /* /
 COPY --from=rockylinux9 /* /
@@ -1233,3 +1333,4 @@ COPY --from=sles15 /* /
 COPY --from=jammy /* /
 COPY --from=noble /* /
 COPY --from=plucky /* /
+COPY --from=questing /* /
