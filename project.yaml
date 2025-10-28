@@ -13,6 +13,19 @@
 # limitations under the License.
 
 targets:
+  trixie:
+    os_versions: [debian-13*]
+    package_extension:
+      deb
+    architectures:
+      x86_64:
+        test_distros:
+          representative:
+          - debian-cloud:debian-13
+      aarch64:
+        test_distros:
+          representative:
+          - debian-cloud:debian-13-arm64
   bookworm:
     os_versions: [debian-12*]
     package_extension:
