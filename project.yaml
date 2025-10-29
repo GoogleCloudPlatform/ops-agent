@@ -14,14 +14,6 @@
 
 targets:
   trixie:
-    package_extension:
-      deb
-    architectures:
-      x86_64:
-        test_distros:
-          representative:
-          - debian-cloud:debian-13
-  trixie:
     os_versions: [debian-13*]
     package_extension:
       deb
