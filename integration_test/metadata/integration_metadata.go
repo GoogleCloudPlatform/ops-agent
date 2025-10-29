@@ -44,6 +44,8 @@ type MetricSpec struct {
 	Type string `yaml:"type" validate:"required"`
 	// The value type, for example INT64.
 	ValueType string `yaml:"value_type" validate:"required,oneof=BOOL INT64 DOUBLE STRING DISTRIBUTION"`
+	// The value of the point, for example 10.0 (but can be an int64, float64, or distribution).
+	Value any
 	// The kind, for example GAUGE.
 	Kind string `yaml:"kind" validate:"required,oneof=GAUGE DELTA CUMULATIVE"`
 	// The unit of the metric.

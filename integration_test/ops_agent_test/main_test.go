@@ -3280,24 +3280,74 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 		// is normal; wait a bit longer to be on the safe side.
 		time.Sleep(3 * time.Minute)
 		window := time.Minute
+		// labels:{key:"instance_name"  value:"test-20251029-efc27-108b2153-8ac2-4205-b522-e8ac4bd2773a"}
+		//  labels:{key:"machine_type"  value:"projects/507934445817/machineTypes/e2-standard-2"}
+		//   labels:{key:"otel_scope_name"  value:"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"}
+		// 	"otel_scope_version"  value:"v0.136.0"}
+		// 	:"test_label"  value:"counter_label"
+		tests := []metadata.ExpectedMetric{
+			{
+				MetricSpec: metadata.MetricSpec{
+					Type:               "prometheus.googleapis.com/test_gauge_value/gauge",
+					Kind:               metric.MetricDescriptor_GAUGE.String(),
+					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+					Value:              789.0,
+					MonitoredResources: []string{"gce_instance"},
+					Labels: []*metadata.MetricLabel{
+						{
+							Name:       "test_label",
+							ValueRegex: "gauge_label",
+						},
+					},
+				},
+				Optional: false,
+			},
+			// {
+			// 	MetricSpec: metadata.MetricSpec{
+			// 		Type:               "prometheus.googleapis.com/test_counter_value/counter",
+			// 		Kind:               metric.MetricDescriptor_GAUGE.String(),
+			// 		ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+			// 		Value:              0.0,
+			// 		MonitoredResources: []string{"gce_instance"},
+			// 		Labels: []*metadata.MetricLabel{
+			// 			{
+			// 				Name:       "otel_scope_name",
+			// 				ValueRegex: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver",
+			// 			},
+			// 			{
+			// 				Name:       "test_label",
+			// 				ValueRegex: "counter_label",
+			// 			},
+			// 		},
+			// 	},
+			// 	Optional: false,
+			// },
+			// {
+			// 	MetricSpec: metadata.MetricSpec{
+			// 		Type:               "prometheus.googleapis.com/test_untyped_value/unknown",
+			// 		Kind:               metric.MetricDescriptor_GAUGE.String(),
+			// 		ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+			// 		Value:              56.0,
+			// 		MonitoredResources: []string{"gce_instance"},
+			// 	},
 
-		tests := []prometheusMetricTest{
-			{"prometheus.googleapis.com/test_gauge_value/gauge", nil,
-				metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 789.0},
-			// Since we are sending the same number at every time point,
-			// the cumulative counter metric will return 0 as no change in values
-			{"prometheus.googleapis.com/test_counter_value/counter", nil,
-				metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 0.0},
-			// Untyped type - GCM will have untyped metrics double written as a gauge AND a cumulative
-			{"prometheus.googleapis.com/test_untyped_value/unknown", nil,
-				metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 56.0},
-			{"prometheus.googleapis.com/test_untyped_value/unknown:counter", nil,
-				metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 0.0},
+			// 	Optional: false,
+			// },
+			// {
+			// 	MetricSpec: metadata.MetricSpec{
+			// 		Type:               "prometheus.googleapis.com/test_untyped_value/unknown:counter",
+			// 		Kind:               metric.MetricDescriptor_CUMULATIVE.String(),
+			// 		ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+			// 		Value:              0.0,
+			// 		MonitoredResources: []string{"gce_instance"},
+			// 	},
+			// 	Optional: false,
+			// },
 		}
 
 		var multiErr error
 		for _, test := range tests {
-			multiErr = multierr.Append(multiErr, assertPrometheusMetric(ctx, logger, vm, window, test))
+			multiErr = multierr.Append(multiErr, assertExpectedMetric(ctx, logger, vm, window, &test, nil))
 		}
 		if multiErr != nil {
 			t.Error(multiErr)
@@ -3381,22 +3431,54 @@ func TestPrometheusUntypedMetrics(t *testing.T) {
 			remote: path.Join(remoteWorkDir, "data"),
 		},
 		check: func(ctx context.Context, logger *log.Logger, vm *gce.VM, window time.Duration) error {
-			tests := []prometheusMetricTest{
-				{"prometheus.googleapis.com/explicit_untyped_metric/unknown", nil,
-					metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 1.0},
-				{"prometheus.googleapis.com/missing_type_hint_metric/unknown", nil,
-					metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 10.0},
-				// Since we are sending the same number at every time point,
-				// the cumulative counter metric will return 0 as no change in values
-				{"prometheus.googleapis.com/explicit_untyped_metric/unknown:counter", nil,
-					metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 0.0},
-				{"prometheus.googleapis.com/missing_type_hint_metric/unknown:counter", nil,
-					metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 0.0},
+			tests := []metadata.ExpectedMetric{
+				{
+					MetricSpec: metadata.MetricSpec{
+						Type:               "prometheus.googleapis.com/explicit_untyped_metric/unknown",
+						Kind:               metric.MetricDescriptor_GAUGE.String(),
+						ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+						Value:              1.0,
+						MonitoredResources: []string{"gce_instance"},
+					},
+					Optional: false,
+				},
+				{
+					MetricSpec: metadata.MetricSpec{
+						Type:               "prometheus.googleapis.com/missing_type_hint_metric/unknown",
+						Kind:               metric.MetricDescriptor_GAUGE.String(),
+						ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+						Value:              10.0,
+						MonitoredResources: []string{"gce_instance"},
+					},
+					Optional: false,
+				},
+				{
+					MetricSpec: metadata.MetricSpec{
+						// Since we are sending the same number at every time point,
+						// the cumulative counter metric will return 0 as no change in values
+						Type:               "prometheus.googleapis.com/explicit_untyped_metric/unknown:counter",
+						Kind:               metric.MetricDescriptor_CUMULATIVE.String(),
+						ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+						Value:              0.0,
+						MonitoredResources: []string{"gce_instance"},
+					},
+					Optional: false,
+				},
+				{
+					MetricSpec: metadata.MetricSpec{
+						Type:               "prometheus.googleapis.com/missing_type_hint_metric/unknown:counter",
+						Kind:               metric.MetricDescriptor_CUMULATIVE.String(),
+						ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+						Value:              0.0,
+						MonitoredResources: []string{"gce_instance"},
+					},
+					Optional: false,
+				},
 			}
 
 			var multiErr error
 			for _, test := range tests {
-				multiErr = multierr.Append(multiErr, assertPrometheusMetric(ctx, logger, vm, window, test))
+				multiErr = multierr.Append(multiErr, assertExpectedMetric(ctx, logger, vm, window, &test, nil))
 			}
 			if multiErr != nil {
 				t.Error(multiErr)
@@ -3442,16 +3524,32 @@ func TestPrometheusUntypedMetricsReset(t *testing.T) {
 			remote: path.Join(remoteWorkDir, "data"),
 		},
 		check: func(ctx context.Context, logger *log.Logger, vm *gce.VM, window time.Duration) error {
-			tests := []prometheusMetricTest{
-				{"prometheus.googleapis.com/untyped_metric/unknown", nil,
-					metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 10.0},
-				{"prometheus.googleapis.com/untyped_metric/unknown:counter", nil,
-					metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 0.0},
-			}
+			tests := []metadata.ExpectedMetric{
+				{
+					MetricSpec: metadata.MetricSpec{
+						Type:               "prometheus.googleapis.com/untyped_metric/unknown",
+						Kind:               metric.MetricDescriptor_GAUGE.String(),
+						ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+						Value:              10.0,
+						MonitoredResources: []string{"gce_instance"},
+					},
 
+					Optional: false,
+				},
+				{
+					MetricSpec: metadata.MetricSpec{
+						Type:               "prometheus.googleapis.com/untyped_metric/unknown:counter",
+						Kind:               metric.MetricDescriptor_CUMULATIVE.String(),
+						ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+						Value:              0.0,
+						MonitoredResources: []string{"gce_instance"},
+					},
+					Optional: false,
+				},
+			}
 			var multiErr error
 			for _, test := range tests {
-				multiErr = multierr.Append(multiErr, assertPrometheusMetric(ctx, logger, vm, window, test))
+				multiErr = multierr.Append(multiErr, assertExpectedMetric(ctx, logger, vm, window, &test, nil))
 			}
 			if multiErr != nil {
 				t.Error(multiErr)
@@ -3467,16 +3565,31 @@ func TestPrometheusUntypedMetricsReset(t *testing.T) {
 			remote: path.Join(remoteWorkDir, "data"),
 		},
 		check: func(ctx context.Context, logger *log.Logger, vm *gce.VM, window time.Duration) error {
-			tests := []prometheusMetricTest{
-				{"prometheus.googleapis.com/untyped_metric/unknown", nil,
-					metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 100.0},
-				{"prometheus.googleapis.com/untyped_metric/unknown:counter", nil,
-					metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 90.0},
+			tests := []metadata.ExpectedMetric{
+				{
+					MetricSpec: metadata.MetricSpec{
+						Type:               "prometheus.googleapis.com/untyped_metric/unknown",
+						Kind:               metric.MetricDescriptor_GAUGE.String(),
+						ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+						Value:              100.0,
+						MonitoredResources: []string{"gce_instance"},
+					},
+					Optional: false,
+				},
+				{
+					MetricSpec: metadata.MetricSpec{
+						Type:               "prometheus.googleapis.com/untyped_metric/unknown:counter",
+						Kind:               metric.MetricDescriptor_CUMULATIVE.String(),
+						ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+						Value:              90.0,
+						MonitoredResources: []string{"gce_instance"},
+					},
+					Optional: false,
+				},
 			}
-
 			var multiErr error
 			for _, test := range tests {
-				multiErr = multierr.Append(multiErr, assertPrometheusMetric(ctx, logger, vm, window, test))
+				multiErr = multierr.Append(multiErr, assertExpectedMetric(ctx, logger, vm, window, &test, nil))
 			}
 			if multiErr != nil {
 				t.Error(multiErr)
@@ -3493,16 +3606,31 @@ func TestPrometheusUntypedMetricsReset(t *testing.T) {
 			remote: path.Join(remoteWorkDir, "data"),
 		},
 		check: func(ctx context.Context, logger *log.Logger, vm *gce.VM, window time.Duration) error {
-			tests := []prometheusMetricTest{
-				{"prometheus.googleapis.com/untyped_metric/unknown", nil,
-					metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 10.0},
-				{"prometheus.googleapis.com/untyped_metric/unknown:counter", nil,
-					metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 0.0},
+			tests := []metadata.ExpectedMetric{
+				{
+					MetricSpec: metadata.MetricSpec{
+						Type:               "prometheus.googleapis.com/untyped_metric/unknown",
+						Kind:               metric.MetricDescriptor_GAUGE.String(),
+						ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+						Value:              10.0,
+						MonitoredResources: []string{"gce_instance"},
+					},
+					Optional: false,
+				},
+				{
+					MetricSpec: metadata.MetricSpec{
+						Type:               "prometheus.googleapis.com/untyped_metric/unknown:counter",
+						Kind:               metric.MetricDescriptor_CUMULATIVE.String(),
+						ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+						Value:              0.0,
+						MonitoredResources: []string{"gce_instance"},
+					},
+					Optional: false,
+				},
 			}
-
 			var multiErr error
 			for _, test := range tests {
-				multiErr = multierr.Append(multiErr, assertPrometheusMetric(ctx, logger, vm, window, test))
+				multiErr = multierr.Append(multiErr, assertExpectedMetric(ctx, logger, vm, window, &test, nil))
 			}
 			if multiErr != nil {
 				t.Error(multiErr)
@@ -3516,16 +3644,32 @@ func TestPrometheusUntypedMetricsReset(t *testing.T) {
 			remote: path.Join(remoteWorkDir, "data"),
 		},
 		check: func(ctx context.Context, logger *log.Logger, vm *gce.VM, window time.Duration) error {
-			tests := []prometheusMetricTest{
-				{"prometheus.googleapis.com/untyped_metric/unknown", nil,
-					metric.MetricDescriptor_GAUGE, metric.MetricDescriptor_DOUBLE, 1000.0},
-				{"prometheus.googleapis.com/untyped_metric/unknown:counter", nil,
-					metric.MetricDescriptor_CUMULATIVE, metric.MetricDescriptor_DOUBLE, 990.0},
+			tests := []metadata.ExpectedMetric{
+				{
+					MetricSpec: metadata.MetricSpec{
+						Type:               "prometheus.googleapis.com/untyped_metric/unknown",
+						Kind:               metric.MetricDescriptor_GAUGE.String(),
+						ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+						Value:              1000.0,
+						MonitoredResources: []string{"gce_instance"},
+					},
+					Optional: false,
+				},
+				{
+					MetricSpec: metadata.MetricSpec{
+						Type:               "prometheus.googleapis.com/untyped_metric/unknown:counter",
+						Kind:               metric.MetricDescriptor_CUMULATIVE.String(),
+						ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+						Value:              990.0,
+						MonitoredResources: []string{"gce_instance"},
+					},
+					Optional: false,
+				},
 			}
 
 			var multiErr error
 			for _, test := range tests {
-				multiErr = multierr.Append(multiErr, assertPrometheusMetric(ctx, logger, vm, window, test))
+				multiErr = multierr.Append(multiErr, assertExpectedMetric(ctx, logger, vm, window, &test, nil))
 			}
 			if multiErr != nil {
 				t.Error(multiErr)
@@ -3828,14 +3972,17 @@ func testPrometheusMetrics(t *testing.T, opsAgentConfig string, testChecks []moc
 // the expected Prometheus histogram metric point
 func assertPrometheusHistogramMetric(ctx context.Context, logger *log.Logger, vm *gce.VM, name string, window time.Duration, expected *distribution.Distribution) error {
 	// GCM map Prometheus histogram to cumulative distribution
-	test := prometheusMetricTest{
-		MetricName:         fmt.Sprintf("prometheus.googleapis.com/%s/histogram", name),
-		ExtraFilter:        nil,
-		ExpectedMetricKind: metric.MetricDescriptor_CUMULATIVE,
-		ExpectedValueType:  metric.MetricDescriptor_DISTRIBUTION,
-		ExpectedValue:      expected,
+	test := metadata.ExpectedMetric{
+		MetricSpec: metadata.MetricSpec{
+			Type:               fmt.Sprintf("prometheus.googleapis.com/%s/histogram", name),
+			Kind:               metric.MetricDescriptor_CUMULATIVE.String(),
+			ValueType:          metric.MetricDescriptor_DISTRIBUTION.String(),
+			Value:              expected,
+			MonitoredResources: []string{"gce_instance"},
+		},
+		Optional: false,
 	}
-	return assertPrometheusMetric(ctx, logger, vm, window, test)
+	return assertExpectedMetric(ctx, logger, vm, window, &test, nil)
 }
 
 // A sample of the Prometheus summary metric with name 'test_summary':
@@ -3858,101 +4005,108 @@ func assertPrometheusSummaryMetric(ctx context.Context, logger *log.Logger, vm *
 	// There is no direct mapping of Prometheus summary type. Instead, GCM
 	// would store the quantiles into prometheus.googleapis.com/NAME/summary
 	// with the actual quantile as a metric label, of type gauge
+
 	for quantile, value := range expected.Quantiles {
-		test := prometheusMetricTest{
-			MetricName:         fmt.Sprintf("prometheus.googleapis.com/%s/summary", name),
-			ExtraFilter:        []string{fmt.Sprintf(`metric.labels.quantile = "%s"`, quantile)},
-			ExpectedMetricKind: metric.MetricDescriptor_GAUGE,
-			ExpectedValueType:  metric.MetricDescriptor_DOUBLE,
-			ExpectedValue:      value,
+		test := metadata.ExpectedMetric{
+			MetricSpec: metadata.MetricSpec{
+				Type:               fmt.Sprintf("prometheus.googleapis.com/%s/summary", name),
+				Value:              value,
+				ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+				Kind:               metric.MetricDescriptor_GAUGE.String(),
+				MonitoredResources: []string{"gce_instance"},
+			},
+			Optional: false,
 		}
-		multiErr = multierr.Append(multiErr, assertPrometheusMetric(ctx, logger, vm, window, test))
+		extraFilters := []string{fmt.Sprintf(`metric.labels.quantile = "%s"`, quantile)}
+		multiErr = multierr.Append(multiErr, assertExpectedMetric(ctx, logger, vm, window, &test, extraFilters))
 	}
 	// The count value in Prometheus summary goes to
 	// prometheus.googleapis.com/NAME_count/summary of type cumulative
-	testCount := prometheusMetricTest{
-		MetricName:         fmt.Sprintf("prometheus.googleapis.com/%s_count/summary", name),
-		ExtraFilter:        nil,
-		ExpectedMetricKind: metric.MetricDescriptor_CUMULATIVE,
-		ExpectedValueType:  metric.MetricDescriptor_DOUBLE,
-		ExpectedValue:      expected.Count,
+	testCount := metadata.ExpectedMetric{
+		MetricSpec: metadata.MetricSpec{
+			Type:               fmt.Sprintf("prometheus.googleapis.com/%s_count/summary", name),
+			Value:              expected.Count,
+			ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+			Kind:               metric.MetricDescriptor_CUMULATIVE.String(),
+			MonitoredResources: []string{"gce_instance"},
+		},
+		Optional: false,
 	}
-	multiErr = multierr.Append(multiErr, assertPrometheusMetric(ctx, logger, vm, window, testCount))
+	multiErr = multierr.Append(multiErr, assertExpectedMetric(ctx, logger, vm, window, &testCount, nil))
 	// The sum value in Prometheus summary goes to
 	// prometheus.googleapis.com/NAME_sum/summary:counter of type cumulative
-	testSummary := prometheusMetricTest{
-		MetricName:         fmt.Sprintf("prometheus.googleapis.com/%s_sum/summary:counter", name),
-		ExtraFilter:        nil,
-		ExpectedMetricKind: metric.MetricDescriptor_CUMULATIVE,
-		ExpectedValueType:  metric.MetricDescriptor_DOUBLE,
-		ExpectedValue:      expected.Sum,
+	testSummary := metadata.ExpectedMetric{
+		MetricSpec: metadata.MetricSpec{
+			Type:               fmt.Sprintf("prometheus.googleapis.com/%s_sum/summary:counter", name),
+			Value:              expected.Sum,
+			ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+			Kind:               metric.MetricDescriptor_CUMULATIVE.String(),
+			MonitoredResources: []string{"gce_instance"},
+		},
+		Optional: false,
 	}
-	multiErr = multierr.Append(multiErr, assertPrometheusMetric(ctx, logger, vm, window, testSummary))
+	multiErr = multierr.Append(multiErr, assertExpectedMetric(ctx, logger, vm, window, &testSummary, nil))
 	return multiErr
 }
 
-// prometheusMetricTest specify a test to use 'MetricName' and 'ExtraFilter' to
-// get the metric and compare with the expected kind, type and value
-type prometheusMetricTest struct {
-	MetricName         string
-	ExtraFilter        []string
-	ExpectedMetricKind metric.MetricDescriptor_MetricKind
-	ExpectedValueType  metric.MetricDescriptor_ValueType
-	ExpectedValue      any
+func waitForAndAssertMetric(ctx context.Context, logger *log.Logger, vm *gce.VM, window time.Duration, metric *metadata.ExpectedMetric) error {
+	series, err := gce.WaitForMetric(ctx, logger, vm, metric.Type, window, nil, false)
+	if err != nil {
+		// Optional metrics can be missing
+		if metric.Optional && gce.IsExhaustedRetriesMetricError(err) {
+			return nil
+		}
+		return err
+	}
+	return metadata.AssertMetric(metric, series)
 }
 
-// assertPrometheusMetric with a given test, wait for the metric, and then use
+// assertExpectedMetric with a given test, wait for the metric, and then use
 // the latest point as the actual value and compare with the expected value
-func assertPrometheusMetric(ctx context.Context, logger *log.Logger, vm *gce.VM, window time.Duration, test prometheusMetricTest) error {
+func assertExpectedMetric(ctx context.Context, logger *log.Logger, vm *gce.VM, window time.Duration, test *metadata.ExpectedMetric, extraFilters []string) error {
+	waitForAndAssertMetric(ctx, logger, vm, window, test)
 	var multiErr error
-	if pts, err := gce.WaitForMetric(ctx, logger, vm, test.MetricName, window, test.ExtraFilter, true); err != nil {
+	if pts, err := gce.WaitForMetric(ctx, logger, vm, test.Type, window, extraFilters, true); err != nil {
 		multiErr = multierr.Append(multiErr, err)
 	} else {
-		if pts.MetricKind != test.ExpectedMetricKind {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has metric kind %s; expected kind %s", test.MetricName, pts.MetricKind, test.ExpectedMetricKind))
-		}
-		if pts.ValueType != test.ExpectedValueType {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has value type %s; expected type %s", test.MetricName, pts.ValueType, test.ExpectedValueType))
-		}
 		if len(pts.Points) == 0 {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has at least one data points in the time windows", test.MetricName))
+			multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has at least one data points in the time windows", test.Type))
 		} else {
 			// Use the last/latest point
 			actual := pts.Points[len(pts.Points)-1]
-			switch test.ExpectedValueType {
-			case metric.MetricDescriptor_DOUBLE:
-				expectedValue := test.ExpectedValue.(float64)
+			switch test.ValueType {
+			case metric.MetricDescriptor_DOUBLE.String():
+				expectedValue := test.Value.(float64)
 				actualValue := actual.Value.GetDoubleValue()
 				if actualValue != expectedValue {
-					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has value %f; expected %f", test.MetricName, actualValue, expectedValue))
+					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has value %f; expected %f", test.Type, actualValue, expectedValue))
 				}
-			case metric.MetricDescriptor_DISTRIBUTION:
-				expectedValue := test.ExpectedValue.(*distribution.Distribution)
+			case metric.MetricDescriptor_DISTRIBUTION.String():
+				expectedValue := test.Value.(*distribution.Distribution)
 				actualValue := actual.Value.GetDistributionValue()
 				if !slices.Equal(actualValue.GetBucketOptions().GetExplicitBuckets().GetBounds(), expectedValue.GetBucketOptions().GetExplicitBuckets().GetBounds()) {
 					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has buckets bounds %v; expected %v",
-						test.MetricName, actualValue.GetBucketOptions().GetExplicitBuckets().GetBounds(), expectedValue.GetBucketOptions().GetExplicitBuckets().GetBounds()))
+						test.Type, actualValue.GetBucketOptions().GetExplicitBuckets().GetBounds(), expectedValue.GetBucketOptions().GetExplicitBuckets().GetBounds()))
 				}
 				if !slices.Equal(actualValue.GetBucketCounts(), expectedValue.GetBucketCounts()) {
 					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has buckets with counts %v; expected %v",
-						test.MetricName, actualValue.GetBucketCounts(), expectedValue.GetBucketCounts()))
+						test.Type, actualValue.GetBucketCounts(), expectedValue.GetBucketCounts()))
 				}
 				if actualValue.Count != expectedValue.Count {
 					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has count %d; expected %d",
-						test.MetricName, actualValue.Count, expectedValue.Count))
+						test.Type, actualValue.Count, expectedValue.Count))
 				}
 				if actualValue.Mean != expectedValue.Mean {
 					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has mean %f; expected %f",
-						test.MetricName, actualValue.Mean, expectedValue.Mean))
+						test.Type, actualValue.Mean, expectedValue.Mean))
 				}
 				if actualValue.SumOfSquaredDeviation != expectedValue.SumOfSquaredDeviation {
 					multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has sum of squared deviation %f; expected %f",
-						test.MetricName, actualValue.SumOfSquaredDeviation, expectedValue.SumOfSquaredDeviation))
+						test.Type, actualValue.SumOfSquaredDeviation, expectedValue.SumOfSquaredDeviation))
 				}
 			default:
-				multiErr = multierr.Append(multiErr, fmt.Errorf("Value check for metric with type %s is not implementated", test.ExpectedValueType))
+				multiErr = multierr.Append(multiErr, fmt.Errorf("Value check for metric with type %s is not implementated", test.ValueType))
 			}
-
 		}
 	}
 	return multiErr
