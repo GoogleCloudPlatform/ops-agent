@@ -142,7 +142,6 @@ func (r MetricsReceiverElasticsearch) disableIndexMetrics(metricsConfig map[stri
 			"enabled": false,
 		}
 	}
-
 }
 
 func init() {
@@ -156,69 +155,92 @@ func (LoggingProcessorMacroElasticsearchJson) Type() string {
 	return "elasticsearch_json"
 }
 
+func (p LoggingProcessorMacroElasticsearchJson) parseMultilineRegex() confgenerator.LoggingProcessorParseMultilineRegex {
+	// When Elasticsearch emits stack traces, the json log may be spread across multiple lines,
+	// so we need this multiline parsing to properly parse the record.
+	// Example multiline log record:
+	// {"type": "server", "timestamp": "2022-01-20T15:46:00,131Z", "level": "ERROR", "component": "o.e.b.ElasticsearchUncaughtExceptionHandler", "cluster.name": "elasticsearch", "node.name": "brandon-testing-elasticsearch", "message": "uncaught exception in thread [main]",
+	// "stacktrace": ["org.elasticsearch.bootstrap.StartupException: java.lang.IllegalArgumentException: unknown setting [invalid.key] please check that any required plugins are installed, or check the breaking changes documentation for removed settings",
+	// -- snip --
+	// "at org.elasticsearch.bootstrap.Elasticsearch.init(Elasticsearch.java:166) ~[elasticsearch-7.16.2.jar:7.16.2]",
+	// "... 6 more"] }
+	return confgenerator.LoggingProcessorParseMultilineRegex{
+		Rules: []confgenerator.MultilineRule{
+			{
+				StateName: "start_state",
+				NextState: "cont",
+				Regex:     `^{.*`,
+			},
+			{
+				StateName: "cont",
+				NextState: "cont",
+				Regex:     `^[^{].*[,}]$`,
+			},
+		},
+	}
+}
+
 func (p LoggingProcessorMacroElasticsearchJson) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
-	// sample log line:
+	// sample log line (ES 7.x):
 	// {"type": "server", "timestamp": "2022-01-17T18:31:47,365Z", "level": "INFO", "component": "o.e.n.Node", "cluster.name": "elasticsearch", "node.name": "ubuntu-jammy", "message": "initialized" }
+	// sample log line (ES 8.x):
+	// {"@timestamp":"2025-09-19T02:20:17.920Z", "log.level": "INFO", "message":"initialized", "ecs.version": "1.2.0","service.name":"ES_ECS","event.dataset":"elasticsearch.server","process.thread.name":"main","log.logger":"org.elasticsearch.node.Node","elasticsearch.node.name":"es-test-3","elasticsearch.cluster.name":"elasticsearch"}
 	// Logs are formatted based on configuration (log4j);
 	// See https://artifacts.elastic.co/javadoc/org/elasticsearch/elasticsearch/7.16.2/org/elasticsearch/common/logging/ESJsonLayout.html
 	// for general layout, and https://www.elastic.co/guide/en/elasticsearch/reference/current/logging.html for general configuration of logging
 	processors := []confgenerator.InternalLoggingProcessor{
-		// When Elasticsearch emits stack traces, the json log may be spread across multiple lines,
-		// so we need this multiline parsing to properly parse the record.
-		// Example multiline log record:
-		// {"type": "server", "timestamp": "2022-01-20T15:46:00,131Z", "level": "ERROR", "component": "o.e.b.ElasticsearchUncaughtExceptionHandler", "cluster.name": "elasticsearch", "node.name": "brandon-testing-elasticsearch", "message": "uncaught exception in thread [main]",
-		// "stacktrace": ["org.elasticsearch.bootstrap.StartupException: java.lang.IllegalArgumentException: unknown setting [invalid.key] please check that any required plugins are installed, or check the breaking changes documentation for removed settings",
-		// -- snip --
-		// "at org.elasticsearch.bootstrap.Elasticsearch.init(Elasticsearch.java:166) ~[elasticsearch-7.16.2.jar:7.16.2]",
-		// "... 6 more"] }
-		confgenerator.LoggingProcessorParseMultilineRegex{
-			Rules: []confgenerator.MultilineRule{
-				{
-					StateName: "start_state",
-					NextState: "cont",
-					Regex:     `^{.*`,
-				},
-				{
-					StateName: "cont",
-					NextState: "cont",
-					Regex:     `^[^{].*[,}]$`,
-				},
-			},
-		},
-		confgenerator.LoggingProcessorParseJson{
+		p.parseMultilineRegex(),
+
+		confgenerator.LoggingProcessorParseJson{},
+		confgenerator.LoggingProcessorParseRegex{
+			Regex: `(?<temp_time_key>.*)`,
+			Field: "timestamp", // Custom ES 7.x format
 			ParserShared: confgenerator.ParserShared{
-				TimeKey:    "timestamp",
+				TimeKey:    "temp_time_key",
 				TimeFormat: "%Y-%m-%dT%H:%M:%S,%L%z",
 			},
 		},
-		p.severityParser(),
-	}
-
-	processors = append(processors, p.nestingProcessors()...)
-
-	return processors
-}
-
-func (p LoggingProcessorMacroElasticsearchJson) severityParser() confgenerator.InternalLoggingProcessor {
-	return confgenerator.LoggingProcessorModifyFields{
-		Fields: map[string]*confgenerator.ModifyField{
-			"severity": {
-				CopyFrom: "jsonPayload.level",
-				MapValues: map[string]string{
-					"TRACE":       "DEBUG",
-					"DEBUG":       "DEBUG",
-					"INFO":        "INFO",
-					"WARN":        "WARNING",
-					"DEPRECATION": "WARNING",
-					"ERROR":       "ERROR",
-					"CRITICAL":    "ERROR",
-					"FATAL":       "FATAL",
-				},
-				MapValuesExclusive: true,
+		confgenerator.LoggingProcessorParseRegex{
+			Regex: `(?<temp_time_key>.*)`,
+			Field: "@timestamp", // ECS format
+			ParserShared: confgenerator.ParserShared{
+				TimeKey:    "temp_time_key",
+				TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
 			},
-			InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+		},
+		confgenerator.LoggingProcessorParseRegex{
+			Regex:       `(?<temp_level>.*)`,
+			Field:       "log.level", // ECS format
+			PreserveKey: true,
+		},
+		confgenerator.LoggingProcessorParseRegex{
+			Regex:       `(?<temp_level>.*)`,
+			Field:       "level", // Custom ES 7.x format
+			PreserveKey: true,
+		},
+
+		confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				"severity": {
+					MoveFrom: "jsonPayload.temp_level",
+					MapValues: map[string]string{
+						"TRACE":       "DEBUG",
+						"DEBUG":       "DEBUG",
+						"INFO":        "INFO",
+						"WARN":        "WARNING",
+						"DEPRECATION": "WARNING",
+						"ERROR":       "ERROR",
+						"CRITICAL":    "ERROR",
+						"FATAL":       "FATAL",
+					},
+					MapValuesExclusive: true,
+				},
+				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+			},
 		},
 	}
+	processors = append(processors, p.nestingProcessors()...)
+	return processors
 }
 
 func (p LoggingProcessorMacroElasticsearchJson) nestingProcessors() []confgenerator.InternalLoggingProcessor {
@@ -240,6 +262,7 @@ func (p LoggingProcessorMacroElasticsearchJson) nestingProcessors() []confgenera
 		"host",
 		"apikey",
 		"cluster",
+		"log",
 	}
 
 	processors := make([]confgenerator.InternalLoggingProcessor, 0, len(prefixes))

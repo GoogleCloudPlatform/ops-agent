@@ -35,6 +35,8 @@ platforms_to_skip:
   # MySQL is not currently supported on various distros.
   - debian-cloud:debian-12
   - debian-cloud:debian-12-arm64
+  - debian-cloud:debian-13
+  - debian-cloud:debian-13-arm64
   - suse-cloud:sles-12
   - suse-cloud:sles-15-arm64
   - suse-sap-cloud:sles-12-sp5-sap

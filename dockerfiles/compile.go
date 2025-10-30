@@ -143,6 +143,18 @@ var dockerfileArguments = []templateArguments{
 		package_extension: "deb",
 	},
 	{
+		from_image:  "debian:trixie",
+		target_name: "trixie",
+		install_packages: `RUN set -x; apt-get update && \
+		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
+		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
+		build-essential cmake bison flex file systemd-dev libsystemd-dev \
+		devscripts cdbs pkg-config zip` + installJava,
+		package_build:     "RUN ./pkg/deb/build.sh",
+		tar_distro_name:   "debian-trixie",
+		package_extension: "deb",
+	},
+	{
 		// Use OpenSUSE Leap 42.3 to emulate SLES 12:
 		//https://en.opensuse.org/openSUSE:Build_Service_cross_distribution_howto#Detect_a_distribution_flavor_for_special_code
 		from_image:  "opensuse/archive:42.3",
