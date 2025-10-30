@@ -771,7 +771,7 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 
 func TestCustomLogFile(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		logPath := logPathForImage(vm.ImageSpec)
@@ -845,7 +845,7 @@ func TestPluginGetStatusReturnsHealthyStatusOnSuccessfulOpsAgentStart(t *testing
 
 }
 
-func TestPluginGetStatusReturnsUnhealthyStatusOnSubAgentTermination(t *testing.T) {
+func TestPluginGetStatusReturnsRPCErrorOnSubAgentTerminationWithNonZeroCode(t *testing.T) {
 	t.Parallel()
 	if !gce.IsOpsAgentUAPPlugin() {
 		t.SkipNow()
@@ -868,7 +868,7 @@ func TestPluginGetStatusReturnsUnhealthyStatusOnSubAgentTermination(t *testing.T
 			t.Error("expected the plugin to report that the Ops Agent is running")
 		}
 
-		_, processName, err := fetchPIDAndProcessName(ctx, logger, vm, []string{"fluent-bit"})
+		_, processName, err := fetchPIDAndProcessName(ctx, logger, vm, metricsAgentProcessNamesForImage(vm.ImageSpec))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -881,16 +881,13 @@ func TestPluginGetStatusReturnsUnhealthyStatusOnSubAgentTermination(t *testing.T
 		time.Sleep(10 * time.Second)
 
 		cmdOut, err = gce.RunRemotely(ctx, logger, vm, agents.GetUAPPluginStatusForImage(vm.ImageSpec))
-		if err != nil {
-			t.Fatal(err)
+
+		// A subagent termination should terminate the entire Ops Agent. In this case, the plugin GetStatus() call should return an RPC error.
+		if err == nil {
+			t.Errorf("expected the plugin GetStatus() call to return an error, got nil")
 		}
 
-		// A subagent termination should terminate the entire Ops Agent. In this case, the plugin is expected to return a non-healthy status for the Ops Agent.
-		if !strings.Contains(cmdOut.Stdout, "\"code\": 1") {
-			t.Error("expected the plugin to report that the Ops Agent is not running")
-		}
-
-		pid, _, err := fetchPIDAndProcessName(ctx, logger, vm, metricsAgentProcessNamesForImage(vm.ImageSpec))
+		pid, _, err := fetchPIDAndProcessName(ctx, logger, vm, []string{"fluent-bit"})
 		if pid != "" {
 			t.Error("expected the plugin to terminate the other subagent when one crashes")
 		}
@@ -1244,7 +1241,7 @@ func TestInvalidStringConfigReceivedFromUAP(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if !strings.Contains(cmdOut.Stdout, "The Ops Agent Plugin is not running.") {
+		if !strings.Contains(cmdOut.Stdout, "failed to validate the custom Ops Agent config") {
 			t.Error("the UAP plugin should not have started the Ops Agent with an invalid config")
 		}
 	})
@@ -1482,7 +1479,7 @@ func TestSyslogUDP(t *testing.T) {
 
 func TestExcludeLogs(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
@@ -1522,7 +1519,7 @@ func TestExcludeLogs(t *testing.T) {
         processors: [json, exclude2]
 `, file1, file2)
 
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1571,7 +1568,7 @@ func TestExcludeLogs(t *testing.T) {
 
 func TestExcludeLogsParseJsonOrder(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
@@ -1621,7 +1618,7 @@ func TestExcludeLogsParseJsonOrder(t *testing.T) {
         exporters: [google]
 `, file1, file2)
 
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1650,9 +1647,9 @@ func TestExcludeLogsParseJsonOrder(t *testing.T) {
 
 func TestExcludeLogsModifyFieldsOrder(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
-		ctx, logger, vm := agents.CommonSetup(t, imageSpec)
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
 		file2 := fmt.Sprintf("%s_2", logPathForImage(vm.ImageSpec))
 		file3 := fmt.Sprintf("%s_3", logPathForImage(vm.ImageSpec))
@@ -1688,17 +1685,17 @@ func TestExcludeLogsModifyFieldsOrder(t *testing.T) {
     exclude_trace:
       type: exclude_logs
       match_any:
-      - trace =~ "value1"
+      - trace =~ "deadcafedeadc0defacefeedb0bacafe"
     exclude_span_id:
       type: exclude_logs
       match_any:
-      - spanId =~ "value2"
+      - spanId =~ "facefeedb0bacafe"
     modify:
       type: modify_fields
       fields:
         trace:
           move_from: jsonPayload.none
-          default_value: value1
+          default_value: deadcafedeadc0defacefeedb0bacafe
     json:
       type: parse_json
   service:
@@ -1714,25 +1711,25 @@ func TestExcludeLogsModifyFieldsOrder(t *testing.T) {
         processors: [json, exclude_trace, modify]
 `, file1, file2, file3)
 
-		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, config); err != nil {
+		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
-		line := `{"logging.googleapis.com/spanId":"value2", "query_field": "value"}` + "\n"
+		line := `{"logging.googleapis.com/spanId":"facefeedb0bacafe", "query_field": "value"}` + "\n"
 		for _, file := range []string{file1, file2, file3} {
-			if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(line), file); err != nil {
+			if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file); err != nil {
 				t.Fatalf("error uploading log: %v", err)
 			}
 		}
 
 		// Expect to see the log included in p3 but not p1 and p2.
-		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f3", time.Hour, `jsonPayload.query_field="value"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger, vm, "f3", time.Hour, `jsonPayload.query_field="value"`); err != nil {
 			t.Error(err)
 		}
 		// Give the excluded log some time to show up.
 		time.Sleep(60 * time.Second)
 		for _, name := range []string{"f1", "f2"} {
-			_, err := gce.QueryLog(ctx, logger.ToMainLog(), vm, name, time.Hour, `jsonPayload.query_field="value"`, 5)
+			_, err := gce.QueryLog(ctx, logger, vm, name, time.Hour, `jsonPayload.query_field="value"`, 5)
 			if err == nil {
 				t.Error("expected log to be excluded but was included")
 			} else if !strings.Contains(err.Error(), "not found, exhausted retries") {
@@ -1744,7 +1741,7 @@ func TestExcludeLogsModifyFieldsOrder(t *testing.T) {
 
 func TestModifyFields(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
@@ -1805,17 +1802,17 @@ func TestModifyFields(t *testing.T) {
         exporters: [google]
 `, file1)
 
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
-		line := `{"field":"value", "default_present":"original", "logging.googleapis.com/labels": {"label1":"value"}, "trace":"trace_value", "spanId": "span_id_value"}` + "\n"
+		line := `{"field":"value", "default_present":"original", "logging.googleapis.com/labels": {"label1":"value"}, "trace":"deadcafedeadc0defacefeedb0bacafe", "spanId": "facefeedb0bacafe"}` + "\n"
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), file1); err != nil {
 			t.Fatalf("error uploading log: %v", err)
 		}
 
 		// Expect to see the log with the modifications applied
-		if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, `jsonPayload.field2="value" AND labels.static="hello world" AND labels.label2="value" AND NOT labels.label1:* AND labels."my.cool.service/foo"="value" AND severity="WARNING" AND NOT jsonPayload.field:* AND jsonPayload.default_present="original" AND jsonPayload.default_absent="default" AND jsonPayload.integer > 5 AND jsonPayload.float > 5 AND jsonPayload.mapped_field="new_value" AND (NOT jsonPayload.omitted = "broken") AND trace = "trace_value" AND NOT jsonPayload.trace:* AND spanId = "span_id_value" AND jsonPayload.spanId = "span_id_value"`); err != nil {
+		if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, `jsonPayload.field2="value" AND labels.static="hello world" AND labels.label2="value" AND NOT labels.label1:* AND labels."my.cool.service/foo"="value" AND severity="WARNING" AND NOT jsonPayload.field:* AND jsonPayload.default_present="original" AND jsonPayload.default_absent="default" AND jsonPayload.integer > 5 AND jsonPayload.float > 5 AND jsonPayload.mapped_field="new_value" AND (NOT jsonPayload.omitted = "broken") AND trace =~ "deadcafedeadc0defacefeedb0bacafe" AND NOT jsonPayload.trace:* AND spanId = "facefeedb0bacafe" AND jsonPayload.spanId = "facefeedb0bacafe"`); err != nil {
 			t.Error(err)
 		}
 	})

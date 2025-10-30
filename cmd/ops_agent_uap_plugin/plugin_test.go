@@ -19,6 +19,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"buf.build/go/protoyaml" // Import the protoyaml-go package
 	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
@@ -34,6 +35,96 @@ func customLogPathByOsType(ctx context.Context) string {
 		return "/var/log"
 	}
 	return `C:\mylog`
+}
+
+func TestStop(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name                string
+		cancel              context.CancelFunc
+		opsAgentPluginError *OpsAgentPluginError
+	}{
+		{
+			name:   "Plugin already stopped",
+			cancel: nil,
+		},
+		{
+			name:                "Plugin running",
+			cancel:              func() {}, // Non-nil function
+			opsAgentPluginError: &OpsAgentPluginError{Message: "error", ShouldRestart: false},
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			ps := &OpsAgentPluginServer{cancel: tc.cancel, pluginError: tc.opsAgentPluginError}
+			_, err := ps.Stop(context.Background(), &pb.StopRequest{})
+			if err != nil {
+				t.Errorf("got error from Stop(): %v, wanted nil", err)
+			}
+
+			if ps.cancel != nil {
+				t.Error("got non-nil cancel function after calling Stop(), want nil")
+			}
+			if ps.pluginError != nil {
+				t.Error("got non-nil pluginError after calling Stop(), want nil")
+			}
+		})
+	}
+}
+
+func TestGetStatus(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name         string
+		wantRPCError bool
+
+		pluginServer   *OpsAgentPluginServer
+		wantStatusCode int32
+	}{
+		{
+			name:         "Plugin not running and has error that requires restart",
+			pluginServer: &OpsAgentPluginServer{cancel: nil, pluginError: &OpsAgentPluginError{Message: "error", ShouldRestart: true}},
+			wantRPCError: true,
+		},
+		{
+			name:           "Plugin not running and has error that does not require restart",
+			pluginServer:   &OpsAgentPluginServer{cancel: nil, pluginError: &OpsAgentPluginError{Message: "error", ShouldRestart: false}},
+			wantStatusCode: 1,
+		},
+		{
+			name:           "Plugin not running and has no error",
+			wantStatusCode: 1,
+			pluginServer:   &OpsAgentPluginServer{},
+		},
+		{
+			name:           "Plugin running",
+			pluginServer:   &OpsAgentPluginServer{cancel: func() {}, pluginError: nil},
+			wantStatusCode: 0,
+		},
+		{
+			name:           "Plugin running and has error that does not require restart",
+			pluginServer:   &OpsAgentPluginServer{cancel: func() {}, pluginError: &OpsAgentPluginError{Message: "error", ShouldRestart: false}},
+			wantStatusCode: 0,
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			status, err := tc.pluginServer.GetStatus(context.Background(), &pb.GetStatusRequest{})
+
+			if (err != nil) != tc.wantRPCError {
+				t.Errorf("got error from GetStatus: %v, wanted error: %v", err, tc.wantRPCError)
+			}
+			if !tc.wantRPCError && (status.Code != tc.wantStatusCode) {
+				t.Errorf("Got status code %d from GetStatus(), wanted %d", status.Code, tc.wantStatusCode)
+			}
+		})
+	}
 }
 func TestWriteCustomConfigToFile(t *testing.T) {
 	yamlConfig := fmt.Sprintf(`logging:
@@ -147,5 +238,26 @@ func TestWriteCustomConfigToFile_receivedEmptyCustomConfig(t *testing.T) {
 			configFile.Close()
 			os.Remove(configPath)
 		})
+	}
+}
+
+// TestHelperProcess isn't a real test. It's used as a helper process to mock
+// command executions.
+func TestHelperProcess(t *testing.T) {
+	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
+		// Skip this test if it's not invoked explicitly as a helper
+		// process. return allows the next tests to continue running.
+		return
+	}
+	switch {
+	case os.Getenv("GO_HELPER_FAILURE") == "1":
+		os.Exit(1)
+	case os.Getenv("GO_HELPER_KILL_BY_SIGNALS") == "1":
+		time.Sleep(1 * time.Minute)
+	case os.Getenv("GO_HELPER_LONG_RUNNING") == "1":
+		time.Sleep(2 * time.Minute)
+	default:
+		// A "successful" mock execution exits with a successful (zero) exit code.
+		os.Exit(0)
 	}
 }
