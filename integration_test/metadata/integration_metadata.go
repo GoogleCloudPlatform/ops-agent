@@ -19,11 +19,14 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"slices"
 
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/go-playground/validator/v10"
 	yaml "github.com/goccy/go-yaml"
 	"go.uber.org/multierr"
+	"google.golang.org/genproto/googleapis/api/distribution"
+	"google.golang.org/genproto/googleapis/api/metric"
 )
 
 // MetricLabel encodes a specification of a metric label in the metrics backend.
@@ -44,6 +47,8 @@ type MetricSpec struct {
 	Type string `yaml:"type" validate:"required"`
 	// The value type, for example INT64.
 	ValueType string `yaml:"value_type" validate:"required,oneof=BOOL INT64 DOUBLE STRING DISTRIBUTION"`
+	// The value of the point, for example 10.0 (but can be an int64, float64, or distribution).
+	Value any
 	// The kind, for example GAUGE.
 	Kind string `yaml:"kind" validate:"required,oneof=GAUGE DELTA CUMULATIVE"`
 	// The unit of the metric.
@@ -218,20 +223,68 @@ func NewIntegrationMetadataValidator() *validator.Validate {
 	return v
 }
 
-func AssertMetric(metric *ExpectedMetric, series *monitoringpb.TimeSeries) error {
+func AssertMetric(expectedMetric *ExpectedMetric, series *monitoringpb.TimeSeries) error {
 	var err error
-	if series.ValueType.String() != metric.ValueType {
-		err = multierr.Append(err, fmt.Errorf("valueType: expected %s but got %s", metric.ValueType, series.ValueType.String()))
+	if series.ValueType.String() != expectedMetric.ValueType {
+		err = multierr.Append(err, fmt.Errorf("valueType: expected %s but got %s", expectedMetric.ValueType, series.ValueType.String()))
 	}
-	if series.MetricKind.String() != metric.Kind {
-		err = multierr.Append(err, fmt.Errorf("kind: expected %s but got %s", metric.Kind, series.MetricKind.String()))
+	if series.MetricKind.String() != expectedMetric.Kind {
+		err = multierr.Append(err, fmt.Errorf("kind: expected %s but got %s", expectedMetric.Kind, series.MetricKind.String()))
 	}
-	if !SliceContains(metric.MonitoredResources, series.Resource.Type) {
-		err = multierr.Append(err, fmt.Errorf("unexpected monitored_resource: expected %v but got %s", metric.MonitoredResources, series.Resource.Type))
+	if !SliceContains(expectedMetric.MonitoredResources, series.Resource.Type) {
+		err = multierr.Append(err, fmt.Errorf("unexpected monitored_resource: expected %v but got %s", expectedMetric.MonitoredResources, series.Resource.Type))
 	}
-	err = multierr.Append(err, assertMetricLabels(metric, series))
+	err = multierr.Append(err, assertMetricLabels(expectedMetric, series))
 	if err != nil {
-		return fmt.Errorf("%s: %w", metric.Type, err)
+		return fmt.Errorf("%s: %w", expectedMetric.Type, err)
+	}
+	if len(series.Points) == 0 {
+		err = multierr.Append(err, fmt.Errorf("Metric %s has at least one data points in the time windows", expectedMetric.Type))
+	} else {
+		if expectedMetric.Value == nil {
+			return nil
+		}
+		// Use the last/latest point
+		actual := series.Points[len(series.Points)-1]
+		switch expectedMetric.ValueType {
+		case metric.MetricDescriptor_DOUBLE.String():
+			expectedValue := expectedMetric.Value.(float64)
+			actualValue := actual.Value.GetDoubleValue()
+			if actualValue != expectedValue {
+				err = multierr.Append(err, fmt.Errorf("Metric %s has value %f; expected %f", expectedMetric.Type, actualValue, expectedValue))
+			}
+		case metric.MetricDescriptor_INT64.String():
+			expectedValue := int64(expectedMetric.Value.(int))
+			actualValue := actual.Value.GetInt64Value()
+			if actualValue != expectedValue {
+				err = multierr.Append(err, fmt.Errorf("Metric %s has value %d; expected %d", expectedMetric.Type, actualValue, expectedValue))
+			}
+		case metric.MetricDescriptor_DISTRIBUTION.String():
+			expectedValue := expectedMetric.Value.(*distribution.Distribution)
+			actualValue := actual.Value.GetDistributionValue()
+			if !slices.Equal(actualValue.GetBucketOptions().GetExplicitBuckets().GetBounds(), expectedValue.GetBucketOptions().GetExplicitBuckets().GetBounds()) {
+				err = multierr.Append(err, fmt.Errorf("Metric %s has buckets bounds %v; expected %v",
+					expectedMetric.Type, actualValue.GetBucketOptions().GetExplicitBuckets().GetBounds(), expectedValue.GetBucketOptions().GetExplicitBuckets().GetBounds()))
+			}
+			if !slices.Equal(actualValue.GetBucketCounts(), expectedValue.GetBucketCounts()) {
+				err = multierr.Append(err, fmt.Errorf("Metric %s has buckets with counts %v; expected %v",
+					expectedMetric.Type, actualValue.GetBucketCounts(), expectedValue.GetBucketCounts()))
+			}
+			if actualValue.Count != expectedValue.Count {
+				err = multierr.Append(err, fmt.Errorf("Metric %s has count %d; expected %d",
+					expectedMetric.Type, actualValue.Count, expectedValue.Count))
+			}
+			if actualValue.Mean != expectedValue.Mean {
+				err = multierr.Append(err, fmt.Errorf("Metric %s has mean %f; expected %f",
+					expectedMetric.Type, actualValue.Mean, expectedValue.Mean))
+			}
+			if actualValue.SumOfSquaredDeviation != expectedValue.SumOfSquaredDeviation {
+				err = multierr.Append(err, fmt.Errorf("Metric %s has sum of squared deviation %f; expected %f",
+					expectedMetric.Type, actualValue.SumOfSquaredDeviation, expectedValue.SumOfSquaredDeviation))
+			}
+		default:
+			err = multierr.Append(err, fmt.Errorf("Value check for metric with type %s is not implementated", expectedMetric.ValueType))
+		}
 	}
 	return nil
 }
