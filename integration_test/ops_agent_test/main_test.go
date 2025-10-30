@@ -3346,7 +3346,7 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 
 		var multiErr error
 		for _, test := range tests {
-			multiErr = multierr.Append(multiErr, assertExpectedMetric(ctx, logger, vm, window, &test, nil, true))
+			multiErr = multierr.Append(multiErr, waitForAndAssertMetric(ctx, logger, vm, window, &test, nil, true))
 		}
 		if multiErr != nil {
 			t.Error(multiErr)
@@ -3493,7 +3493,7 @@ func TestPrometheusUntypedMetrics(t *testing.T) {
 
 			var multiErr error
 			for _, test := range tests {
-				multiErr = multierr.Append(multiErr, assertExpectedMetric(ctx, logger, vm, window, &test, nil, true))
+				multiErr = multierr.Append(multiErr, waitForAndAssertMetric(ctx, logger, vm, window, &test, nil, true))
 			}
 			if multiErr != nil {
 				t.Error(multiErr)
@@ -3570,7 +3570,7 @@ func TestPrometheusUntypedMetricsReset(t *testing.T) {
 			}
 			var multiErr error
 			for _, test := range tests {
-				multiErr = multierr.Append(multiErr, assertExpectedMetric(ctx, logger, vm, window, &test, nil, true))
+				multiErr = multierr.Append(multiErr, waitForAndAssertMetric(ctx, logger, vm, window, &test, nil, true))
 			}
 			if multiErr != nil {
 				t.Error(multiErr)
@@ -3617,7 +3617,7 @@ func TestPrometheusUntypedMetricsReset(t *testing.T) {
 			}
 			var multiErr error
 			for _, test := range tests {
-				multiErr = multierr.Append(multiErr, assertExpectedMetric(ctx, logger, vm, window, &test, nil, true))
+				multiErr = multierr.Append(multiErr, waitForAndAssertMetric(ctx, logger, vm, window, &test, nil, true))
 			}
 			if multiErr != nil {
 				t.Error(multiErr)
@@ -3664,7 +3664,7 @@ func TestPrometheusUntypedMetricsReset(t *testing.T) {
 			}
 			var multiErr error
 			for _, test := range tests {
-				multiErr = multierr.Append(multiErr, assertExpectedMetric(ctx, logger, vm, window, &test, nil, true))
+				multiErr = multierr.Append(multiErr, waitForAndAssertMetric(ctx, logger, vm, window, &test, nil, true))
 			}
 			if multiErr != nil {
 				t.Error(multiErr)
@@ -3709,7 +3709,7 @@ func TestPrometheusUntypedMetricsReset(t *testing.T) {
 
 			var multiErr error
 			for _, test := range tests {
-				multiErr = multierr.Append(multiErr, assertExpectedMetric(ctx, logger, vm, window, &test, nil, true))
+				multiErr = multierr.Append(multiErr, waitForAndAssertMetric(ctx, logger, vm, window, &test, nil, true))
 			}
 			if multiErr != nil {
 				t.Error(multiErr)
@@ -4023,7 +4023,7 @@ func assertPrometheusHistogramMetric(ctx context.Context, logger *log.Logger, vm
 		},
 		Optional: false,
 	}
-	return assertExpectedMetric(ctx, logger, vm, window, &test, nil, true)
+	return waitForAndAssertMetric(ctx, logger, vm, window, &test, nil, true)
 }
 
 // A sample of the Prometheus summary metric with name 'test_summary':
@@ -4062,7 +4062,7 @@ func assertPrometheusSummaryMetric(ctx context.Context, logger *log.Logger, vm *
 			Optional: false,
 		}
 		extraFilters := []string{fmt.Sprintf(`metric.labels.quantile = "%s"`, quantile)}
-		multiErr = multierr.Append(multiErr, assertExpectedMetric(ctx, logger, vm, window, &test, extraFilters, true))
+		multiErr = multierr.Append(multiErr, waitForAndAssertMetric(ctx, logger, vm, window, &test, extraFilters, true))
 	}
 	// The count value in Prometheus summary goes to
 	// prometheus.googleapis.com/NAME_count/summary of type cumulative
@@ -4077,7 +4077,7 @@ func assertPrometheusSummaryMetric(ctx context.Context, logger *log.Logger, vm *
 		},
 		Optional: false,
 	}
-	multiErr = multierr.Append(multiErr, assertExpectedMetric(ctx, logger, vm, window, &testCount, nil, true))
+	multiErr = multierr.Append(multiErr, waitForAndAssertMetric(ctx, logger, vm, window, &testCount, nil, true))
 	// The sum value in Prometheus summary goes to
 	// prometheus.googleapis.com/NAME_sum/summary:counter of type cumulative
 	testSummary := metadata.ExpectedMetric{
@@ -4091,7 +4091,7 @@ func assertPrometheusSummaryMetric(ctx context.Context, logger *log.Logger, vm *
 		},
 		Optional: false,
 	}
-	multiErr = multierr.Append(multiErr, assertExpectedMetric(ctx, logger, vm, window, &testSummary, nil, true))
+	multiErr = multierr.Append(multiErr, waitForAndAssertMetric(ctx, logger, vm, window, &testSummary, nil, true))
 	return multiErr
 }
 
@@ -4105,57 +4105,6 @@ func waitForAndAssertMetric(ctx context.Context, logger *log.Logger, vm *gce.VM,
 		return err
 	}
 	return metadata.AssertMetric(metric, series)
-}
-
-// assertExpectedMetric with a given test, wait for the metric, and then use
-// the latest point as the actual value and compare with the expected value
-func assertExpectedMetric(ctx context.Context, logger *log.Logger, vm *gce.VM, window time.Duration, test *metadata.ExpectedMetric, extraFilters []string, isPrometheus bool) error {
-	return waitForAndAssertMetric(ctx, logger, vm, window, test, extraFilters, isPrometheus)
-	// var multiErr error
-	// if pts, err := gce.WaitForMetric(ctx, logger, vm, test.Type, window, extraFilters, true); err != nil {
-	// 	multiErr = multierr.Append(multiErr, err)
-	// } else {
-	// if len(pts.Points) == 0 {
-	// 	multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has at least one data points in the time windows", test.Type))
-	// } else {
-	// 	// Use the last/latest point
-	// 	actual := pts.Points[len(pts.Points)-1]
-	// 	switch test.ValueType {
-	// 	case metric.MetricDescriptor_DOUBLE.String():
-	// 		expectedValue := test.Value.(float64)
-	// 		actualValue := actual.Value.GetDoubleValue()
-	// 		if actualValue != expectedValue {
-	// 			multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has value %f; expected %f", test.Type, actualValue, expectedValue))
-	// 		}
-	// 	case metric.MetricDescriptor_DISTRIBUTION.String():
-	// 		expectedValue := test.Value.(*distribution.Distribution)
-	// 		actualValue := actual.Value.GetDistributionValue()
-	// 		if !slices.Equal(actualValue.GetBucketOptions().GetExplicitBuckets().GetBounds(), expectedValue.GetBucketOptions().GetExplicitBuckets().GetBounds()) {
-	// 			multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has buckets bounds %v; expected %v",
-	// 				test.Type, actualValue.GetBucketOptions().GetExplicitBuckets().GetBounds(), expectedValue.GetBucketOptions().GetExplicitBuckets().GetBounds()))
-	// 		}
-	// 		if !slices.Equal(actualValue.GetBucketCounts(), expectedValue.GetBucketCounts()) {
-	// 			multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has buckets with counts %v; expected %v",
-	// 				test.Type, actualValue.GetBucketCounts(), expectedValue.GetBucketCounts()))
-	// 		}
-	// 		if actualValue.Count != expectedValue.Count {
-	// 			multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has count %d; expected %d",
-	// 				test.Type, actualValue.Count, expectedValue.Count))
-	// 		}
-	// 		if actualValue.Mean != expectedValue.Mean {
-	// 			multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has mean %f; expected %f",
-	// 				test.Type, actualValue.Mean, expectedValue.Mean))
-	// 		}
-	// 		if actualValue.SumOfSquaredDeviation != expectedValue.SumOfSquaredDeviation {
-	// 			multiErr = multierr.Append(multiErr, fmt.Errorf("Metric %s has sum of squared deviation %f; expected %f",
-	// 				test.Type, actualValue.SumOfSquaredDeviation, expectedValue.SumOfSquaredDeviation))
-	// 		}
-	// 	default:
-	// 		multiErr = multierr.Append(multiErr, fmt.Errorf("Value check for metric with type %s is not implementated", test.ValueType))
-	// 	}
-	// }
-	// }
-	// return multiErr
 }
 
 type fileToUpload struct {
