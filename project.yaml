@@ -176,7 +176,6 @@ targets:
           - windows-cloud:windows-2016-core
           - windows-cloud:windows-2025
           - windows-sql-cloud:sql-std-2019-win-2022
-          - windows-sql-cloud:sql-std-2022-win-2019
           - windows-sql-cloud:sql-std-2022-win-2025
           exhaustive:
           - windows-cloud:windows-2016
@@ -185,4 +184,5 @@ targets:
           - windows-cloud:windows-2019-core
           - windows-cloud:windows-2022-core
           - windows-cloud:windows-2025-core
+          - windows-sql-cloud:sql-std-2022-win-2019
           - windows-sql-cloud:sql-std-2022-win-2022
