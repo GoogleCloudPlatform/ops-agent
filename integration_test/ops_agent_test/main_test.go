@@ -4823,14 +4823,6 @@ traces:
 		); err != nil {
 			t.Fatal(err)
 		}
-		// expectedServiceAttributes := map[string]string{
-		// 	"service_name":        serviceName,
-		// 	"service_namespace":   serviceNamespace,
-		// 	"service_instance_id": serviceInstanceID,
-		// TODO: If/when https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/pull/1065 is merged and
-		// released in our exporter, add this to the expected attributes.
-		// {"service_version", serviceVersion},
-		// }
 		otlpLabels := []*metadata.MetricLabel{
 			{Name: "service_name", ValueRegex: serviceName},
 			{Name: "service_namespace", ValueRegex: serviceNamespace},
@@ -5054,7 +5046,6 @@ traces:
 		if err = runGoCode(ctx, logger, vm, metricFile); err != nil {
 			t.Fatal(err)
 		}
-		// tests := []metadata.ExpectedMetric{}
 		expectedLabels := []*metadata.MetricLabel{
 			{Name: "otel_scope_name", ValueRegex: "foo"},
 			{Name: "otel_scope_version", ValueRegex: ""},
