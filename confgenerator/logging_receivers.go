@@ -200,10 +200,12 @@ func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) [
 func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	operators := []map[string]any{}
 	receiver_config := map[string]any{
-		"include":           r.IncludePaths,
-		"exclude":           r.ExcludePaths,
-		"start_at":          "beginning",
-		"include_file_name": false,
+		"include":                       r.IncludePaths,
+		"exclude":                       r.ExcludePaths,
+		"start_at":                      "beginning",
+		"include_file_name":             false,
+		"preserve_leading_whitespaces":  true,
+		"preserve_trailing_whitespaces": true,
 	}
 	if i := r.WildcardRefreshInterval; i != nil {
 		receiver_config["poll_interval"] = i.String()

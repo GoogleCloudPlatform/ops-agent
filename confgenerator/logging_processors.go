@@ -16,8 +16,10 @@ package confgenerator
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
@@ -41,6 +43,67 @@ type ParseMultiline struct {
 
 func (r ParseMultiline) Type() string {
 	return "parse_multiline"
+}
+
+// This map lists regexes that apply to any line that is part of a previous line.
+var otelFirstMultilineMap = map[string][]string{
+	"java": []string{
+		// Line starts with a java exception class name
+		`(?:Exception|Error|Throwable|V8 errors stack trace)[:\r\n]`,
+	},
+	"python": []string{
+		`Traceback \(most recent call last\):`,
+		// `^Exception:\s*\(.*\)$`,
+	},
+	"go": []string{
+		`\bpanic: `,
+		`http: panic serving`,
+	},
+}
+
+var otelSecondMultilineMap = map[string][]string{
+	"java": []string{
+		// Line starts with a java exception class name
+		//`^(?:[a-zA-Z$_][a-zA-Z$_0-9]*\.)+[a-zA-Z$_][a-zA-Z$_0-9]*: `,
+		`^[\t ]*nested exception is:[\\t ]*`,
+		`^[\t ]+(?:eval ?)?at `,
+		`^[\t ]+--- End of inner exception stack trace ---$`,
+		`^--- End of stack trace from previous location where exception was thrown ---$`,
+		`^[\t ]*(?:Caused by|Suppressed):`,
+		`^[\t ]*... \d+ (?:more|common frames omitted)`,
+	},
+	"python": []string{
+		`^[\t ]+File`,
+		//`[^\t ]`,
+		`^\s*return\s+[\w\.]+\(.*\)$`,
+		`raise Exception\(.*\)$`,
+		`^\s*[\w\.]+ = [\w\.]+\(.*\)$`,
+		//`^(?:[^\s.():]+\.)*[^\s.():]+:`,
+		`^\s*for\s+[\w, \s]+ in\s+[\w\.]+\(.*\):$`,
+		`^\s*([\w\.]+) = ([\w\.]+)\($`,
+		//`^\s*self\.[\w]+\(.*\)$`,
+		`^\s*[\w\.]+\.[\w]+\(.*\)$`,
+		`^\s*.*[+\-*/%|&^~<>].*$`,
+		//`^Traceback \(most recent call last\):$`,
+	},
+	"go": []string{
+		//`^$`,
+		`^\[signal `,
+		`^goroutine \d+ \[[^\]]+\]:$`,
+		`^(?:[^\s.:]+\.)*[^\s.():]+\(|^created by `,
+		`^(.+):(\d+) (\+0x[0-9a-fA-F]+)$`,
+	},
+}
+
+var otelTransitionMultilineMap = map[string][]string{
+	"java": []string{
+		// Line transitions
+		`nested exception is:[\\t ]*$`,
+	},
+	"python": []string{
+		// Line transitions
+		`raise Exception\(.*\)$`,
+	},
 }
 
 var multilineRulesLanguageMap = map[string][]MultilineRule{
@@ -106,6 +169,119 @@ func (p ParseMultiline) Components(ctx context.Context, tag, uid string) []fluen
 		parserComponent,
 		modify.NewRenameOptions("log", "message").Component(tag),
 	}
+}
+
+func (p ParseMultiline) Processors(ctx context.Context) ([]otel.Component, error) {
+	var firstLinesExpr map[string][]string = map[string][]string{
+		"java":   []string{},
+		"python": []string{},
+	}
+	var secondLinesExpr map[string][]string = map[string][]string{
+		"java":   []string{},
+		"python": []string{},
+	}
+	var transitionLinesExpr map[string][]string = map[string][]string{
+		"java":   []string{},
+		"python": []string{},
+	}
+	for _, g := range p.MultilineGroups {
+		if g.Type == "language_exceptions" {
+			a := otelFirstMultilineMap[g.Language]
+			if len(a) > 0 {
+				for _, r := range a {
+					firstLinesExpr[g.Language] = append(firstLinesExpr[g.Language], fmt.Sprintf("body.message matches %q", r))
+				}
+			}
+			b := otelSecondMultilineMap[g.Language]
+			if len(b) > 0 {
+				for _, r := range b {
+					secondLinesExpr[g.Language] = append(secondLinesExpr[g.Language], fmt.Sprintf("not(body.message matches %q)", r))
+				}
+			}
+			c := otelTransitionMultilineMap[g.Language]
+			if len(c) > 0 {
+				for _, r := range c {
+					transitionLinesExpr[g.Language] = append(transitionLinesExpr[g.Language], fmt.Sprintf("not(body.message matches %q)", r))
+				}
+			}
+			continue
+		}
+		return nil, errors.New("unsupported in otel")
+	}
+
+	firstExprSlice := []string{}
+	for lang, expr := range firstLinesExpr {
+		if len(expr) > 0 {
+			firstExprSlice = append(firstExprSlice, "( ("+strings.Join(expr, " or ")+") and ("+strings.Join(secondLinesExpr[lang], "and ")+") )")
+		}
+	}
+	secondExprSlice := []string{}
+	for _, expr := range secondLinesExpr {
+		if len(expr) > 0 {
+			secondExprSlice = append(secondExprSlice, "("+strings.Join(expr, " and ")+")")
+		}
+	}
+	firstExpr := strings.Join(firstExprSlice, "  or ") + " or (" + strings.Join(secondExprSlice, " and ") + ")"
+
+	javaTransitionsExpr := strings.Join(transitionLinesExpr["java"], " and ")
+	pythonTransitionsExpr := strings.Join(transitionLinesExpr["python"], " and ")
+	transitionsExprSlice := []string{}
+	if len(transitionLinesExpr["java"]) > 0 {
+		transitionsExprSlice = append(transitionsExprSlice, javaTransitionsExpr)
+	}
+	if len(transitionLinesExpr["python"]) > 0 {
+		transitionsExprSlice = append(transitionsExprSlice, pythonTransitionsExpr)
+	}
+	transitionExpr := strings.Join(transitionsExprSlice, " and ")
+
+	if transitionExpr == "" {
+		transitionExpr = `body.message matches ".*"`
+	}
+
+	return []otel.Component{{
+		Type: "logstransform",
+		Config: map[string]any{
+			"operators": []map[string]any{
+				{
+					"type":  "add",
+					"field": "attributes.__source_identifier",
+					"value": `EXPR(attributes["agent.googleapis.com/log_file_path"] ?? "")`,
+				},
+				{
+					"type":          "recombine",
+					"combine_field": "body.message",
+					// N.B. We cannot specify "combine_with" because it is not serialized correctly by our yaml library.
+					//"combine_with":   "\n",
+					"is_first_entry": firstExpr,
+					// Take the timestamp and other attributes from the first entry.
+					"overwrite_with": "oldest",
+					// Use the log file path to disambiguate if present.
+					"source_identifier": `attributes.__source_identifier`,
+					// How long to wait for more log lines.
+					// Set to half of the file receiver's poll_interval to guarantee it is flushed every poll.
+					"force_flush_period": "100ms",
+				},
+				{
+					"type":          "recombine",
+					"combine_field": "body.message",
+					// N.B. We cannot specify "combine_with" because it is not serialized correctly by our yaml library.
+					//"combine_with":   "\n",
+					"is_last_entry": transitionExpr,
+					// Take the timestamp and other attributes from the first entry.
+					"overwrite_with": "oldest",
+					// Use the log file path to disambiguate if present.
+					"source_identifier": `attributes.__source_identifier`,
+					// How long to wait for more log lines.
+					// Set to half of the file receiver's poll_interval to guarantee it is flushed every poll.
+					"force_flush_period": "100ms",
+				},
+				{
+					"type":  "remove",
+					"field": "attributes.__source_identifier",
+				},
+			},
+		},
+	}}, nil
 }
 
 func init() {
