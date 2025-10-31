@@ -19,6 +19,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
 type MetricsReceiverMemcached struct {
@@ -35,11 +36,33 @@ func (r MetricsReceiverMemcached) Type() string {
 	return "memcached"
 }
 
-func (r MetricsReceiverMemcached) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (r MetricsReceiverMemcached) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultMemcachedTCPEndpoint
 	}
+	processors := []otel.Component{
+		otel.MetricsFilter(
+			"exclude",
+			"strict",
+			"memcached.operation_hit_ratio",
+		),
+		otel.NormalizeSums(),
+		otel.MetricsTransform(
+			otel.AddPrefix("workload.googleapis.com"),
+		),
+		otel.TransformationMetrics(
+			otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+			otel.SetScopeVersion("1.0"),
+		),
+		otel.MetricsRemoveServiceAttributes(),
+	}
+	resource, _ := platform.FromContext(ctx).GetResource()
+	exporter := otel.OTel
+	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
+		exporter = otel.OTLP
+		processors = append(processors, otel.GCPProjectID(resource.ProjectName()))
 
+	}
 	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "memcached",
@@ -49,22 +72,8 @@ func (r MetricsReceiverMemcached) Pipelines(_ context.Context) ([]otel.ReceiverP
 				"transport":           "tcp",
 			},
 		},
-		Processors: map[string][]otel.Component{"metrics": {
-			otel.MetricsFilter(
-				"exclude",
-				"strict",
-				"memcached.operation_hit_ratio",
-			),
-			otel.NormalizeSums(),
-			otel.MetricsTransform(
-				otel.AddPrefix("workload.googleapis.com"),
-			),
-			otel.TransformationMetrics(
-				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
-				otel.SetScopeVersion("1.0"),
-			),
-			otel.MetricsRemoveServiceAttributes(),
-		}},
+		Processors:    map[string][]otel.Component{"metrics": processors},
+		ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
 	}}, nil
 }
 

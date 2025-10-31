@@ -702,7 +702,13 @@ func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, proces
 	if err != nil {
 		return nil, fmt.Errorf("failed to discover the location of the JMX metrics exporter: %w", err)
 	}
-
+	ctx := context.Background()
+	resource, _ := platform.FromContext(ctx).GetResource()
+	exporter := otel.OTel
+	if ExperimentsFromContext(context.Background())["otlp_exporter"] {
+		exporter = otel.OTLP
+		processors = append(processors, otel.GCPProjectID(resource.ProjectName()))
+	}
 	config := map[string]interface{}{
 		"target_system":       targetSystem,
 		"collection_interval": m.CollectionIntervalString(),
@@ -728,7 +734,8 @@ func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, proces
 			Type:   "jmx",
 			Config: config,
 		},
-		Processors: map[string][]otel.Component{"metrics": processors},
+		Processors:    map[string][]otel.Component{"metrics": processors},
+		ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
 	}}, nil
 }
 
@@ -1071,7 +1078,7 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]PipelineInstan
 	if err != nil {
 		return nil, err
 	}
-	exp_otlp := experimentsFromContext(ctx)["otlp_logging"]
+	exp_otlp := ExperimentsFromContext(ctx)["otlp_logging"]
 	exp_otel := l.Service.OTelLogging
 	var out []PipelineInstance
 	for _, pID := range sortedKeys(l.Service.Pipelines) {

@@ -21,6 +21,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
 
@@ -41,7 +42,7 @@ func (r MetricsReceiverMySql) Type() string {
 	return "mysql"
 }
 
-func (r MetricsReceiverMySql) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (r MetricsReceiverMySql) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	transport := "tcp"
 	if r.Endpoint == "" {
 		transport = "unix"
@@ -52,6 +53,36 @@ func (r MetricsReceiverMySql) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 
 	if r.Username == "" {
 		r.Username = "root"
+	}
+	processors := []otel.Component{
+		otel.NormalizeSums(),
+		otel.MetricsTransform(
+			// The following changes are here to ensure maximum backwards compatibility after the fixes
+			// introduced https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/7924
+			otel.ChangePrefix("mysql\\.buffer_pool\\.", "mysql.buffer_pool_"),
+			otel.UpdateMetric("mysql.buffer_pool_pages",
+				otel.ToggleScalarDataType,
+			),
+			otel.UpdateMetric("mysql.threads",
+				otel.ToggleScalarDataType,
+			),
+			otel.RenameMetric("mysql.buffer_pool_usage", "mysql.buffer_pool_size",
+				otel.RenameLabel("status", "kind"),
+				otel.ToggleScalarDataType,
+			),
+			otel.AddPrefix("workload.googleapis.com"),
+		),
+		otel.TransformationMetrics(
+			otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+			otel.SetScopeVersion("1.0"),
+		),
+		otel.MetricsRemoveServiceAttributes(),
+	}
+	resource, _ := platform.FromContext(ctx).GetResource()
+	exporter := otel.OTel
+	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
+		exporter = otel.OTLP
+		processors = append(processors, otel.GCPProjectID(resource.ProjectName()))
 	}
 
 	return []otel.ReceiverPipeline{
@@ -101,30 +132,8 @@ func (r MetricsReceiverMySql) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 					},
 				},
 			},
-			Processors: map[string][]otel.Component{"metrics": {
-				otel.NormalizeSums(),
-				otel.MetricsTransform(
-					// The following changes are here to ensure maximum backwards compatibility after the fixes
-					// introduced https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/7924
-					otel.ChangePrefix("mysql\\.buffer_pool\\.", "mysql.buffer_pool_"),
-					otel.UpdateMetric("mysql.buffer_pool_pages",
-						otel.ToggleScalarDataType,
-					),
-					otel.UpdateMetric("mysql.threads",
-						otel.ToggleScalarDataType,
-					),
-					otel.RenameMetric("mysql.buffer_pool_usage", "mysql.buffer_pool_size",
-						otel.RenameLabel("status", "kind"),
-						otel.ToggleScalarDataType,
-					),
-					otel.AddPrefix("workload.googleapis.com"),
-				),
-				otel.TransformationMetrics(
-					otel.SetScopeName("agent.googleapis.com/"+r.Type()),
-					otel.SetScopeVersion("1.0"),
-				),
-				otel.MetricsRemoveServiceAttributes(),
-			}},
+			Processors:    map[string][]otel.Component{"metrics": processors},
+			ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
 		},
 	}, nil
 }

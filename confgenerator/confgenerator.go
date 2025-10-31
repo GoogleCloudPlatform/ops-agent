@@ -115,7 +115,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 	}
 	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines)
 
-	exp_otlp_exporter := experimentsFromContext(ctx)["otlp_exporter"]
+	exp_otlp_exporter := ExperimentsFromContext(ctx)["otlp_exporter"]
 	extensions := map[string]interface{}{}
 	if exp_otlp_exporter {
 		extensions["googleclientauth"] = map[string]interface{}{}

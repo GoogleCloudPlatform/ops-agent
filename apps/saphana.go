@@ -19,6 +19,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
 
@@ -137,11 +138,33 @@ func (s MetricsReceiverSapHana) Type() string {
 	return "saphana"
 }
 
-func (s MetricsReceiverSapHana) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (s MetricsReceiverSapHana) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	if s.Endpoint == "" {
 		s.Endpoint = defaultSapHanaEndpoint
 	}
-
+	processors := []otel.Component{
+		otel.MetricsFilter(
+			"exclude",
+			"strict",
+			"saphana.uptime",
+		),
+		otel.NormalizeSums(),
+		otel.MetricsTransform(
+			otel.AddPrefix("workload.googleapis.com"),
+		),
+		otel.TransformationMetrics(
+			otel.FlattenResourceAttribute("saphana.host", "host"),
+			otel.SetScopeName("agent.googleapis.com/"+s.Type()),
+			otel.SetScopeVersion("1.0"),
+		),
+		otel.MetricsRemoveServiceAttributes(),
+	}
+	resource, _ := platform.FromContext(ctx).GetResource()
+	exporter := otel.OTel
+	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
+		exporter = otel.OTLP
+		processors = append(processors, otel.GCPProjectID(resource.ProjectName()))
+	}
 	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "saphana",
@@ -153,23 +176,8 @@ func (s MetricsReceiverSapHana) Pipelines(_ context.Context) ([]otel.ReceiverPip
 				"tls":                 s.TLSConfig(true),
 			},
 		},
-		Processors: map[string][]otel.Component{"metrics": {
-			otel.MetricsFilter(
-				"exclude",
-				"strict",
-				"saphana.uptime",
-			),
-			otel.NormalizeSums(),
-			otel.MetricsTransform(
-				otel.AddPrefix("workload.googleapis.com"),
-			),
-			otel.TransformationMetrics(
-				otel.FlattenResourceAttribute("saphana.host", "host"),
-				otel.SetScopeName("agent.googleapis.com/"+s.Type()),
-				otel.SetScopeVersion("1.0"),
-			),
-			otel.MetricsRemoveServiceAttributes(),
-		}},
+		Processors:    map[string][]otel.Component{"metrics": processors},
+		ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
 	}}, nil
 }
 
