@@ -239,7 +239,7 @@ func AssertMetric(expectedMetric *ExpectedMetric, series *monitoringpb.TimeSerie
 		return fmt.Errorf("%s: %w", expectedMetric.Type, err)
 	}
 	if len(series.Points) == 0 {
-		err = multierr.Append(err, fmt.Errorf("Metric %s has at least one data points in the time windows", expectedMetric.Type))
+		err = multierr.Append(err, fmt.Errorf("Metric %s should have at least one data point in the time window", expectedMetric.Type))
 	} else {
 		if expectedMetric.Value == nil {
 			return nil
