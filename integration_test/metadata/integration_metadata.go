@@ -239,7 +239,7 @@ func AssertMetric(expectedMetric *ExpectedMetric, series *monitoringpb.TimeSerie
 		return fmt.Errorf("%s: %w", expectedMetric.Type, err)
 	}
 	if len(series.Points) == 0 {
-		err = multierr.Append(err, fmt.Errorf("Metric %s has at least one data points in the time windows", expectedMetric.Type))
+		err = multierr.Append(err, fmt.Errorf("Metric %s should have at least one data point in the time window", expectedMetric.Type))
 	} else {
 		if expectedMetric.Value == nil {
 			return nil
@@ -252,6 +252,12 @@ func AssertMetric(expectedMetric *ExpectedMetric, series *monitoringpb.TimeSerie
 			actualValue := actual.Value.GetDoubleValue()
 			if actualValue != expectedValue {
 				err = multierr.Append(err, fmt.Errorf("Metric %s has value %f; expected %f", expectedMetric.Type, actualValue, expectedValue))
+			}
+		case metric.MetricDescriptor_INT64.String():
+			expectedValue := int64(expectedMetric.Value.(int))
+			actualValue := actual.Value.GetInt64Value()
+			if actualValue != expectedValue {
+				err = multierr.Append(err, fmt.Errorf("Metric %s has value %d; expected %d", expectedMetric.Type, actualValue, expectedValue))
 			}
 		case metric.MetricDescriptor_DISTRIBUTION.String():
 			expectedValue := expectedMetric.Value.(*distribution.Distribution)
