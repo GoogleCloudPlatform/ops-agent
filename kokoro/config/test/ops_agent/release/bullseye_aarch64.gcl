@@ -3,7 +3,7 @@ import 'common.gcl' as common
 config build = common.ops_agent_test {
   params {
     environment {
-      TARGET = 'plucky'
+      TARGET = 'bullseye'
       ARCH = 'aarch64'
     }
   }
