@@ -104,6 +104,52 @@ New-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\
 `)
 }
 
+// setExperimentalFeatures sets the EXPERIMENTAL_FEATURES environment variable.
+func setExperimentalFeatures(ctx context.Context, logger *log.Logger, vm *gce.VM, feature string) error {
+	return gce.SetEnvironmentVariables(ctx, logger, vm, map[string]string{"EXPERIMENTAL_FEATURES": feature})
+}
+
+// defaultOtelLoggingConfig returns the default config that is required to use otel_logging.
+func defaultOtelLoggingConfig() string {
+	return `logging:
+  service:
+    experimental_otel_logging: true
+`
+}
+
+// setExperimentalOtelLoggingInConfig in an Ops Agent config
+func setExperimentalOtelLoggingInConfig(config string) string {
+	return strings.Replace(
+		config,
+		"service:\n",
+		"service:\n    experimental_otel_logging: true\n",
+		1,
+	)
+}
+
+// SetupOpsAgentWithFeatureFlag configures the VM and the config depending on the selected feature flag.
+func SetupOpsAgentWithFeatureFlag(ctx context.Context, logger *log.Logger, vm *gce.VM, config string, feature string) error {
+	switch feature {
+	case OtelLoggingFeatureFlag:
+		// Set feature flag in config.
+		if config == "" {
+			config = defaultOtelLoggingConfig()
+		} else {
+			config = setExperimentalOtelLoggingInConfig(config)
+		}
+		// Set experimental feature environment variable.
+		if err := setExperimentalFeatures(ctx, logger, vm, feature); err != nil {
+			return err
+		}
+	}
+	return agents.SetupOpsAgent(ctx, logger, vm, config)
+}
+
+const (
+	OtelLoggingFeatureFlag = "otel_logging"
+	DefaultFeatureFlag     = "default"
+)
+
 func mainErr() error {
 	defer gce.CleanupKeysOrDie()
 
@@ -170,7 +216,7 @@ func mainErr() error {
         - generator_debug_logs
         exporters: [google]
 `, logPath, debugLogPath)
-	if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+	if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, OtelLoggingFeatureFlag); err != nil {
 		return err
 	}
 

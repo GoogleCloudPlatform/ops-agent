@@ -38,7 +38,11 @@ func googleCloudExporter(userAgent string, instrumentationLabels bool, serviceRe
 	return otel.Component{
 		Type: "googlecloud",
 		Config: map[string]interface{}{
-			"user_agent": userAgent,
+			"user_agent":     userAgent,
+			"grpc_pool_size": "20",
+			"sending_queue": map[string]interface{}{
+				"num_consumers": "40",
+			},
 			"metric": map[string]interface{}{
 				// Receivers are responsible for sending fully-qualified metric names.
 				// NB: If a receiver fails to send a full URL, OT will add the prefix `workload.googleapis.com/{metric_name}`.
