@@ -20,7 +20,7 @@ case $VERSION_ID in
   22.04)
     echo "deb http://ppa.launchpad.net/rabbitmq/rabbitmq-erlang/ubuntu jammy main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
     ;;
-  24.04)
+  24.04|25.04)
     echo "deb http://ppa.launchpad.net/rabbitmq/rabbitmq-erlang/ubuntu noble main" | sudo tee /etc/apt/sources.list.d/rabbitmq.list
     ;;
   # debian
@@ -36,12 +36,18 @@ case $VERSION_ID in
     ;;
 esac
 
-if [[ "${VERSION_ID}" != "24.04" && "${VERSION_ID}" != "22.04" && "${VERSION_ID}" != "12" ]]; then
+if [[ "${VERSION_ID}" != "25.04" && "${VERSION_ID}" != "24.04" && "${VERSION_ID}" != "22.04" && "${VERSION_ID}" != "12" ]]; then
   # Ubuntu Noble, Jammy and Debian 12 do not require the extra repo, and adding the extra repo 
   # would sometime cause package conflicts - b/433254435 
   curl -s \
       https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.deb.sh | \
       sudo bash
+fi
+
+if [[ "${VERSION_ID}" == "25.04" ]]; then
+  curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.deb.sh > install_rabbitmq.sh
+  chmod +x install_rabbitmq.sh
+  sudo PLUGINS_DIR="/usr/lib/rabbitmq/lib/rabbitmq_server-4.0.5/plugins"  os=ubuntu dist=noble ./install_rabbitmq.sh
 fi
 
 sudo apt-get update
@@ -57,7 +63,11 @@ fi
 sudo systemctl daemon-reload
 sudo systemctl enable rabbitmq-server
 sudo systemctl restart rabbitmq-server
-sudo rabbitmq-plugins enable rabbitmq_management
+if [[ "${VERSION_ID}" == 25.04 ]]; then
+  sudo PLUGINS_DIR="/usr/lib/rabbitmq/lib/rabbitmq_server-4.0.5/plugins" rabbitmq-plugins enable rabbitmq_management
+else
+  sudo rabbitmq-plugins enable rabbitmq_management
+fi
 sudo systemctl restart rabbitmq-server
 
 sudo rabbitmqctl add_vhost dev
@@ -82,7 +92,11 @@ curl -i -u admin:admin \
     -X POST "${endpoint}/api/bindings/dev/e/webex/q/webq1" \
     -d'{"routing_key":"webq1","arguments":{}}'
 
-sudo rabbitmq-plugins enable rabbitmq_management
+if [[ "${VERSION_ID}" == 25.04 ]]; then
+  sudo PLUGINS_DIR="/usr/lib/rabbitmq/lib/rabbitmq_server-4.0.5/plugins" rabbitmq-plugins enable rabbitmq_management
+else
+  sudo rabbitmq-plugins enable rabbitmq_management
+fi
 sudo rabbitmqctl add_user "usr" "pwd"
 sudo rabbitmqctl set_user_tags "usr" monitoring
 sudo rabbitmqctl set_permissions -p "dev" "usr" "" "" ".*"

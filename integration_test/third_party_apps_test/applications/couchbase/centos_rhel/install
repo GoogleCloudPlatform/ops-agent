@@ -29,4 +29,4 @@ EOF
   --cluster-name otelc --cluster-ramsize 256 --cluster-index-ramsize 256 --services data,index,query,fts \
   --index-storage-setting default
 
-/opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1 --username admin --password password --bucket-type couchbase --bucket-ramsize 256 --bucket otelb --storage-backend couchstore  --bucket-replica 0
+/opt/couchbase/bin/couchbase-cli bucket-create -c 127.0.0.1 --username admin --password password --bucket-type couchbase --bucket-ramsize 256 --bucket otelb  --storage-backend couchstore --bucket-replica 0
