@@ -16,11 +16,11 @@ import (
 )
 
 var renameMap = map[string]string{
-	"otlp.test.prefix1":       "workload.googleapis.com/otlp.test.prefix1",
-	"otlp.test.prefix2":       ".invalid.googleapis.com/otlp.test.prefix2",
-	"abc":                     "otlp.test.prefix3/workload.googleapis.com/abc",
-	"otlp.test.prefix4":       "WORKLOAD.GOOGLEAPIS.COM/otlp.test.prefix4",
-	"otlp.test.prefix5":       "WORKLOAD.googleapis.com/otlp.test.prefix5",
+	"otlp.test.prefix1": "workload.googleapis.com/otlp.test.prefix1",
+	"otlp.test.prefix2": ".invalid.googleapis.com/otlp.test.prefix2",
+	"abc":               "otlp.test.prefix3/workload.googleapis.com/abc",
+	"otlp.test.prefix4": "WORKLOAD.GOOGLEAPIS.COM/otlp.test.prefix4",
+	"otlp.test.prefix5": "WORKLOAD.googleapis.com/otlp.test.prefix5",
 }
 
 var (
