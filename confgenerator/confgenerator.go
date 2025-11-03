@@ -34,7 +34,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
-func googleCloudExporter(userAgent string, instrumentationLabels bool) otel.Component {
+func googleCloudExporter(userAgent string, instrumentationLabels bool, serviceResourceLabels bool) otel.Component {
 	return otel.Component{
 		Type: "googlecloud",
 		Config: map[string]interface{}{
@@ -50,9 +50,23 @@ func googleCloudExporter(userAgent string, instrumentationLabels bool) otel.Comp
 				// Omit instrumentation labels, which break agent metrics.
 				"instrumentation_library_labels": instrumentationLabels,
 				// Omit service labels, which break agent metrics.
-				// TODO: Enable with instrumentationLabels when values are sane.
-				"service_resource_labels": false,
+				"service_resource_labels": serviceResourceLabels,
 				"resource_filters":        []map[string]interface{}{},
+			},
+		},
+	}
+}
+
+func otlpExporter(userAgent string) otel.Component {
+	return otel.Component{
+		Type: "otlphttp",
+		Config: map[string]interface{}{
+			"endpoint": "https://telemetry.googleapis.com",
+			"auth": map[string]interface{}{
+				"authenticator": "googleclientauth",
+			},
+			"headers": map[string]string{
+				"User-Agent": userAgent,
 			},
 		},
 	}
@@ -91,29 +105,15 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 		return "", err
 	}
 
-	receiverPipelines["otel"] = AgentSelfMetrics{
-		Version: metricVersionLabel,
-		Port:    otel.MetricsPort,
-	}.MetricsSubmodulePipeline()
-	pipelines["otel"] = otel.Pipeline{
-		Type:                 "metrics",
-		ReceiverPipelineName: "otel",
+	agentSelfMetrics := AgentSelfMetrics{
+		MetricsVersionLabel: metricVersionLabel,
+		LoggingVersionLabel: loggingVersionLabel,
+		FluentBitPort:       fluentbit.MetricsPort,
+		OtelPort:            otel.MetricsPort,
+		OtelRuntimeDir:      outDir,
+		OtelLogging:         uc.Logging.Service.OTelLogging,
 	}
-
-	receiverPipelines["ops_agent"] = OpsAgentSelfMetricsPipeline(ctx, outDir)
-	pipelines["ops_agent"] = otel.Pipeline{
-		Type:                 "metrics",
-		ReceiverPipelineName: "ops_agent",
-	}
-
-	receiverPipelines["fluentbit"] = AgentSelfMetrics{
-		Version: loggingVersionLabel,
-		Port:    fluentbit.MetricsPort,
-	}.LoggingSubmodulePipeline()
-	pipelines["fluentbit"] = otel.Pipeline{
-		Type:                 "metrics",
-		ReceiverPipelineName: "fluentbit",
-	}
+	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines)
 
 	exp_otlp_exporter := experimentsFromContext(ctx)["otlp_exporter"]
 	extensions := map[string]interface{}{}
@@ -127,9 +127,10 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 		Pipelines:         pipelines,
 		Extensions:        extensions,
 		Exporters: map[otel.ExporterType]otel.Component{
-			otel.System: googleCloudExporter(userAgent, false),
-			otel.OTel:   googleCloudExporter(userAgent, true),
+			otel.System: googleCloudExporter(userAgent, false, false),
+			otel.OTel:   googleCloudExporter(userAgent, true, true),
 			otel.GMP:    googleManagedPrometheusExporter(userAgent),
+			otel.OTLP:   otlpExporter(userAgent),
 		},
 	}.Generate(ctx)
 	if err != nil {
@@ -283,13 +284,7 @@ func (p PipelineInstance) OTelComponents(ctx context.Context) (map[string]otel.R
 			Type:                 p.PipelineType,
 			ReceiverPipelineName: receiverPipelineName,
 		}
-		// Check the Ops Agent receiver type.
-		if receiverPipeline.ExporterTypes[p.PipelineType] == otel.GMP {
-			// Prometheus receivers are incompatible with processors, so we need to assert that no processors are configured.
-			if len(p.Processors) > 0 {
-				return nil, nil, fmt.Errorf("prometheus receivers are incompatible with Ops Agent processors")
-			}
-		}
+
 		for _, processorItem := range p.Processors {
 			processor, ok := processorItem.Component.(OTelProcessor)
 			if !ok {
@@ -451,13 +446,13 @@ func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAg
 		if len(tags) > 0 {
 			out = append(out, stackdriverOutputComponent(ctx, strings.Join(tags, "|"), userAgent, "2G", l.Service.Compress))
 		}
-		out = append(out, uc.generateSelfLogsComponents(ctx, userAgent)...)
 		out = append(out, addGceMetadataAttributesComponents(ctx, []string{
 			"dataproc-cluster-name",
 			"dataproc-cluster-uuid",
 			"dataproc-region",
 		}, "*", "default-dataproc")...)
 	}
+	out = append(out, uc.generateSelfLogsComponents(ctx, userAgent)...)
 	out = append(out, fluentbit.MetricsOutputComponent())
 
 	return out, nil

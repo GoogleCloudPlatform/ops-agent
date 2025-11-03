@@ -17,7 +17,6 @@ set -x -e
 DESTDIR=$1
 mkdir -p $DESTDIR
 fluent_bit_dir=/opt/google-cloud-ops-agent/subagents/fluent-bit
-  
 cd submodules/fluent-bit
 mkdir -p build
 cd build
@@ -27,6 +26,10 @@ cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=$fluent_bit_dir \
   -DFLB_HTTP_SERVER=ON -DFLB_DEBUG=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo \
   -DWITHOUT_HEADERS=ON -DFLB_SHARED_LIB=OFF -DFLB_STREAM_PROCESSOR=OFF \
+  -DFLB_KAFKA=OFF \
+  -DFLB_WASM=OFF \
+  -DFLB_CONFIG_YAML=OFF \
+  -DFLB_IN_SYSTEMD=On \
   -DFLB_MSGPACK_TO_JSON_INIT_BUFFER_SIZE=1.5 -DFLB_MSGPACK_TO_JSON_REALLOC_BUFFER_SIZE=.10 \
   -DFLB_CONFIG_YAML=OFF
 make -j8

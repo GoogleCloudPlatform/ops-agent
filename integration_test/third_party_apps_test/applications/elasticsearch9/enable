@@ -1,0 +1,45 @@
+# Configures Ops Agent to collect telemetry from the app. You must restart the agent for the configuration to take effect.
+
+set -e
+
+# Check if the file exists
+if [ ! -f /etc/google-cloud-ops-agent/config.yaml ]; then
+  # Create the file if it doesn't exist.
+  sudo mkdir -p /etc/google-cloud-ops-agent
+  sudo touch /etc/google-cloud-ops-agent/config.yaml
+fi
+
+# Create a back up of the existing file so existing configurations are not lost.
+sudo cp /etc/google-cloud-ops-agent/config.yaml /etc/google-cloud-ops-agent/config.yaml.bak
+
+# Configure the Ops Agent.
+sudo tee /etc/google-cloud-ops-agent/config.yaml > /dev/null << EOF
+metrics:
+  receivers:
+    elasticsearch:
+      type: elasticsearch
+      endpoint: https://localhost:9200
+      username: elastic
+      password: elastic_test_password_123
+      insecure_skip_verify: true
+      insecure: false
+  service:
+    pipelines:
+      elasticsearch:
+        receivers:
+          - elasticsearch
+
+logging:
+  receivers:
+    elasticsearch_gc:
+      type: elasticsearch_gc
+    elasticsearch_json:
+      type: elasticsearch_json
+  service:
+    pipelines:
+      elasticsearch:
+        receivers:
+          - elasticsearch_gc
+          - elasticsearch_json
+EOF
+

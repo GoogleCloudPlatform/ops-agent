@@ -83,6 +83,7 @@ func (r MetricsReceiverMongoDB) Pipelines(_ context.Context) ([]otel.ReceiverPip
 				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
 				otel.SetScopeVersion("1.0"),
 			),
+			otel.MetricsRemoveServiceAttributes(),
 		}},
 	}}, nil
 }
