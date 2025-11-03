@@ -5211,8 +5211,7 @@ traces:
 			t.Error(err)
 			return
 		}
-	},
-	)
+	})
 }
 
 func TestOTLPTraces(t *testing.T) {
