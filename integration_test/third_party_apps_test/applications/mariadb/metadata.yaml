@@ -148,7 +148,7 @@ expected_metrics:
   - type: workload.googleapis.com/mysql.replica.time_behind_source
     value_type: INT64
     kind: GAUGE
-    unavailable_on: 
+    unavailable_on:
       - debian-cloud:debian-13
       - debian-cloud:debian-13-arm64
     monitored_resources: [gce_instance]
