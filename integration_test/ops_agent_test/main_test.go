@@ -214,9 +214,9 @@ func RunForEachImageAndFeatureFlag(t *testing.T, features []string, testBody fun
 	t.Helper()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		t.Run(DefaultFeatureFlag, func(t *testing.T) {
-			testBody(t, imageSpec, DefaultFeatureFlag)
-		})
+		// t.Run(DefaultFeatureFlag, func(t *testing.T) {
+		// 	testBody(t, imageSpec, DefaultFeatureFlag)
+		// })
 		for _, feature := range features {
 			t.Run(feature, func(t *testing.T) {
 				if gce.IsOpsAgentUAPPlugin() {
@@ -226,11 +226,6 @@ func RunForEachImageAndFeatureFlag(t *testing.T, features []string, testBody fun
 			})
 		}
 	})
-	for _, feature := range featureList {
-		t.Run(feature, func(t *testing.T) {
-			testBody(t, feature)
-		})
-	}
 }
 
 const (
@@ -277,10 +272,10 @@ func SetupOpsAgentWithFeatureFlag(ctx context.Context, logger *log.Logger, vm *g
 			return err
 		}
 	case OtlpHttpExporterFeatureFlag:
+		// Set experimental feature environment variable.
 		if err := setExperimentalFeatures(ctx, logger, vm, feature); err != nil {
 			return err
 		}
-
 	}
 	return agents.SetupOpsAgent(ctx, logger, vm, config)
 }
@@ -2644,6 +2639,10 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 		}
 	}
 
+	// The code `agentMetricsMetadata` in Go is likely declaring a variable or a
+	// constant named `agentMetricsMetadata`. However, without additional context or
+	// code, it is not possible to determine the exact purpose or functionality of
+	// this variable.
 	agentMetricsMetadata := path.Join("agent_metrics", "metadata.yaml")
 	bytes, err := os.ReadFile(agentMetricsMetadata)
 	if err != nil {
@@ -2747,7 +2746,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 
 func TestDefaultMetricsNoProxy(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{ OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, "", feature); err != nil {

@@ -89,20 +89,18 @@ func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]o
 
 func (r AgentSelfMetrics) PrometheusMetricsPipeline(expOtlpExporter bool) otel.ReceiverPipeline {
 	exporter := otel.System
-	processors := []otel.Component{otel.TransformationMetrics(
-		otel.DeleteMetricResourceAttribute("service.name"),
-		otel.DeleteMetricResourceAttribute("service.version"),
-		otel.DeleteMetricResourceAttribute("service.instance.id"),
-		otel.DeleteMetricResourceAttribute("server.port"),
-		otel.DeleteMetricResourceAttribute("url.scheme"),
-	),
+	processors := []otel.Component{
+		otel.MetricsRemoveServiceAttributes(),
+		otel.TransformationMetrics(
+			otel.DeleteMetricResourceAttribute("server.port"),
+			otel.DeleteMetricResourceAttribute("url.scheme"),
+		),
 	}
 	if expOtlpExporter {
 		exporter = otel.OTLP
 		processors = append(processors, otel.MetricStartTime())
 		processors = append(processors, otel.GCPProjectID(r.ProjectName))
 		processors = append(processors, otel.MetricsRemoveInstrumentationLibraryLabelsAttributes())
-
 	}
 	return otel.ReceiverPipeline{
 		Receiver: otel.Component{
