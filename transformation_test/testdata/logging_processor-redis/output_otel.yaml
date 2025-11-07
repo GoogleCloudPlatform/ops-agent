@@ -358,7 +358,7 @@
     timestamp: 2025-07-19T02:08:05.267Z
   - jsonPayload:
       level: "*"
-      message: "<search> gc: ON, prefix min length: 2, min word length to stem: 4, prefix max expansions: 200, query timeout (ms): 500, timeout policy: return, cursor read size: 1000, cursor max idle (ms): 300000, max doctable size: 1000000, max number of search results:  1000000,"
+      message: "<search> gc: ON, prefix min length: 2, min word length to stem: 4, prefix max expansions: 200, query timeout (ms): 500, timeout policy: return, cursor read size: 1000, cursor max idle (ms): 300000, max doctable size: 1000000, max number of search results:  1000000, "
       pid: 1
       role: master
       roleChar: M
