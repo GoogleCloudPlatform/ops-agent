@@ -362,16 +362,16 @@
       message: |-
         org.apache.catalina.core.StandardWrapperValve Servlet.service() for servlet [dispatcher] threw exception
         java.lang.NullPointerException: Cannot invoke "String.length()" because "input" is null
-        at com.example.service.UserService.getUserById(UserService.java:42)
-        at com.example.controller.UserController.handleRequest(UserController.java:28)
-        at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-        at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
-        at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-        at java.base/java.lang.reflect.Method.invoke(Method.java:568)
-        at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:205)
-        at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1011)
-        at org.springframework.web.servlet.FrameworkServlet.doGet(FrameworkServlet.java:895)
-        at javax.servlet.http.HttpServlet.service(HttpServlet.java:626)
+        	at com.example.service.UserService.getUserById(UserService.java:42)
+        	at com.example.controller.UserController.handleRequest(UserController.java:28)
+        	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+        	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+        	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+        	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+        	at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:205)
+        	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1011)
+        	at org.springframework.web.servlet.FrameworkServlet.doGet(FrameworkServlet.java:895)
+        	at javax.servlet.http.HttpServlet.service(HttpServlet.java:626)
       module: http-nio-8080-exec-7
       source: org.apache.catalina.core.StandardWrapperValve
     labels:

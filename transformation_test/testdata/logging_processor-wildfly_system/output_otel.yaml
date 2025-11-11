@@ -19,7 +19,6 @@
   - jsonPayload:
       level: DEBUG
       message: "VM Arguments: -D[Standalone] -Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true  --add-exports=java.desktop/sun.awt=ALL-UNNAMED --add-exports=java.naming/com.sun.jndi.ldap=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.security=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.management/javax.management=ALL-UNNAMED --add-opens=java.naming/javax.naming=ALL-UNNAMED -Dlogging.configuration=file:/opt/wildfly/standalone/configuration/logging.properties"
-      messageCode: ""
       source: org.jboss.as.config
       thread: MSC service thread 1-1
     labels:
@@ -88,11 +87,10 @@
       level: DEBUG
       message: |-
         Configured system properties:
-        [Standalone] =
-        awt.toolkit = sun.awt.X11.XToolkit
-        file.encoding = UTF-8
-        file.separator = /
-      messageCode: ""
+                          [Standalone] = 
+                          awt.toolkit = sun.awt.X11.XToolkit
+                          file.encoding = UTF-8
+                          file.separator = /
       source: org.jboss.as.config
       thread: MSC service thread 1-1
     labels:

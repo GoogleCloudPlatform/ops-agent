@@ -2,7 +2,6 @@
   - jsonPayload:
       collection: collection1
       core: core1
-      exception: ""
       level: INFO
       message: "[collection1]  webapp=/solr path=/select params={q=*:*&wt=json} hits=2435 status=0 QTime=17"
       replica: replica1
@@ -23,7 +22,6 @@
   - jsonPayload:
       collection: collection1
       core: core1
-      exception: ""
       level: DEBUG
       message: handleRequest start select
       replica: replica1
@@ -44,7 +42,6 @@
   - jsonPayload:
       collection: collection1
       core: core1
-      exception: ""
       level: WARN
       message: "Problem loading core: collection1"
       replica: replica1
@@ -68,8 +65,8 @@
       exception: |-
         
         org.apache.solr.common.SolrException:org.apache.solr.common.SolrException: Could not load config for collection1
-        at org.apache.solr.core.SolrCore.<init>(SolrCore.java:XXX)
-        at org.apache.solr.core.CoreContainer.load(CoreContainer.java:YYY)
+            at org.apache.solr.core.SolrCore.<init>(SolrCore.java:XXX)
+            at org.apache.solr.core.CoreContainer.load(CoreContainer.java:YYY)
       level: ERROR
       message: "Error initializing core: collection1"
       replica: replica1
@@ -90,7 +87,6 @@
   - jsonPayload:
       collection: collection2
       core: core2
-      exception: ""
       level: INFO
       message: "[collection2]  webapp=/solr path=/update params={commit=true} status=0 QTime=128"
       replica: replica2
@@ -111,7 +107,6 @@
   - jsonPayload:
       collection: collection1
       core: core1
-      exception: ""
       level: INFO
       message: "[collection1]  webapp=/solr path=/select params={q=id:42&wt=json} hits=1 status=0 QTime=6"
       replica: replica1
@@ -132,7 +127,6 @@
   - jsonPayload:
       collection: collection2
       core: core2
-      exception: ""
       level: INFO
       message: "[collection2]  webapp=/solr path=/admin/metrics params={group=core&prefix=QUERY./select} status=0 QTime=4"
       replica: replica2
@@ -153,7 +147,6 @@
   - jsonPayload:
       collection: collection1
       core: core1
-      exception: ""
       level: INFO
       message: "[collection1]  webapp=/solr path=/select params={q=*:*&fq=category:electronics&wt=xml} hits=154 status=0 QTime=12"
       replica: replica1
@@ -174,7 +167,6 @@
   - jsonPayload:
       collection: collection1
       core: core1
-      exception: ""
       level: INFO
       message: "[collection1]  webapp=/solr path=/update params={commit=true} status=0 QTime=95"
       replica: replica1
@@ -195,13 +187,8 @@
   partialSuccess: true
 - entries:
   - jsonPayload:
-      collection: ""
-      core: ""
-      exception: ""
       level: INFO
       message: Startup complete. Ready to accept requests.
-      replica: ""
-      shard: ""
       source: o.a.s.SolrServer
       thread: main
     labels:

@@ -1,9 +1,7 @@
 - entries:
   - jsonPayload:
-      errorCode: ""
       level: Note
       message: "mysqld: ready for connections."
-      subsystem: ""
       tid: 0
     labels:
       compute.googleapis.com/resource_name: hostname
@@ -85,10 +83,8 @@
     severity: ERROR
     timestamp: 2025-07-22T16:02:04.000004Z
   - jsonPayload:
-      errorCode: ""
       level: Warning
       message: "Aborted connection 47 to db: 'test' user: 'user' host: '172.18.0.3' (Got timeout reading communication packets)"
-      subsystem: ""
       tid: 14
     labels:
       compute.googleapis.com/resource_name: hostname
