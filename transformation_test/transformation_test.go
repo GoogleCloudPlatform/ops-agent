@@ -243,7 +243,6 @@ func (t transformationTest) pipelineInstance(path string) confgenerator.Pipeline
 			p.LoggingProcessor,
 		})
 	}
-	pollInterval := time.Second
 	return confgenerator.PipelineInstance{
 		PipelineType: "logs",
 		PID:          flbTag,
@@ -252,8 +251,7 @@ func (t transformationTest) pipelineInstance(path string) confgenerator.Pipeline
 			IncludePaths: []string{
 				path,
 			},
-			TransformationTest:      true,
-			WildcardRefreshInterval: &pollInterval,
+			TransformationTest: true,
 		}},
 		Processors: processors,
 	}
@@ -360,7 +358,7 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 				Config: map[string]any{
 					"project": "my-project",
 					"sending_queue": map[string]any{
-						"enabled": false,
+						"enabled": true,
 					},
 					"log": map[string]any{
 						"default_log_name": "my-log-name",
