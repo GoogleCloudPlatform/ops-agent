@@ -935,22 +935,3 @@
     severity: NOTICE
     timestamp: 2025-07-19T02:08:05.268Z
   partialSuccess: true
-- entries:
-  - jsonPayload:
-      level: "*"
-      message: Ready to accept connections tcp
-      pid: 1
-      role: master
-      roleChar: M
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
-    logName: projects/my-project/logs/my-log-name
-    resource:
-      labels:
-        instance_id: test-instance-id
-        zone: test-zone
-      type: gce_instance
-    severity: NOTICE
-    timestamp: 2025-07-19T02:08:05.268Z
-  partialSuccess: true
