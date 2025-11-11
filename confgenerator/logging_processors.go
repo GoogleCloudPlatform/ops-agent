@@ -462,7 +462,7 @@ func (p LoggingProcessorParseMultilineRegex) Components(ctx context.Context, tag
 func otelIsFirstEntryExpression(rules []MultilineRule) string {
 	var isFirstEntry []string
 	for _, r := range rules {
-		// The current "recombine" operator multiline support only requires determining the "start_state" for a log.
+		// The current "recombine" operator multiline support only requires determining the "start_state".
 		// TODO: b/459877163 - Update implementation when opentelemetry support "state-machine" multiline parsing.
 		if r.StateName == "start_state" {
 			isFirstEntry = append(isFirstEntry, r.Regex)
