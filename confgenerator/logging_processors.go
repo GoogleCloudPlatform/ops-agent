@@ -394,8 +394,8 @@ func (p LoggingProcessorParseRegexComplex) Processors(ctx context.Context) ([]ot
 	if len(p.Parsers) == 0 {
 		return []otel.Component{}, nil
 	}
-	processors := []otel.Component{}
 
+	processors := []otel.Component{}
 	for _, parserConfig := range p.Parsers {
 		parseRegex := LoggingProcessorParseRegex{
 			ParserShared: parserConfig.Parser,
@@ -484,17 +484,14 @@ func (p LoggingProcessorParseMultilineRegex) Processors(ctx context.Context) ([]
 						"value": `EXPR(attributes["agent.googleapis.com/log_file_path"] ?? "")`,
 					},
 					{
-						"type":          "recombine",
-						"combine_field": "body.message",
-						// N.B. We cannot specify "combine_with" because it is not serialized correctly by our yaml library.
-						//"combine_with":   "\n",
+						"type":           "recombine",
+						"combine_field":  "body.message",
 						"is_first_entry": expr,
 						// Take the timestamp and other attributes from the first entry.
 						"overwrite_with": "oldest",
 						// Use the log file path to disambiguate if present.
 						"source_identifier": `attributes.__source_identifier`,
-						// How long to wait for more log lines.
-						// Set to half of the file receiver's poll_interval to guarantee it is flushed every poll.
+						// Set to half of the file receiver's default poll_interval to guarantee it is flushed every poll.
 						"force_flush_period": "500ms",
 					},
 					{
