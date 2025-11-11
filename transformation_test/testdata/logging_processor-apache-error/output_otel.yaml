@@ -19,7 +19,6 @@
     severity: ERROR
     timestamp: 2011-09-09T17:42:29.902022Z
   - jsonPayload:
-      client: ""
       errorCode: AH02217
       level: error
       message: "ssl_stapling_init_cert: Can't retrieve issuer certificate!"
@@ -39,10 +38,8 @@
     timestamp: 2021-09-30T10:18:29.239182Z
   - jsonPayload:
       client: 72.15.99.187
-      errorCode: ""
       level: error
       message: "File does not exist: /usr/local/apache2/htdocs/favicon.ico"
-      module: ""
       pid: 35708
       tid: 4328636416
     labels:
@@ -58,12 +55,8 @@
     timestamp: 2011-09-09T17:42:29.902022Z
   - jsonPayload:
       client: 127.0.0.1
-      errorCode: ""
       level: error
-      message: "client denied by server configuration: /export/home/live/ap/htdocs/test"
-      module: ""
-      pid: ""
-      tid: ""
+      message: "client denied by server configuration: /export/home/live/ap/htdocs/test "
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_error

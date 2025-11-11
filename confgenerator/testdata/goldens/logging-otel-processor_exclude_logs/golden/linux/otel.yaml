@@ -786,6 +786,8 @@ receivers:
       id: body
       to: body.message
       type: move
+    preserve_leading_whitespaces: true
+    preserve_trailing_whitespaces: true
     start_at: beginning
   filelog/syslog:
     exclude: []
@@ -798,6 +800,8 @@ receivers:
       id: body
       to: body.message
       type: move
+    preserve_leading_whitespaces: true
+    preserve_trailing_whitespaces: true
     start_at: beginning
   hostmetrics/hostmetrics:
     collection_interval: 60s
