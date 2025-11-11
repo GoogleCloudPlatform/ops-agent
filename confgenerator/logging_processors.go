@@ -459,20 +459,25 @@ func (p LoggingProcessorParseMultilineRegex) Components(ctx context.Context, tag
 	)
 }
 
-func (p LoggingProcessorParseMultilineRegex) Processors(ctx context.Context) ([]otel.Component, error) {
-	var firstLines []string
-	for _, r := range p.Rules {
+func otelIsFirstEntryExpression(rules []MultilineRule) string {
+	var isFirstEntry []string
+	for _, r := range rules {
+		// The current "recombine" operator multiline support only requires determining the "start_state" for a log.
+		// TODO: b/459877163 - Update implementation when opentelemetry support "state-machine" multiline parsing.
 		if r.StateName == "start_state" {
-			firstLines = append(firstLines, r.Regex)
+			isFirstEntry = append(isFirstEntry, r.Regex)
 		}
 	}
 
 	var exprParts []string
-	for _, r := range firstLines {
+	for _, r := range isFirstEntry {
 		exprParts = append(exprParts, fmt.Sprintf("body.message matches %q", r))
 	}
-	expr := strings.Join(exprParts, " or ")
+	return strings.Join(exprParts, " or ")
+}
 
+func (p LoggingProcessorParseMultilineRegex) Processors(ctx context.Context) ([]otel.Component, error) {
+	isFirstEntryExpression := otelIsFirstEntryExpression(p.Rules)
 	logsTransform := []otel.Component{
 		{
 			Type: "logstransform",
@@ -486,7 +491,7 @@ func (p LoggingProcessorParseMultilineRegex) Processors(ctx context.Context) ([]
 					{
 						"type":           "recombine",
 						"combine_field":  "body.message",
-						"is_first_entry": expr,
+						"is_first_entry": isFirstEntryExpression,
 						// Take the timestamp and other attributes from the first entry.
 						"overwrite_with": "oldest",
 						// Use the log file path to disambiguate if present.
@@ -507,8 +512,6 @@ func (p LoggingProcessorParseMultilineRegex) Processors(ctx context.Context) ([]
 	if err != nil {
 		return nil, err
 	}
-
-	// return logsTransform, nil
 
 	return append(logsTransform, parseRegexComplexComponents...), nil
 }
