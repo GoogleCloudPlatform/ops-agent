@@ -1,11 +1,9 @@
 - entries:
   - jsonPayload:
-      database: ""
       level: LOG
       message: "connection received: host=192.168.1.10 port=5432 user=admin database=mydb"
       tid: 21763
       time: 2025-07-21 10:14:21.123 UTC
-      user: ""
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
@@ -18,12 +16,10 @@
     severity: INFO
     timestamp: now
   - jsonPayload:
-      database: ""
       level: LOG
       message: "connection authorized: user=admin database=mydb application_name=psql"
       tid: 21763
       time: 2025-07-21 10:14:21.124 UTC
-      user: ""
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
@@ -36,12 +32,10 @@
     severity: INFO
     timestamp: now
   - jsonPayload:
-      database: ""
       level: STATEMENT
       message: SELECT * FROM customers WHERE last_login > now() - interval '30 days';
       tid: 21763
       time: 2025-07-21 10:14:21.125 UTC
-      user: ""
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
@@ -54,12 +48,10 @@
     severity: DEBUG
     timestamp: now
   - jsonPayload:
-      database: ""
       level: LOG
       message: "disconnection: session time: 0:00:01.178 user=admin database=mydb host=192.168.1.10 port=5432"
       tid: 21765
       time: 2025-07-21 10:14:22.301 UTC
-      user: ""
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
@@ -72,12 +64,10 @@
     severity: INFO
     timestamp: now
   - jsonPayload:
-      database: ""
       level: ERROR
       message: syntax error at or near "FROMM" at character 15
       tid: 21767
       time: 2025-07-21 10:14:25.411 UTC
-      user: ""
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
@@ -90,12 +80,10 @@
     severity: ERROR
     timestamp: now
   - jsonPayload:
-      database: ""
       level: STATEMENT
       message: SELECT name, email FROMM users;
       tid: 21767
       time: 2025-07-21 10:14:25.411 UTC
-      user: ""
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
@@ -108,12 +96,10 @@
     severity: DEBUG
     timestamp: now
   - jsonPayload:
-      database: ""
       level: LOG
       message: "duration: 5.345 ms  statement: INSERT INTO orders (user_id, amount, created_at) VALUES (42, 199.99, now());"
       tid: 21770
       time: 2025-07-21 10:14:27.123 UTC
-      user: ""
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
@@ -126,12 +112,10 @@
     severity: INFO
     timestamp: now
   - jsonPayload:
-      database: ""
       level: WARNING
       message: there is already a transaction in progress
       tid: 21772
       time: 2025-07-21 10:14:30.673 UTC
-      user: ""
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
@@ -144,12 +128,10 @@
     severity: WARNING
     timestamp: now
   - jsonPayload:
-      database: ""
       level: STATEMENT
       message: BEGIN;
       tid: 21772
       time: 2025-07-21 10:14:30.673 UTC
-      user: ""
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
@@ -162,17 +144,15 @@
     severity: DEBUG
     timestamp: now
   - jsonPayload:
-      database: ""
       level: LOG
       message: |-
         automatic vacuum of table "public.sessions": index scans: 1
-        pages: 1000 removed, 4323 remain
-        tuples: 12345 removed, 54232 remain
-        buffer usage: 753 hits, 945 misses, 3 dirtied
-        avg read rate: 10.45 MB/s, avg write rate: 3.32 MB/s
+                pages: 1000 removed, 4323 remain
+                tuples: 12345 removed, 54232 remain
+                buffer usage: 753 hits, 945 misses, 3 dirtied
+                avg read rate: 10.45 MB/s, avg write rate: 3.32 MB/s
       tid: 21775
       time: 2025-07-21 10:14:35.987 UTC
-      user: ""
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
@@ -185,12 +165,10 @@
     severity: INFO
     timestamp: now
   - jsonPayload:
-      database: ""
       level: FATAL
       message: password authentication failed for user "invalid_user"
       tid: 21778
       time: 2025-07-21 10:14:40.118 UTC
-      user: ""
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
@@ -203,12 +181,10 @@
     severity: CRITICAL
     timestamp: now
   - jsonPayload:
-      database: ""
       level: DETAIL
       message: "Connection matched pg_hba.conf line 90: \"host all all 0.0.0.0/0 md5\""
       tid: 21778
       time: 2025-07-21 10:14:40.118 UTC
-      user: ""
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
@@ -221,12 +197,10 @@
     severity: DEBUG
     timestamp: now
   - jsonPayload:
-      database: ""
       level: LOG
       message: "checkpoint starting: time"
       tid: 21782
       time: 2025-07-21 10:14:45.721 UTC
-      user: ""
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
@@ -239,12 +213,10 @@
     severity: INFO
     timestamp: now
   - jsonPayload:
-      database: ""
       level: LOG
       message: "checkpoint complete: wrote 1523 buffers (1.2%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.091 s, sync=0.063 s, total=0.332 s; sync files=32, longest=0.021 s, average=0.004 s"
       tid: 21782
       time: 2025-07-21 10:14:46.053 UTC
-      user: ""
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
@@ -257,12 +229,10 @@
     severity: INFO
     timestamp: now
   - jsonPayload:
-      database: ""
       level: LOG
       message: background worker "logical replication launcher" (PID 21784) started
       tid: 21784
       time: 2025-07-21 10:14:49.215 UTC
-      user: ""
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
@@ -275,12 +245,10 @@
     severity: INFO
     timestamp: now
   - jsonPayload:
-      database: ""
       level: LOG
       message: "duration: 13.212 ms  statement: UPDATE inventory SET quantity = quantity - 1 WHERE product_id = 502;"
       tid: 21790
       time: 2025-07-21 10:14:52.800 UTC
-      user: ""
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
@@ -293,12 +261,10 @@
     severity: INFO
     timestamp: now
   - jsonPayload:
-      database: ""
       level: PANIC
       message: "could not write to log file: No space left on device"
       tid: 21793
       time: 2025-07-21 10:14:55.029 UTC
-      user: ""
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
@@ -311,12 +277,10 @@
     severity: CRITICAL
     timestamp: now
   - jsonPayload:
-      database: ""
       level: LOG
       message: "server process (PID 21793) was terminated by signal 6: Aborted"
       tid: 21793
       time: 2025-07-21 10:14:55.029 UTC
-      user: ""
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
@@ -329,12 +293,10 @@
     severity: INFO
     timestamp: now
   - jsonPayload:
-      database: ""
       level: DETAIL
       message: "Failed process was running: COPY logs TO '/var/tmp/log_backup.csv' CSV"
       tid: 21793
       time: 2025-07-21 10:14:55.029 UTC
-      user: ""
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
@@ -347,12 +309,10 @@
     severity: DEBUG
     timestamp: now
   - jsonPayload:
-      database: ""
       level: LOG
       message: database system is shutting down
       tid: 1
       time: 2025-07-21 10:14:56.000 UTC
-      user: ""
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
@@ -365,12 +325,10 @@
     severity: INFO
     timestamp: now
   - jsonPayload:
-      database: ""
       level: LOG
       message: database system shut down at 2025-07-21 10:14:56 UTC
       tid: 1
       time: 2025-07-21 10:14:56.650 UTC
-      user: ""
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
@@ -383,12 +341,10 @@
     severity: INFO
     timestamp: now
   - jsonPayload:
-      database: ""
       level: LOG
       message: database system was shut down at 2025-07-21 10:14:56 UTC
       tid: 1
       time: 2025-07-21 10:14:57.012 UTC
-      user: ""
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general
@@ -403,12 +359,10 @@
   partialSuccess: true
 - entries:
   - jsonPayload:
-      database: ""
       level: LOG
       message: database system is ready to accept connections
       tid: 1
       time: 2025-07-21 10:14:57.012 UTC
-      user: ""
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/postgresql_general

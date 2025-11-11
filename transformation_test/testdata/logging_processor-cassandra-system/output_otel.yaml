@@ -142,13 +142,13 @@
       message: |-
         CompactionTask.java:322 - Error during compaction
         java.lang.RuntimeException: Out of memory while compacting sstable
-        at org.apache.cassandra.db.compaction.CompactionTask.runWith(CompactionTask.java:315)
-        at org.apache.cassandra.db.compaction.CompactionTask.run(CompactionTask.java:236)
-        at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
-        at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
-        at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
-        at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
-        at java.base/java.lang.Thread.run(Thread.java:840)
+        	at org.apache.cassandra.db.compaction.CompactionTask.runWith(CompactionTask.java:315)
+        	at org.apache.cassandra.db.compaction.CompactionTask.run(CompactionTask.java:236)
+        	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+        	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+        	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+        	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+        	at java.base/java.lang.Thread.run(Thread.java:840)
       module: CompactionExecutor:2
     labels:
       compute.googleapis.com/resource_name: hostname
@@ -187,14 +187,14 @@
       message: |-
         HintsWriteExecutor.java:134 - Failed to write hint
         org.apache.cassandra.io.FSWriteError: java.io.IOException: No space left on device
-        at org.apache.cassandra.io.util.FileUtils.handleFSError(FileUtils.java:165)
-        at org.apache.cassandra.io.util.SequentialWriter.write(SequentialWriter.java:135)
-        at org.apache.cassandra.hints.HintsWriteExecutor.write(HintsWriteExecutor.java:128)
-        at org.apache.cassandra.hints.HintsWriteExecutor.writeHint(HintsWriteExecutor.java:110)
-        at org.apache.cassandra.hints.HintsService$WriteHints.run(HintsService.java:549)
-        at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
-        at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
-        at java.base/java.lang.Thread.run(Thread.java:840)
+        	at org.apache.cassandra.io.util.FileUtils.handleFSError(FileUtils.java:165)
+        	at org.apache.cassandra.io.util.SequentialWriter.write(SequentialWriter.java:135)
+        	at org.apache.cassandra.hints.HintsWriteExecutor.write(HintsWriteExecutor.java:128)
+        	at org.apache.cassandra.hints.HintsWriteExecutor.writeHint(HintsWriteExecutor.java:110)
+        	at org.apache.cassandra.hints.HintsService$WriteHints.run(HintsService.java:549)
+        	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+        	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+        	at java.base/java.lang.Thread.run(Thread.java:840)
       module: HintsService:1
     labels:
       compute.googleapis.com/resource_name: hostname

@@ -63,11 +63,11 @@
       message: |-
         Failed to start namenode
         java.io.IOException: Cannot create directory /hadoop/logs/hdfs
-        at org.apache.hadoop.hdfs.server.common.Storage.createDir(Storage.java:157)
-        at org.apache.hadoop.hdfs.server.namenode.FSImage.format(FSImage.java:183)
-        at org.apache.hadoop.hdfs.server.namenode.NameNode.format(NameNode.java:977)
-        at org.apache.hadoop.hdfs.server.namenode.NameNode.createNameNode(NameNode.java:1421)
-        at org.apache.hadoop.hdfs.server.namenode.NameNode.main(NameNode.java:1540)
+        	at org.apache.hadoop.hdfs.server.common.Storage.createDir(Storage.java:157)
+        	at org.apache.hadoop.hdfs.server.namenode.FSImage.format(FSImage.java:183)
+        	at org.apache.hadoop.hdfs.server.namenode.NameNode.format(NameNode.java:977)
+        	at org.apache.hadoop.hdfs.server.namenode.NameNode.createNameNode(NameNode.java:1421)
+        	at org.apache.hadoop.hdfs.server.namenode.NameNode.main(NameNode.java:1540)
       severity: ERROR
       source: org.apache.hadoop.hdfs.server.namenode.NameNode
     labels:

@@ -3,7 +3,6 @@
       level: INFO
       logger: org.apache.zookeeper.ZooKeeper
       message: Initiating client connection, connectString=zookeeper:2181 sessionTimeout=18000 watcher=kafka.zookeeper.ZooKeeperClient$ZooKeeperClientWatcher$@4b2f7dd4
-      source: ""
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/kafka
@@ -35,7 +34,6 @@
       level: INFO
       logger: org.apache.zookeeper.ZooKeeper
       message: Client environment:java.class.path=/opt/kafka/libs/kafka-clients-3.7.0.jar:/opt/kafka/libs/slf4j-api-1.7.30.jar:/opt/kafka/libs/zookeeper-3.6.3.jar:/opt/kafka/libs/...
-      source: ""
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/kafka
@@ -52,18 +50,17 @@
       logger: kafka.server.KafkaConfig
       message: |-
         KafkaConfig values:
-        advertised.listeners = PLAINTEXT://localhost:9092
-        alter.config.policy.class.name = null
-        alter.log.dirs.replication.quota.window.num = 11
-        alter.log.dirs.replication.quota.window.size.seconds = 1
-        background.threads = 10
-        broker.id = 0
-        compression.type = producer
-        controlled.shutdown.enable = true
-        log.dirs = /var/lib/kafka/data
-        num.partitions = 1
-        (zookeeper.connect = zookeeper:2181)
-      source: ""
+        	advertised.listeners = PLAINTEXT://localhost:9092
+        	alter.config.policy.class.name = null
+        	alter.log.dirs.replication.quota.window.num = 11
+        	alter.log.dirs.replication.quota.window.size.seconds = 1
+        	background.threads = 10
+        	broker.id = 0
+        	compression.type = producer
+        	controlled.shutdown.enable = true
+        	log.dirs = /var/lib/kafka/data
+        	num.partitions = 1
+        	(zookeeper.connect = zookeeper:2181)
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/kafka
@@ -158,15 +155,15 @@
   - jsonPayload:
       level: INFO
       logger: kafka.server.ReplicaFetcherThread
-      message: |-
+      message: |
         Error fetching data for partition events-0 from leader kafka-broker-1:9092
-        java.io.IOException: Connection reset by peer
-        at sun.nio.ch.FileDispatcherImpl.read0(Native Method)
-        at sun.nio.ch.SocketDispatcher.read(SocketDispatcher.java:39)
-        at sun.nio.ch.IOUtil.readIntoNativeBuffer(IOUtil.java:223)
-        at sun.nio.ch.IOUtil.read(IOUtil.java:197)
-        at sun.nio.ch.SocketChannelImpl.read(SocketChannelImpl.java:379)
-        ... 6 more
+        	java.io.IOException: Connection reset by peer
+        		at sun.nio.ch.FileDispatcherImpl.read0(Native Method)
+        		at sun.nio.ch.SocketDispatcher.read(SocketDispatcher.java:39)
+        		at sun.nio.ch.IOUtil.readIntoNativeBuffer(IOUtil.java:223)
+        		at sun.nio.ch.IOUtil.read(IOUtil.java:197)
+        		at sun.nio.ch.SocketChannelImpl.read(SocketChannelImpl.java:379)
+        		... 6 more
       source: ReplicaFetcherThread-0-1
     labels:
       compute.googleapis.com/resource_name: hostname
