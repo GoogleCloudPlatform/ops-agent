@@ -111,6 +111,8 @@
         zone: test-zone
       type: gce_instance
     timestamp: 2025-07-22T16:00:08.890123Z
+  partialSuccess: true
+- entries:
   - jsonPayload:
       command: Query
       message: SELECT * FROM sessions WHERE active = 1;

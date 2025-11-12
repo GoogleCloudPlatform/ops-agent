@@ -81,6 +81,8 @@
       type: gce_instance
     severity: ERROR
     timestamp: 2022-02-02T02:09:51.500Z
+  partialSuccess: true
+- entries:
   - jsonPayload:
       message: Successfully started datanode on port 9866
       severity: INFO

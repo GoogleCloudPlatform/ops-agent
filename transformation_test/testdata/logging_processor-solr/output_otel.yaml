@@ -184,6 +184,8 @@
       type: gce_instance
     severity: INFO
     timestamp: 2025-07-21T23:58:55.013Z
+  partialSuccess: true
+- entries:
   - jsonPayload:
       level: INFO
       message: Startup complete. Ready to accept requests.

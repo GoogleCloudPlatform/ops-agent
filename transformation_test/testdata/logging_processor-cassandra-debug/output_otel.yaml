@@ -339,6 +339,8 @@
       type: gce_instance
     severity: DEBUG
     timestamp: 2025-07-22T15:15:42.200Z
+  partialSuccess: true
+- entries:
   - jsonPayload:
       javaClass: MerkleTree.java
       level: DEBUG

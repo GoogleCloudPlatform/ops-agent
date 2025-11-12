@@ -356,6 +356,8 @@
       type: gce_instance
     severity: INFO
     timestamp: now
+  partialSuccess: true
+- entries:
   - jsonPayload:
       level: LOG
       message: database system is ready to accept connections

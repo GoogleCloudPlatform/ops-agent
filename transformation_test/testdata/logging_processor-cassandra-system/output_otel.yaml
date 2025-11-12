@@ -178,6 +178,8 @@
       type: gce_instance
     severity: WARNING
     timestamp: 2025-07-22T18:40:00.409Z
+  partialSuccess: true
+- entries:
   - jsonPayload:
       javaClass: HintsWriteExecutor.java
       level: ERROR

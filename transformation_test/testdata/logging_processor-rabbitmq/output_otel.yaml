@@ -201,6 +201,8 @@
         zone: test-zone
       type: gce_instance
     timestamp: now
+  partialSuccess: true
+- entries:
   - jsonPayload:
       message: "{shutdown,{connection_closed, \"Broken pipe\"}}"
       process_id: 123.456.789

@@ -194,6 +194,8 @@
       type: gce_instance
     severity: DEBUG
     timestamp: 2025-05-21T04:34:14.094Z
+  partialSuccess: true
+- entries:
   - jsonPayload:
       level: TRACE
       message: " [] - Successfully recovered 0 persisted job graphs."
