@@ -88,6 +88,8 @@ processors:
     interval: 1m
   metricstarttime/agent_prometheus_1:
     strategy: subtract_initial_point
+  metricstarttime/ops_agent_1:
+    strategy: subtract_initial_point
   metricstarttime/prometheus_2:
     strategy: subtract_initial_point
   metricstransform/fluentbit_1:
@@ -594,7 +596,7 @@ processors:
     - action: insert
       key: gcp.project_id
       value: test-project
-  resource/ops_agent_1:
+  resource/ops_agent_2:
     attributes:
     - action: insert
       key: gcp.project_id
@@ -649,7 +651,7 @@ processors:
     - context: datapoint
       statements:
       - set(time, Now())
-  transform/ops_agent_2:
+  transform/ops_agent_3:
     metric_statements:
     - context: scope
       statements:
@@ -835,8 +837,9 @@ service:
       - otlphttp/otlp
       processors:
       - transform/ops_agent_0
-      - resource/ops_agent_1
-      - transform/ops_agent_2
+      - metricstarttime/ops_agent_1
+      - resource/ops_agent_2
+      - transform/ops_agent_3
       - resourcedetection/_global_0
       receivers:
       - otlpjsonfile/ops_agent

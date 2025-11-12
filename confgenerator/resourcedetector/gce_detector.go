@@ -131,6 +131,7 @@ func (r GCEResource) OTelResourceAttributes() map[string]string {
 		"cloud.availability_zone": r.Zone,
 		"cloud.region":            r.Zone,
 		"host.id":                 r.InstanceID,
+		"instance_id":             r.InstanceID,
 	}
 }
 

@@ -298,6 +298,23 @@ func MetricsRemoveInstrumentationLibraryLabelsAttributes() Component {
 	)
 }
 
+func CopyHostIDToInstanceID() Component {
+	return Component{
+		Type: "transform",
+		Config: map[string]any{
+			"metric_statements": []map[string]any{
+				{
+					"context":    "resource",
+					"error_mode": "silent",
+					"statements": []string{
+						`set(attributes["instance_id"], attributes["host.id"])`,
+					},
+				},
+			},
+		},
+	}
+}
+
 // TransformQueryContext is a type wrapper for the context of a query expression within the transoform processor
 type TransformQueryContext string
 

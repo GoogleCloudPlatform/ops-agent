@@ -214,9 +214,9 @@ func RunForEachImageAndFeatureFlag(t *testing.T, features []string, testBody fun
 	t.Helper()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		// t.Run(DefaultFeatureFlag, func(t *testing.T) {
-		// 	testBody(t, imageSpec, DefaultFeatureFlag)
-		// })
+		t.Run(DefaultFeatureFlag, func(t *testing.T) {
+			testBody(t, imageSpec, DefaultFeatureFlag)
+		})
 		for _, feature := range features {
 			t.Run(feature, func(t *testing.T) {
 				if gce.IsOpsAgentUAPPlugin() {
@@ -2639,10 +2639,6 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 		}
 	}
 
-	// The code `agentMetricsMetadata` in Go is likely declaring a variable or a
-	// constant named `agentMetricsMetadata`. However, without additional context or
-	// code, it is not possible to determine the exact purpose or functionality of
-	// this variable.
 	agentMetricsMetadata := path.Join("agent_metrics", "metadata.yaml")
 	bytes, err := os.ReadFile(agentMetricsMetadata)
 	if err != nil {
@@ -2731,22 +2727,22 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 		t.Fatal(err)
 	}
 
-	// series, err := gce.WaitForMetricSeries(ctx, logger, vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", window, nil, false, len(fc.Features))
-	// if err != nil {
-	// 	t.Error(err)
-	// 	return
-	// }
+	series, err := gce.WaitForMetricSeries(ctx, logger, vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", window, nil, false, len(fc.Features))
+	if err != nil {
+		t.Error(err)
+		return
+	}
 
-	// err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, fc.Features)
-	// if err != nil {
-	// 	t.Error(err)
-	// 	return
-	// }
+	err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, fc.Features)
+	if err != nil {
+		t.Error(err)
+		return
+	}
 }
 
 func TestDefaultMetricsNoProxy(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{ OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, "", feature); err != nil {

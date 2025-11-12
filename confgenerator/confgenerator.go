@@ -57,6 +57,17 @@ func googleCloudExporter(userAgent string, instrumentationLabels bool, serviceRe
 	}
 }
 
+func ConvertToOtlpExporter(receiver otel.ReceiverPipeline, expOtlpExporter bool, projectName string) otel.ReceiverPipeline {
+	if !expOtlpExporter {
+		return receiver
+	}
+	receiver.ExporterTypes["metrics"] = otel.OTLP
+	receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.MetricStartTime())
+	receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.GCPProjectID(projectName))
+	receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.MetricsRemoveInstrumentationLibraryLabelsAttributes())
+	return receiver
+}
+
 func otlpExporter(userAgent string) otel.Component {
 	return otel.Component{
 		Type: "otlphttp",
