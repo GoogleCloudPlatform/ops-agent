@@ -192,6 +192,8 @@
       type: gce_instance
     severity: INFO
     timestamp: 2025-07-22T16:02:11.567Z
+  partialSuccess: true
+- entries:
   - jsonPayload:
       level: INFO
       logger: kafka.coordinator.group.GroupCoordinator

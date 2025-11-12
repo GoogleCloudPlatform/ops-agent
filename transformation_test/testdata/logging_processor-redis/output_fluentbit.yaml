@@ -659,6 +659,18 @@
     logName: projects/my-project/logs/transformation_test
     severity: 300.0
     timestamp: 2025-07-18T19:08:05.268000000Z
+  - jsonPayload:
+      level: "*"
+      message: Ready to accept connections tcp
+      pid: 1.0
+      role: master
+      roleChar: M
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/transformation_test
+    severity: 300.0
+    timestamp: 2025-07-18T19:08:05.268000000Z
   partialSuccess: true
   resource:
     labels: {}

@@ -83,6 +83,8 @@
       file: StatCollector.cpp
       line: "333"
     timestamp: 2025-08-18T16:15:10.555432Z
+  partialSuccess: true
+- entries:
   - jsonPayload:
       component: indexserver
       connection_id: 200002
