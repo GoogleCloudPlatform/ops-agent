@@ -212,9 +212,7 @@ func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.Receiv
 	}
 	// TODO: Configure `storage` to store file checkpoints
 	if len(r.MultilineRules) > 0 {
-		receiver_config["multiline"] = map[string]any{
-			"line_start_pattern": otelIsFirstEntryExpression(r.MultilineRules),
-		}
+		return nil, fmt.Errorf("setting multiline rules in otel filelog receiver is not supported")
 	}
 	// TODO: Support BufferInMemory
 	// OTel parses the log to `body` by default; put it in a `message` field to match fluent-bit's behavior.
