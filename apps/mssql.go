@@ -84,6 +84,9 @@ func (m MetricsReceiverMssql) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 				},
 			},
 		},
+		ExporterTypes: map[string]otel.ExporterType{
+			"metrics": otel.System,
+		},
 		Processors: map[string][]otel.Component{"metrics": {
 			otel.MetricsTransform(
 				otel.RenameMetric(
