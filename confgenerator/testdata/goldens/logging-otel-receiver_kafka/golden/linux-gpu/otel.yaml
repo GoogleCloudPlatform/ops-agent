@@ -92,7 +92,7 @@ processors:
       type: add
       value: EXPR(attributes["agent.googleapis.com/log_file_path"] ?? "")
     - combine_field: body.message
-      force_flush_period: 100ms
+      force_flush_period: 1000ms
       is_first_entry: "body.message matches \"^\\\\[\\\\d{4}-\\\\d{2}-\\\\d{2}\\\\s+\\\\d{2}:\\\\d{2}:\\\\d{2},\\\\d+\\\\]\""
       overwrite_with: oldest
       source_identifier: attributes.__source_identifier
