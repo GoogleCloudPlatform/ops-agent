@@ -1,10 +1,9 @@
 - entries:
   - jsonPayload:
-      extradata: "n"
-      ident: my_app_id
-      msgid: "n"
-      pid: "n"
-      pri: "13"
+      always: first
+      empty: second
+      name: all fields present
+      optional: third
     labels:
       compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/my-log-name
@@ -13,14 +12,11 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: 2006-01-02T08:04:05Z
+    timestamp: now
   - jsonPayload:
-      host: host_name
-      ident: my_app_id
-      message: qqqqrrrr
-      msgid: "n"
-      pid: "n"
-      pri: "14"
+      always: first
+      empty: second
+      name: optional field missing
     labels:
       compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/my-log-name
@@ -29,9 +25,34 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: 2006-01-02T08:03:05Z
+    timestamp: now
   - jsonPayload:
-      message: "<15>1 2006-01-02T15:04:05+0700 vm_name_1 my_app_id n n n "
+      always: first
+      name: empty field missing
+      optional: third
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
+  - jsonPayload:
+      always: first
+      name: optional and empty fields missing
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
+  - jsonPayload:
+      message: "   always, optional and empty missing"
     labels:
       compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/my-log-name

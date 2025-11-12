@@ -1,27 +1,38 @@
 - entries:
   - jsonPayload:
-      extradata: "n"
-      ident: my_app_id
-      msgid: "n"
-      pid: "n"
-      pri: "13"
+      always: first
+      empty: second
+      name: all fields present
+      optional: third
     labels:
       compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/transformation_test
-    timestamp: 2006-01-02T08:04:05.000000000Z
+    timestamp: now
   - jsonPayload:
-      host: host_name
-      ident: my_app_id
-      message: qqqqrrrr
-      msgid: "n"
-      pid: "n"
-      pri: "14"
+      always: first
+      empty: second
+      name: optional field missing
     labels:
       compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/transformation_test
-    timestamp: 2006-01-02T08:03:05.000000000Z
+    timestamp: now
   - jsonPayload:
-      message: "<15>1 2006-01-02T15:04:05+0700 vm_name_1 my_app_id n n n "
+      always: first
+      name: empty field missing
+      optional: third
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      always: first
+      name: optional and empty fields missing
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "   always, optional and empty missing"
     labels:
       compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/transformation_test
