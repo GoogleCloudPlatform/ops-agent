@@ -21,7 +21,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
 
@@ -127,57 +126,7 @@ func (r MetricsReceiverVault) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 	queries = append(queries, metricRenewRevokeTransforms...)
 	queries = append(queries, metricDetailTransforms...)
 
-	processors := []otel.Component{
-		otel.TransformationMetrics(
-			append(
-				queries,
-				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
-				otel.SetScopeVersion("1.0"),
-			)...,
-		),
-		otel.MetricsFilter(
-			"include",
-			"strict",
-			includeMetrics...,
-		),
-		// This is currently needed along side the newer transform processor as the new processor doesn't currently support toggling scalar data types.
-		// Issue: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11810
-		otel.MetricsTransform(
-			otel.UpdateMetric(
-				"vault.audit.response.failed",
-				otel.ToggleScalarDataType,
-			),
-			otel.UpdateMetric(
-				"vault.audit.request.failed",
-				otel.ToggleScalarDataType,
-			),
-			otel.UpdateMetric(
-				"vault.token.lease.count",
-				otel.ToggleScalarDataType,
-			),
-			otel.UpdateMetric(
-				"vault.token.count",
-				otel.ToggleScalarDataType,
-			),
-			otel.UpdateMetric(
-				"vault.core.request.count",
-				otel.ToggleScalarDataType,
-			),
-		),
-		otel.NormalizeSums(),
-		otel.MetricsTransform(
-			otel.AddPrefix("workload.googleapis.com"),
-		),
-		otel.MetricsRemoveServiceAttributes(),
-	}
-
-	exporter := otel.OTel
-	resource, _ := platform.FromContext(ctx).GetResource()
-	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
-		exporter = otel.OTLP
-		processors = append(processors, otel.GCPProjectID(resource.ProjectName()))
-	}
-	return []otel.ReceiverPipeline{{
+	return []otel.ReceiverPipeline{confgenerator.ConvertToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "prometheus",
 			Config: map[string]interface{}{
@@ -188,9 +137,50 @@ func (r MetricsReceiverVault) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 				},
 			},
 		},
-		Processors:    map[string][]otel.Component{"metrics": processors},
-		ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
-	}}, nil
+		Processors: map[string][]otel.Component{"metrics": {
+			otel.TransformationMetrics(
+				append(
+					queries,
+					otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+					otel.SetScopeVersion("1.0"),
+				)...,
+			),
+			otel.MetricsFilter(
+				"include",
+				"strict",
+				includeMetrics...,
+			),
+			// This is currently needed along side the newer transform processor as the new processor doesn't currently support toggling scalar data types.
+			// Issue: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11810
+			otel.MetricsTransform(
+				otel.UpdateMetric(
+					"vault.audit.response.failed",
+					otel.ToggleScalarDataType,
+				),
+				otel.UpdateMetric(
+					"vault.audit.request.failed",
+					otel.ToggleScalarDataType,
+				),
+				otel.UpdateMetric(
+					"vault.token.lease.count",
+					otel.ToggleScalarDataType,
+				),
+				otel.UpdateMetric(
+					"vault.token.count",
+					otel.ToggleScalarDataType,
+				),
+				otel.UpdateMetric(
+					"vault.core.request.count",
+					otel.ToggleScalarDataType,
+				),
+			),
+			otel.NormalizeSums(),
+			otel.MetricsTransform(
+				otel.AddPrefix("workload.googleapis.com"),
+			),
+			otel.MetricsRemoveServiceAttributes(),
+		}},
+	}, ctx)}, nil
 }
 
 type metricTransformer struct {

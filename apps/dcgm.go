@@ -127,80 +127,8 @@ func (r MetricsReceiverDcgm) Pipelines(ctx context.Context) ([]otel.ReceiverPipe
 			"enabled": true,
 		}
 	}
-	processors := []otel.Component{
-		otel.MetricsTransform(
-			otel.RenameMetric(
-				"gpu.dcgm.memory.bandwidth_utilization",
-				"dcgm.gpu.profiling.dram_utilization",
-			),
-			otel.RenameMetric(
-				"gpu.dcgm.nvlink.io",
-				"dcgm.gpu.profiling.nvlink_traffic_rate",
-				otel.RenameLabel("network.io.direction", "direction"),
-				otel.RenameLabelValues("direction", map[string]string{
-					"receive":  "rx",
-					"transmit": "tx",
-				}),
-			),
-			otel.RenameMetric(
-				"gpu.dcgm.pcie.io",
-				"dcgm.gpu.profiling.pcie_traffic_rate",
-				otel.RenameLabel("network.io.direction", "direction"),
-				otel.RenameLabelValues("direction", map[string]string{
-					"receive":  "rx",
-					"transmit": "tx",
-				}),
-			),
-			otel.RenameMetric(
-				"gpu.dcgm.pipe.utilization",
-				"dcgm.gpu.profiling.pipe_utilization",
-				otel.RenameLabel("gpu.pipe", "pipe"),
-			),
-			otel.RenameMetric(
-				"gpu.dcgm.sm.occupancy",
-				"dcgm.gpu.profiling.sm_occupancy",
-			),
-			otel.RenameMetric(
-				"gpu.dcgm.sm.utilization",
-				"dcgm.gpu.profiling.sm_utilization",
-			),
-		),
-		otel.CumulativeToDelta(
-			"dcgm.gpu.profiling.nvlink_traffic_rate",
-			"dcgm.gpu.profiling.pcie_traffic_rate",
-		),
-		otel.DeltaToRate(
-			"dcgm.gpu.profiling.nvlink_traffic_rate",
-			"dcgm.gpu.profiling.pcie_traffic_rate",
-		),
-		otel.MetricsTransform(
-			otel.UpdateMetric(
-				"dcgm.gpu.profiling.nvlink_traffic_rate",
-				otel.ToggleScalarDataType,
-			),
-			otel.UpdateMetric(
-				"dcgm.gpu.profiling.pcie_traffic_rate",
-				otel.ToggleScalarDataType,
-			),
-		),
-		otel.MetricsTransform(
-			otel.AddPrefix("workload.googleapis.com"),
-		),
-		otel.TransformationMetrics(
-			otel.FlattenResourceAttribute("gpu.model", "model"),
-			otel.FlattenResourceAttribute("gpu.number", "gpu_number"),
-			otel.FlattenResourceAttribute("gpu.uuid", "uuid"),
-			otel.SetScopeName("agent.googleapis.com/"+r.Type()),
-			otel.SetScopeVersion("1.0"),
-		),
-	}
-	resource, _ := platform.FromContext(ctx).GetResource()
-	exporter := otel.OTel
-	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
-		exporter = otel.OTLP
-		processors = append(processors, otel.GCPProjectID(resource.ProjectName()))
-	}
-	return []otel.ReceiverPipeline{{
+
+	return []otel.ReceiverPipeline{confgenerator.ConvertToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "dcgm",
 			Config: map[string]interface{}{
@@ -209,9 +137,75 @@ func (r MetricsReceiverDcgm) Pipelines(ctx context.Context) ([]otel.ReceiverPipe
 				"metrics":             metricsConfig,
 			},
 		},
-		Processors:    map[string][]otel.Component{"metrics": processors},
-		ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
-	}}, nil
+		Processors: map[string][]otel.Component{"metrics": {
+			otel.MetricsTransform(
+				otel.RenameMetric(
+					"gpu.dcgm.memory.bandwidth_utilization",
+					"dcgm.gpu.profiling.dram_utilization",
+				),
+				otel.RenameMetric(
+					"gpu.dcgm.nvlink.io",
+					"dcgm.gpu.profiling.nvlink_traffic_rate",
+					otel.RenameLabel("network.io.direction", "direction"),
+					otel.RenameLabelValues("direction", map[string]string{
+						"receive":  "rx",
+						"transmit": "tx",
+					}),
+				),
+				otel.RenameMetric(
+					"gpu.dcgm.pcie.io",
+					"dcgm.gpu.profiling.pcie_traffic_rate",
+					otel.RenameLabel("network.io.direction", "direction"),
+					otel.RenameLabelValues("direction", map[string]string{
+						"receive":  "rx",
+						"transmit": "tx",
+					}),
+				),
+				otel.RenameMetric(
+					"gpu.dcgm.pipe.utilization",
+					"dcgm.gpu.profiling.pipe_utilization",
+					otel.RenameLabel("gpu.pipe", "pipe"),
+				),
+				otel.RenameMetric(
+					"gpu.dcgm.sm.occupancy",
+					"dcgm.gpu.profiling.sm_occupancy",
+				),
+				otel.RenameMetric(
+					"gpu.dcgm.sm.utilization",
+					"dcgm.gpu.profiling.sm_utilization",
+				),
+			),
+			otel.CumulativeToDelta(
+				"dcgm.gpu.profiling.nvlink_traffic_rate",
+				"dcgm.gpu.profiling.pcie_traffic_rate",
+			),
+			otel.DeltaToRate(
+				"dcgm.gpu.profiling.nvlink_traffic_rate",
+				"dcgm.gpu.profiling.pcie_traffic_rate",
+			),
+			otel.MetricsTransform(
+				otel.UpdateMetric(
+					"dcgm.gpu.profiling.nvlink_traffic_rate",
+					otel.ToggleScalarDataType,
+				),
+				otel.UpdateMetric(
+					"dcgm.gpu.profiling.pcie_traffic_rate",
+					otel.ToggleScalarDataType,
+				),
+			),
+			otel.MetricsTransform(
+				otel.AddPrefix("workload.googleapis.com"),
+			),
+			otel.TransformationMetrics(
+				otel.FlattenResourceAttribute("gpu.model", "model"),
+				otel.FlattenResourceAttribute("gpu.number", "gpu_number"),
+				otel.FlattenResourceAttribute("gpu.uuid", "uuid"),
+				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+				otel.SetScopeVersion("1.0"),
+			),
+		},
+		},
+	}, ctx)}, nil
 }
 
 func init() {

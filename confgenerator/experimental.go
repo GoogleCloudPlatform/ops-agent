@@ -58,7 +58,7 @@ func ContextWithExperiments(ctx context.Context, experiments map[string]bool) co
 	return context.WithValue(ctx, experimentsKey, experiments)
 }
 
-func ExperimentsFromContext(ctx context.Context) map[string]bool {
+func experimentsFromContext(ctx context.Context) map[string]bool {
 	if features := ctx.Value(experimentsKey); features != nil {
 		return features.(map[string]bool)
 	}
@@ -67,7 +67,7 @@ func ExperimentsFromContext(ctx context.Context) map[string]bool {
 
 func registerExperimentalValidations(v *validator.Validate) {
 	v.RegisterValidationCtx("experimental", func(ctx context.Context, fl validator.FieldLevel) bool {
-		return fl.Field().IsZero() || ExperimentsFromContext(ctx)[fl.Param()]
+		return fl.Field().IsZero() || experimentsFromContext(ctx)[fl.Param()]
 	})
 	v.RegisterStructValidationCtx(componentValidator, ConfigComponent{})
 }
@@ -78,7 +78,7 @@ func componentValidator(ctx context.Context, sl validator.StructLevel) {
 		return
 	}
 	feature, ok := requiredFeatureForType[comp.Type]
-	if !ok || ExperimentsFromContext(ctx)[feature] {
+	if !ok || experimentsFromContext(ctx)[feature] {
 		return
 	}
 	sl.ReportError(comp, "type", "Type", "experimental", comp.Type)

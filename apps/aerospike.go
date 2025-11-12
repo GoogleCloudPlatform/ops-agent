@@ -20,7 +20,6 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
 
@@ -76,27 +75,8 @@ func (r MetricsReceiverAerospike) Pipelines(ctx context.Context) ([]otel.Receive
 	if r.Endpoint != "" {
 		endpoint = r.Endpoint
 	}
-	processors := []otel.Component{
-		otel.NormalizeSums(),
-		otel.MetricsTransform(
-			otel.AddPrefix("workload.googleapis.com"),
-		),
-		otel.TransformationMetrics(
-			otel.FlattenResourceAttribute("aerospike.node.name", "node_name"),
-			otel.FlattenResourceAttribute("aerospike.namespace", "namespace_name"),
-			otel.SetScopeName("agent.googleapis.com/"+r.Type()),
-			otel.SetScopeVersion("1.0"),
-		),
-		otel.MetricsRemoveServiceAttributes(),
-	}
-	resource, _ := platform.FromContext(ctx).GetResource()
-	exporter := otel.OTel
-	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
-		exporter = otel.OTLP
-		processors = append(processors, otel.GCPProjectID(resource.ProjectName()))
-	}
 
-	return []otel.ReceiverPipeline{{
+	return []otel.ReceiverPipeline{confgenerator.ConvertToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "aerospike",
 			Config: map[string]interface{}{
@@ -108,9 +88,20 @@ func (r MetricsReceiverAerospike) Pipelines(ctx context.Context) ([]otel.Receive
 				"timeout":                 timeout,
 			},
 		},
-		Processors:    map[string][]otel.Component{"metrics": processors},
-		ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
-	}}, nil
+		Processors: map[string][]otel.Component{"metrics": {
+			otel.NormalizeSums(),
+			otel.MetricsTransform(
+				otel.AddPrefix("workload.googleapis.com"),
+			),
+			otel.TransformationMetrics(
+				otel.FlattenResourceAttribute("aerospike.node.name", "node_name"),
+				otel.FlattenResourceAttribute("aerospike.namespace", "namespace_name"),
+				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+				otel.SetScopeVersion("1.0"),
+			),
+			otel.MetricsRemoveServiceAttributes(),
+		}},
+	}, ctx)}, nil
 }
 
 func init() {

@@ -36,7 +36,7 @@ func (MetricsReceiverMssql) Type() string {
 
 func (m MetricsReceiverMssql) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	if m.ReceiverVersion == "2" {
-		return []otel.ReceiverPipeline{{
+		return []otel.ReceiverPipeline{confgenerator.ConvertToOtlpExporter(otel.ReceiverPipeline{
 			Receiver: otel.Component{
 				Type: "sqlserver",
 				Config: map[string]interface{}{
@@ -59,38 +59,10 @@ func (m MetricsReceiverMssql) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 				otel.MetricsRemoveServiceAttributes(),
 				otel.NormalizeSums(),
 			}},
-		}}, nil
-	}
-	processors := []otel.Component{
-		otel.MetricsTransform(
-			otel.RenameMetric(
-				`\SQLServer:General Statistics(_Total)\User Connections`,
-				"mssql/connections/user",
-			),
-			otel.RenameMetric(
-				`\SQLServer:Databases(_Total)\Transactions/sec`,
-				"mssql/transaction_rate",
-			),
-			otel.RenameMetric(
-				`\SQLServer:Databases(_Total)\Write Transactions/sec`,
-				"mssql/write_transaction_rate",
-			),
-			otel.AddPrefix("agent.googleapis.com"),
-		),
-		otel.TransformationMetrics(
-			otel.SetScopeName("agent.googleapis.com/"+m.Type()),
-			otel.SetScopeVersion("1.0"),
-		),
-	}
-	resource, _ := platform.FromContext(ctx).GetResource()
-	exporter := otel.System
-	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
-		exporter = otel.OTLP
-		processors = append(processors, otel.GCPProjectID(resource.ProjectName()))
-
+		}, ctx)}, nil
 	}
 
-	return []otel.ReceiverPipeline{{
+	return []otel.ReceiverPipeline{confgenerator.ConvertToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "windowsperfcounters",
 			Config: map[string]interface{}{
@@ -112,11 +84,28 @@ func (m MetricsReceiverMssql) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 				},
 			},
 		},
-		ExporterTypes: map[string]otel.ExporterType{
-			"metrics": exporter,
-		},
-		Processors: map[string][]otel.Component{"metrics": processors},
-	}}, nil
+		Processors: map[string][]otel.Component{"metrics": {
+			otel.MetricsTransform(
+				otel.RenameMetric(
+					`\SQLServer:General Statistics(_Total)\User Connections`,
+					"mssql/connections/user",
+				),
+				otel.RenameMetric(
+					`\SQLServer:Databases(_Total)\Transactions/sec`,
+					"mssql/transaction_rate",
+				),
+				otel.RenameMetric(
+					`\SQLServer:Databases(_Total)\Write Transactions/sec`,
+					"mssql/write_transaction_rate",
+				),
+				otel.AddPrefix("agent.googleapis.com"),
+			),
+			otel.TransformationMetrics(
+				otel.SetScopeName("agent.googleapis.com/"+m.Type()),
+				otel.SetScopeVersion("1.0"),
+			),
+		}},
+	}, ctx)}, nil
 }
 
 func init() {

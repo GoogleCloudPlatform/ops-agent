@@ -705,7 +705,7 @@ func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, proces
 	ctx := context.Background()
 	resource, _ := platform.FromContext(ctx).GetResource()
 	exporter := otel.OTel
-	if ExperimentsFromContext(context.Background())["otlp_exporter"] {
+	if experimentsFromContext(context.Background())["otlp_exporter"] {
 		exporter = otel.OTLP
 		processors = append(processors, otel.GCPProjectID(resource.ProjectName()))
 	}
@@ -1078,7 +1078,7 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]PipelineInstan
 	if err != nil {
 		return nil, err
 	}
-	exp_otlp := ExperimentsFromContext(ctx)["otlp_logging"]
+	exp_otlp := experimentsFromContext(ctx)["otlp_logging"]
 	exp_otel := l.Service.OTelLogging
 	var out []PipelineInstance
 	for _, pID := range sortedKeys(l.Service.Pipelines) {

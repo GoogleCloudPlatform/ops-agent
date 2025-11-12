@@ -19,7 +19,6 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
 type MetricsReceiverFlink struct {
@@ -38,34 +37,8 @@ func (r MetricsReceiverFlink) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 	if r.Endpoint == "" {
 		r.Endpoint = defaultFlinkEndpoint
 	}
-	processors := []otel.Component{
-		otel.NormalizeSums(),
-		otel.MetricsTransform(
-			otel.UpdateMetric("flink.jvm.gc.collections.count", otel.RenameLabel("name", "garbage_collector_name")),
-			otel.UpdateMetric("flink.jvm.gc.collections.time", otel.RenameLabel("name", "garbage_collector_name")),
-			otel.UpdateMetric("flink.operator.record.count", otel.RenameLabel("name", "operator_name")),
-			otel.UpdateMetric("flink.operator.watermark.output", otel.RenameLabel("name", "operator_name")),
-			otel.AddPrefix("workload.googleapis.com"),
-		),
-		otel.TransformationMetrics(
-			otel.FlattenResourceAttribute("host.name", "host_name"),
-			otel.FlattenResourceAttribute("flink.taskmanager.id", "taskmanager_id"),
-			otel.FlattenResourceAttribute("flink.job.name", "job_name"),
-			otel.FlattenResourceAttribute("flink.task.name", "task_name"),
-			otel.FlattenResourceAttribute("flink.subtask.index", "subtask_index"),
-			otel.FlattenResourceAttribute("flink.resource.type", "resource_type"),
-			otel.SetScopeName("agent.googleapis.com/"+r.Type()),
-			otel.SetScopeVersion("1.0"),
-		),
-		otel.MetricsRemoveServiceAttributes(),
-	}
-	resource, _ := platform.FromContext(ctx).GetResource()
-	exporter := otel.OTel
-	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
-		exporter = otel.OTLP
-		processors = append(processors, otel.GCPProjectID(resource.ProjectName()))
-	}
-	return []otel.ReceiverPipeline{{
+
+	return []otel.ReceiverPipeline{confgenerator.ConvertToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "flinkmetrics",
 			Config: map[string]interface{}{
@@ -73,9 +46,28 @@ func (r MetricsReceiverFlink) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 				"endpoint":            r.Endpoint,
 			},
 		},
-		Processors:    map[string][]otel.Component{"metrics": processors},
-		ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
-	}}, nil
+		Processors: map[string][]otel.Component{"metrics": {
+			otel.NormalizeSums(),
+			otel.MetricsTransform(
+				otel.UpdateMetric("flink.jvm.gc.collections.count", otel.RenameLabel("name", "garbage_collector_name")),
+				otel.UpdateMetric("flink.jvm.gc.collections.time", otel.RenameLabel("name", "garbage_collector_name")),
+				otel.UpdateMetric("flink.operator.record.count", otel.RenameLabel("name", "operator_name")),
+				otel.UpdateMetric("flink.operator.watermark.output", otel.RenameLabel("name", "operator_name")),
+				otel.AddPrefix("workload.googleapis.com"),
+			),
+			otel.TransformationMetrics(
+				otel.FlattenResourceAttribute("host.name", "host_name"),
+				otel.FlattenResourceAttribute("flink.taskmanager.id", "taskmanager_id"),
+				otel.FlattenResourceAttribute("flink.job.name", "job_name"),
+				otel.FlattenResourceAttribute("flink.task.name", "task_name"),
+				otel.FlattenResourceAttribute("flink.subtask.index", "subtask_index"),
+				otel.FlattenResourceAttribute("flink.resource.type", "resource_type"),
+				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+				otel.SetScopeVersion("1.0"),
+			),
+			otel.MetricsRemoveServiceAttributes(),
+		}},
+	}, ctx)}, nil
 }
 
 func init() {

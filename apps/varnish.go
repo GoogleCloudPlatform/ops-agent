@@ -19,7 +19,6 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
 type MetricsReceiverVarnish struct {
@@ -34,25 +33,7 @@ func (MetricsReceiverVarnish) Type() string {
 }
 
 func (r MetricsReceiverVarnish) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
-	processors := []otel.Component{
-		otel.NormalizeSums(),
-		otel.MetricsTransform(
-			otel.AddPrefix("workload.googleapis.com"),
-		),
-		otel.TransformationMetrics(
-			otel.SetScopeName("agent.googleapis.com/"+r.Type()),
-			otel.SetScopeVersion("1.0"),
-		),
-		otel.MetricsRemoveServiceAttributes(),
-	}
-
-	exporter := otel.OTel
-	resource, _ := platform.FromContext(ctx).GetResource()
-	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
-		exporter = otel.OTLP
-		processors = append(processors, otel.GCPProjectID(resource.ProjectName()))
-	}
-	return []otel.ReceiverPipeline{{
+	return []otel.ReceiverPipeline{confgenerator.ConvertToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "varnish",
 			Config: map[string]interface{}{
@@ -61,9 +42,18 @@ func (r MetricsReceiverVarnish) Pipelines(ctx context.Context) ([]otel.ReceiverP
 				"exec_dir":            r.ExecDir,
 			},
 		},
-		Processors:    map[string][]otel.Component{"metrics": processors},
-		ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
-	}}, nil
+		Processors: map[string][]otel.Component{"metrics": {
+			otel.NormalizeSums(),
+			otel.MetricsTransform(
+				otel.AddPrefix("workload.googleapis.com"),
+			),
+			otel.TransformationMetrics(
+				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+				otel.SetScopeVersion("1.0"),
+			),
+			otel.MetricsRemoveServiceAttributes(),
+		}},
+	}, ctx)}, nil
 }
 
 func init() {

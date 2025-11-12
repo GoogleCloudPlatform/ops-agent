@@ -291,6 +291,13 @@ func MetricsRemoveServiceAttributes() Component {
 	}
 }
 
+func MetricsRemoveInstrumentationLibraryLabelsAttributes() Component {
+	return TransformationMetrics(
+		SetScopeName(""),
+		SetScopeVersion(""),
+	)
+}
+
 // TransformQueryContext is a type wrapper for the context of a query expression within the transoform processor
 type TransformQueryContext string
 

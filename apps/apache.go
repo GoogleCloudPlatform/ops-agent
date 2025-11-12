@@ -19,7 +19,6 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
 type MetricsReceiverApache struct {
@@ -40,31 +39,8 @@ func (r MetricsReceiverApache) Pipelines(ctx context.Context) ([]otel.ReceiverPi
 	if r.ServerStatusURL == "" {
 		r.ServerStatusURL = defaultServerStatusURL
 	}
-	processors := []otel.Component{
-		otel.MetricsFilter(
-			"exclude",
-			"strict",
-			"apache.uptime",
-		),
-		otel.NormalizeSums(),
-		otel.MetricsTransform(
-			otel.AddPrefix("workload.googleapis.com"),
-		),
-		otel.TransformationMetrics(
-			otel.FlattenResourceAttribute("apache.server.name", "server_name"),
-			otel.SetScopeName("agent.googleapis.com/"+r.Type()),
-			otel.SetScopeVersion("1.0"),
-		),
-		otel.MetricsRemoveServiceAttributes(),
-	}
-	resource, _ := platform.FromContext(ctx).GetResource()
-	exporter := otel.OTel
-	if confgenerator.ExperimentsFromContext(ctx)["otlp_exporter"] {
-		exporter = otel.OTLP
-		processors = append(processors, otel.GCPProjectID(resource.ProjectName()))
-	}
 
-	return []otel.ReceiverPipeline{{
+	return []otel.ReceiverPipeline{confgenerator.ConvertToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "apache",
 			Config: map[string]interface{}{
@@ -72,9 +48,24 @@ func (r MetricsReceiverApache) Pipelines(ctx context.Context) ([]otel.ReceiverPi
 				"endpoint":            r.ServerStatusURL,
 			},
 		},
-		Processors:    map[string][]otel.Component{"metrics": processors},
-		ExporterTypes: map[string]otel.ExporterType{"metrics": exporter},
-	}}, nil
+		Processors: map[string][]otel.Component{"metrics": {
+			otel.MetricsFilter(
+				"exclude",
+				"strict",
+				"apache.uptime",
+			),
+			otel.NormalizeSums(),
+			otel.MetricsTransform(
+				otel.AddPrefix("workload.googleapis.com"),
+			),
+			otel.TransformationMetrics(
+				otel.FlattenResourceAttribute("apache.server.name", "server_name"),
+				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
+				otel.SetScopeVersion("1.0"),
+			),
+			otel.MetricsRemoveServiceAttributes(),
+		}},
+	}, ctx)}, nil
 }
 
 func init() {
