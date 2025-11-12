@@ -493,8 +493,8 @@ func (p LoggingProcessorParseMultilineRegex) Processors(ctx context.Context) ([]
 						"overwrite_with": "oldest",
 						// Use the log file path to disambiguate if present.
 						"source_identifier": `attributes.__source_identifier`,
-						// Set to half of the filelogreceiver default "poll_interval" (200ms) to guarantee it is flushed every poll.
-						"force_flush_period": "100ms",
+						// Set time interval (same as fluent-bit "flush_timeout") to wait for secondary logs to be appended.
+						"force_flush_period": "1000ms",
 					},
 					{
 						"type":  "remove",
