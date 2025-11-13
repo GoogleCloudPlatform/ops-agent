@@ -1,6 +1,15 @@
 set -e
 
-sudo yum -y install java-1.8.0-openjdk java-1.8.0-openjdk-devel
+source /etc/os-release
+MAJOR_VERSION_ID=${VERSION_ID%%.*}
+
+JAVA_VERSION=1.8.0
+if [[ "$ID" == "rocky" && "$MAJOR_VERSION_ID" == "10" ]]; then
+  JAVA_VERSION=21
+fi
+
+sudo yum install -y \
+  curl java-${JAVA_VERSION}-openjdk java-${JAVA_VERSION}-openjdk-devel
 
 # TODO(sophieyfang): Below file is the same across all distros.
 # Have a single source file to be copied across all distros.
