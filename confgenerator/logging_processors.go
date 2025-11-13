@@ -460,18 +460,13 @@ func (p LoggingProcessorParseMultilineRegex) Components(ctx context.Context, tag
 }
 
 func (p LoggingProcessorParseMultilineRegex) Processors(ctx context.Context) ([]otel.Component, error) {
-	var isFirstEntry []string
+	var exprParts []string
 	for _, r := range p.Rules {
 		// The current "recombine" operator multiline support only supports setting a "start_state" ("is_first_entry").
 		// TODO: b/459877163 - Update implementation when opentelemetry supports "state-machine" multiline parsing.
 		if r.StateName == "start_state" {
-			isFirstEntry = append(isFirstEntry, r.Regex)
+			exprParts = append(exprParts, fmt.Sprintf("body.message matches %q", r.Regex))
 		}
-	}
-
-	var exprParts []string
-	for _, r := range isFirstEntry {
-		exprParts = append(exprParts, fmt.Sprintf("body.message matches %q", r))
 	}
 	isFirstEntryExpr := strings.Join(exprParts, " or ")
 
