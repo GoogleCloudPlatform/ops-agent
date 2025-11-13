@@ -122,18 +122,7 @@ func (p LoggingProcessorMacroZookeeperGeneral) Expand(ctx context.Context) []con
 					},
 				},
 			},
-			Rules: []confgenerator.MultilineRule{
-				{
-					StateName: "start_state",
-					NextState: "cont",
-					Regex:     `^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2},\d{3}`,
-				},
-				{
-					StateName: "cont",
-					NextState: "cont",
-					Regex:     `^(?!\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2},\d{3})`,
-				},
-			},
+			StartState: `^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2},\d{3}`,
 		},
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{

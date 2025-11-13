@@ -430,7 +430,34 @@ type MultilineRule = fluentbit.MultilineRule
 //	rule      "cont"          "/^\s+at.*/"                     "cont"
 type LoggingProcessorParseMultilineRegex struct {
 	LoggingProcessorParseRegexComplex
-	Rules []MultilineRule
+	StartState string
+}
+
+func (p LoggingProcessorParseMultilineRegex) contState() string {
+	// 1. Trim "^" if it exists
+	trimmedPattern := strings.TrimPrefix(p.StartState, "^")
+
+	// 2. Wrap the stripped pattern in the start-anchored negative lookahead
+	// ^ - Start of string anchor
+	// (?! - Negative Lookahead start
+	// ... - The content to negate
+	// ) - Negative Lookahead end
+	return fmt.Sprintf("^(?!%s)", trimmedPattern)
+}
+
+func (p LoggingProcessorParseMultilineRegex) MultilineRules() []MultilineRule {
+	return []MultilineRule{
+		{
+			StateName: "start_state",
+			NextState: "cont",
+			Regex:     p.StartState,
+		},
+		{
+			StateName: "cont",
+			NextState: "cont",
+			Regex:     p.contState(),
+		},
+	}
 }
 
 func (p LoggingProcessorParseMultilineRegex) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
@@ -453,23 +480,13 @@ func (p LoggingProcessorParseMultilineRegex) Components(ctx context.Context, tag
 	return append(
 		[]fluentbit.Component{
 			filter,
-			fluentbit.ParseMultilineComponent(multilineParserName, p.Rules),
+			fluentbit.ParseMultilineComponent(multilineParserName, p.MultilineRules()),
 		},
 		p.LoggingProcessorParseRegexComplex.Components(ctx, tag, uid)...,
 	)
 }
 
 func (p LoggingProcessorParseMultilineRegex) Processors(ctx context.Context) ([]otel.Component, error) {
-	var exprParts []string
-	for _, r := range p.Rules {
-		// The current "recombine" operator multiline support only supports setting a "start_state" ("is_first_entry").
-		// TODO: b/459877163 - Update implementation when opentelemetry supports "state-machine" multiline parsing.
-		if r.StateName == "start_state" {
-			exprParts = append(exprParts, fmt.Sprintf("body.message matches %q", r.Regex))
-		}
-	}
-	isFirstEntryExpr := strings.Join(exprParts, " or ")
-
 	logsTransform := []otel.Component{
 		{
 			Type: "logstransform",
@@ -483,7 +500,7 @@ func (p LoggingProcessorParseMultilineRegex) Processors(ctx context.Context) ([]
 					{
 						"type":           "recombine",
 						"combine_field":  "body.message",
-						"is_first_entry": isFirstEntryExpr,
+						"is_first_entry": fmt.Sprintf("body.message matches %q", p.StartState),
 						// Take the timestamp and other attributes from the first entry.
 						"overwrite_with": "oldest",
 						// Use the log file path to disambiguate if present.

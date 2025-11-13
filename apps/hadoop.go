@@ -73,18 +73,7 @@ func (p LoggingProcessorMacroHadoop) Expand(ctx context.Context) []confgenerator
 	// 2022-02-01 18:09:47,136 INFO org.apache.hadoop.hdfs.server.namenode.FSEditLog: Edit logging is async:true
 	return []confgenerator.InternalLoggingProcessor{
 		confgenerator.LoggingProcessorParseMultilineRegex{
-			Rules: []confgenerator.MultilineRule{
-				{
-					StateName: "start_state",
-					NextState: "cont",
-					Regex:     `^\d+-\d+-\d+ \d+:\d+:\d+,\d+.*`,
-				},
-				{
-					StateName: "cont",
-					NextState: "cont",
-					Regex:     `^(?!\d+-\d+-\d+ \d+:\d+:\d+,\d+).*`,
-				},
-			},
+			StartState: `^\d+-\d+-\d+ \d+:\d+:\d+,\d+.*`,
 		},
 		confgenerator.LoggingProcessorParseRegex{
 			Regex: `(?<timestamp>\d+-\d+-\d+ \d+:\d+:\d+,\d+)\s+(?<severity>\w+)\s+(?<source>\S+):\s+(?<message>[\S\s]*)`,

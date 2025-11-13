@@ -273,26 +273,11 @@ func (p LoggingProcessorMacroMysqlGeneral) Expand(ctx context.Context) []confgen
 					},
 				},
 			},
-			Rules: []confgenerator.MultilineRule{
-				{
-					StateName: "start_state",
-					NextState: "cont",
-					Regex: fmt.Sprintf(
-						`^(%s|%s|\t\t)`,
-						timeRegexMySQLNew,
-						timeRegexOld,
-					),
-				},
-				{
-					StateName: "cont",
-					NextState: "cont",
-					Regex: fmt.Sprintf(
-						`^(?!(%s|%s|\t\t))`,
-						timeRegexMySQLNew,
-						timeRegexOld,
-					),
-				},
-			},
+			StartState: fmt.Sprintf(
+				`^(%s|%s|\t\t)`,
+				timeRegexMySQLNew,
+				timeRegexOld,
+			),
 		},
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
@@ -525,34 +510,11 @@ func (p LoggingProcessorMacroMysqlSlow) Expand(ctx context.Context) []confgenera
 			LoggingProcessorParseRegexComplex: confgenerator.LoggingProcessorParseRegexComplex{
 				Parsers: parsers,
 			},
-			Rules: []confgenerator.MultilineRule{
-				// Logs start with Time: or User@Host: (omitting time if it's the same as the previous entry).
-				{
-					StateName: "start_state",
-					NextState: "comment",
-					Regex: fmt.Sprintf(
-						`^# (User@Host: |Time: (%s|%s))`,
-						timeRegexMySQLNew,
-						timeRegexOld,
-					),
-				},
-				// Explicitly consume the next line, which might be User@Host.
-				{
-					StateName: "comment",
-					NextState: "cont",
-					Regex:     `^# `,
-				},
-				// Then consume everything until the next Time or User@Host.
-				{
-					StateName: "cont",
-					NextState: "cont",
-					Regex: fmt.Sprintf(
-						`^(?!# (User@Host: |Time: (%s|%s)))`,
-						timeRegexMySQLNew,
-						timeRegexOld,
-					),
-				},
-			},
+			StartState: fmt.Sprintf(
+				`^# (User@Host: |Time: (%s|%s))`,
+				timeRegexMySQLNew,
+				timeRegexOld,
+			),
 		},
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: modifyFields,

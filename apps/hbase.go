@@ -90,18 +90,7 @@ func (p LoggingProcessorMacroHbaseSystem) Expand(ctx context.Context) []confgene
 					},
 				},
 			},
-			Rules: []confgenerator.MultilineRule{
-				{
-					StateName: "start_state",
-					NextState: "cont",
-					Regex:     `^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\,\d{3,6}`,
-				},
-				{
-					StateName: "cont",
-					NextState: "cont",
-					Regex:     `^(?!\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\,\d{3,6})`,
-				},
-			},
+			StartState: `^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\,\d{3,6}`,
 		},
 		// https://hadoop.apache.org/docs/r2.7.0/hadoop-project-dist/hadoop-common/CommandsManual.html
 		confgenerator.LoggingProcessorModifyFields{

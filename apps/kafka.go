@@ -107,18 +107,7 @@ func (p LoggingProcessorMacroKafka) Expand(ctx context.Context) []confgenerator.
 					},
 				},
 			},
-			Rules: []confgenerator.MultilineRule{
-				{
-					StateName: "start_state",
-					NextState: "cont",
-					Regex:     `^\[\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+\]`,
-				},
-				{
-					StateName: "cont",
-					NextState: "cont",
-					Regex:     `^(?!\[\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+\])`,
-				},
-			},
+			StartState: `^\[\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d+\]`,
 		},
 		// Log levels are just log4j log levels
 		// https://logging.apache.org/log4j/2.x/log4j-api/apidocs/org/apache/logging/log4j/Level.html

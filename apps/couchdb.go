@@ -146,18 +146,7 @@ func (p LoggingProcessorMacroCouchdb) Expand(ctx context.Context) []confgenerato
 					},
 				},
 			},
-			Rules: []confgenerator.MultilineRule{
-				{
-					StateName: "start_state",
-					NextState: "cont",
-					Regex:     `^\[\w+\]`,
-				},
-				{
-					StateName: "cont",
-					NextState: "cont",
-					Regex:     `^(?!\[\w+\])`,
-				},
-			},
+			StartState: `^\[\w+\]`,
 		},
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: fields,

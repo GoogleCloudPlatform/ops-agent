@@ -81,18 +81,7 @@ func (p LoggingProcessorMacroSolrSystem) Expand(ctx context.Context) []confgener
 					},
 				},
 			},
-			Rules: []confgenerator.MultilineRule{
-				{
-					StateName: "start_state",
-					NextState: "cont",
-					Regex:     `^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3}\s[A-z]+\s{1,5}`,
-				},
-				{
-					StateName: "cont",
-					NextState: "cont",
-					Regex:     `^(?!\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3}\s[A-z]+\s{1,5})`,
-				},
-			},
+			StartState: `^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3}\s[A-z]+\s{1,5}`,
 		},
 		// https://solr.apache.org/guide/6_6/configuring-logging.html
 		confgenerator.LoggingProcessorModifyFields{

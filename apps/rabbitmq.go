@@ -60,18 +60,7 @@ func (p LoggingProcessorMacroRabbitmq) Expand(ctx context.Context) []confgenerat
 			// ===========
 			// ERROR: could not bind to distribution port 25672, it is in use by another node: rabbit@keith-testing-rabbitmq
 			//
-			Rules: []confgenerator.MultilineRule{
-				{
-					StateName: "start_state",
-					NextState: "cont",
-					Regex:     `^\d+-\d+-\d+ \d+:\d+:\d+\.\d+\+\d+:\d+`,
-				},
-				{
-					StateName: "cont",
-					NextState: "cont",
-					Regex:     `^(?!\d+-\d+-\d+ \d+:\d+:\d+\.\d+\+\d+:\d+)`,
-				},
-			},
+			StartState: `^\d+-\d+-\d+ \d+:\d+:\d+\.\d+\+\d+:\d+`,
 		},
 		// severities documented here: https://www.rabbitmq.com/logging.html#log-levels
 		confgenerator.LoggingProcessorModifyFields{

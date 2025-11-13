@@ -165,18 +165,7 @@ func (p LoggingProcessorMacroElasticsearchJson) parseMultilineRegex() confgenera
 	// "at org.elasticsearch.bootstrap.Elasticsearch.init(Elasticsearch.java:166) ~[elasticsearch-7.16.2.jar:7.16.2]",
 	// "... 6 more"] }
 	return confgenerator.LoggingProcessorParseMultilineRegex{
-		Rules: []confgenerator.MultilineRule{
-			{
-				StateName: "start_state",
-				NextState: "cont",
-				Regex:     `^{.*`,
-			},
-			{
-				StateName: "cont",
-				NextState: "cont",
-				Regex:     `^[^{].*[,}]$`,
-			},
-		},
+		StartState: `^{.*`,
 	}
 }
 

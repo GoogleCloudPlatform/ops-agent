@@ -275,18 +275,7 @@ func (lr LoggingReceiverCouchbase) Components(ctx context.Context, tag string) [
 				},
 			},
 		},
-		Rules: []confgenerator.MultilineRule{
-			{
-				StateName: "start_state",
-				NextState: "cont",
-				Regex:     `^\[([^\s+:]*):`,
-			},
-			{
-				StateName: "cont",
-				NextState: "cont",
-				Regex:     `^(?!\[([^\s+:]*):).*$`,
-			},
-		},
+		StartState: `^(?!\[([^\s+:]*):).*$`,
 	}.Components(ctx, tag, lr.Type())...)
 
 	components = append(components,
@@ -404,18 +393,7 @@ func (lg LoggingProcessorCouchbaseGOXDCR) Components(ctx context.Context, tag st
 				},
 			},
 		},
-		Rules: []confgenerator.MultilineRule{
-			{
-				StateName: "start_state",
-				NextState: "cont",
-				Regex:     `^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}`,
-			},
-			{
-				StateName: "cont",
-				NextState: "cont",
-				Regex:     `^(?!\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})`,
-			},
-		},
+		StartState: `^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}`,
 	}.Components(ctx, tag, lg.Type())...)
 	c = append(c,
 		confgenerator.LoggingProcessorModifyFields{

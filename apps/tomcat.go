@@ -91,18 +91,7 @@ func (p LoggingProcessorMacroTomcatSystem) Expand(ctx context.Context) []confgen
 					},
 				},
 			},
-			Rules: []confgenerator.MultilineRule{
-				{
-					StateName: "start_state",
-					NextState: "cont",
-					Regex:     `^\d{2}-[A-Z]{1}[a-z]{2}-\d{4}\s\d{2}:\d{2}:\d{2}.\d{3}`,
-				},
-				{
-					StateName: "cont",
-					NextState: "cont",
-					Regex:     `^(?!\d{2}-[A-Z]{1}[a-z]{2}-\d{4}\s\d{2}:\d{2}:\d{2}.\d{3})`,
-				},
-			},
+			StartState: `^\d{2}-[A-Z]{1}[a-z]{2}-\d{4}\s\d{2}:\d{2}:\d{2}.\d{3}`,
 		},
 		// https://tomcat.apache.org/tomcat-10.0-doc/logging.html
 		confgenerator.LoggingProcessorModifyFields{

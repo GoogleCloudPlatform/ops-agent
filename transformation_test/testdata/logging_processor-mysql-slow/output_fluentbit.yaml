@@ -1,5 +1,12 @@
 - entries:
   - jsonPayload:
+      message: "# Time: 2025-07-22T16:01:01.111111Z"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_slow
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
       host: localhost
       lockTime: 0.00015
       message: |
@@ -15,6 +22,13 @@
     logName: projects/my-project/logs/transformation_test
     timestamp: now
   - jsonPayload:
+      message: "# Time: 2025-07-22T16:01:03.222222Z"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_slow
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
       host: 172.18.0.1
       lockTime: 0.000221
       message: |
@@ -24,6 +38,13 @@
       rowsExamined: 100000.0
       rowsSent: 100.0
       user: root
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_slow
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "# Time: 2025-07-22T16:01:05.333333Z"
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_slow

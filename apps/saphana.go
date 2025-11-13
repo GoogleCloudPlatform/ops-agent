@@ -31,18 +31,7 @@ func (LoggingProcessorMacroSapHanaTrace) Type() string {
 func (p LoggingProcessorMacroSapHanaTrace) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
 	return []confgenerator.InternalLoggingProcessor{
 		confgenerator.LoggingProcessorParseMultilineRegex{
-			Rules: []confgenerator.MultilineRule{
-				{
-					StateName: "start_state",
-					NextState: "cont",
-					Regex:     `^\[\d+\]\{-?\d+\}`,
-				},
-				{
-					StateName: "cont",
-					NextState: "cont",
-					Regex:     `^(?!\[\d+\]\{-?\d+\})`,
-				},
-			},
+			StartState: `^\[\d+\]\{-?\d+\}`,
 		},
 		confgenerator.LoggingProcessorParseRegex{
 			// Undocumented Format: [thread_id]{connection_id}[transaction_id/update_transaction_id] timestamp severity_flag component source_file : message

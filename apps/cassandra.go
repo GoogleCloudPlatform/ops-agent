@@ -107,18 +107,7 @@ func javaLogParsingComponents(processorType string) []confgenerator.InternalLogg
 					},
 				},
 			},
-			Rules: []confgenerator.MultilineRule{
-				{
-					StateName: "start_state",
-					NextState: "cont",
-					Regex:     `^[A-Z]+\s+\[[^\]]+\] \d+`,
-				},
-				{
-					StateName: "cont",
-					NextState: "cont",
-					Regex:     `^(?![A-Z]+\s+\[[^\]]+\] \d+)`,
-				},
-			},
+			StartState: `^[A-Z]+\s+\[[^\]]+\] \d+`,
 		},
 		// Best documentation found for log levels:
 		// https://docs.datastax.com/en/cassandra-oss/3.0/cassandra/configuration/configLoggingLevels.html#Loglevels
@@ -193,18 +182,7 @@ func (p LoggingProcessorMacroCassandraGC) Expand(ctx context.Context) []confgene
 					},
 				},
 			},
-			Rules: []confgenerator.MultilineRule{
-				{
-					StateName: "start_state",
-					NextState: "cont",
-					Regex:     `^\[?\d{4}-\d{2}-\d{2}`,
-				},
-				{
-					StateName: "cont",
-					NextState: "cont",
-					Regex:     `^(?!\[?\d{4}-\d{2}-\d{2})`,
-				},
-			},
+			StartState: `^\[?\d{4}-\d{2}-\d{2}`,
 		},
 		// Java11+ gc logs have severity in the log line
 		// https://bugs.openjdk.org/browse/JDK-8046148
