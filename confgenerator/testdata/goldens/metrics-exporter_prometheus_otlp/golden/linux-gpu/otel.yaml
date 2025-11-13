@@ -86,6 +86,10 @@ processors:
         - googlecloudmonitoring/point_count
   interval/loggingmetrics_7:
     interval: 1m
+  metricstarttime/agent_prometheus_1:
+    strategy: subtract_initial_point
+  metricstarttime/ops_agent_1:
+    strategy: subtract_initial_point
   metricstarttime/prometheus_2:
     strategy: subtract_initial_point
   metricstransform/fluentbit_1:
@@ -587,6 +591,16 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  resource/agent_prometheus_2:
+    attributes:
+    - action: insert
+      key: gcp.project_id
+      value: test-project
+  resource/ops_agent_2:
+    attributes:
+    - action: insert
+      key: gcp.project_id
+      value: test-project
   resource/prometheus_3:
     attributes:
     - action: insert
@@ -595,6 +609,12 @@ processors:
   resourcedetection/_global_0:
     detectors:
     - gcp
+  transform/_global_0:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - set(attributes["instance_id"], attributes["host.id"])
   transform/agent_prometheus_0:
     metric_statements:
     - context: metric
@@ -604,6 +624,12 @@ processors:
       - delete_key(resource.attributes, "service.instance.id")
       - delete_key(resource.attributes, "server.port")
       - delete_key(resource.attributes, "url.scheme")
+  transform/agent_prometheus_3:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
   transform/loggingmetrics_0:
     error_mode: ignore
     metric_statements:
@@ -631,6 +657,12 @@ processors:
     - context: datapoint
       statements:
       - set(time, Now())
+  transform/ops_agent_3:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
   transform/otel_0:
     error_mode: ignore
     metric_statements:
@@ -762,6 +794,7 @@ service:
       - metricstransform/hostmetrics_2
       - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
+      - transform/_global_0
       receivers:
       - hostmetrics/hostmetrics
     metrics/default__pipeline_hostmetrics_1:
@@ -771,23 +804,31 @@ service:
       - metricstransform/hostmetrics_1_0
       - filter/default__pipeline_hostmetrics_1_0
       - resourcedetection/_global_0
+      - transform/_global_0
       receivers:
       - nvml/hostmetrics_1
     metrics/fluentbit:
       exporters:
-      - googlecloud
+      - otlphttp/otlp
       processors:
       - transform/agent_prometheus_0
+      - metricstarttime/agent_prometheus_1
+      - resource/agent_prometheus_2
+      - transform/agent_prometheus_3
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
       - resourcedetection/_global_0
+      - transform/_global_0
       receivers:
       - prometheus/agent_prometheus
     metrics/loggingmetrics:
       exporters:
-      - googlecloud
+      - otlphttp/otlp
       processors:
       - transform/agent_prometheus_0
+      - metricstarttime/agent_prometheus_1
+      - resource/agent_prometheus_2
+      - transform/agent_prometheus_3
       - transform/loggingmetrics_0
       - filter/loggingmetrics_1
       - filter/loggingmetrics_2
@@ -798,26 +839,35 @@ service:
       - interval/loggingmetrics_7
       - metricstransform/loggingmetrics_8
       - resourcedetection/_global_0
+      - transform/_global_0
       receivers:
       - prometheus/agent_prometheus
     metrics/opsagent:
       exporters:
-      - googlecloud
+      - otlphttp/otlp
       processors:
       - transform/ops_agent_0
+      - metricstarttime/ops_agent_1
+      - resource/ops_agent_2
+      - transform/ops_agent_3
       - resourcedetection/_global_0
+      - transform/_global_0
       receivers:
       - otlpjsonfile/ops_agent
     metrics/otel:
       exporters:
-      - googlecloud
+      - otlphttp/otlp
       processors:
       - transform/agent_prometheus_0
+      - metricstarttime/agent_prometheus_1
+      - resource/agent_prometheus_2
+      - transform/agent_prometheus_3
       - transform/otel_0
       - filter/otel_1
       - filter/otel_2
       - metricstransform/otel_3
       - resourcedetection/_global_0
+      - transform/_global_0
       receivers:
       - prometheus/agent_prometheus
     metrics/prometheus__pipeline_prometheus:
