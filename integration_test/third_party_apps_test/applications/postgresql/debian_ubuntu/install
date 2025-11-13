@@ -1,17 +1,26 @@
 set -e
 
+source /etc/os-release
+
+postgres_version=16
+
+if [[ "${VERSION_ID}" == 25.04 ]]; then
+  postgres_version=17
+fi
+
+
 sudo apt-get -y install gnupg wget
 sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
 sudo wget --no-verbose --output-document=/etc/apt/trusted.gpg.d/postgresql.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
 sudo apt-get -y update
-sudo apt-get install -y postgresql-16
+sudo apt-get install -y postgresql-${postgres_version}
 
 sudo service postgresql restart
 sudo su postgres -c "psql postgres -c \"ALTER ROLE postgres WITH PASSWORD 'abc123';\""
 sudo su postgres -c "psql postgres -c \"CREATE ROLE replica_user WITH REPLICATION LOGIN PASSWORD 'abc123';\""
 
-DATA_ROOT=/var/lib/postgresql/16
-CFG_ROOT=/etc/postgresql/16
+DATA_ROOT=/var/lib/postgresql/${postgres_version}
+CFG_ROOT=/etc/postgresql/${postgres_version}
 
 ### Everything following this comment is designed to set up a paused replica to get replication metrics
 sudo tee -a ${CFG_ROOT}/main/postgresql.conf << EOF
@@ -63,7 +72,7 @@ EOF
 sudo chown -R postgres:postgres ${DATA_ROOT}/repl
 
 # start the replica in the background
-nohup sudo su postgres -c "/usr/lib/postgresql/16/bin/postgres -D ${DATA_ROOT}/repl" 2>/dev/null >/dev/null </dev/null &
+nohup sudo su postgres -c "/usr/lib/postgresql/${postgres_version}/bin/postgres -D ${DATA_ROOT}/repl" 2>/dev/null >/dev/null </dev/null &
 # give it time to start, since we put it in the background
 sleep 5
 # pause the replication so we see delay metrics populated
