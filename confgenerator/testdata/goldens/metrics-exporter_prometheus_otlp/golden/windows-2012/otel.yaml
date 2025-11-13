@@ -646,6 +646,12 @@ processors:
   resourcedetection/_global_0:
     detectors:
     - gcp
+  transform/_global_0:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - set(attributes["instance_id"], attributes["host.id"])
   transform/agent_prometheus_0:
     metric_statements:
     - context: metric
@@ -870,6 +876,7 @@ service:
       - metricstransform/hostmetrics_2
       - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
+      - transform/_global_0
       receivers:
       - hostmetrics/hostmetrics
     metrics/default__pipeline_iis:
@@ -882,6 +889,7 @@ service:
       - transform/iis_3
       - filter/default__pipeline_iis_0
       - resourcedetection/_global_0
+      - transform/_global_0
       receivers:
       - windowsperfcounters/iis
     metrics/default__pipeline_mssql:
@@ -892,6 +900,7 @@ service:
       - transform/mssql_1
       - filter/default__pipeline_mssql_0
       - resourcedetection/_global_0
+      - transform/_global_0
       receivers:
       - windowsperfcounters/mssql
     metrics/fluentbit:
@@ -905,6 +914,7 @@ service:
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
       - resourcedetection/_global_0
+      - transform/_global_0
       receivers:
       - prometheus/agent_prometheus
     metrics/loggingmetrics:
@@ -925,6 +935,7 @@ service:
       - interval/loggingmetrics_7
       - metricstransform/loggingmetrics_8
       - resourcedetection/_global_0
+      - transform/_global_0
       receivers:
       - prometheus/agent_prometheus
     metrics/opsagent:
@@ -936,6 +947,7 @@ service:
       - resource/ops_agent_2
       - transform/ops_agent_3
       - resourcedetection/_global_0
+      - transform/_global_0
       receivers:
       - otlpjsonfile/ops_agent
     metrics/otel:
@@ -951,6 +963,7 @@ service:
       - filter/otel_2
       - metricstransform/otel_3
       - resourcedetection/_global_0
+      - transform/_global_0
       receivers:
       - prometheus/agent_prometheus
     metrics/prometheus__pipeline_prometheus:
