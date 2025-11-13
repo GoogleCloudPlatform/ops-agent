@@ -1,0 +1,4 @@
+- type: parse_regex
+  field: message
+  regex: ^(?<always>\S+) (?<empty>\S*) (?<optional>\S+)? (?<name>.+)$
+  time_format: "%Y-%m-%dT%H:%M:%S%z"
