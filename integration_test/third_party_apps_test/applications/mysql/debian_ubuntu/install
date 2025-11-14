@@ -3,8 +3,11 @@ set -e
 sudo apt update
 sudo apt install -y wget
 
-wget --no-verbose https://dev.mysql.com/get/mysql-apt-config_0.8.29-1_all.deb
-sudo dpkg -i mysql-apt-config_0.8.29-1_all.deb
+wget --no-verbose https://dev.mysql.com/get/mysql-apt-config_0.8.35-1_all.deb
+sudo debconf-set-selections <<< 'mysql-apt-config mysql-apt-config/select-server select mysql-8.0'
+sudo debconf-set-selections <<< 'mysql-apt-config mysql-apt-config/select-product select Ok'
+sudo debconf-show mysql-apt-config
+sudo dpkg -i mysql-apt-config_0.8.35-1_all.deb
 sudo apt update
 sudo debconf-set-selections <<< 'mysql-community-server mysql-server/default-auth-override select Use Legacy Authentication Method (Retain MySQL 5.x Compatibility)'
 
@@ -16,7 +19,9 @@ if [[ "${ID}" == debian && "${VERSION_ID}" == 9 ]]; then
   sudo apt install -y libmariadbclient18
 elif [[ "${ID}" == ubuntu && "${VERSION_ID}" == 1[68].04 ]]; then
   sudo apt install -y libmysqlclient20
-elif [[ "${ID}" == ubuntu ]]; then  # 19.10 and later
+elif [[ "${ID}" == ubuntu && "${VERSION_ID}" == 25.04 ]]; then  # 25.04 and later
+  sudo apt install -y libmysqlclient24
+elif [[ "${ID}" == ubuntu ]]; then  # 25.10 and later
   sudo apt install -y libmysqlclient21
 fi
 

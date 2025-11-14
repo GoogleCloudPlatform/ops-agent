@@ -329,7 +329,11 @@ func (p LoggingProcessorParseRegex) Processors(ctx context.Context) ([]otel.Comp
 
 	cachedParsedRegex := ottl.LValue{"cache", "__parsed_regex"}
 	statements := ottl.NewStatements(
-		cachedParsedRegex.SetIf(ottl.ExtractPatternsRubyRegex(fromAccessor, p.Regex), fromAccessor.IsPresent()),
+		// Set `OmitEmptyValues : true` to have the same behaviour as fluent-bit `parse_regex` with `Skip_Empty_Values: true`.
+		cachedParsedRegex.SetIf(ottl.ExtractPatternsRubyRegex(fromAccessor, p.Regex, true), ottl.And(
+			fromAccessor.IsPresent(),
+			ottl.IsMatchRubyRegex(fromAccessor, p.Regex),
+		)),
 		fromAccessor.DeleteIf(cachedParsedRegex.IsPresent()),
 		ottl.LValue{"body"}.MergeMapsIf(cachedParsedRegex, "upsert", cachedParsedRegex.IsPresent()),
 		cachedParsedRegex.Delete(),
