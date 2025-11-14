@@ -427,6 +427,24 @@ func (r LoggingReceiverFluentForward) Components(ctx context.Context, tag string
 	}}
 }
 
+func (r LoggingReceiverFluentForward) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
+	return []otel.ReceiverPipeline{{
+		Receiver: otel.Component{
+			Type: "fluentforward",
+			Config: map[string]any{
+				"endpoint": fmt.Sprintf("%s:%d", r.ListenHost, r.ListenPort),
+			},
+		},
+		Processors: map[string][]otel.Component{
+			"logs": []otel.Component{},
+		},
+
+		ExporterTypes: map[string]otel.ExporterType{
+			"logs": otel.OTel,
+		},
+	}}, nil
+}
+
 func init() {
 	LoggingReceiverTypes.RegisterType(func() LoggingReceiver { return &LoggingReceiverFluentForward{} })
 }
