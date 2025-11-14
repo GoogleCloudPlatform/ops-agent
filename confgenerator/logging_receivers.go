@@ -431,7 +431,7 @@ func (r LoggingReceiverFluentForward) Pipelines(ctx context.Context) ([]otel.Rec
 	modify_fields_processors, err := LoggingProcessorModifyFields{
 		Fields: map[string]*ModifyField{
 			`jsonPayload`: {
-				MoveFrom: "labels",
+				CopyFrom: "labels",
 			},
 		},
 	}.Processors(ctx)
