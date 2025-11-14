@@ -72,6 +72,8 @@ platforms_to_skip:
   - ubuntu-os-cloud:ubuntu-2404-lts-arm64
   - ubuntu-os-cloud:ubuntu-2504-amd64
   - ubuntu-os-cloud:ubuntu-2504-arm64
+  - ubuntu-os-cloud:ubuntu-2510-amd64
+  - ubuntu-os-cloud:ubuntu-2510-arm64
   - debian-cloud:debian-12
   - debian-cloud:debian-12-arm64
   # couchdb does not support Debian 13 yet: https://apache.jfrog.io/ui/native/couchdb-deb/dists/.
