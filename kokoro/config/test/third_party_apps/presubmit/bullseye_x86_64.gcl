@@ -3,7 +3,10 @@ import 'common.gcl' as common
 config build = common.third_party_apps_test {
   params {
     environment {
-      TARGET = 'bullseye'
+      // DO NOT MERGE: Temporarily disable smart test skipping for
+      // this distro so that all apps actually run.
+      SHORT = 'false'
+      TARGET = 'questing'
       ARCH = 'x86_64'
     }
   }

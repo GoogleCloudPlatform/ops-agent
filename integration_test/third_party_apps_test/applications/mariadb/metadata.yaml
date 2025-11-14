@@ -60,6 +60,8 @@ platforms_to_skip:
   - suse-cloud:sles-15-arm64
   - ubuntu-os-cloud:ubuntu-2504-lts-amd64 # Possible support in the future
   - ubuntu-os-cloud:ubuntu-2504-lts-arm64 # Possible support in the future
+  - ubuntu-os-cloud:ubuntu-2510-lts-amd64
+  - ubuntu-os-cloud:ubuntu-2510-lts-arm64
 supported_app_version: ["10.1.X through 10.7.X", ""] # Indicate multiple versions.
 expected_metrics:
   - type: workload.googleapis.com/mysql.buffer_pool_data_pages
