@@ -428,6 +428,17 @@ func (r LoggingReceiverFluentForward) Components(ctx context.Context, tag string
 }
 
 func (r LoggingReceiverFluentForward) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
+	modify_fields_processors, err := LoggingProcessorModifyFields{
+		Fields: map[string]*ModifyField{
+			`jsonPayload`: {
+				MoveFrom: "labels",
+			},
+		},
+	}.Processors(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	return []otel.ReceiverPipeline{{
 		Receiver: otel.Component{
 			Type: "fluentforward",
@@ -436,7 +447,7 @@ func (r LoggingReceiverFluentForward) Pipelines(ctx context.Context) ([]otel.Rec
 			},
 		},
 		Processors: map[string][]otel.Component{
-			"logs": []otel.Component{},
+			"logs": modify_fields_processors,
 		},
 
 		ExporterTypes: map[string]otel.ExporterType{
