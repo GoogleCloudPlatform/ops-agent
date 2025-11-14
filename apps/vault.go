@@ -75,7 +75,7 @@ func (r MetricsReceiverVault) Type() string {
 	return "vault"
 }
 
-func (r MetricsReceiverVault) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (r MetricsReceiverVault) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultVaultEndpoint
 	}
@@ -126,7 +126,7 @@ func (r MetricsReceiverVault) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 	queries = append(queries, metricRenewRevokeTransforms...)
 	queries = append(queries, metricDetailTransforms...)
 
-	return []otel.ReceiverPipeline{{
+	return []otel.ReceiverPipeline{confgenerator.ConvertToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "prometheus",
 			Config: map[string]interface{}{
@@ -180,7 +180,7 @@ func (r MetricsReceiverVault) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
-	}}, nil
+	}, ctx)}, nil
 }
 
 type metricTransformer struct {

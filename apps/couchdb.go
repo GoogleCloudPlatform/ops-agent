@@ -39,11 +39,12 @@ func (MetricsReceiverCouchdb) Type() string {
 	return "couchdb"
 }
 
-func (r MetricsReceiverCouchdb) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (r MetricsReceiverCouchdb) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultCouchdbEndpoint
 	}
-	return []otel.ReceiverPipeline{{
+
+	return []otel.ReceiverPipeline{confgenerator.ConvertToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "couchdb",
 			Config: map[string]interface{}{
@@ -64,7 +65,7 @@ func (r MetricsReceiverCouchdb) Pipelines(_ context.Context) ([]otel.ReceiverPip
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
-	}}, nil
+	}, ctx)}, nil
 }
 
 func init() {
