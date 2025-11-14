@@ -63,7 +63,12 @@ func ConvertToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context) 
 	if !expOtlpExporter {
 		return receiver
 	}
+	_, err := receiver.ExporterTypes["metrics"]
+	if !err {
+		return receiver
+	}
 	receiver.ExporterTypes["metrics"] = otel.OTLP
+
 	receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.GCPProjectID(resource.ProjectName()))
 	return receiver
 }
