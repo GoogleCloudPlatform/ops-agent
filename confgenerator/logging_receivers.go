@@ -441,6 +441,7 @@ func (r LoggingReceiverFluentForward) Pipelines(ctx context.Context) ([]otel.Rec
 					attributes := ottl.LValue{"attributes"}
 
 					return ottl.NewStatements(
+						body.SetIf(ottl.MapLiteral(map[string]string{}), ottl.Not(body.IsPresent())),
 						bodyStaticValue.Set(ottl.StringLiteral(staticValue)),
 						body.MergeMapsIf(attributes, "upsert", attributes.IsPresent()),
 					)
