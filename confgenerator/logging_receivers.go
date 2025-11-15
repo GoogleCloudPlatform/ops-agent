@@ -428,10 +428,23 @@ func (r LoggingReceiverFluentForward) Components(ctx context.Context, tag string
 }
 
 func (r LoggingReceiverFluentForward) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
+	staticValue := string("TEST")
 	modify_fields_processors, err := LoggingProcessorModifyFields{
 		Fields: map[string]*ModifyField{
-			`jsonPayload`: {
-				CopyFrom: "labels",
+			`labels.fluent_forward`: {
+				StaticValue: &staticValue,
+				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
+					// Prefer jsonPayload.provider.event_source if present and non-empty
+
+					body := ottl.LValue{"body"}
+					bodyStaticValue := ottl.LValue{"body", "static_value"}
+					attributes := ottl.LValue{"attributes"}
+
+					return ottl.NewStatements(
+						bodyStaticValue.Set(ottl.StringLiteral(staticValue)),
+						body.MergeMapsIf(attributes, "upsert", attributes.IsPresent()),
+					)
+				},
 			},
 		},
 	}.Processors(ctx)
