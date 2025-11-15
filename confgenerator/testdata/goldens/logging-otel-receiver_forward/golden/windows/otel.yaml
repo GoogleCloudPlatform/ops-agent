@@ -639,11 +639,11 @@ processors:
     log_statements:
     - context: log
       statements:
-      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["__field_0"], attributes) where (attributes != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_0"])
-      - set(body, cache["value"]) where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], "TEST")
+      - set(body["static_value"], "TEST")
+      - merge_maps(body, attributes, "upsert") where (attributes != nil)
+      - set(attributes["fluent_forward"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/fluent__forward_1:
     error_mode: ignore
     log_statements:
