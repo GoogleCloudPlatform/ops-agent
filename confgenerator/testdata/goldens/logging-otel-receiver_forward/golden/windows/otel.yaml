@@ -639,12 +639,13 @@ processors:
     log_statements:
     - context: log
       statements:
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], "TEST")
-      - set(body, {}) where (not (body != nil))
-      - set(body["static_value"], "TEST")
+      - set(cache["body_string"], body) where IsString(body)
+      - set(cache["body_map"], body) where IsMap(body)
+      - set(body, {})
+      - set(body["message"], cache["body_string"]) where (cache != nil and cache["body_string"] != nil)
+      - merge_maps(body, cache["body_map"], "upsert") where (cache != nil and cache["body_map"] != nil)
       - merge_maps(body, attributes, "upsert") where (attributes != nil)
-      - set(attributes["fluent_forward"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - set(attributes, {})
   transform/fluent__forward_1:
     error_mode: ignore
     log_statements:
