@@ -22,6 +22,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
@@ -70,6 +71,26 @@ func otelSetLogNameComponents(ctx context.Context, logName string) []otel.Compon
 	// TODO: Prepend `receiver_id.` if it already exists, like the `fluent_forward` receiver?
 	p := setLogNameProcessor(ctx, logName)
 	components, err := p.Processors(ctx)
+	if err != nil {
+		// We're generating a hard-coded config, so this should never fail.
+		panic(err)
+	}
+	return components
+}
+
+func otelFluentForwardSetLogNameComponents(ctx context.Context) []otel.Component {
+	mf := LoggingProcessorModifyFields{
+		Fields: map[string]*ModifyField{
+			"logName": {
+				MoveFrom: `logName`,
+				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
+					fluentTag := ottl.LValue{`body`, `"fluent.tag"`}
+					return v.Set(ottl.Concat(v, fluentTag.String()))
+				},
+			},
+		},
+	}
+	components, err := mf.Processors(ctx)
 	if err != nil {
 		// We're generating a hard-coded config, so this should never fail.
 		panic(err)

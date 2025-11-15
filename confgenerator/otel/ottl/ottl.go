@@ -180,6 +180,10 @@ func ExtractPatternsRubyRegex(a Value, pattern string, omitEmptyValues bool) Val
 	return valuef(`ExtractPatternsRubyRegex(%s, %q, %v)`, a, pattern, omitEmptyValues)
 }
 
+func Concat(a Value, b string) Value {
+	return valuef(`Concat(%s, %s)`, a, b)
+}
+
 func ConvertCase(a Value, toCase string) Value {
 	return valuef(`ConvertCase(%s, %q)`, a, toCase)
 }
