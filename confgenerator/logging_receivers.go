@@ -427,6 +427,49 @@ func (r LoggingReceiverFluentForward) Components(ctx context.Context, tag string
 	}}
 }
 
+func (r LoggingReceiverFluentForward) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
+	staticValue := string("TEST")
+	modify_fields_processors, err := LoggingProcessorModifyFields{
+		Fields: map[string]*ModifyField{
+			`labels.fluent_forward`: {
+				StaticValue: &staticValue,
+				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
+					// Prefer jsonPayload.provider.event_source if present and non-empty
+
+					body := ottl.LValue{"body"}
+					bodyStaticValue := ottl.LValue{"body", "static_value"}
+					attributes := ottl.LValue{"attributes"}
+
+					return ottl.NewStatements(
+						body.SetIf(ottl.MapLiteral(map[string]string{}), ottl.Not(body.IsPresent())),
+						bodyStaticValue.Set(ottl.StringLiteral(staticValue)),
+						body.MergeMapsIf(attributes, "upsert", attributes.IsPresent()),
+					)
+				},
+			},
+		},
+	}.Processors(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return []otel.ReceiverPipeline{{
+		Receiver: otel.Component{
+			Type: "fluentforward",
+			Config: map[string]any{
+				"endpoint": fmt.Sprintf("%s:%d", r.ListenHost, r.ListenPort),
+			},
+		},
+		Processors: map[string][]otel.Component{
+			"logs": modify_fields_processors,
+		},
+
+		ExporterTypes: map[string]otel.ExporterType{
+			"logs": otel.OTel,
+		},
+	}}, nil
+}
+
 func init() {
 	LoggingReceiverTypes.RegisterType(func() LoggingReceiver { return &LoggingReceiverFluentForward{} })
 }

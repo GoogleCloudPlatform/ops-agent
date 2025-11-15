@@ -63,6 +63,10 @@ func StringLiteral(v string) Value {
 	return valuef(`%q`, v)
 }
 
+func MapLiteral(m map[string]string) Value {
+	return valuef(`{}`)
+}
+
 func IntLiteral(v int) Value {
 	return valuef(`%d`, v)
 }
