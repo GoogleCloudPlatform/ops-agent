@@ -63,10 +63,6 @@ func StringLiteral(v string) Value {
 	return valuef(`%q`, v)
 }
 
-func MapLiteral(m map[string]string) Value {
-	return valuef(`{}`)
-}
-
 func IntLiteral(v int) Value {
 	return valuef(`%d`, v)
 }
@@ -148,6 +144,14 @@ func (a LValue) IsPresent() Value {
 		conditions = append(conditions, IsNotNil(a[:i]))
 	}
 	return And(conditions...)
+}
+
+func (a LValue) IsMap() Value {
+	return valuef(`IsMap(%s)`, a)
+}
+
+func (a LValue) IsString() Value {
+	return valuef(`IsString(%s)`, a)
 }
 
 func ToString(a Value) Value {

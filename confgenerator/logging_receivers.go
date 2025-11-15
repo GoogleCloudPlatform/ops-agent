@@ -428,29 +428,25 @@ func (r LoggingReceiverFluentForward) Components(ctx context.Context, tag string
 }
 
 func (r LoggingReceiverFluentForward) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
-	staticValue := string("TEST")
-	modify_fields_processors, err := LoggingProcessorModifyFields{
-		Fields: map[string]*ModifyField{
-			`labels.fluent_forward`: {
-				StaticValue: &staticValue,
-				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
-					// Prefer jsonPayload.provider.event_source if present and non-empty
+	body := ottl.LValue{"body"}
+	bodyMessage := ottl.LValue{"body", "message"}
+	attributes := ottl.LValue{"attributes"}
+	cacheBodyString := ottl.LValue{"cache", "body_string"}
+	cacheBodyMap := ottl.LValue{"cache", "body_map"}
 
-					body := ottl.LValue{"body"}
-					bodyStaticValue := ottl.LValue{"body", "static_value"}
-					attributes := ottl.LValue{"attributes"}
-
-					return ottl.NewStatements(
-						body.SetIf(ottl.MapLiteral(map[string]string{}), ottl.Not(body.IsPresent())),
-						bodyStaticValue.Set(ottl.StringLiteral(staticValue)),
-						body.MergeMapsIf(attributes, "upsert", attributes.IsPresent()),
-					)
-				},
-			},
-		},
-	}.Processors(ctx)
-	if err != nil {
-		return nil, err
+	processors := []otel.Component{
+		otel.Transform(
+			"log", "log",
+			ottl.NewStatements(
+				cacheBodyString.SetIf(body, body.IsString()),
+				cacheBodyMap.SetIf(body, body.IsMap()),
+				body.Set(ottl.RValue("{}")),
+				bodyMessage.SetIf(cacheBodyString, cacheBodyString.IsPresent()),
+				body.MergeMapsIf(cacheBodyMap, "upsert", cacheBodyMap.IsPresent()),
+				body.MergeMapsIf(attributes, "upsert", attributes.IsPresent()),
+				attributes.Set(ottl.RValue("{}")),
+			),
+		),
 	}
 
 	return []otel.ReceiverPipeline{{
@@ -461,7 +457,7 @@ func (r LoggingReceiverFluentForward) Pipelines(ctx context.Context) ([]otel.Rec
 			},
 		},
 		Processors: map[string][]otel.Component{
-			"logs": modify_fields_processors,
+			"logs": processors,
 		},
 
 		ExporterTypes: map[string]otel.ExporterType{
