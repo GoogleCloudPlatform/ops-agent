@@ -191,24 +191,24 @@ expected_logs:
     fields:
       - name: jsonPayload.auth
         type: struct
-        description: ""
+        description: ''
         optional: true
       - name: jsonPayload.request
         type: struct
-        description: ""
+        description: ''
       - name: jsonPayload.response
         type: struct
-        description: ""
+        description: ''
         optional: true
       - name: jsonPayload.auth.token_type
         value_regex: default
         type: string
-        description: ""
+        description: ''
         optional: true
       - name: jsonPayload.request.namespace.id
         value_regex: root
         type: string
-        description: ""
+        description: ''
         optional: true
       - name: jsonPayload.request.path
         value_regex: sys\/audit\/test
@@ -343,7 +343,7 @@ expected_logs:
         optional: true
       - name: severity
         type: string
-        description: ""
+        description: ''
 configuration_options:
   logs:
     - type: vault_audit
