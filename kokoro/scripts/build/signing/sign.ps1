@@ -11,23 +11,24 @@ $files_to_sign = @(
     'out/bin/fluent-bit.exe',
     'out/bin/fluent-bit.dll',
     'out/bin/google-cloud-ops-agent.exe',
-    'out/bin/google-cloud-ops-agent-diagnostics.exe',
     'out/bin/google-cloud-ops-agent-wrapper.exe',
     'pkg/goo/maint.ps1'
 )
 
-$amd64_path = 'out/bin/google-cloud-metrics-agent_windows_amd64.exe'
-$x86_path = 'out/bin/google-cloud-metrics-agent_windows_386.exe'
+$metrics_agent_files = Get-ChildItem -Path 'out/bin/' -Filter 'google-cloud-metrics-agent_windows_*.exe' -ErrorAction SilentlyContinue |
+    Where-Object { $_.Name -match '^google-cloud-metrics-agent_windows_(amd64|386)\.exe$' }
 
-# Check which file exists and add it to the list.
-if (Test-Path $amd64_path) {
-    $files_to_sign += $amd64_path
-}
-elseif (Test-Path $x86_path) {
-    $files_to_sign += $x86_path
+if ($metrics_agent_files) {
+    # If multiple files match, we'll use the first one found and issue a warning.
+    if ($metrics_agent_files.Count -gt 1) {
+        throw "ERROR: Multiple Google Cloud Metrics Agent executables found in 'out/bin/'. Cannot proceed with signing. Files found: $($found_files -join ', ')"
+    }
+    $files_to_sign += "out/bin/$($metrics_agent_files[0].Name)"
+    Write-Host "Found Google Cloud Metrics Agent executable: 'out/bin/$($metrics_agent_files[0].Name)'"
 }
 else {
-    throw "ERROR: Could not find the Google Cloud Metrics Agent executable. Checked for '$amd64_path' and '$x86_path'."
+  # Throw an error if no file matching the specific pattern is found
+  throw "ERROR: Could not find the Google Cloud Metrics Agent executable for amd64 or 386 in 'out/bin/'."
 }
 
 $script_exit_code = 0
