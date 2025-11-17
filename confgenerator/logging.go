@@ -84,8 +84,8 @@ func otelFluentForwardSetLogNameComponents(ctx context.Context) []otel.Component
 			"logName": {
 				MoveFrom: `logName`,
 				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
-					fluentTag := ottl.LValue{`body`, `"fluent.tag"`}
-					return v.Set(ottl.Concat(v, fluentTag.String()))
+					fluentTag := ottl.LValue{`body`, `fluent.tag`}
+					return v.Set(ottl.Concat([]ottl.Value{v, fluentTag}, "."))
 				},
 			},
 		},
