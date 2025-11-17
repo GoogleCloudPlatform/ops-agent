@@ -648,7 +648,7 @@ processors:
       - delete_key(attributes, "gcp.log_name") where (attributes != nil and attributes["gcp.log_name"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_0"])
-      - "set(cache[\"value\"], Concat(cache[\"value\"], body[\"\\\"fluent.tag\\\"\"]))"
+      - set(cache["value"], Concat([cache["value"],body["fluent.tag"]], "."))
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/loggingmetrics_0:
     error_mode: ignore
