@@ -190,10 +190,8 @@ targets:
           windows-cloud:windows-2022
         test_distros:
           representative:
-          - windows-sql-cloud:sql-web-2019-win-2019
-          - windows-sql-cloud:sql-std-2022-win-2019
-          - windows-sql-cloud:sql-web-2022-win-2019
-          - windows-sql-cloud:sql-ent-2022-win-2019
+          - windows-sql-cloud=sql-2019-standard-windows-2019-dc-v20250710
+          - windows-sql-cloud=sql-2022-standard-windows-2019-dc-v20251029
           exhaustive:
           - windows-cloud:windows-2016
           - windows-cloud:windows-2019
