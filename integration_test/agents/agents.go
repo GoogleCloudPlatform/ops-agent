@@ -988,7 +988,7 @@ func SetupOpsAgentFrom(ctx context.Context, logger *log.Logger, vm *gce.VM, conf
 // reasonable amount of time.
 func RecommendedMachineType(imageSpec string) string {
 	if gce.IsWindows(imageSpec) {
-		return "e2-standard-4"
+		return "e2-standard-16"
 	}
 	if gce.IsARM(imageSpec) {
 		return "t2a-standard-2"

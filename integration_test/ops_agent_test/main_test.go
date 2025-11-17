@@ -2838,6 +2838,7 @@ func addSecretEntry(ctx context.Context, client *secretmanager.Client, projectID
 	return result, nil
 }
 func TestGoogleSecretManagerProvider(t *testing.T) {
+	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		// GoogleSecretManagerProvider requires the following scope to be set in order to access secret entries in the Google secret manager.
