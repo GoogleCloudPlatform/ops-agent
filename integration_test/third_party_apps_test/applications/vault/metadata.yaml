@@ -68,8 +68,8 @@ configure_integration: |-
   ```
 supported_operating_systems: linux
 platforms_to_skip:
-  - ubuntu-os-cloud:ubuntu-2510-amd64
-  - ubuntu-os-cloud:ubuntu-2510-arm64
+  - ubuntu-os-cloud:ubuntu-2510-amd64 # vault not available for 25.10 yet: https://www.hashicorp.com/en/official-packaging-guide
+  - ubuntu-os-cloud:ubuntu-2510-arm64 # vault not available for 25.10 yet: https://www.hashicorp.com/en/official-packaging-guide
 supported_app_version: ["1.6+"]
 expected_metrics:
   - type: workload.googleapis.com/vault.core.request.count
@@ -191,24 +191,24 @@ expected_logs:
     fields:
       - name: jsonPayload.auth
         type: struct
-        description: ''
+        description: ""
         optional: true
       - name: jsonPayload.request
         type: struct
-        description: ''
+        description: ""
       - name: jsonPayload.response
         type: struct
-        description: ''
+        description: ""
         optional: true
       - name: jsonPayload.auth.token_type
         value_regex: default
         type: string
-        description: ''
+        description: ""
         optional: true
       - name: jsonPayload.request.namespace.id
         value_regex: root
         type: string
-        description: ''
+        description: ""
         optional: true
       - name: jsonPayload.request.path
         value_regex: sys\/audit\/test
@@ -343,7 +343,7 @@ expected_logs:
         optional: true
       - name: severity
         type: string
-        description: ''
+        description: ""
 configuration_options:
   logs:
     - type: vault_audit

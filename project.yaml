@@ -30,23 +30,6 @@ targets:
           - ubuntu-os-cloud:ubuntu-2504-arm64
           exhaustive:
           - ubuntu-os-cloud:ubuntu-minimal-2504-arm64
-  questing:
-    os_versions: [ubuntu-25.10*]
-    package_extension:
-      deb
-    architectures:
-      x86_64:
-        test_distros:
-          representative:
-          - ubuntu-os-cloud:ubuntu-2510-amd64
-          exhaustive:
-          - ubuntu-os-cloud:ubuntu-minimal-2510-amd64
-      aarch64:
-        test_distros:
-          representative:
-          - ubuntu-os-cloud:ubuntu-2510-arm64
-          exhaustive:
-          - ubuntu-os-cloud:ubuntu-minimal-2510-arm64
   trixie:
     os_versions: [debian-13*]
     package_extension:

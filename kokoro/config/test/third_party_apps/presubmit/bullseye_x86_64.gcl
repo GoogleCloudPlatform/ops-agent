@@ -6,7 +6,7 @@ config build = common.third_party_apps_test {
       // DO NOT MERGE: Temporarily disable smart test skipping for
       // this distro so that all apps actually run.
       SHORT = 'false'
-      TARGET = 'questing'
+      TARGET = 'bullseye'
       ARCH = 'x86_64'
     }
   }

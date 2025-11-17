@@ -3,7 +3,7 @@ import 'common.gcl' as common
 config build = common.third_party_apps_test {
   params {
     environment {
-      TARGET = 'questing'
+      TARGET = 'bullseye'
       ARCH = 'aarch64'
     }
   }
