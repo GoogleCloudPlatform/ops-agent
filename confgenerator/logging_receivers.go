@@ -437,7 +437,8 @@ func (r LoggingReceiverFluentForward) Pipelines(ctx context.Context) ([]otel.Rec
 	processors := []otel.Component{
 		otel.Transform(
 			"log", "log",
-			// Transformations required to transform "fluentforwardreceiver" output to the expected ops agent "fluent_forward" LogEntry format.
+			// Transformations required to convert "fluentforwardreceiver" output to the expected ops agent "fluent_forward" LogEntry format.
+			// In summary, this moves all resulting "fluentforwardreceiver" fields into "body" (jsonPayload).
 			// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/release/v0.136.x/receiver/fluentforwardreceiver/conversion.go#L171
 			ottl.NewStatements(
 				// "fluentforwardreceiver" sets "log" and "message" as "body". All other fields are set as "attributes".

@@ -279,7 +279,7 @@ func (p PipelineInstance) OTelComponents(ctx context.Context) (map[string]otel.R
 			if p.Receiver.Type() == "fluent_forward" {
 				pipelineProcessors = append(
 					pipelineProcessors,
-					otelFluentForwardSetLogNameComponents(ctx)...,
+					otelFluentForwardSetLogNameComponents()...,
 				)
 			}
 			receiverPipeline.Processors["logs"] = pipelineProcessors

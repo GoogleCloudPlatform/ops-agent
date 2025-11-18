@@ -78,24 +78,20 @@ func otelSetLogNameComponents(ctx context.Context, logName string) []otel.Compon
 	return components
 }
 
-func otelFluentForwardSetLogNameComponents(ctx context.Context) []otel.Component {
-	mf := LoggingProcessorModifyFields{
-		Fields: map[string]*ModifyField{
-			"logName": {
-				MoveFrom: `jsonPayload."fluent.tag"`,
-				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
-					logName := ottl.LValue{`logName`}
-					return v.Set(ottl.Concat([]ottl.Value{logName, v}, "."))
-				},
-			},
-		},
+func otelFluentForwardSetLogNameComponents() []otel.Component {
+	bodyFluentTag := ottl.LValue{"body", "fluent.tag"}
+	logName := ottl.LValue{"attributes", "gcp.log_name"}
+
+	return []otel.Component{
+		otel.Transform(
+			"log", "log",
+			ottl.NewStatements(
+				logName.SetIf(ottl.Concat([]ottl.Value{logName, bodyFluentTag}, "."),
+					ottl.And(logName.IsPresent(), bodyFluentTag.IsPresent())),
+				bodyFluentTag.DeleteIf(bodyFluentTag.IsPresent()),
+			),
+		),
 	}
-	components, err := mf.Processors(ctx)
-	if err != nil {
-		// We're generating a hard-coded config, so this should never fail.
-		panic(err)
-	}
-	return components
 }
 
 // stackdriverOutputComponent generates a component that outputs logs matching the regex `match` using `userAgent`.
