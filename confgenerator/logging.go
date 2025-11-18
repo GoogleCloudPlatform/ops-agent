@@ -82,10 +82,10 @@ func otelFluentForwardSetLogNameComponents(ctx context.Context) []otel.Component
 	mf := LoggingProcessorModifyFields{
 		Fields: map[string]*ModifyField{
 			"logName": {
-				MoveFrom: `logName`,
+				MoveFrom: `jsonPayload."fluent.tag"`,
 				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
-					fluentTag := ottl.LValue{`body`, `fluent.tag`}
-					return v.Set(ottl.Concat([]ottl.Value{v, fluentTag}, "."))
+					logName := ottl.LValue{`logName`}
+					return v.Set(ottl.Concat([]ottl.Value{logName, v}, "."))
 				},
 			},
 		},

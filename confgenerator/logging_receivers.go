@@ -437,9 +437,13 @@ func (r LoggingReceiverFluentForward) Pipelines(ctx context.Context) ([]otel.Rec
 	processors := []otel.Component{
 		otel.Transform(
 			"log", "log",
+			// Transformations required to transform "fluentforwardreceiver" output to the expected ops agent "fluent_forward" LogEntry format.
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/release/v0.136.x/receiver/fluentforwardreceiver/conversion.go#L171
 			ottl.NewStatements(
+				// "fluentforwardreceiver" sets "log" and "message" as "body". All other fields are set as "attributes".
 				cacheBodyString.SetIf(body, body.IsString()),
 				cacheBodyMap.SetIf(body, body.IsMap()),
+				// Merge "cache['body_string']", "cache['body_map']" and "attributes" into "body" (jsonPayload).
 				body.Set(ottl.RValue("{}")),
 				bodyMessage.SetIf(cacheBodyString, cacheBodyString.IsPresent()),
 				body.MergeMapsIf(cacheBodyMap, "upsert", cacheBodyMap.IsPresent()),
