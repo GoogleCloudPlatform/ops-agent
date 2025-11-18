@@ -251,6 +251,7 @@ func (c ModularConfig) Generate(ctx context.Context, expOtlpExporter bool) (stri
 		if name, ok := resourceDetectionProcessorNames[rdm]; ok {
 			processorNames = append(processorNames, name)
 			processors[name] = resourceDetectionProcessors[rdm].Config
+			// b/459468648
 			if expOtlpExporter {
 				copyProcessor := CopyHostIDToInstanceID()
 				processorNames = append(processorNames, copyProcessor.name("_global_0"))
