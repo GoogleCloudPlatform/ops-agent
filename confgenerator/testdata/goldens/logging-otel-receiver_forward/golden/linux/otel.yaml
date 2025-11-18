@@ -614,13 +614,8 @@ processors:
     log_statements:
     - context: log
       statements:
-      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["__field_0"], body["fluent.tag"]) where (body != nil and body["fluent.tag"] != nil)
-      - delete_key(body, "fluent.tag") where (body != nil and body["fluent.tag"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_0"])
-      - set(cache["value"], Concat([logName,cache["value"]], "."))
-      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - set(attributes["gcp.log_name"], Concat([attributes["gcp.log_name"],body["fluent.tag"]], ".")) where ((attributes != nil and attributes["gcp.log_name"] != nil) and (body != nil and body["fluent.tag"] != nil))
+      - delete_key(body, "fluent.tag") where ((body != nil and body["fluent.tag"] != nil) and (body != nil and body["fluent.tag"] != nil))
   transform/loggingmetrics_0:
     error_mode: ignore
     metric_statements:
