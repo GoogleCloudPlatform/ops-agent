@@ -681,11 +681,11 @@ processors:
     - context: log
       statements:
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["__field_0"], attributes["gcp.log_name"]) where (attributes != nil and attributes["gcp.log_name"] != nil)
-      - delete_key(attributes, "gcp.log_name") where (attributes != nil and attributes["gcp.log_name"] != nil)
+      - set(cache["__field_0"], body["fluent.tag"]) where (body != nil and body["fluent.tag"] != nil)
+      - delete_key(body, "fluent.tag") where (body != nil and body["fluent.tag"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_0"])
-      - set(cache["value"], Concat([cache["value"],body["fluent.tag"]], "."))
+      - set(cache["value"], Concat([logName,cache["value"]], "."))
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/iis_3:
     metric_statements:
