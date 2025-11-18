@@ -23,7 +23,7 @@ require (
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/prometheus/common v0.55.0
-	github.com/prometheus/prometheus v0.51.2-0.20240405174432-b4a973753c6e
+	github.com/prometheus/prometheus v0.54.0
 	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/smallnest/weighted v0.0.0-20230419055410-36b780e40a7a // indirect
 	go.opentelemetry.io/contrib/detectors/gcp v1.38.0
@@ -51,7 +51,7 @@ require (
 	github.com/GoogleCloudPlatform/google-guest-agent v0.0.0-20250924181420-23412fbd6228
 	github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20250729162438-fe8de74ec513
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.29.0
-	go.opentelemetry.io/collector/pdata v1.4.0
+	go.opentelemetry.io/collector/pdata v1.12.0
 	golang.org/x/sync v0.17.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20250922171735-9219d122eba9
 	gopkg.in/yaml.v3 v3.0.1
@@ -86,7 +86,7 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/digitalocean/godo v1.118.0 // indirect
 	github.com/distribution/reference v0.5.0 // indirect
-	github.com/docker/docker v27.1.1+incompatible // indirect
+	github.com/docker/docker v28.0.0+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
