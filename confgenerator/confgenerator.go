@@ -140,7 +140,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 		OtelLogging:         uc.Logging.Service.OTelLogging,
 		ProjectName:         resource.ProjectName(),
 	}
-	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines, expOtlpExporter)
+	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines, ctx)
 
 	extensions := map[string]interface{}{}
 	if expOtlpExporter {

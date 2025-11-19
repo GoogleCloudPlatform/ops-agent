@@ -65,7 +65,7 @@ func (r MetricsReceiverMemcached) Pipelines(ctx context.Context) ([]otel.Receive
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
-	}, ctx)}, nil
+	}, ctx, false)}, nil
 }
 
 func init() {

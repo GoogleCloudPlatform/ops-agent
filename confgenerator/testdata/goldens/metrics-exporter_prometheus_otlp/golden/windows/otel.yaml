@@ -96,9 +96,9 @@ processors:
         - googlecloudmonitoring/point_count
   interval/loggingmetrics_7:
     interval: 1m
-  metricstarttime/agent_prometheus_1:
+  metricstarttime/agent_prometheus_2:
     strategy: subtract_initial_point
-  metricstarttime/ops_agent_1:
+  metricstarttime/ops_agent_2:
     strategy: subtract_initial_point
   metricstarttime/prometheus_2:
     strategy: subtract_initial_point
@@ -628,12 +628,22 @@ processors:
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
   normalizesums/iis_2: {}
+  resource/agent_prometheus_1:
+    attributes:
+    - action: insert
+      key: gcp.project_id
+      value: test-project
   resource/iis_4:
     attributes:
     - action: insert
       key: gcp.project_id
       value: test-project
   resource/mssql_2:
+    attributes:
+    - action: insert
+      key: gcp.project_id
+      value: test-project
+  resource/ops_agent_1:
     attributes:
     - action: insert
       key: gcp.project_id
@@ -910,8 +920,8 @@ service:
       - otlphttp/otlp
       processors:
       - transform/agent_prometheus_0
-      - metricstarttime/agent_prometheus_1
-      - resource/agent_prometheus_2
+      - resource/agent_prometheus_1
+      - metricstarttime/agent_prometheus_2
       - transform/agent_prometheus_3
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
@@ -924,8 +934,8 @@ service:
       - otlphttp/otlp
       processors:
       - transform/agent_prometheus_0
-      - metricstarttime/agent_prometheus_1
-      - resource/agent_prometheus_2
+      - resource/agent_prometheus_1
+      - metricstarttime/agent_prometheus_2
       - transform/agent_prometheus_3
       - transform/loggingmetrics_0
       - filter/loggingmetrics_1
@@ -945,8 +955,8 @@ service:
       - otlphttp/otlp
       processors:
       - transform/ops_agent_0
-      - metricstarttime/ops_agent_1
-      - resource/ops_agent_2
+      - resource/ops_agent_1
+      - metricstarttime/ops_agent_2
       - transform/ops_agent_3
       - resourcedetection/_global_0
       - transform/_global_0
@@ -957,8 +967,8 @@ service:
       - otlphttp/otlp
       processors:
       - transform/agent_prometheus_0
-      - metricstarttime/agent_prometheus_1
-      - resource/agent_prometheus_2
+      - resource/agent_prometheus_1
+      - metricstarttime/agent_prometheus_2
       - transform/agent_prometheus_3
       - transform/otel_0
       - filter/otel_1

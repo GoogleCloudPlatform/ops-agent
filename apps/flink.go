@@ -67,7 +67,7 @@ func (r MetricsReceiverFlink) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
-	}, ctx)}, nil
+	}, ctx, false)}, nil
 }
 
 func init() {

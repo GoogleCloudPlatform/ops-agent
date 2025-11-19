@@ -65,7 +65,7 @@ func (r MetricsReceiverApache) Pipelines(ctx context.Context) ([]otel.ReceiverPi
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
-	}, ctx)}, nil
+	}, ctx, false)}, nil
 }
 
 func init() {

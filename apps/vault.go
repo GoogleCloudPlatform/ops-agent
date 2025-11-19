@@ -180,7 +180,7 @@ func (r MetricsReceiverVault) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
-	}, ctx)}, nil
+	}, ctx, false)}, nil
 }
 
 type metricTransformer struct {

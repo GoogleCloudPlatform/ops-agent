@@ -101,7 +101,7 @@ func (r MetricsReceiverAerospike) Pipelines(ctx context.Context) ([]otel.Receive
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
-	}, ctx)}, nil
+	}, ctx, false)}, nil
 }
 
 func init() {

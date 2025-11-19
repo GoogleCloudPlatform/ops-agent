@@ -15,6 +15,7 @@
 package confgenerator
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"time"
@@ -57,9 +58,9 @@ var grpcToHTTPStatus = map[string]string{
 	"DEADLINE_EXCEEDED":   "504",
 }
 
-func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]otel.ReceiverPipeline, pipelines map[string]otel.Pipeline, expOtlpExporter bool) {
+func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]otel.ReceiverPipeline, pipelines map[string]otel.Pipeline, ctx context.Context) {
 	// Receiver pipelines names should have 1 underscore to avoid collision with user configurations.
-	receiverPipelines["agent_prometheus"] = r.PrometheusMetricsPipeline(expOtlpExporter)
+	receiverPipelines["agent_prometheus"] = r.PrometheusMetricsPipeline(ctx)
 
 	// Pipeline names should have no underscores to avoid collision with user configurations.
 	pipelines["otel"] = otel.Pipeline{
@@ -80,14 +81,14 @@ func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]o
 		Processors:           r.LoggingMetricsPipelineProcessors(),
 	}
 
-	receiverPipelines["ops_agent"] = r.OpsAgentPipeline(expOtlpExporter)
+	receiverPipelines["ops_agent"] = r.OpsAgentPipeline(ctx)
 	pipelines["opsagent"] = otel.Pipeline{
 		Type:                 "metrics",
 		ReceiverPipelineName: "ops_agent",
 	}
 }
 
-func (r AgentSelfMetrics) PrometheusMetricsPipeline(expOtlpExporter bool) otel.ReceiverPipeline {
+func (r AgentSelfMetrics) PrometheusMetricsPipeline(ctx context.Context) otel.ReceiverPipeline {
 	return ConvertToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "prometheus",
@@ -129,7 +130,7 @@ func (r AgentSelfMetrics) PrometheusMetricsPipeline(expOtlpExporter bool) otel.R
 				),
 			},
 		},
-	}, expOtlpExporter, r.ProjectName)
+	}, ctx, true)
 }
 
 func (r AgentSelfMetrics) OtelPipelineProcessors() []otel.Component {
@@ -304,7 +305,7 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors() []otel.Component {
 	}
 }
 
-func (r AgentSelfMetrics) OpsAgentPipeline(expOtlpExporter bool) otel.ReceiverPipeline {
+func (r AgentSelfMetrics) OpsAgentPipeline(ctx context.Context) otel.ReceiverPipeline {
 	receiverConfig := map[string]any{
 		"include": []string{
 			filepath.Join(r.OtelRuntimeDir, "enabled_receivers_otlp.json"),
@@ -325,7 +326,7 @@ func (r AgentSelfMetrics) OpsAgentPipeline(expOtlpExporter bool) otel.ReceiverPi
 				otel.Transform("metric", "datapoint", []ottl.Statement{"set(time, Now())"}),
 			},
 		},
-	}, expOtlpExporter, r.ProjectName)
+	}, ctx, true)
 }
 
 // intentionally not registered as a component because this is not created by users

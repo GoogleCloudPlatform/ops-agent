@@ -72,7 +72,7 @@ func (r MetricsReceiverIis) Pipelines(ctx context.Context) ([]otel.ReceiverPipel
 				),
 				otel.NormalizeSums(),
 			}},
-		}, ctx)}, nil
+		}, ctx, false)}, nil
 	}
 
 	// Return version 1 if version is anything other than 2
@@ -144,7 +144,7 @@ func (r MetricsReceiverIis) Pipelines(ctx context.Context) ([]otel.ReceiverPipel
 				otel.SetScopeVersion("1.0"),
 			),
 		}},
-	}, ctx)}, nil
+	}, ctx, false)}, nil
 }
 
 func init() {

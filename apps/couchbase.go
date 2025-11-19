@@ -170,7 +170,7 @@ func (r MetricsReceiverCouchbase) Pipelines(ctx context.Context) ([]otel.Receive
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
-	}, ctx)}, nil
+	}, ctx, false)}, nil
 }
 
 type couchbaseMetric struct {
