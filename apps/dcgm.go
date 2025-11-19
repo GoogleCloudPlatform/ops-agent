@@ -36,7 +36,7 @@ func (r MetricsReceiverDcgm) Type() string {
 	return "dcgm"
 }
 
-func (r MetricsReceiverDcgm) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (r MetricsReceiverDcgm) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultDcgmEndpoint
 	}
@@ -128,7 +128,7 @@ func (r MetricsReceiverDcgm) Pipelines(_ context.Context) ([]otel.ReceiverPipeli
 		}
 	}
 
-	return []otel.ReceiverPipeline{{
+	return []otel.ReceiverPipeline{confgenerator.ConvertToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "dcgm",
 			Config: map[string]interface{}{
@@ -203,8 +203,9 @@ func (r MetricsReceiverDcgm) Pipelines(_ context.Context) ([]otel.ReceiverPipeli
 				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
 				otel.SetScopeVersion("1.0"),
 			),
-		}},
-	}}, nil
+		},
+		},
+	}, ctx)}, nil
 }
 
 func init() {
