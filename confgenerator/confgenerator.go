@@ -70,10 +70,10 @@ func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, 
 	pipeline.ExporterTypes["metrics"] = otel.OTLP
 
 	pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.GCPProjectID(resource.ProjectName()))
-  if systemMetric {
-    pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricStartTime())
-	  pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveInstrumentationLibraryLabelsAttributes())
-  }
+	if systemMetric {
+		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricStartTime())
+		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveInstrumentationLibraryLabelsAttributes())
+	}
 	return pipeline
 }
 
