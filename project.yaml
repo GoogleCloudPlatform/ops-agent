@@ -137,8 +137,16 @@ targets:
         test_distros:
           representative:
           - rocky-linux-cloud:rocky-linux-9
+          - rhel-sap-cloud:rhel-9-0-sap-ha
+          - rhel-sap-cloud:rhel-9-2-sap-ha
+          - rhel-sap-cloud:rhel-9-4-sap-ha
+          - rhel-sap-cloud:rhel-9-6-sap-ha
           exhaustive:
           - rhel-cloud:rhel-9
+          - rhel-sap-cloud:rhel-9-0-sap-ha
+          - rhel-sap-cloud:rhel-9-2-sap-ha
+          - rhel-sap-cloud:rhel-9-4-sap-ha
+          - rhel-sap-cloud:rhel-9-6-sap-ha
           - rocky-linux-cloud:rocky-linux-9-optimized-gcp
       aarch64:
         test_distros:
@@ -180,7 +188,7 @@ targets:
           exhaustive:
           - suse-cloud:sles-15-sp6-arm64
           - opensuse-cloud:opensuse-leap-arm64
-          - opensuse-cloud=opensuse-leap-15-6-v20250724-arm64 
+          - opensuse-cloud=opensuse-leap-15-6-v20250724-arm64
   windows:
     package_extension:
       goo
