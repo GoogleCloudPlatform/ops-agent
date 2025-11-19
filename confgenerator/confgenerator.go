@@ -57,15 +57,24 @@ func googleCloudExporter(userAgent string, instrumentationLabels bool, serviceRe
 	}
 }
 
-func ConvertToOtlpExporter(receiver otel.ReceiverPipeline, expOtlpExporter bool, projectName string) otel.ReceiverPipeline {
+func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, systemMetric bool) otel.ReceiverPipeline {
+	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
+	resource, _ := platform.FromContext(ctx).GetResource()
 	if !expOtlpExporter {
-		return receiver
+		return pipeline
 	}
-	receiver.ExporterTypes["metrics"] = otel.OTLP
-	receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.MetricStartTime())
-	receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.GCPProjectID(projectName))
-	receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.MetricsRemoveInstrumentationLibraryLabelsAttributes())
-	return receiver
+	_, err := pipeline.ExporterTypes["metrics"]
+	if !err {
+		return pipeline
+	}
+	pipeline.ExporterTypes["metrics"] = otel.OTLP
+
+	pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.GCPProjectID(resource.ProjectName()))
+  if systemMetric {
+    pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricStartTime())
+	  pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveInstrumentationLibraryLabelsAttributes())
+  }
+	return pipeline
 }
 
 func otlpExporter(userAgent string) otel.Component {

@@ -628,12 +628,12 @@ processors:
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
   normalizesums/iis_2: {}
-  resource/agent_prometheus_2:
+  resource/iis_4:
     attributes:
     - action: insert
       key: gcp.project_id
       value: test-project
-  resource/ops_agent_2:
+  resource/mssql_2:
     attributes:
     - action: insert
       key: gcp.project_id
@@ -881,12 +881,13 @@ service:
       - hostmetrics/hostmetrics
     metrics/default__pipeline_iis:
       exporters:
-      - googlecloud
+      - otlphttp/otlp
       processors:
       - metricstransform/iis_0
       - casttosum/iis_1
       - normalizesums/iis_2
       - transform/iis_3
+      - resource/iis_4
       - filter/default__pipeline_iis_0
       - resourcedetection/_global_0
       - transform/_global_0
@@ -894,10 +895,11 @@ service:
       - windowsperfcounters/iis
     metrics/default__pipeline_mssql:
       exporters:
-      - googlecloud
+      - otlphttp/otlp
       processors:
       - metricstransform/mssql_0
       - transform/mssql_1
+      - resource/mssql_2
       - filter/default__pipeline_mssql_0
       - resourcedetection/_global_0
       - transform/_global_0
