@@ -57,20 +57,24 @@ func googleCloudExporter(userAgent string, instrumentationLabels bool, serviceRe
 	}
 }
 
-func ConvertToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
+func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, systemMetric bool) otel.ReceiverPipeline {
 	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
 	resource, _ := platform.FromContext(ctx).GetResource()
 	if !expOtlpExporter {
-		return receiver
+		return pipeline
 	}
-	_, err := receiver.ExporterTypes["metrics"]
+	_, err := pipeline.ExporterTypes["metrics"]
 	if !err {
-		return receiver
+		return pipeline
 	}
-	receiver.ExporterTypes["metrics"] = otel.OTLP
+	pipeline.ExporterTypes["metrics"] = otel.OTLP
 
-	receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.GCPProjectID(resource.ProjectName()))
-	return receiver
+	pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.GCPProjectID(resource.ProjectName()))
+	if systemMetric {
+		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricStartTime())
+		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveInstrumentationLibraryLabelsAttributes())
+	}
+	return pipeline
 }
 
 func otlpExporter(userAgent string) otel.Component {
@@ -112,9 +116,15 @@ func (uc *UnifiedConfig) getOTelLogLevel() string {
 
 func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) (string, error) {
 	p := platform.FromContext(ctx)
+	resource, err := p.GetResource()
+	if err != nil {
+		log.Printf("can't get resource metadata: %v", err)
+		return "", nil
+	}
 	userAgent, _ := p.UserAgent("Google-Cloud-Ops-Agent-Metrics")
 	metricVersionLabel, _ := p.VersionLabel("google-cloud-ops-agent-metrics")
 	loggingVersionLabel, _ := p.VersionLabel("google-cloud-ops-agent-logging")
+	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
 
 	receiverPipelines, pipelines, err := uc.generateOtelPipelines(ctx)
 	if err != nil {
@@ -128,12 +138,12 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 		OtelPort:            otel.MetricsPort,
 		OtelRuntimeDir:      outDir,
 		OtelLogging:         uc.Logging.Service.OTelLogging,
+		ProjectName:         resource.ProjectName(),
 	}
-	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines)
+	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines, ctx)
 
-	exp_otlp_exporter := experimentsFromContext(ctx)["otlp_exporter"]
 	extensions := map[string]interface{}{}
-	if exp_otlp_exporter {
+	if expOtlpExporter {
 		extensions["googleclientauth"] = map[string]interface{}{}
 	}
 
@@ -148,7 +158,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 			otel.GMP:    googleManagedPrometheusExporter(userAgent),
 			otel.OTLP:   otlpExporter(userAgent),
 		},
-	}.Generate(ctx, exp_otlp_exporter)
+	}.Generate(ctx, expOtlpExporter)
 	if err != nil {
 		return "", err
 	}

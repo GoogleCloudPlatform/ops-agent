@@ -96,6 +96,10 @@ processors:
         - googlecloudmonitoring/point_count
   interval/loggingmetrics_7:
     interval: 1m
+  metricstarttime/agent_prometheus_2:
+    strategy: subtract_initial_point
+  metricstarttime/ops_agent_2:
+    strategy: subtract_initial_point
   metricstarttime/prometheus_2:
     strategy: subtract_initial_point
   metricstransform/fluentbit_1:
@@ -624,12 +628,22 @@ processors:
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
   normalizesums/iis_2: {}
+  resource/agent_prometheus_1:
+    attributes:
+    - action: insert
+      key: gcp.project_id
+      value: test-project
   resource/iis_4:
     attributes:
     - action: insert
       key: gcp.project_id
       value: test-project
   resource/mssql_2:
+    attributes:
+    - action: insert
+      key: gcp.project_id
+      value: test-project
+  resource/ops_agent_1:
     attributes:
     - action: insert
       key: gcp.project_id
@@ -657,6 +671,12 @@ processors:
       - delete_key(resource.attributes, "service.instance.id")
       - delete_key(resource.attributes, "server.port")
       - delete_key(resource.attributes, "url.scheme")
+  transform/agent_prometheus_3:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
   transform/iis_3:
     metric_statements:
     - context: scope
@@ -696,6 +716,12 @@ processors:
     - context: datapoint
       statements:
       - set(time, Now())
+  transform/ops_agent_3:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
   transform/otel_0:
     error_mode: ignore
     metric_statements:
@@ -891,9 +917,12 @@ service:
       - windowsperfcounters/mssql
     metrics/fluentbit:
       exporters:
-      - googlecloud
+      - otlphttp/otlp
       processors:
       - transform/agent_prometheus_0
+      - resource/agent_prometheus_1
+      - metricstarttime/agent_prometheus_2
+      - transform/agent_prometheus_3
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
       - resourcedetection/_global_0
@@ -902,9 +931,12 @@ service:
       - prometheus/agent_prometheus
     metrics/loggingmetrics:
       exporters:
-      - googlecloud
+      - otlphttp/otlp
       processors:
       - transform/agent_prometheus_0
+      - resource/agent_prometheus_1
+      - metricstarttime/agent_prometheus_2
+      - transform/agent_prometheus_3
       - transform/loggingmetrics_0
       - filter/loggingmetrics_1
       - filter/loggingmetrics_2
@@ -920,18 +952,24 @@ service:
       - prometheus/agent_prometheus
     metrics/opsagent:
       exporters:
-      - googlecloud
+      - otlphttp/otlp
       processors:
       - transform/ops_agent_0
+      - resource/ops_agent_1
+      - metricstarttime/ops_agent_2
+      - transform/ops_agent_3
       - resourcedetection/_global_0
       - transform/_global_0
       receivers:
       - otlpjsonfile/ops_agent
     metrics/otel:
       exporters:
-      - googlecloud
+      - otlphttp/otlp
       processors:
       - transform/agent_prometheus_0
+      - resource/agent_prometheus_1
+      - metricstarttime/agent_prometheus_2
+      - transform/agent_prometheus_3
       - transform/otel_0
       - filter/otel_1
       - filter/otel_2

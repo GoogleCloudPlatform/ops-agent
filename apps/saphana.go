@@ -170,7 +170,7 @@ func (s MetricsReceiverSapHana) Pipelines(ctx context.Context) ([]otel.ReceiverP
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
-	}, ctx)}, nil
+	}, ctx, false)}, nil
 }
 
 func init() {
