@@ -97,8 +97,8 @@ New-Item -Path $env:KOKORO_ARTIFACTS_DIR -Name 'result' -ItemType 'directory'
 (Get-FileHash -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/google-cloud-ops-agent-plugin*.tar.gz" -Algorithm SHA256).Hash.ToLower() | Out-File -FilePath "$env:KOKORO_ARTIFACTS_DIR/result/google-cloud-ops-agent-plugin-sha256.txt" -Encoding ascii
 Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/google-cloud-ops-agent-plugin*.tar.gz" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
 
-Copy-Item -Path "./pkg/goo/maint.ps1" -Destination "$env:KOKORO_ARTIFACTS_DIR/out/bin/maint.ps1"
-Copy-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out" -Destination "$env:KOKORO_ARTIFACTS_DIR/result/out"
+Copy-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
+Copy-Item -Path "./pkg/goo/maint.ps1" -Destination "$env:KOKORO_ARTIFACTS_DIR/result/out/bin/maint.ps1"
 
 # If presubmit packaging ran inside the container, move the .goo
 Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/result/out/*.goo" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
@@ -106,6 +106,7 @@ Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/result/out/*.goo" -Destination "$env:
 # Copy the .pdb and .dll files from $env:KOKORO_ARTIFACTS_DIR/out/bin to $env:KOKORO_ARTIFACTS_DIR/result.
 # The .pdb and .dll files are saved so the team can use them in the event that we have to debug this Ops Agent build.
 # They are not distributed to customers.
+# .pdb files might not exist
 Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/result/out/bin/*.pdb" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
 Copy-Item -Path "$env:KOKORO_ARTIFACTS_DIR/result/out/bin/*.dll" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
 
