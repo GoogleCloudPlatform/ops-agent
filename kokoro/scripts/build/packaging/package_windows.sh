@@ -53,7 +53,6 @@ mkdir -p "$OutputDir"
 
 # Move pre-built files from the input directory into the current structure.
 mv "${InputDir}/result/out/"* ./out/
-mv "${InputDir}/result/pkg/goo/maint.ps1" ./pkg/goo/maint.ps1
 
 echo "Current directory contents:"
 ls -la
