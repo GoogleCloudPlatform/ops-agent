@@ -391,10 +391,6 @@ func (p LoggingProcessorParseRegexComplex) Components(ctx context.Context, tag, 
 }
 
 func (p LoggingProcessorParseRegexComplex) Processors(ctx context.Context) ([]otel.Component, error) {
-	if len(p.Parsers) == 0 {
-		return []otel.Component{}, nil
-	}
-
 	processors := []otel.Component{}
 	for _, parserConfig := range p.Parsers {
 		parseRegex := LoggingProcessorParseRegex{
