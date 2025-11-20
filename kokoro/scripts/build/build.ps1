@@ -106,7 +106,7 @@ Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/result/out/*.goo" -Destination "$env:
 # Copy the .pdb and .dll files from $env:KOKORO_ARTIFACTS_DIR/out/bin to $env:KOKORO_ARTIFACTS_DIR/result.
 # The .pdb and .dll files are saved so the team can use them in the event that we have to debug this Ops Agent build.
 # They are not distributed to customers.
-Copy-Item -Path "$env:KOKORO_ARTIFACTS_DIR/result/out/bin/*.pdb" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
+Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/result/out/bin/*.pdb" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
 Copy-Item -Path "$env:KOKORO_ARTIFACTS_DIR/result/out/bin/*.dll" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
 
 # If Kokoro is being triggered by Louhi, then Louhi needs to be able to
