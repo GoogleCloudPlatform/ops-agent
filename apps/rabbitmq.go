@@ -123,7 +123,7 @@ func (r MetricsReceiverRabbitmq) Type() string {
 	return "rabbitmq"
 }
 
-func (r MetricsReceiverRabbitmq) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (r MetricsReceiverRabbitmq) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultRabbitmqTCPEndpoint
 	}
@@ -136,7 +136,7 @@ func (r MetricsReceiverRabbitmq) Pipelines(_ context.Context) ([]otel.ReceiverPi
 		"tls":                 r.TLSConfig(true),
 	}
 
-	return []otel.ReceiverPipeline{{
+	return []otel.ReceiverPipeline{confgenerator.ConvertToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type:   "rabbitmq",
 			Config: cfg,
@@ -155,7 +155,7 @@ func (r MetricsReceiverRabbitmq) Pipelines(_ context.Context) ([]otel.ReceiverPi
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
-	}}, nil
+	}, ctx)}, nil
 }
 
 func init() {

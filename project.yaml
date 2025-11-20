@@ -13,6 +13,16 @@
 # limitations under the License.
 
 targets:
+  questing:
+    package_extension:
+      deb
+    architectures:
+      x86_64:
+        test_distros:
+          representative:
+          - ubuntu-os-cloud:ubuntu-2510-amd64
+          exhaustive:
+          - ubuntu-os-cloud:ubuntu-minimal-2510-amd64
   plucky:
     os_versions: [ubuntu-25.04*]
     package_extension:

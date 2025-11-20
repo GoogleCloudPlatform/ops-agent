@@ -49,4 +49,4 @@ switch ($Arch) {
   -var:ARCH=$Arch `
   -var:GOOS=$Goos `
   -var:GOARCH=$GoArch `
-  pkg/goo/presubmit.goospec
+  pkg/goo/google-cloud-ops-agent.goospec

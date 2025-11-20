@@ -8,13 +8,11 @@ $timestamp_server = 'http://timestamp.digicert.com'
 Write-Host "Using the timestamp server: '$timestamp_server'"
 
 # 1. Start with the specific manual files
-$files_to_process = @(
-    'pkg/goo/maint.ps1'
-)
+$files_to_process = @()
 
 # 2. Add all .exe and .dll files found in out/bin
-if (Test-Path 'out/bin') {
-    $bin_files = Get-ChildItem -Path 'out/bin' -Recurse -Include *.exe, *.dll
+if (Test-Path 'out/') {
+    $bin_files = Get-ChildItem -Path 'out' -Recurse -Include *.exe, *.dll, *.ps1
     foreach ($file in $bin_files) {
         # We add the FullName (absolute path) to ensure accuracy
         $files_to_process += $file.FullName

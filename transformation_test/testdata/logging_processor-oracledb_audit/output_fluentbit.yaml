@@ -1,0 +1,32 @@
+- entries:
+  - jsonPayload:
+      action: |-
+        select distinct 'ALTER SYSTEM KILL SESSION ''' || stat.sid || ',' ||
+        			sess.serial# ||
+        			decode(substr(inst.version, 1, 4),
+        					'12.1', ''' immediate ', ''' force timeout 0 ') ||
+        			'-- process 73841'
+        FROM SYS.V$mystat stat, v$session sess, v$instance inst
+        where stat.sid=sess.sid
+        union all
+        select '/' from dual
+      action_number: "3"
+      client_terminal: pts/1
+      client_user: oracle
+      database_user: /
+      dbid: "1643176521"
+      length: "623"
+      privilege: SYSDBA
+      sessionid: "4294967295"
+      status: "0"
+      user_host: oradb19
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/oracledb_audit
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2022-09-14T16:18:03.000000000Z
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance

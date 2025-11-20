@@ -1,1 +1,1 @@
-- config_error: "processor \"processor0\" has invalid configuration: unimplemented"
+- config_error: "processor \"processor0\" has invalid configuration: type \"int\" not supported for field jsonPayload.connection_id"

@@ -365,6 +365,9 @@ WORKDIR /work
 COPY . /work
 
 ARG PACKAGE="false"
+# Always copy maint.ps1, even when not running as a presubmit.
+RUN Copy-Item -Path .\pkg\goo\maint.ps1 -Destination /work/out/bin/;
+
 RUN if ($env:PACKAGE -eq 'true') { `
       & .\pkg\goo\build.ps1 -DestDir /work/out; `
       ls /work/out; `
