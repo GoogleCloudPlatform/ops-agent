@@ -321,6 +321,63 @@ func (r LoggingReceiverSyslog) Components(ctx context.Context, tag string) []flu
 	}}
 }
 
+func (r LoggingReceiverSyslog) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
+	// body := ottl.LValue{"body"}
+	// bodyMessage := ottl.LValue{"body", "message"}
+	// attributes := ottl.LValue{"attributes"}
+	// cacheBodyString := ottl.LValue{"cache", "body_string"}
+	// cacheBodyMap := ottl.LValue{"cache", "body_map"}
+
+	processors := []otel.Component{
+		otel.Transform(
+			"log", "log",
+			// Transformations required to convert "fluentforwardreceiver" output to the expected ops agent "fluent_forward" LogEntry format.
+			// In summary, this moves all resulting "fluentforwardreceiver" fields into "body" (jsonPayload).
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/release/v0.136.x/receiver/fluentforwardreceiver/conversion.go#L171
+			ottl.NewStatements(
+			// "fluentforwardreceiver" sets "log" and "message" as "body". All other fields are set as "attributes".
+			// cacheBodyString.SetIf(body, body.IsString()),
+			// cacheBodyMap.SetIf(body, body.IsMap()),
+			// Merge "cache['body_string']", "cache['body_map']" and "attributes" into "body" (jsonPayload).
+			// body.Set(ottl.RValue("{}")),
+			// bodyMessage.SetIf(cacheBodyString, cacheBodyString.IsPresent()),
+			// body.MergeMapsIf(cacheBodyMap, "upsert", cacheBodyMap.IsPresent()),
+			// body.MergeMapsIf(attributes, "upsert", attributes.IsPresent()),
+			// attributes.Set(ottl.RValue("{}")),
+			),
+		),
+	}
+
+	config := map[string]any{}
+
+	switch r.TransportProtocol {
+	case "tcp":
+		config["tcp"] = map[string]any{
+			"listen_address": fmt.Sprintf("%s:%d", r.ListenHost, r.ListenPort),
+			"protocol":       "rfc5424",
+		}
+	case "udp":
+		config["udp"] = map[string]any{
+			"listen_address": fmt.Sprintf("%s:%d", r.ListenHost, r.ListenPort),
+			"protocol":       "rfc5424",
+		}
+	}
+
+	return []otel.ReceiverPipeline{{
+		Receiver: otel.Component{
+			Type:   "syslog",
+			Config: config,
+		},
+		Processors: map[string][]otel.Component{
+			"logs": processors,
+		},
+
+		ExporterTypes: map[string]otel.ExporterType{
+			"logs": otel.OTel,
+		},
+	}}, nil
+}
+
 func init() {
 	LoggingReceiverTypes.RegisterType(func() LoggingReceiver { return &LoggingReceiverSyslog{} })
 }
