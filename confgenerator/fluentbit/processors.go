@@ -24,9 +24,9 @@ import (
 )
 
 type MultilineRule struct {
-	StateName string
-	Regex     string
-	NextState string
+	StateName string `yaml:"state_name"`
+	Regex     string `yaml:"regex"`
+	NextState string `yaml:"next_state"`
 }
 
 func (r MultilineRule) AsString() string {

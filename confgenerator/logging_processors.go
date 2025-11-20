@@ -430,7 +430,12 @@ type MultilineRule = fluentbit.MultilineRule
 //	rule      "cont"          "/^\s+at.*/"                     "cont"
 type LoggingProcessorParseMultilineRegex struct {
 	LoggingProcessorParseRegexComplex
-	Rules []MultilineRule
+	Rules           []MultilineRule `yaml:"rules"`
+	ConfigComponent `yaml:",inline"`
+}
+
+func (r LoggingProcessorParseMultilineRegex) Type() string {
+	return "parse_multiline_regex"
 }
 
 func (p LoggingProcessorParseMultilineRegex) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
