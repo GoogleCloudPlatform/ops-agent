@@ -897,13 +897,13 @@ receivers:
         - targets:
           - 0.0.0.0:20201
   syslog/test__syslog__source__id__tcp:
+    protocol: rfc5424
     tcp:
       listen_address: 1.1.1.1:1111
-      protocol: rfc5424
   syslog/test__syslog__source__id__udp:
+    protocol: rfc5424
     udp:
       listen_address: 2.2.2.2:2222
-      protocol: rfc5424
   windowsperfcounters/iis:
     collection_interval: 60s
     perfcounters:

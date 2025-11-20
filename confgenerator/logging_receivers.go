@@ -348,19 +348,11 @@ func (r LoggingReceiverSyslog) Pipelines(ctx context.Context) ([]otel.ReceiverPi
 		),
 	}
 
-	config := map[string]any{}
-
-	switch r.TransportProtocol {
-	case "tcp":
-		config["tcp"] = map[string]any{
+	config := map[string]any{
+		r.TransportProtocol: map[string]any{
 			"listen_address": fmt.Sprintf("%s:%d", r.ListenHost, r.ListenPort),
-			"protocol":       "rfc5424",
-		}
-	case "udp":
-		config["udp"] = map[string]any{
-			"listen_address": fmt.Sprintf("%s:%d", r.ListenHost, r.ListenPort),
-			"protocol":       "rfc5424",
-		}
+		},
+		"protocol": "rfc5424",
 	}
 
 	return []otel.ReceiverPipeline{{
