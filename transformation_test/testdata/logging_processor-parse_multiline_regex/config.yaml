@@ -1,0 +1,12 @@
+- type: parse_multiline_regex
+  rules: 
+  - state_name : "start_state"  
+    next_state : "cont"
+    regex : ".*first line.*"
+  - state_name : "cont"  
+    next_state : "cont"
+    regex : ".*secondary line.*"
+  - state_name : "cont"  
+    next_state : "start_state"
+    regex : ".*connects a log with a first line.*"
+    
