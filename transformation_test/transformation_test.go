@@ -527,7 +527,7 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 			msg, _ := log["msg"].(string)
 			if strings.HasPrefix(msg, "Consuming files") {
 				consumingCount += 1
-				if consumingCount == 2 {
+				if consumingCount == 3 {
 					// We've processed the entire input file. Signal the collector to stop.
 					if err := cmd.Process.Signal(os.Interrupt); err != nil {
 						t.Errorf("failed to signal process: %v", err)
