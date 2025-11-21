@@ -156,6 +156,7 @@ func (p ParserShared) TimestampStatements() (ottl.Statements, error) {
 
 func (p ParserShared) TypesStatements() (ottl.Statements, error) {
 	var out ottl.Statements
+	// Sort map keys to always get the same statements order and error message.
 	for _, field := range GetSortedKeys(p.Types) {
 		fieldType := p.Types[field]
 		m, err := filter.NewMemberLegacy(field)
