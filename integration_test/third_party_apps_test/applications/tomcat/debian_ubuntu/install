@@ -14,8 +14,14 @@ elif [[ $ID == ubuntu && "${VERSION_ID}" == 24* ]]; then
     sudo apt-get install -y default-jdk default-jdk-headless
     TOMCAT_VERSION=tomcat10
 else
-    sudo apt-get install -y default-jdk default-jdk-headless
-    TOMCAT_VERSION=tomcat9
+    if [[ $ID == ubuntu && "${VERSION_ID}" == 24* ]]; then
+        TOMCAT_VERSION=tomcat10
+    elif [[ $ID == ubuntu && "${VERSION_ID}" == 25* ]]; then
+        TOMCAT_VERSION=tomcat10
+    else
+        TOMCAT_VERSION=tomcat9
+    fi
+    sudo apt-get install -y curl default-jdk default-jdk-headless
 fi
 
 sudo apt install ${TOMCAT_VERSION} -y

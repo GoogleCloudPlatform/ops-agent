@@ -1,6 +1,5 @@
 - entries:
-  - jsonPayload:
-      gzip_ratio: ""
+  - jsonPayload: {}
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/jetty_access
@@ -11,8 +10,7 @@
         zone: test-zone
       type: gce_instance
     timestamp: 2000-10-10T20:55:36Z
-  - jsonPayload:
-      gzip_ratio: ""
+  - jsonPayload: {}
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/jetty_access
@@ -24,7 +22,6 @@
       type: gce_instance
     timestamp: 2021-08-26T16:49:43Z
   - jsonPayload:
-      gzip_ratio: ""
       user: frank
     labels:
       compute.googleapis.com/resource_name: hostname
@@ -36,8 +33,7 @@
         zone: test-zone
       type: gce_instance
     timestamp: 2000-10-10T20:55:36Z
-  - jsonPayload:
-      gzip_ratio: ""
+  - jsonPayload: {}
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/jetty_access
@@ -49,7 +45,6 @@
       type: gce_instance
     timestamp: 2021-08-26T16:50:15Z
   - jsonPayload:
-      gzip_ratio: ""
       user: admin
     labels:
       compute.googleapis.com/resource_name: hostname

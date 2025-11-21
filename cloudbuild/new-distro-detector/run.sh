@@ -23,7 +23,6 @@ set -o pipefail
 PATTERNS_FILE="irrelevant_family_patterns.txt"
 echo '^cos-
 ^fedora-
-^rhel-
 ^rocky-linux-[0-9]+-optimized-gcp
 ^sql-
 ^ubuntu-pro-

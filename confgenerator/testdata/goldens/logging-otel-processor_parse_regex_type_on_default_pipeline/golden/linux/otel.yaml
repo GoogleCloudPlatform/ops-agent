@@ -594,7 +594,7 @@ processors:
     log_statements:
     - context: log
       statements:
-      - set(cache["__parsed_regex"], ExtractPatternsRubyRegex(body["key_1"], "regex_pattern_1")) where (body != nil and body["key_1"] != nil)
+      - set(cache["__parsed_regex"], ExtractPatternsRubyRegex(body["key_1"], "regex_pattern_1", true)) where ((body != nil and body["key_1"] != nil) and IsMatchRubyRegex(body["key_1"], "regex_pattern_1"))
       - delete_key(body, "key_1") where ((body != nil and body["key_1"] != nil) and (cache != nil and cache["__parsed_regex"] != nil))
       - merge_maps(body, cache["__parsed_regex"], "upsert") where (cache != nil and cache["__parsed_regex"] != nil)
       - delete_key(cache, "__parsed_regex") where (cache != nil and cache["__parsed_regex"] != nil)
@@ -697,6 +697,8 @@ receivers:
       id: body
       to: body.message
       type: move
+    preserve_leading_whitespaces: true
+    preserve_trailing_whitespaces: true
     start_at: beginning
   hostmetrics/hostmetrics:
     collection_interval: 60s

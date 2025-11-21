@@ -619,7 +619,7 @@ processors:
       - delete_key(cache, "__field_13") where (cache != nil and cache["__field_13"] != nil)
       - set(cache["__field_13"], body["trace"]) where (body != nil and body["trace"] != nil)
       - set(cache["__omit_0"], false)
-      - set(cache["__omit_0"], true) where ((body != nil and body["omitted"] != nil) and IsMatch(body["omitted"], "(?i)^-$"))
+      - set(cache["__omit_0"], true) where ((body != nil and body["omitted"] != nil) and IsMatchRubyRegex(body["omitted"], "(?i)^-$"))
       - delete_key(body, "move_source") where (body != nil and body["move_source"] != nil)
       - delete_key(body, "trace") where (body != nil and body["trace"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
@@ -759,6 +759,8 @@ receivers:
       id: body
       to: body.message
       type: move
+    preserve_leading_whitespaces: true
+    preserve_trailing_whitespaces: true
     start_at: beginning
   filelog/syslog:
     exclude: []
@@ -771,6 +773,8 @@ receivers:
       id: body
       to: body.message
       type: move
+    preserve_leading_whitespaces: true
+    preserve_trailing_whitespaces: true
     start_at: beginning
   hostmetrics/hostmetrics:
     collection_interval: 60s

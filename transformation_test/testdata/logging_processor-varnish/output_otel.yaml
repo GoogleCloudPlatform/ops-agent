@@ -1,6 +1,5 @@
 - entries:
-  - jsonPayload:
-      gzip_ratio: ""
+  - jsonPayload: {}
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/varnish
@@ -12,7 +11,6 @@
       type: gce_instance
     timestamp: 2022-03-02T15:55:05Z
   - jsonPayload:
-      gzip_ratio: ""
       user: john
     labels:
       compute.googleapis.com/resource_name: hostname
@@ -24,8 +22,7 @@
         zone: test-zone
       type: gce_instance
     timestamp: 2022-03-03T10:12:45Z
-  - jsonPayload:
-      gzip_ratio: ""
+  - jsonPayload: {}
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/varnish
@@ -37,7 +34,6 @@
       type: gce_instance
     timestamp: 2022-03-04T08:30:12Z
   - jsonPayload:
-      gzip_ratio: ""
       user: alice
     labels:
       compute.googleapis.com/resource_name: hostname
@@ -49,8 +45,7 @@
         zone: test-zone
       type: gce_instance
     timestamp: 2022-03-05T22:01:59Z
-  - jsonPayload:
-      gzip_ratio: ""
+  - jsonPayload: {}
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/varnish
@@ -62,7 +57,6 @@
       type: gce_instance
     timestamp: 2022-03-06T14:23:11Z
   - jsonPayload:
-      gzip_ratio: ""
       user: bob
     labels:
       compute.googleapis.com/resource_name: hostname

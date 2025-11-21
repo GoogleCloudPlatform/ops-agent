@@ -1,1 +1,117 @@
-- config_error: "processor \"processor0\" has invalid configuration: unimplemented"
+- entries:
+  - jsonPayload:
+      level: Note
+      message: "mysqld: ready for connections."
+      tid: 0
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_error
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: NOTICE
+    timestamp: 2025-07-22T16:02:00Z
+  - jsonPayload:
+      errorCode: MY-010055
+      level: ERROR
+      message: Unknown database 'invalid_db'
+      subsystem: Server
+      tid: 10
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_error
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: ERROR
+    timestamp: 2025-07-22T16:02:01.000001Z
+  - jsonPayload:
+      errorCode: MY-010068
+      level: Warning
+      message: CA certificate ca.pem is self signed.
+      subsystem: Server
+      tid: 11
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_error
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: WARNING
+    timestamp: 2025-07-22T16:02:02.000002Z
+  - jsonPayload:
+      errorCode: MY-013360
+      level: ERROR
+      message: "Plugin 'auth_socket' could not be loaded: Error loading shared library."
+      subsystem: Server
+      tid: 12
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_error
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: ERROR
+    timestamp: 2025-07-22T16:02:03.000003Z
+  - jsonPayload:
+      errorCode: MY-010123
+      level: ERROR
+      message: Table './app/logs' is marked as crashed and should be repaired
+      subsystem: Server
+      tid: 13
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_error
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: ERROR
+    timestamp: 2025-07-22T16:02:04.000004Z
+  - jsonPayload:
+      level: Warning
+      message: "Aborted connection 47 to db: 'test' user: 'user' host: '172.18.0.3' (Got timeout reading communication packets)"
+      tid: 14
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_error
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: WARNING
+    timestamp: 2025-07-22T16:02:05.000005Z
+  - jsonPayload:
+      errorCode: MY-012345
+      level: ERROR
+      message: Cannot allocate memory for the buffer pool
+      subsystem: InnoDB
+      tid: 15
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_error
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: ERROR
+    timestamp: 2025-07-22T16:02:06.000006Z
+  partialSuccess: true

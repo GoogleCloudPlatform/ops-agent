@@ -57,6 +57,22 @@ func googleCloudExporter(userAgent string, instrumentationLabels bool, serviceRe
 	}
 }
 
+func ConvertToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
+	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
+	resource, _ := platform.FromContext(ctx).GetResource()
+	if !expOtlpExporter {
+		return receiver
+	}
+	_, err := receiver.ExporterTypes["metrics"]
+	if !err {
+		return receiver
+	}
+	receiver.ExporterTypes["metrics"] = otel.OTLP
+
+	receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.GCPProjectID(resource.ProjectName()))
+	return receiver
+}
+
 func otlpExporter(userAgent string) otel.Component {
 	return otel.Component{
 		Type: "otlphttp",
@@ -132,7 +148,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 			otel.GMP:    googleManagedPrometheusExporter(userAgent),
 			otel.OTLP:   otlpExporter(userAgent),
 		},
-	}.Generate(ctx)
+	}.Generate(ctx, exp_otlp_exporter)
 	if err != nil {
 		return "", err
 	}

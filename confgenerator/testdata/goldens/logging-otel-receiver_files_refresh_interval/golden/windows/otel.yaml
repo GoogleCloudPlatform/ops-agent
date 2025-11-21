@@ -1044,6 +1044,8 @@ receivers:
       to: body.message
       type: move
     poll_interval: 30s
+    preserve_leading_whitespaces: true
+    preserve_trailing_whitespaces: true
     start_at: beginning
   hostmetrics/hostmetrics:
     collection_interval: 60s

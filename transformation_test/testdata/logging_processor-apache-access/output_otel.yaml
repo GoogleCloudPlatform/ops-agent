@@ -1,6 +1,5 @@
 - entries:
-  - jsonPayload:
-      gzip_ratio: ""
+  - jsonPayload: {}
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_access
@@ -12,7 +11,6 @@
       type: gce_instance
     timestamp: 2000-10-10T20:55:36Z
   - jsonPayload:
-      gzip_ratio: ""
       user: frank
     labels:
       compute.googleapis.com/resource_name: hostname
@@ -24,8 +22,7 @@
         zone: test-zone
       type: gce_instance
     timestamp: 2000-10-10T20:55:36Z
-  - jsonPayload:
-      gzip_ratio: ""
+  - jsonPayload: {}
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_access
@@ -37,7 +34,6 @@
       type: gce_instance
     timestamp: 2021-08-26T16:50:15Z
   - jsonPayload:
-      gzip_ratio: ""
       user: admin
     labels:
       compute.googleapis.com/resource_name: hostname
@@ -50,7 +46,7 @@
       type: gce_instance
     timestamp: 2021-08-26T16:51:22Z
   - jsonPayload:
-      gzip_ratio: ""
+      message: "172.16.0.1 - - [26/Aug/2021:16:53:05 +0000] \"PUT /api/data/123 HTTP/1.1\" 500 789 \"https://api.example.com/docs\" \"python-requests/2.25.1\" "
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_access
@@ -60,5 +56,5 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: 2021-08-26T16:53:05Z
+    timestamp: now
   partialSuccess: true
