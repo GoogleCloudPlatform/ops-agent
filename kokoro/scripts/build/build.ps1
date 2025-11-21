@@ -98,7 +98,7 @@ New-Item -Path $env:KOKORO_ARTIFACTS_DIR -Name 'result' -ItemType 'directory'
 Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/google-cloud-ops-agent-plugin*.tar.gz" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
 
 Copy-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
-Copy-Item -Path "./pkg/goo/maint.ps1" -Destination "$env:KOKORO_ARTIFACTS_DIR/result/out/bin/maint.ps1"
+Copy-Item -Path "./pkg/goo/maint.ps1" -Destination "$env:KOKORO_ARTIFACTS_DIR/result/out/bin"
 
 # If presubmit packaging ran inside the container, move the .goo
 Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/result/out/*.goo" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
