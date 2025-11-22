@@ -34,6 +34,8 @@ minimum_supported_agent_version:
 supported_operating_systems: linux
 platforms_to_skip:
   # MongoDB3.6 hit end of life in 2021 and is not supported on various distros.
+  - debian-cloud:debian-13
+  - debian-cloud:debian-13-arm64
   - debian-cloud:debian-11
   - debian-cloud:debian-12
   - debian-cloud:debian-12-arm64
@@ -51,6 +53,10 @@ platforms_to_skip:
   - ubuntu-os-cloud:ubuntu-2204-lts-arm64
   - ubuntu-os-cloud:ubuntu-2404-lts-amd64
   - ubuntu-os-cloud:ubuntu-2404-lts-arm64
+  - ubuntu-os-cloud:ubuntu-2504-amd64
+  - ubuntu-os-cloud:ubuntu-2504-arm64
+  - ubuntu-os-cloud:ubuntu-2510-amd64
+  - ubuntu-os-cloud:ubuntu-2510-arm64
 supported_app_version: ["2.6", "3.0+", "4.0+", "5.0"]
 expected_metrics:
   - type: workload.googleapis.com/mongodb.cache.operations

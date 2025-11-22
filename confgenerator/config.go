@@ -702,7 +702,7 @@ func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, proces
 	if err != nil {
 		return nil, fmt.Errorf("failed to discover the location of the JMX metrics exporter: %w", err)
 	}
-
+	ctx := context.Background()
 	config := map[string]interface{}{
 		"target_system":       targetSystem,
 		"collection_interval": m.CollectionIntervalString(),
@@ -723,13 +723,13 @@ func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, proces
 		config["password"] = secretPassword
 	}
 
-	return []otel.ReceiverPipeline{{
+	return []otel.ReceiverPipeline{ConvertToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type:   "jmx",
 			Config: config,
 		},
 		Processors: map[string][]otel.Component{"metrics": processors},
-	}}, nil
+	}, ctx)}, nil
 }
 
 type MetricsReceiverSharedCollectJVM struct {
@@ -1223,7 +1223,7 @@ func (uc *UnifiedConfig) ValidateMetrics(ctx context.Context) error {
 		if len(p.ExporterIDs) > 0 {
 			log.Printf(`The "metrics.service.pipelines.%s.exporters" field is deprecated and will be ignored. Please remove it from your configuration.`, id)
 		}
-		if err := validateNoCustomGMPProcessors(receivers, p.ReceiverIDs, p.ProcessorIDs, subagent, ctx); err != nil {
+		if err := validateAllowCustomProcessors(receivers, p.ReceiverIDs, p.ProcessorIDs); err != nil {
 			return err
 		}
 	}
@@ -1298,24 +1298,26 @@ func validateComponentKeys[V any](components map[string]V, refs []string, subage
 	return nil
 }
 
+// CustomProcessorValidator checks if receiver or pipeline allows Ops Agent to have processors
+// Ops Agent cannot have processors if the receiver is of prometheus type, or if it
+// is an OTLP receiver that exports metrics to googlemanagedprometheus
+type CustomProcessorValidator interface {
+	AllowCustomProcessors() bool
+}
+
 // Pipelines that export prometheus metrics are not allowed to have Ops Agent processors
-func validateNoCustomGMPProcessors(receivers metricsReceiverMap, receiverIDs, processorIDs []string, subagent string, ctx context.Context) error {
+func validateAllowCustomProcessors(receivers metricsReceiverMap, receiverIDs, processorIDs []string) error {
 	for _, ID := range receiverIDs {
 		receiver, ok := receivers[ID]
 		if !ok {
-			return fmt.Errorf("metric receiver %q is not defined.", ID)
+			return fmt.Errorf("metric receiver %q is not defined", ID)
 		}
-		receiverPipelines, err := receiver.Pipelines(ctx)
-		if err != nil {
-			return err
+		if v, ok := receiver.(CustomProcessorValidator); !ok || v.AllowCustomProcessors() {
+			continue
 		}
-		for _, receiverPipeline := range receiverPipelines {
-			// Check the Ops Agent receiver type.
-			if receiverPipeline.ExporterTypes[subagent] == otel.GMP {
-				if len(processorIDs) > 0 {
-					return fmt.Errorf("prometheus receivers are incompatible with Ops Agent processors")
-				}
-			}
+
+		if len(processorIDs) > 0 {
+			return fmt.Errorf("%s receiver is incompatible with Ops Agent processors", ID)
 		}
 	}
 	return nil

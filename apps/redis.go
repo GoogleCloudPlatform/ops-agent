@@ -39,7 +39,7 @@ func (r MetricsReceiverRedis) Type() string {
 	return "redis"
 }
 
-func (r MetricsReceiverRedis) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (r MetricsReceiverRedis) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	if r.Address == "" {
 		r.Address = defaultRedisEndpoint
 	}
@@ -51,7 +51,7 @@ func (r MetricsReceiverRedis) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 		transport = "tcp"
 	}
 
-	return []otel.ReceiverPipeline{{
+	return []otel.ReceiverPipeline{confgenerator.ConvertToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "redis",
 			Config: map[string]interface{}{
@@ -77,8 +77,9 @@ func (r MetricsReceiverRedis) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
 				otel.SetScopeVersion("1.0"),
 			),
+			otel.MetricsRemoveServiceAttributes(),
 		}},
-	}}, nil
+	}, ctx)}, nil
 }
 
 func init() {

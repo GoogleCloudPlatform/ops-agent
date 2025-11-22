@@ -70,8 +70,15 @@ platforms_to_skip:
   - rocky-linux-cloud:rocky-linux-9-optimized-gcp-arm64
   - ubuntu-os-cloud:ubuntu-2404-lts-amd64
   - ubuntu-os-cloud:ubuntu-2404-lts-arm64
+  - ubuntu-os-cloud:ubuntu-2504-amd64
+  - ubuntu-os-cloud:ubuntu-2504-arm64
+  - ubuntu-os-cloud:ubuntu-2510-amd64 # couchdb not available for 25.10 yet: https://docs.couchdb.org/en/stable/install/unix.html
+  - ubuntu-os-cloud:ubuntu-2510-arm64
   - debian-cloud:debian-12
   - debian-cloud:debian-12-arm64
+  # couchdb does not support Debian 13 yet: https://apache.jfrog.io/ui/native/couchdb-deb/dists/.
+  - debian-cloud:debian-13
+  - debian-cloud:debian-13-arm64
 supported_app_version: ["2.3.x", "3.1 and higher"]
 expected_metrics:
   - type: workload.googleapis.com/couchdb.average_request_time
