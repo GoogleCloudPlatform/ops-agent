@@ -50,6 +50,10 @@ platforms_to_skip:
   - rocky-linux-cloud:rocky-linux-9-optimized-gcp
   - rocky-linux-cloud:rocky-linux-9-arm64
   - rocky-linux-cloud:rocky-linux-9-optimized-gcp-arm64
+  - rhel-sap-cloud:rhel-9-0-sap-ha
+  - rhel-sap-cloud:rhel-9-2-sap-ha
+  - rhel-sap-cloud:rhel-9-4-sap-ha
+  - rhel-sap-cloud:rhel-9-6-sap-ha
   - debian-cloud:debian-11
   - debian-cloud:debian-12
   - debian-cloud:debian-12-arm64
