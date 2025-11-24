@@ -818,10 +818,10 @@ func (lr LoggingProcessorMacroOracleDBAlert) Expand(ctx context.Context) []confg
 }
 
 type LoggingReceiverMacroOracleDBAlert struct {
-	OracleHome                              string   `yaml:"oracle_home,omitempty" validate:"required_without=IncludePaths,excluded_with=IncludePaths"`
-	IncludePaths                            []string `yaml:"include_paths,omitempty" validate:"required_without=OracleHome,excluded_with=OracleHome"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
-	LoggingProcessorMacroOracleDBAlert      `yaml:",inline"`
+	LoggingProcessorMacroOracleDBAlert `yaml:",inline"`
+	ReceiverMixin                      confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
+	OracleHome                         string                                  `yaml:"oracle_home,omitempty" validate:"required_without=IncludePaths,excluded_with=IncludePaths"`
+	IncludePaths                       []string                                `yaml:"include_paths,omitempty" validate:"required_without=OracleHome,excluded_with=OracleHome"`
 }
 
 func (lr LoggingReceiverMacroOracleDBAlert) Expand(ctx context.Context) (confgenerator.InternalLoggingReceiver, []confgenerator.InternalLoggingProcessor) {
@@ -831,9 +831,9 @@ func (lr LoggingReceiverMacroOracleDBAlert) Expand(ctx context.Context) (confgen
 		}
 	}
 
-	lr.LoggingReceiverFilesMixin.IncludePaths = lr.IncludePaths
+	lr.ReceiverMixin.IncludePaths = lr.IncludePaths
 
-	return &lr.LoggingReceiverFilesMixin, lr.LoggingProcessorMacroOracleDBAlert.Expand(ctx)
+	return &lr.ReceiverMixin, lr.LoggingProcessorMacroOracleDBAlert.Expand(ctx)
 }
 
 type LoggingProcessorMacroOracleDBAudit struct {
@@ -921,10 +921,10 @@ func (lr LoggingProcessorMacroOracleDBAudit) Expand(ctx context.Context) []confg
 }
 
 type LoggingReceiverMacroOracleDBAudit struct {
-	OracleHome                              string   `yaml:"oracle_home,omitempty" validate:"required_without=IncludePaths,excluded_with=IncludePaths"`
-	IncludePaths                            []string `yaml:"include_paths,omitempty" validate:"required_without=OracleHome,excluded_with=OracleHome"`
-	confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
-	LoggingProcessorMacroOracleDBAudit      `yaml:",inline"`
+	LoggingProcessorMacroOracleDBAudit `yaml:",inline"`
+	ReceiverMixin                      confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
+	OracleHome                         string                                  `yaml:"oracle_home,omitempty" validate:"required_without=IncludePaths,excluded_with=IncludePaths"`
+	IncludePaths                       []string                                `yaml:"include_paths,omitempty" validate:"required_without=OracleHome,excluded_with=OracleHome"`
 }
 
 func (lr LoggingReceiverMacroOracleDBAudit) Expand(ctx context.Context) (confgenerator.InternalLoggingReceiver, []confgenerator.InternalLoggingProcessor) {
@@ -934,18 +934,18 @@ func (lr LoggingReceiverMacroOracleDBAudit) Expand(ctx context.Context) (confgen
 		}
 	}
 
-	lr.LoggingReceiverFilesMixin.IncludePaths = lr.IncludePaths
+	lr.ReceiverMixin.IncludePaths = lr.IncludePaths
 
-	return &lr.LoggingReceiverFilesMixin, lr.LoggingProcessorMacroOracleDBAudit.Expand(ctx)
+	return &lr.ReceiverMixin, lr.LoggingProcessorMacroOracleDBAudit.Expand(ctx)
 }
 
 func init() {
 	confgenerator.RegisterLoggingProcessorMacro[LoggingProcessorMacroOracleDBAlert]()
-	confgenerator.RegisterLoggingReceiverMacro[LoggingReceiverMacroOracleDBAlert](func() LoggingReceiverMacroOracleDBAlert {
+	confgenerator.RegisterLoggingReceiverMacro(func() LoggingReceiverMacroOracleDBAlert {
 		return LoggingReceiverMacroOracleDBAlert{}
 	})
 	confgenerator.RegisterLoggingProcessorMacro[LoggingProcessorMacroOracleDBAudit]()
-	confgenerator.RegisterLoggingReceiverMacro[LoggingReceiverMacroOracleDBAudit](func() LoggingReceiverMacroOracleDBAudit {
+	confgenerator.RegisterLoggingReceiverMacro(func() LoggingReceiverMacroOracleDBAudit {
 		return LoggingReceiverMacroOracleDBAudit{}
 	})
 
