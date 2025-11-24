@@ -53,7 +53,7 @@ func MetricsOTTLFilter(metricQueries []string, datapointQueries []string) Compon
 		metricsConfig["metric"] = metricQueries
 	}
 	if len(datapointQueries) > 0 {
-		metricsConfig["datapoint"] = metricQueries
+		metricsConfig["datapoint"] = datapointQueries
 	}
 
 	return Component{
@@ -94,14 +94,32 @@ func CastToSum(metrics ...string) Component {
 
 // CumulativeToDelta returns a Component that converts each cumulative metric to delta.
 func CumulativeToDelta(metrics ...string) Component {
-	return Component{
-		Type: "cumulativetodelta",
-		Config: map[string]interface{}{
-			"include": map[string]interface{}{
-				"metrics":    metrics,
-				"match_type": "strict",
-			},
+	return CumulativeToDeltaWithInitialValue("", metrics...)
+}
+
+// CumulativeToDeltaWithInitialValue returns a Component that converts each cumulative metric to delta
+// with the possibility to set the "initial_value" option.
+func CumulativeToDeltaWithInitialValue(initial_value string, metrics ...string) Component {
+	config := map[string]interface{}{
+		"include": map[string]interface{}{
+			"metrics":    metrics,
+			"match_type": "strict",
 		},
+	}
+	if initial_value != "" {
+		config["initial_value"] = initial_value
+	}
+	return Component{
+		Type:   "cumulativetodelta",
+		Config: config,
+	}
+}
+
+// DeltaToCumulative returns a Component that converts each delta metric to cumulative.
+func DeltaToCumulative() Component {
+	return Component{
+		Type:   "deltatocumulative",
+		Config: map[string]interface{}{},
 	}
 }
 
@@ -111,6 +129,16 @@ func DeltaToRate(metrics ...string) Component {
 		Type: "deltatorate",
 		Config: map[string]interface{}{
 			"metrics": metrics,
+		},
+	}
+}
+
+// Interval returns a Component that aggregates metrics within an interval.
+func Interval(duration string) Component {
+	return Component{
+		Type: "interval",
+		Config: map[string]interface{}{
+			"interval": duration,
 		},
 	}
 }
@@ -233,6 +261,53 @@ func TransformationMetrics(queries ...TransformQuery) Component {
 	}
 }
 
+// MetricsRemoveServiceAttributes will remove any service attributes that the
+// googlecloudexporter attempts to promote from resource to metric attributes.
+// The attributes it removes are specified at:
+// https://opentelemetry.io/docs/specs/semconv/registry/attributes/service/
+//
+// This does not use the typical TransformQuery API because it needs to have
+// a silent error_mode and use the resource context. The latter would have been
+// easily fixable, but the error_mode would have required a major refactor for
+// this to be the only TransformQuery making use of it.
+// - @braydonk
+func MetricsRemoveServiceAttributes() Component {
+	return Component{
+		Type: "transform",
+		Config: map[string]any{
+			"metric_statements": []map[string]any{
+				{
+					"context":    "resource",
+					"error_mode": "silent",
+					"statements": []string{
+						`delete_key(attributes, "service.name")`,
+						`delete_key(attributes, "service.instance.id")`,
+						`delete_key(attributes, "service.namespace")`,
+						`delete_key(attributes, "service.version")`,
+					},
+				},
+			},
+		},
+	}
+}
+
+func CopyHostIDToInstanceID() Component {
+	return Component{
+		Type: "transform",
+		Config: map[string]any{
+			"metric_statements": []map[string]any{
+				{
+					"context":    "resource",
+					"error_mode": "silent",
+					"statements": []string{
+						`set(attributes["instance_id"], attributes["host.id"])`,
+					},
+				},
+			},
+		},
+	}
+}
+
 // TransformQueryContext is a type wrapper for the context of a query expression within the transoform processor
 type TransformQueryContext string
 
@@ -263,6 +338,14 @@ func GroupByAttribute(attribute string) TransformQuery {
 	return TransformQuery{
 		Context:   Datapoint,
 		Statement: fmt.Sprintf(`set(resource.attributes["%s"], attributes["%s"])`, attribute, attribute),
+	}
+}
+
+// DeleteMetricResourceAttribute returns an expression that removes the metric resource attribute specified.
+func DeleteMetricResourceAttribute(metricAttribute string) TransformQuery {
+	return TransformQuery{
+		Context:   Metric,
+		Statement: fmt.Sprintf(`delete_key(resource.attributes, "%s")`, metricAttribute),
 	}
 }
 

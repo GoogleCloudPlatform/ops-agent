@@ -202,14 +202,13 @@
       message: invalid timestamp
       node:
         name: node-1
-      timestamp: not-a-timestamp
       type: server
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
     logName: projects/my-project/logs/transformation_test
     severity: 200.0
-    timestamp: 2024-06-10T12:35:26.456000000Z
+    timestamp: now
   partialSuccess: true
   resource:
     labels: {}

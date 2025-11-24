@@ -32,8 +32,8 @@ func (MetricsReceiverVarnish) Type() string {
 	return "varnish"
 }
 
-func (r MetricsReceiverVarnish) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
-	return []otel.ReceiverPipeline{{
+func (r MetricsReceiverVarnish) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
+	return []otel.ReceiverPipeline{confgenerator.ConvertToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "varnish",
 			Config: map[string]interface{}{
@@ -51,8 +51,9 @@ func (r MetricsReceiverVarnish) Pipelines(_ context.Context) ([]otel.ReceiverPip
 				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
 				otel.SetScopeVersion("1.0"),
 			),
+			otel.MetricsRemoveServiceAttributes(),
 		}},
-	}}, nil
+	}, ctx)}, nil
 }
 
 func init() {
