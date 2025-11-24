@@ -1072,7 +1072,7 @@ receivers:
         - targets:
           - 0.0.0.0:20201
   tcplog/tcp__logs:
-    endpoint: 1.2.3.4:5678
+    listen_address: 1.2.3.4:5678
   windowseventlog/windows__event__log:
     channel: System
     poll_interval: 1s
