@@ -1,1 +1,152 @@
-- config_error: "processor \"processor0\" has invalid configuration: unimplemented"
+- entries:
+  - jsonPayload:
+      level: INFO
+      log_type: PipelineManager
+      message: Starting replication pipeline for bucket travel-data
+      timestamp: 2025-08-18T14:27:02.452Z
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_goxdcr
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: now
+  - jsonPayload:
+      level: WARN
+      log_type: XDCR.CheckpointService
+      message: Failed to save checkpoint due to timeout
+      timestamp: 2025-08-18T14:27:10.874Z
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_goxdcr
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: WARNING
+    timestamp: now
+  - jsonPayload:
+      level: ERROR
+      log_type: Router
+      message: |-
+        Failed to route mutation for key "user:12345", retrying...
+        Additional detail: document size exceeded configured threshold
+      timestamp: 2025-08-18T14:27:22.345Z
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_goxdcr
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: ERROR
+    timestamp: now
+  - jsonPayload:
+      level: DEBUG
+      log_type: BackfillManager
+      message: Backfill task created for vbucket 102
+      timestamp: 2025-08-18T14:27:45.657Z
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_goxdcr
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: DEBUG
+    timestamp: now
+  partialSuccess: true
+- entries:
+  - jsonPayload:
+      level: INFO
+      log_type: PipelineManager
+      message: Replication pipeline stopped successfully
+      timestamp: 2025-08-18T14:28:00.998Z
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_goxdcr
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: now
+  partialSuccess: true
+- collector_errors:
+  - caller: ottl@v0.136.0/parser.go:410
+    error: "parsing time \"2025-08-18T14:27:02.452Z\": extra text: \"Z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.136.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%dT%H:%M:%S.%L") != nil)
+  - caller: ottl@v0.136.0/parser.go:410
+    error: "parsing time \"2025-08-18T14:27:10.874Z\": extra text: \"Z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.136.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%dT%H:%M:%S.%L") != nil)
+  - caller: ottl@v0.136.0/parser.go:410
+    error: "parsing time \"2025-08-18T14:27:22.345Z\": extra text: \"Z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.136.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%dT%H:%M:%S.%L") != nil)
+  - caller: ottl@v0.136.0/parser.go:410
+    error: "parsing time \"2025-08-18T14:27:45.657Z\": extra text: \"Z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.136.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%dT%H:%M:%S.%L") != nil)
+  - caller: ottl@v0.136.0/parser.go:410
+    error: "parsing time \"2025-08-18T14:28:00.998Z\": extra text: \"Z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.136.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%dT%H:%M:%S.%L") != nil)

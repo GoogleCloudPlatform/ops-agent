@@ -1,1 +1,194 @@
-- config_error: "processor \"processor0\" has invalid configuration: unimplemented"
+- entries:
+  - jsonPayload:
+      level: info
+      message: Bucket 'travel-data' created with 3 replicas
+      node_name: ns_1@127.0.0.1
+      source: menelaus_web
+      timestamp: 2025-08-18T09:15:12.123Z
+      type: ns_server
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: now
+  - jsonPayload:
+      level: warn
+      message: Index build taking longer than expected on bucket 'travel-data'
+      node_name: ns_1@127.0.0.1
+      source: index_updater
+      timestamp: 2025-08-18T09:16:05.452Z
+      type: ns_server
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: WARNING
+    timestamp: now
+  - jsonPayload:
+      level: error
+      message: "Failed to allocate memory for vbuckets: insufficient quota"
+      node_name: ns_1@127.0.0.1
+      source: bucket_engine
+      timestamp: 2025-08-18T09:16:33.764Z
+      type: ns_server
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: ERROR
+    timestamp: now
+  - jsonPayload:
+      level: debug
+      message: |-
+        Rebalance progress: 45% completed
+        Continuation line giving rebalance details
+        Still continuing additional rebalance logs with memory usage stats...
+      node_name: ns_1@127.0.0.1
+      source: rebalance
+      timestamp: 2025-08-18T09:16:55.987Z
+      type: ns_server
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: DEBUG
+    timestamp: now
+  - jsonPayload:
+      level: info
+      message: Node 'ns_1@127.0.0.1' added to cluster
+      node_name: ns_1@127.0.0.1
+      source: cluster_manager
+      timestamp: 2025-08-18T09:17:30.333Z
+      type: ns_server
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: now
+  partialSuccess: true
+- entries:
+  - jsonPayload:
+      level: error
+      message: "SSL handshake failed: certificate expired"
+      node_name: ns_1@127.0.0.1
+      source: ssl_certificate
+      timestamp: 2025-08-18T09:18:00.741Z
+      type: ns_server
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: ERROR
+    timestamp: now
+  partialSuccess: true
+- collector_errors:
+  - caller: ottl@v0.136.0/parser.go:410
+    error: "parsing time \"2025-08-18T09:15:12.123Z\": extra text: \"Z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.136.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%dT%H:%M:%S.%L") != nil)
+  - caller: ottl@v0.136.0/parser.go:410
+    error: "parsing time \"2025-08-18T09:16:05.452Z\": extra text: \"Z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.136.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%dT%H:%M:%S.%L") != nil)
+  - caller: ottl@v0.136.0/parser.go:410
+    error: "parsing time \"2025-08-18T09:16:33.764Z\": extra text: \"Z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.136.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%dT%H:%M:%S.%L") != nil)
+  - caller: ottl@v0.136.0/parser.go:410
+    error: "parsing time \"2025-08-18T09:16:55.987Z\": extra text: \"Z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.136.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%dT%H:%M:%S.%L") != nil)
+  - caller: ottl@v0.136.0/parser.go:410
+    error: "parsing time \"2025-08-18T09:17:30.333Z\": extra text: \"Z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.136.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%dT%H:%M:%S.%L") != nil)
+  - caller: ottl@v0.136.0/parser.go:410
+    error: "parsing time \"2025-08-18T09:18:00.741Z\": extra text: \"Z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.136.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%dT%H:%M:%S.%L") != nil)
