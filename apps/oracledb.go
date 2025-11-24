@@ -819,7 +819,7 @@ func (lr LoggingProcessorMacroOracleDBAlert) Expand(ctx context.Context) []confg
 
 type LoggingReceiverMacroOracleDBAlert struct {
 	LoggingProcessorMacroOracleDBAlert `yaml:",inline"`
-	ReceiverMixin                      confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
+	ReceiverMixin                      confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 	OracleHome                         string                                  `yaml:"oracle_home,omitempty" validate:"required_without=IncludePaths,excluded_with=IncludePaths"`
 	IncludePaths                       []string                                `yaml:"include_paths,omitempty" validate:"required_without=OracleHome,excluded_with=OracleHome"`
 }
@@ -922,7 +922,7 @@ func (lr LoggingProcessorMacroOracleDBAudit) Expand(ctx context.Context) []confg
 
 type LoggingReceiverMacroOracleDBAudit struct {
 	LoggingProcessorMacroOracleDBAudit `yaml:",inline"`
-	ReceiverMixin                      confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
+	ReceiverMixin                      confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
 	OracleHome                         string                                  `yaml:"oracle_home,omitempty" validate:"required_without=IncludePaths,excluded_with=IncludePaths"`
 	IncludePaths                       []string                                `yaml:"include_paths,omitempty" validate:"required_without=OracleHome,excluded_with=OracleHome"`
 }
