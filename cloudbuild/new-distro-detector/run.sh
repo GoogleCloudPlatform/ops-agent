@@ -23,10 +23,10 @@ set -o pipefail
 PATTERNS_FILE="irrelevant_family_patterns.txt"
 echo '^cos-
 ^fedora-
-^rhel-
 ^rocky-linux-[0-9]+-optimized-gcp
 ^sql-
 ^ubuntu-pro-
+^ubuntu-accelerator
 ^ubuntu-minimal-' > "${PATTERNS_FILE}"
 
 # Remove families that require no action on our part. This consists of both

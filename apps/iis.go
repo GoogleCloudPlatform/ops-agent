@@ -36,9 +36,9 @@ func (r MetricsReceiverIis) Type() string {
 	return "iis"
 }
 
-func (r MetricsReceiverIis) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (r MetricsReceiverIis) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	if r.ReceiverVersion == "2" {
-		return []otel.ReceiverPipeline{{
+		return []otel.ReceiverPipeline{confgenerator.ConvertToOtlpExporter(otel.ReceiverPipeline{
 			Receiver: otel.Component{
 				Type: "iis",
 				Config: map[string]interface{}{
@@ -52,6 +52,7 @@ func (r MetricsReceiverIis) Pipelines(_ context.Context) ([]otel.ReceiverPipelin
 					otel.SetScopeName("agent.googleapis.com/"+r.Type()),
 					otel.SetScopeVersion("2.0"),
 				),
+				otel.MetricsRemoveServiceAttributes(),
 				// Drop all resource keys; Must be done in a separate transform,
 				// otherwise the above flatten resource attribute queries will only
 				// work for the first datapoint
@@ -71,11 +72,11 @@ func (r MetricsReceiverIis) Pipelines(_ context.Context) ([]otel.ReceiverPipelin
 				),
 				otel.NormalizeSums(),
 			}},
-		}}, nil
+		}, ctx)}, nil
 	}
 
 	// Return version 1 if version is anything other than 2
-	return []otel.ReceiverPipeline{{
+	return []otel.ReceiverPipeline{confgenerator.ConvertToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "windowsperfcounters",
 			Config: map[string]interface{}{
@@ -143,7 +144,7 @@ func (r MetricsReceiverIis) Pipelines(_ context.Context) ([]otel.ReceiverPipelin
 				otel.SetScopeVersion("1.0"),
 			),
 		}},
-	}}, nil
+	}, ctx)}, nil
 }
 
 func init() {

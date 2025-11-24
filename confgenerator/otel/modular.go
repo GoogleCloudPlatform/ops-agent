@@ -37,6 +37,7 @@ const (
 	OTel ExporterType = iota
 	System
 	GMP
+	OTLP
 )
 const (
 	Override ResourceDetectionMode = iota
@@ -50,6 +51,8 @@ func (t ExporterType) Name() string {
 		return ""
 	} else if t == OTel {
 		return "otel"
+	} else if t == OTLP {
+		return "otlp"
 	} else {
 		panic("unknown ExporterType")
 	}
@@ -131,7 +134,7 @@ type ModularConfig struct {
 //	processors: [filter/mypipe_1, metrics_filter/mypipe_2, resourcedetection/_global_0]
 //	extensions: [googleclientauth]
 //	exporters: [googlecloud]
-func (c ModularConfig) Generate(ctx context.Context) (string, error) {
+func (c ModularConfig) Generate(ctx context.Context, expOtlpExporter bool) (string, error) {
 	pl := platform.FromContext(ctx)
 	receivers := map[string]interface{}{}
 	processors := map[string]interface{}{}
@@ -184,6 +187,7 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 			telemetryMap["logs"] = logs
 		}
 	}
+
 	configMap := map[string]interface{}{
 		"receivers":  receivers,
 		"processors": processors,
@@ -192,7 +196,7 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 	}
 
 	if len(c.Extensions) > 0 {
-		extensionsList := []string{}
+		var extensionsList []string
 		for extensionName := range c.Extensions {
 			extensions[extensionName] = c.Extensions[extensionName]
 			extensionsList = append(extensionsList, extensionName)
@@ -247,6 +251,12 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 		if name, ok := resourceDetectionProcessorNames[rdm]; ok {
 			processorNames = append(processorNames, name)
 			processors[name] = resourceDetectionProcessors[rdm].Config
+			// b/459468648
+			if expOtlpExporter {
+				copyProcessor := CopyHostIDToInstanceID()
+				processorNames = append(processorNames, copyProcessor.name("_global_0"))
+				processors[copyProcessor.name("_global_0")] = copyProcessor.Config
+			}
 		}
 		exporterType := receiverPipeline.ExporterTypes[pipeline.Type]
 		if _, ok := exporterNames[exporterType]; !ok {

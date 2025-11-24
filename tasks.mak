@@ -41,7 +41,7 @@ build:
 	DOCKER_BUILDKIT=1 docker build -o /tmp/google-cloud-ops-agent . $(ARGS)
 
 .PHONY: rebuild_submodules
-rebuild_submodules: fluent_bit_local otelopscol_local
+rebuild_submodules: clean_submodules fluent_bit_local otelopscol_local
 
 .PHONY: fluent_bit_local
 fluent_bit_local: dist/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit
@@ -49,6 +49,10 @@ fluent_bit_local: dist/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluen
 SKIP_JAVA ?= true
 .PHONY: otelopscol_local
 otelopscol_local: dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol
+
+.PHONY: clean_submodules
+clean_submodules:
+	rm -rf dist
 
 ############
 # Tools

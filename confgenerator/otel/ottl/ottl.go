@@ -168,8 +168,8 @@ func ParseJSON(a Value) Value {
 	return valuef(`ParseJSON(%s)`, a)
 }
 
-func ExtractPatternsRubyRegex(a Value, pattern string) Value {
-	return valuef(`ExtractPatternsRubyRegex(%s, %q)`, a, pattern)
+func ExtractPatternsRubyRegex(a Value, pattern string, omitEmptyValues bool) Value {
+	return valuef(`ExtractPatternsRubyRegex(%s, %q, %v)`, a, pattern, omitEmptyValues)
 }
 
 func ConvertCase(a Value, toCase string) Value {
@@ -186,6 +186,10 @@ func ToValues(a Value) Value {
 
 func IsMatch(target Value, pattern string) Value {
 	return valuef(`IsMatch(%s, %q)`, target, pattern)
+}
+
+func IsMatchRubyRegex(target Value, pattern string) Value {
+	return valuef(`IsMatchRubyRegex(%s, %q)`, target, pattern)
 }
 
 func Equals(a, b Value) Value {
