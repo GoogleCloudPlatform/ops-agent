@@ -409,7 +409,7 @@ func (r LoggingReceiverTCP) Pipelines(ctx context.Context) ([]otel.ReceiverPipel
 		Receiver: otel.Component{
 			Type: "tcplog",
 			Config: map[string]any{
-				"endpoint": fmt.Sprintf("%s:%d", r.ListenHost, r.ListenPort),
+				"listen_address": fmt.Sprintf("%s:%d", r.ListenHost, r.ListenPort),
 			},
 		},
 		Processors: map[string][]otel.Component{
