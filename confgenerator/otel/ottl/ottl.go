@@ -253,6 +253,17 @@ func (a LValue) SetToBool(b Value) Statements {
 	return out
 }
 
+func (a LValue) SetToYesNoBoolean(b Value) Statements {
+	cache := LValue{"cache", "__yes_no_bool"}
+	out := Statements{
+		statementf(`set(%s, true) where (%s and %s == "Yes")`, cache, IsNotNil(b), b),
+		statementf(`set(%s, false) where (%s and %s != "Yes")`, cache, IsNotNil(b), b),
+	}
+	out = out.Append(a.SetIf(cache, cache.IsPresent()))
+	out = out.Append(cache.Delete())
+	return out
+}
+
 // Delete removes a (potentially nested) key from its parent maps, if that key exists.
 func (a LValue) Delete() Statements {
 	parent := a[:len(a)-1]

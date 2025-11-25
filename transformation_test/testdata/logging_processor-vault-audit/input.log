@@ -1,0 +1,47 @@
+{"time":"2025-08-25T14:00:00.123456789Z","type":"request","auth":{"token_type":"default"},"request":{"id":"req-001","operation":"update","namespace":{"id":"root"},"path":"sys/audit/test"}}
+{
+  "time":"2025-08-25T14:01:00.987654321Z",
+  "type":"request",
+  "auth":{
+    "token_type":"root"
+  },
+  "request":{
+    "id":"req-002",
+    "operation":"delete",
+    "namespace":{
+      "id":"root"
+    },
+    "path":"sys/secrets/data"
+  }
+}
+{"time":"2025-08-25T14:02:00.111213141Z","type":"response","auth":{"token_type":"default"},"response":{"id":"res-001","status":"success"}}
+{
+  "time":"2025-08-25T14:03:00.999888777Z",
+  "type":"response",
+  "auth":{
+    "token_type":"default"
+  },
+  "response":{
+    "id":"res-002",
+    "status":"failure",
+    "error":"permission denied"
+  }
+}
+{"time":"2025-08-25T14:04:00.222333444Z","type":"request","auth":{"token_type":"default"},"request":{"id":"req-003","operation":"create","namespace":{"id":"root"},"path":"sys/audit/new"}}
+{
+  "time":"2025-08-25T14:05:00.555666777Z",
+  "type":"request",
+  "auth":{
+    "token_type":"default"
+  },
+  "request":{
+    "id":"req-004",
+    "operation":"update",
+    "namespace":{
+    "id":"root"
+    },
+    "path":"sys/audit/multi"
+   }
+}
+{"time":"2025-08-25T15:02:00.111213141Z","type":"response","auth":{"token_type":"default"},"response":{"id":"res-001","status":"success"}}
+{"time":"2025-08-25T16:04:00.222333444Z","type":"request","auth":{"token_type":"default"},"request":{"id":"req-003","operation":"create","namespace":{"id":"root"},"path":"sys/audit/new"}}

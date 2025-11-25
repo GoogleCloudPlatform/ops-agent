@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
@@ -155,7 +156,9 @@ func (p ParserShared) TimestampStatements() (ottl.Statements, error) {
 
 func (p ParserShared) TypesStatements() (ottl.Statements, error) {
 	var out ottl.Statements
-	for field, fieldType := range p.Types {
+	// Sort map keys to always get the same statements order and error message.
+	for _, field := range GetSortedKeys(p.Types) {
+		fieldType := p.Types[field]
 		m, err := filter.NewMemberLegacy(field)
 		if err != nil {
 			return nil, err
@@ -389,6 +392,23 @@ func (p LoggingProcessorParseRegexComplex) Components(ctx context.Context, tag, 
 	return components
 }
 
+func (p LoggingProcessorParseRegexComplex) Processors(ctx context.Context) ([]otel.Component, error) {
+	processors := []otel.Component{}
+	for _, parserConfig := range p.Parsers {
+		parseRegex := LoggingProcessorParseRegex{
+			ParserShared: parserConfig.Parser,
+			Regex:        parserConfig.Regex,
+			Field:        p.Field,
+		}
+		parseRegexProcessors, err := parseRegex.Processors(ctx)
+		if err != nil {
+			return nil, err
+		}
+		processors = append(processors, parseRegexProcessors...)
+	}
+	return processors, nil
+}
+
 type MultilineRule = fluentbit.MultilineRule
 
 // A LoggingProcessorParseMultilineRegex applies a set of regex rules to the specified lines, storing the named capture groups as keys in the log record.
@@ -435,6 +455,55 @@ func (p LoggingProcessorParseMultilineRegex) Components(ctx context.Context, tag
 		},
 		p.LoggingProcessorParseRegexComplex.Components(ctx, tag, uid)...,
 	)
+}
+
+func (p LoggingProcessorParseMultilineRegex) Processors(ctx context.Context) ([]otel.Component, error) {
+	var exprParts []string
+	for _, r := range p.Rules {
+		// The current "recombine" operator multiline support only supports setting a "start_state" ("is_first_entry").
+		// TODO: b/459877163 - Update implementation when opentelemetry supports "state-machine" multiline parsing.
+		if r.StateName == "start_state" {
+			exprParts = append(exprParts, fmt.Sprintf("body.message matches %q", r.Regex))
+		}
+	}
+	isFirstEntryExpr := strings.Join(exprParts, " or ")
+
+	logsTransform := []otel.Component{
+		{
+			Type: "logstransform",
+			Config: map[string]any{
+				"operators": []map[string]any{
+					{
+						"type":  "add",
+						"field": "attributes.__source_identifier",
+						"value": `EXPR(attributes["agent.googleapis.com/log_file_path"] ?? "")`,
+					},
+					{
+						"type":           "recombine",
+						"combine_field":  "body.message",
+						"is_first_entry": isFirstEntryExpr,
+						// Take the timestamp and other attributes from the first entry.
+						"overwrite_with": "oldest",
+						// Use the log file path to disambiguate if present.
+						"source_identifier": `attributes.__source_identifier`,
+						// Set time interval (same as fluent-bit "flush_timeout") to wait for secondary logs to be appended.
+						"force_flush_period": "1000ms",
+					},
+					{
+						"type":  "remove",
+						"field": "attributes.__source_identifier",
+					},
+				},
+			},
+		},
+	}
+
+	parseRegexComplexComponents, err := p.LoggingProcessorParseRegexComplex.Processors(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return append(logsTransform, parseRegexComplexComponents...), nil
 }
 
 func init() {
