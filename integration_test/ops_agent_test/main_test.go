@@ -1414,11 +1414,11 @@ func TestSyslogTCP(t *testing.T) {
 		// detecting a failure if the exclusion message were to actually be included.
 
 		// Write test message for exclusion using the program called logger.
-		if _, err := gce.RunRemotely(ctx, logger, vm, "logger -n 0.0.0.0 --tcp --port=5140 -- abc test pattern xyz"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "logger -n 0.0.0.0 --tcp --port=5140 --rfc3164 -- abc test pattern xyz"); err != nil {
 			t.Fatalf("Error writing dummy log line: %v", err)
 		}
 		// Write test message for inclusion.
-		if _, err := gce.RunRemotely(ctx, logger, vm, "logger -n 0.0.0.0 --tcp --port=5140 -- abcdefg"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "logger -n 0.0.0.0 --tcp --port=5140 --rfc3164 -- abcdefg"); err != nil {
 			t.Fatalf("Error writing dummy log line: %v", err)
 		}
 
@@ -1466,7 +1466,7 @@ func TestSyslogUDP(t *testing.T) {
 		}
 
 		// Write "abcdefg" using the program called logger.
-		if _, err := gce.RunRemotely(ctx, logger, vm, "logger -n 0.0.0.0 --udp --port=5140 -- abcdefg"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "logger -n 0.0.0.0 --udp --port=5140 --rfc3164 -- abcdefg"); err != nil {
 			t.Fatalf("Error writing dummy log line: %v", err)
 		}
 
