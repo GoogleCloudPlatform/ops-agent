@@ -721,6 +721,7 @@ processors:
       - set(body, {})
       - merge_maps(body, cache["body_map"], "upsert") where (cache != nil and cache["body_map"] != nil)
       - set(body["message"], cache["body_string"]) where (cache != nil and cache["body_string"] != nil)
+      - set(attributes, {})
   transform/test__syslog__source__id__tcp_1:
     error_mode: ignore
     log_statements:
@@ -760,6 +761,7 @@ processors:
       - set(body, {})
       - merge_maps(body, cache["body_map"], "upsert") where (cache != nil and cache["body_map"] != nil)
       - set(body["message"], cache["body_string"]) where (cache != nil and cache["body_string"] != nil)
+      - set(attributes, {})
   transform/test__syslog__source__id__udp_1:
     error_mode: ignore
     log_statements:
