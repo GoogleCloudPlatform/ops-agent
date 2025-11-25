@@ -325,6 +325,7 @@ func (r LoggingReceiverSyslog) Pipelines(ctx context.Context) ([]otel.ReceiverPi
 	bodyMessage := ottl.LValue{"body", "message"}
 	cacheBodyString := ottl.LValue{"cache", "body_string"}
 	cacheBodyMap := ottl.LValue{"cache", "body_map"}
+	attributes := ottl.LValue{"attributes"}
 
 	processors := []otel.Component{
 		otel.Transform(
@@ -333,11 +334,14 @@ func (r LoggingReceiverSyslog) Pipelines(ctx context.Context) ([]otel.ReceiverPi
 			ottl.NewStatements(
 				// "syslogreceiver" sets the incoming log as "body" of type "string".
 				cacheBodyString.SetIf(body, body.IsString()),
+				// Preserve any existing fields in "body" just in case.
 				cacheBodyMap.SetIf(body, body.IsMap()),
 				body.Set(ottl.RValue("{}")),
 				body.MergeMapsIf(cacheBodyMap, "upsert", cacheBodyMap.IsPresent()),
-				// Move "body" to "body.message" (jsonPayloa.message)
+				// Move "body" to "body.message" (jsonPayload.message)
 				bodyMessage.SetIf(cacheBodyString, cacheBodyString.IsPresent()),
+				// Clear any possible parsed fields added to "attributes".
+				attributes.Set(ottl.RValue("{}")),
 			),
 		),
 	}
