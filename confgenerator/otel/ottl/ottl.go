@@ -248,7 +248,7 @@ func (a LValue) SetToBool(b Value) Statements {
 func (a LValue) SetToYesNoBoolean(b Value) Statements {
 	return []Statement{
 		statementf(`set(%s, true) where (%s and %s == "Yes")`, a, IsNotNil(b), b),
-		statementf(`set(%s, false) where (%s and %s == "No")`, a, IsNotNil(b), b),
+		statementf(`set(%s, false) where (%s and %s != "Yes")`, a, IsNotNil(b), b),
 	}
 }
 
