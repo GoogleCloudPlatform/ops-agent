@@ -1414,15 +1414,17 @@ func TestSyslogTCP(t *testing.T) {
 		// detecting a failure if the exclusion message were to actually be included.
 
 		// Write test message for exclusion using the program called logger.
-		if _, err := gce.RunRemotely(ctx, logger, vm, "logger -n 0.0.0.0 --tcp --port=5140 --rfc3164 -- abc test pattern xyz"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "logger -n 0.0.0.0 --tcp --port=5140 --rfc5424 -- abc test pattern xyz"); err != nil {
 			t.Fatalf("Error writing dummy log line: %v", err)
 		}
 		// Write test message for inclusion.
-		if _, err := gce.RunRemotely(ctx, logger, vm, "logger -n 0.0.0.0 --tcp --port=5140 --rfc3164 -- abcdefg"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "logger -n 0.0.0.0 --tcp --port=5140 --rfc5424 -- abcdefg"); err != nil {
 			t.Fatalf("Error writing dummy log line: %v", err)
 		}
 
-		if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, "jsonPayload.message:abcdefg"); err != nil {
+		// Verify the ingested log preserves the syslog rfc5424 format.
+		rfc5424LogQuery := `jsonPayload.message =~ "^<\d+>1 \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}) \S+ \S+ \S+ \S+ \[timeQuality tzKnown=\"\d+\" isSynced=\"\d+\" syncAccuracy=\"\d+\"] %s$"`
+		if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, fmt.Sprintf(rfc5424LogQuery, "abcdefg")); err != nil {
 			t.Error(err)
 		}
 		time.Sleep(60 * time.Second)
@@ -1466,11 +1468,13 @@ func TestSyslogUDP(t *testing.T) {
 		}
 
 		// Write "abcdefg" using the program called logger.
-		if _, err := gce.RunRemotely(ctx, logger, vm, "logger -n 0.0.0.0 --udp --port=5140 --rfc3164 -- abcdefg"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "logger -n 0.0.0.0 --udp --port=5140 --rfc5424 -- abcdefg"); err != nil {
 			t.Fatalf("Error writing dummy log line: %v", err)
 		}
 
-		if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, "jsonPayload.message:abcdefg"); err != nil {
+		// Verify the ingested log preserves the syslog rfc5424 format.
+		rfc5424LogQuery := `jsonPayload.message =~ "^<\d+>1 \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}) \S+ \S+ \S+ \S+ \[timeQuality tzKnown=\"\d+\" isSynced=\"\d+\" syncAccuracy=\"\d+\"] %s$"`
+		if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, fmt.Sprintf(rfc5424LogQuery, "abcdefg")); err != nil {
 			t.Error(err)
 		}
 	})
