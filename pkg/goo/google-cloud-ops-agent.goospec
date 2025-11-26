@@ -23,7 +23,7 @@
     "out\\bin\\google-cloud-ops-agent-wrapper.exe": "{{$INSTALL_DIR}}/bin/google-cloud-ops-agent-wrapper.exe"
   },
   "install": {
-    "path": "out/maint.ps1",
+    "path": "out/bin/maint.ps1",
     "args": ["-InstallDir:\"{{$INSTALL_DIR}}\"", "-Action:install"]
   },
   "uninstall": {
