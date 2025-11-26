@@ -57,7 +57,11 @@ func googleCloudExporter(userAgent string, instrumentationLabels bool, serviceRe
 	}
 }
 
-func ConvertToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
+func ConvertSystemToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
+	return ConvertToOtlpExporter2(receiver, ctx, true)
+}
+
+func ConvertToOtlpExporter2(receiver otel.ReceiverPipeline, ctx context.Context, isSystem bool) otel.ReceiverPipeline {
 	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
 	resource, _ := platform.FromContext(ctx).GetResource()
 	if !expOtlpExporter {
@@ -68,9 +72,12 @@ func ConvertToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context) 
 		return receiver
 	}
 	receiver.ExporterTypes["metrics"] = otel.OTLP
-
 	receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.GCPProjectID(resource.ProjectName()))
 	return receiver
+}
+
+func ConvertToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
+	return ConvertToOtlpExporter2(receiver, ctx, false)
 }
 
 func otlpExporter(userAgent string) otel.Component {

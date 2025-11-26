@@ -291,6 +291,13 @@ func MetricsRemoveServiceAttributes() Component {
 	}
 }
 
+func MetricsRemoveInstrumentationLibraryLabelsAttributes() Component {
+	return TransformationMetrics(
+		SetScopeName(""),
+		SetScopeVersion(""),
+	)
+}
+
 func CopyHostIDToInstanceID() Component {
 	return Component{
 		Type: "transform",

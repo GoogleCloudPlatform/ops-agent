@@ -285,7 +285,7 @@ func (r MetricsReceiverHostmetrics) Pipelines(ctx context.Context) ([]otel.Recei
 		)
 	}
 	transforms = append(transforms, otel.AddPrefix("agent.googleapis.com"))
-	pipelines := []otel.ReceiverPipeline{{
+	pipelines := []otel.ReceiverPipeline{confgenerator.ConvertSystemToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "hostmetrics",
 			Config: map[string]interface{}{
@@ -327,10 +327,10 @@ func (r MetricsReceiverHostmetrics) Pipelines(ctx context.Context) ([]otel.Recei
 			),
 			otel.MetricsTransform(transforms...),
 		}},
-	}}
+	}, ctx)}
 
 	if p.HasNvidiaGpu && !r.disableGPUMetrics {
-		pipelines = append(pipelines, otel.ReceiverPipeline{
+		pipelines = append(pipelines, confgenerator.ConvertSystemToOtlpExporter(otel.ReceiverPipeline{
 			Receiver: otel.Component{
 				Type: "nvml",
 				Config: map[string]interface{}{
@@ -363,7 +363,7 @@ func (r MetricsReceiverHostmetrics) Pipelines(ctx context.Context) ([]otel.Recei
 					otel.AddPrefix("agent.googleapis.com"),
 				),
 			}},
-		})
+		}, ctx))
 	}
 
 	return pipelines, nil
