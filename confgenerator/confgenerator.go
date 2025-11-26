@@ -74,7 +74,6 @@ func ConvertToOtlpExporter2(pipeline otel.ReceiverPipeline, ctx context.Context,
 	pipeline.ExporterTypes["metrics"] = otel.OTLP
 	pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.GCPProjectID(resource.ProjectName()))
 	if isSystem {
-		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricStartTime())
 		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveInstrumentationLibraryLabelsAttributes())
 	}
 	return pipeline

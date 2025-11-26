@@ -81,8 +81,6 @@ processors:
         - googlecloudmonitoring/point_count
   interval/loggingmetrics_7:
     interval: 1m
-  metricstarttime/hostmetrics_4:
-    strategy: subtract_initial_point
   metricstarttime/prometheus_2:
     strategy: subtract_initial_point
   metricstransform/fluentbit_1:
@@ -588,7 +586,7 @@ processors:
       - delete_key(resource.attributes, "service.instance.id")
       - delete_key(resource.attributes, "server.port")
       - delete_key(resource.attributes, "url.scheme")
-  transform/hostmetrics_5:
+  transform/hostmetrics_4:
     metric_statements:
     - context: scope
       statements:
@@ -749,8 +747,7 @@ service:
       - filter/hostmetrics_1
       - metricstransform/hostmetrics_2
       - resource/hostmetrics_3
-      - metricstarttime/hostmetrics_4
-      - transform/hostmetrics_5
+      - transform/hostmetrics_4
       - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
       - transform/_global_0
