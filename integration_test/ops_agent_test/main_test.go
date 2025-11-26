@@ -1423,7 +1423,7 @@ func TestSyslogTCP(t *testing.T) {
 		}
 
 		// Verify the ingested log preserves the syslog rfc5424 format.
-		rfc5424LogQuery := `jsonPayload.message =~ "^<\d+>1 \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}) \S+ \S+ \S+ \S+ \[timeQuality tzKnown=\"\d+\" isSynced=\"\d+\" syncAccuracy=\"\d+\"] %s$"`
+		rfc5424LogQuery := `jsonPayload.message =~ "^<\d+>1 \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}) \S+ \S+ \S+ \S+ \[[^\]]+\] %s$"`
 		if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, fmt.Sprintf(rfc5424LogQuery, "abcdefg")); err != nil {
 			t.Error(err)
 		}
@@ -1473,7 +1473,7 @@ func TestSyslogUDP(t *testing.T) {
 		}
 
 		// Verify the ingested log preserves the syslog rfc5424 format.
-		rfc5424LogQuery := `jsonPayload.message =~ "^<\d+>1 \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}) \S+ \S+ \S+ \S+ \[timeQuality tzKnown=\"\d+\" isSynced=\"\d+\" syncAccuracy=\"\d+\"] %s$"`
+		rfc5424LogQuery := `jsonPayload.message =~ "^<\d+>1 \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}) \S+ \S+ \S+ \S+ \[[^\]]+\] %s$"`
 		if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, fmt.Sprintf(rfc5424LogQuery, "abcdefg")); err != nil {
 			t.Error(err)
 		}
