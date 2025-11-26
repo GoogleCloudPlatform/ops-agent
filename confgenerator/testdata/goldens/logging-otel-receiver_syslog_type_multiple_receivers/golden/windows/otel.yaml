@@ -794,12 +794,14 @@ processors:
     log_statements:
     - context: log
       statements:
-      - set(cache["body_string"], body) where IsString(body)
-      - set(cache["body_map"], body) where IsMap(body)
+      - set(cache["__body_string"], body) where IsString(body)
+      - set(cache["__body_map"], body) where IsMap(body)
       - set(body, {})
-      - merge_maps(body, cache["body_map"], "upsert") where (cache != nil and cache["body_map"] != nil)
-      - set(body["message"], cache["body_string"]) where (cache != nil and cache["body_string"] != nil)
+      - merge_maps(body, cache["__body_map"], "upsert") where (cache != nil and cache["__body_map"] != nil)
+      - set(body["message"], cache["__body_string"]) where (cache != nil and cache["__body_string"] != nil)
       - set(attributes, {})
+      - delete_key(cache, "__body_map") where ((cache != nil and cache["__body_map"] != nil) and (cache != nil and cache["__body_map"] != nil))
+      - delete_key(cache, "__body_string") where ((cache != nil and cache["__body_string"] != nil) and (cache != nil and cache["__body_string"] != nil))
   transform/test__syslog__source__id__tcp_1:
     error_mode: ignore
     log_statements:
@@ -834,12 +836,14 @@ processors:
     log_statements:
     - context: log
       statements:
-      - set(cache["body_string"], body) where IsString(body)
-      - set(cache["body_map"], body) where IsMap(body)
+      - set(cache["__body_string"], body) where IsString(body)
+      - set(cache["__body_map"], body) where IsMap(body)
       - set(body, {})
-      - merge_maps(body, cache["body_map"], "upsert") where (cache != nil and cache["body_map"] != nil)
-      - set(body["message"], cache["body_string"]) where (cache != nil and cache["body_string"] != nil)
+      - merge_maps(body, cache["__body_map"], "upsert") where (cache != nil and cache["__body_map"] != nil)
+      - set(body["message"], cache["__body_string"]) where (cache != nil and cache["__body_string"] != nil)
       - set(attributes, {})
+      - delete_key(cache, "__body_map") where ((cache != nil and cache["__body_map"] != nil) and (cache != nil and cache["__body_map"] != nil))
+      - delete_key(cache, "__body_string") where ((cache != nil and cache["__body_string"] != nil) and (cache != nil and cache["__body_string"] != nil))
   transform/test__syslog__source__id__udp_1:
     error_mode: ignore
     log_statements:

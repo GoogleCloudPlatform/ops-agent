@@ -323,8 +323,8 @@ func (r LoggingReceiverSyslog) Components(ctx context.Context, tag string) []flu
 func (r LoggingReceiverSyslog) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	body := ottl.LValue{"body"}
 	bodyMessage := ottl.LValue{"body", "message"}
-	cacheBodyString := ottl.LValue{"cache", "body_string"}
-	cacheBodyMap := ottl.LValue{"cache", "body_map"}
+	cacheBodyString := ottl.LValue{"cache", "__body_string"}
+	cacheBodyMap := ottl.LValue{"cache", "__body_map"}
 	attributes := ottl.LValue{"attributes"}
 
 	processors := []otel.Component{
@@ -342,6 +342,9 @@ func (r LoggingReceiverSyslog) Pipelines(ctx context.Context) ([]otel.ReceiverPi
 				bodyMessage.SetIf(cacheBodyString, cacheBodyString.IsPresent()),
 				// Clear any possible parsed fields added to "attributes".
 				attributes.Set(ottl.RValue("{}")),
+				// Clear cache.
+				cacheBodyMap.DeleteIf(cacheBodyMap.IsPresent()),
+				cacheBodyString.DeleteIf(cacheBodyString.IsPresent()),
 			),
 		),
 	}
