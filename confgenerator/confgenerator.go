@@ -61,19 +61,23 @@ func ConvertSystemToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Con
 	return ConvertToOtlpExporter2(receiver, ctx, true)
 }
 
-func ConvertToOtlpExporter2(receiver otel.ReceiverPipeline, ctx context.Context, isSystem bool) otel.ReceiverPipeline {
+func ConvertToOtlpExporter2(pipeline otel.ReceiverPipeline, ctx context.Context, isSystem bool) otel.ReceiverPipeline {
 	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
 	resource, _ := platform.FromContext(ctx).GetResource()
 	if !expOtlpExporter {
-		return receiver
+		return pipeline
 	}
-	_, err := receiver.ExporterTypes["metrics"]
+	_, err := pipeline.ExporterTypes["metrics"]
 	if !err {
-		return receiver
+		return pipeline
 	}
-	receiver.ExporterTypes["metrics"] = otel.OTLP
-	receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.GCPProjectID(resource.ProjectName()))
-	return receiver
+	pipeline.ExporterTypes["metrics"] = otel.OTLP
+	pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.GCPProjectID(resource.ProjectName()))
+	if isSystem {
+		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricStartTime())
+		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveInstrumentationLibraryLabelsAttributes())
+	}
+	return pipeline
 }
 
 func ConvertToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
