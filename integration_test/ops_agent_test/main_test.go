@@ -2190,7 +2190,7 @@ func TestFluentForwardLog(t *testing.T) {
 
 func TestWindowsEventLog(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if !gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -2211,7 +2211,7 @@ func TestWindowsEventLog(t *testing.T) {
         receivers: [windows_event_log]
         exporters: [google]
 `
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2235,7 +2235,7 @@ func TestWindowsEventLog(t *testing.T) {
 
 func TestWindowsEventLogV1UnsupportedChannel(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if !gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -2256,7 +2256,7 @@ func TestWindowsEventLogV1UnsupportedChannel(t *testing.T) {
       default_pipeline:
         receivers: [%s]
 `, log, channel, log)
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2270,7 +2270,7 @@ func TestWindowsEventLogV1UnsupportedChannel(t *testing.T) {
 
 func TestWindowsEventLogV2(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if !gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -2311,7 +2311,7 @@ func TestWindowsEventLogV2(t *testing.T) {
       pipeline_xml:
         receivers: [winlog2_xml]
 `
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2518,7 +2518,7 @@ func hasKeyWithValueType[V any](m map[string]any, k string) bool {
 
 func TestWindowsEventLogWithNonDefaultTimeZone(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if !gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -2527,7 +2527,7 @@ func TestWindowsEventLogWithNonDefaultTimeZone(t *testing.T) {
 		if _, err := gce.RunRemotely(ctx, logger, vm, `Set-TimeZone -Id "Eastern Standard Time"`); err != nil {
 			t.Fatal(err)
 		}
-		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
+		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, "", feature); err != nil {
 			t.Fatal(err)
 		}
 

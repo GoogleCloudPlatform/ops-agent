@@ -146,6 +146,14 @@ func (a LValue) IsPresent() Value {
 	return And(conditions...)
 }
 
+func (a LValue) IsMap() Value {
+	return valuef(`IsMap(%s)`, a)
+}
+
+func (a LValue) IsString() Value {
+	return valuef(`IsString(%s)`, a)
+}
+
 func ToString(a Value) Value {
 	return valuef(`Concat([%s], "")`, a)
 }

@@ -1,0 +1,52 @@
+- entries:
+  - jsonPayload:
+      Channel: System
+      ComputerName: test-computer
+      Data: "12345"
+      EventID: 4444
+      EventType: Information
+      Message: The Windows Modules Installer service entered the running state.
+      Qualifiers: 33333
+      RecordNumber: 1111
+      Sid: ""
+      SourceName: Service Control Manager
+      StringInserts:
+      - Windows Modules Installer
+      - running
+      TimeGenerated: 2025-07-02 20:38:45.0260774 +0000
+      TimeWritten: 2025-07-02 20:38:45.0260774 +0000
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2025-07-02T20:38:45.026077400Z
+  - jsonPayload:
+      Channel: System
+      ComputerName: test-computer
+      Data: "12345"
+      EventID: 4444
+      EventType: Information
+      Message: The Software Protection service entered the stopped state.
+      Qualifiers: 33333
+      RecordNumber: 1111
+      Sid: ""
+      SourceName: Service Control Manager
+      StringInserts:
+      - Software Protection
+      - stopped
+      TimeGenerated: 2025-07-02 20:39:32.3390061 +0000
+      TimeWritten: 2025-07-02 20:39:32.3390061 +0000
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2025-07-02T20:39:32.339006100Z
+  partialSuccess: true
