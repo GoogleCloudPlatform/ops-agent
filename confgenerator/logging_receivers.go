@@ -556,19 +556,42 @@ func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.R
 			"poll_interval": "1s",
 			// TODO: Configure storage
 		}
-		if r.RenderAsXML {
-			receiver_config["raw"] = true
-			// TODO: Rename to `jsonPayload.raw_xml`
+
+		p, err := windowsEventLogV1Processors(ctx)
+		if err != nil {
+			return nil, err
 		}
-		var p []otel.Component
-		if r.IsDefaultVersion() {
-			var err error
-			p, err = windowsEventLogV1Processors(ctx)
+		if !r.IsDefaultVersion() {
+			p, err = windowsEventLogV2Processors(ctx)
 			if err != nil {
 				return nil, err
 			}
 		}
-		// TODO: Add processors for fluent-bit's V2 format.
+		if r.RenderAsXML {
+			receiver_config["raw"] = true
+
+			body := ottl.LValue{"body"}
+			cacheBodyString := ottl.LValue{"cache", "__body_string"}
+			cacheBodyMap := ottl.LValue{"cache", "__body_map"}
+			bodyRawXML := ottl.LValue{"body", "raw_xml"}
+			p = []otel.Component{
+				otel.Transform(
+					"log", "log",
+					// Move "body" to "body.raw_xml" (jsonPayload.raw_xml)
+					ottl.NewStatements(
+						cacheBodyString.SetIf(body, body.IsString()),
+						cacheBodyMap.SetIf(body, body.IsMap()),
+						body.Set(ottl.RValue("{}")),
+						body.MergeMapsIf(cacheBodyMap, "upsert", cacheBodyMap.IsPresent()),
+						// Move "body" to "body.message" (jsonPayload.message)
+						bodyRawXML.SetIf(cacheBodyString, cacheBodyString.IsPresent()),
+						// Clear cache.
+						cacheBodyMap.Delete(),
+						cacheBodyString.Delete(),
+					),
+				),
+			}
+		}
 		out = append(out, otel.ReceiverPipeline{
 			Receiver: otel.Component{
 				Type:   "windowseventlog",
@@ -607,6 +630,108 @@ func (p LoggingProcessorWindowsEventLogV1) Processors(ctx context.Context) ([]ot
 }
 
 func windowsEventLogV1Processors(ctx context.Context) ([]otel.Component, error) {
+	// The winlog input in fluent-bit has a completely different structure, so we need to convert the OTel format into the fluent-bit format.
+	var empty string
+	p := &LoggingProcessorModifyFields{
+		EmptyBody: true,
+		Fields: map[string]*ModifyField{
+			"jsonPayload.Channel":      {CopyFrom: "jsonPayload.channel"},
+			"jsonPayload.ComputerName": {CopyFrom: "jsonPayload.computer"},
+			"jsonPayload.Data": {
+				CopyFrom:     "jsonPayload.event_data.binary",
+				DefaultValue: &empty,
+				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
+					return v.Set(ottl.ConvertCase(v, "lower"))
+				},
+			},
+			// TODO: OTel puts the human-readable category at jsonPayload.task, but we need them to add the integer version.
+			//"jsonPayload.EventCategory": {StaticValue: "0", Type: "integer"},
+			"jsonPayload.EventID": {CopyFrom: "jsonPayload.event_id.id"},
+			"jsonPayload.EventType": {
+				CopyFrom: "jsonPayload.level",
+				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
+					// TODO: What if there are multiple keywords?
+					keywords := ottl.LValue{"cache", "body", "keywords"}
+					keyword0 := ottl.RValue(`cache["body"]["keywords"][0]`)
+					return ottl.NewStatements(
+						v.SetIf(ottl.StringLiteral("SuccessAudit"), ottl.And(
+							keywords.IsPresent(),
+							ottl.IsNotNil(keyword0),
+							ottl.Equals(keyword0, ottl.StringLiteral("Audit Success")),
+						)),
+						v.SetIf(ottl.StringLiteral("FailureAudit"), ottl.And(
+							keywords.IsPresent(),
+							ottl.IsNotNil(keyword0),
+							ottl.Equals(keyword0, ottl.StringLiteral("Audit Failure")),
+						)),
+					)
+				},
+			},
+			// TODO: Fix OTel receiver to provide raw non-parsed messages.
+			"jsonPayload.Message":      {CopyFrom: "jsonPayload.message"},
+			"jsonPayload.Qualifiers":   {CopyFrom: "jsonPayload.event_id.qualifiers"},
+			"jsonPayload.RecordNumber": {CopyFrom: "jsonPayload.record_id"},
+			"jsonPayload.Sid": {
+				CopyFrom:     "jsonPayload.security.user_id",
+				DefaultValue: &empty,
+			},
+			"jsonPayload.SourceName": {
+				CopyFrom: "jsonPayload.provider.name",
+				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
+					// Prefer jsonPayload.provider.event_source if present and non-empty
+					eventSource := ottl.LValue{"cache", "body", "provider", "event_source"}
+					return v.SetIf(
+						eventSource,
+						ottl.And(
+							eventSource.IsPresent(),
+							ottl.Not(ottl.Equals(
+								eventSource,
+								ottl.StringLiteral(""),
+							)),
+						),
+					)
+				},
+			},
+			"jsonPayload.StringInserts": {
+				CopyFrom: "jsonPayload.event_data.data",
+				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
+					return v.Set(ottl.ToValues(v))
+				},
+			},
+			"jsonPayload.TimeGenerated": {
+				CopyFrom:          "jsonPayload.system_time",
+				CustomConvertFunc: formatSystemTime,
+			},
+			"jsonPayload.TimeWritten": {
+				CopyFrom:          "jsonPayload.system_time",
+				CustomConvertFunc: formatSystemTime,
+			},
+		}}
+	return p.Processors(ctx)
+}
+
+// LoggingProcessorWindowsEventLogV2 contains the processors for the ReceiverVersion=2.
+type LoggingProcessorWindowsEventLogV2 struct {
+	ConfigComponent `yaml:",inline"`
+}
+
+func (r LoggingProcessorWindowsEventLogV2) Type() string {
+	return "windows_event_log_v2"
+}
+
+func (p LoggingProcessorWindowsEventLogV2) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
+	// TODO: Refactor LoggingReceiverWindowsEventLog into separate receiver and processor components for transformation tests.
+	// Should integrate the configuration for "ReceiverVersion" and "RenderAsXML".
+	return []fluentbit.Component{}
+}
+
+func (p LoggingProcessorWindowsEventLogV2) Processors(ctx context.Context) ([]otel.Component, error) {
+	// TODO: Refactor LoggingReceiverWindowsEventLog into separate receiver and processor components for transformation tests.
+	// Should integrate the configuration for "ReceiverVersion" and "RenderAsXML".
+	return windowsEventLogV1Processors(ctx)
+}
+
+func windowsEventLogV2Processors(ctx context.Context) ([]otel.Component, error) {
 	// The winlog input in fluent-bit has a completely different structure, so we need to convert the OTel format into the fluent-bit format.
 	var empty string
 	p := &LoggingProcessorModifyFields{
