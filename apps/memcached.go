@@ -40,7 +40,7 @@ func (r MetricsReceiverMemcached) Pipelines(ctx context.Context) ([]otel.Receive
 		r.Endpoint = defaultMemcachedTCPEndpoint
 	}
 
-	return []otel.ReceiverPipeline{confgenerator.ConvertToOtlpExporter(otel.ReceiverPipeline{
+	return []otel.ReceiverPipeline{confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "memcached",
 			Config: map[string]interface{}{
