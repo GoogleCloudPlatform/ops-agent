@@ -132,11 +132,6 @@ func (uc *UnifiedConfig) getOTelLogLevel() string {
 
 func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) (string, error) {
 	p := platform.FromContext(ctx)
-	resource, err := p.GetResource()
-	if err != nil {
-		log.Printf("can't get resource metadata: %v", err)
-		return "", nil
-	}
 	userAgent, _ := p.UserAgent("Google-Cloud-Ops-Agent-Metrics")
 	metricVersionLabel, _ := p.VersionLabel("google-cloud-ops-agent-metrics")
 	loggingVersionLabel, _ := p.VersionLabel("google-cloud-ops-agent-logging")
@@ -154,7 +149,6 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 		OtelPort:            otel.MetricsPort,
 		OtelRuntimeDir:      outDir,
 		OtelLogging:         uc.Logging.Service.OTelLogging,
-		ProjectName:         resource.ProjectName(),
 	}
 	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines, ctx)
 
