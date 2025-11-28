@@ -92,8 +92,10 @@ processors:
         match_type: regexp
         metric_names:
         - "^agent\\.googleapis\\.com/gpu/utilization$$"
-  interval/loggingmetrics_7:
+  interval/loggingmetrics_9:
     interval: 1m
+  metricstarttime/loggingmetrics_7:
+    strategy: subtract_initial_point
   metricstransform/fluentbit_1:
     transforms:
     - action: update
@@ -410,13 +412,18 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  metricstransform/loggingmetrics_10:
+    transforms:
+    - action: update
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: agent.googleapis.com/$${1}
   metricstransform/loggingmetrics_3:
     transforms:
     - action: update
       include: fluentbit_stackdriver_retried_records_total
       new_name: fluentbit_log_entry_retry_count
       operations:
-      - action: toggle_scalar_data_type
       - action: update_label
         label: status
         new_label: response_code
@@ -428,7 +435,6 @@ processors:
       include: otelcol_exporter_send_failed_log_records
       new_name: otel_log_entry_retry_count
       operations:
-      - action: toggle_scalar_data_type
       - action: add_label
         new_label: response_code
         new_value: "400"
@@ -440,7 +446,6 @@ processors:
       include: fluentbit_stackdriver_requests_total
       new_name: fluentbit_request_count
       operations:
-      - action: toggle_scalar_data_type
       - action: update_label
         label: status
         new_label: response_code
@@ -500,7 +505,6 @@ processors:
       include: fluentbit_stackdriver_proc_records_total
       new_name: fluentbit_log_entry_count
       operations:
-      - action: toggle_scalar_data_type
       - action: update_label
         label: status
         new_label: response_code
@@ -512,7 +516,6 @@ processors:
       include: otelcol_exporter_sent_log_records
       new_name: otel_log_entry_count
       operations:
-      - action: toggle_scalar_data_type
       - action: add_label
         new_label: response_code
         new_value: "200"
@@ -524,7 +527,6 @@ processors:
       include: otelcol_exporter_send_failed_log_records
       new_name: otel_log_entry_count
       operations:
-      - action: toggle_scalar_data_type
       - action: add_label
         new_label: response_code
         new_value: "400"
@@ -545,9 +547,17 @@ processors:
   metricstransform/loggingmetrics_8:
     transforms:
     - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: agent.googleapis.com/$${1}
+      include: agent/log_entry_retry_count
+      operations:
+      - action: toggle_scalar_data_type
+    - action: update
+      include: agent/request_count
+      operations:
+      - action: toggle_scalar_data_type
+    - action: update
+      include: agent/log_entry_count
+      operations:
+      - action: toggle_scalar_data_type
   metricstransform/otel_3:
     transforms:
     - action: update
@@ -746,8 +756,10 @@ service:
       - cumulativetodelta/loggingmetrics_4
       - transform/loggingmetrics_5
       - deltatocumulative/loggingmetrics_6
-      - interval/loggingmetrics_7
+      - metricstarttime/loggingmetrics_7
       - metricstransform/loggingmetrics_8
+      - interval/loggingmetrics_9
+      - metricstransform/loggingmetrics_10
       - resourcedetection/_global_0
       receivers:
       - prometheus/agent_prometheus

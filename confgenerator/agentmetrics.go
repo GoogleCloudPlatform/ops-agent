@@ -15,6 +15,7 @@
 package confgenerator
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"time"
@@ -33,6 +34,7 @@ type AgentSelfMetrics struct {
 	OtelPort            int
 	OtelRuntimeDir      string
 	OtelLogging         bool
+	ProjectName         string
 }
 
 // Following reference : https://github.com/googleapis/googleapis/blob/master/google/rpc/code.proto
@@ -56,9 +58,9 @@ var grpcToHTTPStatus = map[string]string{
 	"DEADLINE_EXCEEDED":   "504",
 }
 
-func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]otel.ReceiverPipeline, pipelines map[string]otel.Pipeline) {
+func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]otel.ReceiverPipeline, pipelines map[string]otel.Pipeline, ctx context.Context) {
 	// Receiver pipelines names should have 1 underscore to avoid collision with user configurations.
-	receiverPipelines["agent_prometheus"] = r.PrometheusMetricsPipeline()
+	receiverPipelines["agent_prometheus"] = r.PrometheusMetricsPipeline(ctx)
 
 	// Pipeline names should have no underscores to avoid collision with user configurations.
 	pipelines["otel"] = otel.Pipeline{
@@ -79,15 +81,15 @@ func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]o
 		Processors:           r.LoggingMetricsPipelineProcessors(),
 	}
 
-	receiverPipelines["ops_agent"] = r.OpsAgentPipeline()
+	receiverPipelines["ops_agent"] = r.OpsAgentPipeline(ctx)
 	pipelines["opsagent"] = otel.Pipeline{
 		Type:                 "metrics",
 		ReceiverPipelineName: "ops_agent",
 	}
 }
 
-func (r AgentSelfMetrics) PrometheusMetricsPipeline() otel.ReceiverPipeline {
-	return otel.ReceiverPipeline{
+func (r AgentSelfMetrics) PrometheusMetricsPipeline(ctx context.Context) otel.ReceiverPipeline {
+	return ConvertGCMSystemExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "prometheus",
 			Config: map[string]interface{}{
@@ -128,7 +130,7 @@ func (r AgentSelfMetrics) PrometheusMetricsPipeline() otel.ReceiverPipeline {
 				),
 			},
 		},
-	}
+	}, ctx)
 }
 
 func (r AgentSelfMetrics) OtelPipelineProcessors() []otel.Component {
@@ -218,20 +220,14 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors() []otel.Component {
 		// Format fluentbit and otel logging metrics before aggregation.
 		otel.MetricsTransform(
 			otel.RenameMetric("fluentbit_stackdriver_retried_records_total", "fluentbit_log_entry_retry_count",
-				// change data type from double -> int64
-				otel.ToggleScalarDataType,
 				otel.RenameLabel("status", "response_code"),
 				otel.AggregateLabels("sum", "response_code"),
 			),
 			otel.DuplicateMetric("otelcol_exporter_send_failed_log_records", "otel_log_entry_retry_count",
-				// change data type from double -> int64
-				otel.ToggleScalarDataType,
 				otel.AddLabel("response_code", "400"),
 				otel.AggregateLabels("sum", "response_code"),
 			),
 			otel.RenameMetric("fluentbit_stackdriver_requests_total", "fluentbit_request_count",
-				// change data type from double -> int64
-				otel.ToggleScalarDataType,
 				otel.RenameLabel("status", "response_code"),
 				otel.AggregateLabels("sum", "response_code"),
 			),
@@ -243,19 +239,16 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors() []otel.Component {
 			),
 			otel.RenameMetric("fluentbit_stackdriver_proc_records_total", "fluentbit_log_entry_count",
 				// change data type from double -> int64
-				otel.ToggleScalarDataType,
 				otel.RenameLabel("status", "response_code"),
 				otel.AggregateLabels("sum", "response_code"),
 			),
 			otel.RenameMetric("otelcol_exporter_sent_log_records", "otel_log_entry_count",
 				// change data type from double -> int64
-				otel.ToggleScalarDataType,
 				otel.AddLabel("response_code", "200"),
 				otel.AggregateLabels("sum", "response_code"),
 			),
 			otel.RenameMetric("otelcol_exporter_send_failed_log_records", "otel_log_entry_count",
 				// change data type from double -> int64
-				otel.ToggleScalarDataType,
 				otel.AddLabel("response_code", "400"),
 				otel.AggregateLabels("sum", "response_code"),
 			),
@@ -297,24 +290,39 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors() []otel.Component {
 		// DeltaToCumulative keeps in memory information of previous delta points
 		// to generate a valid cumulative monotonic metric.
 		otel.DeltaToCumulative(),
+		otel.MetricStartTime(),
+		otel.MetricsTransform(
+			otel.UpdateMetric("agent/log_entry_retry_count",
+				// change data type from double -> int64
+				otel.ToggleScalarDataType,
+			),
+			otel.UpdateMetric("agent/request_count",
+				// change data type from double -> int64
+				otel.ToggleScalarDataType,
+			),
+			otel.UpdateMetric("agent/log_entry_count",
+				// change data type from double -> int64
+				otel.ToggleScalarDataType,
+			),
+		),
 		// The processor "interval" outputs the last point in each 1 minute interval.
 		otel.Interval("1m"),
 		otel.MetricsTransform(otel.AddPrefix("agent.googleapis.com")),
 	}
 }
 
-func (r AgentSelfMetrics) OpsAgentPipeline() otel.ReceiverPipeline {
-	receiver_config := map[string]any{
+func (r AgentSelfMetrics) OpsAgentPipeline(ctx context.Context) otel.ReceiverPipeline {
+	receiverConfig := map[string]any{
 		"include": []string{
 			filepath.Join(r.OtelRuntimeDir, "enabled_receivers_otlp.json"),
 			filepath.Join(r.OtelRuntimeDir, "feature_tracking_otlp.json")},
 		"replay_file":   true,
 		"poll_interval": time.Duration(60 * time.Second).String(),
 	}
-	return otel.ReceiverPipeline{
+	return ConvertGCMSystemExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type:   "otlpjsonfile",
-			Config: receiver_config,
+			Config: receiverConfig,
 		},
 		ExporterTypes: map[string]otel.ExporterType{
 			"metrics": otel.System,
@@ -324,7 +332,7 @@ func (r AgentSelfMetrics) OpsAgentPipeline() otel.ReceiverPipeline {
 				otel.Transform("metric", "datapoint", []ottl.Statement{"set(time, Now())"}),
 			},
 		},
-	}
+	}, ctx)
 }
 
 // intentionally not registered as a component because this is not created by users

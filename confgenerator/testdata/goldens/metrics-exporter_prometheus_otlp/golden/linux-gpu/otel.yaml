@@ -84,8 +84,14 @@ processors:
         - otelcol_process_memory_rss
         - grpc.client.attempt.duration_count
         - googlecloudmonitoring/point_count
-  interval/loggingmetrics_7:
+  interval/loggingmetrics_9:
     interval: 1m
+  metricstarttime/agent_prometheus_2:
+    strategy: subtract_initial_point
+  metricstarttime/loggingmetrics_7:
+    strategy: subtract_initial_point
+  metricstarttime/ops_agent_2:
+    strategy: subtract_initial_point
   metricstarttime/prometheus_3:
     strategy: subtract_initial_point
   metricstransform/fluentbit_1:
@@ -404,13 +410,18 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  metricstransform/loggingmetrics_10:
+    transforms:
+    - action: update
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: agent.googleapis.com/$${1}
   metricstransform/loggingmetrics_3:
     transforms:
     - action: update
       include: fluentbit_stackdriver_retried_records_total
       new_name: fluentbit_log_entry_retry_count
       operations:
-      - action: toggle_scalar_data_type
       - action: update_label
         label: status
         new_label: response_code
@@ -422,7 +433,6 @@ processors:
       include: otelcol_exporter_send_failed_log_records
       new_name: otel_log_entry_retry_count
       operations:
-      - action: toggle_scalar_data_type
       - action: add_label
         new_label: response_code
         new_value: "400"
@@ -434,7 +444,6 @@ processors:
       include: fluentbit_stackdriver_requests_total
       new_name: fluentbit_request_count
       operations:
-      - action: toggle_scalar_data_type
       - action: update_label
         label: status
         new_label: response_code
@@ -494,7 +503,6 @@ processors:
       include: fluentbit_stackdriver_proc_records_total
       new_name: fluentbit_log_entry_count
       operations:
-      - action: toggle_scalar_data_type
       - action: update_label
         label: status
         new_label: response_code
@@ -506,7 +514,6 @@ processors:
       include: otelcol_exporter_sent_log_records
       new_name: otel_log_entry_count
       operations:
-      - action: toggle_scalar_data_type
       - action: add_label
         new_label: response_code
         new_value: "200"
@@ -518,7 +525,6 @@ processors:
       include: otelcol_exporter_send_failed_log_records
       new_name: otel_log_entry_count
       operations:
-      - action: toggle_scalar_data_type
       - action: add_label
         new_label: response_code
         new_value: "400"
@@ -539,9 +545,17 @@ processors:
   metricstransform/loggingmetrics_8:
     transforms:
     - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: agent.googleapis.com/$${1}
+      include: agent/log_entry_retry_count
+      operations:
+      - action: toggle_scalar_data_type
+    - action: update
+      include: agent/request_count
+      operations:
+      - action: toggle_scalar_data_type
+    - action: update
+      include: agent/log_entry_count
+      operations:
+      - action: toggle_scalar_data_type
   metricstransform/otel_3:
     transforms:
     - action: update
@@ -587,6 +601,16 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  resource/agent_prometheus_1:
+    attributes:
+    - action: insert
+      key: gcp.project_id
+      value: test-project
+  resource/ops_agent_1:
+    attributes:
+    - action: insert
+      key: gcp.project_id
+      value: test-project
   resource/prometheus_1:
     attributes:
     - action: insert
@@ -610,6 +634,12 @@ processors:
       - delete_key(resource.attributes, "service.instance.id")
       - delete_key(resource.attributes, "server.port")
       - delete_key(resource.attributes, "url.scheme")
+  transform/agent_prometheus_3:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
   transform/loggingmetrics_0:
     error_mode: ignore
     metric_statements:
@@ -637,6 +667,12 @@ processors:
     - context: datapoint
       statements:
       - set(time, Now())
+  transform/ops_agent_3:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
   transform/otel_0:
     error_mode: ignore
     metric_statements:
@@ -783,9 +819,12 @@ service:
       - nvml/hostmetrics_1
     metrics/fluentbit:
       exporters:
-      - googlecloud
+      - otlphttp/otlp
       processors:
       - transform/agent_prometheus_0
+      - resource/agent_prometheus_1
+      - metricstarttime/agent_prometheus_2
+      - transform/agent_prometheus_3
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
       - resourcedetection/_global_0
@@ -794,9 +833,12 @@ service:
       - prometheus/agent_prometheus
     metrics/loggingmetrics:
       exporters:
-      - googlecloud
+      - otlphttp/otlp
       processors:
       - transform/agent_prometheus_0
+      - resource/agent_prometheus_1
+      - metricstarttime/agent_prometheus_2
+      - transform/agent_prometheus_3
       - transform/loggingmetrics_0
       - filter/loggingmetrics_1
       - filter/loggingmetrics_2
@@ -804,26 +846,34 @@ service:
       - cumulativetodelta/loggingmetrics_4
       - transform/loggingmetrics_5
       - deltatocumulative/loggingmetrics_6
-      - interval/loggingmetrics_7
+      - metricstarttime/loggingmetrics_7
       - metricstransform/loggingmetrics_8
+      - interval/loggingmetrics_9
+      - metricstransform/loggingmetrics_10
       - resourcedetection/_global_0
       - transform/_global_0
       receivers:
       - prometheus/agent_prometheus
     metrics/opsagent:
       exporters:
-      - googlecloud
+      - otlphttp/otlp
       processors:
       - transform/ops_agent_0
+      - resource/ops_agent_1
+      - metricstarttime/ops_agent_2
+      - transform/ops_agent_3
       - resourcedetection/_global_0
       - transform/_global_0
       receivers:
       - otlpjsonfile/ops_agent
     metrics/otel:
       exporters:
-      - googlecloud
+      - otlphttp/otlp
       processors:
       - transform/agent_prometheus_0
+      - resource/agent_prometheus_1
+      - metricstarttime/agent_prometheus_2
+      - transform/agent_prometheus_3
       - transform/otel_0
       - filter/otel_1
       - filter/otel_2
