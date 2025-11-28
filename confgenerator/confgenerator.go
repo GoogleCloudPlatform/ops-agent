@@ -57,11 +57,19 @@ func googleCloudExporter(userAgent string, instrumentationLabels bool, serviceRe
 	}
 }
 
-func ConvertSystemToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
-	return ConvertToOtlpExporter2(receiver, ctx, true)
+func ConvertPrometheusExporterToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
+	return ConvertToOtlpExporter(receiver, ctx, true, false)
 }
 
-func ConvertToOtlpExporter2(pipeline otel.ReceiverPipeline, ctx context.Context, isSystem bool) otel.ReceiverPipeline {
+func ConvertGCMOtelExporterToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
+	return ConvertToOtlpExporter(receiver, ctx, false, false)
+}
+
+func ConvertGCMSystemExporterToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
+	return ConvertToOtlpExporter(receiver, ctx, false, true)
+}
+
+func ConvertToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context, isPrometheus bool, isSystem bool) otel.ReceiverPipeline {
 	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
 	resource, _ := platform.FromContext(ctx).GetResource()
 	if !expOtlpExporter {
@@ -75,12 +83,12 @@ func ConvertToOtlpExporter2(pipeline otel.ReceiverPipeline, ctx context.Context,
 	pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.GCPProjectID(resource.ProjectName()))
 	if isSystem {
 		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveInstrumentationLibraryLabelsAttributes())
+	}	
+	if isPrometheus {
+		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricUnknownCounter())
+		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricStartTime())
 	}
 	return pipeline
-}
-
-func ConvertToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
-	return ConvertToOtlpExporter2(receiver, ctx, false)
 }
 
 func otlpExporter(userAgent string) otel.Component {
@@ -141,9 +149,9 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 	}
 	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines)
 
-	exp_otlp_exporter := experimentsFromContext(ctx)["otlp_exporter"]
+	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
 	extensions := map[string]interface{}{}
-	if exp_otlp_exporter {
+	if expOtlpExporter {
 		extensions["googleclientauth"] = map[string]interface{}{}
 	}
 
@@ -158,7 +166,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 			otel.GMP:    googleManagedPrometheusExporter(userAgent),
 			otel.OTLP:   otlpExporter(userAgent),
 		},
-	}.Generate(ctx, exp_otlp_exporter)
+	}.Generate(ctx, expOtlpExporter)
 	if err != nil {
 		return "", err
 	}
