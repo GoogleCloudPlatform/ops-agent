@@ -76,7 +76,7 @@ func (r MetricsReceiverCouchbase) Pipelines(ctx context.Context) ([]otel.Receive
 		},
 	}
 
-	return []otel.ReceiverPipeline{confgenerator.ConvertToOtlpExporter(otel.ReceiverPipeline{
+	return []otel.ReceiverPipeline{confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type:   "prometheus",
 			Config: config,

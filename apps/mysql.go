@@ -55,7 +55,7 @@ func (r MetricsReceiverMySql) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 	}
 
 	return []otel.ReceiverPipeline{
-		confgenerator.ConvertToOtlpExporter(otel.ReceiverPipeline{
+		confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
 			Receiver: otel.Component{
 				Type: "mysql",
 				Config: map[string]interface{}{

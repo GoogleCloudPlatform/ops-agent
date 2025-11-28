@@ -38,7 +38,7 @@ func (r MetricsReceiverFlink) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 		r.Endpoint = defaultFlinkEndpoint
 	}
 
-	return []otel.ReceiverPipeline{confgenerator.ConvertToOtlpExporter(otel.ReceiverPipeline{
+	return []otel.ReceiverPipeline{confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "flinkmetrics",
 			Config: map[string]interface{}{

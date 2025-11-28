@@ -723,7 +723,7 @@ func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, proces
 		config["password"] = secretPassword
 	}
 
-	return []otel.ReceiverPipeline{ConvertToOtlpExporter(otel.ReceiverPipeline{
+	return []otel.ReceiverPipeline{ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type:   "jmx",
 			Config: config,

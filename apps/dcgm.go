@@ -128,7 +128,7 @@ func (r MetricsReceiverDcgm) Pipelines(ctx context.Context) ([]otel.ReceiverPipe
 		}
 	}
 
-	return []otel.ReceiverPipeline{confgenerator.ConvertToOtlpExporter(otel.ReceiverPipeline{
+	return []otel.ReceiverPipeline{confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "dcgm",
 			Config: map[string]interface{}{

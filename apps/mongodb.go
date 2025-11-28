@@ -72,7 +72,7 @@ func (r MetricsReceiverMongoDB) Pipelines(ctx context.Context) ([]otel.ReceiverP
 		config["tls"] = r.TLSConfig(false)
 	}
 
-	return []otel.ReceiverPipeline{confgenerator.ConvertToOtlpExporter(otel.ReceiverPipeline{
+	return []otel.ReceiverPipeline{confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type:   r.Type(),
 			Config: config,

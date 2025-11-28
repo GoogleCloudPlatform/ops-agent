@@ -40,7 +40,7 @@ func (r MetricsReceiverApache) Pipelines(ctx context.Context) ([]otel.ReceiverPi
 		r.ServerStatusURL = defaultServerStatusURL
 	}
 
-	return []otel.ReceiverPipeline{confgenerator.ConvertToOtlpExporter(otel.ReceiverPipeline{
+	return []otel.ReceiverPipeline{confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "apache",
 			Config: map[string]interface{}{
