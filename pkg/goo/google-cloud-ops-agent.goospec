@@ -23,11 +23,11 @@
     "out\\bin\\google-cloud-ops-agent-wrapper.exe": "{{$INSTALL_DIR}}/bin/google-cloud-ops-agent-wrapper.exe"
   },
   "install": {
-    "path": "pkg/goo/maint.ps1",
+    "path": "out/bin/maint.ps1",
     "args": ["-InstallDir:\"{{$INSTALL_DIR}}\"", "-Action:install"]
   },
   "uninstall": {
-    "path": "pkg/goo/maint.ps1",
+    "path": "out/bin/maint.ps1",
     "args": ["-InstallDir:\"{{$INSTALL_DIR}}\"", "-Action:uninstall"]
   },
   "sources": [{
@@ -42,7 +42,7 @@
         "out/bin/google-cloud-ops-agent.exe",
         "out/bin/google-cloud-ops-agent-wrapper.exe",
         "confgenerator/default-config.yaml",
-        "pkg/goo/maint.ps1"
+        "out/bin/maint.ps1"
       ]
   }]
 }
