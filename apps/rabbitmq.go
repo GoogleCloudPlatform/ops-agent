@@ -155,7 +155,7 @@ func (r MetricsReceiverRabbitmq) Pipelines(ctx context.Context) ([]otel.Receiver
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
-	}, ctx, false)}, nil
+	}, ctx)}, nil
 }
 
 func init() {

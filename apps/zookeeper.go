@@ -63,7 +63,7 @@ func (r MetricsReceiverZookeeper) Pipelines(ctx context.Context) ([]otel.Receive
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
-	}, ctx, false)}, nil
+	}, ctx)}, nil
 }
 
 type LoggingProcessorMacroZookeeperGeneral struct{}

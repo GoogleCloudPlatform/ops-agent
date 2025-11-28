@@ -65,7 +65,7 @@ func (r MetricsReceiverCouchdb) Pipelines(ctx context.Context) ([]otel.ReceiverP
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
-	}, ctx, false)}, nil
+	}, ctx)}, nil
 }
 
 func init() {

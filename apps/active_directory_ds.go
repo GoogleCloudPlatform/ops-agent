@@ -51,7 +51,7 @@ func (r MetricsReceiverActiveDirectoryDS) Pipelines(ctx context.Context) ([]otel
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
-	}, ctx, false)}, nil
+	}, ctx)}, nil
 }
 
 func init() {

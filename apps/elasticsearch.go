@@ -94,7 +94,7 @@ func (r MetricsReceiverElasticsearch) Pipelines(ctx context.Context) ([]otel.Rec
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
-	}, ctx, false)}, nil
+	}, ctx)}, nil
 }
 
 func (r MetricsReceiverElasticsearch) skipJVMMetricsConfig(metricsConfig map[string]interface{}) {

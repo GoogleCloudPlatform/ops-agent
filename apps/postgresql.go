@@ -102,7 +102,7 @@ func (r MetricsReceiverPostgresql) Pipelines(ctx context.Context) ([]otel.Receiv
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
-	}, ctx, false)}, nil
+	}, ctx)}, nil
 }
 
 func init() {

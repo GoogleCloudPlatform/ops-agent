@@ -205,7 +205,7 @@ func (r MetricsReceiverDcgm) Pipelines(ctx context.Context) ([]otel.ReceiverPipe
 			),
 		},
 		},
-	}, ctx, false)}, nil
+	}, ctx)}, nil
 }
 
 func init() {

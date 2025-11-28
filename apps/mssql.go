@@ -59,7 +59,7 @@ func (m MetricsReceiverMssql) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 				otel.MetricsRemoveServiceAttributes(),
 				otel.NormalizeSums(),
 			}},
-		}, ctx, false)}, nil
+		}, ctx)}, nil
 	}
 
 	return []otel.ReceiverPipeline{confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
@@ -108,7 +108,7 @@ func (m MetricsReceiverMssql) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 				otel.SetScopeVersion("1.0"),
 			),
 		}},
-	}, ctx, false)}, nil
+	}, ctx)}, nil
 }
 
 func init() {

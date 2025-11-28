@@ -89,7 +89,7 @@ func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]o
 }
 
 func (r AgentSelfMetrics) PrometheusMetricsPipeline(ctx context.Context) otel.ReceiverPipeline {
-	return ConvertToOtlpExporter(otel.ReceiverPipeline{
+	return ConvertGCMSystemExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "prometheus",
 			Config: map[string]interface{}{
@@ -130,7 +130,7 @@ func (r AgentSelfMetrics) PrometheusMetricsPipeline(ctx context.Context) otel.Re
 				),
 			},
 		},
-	}, ctx, true)
+	}, ctx)
 }
 
 func (r AgentSelfMetrics) OtelPipelineProcessors() []otel.Component {
@@ -319,7 +319,7 @@ func (r AgentSelfMetrics) OpsAgentPipeline(ctx context.Context) otel.ReceiverPip
 		"replay_file":   true,
 		"poll_interval": time.Duration(60 * time.Second).String(),
 	}
-	return ConvertToOtlpExporter(otel.ReceiverPipeline{
+	return ConvertGCMSystemExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type:   "otlpjsonfile",
 			Config: receiverConfig,
@@ -332,7 +332,7 @@ func (r AgentSelfMetrics) OpsAgentPipeline(ctx context.Context) otel.ReceiverPip
 				otel.Transform("metric", "datapoint", []ottl.Statement{"set(time, Now())"}),
 			},
 		},
-	}, ctx, true)
+	}, ctx)
 }
 
 // intentionally not registered as a component because this is not created by users

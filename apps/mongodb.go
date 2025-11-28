@@ -88,7 +88,7 @@ func (r MetricsReceiverMongoDB) Pipelines(ctx context.Context) ([]otel.ReceiverP
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
-	}, ctx, false)}, nil
+	}, ctx)}, nil
 }
 
 func init() {

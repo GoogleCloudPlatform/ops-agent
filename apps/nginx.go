@@ -58,7 +58,7 @@ func (r MetricsReceiverNginx) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 				otel.SetScopeVersion("1.0"),
 			),
 			otel.MetricsRemoveServiceAttributes(),
-		}}}, ctx, false)}, nil
+		}}}, ctx)}, nil
 }
 
 func init() {

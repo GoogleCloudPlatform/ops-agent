@@ -125,7 +125,7 @@ func (r MetricsReceiverOracleDB) Pipelines(ctx context.Context) ([]otel.Receiver
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
-	}, ctx, false)}, nil
+	}, ctx)}, nil
 }
 
 var oracleQueries = []sqlReceiverQuery{

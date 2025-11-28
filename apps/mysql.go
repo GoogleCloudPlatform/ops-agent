@@ -125,7 +125,7 @@ func (r MetricsReceiverMySql) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 				),
 				otel.MetricsRemoveServiceAttributes(),
 			}},
-		}, ctx, false)}, nil
+		}, ctx)}, nil
 }
 
 func init() {

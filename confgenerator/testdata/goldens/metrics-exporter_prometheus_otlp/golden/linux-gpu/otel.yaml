@@ -86,6 +86,12 @@ processors:
         - googlecloudmonitoring/point_count
   interval/loggingmetrics_9:
     interval: 1m
+  metricstarttime/agent_prometheus_2:
+    strategy: subtract_initial_point
+  metricstarttime/loggingmetrics_7:
+    strategy: subtract_initial_point
+  metricstarttime/ops_agent_2:
+    strategy: subtract_initial_point
   metricstarttime/prometheus_3:
     strategy: subtract_initial_point
   metricstransform/fluentbit_1:
@@ -595,6 +601,16 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  resource/agent_prometheus_1:
+    attributes:
+    - action: insert
+      key: gcp.project_id
+      value: test-project
+  resource/ops_agent_1:
+    attributes:
+    - action: insert
+      key: gcp.project_id
+      value: test-project
   resource/prometheus_1:
     attributes:
     - action: insert
