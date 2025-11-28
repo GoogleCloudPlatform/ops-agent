@@ -62,7 +62,7 @@ func ConvertPrometheusExporterToOtlpExporter(receiver otel.ReceiverPipeline, ctx
 }
 
 func ConvertGCMOtelExporterToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
-		return ConvertToOtlpExporter(receiver, ctx, false)
+	return ConvertToOtlpExporter(receiver, ctx, false)
 }
 
 func ConvertToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context, isPrometheus bool) otel.ReceiverPipeline {
