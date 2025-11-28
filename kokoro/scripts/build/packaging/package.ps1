@@ -14,14 +14,7 @@ function Invoke-PackageBuild {
         Throw "Error: Missing required arguments for build function."
     }
 
-    # Map Arch to GoArch
-    switch ($Arch) {
-        "x86_64" { $GoArch = "amd64" }
-        "x86"    { $GoArch = "386" }
-        Default { Throw "ERROR: Architecture must be set to one of: x86, x86_64" }
-    }
-
-    Write-Host "Starting build for Arch: ${Arch} (GoArch: ${GoArch})"
+    Write-Host "Preparing build environment for Arch: ${Arch}"
 
     # Configure Git
     git config --global --add safe.directory "$(Get-Location)"
@@ -32,6 +25,7 @@ function Invoke-PackageBuild {
     go install -trimpath -ldflags="-s -w" github.com/google/googet/v2/goopack@v2.18.4
 
     Write-Host "Preparing directories and files..."
+    # build.ps1 uses the destination, but we ensure it exists here to be safe
     New-Item -Path "out" -ItemType Directory -Force | Out-Null
     New-Item -Path $OutputDir -ItemType Directory -Force | Out-Null
 
@@ -42,41 +36,21 @@ function Invoke-PackageBuild {
     Write-Host "Current directory contents:"
     Get-ChildItem -Force | Select-Object Name, LastWriteTime, Length
 
-    # Extract package version from VERSION file
-    try {
-        $VersionContent = Get-Content -Path ".\VERSION" -ErrorAction Stop
-        # Look for the line containing PKG_VERSION
-        $VersionLine = $VersionContent | Select-String "PKG_VERSION"
-        if ($VersionLine) {
-            # Parse 'PKG_VERSION="1.2.3"' -> split by '=', trim spaces and quotes
-            $releaseName = $VersionLine.ToString().Split('=')[1].Trim().Trim('"')
-        } else {
-            Throw "PKG_VERSION not found in ./VERSION"
-        }
-    }
-    catch {
-        Throw "Failed to read release version: $_"
+    $BuildScriptPath = ".\pkg\goo\build.ps1"
+
+    Write-Host "Delegating package creation to $BuildScriptPath..."
+
+    if (-not (Test-Path $BuildScriptPath)) {
+        Throw "Error: build.ps1 not found at: $BuildScriptPath"
     }
 
-    Write-Host "Building package version: ${releaseName}"
+    & $BuildScriptPath -DestDir $OutputDir -Arch $Arch
 
-    # Determine GOPATH
-    $GOPATH = $env:GOPATH
-    if ([string]::IsNullOrWhiteSpace($GOPATH)) {
-        $GOPATH = "$env:USERPROFILE\go"
+    if ($LASTEXITCODE -ne 0) {
+        Throw "Error: build.ps1 failed with exit code $LASTEXITCODE"
     }
 
-    # Run goopack
-    $GoopackPath = "$GOPATH\bin\goopack.exe"
-
-    & $GoopackPath -output_dir "$OutputDir" `
-        "-var:PKG_VERSION=$releaseName" `
-        "-var:ARCH=$Arch" `
-        "-var:GOOS=windows" `
-        "-var:GOARCH=$GoArch" `
-        pkg/goo/google-cloud-ops-agent.goospec
-
-    Write-Host "Build process complete. Output at: ${OutputDir}"
+    Write-Host "Package process complete. Output at: ${OutputDir}"
 }
 
 Write-Host "Starting Entry Point Script..."
@@ -91,7 +65,6 @@ foreach ($var in $RequiredVars) {
 
 # 2. Parse the Louhi tag
 # Example: louhi/2.46.0/abcdef/windows/x86_64/start
-# Indices: 0    /1     /2     /3      /4     /5
 $LouhiTag = $env:_LOUHI_TAG_NAME
 $LouhiParts = $LouhiTag -split "/"
 
@@ -121,7 +94,6 @@ if (Test-Path $TargetDir) {
 }
 
 # 5. Execute Core Build Logic (Function Call)
-# This replaces the call to ./kokoro/scripts/build/packaging/package_windows.sh
 Invoke-PackageBuild -Arch $Arch -InputDir $INPUT_DIR -OutputDir $OUTPUT_DIR
 
 # 6. Upload Artifacts
@@ -133,7 +105,6 @@ $GcsBucket = "gs://$($env:_STAGING_ARTIFACTS_PROJECT_ID)-ops-agent-releases/$Ver
 Write-Host "Copying *.goo files to $GcsBucket"
 
 # Upload .goo files
-# We verify files exist first to avoid cryptic gsutil errors, though gsutil handles wildcards well.
 $GooFiles = Join-Path $OUTPUT_DIR "*.goo"
 gsutil cp $GooFiles "$GcsBucket"
 

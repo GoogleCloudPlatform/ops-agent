@@ -66,7 +66,6 @@ foreach ($file_path in $files_to_process) {
     $out = Invoke-Expression $verify_command
     $verify_code = $LastExitCode
     Write-Host -separator "`n" $out
-    Write-Host "Exit code (Verify): $verify_code"
 
     if ($verify_code -ne 0) {
         Write-Error "ERROR: Verification of $file_path FAILED with exit code $verify_code."
