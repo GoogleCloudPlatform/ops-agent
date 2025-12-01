@@ -1077,6 +1077,10 @@ func InstallOpsAgentUAPPlugin(ctx context.Context, logger *log.Logger, vm *gce.V
 //
 // gcsPath must point to a GCS Path to a .tar.gz file to install on the testing VMs.
 func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, gcsPath string) error {
+	if err := gce.InstallGcloudIfNeeded(ctx, logger, vm); err != nil {
+		return err
+	}
+
 	if gce.IsWindows(vm.ImageSpec) {
 		if _, err := gce.RunRemotely(ctx, logger, vm, "New-Item -ItemType directory -Path C:\\agentPlugin"); err != nil {
 			return err
