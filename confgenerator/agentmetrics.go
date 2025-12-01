@@ -34,7 +34,6 @@ type AgentSelfMetrics struct {
 	OtelPort            int
 	OtelRuntimeDir      string
 	OtelLogging         bool
-	ProjectName         string
 }
 
 // Following reference : https://github.com/googleapis/googleapis/blob/master/google/rpc/code.proto
