@@ -1422,9 +1422,10 @@ func TestSyslogTCP(t *testing.T) {
 			t.Fatalf("Error writing dummy log line: %v", err)
 		}
 
-		// Verify the ingested log preserves the syslog rfc5424 format.
-		rfc5424LogQuery := `jsonPayload.message =~ "^<\d+>1 \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}) \S+ \S+ \S+ \S+ \[[^\]]+\] %s$"`
-		if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, fmt.Sprintf(rfc5424LogQuery, "abcdefg")); err != nil {
+		// Verify the ingested log preserves the syslog rfc5424 format and no additional labels are added.
+		rfc5424LogQuery := `jsonPayload.message =~ "^<\d+>1 \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}) \S+ \S+ \S+ \S+ \[[^\]]+\] abcdefg$"`
+		logQuery := rfc5424LogQuery + ` (NOT labels.message :*) AND (NOT labels.hostname :*) AND (NOT labels.priority :*)`
+		if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, logQuery); err != nil {
 			t.Error(err)
 		}
 		time.Sleep(60 * time.Second)
@@ -1472,9 +1473,10 @@ func TestSyslogUDP(t *testing.T) {
 			t.Fatalf("Error writing dummy log line: %v", err)
 		}
 
-		// Verify the ingested log preserves the syslog rfc5424 format.
-		rfc5424LogQuery := `jsonPayload.message =~ "^<\d+>1 \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}) \S+ \S+ \S+ \S+ \[[^\]]+\] %s$"`
-		if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, fmt.Sprintf(rfc5424LogQuery, "abcdefg")); err != nil {
+		// Verify the ingested log preserves the syslog rfc5424 format and no additional labels are added.
+		rfc5424LogQuery := `jsonPayload.message =~ "^<\d+>1 \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}) \S+ \S+ \S+ \S+ \[[^\]]+\] abcdefg$"`
+		logQuery := rfc5424LogQuery + ` (NOT labels.message :*) AND (NOT labels.hostname :*) AND (NOT labels.priority :*)`
+		if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, logQuery); err != nil {
 			t.Error(err)
 		}
 	})
