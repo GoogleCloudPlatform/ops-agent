@@ -34,7 +34,7 @@ SCRATCH="$(mktemp --directory)"
 
 (cd "${SCRATCH}" && wget --force-directories "$@")
 
-gsutil cp -r "${SCRATCH}/*" "gs://ops-agents-public-buckets-vendored-deps/mirrored-content/"
+gcloud storage cp -r "${SCRATCH}/*" "gs://ops-agents-public-buckets-vendored-deps/mirrored-content/"
 
 set +x
 
