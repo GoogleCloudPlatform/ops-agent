@@ -44,7 +44,7 @@ func (r MetricsReceiverCouchdb) Pipelines(ctx context.Context) ([]otel.ReceiverP
 		r.Endpoint = defaultCouchdbEndpoint
 	}
 
-	return []otel.ReceiverPipeline{confgenerator.ConvertToOtlpExporter(otel.ReceiverPipeline{
+	return []otel.ReceiverPipeline{confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "couchdb",
 			Config: map[string]interface{}{
