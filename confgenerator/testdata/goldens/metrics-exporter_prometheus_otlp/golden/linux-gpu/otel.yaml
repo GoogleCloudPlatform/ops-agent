@@ -86,7 +86,7 @@ processors:
         - googlecloudmonitoring/point_count
   interval/loggingmetrics_7:
     interval: 1m
-  metricstarttime/prometheus_2:
+  metricstarttime/prometheus_3:
     strategy: subtract_initial_point
   metricstransform/fluentbit_1:
     transforms:
@@ -587,7 +587,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  resource/prometheus_3:
+  resource/prometheus_1:
     attributes:
     - action: insert
       key: gcp.project_id
@@ -653,7 +653,7 @@ processors:
       - delete_key(attributes, "location")
       - delete_key(attributes, "cluster")
       - delete_key(attributes, "namespace")
-  transform/prometheus_1:
+  transform/prometheus_2:
     error_mode: ignore
     metric_statements:
     - context: metric
@@ -837,9 +837,9 @@ service:
       - otlphttp/otlp
       processors:
       - transform/prometheus_0
-      - transform/prometheus_1
-      - metricstarttime/prometheus_2
-      - resource/prometheus_3
+      - resource/prometheus_1
+      - transform/prometheus_2
+      - metricstarttime/prometheus_3
       receivers:
       - prometheus/prometheus
   telemetry:
