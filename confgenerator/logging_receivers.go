@@ -569,27 +569,14 @@ func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.R
 		}
 		if r.RenderAsXML {
 			receiver_config["raw"] = true
-
-			body := ottl.LValue{"body"}
-			cacheBodyString := ottl.LValue{"cache", "__body_string"}
-			cacheBodyMap := ottl.LValue{"cache", "__body_map"}
-			bodyRawXML := ottl.LValue{"body", "raw_xml"}
-			p = []otel.Component{
-				otel.Transform(
-					"log", "log",
-					// Move "body" to "body.raw_xml" (jsonPayload.raw_xml)
-					ottl.NewStatements(
-						cacheBodyString.SetIf(body, body.IsString()),
-						cacheBodyMap.SetIf(body, body.IsMap()),
-						body.Set(ottl.RValue("{}")),
-						body.MergeMapsIf(cacheBodyMap, "upsert", cacheBodyMap.IsPresent()),
-						// Move "body" to "body.message" (jsonPayload.message)
-						bodyRawXML.SetIf(cacheBodyString, cacheBodyString.IsPresent()),
-						// Clear cache.
-						cacheBodyMap.Delete(),
-						cacheBodyString.Delete(),
-					),
-				),
+			// When "raw = true", the body contains the event original XML string.
+			receiver_config["operators"] = []map[string]any{
+				{
+					"id":   "body",
+					"type": "move",
+					"from": "body",
+					"to":   "body.raw_xml",
+				},
 			}
 		}
 		out = append(out, otel.ReceiverPipeline{
@@ -728,7 +715,7 @@ func (p LoggingProcessorWindowsEventLogV2) Components(ctx context.Context, tag, 
 func (p LoggingProcessorWindowsEventLogV2) Processors(ctx context.Context) ([]otel.Component, error) {
 	// TODO: Refactor LoggingReceiverWindowsEventLog into separate receiver and processor components for transformation tests.
 	// Should integrate the configuration for "ReceiverVersion" and "RenderAsXML".
-	return windowsEventLogV1Processors(ctx)
+	return windowsEventLogV2Processors(ctx)
 }
 
 func windowsEventLogV2Processors(ctx context.Context) ([]otel.Component, error) {
@@ -737,8 +724,8 @@ func windowsEventLogV2Processors(ctx context.Context) ([]otel.Component, error) 
 	p := &LoggingProcessorModifyFields{
 		EmptyBody: true,
 		Fields: map[string]*ModifyField{
-			"jsonPayload.Channel":      {CopyFrom: "jsonPayload.channel"},
-			"jsonPayload.ComputerName": {CopyFrom: "jsonPayload.computer"},
+			"jsonPayload.Channel":  {CopyFrom: "jsonPayload.channel"},
+			"jsonPayload.Computer": {CopyFrom: "jsonPayload.computer"},
 			"jsonPayload.Data": {
 				CopyFrom:     "jsonPayload.event_data.binary",
 				DefaultValue: &empty,
@@ -748,7 +735,8 @@ func windowsEventLogV2Processors(ctx context.Context) ([]otel.Component, error) 
 			},
 			// TODO: OTel puts the human-readable category at jsonPayload.task, but we need them to add the integer version.
 			//"jsonPayload.EventCategory": {StaticValue: "0", Type: "integer"},
-			"jsonPayload.EventID": {CopyFrom: "jsonPayload.event_id.id"},
+			"jsonPayload.EventID":       {CopyFrom: "jsonPayload.event_id.id"},
+			"jsonPayload.EventRecordID": {CopyFrom: "jsonPayload.record_id"},
 			"jsonPayload.EventType": {
 				CopyFrom: "jsonPayload.level",
 				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
@@ -770,14 +758,13 @@ func windowsEventLogV2Processors(ctx context.Context) ([]otel.Component, error) 
 				},
 			},
 			// TODO: Fix OTel receiver to provide raw non-parsed messages.
-			"jsonPayload.Message":      {CopyFrom: "jsonPayload.message"},
-			"jsonPayload.Qualifiers":   {CopyFrom: "jsonPayload.event_id.qualifiers"},
-			"jsonPayload.RecordNumber": {CopyFrom: "jsonPayload.record_id"},
-			"jsonPayload.Sid": {
+			"jsonPayload.Message":    {CopyFrom: "jsonPayload.message"},
+			"jsonPayload.Qualifiers": {CopyFrom: "jsonPayload.event_id.qualifiers"},
+			"jsonPayload.UserId": {
 				CopyFrom:     "jsonPayload.security.user_id",
 				DefaultValue: &empty,
 			},
-			"jsonPayload.SourceName": {
+			"jsonPayload.ProviderName": {
 				CopyFrom: "jsonPayload.provider.name",
 				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
 					// Prefer jsonPayload.provider.event_source if present and non-empty
@@ -800,11 +787,7 @@ func windowsEventLogV2Processors(ctx context.Context) ([]otel.Component, error) 
 					return v.Set(ottl.ToValues(v))
 				},
 			},
-			"jsonPayload.TimeGenerated": {
-				CopyFrom:          "jsonPayload.system_time",
-				CustomConvertFunc: formatSystemTime,
-			},
-			"jsonPayload.TimeWritten": {
+			"jsonPayload.TimeCreated": {
 				CopyFrom:          "jsonPayload.system_time",
 				CustomConvertFunc: formatSystemTime,
 			},
