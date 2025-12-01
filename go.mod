@@ -196,4 +196,4 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal => ./submodules/opentelemetry-operations-collector/integration_test/gce-testing-internal
+replace github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal => github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20251201231605-60086a05c04d
