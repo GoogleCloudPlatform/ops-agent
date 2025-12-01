@@ -705,3 +705,13 @@ func MetricUnknownCounter() Component {
 		"set(metric.name, Substring(metric.name, 0, Len(metric.name)-Len(\":unknowncounter\"))) where HasSuffix(metric.name, \":unknowncounter\")",
 	})
 }
+
+func Batch() Component {
+	return Component{
+		Type: "batch",
+		Config: map[string]interface{}{
+			"send_batch_size":     200,
+			"send_batch_max_size": 200,
+		},
+	}
+}
