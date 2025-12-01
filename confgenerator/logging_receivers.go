@@ -578,6 +578,8 @@ func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.R
 					"to":   "body.raw_xml",
 				},
 			}
+			// Not processors needed.
+			p = []otel.Component{}
 		}
 		out = append(out, otel.ReceiverPipeline{
 			Receiver: otel.Component{
@@ -620,7 +622,7 @@ func windowsEventLogV1Processors(ctx context.Context) ([]otel.Component, error) 
 	// The winlog input in fluent-bit has a completely different structure, so we need to convert the OTel format into the fluent-bit format.
 	var empty string
 	p := &LoggingProcessorModifyFields{
-		EmptyBody: true,
+		// EmptyBody: true,
 		Fields: map[string]*ModifyField{
 			"jsonPayload.Channel":      {CopyFrom: "jsonPayload.channel"},
 			"jsonPayload.ComputerName": {CopyFrom: "jsonPayload.computer"},
@@ -722,7 +724,7 @@ func windowsEventLogV2Processors(ctx context.Context) ([]otel.Component, error) 
 	// The winlog input in fluent-bit has a completely different structure, so we need to convert the OTel format into the fluent-bit format.
 	var empty string
 	p := &LoggingProcessorModifyFields{
-		EmptyBody: true,
+		// EmptyBody: true,
 		Fields: map[string]*ModifyField{
 			"jsonPayload.Channel":  {CopyFrom: "jsonPayload.channel"},
 			"jsonPayload.Computer": {CopyFrom: "jsonPayload.computer"},
