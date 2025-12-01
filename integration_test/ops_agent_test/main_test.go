@@ -1424,7 +1424,7 @@ func TestSyslogTCP(t *testing.T) {
 
 		// Verify the ingested log preserves the syslog rfc5424 format and no additional labels are added.
 		rfc5424LogQuery := `jsonPayload.message =~ "^<\d+>1 \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}) \S+ \S+ \S+ \S+ \[[^\]]+\] abcdefg$"`
-		logQuery := rfc5424LogQuery + `AND (NOT labels.message :*) AND (NOT labels.hostname :*) AND (NOT labels.priority :*)`
+		logQuery := rfc5424LogQuery + ` AND (NOT labels.message :*) AND (NOT labels.hostname :*) AND (NOT labels.priority :*)`
 		if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, logQuery); err != nil {
 			t.Error(err)
 		}
@@ -1475,7 +1475,7 @@ func TestSyslogUDP(t *testing.T) {
 
 		// Verify the ingested log preserves the syslog rfc5424 format and no additional labels are added.
 		rfc5424LogQuery := `jsonPayload.message =~ "^<\d+>1 \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}) \S+ \S+ \S+ \S+ \[[^\]]+\] abcdefg$"`
-		logQuery := rfc5424LogQuery + `AND (NOT labels.message :*) AND (NOT labels.hostname :*) AND (NOT labels.priority :*)`
+		logQuery := rfc5424LogQuery + ` AND (NOT labels.message :*) AND (NOT labels.hostname :*) AND (NOT labels.priority :*)`
 		if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, logQuery); err != nil {
 			t.Error(err)
 		}
