@@ -343,8 +343,8 @@ func (r LoggingReceiverSyslog) Pipelines(ctx context.Context) ([]otel.ReceiverPi
 				// Clear any possible parsed fields added to "attributes".
 				attributes.Set(ottl.RValue("{}")),
 				// Clear cache.
-				cacheBodyMap.DeleteIf(cacheBodyMap.IsPresent()),
-				cacheBodyString.DeleteIf(cacheBodyString.IsPresent()),
+				cacheBodyMap.Delete(),
+				cacheBodyString.Delete(),
 			),
 		),
 	}

@@ -751,8 +751,8 @@ processors:
       - merge_maps(body, cache["__body_map"], "upsert") where (cache != nil and cache["__body_map"] != nil)
       - set(body["message"], cache["__body_string"]) where (cache != nil and cache["__body_string"] != nil)
       - set(attributes, {})
-      - delete_key(cache, "__body_map") where ((cache != nil and cache["__body_map"] != nil) and (cache != nil and cache["__body_map"] != nil))
-      - delete_key(cache, "__body_string") where ((cache != nil and cache["__body_string"] != nil) and (cache != nil and cache["__body_string"] != nil))
+      - delete_key(cache, "__body_map") where (cache != nil and cache["__body_map"] != nil)
+      - delete_key(cache, "__body_string") where (cache != nil and cache["__body_string"] != nil)
   transform/test__syslog__source__id__tcp_1:
     error_mode: ignore
     log_statements:
@@ -793,8 +793,8 @@ processors:
       - merge_maps(body, cache["__body_map"], "upsert") where (cache != nil and cache["__body_map"] != nil)
       - set(body["message"], cache["__body_string"]) where (cache != nil and cache["__body_string"] != nil)
       - set(attributes, {})
-      - delete_key(cache, "__body_map") where ((cache != nil and cache["__body_map"] != nil) and (cache != nil and cache["__body_map"] != nil))
-      - delete_key(cache, "__body_string") where ((cache != nil and cache["__body_string"] != nil) and (cache != nil and cache["__body_string"] != nil))
+      - delete_key(cache, "__body_map") where (cache != nil and cache["__body_map"] != nil)
+      - delete_key(cache, "__body_string") where (cache != nil and cache["__body_string"] != nil)
   transform/test__syslog__source__id__udp_1:
     error_mode: ignore
     log_statements:
