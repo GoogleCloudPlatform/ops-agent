@@ -285,7 +285,9 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors() []otel.Component {
 		// DeltaToCumulative keeps in memory information of previous delta points
 		// to generate a valid cumulative monotonic metric.
 		otel.DeltaToCumulative(),
-    otel.MetricStartTime(),
+		otel.MetricStartTime(),
+		// Transfrom from double -> int64 after we apply the metricstarttime processor
+		// This prevents us from hitting b/
 		otel.MetricsTransform(
 			otel.UpdateMetric("agent/log_entry_retry_count",
 				// change data type from double -> int64
