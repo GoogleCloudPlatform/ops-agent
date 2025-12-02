@@ -33,7 +33,7 @@ func (r MetricsReceiverActiveDirectoryDS) Type() string {
 }
 
 func (r MetricsReceiverActiveDirectoryDS) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
-	return []otel.ReceiverPipeline{confgenerator.ConvertToOtlpExporter(otel.ReceiverPipeline{
+	return []otel.ReceiverPipeline{confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "active_directory_ds",
 			Config: map[string]interface{}{
