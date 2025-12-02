@@ -10,7 +10,7 @@ Write-Host "Using the timestamp server: '$timestamp_server'"
 # 1. Start with the specific manual files
 $files_to_process = @()
 
-# 2. Add all .exe and .dll files found in out/bin
+# 2. Add all .exe, .dll and .ps1 files found in out/bin
 if (Test-Path 'out/') {
     $bin_files = Get-ChildItem -Path 'out' -Recurse -Include *.exe, *.dll, *.ps1
     foreach ($file in $bin_files) {

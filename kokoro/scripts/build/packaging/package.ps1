@@ -82,16 +82,15 @@ $INPUT_DIR = $env:KOKORO_GFILE_DIR
 $OUTPUT_DIR = Join-Path $env:KOKORO_ARTIFACTS_DIR "result"
 
 # 4. Change Directory
-Write-Host "Changing directory to git/unified_agents..."
-$TargetDir = Join-Path (Get-Location) "git\unified_agents"
+$TargetDir = "git\unified_agents"
+Write-Host "Changing directory to $TargetDir..."
 
-if (Test-Path $TargetDir) {
-    Set-Location $TargetDir
-} else {
-    # Fallback if running relative to root already or path structure differs
-    if (Test-Path "git/unified_agents") { Set-Location "git/unified_agents" }
-    else { Throw "Could not find directory 'git/unified_agents'" }
+if (-not (Test-Path $TargetDir)) {
+    # Fail fast if the directory structure isn't what we expect
+    Throw "Error: Could not find directory '$TargetDir'. Current location is $(Get-Location)"
 }
+
+Set-Location $TargetDir
 
 # 5. Execute Core Build Logic (Function Call)
 Invoke-PackageBuild -Arch $Arch -InputDir $INPUT_DIR -OutputDir $OUTPUT_DIR
