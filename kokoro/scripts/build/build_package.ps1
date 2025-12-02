@@ -109,7 +109,7 @@ Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/google-cloud-ops-agent-plugin
 # So for Louhi, we will upload to an additional location
 if ($env:_LOUHI_REF_SHA -ne $null) {
   # Example format: gs://<project>-ops-agent-releases/2.46.0/abcdef/windows/x86_64/
-  $gcs_bucket="gs://${env:_STAGING_ARTIFACTS_PROJECT_ID}-ops-agent-releases/${env:_VERSION}/${env:_LOUHI_REF_SHA}/${env:_DISTRO}/${env:_ARCH}/"
+  $gcs_bucket="gs://${env:_STAGING_ARTIFACTS_PROJECT_ID}-ops-agent-releases/${env:_VERSION}/${env:_RELEASE_ID}/${env:_DISTRO}/${env:_ARCH}/"
   gsutil cp "$env:KOKORO_ARTIFACTS_DIR/result/*.goo"  "${gcs_bucket}"
   gsutil cp "$env:KOKORO_ARTIFACTS_DIR/result/google-cloud-ops-agent-plugin*.tar.gz"  "${gcs_bucket}"
   gsutil cp "$env:KOKORO_ARTIFACTS_DIR/result/google-cloud-ops-agent-plugin-sha256.txt"  "${gcs_bucket}"
