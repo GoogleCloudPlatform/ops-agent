@@ -1,0 +1,8 @@
+- type: parse_json
+  time_key: time
+  time_format: "%Y-%m-%dT%H:%M:%S.%L%z"
+- type: modify_fields
+  fields:
+    labels."log.record.original":
+      move_from: jsonPayload."log.record.original"
+- type: windows_event_log_raw_xml
