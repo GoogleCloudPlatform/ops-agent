@@ -137,7 +137,11 @@ func (r ReceiverOTLP) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, e
 
 	receiverPipelineType, metricsRDM, metricsProcessors := r.metricsProcessors(ctx)
 
-	return []otel.ReceiverPipeline{confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
+	converter := confgenerator.ConvertGCMOtelExporterToOtlpExporter
+	if r.MetricsMode != "googlecloudmonitoring" {
+		converter = confgenerator.ConvertPrometheusExporterToOtlpExporter
+	}
+	return []otel.ReceiverPipeline{converter(otel.ReceiverPipeline{
 		ExporterTypes: map[string]otel.ExporterType{
 			"metrics": receiverPipelineType,
 			"traces":  otel.OTel,
