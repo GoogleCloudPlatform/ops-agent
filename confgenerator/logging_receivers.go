@@ -590,7 +590,7 @@ func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.R
 	return out, nil
 }
 
-// LoggingProcessorWindowsEventLogV1 contains the processors for the ReceiverVersion=1.
+// LoggingProcessorWindowsEventLogV1 contains the otel logging processors for ReceiverVersion=1.
 type LoggingProcessorWindowsEventLogV1 struct {
 	ConfigComponent `yaml:",inline"`
 }
@@ -600,14 +600,11 @@ func (r LoggingProcessorWindowsEventLogV1) Type() string {
 }
 
 func (p LoggingProcessorWindowsEventLogV1) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	// TODO: Refactor LoggingReceiverWindowsEventLog into separate receiver and processor components for transformation tests.
-	// Should integrate the configuration for "ReceiverVersion" and "RenderAsXML".
+	// This processor is only intended for otel logging since fluent-bit "winlog" receiver generates a specific log structure.
 	return []fluentbit.Component{}
 }
 
 func (p LoggingProcessorWindowsEventLogV1) Processors(ctx context.Context) ([]otel.Component, error) {
-	// TODO: Refactor LoggingReceiverWindowsEventLog into separate receiver and processor components for transformation tests.
-	// Should integrate the configuration for "ReceiverVersion" and "RenderAsXML".
 	return windowsEventLogV1Processors(ctx)
 }
 
@@ -691,7 +688,7 @@ func windowsEventLogV1Processors(ctx context.Context) ([]otel.Component, error) 
 	return p.Processors(ctx)
 }
 
-// LoggingProcessorWindowsEventLogV2 contains the processors for the ReceiverVersion=2.
+// LoggingProcessorWindowsEventLogV2 contains the otel logging processors for ReceiverVersion=2.
 type LoggingProcessorWindowsEventLogV2 struct {
 	ConfigComponent `yaml:",inline"`
 }
@@ -701,14 +698,11 @@ func (r LoggingProcessorWindowsEventLogV2) Type() string {
 }
 
 func (p LoggingProcessorWindowsEventLogV2) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	// TODO: Refactor LoggingReceiverWindowsEventLog into separate receiver and processor components for transformation tests.
-	// Should integrate the configuration for "ReceiverVersion" and "RenderAsXML".
+	// This processor is only intended for otel logging since fluent-bit "winevtlog" receiver generates a specific log structure.
 	return []fluentbit.Component{}
 }
 
 func (p LoggingProcessorWindowsEventLogV2) Processors(ctx context.Context) ([]otel.Component, error) {
-	// TODO: Refactor LoggingReceiverWindowsEventLog into separate receiver and processor components for transformation tests.
-	// Should integrate the configuration for "ReceiverVersion" and "RenderAsXML".
 	return windowsEventLogV2Processors(ctx)
 }
 
@@ -767,7 +761,7 @@ func windowsEventLogV2Processors(ctx context.Context) ([]otel.Component, error) 
 	return p.Processors(ctx)
 }
 
-// LoggingProcessorWindowsEventLogRawXML contains the processors for the RenderAsXML=true.
+// LoggingProcessorWindowsEventLogRawXML contains the otel logging processors for RenderAsXML=true.
 type LoggingProcessorWindowsEventLogRawXML struct {
 	ConfigComponent `yaml:",inline"`
 }
@@ -777,14 +771,11 @@ func (r LoggingProcessorWindowsEventLogRawXML) Type() string {
 }
 
 func (p LoggingProcessorWindowsEventLogRawXML) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	// TODO: Refactor LoggingReceiverWindowsEventLog into separate receiver and processor components for transformation tests.
-	// Should integrate the configuration for "ReceiverVersion" and "RenderAsXML".
+	// This processor is only intended for otel logging since fluent-bit "winlog" receiver generates a specific log structure.
 	return []fluentbit.Component{}
 }
 
 func (p LoggingProcessorWindowsEventLogRawXML) Processors(ctx context.Context) ([]otel.Component, error) {
-	// TODO: Refactor LoggingReceiverWindowsEventLog into separate receiver and processor components for transformation tests.
-	// Should integrate the configuration for "ReceiverVersion" and "RenderAsXML".
 	return windowsEventLogRawXMLProcessors(ctx)
 }
 
