@@ -730,16 +730,12 @@ func windowsEventLogV2Processors(ctx context.Context) ([]otel.Component, error) 
 				Type:               "integer",
 				MapValuesExclusive: true,
 			},
-			"jsonPayload.Message":    {CopyFrom: "jsonPayload.message"},
-			"jsonPayload.Opcode":     {CopyFrom: "jsonPayload.opcode", Type: "integer"},
-			"jsonPayload.Qualifiers": {CopyFrom: "jsonPayload.event_id.qualifiers"},
-			"jsonPayload.UserId": {
-				CopyFrom:     "jsonPayload.security.user_id",
-				DefaultValue: &empty,
-			},
+			"jsonPayload.Message":      {CopyFrom: "jsonPayload.message"},
+			"jsonPayload.Opcode":       {CopyFrom: "jsonPayload.opcode", Type: "integer"},
 			"jsonPayload.ProcessID":    {CopyFrom: "jsonPayload.execution.process_id", Type: "integer"},
 			"jsonPayload.ProviderGuid": {CopyFrom: "jsonPayload.provider.guid"},
 			"jsonPayload.ProviderName": {CopyFrom: "jsonPayload.provider.name"},
+			"jsonPayload.Qualifiers":   {CopyFrom: "jsonPayload.event_id.qualifiers"},
 			"jsonPayload.StringInserts": {
 				CopyFrom: "jsonPayload.event_data",
 				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
@@ -758,6 +754,10 @@ func windowsEventLogV2Processors(ctx context.Context) ([]otel.Component, error) 
 			"jsonPayload.TimeCreated": {
 				CopyFrom:          "jsonPayload.system_time",
 				CustomConvertFunc: formatSystemTime,
+			},
+			"jsonPayload.UserId": {
+				CopyFrom:     "jsonPayload.security.user_id",
+				DefaultValue: &empty,
 			},
 		}}
 	return p.Processors(ctx)
