@@ -547,7 +547,6 @@ func (r LoggingReceiverWindowsEventLog) Components(ctx context.Context, tag stri
 }
 
 func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
-	// TODO: r.IsDefaultVersion() should use the old windows event log API, but the Collector doesn't have a receiver for that.
 	var out []otel.ReceiverPipeline
 	for _, c := range r.Channels {
 		receiver_config := map[string]any{
@@ -568,18 +567,12 @@ func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.R
 			}
 		}
 		if r.RenderAsXML {
-			receiver_config["raw"] = true
-			// When "raw = true", the body contains the event original XML string.
-			receiver_config["operators"] = []map[string]any{
-				{
-					"id":   "body",
-					"type": "move",
-					"from": "body",
-					"to":   "body.raw_xml",
-				},
+			receiver_config["include_log_record_original"] = true
+			// When "include_log_record_original = true", the event original XML string is set in `attributes."log.record.original"`.
+			p, err = windowsEventLogRawXMLProcessors(ctx)
+			if err != nil {
+				return nil, err
 			}
-			// Not processors needed.
-			p = []otel.Component{}
 		}
 		out = append(out, otel.ReceiverPipeline{
 			Receiver: otel.Component{
@@ -752,10 +745,10 @@ func windowsEventLogV2Processors(ctx context.Context) ([]otel.Component, error) 
 			"jsonPayload.ProviderGuid": {CopyFrom: "jsonPayload.provider.guid"},
 			"jsonPayload.ProviderName": {CopyFrom: "jsonPayload.provider.name"},
 			"jsonPayload.StringInserts": {
-				CopyFrom: "jsonPayload.event_data.data",
+				CopyFrom: "jsonPayload.event_data",
 				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
-					eventData := ottl.LValue{"body", "event_data", "data"}
-					eventBinary := ottl.LValue{"body", "event_data", "binary"}
+					eventData := ottl.LValue{v.String(), "data"}
+					eventBinary := ottl.LValue{v.String(), "binary"}
 					cacheEventData := ottl.LValue{"cache", "__event_data"}
 					return ottl.NewStatements(
 						cacheEventData.SetIf(ottl.ToValues(eventData), eventData.IsPresent()),
@@ -771,6 +764,55 @@ func windowsEventLogV2Processors(ctx context.Context) ([]otel.Component, error) 
 				CustomConvertFunc: formatSystemTime,
 			},
 		}}
+	return p.Processors(ctx)
+}
+
+// LoggingProcessorWindowsEventLogRawXML contains the processors for the RenderAsXML=true.
+type LoggingProcessorWindowsEventLogRawXML struct {
+	ConfigComponent `yaml:",inline"`
+}
+
+func (r LoggingProcessorWindowsEventLogRawXML) Type() string {
+	return "windows_event_log_raw_xml"
+}
+
+func (p LoggingProcessorWindowsEventLogRawXML) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
+	// TODO: Refactor LoggingReceiverWindowsEventLog into separate receiver and processor components for transformation tests.
+	// Should integrate the configuration for "ReceiverVersion" and "RenderAsXML".
+	return []fluentbit.Component{}
+}
+
+func (p LoggingProcessorWindowsEventLogRawXML) Processors(ctx context.Context) ([]otel.Component, error) {
+	// TODO: Refactor LoggingReceiverWindowsEventLog into separate receiver and processor components for transformation tests.
+	// Should integrate the configuration for "ReceiverVersion" and "RenderAsXML".
+	return windowsEventLogRawXMLProcessors(ctx)
+}
+
+func windowsEventLogRawXMLProcessors(ctx context.Context) ([]otel.Component, error) {
+	// When setting "Render_Event_As_XML = True" in fluent-bit winlog receiver, the resulting log contains
+	// the fields "Message", "System" (raw_xml) and "StringInserts". We replicate that structure in otel
+	// by setting `include_log_record_original: true` which sets `labels."log.record.original"` with the
+	// event original XML.
+	p := &LoggingProcessorModifyFields{
+		EmptyBody: true,
+		Fields: map[string]*ModifyField{
+			"jsonPayload.Message": {CopyFrom: "jsonPayload.message"},
+			`jsonPayload.raw_xml`: {MoveFrom: `labels."log.record.original"`},
+			"jsonPayload.StringInserts": {
+				CopyFrom: "jsonPayload.event_data",
+				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
+					eventData := ottl.LValue{v.String(), "data"}
+					eventBinary := ottl.LValue{v.String(), "binary"}
+					cacheEventData := ottl.LValue{"cache", "__event_data"}
+					return ottl.NewStatements(
+						cacheEventData.SetIf(ottl.ToValues(eventData), eventData.IsPresent()),
+						cacheEventData.AppendValuesIf(eventBinary, ottl.And(cacheEventData.IsPresent(), eventBinary.IsPresent())),
+						v.SetIf(cacheEventData, cacheEventData.IsPresent()),
+					)
+				},
+			},
+		},
+	}
 	return p.Processors(ctx)
 }
 
