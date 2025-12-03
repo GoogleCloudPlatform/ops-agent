@@ -1228,15 +1228,15 @@ receivers:
   windowseventlog/windows__event__log:
     channel: System
     poll_interval: 1s
-    start_at: end
+    start_at: beginning
   windowseventlog/windows__event__log_1:
     channel: Application
     poll_interval: 1s
-    start_at: end
+    start_at: beginning
   windowseventlog/windows__event__log_2:
     channel: Security
     poll_interval: 1s
-    start_at: end
+    start_at: beginning
   windowsperfcounters/iis:
     collection_interval: 60s
     perfcounters:

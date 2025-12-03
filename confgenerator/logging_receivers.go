@@ -603,7 +603,7 @@ func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.R
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/release/v0.136.x/receiver/windowseventlogreceiver
 		receiver_config := map[string]any{
 			"channel":       c,
-			"start_at":      "end",
+			"start_at":      "beginning",
 			"poll_interval": "1s",
 			// TODO: Configure storage
 		}
