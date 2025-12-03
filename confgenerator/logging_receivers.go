@@ -549,9 +549,10 @@ func (r LoggingReceiverWindowsEventLog) Components(ctx context.Context, tag stri
 func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	var out []otel.ReceiverPipeline
 	for _, c := range r.Channels {
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/release/v0.136.x/receiver/windowseventlogreceiver
 		receiver_config := map[string]any{
 			"channel":       c,
-			"start_at":      "beginning",
+			"start_at":      "end",
 			"poll_interval": "1s",
 			// TODO: Configure storage
 		}
@@ -609,7 +610,8 @@ func (p LoggingProcessorWindowsEventLogV1) Processors(ctx context.Context) ([]ot
 }
 
 func windowsEventLogV1Processors(ctx context.Context) ([]otel.Component, error) {
-	// The winlog input in fluent-bit has a completely different structure, so we need to convert the OTel format into the fluent-bit format.
+	// The winlog input in fluent-bit has a completely different structure.
+	// We need to convert the OTel format into the fluent-bit format.
 	var empty string
 	p := &LoggingProcessorModifyFields{
 		EmptyBody: true,
@@ -645,7 +647,6 @@ func windowsEventLogV1Processors(ctx context.Context) ([]otel.Component, error) 
 					)
 				},
 			},
-			// TODO: Fix OTel receiver to provide raw non-parsed messages.
 			"jsonPayload.Message":      {CopyFrom: "jsonPayload.message"},
 			"jsonPayload.Qualifiers":   {CopyFrom: "jsonPayload.event_id.qualifiers"},
 			"jsonPayload.RecordNumber": {CopyFrom: "jsonPayload.record_id"},
@@ -707,7 +708,8 @@ func (p LoggingProcessorWindowsEventLogV2) Processors(ctx context.Context) ([]ot
 }
 
 func windowsEventLogV2Processors(ctx context.Context) ([]otel.Component, error) {
-	// The winevtlog input in fluent-bit has a completely different structure, so we need to convert the OTel format into the fluent-bit format.
+	// The winevtlog input in fluent-bit has a completely different structure.
+	// We need to convert the OTel format into the fluent-bit format.
 	var empty string
 	p := &LoggingProcessorModifyFields{
 		EmptyBody: true,
