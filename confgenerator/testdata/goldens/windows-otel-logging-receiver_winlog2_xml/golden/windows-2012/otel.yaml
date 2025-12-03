@@ -1027,6 +1027,32 @@ processors:
     - context: log
       statements:
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["message"]) where (body != nil and body["message"] != nil)
+      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["__field_1"], body["event_data"]) where (body != nil and body["event_data"] != nil)
+      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["__field_2"], attributes["log.record.original"]) where (attributes != nil and attributes["log.record.original"] != nil)
+      - delete_key(attributes, "log.record.original") where (attributes != nil and attributes["log.record.original"] != nil)
+      - set(cache["body"], body)
+      - keep_keys(body, [])
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"])
+      - set(body["Message"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_1"])
+      - set(cache["__event_data"], ToValues(cache["value"]["data"])) where (cache["value"] != nil and cache["value"]["data"] != nil)
+      - append(cache["__event_data"], cache["value"]["binary"]) where ((cache != nil and cache["__event_data"] != nil) and (cache["value"] != nil and cache["value"]["binary"] != nil))
+      - set(cache["value"], cache["__event_data"]) where (cache != nil and cache["__event_data"] != nil)
+      - set(body["StringInserts"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_2"])
+      - set(body["raw_xml"], cache["value"]) where (cache != nil and cache["value"] != nil)
+  transform/winlog2_1:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
       - set(cache["__field_0"], attributes["compute.googleapis.com/instance_group_manager/name"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/name"] != nil)
       - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
       - set(cache["__field_1"], attributes["compute.googleapis.com/instance_group_manager/zone"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/zone"] != nil)
@@ -1051,6 +1077,32 @@ processors:
       - set(cache["value"], "winlog2") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/winlog2_1_0:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["message"]) where (body != nil and body["message"] != nil)
+      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["__field_1"], body["event_data"]) where (body != nil and body["event_data"] != nil)
+      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["__field_2"], attributes["log.record.original"]) where (attributes != nil and attributes["log.record.original"] != nil)
+      - delete_key(attributes, "log.record.original") where (attributes != nil and attributes["log.record.original"] != nil)
+      - set(cache["body"], body)
+      - keep_keys(body, [])
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"])
+      - set(body["Message"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_1"])
+      - set(cache["__event_data"], ToValues(cache["value"]["data"])) where (cache["value"] != nil and cache["value"]["data"] != nil)
+      - append(cache["__event_data"], cache["value"]["binary"]) where ((cache != nil and cache["__event_data"] != nil) and (cache["value"] != nil and cache["value"]["binary"] != nil))
+      - set(cache["value"], cache["__event_data"]) where (cache != nil and cache["__event_data"] != nil)
+      - set(body["StringInserts"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_2"])
+      - set(body["raw_xml"], cache["value"]) where (cache != nil and cache["value"] != nil)
+  transform/winlog2_1_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1132,23 +1184,13 @@ receivers:
     start_at: beginning
   windowseventlog/winlog2:
     channel: Application
-    operators:
-    - from: body
-      id: body
-      to: body.raw_xml
-      type: move
+    include_log_record_original: true
     poll_interval: 1s
-    raw: true
     start_at: beginning
   windowseventlog/winlog2_1:
     channel: System
-    operators:
-    - from: body
-      id: body
-      to: body.raw_xml
-      type: move
+    include_log_record_original: true
     poll_interval: 1s
-    raw: true
     start_at: beginning
   windowsperfcounters/iis:
     collection_interval: 60s
@@ -1216,6 +1258,7 @@ service:
       - googlecloud/otel
       processors:
       - transform/winlog2_0
+      - transform/winlog2_1
       - resourcedetection/_global_0
       receivers:
       - windowseventlog/winlog2
@@ -1224,6 +1267,7 @@ service:
       - googlecloud/otel
       processors:
       - transform/winlog2_1_0
+      - transform/winlog2_1_1
       - resourcedetection/_global_0
       receivers:
       - windowseventlog/winlog2_1
