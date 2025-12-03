@@ -622,7 +622,7 @@ func windowsEventLogV1Processors(ctx context.Context) ([]otel.Component, error) 
 	// The winlog input in fluent-bit has a completely different structure, so we need to convert the OTel format into the fluent-bit format.
 	var empty string
 	p := &LoggingProcessorModifyFields{
-		// EmptyBody: true,
+		EmptyBody: true,
 		Fields: map[string]*ModifyField{
 			"jsonPayload.Channel":      {CopyFrom: "jsonPayload.channel"},
 			"jsonPayload.ComputerName": {CopyFrom: "jsonPayload.computer"},
@@ -633,9 +633,8 @@ func windowsEventLogV1Processors(ctx context.Context) ([]otel.Component, error) 
 					return v.Set(ottl.ConvertCase(v, "lower"))
 				},
 			},
-			// TODO: OTel puts the human-readable category at jsonPayload.task, but we need them to add the integer version.
-			//"jsonPayload.EventCategory": {StaticValue: "0", Type: "integer"},
-			"jsonPayload.EventID": {CopyFrom: "jsonPayload.event_id.id"},
+			"jsonPayload.EventCategory": {CopyFrom: "jsonPayload.task", Type: "integer"},
+			"jsonPayload.EventID":       {CopyFrom: "jsonPayload.event_id.id"},
 			"jsonPayload.EventType": {
 				CopyFrom: "jsonPayload.level",
 				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
@@ -721,74 +720,52 @@ func (p LoggingProcessorWindowsEventLogV2) Processors(ctx context.Context) ([]ot
 }
 
 func windowsEventLogV2Processors(ctx context.Context) ([]otel.Component, error) {
-	// The winlog input in fluent-bit has a completely different structure, so we need to convert the OTel format into the fluent-bit format.
+	// The winevtlog input in fluent-bit has a completely different structure, so we need to convert the OTel format into the fluent-bit format.
 	var empty string
 	p := &LoggingProcessorModifyFields{
-		// EmptyBody: true,
+		EmptyBody: true,
 		Fields: map[string]*ModifyField{
-			"jsonPayload.Channel":  {CopyFrom: "jsonPayload.channel"},
-			"jsonPayload.Computer": {CopyFrom: "jsonPayload.computer"},
-			"jsonPayload.Data": {
-				CopyFrom:     "jsonPayload.event_data.binary",
-				DefaultValue: &empty,
-				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
-					return v.Set(ottl.ConvertCase(v, "lower"))
-				},
-			},
-			// TODO: OTel puts the human-readable category at jsonPayload.task, but we need them to add the integer version.
-			//"jsonPayload.EventCategory": {StaticValue: "0", Type: "integer"},
+			"jsonPayload.Channel":       {CopyFrom: "jsonPayload.channel"},
+			"jsonPayload.Computer":      {CopyFrom: "jsonPayload.computer"},
 			"jsonPayload.EventID":       {CopyFrom: "jsonPayload.event_id.id"},
 			"jsonPayload.EventRecordID": {CopyFrom: "jsonPayload.record_id"},
-			"jsonPayload.EventType": {
+			"jsonPayload.Keywords":      {CopyFrom: "jsonPayload.keywords"},
+			"jsonPayload.Level": {
 				CopyFrom: "jsonPayload.level",
-				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
-					// TODO: What if there are multiple keywords?
-					keywords := ottl.LValue{"cache", "body", "keywords"}
-					keyword0 := ottl.RValue(`cache["body"]["keywords"][0]`)
-					return ottl.NewStatements(
-						v.SetIf(ottl.StringLiteral("SuccessAudit"), ottl.And(
-							keywords.IsPresent(),
-							ottl.IsNotNil(keyword0),
-							ottl.Equals(keyword0, ottl.StringLiteral("Audit Success")),
-						)),
-						v.SetIf(ottl.StringLiteral("FailureAudit"), ottl.And(
-							keywords.IsPresent(),
-							ottl.IsNotNil(keyword0),
-							ottl.Equals(keyword0, ottl.StringLiteral("Audit Failure")),
-						)),
-					)
+				MapValues: map[string]string{
+					"Critical":    "1",
+					"Error":       "2",
+					"Warning":     "3",
+					"Information": "4",
 				},
+				Type:               "integer",
+				MapValuesExclusive: true,
 			},
-			// TODO: Fix OTel receiver to provide raw non-parsed messages.
 			"jsonPayload.Message":    {CopyFrom: "jsonPayload.message"},
+			"jsonPayload.Opcode":     {CopyFrom: "jsonPayload.opcode", Type: "integer"},
 			"jsonPayload.Qualifiers": {CopyFrom: "jsonPayload.event_id.qualifiers"},
 			"jsonPayload.UserId": {
 				CopyFrom:     "jsonPayload.security.user_id",
 				DefaultValue: &empty,
 			},
-			"jsonPayload.ProviderName": {
-				CopyFrom: "jsonPayload.provider.name",
-				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
-					// Prefer jsonPayload.provider.event_source if present and non-empty
-					eventSource := ottl.LValue{"cache", "body", "provider", "event_source"}
-					return v.SetIf(
-						eventSource,
-						ottl.And(
-							eventSource.IsPresent(),
-							ottl.Not(ottl.Equals(
-								eventSource,
-								ottl.StringLiteral(""),
-							)),
-						),
-					)
-				},
-			},
+			"jsonPayload.ProcessID":    {CopyFrom: "jsonPayload.execution.process_id", Type: "integer"},
+			"jsonPayload.ProviderGuid": {CopyFrom: "jsonPayload.provider.guid"},
+			"jsonPayload.ProviderName": {CopyFrom: "jsonPayload.provider.name"},
 			"jsonPayload.StringInserts": {
 				CopyFrom: "jsonPayload.event_data.data",
 				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
-					return v.Set(ottl.ToValues(v))
+					eventData := ottl.LValue{"body", "event_data", "data"}
+					eventBinary := ottl.LValue{"body", "event_data", "binary"}
+					cacheEventData := ottl.LValue{"cache", "__event_data"}
+					return ottl.NewStatements(
+						cacheEventData.SetIf(ottl.ToValues(eventData), eventData.IsPresent()),
+						cacheEventData.AppendValuesIf(eventBinary, ottl.And(cacheEventData.IsPresent(), eventBinary.IsPresent())),
+						v.SetIf(cacheEventData, cacheEventData.IsPresent()),
+					)
 				},
 			},
+			"jsonPayload.Task":     {CopyFrom: "jsonPayload.task", Type: "integer"},
+			"jsonPayload.ThreadId": {CopyFrom: "jsonPayload.execution.thread_id", Type: "integer"},
 			"jsonPayload.TimeCreated": {
 				CopyFrom:          "jsonPayload.system_time",
 				CustomConvertFunc: formatSystemTime,
