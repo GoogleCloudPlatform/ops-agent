@@ -137,7 +137,7 @@ func (r ReceiverOTLP) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, e
 
 	receiverPipelineType, metricsRDM, metricsProcessors := r.metricsProcessors(ctx)
 
-	return []otel.ReceiverPipeline{{
+	return []otel.ReceiverPipeline{confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
 		ExporterTypes: map[string]otel.ExporterType{
 			"metrics": receiverPipelineType,
 			"traces":  otel.OTel,
@@ -163,7 +163,7 @@ func (r ReceiverOTLP) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, e
 			"traces":  otel.SetIfMissing,
 			"logs":    otel.SetIfMissing,
 		},
-	}}, nil
+	}, ctx)}, nil
 }
 
 func init() {
