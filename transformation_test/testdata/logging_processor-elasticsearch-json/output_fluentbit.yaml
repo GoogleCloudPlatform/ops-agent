@@ -213,3 +213,21 @@
   resource:
     labels: {}
     type: gce_instance
+- entries:
+  - jsonPayload:
+      component: o.e.n.Node
+      level: INFO
+      message: invalid timestamp
+      node:
+        name: node-1
+      type: server
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/elasticsearch_json
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: now
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance
