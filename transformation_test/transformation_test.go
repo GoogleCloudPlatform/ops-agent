@@ -38,6 +38,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/set"
 	"github.com/goccy/go-yaml"
 	"github.com/google/go-cmp/cmp"
 	"github.com/shirou/gopsutil/host"
@@ -59,6 +60,13 @@ const (
 var (
 	flbPath        = flag.String("flb", os.Getenv("FLB"), "path to fluent-bit")
 	otelopscolPath = flag.String("otelopscol", os.Getenv("OTELOPSCOL"), "path to otelopscol")
+
+	multilineTests = set.FromSlice([]string{
+		"logging_processor-flink",
+		"logging_proceessor-elasticsearch-json",
+		"logging_processor-mysql-general",
+		"logging_processor-hbase-system",
+	})
 )
 
 type transformationTest []loggingProcessor
@@ -104,6 +112,11 @@ func TestTransformationTests(t *testing.T) {
 func (transformationConfig transformationTest) runFluentBitTest(t *testing.T, name string) {
 	ctx, cancel := context.WithCancel(testContext())
 	defer cancel()
+
+	if multilineTests.Contains(name) {
+		ctx = contextWithFlbMultilineTest(ctx)
+	}
+
 	// Generate config files
 	genFiles, err := generateFluentBitConfigs(ctx, name, transformationConfig)
 	if err != nil {
@@ -263,22 +276,29 @@ func generateFluentBitConfigs(ctx context.Context, name string, transformationTe
 		return nil, err
 	}
 
-	service := fluentbit.Component{
-		Kind: "SERVICE",
-		Config: map[string]string{
-			// The combination of Exit_On_Eof on a tail receiver with a multiline parser causes
-			// the last log in a file to be dropped. See :
-			// - https://github.com/fluent/fluent-bit/issues/8623
-			// - https://github.com/fluent/fluent-bit/issues/8353
-			// - https://github.com/fluent/fluent-bit/issues/3926
-			// Some attempts of a solution have been implemented :
-			// - https://github.com/fluent/fluent-bit/pull/8545
-			// On newer fluent-bit 4.0.x versions, last log in a file maybe (non-deterministically)
-			// dropped (~%85 retries) or sent (~15% retries) causing flaky tests.
-			// Set shutdown "Grace" period to 0s to avoid any unreliable logs to be sent after Exit_On_Eof.
-			// This forces the last log line from an multiline parser to always be dropped.
-			"Grace": "0",
-		},
+	components := []fluentbit.Component{}
+
+	if contextHasFlbMulttilineTest(ctx) {
+		service := fluentbit.Component{
+			Kind: "SERVICE",
+			Config: map[string]string{
+				// The combination of Exit_On_Eof on a tail receiver with a multiline parser causes
+				// the last log in a file to be dropped. See :
+				// - https://github.com/fluent/fluent-bit/issues/8623
+				// - https://github.com/fluent/fluent-bit/issues/8353
+				// - https://github.com/fluent/fluent-bit/issues/3926
+				// Some attempts of a solution have been implemented :
+				// - https://github.com/fluent/fluent-bit/pull/8545
+				// On newer fluent-bit 4.0.x versions, last log in a file maybe (non-deterministically)
+				// dropped (~%85 retries) or sent (~15% retries) causing flaky tests.
+				// Set shutdown "Grace" period to 0s to avoid any unreliable logs to be sent after Exit_On_Eof.
+				// This forces the last log line from an multiline parser to always be dropped.
+				"Grace": "0",
+				"Flush": "10",
+			},
+		}
+
+		components = append(components, service)
 	}
 
 	pi := transformationTest.pipelineInstance(abs)
@@ -305,7 +325,6 @@ func generateFluentBitConfigs(ctx context.Context, name string, transformationTe
 			"export_to_project_id":          "my-project",
 		},
 	}
-	components := []fluentbit.Component{service}
 	components = append(components, fbSource.Components...)
 	components = append(components, output)
 	return fluentbit.ModularConfig{
@@ -627,6 +646,16 @@ func sanitizeOtelStacktrace(t *testing.T, input string) string {
 
 	result = strings.ReplaceAll(result, "\t", "  ")
 	return result
+}
+
+const flbMultilineTestKey = "fluent_bit_long_flush"
+
+func contextWithFlbMultilineTest(ctx context.Context) context.Context {
+	return context.WithValue(ctx, flbMultilineTestKey, true)
+}
+
+func contextHasFlbMulttilineTest(ctx context.Context) bool {
+	return ctx.Value(flbMultilineTestKey) == true
 }
 
 func init() {
