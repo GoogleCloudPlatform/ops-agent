@@ -38,7 +38,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/set"
 	"github.com/goccy/go-yaml"
 	"github.com/google/go-cmp/cmp"
 	"github.com/shirou/gopsutil/host"
@@ -61,13 +60,39 @@ var (
 	flbPath        = flag.String("flb", os.Getenv("FLB"), "path to fluent-bit")
 	otelopscolPath = flag.String("otelopscol", os.Getenv("OTELOPSCOL"), "path to otelopscol")
 
-	multilineTests = set.FromSlice([]string{
-		"logging_processor-flink",
-		"logging_proceessor-elasticsearch-json",
-		"logging_processor-mysql-general",
-		"logging_processor-hbase-system",
+	multilineTestPatterns = newTestMatchPatterns([]string{
+		".*flink.*",
+		".*elasticsearch.*",
+		".*mysql.*",
+		".*hbase.*",
+		".*cassandra.*",
+		".*couchdb.*",
+		".*hadoop.*",
+		".*kafka.*",
+		".*postgresql.*",
+		".*rabbitmq.*",
+		".*wildfly.*",
+		".*zookeeper.*",
+		".*vault.*",
+		".*solr.*",
+		".*oracledb.*",
+		".*saphana.*",
 	})
 )
+
+func isMultilineTest(s string) bool {
+	return multilineTestPatterns.testMatch(s)
+}
+
+const flbMultilineTestKey = "fluent_bit_long_flush"
+
+func contextWithFlbMultilineTest(ctx context.Context) context.Context {
+	return context.WithValue(ctx, flbMultilineTestKey, true)
+}
+
+func contextHasFlbMulttilineTest(ctx context.Context) bool {
+	return ctx.Value(flbMultilineTestKey) == true
+}
 
 type transformationTest []loggingProcessor
 type loggingProcessor struct {
@@ -113,7 +138,7 @@ func (transformationConfig transformationTest) runFluentBitTest(t *testing.T, na
 	ctx, cancel := context.WithCancel(testContext())
 	defer cancel()
 
-	if multilineTests.Contains(name) {
+	if isMultilineTest(name) {
 		ctx = contextWithFlbMultilineTest(ctx)
 	}
 
@@ -648,14 +673,23 @@ func sanitizeOtelStacktrace(t *testing.T, input string) string {
 	return result
 }
 
-const flbMultilineTestKey = "fluent_bit_long_flush"
+type testMatchPatterns []*regexp.Regexp
 
-func contextWithFlbMultilineTest(ctx context.Context) context.Context {
-	return context.WithValue(ctx, flbMultilineTestKey, true)
+func newTestMatchPatterns(patterns []string) testMatchPatterns {
+	regexes := make([]*regexp.Regexp, 0, len(patterns))
+	for _, pattern := range patterns {
+		regexes = append(regexes, regexp.MustCompile(pattern))
+	}
+	return regexes
 }
 
-func contextHasFlbMulttilineTest(ctx context.Context) bool {
-	return ctx.Value(flbMultilineTestKey) == true
+func (t testMatchPatterns) testMatch(s string) bool {
+	for _, r := range t {
+		if r.MatchString(s) {
+			return true
+		}
+	}
+	return false
 }
 
 func init() {
