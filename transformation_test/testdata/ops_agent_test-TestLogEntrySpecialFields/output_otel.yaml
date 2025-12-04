@@ -17,7 +17,7 @@
       go.opentelemetry.io/collector/exporter/exporterhelper/internal.NewLogsRequest.newConsumeLogs.func1
         go.opentelemetry.io/collector/exporter/exporterhelper@v0.138.0/internal/new_request.go:70
       go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
-        go.opentelemetry.io/collector/consumer@v1.42.0/logs.go:27
+        go.opentelemetry.io/collector/consumer@v1.44.0/logs.go:27
       go.opentelemetry.io/collector/service/internal/refconsumer.refLogs.ConsumeLogs
         go.opentelemetry.io/collector/service@v0.138.0/internal/refconsumer/logs.go:29
       go.opentelemetry.io/collector/internal/fanoutconsumer.(*logsConsumer).ConsumeLogs
@@ -25,23 +25,23 @@
       go.opentelemetry.io/collector/processor/processorhelper.NewLogs.func1
         go.opentelemetry.io/collector/processor/processorhelper@v0.138.0/logs.go:71
       go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
-        go.opentelemetry.io/collector/consumer@v1.42.0/logs.go:27
+        go.opentelemetry.io/collector/consumer@v1.44.0/logs.go:27
       go.opentelemetry.io/collector/service/internal/refconsumer.refLogs.ConsumeLogs
         go.opentelemetry.io/collector/service@v0.138.0/internal/refconsumer/logs.go:29
       go.opentelemetry.io/collector/processor/processorhelper.NewLogs.func1
         go.opentelemetry.io/collector/processor/processorhelper@v0.138.0/logs.go:71
       go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
-        go.opentelemetry.io/collector/consumer@v1.42.0/logs.go:27
+        go.opentelemetry.io/collector/consumer@v1.44.0/logs.go:27
       go.opentelemetry.io/collector/service/internal/refconsumer.refLogs.ConsumeLogs
         go.opentelemetry.io/collector/service@v0.138.0/internal/refconsumer/logs.go:29
       go.opentelemetry.io/collector/processor/processorhelper.NewLogs.func1
         go.opentelemetry.io/collector/processor/processorhelper@v0.138.0/logs.go:71
       go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
-        go.opentelemetry.io/collector/consumer@v1.42.0/logs.go:27
+        go.opentelemetry.io/collector/consumer@v1.44.0/logs.go:27
       go.opentelemetry.io/collector/service/internal/refconsumer.refLogs.ConsumeLogs
         go.opentelemetry.io/collector/service@v0.138.0/internal/refconsumer/logs.go:29
       go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
-        go.opentelemetry.io/collector/consumer@v1.42.0/logs.go:27
+        go.opentelemetry.io/collector/consumer@v1.44.0/logs.go:27
       go.opentelemetry.io/collector/internal/fanoutconsumer.(*logsConsumer).ConsumeLogs
         go.opentelemetry.io/collector/internal/fanoutconsumer@v0.138.0/logs.go:62
       github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry.(*logsConsumer).ConsumeLogs
