@@ -75,17 +75,3 @@
   resource:
     labels: {}
     type: gce_instance
-- entries:
-  - jsonPayload:
-      command: Query
-      message: SELECT * FROM sessions WHERE active = 1;
-      tid: 22.0
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_general
-    logName: projects/my-project/logs/transformation_test
-    timestamp: 2025-07-22T16:00:09.901234000Z
-  partialSuccess: true
-  resource:
-    labels: {}
-    type: gce_instance

@@ -256,19 +256,3 @@
   resource:
     labels: {}
     type: gce_instance
-- entries:
-  - jsonPayload:
-      level: INFO
-      message: "master.HMaster: HMaster shutdown completed"
-      module: ShutdownHook
-      source: master.HMaster
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hbase_system
-    logName: projects/my-project/logs/transformation_test
-    severity: 200.0
-    timestamp: 2025-07-22T22:19:58.204000000Z
-  partialSuccess: true
-  resource:
-    labels: {}
-    type: gce_instance
