@@ -1366,14 +1366,17 @@ receivers:
           - 0.0.0.0:20201
   windowseventlog/windows__event__log:
     channel: System
+    ignore_channel_errors: true
     poll_interval: 1s
     start_at: beginning
   windowseventlog/windows__event__log_1:
     channel: Application
+    ignore_channel_errors: true
     poll_interval: 1s
     start_at: beginning
   windowseventlog/windows__event__log_2:
     channel: Security
+    ignore_channel_errors: true
     poll_interval: 1s
     start_at: beginning
   windowsperfcounters/iis:
