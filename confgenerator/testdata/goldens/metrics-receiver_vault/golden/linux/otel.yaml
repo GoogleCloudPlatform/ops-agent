@@ -437,7 +437,6 @@ processors:
       include: grpc.client.attempt.duration_count
       new_name: otel_request_count
       operations:
-      - action: toggle_scalar_data_type
       - action: update_label
         label: grpc.status
         new_label: response_code

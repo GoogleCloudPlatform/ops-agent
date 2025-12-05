@@ -237,8 +237,6 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors() []otel.Component {
 				otel.AggregateLabels("sum", "response_code"),
 			),
 			otel.RenameMetric("grpc.client.attempt.duration_count", "otel_request_count",
-				// change data type from double -> int64
-				otel.ToggleScalarDataType,
 				otel.RenameLabel("grpc.status", "response_code"),
 				otel.RenameLabelValues("response_code", grpcToHTTPStatus),
 				// delete grpc_client_method dimension & service.version label, retaining only response_code
