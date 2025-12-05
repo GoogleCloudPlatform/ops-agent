@@ -77,6 +77,7 @@ var (
 		".*solr.*",
 		".*oracledb.*",
 		".*saphana.*",
+		".*tomcat.*",
 	})
 )
 
