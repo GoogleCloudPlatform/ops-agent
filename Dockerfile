@@ -601,7 +601,11 @@ ARG OPENJDK_MAJOR_VERSION
 RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
+<<<<<<< HEAD
 		build-essential cmake bison flex file systemd-dev libsystemd-dev \
+=======
+		build-essential cmake bison flex file libsystemd-dev systemd-dev \
+>>>>>>> 52896294e (add missing libsystemd-dev from trixie)
 		devscripts cdbs pkg-config zip
 COPY --from=openjdk-install /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/ /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk
 ENV JAVA_HOME /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/
