@@ -291,6 +291,13 @@ func MetricsRemoveServiceAttributes() Component {
 	}
 }
 
+func MetricsRemoveInstrumentationLibraryLabelsAttributes() Component {
+	return TransformationMetrics(
+		SetScopeName(""),
+		SetScopeVersion(""),
+	)
+}
+
 func CopyHostIDToInstanceID() Component {
 	return Component{
 		Type: "transform",
@@ -697,4 +704,14 @@ func MetricUnknownCounter() Component {
 		// Delete the extra suffix once we are done.
 		"set(metric.name, Substring(metric.name, 0, Len(metric.name)-Len(\":unknowncounter\"))) where HasSuffix(metric.name, \":unknowncounter\")",
 	})
+}
+
+func Batch() Component {
+	return Component{
+		Type: "batch",
+		Config: map[string]interface{}{
+			"send_batch_size":     200,
+			"send_batch_max_size": 200,
+		},
+	}
 }
