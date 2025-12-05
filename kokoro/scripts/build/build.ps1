@@ -76,7 +76,7 @@ if ($env:KOKORO_JOB_TYPE -eq 'RELEASE') {
 }
 $cache_location="${artifact_registry}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:windows-${arch}${suffix}"
 Invoke-Program docker pull $cache_location
-Invoke-Program docker build --cache-from="${cache_location}" -t $tag -f './Dockerfile.windows' .
+Invoke-Program docker build --cache-from="${cache_location}" --build-arg PACKAGE="$env:PACKAGE" -t $tag -f './Dockerfile.windows' .
 Invoke-Program docker create --name $name $tag
 Invoke-Program docker cp "${name}:/work/out" $env:KOKORO_ARTIFACTS_DIR
 
@@ -93,15 +93,21 @@ if (($env:KOKORO_ROOT_JOB_TYPE -eq 'CONTINUOUS_INTEGRATION') -or ($env:KOKORO_JO
 # Copy the .goo file from $env:KOKORO_ARTIFACTS_DIR/out to $env:KOKORO_ARTIFACTS_DIR/result.
 # The .goo file is the installable package that is distributed to customers.
 New-Item -Path $env:KOKORO_ARTIFACTS_DIR -Name 'result' -ItemType 'directory'
-Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/*.goo" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
-# Copy the .pdb and .dll files from $env:KOKORO_ARTIFACTS_DIR/out/bin to $env:KOKORO_ARTIFACTS_DIR/result.
-# The .pdb and .dll files are saved so the team can use them in the event that we have to debug this Ops Agent build. 
-# They are not distributed to customers.
-Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/*.pdb" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
-Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/*.dll" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
 # Copy Ops Agent UAP Plugin tarball to the result directory.
 (Get-FileHash -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/google-cloud-ops-agent-plugin*.tar.gz" -Algorithm SHA256).Hash.ToLower() | Out-File -FilePath "$env:KOKORO_ARTIFACTS_DIR/result/google-cloud-ops-agent-plugin-sha256.txt" -Encoding ascii
 Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out/bin/google-cloud-ops-agent-plugin*.tar.gz" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
+
+Copy-Item -Path "$env:KOKORO_ARTIFACTS_DIR/out" -Destination "$env:KOKORO_ARTIFACTS_DIR/result" -Recurse
+
+# If presubmit packaging ran inside the container, move the .goo
+Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/result/out/*.goo" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
+
+# Copy the .pdb and .dll files from $env:KOKORO_ARTIFACTS_DIR/out/bin to $env:KOKORO_ARTIFACTS_DIR/result.
+# The .pdb and .dll files are saved so the team can use them in the event that we have to debug this Ops Agent build.
+# They are not distributed to customers.
+# .pdb files might not exist
+Move-Item -Path "$env:KOKORO_ARTIFACTS_DIR/result/out/bin/*.pdb" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
+Copy-Item -Path "$env:KOKORO_ARTIFACTS_DIR/result/out/bin/*.dll" -Destination "$env:KOKORO_ARTIFACTS_DIR/result"
 
 # If Kokoro is being triggered by Louhi, then Louhi needs to be able to
 # reconstruct the path where the artifacts are placed. Louhi does not have
