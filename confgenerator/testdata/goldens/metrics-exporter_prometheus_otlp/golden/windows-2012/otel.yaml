@@ -94,13 +94,15 @@ processors:
         - otelcol_process_memory_rss
         - grpc.client.attempt.duration_count
         - googlecloudmonitoring/point_count
-  interval/loggingmetrics_9:
+  interval/loggingmetrics_7:
     interval: 1m
-  metricstarttime/agent_prometheus_2:
+  metricstarttime/agent_prometheus_3:
     strategy: subtract_initial_point
-  metricstarttime/loggingmetrics_7:
+  metricstarttime/iis_5:
     strategy: subtract_initial_point
-  metricstarttime/ops_agent_2:
+  metricstarttime/mssql_3:
+    strategy: subtract_initial_point
+  metricstarttime/ops_agent_3:
     strategy: subtract_initial_point
   metricstarttime/prometheus_3:
     strategy: subtract_initial_point
@@ -431,18 +433,13 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/loggingmetrics_10:
-    transforms:
-    - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: agent.googleapis.com/$${1}
   metricstransform/loggingmetrics_3:
     transforms:
     - action: update
       include: fluentbit_stackdriver_retried_records_total
       new_name: fluentbit_log_entry_retry_count
       operations:
+      - action: toggle_scalar_data_type
       - action: update_label
         label: status
         new_label: response_code
@@ -454,6 +451,7 @@ processors:
       include: otelcol_exporter_send_failed_log_records
       new_name: otel_log_entry_retry_count
       operations:
+      - action: toggle_scalar_data_type
       - action: add_label
         new_label: response_code
         new_value: "400"
@@ -465,6 +463,7 @@ processors:
       include: fluentbit_stackdriver_requests_total
       new_name: fluentbit_request_count
       operations:
+      - action: toggle_scalar_data_type
       - action: update_label
         label: status
         new_label: response_code
@@ -476,6 +475,7 @@ processors:
       include: grpc.client.attempt.duration_count
       new_name: otel_request_count
       operations:
+      - action: toggle_scalar_data_type
       - action: update_label
         label: grpc.status
         new_label: response_code
@@ -524,6 +524,7 @@ processors:
       include: fluentbit_stackdriver_proc_records_total
       new_name: fluentbit_log_entry_count
       operations:
+      - action: toggle_scalar_data_type
       - action: update_label
         label: status
         new_label: response_code
@@ -535,6 +536,7 @@ processors:
       include: otelcol_exporter_sent_log_records
       new_name: otel_log_entry_count
       operations:
+      - action: toggle_scalar_data_type
       - action: add_label
         new_label: response_code
         new_value: "200"
@@ -546,6 +548,7 @@ processors:
       include: otelcol_exporter_send_failed_log_records
       new_name: otel_log_entry_count
       operations:
+      - action: toggle_scalar_data_type
       - action: add_label
         new_label: response_code
         new_value: "400"
@@ -566,17 +569,9 @@ processors:
   metricstransform/loggingmetrics_8:
     transforms:
     - action: update
-      include: agent/log_entry_retry_count
-      operations:
-      - action: toggle_scalar_data_type
-    - action: update
-      include: agent/request_count
-      operations:
-      - action: toggle_scalar_data_type
-    - action: update
-      include: agent/log_entry_count
-      operations:
-      - action: toggle_scalar_data_type
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: agent.googleapis.com/$${1}
   metricstransform/mssql_0:
     transforms:
     - action: update
@@ -681,7 +676,7 @@ processors:
       - delete_key(resource.attributes, "service.instance.id")
       - delete_key(resource.attributes, "server.port")
       - delete_key(resource.attributes, "url.scheme")
-  transform/agent_prometheus_3:
+  transform/agent_prometheus_2:
     metric_statements:
     - context: scope
       statements:
@@ -726,7 +721,7 @@ processors:
     - context: datapoint
       statements:
       - set(time, Now())
-  transform/ops_agent_3:
+  transform/ops_agent_2:
     metric_statements:
     - context: scope
       statements:
@@ -908,6 +903,7 @@ service:
       - normalizesums/iis_2
       - transform/iis_3
       - resource/iis_4
+      - metricstarttime/iis_5
       - filter/default__pipeline_iis_0
       - resourcedetection/_global_0
       - transform/_global_0
@@ -920,6 +916,7 @@ service:
       - metricstransform/mssql_0
       - transform/mssql_1
       - resource/mssql_2
+      - metricstarttime/mssql_3
       - filter/default__pipeline_mssql_0
       - resourcedetection/_global_0
       - transform/_global_0
@@ -931,8 +928,8 @@ service:
       processors:
       - transform/agent_prometheus_0
       - resource/agent_prometheus_1
-      - metricstarttime/agent_prometheus_2
-      - transform/agent_prometheus_3
+      - transform/agent_prometheus_2
+      - metricstarttime/agent_prometheus_3
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
       - resourcedetection/_global_0
@@ -945,8 +942,8 @@ service:
       processors:
       - transform/agent_prometheus_0
       - resource/agent_prometheus_1
-      - metricstarttime/agent_prometheus_2
-      - transform/agent_prometheus_3
+      - transform/agent_prometheus_2
+      - metricstarttime/agent_prometheus_3
       - transform/loggingmetrics_0
       - filter/loggingmetrics_1
       - filter/loggingmetrics_2
@@ -954,10 +951,8 @@ service:
       - cumulativetodelta/loggingmetrics_4
       - transform/loggingmetrics_5
       - deltatocumulative/loggingmetrics_6
-      - metricstarttime/loggingmetrics_7
+      - interval/loggingmetrics_7
       - metricstransform/loggingmetrics_8
-      - interval/loggingmetrics_9
-      - metricstransform/loggingmetrics_10
       - resourcedetection/_global_0
       - transform/_global_0
       receivers:
@@ -968,8 +963,8 @@ service:
       processors:
       - transform/ops_agent_0
       - resource/ops_agent_1
-      - metricstarttime/ops_agent_2
-      - transform/ops_agent_3
+      - transform/ops_agent_2
+      - metricstarttime/ops_agent_3
       - resourcedetection/_global_0
       - transform/_global_0
       receivers:
@@ -980,8 +975,8 @@ service:
       processors:
       - transform/agent_prometheus_0
       - resource/agent_prometheus_1
-      - metricstarttime/agent_prometheus_2
-      - transform/agent_prometheus_3
+      - transform/agent_prometheus_2
+      - metricstarttime/agent_prometheus_3
       - transform/otel_0
       - filter/otel_1
       - filter/otel_2
