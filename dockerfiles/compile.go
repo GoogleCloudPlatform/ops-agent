@@ -148,11 +148,7 @@ var dockerfileArguments = []templateArguments{
 		install_packages: `RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-<<<<<<< HEAD
 		build-essential cmake bison flex file systemd-dev libsystemd-dev \
-=======
-		build-essential cmake bison flex file libsystemd-dev systemd-dev \
->>>>>>> 52896294e (add missing libsystemd-dev from trixie)
 		devscripts cdbs pkg-config zip` + installJava,
 		package_build:     "RUN ./pkg/deb/build.sh",
 		tar_distro_name:   "debian-trixie",
