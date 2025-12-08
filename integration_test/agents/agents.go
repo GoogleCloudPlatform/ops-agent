@@ -895,6 +895,9 @@ func StartOpsAgentViaUAPCommand(imageSpec string, config string) string {
 		grpcurlExecutable = `C:\grpcurl.exe`
 	}
 	if len(config) > 0 {
+		if gce.IsWindows(imageSpec) {
+			return fmt.Sprintf("echo '{%s}' | %s -plaintext -d \"@\" localhost:1234 plugin_comm.GuestAgentPlugin/Start", config, grpcurlExecutable)
+		}
 		return fmt.Sprintf("%s -plaintext -d '{%s}' localhost:1234 plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable, config)
 	}
 	return fmt.Sprintf("%s -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable)
@@ -1132,44 +1135,48 @@ func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm
 // Packages with "dbgsym" in their name are skipped because customers don't
 // generally install those, so our tests shouldn't either.
 func InstallPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, gcsPath string) error {
-	if gce.IsWindows(vm.ImageSpec) {
-		return installWindowsPackageFromGCS(ctx, logger, vm, gcsPath)
-	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, "mkdir -p /tmp/agentUpload /tmp/agentPlugin"); err != nil {
-		return err
-	}
-	if err := gce.InstallGsutilIfNeeded(ctx, logger, vm); err != nil {
-		return err
-	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, "sudo gsutil cp -r "+gcsPath+"/* /tmp/agentUpload"); err != nil {
-		return fmt.Errorf("error copying down agent package from GCS: %v", err)
-	}
-	// Print the contents of /tmp/agentUpload into the logs.
-	if _, err := gce.RunRemotely(ctx, logger, vm, "ls /tmp/agentUpload"); err != nil {
-		return err
-	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, "rm /tmp/agentUpload/*dbgsym* || echo nothing to delete"); err != nil {
-		return err
-	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, "mv /tmp/agentUpload/*.tar.gz /tmp/agentPlugin || echo nothing to move"); err != nil {
-		return err
-	}
-	if IsRPMBased(vm.ImageSpec) {
-		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo rpm --upgrade -v --force /tmp/agentUpload/*"); err != nil {
-			return fmt.Errorf("error installing agent from .rpm file: %v", err)
+	tryInstallPackageFromGCS := func() error {
+		if gce.IsWindows(vm.ImageSpec) {
+			return installWindowsPackageFromGCS(ctx, logger, vm, gcsPath)
+		}
+		if _, err := gce.RunRemotely(ctx, logger, vm, "mkdir -p /tmp/agentUpload /tmp/agentPlugin"); err != nil {
+			return err
+		}
+		if err := gce.InstallGsutilIfNeeded(ctx, logger, vm); err != nil {
+			return err
+		}
+		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo gsutil cp -r "+gcsPath+"/* /tmp/agentUpload"); err != nil {
+			return fmt.Errorf("error copying down agent package from GCS: %v", err)
+		}
+		// Print the contents of /tmp/agentUpload into the logs.
+		if _, err := gce.RunRemotely(ctx, logger, vm, "ls /tmp/agentUpload"); err != nil {
+			return err
+		}
+		if _, err := gce.RunRemotely(ctx, logger, vm, "rm /tmp/agentUpload/*dbgsym* || echo nothing to delete"); err != nil {
+			return err
+		}
+		if _, err := gce.RunRemotely(ctx, logger, vm, "mv -f /tmp/agentUpload/*.tar.gz /tmp/agentPlugin || echo nothing to move"); err != nil {
+			return err
+		}
+		if IsRPMBased(vm.ImageSpec) {
+			if _, err := gce.RunRemotely(ctx, logger, vm, "sudo rpm --upgrade -v --force /tmp/agentUpload/*"); err != nil {
+				return fmt.Errorf("error installing agent from .rpm file: %v", err)
+			}
+			return nil
+		}
+		// --allow-downgrades is marked as dangerous, but I don't see another way
+		// to get the following sequence to work (from TestUpgradeOpsAgent):
+		// 1. install stable package from Rapture
+		// 2. install just-built package from GCS
+		// Nor do I know why apt considers that sequence to be a downgrade.
+		// Setting DPkg::Lock::Timeout=600 to wait while other apt command may be executing.
+		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo apt-get -o DPkg::Lock::Timeout=600 install --allow-downgrades --yes --verbose-versions /tmp/agentUpload/*"); err != nil {
+			return fmt.Errorf("error installing agent from .deb file: %v", err)
 		}
 		return nil
 	}
-	// --allow-downgrades is marked as dangerous, but I don't see another way
-	// to get the following sequence to work (from TestUpgradeOpsAgent):
-	// 1. install stable package from Rapture
-	// 2. install just-built package from GCS
-	// Nor do I know why apt considers that sequence to be a downgrade.
-	// Setting DPkg::Lock::Timeout=600 to wait while other apt command may be executing.
-	if _, err := gce.RunRemotely(ctx, logger, vm, "sudo apt-get -o DPkg::Lock::Timeout=600 install --allow-downgrades --yes --verbose-versions /tmp/agentUpload/*"); err != nil {
-		return fmt.Errorf("error installing agent from .deb file: %v", err)
-	}
-	return nil
+	backoffPolicy := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(30*time.Second), 3), ctx)
+	return backoff.Retry(tryInstallPackageFromGCS, backoffPolicy)
 }
 
 // Installs the agent package from GCS (see packagesInGCS) onto the given Windows VM.

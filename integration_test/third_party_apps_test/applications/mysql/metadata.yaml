@@ -35,9 +35,15 @@ platforms_to_skip:
   # MySQL is not currently supported on various distros.
   - debian-cloud:debian-12
   - debian-cloud:debian-12-arm64
+  - debian-cloud:debian-13
+  - debian-cloud:debian-13-arm64
   - suse-cloud:sles-12
   - suse-cloud:sles-15-arm64
   - suse-sap-cloud:sles-12-sp5-sap
+  - ubuntu-os-cloud:ubuntu-2504-amd64 # MySQL is not available on Ubuntu 25.04 yet: https://screenshot.googleplex.com/7TvAef4GqUCpWct 
+  - ubuntu-os-cloud:ubuntu-2504-arm64 # MySQL is not available on Ubuntu 25.04 yet
+  - ubuntu-os-cloud:ubuntu-2510-amd64 # MySQL is not available on Ubuntu 25.10 yet
+  - ubuntu-os-cloud:ubuntu-2510-arm64 # MySQL is not available on Ubuntu 25.10 yet
 supported_app_version: ["5.7", "8.0"]
 expected_metrics:
   - type: workload.googleapis.com/mysql.buffer_pool_data_pages

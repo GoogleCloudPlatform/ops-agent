@@ -33,11 +33,12 @@ func (MetricsReceiverFlink) Type() string {
 
 const defaultFlinkEndpoint = "http://localhost:8081"
 
-func (r MetricsReceiverFlink) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (r MetricsReceiverFlink) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultFlinkEndpoint
 	}
-	return []otel.ReceiverPipeline{{
+
+	return []otel.ReceiverPipeline{confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "flinkmetrics",
 			Config: map[string]interface{}{
@@ -64,8 +65,9 @@ func (r MetricsReceiverFlink) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
 				otel.SetScopeVersion("1.0"),
 			),
+			otel.MetricsRemoveServiceAttributes(),
 		}},
-	}}, nil
+	}, ctx)}, nil
 }
 
 func init() {

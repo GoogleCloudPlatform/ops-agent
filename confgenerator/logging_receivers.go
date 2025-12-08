@@ -200,18 +200,19 @@ func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) [
 func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	operators := []map[string]any{}
 	receiver_config := map[string]any{
-		"include":           r.IncludePaths,
-		"exclude":           r.ExcludePaths,
-		"start_at":          "beginning",
-		"include_file_name": false,
+		"include":                       r.IncludePaths,
+		"exclude":                       r.ExcludePaths,
+		"start_at":                      "beginning",
+		"include_file_name":             false,
+		"preserve_leading_whitespaces":  true,
+		"preserve_trailing_whitespaces": true,
 	}
 	if i := r.WildcardRefreshInterval; i != nil {
 		receiver_config["poll_interval"] = i.String()
 	}
 	// TODO: Configure `storage` to store file checkpoints
-	// TODO: Configure multiline rules
 	if len(r.MultilineRules) > 0 {
-		return nil, fmt.Errorf("multiline rules are not supported in otel")
+		return nil, fmt.Errorf("setting multiline rules in otel filelog receiver is not supported")
 	}
 	// TODO: Support BufferInMemory
 	// OTel parses the log to `body` by default; put it in a `message` field to match fluent-bit's behavior.
@@ -317,6 +318,57 @@ func (r LoggingReceiverSyslog) Components(ctx context.Context, tag string) []flu
 			"Regex":  `^(?<message>.*)$`,
 		},
 	}}
+}
+
+func (r LoggingReceiverSyslog) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
+	body := ottl.LValue{"body"}
+	bodyMessage := ottl.LValue{"body", "message"}
+	cacheBodyString := ottl.LValue{"cache", "__body_string"}
+	cacheBodyMap := ottl.LValue{"cache", "__body_map"}
+	attributes := ottl.LValue{"attributes"}
+
+	processors := []otel.Component{
+		otel.Transform(
+			"log", "log",
+			// Transformations required to convert "syslogreceiver" output to the expected ops agent "syslog" LogEntry format.
+			ottl.NewStatements(
+				// "syslogreceiver" sets the incoming log as "body" of type "string".
+				cacheBodyString.SetIf(body, body.IsString()),
+				// Preserve any existing fields in "body" just in case.
+				cacheBodyMap.SetIf(body, body.IsMap()),
+				body.Set(ottl.RValue("{}")),
+				body.MergeMapsIf(cacheBodyMap, "upsert", cacheBodyMap.IsPresent()),
+				// Move "body" to "body.message" (jsonPayload.message)
+				bodyMessage.SetIf(cacheBodyString, cacheBodyString.IsPresent()),
+				// Clear any possible parsed fields added to "attributes".
+				attributes.Set(ottl.RValue("{}")),
+				// Clear cache.
+				cacheBodyMap.Delete(),
+				cacheBodyString.Delete(),
+			),
+		),
+	}
+
+	config := map[string]any{
+		r.TransportProtocol: map[string]any{
+			"listen_address": fmt.Sprintf("%s:%d", r.ListenHost, r.ListenPort),
+		},
+		"protocol": "rfc5424",
+	}
+
+	return []otel.ReceiverPipeline{{
+		Receiver: otel.Component{
+			Type:   "syslog",
+			Config: config,
+		},
+		Processors: map[string][]otel.Component{
+			"logs": processors,
+		},
+
+		ExporterTypes: map[string]otel.ExporterType{
+			"logs": otel.OTel,
+		},
+	}}, nil
 }
 
 func init() {

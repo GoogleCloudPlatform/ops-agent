@@ -31,8 +31,8 @@ func (r MetricsReceiverActiveDirectoryDS) Type() string {
 	return "active_directory_ds"
 }
 
-func (r MetricsReceiverActiveDirectoryDS) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
-	return []otel.ReceiverPipeline{{
+func (r MetricsReceiverActiveDirectoryDS) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
+	return []otel.ReceiverPipeline{confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "active_directory_ds",
 			Config: map[string]interface{}{
@@ -48,8 +48,9 @@ func (r MetricsReceiverActiveDirectoryDS) Pipelines(_ context.Context) ([]otel.R
 				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
 				otel.SetScopeVersion("1.0"),
 			),
+			otel.MetricsRemoveServiceAttributes(),
 		}},
-	}}, nil
+	}, ctx)}, nil
 }
 
 func init() {

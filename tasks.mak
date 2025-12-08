@@ -41,7 +41,7 @@ build:
 	DOCKER_BUILDKIT=1 docker build -o /tmp/google-cloud-ops-agent . $(ARGS)
 
 .PHONY: rebuild_submodules
-rebuild_submodules: fluent_bit_local otelopscol_local
+rebuild_submodules: clean_submodules fluent_bit_local otelopscol_local
 
 .PHONY: fluent_bit_local
 fluent_bit_local: dist/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit
@@ -49,6 +49,10 @@ fluent_bit_local: dist/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluen
 SKIP_JAVA ?= true
 .PHONY: otelopscol_local
 otelopscol_local: dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol
+
+.PHONY: clean_submodules
+clean_submodules:
+	rm -rf dist
 
 ############
 # Tools
@@ -144,30 +148,45 @@ transformation_test_update: transformation_test
 # these targets. The Makefile will not ascribe defaults for these, since they
 # are specific to different user environments.
 #
-# Defaults are provided for ZONES and PLATFORMS.
+# Defaults are provided for ZONES and IMAGE_SPECS.
 #
 # If you would like to use a custom build you can provide a REPO_SUFFIX or
 # AGENT_PACKAGES_IN_GCS. These targets function fine without either specified.
+#
+# INTEGRATION_TEST_FILTER gets passed directly to -test.run, and lets you
+# specify which integration tests to run. All tests run by default.
+#
+# THIRD_PARTY_APPS lets you specify which apps to run. All apps run by default.
+#
+# THIRD_PARTY_APPS_ENDPOINT controls which endpoint to use and defaults to
+# googlecloudmonitoring. Allowed values are googlecloudmonitoring, otlphttp,
+# or both using (googlecloudmonitoring|otlphttp).
+
 ZONES ?= us-central1-b
-PLATFORMS ?= debian-cloud:debian-11
+IMAGE_SPECS ?= debian-cloud:debian-11
+INTEGRATION_TEST_FILTER ?= '.*'
+THIRD_PARTY_APPS ?= '.*'
+THIRD_PARTY_APPS_ENDPOINT ?= googlecloudmonitoring
 
 .PHONY: integration_tests
 integration_tests:
 	ZONES="${ZONES}" \
-	PLATFORMS="${PLATFORMS}" \
+	IMAGE_SPECS="${IMAGE_SPECS}" \
 	go test -v ./integration_test/ops_agent_test/main_test.go \
-	-test.parallel=1000 \
+	-parallel=1000 \
 	-tags=integration_test \
-	-timeout=4h
+	-timeout=4h \
+	-run="${INTEGRATION_TEST_FILTER}"
 
 .PHONY: third_party_apps_test
 third_party_apps_test:
 	ZONES="${ZONES}" \
-	PLATFORMS="${PLATFORMS}" \
+	IMAGE_SPECS="${IMAGE_SPECS}" \
 	go test -v ./integration_test/third_party_apps_test/main_test.go \
-	-test.parallel=1000 \
+	-parallel=1000 \
 	-tags=integration_test \
-	-timeout=4h
+	-timeout=4h \
+	-run="TestThirdPartyApps/.*/${THIRD_PARTY_APPS_ENDPOINT}/${THIRD_PARTY_APPS}"
 
 ############
 # Precommit

@@ -146,6 +146,14 @@ func (a LValue) IsPresent() Value {
 	return And(conditions...)
 }
 
+func (a LValue) IsMap() Value {
+	return valuef(`IsMap(%s)`, a)
+}
+
+func (a LValue) IsString() Value {
+	return valuef(`IsString(%s)`, a)
+}
+
 func ToString(a Value) Value {
 	return valuef(`Concat([%s], "")`, a)
 }
@@ -168,8 +176,8 @@ func ParseJSON(a Value) Value {
 	return valuef(`ParseJSON(%s)`, a)
 }
 
-func ExtractPatternsRubyRegex(a Value, pattern string) Value {
-	return valuef(`ExtractPatternsRubyRegex(%s, %q)`, a, pattern)
+func ExtractPatternsRubyRegex(a Value, pattern string, omitEmptyValues bool) Value {
+	return valuef(`ExtractPatternsRubyRegex(%s, %q, %v)`, a, pattern, omitEmptyValues)
 }
 
 func ConvertCase(a Value, toCase string) Value {
@@ -186,6 +194,10 @@ func ToValues(a Value) Value {
 
 func IsMatch(target Value, pattern string) Value {
 	return valuef(`IsMatch(%s, %q)`, target, pattern)
+}
+
+func IsMatchRubyRegex(target Value, pattern string) Value {
+	return valuef(`IsMatchRubyRegex(%s, %q)`, target, pattern)
 }
 
 func Equals(a, b Value) Value {
@@ -238,6 +250,17 @@ func (a LValue) SetToBool(b Value) Statements {
 		statementf(`set(%s, true) where %s == "true"`, a, b),
 		statementf(`set(%s, false) where %s == "false"`, a, b),
 	)
+	return out
+}
+
+func (a LValue) SetToYesNoBoolean(b Value) Statements {
+	cache := LValue{"cache", "__yes_no_bool"}
+	out := Statements{
+		statementf(`set(%s, true) where (%s and %s == "Yes")`, cache, IsNotNil(b), b),
+		statementf(`set(%s, false) where (%s and %s != "Yes")`, cache, IsNotNil(b), b),
+	}
+	out = out.Append(a.SetIf(cache, cache.IsPresent()))
+	out = out.Append(cache.Delete())
 	return out
 }
 

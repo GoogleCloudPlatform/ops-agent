@@ -46,7 +46,7 @@ func (r MetricsReceiverMongoDB) Type() string {
 	return "mongodb"
 }
 
-func (r MetricsReceiverMongoDB) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (r MetricsReceiverMongoDB) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	transport := "tcp"
 	if r.Endpoint == "" {
 		r.Endpoint = defaultMongodbEndpoint
@@ -72,7 +72,7 @@ func (r MetricsReceiverMongoDB) Pipelines(_ context.Context) ([]otel.ReceiverPip
 		config["tls"] = r.TLSConfig(false)
 	}
 
-	return []otel.ReceiverPipeline{{
+	return []otel.ReceiverPipeline{confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type:   r.Type(),
 			Config: config,
@@ -86,8 +86,9 @@ func (r MetricsReceiverMongoDB) Pipelines(_ context.Context) ([]otel.ReceiverPip
 				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
 				otel.SetScopeVersion("1.0"),
 			),
+			otel.MetricsRemoveServiceAttributes(),
 		}},
-	}}, nil
+	}, ctx)}, nil
 }
 
 func init() {
