@@ -1153,12 +1153,12 @@ logging:
 		// httpRequest field is tested by TestHTTPRequestLog(); covers the rest
 		// of the specfial fields here
 		line := `{"logging.googleapis.com/severity": "WARNING", ` +
-				`"logging.googleapis.com/labels": {"label1":"value1", "label2":"value2"}, ` +
-				`"logging.googleapis.com/operation": {"id": "id", "producer": "producer", "first": true, "last": true}, ` +
-				`"logging.googleapis.com/sourceLocation": {"file": "file", "line": "1", "function": "function"}, ` +
-				`"logging.googleapis.com/trace":"trace", ` +
-				`"logging.googleapis.com/spanId":"spanId", ` +
-				`"normal_field": "value"}` + "\n"
+			`"logging.googleapis.com/labels": {"label1":"value1", "label2":"value2"}, ` +
+			`"logging.googleapis.com/operation": {"id": "id", "producer": "producer", "first": true, "last": true}, ` +
+			`"logging.googleapis.com/sourceLocation": {"file": "file", "line": "1", "function": "function"}, ` +
+			`"logging.googleapis.com/trace":"trace", ` +
+			`"logging.googleapis.com/spanId":"spanId", ` +
+			`"normal_field": "value"}` + "\n"
 		if err := gce.UploadContent(ctx, logger.ToMainLog(), vm, strings.NewReader(line), file1); err != nil {
 			t.Fatalf("error uploading log: %v", err)
 		}
@@ -1167,12 +1167,12 @@ logging:
 		// level of the LogEntry and the rest to jsonPayload
 		if err := gce.WaitForLog(ctx, logger.ToMainLog(), vm, "f1", time.Hour,
 			`severity="WARNING" AND `+
-					`labels.label1="value1" AND labels.label2="value2" AND `+
-					`operation.id="id" AND operation.producer="producer" AND operation.first=true AND operation.last=true AND `+
-					`sourceLocation.file="file" AND sourceLocation.line="1" AND sourceLocation.function="function" AND `+
-					`trace="trace" AND `+
-					`spanId="spanId" AND `+
-					`jsonPayload.normal_field="value"`); err != nil {
+				`labels.label1="value1" AND labels.label2="value2" AND `+
+				`operation.id="id" AND operation.producer="producer" AND operation.first=true AND operation.last=true AND `+
+				`sourceLocation.file="file" AND sourceLocation.line="1" AND sourceLocation.function="function" AND `+
+				`trace="trace" AND `+
+				`spanId="spanId" AND `+
+				`jsonPayload.normal_field="value"`); err != nil {
 			t.Error(err)
 		}
 	})
@@ -1994,12 +1994,12 @@ func startFluentBitBackgroundPipe(ctx context.Context, logger *log.Logger, vm *g
 	Format json`
 
 	fluentBitArgs := "-i tail" +
-			" -p buffer_chunk_size=512k" +
-			" -p buffer_max_size=512k" +
-			" -p path=" + remoteFile
+		" -p buffer_chunk_size=512k" +
+		" -p buffer_max_size=512k" +
+		" -p path=" + remoteFile
 	if parseInputAsJSON {
 		fluentBitArgs += " -p parser=json" +
-				" -R " + parserFile
+			" -R " + parserFile
 	}
 	fluentBitArgs += " " + outputConfig
 
@@ -2396,9 +2396,9 @@ func TestWindowsEventLogV2(t *testing.T) {
 				t.Fatal(err)
 			}
 			if len(jsonMap) != 3 ||
-					!hasKeyWithValueType[string](jsonMap, "Message") ||
-					!hasKeyWithValueType[[]any](jsonMap, "StringInserts") ||
-					!hasKeyWithValueType[string](jsonMap, "raw_xml") {
+				!hasKeyWithValueType[string](jsonMap, "Message") ||
+				!hasKeyWithValueType[[]any](jsonMap, "StringInserts") ||
+				!hasKeyWithValueType[string](jsonMap, "raw_xml") {
 				t.Fatalf("expected exactly 3 fields in jsonPayload (Message, StringInserts, raw_xml): jsonPayload=%+v", jsonMap)
 			}
 			rawXml := jsonMap["raw_xml"].(string)
@@ -4551,7 +4551,7 @@ func TestUpgradeOpsAgent(t *testing.T) {
 			// Installation from stable may fail before the first release on
 			// a newly supported distro.
 			if strings.HasPrefix(err.Error(), "InstallOpsAgent() failed to run googet") ||
-					strings.HasPrefix(err.Error(), "InstallOpsAgent() error running repo script") {
+				strings.HasPrefix(err.Error(), "InstallOpsAgent() error running repo script") {
 				t.Skipf("Installing stable agent failed with error %v; assuming first release.", err)
 			}
 			t.Fatal(err)
