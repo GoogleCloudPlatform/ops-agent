@@ -36,7 +36,7 @@
       type: gce_instance
     timestamp: now
   - jsonPayload:
-      message: "2023-01-15T10:33:18.345678Z INFO Active Directory Web Services: Certificate renewal completed successfully for domain controller DC01"
+      message: "2023-01-15T10:33:18.345678Z INFO Active Directory Web Services: Certificate renewal completed successfully for domain controller DC01 "
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/active_directory_ds
