@@ -220,7 +220,7 @@
     timestamp: now
   partialSuccess: true
 - collector_errors:
-  - caller: ottl@v0.136.0/parser.go:410
+  - caller: ottl@v0.138.0/parser.go:410
     error: "parsing time \"2025-08-18 01:01:20.441571+00:00\" as \"%Y-%m-%d %H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
     level: warn
     msg: failed to execute statement
@@ -231,9 +231,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.136.0
+      service.version: v0.138.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%d %H:%M:%S.%L%z") != nil)
-  - caller: ottl@v0.136.0/parser.go:410
+  - caller: ottl@v0.138.0/parser.go:410
     error: "parsing time \"2025-08-18 01:05:10.000123+02:00\" as \"%Y-%m-%d %H:%M:%S.%L%z\": cannot parse \"+02:00\" as \"%z\""
     level: warn
     msg: failed to execute statement
@@ -244,9 +244,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.136.0
+      service.version: v0.138.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%d %H:%M:%S.%L%z") != nil)
-  - caller: ottl@v0.136.0/parser.go:410
+  - caller: ottl@v0.138.0/parser.go:410
     error: "parsing time \"2025-08-18 02:15:45.987+00:00\" as \"%Y-%m-%d %H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
     level: warn
     msg: failed to execute statement
@@ -257,9 +257,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.136.0
+      service.version: v0.138.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%d %H:%M:%S.%L%z") != nil)
-  - caller: ottl@v0.136.0/parser.go:410
+  - caller: ottl@v0.138.0/parser.go:410
     error: "parsing time \"2025-08-18 02:16:01.001+00:00\" as \"%Y-%m-%d %H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
     level: warn
     msg: failed to execute statement
@@ -270,9 +270,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.136.0
+      service.version: v0.138.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%d %H:%M:%S.%L%z") != nil)
-  - caller: ottl@v0.136.0/parser.go:410
+  - caller: ottl@v0.138.0/parser.go:410
     error: "parsing time \"2025-08-18 02:22:33.444+00:00\" as \"%Y-%m-%d %H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
     level: warn
     msg: failed to execute statement
@@ -283,9 +283,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.136.0
+      service.version: v0.138.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%d %H:%M:%S.%L%z") != nil)
-  - caller: ottl@v0.136.0/parser.go:410
+  - caller: ottl@v0.138.0/parser.go:410
     error: "parsing time \"2025-08-18 02:23:00.999+00:00\" as \"%Y-%m-%d %H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
     level: warn
     msg: failed to execute statement
@@ -296,9 +296,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.136.0
+      service.version: v0.138.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%d %H:%M:%S.%L%z") != nil)
-  - caller: ottl@v0.136.0/parser.go:410
+  - caller: ottl@v0.138.0/parser.go:410
     error: "parsing time \"2025-08-18 02:55:55.123+00:00\" as \"%Y-%m-%d %H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
     level: warn
     msg: failed to execute statement
@@ -309,9 +309,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.136.0
+      service.version: v0.138.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%d %H:%M:%S.%L%z") != nil)
-  - caller: ottl@v0.136.0/parser.go:410
+  - caller: ottl@v0.138.0/parser.go:410
     error: "parsing time \"2025-08-18 03:56:01.456+00:00\" as \"%Y-%m-%d %H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
     level: warn
     msg: failed to execute statement
@@ -322,9 +322,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.136.0
+      service.version: v0.138.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%d %H:%M:%S.%L%z") != nil)
-  - caller: ottl@v0.136.0/parser.go:410
+  - caller: ottl@v0.138.0/parser.go:410
     error: "parsing time \"2025-08-18 04:06:06.789+00:00\" as \"%Y-%m-%d %H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
     level: warn
     msg: failed to execute statement
@@ -335,9 +335,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.136.0
+      service.version: v0.138.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%d %H:%M:%S.%L%z") != nil)
-  - caller: ottl@v0.136.0/parser.go:410
+  - caller: ottl@v0.138.0/parser.go:410
     error: "parsing time \"2025-08-18 04:06:10.101+00:00\" as \"%Y-%m-%d %H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
     level: warn
     msg: failed to execute statement
@@ -348,5 +348,5 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.136.0
+      service.version: v0.138.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%d %H:%M:%S.%L%z") != nil)
