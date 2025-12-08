@@ -74,7 +74,6 @@ func (p LoggingProcessorMacroActiveDirectoryDS) Expand(ctx context.Context) []co
 }
 
 type LoggingReceiverMacroActiveDirectoryDS struct {
-	confgenerator.ConfigComponent          `yaml:",inline"`
 	LoggingProcessorMacroActiveDirectoryDS `yaml:",inline"`
 }
 
@@ -89,8 +88,7 @@ func (r LoggingReceiverMacroActiveDirectoryDS) Expand(ctx context.Context) (conf
 }
 
 func init() {
-	// TODO: Add windows platform param once the IIS PR is merged
-	confgenerator.RegisterLoggingReceiverMacro[LoggingReceiverMacroActiveDirectoryDS](func() LoggingReceiverMacroActiveDirectoryDS {
+	confgenerator.RegisterLoggingReceiverMacro(func() LoggingReceiverMacroActiveDirectoryDS {
 		return LoggingReceiverMacroActiveDirectoryDS{}
 	}, platform.Windows)
 }
