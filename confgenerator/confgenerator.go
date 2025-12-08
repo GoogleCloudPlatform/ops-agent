@@ -89,7 +89,6 @@ func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, 
 		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricUnknownCounter())
 
 	}
-	pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricStartTime())
 	return pipeline
 }
 
@@ -311,6 +310,14 @@ func (p PipelineInstance) OTelComponents(ctx context.Context) (map[string]otel.R
 			receiverPipeline.Processors["logs"] = append(
 				processors,
 				otelSetLogNameComponents(ctx, p.RID)...,
+			)
+		}
+
+		expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
+		if processors, ok := receiverPipeline.Processors["metrics"]; ok && expOtlpExporter {
+			receiverPipeline.Processors["metrics"] = append(
+				processors,
+				otel.MetricStartTime(),
 			)
 		}
 
