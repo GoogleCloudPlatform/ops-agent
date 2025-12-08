@@ -74,9 +74,8 @@ func (p LoggingProcessorMacroActiveDirectoryDS) Expand(ctx context.Context) []co
 }
 
 type LoggingReceiverMacroActiveDirectoryDS struct {
-	confgenerator.ConfigComponent                `yaml:",inline"`
-	confgenerator.LoggingReceiverWindowsEventLog `yaml:",inline"`
-	LoggingProcessorMacroActiveDirectoryDS       `yaml:",inline"`
+	confgenerator.ConfigComponent          `yaml:",inline"`
+	LoggingProcessorMacroActiveDirectoryDS `yaml:",inline"`
 }
 
 func (r LoggingReceiverMacroActiveDirectoryDS) Type() string {
@@ -84,13 +83,14 @@ func (r LoggingReceiverMacroActiveDirectoryDS) Type() string {
 }
 
 func (r LoggingReceiverMacroActiveDirectoryDS) Expand(ctx context.Context) (confgenerator.InternalLoggingReceiver, []confgenerator.InternalLoggingProcessor) {
-	r.Channels = []string{"Directory Service", "Active Directory Web Services"}
-	return &r.LoggingReceiverWindowsEventLog, r.LoggingProcessorMacroActiveDirectoryDS.Expand(ctx)
+	return &confgenerator.LoggingReceiverWindowsEventLog{
+		Channels: []string{"Directory Service", "Active Directory Web Services"},
+	}, r.LoggingProcessorMacroActiveDirectoryDS.Expand(ctx)
 }
 
 func init() {
 	// TODO: Add windows platform param once the IIS PR is merged
 	confgenerator.RegisterLoggingReceiverMacro[LoggingReceiverMacroActiveDirectoryDS](func() LoggingReceiverMacroActiveDirectoryDS {
 		return LoggingReceiverMacroActiveDirectoryDS{}
-	})
+	}, platform.Windows)
 }
