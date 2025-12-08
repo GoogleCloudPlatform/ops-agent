@@ -57,6 +57,10 @@ func googleCloudExporter(userAgent string, instrumentationLabels bool, serviceRe
 	}
 }
 
+func otelSetOtlpExporterComponents() []otel.Component {
+	return []otel.Component{otel.MetricStartTime()}
+}
+
 func ConvertPrometheusExporterToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
 	return ConvertToOtlpExporter(pipeline, ctx, true, false)
 }
@@ -317,7 +321,7 @@ func (p PipelineInstance) OTelComponents(ctx context.Context) (map[string]otel.R
 		if processors, ok := receiverPipeline.Processors["metrics"]; ok && expOtlpExporter {
 			receiverPipeline.Processors["metrics"] = append(
 				processors,
-				otel.MetricStartTime(),
+				otelSetOtlpExporterComponents()...,
 			)
 		}
 
