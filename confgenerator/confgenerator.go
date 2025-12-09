@@ -57,6 +57,34 @@ func googleCloudExporter(userAgent string, instrumentationLabels bool, serviceRe
 	}
 }
 
+func ConvertPrometheusExporterToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
+	return ConvertToOtlpExporter(receiver, ctx, true)
+}
+
+func ConvertGCMOtelExporterToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
+	return ConvertToOtlpExporter(receiver, ctx, false)
+}
+
+func ConvertToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context, isPrometheus bool) otel.ReceiverPipeline {
+	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
+	resource, _ := platform.FromContext(ctx).GetResource()
+	if !expOtlpExporter {
+		return receiver
+	}
+	_, err := receiver.ExporterTypes["metrics"]
+	if !err {
+		return receiver
+	}
+	receiver.ExporterTypes["metrics"] = otel.OTLP
+
+	receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.GCPProjectID(resource.ProjectName()))
+	if isPrometheus {
+		receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.MetricUnknownCounter())
+		receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.MetricStartTime())
+	}
+	return receiver
+}
+
 func otlpExporter(userAgent string) otel.Component {
 	return otel.Component{
 		Type: "otlphttp",
@@ -115,9 +143,9 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 	}
 	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines)
 
-	exp_otlp_exporter := experimentsFromContext(ctx)["otlp_exporter"]
+	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
 	extensions := map[string]interface{}{}
-	if exp_otlp_exporter {
+	if expOtlpExporter {
 		extensions["googleclientauth"] = map[string]interface{}{}
 	}
 
@@ -132,7 +160,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 			otel.GMP:    googleManagedPrometheusExporter(userAgent),
 			otel.OTLP:   otlpExporter(userAgent),
 		},
-	}.Generate(ctx)
+	}.Generate(ctx, expOtlpExporter)
 	if err != nil {
 		return "", err
 	}

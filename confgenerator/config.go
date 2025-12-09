@@ -702,7 +702,7 @@ func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, proces
 	if err != nil {
 		return nil, fmt.Errorf("failed to discover the location of the JMX metrics exporter: %w", err)
 	}
-
+	ctx := context.Background()
 	config := map[string]interface{}{
 		"target_system":       targetSystem,
 		"collection_interval": m.CollectionIntervalString(),
@@ -723,13 +723,13 @@ func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, proces
 		config["password"] = secretPassword
 	}
 
-	return []otel.ReceiverPipeline{{
+	return []otel.ReceiverPipeline{ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type:   "jmx",
 			Config: config,
 		},
 		Processors: map[string][]otel.Component{"metrics": processors},
-	}}, nil
+	}, ctx)}, nil
 }
 
 type MetricsReceiverSharedCollectJVM struct {
