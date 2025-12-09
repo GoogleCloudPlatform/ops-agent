@@ -98,6 +98,13 @@ Invoke-PackageBuild -Arch $Arch -InputDir $INPUT_DIR -OutputDir $OUTPUT_DIR
 # 6. Upload Artifacts
 Write-Host "Uploading artifacts..."
 
+# Workaround for a known issue where Windows containers cannot reach the GCP Metadata server.
+# see b/467401022 for details.
+Write-Host "Applying Network Routing Fix..."
+$gateway = (Get-NetRoute | Where-Object { $_.DestinationPrefix -eq '0.0.0.0/0' } | Sort-Object RouteMetric | Select-Object -ExpandProperty NextHop -First 1)
+$ifIndex = (Get-NetAdapter -InterfaceDescription "Hyper-V Virtual Ethernet*" | Sort-Object | Select-Object -ExpandProperty ifIndex -First 1)
+New-NetRoute -DestinationPrefix 169.254.169.254/32 -InterfaceIndex $ifIndex -NextHop $gateway -ErrorAction SilentlyContinue
+
 # Construct GCS Bucket URL
 $GcsBucket = "gs://$($env:_STAGING_ARTIFACTS_PROJECT_ID)-ops-agent-releases/$Ver/$Ref/$Target/$Arch/"
 
