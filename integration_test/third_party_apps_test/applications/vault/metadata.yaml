@@ -68,16 +68,13 @@ configure_integration: |-
   ```
 supported_operating_systems: linux
 platforms_to_skip:
-<<<<<<< HEAD
   # hashicorp repo not available for rh10
   - rocky-linux-cloud:rocky-linux-10
   - rocky-linux-cloud:rocky-linux-10-optimized-gcp
   - rocky-linux-cloud:rocky-linux-10-arm64
   - rocky-linux-cloud:rocky-linux-10-optimized-gcp-arm64
-=======
   - ubuntu-os-cloud:ubuntu-2510-amd64 # vault not available for 25.10 yet: https://www.hashicorp.com/en/official-packaging-guide
   - ubuntu-os-cloud:ubuntu-2510-arm64 # vault not available for 25.10 yet: https://www.hashicorp.com/en/official-packaging-guide
->>>>>>> master
 supported_app_version: ["1.6+"]
 expected_metrics:
   - type: workload.googleapis.com/vault.core.request.count
