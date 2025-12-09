@@ -56,7 +56,7 @@ function Invoke-PackageBuild {
     Write-Host "Package process complete. Output at: ${OutputDir}"
 }
 
-# New wrapper function to handle gcloud calls and error checking
+# Wrapper function to handle gcloud calls and error checking
 function Upload-Artifact {
     param(
         [Parameter(Mandatory=$true)]
