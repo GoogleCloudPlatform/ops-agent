@@ -2184,7 +2184,8 @@ func TestFluentForwardLog(t *testing.T) {
 
 		// Verify a large structured log that's reasonably close to the limit of 256 KB.
 		largeLog := fmt.Sprintf(`{"large":"start%send"}`, strings.Repeat("a", 250_000))
-		if err = writeLinesToRemoteFile(ctx, logger, vm, imageSpec, pipePath, largeLog); err != nil {
+		normalLog := `{"message":"some message", "field1":"value", "field2":"value" }`
+		if err = writeLinesToRemoteFile(ctx, logger, vm, imageSpec, pipePath, largeLog, normalLog); err != nil {
 			t.Fatalf("Error writing dummy TCP log line: %v", err)
 		}
 
@@ -2192,21 +2193,7 @@ func TestFluentForwardLog(t *testing.T) {
 			t.Error(err)
 		}
 
-		normalLog := `{"message":"some message", "field1":"value", "field2":"value" }`
-		if err = writeLinesToRemoteFile(ctx, logger, vm, imageSpec, pipePath, normalLog); err != nil {
-			t.Fatalf("Error writing dummy TCP log line: %v", err)
-		}
-
 		if err = gce.WaitForLog(ctx, logger, vm, "fluent_logs.forwarder_tag", time.Hour, `jsonPayload.message="some message" AND jsonPayload.field1="value" AND jsonPayload.field2="value"`); err != nil {
-			t.Error(err)
-		}
-
-		anotherLog := `{"log":"some message", "field3":"value", "field4":"value" }`
-		if err = writeLinesToRemoteFile(ctx, logger, vm, imageSpec, pipePath, anotherLog); err != nil {
-			t.Fatalf("Error writing dummy TCP log line: %v", err)
-		}
-
-		if err = gce.WaitForLog(ctx, logger, vm, "fluent_logs.forwarder_tag", time.Hour, `jsonPayload.log="some message" AND jsonPayload.field3="value" AND jsonPayload.field4="value"`); err != nil {
 			t.Error(err)
 		}
 	})
