@@ -61,23 +61,23 @@ var (
 	otelopscolPath = flag.String("otelopscol", os.Getenv("OTELOPSCOL"), "path to otelopscol")
 
 	multilineTestPatterns = newTestMatchPatterns([]string{
-		".*flink.*",
-		".*elasticsearch.*",
-		".*mysql.*",
-		".*hbase.*",
 		".*cassandra.*",
 		".*couchdb.*",
+		".*elasticsearch.*",
+		".*flink.*",
 		".*hadoop.*",
+		".*hbase.*",
 		".*kafka.*",
+		".*mysql.*",
+		".*oracledb.*",
 		".*postgresql.*",
 		".*rabbitmq.*",
+		".*saphana.*",
+		".*solr.*",
+		".*tomcat.*",
+		".*vault.*",
 		".*wildfly.*",
 		".*zookeeper.*",
-		".*vault.*",
-		".*solr.*",
-		".*oracledb.*",
-		".*saphana.*",
-		".*tomcat.*",
 	})
 )
 
@@ -317,8 +317,14 @@ func generateFluentBitConfigs(ctx context.Context, name string, transformationTe
 				// - https://github.com/fluent/fluent-bit/pull/8545
 				// On newer fluent-bit 4.0.x versions, last log in a file maybe (non-deterministically)
 				// dropped (~%85 retries) or sent (~15% retries) causing flaky tests.
+
 				// Set shutdown "Grace" period to 0s to avoid any unreliable logs to be sent after Exit_On_Eof.
-				// This forces the last log line from an multiline parser to always be dropped.
+				// Set the "Flush" time to 10s, which fixes a race condition in multiline tests that
+				// would sometimes perform a final flush and cause the last line to appear.
+				// (Started in Fluent Bit 4.0.13)
+				//
+				// These settings in combination forces the last log line from any multiline parser
+				// to always be dropped.
 				"Grace": "0",
 				"Flush": "10",
 			},
