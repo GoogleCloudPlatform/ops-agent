@@ -137,12 +137,12 @@ func (s MetricsReceiverSapHana) Type() string {
 	return "saphana"
 }
 
-func (s MetricsReceiverSapHana) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (s MetricsReceiverSapHana) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	if s.Endpoint == "" {
 		s.Endpoint = defaultSapHanaEndpoint
 	}
 
-	return []otel.ReceiverPipeline{{
+	return []otel.ReceiverPipeline{confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "saphana",
 			Config: map[string]interface{}{
@@ -170,7 +170,7 @@ func (s MetricsReceiverSapHana) Pipelines(_ context.Context) ([]otel.ReceiverPip
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
-	}}, nil
+	}, ctx)}, nil
 }
 
 func init() {

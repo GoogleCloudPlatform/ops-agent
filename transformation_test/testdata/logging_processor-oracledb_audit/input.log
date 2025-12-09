@@ -1,0 +1,38 @@
+Wed Sep 14 16:18:03 2022 +00:00
+LENGTH : '623'
+ACTION :[373] 'select distinct 'ALTER SYSTEM KILL SESSION ''' || stat.sid || ',' ||
+			sess.serial# ||
+			decode(substr(inst.version, 1, 4),
+					'12.1', ''' immediate ', ''' force timeout 0 ') ||
+			'-- process 73841'
+FROM SYS.V$mystat stat, v$session sess, v$instance inst
+where stat.sid=sess.sid
+union all
+select '/' from dual'
+DATABASE USER:[1] '/'
+PRIVILEGE :[6] 'SYSDBA'
+CLIENT USER:[6] 'oracle'
+CLIENT TERMINAL:[5] 'pts/1'
+STATUS:[1] '0'
+DBID:[10] '1643176521'
+SESSIONID:[10] '4294967295'
+USERHOST:[7] 'oradb19'
+CLIENT ADDRESS:[0] ''
+ACTION NUMBER:[1] '3'
+Thu Oct 05 09:25:17 2022 +00:00
+LENGTH : '145'
+ACTION :[47] 'CREATE TABLE employees (
+    emp_id NUMBER PRIMARY KEY,
+    emp_name VARCHAR2(100),
+    dept_id NUMBER
+)'
+DATABASE USER:[8] 'HR_ADMIN'
+PRIVILEGE :[7] 'CONNECT'
+CLIENT USER:[8] 'hr_admin'
+CLIENT TERMINAL:[6] 'pts/2'
+STATUS:[1] '0'
+DBID:[10] '1643176521'
+SESSIONID:[10] '4294967296'
+USERHOST:[9] 'hrserver'
+CLIENT ADDRESS:[12] '192.168.1.45'
+ACTION NUMBER:[1] '1'

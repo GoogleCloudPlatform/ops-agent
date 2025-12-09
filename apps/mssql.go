@@ -34,9 +34,9 @@ func (MetricsReceiverMssql) Type() string {
 	return "mssql"
 }
 
-func (m MetricsReceiverMssql) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (m MetricsReceiverMssql) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	if m.ReceiverVersion == "2" {
-		return []otel.ReceiverPipeline{{
+		return []otel.ReceiverPipeline{confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
 			Receiver: otel.Component{
 				Type: "sqlserver",
 				Config: map[string]interface{}{
@@ -59,10 +59,10 @@ func (m MetricsReceiverMssql) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 				otel.MetricsRemoveServiceAttributes(),
 				otel.NormalizeSums(),
 			}},
-		}}, nil
+		}, ctx)}, nil
 	}
 
-	return []otel.ReceiverPipeline{{
+	return []otel.ReceiverPipeline{confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "windowsperfcounters",
 			Config: map[string]interface{}{
@@ -108,7 +108,7 @@ func (m MetricsReceiverMssql) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 				otel.SetScopeVersion("1.0"),
 			),
 		}},
-	}}, nil
+	}, ctx)}, nil
 }
 
 func init() {

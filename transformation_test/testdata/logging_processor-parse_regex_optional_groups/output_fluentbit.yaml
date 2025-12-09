@@ -1,0 +1,43 @@
+- entries:
+  - jsonPayload:
+      always: first
+      empty: second
+      name: all fields present
+      optional: third
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      always: first
+      empty: second
+      name: optional field missing
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      always: first
+      name: empty field missing
+      optional: third
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      always: first
+      name: optional and empty fields missing
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: "   always, optional and empty missing"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance

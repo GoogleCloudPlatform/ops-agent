@@ -47,11 +47,16 @@ if [ "$SKIP_OTEL_JAVA" != "true" ]; then
     cd ../..
 fi
 
+if [ -z "${GO_BIN}" ]; then
+    GO_BIN=/usr/local/go/bin/go
+fi
+ARCH=$($GO_BIN env GOARCH)
+
 cd submodules/opentelemetry-operations-collector/otelopscol
-ARCH=$(/usr/local/go/bin/go env GOARCH)
-GO_BIN=/usr/local/go/bin/go \
-BUILDARCH=$ARCH \
-TARGETARCH=$ARCH \
+
+BUILDARCH="$ARCH" \
+TARGETARCH="$ARCH" \
+GO_BIN="${GO_BIN}" \
 COLLECTOR_LD_FLAGS="$LDFLAGS" \
 COLLECTOR_BUILDVCS="false" \
 COLLECTOR_BUILD_TAGS="gpu" \

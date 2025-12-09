@@ -44,7 +44,7 @@ func (r MetricsReceiverPostgresql) Type() string {
 	return "postgresql"
 }
 
-func (r MetricsReceiverPostgresql) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (r MetricsReceiverPostgresql) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	transport := "tcp"
 	if r.Endpoint == "" {
 		transport = "unix"
@@ -75,7 +75,7 @@ func (r MetricsReceiverPostgresql) Pipelines(_ context.Context) ([]otel.Receiver
 		cfg["tls"] = r.TLSConfig(true)
 	}
 
-	return []otel.ReceiverPipeline{{
+	return []otel.ReceiverPipeline{confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type:   "postgresql",
 			Config: cfg,
@@ -102,7 +102,7 @@ func (r MetricsReceiverPostgresql) Pipelines(_ context.Context) ([]otel.Receiver
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
-	}}, nil
+	}, ctx)}, nil
 }
 
 func init() {
