@@ -1,5 +1,8 @@
 $ErrorActionPreference = "Stop"
 
+# Configuration
+$MetadataServerIP = "169.254.169.254"
+
 function Invoke-PackageBuild {
     param(
         [Parameter(Mandatory=$true)][string]$Arch,
@@ -53,6 +56,26 @@ function Invoke-PackageBuild {
     Write-Host "Package process complete. Output at: ${OutputDir}"
 }
 
+# New wrapper function to handle gcloud calls and error checking
+function Upload-Artifact {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$Path,
+        [Parameter(Mandatory=$true)]
+        [string]$Destination
+    )
+
+    Write-Host "Uploading $Path to $Destination..."
+
+    # Execute gcloud command
+    gcloud storage cp $Path $Destination
+
+    # Immediate error check
+    if ($LASTEXITCODE -ne 0) {
+        Throw "Error: Failed to upload '$Path'. gcloud exited with code $LASTEXITCODE."
+    }
+}
+
 Write-Host "Starting Entry Point Script..."
 
 # 1. Validate Environment Variables
@@ -103,23 +126,34 @@ Write-Host "Uploading artifacts..."
 Write-Host "Applying Network Routing Fix..."
 $gateway = (Get-NetRoute | Where-Object { $_.DestinationPrefix -eq '0.0.0.0/0' } | Sort-Object RouteMetric | Select-Object -ExpandProperty NextHop -First 1)
 $ifIndex = (Get-NetAdapter -InterfaceDescription "Hyper-V Virtual Ethernet*" | Sort-Object | Select-Object -ExpandProperty ifIndex -First 1)
-New-NetRoute -DestinationPrefix 169.254.169.254/32 -InterfaceIndex $ifIndex -NextHop $gateway -ErrorAction SilentlyContinue
+
+# Using the variable for the route prefix
+New-NetRoute -DestinationPrefix "$MetadataServerIP/32" -InterfaceIndex $ifIndex -NextHop $gateway -ErrorAction SilentlyContinue
+
+# Verify Metadata Connectivity
+Write-Host "Verifying connectivity to Metadata server ($MetadataServerIP)..."
+try {
+    # Using the variable for the connection test
+    Test-Connection -ComputerName $MetadataServerIP -Count 1
+}
+catch {
+    Write-Warning "Ping to Metadata server failed. Authentication might fail in the next steps."
+}
 
 # Construct GCS Bucket URL
 $GcsBucket = "gs://$($env:_STAGING_ARTIFACTS_PROJECT_ID)-ops-agent-releases/$Ver/$Ref/$Target/$Arch/"
-
-Write-Host "Copying *.goo files to $GcsBucket"
+Write-Host "Destination: $GcsBucket"
 
 # Upload .goo files
 $GooFiles = Join-Path $OUTPUT_DIR "*.goo"
-gsutil cp $GooFiles "$GcsBucket"
+Upload-Artifact -Path $GooFiles -Destination $GcsBucket
 
 # Upload tar.gz plugin files
 $PluginTar = Join-Path $INPUT_DIR "result\google-cloud-ops-agent-plugin*.tar.gz"
-gsutil cp $PluginTar "$GcsBucket"
+Upload-Artifact -Path $PluginTar -Destination $GcsBucket
 
 # Upload SHA256 text file
 $ShaFile = Join-Path $INPUT_DIR "result\google-cloud-ops-agent-plugin-sha256.txt"
-gsutil cp $ShaFile "$GcsBucket"
+Upload-Artifact -Path $ShaFile -Destination $GcsBucket
 
 Write-Host "Script finished successfully."
