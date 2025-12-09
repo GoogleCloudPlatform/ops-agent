@@ -127,7 +127,6 @@ Write-Host "Applying Network Routing Fix..."
 $gateway = (Get-NetRoute | Where-Object { $_.DestinationPrefix -eq '0.0.0.0/0' } | Sort-Object RouteMetric | Select-Object -ExpandProperty NextHop -First 1)
 $ifIndex = (Get-NetAdapter -InterfaceDescription "Hyper-V Virtual Ethernet*" | Sort-Object | Select-Object -ExpandProperty ifIndex -First 1)
 
-# Using the variable for the route prefix
 New-NetRoute -DestinationPrefix "$MetadataServerIP/32" -InterfaceIndex $ifIndex -NextHop $gateway -ErrorAction SilentlyContinue
 
 # Verify Metadata Connectivity
