@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-$GoVersion = "1.24.3"
+$GoVersion = "1.24.11"
 $GoInstallerUrl = "https://go.dev/dl/go$GoVersion.windows-amd64.msi"
 $GoInstallDir = "C:\Go"
 
