@@ -43,44 +43,63 @@ export_to_sponge_config "PACKAGE_VERSION" "${PKG_VERSION}"
 ARCH="$(docker info --format '{{.Architecture}}')"
 ARTIFACT_REGISTRY="us-docker.pkg.dev"
 docker-credential-gcr configure-docker --registries="${ARTIFACT_REGISTRY}"
-CACHE="${ARTIFACT_REGISTRY}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:${DISTRO}_${ARCH}"
 
-build_params=()
-if [[ -n "${KOKORO_GITHUB_PULL_REQUEST_NUMBER}" ]]; then  # Per-PR cache
-    # In this case we will be caching from multiple sources.
-    build_params+=(--cache-from=type=registry,ref="${CACHE}_PR${KOKORO_GITHUB_PULL_REQUEST_NUMBER}")
-    build_params+=(--cache-to=type=registry,ref="${CACHE}_PR${KOKORO_GITHUB_PULL_REQUEST_NUMBER}",mode=max)
-fi
-if [[ "${KOKORO_ROOT_JOB_TYPE}" == "CONTINUOUS_INTEGRATION" ]]; then  # CI cache
-    build_params+=(--cache-to=type=registry,ref="${CACHE}",mode=max)
-fi
+docker buildx create --use || true
 
-docker buildx create --use
-docker buildx build . \
-  --cache-from=type=registry,ref="${CACHE}" \
-  --build-arg BUILDKIT_INLINE_CACHE=1 \
-  --progress=plain \
-  --target "${DISTRO}-build" \
-  -t build_image \
-  --load \
-  "${build_params[@]}"
+# _DISTROS is expected to be a space-separated string of "distro/arch/pkgformat"
+# e.g. "bookworm/x86_64/deb bookworm/aarch64/deb windows/x86_64/goo"
+for entry in ${_DISTROS}; do
+    IFS='/' read -r DISTRO ARCH_TARGET PKGFORMAT <<< "$entry"
 
-SIGNING_DIR="$(pwd)/kokoro/scripts/build/signing"
-if [[ "${PKGFORMAT}" == "rpm" && "${SKIP_SIGNING}" != "true" ]]; then
-  RPM_SIGNING_KEY="${KOKORO_KEYSTORE_DIR}/71565_rpm-signing-key"
-  cp "${RPM_SIGNING_KEY}" "${SIGNING_DIR}/signing-key"
-fi
-
-docker run \
-  -i \
-  -v "${RESULT_DIR}":/artifacts \
-  -v "${SIGNING_DIR}":/signing \
-  build_image \
-  bash <<EOF
-    cp /google-cloud-ops-agent*.${PKGFORMAT} /artifacts
-    cp /google-cloud-ops-agent-plugin*.tar.gz /artifacts
-
-    if [[ "${PKGFORMAT}" == "rpm" && "${SKIP_SIGNING}" != "true" ]]; then
-      bash /signing/sign.sh /artifacts/*.rpm
+    # Filter by current architecture
+    if [[ "$ARCH_TARGET" != "$ARCH" ]]; then
+        echo "Skipping ${DISTRO}/${ARCH_TARGET} (current arch: ${ARCH})"
+        continue
     fi
-EOF
+
+    echo "=========================================================="
+    echo "Building and signing for Distro: ${DISTRO}, Format: ${PKGFORMAT}, Arch: ${ARCH}"
+    echo "=========================================================="
+
+    CACHE="${ARTIFACT_REGISTRY}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:${DISTRO}_${ARCH}"
+
+    build_params=()
+    if [[ -n "${KOKORO_GITHUB_PULL_REQUEST_NUMBER}" ]]; then  # Per-PR cache
+        # In this case we will be caching from multiple sources.
+        build_params+=(--cache-from=type=registry,ref="${CACHE}_PR${KOKORO_GITHUB_PULL_REQUEST_NUMBER}")
+        build_params+=(--cache-to=type=registry,ref="${CACHE}_PR${KOKORO_GITHUB_PULL_REQUEST_NUMBER}",mode=max)
+    fi
+    if [[ "${KOKORO_ROOT_JOB_TYPE}" == "CONTINUOUS_INTEGRATION" ]]; then  # CI cache
+        build_params+=(--cache-to=type=registry,ref="${CACHE}",mode=max)
+    fi
+
+    docker buildx build . \
+      --cache-from=type=registry,ref="${CACHE}" \
+      --build-arg BUILDKIT_INLINE_CACHE=1 \
+      --progress=plain \
+      --target "${DISTRO}-build" \
+      -t build_image \
+      --load \
+      "${build_params[@]}"
+
+    SIGNING_DIR="$(pwd)/kokoro/scripts/build/signing"
+    if [[ "${PKGFORMAT}" == "rpm" && "${SKIP_SIGNING}" != "true" ]]; then
+      RPM_SIGNING_KEY="${KOKORO_KEYSTORE_DIR}/71565_rpm-signing-key"
+      cp "${RPM_SIGNING_KEY}" "${SIGNING_DIR}/signing-key"
+    fi
+
+    docker run \
+      -i \
+      -v "${RESULT_DIR}":/artifacts \
+      -v "${SIGNING_DIR}":/signing \
+      build_image \
+      bash <<DOCKER_EOF
+        cp /google-cloud-ops-agent*.${PKGFORMAT} /artifacts
+        cp /google-cloud-ops-agent-plugin*.tar.gz /artifacts
+
+        if [[ "${PKGFORMAT}" == "rpm" && "${SKIP_SIGNING}" != "true" ]]; then
+          bash /signing/sign.sh /artifacts/*.rpm
+        fi
+DOCKER_EOF
+
+done
