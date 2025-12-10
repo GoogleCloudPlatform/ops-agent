@@ -609,24 +609,21 @@ func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.R
 			// TODO: Configure storage
 		}
 
-		p, err := windowsEventLogV1Processors(ctx)
+		var p []otel.Component
+		var err error
+		if r.IsDefaultVersion() {
+			p, err = windowsEventLogV1Processors(ctx)
+		} else if r.RenderAsXML {
+			// When "include_log_record_original = true", the event original XML string is set in `attributes."log.record.original"`.
+			receiver_config["include_log_record_original"] = true
+			p, err = windowsEventLogRawXMLProcessors(ctx)
+		} else {
+			p, err = windowsEventLogV2Processors(ctx)
+		}
 		if err != nil {
 			return nil, err
 		}
-		if !r.IsDefaultVersion() {
-			p, err = windowsEventLogV2Processors(ctx)
-			if err != nil {
-				return nil, err
-			}
-		}
-		if r.RenderAsXML {
-			receiver_config["include_log_record_original"] = true
-			// When "include_log_record_original = true", the event original XML string is set in `attributes."log.record.original"`.
-			p, err = windowsEventLogRawXMLProcessors(ctx)
-			if err != nil {
-				return nil, err
-			}
-		}
+
 		out = append(out, otel.ReceiverPipeline{
 			Receiver: otel.Component{
 				Type:   "windowseventlog",
