@@ -1,7 +1,37 @@
 $ErrorActionPreference = "Stop"
 
-# Configuration
-$MetadataServerIP = "169.254.169.254"
+$GoVersion = "1.24.11"
+$GoInstallerUrl = "https://go.dev/dl/go$GoVersion.windows-amd64.msi"
+$GoInstallDir = "C:\Go"
+
+function Install-Go {
+    Write-Host "Downloading and Installing Go..."
+
+    $DownloadDir = "C:\local"
+    $MsiPath = Join-Path $DownloadDir "go_installer.msi"
+
+    # Ensure the local directory exists
+    if (-not (Test-Path $DownloadDir)) {
+        New-Item -Path $DownloadDir -ItemType Directory -Force | Out-Null
+    }
+
+    # Download the MSI
+    Write-Host "Downloading Go $GoVersion from $GoInstallerUrl..."
+    Invoke-WebRequest -Uri $GoInstallerUrl -OutFile $MsiPath
+
+    # Install the MSI
+    Write-Host "Running MSI Installer..."
+    Start-Process msiexec.exe `
+        -ArgumentList "/i $MsiPath /quiet /norestart ALLUSERS=1 INSTALLDIR=$GoInstallDir" `
+        -NoNewWindow -Wait
+
+    # Add Go to the path for the current session
+    $env:Path = "$env:Path;$GoInstallDir\bin"
+
+    # Verify installation
+    $InstalledVersion = go version
+    Write-Host "Go installed successfully: $InstalledVersion"
+}
 
 function Invoke-PackageBuild {
     param(
@@ -53,26 +83,6 @@ function Invoke-PackageBuild {
     Write-Host "Package process complete. Output at: ${OutputDir}"
 }
 
-# Wrapper function to handle gcloud calls and error checking
-function Upload-Artifact {
-    param(
-        [Parameter(Mandatory=$true)]
-        [string]$Path,
-        [Parameter(Mandatory=$true)]
-        [string]$Destination
-    )
-
-    Write-Host "Uploading $Path to $Destination..."
-
-    # Execute gcloud command
-    gcloud storage cp $Path $Destination
-
-    # Immediate error check
-    if ($LASTEXITCODE -ne 0) {
-        Throw "Error: Failed to upload '$Path'. gcloud exited with code $LASTEXITCODE."
-    }
-}
-
 Write-Host "Starting Entry Point Script..."
 
 # 1. Validate Environment Variables
@@ -117,38 +127,20 @@ Invoke-PackageBuild -Arch $Arch -InputDir $InputDir -OutputDir $OutputDir
 # 7. Upload Artifacts
 Write-Host "Uploading artifacts..."
 
-# Workaround for a known issue where Windows containers cannot reach the GCP Metadata server.
-# see b/467401022 for details.
-Write-Host "Applying Network Routing Fix..."
-$gateway = (Get-NetRoute | Where-Object { $_.DestinationPrefix -eq '0.0.0.0/0' } | Sort-Object RouteMetric | Select-Object -ExpandProperty NextHop -First 1)
-$ifIndex = (Get-NetAdapter -InterfaceDescription "Hyper-V Virtual Ethernet*" | Sort-Object | Select-Object -ExpandProperty ifIndex -First 1)
-
-New-NetRoute -DestinationPrefix "$MetadataServerIP/32" -InterfaceIndex $ifIndex -NextHop $gateway -ErrorAction SilentlyContinue
-
-# Verify Metadata Connectivity
-Write-Host "Verifying connectivity to Metadata server ($MetadataServerIP)..."
-try {
-    # Using the variable for the connection test
-    Test-Connection -ComputerName $MetadataServerIP -Count 1
-}
-catch {
-    Write-Warning "Ping to Metadata server failed. Authentication might fail in the next steps."
-}
-
-# Construct GCS Bucket URL
 $GcsBucket = "gs://$($env:_STAGING_ARTIFACTS_PROJECT_ID)-ops-agent-releases/$Ver/$Ref/$Target/$Arch/"
-Write-Host "Destination: $GcsBucket"
+
+Write-Host "Copying artifacts to $GcsBucket"
 
 # Upload .goo files
-$GooFiles = Join-Path $OUTPUT_DIR "*.goo"
-Upload-Artifact -Path $GooFiles -Destination $GcsBucket
+$GooFiles = Join-Path $OutputDir "*.goo"
+gsutil cp $GooFiles "$GcsBucket"
 
 # Upload tar.gz plugin files
-$PluginTar = Join-Path $INPUT_DIR "result\google-cloud-ops-agent-plugin*.tar.gz"
-Upload-Artifact -Path $PluginTar -Destination $GcsBucket
+$PluginTar = Join-Path $InputDir "result\google-cloud-ops-agent-plugin*.tar.gz"
+gsutil cp $PluginTar "$GcsBucket"
 
 # Upload SHA256 text file
-$ShaFile = Join-Path $INPUT_DIR "result\google-cloud-ops-agent-plugin-sha256.txt"
-Upload-Artifact -Path $ShaFile -Destination $GcsBucket
+$ShaFile = Join-Path $InputDir "result\google-cloud-ops-agent-plugin-sha256.txt"
+gsutil cp $ShaFile "$GcsBucket"
 
 Write-Host "Script finished successfully."
