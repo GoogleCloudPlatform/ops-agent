@@ -1,7 +1,37 @@
 $ErrorActionPreference = "Stop"
 
-# Configuration
-$MetadataServerIP = "169.254.169.254"
+$GoVersion = "1.24.3"
+$GoInstallerUrl = "https://go.dev/dl/go$GoVersion.windows-amd64.msi"
+$GoInstallDir = "C:\Go"
+
+function Install-Go {
+    Write-Host "Downloading and Installing Go..."
+
+    $DownloadDir = "C:\local"
+    $MsiPath = Join-Path $DownloadDir "go_installer.msi"
+
+    # Ensure the local directory exists
+    if (-not (Test-Path $DownloadDir)) {
+        New-Item -Path $DownloadDir -ItemType Directory -Force | Out-Null
+    }
+
+    # Download the MSI
+    Write-Host "Downloading Go $GoVersion from $GoInstallerUrl..."
+    Invoke-WebRequest -Uri $GoInstallerUrl -OutFile $MsiPath
+
+    # Install the MSI
+    Write-Host "Running MSI Installer..."
+    Start-Process msiexec.exe `
+        -ArgumentList "/i $MsiPath /quiet /norestart ALLUSERS=1 INSTALLDIR=$GoInstallDir" `
+        -NoNewWindow -Wait
+
+    # Add Go to the path for the current session
+    $env:Path = "$env:Path;$GoInstallDir\bin"
+
+    # Verify installation
+    $InstalledVersion = go version
+    Write-Host "Go installed successfully: $InstalledVersion"
+}
 
 function Invoke-PackageBuild {
     param(
@@ -10,7 +40,6 @@ function Invoke-PackageBuild {
         [Parameter(Mandatory=$true)][string]$InputDir
     )
 
-    # Validate arguments
     if ([string]::IsNullOrWhiteSpace($Arch) -or `
         [string]::IsNullOrWhiteSpace($OutputDir) -or `
         [string]::IsNullOrWhiteSpace($InputDir)) {
@@ -28,11 +57,10 @@ function Invoke-PackageBuild {
     go install -trimpath -ldflags="-s -w" github.com/google/googet/v2/goopack@v2.18.4
 
     Write-Host "Preparing directories and files..."
-    # build.ps1 uses the destination, but we ensure it exists here to be safe
     New-Item -Path "out" -ItemType Directory -Force | Out-Null
     New-Item -Path $OutputDir -ItemType Directory -Force | Out-Null
 
-    # Move pre-built files: mv "${InputDir}/result/out/"* ./out/
+    # Move pre-built files
     $SourcePath = Join-Path $InputDir "result\out\*"
     Move-Item -Path $SourcePath -Destination ".\out\" -Force
 
@@ -40,7 +68,6 @@ function Invoke-PackageBuild {
     Get-ChildItem -Force | Select-Object Name, LastWriteTime, Length
 
     $BuildScriptPath = ".\pkg\goo\build.ps1"
-
     Write-Host "Delegating package creation to $BuildScriptPath..."
 
     if (-not (Test-Path $BuildScriptPath)) {
@@ -56,26 +83,6 @@ function Invoke-PackageBuild {
     Write-Host "Package process complete. Output at: ${OutputDir}"
 }
 
-# Wrapper function to handle gcloud calls and error checking
-function Upload-Artifact {
-    param(
-        [Parameter(Mandatory=$true)]
-        [string]$Path,
-        [Parameter(Mandatory=$true)]
-        [string]$Destination
-    )
-
-    Write-Host "Uploading $Path to $Destination..."
-
-    # Execute gcloud command
-    gcloud storage cp $Path $Destination
-
-    # Immediate error check
-    if ($LASTEXITCODE -ne 0) {
-        Throw "Error: Failed to upload '$Path'. gcloud exited with code $LASTEXITCODE."
-    }
-}
-
 Write-Host "Starting Entry Point Script..."
 
 # 1. Validate Environment Variables
@@ -86,8 +93,10 @@ foreach ($var in $RequiredVars) {
     }
 }
 
-# 2. Parse the Louhi tag
-# Example: louhi/2.46.0/abcdef/windows/x86_64/start
+# 2. Install Go
+Install-Go
+
+# 3. Parse the Louhi tag
 $LouhiTag = $env:_LOUHI_TAG_NAME
 $LouhiParts = $LouhiTag -split "/"
 
@@ -95,64 +104,43 @@ if ($LouhiParts.Count -lt 5) {
     Throw "Error: _LOUHI_TAG_NAME format is unexpected: $LouhiTag"
 }
 
-$Arch = $LouhiParts[4]
-$Ver = $LouhiParts[1]
-$Ref = $LouhiParts[2]
+$Ver    = $LouhiParts[1]
+$Ref    = $LouhiParts[2]
 $Target = $LouhiParts[3]
+$Arch   = $LouhiParts[4]
 
-# 3. Define Paths
-$INPUT_DIR = $env:KOKORO_GFILE_DIR
-$OUTPUT_DIR = Join-Path $env:KOKORO_ARTIFACTS_DIR "result"
-
-# 4. Change Directory
+# 4. Define Paths (Standardized to PascalCase)
+$InputDir  = $env:KOKORO_GFILE_DIR
+$OutputDir = Join-Path $env:KOKORO_ARTIFACTS_DIR "result"
 $TargetDir = "git\unified_agents"
-Write-Host "Changing directory to $TargetDir..."
 
+# 5. Change Directory
+Write-Host "Changing directory to $TargetDir..."
 if (-not (Test-Path $TargetDir)) {
-    # Fail fast if the directory structure isn't what we expect
     Throw "Error: Could not find directory '$TargetDir'. Current location is $(Get-Location)"
 }
-
 Set-Location $TargetDir
 
-# 5. Execute Core Build Logic (Function Call)
-Invoke-PackageBuild -Arch $Arch -InputDir $INPUT_DIR -OutputDir $OUTPUT_DIR
+# 6. Execute Core Build Logic
+Invoke-PackageBuild -Arch $Arch -InputDir $InputDir -OutputDir $OutputDir
 
-# 6. Upload Artifacts
+# 7. Upload Artifacts
 Write-Host "Uploading artifacts..."
 
-# Workaround for a known issue where Windows containers cannot reach the GCP Metadata server.
-# see b/467401022 for details.
-Write-Host "Applying Network Routing Fix..."
-$gateway = (Get-NetRoute | Where-Object { $_.DestinationPrefix -eq '0.0.0.0/0' } | Sort-Object RouteMetric | Select-Object -ExpandProperty NextHop -First 1)
-$ifIndex = (Get-NetAdapter -InterfaceDescription "Hyper-V Virtual Ethernet*" | Sort-Object | Select-Object -ExpandProperty ifIndex -First 1)
-
-New-NetRoute -DestinationPrefix "$MetadataServerIP/32" -InterfaceIndex $ifIndex -NextHop $gateway -ErrorAction SilentlyContinue
-
-# Verify Metadata Connectivity
-Write-Host "Verifying connectivity to Metadata server ($MetadataServerIP)..."
-try {
-    # Using the variable for the connection test
-    Test-Connection -ComputerName $MetadataServerIP -Count 1
-}
-catch {
-    Write-Warning "Ping to Metadata server failed. Authentication might fail in the next steps."
-}
-
-# Construct GCS Bucket URL
 $GcsBucket = "gs://$($env:_STAGING_ARTIFACTS_PROJECT_ID)-ops-agent-releases/$Ver/$Ref/$Target/$Arch/"
-Write-Host "Destination: $GcsBucket"
+
+Write-Host "Copying artifacts to $GcsBucket"
 
 # Upload .goo files
-$GooFiles = Join-Path $OUTPUT_DIR "*.goo"
-Upload-Artifact -Path $GooFiles -Destination $GcsBucket
+$GooFiles = Join-Path $OutputDir "*.goo"
+gsutil cp $GooFiles "$GcsBucket"
 
 # Upload tar.gz plugin files
-$PluginTar = Join-Path $INPUT_DIR "result\google-cloud-ops-agent-plugin*.tar.gz"
-Upload-Artifact -Path $PluginTar -Destination $GcsBucket
+$PluginTar = Join-Path $InputDir "result\google-cloud-ops-agent-plugin*.tar.gz"
+gsutil cp $PluginTar "$GcsBucket"
 
 # Upload SHA256 text file
-$ShaFile = Join-Path $INPUT_DIR "result\google-cloud-ops-agent-plugin-sha256.txt"
-Upload-Artifact -Path $ShaFile -Destination $GcsBucket
+$ShaFile = Join-Path $InputDir "result\google-cloud-ops-agent-plugin-sha256.txt"
+gsutil cp $ShaFile "$GcsBucket"
 
 Write-Host "Script finished successfully."
