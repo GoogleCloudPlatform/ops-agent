@@ -19,15 +19,15 @@ if [[ $ID == debian ]]; then
 fi
 sudo apt update
 
-#  R580 is the last driver branch to support the Pascal (P4 and P100) and Volta architecture (V100).
-# https://docs.cloud.google.com/compute/docs/gpus/install-drivers-gpu#recommended-driver-branches
 DEVICE_CODE=$(lspci -n | grep -Po '10de:[\w\d]{4}')
 case $DEVICE_CODE in
     # V100 | P4 | P100
     # Device PCIe ID lookup: https://envytools.readthedocs.io/en/latest/hw/pciid.html
     10de:1db1|10de:1bb3|10de:15f8)
-        # For GPUs older than Turing (Volta: V100, Pascal: P4, P100), ping the
-        # version to CUDA 12.9 (driver 575)
+        # For GPUs older than Turing (Volta: V100, Pascal: P4, P100):
+        # 1. R580 is the last driver branch to support the Pascal (P4 and P100) and Volta architecture (V100).
+        # https://docs.cloud.google.com/compute/docs/gpus/install-drivers-gpu#recommended-driver-branches
+        # 2. They need proprietary kernel modules, not the open kernel modules (nvidia-open-*)
         sudo apt -y install nvidia-driver-575
         sudo apt -y install cuda-12-9
         ;;
