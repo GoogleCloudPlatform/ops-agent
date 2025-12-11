@@ -651,7 +651,7 @@ func (r LoggingProcessorWindowsEventLogV1) Type() string {
 
 func (p LoggingProcessorWindowsEventLogV1) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	// This processor is only intended for otel logging since fluent-bit "winlog" receiver generates a specific log structure.
-	return []fluentbit.Component{}
+	return noFluentBitImplementation(ctx, tag, uid)
 }
 
 func (p LoggingProcessorWindowsEventLogV1) Processors(ctx context.Context) ([]otel.Component, error) {
@@ -749,7 +749,7 @@ func (r LoggingProcessorWindowsEventLogV2) Type() string {
 
 func (p LoggingProcessorWindowsEventLogV2) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	// This processor is only intended for otel logging since fluent-bit "winevtlog" receiver generates a specific log structure.
-	return []fluentbit.Component{}
+	return noFluentBitImplementation(ctx, tag, uid)
 }
 
 func (p LoggingProcessorWindowsEventLogV2) Processors(ctx context.Context) ([]otel.Component, error) {
@@ -823,7 +823,7 @@ func (r LoggingProcessorWindowsEventLogRawXML) Type() string {
 
 func (p LoggingProcessorWindowsEventLogRawXML) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	// This processor is only intended for otel logging since fluent-bit "winlog" receiver generates a specific log structure.
-	return []fluentbit.Component{}
+	return noFluentBitImplementation(ctx, tag, uid)
 }
 
 func (p LoggingProcessorWindowsEventLogRawXML) Processors(ctx context.Context) ([]otel.Component, error) {
@@ -856,6 +856,30 @@ func windowsEventLogRawXMLProcessors(ctx context.Context) ([]otel.Component, err
 		},
 	}
 	return p.Processors(ctx)
+}
+
+func noFluentBitImplementation(ctx context.Context, tag, uid string) []fluentbit.Component {
+	// Clear jsonPayload.* fields and set static message.
+	defaultMessage := "This processor is only used for testing otel."
+	return LoggingProcessorModifyFields{
+		Fields: map[string]*ModifyField{
+			"jsonPayload.channel":          {OmitIf: `jsonPayload.channel =~ ".*"`},
+			"jsonPayload.computer":         {OmitIf: `jsonPayload.computer =~ ".*"`},
+			"jsonPayload.event_data":       {OmitIf: `jsonPayload.event_data != nil`},
+			"jsonPayload.event_id":         {OmitIf: `jsonPayload.event_id != nil`},
+			"jsonPayload.execution":        {OmitIf: `jsonPayload.execution != nil`},
+			"jsonPayload.keywords":         {OmitIf: `jsonPayload.keywords != nil`},
+			"jsonPayload.level":            {OmitIf: `jsonPayload.level =~ ".*"`},
+			"jsonPayload.message":          {StaticValue: &defaultMessage},
+			"jsonPayload.opcode":           {OmitIf: `jsonPayload.opcode =~ ".*"`},
+			"jsonPayload.provider":         {OmitIf: `jsonPayload.provider != nil`},
+			"jsonPayload.record_id":        {OmitIf: `jsonPayload.record_id != nil`},
+			"jsonPayload.security":         {OmitIf: `jsonPayload.security != nil`},
+			"jsonPayload.system_time":      {OmitIf: `jsonPayload.system_time =~ ".*"`},
+			"jsonPayload.task":             {OmitIf: `jsonPayload.task =~ ".*"`},
+			`labels."log.record.original"`: {OmitIf: `labels."log.record.original" =~ ".*"`},
+		},
+	}.Components(ctx, tag, uid)
 }
 
 func formatSystemTime(v ottl.LValue) ottl.Statements {
