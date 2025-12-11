@@ -317,14 +317,6 @@ func (p PipelineInstance) OTelComponents(ctx context.Context) (map[string]otel.R
 			)
 		}
 
-		expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
-		if processors, ok := receiverPipeline.Processors["metrics"]; ok && expOtlpExporter {
-			receiverPipeline.Processors["metrics"] = append(
-				processors,
-				otelSetOtlpExporterComponents()...,
-			)
-		}
-
 		outR[receiverPipelineName] = receiverPipeline
 
 		pipeline := otel.Pipeline{
