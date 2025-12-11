@@ -68,7 +68,7 @@ docker buildx build . \
 SIGNING_DIR="$(pwd)/kokoro/scripts/build/signing"
 if [[ "${PKGFORMAT}" == "rpm" && "${SKIP_SIGNING}" != "true" ]]; then
   RPM_STANDARD_SIGNING_KEY="${KOKORO_KEYSTORE_DIR}/71565_rpm-signing-key"
-  RPM_EL10_SIGNING_KEY="${KOKORO_KEYSTORE_DIR}/78657_rpm-el10-signing-key"
+  RPM_EL10_SIGNING_KEY="${KOKORO_KEYSTORE_DIR}/78657_el10-v1-rpm-signing-key"
 
   # Google packages are to be signed using a specific key per major version
   # of RHEL starting with RHEL 10, we detect whether to use the EL10 signing
