@@ -26,21 +26,19 @@ function Install-Go {
         -ArgumentList "/i $MsiPath /quiet /norestart ALLUSERS=1 INSTALLDIR=$GoInstallDir" `
         -NoNewWindow -Wait
 
-    # Check after install (Before Refresh)
-    Write-Host "DEBUG: GOPATH after install (before refresh) is: '$env:GOPATH'"
+    # Add Go binary to the path for the current session
+    $env:Path = "$env:Path;$GoInstallDir\bin"
 
-    # Refresh environment
-    # This pulls the new Path (including C:\Go\bin) from the Registry into the current session
-    Write-Host "Refreshing Environment Variables from Registry..."
-    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+    # Manually set GOPATH
+    $env:GOPATH = "$HOME\go"
 
-    # Check after refresh
-    Write-Host "DEBUG: GOPATH after refresh is: '$env:GOPATH'"
+    # GOPATH\bin to the path for the current session
+    $env:Path = "$env:Path;$env:GOPATH\bin"
 
-    # Final Verification
+    # Verify installation
     $InstalledVersion = go version
     Write-Host "Go installed successfully: $InstalledVersion"
-    Write-Host "Final GOPATH is set to: $env:GOPATH"
+    Write-Host "GOPATH manually set to: $env:GOPATH"
 }
 
 function Invoke-PackageBuild {
