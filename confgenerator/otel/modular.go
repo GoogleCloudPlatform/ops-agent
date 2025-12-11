@@ -256,6 +256,12 @@ func (c ModularConfig) Generate(ctx context.Context, expOtlpExporter bool) (stri
 				copyProcessor := CopyHostIDToInstanceID()
 				processorNames = append(processorNames, copyProcessor.name("_global_0"))
 				processors[copyProcessor.name("_global_0")] = copyProcessor.Config
+				// Similar to the resource detector, for any pipeline that is using the
+				// otlphttp exporter, we add a MetricStartTime processor at the end of it.
+				// This mimics the current behavior on GCM exporter.
+				metricStartTime := MetricStartTime()
+				processorNames = append(processorNames, metricStartTime.name(fmt.Sprintf("%s_0", prefix)))
+				processors[metricStartTime.name(fmt.Sprintf("%s_0", prefix))] = metricStartTime.Config
 			}
 		}
 		exporterType := receiverPipeline.ExporterTypes[pipeline.Type]
