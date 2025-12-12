@@ -86,9 +86,9 @@ func ConvertToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context, 
 		receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.MetricUnknownCounter())
 		receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.MetricStartTime())
 		if isOtlp {
-		// receiver.Processors["metrics"] = append(receiver.Processors["metrics"],
-		// 	otel.MetricsTransform(
-		// 		otel.AddPrefix("prometheus.googleapis.com")))
+			receiver.Processors["metrics"] = append(receiver.Processors["metrics"],
+				otel.MetricsTransform(
+					otel.AddPrefix("prometheus.googleapis.com")))
 		}
 	}
 	return receiver
