@@ -123,6 +123,12 @@ func (a LValue) SetIf(b, condition Value) Statements {
 	return statements
 }
 
+func (a LValue) AppendValuesIf(b, condition Value) Statements {
+	return Statements{
+		statementf(`append(%s, %s) where %s`, a, b, condition),
+	}
+}
+
 func (a LValue) MergeMaps(source Value, strategy string) Statements {
 	return a.MergeMapsIf(source, strategy, IsNotNil(source))
 }

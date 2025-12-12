@@ -1,0 +1,17 @@
+- entries:
+  - jsonPayload:
+      message: This processor is only used for testing otel.
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      message: This processor is only used for testing otel.
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance

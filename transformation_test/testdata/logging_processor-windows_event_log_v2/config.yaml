@@ -1,0 +1,6 @@
+# This test is only intended to verify the Otel transformations required to generate
+# a log entry output format similar to the fluent-bit windows event log receiver.
+- type: parse_json
+  time_key: time
+  time_format: "%Y-%m-%dT%H:%M:%S.%L%z"
+- type: windows_event_log_v2
