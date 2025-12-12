@@ -2748,7 +2748,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 
 func TestDefaultMetricsNoProxy(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag, OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, "", feature); err != nil {
@@ -2766,7 +2766,7 @@ func TestDefaultMetricsNoProxy(t *testing.T) {
 // go/sdi-integ-test#proxy-testing
 func TestDefaultMetricsWithProxy(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag, OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if !gce.IsWindows(imageSpec) {
 			t.Skip("Proxy test is currently only supported on windows.")
