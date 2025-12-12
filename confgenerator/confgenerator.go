@@ -57,15 +57,19 @@ func googleCloudExporter(userAgent string, instrumentationLabels bool, serviceRe
 	}
 }
 
+func ConvertOtlpPrometheusExporterToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
+	return ConvertToOtlpExporter(receiver, ctx, true, true)
+}
+
 func ConvertPrometheusExporterToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
-	return ConvertToOtlpExporter(receiver, ctx, true)
+	return ConvertToOtlpExporter(receiver, ctx, true, false)
 }
 
 func ConvertGCMOtelExporterToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
-	return ConvertToOtlpExporter(receiver, ctx, false)
+	return ConvertToOtlpExporter(receiver, ctx, false, false)
 }
 
-func ConvertToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context, isPrometheus bool) otel.ReceiverPipeline {
+func ConvertToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context, isPrometheus, isOtlp bool) otel.ReceiverPipeline {
 	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
 	resource, _ := platform.FromContext(ctx).GetResource()
 	if !expOtlpExporter {
@@ -81,6 +85,11 @@ func ConvertToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context, 
 	if isPrometheus {
 		receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.MetricUnknownCounter())
 		receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.MetricStartTime())
+		if isOtlp {
+		// receiver.Processors["metrics"] = append(receiver.Processors["metrics"],
+		// 	otel.MetricsTransform(
+		// 		otel.AddPrefix("prometheus.googleapis.com")))
+		}
 	}
 	return receiver
 }
