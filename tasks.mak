@@ -128,7 +128,7 @@ dist/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit:
 	bash ./builds/fluent_bit.sh $(PWD)/dist
 
 dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol:
-	SKIP_OTEL_JAVA=${SKIP_JAVA} bash ./builds/otel.sh $(PWD)/dist
+	SKIP_OTEL_JAVA=${SKIP_JAVA} GO_BIN=$(shell which go) bash ./builds/otel.sh $(PWD)/dist
 
 .PHONY: transformation_test
 transformation_test: dist/opt/google-cloud-ops-agent/subagents/fluent-bit/bin/fluent-bit dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collector/otelopscol

@@ -174,10 +174,10 @@ RUN Copy-Item -Path C:\Windows\System32\msvcp140.dll -Destination /work/out/bin/
 #
 # Install Golang
 #
-ADD https://go.dev/dl/go1.24.3.windows-amd64.msi /local/go1.24.3.windows-amd64.msi
+ADD https://go.dev/dl/go1.24.11.windows-amd64.msi /local/go1.24.11.windows-amd64.msi
 
 RUN Start-Process msiexec.exe `
-    -ArgumentList '/i C:\local\go1.24.3.windows-amd64.msi ', '/quiet ', `
+    -ArgumentList '/i C:\local\go1.24.11.windows-amd64.msi ', '/quiet ', `
     '/norestart ', 'ALLUSERS=1,INSTALLDIR=C:\Go' -NoNewWindow -Wait;
 
 #
