@@ -32,7 +32,7 @@ import (
 	"time"
 
 	logpb "cloud.google.com/go/logging/apiv2/loggingpb"
-	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
+	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -704,4 +704,5 @@ func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &confgenerator.LoggingProcessorWindowsEventLogV1{} })
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &confgenerator.LoggingProcessorWindowsEventLogV2{} })
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &confgenerator.LoggingProcessorWindowsEventLogRawXML{} })
+	confgenerator.RegisterLoggingProcessorMacro[apps.LoggingProcessorMacroActiveDirectoryDS]()
 }
