@@ -85,12 +85,6 @@ github.com/Code-Hex/go-generics-cache v1.5.1/go.mod h1:qxcC9kRVrct9rHeiYpFWSoW1v
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/GoogleCloudPlatform/google-guest-agent v0.0.0-20250924181420-23412fbd6228 h1:K6GHKAI+PB91Fm+KEwX4q6s6xzZ/+BkOi8Kjxh0tJ6U=
 github.com/GoogleCloudPlatform/google-guest-agent v0.0.0-20250924181420-23412fbd6228/go.mod h1:31SvkAl6ORtir1odRpTl92XpTtn52GnBAHPtCKDSePo=
-github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20251201223823-8da9030240de h1:JUO5VHUbPflDGAZn7uTX2ZmxLeRfMftD1TdsuV0C2pE=
-github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20251201223823-8da9030240de/go.mod h1:kgWi7UKMm3Hg1qtuzDZn/31zjxWY6RITRMO41VOT9d8=
-github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20251202002049-ba4db508ec7c h1:FxGQ6+uWIC7iWlQsQL69Ia0Nl1x2e3gZrKrAFWbnDBc=
-github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20251202002049-ba4db508ec7c/go.mod h1:kgWi7UKMm3Hg1qtuzDZn/31zjxWY6RITRMO41VOT9d8=
-github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20251202044153-bcf2bbd2ed44 h1:vPT3bGG6DNwbFtb8QqtKNLHppVQ6DkG4fxbbVnVUohg=
-github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20251202044153-bcf2bbd2ed44/go.mod h1:kgWi7UKMm3Hg1qtuzDZn/31zjxWY6RITRMO41VOT9d8=
 github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20251215162037-1a81356f1648 h1:v/T+kxq5ffojZt5poSmahN+vG2bMTvy/VFRPzFRu/ao=
 github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20251215162037-1a81356f1648/go.mod h1:hmqK+hsg2z+Xo/Yz16sNxb6TZX+q0KxKsrgYzdpV0P8=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.29.0 h1:UQUsRi8WTzhZntp5313l+CHIAT95ojUI2lpP/ExlZa4=
