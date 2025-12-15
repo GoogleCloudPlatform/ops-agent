@@ -77,10 +77,6 @@ type LoggingReceiverMacroActiveDirectoryDS struct {
 	LoggingProcessorMacroActiveDirectoryDS `yaml:",inline"`
 }
 
-func (r LoggingReceiverMacroActiveDirectoryDS) Type() string {
-	return "active_directory_ds"
-}
-
 func (r LoggingReceiverMacroActiveDirectoryDS) Expand(ctx context.Context) (confgenerator.InternalLoggingReceiver, []confgenerator.InternalLoggingProcessor) {
 	return &confgenerator.LoggingReceiverWindowsEventLog{
 		Channels: []string{"Directory Service", "Active Directory Web Services"},
