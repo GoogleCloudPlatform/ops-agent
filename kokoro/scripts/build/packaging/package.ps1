@@ -141,14 +141,14 @@ Write-Host "Copying artifacts to $GcsBucket"
 
 # Upload .goo files
 $GooFiles = Join-Path $OutputDir "*.goo"
-gsutil cp $GooFiles "$GcsBucket"
+gcloud storage cp $GooFiles "$GcsBucket"
 
 # Upload tar.gz plugin files
 $PluginTar = Join-Path $InputDir "result\google-cloud-ops-agent-plugin*.tar.gz"
-gsutil cp $PluginTar "$GcsBucket"
+gcloud storage cp $PluginTar "$GcsBucket"
 
 # Upload SHA256 text file
 $ShaFile = Join-Path $InputDir "result\google-cloud-ops-agent-plugin-sha256.txt"
-gsutil cp $ShaFile "$GcsBucket"
+gcloud storage cp $ShaFile "$GcsBucket"
 
 Write-Host "Script finished successfully."

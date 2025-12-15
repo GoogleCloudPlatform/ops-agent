@@ -1142,10 +1142,10 @@ func InstallPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, 
 		if _, err := gce.RunRemotely(ctx, logger, vm, "mkdir -p /tmp/agentUpload /tmp/agentPlugin"); err != nil {
 			return err
 		}
-		if err := gce.InstallGsutilIfNeeded(ctx, logger, vm); err != nil {
+		if err := gce.InstallGcloudIfNeeded(ctx, logger, vm); err != nil {
 			return err
 		}
-		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo gsutil cp -r "+gcsPath+"/* /tmp/agentUpload"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo gcloud storage cp -r "+gcsPath+"/* /tmp/agentUpload"); err != nil {
 			return fmt.Errorf("error copying down agent package from GCS: %v", err)
 		}
 		// Print the contents of /tmp/agentUpload into the logs.
