@@ -49,7 +49,6 @@ require (
 	buf.build/go/protoyaml v0.3.1
 	cloud.google.com/go/secretmanager v1.15.0
 	github.com/GoogleCloudPlatform/google-guest-agent v0.0.0-20250924181420-23412fbd6228
-	github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20251202044153-bcf2bbd2ed44
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.29.0
 	go.opentelemetry.io/collector/pdata v1.12.0
 	golang.org/x/sync v0.18.0
@@ -73,6 +72,7 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2 // indirect
 	github.com/Code-Hex/go-generics-cache v1.5.1 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20251215162037-1a81356f1648 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.53.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/alecthomas/units v0.0.0-20240626203959-61d1e3462e30 // indirect
