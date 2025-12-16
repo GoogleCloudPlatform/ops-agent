@@ -476,10 +476,10 @@ you need to:
     ```
 
 2.  [Connect](#connect-to-windows-build-vm) to the Windows VM, open a `Windows
-    PowerShell`, delete the cached credential, and redo gcloud login:
+    PowerShell`, delete the cached credentials, and redo gcloud login:
 
     ```
-    rd -r $env:USERPROFILE\.gcloud storage
+    gcloud auth revoke --all
     ```
 
 </details>
