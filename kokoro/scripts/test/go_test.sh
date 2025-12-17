@@ -153,7 +153,7 @@ export_to_sponge_config "ARCH" "${ARCH:-}"
 if compgen -G "${KOKORO_GFILE_DIR}/result/google-cloud-ops-agent*" > /dev/null; then
   # Upload the agent packages to GCS.
   AGENT_PACKAGES_IN_GCS="gs://${TRANSFERS_BUCKET}/agent_packages/${KOKORO_BUILD_ID}"
-  gsutil cp -r "${KOKORO_GFILE_DIR}/result/*" "${AGENT_PACKAGES_IN_GCS}/"
+  gcloud storage cp -r "${KOKORO_GFILE_DIR}/result/*" "${AGENT_PACKAGES_IN_GCS}/"
 
   # AGENT_PACKAGES_IN_GCS is used to tell Ops Agent integration tests
   # (https://github.com/GoogleCloudPlatform/ops-agent/tree/master/integration_test)

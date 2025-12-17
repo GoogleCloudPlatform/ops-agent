@@ -1077,7 +1077,7 @@ func InstallOpsAgentUAPPlugin(ctx context.Context, logger *log.Logger, vm *gce.V
 //
 // gcsPath must point to a GCS Path to a .tar.gz file to install on the testing VMs.
 func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, gcsPath string) error {
-	if err := gce.InstallGsutilIfNeeded(ctx, logger, vm); err != nil {
+	if err := gce.InstallGcloudIfNeeded(ctx, logger, vm); err != nil {
 		return err
 	}
 
@@ -1086,7 +1086,7 @@ func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm
 			return err
 		}
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf(`gsutil cp %s/google-cloud-ops-agent-plugin*.tar.gz C:\\agentPlugin`, gcsPath)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf(`gcloud storage cp %s/google-cloud-ops-agent-plugin*.tar.gz C:\\agentPlugin`, gcsPath)); err != nil {
 			return fmt.Errorf("error copying down agent package from GCS: %v", err)
 		}
 
@@ -1106,7 +1106,7 @@ func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm
 			return err
 		}
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo gsutil cp "+gcsPath+"/google-cloud-ops-agent-plugin*.tar.gz /tmp/agentPlugin"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo gcloud storage cp "+gcsPath+"/google-cloud-ops-agent-plugin*.tar.gz /tmp/agentPlugin"); err != nil {
 			return fmt.Errorf("error copying down the agent uap plugin tarball from GCS: %v", err)
 		}
 
@@ -1142,10 +1142,10 @@ func InstallPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, 
 		if _, err := gce.RunRemotely(ctx, logger, vm, "mkdir -p /tmp/agentUpload /tmp/agentPlugin"); err != nil {
 			return err
 		}
-		if err := gce.InstallGsutilIfNeeded(ctx, logger, vm); err != nil {
+		if err := gce.InstallGcloudIfNeeded(ctx, logger, vm); err != nil {
 			return err
 		}
-		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo gsutil cp -r "+gcsPath+"/* /tmp/agentUpload"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo gcloud storage cp -r "+gcsPath+"/* /tmp/agentUpload"); err != nil {
 			return fmt.Errorf("error copying down agent package from GCS: %v", err)
 		}
 		// Print the contents of /tmp/agentUpload into the logs.
@@ -1184,7 +1184,7 @@ func installWindowsPackageFromGCS(ctx context.Context, logger *log.Logger, vm *g
 	if _, err := gce.RunRemotely(ctx, logger, vm, "New-Item -ItemType directory -Path C:\\agentUpload"); err != nil {
 		return err
 	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("gsutil cp -r %s/*.goo C:\\agentUpload", gcsPath)); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("gcloud storage cp -r %s/*.goo C:\\agentUpload", gcsPath)); err != nil {
 		return fmt.Errorf("error copying down agent package from GCS: %v", err)
 	}
 	if _, err := gce.RunRemotely(ctx, logger, vm, "googet -noconfirm -verbose install -reinstall (Get-ChildItem C:\\agentUpload\\*.goo | Select-Object -Expand FullName)"); err != nil {
