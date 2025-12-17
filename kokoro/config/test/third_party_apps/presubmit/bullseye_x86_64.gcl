@@ -2,9 +2,11 @@ import 'common.gcl' as common
 
 config build = common.third_party_apps_test {
   params {
+    platforms = ['rocky-linux-cloud:rocky-linux-10']
     environment {
-      TARGET = 'bullseye'
+      TARGET = 'rockylinux10'
       ARCH = 'x86_64'
+      SHORT = 'false'
     }
   }
 }
