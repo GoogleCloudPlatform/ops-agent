@@ -20,6 +20,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
 // LoggingReceiverMacro is a logging component that generates other
@@ -30,10 +31,10 @@ type LoggingReceiverMacro interface {
 	Expand(ctx context.Context) (InternalLoggingReceiver, []InternalLoggingProcessor)
 }
 
-func RegisterLoggingReceiverMacro[LRM LoggingReceiverMacro](constructor func() LRM) {
+func RegisterLoggingReceiverMacro[LRM LoggingReceiverMacro](constructor func() LRM, platforms ...platform.Type) {
 	LoggingReceiverTypes.RegisterType(func() LoggingReceiver {
 		return &loggingReceiverMacroAdapter[LRM]{ReceiverMacro: constructor()}
-	})
+	}, platforms...)
 }
 
 // loggingReceiverMacroAdapter is the type used to unmarshal user configuration for a LoggingReceiverMacro and adapt its interface to the LoggingReceiver interface.
