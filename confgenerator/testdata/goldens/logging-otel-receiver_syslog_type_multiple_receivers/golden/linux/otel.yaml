@@ -36,7 +36,7 @@ exporters:
 extensions:
   file_storage:
     create_directory: true
-    directory: /var/lib/google-cloud-ops-agent/fluent-bit/file_storage
+    directory: file_storage
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
@@ -835,8 +835,8 @@ receivers:
       processes: {}
   otlpjsonfile/ops_agent:
     include:
-    - /var/log/google-cloud-ops-agent/enabled_receivers_otlp.json
-    - /var/log/google-cloud-ops-agent/feature_tracking_otlp.json
+    - enabled_receivers_otlp.json
+    - feature_tracking_otlp.json
     poll_interval: 1m0s
     replay_file: true
   prometheus/agent_prometheus:

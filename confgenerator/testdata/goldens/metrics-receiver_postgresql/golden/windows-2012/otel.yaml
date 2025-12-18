@@ -751,8 +751,8 @@ receivers:
       processes: {}
   otlpjsonfile/ops_agent:
     include:
-    - "C:\\ProgramData\\Google\\Cloud Operations\\Ops Agent\\log/enabled_receivers_otlp.json"
-    - "C:\\ProgramData\\Google\\Cloud Operations\\Ops Agent\\log/feature_tracking_otlp.json"
+    - enabled_receivers_otlp.json
+    - feature_tracking_otlp.json
     poll_interval: 1m0s
     replay_file: true
   postgresql/postgresql:
