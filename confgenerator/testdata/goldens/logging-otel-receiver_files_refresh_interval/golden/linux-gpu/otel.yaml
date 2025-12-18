@@ -1,20 +1,40 @@
 exporters:
   googlecloud:
+    log:
+      grpc_pool_size: 20
     metric:
       instrumentation_library_labels: false
       prefix: ""
       resource_filters: []
       service_resource_labels: false
       skip_create_descriptor: true
+    sending_queue:
+      enabled: true
+      num_consumers: 40
+      queue_size: 50000000
+      sizer: bytes
+      storage: file_storage
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
   googlecloud/otel:
+    log:
+      grpc_pool_size: 20
     metric:
       instrumentation_library_labels: true
       prefix: ""
       resource_filters: []
       service_resource_labels: true
       skip_create_descriptor: true
+    sending_queue:
+      enabled: true
+      num_consumers: 40
+      queue_size: 50000000
+      sizer: bytes
+      storage: file_storage
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
+extensions:
+  file_storage:
+    create_directory: true
+    directory: /var/lib/google-cloud-ops-agent/fluent-bit/file_storage
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
@@ -703,6 +723,7 @@ receivers:
     preserve_leading_whitespaces: true
     preserve_trailing_whitespaces: true
     start_at: beginning
+    storage: file_storage
   filelog/syslog:
     exclude: []
     include:
@@ -717,6 +738,7 @@ receivers:
     preserve_leading_whitespaces: true
     preserve_trailing_whitespaces: true
     start_at: beginning
+    storage: file_storage
   hostmetrics/hostmetrics:
     collection_interval: 60s
     scrapers:
@@ -736,8 +758,8 @@ receivers:
     collection_interval: 60s
   otlpjsonfile/ops_agent:
     include:
-    - enabled_receivers_otlp.json
-    - feature_tracking_otlp.json
+    - /var/log/google-cloud-ops-agent/enabled_receivers_otlp.json
+    - /var/log/google-cloud-ops-agent/feature_tracking_otlp.json
     poll_interval: 1m0s
     replay_file: true
   prometheus/agent_prometheus:
@@ -755,6 +777,8 @@ receivers:
         - targets:
           - 0.0.0.0:20201
 service:
+  extensions:
+  - file_storage
   pipelines:
     logs/logs_default__pipeline_syslog:
       exporters:
