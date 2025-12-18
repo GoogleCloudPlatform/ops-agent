@@ -279,7 +279,10 @@ func generateConfigs(pc platformConfig, testDir string) (got map[string]string, 
 	}
 
 	// Otel configs
-	otelGeneratedConfig, err := mergedUc.GenerateOtelConfig(ctx, "")
+	otelGeneratedConfig, err := mergedUc.GenerateOtelConfig(ctx,
+		pc.defaultLogsDir,
+		pc.defaultStateDir,
+	)
 	if err != nil {
 		return
 	}

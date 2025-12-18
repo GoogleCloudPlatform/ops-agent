@@ -53,6 +53,16 @@ func googleCloudExporter(userAgent string, instrumentationLabels bool, serviceRe
 				"service_resource_labels": serviceResourceLabels,
 				"resource_filters":        []map[string]interface{}{},
 			},
+			"log": map[string]interface{}{
+				"grpc_pool_size": 20,
+			},
+			"sending_queue": map[string]interface{}{
+				"enabled":       true,
+				"num_consumers": 40,
+				"storage":       FileStorageExtensionID(),
+				"sizer":         "bytes",
+				"queue_size":    50000000, //50M
+			},
 		},
 	}
 }
@@ -122,7 +132,17 @@ func (uc *UnifiedConfig) getOTelLogLevel() string {
 	return logLevel
 }
 
-func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) (string, error) {
+// FileStorageExtensionID returns the file_storage extension used by all receivers and exporters.
+func FileStorageExtensionID() string {
+	return "file_storage"
+}
+
+// FileStorageExtensionDirectoryPath returns the directory path for the file_storage extension.
+func FileStorageExtensionDirectoryPath(stateDir string) string {
+	return path.Join(stateDir, "file_storage")
+}
+
+func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDir string) (string, error) {
 	p := platform.FromContext(ctx)
 	userAgent, _ := p.UserAgent("Google-Cloud-Ops-Agent-Metrics")
 	metricVersionLabel, _ := p.VersionLabel("google-cloud-ops-agent-metrics")
@@ -147,6 +167,12 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 	extensions := map[string]interface{}{}
 	if expOtlpExporter {
 		extensions["googleclientauth"] = map[string]interface{}{}
+	}
+	if uc.Logging.Service.OTelLogging {
+		extensions["file_storage"] = map[string]interface{}{
+			"directory":        FileStorageExtensionDirectoryPath(stateDir),
+			"create_directory": true,
+		}
 	}
 
 	otelConfig, err := otel.ModularConfig{
