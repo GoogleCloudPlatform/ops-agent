@@ -54,15 +54,16 @@ func googleCloudExporter(userAgent string, instrumentationLabels bool, serviceRe
 				"resource_filters":        []map[string]interface{}{},
 			},
 			"log": map[string]interface{}{
-				"grpc_pool_size": 20,
+				"grpc_pool_size": 10,
 			},
 			"sending_queue": map[string]interface{}{
 				"enabled":       true,
-				"num_consumers": 40,
+				"num_consumers": 20,
 				"storage":       FileStorageExtensionID(),
 				"sizer":         "bytes",
 				"queue_size":    50000000, //50M
 			},
+			"timeout": "60s",
 		},
 	}
 }
