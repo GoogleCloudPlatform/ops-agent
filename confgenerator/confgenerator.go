@@ -139,7 +139,32 @@ func (uc *UnifiedConfig) getOTelLogLevel() string {
 	return logLevel
 }
 
-func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) (string, error) {
+// fileStorageExtensionID returns the file_storage extension used by all receivers and exporters.
+func fileStorageExtensionID() string {
+	return "file_storage"
+}
+
+// fileStorageExtensionConfig returns a configured file_storage extension to be used by all receivers and exporters.
+func fileStorageExtensionConfig(stateDir string) map[string]interface{} {
+	return map[string]interface{}{
+		"directory":        path.Join(stateDir, "file_storage"),
+		"create_directory": true,
+	}
+}
+
+func (uc *UnifiedConfig) getEnabledExtensions(ctx context.Context, stateDir string) map[string]interface{} {
+	extensions := map[string]interface{}{}
+	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
+	if expOtlpExporter {
+		extensions["googleclientauth"] = map[string]interface{}{}
+	}
+	if uc.Logging.Service.OTelLogging {
+		extensions["file_storage"] = fileStorageExtensionConfig(stateDir)
+	}
+	return extensions
+}
+
+func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDir string) (string, error) {
 	p := platform.FromContext(ctx)
 	userAgent, _ := p.UserAgent("Google-Cloud-Ops-Agent-Metrics")
 	metricVersionLabel, _ := p.VersionLabel("google-cloud-ops-agent-metrics")
@@ -161,11 +186,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines)
 
 	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
-	extensions := map[string]interface{}{}
-	if expOtlpExporter {
-		extensions["googleclientauth"] = map[string]interface{}{}
-	}
-
+	extensions := uc.getEnabledExtensions(ctx, stateDir)
 	otelConfig, err := otel.ModularConfig{
 		LogLevel:          uc.getOTelLogLevel(),
 		ReceiverPipelines: receiverPipelines,
