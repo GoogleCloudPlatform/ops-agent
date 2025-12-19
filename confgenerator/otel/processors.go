@@ -291,6 +291,16 @@ func MetricsRemoveServiceAttributes() Component {
 	}
 }
 
+func BatchProcessor() Component {
+	return Component{
+		Type: "batch",
+		Config: map[string]any{
+			"send_batch_max_size": 1000,
+			"send_batch_size":     1000,
+		},
+	}
+}
+
 func CopyHostIDToInstanceID() Component {
 	return Component{
 		Type: "transform",
