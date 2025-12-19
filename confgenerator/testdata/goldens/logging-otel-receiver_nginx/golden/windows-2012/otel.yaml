@@ -7,7 +7,7 @@ exporters:
       service_resource_labels: false
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
-  googlecloud/otel:
+  googlecloud/logs:
     log:
       grpc_pool_size: 20
     metric:
@@ -1435,7 +1435,7 @@ service:
   pipelines:
     logs/logs_default__pipeline_windows__event__log:
       exporters:
-      - googlecloud/otel
+      - googlecloud/logs
       processors:
       - transform/windows__event__log_0
       - transform/windows__event__log_1
@@ -1444,7 +1444,7 @@ service:
       - windowseventlog/windows__event__log
     logs/logs_default__pipeline_windows__event__log_1:
       exporters:
-      - googlecloud/otel
+      - googlecloud/logs
       processors:
       - transform/windows__event__log_1_0
       - transform/windows__event__log_1_1
@@ -1453,7 +1453,7 @@ service:
       - windowseventlog/windows__event__log_1
     logs/logs_default__pipeline_windows__event__log_2:
       exporters:
-      - googlecloud/otel
+      - googlecloud/logs
       processors:
       - transform/windows__event__log_2_0
       - transform/windows__event__log_2_1
@@ -1462,7 +1462,7 @@ service:
       - windowseventlog/windows__event__log_2
     logs/logs_nginx_nginx__access:
       exporters:
-      - googlecloud/otel
+      - googlecloud/logs
       processors:
       - transform/nginx__access_0
       - transform/nginx__access_1
@@ -1472,7 +1472,7 @@ service:
       - filelog/nginx__access
     logs/logs_nginx_nginx__error:
       exporters:
-      - googlecloud/otel
+      - googlecloud/logs
       processors:
       - transform/nginx__error_0
       - transform/nginx__error_1
