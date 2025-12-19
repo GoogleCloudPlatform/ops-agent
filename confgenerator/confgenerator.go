@@ -34,7 +34,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
-func googleCloudExporter(userAgent string, instrumentationLabels bool, serviceResourceLabels, logsExporter bool) otel.Component {
+func googleCloudExporter(userAgent string, instrumentationLabels, serviceResourceLabels, logBuffering bool) otel.Component {
 	config := map[string]interface{}{
 		"user_agent": userAgent,
 		"metric": map[string]interface{}{
@@ -52,7 +52,7 @@ func googleCloudExporter(userAgent string, instrumentationLabels bool, serviceRe
 			"resource_filters":        []map[string]interface{}{},
 		},
 	}
-	if logsExporter {
+	if logBuffering {
 		config["log"] = map[string]any{
 			"grpc_pool_size": 20,
 		}
@@ -187,7 +187,8 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 		Extensions:        extensions,
 		Exporters: map[otel.ExporterType]otel.Component{
 			otel.System: googleCloudExporter(userAgent, false, false, false),
-			otel.OTel:   googleCloudExporter(userAgent, true, true, true),
+			otel.OTel:   googleCloudExporter(userAgent, true, true, false),
+			otel.Logs:   googleCloudExporter(userAgent, true, true, true),
 			otel.GMP:    googleManagedPrometheusExporter(userAgent),
 			otel.OTLP:   otlpExporter(userAgent),
 		},

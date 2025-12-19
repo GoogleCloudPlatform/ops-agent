@@ -36,6 +36,7 @@ const (
 	// another exporter type.
 	OTel ExporterType = iota
 	System
+	Logs
 	GMP
 	OTLP
 )
@@ -51,6 +52,8 @@ func (t ExporterType) Name() string {
 		return ""
 	} else if t == OTel {
 		return "otel"
+	} else if t == Logs {
+		return "logs"
 	} else if t == OTLP {
 		return "otlp"
 	} else {
