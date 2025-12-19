@@ -32,6 +32,9 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
+  batch/_global_2:
+    send_batch_max_size: 1000
+    send_batch_size: 1000
   casttosum/iis_1:
     metrics:
     - agent.googleapis.com/iis/network/transferred_bytes_count
@@ -1268,6 +1271,7 @@ service:
       - transform/windows__event__log_0
       - transform/windows__event__log_1
       - resourcedetection/_global_0
+      - batch/_global_2
       receivers:
       - windowseventlog/windows__event__log
     logs/logs_default__pipeline_windows__event__log_1:
@@ -1277,6 +1281,7 @@ service:
       - transform/windows__event__log_1_0
       - transform/windows__event__log_1_1
       - resourcedetection/_global_0
+      - batch/_global_2
       receivers:
       - windowseventlog/windows__event__log_1
     logs/logs_default__pipeline_windows__event__log_2:
@@ -1286,6 +1291,7 @@ service:
       - transform/windows__event__log_2_0
       - transform/windows__event__log_2_1
       - resourcedetection/_global_0
+      - batch/_global_2
       receivers:
       - windowseventlog/windows__event__log_2
     logs/logs_kafka_kafka:
@@ -1297,6 +1303,7 @@ service:
       - transform/kafka_2
       - transform/kafka_3
       - resourcedetection/_global_0
+      - batch/_global_2
       receivers:
       - filelog/kafka
     metrics/default__pipeline_hostmetrics:

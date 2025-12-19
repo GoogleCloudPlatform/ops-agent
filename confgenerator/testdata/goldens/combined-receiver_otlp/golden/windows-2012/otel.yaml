@@ -40,6 +40,9 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
+  batch/_global_2:
+    send_batch_max_size: 1000
+    send_batch_size: 1000
   casttosum/iis_1:
     metrics:
     - agent.googleapis.com/iis/network/transferred_bytes_count
@@ -835,6 +838,7 @@ service:
       processors:
       - transform/otlp_0
       - resourcedetection/_global_1
+      - batch/_global_2
       receivers:
       - otlp/otlp
     metrics/default__pipeline_hostmetrics:

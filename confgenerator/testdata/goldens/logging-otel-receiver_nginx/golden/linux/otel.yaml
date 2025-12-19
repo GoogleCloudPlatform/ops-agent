@@ -32,6 +32,9 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
+  batch/_global_2:
+    send_batch_max_size: 1000
+    send_batch_size: 1000
   cumulativetodelta/loggingmetrics_4:
     include:
       match_type: strict
@@ -1010,6 +1013,7 @@ service:
       processors:
       - transform/syslog_0
       - resourcedetection/_global_0
+      - batch/_global_2
       receivers:
       - filelog/syslog
     logs/logs_nginx_nginx__access:
@@ -1020,6 +1024,7 @@ service:
       - transform/nginx__access_1
       - transform/nginx__access_2
       - resourcedetection/_global_0
+      - batch/_global_2
       receivers:
       - filelog/nginx__access
     logs/logs_nginx_nginx__error:
@@ -1030,6 +1035,7 @@ service:
       - transform/nginx__error_1
       - transform/nginx__error_2
       - resourcedetection/_global_0
+      - batch/_global_2
       receivers:
       - filelog/nginx__error
     metrics/default__pipeline_hostmetrics:

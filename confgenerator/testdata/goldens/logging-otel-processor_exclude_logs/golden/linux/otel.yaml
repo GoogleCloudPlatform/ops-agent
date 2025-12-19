@@ -32,6 +32,9 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
+  batch/_global_2:
+    send_batch_max_size: 1000
+    send_batch_size: 1000
   cumulativetodelta/loggingmetrics_4:
     include:
       match_type: strict
@@ -863,6 +866,7 @@ service:
       processors:
       - transform/syslog_0
       - resourcedetection/_global_0
+      - batch/_global_2
       receivers:
       - filelog/syslog
     logs/logs_p1_sample__logs:
@@ -894,6 +898,7 @@ service:
       - filter/logs_p1_sample__logs_21
       - filter/logs_p1_sample__logs_22
       - resourcedetection/_global_0
+      - batch/_global_2
       receivers:
       - filelog/sample__logs
     metrics/default__pipeline_hostmetrics:

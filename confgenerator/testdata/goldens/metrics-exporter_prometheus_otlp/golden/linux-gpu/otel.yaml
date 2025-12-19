@@ -595,7 +595,7 @@ processors:
   resourcedetection/_global_0:
     detectors:
     - gcp
-  transform/_global_0:
+  transform/_global_3:
     metric_statements:
     - context: resource
       error_mode: silent
@@ -768,7 +768,6 @@ service:
       - metricstransform/hostmetrics_2
       - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
-      - transform/_global_0
       receivers:
       - hostmetrics/hostmetrics
     metrics/default__pipeline_hostmetrics_1:
@@ -778,7 +777,6 @@ service:
       - metricstransform/hostmetrics_1_0
       - filter/default__pipeline_hostmetrics_1_0
       - resourcedetection/_global_0
-      - transform/_global_0
       receivers:
       - nvml/hostmetrics_1
     metrics/fluentbit:
@@ -789,7 +787,6 @@ service:
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
       - resourcedetection/_global_0
-      - transform/_global_0
       receivers:
       - prometheus/agent_prometheus
     metrics/loggingmetrics:
@@ -807,7 +804,6 @@ service:
       - interval/loggingmetrics_7
       - metricstransform/loggingmetrics_8
       - resourcedetection/_global_0
-      - transform/_global_0
       receivers:
       - prometheus/agent_prometheus
     metrics/opsagent:
@@ -816,7 +812,6 @@ service:
       processors:
       - transform/ops_agent_0
       - resourcedetection/_global_0
-      - transform/_global_0
       receivers:
       - otlpjsonfile/ops_agent
     metrics/otel:
@@ -829,7 +824,6 @@ service:
       - filter/otel_2
       - metricstransform/otel_3
       - resourcedetection/_global_0
-      - transform/_global_0
       receivers:
       - prometheus/agent_prometheus
     metrics/prometheus__pipeline_prometheus:
@@ -840,6 +834,7 @@ service:
       - resource/prometheus_1
       - transform/prometheus_2
       - metricstarttime/prometheus_3
+      - transform/_global_3
       receivers:
       - prometheus/prometheus
   telemetry:
