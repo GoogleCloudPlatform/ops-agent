@@ -54,11 +54,11 @@ func googleCloudExporter(userAgent string, instrumentationLabels bool, serviceRe
 	}
 	if logsExporter {
 		config["log"] = map[string]any{
-			"grpc_pool_size": 10,
+			"grpc_pool_size": 20,
 		}
 		config["sending_queue"] = map[string]any{
 			"enabled":       true,
-			"num_consumers": 20,
+			"num_consumers": 40,
 			"storage":       FileStorageExtensionID(),
 			"sizer":         "bytes",
 			"queue_size":    50000000, //50M
