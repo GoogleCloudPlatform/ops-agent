@@ -15,6 +15,10 @@ exporters:
       service_resource_labels: true
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
+extensions:
+  file_storage:
+    create_directory: true
+    directory: file_storage
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
@@ -1065,6 +1069,7 @@ receivers:
     preserve_leading_whitespaces: true
     preserve_trailing_whitespaces: true
     start_at: beginning
+    storage: file_storage
   hostmetrics/hostmetrics:
     collection_interval: 60s
     scrapers:
@@ -1108,16 +1113,19 @@ receivers:
     ignore_channel_errors: true
     poll_interval: 1s
     start_at: beginning
+    storage: file_storage
   windowseventlog/windows__event__log_1:
     channel: Application
     ignore_channel_errors: true
     poll_interval: 1s
     start_at: beginning
+    storage: file_storage
   windowseventlog/windows__event__log_2:
     channel: Security
     ignore_channel_errors: true
     poll_interval: 1s
     start_at: beginning
+    storage: file_storage
   windowsperfcounters/iis:
     collection_interval: 60s
     perfcounters:
@@ -1151,6 +1159,8 @@ receivers:
       - _Total
       object: SQLServer:Databases
 service:
+  extensions:
+  - file_storage
   pipelines:
     logs/logs_default__pipeline_windows__event__log:
       exporters:
