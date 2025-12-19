@@ -27,7 +27,7 @@
       go.opentelemetry.io/collector/processor/batchprocessor.(*shard[...]).sendItems
         go.opentelemetry.io/collector/processor/batchprocessor@v0.138.0/batch_processor.go:273
       go.opentelemetry.io/collector/processor/batchprocessor.(*shard[...]).startLoop
-        go.opentelemetry.io/collector/processor/batchprocessor@v0.138.0/batch_processor.go:223
+        go.opentelemetry.io/collector/processor/batchprocessor@v0.138.0/batch_processor.go:216
   - caller: batchprocessor@v0.138.0/batch_processor.go:275
     error: "could not process attribute gcp.source_location: json: cannot unmarshal string into Go struct field LogEntrySourceLocation.line of type int64"
     level: warn
