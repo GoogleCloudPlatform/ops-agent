@@ -52,6 +52,12 @@ const TrailingQueryWindow = 2 * time.Minute
 // OpsAgentPluginServerPort defines the port on which the Ops Agent UAP Plugin gRPC server runs.
 const OpsAgentPluginServerPort = "1234"
 
+const (
+	OtelLoggingFeatureFlag      = "otel_logging"
+	OtlpHttpExporterFeatureFlag = "otlp_exporter"
+	DefaultFeatureFlag          = "default"
+)
+
 //go:embed testdata
 var scriptsDir embed.FS
 
@@ -840,6 +846,52 @@ func InstallOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, locati
 // SetupOpsAgent installs the Ops Agent and installs the given config.
 func SetupOpsAgent(ctx context.Context, logger *log.Logger, vm *gce.VM, config string) error {
 	return SetupOpsAgentFrom(ctx, logger, vm, config, LocationFromEnvVars())
+}
+
+// setExperimentalFeatures sets the EXPERIMENTAL_FEATURES environment variable.
+func setExperimentalFeatures(ctx context.Context, logger *log.Logger, vm *gce.VM, feature string) error {
+	return gce.SetEnvironmentVariables(ctx, logger, vm, map[string]string{"EXPERIMENTAL_FEATURES": feature})
+}
+
+// defaultOtelLoggingConfig returns the default config that is required to use otel_logging.
+func defaultOtelLoggingConfig() string {
+	return `logging:
+  service:
+    experimental_otel_logging: true
+`
+}
+
+// setExperimentalOtelLoggingInConfig in an Ops Agent config
+func setExperimentalOtelLoggingInConfig(config string) string {
+	return strings.Replace(
+		config,
+		"service:\n",
+		"service:\n    experimental_otel_logging: true\n",
+		1,
+	)
+}
+
+// SetupOpsAgentWithFeatureFlag configures the VM and the config depending on the selected feature flag.
+func SetupOpsAgentWithFeatureFlag(ctx context.Context, logger *log.Logger, vm *gce.VM, config string, feature string) error {
+	switch feature {
+	case OtelLoggingFeatureFlag:
+		// Set feature flag in config.
+		if config == "" {
+			config = defaultOtelLoggingConfig()
+		} else {
+			config = setExperimentalOtelLoggingInConfig(config)
+		}
+		// Set experimental feature environment variable.
+		if err := setExperimentalFeatures(ctx, logger, vm, feature); err != nil {
+			return err
+		}
+	case OtlpHttpExporterFeatureFlag:
+		if err := setExperimentalFeatures(ctx, logger, vm, feature); err != nil {
+			return err
+		}
+
+	}
+	return SetupOpsAgent(ctx, logger, vm, config)
 }
 
 // RestartOpsAgent restarts the Ops Agent and waits for it to become available.
