@@ -65,6 +65,8 @@ docker buildx build . \
   --load \
   "${build_params[@]}"
 
+echo "The value of SKIP_SIGNING is: '${SKIP_SIGNING}'"
+
 SIGNING_DIR="$(pwd)/kokoro/scripts/build/signing"
 if [[ "${PKGFORMAT}" == "rpm" && "${SKIP_SIGNING}" != "true" ]]; then
   RPM_SIGNING_KEY="${KOKORO_KEYSTORE_DIR}/71565_rpm-signing-key"
