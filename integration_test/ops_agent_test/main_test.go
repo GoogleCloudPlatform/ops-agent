@@ -1375,7 +1375,7 @@ func TestProcessorOrder(t *testing.T) {
 
 func TestSyslogTCP(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -1405,7 +1405,7 @@ func TestSyslogTCP(t *testing.T) {
         exporters: [google]
 `
 
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1414,15 +1414,18 @@ func TestSyslogTCP(t *testing.T) {
 		// detecting a failure if the exclusion message were to actually be included.
 
 		// Write test message for exclusion using the program called logger.
-		if _, err := gce.RunRemotely(ctx, logger, vm, "logger -n 0.0.0.0 --tcp --port=5140 -- abc test pattern xyz"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "logger -n 0.0.0.0 --tcp --port=5140 --rfc5424 -- abc test pattern xyz"); err != nil {
 			t.Fatalf("Error writing dummy log line: %v", err)
 		}
 		// Write test message for inclusion.
-		if _, err := gce.RunRemotely(ctx, logger, vm, "logger -n 0.0.0.0 --tcp --port=5140 -- abcdefg"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "logger -n 0.0.0.0 --tcp --port=5140 --rfc5424 -- abcdefg"); err != nil {
 			t.Fatalf("Error writing dummy log line: %v", err)
 		}
 
-		if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, "jsonPayload.message:abcdefg"); err != nil {
+		// Verify the ingested log preserves the syslog rfc5424 format and no additional labels are added.
+		rfc5424LogQuery := `jsonPayload.message =~ "^<\d+>1 \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}) \S+ \S+ \S+ \S+ \[[^\]]+\] abcdefg$"`
+		logQuery := rfc5424LogQuery + ` AND (NOT labels.message :*) AND (NOT labels.hostname :*) AND (NOT labels.priority :*)`
+		if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, logQuery); err != nil {
 			t.Error(err)
 		}
 		time.Sleep(60 * time.Second)
@@ -1437,7 +1440,7 @@ func TestSyslogTCP(t *testing.T) {
 
 func TestSyslogUDP(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -1461,16 +1464,19 @@ func TestSyslogUDP(t *testing.T) {
         exporters: [google]
 `
 
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
 		// Write "abcdefg" using the program called logger.
-		if _, err := gce.RunRemotely(ctx, logger, vm, "logger -n 0.0.0.0 --udp --port=5140 -- abcdefg"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "logger -n 0.0.0.0 --udp --port=5140 --rfc5424 -- abcdefg"); err != nil {
 			t.Fatalf("Error writing dummy log line: %v", err)
 		}
 
-		if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, "jsonPayload.message:abcdefg"); err != nil {
+		// Verify the ingested log preserves the syslog rfc5424 format and no additional labels are added.
+		rfc5424LogQuery := `jsonPayload.message =~ "^<\d+>1 \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}) \S+ \S+ \S+ \S+ \[[^\]]+\] abcdefg$"`
+		logQuery := rfc5424LogQuery + ` AND (NOT labels.message :*) AND (NOT labels.hostname :*) AND (NOT labels.priority :*)`
+		if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, logQuery); err != nil {
 			t.Error(err)
 		}
 	})
@@ -2190,7 +2196,7 @@ func TestFluentForwardLog(t *testing.T) {
 
 func TestWindowsEventLog(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if !gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -2211,7 +2217,7 @@ func TestWindowsEventLog(t *testing.T) {
         receivers: [windows_event_log]
         exporters: [google]
 `
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2235,7 +2241,7 @@ func TestWindowsEventLog(t *testing.T) {
 
 func TestWindowsEventLogV1UnsupportedChannel(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if !gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -2256,7 +2262,7 @@ func TestWindowsEventLogV1UnsupportedChannel(t *testing.T) {
       default_pipeline:
         receivers: [%s]
 `, log, channel, log)
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2270,7 +2276,7 @@ func TestWindowsEventLogV1UnsupportedChannel(t *testing.T) {
 
 func TestWindowsEventLogV2(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if !gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -2311,7 +2317,7 @@ func TestWindowsEventLogV2(t *testing.T) {
       pipeline_xml:
         receivers: [winlog2_xml]
 `
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2518,7 +2524,7 @@ func hasKeyWithValueType[V any](m map[string]any, k string) bool {
 
 func TestWindowsEventLogWithNonDefaultTimeZone(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if !gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -2527,7 +2533,7 @@ func TestWindowsEventLogWithNonDefaultTimeZone(t *testing.T) {
 		if _, err := gce.RunRemotely(ctx, logger, vm, `Set-TimeZone -Id "Eastern Standard Time"`); err != nil {
 			t.Fatal(err)
 		}
-		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
+		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, "", feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2838,6 +2844,7 @@ func addSecretEntry(ctx context.Context, client *secretmanager.Client, projectID
 	return result, nil
 }
 func TestGoogleSecretManagerProvider(t *testing.T) {
+	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		// GoogleSecretManagerProvider requires the following scope to be set in order to access secret entries in the Google secret manager.
@@ -4721,7 +4728,7 @@ func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	// To update this, first run `mirror_content.sh` under `integration_test`. Example:
 	//   ./mirror_content.sh https://go.dev/dl/go1.21.4.linux-{amd64,arm64}.tar.gz
 	// Then update this version.
-	goVersion := "1.23.0"
+	goVersion := "1.24.11"
 
 	goArch := "amd64"
 	if gce.IsARM(vm.ImageSpec) {
@@ -4737,7 +4744,7 @@ func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	} else {
 		installCmd = fmt.Sprintf(`
 			set -o pipefail
-			gsutil cp \
+			gcloud storage cp \
 				"gs://ops-agents-public-buckets-vendored-deps/mirrored-content/go.dev/dl/go%s.linux-%s.tar.gz" - | \
 				sudo tar --directory /usr/local -xzf /dev/stdin`, goVersion, goArch)
 	}

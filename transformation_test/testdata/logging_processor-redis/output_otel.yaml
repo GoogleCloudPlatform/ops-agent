@@ -358,7 +358,7 @@
     timestamp: 2025-07-19T02:08:05.267Z
   - jsonPayload:
       level: "*"
-      message: "<search> gc: ON, prefix min length: 2, min word length to stem: 4, prefix max expansions: 200, query timeout (ms): 500, timeout policy: return, cursor read size: 1000, cursor max idle (ms): 300000, max doctable size: 1000000, max number of search results:  1000000,"
+      message: "<search> gc: ON, prefix min length: 2, min word length to stem: 4, prefix max expansions: 200, query timeout (ms): 500, timeout policy: return, cursor read size: 1000, cursor max idle (ms): 300000, max doctable size: 1000000, max number of search results:  1000000, "
       pid: 1
       role: master
       roleChar: M
@@ -920,6 +920,23 @@
   - jsonPayload:
       level: "*"
       message: Server initialized
+      pid: 1
+      role: master
+      roleChar: M
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/redis
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: NOTICE
+    timestamp: 2025-07-19T02:08:05.268Z
+  - jsonPayload:
+      level: "*"
+      message: Ready to accept connections tcp
       pid: 1
       role: master
       roleChar: M

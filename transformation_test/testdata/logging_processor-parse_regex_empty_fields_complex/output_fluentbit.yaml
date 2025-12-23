@@ -1,0 +1,41 @@
+- entries:
+  - jsonPayload:
+      extradata: "n"
+      host: default_host
+      ident: my_app_id
+      message: qqqqrrrr
+      msgid: "n"
+      pid: "n"
+      pri: "13"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2006-01-02T08:04:05.000000000Z
+  - jsonPayload:
+      extradata: "n"
+      host: default_host
+      ident: my_app_id
+      message: qqqqrrrr
+      msgid: "n"
+      pid: "n"
+      pri: "14"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2006-01-02T08:03:05.000000000Z
+  - jsonPayload:
+      extradata: "n"
+      host: vm_name_1
+      ident: my_app_id
+      message: qqqqrrrr
+      msgid: "n"
+      pid: "n"
+      pri: "15"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2006-01-02T08:04:05.000000000Z
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance

@@ -39,12 +39,12 @@ func (MetricsReceiverZookeeper) Type() string {
 	return "zookeeper"
 }
 
-func (r MetricsReceiverZookeeper) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (r MetricsReceiverZookeeper) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultZookeeperEndpoint
 	}
 
-	return []otel.ReceiverPipeline{{
+	return []otel.ReceiverPipeline{confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "zookeeper",
 			Config: map[string]interface{}{
@@ -63,7 +63,7 @@ func (r MetricsReceiverZookeeper) Pipelines(_ context.Context) ([]otel.ReceiverP
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
-	}}, nil
+	}, ctx)}, nil
 }
 
 type LoggingProcessorMacroZookeeperGeneral struct{}

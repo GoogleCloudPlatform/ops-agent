@@ -96,7 +96,7 @@ processors:
         - googlecloudmonitoring/point_count
   interval/loggingmetrics_7:
     interval: 1m
-  metricstarttime/prometheus_2:
+  metricstarttime/prometheus_3:
     strategy: subtract_initial_point
   metricstransform/fluentbit_1:
     transforms:
@@ -624,7 +624,17 @@ processors:
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
   normalizesums/iis_2: {}
-  resource/prometheus_3:
+  resource/iis_4:
+    attributes:
+    - action: insert
+      key: gcp.project_id
+      value: test-project
+  resource/mssql_2:
+    attributes:
+    - action: insert
+      key: gcp.project_id
+      value: test-project
+  resource/prometheus_1:
     attributes:
     - action: insert
       key: gcp.project_id
@@ -632,6 +642,12 @@ processors:
   resourcedetection/_global_0:
     detectors:
     - gcp
+  transform/_global_0:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - set(attributes["instance_id"], attributes["host.id"])
   transform/agent_prometheus_0:
     metric_statements:
     - context: metric
@@ -696,7 +712,7 @@ processors:
       - delete_key(attributes, "location")
       - delete_key(attributes, "cluster")
       - delete_key(attributes, "namespace")
-  transform/prometheus_1:
+  transform/prometheus_2:
     error_mode: ignore
     metric_statements:
     - context: metric
@@ -844,28 +860,33 @@ service:
       - metricstransform/hostmetrics_2
       - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
+      - transform/_global_0
       receivers:
       - hostmetrics/hostmetrics
     metrics/default__pipeline_iis:
       exporters:
-      - googlecloud
+      - otlphttp/otlp
       processors:
       - metricstransform/iis_0
       - casttosum/iis_1
       - normalizesums/iis_2
       - transform/iis_3
+      - resource/iis_4
       - filter/default__pipeline_iis_0
       - resourcedetection/_global_0
+      - transform/_global_0
       receivers:
       - windowsperfcounters/iis
     metrics/default__pipeline_mssql:
       exporters:
-      - googlecloud
+      - otlphttp/otlp
       processors:
       - metricstransform/mssql_0
       - transform/mssql_1
+      - resource/mssql_2
       - filter/default__pipeline_mssql_0
       - resourcedetection/_global_0
+      - transform/_global_0
       receivers:
       - windowsperfcounters/mssql
     metrics/fluentbit:
@@ -876,6 +897,7 @@ service:
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
       - resourcedetection/_global_0
+      - transform/_global_0
       receivers:
       - prometheus/agent_prometheus
     metrics/loggingmetrics:
@@ -893,6 +915,7 @@ service:
       - interval/loggingmetrics_7
       - metricstransform/loggingmetrics_8
       - resourcedetection/_global_0
+      - transform/_global_0
       receivers:
       - prometheus/agent_prometheus
     metrics/opsagent:
@@ -901,6 +924,7 @@ service:
       processors:
       - transform/ops_agent_0
       - resourcedetection/_global_0
+      - transform/_global_0
       receivers:
       - otlpjsonfile/ops_agent
     metrics/otel:
@@ -913,6 +937,7 @@ service:
       - filter/otel_2
       - metricstransform/otel_3
       - resourcedetection/_global_0
+      - transform/_global_0
       receivers:
       - prometheus/agent_prometheus
     metrics/prometheus__pipeline_prometheus:
@@ -920,9 +945,9 @@ service:
       - otlphttp/otlp
       processors:
       - transform/prometheus_0
-      - transform/prometheus_1
-      - metricstarttime/prometheus_2
-      - resource/prometheus_3
+      - resource/prometheus_1
+      - transform/prometheus_2
+      - metricstarttime/prometheus_3
       receivers:
       - prometheus/prometheus
   telemetry:

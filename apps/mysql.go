@@ -41,7 +41,7 @@ func (r MetricsReceiverMySql) Type() string {
 	return "mysql"
 }
 
-func (r MetricsReceiverMySql) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (r MetricsReceiverMySql) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	transport := "tcp"
 	if r.Endpoint == "" {
 		transport = "unix"
@@ -55,7 +55,7 @@ func (r MetricsReceiverMySql) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 	}
 
 	return []otel.ReceiverPipeline{
-		{
+		confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
 			Receiver: otel.Component{
 				Type: "mysql",
 				Config: map[string]interface{}{
@@ -125,8 +125,7 @@ func (r MetricsReceiverMySql) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 				),
 				otel.MetricsRemoveServiceAttributes(),
 			}},
-		},
-	}, nil
+		}, ctx)}, nil
 }
 
 func init() {
