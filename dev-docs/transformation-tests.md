@@ -16,7 +16,7 @@ make transformation_test_update
 ```
 These targets are part of the `precommit` and `precommit_update` targets respectively.
 
-If you are on a new branch that updates Fluent Bit or otelopscol and are locally verifying the transformation tests, you can force the agents to rebuild by deleting the `dist` folder before running `make transfomration_test`; the target will rebuild the agents if they are not present.
+If you are on a new branch that updates Fluent Bit or otelopscol and are locally verifying the transformation tests, you can force the agents to rebuild by deleting the `dist` folder before running `make transformation_test`; the target will rebuild the agents if they are not present.
 
 Read on if you are interested in how the transformation tests actually work.
 
