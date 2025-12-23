@@ -131,8 +131,6 @@
         zone: test-zone
       type: gce_instance
     timestamp: 2025-08-25T15:02:00.111213141Z
-  partialSuccess: true
-- entries:
   - jsonPayload:
       auth:
         token_type: default

@@ -367,8 +367,6 @@
       type: gce_instance
     severity: INFO
     timestamp: 2025-07-23T05:19:58.105Z
-  partialSuccess: true
-- entries:
   - jsonPayload:
       level: INFO
       message: "master.HMaster: HMaster shutdown completed"

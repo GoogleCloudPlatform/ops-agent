@@ -404,7 +404,7 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 		ReceiverPipelines: rps,
 		Pipelines:         pls,
 		Exporters: map[otel.ExporterType]otel.Component{
-			otel.OTel: {
+			otel.Logs: {
 				Type: "googlecloud",
 				Config: map[string]any{
 					"project": "my-project",

@@ -34,26 +34,41 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
-func googleCloudExporter(userAgent string, instrumentationLabels bool, serviceResourceLabels bool) otel.Component {
-	return otel.Component{
-		Type: "googlecloud",
-		Config: map[string]interface{}{
-			"user_agent": userAgent,
-			"metric": map[string]interface{}{
-				// Receivers are responsible for sending fully-qualified metric names.
-				// NB: If a receiver fails to send a full URL, OT will add the prefix `workload.googleapis.com/{metric_name}`.
-				// TODO(b/197129428): Write a test to make sure this doesn't happen.
-				"prefix": "",
-				// OT calls CreateMetricDescriptor by default. Skip because we want
-				// descriptors to be created implicitly with new time series.
-				"skip_create_descriptor": true,
-				// Omit instrumentation labels, which break agent metrics.
-				"instrumentation_library_labels": instrumentationLabels,
-				// Omit service labels, which break agent metrics.
-				"service_resource_labels": serviceResourceLabels,
-				"resource_filters":        []map[string]interface{}{},
-			},
+func googleCloudExporter(userAgent string, instrumentationLabels, serviceResourceLabels, logBuffering bool) otel.Component {
+	config := map[string]interface{}{
+		"user_agent": userAgent,
+		"metric": map[string]interface{}{
+			// Receivers are responsible for sending fully-qualified metric names.
+			// NB: If a receiver fails to send a full URL, OT will add the prefix `workload.googleapis.com/{metric_name}`.
+			// TODO(b/197129428): Write a test to make sure this doesn't happen.
+			"prefix": "",
+			// OT calls CreateMetricDescriptor by default. Skip because we want
+			// descriptors to be created implicitly with new time series.
+			"skip_create_descriptor": true,
+			// Omit instrumentation labels, which break agent metrics.
+			"instrumentation_library_labels": instrumentationLabels,
+			// Omit service labels, which break agent metrics.
+			"service_resource_labels": serviceResourceLabels,
+			"resource_filters":        []map[string]interface{}{},
 		},
+	}
+	if logBuffering {
+		config["log"] = map[string]any{
+			"grpc_pool_size": 20,
+		}
+		config["sending_queue"] = map[string]any{
+			"enabled":       true,
+			"num_consumers": 40,
+			"storage":       FileStorageExtensionID(),
+			"sizer":         "bytes",
+			"queue_size":    50000000, //50M
+		}
+		config["timeout"] = "60s"
+	}
+
+	return otel.Component{
+		Type:   "googlecloud",
+		Config: config,
 	}
 }
 
@@ -122,7 +137,17 @@ func (uc *UnifiedConfig) getOTelLogLevel() string {
 	return logLevel
 }
 
-func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) (string, error) {
+// FileStorageExtensionID returns the file_storage extension used by all receivers and exporters.
+func FileStorageExtensionID() string {
+	return "file_storage"
+}
+
+// FileStorageExtensionDirectoryPath returns the directory path for the file_storage extension.
+func FileStorageExtensionDirectoryPath(stateDir string) string {
+	return path.Join(stateDir, "file_storage")
+}
+
+func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDir string) (string, error) {
 	p := platform.FromContext(ctx)
 	userAgent, _ := p.UserAgent("Google-Cloud-Ops-Agent-Metrics")
 	metricVersionLabel, _ := p.VersionLabel("google-cloud-ops-agent-metrics")
@@ -148,6 +173,12 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 	if expOtlpExporter {
 		extensions["googleclientauth"] = map[string]interface{}{}
 	}
+	if uc.Logging.Service.OTelLogging {
+		extensions["file_storage"] = map[string]interface{}{
+			"directory":        FileStorageExtensionDirectoryPath(stateDir),
+			"create_directory": true,
+		}
+	}
 
 	otelConfig, err := otel.ModularConfig{
 		LogLevel:          uc.getOTelLogLevel(),
@@ -155,8 +186,9 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 		Pipelines:         pipelines,
 		Extensions:        extensions,
 		Exporters: map[otel.ExporterType]otel.Component{
-			otel.System: googleCloudExporter(userAgent, false, false),
-			otel.OTel:   googleCloudExporter(userAgent, true, true),
+			otel.System: googleCloudExporter(userAgent, false, false, false),
+			otel.OTel:   googleCloudExporter(userAgent, true, true, false),
+			otel.Logs:   googleCloudExporter(userAgent, true, true, true),
 			otel.GMP:    googleManagedPrometheusExporter(userAgent),
 			otel.OTLP:   otlpExporter(userAgent),
 		},
