@@ -102,7 +102,7 @@ func (LoggingProcessorMacroMongodb) Type() string {
 func (p LoggingProcessorMacroMongodb) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
 	c := []confgenerator.InternalLoggingProcessor{}
 
-	c = append(c, p.JsonLogComponents(ctx)...)
+	c = append(c, p.JsonLogComponents()...)
 	c = append(c, p.RegexLogComponents()...)
 	c = append(c, p.severityParser()...)
 
@@ -112,11 +112,18 @@ func (p LoggingProcessorMacroMongodb) Expand(ctx context.Context) []confgenerato
 // JsonLogComponents are the fluentbit components for parsing log messages that are json formatted.
 // these are generally messages from mongo with versions greater than or equal to 4.4
 // documentation: https://docs.mongodb.com/v4.4/reference/log-messages/#log-message-format
-func (p LoggingProcessorMacroMongodb) JsonLogComponents(ctx context.Context) []confgenerator.InternalLoggingProcessor {
+func (p LoggingProcessorMacroMongodb) JsonLogComponents() []confgenerator.InternalLoggingProcessor {
 	c := p.jsonParserWithTimeKey()
 
 	c = append(c, p.promoteWiredTiger()...)
 	c = append(c, p.renames()...)
+	c = append(c, &confgenerator.LoggingProcessorModifyFields{
+		Fields: map[string]*confgenerator.ModifyField{
+			`jsonPayload.message`: {
+				MoveFrom: `jsonPayload.json_message`,
+			},
+		},
+	})
 
 	return c
 }
@@ -152,11 +159,13 @@ func (p LoggingProcessorMacroMongodb) jsonParserWithTimeKey() []confgenerator.In
 	// IMPORTANT: now that we have lifted the json to top level
 	// we need to re-parse in order to properly set time at the
 	// parser level
-	c = append(c, &confgenerator.LoggingProcessorParseTimestamp{
+	c = append(c, &confgenerator.LoggingProcessorParseRegex{
 		ParserShared: confgenerator.ParserShared{
 			TimeKey:    "time",
 			TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
 		},
+		Regex: `^(?<time>.*)$`,
+		Field: "time",
 	})
 
 	return c
@@ -201,7 +210,7 @@ func (p LoggingProcessorMacroMongodb) renames() []confgenerator.InternalLoggingP
 	}{
 		{"jsonPayload.c", "jsonPayload.component"},
 		{"jsonPayload.ctx", "jsonPayload.context"},
-		{"jsonPayload.msg", "jsonPayload.message"},
+		{"jsonPayload.msg", "jsonPayload.json_message"},
 		{"jsonPayload.attr", "jsonPayload.attributes"},
 	}
 

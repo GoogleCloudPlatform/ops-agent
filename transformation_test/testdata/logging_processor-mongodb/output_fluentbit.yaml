@@ -1,6 +1,13 @@
 - entries:
   - jsonPayload:
       attributes: {}
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mongodb
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
+  - jsonPayload:
+      attributes: {}
       component: CONTROL
       context: main
       id: 23285.0

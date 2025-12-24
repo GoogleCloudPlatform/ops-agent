@@ -550,6 +550,28 @@ func (p LoggingProcessorRemoveField) Components(ctx context.Context, tag, uid st
 	return []fluentbit.Component{filter}
 }
 
+func (p LoggingProcessorRemoveField) Processors(ctx context.Context) ([]otel.Component, error) {
+	fromMember, err := filter.NewMemberLegacy(p.Field)
+	if err != nil {
+		return nil, err
+	}
+	fromAccessor, err := fromMember.OTTLAccessor()
+	if err != nil {
+		return nil, err
+	}
+
+	// delete only if the field exists
+	statements := ottl.NewStatements(
+		fromAccessor.DeleteIf(fromAccessor.IsPresent()),
+	)
+
+	return []otel.Component{otel.Transform(
+		"log", "log",
+		statements,
+	)}, nil
+
+}
+
 type LoggingProcessorParseTimestamp struct {
 	ParserShared `yaml:",inline"`
 }
