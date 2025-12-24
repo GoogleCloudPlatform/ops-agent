@@ -19,6 +19,9 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
+  batch/hostmetrics_5:
+    send_batch_max_size: 200
+    send_batch_size: 200
   cumulativetodelta/loggingmetrics_4:
     include:
       match_type: strict
@@ -558,6 +561,11 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  resource/hostmetrics_3:
+    attributes:
+    - action: insert
+      key: gcp.project_id
+      value: test-project
   resource/prometheus_1:
     attributes:
     - action: insert
@@ -581,6 +589,12 @@ processors:
       - delete_key(resource.attributes, "service.instance.id")
       - delete_key(resource.attributes, "server.port")
       - delete_key(resource.attributes, "url.scheme")
+  transform/hostmetrics_4:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
   transform/loggingmetrics_0:
     error_mode: ignore
     metric_statements:
@@ -730,11 +744,14 @@ service:
   pipelines:
     metrics/default__pipeline_hostmetrics:
       exporters:
-      - googlecloud
+      - otlphttp/otlp
       processors:
       - agentmetrics/hostmetrics_0
       - filter/hostmetrics_1
       - metricstransform/hostmetrics_2
+      - resource/hostmetrics_3
+      - transform/hostmetrics_4
+      - batch/hostmetrics_5
       - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
       - transform/_global_0
