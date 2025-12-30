@@ -65,14 +65,6 @@ docker buildx build . \
   --load \
   "${build_params[@]}"
 
-echo "The value of SKIP_SIGNING is: '${SKIP_SIGNING}'"
-
-SIGNING_DIR="$(pwd)/kokoro/scripts/build/signing"
-if [[ "${PKGFORMAT}" == "rpm" && "${SKIP_SIGNING}" != "true" ]]; then
-  RPM_SIGNING_KEY="${KOKORO_KEYSTORE_DIR}/71565_rpm-signing-key"
-  cp "${RPM_SIGNING_KEY}" "${SIGNING_DIR}/signing-key"
-fi
-
 docker run \
   -i \
   -v "${RESULT_DIR}":/artifacts \
@@ -81,8 +73,4 @@ docker run \
   bash <<EOF
     cp /google-cloud-ops-agent*.${PKGFORMAT} /artifacts
     cp /google-cloud-ops-agent-plugin*.tar.gz /artifacts
-
-    if [[ "${PKGFORMAT}" == "rpm" && "${SKIP_SIGNING}" != "true" ]]; then
-      bash /signing/sign.sh /artifacts/*.rpm
-    fi
 EOF
