@@ -922,6 +922,11 @@ const (
 	AerospikeApp = "aerospike"
 )
 
+func replaceImageProject(imageSpec string, imageProject string) string {
+	_, imageFamily, _ := strings.Cut(imageSpec, ":")
+	return fmt.Sprintf("%s:%s", imageProject, imageFamily)
+}
+
 // incompatibleOperatingSystem looks at the supported_operating_systems field
 // of metadata.yaml for this app and returns a nonempty skip reason if it
 // thinks this app doesn't support the given image.
@@ -1069,6 +1074,7 @@ func TestThirdPartyApps(t *testing.T) {
 						options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-size=100GB")
 						options.MachineType = tc.gpu.machineType
 						options.Zone = tc.gpu.availableZone
+						options.ImageSpec = replaceImageProject(options.ImageSpec, "lujieduan-dev")
 					}
 					if tc.imageSpec == SAPHANAImageSpec {
 						// This image needs an SSD in order to be performant enough.
