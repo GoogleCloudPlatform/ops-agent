@@ -11,7 +11,8 @@ steps:
     ./check_source_image.sh "${PROJECT_ID}" \
       "${_LOUHI_PARAM_SOURCE_IMAGE_FAMILY}" \
       "${_LOUHI_PARAM_SOURCE_IMAGE_PROJECT}" \
-      "${_LOUHI_PARAM_OUTPUT_IMAGE_FAMILY}"
+      "${_LOUHI_PARAM_OUTPUT_IMAGE_FAMILY}" \
+      "${_LOUHI_TRIGGER_TYPE}"
   waitFor: ['-']
 
 # Conditionally build the Packer builder image. Runs 'build_packer_builder.sh'.
@@ -39,7 +40,7 @@ steps:
 
     /usr/bin/packer build \
       -var "project_id=${PROJECT_ID}" \
-      -var "image_name=${_LOUHI_PARAM_OUTPUT_IMAGE_FAMILY}-$(date +%m-%d-%Y)" \
+      -var "image_name=${_LOUHI_PARAM_OUTPUT_IMAGE_FAMILY}-$(date  -u +%Y%m%d-%H%M%S)" \
       -var "image_family=${_LOUHI_PARAM_OUTPUT_IMAGE_FAMILY}" \
       -var "source_image=$(cat /workspace/new_source_image.txt)" \
       -var "source_image_project=${_LOUHI_PARAM_SOURCE_IMAGE_PROJECT}" \
