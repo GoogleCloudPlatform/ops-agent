@@ -24,19 +24,6 @@ variable "source_image_project" {
   description = "The specific source GCE image project (e.g., ubuntu-os-cloud)"
 }
 
-
-variable "gpu_driver_version" {
-  type        = string
-  default     = "535.161.01" // Pin specific NVIDIA driver version
-  description = "Specific NVIDIA GPU driver version to install"
-}
-
-variable "cuda_version" {
-  type        = string
-  default     = "12.2.2" // Pin specific CUDA Toolkit version
-  description = "Specific CUDA Toolkit version to install"
-}
-
 variable "zone" {
   type        = string
   default     = "us-central1-a"
@@ -72,32 +59,18 @@ source "googlecompute" "gpu_image" {
 
 build {
   sources = ["source.googlecompute.gpu_image"]
+
+  // Provisioner 1: Most distros only need one step
   provisioner "shell" {
     script = "./scripts/${var.image_family}/setup_vm.sh"
-    # Packer will pass these variables as PACKER_VAR_* env vars
-    environment_vars = [
-      "PACKER_VAR_project_id=${var.project_id}",
-      "PACKER_VAR_gpu_driver_version=${var.gpu_driver_version}",
-      "PACKER_VAR_cuda_version=${var.cuda_version}",
-      "PACKER_VAR_build_id=${var.build_id}"
-    ]
-    # Expect a disconnect/reboot after GPU driver install
-    expect_disconnect = true
-    # Give some time for SSH to come back up
+    expect_disconnect = true  // Expect a disconnect/reboot after GPU driver install
     timeout           = "240m"
   }
 
   // Provisioner 2: Handles the post-reboot part, ONLY for Debian 12.
   provisioner "shell" {
     script  = var.image_family == "debian-12" ? "./scripts/${var.image_family}/post_reboot.sh" : "./scripts/noop.sh"
-    environment_vars = [
-      "PACKER_VAR_project_id=${var.project_id}",
-      "PACKER_VAR_gpu_driver_version=${var.gpu_driver_version}",
-      "PACKER_VAR_cuda_version=${var.cuda_version}",
-      "PACKER_VAR_build_id=${var.build_id}"
-    ]
-    # Wait for the reboot to be complete
-    pause_before = "60s"
+    pause_before = "60s" // Wait for the reboot to be complete
     expect_disconnect = false // No reboot expected in this second phase.
     timeout           = "240m"
   }

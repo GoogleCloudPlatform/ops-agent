@@ -31,7 +31,11 @@ if [[ "${LATEST_PUBLIC_IMAGE}" == "${LAST_CURATED_SOURCE_IMAGE}" ]] && \
 # Else, we either have a new image, or this is trigger by git changes
 # Note that we set the Louhi Git trigger to only watch cloudbuild/gpu-image-builder directory
 else
-  echo "New source image '${LATEST_PUBLIC_IMAGE}' detected or first run. Signaling to run build."
+  if [[ "${LATEST_PUBLIC_IMAGE}" != "${LAST_CURATED_SOURCE_IMAGE}" ]]; then
+    echo "New source image '${LATEST_PUBLIC_IMAGE}' detected or first run. Signaling to run build."
+  else
+    echo "New image building triggered by GitHub changes (Louhi trigger type = '${LOUHI_TRIGGER_TYPE}')"
+  fi
   echo "${LATEST_PUBLIC_IMAGE}" > /workspace/new_source_image.txt
   echo "RUN" > /workspace/build_status.txt
 fi
