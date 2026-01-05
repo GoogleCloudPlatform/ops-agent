@@ -26,12 +26,19 @@ function Install-Go {
         -ArgumentList "/i $MsiPath /quiet /norestart ALLUSERS=1 INSTALLDIR=$GoInstallDir" `
         -NoNewWindow -Wait
 
-    # Add Go to the path for the current session
+    # Add Go binary to the path for the current session
     $env:Path = "$env:Path;$GoInstallDir\bin"
+
+    # Manually set GOPATH
+    $env:GOPATH = "$HOME\go"
+
+    # GOPATH\bin to the path for the current session
+    $env:Path = "$env:Path;$env:GOPATH\bin"
 
     # Verify installation
     $InstalledVersion = go version
     Write-Host "Go installed successfully: $InstalledVersion"
+    Write-Host "GOPATH manually set to: $env:GOPATH"
 }
 
 function Invoke-PackageBuild {
@@ -134,14 +141,14 @@ Write-Host "Copying artifacts to $GcsBucket"
 
 # Upload .goo files
 $GooFiles = Join-Path $OutputDir "*.goo"
-gsutil cp $GooFiles "$GcsBucket"
+gcloud storage cp $GooFiles "$GcsBucket"
 
 # Upload tar.gz plugin files
 $PluginTar = Join-Path $InputDir "result\google-cloud-ops-agent-plugin*.tar.gz"
-gsutil cp $PluginTar "$GcsBucket"
+gcloud storage cp $PluginTar "$GcsBucket"
 
 # Upload SHA256 text file
 $ShaFile = Join-Path $InputDir "result\google-cloud-ops-agent-plugin-sha256.txt"
-gsutil cp $ShaFile "$GcsBucket"
+gcloud storage cp $ShaFile "$GcsBucket"
 
 Write-Host "Script finished successfully."
