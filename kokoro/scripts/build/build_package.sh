@@ -68,7 +68,6 @@ docker buildx build . \
 docker run \
   -i \
   -v "${RESULT_DIR}":/artifacts \
-  -v "${SIGNING_DIR}":/signing \
   build_image \
   bash <<EOF
     cp /google-cloud-ops-agent*.${PKGFORMAT} /artifacts
