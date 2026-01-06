@@ -134,7 +134,7 @@ type ModularConfig struct {
 //	processors: [filter/mypipe_1, metrics_filter/mypipe_2, resourcedetection/_global_0]
 //	extensions: [googleclientauth]
 //	exporters: [googlecloud]
-func (c ModularConfig) Generate(ctx context.Context, expOtlpExporter bool) (string, error) {
+func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 	pl := platform.FromContext(ctx)
 	receivers := map[string]interface{}{}
 	processors := map[string]interface{}{}
@@ -251,12 +251,6 @@ func (c ModularConfig) Generate(ctx context.Context, expOtlpExporter bool) (stri
 		if name, ok := resourceDetectionProcessorNames[rdm]; ok {
 			processorNames = append(processorNames, name)
 			processors[name] = resourceDetectionProcessors[rdm].Config
-			// b/459468648
-			if expOtlpExporter {
-				copyProcessor := CopyHostIDToInstanceID()
-				processorNames = append(processorNames, copyProcessor.name("_global_0"))
-				processors[copyProcessor.name("_global_0")] = copyProcessor.Config
-			}
 		}
 		exporterType := receiverPipeline.ExporterTypes[pipeline.Type]
 		if _, ok := exporterNames[exporterType]; !ok {
