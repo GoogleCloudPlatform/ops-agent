@@ -3,7 +3,7 @@
 # Builds the custom Packer Cloud Build builder if it doesn't exist.
 # https://docs.cloud.google.com/build/docs/building/build-vm-images-with-packer
 
-set -euo pipefail
+set -xeuo pipefail
 
 PROJECT_ID="${1}"
 PACKER_BUILDER_IMAGE="gcr.io/${PROJECT_ID}/packer"
@@ -14,7 +14,7 @@ else
   echo "Packer builder image not found. Building it now..."
   git clone https://github.com/GoogleCloudPlatform/cloud-builders-community.git --depth=1
   cd cloud-builders-community/packer
-  gcloud builds submit --project="${PROJECT_ID}" . 
+  gcloud builds submit --project="${PROJECT_ID}" --service-account=projects/stackdriver-test-143416/serviceAccounts/build-and-test@stackdriver-test-143416.iam.gserviceaccount.com . 
   cd -
   echo "Packer builder image built."
 fi
