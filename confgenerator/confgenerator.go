@@ -169,7 +169,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 			otel.GMP:    googleManagedPrometheusExporter(userAgent),
 			otel.OTLP:   otlpExporter(userAgent),
 		},
-	}.Generate(ctx, expOtlpExporter)
+	}.Generate(ctx)
 	if err != nil {
 		return "", err
 	}
