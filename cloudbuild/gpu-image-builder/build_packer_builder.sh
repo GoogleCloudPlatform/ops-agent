@@ -14,7 +14,13 @@ else
   echo "Packer builder image not found. Building it now..."
   git clone https://github.com/GoogleCloudPlatform/cloud-builders-community.git --depth=1
   cd cloud-builders-community/packer
-  gcloud builds submit --project="${PROJECT_ID}" --service-account=projects/stackdriver-test-143416/serviceAccounts/build-and-test@stackdriver-test-143416.iam.gserviceaccount.com . 
+  gcloud builds submit \
+    https://github.com/GoogleCloudPlatform/cloud-builders-community \
+    --git-source-revision=master \
+    --git-source-dir=./packer/ \
+    --project="${PROJECT_ID}" \
+    --service-account=projects/stackdriver-test-143416/serviceAccounts/build-and-test@stackdriver-test-143416.iam.gserviceaccount.com \
+    --gcs-log-dir=gs://cloud-built-otel-collector-buckets-test-logs 
   cd -
   echo "Packer builder image built."
 fi
