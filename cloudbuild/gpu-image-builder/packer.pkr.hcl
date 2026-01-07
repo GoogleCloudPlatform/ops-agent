@@ -62,14 +62,14 @@ build {
 
   // Provisioner 1: Most distros only need one step
   provisioner "shell" {
-    script = "./scripts/${var.image_family}/setup_vm.sh"
+    script = "/workspace/louhi_ws/cloudbuild/gpu-image-builder/scripts/${var.image_family}/setup_vm.sh"
     expect_disconnect = true  // Expect a disconnect/reboot after GPU driver install
     timeout           = "240m"
   }
 
   // Provisioner 2: Handles the post-reboot part, ONLY for Debian 12.
   provisioner "shell" {
-    script  = var.image_family == "debian-12" ? "./scripts/${var.image_family}/post_reboot.sh" : "./scripts/noop.sh"
+    script  = var.image_family == "debian-12" ? "/workspace/louhi_ws/cloudbuild/gpu-image-builder/scripts/${var.image_family}/post_reboot.sh" : "/workspace/louhi_ws/cloudbuild/gpu-image-builder/scripts/noop.sh"
     pause_before = "60s" // Wait for the reboot to be complete
     expect_disconnect = false // No reboot expected in this second phase.
     timeout           = "240m"
