@@ -52,6 +52,9 @@ const TrailingQueryWindow = 2 * time.Minute
 // OpsAgentPluginServerPort defines the port on which the Ops Agent UAP Plugin gRPC server runs.
 const OpsAgentPluginServerPort = "1234"
 
+// OpsAgentPluginEntryPointName is the name of the entry point binary for the Ops Agent UAP Plugin.
+const OpsAgentPluginEntryPointName = "ops_agent"
+
 //go:embed testdata
 var scriptsDir embed.FS
 
@@ -867,7 +870,7 @@ func StartOpsAgentPluginServer(ctx context.Context, logger *log.Logger, vm *gce.
 		return nil
 	}
 
-	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo nohup ~/ops_agent --address=localhost:%s --errorlogfile=errorlog.txt --protocol=tcp > ~/uap_plugin_out.log 2>&1 &", port)); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo nohup ~/%s --address=localhost:%s --errorlogfile=errorlog.txt --protocol=tcp > ~/uap_plugin_out.log 2>&1 &", OpsAgentPluginEntryPointName, port)); err != nil {
 		return fmt.Errorf("StartOpsAgentPluginServer() failed to start the ops agent plugin: %v", err)
 	}
 	return nil

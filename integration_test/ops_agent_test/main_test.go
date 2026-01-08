@@ -917,7 +917,7 @@ func TestKillChildJobsWhenPluginServerProcessTerminates(t *testing.T) {
 			t.Error("expected the plugin to report that the Ops Agent is running")
 		}
 
-		_, processName, err := fetchPIDAndProcessName(ctx, logger, vm, []string{"plugin"})
+		_, processName, err := fetchPIDAndProcessName(ctx, logger, vm, []string{agents.OpsAgentPluginEntryPointName})
 		if err != nil {
 			t.Fatal(err)
 		}
