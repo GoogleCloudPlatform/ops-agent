@@ -867,7 +867,7 @@ func StartOpsAgentPluginServer(ctx context.Context, logger *log.Logger, vm *gce.
 		return nil
 	}
 
-	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo nohup ~/plugin --address=localhost:%s --errorlogfile=errorlog.txt --protocol=tcp > ~/uap_plugin_out.log 2>&1 &", port)); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo nohup ~/ops_agent --address=localhost:%s --errorlogfile=errorlog.txt --protocol=tcp > ~/uap_plugin_out.log 2>&1 &", port)); err != nil {
 		return fmt.Errorf("StartOpsAgentPluginServer() failed to start the ops agent plugin: %v", err)
 	}
 	return nil
