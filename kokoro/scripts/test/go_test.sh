@@ -204,7 +204,7 @@ fi
 
 # Set up some command line flags for "go test".
 go_test_args=(
-  -test.parallel=1000
+  "-test.parallel=${TEST_PARALLEL:-1000}"
   -tags=integration_test
   -timeout=3h
 )
