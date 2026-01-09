@@ -174,10 +174,10 @@ RUN Copy-Item -Path C:\Windows\System32\msvcp140.dll -Destination /work/out/bin/
 #
 # Install Golang
 #
-ADD https://go.dev/dl/go1.24.3.windows-amd64.msi /local/go1.24.3.windows-amd64.msi
+ADD https://go.dev/dl/go1.24.11.windows-amd64.msi /local/go1.24.11.windows-amd64.msi
 
 RUN Start-Process msiexec.exe `
-    -ArgumentList '/i C:\local\go1.24.3.windows-amd64.msi ', '/quiet ', `
+    -ArgumentList '/i C:\local\go1.24.11.windows-amd64.msi ', '/quiet ', `
     '/norestart ', 'ALLUSERS=1,INSTALLDIR=C:\Go' -NoNewWindow -Wait;
 
 #
@@ -355,6 +355,7 @@ RUN Get-Content VERSION | Where-Object length | ForEach-Object { Invoke-Expressi
     go build -o bin/plugin.exe -ldflags \"-X github.com/GoogleCloudPlatform/ops-agent/internal/version.BuildDistro=$env:BUILD_DISTRO -X github.com/GoogleCloudPlatform/ops-agent/internal/version.Version=$env:PKG_VERSION\" ./cmd/ops_agent_uap_plugin; `
     Copy-Item -Path bin/plugin.exe -Destination /work/out/bin/; `
     $env:PKG_VERSION | Out-File -FilePath /work/out/bin/OPS_AGENT_VERSION -Encoding UTF8;
+
 ###############################################################################
 # Packaging
 ###############################################################################
@@ -363,7 +364,14 @@ WORKDIR /work
 
 COPY . /work
 
-RUN & .\pkg\goo\build.ps1 -DestDir /work/out;
+ARG PACKAGE="false"
+# Always copy maint.ps1, even when not running as a presubmit.
+RUN Copy-Item -Path .\pkg\goo\maint.ps1 -Destination /work/out/bin/;
+
+RUN if ($env:PACKAGE -eq 'true') { `
+      & .\pkg\goo\build.ps1 -DestDir /work/out; `
+      ls /work/out; `
+    }
 
 ###############################################################################
 # Packaging for the Ops Agent Plugin
@@ -374,5 +382,4 @@ WORKDIR /work
 COPY . /work
 
 RUN & .\pkg\plugin\build.ps1 -DestDir /work/out/bin;
-
 

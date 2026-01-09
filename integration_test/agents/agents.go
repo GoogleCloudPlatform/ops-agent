@@ -213,6 +213,7 @@ func getOpsAgentLogFilesList(imageSpec string) []string {
 		return []string{
 			gce.SyslogLocation(imageSpec),
 			OpsAgentConfigPath(imageSpec),
+			"~/uap_plugin_out.log",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/health-checks.log",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/subagents/logging-module.log",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/subagents/metrics-module.log",
@@ -866,7 +867,7 @@ func StartOpsAgentPluginServer(ctx context.Context, logger *log.Logger, vm *gce.
 		return nil
 	}
 
-	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo nohup ~/plugin --address=localhost:%s --errorlogfile=errorlog.txt --protocol=tcp 1>/dev/null 2>/dev/null &", port)); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo nohup ~/plugin --address=localhost:%s --errorlogfile=errorlog.txt --protocol=tcp > ~/uap_plugin_out.log 2>&1 &", port)); err != nil {
 		return fmt.Errorf("StartOpsAgentPluginServer() failed to start the ops agent plugin: %v", err)
 	}
 	return nil
@@ -1077,7 +1078,7 @@ func InstallOpsAgentUAPPlugin(ctx context.Context, logger *log.Logger, vm *gce.V
 //
 // gcsPath must point to a GCS Path to a .tar.gz file to install on the testing VMs.
 func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, gcsPath string) error {
-	if err := gce.InstallGsutilIfNeeded(ctx, logger, vm); err != nil {
+	if err := gce.InstallGcloudIfNeeded(ctx, logger, vm); err != nil {
 		return err
 	}
 
@@ -1086,7 +1087,7 @@ func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm
 			return err
 		}
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf(`gsutil cp %s/google-cloud-ops-agent-plugin*.tar.gz C:\\agentPlugin`, gcsPath)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf(`gcloud storage cp %s/google-cloud-ops-agent-plugin*.tar.gz C:\\agentPlugin`, gcsPath)); err != nil {
 			return fmt.Errorf("error copying down agent package from GCS: %v", err)
 		}
 
@@ -1106,7 +1107,7 @@ func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm
 			return err
 		}
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo gsutil cp "+gcsPath+"/google-cloud-ops-agent-plugin*.tar.gz /tmp/agentPlugin"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo gcloud storage cp "+gcsPath+"/google-cloud-ops-agent-plugin*.tar.gz /tmp/agentPlugin"); err != nil {
 			return fmt.Errorf("error copying down the agent uap plugin tarball from GCS: %v", err)
 		}
 
@@ -1135,44 +1136,48 @@ func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm
 // Packages with "dbgsym" in their name are skipped because customers don't
 // generally install those, so our tests shouldn't either.
 func InstallPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, gcsPath string) error {
-	if gce.IsWindows(vm.ImageSpec) {
-		return installWindowsPackageFromGCS(ctx, logger, vm, gcsPath)
-	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, "mkdir -p /tmp/agentUpload /tmp/agentPlugin"); err != nil {
-		return err
-	}
-	if err := gce.InstallGsutilIfNeeded(ctx, logger, vm); err != nil {
-		return err
-	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, "sudo gsutil cp -r "+gcsPath+"/* /tmp/agentUpload"); err != nil {
-		return fmt.Errorf("error copying down agent package from GCS: %v", err)
-	}
-	// Print the contents of /tmp/agentUpload into the logs.
-	if _, err := gce.RunRemotely(ctx, logger, vm, "ls /tmp/agentUpload"); err != nil {
-		return err
-	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, "rm /tmp/agentUpload/*dbgsym* || echo nothing to delete"); err != nil {
-		return err
-	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, "mv /tmp/agentUpload/*.tar.gz /tmp/agentPlugin || echo nothing to move"); err != nil {
-		return err
-	}
-	if IsRPMBased(vm.ImageSpec) {
-		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo rpm --upgrade -v --force /tmp/agentUpload/*"); err != nil {
-			return fmt.Errorf("error installing agent from .rpm file: %v", err)
+	tryInstallPackageFromGCS := func() error {
+		if gce.IsWindows(vm.ImageSpec) {
+			return installWindowsPackageFromGCS(ctx, logger, vm, gcsPath)
+		}
+		if _, err := gce.RunRemotely(ctx, logger, vm, "mkdir -p /tmp/agentUpload /tmp/agentPlugin"); err != nil {
+			return err
+		}
+		if err := gce.InstallGcloudIfNeeded(ctx, logger, vm); err != nil {
+			return err
+		}
+		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo gcloud storage cp -r "+gcsPath+"/* /tmp/agentUpload"); err != nil {
+			return fmt.Errorf("error copying down agent package from GCS: %v", err)
+		}
+		// Print the contents of /tmp/agentUpload into the logs.
+		if _, err := gce.RunRemotely(ctx, logger, vm, "ls /tmp/agentUpload"); err != nil {
+			return err
+		}
+		if _, err := gce.RunRemotely(ctx, logger, vm, "rm /tmp/agentUpload/*dbgsym* || echo nothing to delete"); err != nil {
+			return err
+		}
+		if _, err := gce.RunRemotely(ctx, logger, vm, "mv -f /tmp/agentUpload/*.tar.gz /tmp/agentPlugin || echo nothing to move"); err != nil {
+			return err
+		}
+		if IsRPMBased(vm.ImageSpec) {
+			if _, err := gce.RunRemotely(ctx, logger, vm, "sudo rpm --upgrade -v --force /tmp/agentUpload/*"); err != nil {
+				return fmt.Errorf("error installing agent from .rpm file: %v", err)
+			}
+			return nil
+		}
+		// --allow-downgrades is marked as dangerous, but I don't see another way
+		// to get the following sequence to work (from TestUpgradeOpsAgent):
+		// 1. install stable package from Rapture
+		// 2. install just-built package from GCS
+		// Nor do I know why apt considers that sequence to be a downgrade.
+		// Setting DPkg::Lock::Timeout=600 to wait while other apt command may be executing.
+		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo apt-get -o DPkg::Lock::Timeout=600 install --allow-downgrades --yes --verbose-versions /tmp/agentUpload/*"); err != nil {
+			return fmt.Errorf("error installing agent from .deb file: %v", err)
 		}
 		return nil
 	}
-	// --allow-downgrades is marked as dangerous, but I don't see another way
-	// to get the following sequence to work (from TestUpgradeOpsAgent):
-	// 1. install stable package from Rapture
-	// 2. install just-built package from GCS
-	// Nor do I know why apt considers that sequence to be a downgrade.
-	// Setting DPkg::Lock::Timeout=600 to wait while other apt command may be executing.
-	if _, err := gce.RunRemotely(ctx, logger, vm, "sudo apt-get -o DPkg::Lock::Timeout=600 install --allow-downgrades --yes --verbose-versions /tmp/agentUpload/*"); err != nil {
-		return fmt.Errorf("error installing agent from .deb file: %v", err)
-	}
-	return nil
+	backoffPolicy := backoff.WithContext(backoff.WithMaxRetries(backoff.NewConstantBackOff(30*time.Second), 3), ctx)
+	return backoff.Retry(tryInstallPackageFromGCS, backoffPolicy)
 }
 
 // Installs the agent package from GCS (see packagesInGCS) onto the given Windows VM.
@@ -1180,7 +1185,7 @@ func installWindowsPackageFromGCS(ctx context.Context, logger *log.Logger, vm *g
 	if _, err := gce.RunRemotely(ctx, logger, vm, "New-Item -ItemType directory -Path C:\\agentUpload"); err != nil {
 		return err
 	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("gsutil cp -r %s/*.goo C:\\agentUpload", gcsPath)); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("gcloud storage cp -r %s/*.goo C:\\agentUpload", gcsPath)); err != nil {
 		return fmt.Errorf("error copying down agent package from GCS: %v", err)
 	}
 	if _, err := gce.RunRemotely(ctx, logger, vm, "googet -noconfirm -verbose install -reinstall (Get-ChildItem C:\\agentUpload\\*.goo | Select-Object -Expand FullName)"); err != nil {
