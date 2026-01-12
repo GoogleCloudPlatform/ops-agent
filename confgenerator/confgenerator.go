@@ -185,7 +185,6 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 	}
 	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines)
 
-	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
 	extensions := uc.getEnabledExtensions(ctx, stateDir)
 	otelConfig, err := otel.ModularConfig{
 		LogLevel:          uc.getOTelLogLevel(),
