@@ -52,6 +52,13 @@ const TrailingQueryWindow = 2 * time.Minute
 // OpsAgentPluginServerPort defines the port on which the Ops Agent UAP Plugin gRPC server runs.
 const OpsAgentPluginServerPort = "1234"
 
+// OpsAgentPluginEntryPointName is the name of the entry point binary for the Ops Agent UAP Plugin.
+const OpsAgentPluginEntryPointName = "ops_agent"
+
+const linuxAgentGCSDownloadPath = "/tmp/agentUpload"
+
+const windowsAgentGCSDownloadPath = "C:\\agentUpload"
+
 //go:embed testdata
 var scriptsDir embed.FS
 
@@ -214,6 +221,8 @@ func getOpsAgentLogFilesList(imageSpec string) []string {
 			gce.SyslogLocation(imageSpec),
 			OpsAgentConfigPath(imageSpec),
 			"~/uap_plugin_out.log",
+			"~/uap_plugin_ps.log",
+			"~/uap_plugin_ports.log",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/health-checks.log",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/subagents/logging-module.log",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/subagents/metrics-module.log",
@@ -867,8 +876,18 @@ func StartOpsAgentPluginServer(ctx context.Context, logger *log.Logger, vm *gce.
 		return nil
 	}
 
-	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo nohup ~/plugin --address=localhost:%s --errorlogfile=errorlog.txt --protocol=tcp > ~/uap_plugin_out.log 2>&1 &", port)); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo nohup ~/%s --address=localhost:%s --errorlogfile=errorlog.txt --protocol=tcp > ~/uap_plugin_out.log 2>&1 &", OpsAgentPluginEntryPointName, port)); err != nil {
 		return fmt.Errorf("StartOpsAgentPluginServer() failed to start the ops agent plugin: %v", err)
+	}
+	// TODO(b/456444594): just some printf debugging
+	for _, cmd := range []string{
+		"sleep 5",
+		fmt.Sprintf("ps ax | grep %s > ~/uap_plugin_ps.log", OpsAgentPluginEntryPointName),
+		"ss -tulpn > ~/uap_plugin_ports.log",
+	} {
+		if out, err := gce.RunRemotely(ctx, logger, vm, cmd); err != nil {
+			logger.Printf("StartOpsAgentPluginServer() failed to capture debugging info (non-fatal):\nstdout+stderr=%s\n%s\nerr=%v\n", out.Stdout, out.Stderr, err)
+		}
 	}
 	return nil
 
@@ -1140,27 +1159,27 @@ func InstallPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, 
 		if gce.IsWindows(vm.ImageSpec) {
 			return installWindowsPackageFromGCS(ctx, logger, vm, gcsPath)
 		}
-		if _, err := gce.RunRemotely(ctx, logger, vm, "mkdir -p /tmp/agentUpload /tmp/agentPlugin"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("mkdir -p %s /tmp/agentPlugin", linuxAgentGCSDownloadPath)); err != nil {
 			return err
 		}
 		if err := gce.InstallGcloudIfNeeded(ctx, logger, vm); err != nil {
 			return err
 		}
-		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo gcloud storage cp -r "+gcsPath+"/* /tmp/agentUpload"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo gcloud storage cp -r %s/* %s", gcsPath, linuxAgentGCSDownloadPath)); err != nil {
 			return fmt.Errorf("error copying down agent package from GCS: %v", err)
 		}
-		// Print the contents of /tmp/agentUpload into the logs.
-		if _, err := gce.RunRemotely(ctx, logger, vm, "ls /tmp/agentUpload"); err != nil {
+		//Print the contents of the agent download directory into the logs.
+		if _, err := gce.RunRemotely(ctx, logger, vm, "ls "+linuxAgentGCSDownloadPath); err != nil {
 			return err
 		}
-		if _, err := gce.RunRemotely(ctx, logger, vm, "rm /tmp/agentUpload/*dbgsym* || echo nothing to delete"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("rm %s/*dbgsym* || echo nothing to delete", linuxAgentGCSDownloadPath)); err != nil {
 			return err
 		}
-		if _, err := gce.RunRemotely(ctx, logger, vm, "mv -f /tmp/agentUpload/*.tar.gz /tmp/agentPlugin || echo nothing to move"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("mv -f %s/*.tar.gz /tmp/agentPlugin || echo nothing to move", linuxAgentGCSDownloadPath)); err != nil {
 			return err
 		}
 		if IsRPMBased(vm.ImageSpec) {
-			if _, err := gce.RunRemotely(ctx, logger, vm, "sudo rpm --upgrade -v --force /tmp/agentUpload/*"); err != nil {
+			if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo rpm --upgrade -v --force %s/*", linuxAgentGCSDownloadPath)); err != nil {
 				return fmt.Errorf("error installing agent from .rpm file: %v", err)
 			}
 			return nil
@@ -1171,7 +1190,7 @@ func InstallPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, 
 		// 2. install just-built package from GCS
 		// Nor do I know why apt considers that sequence to be a downgrade.
 		// Setting DPkg::Lock::Timeout=600 to wait while other apt command may be executing.
-		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo apt-get -o DPkg::Lock::Timeout=600 install --allow-downgrades --yes --verbose-versions /tmp/agentUpload/*"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo apt-get -o DPkg::Lock::Timeout=600 install --allow-downgrades --yes --verbose-versions %s/*", linuxAgentGCSDownloadPath)); err != nil {
 			return fmt.Errorf("error installing agent from .deb file: %v", err)
 		}
 		return nil
@@ -1182,13 +1201,13 @@ func InstallPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, 
 
 // Installs the agent package from GCS (see packagesInGCS) onto the given Windows VM.
 func installWindowsPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, gcsPath string) error {
-	if _, err := gce.RunRemotely(ctx, logger, vm, "New-Item -ItemType directory -Path C:\\agentUpload"); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("New-Item -ItemType directory -Path %s", windowsAgentGCSDownloadPath)); err != nil {
 		return err
 	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("gcloud storage cp -r %s/*.goo C:\\agentUpload", gcsPath)); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("gcloud storage cp -r %s/*.goo %s", gcsPath, windowsAgentGCSDownloadPath)); err != nil {
 		return fmt.Errorf("error copying down agent package from GCS: %v", err)
 	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, "googet -noconfirm -verbose install -reinstall (Get-ChildItem C:\\agentUpload\\*.goo | Select-Object -Expand FullName)"); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("googet -noconfirm -verbose install -reinstall (Get-ChildItem %s\\*.goo | Select-Object -Expand FullName)", windowsAgentGCSDownloadPath)); err != nil {
 		return fmt.Errorf("error installing agent from .goo file: %v", err)
 	}
 	return nil
@@ -1215,4 +1234,210 @@ func GetOtelConfigPath(imageSpec string) string {
 		return `C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\otel\otel.yaml`
 	}
 	return "/var/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml"
+}
+
+const (
+	OtelLoggingFeatureFlag      = "otel_logging"
+	OtlpHttpExporterFeatureFlag = "otlp_exporter"
+	DefaultFeatureFlag          = "default"
+)
+
+// setExperimentalFeatures sets the EXPERIMENTAL_FEATURES environment variable.
+func setExperimentalFeatures(ctx context.Context, logger *log.Logger, vm *gce.VM, feature string) error {
+	return gce.SetEnvironmentVariables(ctx, logger, vm, map[string]string{"EXPERIMENTAL_FEATURES": feature})
+}
+
+// defaultOtelLoggingConfig returns the default config that is required to use otel_logging.
+func defaultOtelLoggingConfig() string {
+	return `logging:
+  service:
+    experimental_otel_logging: true
+`
+}
+
+// setExperimentalOtelLoggingInConfig in an Ops Agent config
+func setExperimentalOtelLoggingInConfig(config string) string {
+	return strings.Replace(
+		config,
+		"service:\n",
+		"service:\n    experimental_otel_logging: true\n",
+		1,
+	)
+}
+
+// SetupOpsAgentWithFeatureFlag configures the VM and the config depending on the selected feature flag.
+func SetupOpsAgentWithFeatureFlag(ctx context.Context, logger *log.Logger, vm *gce.VM, config string, feature string) error {
+	switch feature {
+	case OtelLoggingFeatureFlag:
+		// Set feature flag in config.
+		if config == "" {
+			config = defaultOtelLoggingConfig()
+		} else {
+			config = setExperimentalOtelLoggingInConfig(config)
+		}
+		// Set experimental feature environment variable.
+		if err := setExperimentalFeatures(ctx, logger, vm, feature); err != nil {
+			return err
+		}
+	case OtlpHttpExporterFeatureFlag:
+		if err := setExperimentalFeatures(ctx, logger, vm, feature); err != nil {
+			return err
+		}
+
+	}
+	return SetupOpsAgent(ctx, logger, vm, config)
+}
+
+func verifyRPMPackageSigned(ctx context.Context, logger *log.Logger, vm *gce.VM, location PackageLocation) error {
+	if !IsRPMBased(vm.ImageSpec) {
+		return fmt.Errorf(fmt.Sprintf("VM spec: %s, is not RPM based", vm.ImageSpec))
+	}
+
+	if location.packagesInGCS != "" {
+		return verifyRPMPackageSignedFromGCS(ctx, logger, vm)
+	}
+
+	// Assumes the Ops Agent was set up using the install script (with REPO_SUFFIX).
+	// Since the script has already added the repository to the VM, we only need
+	// to download the package.
+	_, err := gce.RunRemotely(ctx, logger, vm, "dnf download google-cloud-ops-agent")
+	if err != nil {
+		return fmt.Errorf("failed to run dnf download: %v", err)
+	}
+
+	return verifyIfRPMIsSigned(ctx, logger, vm, "./*.rpm")
+}
+
+func verifyRPMPackageSignedFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	return verifyIfRPMIsSigned(ctx, logger, vm, fmt.Sprintf("%s/*.rpm", linuxAgentGCSDownloadPath))
+}
+
+func verifyWindowsBinarySignedFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	return verifyWindowsBinaryIsSigned(ctx, logger, vm, fmt.Sprintf("%s\\*.goo", windowsAgentGCSDownloadPath))
+}
+
+func verifyWindowsBinarySigned(ctx context.Context, logger *log.Logger, vm *gce.VM, location PackageLocation) error {
+	if !gce.IsWindows(vm.ImageSpec) {
+		return fmt.Errorf(fmt.Sprintf("VM spec: %s, is not windows based", vm.ImageSpec))
+	}
+	if location.packagesInGCS != "" {
+		return verifyWindowsBinarySignedFromGCS(ctx, logger, vm)
+	}
+
+	// Assumes the Ops Agent was set up using the install script (with REPO_SUFFIX).
+	// Since the script has already added the repository to the VM, we only need
+	// to download the package.
+	_, err := gce.RunRemotely(ctx, logger, vm, "googet download google-cloud-ops-agent")
+	if err != nil {
+		return fmt.Errorf("failed to run googet download: %v", err)
+	}
+	return verifyWindowsBinaryIsSigned(ctx, logger, vm, "*.goo")
+}
+
+// verifyWindowsBinaryIsSigned assumes that the googet package has already been installed.
+func verifyWindowsBinaryIsSigned(ctx context.Context, logger *log.Logger, vm *gce.VM, path string) error {
+	cmd := strings.Join([]string{
+		fmt.Sprintf("$googetFullName = Get-ChildItem -Filter %s | Select-Object -ExpandProperty FullName", path),
+		"New-Item -Path . -Name \"expand\" -ItemType Directory",
+		"tar -vxf $googetFullName -C .\\expand\\",
+		"cd expand",
+	}, ";")
+
+	_, err := gce.RunRemotely(ctx, logger, vm, cmd)
+	if err != nil {
+		return fmt.Errorf("failed to run cmd: \n%s\nerror:\n%v", cmd, err)
+	}
+
+	cmd = `Get-ChildItem -Path 'expand' -Recurse -Include *.exe, *.dll, *.ps1 | 
+    Get-AuthenticodeSignature | 
+    Where-Object { $_.Status -ne 'Valid' } | 
+    Select-Object Status, Path`
+	out, err := gce.RunRemotely(ctx, logger, vm, cmd)
+	if err != nil {
+		return fmt.Errorf("failed to get unsigned binaries: %v", err)
+	}
+	output := out.Stdout
+	if output != "" {
+		return fmt.Errorf("found unsigned executables:\n %s", output)
+	}
+	return nil
+}
+
+func verifyIfRPMIsSigned(ctx context.Context, logger *log.Logger, vm *gce.VM, path string) error {
+	out, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("rpm -q --qf '%%{NAME}-%%{VERSION}-%%{RELEASE} %%{SIGPGP:pgpsig} %%{SIGGPG:pgpsig}\\n' -p %s", path))
+	if err != nil {
+		return fmt.Errorf("failed to run rpm -q: %v", err)
+	}
+	output := out.Stdout
+	if !strings.Contains(output, "Key ID") {
+		return fmt.Errorf("RPM was not signed, got output:\n %s", output)
+	}
+	return nil
+}
+
+// VerifyOpsAgentSigned checks if the Ops agent is properly signed.
+// Supported: RPM based VMs and Windows.
+func VerifyOpsAgentSigned(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
+	location := LocationFromEnvVars()
+	if !IsRPMBased(vm.ImageSpec) && !gce.IsWindows(vm.ImageSpec) {
+		return fmt.Errorf(fmt.Sprintf("VM image: %s, is not suported for signing", vm.ImageSpec))
+	}
+
+	if IsRPMBased(vm.ImageSpec) {
+		return verifyRPMPackageSigned(ctx, logger, vm, location)
+	}
+
+	return verifyWindowsBinarySigned(ctx, logger, vm, location)
+}
+
+const (
+	OtelLoggingFeatureFlag      = "otel_logging"
+	OtlpHttpExporterFeatureFlag = "otlp_exporter"
+	DefaultFeatureFlag          = "default"
+)
+
+// setExperimentalFeatures sets the EXPERIMENTAL_FEATURES environment variable.
+func setExperimentalFeatures(ctx context.Context, logger *log.Logger, vm *gce.VM, feature string) error {
+	return gce.SetEnvironmentVariables(ctx, logger, vm, map[string]string{"EXPERIMENTAL_FEATURES": feature})
+}
+
+// defaultOtelLoggingConfig returns the default config that is required to use otel_logging.
+func defaultOtelLoggingConfig() string {
+	return `logging:
+  service:
+    experimental_otel_logging: true
+`
+}
+
+// setExperimentalOtelLoggingInConfig in an Ops Agent config
+func setExperimentalOtelLoggingInConfig(config string) string {
+	return strings.Replace(
+		config,
+		"service:\n",
+		"service:\n    experimental_otel_logging: true\n",
+		1,
+	)
+}
+
+// SetupOpsAgentWithFeatureFlag configures the VM and the config depending on the selected feature flag.
+func SetupOpsAgentWithFeatureFlag(ctx context.Context, logger *log.Logger, vm *gce.VM, config string, feature string) error {
+	switch feature {
+	case OtelLoggingFeatureFlag:
+		// Set feature flag in config.
+		if config == "" {
+			config = defaultOtelLoggingConfig()
+		} else {
+			config = setExperimentalOtelLoggingInConfig(config)
+		}
+		// Set experimental feature environment variable.
+		if err := setExperimentalFeatures(ctx, logger, vm, feature); err != nil {
+			return err
+		}
+	case OtlpHttpExporterFeatureFlag:
+		if err := setExperimentalFeatures(ctx, logger, vm, feature); err != nil {
+			return err
+		}
+
+	}
+	return SetupOpsAgent(ctx, logger, vm, config)
 }
