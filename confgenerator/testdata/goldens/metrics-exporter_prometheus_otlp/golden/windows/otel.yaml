@@ -19,6 +19,9 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
+  batch/hostmetrics_5:
+    send_batch_max_size: 200
+    send_batch_size: 200
   batch/iis_5:
     send_batch_max_size: 200
     send_batch_size: 200
