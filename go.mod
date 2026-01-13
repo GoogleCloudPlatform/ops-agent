@@ -195,3 +195,5 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
+
+replace github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal => github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20260113151826-c75d52d872bf
