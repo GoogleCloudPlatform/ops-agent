@@ -27,6 +27,9 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
+  batch/otlp_4:
+    send_batch_max_size: 200
+    send_batch_size: 200
   cumulativetodelta/loggingmetrics_4:
     include:
       match_type: strict
@@ -94,7 +97,7 @@ processors:
     - location
   interval/loggingmetrics_7:
     interval: 1m
-  metricstarttime/otlp_5:
+  metricstarttime/otlp_6:
     strategy: subtract_initial_point
   metricstransform/fluentbit_1:
     transforms:
@@ -639,7 +642,7 @@ processors:
       - set(attributes["cluster"], "__gce__") where "__gce__" != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
       - set(attributes["instance_name"], resource.attributes["host.name"]) where resource.attributes["host.name"] != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
       - set(attributes["machine_type"], resource.attributes["host.type"]) where resource.attributes["host.type"] != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
-  transform/otlp_4:
+  transform/otlp_5:
     error_mode: ignore
     metric_statements:
     - context: metric
@@ -757,8 +760,9 @@ service:
       - transform/otlp_1
       - groupbyattrs/otlp_2
       - resource/otlp_3
-      - transform/otlp_4
-      - metricstarttime/otlp_5
+      - batch/otlp_4
+      - transform/otlp_5
+      - metricstarttime/otlp_6
       receivers:
       - otlp/otlp
     traces/traces_otlp_otlp:
