@@ -82,6 +82,9 @@ func ConvertToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context, 
 	receiver.ExporterTypes["metrics"] = otel.OTLP
 
 	receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.GCPProjectID(resource.ProjectName()))
+
+	// The OTLP exporter doesn't batch by default like the googlecloud.* exporters. We need this to avoid the API point limits.
+	receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.Batch())
 	if isPrometheus {
 		receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.MetricUnknownCounter())
 		receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.MetricStartTime())
