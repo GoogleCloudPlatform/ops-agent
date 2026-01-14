@@ -5947,19 +5947,6 @@ func TestAppHubLogLabels(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
-	// gcloud stores command logs inside of its config directory.
-	// Every test gets its own gcloud config directory copied from
-	// the main one for isolation, and therefore gets its own copy
-	// of all of the gcloud command logs on the system.
-	// When running many tests in parallel, this can fill the disk.
-	// So disable gcloud logging and delete any existing logs before
-	// running the tests.
-	ctx := context.Background()
-	if err := gce.DisableGcloudLogging(ctx); err != nil {
-		fmt.Printf("warning: could not disable gcloud logging; proceeding anyway. err=%s\n", err)
-	} else if err := gce.DeleteGcloudLogs(ctx); err != nil {
-		fmt.Printf("warning: could not delete gcloud logs; proceeding anyway. err=%s\n", err)
-	}
 	code := m.Run()
 	gce.CleanupKeysOrDie()
 	os.Exit(code)
