@@ -19,6 +19,15 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
+  batch/iis_5:
+    send_batch_max_size: 200
+    send_batch_size: 200
+  batch/mssql_3:
+    send_batch_max_size: 200
+    send_batch_size: 200
+  batch/prometheus_2:
+    send_batch_max_size: 200
+    send_batch_size: 200
   casttosum/iis_1:
     metrics:
     - agent.googleapis.com/iis/network/transferred_bytes_count
@@ -96,7 +105,7 @@ processors:
         - googlecloudmonitoring/point_count
   interval/loggingmetrics_7:
     interval: 1m
-  metricstarttime/prometheus_3:
+  metricstarttime/prometheus_4:
     strategy: subtract_initial_point
   metricstransform/fluentbit_1:
     transforms:
@@ -706,7 +715,7 @@ processors:
       - delete_key(attributes, "location")
       - delete_key(attributes, "cluster")
       - delete_key(attributes, "namespace")
-  transform/prometheus_2:
+  transform/prometheus_3:
     error_mode: ignore
     metric_statements:
     - context: metric
@@ -865,6 +874,7 @@ service:
       - normalizesums/iis_2
       - transform/iis_3
       - resource/iis_4
+      - batch/iis_5
       - filter/default__pipeline_iis_0
       - resourcedetection/_global_0
       receivers:
@@ -876,6 +886,7 @@ service:
       - metricstransform/mssql_0
       - transform/mssql_1
       - resource/mssql_2
+      - batch/mssql_3
       - filter/default__pipeline_mssql_0
       - resourcedetection/_global_0
       receivers:
@@ -933,8 +944,9 @@ service:
       processors:
       - transform/prometheus_0
       - resource/prometheus_1
-      - transform/prometheus_2
-      - metricstarttime/prometheus_3
+      - batch/prometheus_2
+      - transform/prometheus_3
+      - metricstarttime/prometheus_4
       receivers:
       - prometheus/prometheus
   telemetry:

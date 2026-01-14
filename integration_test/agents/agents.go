@@ -55,6 +55,9 @@ const OpsAgentPluginServerPort = "1234"
 // OpsAgentPluginEntryPointName is the name of the entry point binary for the Ops Agent UAP Plugin.
 const OpsAgentPluginEntryPointName = "ops_agent"
 
+// OpsAgentPluginEntryPointName is the name of the entry point binary for the Ops Agent UAP Plugin.
+const OpsAgentPluginEntryPointName = "ops_agent"
+
 const linuxAgentInstallPath = "/tmp/agentUpload"
 
 const windowsAgentInstallPath = "C:\\agentUpload"
