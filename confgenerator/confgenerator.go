@@ -185,12 +185,11 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 	}
 	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines)
 
-	extensions := uc.getEnabledExtensions(ctx, stateDir)
 	otelConfig, err := otel.ModularConfig{
 		LogLevel:          uc.getOTelLogLevel(),
 		ReceiverPipelines: receiverPipelines,
 		Pipelines:         pipelines,
-		Extensions:        extensions,
+		Extensions:        uc.getEnabledExtensions(ctx, stateDir),
 		Exporters: map[otel.ExporterType]otel.Component{
 			otel.System: googleCloudExporter(userAgent, false, false),
 			otel.OTel:   googleCloudExporter(userAgent, true, true),

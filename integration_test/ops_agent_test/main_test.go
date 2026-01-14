@@ -5953,6 +5953,93 @@ func TestLogCompression(t *testing.T) {
 	})
 }
 
+func TestLogCursor(t *testing.T) {
+	t.Parallel()
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+		t.Parallel()
+
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+
+		logPath := logPathForImage(vm.ImageSpec)
+		config := fmt.Sprintf(`logging:
+  receivers:
+    files_1:
+      type: files
+      include_paths: [%s]
+  service:
+    pipelines:
+      p1:
+        receivers: [files_1]
+`, logPath)
+
+		firstLinesToWrite := []string{
+			`line #1`,
+			`line #2`,
+		}
+		if err := writeLinesToRemoteFile(ctx, logger, vm, imageSpec, logPath, firstLinesToWrite...); err != nil {
+			t.Fatalf("Error writing dummy log lines: %v", err)
+		}
+
+		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+			t.Fatal(err)
+		}
+
+		var waitGroup sync.WaitGroup
+		addQueryFuncToWaitGroup := func(queryFunc func() error) {
+			waitGroup.Add(1)
+			go func() {
+				defer waitGroup.Done()
+				if err := queryFunc(); err != nil {
+					t.Error(err)
+				}
+			}()
+		}
+
+		addQueryFuncToWaitGroup(func() error {
+			return gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="line #1"`)
+		})
+		addQueryFuncToWaitGroup(func() error {
+			return gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="line #2"`)
+		})
+		waitGroup.Wait()
+
+		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StopCommandForImage(vm.ImageSpec)); err != nil {
+			t.Fatal(err)
+		}
+
+		secondLinesToWrite := []string{
+			`line #3`,
+			`line #4`,
+		}
+
+		if err := writeLinesToRemoteFile(ctx, logger, vm, imageSpec, logPath, secondLinesToWrite...); err != nil {
+			t.Fatalf("Error writing dummy log lines: %v", err)
+		}
+
+		time.Sleep(1 * time.Minute)
+
+		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartCommandForImage(vm.ImageSpec)); err != nil {
+			t.Fatal(err)
+		}
+
+		time.Sleep(1 * time.Minute)
+
+		addQueryFuncToWaitGroup(func() error {
+			return gce.AssertLogMissing(ctx, logger, vm, "files_1", 2*time.Minute, `jsonPayload.message="line #1"`)
+		})
+		addQueryFuncToWaitGroup(func() error {
+			return gce.AssertLogMissing(ctx, logger, vm, "files_1", 2*time.Minute, `jsonPayload.message="line #2"`)
+		})
+		addQueryFuncToWaitGroup(func() error {
+			return gce.WaitForLog(ctx, logger, vm, "files_1", 2*time.Minute, `jsonPayload.message="line #3"`)
+		})
+		addQueryFuncToWaitGroup(func() error {
+			return gce.WaitForLog(ctx, logger, vm, "files_1", 2*time.Minute, `jsonPayload.message="line #4"`)
+		})
+		waitGroup.Wait()
+	})
+}
+
 // listAndDeleteResources lists all gcloud resources of a given resourceType that match the gcloudFilter.
 // All the found listed resources are then deleted sequentially.
 // extraArguments can be used for different type of gcloud command requirements.
