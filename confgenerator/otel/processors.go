@@ -695,6 +695,6 @@ func Batch() Component {
 func ReplaceDotsWithUnderscore() Component {
 	return Transform("metric", "metric", []ottl.Statement{
 		// otlp.test.updowncounter -> otlp_test_updowncounter
-		"set(name, replace_all(name, \".\", \"_\"))",
+		"replace_pattern(name, \"\\.\", \"_\")",
 	})
 }

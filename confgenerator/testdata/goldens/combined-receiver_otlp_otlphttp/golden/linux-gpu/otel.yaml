@@ -684,7 +684,7 @@ processors:
     metric_statements:
     - context: metric
       statements:
-      - set(name, replace_all(name, ".", "_"))
+      - "replace_pattern(name, \"\\.\", \"_\")"
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
