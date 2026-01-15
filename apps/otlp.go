@@ -139,7 +139,7 @@ func (r ReceiverOTLP) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, e
 
 	converter := confgenerator.ConvertGCMOtelExporterToOtlpExporter
 	if r.MetricsMode != "googlecloudmonitoring" {
-		converter = confgenerator.ConvertOtlpPrometheusExporterToOtlpExporter
+		converter = confgenerator.ConvertPrometheusExporterToOtlpExporter
 	}
 	return []otel.ReceiverPipeline{converter(otel.ReceiverPipeline{
 		ExporterTypes: map[string]otel.ExporterType{

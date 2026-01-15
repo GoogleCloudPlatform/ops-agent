@@ -744,6 +744,12 @@ processors:
       - copy_metric(Concat([metric.name, "unknowncounter"], ":")) where metric.metadata["prometheus.type"] == "unknown" and not HasSuffix(metric.name, ":unknowncounter")
       - convert_gauge_to_sum("cumulative", true) where HasSuffix(metric.name, ":unknowncounter")
       - set(metric.name, Substring(metric.name, 0, Len(metric.name)-Len(":unknowncounter"))) where HasSuffix(metric.name, ":unknowncounter")
+  transform/otlp_7:
+    error_mode: ignore
+    metric_statements:
+    - context: metric
+      statements:
+      - set(name, replace_all(name, ".", "_"))
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
@@ -918,6 +924,7 @@ service:
       - batch/otlp_4
       - transform/otlp_5
       - metricstarttime/otlp_6
+      - transform/otlp_7
       receivers:
       - otlp/otlp
     traces/traces_otlp_otlp:
