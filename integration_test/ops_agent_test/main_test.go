@@ -5411,7 +5411,7 @@ func TestNetworkHealthCheck(t *testing.T) {
 		}
 
 		// Setting deny egress firewall rule. Waiting to changes to propagate
-		if _, err := gce.AddTagToVm(ctx, logger, vm, []string{gce.DenyEgressTrafficTag}); err != nil {
+		if err := gce.AddTagToVm(ctx, logger, vm, []string{gce.DenyEgressTrafficTag}); err != nil {
 			t.Fatal(err)
 		}
 		time.Sleep(2 * time.Minute)
@@ -5595,7 +5595,7 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
 			done
 			du -c %s | cut -f 1 | tail -n 1`, logPath, logsPerSecond, logPath, bufferDir)
 
-		if _, err := gce.AddTagToVm(ctx, dirLog.ToFile("firewall_setup.txt"), vm, []string{gce.DenyEgressTrafficTag}); err != nil {
+		if err := gce.AddTagToVm(ctx, dirLog.ToFile("firewall_setup.txt"), vm, []string{gce.DenyEgressTrafficTag}); err != nil {
 			t.Fatal(err)
 		}
 
@@ -5615,7 +5615,7 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
 			t.Fatalf("%d is greater than the allowed threshold %d", byteCount, threshold)
 		}
 
-		if _, err := gce.RemoveTagFromVm(ctx, dirLog.ToFile("firewall_setup.txt"), vm, []string{gce.DenyEgressTrafficTag}); err != nil {
+		if err := gce.RemoveTagFromVm(ctx, dirLog.ToFile("firewall_setup.txt"), vm, []string{gce.DenyEgressTrafficTag}); err != nil {
 			t.Fatal(err)
 		}
 

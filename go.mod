@@ -198,4 +198,5 @@ require (
 )
 
 //replace github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal => /usr/local/google/home/jefferbrecht/go/src/github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal
-replace github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal => github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20260114221429-995ea845eb56
+
+replace github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal => github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20260115200646-da523c19fa91

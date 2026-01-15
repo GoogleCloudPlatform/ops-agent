@@ -1012,12 +1012,6 @@ func CommonSetupWithExtraCreateArgumentsAndMetadata(t *testing.T, imageSpec stri
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
 	t.Cleanup(cancel)
-	gcloudConfigDir := t.TempDir()
-	if err := gce.SetupGcloudConfigDir(ctx, gcloudConfigDir); err != nil {
-		t.Fatalf("Unable to set up a gcloud config directory: %v", err)
-	}
-	ctx = gce.WithGcloudConfigDir(ctx, gcloudConfigDir)
-
 	logger := gce.SetupLogger(t)
 	logger.ToMainLog().Println("Calling SetupVM(). For details, see VM_initialization.txt.")
 	options := gce.VMOptions{
@@ -1040,12 +1034,6 @@ func ManagedInstanceGroupVMSetup(t *testing.T, imageSpec string, extraCreateArgu
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), gce.SuggestedTimeout)
 	t.Cleanup(cancel)
-	gcloudConfigDir := t.TempDir()
-	if err := gce.SetupGcloudConfigDir(ctx, gcloudConfigDir); err != nil {
-		t.Fatalf("Unable to set up a gcloud config directory: %v", err)
-	}
-	ctx = gce.WithGcloudConfigDir(ctx, gcloudConfigDir)
-
 	logger := gce.SetupLogger(t)
 	logger.ToMainLog().Println("Calling SetupManagedInstanceGroupVM(). For details, see VM_initialization.txt.")
 	options := gce.VMOptions{
