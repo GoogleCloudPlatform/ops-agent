@@ -5953,7 +5953,7 @@ func TestLogCompression(t *testing.T) {
 	})
 }
 
-func TestLogCursor(t *testing.T) {
+func TestFileOffset(t *testing.T) {
 	t.Parallel()
 	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
@@ -6016,14 +6016,17 @@ func TestLogCursor(t *testing.T) {
 			t.Fatalf("Error writing dummy log lines: %v", err)
 		}
 
+		// Wait 1 min to avoid querying logs ingested before restart.
 		time.Sleep(1 * time.Minute)
 
 		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartCommandForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)
 		}
 
+		// Wait 1 min for logs to be ingested after restart.
 		time.Sleep(1 * time.Minute)
 
+		// We should only observe the new logs written after restart.
 		addQueryFuncToWaitGroup(func() error {
 			return gce.AssertLogMissing(ctx, logger, vm, "files_1", 2*time.Minute, `jsonPayload.message="line #1"`)
 		})
