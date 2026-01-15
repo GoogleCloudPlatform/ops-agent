@@ -55,9 +55,9 @@ const OpsAgentPluginServerPort = "1234"
 // OpsAgentPluginEntryPointName is the name of the entry point binary for the Ops Agent UAP Plugin.
 const OpsAgentPluginEntryPointName = "ops_agent"
 
-const linuxAgentInstallPath = "/tmp/agentUpload"
+const linuxAgentGCSDownloadPath = "/tmp/agentUpload"
 
-const windowsAgentInstallPath = "C:\\agentUpload"
+const windowsAgentGCSDownloadPath = "C:\\agentUpload"
 
 //go:embed testdata
 var scriptsDir embed.FS
@@ -1147,27 +1147,27 @@ func InstallPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, 
 		if gce.IsWindows(vm.ImageSpec) {
 			return installWindowsPackageFromGCS(ctx, logger, vm, gcsPath)
 		}
-		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("mkdir -p %s /tmp/agentPlugin", linuxAgentInstallPath)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("mkdir -p %s /tmp/agentPlugin", linuxAgentGCSDownloadPath)); err != nil {
 			return err
 		}
 		if err := gce.InstallGcloudIfNeeded(ctx, logger, vm); err != nil {
 			return err
 		}
-		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo gcloud storage cp -r %s/* %s", gcsPath, linuxAgentInstallPath)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo gcloud storage cp -r %s/* %s", gcsPath, linuxAgentGCSDownloadPath)); err != nil {
 			return fmt.Errorf("error copying down agent package from GCS: %v", err)
 		}
-		// Print the contents of /tmp/agentUpload into the logs.
-		if _, err := gce.RunRemotely(ctx, logger, vm, "ls "+linuxAgentInstallPath); err != nil {
+		//Print the contents of the agent download directory into the logs.
+		if _, err := gce.RunRemotely(ctx, logger, vm, "ls "+linuxAgentGCSDownloadPath); err != nil {
 			return err
 		}
-		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("rm %s/*dbgsym* || echo nothing to delete", linuxAgentInstallPath)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("rm %s/*dbgsym* || echo nothing to delete", linuxAgentGCSDownloadPath)); err != nil {
 			return err
 		}
-		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("mv -f %s/*.tar.gz /tmp/agentPlugin || echo nothing to move", linuxAgentInstallPath)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("mv -f %s/*.tar.gz /tmp/agentPlugin || echo nothing to move", linuxAgentGCSDownloadPath)); err != nil {
 			return err
 		}
 		if IsRPMBased(vm.ImageSpec) {
-			if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo rpm --upgrade -v --force %s/*", linuxAgentInstallPath)); err != nil {
+			if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo rpm --upgrade -v --force %s/*", linuxAgentGCSDownloadPath)); err != nil {
 				return fmt.Errorf("error installing agent from .rpm file: %v", err)
 			}
 			return nil
@@ -1178,7 +1178,7 @@ func InstallPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, 
 		// 2. install just-built package from GCS
 		// Nor do I know why apt considers that sequence to be a downgrade.
 		// Setting DPkg::Lock::Timeout=600 to wait while other apt command may be executing.
-		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo apt-get -o DPkg::Lock::Timeout=600 install --allow-downgrades --yes --verbose-versions %s/*", linuxAgentInstallPath)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo apt-get -o DPkg::Lock::Timeout=600 install --allow-downgrades --yes --verbose-versions %s/*", linuxAgentGCSDownloadPath)); err != nil {
 			return fmt.Errorf("error installing agent from .deb file: %v", err)
 		}
 		return nil
@@ -1189,13 +1189,13 @@ func InstallPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, 
 
 // Installs the agent package from GCS (see packagesInGCS) onto the given Windows VM.
 func installWindowsPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, gcsPath string) error {
-	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("New-Item -ItemType directory -Path %s", windowsAgentInstallPath)); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("New-Item -ItemType directory -Path %s", windowsAgentGCSDownloadPath)); err != nil {
 		return err
 	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("gcloud storage cp -r %s/*.goo %s", gcsPath, windowsAgentInstallPath)); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("gcloud storage cp -r %s/*.goo %s", gcsPath, windowsAgentGCSDownloadPath)); err != nil {
 		return fmt.Errorf("error copying down agent package from GCS: %v", err)
 	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("googet -noconfirm -verbose install -reinstall (Get-ChildItem %s\\*.goo | Select-Object -Expand FullName)", windowsAgentInstallPath)); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("googet -noconfirm -verbose install -reinstall (Get-ChildItem %s\\*.goo | Select-Object -Expand FullName)", windowsAgentGCSDownloadPath)); err != nil {
 		return fmt.Errorf("error installing agent from .goo file: %v", err)
 	}
 	return nil
@@ -1245,11 +1245,11 @@ func isRPMPackageSigned(ctx context.Context, logger *log.Logger, vm *gce.VM, loc
 }
 
 func isRPMPackageSignedFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
-	return checkIfRPMIsSigned(ctx, logger, vm, fmt.Sprintf("%s/*.rpm", linuxAgentInstallPath))
+	return checkIfRPMIsSigned(ctx, logger, vm, fmt.Sprintf("%s/*.rpm", linuxAgentGCSDownloadPath))
 }
 
 func isWindowsBinarySignedFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
-	return checkIfWindowsBinaryIsSigned(ctx, logger, vm, fmt.Sprintf("%s\\*.goo", windowsAgentInstallPath))
+	return checkIfWindowsBinaryIsSigned(ctx, logger, vm, fmt.Sprintf("%s\\*.goo", windowsAgentGCSDownloadPath))
 }
 
 func isWindowsBinarySigned(ctx context.Context, logger *log.Logger, vm *gce.VM, location PackageLocation) error {
