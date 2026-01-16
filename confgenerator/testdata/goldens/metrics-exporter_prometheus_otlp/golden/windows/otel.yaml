@@ -22,10 +22,10 @@ processors:
   batch/hostmetrics_6:
     send_batch_max_size: 200
     send_batch_size: 200
-  batch/iis_7:
+  batch/iis_5:
     send_batch_max_size: 200
     send_batch_size: 200
-  batch/mssql_5:
+  batch/mssql_3:
     send_batch_max_size: 200
     send_batch_size: 200
   batch/prometheus_2:
@@ -689,21 +689,6 @@ processors:
       statements:
       - set(name, "agent.googleapis.com/iis")
       - set(version, "1.0")
-  transform/iis_5:
-    metric_statements:
-    - context: scope
-      statements:
-      - set(name, "")
-      - set(version, "")
-  transform/iis_6:
-    metric_statements:
-    - context: resource
-      error_mode: silent
-      statements:
-      - delete_key(attributes, "service.name")
-      - delete_key(attributes, "service.instance.id")
-      - delete_key(attributes, "service.namespace")
-      - delete_key(attributes, "service.version")
   transform/loggingmetrics_0:
     error_mode: ignore
     metric_statements:
@@ -731,21 +716,6 @@ processors:
       statements:
       - set(name, "agent.googleapis.com/mssql")
       - set(version, "1.0")
-  transform/mssql_3:
-    metric_statements:
-    - context: scope
-      statements:
-      - set(name, "")
-      - set(version, "")
-  transform/mssql_4:
-    metric_statements:
-    - context: resource
-      error_mode: silent
-      statements:
-      - delete_key(attributes, "service.name")
-      - delete_key(attributes, "service.instance.id")
-      - delete_key(attributes, "service.namespace")
-      - delete_key(attributes, "service.version")
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
@@ -931,9 +901,7 @@ service:
       - normalizesums/iis_2
       - transform/iis_3
       - resource/iis_4
-      - transform/iis_5
-      - transform/iis_6
-      - batch/iis_7
+      - batch/iis_5
       - filter/default__pipeline_iis_0
       - resourcedetection/_global_0
       receivers:
@@ -945,9 +913,7 @@ service:
       - metricstransform/mssql_0
       - transform/mssql_1
       - resource/mssql_2
-      - transform/mssql_3
-      - transform/mssql_4
-      - batch/mssql_5
+      - batch/mssql_3
       - filter/default__pipeline_mssql_0
       - resourcedetection/_global_0
       receivers:
