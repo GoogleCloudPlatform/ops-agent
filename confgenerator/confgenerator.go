@@ -66,25 +66,32 @@ func ConvertGCMOtelExporterToOtlpExporter(receiver otel.ReceiverPipeline, ctx co
 }
 
 func ConvertToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context, isPrometheus bool) otel.ReceiverPipeline {
+
 	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
 	resource, _ := platform.FromContext(ctx).GetResource()
 	if !expOtlpExporter {
 		return receiver
 	}
-	_, err := receiver.ExporterTypes["metrics"]
-	if !err {
-		return receiver
-	}
-	receiver.ExporterTypes["metrics"] = otel.OTLP
+	_, ok := receiver.ExporterTypes["metrics"]
+	if ok {
+		receiver.ExporterTypes["metrics"] = otel.OTLP
+		receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.GCPProjectID(resource.ProjectName()))
 
-	receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.GCPProjectID(resource.ProjectName()))
-
-	// The OTLP exporter doesn't batch by default like the googlecloud.* exporters. We need this to avoid the API point limits.
-	receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.Batch())
-	if isPrometheus {
-		receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.MetricUnknownCounter())
-		receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.MetricStartTime())
+		// The OTLP exporter doesn't batch by default like the googlecloud.* exporters. We need this to avoid the API point limits.
+		receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.Batch())
+		if isPrometheus {
+			receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.MetricUnknownCounter())
+			receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.MetricStartTime())
+		}
 	}
+
+	_, ok = receiver.ExporterTypes["logs"]
+	if ok {
+		receiver.ExporterTypes["logs"] = otel.OTLP
+		receiver.Processors["logs"] = append(receiver.Processors["logs"], otel.GCPProjectID(resource.ProjectName()))
+		receiver.Processors["logs"] = append(receiver.Processors["logs"], otel.Batch())
+	}
+	log.Println("Converting OTel exporter to OTLP exporter for receiver:", receiver)
 	return receiver
 }
 
