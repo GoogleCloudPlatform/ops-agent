@@ -85,7 +85,7 @@ var testdataDir embed.FS
 
 func logPathForImage(imageSpec string) string {
 	if gce.IsWindows(imageSpec) {
-		return `C:\mylog`
+		return `C:\tmp\mylog`
 	}
 	return "/tmp/mylog"
 }
@@ -1963,11 +1963,11 @@ func TestLogFilePathLabel(t *testing.T) {
 			t.Fatalf("error uploading log: %v", err)
 		}
 
-		// In Windows the generated log_file_path "C:\mylog_1" uses a backslash.
+		// In Windows the generated log_file_path "C:\tmp\mylog_1" uses a backslash.
 		// When constructing the query in WaithForLog the backslashes are escaped so
-		// replacing with two backslahes correctly queries for "C:\mylog_1" label.
+		// replacing with two backslahes correctly queries for "C:\tmp\mylog_1" label.
 		if gce.IsWindows(imageSpec) {
-			file1 = strings.Replace(file1, `\`, `\\`, 1)
+			file1 = strings.Replace(file1, `\`, `\\`, -1)
 		}
 
 		// Expect to see log with label added.
