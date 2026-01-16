@@ -19,10 +19,10 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  batch/hostmetrics_1_3:
+  batch/hostmetrics_1_4:
     send_batch_max_size: 200
     send_batch_size: 200
-  batch/hostmetrics_5:
+  batch/hostmetrics_6:
     send_batch_max_size: 200
     send_batch_size: 200
   batch/prometheus_2:
@@ -629,12 +629,30 @@ processors:
       statements:
       - set(name, "")
       - set(version, "")
+  transform/hostmetrics_1_3:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
   transform/hostmetrics_4:
     metric_statements:
     - context: scope
       statements:
       - set(name, "")
       - set(version, "")
+  transform/hostmetrics_5:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
   transform/loggingmetrics_0:
     error_mode: ignore
     metric_statements:
@@ -793,7 +811,8 @@ service:
       - metricstransform/hostmetrics_2
       - resource/hostmetrics_3
       - transform/hostmetrics_4
-      - batch/hostmetrics_5
+      - transform/hostmetrics_5
+      - batch/hostmetrics_6
       - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
       receivers:
@@ -805,7 +824,8 @@ service:
       - metricstransform/hostmetrics_1_0
       - resource/hostmetrics_1_1
       - transform/hostmetrics_1_2
-      - batch/hostmetrics_1_3
+      - transform/hostmetrics_1_3
+      - batch/hostmetrics_1_4
       - filter/default__pipeline_hostmetrics_1_0
       - resourcedetection/_global_0
       receivers:
