@@ -89,7 +89,9 @@ func ConvertToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context, 
 	if ok {
 		receiver.ExporterTypes["logs"] = otel.OTLP
 		receiver.Processors["logs"] = append(receiver.Processors["logs"], otel.GCPProjectID(resource.ProjectName()))
+		receiver.Processors["logs"] = append(receiver.Processors["logs"], otel.DisableOtlpRoundTrip())
 		receiver.Processors["logs"] = append(receiver.Processors["logs"], otel.Batch())
+		receiver.Processors["logs"] = append(receiver.Processors["logs"], otel.InstrumentationScope())
 	}
 	return receiver
 }
