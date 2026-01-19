@@ -68,7 +68,7 @@ var (
 	logSizeInBytes   = os.Getenv("LOG_SIZE_IN_BYTES")
 	logRate          = os.Getenv("LOG_RATE")
 	logPath          = "/tmp/tail_file"
-	logGeneratorPath = "/log_generator.py"
+	logGeneratorPath = "/tmp/log_generator.py"
 
 	ttl    = os.Getenv("TTL")
 	distro = os.Getenv("DISTRO")
