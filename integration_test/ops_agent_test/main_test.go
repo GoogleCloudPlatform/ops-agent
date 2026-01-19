@@ -5972,11 +5972,7 @@ func TestFileOffset(t *testing.T) {
         receivers: [files_1]
 `, logPath)
 
-		firstLinesToWrite := []string{
-			`line #1`,
-			`line #2`,
-		}
-		if err := writeLinesToRemoteFile(ctx, logger, vm, imageSpec, logPath, firstLinesToWrite...); err != nil {
+		if err := writeLinesToRemoteFile(ctx, logger, vm, imageSpec, logPath, "first line"); err != nil {
 			t.Fatalf("Error writing dummy log lines: %v", err)
 		}
 
@@ -5984,40 +5980,17 @@ func TestFileOffset(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		var waitGroup sync.WaitGroup
-		addQueryFuncToWaitGroup := func(queryFunc func() error) {
-			waitGroup.Add(1)
-			go func() {
-				defer waitGroup.Done()
-				if err := queryFunc(); err != nil {
-					t.Error(err)
-				}
-			}()
-		}
-
-		addQueryFuncToWaitGroup(func() error {
-			return gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="line #1"`)
-		})
-		addQueryFuncToWaitGroup(func() error {
-			return gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="line #2"`)
-		})
-		waitGroup.Wait()
+		// Wait 1 min for all logs to be ingested after first start.
+		time.Sleep(1 * time.Minute)
 
 		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StopCommandForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)
 		}
 
-		secondLinesToWrite := []string{
-			`line #3`,
-			`line #4`,
-		}
-
-		if err := writeLinesToRemoteFile(ctx, logger, vm, imageSpec, logPath, secondLinesToWrite...); err != nil {
+		// Additional log to test succesful agent restart.
+		if err := writeLinesToRemoteFile(ctx, logger, vm, imageSpec, logPath, "second line"); err != nil {
 			t.Fatalf("Error writing dummy log lines: %v", err)
 		}
-
-		// Wait 1 min to avoid querying logs ingested before restart.
-		time.Sleep(1 * time.Minute)
 
 		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartCommandForImage(vm.ImageSpec)); err != nil {
 			t.Fatal(err)
@@ -6026,20 +5999,21 @@ func TestFileOffset(t *testing.T) {
 		// Wait 1 min for logs to be ingested after restart.
 		time.Sleep(1 * time.Minute)
 
-		// We should only observe the new logs written after restart.
-		addQueryFuncToWaitGroup(func() error {
-			return gce.AssertLogMissing(ctx, logger, vm, "files_1", 2*time.Minute, `jsonPayload.message="line #1"`)
-		})
-		addQueryFuncToWaitGroup(func() error {
-			return gce.AssertLogMissing(ctx, logger, vm, "files_1", 2*time.Minute, `jsonPayload.message="line #2"`)
-		})
-		addQueryFuncToWaitGroup(func() error {
-			return gce.WaitForLog(ctx, logger, vm, "files_1", 2*time.Minute, `jsonPayload.message="line #3"`)
-		})
-		addQueryFuncToWaitGroup(func() error {
-			return gce.WaitForLog(ctx, logger, vm, "files_1", 2*time.Minute, `jsonPayload.message="line #4"`)
-		})
-		waitGroup.Wait()
+		// We should only observe one instance of the "first line" log.
+		matchingLogs, err := gce.QueryAllLogs(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="first line"`, gce.LogQueryMaxAttempts)
+		if err != nil {
+			t.Error(err)
+		}
+		if len(matchingLogs) == 0 {
+			t.Errorf(`Expected to find at least one instance of "first line" log in the backend. Found %d instances.`, len(matchingLogs))
+		}
+		if len(matchingLogs) >= 2 {
+			t.Errorf(`Expected to find only one instance of "first line" log in the backend. Found %d instances.`, len(matchingLogs))
+		}
+		// Verify second log was ingested.
+		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="second line"`); err != nil {
+			t.Error(err)
+		}
 	})
 }
 
