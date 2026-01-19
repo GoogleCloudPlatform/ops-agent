@@ -4780,7 +4780,7 @@ func runGoCode(ctx context.Context, logger *log.Logger, vm *gce.VM, content io.R
 
 func TestOTLPMetricsGCM(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		otlpConfig := `
@@ -4800,7 +4800,7 @@ traces:
   service:
     pipelines:
 `
-		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, otlpConfig, feature); err != nil {
+		if err := agents.SetupOpsAgent(ctx, logger, vm, otlpConfig); err != nil {
 			t.Fatal(err)
 		}
 
@@ -4964,50 +4964,50 @@ traces:
 
 		}
 
-		// expectedFeatures := []*feature_tracking_metadata.FeatureTracking{
-		// 	{
-		// 		Module:  "logging",
-		// 		Feature: "service:pipelines",
-		// 		Key:     "default_pipeline_overridden",
-		// 		Value:   "false",
-		// 	},
-		// 	{
-		// 		Module:  "metrics",
-		// 		Feature: "service:pipelines",
-		// 		Key:     "default_pipeline_overridden",
-		// 		Value:   "false",
-		// 	},
-		// 	{
-		// 		Module:  "combined",
-		// 		Feature: "receivers:otlp",
-		// 		Key:     "[0].metrics_mode",
-		// 		Value:   "googlecloudmonitoring",
-		// 	},
-		// 	{
-		// 		Module:  "combined",
-		// 		Feature: "receivers:otlp",
-		// 		Key:     "[0].enabled",
-		// 		Value:   "true",
-		// 	},
-		// 	{
-		// 		Module:  "combined",
-		// 		Feature: "receivers:otlp",
-		// 		Key:     "[0].grpc_endpoint",
-		// 		Value:   "endpoint",
-		// 	},
-		// }
+		expectedFeatures := []*feature_tracking_metadata.FeatureTracking{
+			{
+				Module:  "logging",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "false",
+			},
+			{
+				Module:  "metrics",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "false",
+			},
+			{
+				Module:  "combined",
+				Feature: "receivers:otlp",
+				Key:     "[0].metrics_mode",
+				Value:   "googlecloudmonitoring",
+			},
+			{
+				Module:  "combined",
+				Feature: "receivers:otlp",
+				Key:     "[0].enabled",
+				Value:   "true",
+			},
+			{
+				Module:  "combined",
+				Feature: "receivers:otlp",
+				Key:     "[0].grpc_endpoint",
+				Value:   "endpoint",
+			},
+		}
 
-		// series, err := gce.WaitForMetricSeries(ctx, logger, vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", time.Hour, nil, false, len(expectedFeatures))
-		// if err != nil {
-		// 	t.Error(err)
-		// 	return
-		// }
+		series, err := gce.WaitForMetricSeries(ctx, logger, vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", time.Hour, nil, false, len(expectedFeatures))
+		if err != nil {
+			t.Error(err)
+			return
+		}
 
-		// err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, expectedFeatures)
-		// if err != nil {
-		// 	t.Error(err)
-		// 	return
-		// }
+		err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, expectedFeatures)
+		if err != nil {
+			t.Error(err)
+			return
+		}
 	},
 	)
 }
@@ -5033,6 +5033,7 @@ traces:
   service:
     pipelines:
 `
+		// Only run the test for the OTLP http exporter
 		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, otlpConfig, OtlpHttpExporterFeatureFlag); err != nil {
 			t.Fatal(err)
 		}
