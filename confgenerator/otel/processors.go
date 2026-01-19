@@ -702,6 +702,15 @@ func InstrumentationScope() Component {
 	))
 }
 
+func FlattenSourceLocation() Component {
+	return Transform("log", "log", ottl.NewStatements(
+		ottl.LValue{"attributes", "code.file.path"}.SetIf(ottl.RValue(`attributes["gcp.source_location"]["file"]`), ottl.IsNotNil(ottl.RValue(`attributes["gcp.source_location"]["file"]`))),
+		ottl.LValue{"attributes", "code.function.name"}.SetIf(ottl.RValue(`attributes["gcp.source_location"]["func"]`), ottl.IsNotNil(ottl.RValue(`attributes["gcp.source_location"]["func"]`))),
+		ottl.LValue{"attributes", "code.line.number"}.SetIf(ottl.RValue(`attributes["gcp.source_location"]["line"]`), ottl.IsNotNil(ottl.RValue(`attributes["gcp.source_location"]["line"]`))),
+		ottl.LValue{"attributes", "gcp.source_location"}.Delete(),
+	))
+}
+
 func Batch() Component {
 	return Component{
 		Type: "batch",
