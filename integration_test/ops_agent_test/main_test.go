@@ -92,7 +92,7 @@ func logPathForImage(imageSpec string) string {
 
 func workDirForImage(imageSpec string) string {
 	if gce.IsWindows(imageSpec) {
-		return `C:\work`
+		return `C:\tmp\work`
 	}
 	return "/tmp/work"
 }
