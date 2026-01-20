@@ -217,6 +217,8 @@ func getOpsAgentLogFilesList(imageSpec string) []string {
 			gce.SyslogLocation(imageSpec),
 			OpsAgentConfigPath(imageSpec),
 			"~/uap_plugin_out.log",
+			"~/uap_plugin_ps.log",
+			"~/uap_plugin_ports.log",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/health-checks.log",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/subagents/logging-module.log",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/subagents/metrics-module.log",
@@ -872,6 +874,16 @@ func StartOpsAgentPluginServer(ctx context.Context, logger *log.Logger, vm *gce.
 
 	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo nohup ~/%s --address=localhost:%s --errorlogfile=errorlog.txt --protocol=tcp > ~/uap_plugin_out.log 2>&1 &", OpsAgentPluginEntryPointName, port)); err != nil {
 		return fmt.Errorf("StartOpsAgentPluginServer() failed to start the ops agent plugin: %v", err)
+	}
+	// TODO(b/456444594): just some printf debugging
+	for _, cmd := range []string{
+		"sleep 5",
+		fmt.Sprintf("ps ax | grep %s > ~/uap_plugin_ps.log", OpsAgentPluginEntryPointName),
+		"ss -tulpn > ~/uap_plugin_ports.log",
+	} {
+		if out, err := gce.RunRemotely(ctx, logger, vm, cmd); err != nil {
+			logger.Printf("StartOpsAgentPluginServer() failed to capture debugging info (non-fatal):\nstdout+stderr=%s\n%s\nerr=%v\n", out.Stdout, out.Stderr, err)
+		}
 	}
 	return nil
 
