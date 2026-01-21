@@ -231,7 +231,7 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 	}
 	exporterTypeProcessorNames := map[ExporterType]string{
 		Logs: exporterTypeProcessors[Logs].name("_global_2"),
-		OTLP: exporterTypeProcessors[Logs].name("_global_3"),
+		OTLP: exporterTypeProcessors[OTLP].name("_global_3"),
 	}
 
 	for prefix, pipeline := range c.Pipelines {
