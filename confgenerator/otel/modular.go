@@ -36,6 +36,7 @@ const (
 	// another exporter type.
 	OTel ExporterType = iota
 	System
+	Logs
 	GMP
 	OTLP
 )
@@ -51,6 +52,8 @@ func (t ExporterType) Name() string {
 		return ""
 	} else if t == OTel {
 		return "otel"
+	} else if t == Logs {
+		return "logs"
 	} else if t == OTLP {
 		return "otlp"
 	} else {
@@ -221,6 +224,16 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 		SetIfMissing: resourceDetectionProcessors[SetIfMissing].name("_global_1"),
 	}
 
+	exporterTypeProcessors := map[ExporterType]Component{
+		Logs: BatchLogsExporter(),
+		// The OTLP exporter doesn't batch by default like the googlecloud.* exporters. We need this to avoid the API point limits.
+		OTLP: BatchOLTPMetricExporter(),
+	}
+	exporterTypeProcessorNames := map[ExporterType]string{
+		Logs: exporterTypeProcessors[Logs].name("_global_2"),
+		OTLP: exporterTypeProcessors[Logs].name("_global_3"),
+	}
+
 	for prefix, pipeline := range c.Pipelines {
 		// Receiver pipelines need to be instantiated once, since they might have more than one type.
 		// We do this work more than once if it's in more than one pipeline, but it should just overwrite the same names.
@@ -253,6 +266,10 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 			processors[name] = resourceDetectionProcessors[rdm].Config
 		}
 		exporterType := receiverPipeline.ExporterTypes[pipeline.Type]
+		if name, ok := exporterTypeProcessorNames[exporterType]; ok {
+			processorNames = append(processorNames, name)
+			processors[name] = exporterTypeProcessors[exporterType].Config
+		}
 		if _, ok := exporterNames[exporterType]; !ok {
 			exporter := c.Exporters[exporterType]
 			name := exporter.name(exporterType.Name())
