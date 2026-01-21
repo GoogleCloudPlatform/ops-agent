@@ -7,18 +7,25 @@ exporters:
       service_resource_labels: false
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
-  googlecloud/otel:
+  googlecloud/logs:
+    log:
+      grpc_pool_size: 20
     metric:
       instrumentation_library_labels: true
       prefix: ""
       resource_filters: []
       service_resource_labels: true
       skip_create_descriptor: true
+    timeout: 60s
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
+  batch/_global_2:
+    send_batch_max_size: 1000
+    send_batch_size: 1000
+    timeout: 200s
   cumulativetodelta/loggingmetrics_4:
     include:
       match_type: strict
@@ -988,30 +995,33 @@ service:
   pipelines:
     logs/logs_default__pipeline_syslog:
       exporters:
-      - googlecloud/otel
+      - googlecloud/logs
       processors:
       - transform/syslog_0
       - resourcedetection/_global_0
+      - batch/_global_2
       receivers:
       - filelog/syslog
     logs/logs_nginx_nginx__access:
       exporters:
-      - googlecloud/otel
+      - googlecloud/logs
       processors:
       - transform/nginx__access_0
       - transform/nginx__access_1
       - transform/nginx__access_2
       - resourcedetection/_global_0
+      - batch/_global_2
       receivers:
       - filelog/nginx__access
     logs/logs_nginx_nginx__error:
       exporters:
-      - googlecloud/otel
+      - googlecloud/logs
       processors:
       - transform/nginx__error_0
       - transform/nginx__error_1
       - transform/nginx__error_2
       - resourcedetection/_global_0
+      - batch/_global_2
       receivers:
       - filelog/nginx__error
     metrics/default__pipeline_hostmetrics:

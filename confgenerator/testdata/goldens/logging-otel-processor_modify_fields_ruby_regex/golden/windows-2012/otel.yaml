@@ -18,14 +18,6 @@ exporters:
       skip_create_descriptor: true
     timeout: 60s
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
-  googlecloud/otel:
-    metric:
-      instrumentation_library_labels: true
-      prefix: ""
-      resource_filters: []
-      service_resource_labels: true
-      skip_create_descriptor: true
-    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
@@ -1174,29 +1166,32 @@ service:
   pipelines:
     logs/logs_default__pipeline_windows__event__log:
       exporters:
-      - googlecloud/otel
+      - googlecloud/logs
       processors:
       - transform/windows__event__log_0
       - transform/windows__event__log_1
       - resourcedetection/_global_0
+      - batch/_global_2
       receivers:
       - windowseventlog/windows__event__log
     logs/logs_default__pipeline_windows__event__log_1:
       exporters:
-      - googlecloud/otel
+      - googlecloud/logs
       processors:
       - transform/windows__event__log_1_0
       - transform/windows__event__log_1_1
       - resourcedetection/_global_0
+      - batch/_global_2
       receivers:
       - windowseventlog/windows__event__log_1
     logs/logs_default__pipeline_windows__event__log_2:
       exporters:
-      - googlecloud/otel
+      - googlecloud/logs
       processors:
       - transform/windows__event__log_2_0
       - transform/windows__event__log_2_1
       - resourcedetection/_global_0
+      - batch/_global_2
       receivers:
       - windowseventlog/windows__event__log_2
     logs/logs_p1_sample__logs:
