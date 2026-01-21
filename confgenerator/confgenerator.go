@@ -109,6 +109,24 @@ func otlpExporter(userAgent string) otel.Component {
 			"headers": map[string]string{
 				"User-Agent": userAgent,
 			},
+			"encoding": "json",
+		},
+	}
+}
+
+// This will merge with the otlp exporter above once the prod UTR logging endpoint is ready.
+func otlpExporterUTRLoggingStaging(userAgent string) otel.Component {
+	return otel.Component{
+		Type: "otlphttp",
+		Config: map[string]interface{}{
+			"endpoint": "https://test-us-central2-telemetry.sandbox.googleapis.com",
+			"auth": map[string]interface{}{
+				"authenticator": "googleclientauth",
+			},
+			"headers": map[string]string{
+				"User-Agent": userAgent,
+			},
+			"encoding": "json",
 		},
 	}
 }
@@ -168,10 +186,11 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 		Pipelines:         pipelines,
 		Extensions:        extensions,
 		Exporters: map[otel.ExporterType]otel.Component{
-			otel.System: googleCloudExporter(userAgent, false, false),
-			otel.OTel:   googleCloudExporter(userAgent, true, true),
-			otel.GMP:    googleManagedPrometheusExporter(userAgent),
-			otel.OTLP:   otlpExporter(userAgent),
+			otel.System:         googleCloudExporter(userAgent, false, false),
+			otel.OTel:           googleCloudExporter(userAgent, true, true),
+			otel.GMP:            googleManagedPrometheusExporter(userAgent),
+			otel.OTLP:           otlpExporter(userAgent),
+			otel.OTLPStagingUTR: otlpExporterUTRLoggingStaging(userAgent),
 		},
 	}.Generate(ctx)
 	if err != nil {

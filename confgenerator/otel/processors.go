@@ -711,6 +711,15 @@ func FlattenSourceLocation() Component {
 	))
 }
 
+// This processor copies the service.* attributes from the resource to the log attributes, if they exist.
+func CopyServiceResourceLabels() Component {
+	return Transform("log", "log", ottl.NewStatements(
+		ottl.LValue{"attributes", "service.name"}.SetIf(ottl.RValue(`resource.attributes["service.name"]`), ottl.IsNotNil(ottl.RValue(`resource.attributes["service.name"]`))),
+		ottl.LValue{"attributes", "service.namespace"}.SetIf(ottl.RValue(`resource.attributes["service.namespace"]`), ottl.IsNotNil(ottl.RValue(`resource.attributes["service.namespace"]`))),
+		ottl.LValue{"attributes", "service.instance.id"}.SetIf(ottl.RValue(`resource.attributes["service.instance.id"]`), ottl.IsNotNil(ottl.RValue(`resource.attributes["service.instance.id"]`))),
+	))
+}
+
 func Batch() Component {
 	return Component{
 		Type: "batch",
