@@ -19,7 +19,7 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  batch/prometheus_2:
+  batch/_global_3:
     send_batch_max_size: 200
     send_batch_size: 200
   cumulativetodelta/loggingmetrics_4:
@@ -84,7 +84,7 @@ processors:
         - googlecloudmonitoring/point_count
   interval/loggingmetrics_7:
     interval: 1m
-  metricstarttime/prometheus_4:
+  metricstarttime/prometheus_3:
     strategy: subtract_initial_point
   metricstransform/fluentbit_1:
     transforms:
@@ -621,7 +621,7 @@ processors:
       - delete_key(attributes, "location")
       - delete_key(attributes, "cluster")
       - delete_key(attributes, "namespace")
-  transform/prometheus_3:
+  transform/prometheus_2:
     error_mode: ignore
     metric_statements:
     - context: metric
@@ -789,9 +789,9 @@ service:
       processors:
       - transform/prometheus_0
       - resource/prometheus_1
-      - batch/prometheus_2
-      - transform/prometheus_3
-      - metricstarttime/prometheus_4
+      - transform/prometheus_2
+      - metricstarttime/prometheus_3
+      - batch/_global_3
       receivers:
       - prometheus/prometheus
   telemetry:
