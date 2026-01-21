@@ -168,11 +168,11 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 		Pipelines:         pipelines,
 		Extensions:        extensions,
 		Exporters: map[otel.ExporterType]otel.Component{
-			otel.System: googleCloudExporter(userAgent, false, false, false),
-			otel.OTel:   googleCloudExporter(userAgent, true, true, false),
-			otel.Logs:   googleCloudExporter(userAgent, true, true, true),
-			otel.GMP:    googleManagedPrometheusExporter(userAgent),
-			otel.OTLP:   otlpExporter(userAgent),
+			otel.System:   googleCloudExporter(userAgent, false, false, false),
+			otel.OTel:     googleCloudExporter(userAgent, true, true, false),
+			otel.OTelLogs: googleCloudExporter(userAgent, true, true, true),
+			otel.GMP:      googleManagedPrometheusExporter(userAgent),
+			otel.OTLP:     otlpExporter(userAgent),
 		},
 	}.Generate(ctx)
 	if err != nil {

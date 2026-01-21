@@ -141,7 +141,7 @@ func (r ReceiverOTLP) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, e
 		ExporterTypes: map[string]otel.ExporterType{
 			"metrics": receiverPipelineType,
 			"traces":  otel.OTel,
-			"logs":    otel.Logs,
+			"logs":    otel.OTelLogs,
 		},
 		Receiver: otel.Component{
 			Type: "otlp",

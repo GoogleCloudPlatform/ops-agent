@@ -36,9 +36,9 @@ const (
 	// another exporter type.
 	OTel ExporterType = iota
 	System
-	Logs
 	GMP
 	OTLP
+	OTelLogs
 )
 const (
 	Override ResourceDetectionMode = iota
@@ -52,7 +52,7 @@ func (t ExporterType) Name() string {
 		return ""
 	} else if t == OTel {
 		return "otel"
-	} else if t == Logs {
+	} else if t == OTelLogs {
 		return "logs"
 	} else if t == OTLP {
 		return "otlp"
@@ -225,13 +225,13 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 	}
 
 	exporterTypeProcessors := map[ExporterType]Component{
-		Logs: BatchLogsExporter(),
+		OTelLogs: BatchLogsExporter(),
 		// The OTLP exporter doesn't batch by default like the googlecloud.* exporters. We need this to avoid the API point limits.
 		OTLP: BatchOLTPMetricExporter(),
 	}
 	exporterTypeProcessorNames := map[ExporterType]string{
-		Logs: exporterTypeProcessors[Logs].name("_global_2"),
-		OTLP: exporterTypeProcessors[OTLP].name("_global_3"),
+		OTelLogs: exporterTypeProcessors[OTelLogs].name("_global_2"),
+		OTLP:     exporterTypeProcessors[OTLP].name("_global_3"),
 	}
 
 	for prefix, pipeline := range c.Pipelines {

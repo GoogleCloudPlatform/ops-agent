@@ -241,7 +241,7 @@ func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.Receiv
 			"logs": nil,
 		},
 		ExporterTypes: map[string]otel.ExporterType{
-			"logs": otel.Logs,
+			"logs": otel.OTelLogs,
 		},
 	}}, nil
 }
@@ -366,7 +366,7 @@ func (r LoggingReceiverSyslog) Pipelines(ctx context.Context) ([]otel.ReceiverPi
 		},
 
 		ExporterTypes: map[string]otel.ExporterType{
-			"logs": otel.Logs,
+			"logs": otel.OTelLogs,
 		},
 	}}, nil
 }
@@ -633,7 +633,7 @@ func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.R
 				"logs": p,
 			},
 			ExporterTypes: map[string]otel.ExporterType{
-				"logs": otel.Logs,
+				"logs": otel.OTelLogs,
 			},
 		})
 	}
@@ -1011,7 +1011,7 @@ func (r LoggingReceiverSystemd) Pipelines(ctx context.Context) ([]otel.ReceiverP
 		},
 
 		ExporterTypes: map[string]otel.ExporterType{
-			"logs": otel.Logs,
+			"logs": otel.OTelLogs,
 		},
 	}}, nil
 }
