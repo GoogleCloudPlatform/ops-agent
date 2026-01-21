@@ -56,6 +56,10 @@ func googleCloudExporter(userAgent string, instrumentationLabels, serviceResourc
 		config["log"] = map[string]any{
 			"grpc_pool_size": 20,
 		}
+		config["sending_queue"] = map[string]any{
+			"enabled":       true,
+			"num_consumers": 40,
+		}
 		config["timeout"] = "60s"
 	}
 
