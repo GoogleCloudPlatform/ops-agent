@@ -57,32 +57,42 @@ func googleCloudExporter(userAgent string, instrumentationLabels bool, serviceRe
 	}
 }
 
-func ConvertPrometheusExporterToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
-	return ConvertToOtlpExporter(receiver, ctx, true)
+func ConvertPrometheusExporterToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
+	return ConvertToOtlpExporter(pipeline, ctx, true, false)
 }
 
-func ConvertGCMOtelExporterToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
-	return ConvertToOtlpExporter(receiver, ctx, false)
+func ConvertGCMOtelExporterToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
+	return ConvertToOtlpExporter(pipeline, ctx, false, false)
 }
 
-func ConvertToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context, isPrometheus bool) otel.ReceiverPipeline {
+func ConvertGCMSystemExporterToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
+	return ConvertToOtlpExporter(pipeline, ctx, false, true)
+}
+
+func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, isPrometheus bool, isSystem bool) otel.ReceiverPipeline {
 	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
 	resource, _ := platform.FromContext(ctx).GetResource()
 	if !expOtlpExporter {
-		return receiver
+		return pipeline
 	}
-	_, err := receiver.ExporterTypes["metrics"]
+	_, err := pipeline.ExporterTypes["metrics"]
 	if !err {
-		return receiver
+		return pipeline
 	}
-	receiver.ExporterTypes["metrics"] = otel.OTLP
+	pipeline.ExporterTypes["metrics"] = otel.OTLP
+	pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.GCPProjectID(resource.ProjectName()))
+	if isSystem {
+		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveInstrumentationLibraryLabelsAttributes())
+		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveServiceAttributes())
+	}
 
-	receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.GCPProjectID(resource.ProjectName()))
+	// The OTLP exporter doesn't batch by default like the googlecloud.* exporters. We need this to avoid the API point limits.
+	pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.Batch())
 	if isPrometheus {
-		receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.MetricUnknownCounter())
-		receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.MetricStartTime())
+		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricUnknownCounter())
+		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricStartTime())
 	}
-	return receiver
+	return pipeline
 }
 
 func otlpExporter(userAgent string) otel.Component {

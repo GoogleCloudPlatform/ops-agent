@@ -85,7 +85,7 @@ var testdataDir embed.FS
 
 func logPathForImage(imageSpec string) string {
 	if gce.IsWindows(imageSpec) {
-		return `C:\mylog`
+		return `C:\tmp\mylog`
 	}
 	return "/tmp/mylog"
 }
@@ -917,7 +917,7 @@ func TestKillChildJobsWhenPluginServerProcessTerminates(t *testing.T) {
 			t.Error("expected the plugin to report that the Ops Agent is running")
 		}
 
-		_, processName, err := fetchPIDAndProcessName(ctx, logger, vm, []string{"plugin"})
+		_, processName, err := fetchPIDAndProcessName(ctx, logger, vm, []string{agents.OpsAgentPluginEntryPointName})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1963,11 +1963,11 @@ func TestLogFilePathLabel(t *testing.T) {
 			t.Fatalf("error uploading log: %v", err)
 		}
 
-		// In Windows the generated log_file_path "C:\mylog_1" uses a backslash.
+		// In Windows the generated log_file_path "C:\tmp\mylog_1" uses a backslash.
 		// When constructing the query in WaithForLog the backslashes are escaped so
-		// replacing with two backslahes correctly queries for "C:\mylog_1" label.
+		// replacing with two backslahes correctly queries for "C:\tmp\mylog_1" label.
 		if gce.IsWindows(imageSpec) {
-			file1 = strings.Replace(file1, `\`, `\\`, 1)
+			file1 = strings.Replace(file1, `\`, `\\`, -1)
 		}
 
 		// Expect to see log with label added.
@@ -2748,7 +2748,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 
 func TestDefaultMetricsNoProxy(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag, OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, "", feature); err != nil {
@@ -2766,7 +2766,7 @@ func TestDefaultMetricsNoProxy(t *testing.T) {
 // go/sdi-integ-test#proxy-testing
 func TestDefaultMetricsWithProxy(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag, OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if !gce.IsWindows(imageSpec) {
 			t.Skip("Proxy test is currently only supported on windows.")
@@ -2937,7 +2937,7 @@ func TestGoogleSecretManagerProvider(t *testing.T) {
 }
 func TestPrometheusMetrics(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
@@ -2991,7 +2991,7 @@ func TestPrometheusMetrics(t *testing.T) {
           - prometheus
 `
 
-		if err := agents.SetupOpsAgent(ctx, logger, vm, promConfig); err != nil {
+		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, promConfig, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -3122,7 +3122,7 @@ func TestPrometheusMetrics(t *testing.T) {
 
 func TestPrometheusMetricsWithMetadata(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		metadataKey, metadataValue := "test", "${test:value}"
 		escapedMetadataValue := "_{test:value}"
@@ -3152,7 +3152,7 @@ func TestPrometheusMetricsWithMetadata(t *testing.T) {
           - prometheus
 `, metadataKey, metadataKey)
 
-		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, promConfig); err != nil {
+		if err := SetupOpsAgentWithFeatureFlag(ctx, logger.ToMainLog(), vm, promConfig, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -3188,7 +3188,7 @@ func getCommonLabels(vm *gce.VM) []*metadata.MetricLabel {
 // The JSON exporter will connect to a http server that serve static JSON files
 func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		// TODO: Set up JSON exporter stuff on Windows
 		if gce.IsWindows(imageSpec) {
@@ -3292,7 +3292,7 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
       prom_pipeline:
         receivers: [prom_app]
 `
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -3936,7 +3936,7 @@ func buildGoBinary(ctx context.Context, logger *log.Logger, vm *gce.VM, source, 
 // correctly received and processed
 func testPrometheusMetrics(t *testing.T, opsAgentConfig string, testChecks []mockPrometheusCheck) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -3987,7 +3987,7 @@ func testPrometheusMetrics(t *testing.T, opsAgentConfig string, testChecks []moc
 			t.Fatalf("Http server failed to start with stdout %s and stderr %s", liveCheckOut.Stdout, liveCheckOut.Stderr)
 		}
 		// 3. Config and start the agent
-		if err := agents.SetupOpsAgent(ctx, logger, vm, opsAgentConfig); err != nil {
+		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, opsAgentConfig, feature); err != nil {
 			t.Fatal(err)
 		}
 
