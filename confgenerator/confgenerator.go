@@ -91,10 +91,14 @@ func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, 
 	}
 
 	if _, ok := pipeline.ExporterTypes["logs"]; ok {
-		pipeline.ExporterTypes["logs"] = otel.OTLP
+		pipeline.ExporterTypes["logs"] = otel.OTLPStagingUTR
 		pipeline.Processors["logs"] = append(pipeline.Processors["logs"], otel.GCPProjectID(resource.ProjectName()))
 		pipeline.Processors["logs"] = append(pipeline.Processors["logs"], otel.Batch())
+		pipeline.Processors["logs"] = append(pipeline.Processors["logs"], otel.DisableOtlpRoundTrip())
+		pipeline.Processors["logs"] = append(pipeline.Processors["logs"], otel.InstrumentationScope())
+		pipeline.Processors["logs"] = append(pipeline.Processors["logs"], otel.CopyServiceResourceLabels())
 	}
+
 	return pipeline
 }
 
