@@ -163,7 +163,7 @@ func (r ReceiverOTLP) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, e
 			"traces":  otel.SetIfMissing,
 			"logs":    otel.SetIfMissing,
 		},
-	}, ctx, false)}, nil
+	}, ctx, false, false)}, nil
 }
 
 func init() {
