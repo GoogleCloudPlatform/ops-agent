@@ -27,10 +27,13 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  batch/iis_5:
+  batch/hostmetrics_6:
     send_batch_max_size: 200
     send_batch_size: 200
-  batch/mssql_3:
+  batch/iis_7:
+    send_batch_max_size: 200
+    send_batch_size: 200
+  batch/mssql_5:
     send_batch_max_size: 200
     send_batch_size: 200
   batch/otlp_4:
@@ -646,6 +649,11 @@ processors:
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
   normalizesums/iis_2: {}
+  resource/hostmetrics_3:
+    attributes:
+    - action: insert
+      key: gcp.project_id
+      value: test-project
   resource/iis_4:
     attributes:
     - action: insert
@@ -681,12 +689,42 @@ processors:
       - delete_key(resource.attributes, "service.instance.id")
       - delete_key(resource.attributes, "server.port")
       - delete_key(resource.attributes, "url.scheme")
+  transform/hostmetrics_4:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/hostmetrics_5:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
   transform/iis_3:
     metric_statements:
     - context: scope
       statements:
       - set(name, "agent.googleapis.com/iis")
       - set(version, "1.0")
+  transform/iis_5:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/iis_6:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
   transform/loggingmetrics_0:
     error_mode: ignore
     metric_statements:
@@ -714,6 +752,21 @@ processors:
       statements:
       - set(name, "agent.googleapis.com/mssql")
       - set(version, "1.0")
+  transform/mssql_3:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/mssql_4:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
@@ -825,11 +878,15 @@ service:
   pipelines:
     metrics/default__pipeline_hostmetrics:
       exporters:
-      - googlecloud
+      - otlphttp/otlp
       processors:
       - agentmetrics/hostmetrics_0
       - filter/hostmetrics_1
       - metricstransform/hostmetrics_2
+      - resource/hostmetrics_3
+      - transform/hostmetrics_4
+      - transform/hostmetrics_5
+      - batch/hostmetrics_6
       - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
       receivers:
@@ -843,7 +900,9 @@ service:
       - normalizesums/iis_2
       - transform/iis_3
       - resource/iis_4
-      - batch/iis_5
+      - transform/iis_5
+      - transform/iis_6
+      - batch/iis_7
       - filter/default__pipeline_iis_0
       - resourcedetection/_global_0
       receivers:
@@ -855,7 +914,9 @@ service:
       - metricstransform/mssql_0
       - transform/mssql_1
       - resource/mssql_2
-      - batch/mssql_3
+      - transform/mssql_3
+      - transform/mssql_4
+      - batch/mssql_5
       - filter/default__pipeline_mssql_0
       - resourcedetection/_global_0
       receivers:
