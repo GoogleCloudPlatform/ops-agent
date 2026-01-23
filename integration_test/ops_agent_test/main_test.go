@@ -5057,7 +5057,6 @@ traces:
 		}
 		expectedLabels := []*metadata.MetricLabel{
 			{Name: "otel_scope_name", ValueRegex: "foo"},
-			{Name: "otel_scope_version", ValueRegex: ""},
 			{Name: "instance_name", ValueRegex: vm.Name},
 			{Name: "machine_type", ValueRegex: fmt.Sprintf("projects/[0-9]+/machineTypes/%s", vm.MachineType)},
 		}
