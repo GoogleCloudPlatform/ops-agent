@@ -100,6 +100,7 @@ func main() {
 	testHistogramMetric(ctx, meter, "otlp.test.histogram")
 	testUpDownCounterMetric(ctx, meter, "otlp.test.updowncounter")
 	testCumulativeMetric(ctx, meter, "otlp.test.cumulative")
+
 }
 
 func testCumulativeMetric(ctx context.Context, meter metric.Meter, name string) {
