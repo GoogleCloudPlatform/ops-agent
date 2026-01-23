@@ -676,6 +676,13 @@ func GCPProjectID(projectID string) Component {
 	)
 }
 
+// temp processor, will delete when UTR logging recognizes cloud.platform resource attribute
+func AddResourceType() Component {
+	return ResourceTransform(
+		map[string]string{"gcp.resource_type": "gce_instance"}, false,
+	)
+}
+
 func DisableOtlpRoundTrip() Component {
 	return ResourceTransform(
 		map[string]string{"gcp.internal.omit_otlp": "true"}, false,
@@ -718,6 +725,14 @@ func CopyServiceResourceLabels() Component {
 		ottl.LValue{"attributes", "service.namespace"}.SetIf(ottl.RValue(`resource.attributes["service.namespace"]`), ottl.IsNotNil(ottl.RValue(`resource.attributes["service.namespace"]`))),
 		ottl.LValue{"attributes", "service.instance.id"}.SetIf(ottl.RValue(`resource.attributes["service.instance.id"]`), ottl.IsNotNil(ottl.RValue(`resource.attributes["service.instance.id"]`))),
 	))
+}
+
+// A temp processor, will delete when UTR logging supports case-insensitive severity text parsing.
+func ConvertSeverityTextToLowercase() Component {
+	return Transform("log", "log", []ottl.Statement{
+		`set(severity_text, ToLowerCase(severity_text)) where severity_text != nil`,
+	})
+
 }
 
 func Batch() Component {
