@@ -34,7 +34,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
-func googleCloudExporter(userAgent string, instrumentationLabels, serviceResourceLabels, logsExporter bool) otel.Component {
+func googleCloudExporter(userAgent string, instrumentationLabels, serviceResourceLabels bool) otel.Component {
 	config := map[string]interface{}{
 		"user_agent": userAgent,
 		"metric": map[string]interface{}{
@@ -52,7 +52,19 @@ func googleCloudExporter(userAgent string, instrumentationLabels, serviceResourc
 			"resource_filters":        []map[string]interface{}{},
 		},
 	}
-	if logsExporter {
+
+	return otel.Component{
+		Type:   "googlecloud",
+		Config: config,
+	}
+}
+
+func googleCloudLoggingExporter(userAgent string) otel.Component {
+	googleCloudExporter := googleCloudExporter(userAgent, false, false)
+	config, ok := googleCloudExporter.Config.(map[string]interface{})
+	if ok {
+		// Set to achieve 40K/s logs throughput to Google Cloud Logging.
+		// https://github.com/googleapis/google-cloud-go/blob/logging/v1.4.2/logging/apiv2/logging_client.go#L78-L90
 		config["log"] = map[string]any{
 			"grpc_pool_size": 20,
 		}
@@ -60,6 +72,8 @@ func googleCloudExporter(userAgent string, instrumentationLabels, serviceResourc
 			"enabled":       true,
 			"num_consumers": 40,
 		}
+		// Set to mirror the 60s max limit of default retry window in Google Cloud Logging apiv2 go client :
+		// https://github.com/googleapis/google-cloud-go/blob/logging/v1.4.2/logging/apiv2/logging_client.go#L78-L90
 		config["timeout"] = "60s"
 	}
 
@@ -168,9 +182,9 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 		Pipelines:         pipelines,
 		Extensions:        extensions,
 		Exporters: map[otel.ExporterType]otel.Component{
-			otel.System:   googleCloudExporter(userAgent, false, false, false),
-			otel.OTel:     googleCloudExporter(userAgent, true, true, false),
-			otel.OTelLogs: googleCloudExporter(userAgent, true, true, true),
+			otel.System:   googleCloudExporter(userAgent, false, false),
+			otel.OTel:     googleCloudExporter(userAgent, true, true),
+			otel.OTelLogs: googleCloudLoggingExporter(userAgent),
 			otel.GMP:      googleManagedPrometheusExporter(userAgent),
 			otel.OTLP:     otlpExporter(userAgent),
 		},
