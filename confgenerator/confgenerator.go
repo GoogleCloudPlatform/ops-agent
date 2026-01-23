@@ -75,22 +75,24 @@ func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, 
 	if !expOtlpExporter {
 		return pipeline
 	}
-	_, err := pipeline.ExporterTypes["metrics"]
-	if !err {
-		return pipeline
-	}
-	pipeline.ExporterTypes["metrics"] = otel.OTLP
-	pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.GCPProjectID(resource.ProjectName()))
-	if isSystem {
-		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveInstrumentationLibraryLabelsAttributes())
-		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveServiceAttributes())
-	}
+	if _, ok := pipeline.ExporterTypes["metrics"]; ok {
+		pipeline.ExporterTypes["metrics"] = otel.OTLP
+		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.GCPProjectID(resource.ProjectName()))
+		if isSystem {
+			pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveInstrumentationLibraryLabelsAttributes())
+			pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveServiceAttributes())
+		}
 
-	// The OTLP exporter doesn't batch by default like the googlecloud.* exporters. We need this to avoid the API point limits.
-	pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.Batch())
-	if isPrometheus {
-		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricUnknownCounter())
-		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricStartTime())
+		// The OTLP exporter doesn't batch by default like the googlecloud.* exporters. We need this to avoid the API point limits.
+		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.Batch())
+		if isPrometheus {
+			pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricUnknownCounter())
+			pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricStartTime())
+		}
+	}
+	if _, ok := pipeline.ExporterTypes["traces"]; ok {
+		pipeline.ExporterTypes["traces"] = otel.OTLP
+		pipeline.Processors["traces"] = append(pipeline.Processors["traces"], otel.GCPProjectID(resource.ProjectName()))
 	}
 	return pipeline
 }

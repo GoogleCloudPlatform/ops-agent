@@ -5223,7 +5223,7 @@ traces:
 
 func TestOTLPTraces(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		otlpConfig := `
@@ -5241,7 +5241,7 @@ metrics:
   service:
     pipelines:
 `
-		if err := agents.SetupOpsAgent(ctx, logger, vm, otlpConfig); err != nil {
+		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, otlpConfig, feature); err != nil {
 			t.Fatal(err)
 		}
 
