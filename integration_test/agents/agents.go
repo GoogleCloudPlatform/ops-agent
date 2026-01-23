@@ -1231,3 +1231,55 @@ func GetOtelConfigPath(imageSpec string) string {
 	}
 	return "/var/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml"
 }
+
+const (
+	OtelLoggingFeatureFlag      = "otel_logging"
+	OtlpHttpExporterFeatureFlag = "otlp_exporter"
+	DefaultFeatureFlag          = "default"
+)
+
+// setExperimentalFeatures sets the EXPERIMENTAL_FEATURES environment variable.
+func setExperimentalFeatures(ctx context.Context, logger *log.Logger, vm *gce.VM, feature string) error {
+	return gce.SetEnvironmentVariables(ctx, logger, vm, map[string]string{"EXPERIMENTAL_FEATURES": feature})
+}
+
+// defaultOtelLoggingConfig returns the default config that is required to use otel_logging.
+func defaultOtelLoggingConfig() string {
+	return `logging:
+  service:
+    experimental_otel_logging: true
+`
+}
+
+// setExperimentalOtelLoggingInConfig in an Ops Agent config
+func setExperimentalOtelLoggingInConfig(config string) string {
+	return strings.Replace(
+		config,
+		"service:\n",
+		"service:\n    experimental_otel_logging: true\n",
+		1,
+	)
+}
+
+// SetupOpsAgentWithFeatureFlag configures the VM and the config depending on the selected feature flag.
+func SetupOpsAgentWithFeatureFlag(ctx context.Context, logger *log.Logger, vm *gce.VM, config string, feature string) error {
+	switch feature {
+	case OtelLoggingFeatureFlag:
+		// Set feature flag in config.
+		if config == "" {
+			config = defaultOtelLoggingConfig()
+		} else {
+			config = setExperimentalOtelLoggingInConfig(config)
+		}
+		// Set experimental feature environment variable.
+		if err := setExperimentalFeatures(ctx, logger, vm, feature); err != nil {
+			return err
+		}
+	case OtlpHttpExporterFeatureFlag:
+		if err := setExperimentalFeatures(ctx, logger, vm, feature); err != nil {
+			return err
+		}
+
+	}
+	return SetupOpsAgent(ctx, logger, vm, config)
+}
