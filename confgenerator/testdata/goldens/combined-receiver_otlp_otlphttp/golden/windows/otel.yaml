@@ -15,10 +15,6 @@ exporters:
       service_resource_labels: true
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
-  googlemanagedprometheus:
-    metric:
-      add_metric_suffixes: false
-    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
   otlphttp/otlp:
     auth:
       authenticator: googleclientauth
@@ -38,6 +34,9 @@ processors:
     send_batch_max_size: 200
     send_batch_size: 200
   batch/mssql_5:
+    send_batch_max_size: 200
+    send_batch_size: 200
+  batch/otlp_4:
     send_batch_max_size: 200
     send_batch_size: 200
   casttosum/iis_1:
@@ -663,6 +662,11 @@ processors:
     - action: insert
       key: gcp.project_id
       value: test-project
+  resource/otlp_3:
+    attributes:
+    - action: insert
+      key: gcp.project_id
+      value: test-project
   resourcedetection/_global_0:
     detectors:
     - gcp
@@ -956,11 +960,13 @@ service:
       - prometheus/agent_prometheus
     metrics/otlp_otlp:
       exporters:
-      - googlemanagedprometheus
+      - otlphttp/otlp
       processors:
       - resourcedetection/otlp_0
       - transform/otlp_1
       - groupbyattrs/otlp_2
+      - resource/otlp_3
+      - batch/otlp_4
       receivers:
       - otlp/otlp
     traces/traces_otlp_otlp:
