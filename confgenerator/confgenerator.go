@@ -75,23 +75,32 @@ func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, 
 	if !expOtlpExporter {
 		return pipeline
 	}
-	_, err := pipeline.ExporterTypes["metrics"]
-	if !err {
-		return pipeline
-	}
-	pipeline.ExporterTypes["metrics"] = otel.OTLP
-	pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.GCPProjectID(resource.ProjectName()))
-	if isSystem {
-		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveInstrumentationLibraryLabelsAttributes())
-		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveServiceAttributes())
+	if _, ok := pipeline.ExporterTypes["metrics"]; ok {
+		pipeline.ExporterTypes["metrics"] = otel.OTLP
+		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.GCPProjectID(resource.ProjectName()))
+		if isSystem {
+			pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveInstrumentationLibraryLabelsAttributes())
+			pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveServiceAttributes())
+		}
+		// The OTLP exporter doesn't batch by default like the googlecloud.* exporters. We need this to avoid the API point limits.
+		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.Batch())
+		if isPrometheus {
+			pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricUnknownCounter())
+			pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricStartTime())
+		}
 	}
 
-	// The OTLP exporter doesn't batch by default like the googlecloud.* exporters. We need this to avoid the API point limits.
-	pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.Batch())
-	if isPrometheus {
-		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricUnknownCounter())
-		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricStartTime())
+	if _, ok := pipeline.ExporterTypes["logs"]; ok {
+		pipeline.ExporterTypes["logs"] = otel.OTLPStagingUTR
+		pipeline.Processors["logs"] = append(pipeline.Processors["logs"], otel.GCPProjectID(resource.ProjectName()))
+		pipeline.Processors["logs"] = append(pipeline.Processors["logs"], otel.Batch())
+		pipeline.Processors["logs"] = append(pipeline.Processors["logs"], otel.DisableOtlpRoundTrip())
+		pipeline.Processors["logs"] = append(pipeline.Processors["logs"], otel.InstrumentationScope())
+		pipeline.Processors["logs"] = append(pipeline.Processors["logs"], otel.CopyServiceResourceLabels())
+		pipeline.Processors["logs"] = append(pipeline.Processors["logs"], otel.ConvertSeverityTextToLowercase())
+		pipeline.Processors["logs"] = append(pipeline.Processors["logs"], otel.AddResourceType())
 	}
+
 	return pipeline
 }
 
@@ -106,6 +115,23 @@ func otlpExporter(userAgent string) otel.Component {
 			"headers": map[string]string{
 				"User-Agent": userAgent,
 			},
+		},
+	}
+}
+
+// This will merge with the otlp exporter above once the prod UTR logging endpoint is ready.
+func otlpExporterUTRLoggingStaging(userAgent string) otel.Component {
+	return otel.Component{
+		Type: "otlphttp",
+		Config: map[string]interface{}{
+			"endpoint": "https://test-us-central2-telemetry.sandbox.googleapis.com",
+			"auth": map[string]interface{}{
+				"authenticator": "googleclientauth",
+			},
+			"headers": map[string]string{
+				"User-Agent": userAgent,
+			},
+			"encoding": "json",
 		},
 	}
 }
@@ -165,10 +191,11 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 		Pipelines:         pipelines,
 		Extensions:        extensions,
 		Exporters: map[otel.ExporterType]otel.Component{
-			otel.System: googleCloudExporter(userAgent, false, false),
-			otel.OTel:   googleCloudExporter(userAgent, true, true),
-			otel.GMP:    googleManagedPrometheusExporter(userAgent),
-			otel.OTLP:   otlpExporter(userAgent),
+			otel.System:         googleCloudExporter(userAgent, false, false),
+			otel.OTel:           googleCloudExporter(userAgent, true, true),
+			otel.GMP:            googleManagedPrometheusExporter(userAgent),
+			otel.OTLP:           otlpExporter(userAgent),
+			otel.OTLPStagingUTR: otlpExporterUTRLoggingStaging(userAgent),
 		},
 	}.Generate(ctx)
 	if err != nil {

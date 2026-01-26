@@ -232,7 +232,7 @@ func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.Receiv
 		})
 	}
 	receiver_config["operators"] = operators
-	return []otel.ReceiverPipeline{{
+	return []otel.ReceiverPipeline{ConvertToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type:   "filelog",
 			Config: receiver_config,
@@ -243,7 +243,7 @@ func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.Receiv
 		ExporterTypes: map[string]otel.ExporterType{
 			"logs": otel.OTel,
 		},
-	}}, nil
+	}, ctx, false, false)}, nil
 }
 
 func (r LoggingReceiverFilesMixin) MergeInternalLoggingProcessor(p InternalLoggingProcessor) (InternalLoggingReceiver, InternalLoggingProcessor) {
@@ -356,7 +356,7 @@ func (r LoggingReceiverSyslog) Pipelines(ctx context.Context) ([]otel.ReceiverPi
 		"protocol": "rfc5424",
 	}
 
-	return []otel.ReceiverPipeline{{
+	return []otel.ReceiverPipeline{ConvertToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type:   "syslog",
 			Config: config,
@@ -368,7 +368,7 @@ func (r LoggingReceiverSyslog) Pipelines(ctx context.Context) ([]otel.ReceiverPi
 		ExporterTypes: map[string]otel.ExporterType{
 			"logs": otel.OTel,
 		},
-	}}, nil
+	}, ctx, false, false)}, nil
 }
 
 func init() {
@@ -1001,7 +1001,7 @@ func (r LoggingReceiverSystemd) Pipelines(ctx context.Context) ([]otel.ReceiverP
 		return nil, err
 	}
 
-	return []otel.ReceiverPipeline{{
+	return []otel.ReceiverPipeline{ConvertToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type:   "journald",
 			Config: receiver_config,
@@ -1013,7 +1013,7 @@ func (r LoggingReceiverSystemd) Pipelines(ctx context.Context) ([]otel.ReceiverP
 		ExporterTypes: map[string]otel.ExporterType{
 			"logs": otel.OTel,
 		},
-	}}, nil
+	}, ctx, false, false)}, nil
 }
 
 func init() {
