@@ -4982,7 +4982,7 @@ traces:
     pipelines:
 `
 		// Only run the test for the OTLP http exporter
-		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, otlpConfig, OtlpHttpExporterFeatureFlag); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, otlpConfig, agents.OtlpHttpExporterFeatureFlag); err != nil {
 			t.Fatal(err)
 		}
 
