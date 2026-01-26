@@ -2102,7 +2102,7 @@ func TestTCPLog(t *testing.T) {
 
 func TestFluentForwardLog(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
@@ -2118,7 +2118,7 @@ func TestFluentForwardLog(t *testing.T) {
       fluent_pipeline:
         receivers: [fluent_logs]
 `
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2132,11 +2132,16 @@ func TestFluentForwardLog(t *testing.T) {
 
 		// Verify a large structured log that's reasonably close to the limit of 256 KB.
 		largeLog := fmt.Sprintf(`{"large":"start%send"}`, strings.Repeat("a", 250_000))
-		if err = writeLinesToRemoteFile(ctx, logger, vm, imageSpec, pipePath, largeLog); err != nil {
+		normalLog := `{"message":"some message", "field1":"value", "field2":"value" }`
+		if err = writeLinesToRemoteFile(ctx, logger, vm, imageSpec, pipePath, largeLog, normalLog); err != nil {
 			t.Fatalf("Error writing dummy TCP log line: %v", err)
 		}
 
 		if err = gce.WaitForLog(ctx, logger, vm, "fluent_logs.forwarder_tag", time.Hour, `jsonPayload.large:"start" AND jsonPayload.large:"end"`); err != nil {
+			t.Error(err)
+		}
+
+		if err = gce.WaitForLog(ctx, logger, vm, "fluent_logs.forwarder_tag", time.Hour, `jsonPayload.message="some message" AND jsonPayload.field1="value" AND jsonPayload.field2="value"`); err != nil {
 			t.Error(err)
 		}
 	})
