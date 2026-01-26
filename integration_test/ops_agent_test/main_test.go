@@ -5060,7 +5060,7 @@ traces:
 					Kind: metric.MetricDescriptor_GAUGE.String(),
 					// b/476112381: New OTLP endpoint for prometheus converts INT metrics types to DOUBLE
 					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
-					Value:              3,
+					Value:              3.0,
 					MonitoredResources: []string{"prometheus_target"},
 					Labels:             expectedLabels,
 				},
