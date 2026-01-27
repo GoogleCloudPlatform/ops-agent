@@ -6,28 +6,44 @@ exporters:
       resource_filters: []
       service_resource_labels: false
       skip_create_descriptor: true
-    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
+  googlecloud/otel:
+    metric:
+      instrumentation_library_labels: true
+      prefix: ""
+      resource_filters: []
+      service_resource_labels: true
+      skip_create_descriptor: true
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
   otlphttp/otlp:
     auth:
       authenticator: googleclientauth
     endpoint: https://telemetry.googleapis.com
     headers:
-      User-Agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
+      User-Agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
 extensions:
   googleclientauth: {}
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  batch/hostmetrics_1_4:
-    send_batch_max_size: 200
-    send_batch_size: 200
   batch/hostmetrics_6:
     send_batch_max_size: 200
     send_batch_size: 200
-  batch/prometheus_2:
+  batch/iis_7:
     send_batch_max_size: 200
     send_batch_size: 200
+  batch/mssql_5:
+    send_batch_max_size: 200
+    send_batch_size: 200
+  batch/otlp_4:
+    send_batch_max_size: 200
+    send_batch_size: 200
+  casttosum/iis_1:
+    metrics:
+    - agent.googleapis.com/iis/network/transferred_bytes_count
+    - agent.googleapis.com/iis/new_connection_count
+    - agent.googleapis.com/iis/request_count
   cumulativetodelta/loggingmetrics_4:
     include:
       match_type: strict
@@ -45,7 +61,12 @@ processors:
       exclude:
         match_type: regexp
         metric_names: []
-  filter/default__pipeline_hostmetrics_1_0:
+  filter/default__pipeline_iis_0:
+    metrics:
+      exclude:
+        match_type: regexp
+        metric_names: []
+  filter/default__pipeline_mssql_0:
     metrics:
       exclude:
         match_type: regexp
@@ -93,9 +114,14 @@ processors:
         - otelcol_process_memory_rss
         - grpc.client.attempt.duration_count
         - googlecloudmonitoring/point_count
+  groupbyattrs/otlp_2:
+    keys:
+    - namespace
+    - cluster
+    - location
   interval/loggingmetrics_7:
     interval: 1m
-  metricstarttime/prometheus_3:
+  metricstarttime/otlp_6:
     strategy: subtract_initial_point
   metricstransform/fluentbit_1:
     transforms:
@@ -111,30 +137,6 @@ processors:
         aggregation_type: sum
         label_set:
         - version
-    - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: agent.googleapis.com/$${1}
-  metricstransform/hostmetrics_1_0:
-    transforms:
-    - action: update
-      include: nvml.gpu.utilization
-      new_name: gpu/utilization
-      operations:
-      - action: experimental_scale_value
-        experimental_scale: 100.0
-    - action: update
-      include: nvml.gpu.memory.bytes_used
-      new_name: gpu/memory/bytes_used
-    - action: update
-      include: nvml.gpu.processes.utilization
-      new_name: gpu/processes/utilization
-      operations:
-      - action: experimental_scale_value
-        experimental_scale: 100.0
-    - action: update
-      include: nvml.gpu.processes.max_bytes_used
-      new_name: gpu/processes/max_bytes_used
     - action: update
       include: ^(.*)$$
       match_type: regexp
@@ -410,6 +412,41 @@ processors:
         new_label: process
         new_value: all
     - action: update
+      include: process.handles
+      new_name: processes/windows/handles
+      operations:
+      - action: add_label
+        new_label: process
+        new_value: all
+    - action: update
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: agent.googleapis.com/$${1}
+  metricstransform/iis_0:
+    transforms:
+    - action: update
+      include: "\\Web Service(_Total)\\Current Connections"
+      new_name: iis/current_connections
+    - action: combine
+      include: "^\\\\Web Service\\(_Total\\)\\\\Total Bytes (?P<direction>.*)$$"
+      match_type: regexp
+      new_name: iis/network/transferred_bytes_count
+      operations:
+      - action: toggle_scalar_data_type
+      submatch_case: lower
+    - action: update
+      include: "\\Web Service(_Total)\\Total Connection Attempts (all instances)"
+      new_name: iis/new_connection_count
+      operations:
+      - action: toggle_scalar_data_type
+    - action: combine
+      include: "^\\\\Web Service\\(_Total\\)\\\\Total (?P<http_method>.*) Requests$$"
+      match_type: regexp
+      new_name: iis/request_count
+      operations:
+      - action: toggle_scalar_data_type
+      submatch_case: lower
+    - action: update
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
@@ -551,6 +588,21 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  metricstransform/mssql_0:
+    transforms:
+    - action: update
+      include: "\\SQLServer:General Statistics(_Total)\\User Connections"
+      new_name: mssql/connections/user
+    - action: update
+      include: "\\SQLServer:Databases(_Total)\\Transactions/sec"
+      new_name: mssql/transaction_rate
+    - action: update
+      include: "\\SQLServer:Databases(_Total)\\Write Transactions/sec"
+      new_name: mssql/write_transaction_rate
+    - action: update
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: agent.googleapis.com/$${1}
   metricstransform/otel_3:
     transforms:
     - action: update
@@ -596,23 +648,29 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/prometheus_5:
+  metricstransform/otlp_7:
     transforms:
     - action: update
       include: ^(.*)$$
       match_type: regexp
       new_name: prometheus.googleapis.com/$${1}
-  resource/hostmetrics_1_1:
-    attributes:
-    - action: insert
-      key: gcp.project_id
-      value: test-project
+  normalizesums/iis_2: {}
   resource/hostmetrics_3:
     attributes:
     - action: insert
       key: gcp.project_id
       value: test-project
-  resource/prometheus_1:
+  resource/iis_4:
+    attributes:
+    - action: insert
+      key: gcp.project_id
+      value: test-project
+  resource/mssql_2:
+    attributes:
+    - action: insert
+      key: gcp.project_id
+      value: test-project
+  resource/otlp_3:
     attributes:
     - action: insert
       key: gcp.project_id
@@ -620,6 +678,14 @@ processors:
   resourcedetection/_global_0:
     detectors:
     - gcp
+  resourcedetection/_global_1:
+    detectors:
+    - gcp
+    override: false
+  resourcedetection/otlp_0:
+    detectors:
+    - gcp
+    override: false
   transform/agent_prometheus_0:
     metric_statements:
     - context: metric
@@ -629,13 +695,13 @@ processors:
       - delete_key(resource.attributes, "service.instance.id")
       - delete_key(resource.attributes, "server.port")
       - delete_key(resource.attributes, "url.scheme")
-  transform/hostmetrics_1_2:
+  transform/hostmetrics_4:
     metric_statements:
     - context: scope
       statements:
       - set(name, "")
       - set(version, "")
-  transform/hostmetrics_1_3:
+  transform/hostmetrics_5:
     metric_statements:
     - context: resource
       error_mode: silent
@@ -644,13 +710,19 @@ processors:
       - delete_key(attributes, "service.instance.id")
       - delete_key(attributes, "service.namespace")
       - delete_key(attributes, "service.version")
-  transform/hostmetrics_4:
+  transform/iis_3:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "agent.googleapis.com/iis")
+      - set(version, "1.0")
+  transform/iis_5:
     metric_statements:
     - context: scope
       statements:
       - set(name, "")
       - set(version, "")
-  transform/hostmetrics_5:
+  transform/iis_6:
     metric_statements:
     - context: resource
       error_mode: silent
@@ -680,6 +752,27 @@ processors:
       - set(metric.name, "agent/log_entry_count") where metric.name == "otel_log_entry_count"
       - set(metric.name, "agent/log_entry_retry_count") where metric.name == "otel_log_entry_retry_count"
       - set(metric.name, "agent/request_count") where metric.name == "otel_request_count"
+  transform/mssql_1:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "agent.googleapis.com/mssql")
+      - set(version, "1.0")
+  transform/mssql_3:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/mssql_4:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
@@ -692,17 +785,17 @@ processors:
     - context: metric
       statements:
       - extract_count_metric(true) where name == "grpc.client.attempt.duration"
-  transform/prometheus_0:
+  transform/otlp_1:
+    error_mode: ignore
     metric_statements:
     - context: datapoint
       statements:
-      - set(resource.attributes["location"], attributes["location"])
-      - set(resource.attributes["cluster"], attributes["cluster"])
-      - set(resource.attributes["namespace"], attributes["namespace"])
-      - delete_key(attributes, "location")
-      - delete_key(attributes, "cluster")
-      - delete_key(attributes, "namespace")
-  transform/prometheus_2:
+      - set(attributes["location"], resource.attributes["cloud.availability_zone"]) where resource.attributes["cloud.availability_zone"] != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
+      - set(attributes["namespace"], Concat([resource.attributes["host.id"], resource.attributes["host.name"]], "/")) where Concat([resource.attributes["host.id"], resource.attributes["host.name"]], "/") != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
+      - set(attributes["cluster"], "__gce__") where "__gce__" != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
+      - set(attributes["instance_name"], resource.attributes["host.name"]) where resource.attributes["host.name"] != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
+      - set(attributes["machine_type"], resource.attributes["host.type"]) where resource.attributes["host.type"] != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
+  transform/otlp_5:
     error_mode: ignore
     metric_statements:
     - context: metric
@@ -722,12 +815,17 @@ receivers:
       network: {}
       paging: {}
       process:
+        metrics:
+          process.handles:
+            enabled: true
         mute_process_all_errors: true
         mute_process_exe_error: true
         mute_process_name_error: true
       processes: {}
-  nvml/hostmetrics_1:
-    collection_interval: 60s
+  otlp/otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
   otlpjsonfile/ops_agent:
     include:
     - enabled_receivers_otlp.json
@@ -748,62 +846,38 @@ receivers:
         static_configs:
         - targets:
           - 0.0.0.0:20201
-  prometheus/prometheus:
-    config:
-      global:
-        scrape_interval: 1m
-        scrape_timeout: 10s
-        scrape_protocols:
-        - OpenMetricsText1.0.0
-        - OpenMetricsText0.0.1
-        - PrometheusText0.0.4
-        evaluation_interval: 1m
-      runtime:
-        gogc: 75
-      scrape_configs:
-      - job_name: node
-        honor_timestamps: true
-        track_timestamps_staleness: false
-        scrape_interval: 10s
-        scrape_timeout: 10s
-        scrape_protocols:
-        - OpenMetricsText1.0.0
-        - OpenMetricsText0.0.1
-        - PrometheusText0.0.4
-        metrics_path: /metrics
-        scheme: http
-        enable_compression: true
-        follow_redirects: true
-        enable_http2: true
-        relabel_configs:
-        - source_labels: [__meta_gce_machine_type]
-          separator: ;
-          regex: (.+)
-          target_label: machine_type
-          replacement: $${1}
-          action: replace
-        static_configs:
-        - targets:
-          - localhost:1234
-          labels:
-            __meta_gce_instance_id: test-instance-id
-            __meta_gce_instance_name: test-instance-name
-            __meta_gce_interface_ipv4_nictest_interface: test-interface-ipv4
-            __meta_gce_machine_type: test-machine-type
-            __meta_gce_metadata_test_escape: $$foo
-            __meta_gce_metadata_test_escape_parentheses: _{foo:bar}
-            __meta_gce_metadata_test_key: test-value
-            __meta_gce_network: test-network
-            __meta_gce_private_ip: test-private-ip
-            __meta_gce_project: test-project
-            __meta_gce_public_ip: test-public-ip
-            __meta_gce_tags: test-tag
-            __meta_gce_zone: test-zone
-            cluster: __gce__
-            instance_name: test-instance-name
-            location: test-zone
-            machine_type: test-machine-type
-            namespace: test-instance-id/test-instance-name
+  windowsperfcounters/iis:
+    collection_interval: 60s
+    perfcounters:
+    - counters:
+      - name: Current Connections
+      - name: Total Bytes Received
+      - name: Total Bytes Sent
+      - name: Total Connection Attempts (all instances)
+      - name: Total Delete Requests
+      - name: Total Get Requests
+      - name: Total Head Requests
+      - name: Total Options Requests
+      - name: Total Post Requests
+      - name: Total Put Requests
+      - name: Total Trace Requests
+      instances:
+      - _Total
+      object: Web Service
+  windowsperfcounters/mssql:
+    collection_interval: 60s
+    perfcounters:
+    - counters:
+      - name: User Connections
+      instances:
+      - _Total
+      object: SQLServer:General Statistics
+    - counters:
+      - name: Transactions/sec
+      - name: Write Transactions/sec
+      instances:
+      - _Total
+      object: SQLServer:Databases
 service:
   extensions:
   - googleclientauth
@@ -823,19 +897,36 @@ service:
       - resourcedetection/_global_0
       receivers:
       - hostmetrics/hostmetrics
-    metrics/default__pipeline_hostmetrics_1:
+    metrics/default__pipeline_iis:
       exporters:
       - otlphttp/otlp
       processors:
-      - metricstransform/hostmetrics_1_0
-      - resource/hostmetrics_1_1
-      - transform/hostmetrics_1_2
-      - transform/hostmetrics_1_3
-      - batch/hostmetrics_1_4
-      - filter/default__pipeline_hostmetrics_1_0
+      - metricstransform/iis_0
+      - casttosum/iis_1
+      - normalizesums/iis_2
+      - transform/iis_3
+      - resource/iis_4
+      - transform/iis_5
+      - transform/iis_6
+      - batch/iis_7
+      - filter/default__pipeline_iis_0
       - resourcedetection/_global_0
       receivers:
-      - nvml/hostmetrics_1
+      - windowsperfcounters/iis
+    metrics/default__pipeline_mssql:
+      exporters:
+      - otlphttp/otlp
+      processors:
+      - metricstransform/mssql_0
+      - transform/mssql_1
+      - resource/mssql_2
+      - transform/mssql_3
+      - transform/mssql_4
+      - batch/mssql_5
+      - filter/default__pipeline_mssql_0
+      - resourcedetection/_global_0
+      receivers:
+      - windowsperfcounters/mssql
     metrics/fluentbit:
       exporters:
       - googlecloud
@@ -883,18 +974,27 @@ service:
       - resourcedetection/_global_0
       receivers:
       - prometheus/agent_prometheus
-    metrics/prometheus__pipeline_prometheus:
+    metrics/otlp_otlp:
       exporters:
       - otlphttp/otlp
       processors:
-      - transform/prometheus_0
-      - resource/prometheus_1
-      - batch/prometheus_2
-      - transform/prometheus_3
-      - metricstarttime/prometheus_4
-      - metricstransform/prometheus_5
+      - resourcedetection/otlp_0
+      - transform/otlp_1
+      - groupbyattrs/otlp_2
+      - resource/otlp_3
+      - batch/otlp_4
+      - transform/otlp_5
+      - metricstarttime/otlp_6
+      - metricstransform/otlp_7
       receivers:
-      - prometheus/prometheus
+      - otlp/otlp
+    traces/traces_otlp_otlp:
+      exporters:
+      - googlecloud/otel
+      processors:
+      - resourcedetection/_global_1
+      receivers:
+      - otlp/otlp
   telemetry:
     metrics:
       readers:

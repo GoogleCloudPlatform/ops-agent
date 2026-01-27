@@ -19,7 +19,10 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  batch/prometheus__pipeline_prometheus_0:
+  batch/hostmetrics_6:
+    send_batch_max_size: 200
+    send_batch_size: 200
+  batch/prometheus_2:
     send_batch_max_size: 200
     send_batch_size: 200
   cumulativetodelta/loggingmetrics_4:
@@ -561,6 +564,17 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  metricstransform/prometheus_5:
+    transforms:
+    - action: update
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: prometheus.googleapis.com/$${1}
+  resource/hostmetrics_3:
+    attributes:
+    - action: insert
+      key: gcp.project_id
+      value: test-project
   resource/prometheus_1:
     attributes:
     - action: insert
@@ -578,6 +592,21 @@ processors:
       - delete_key(resource.attributes, "service.instance.id")
       - delete_key(resource.attributes, "server.port")
       - delete_key(resource.attributes, "url.scheme")
+  transform/hostmetrics_4:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/hostmetrics_5:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
   transform/loggingmetrics_0:
     error_mode: ignore
     metric_statements:
@@ -727,11 +756,15 @@ service:
   pipelines:
     metrics/default__pipeline_hostmetrics:
       exporters:
-      - googlecloud
+      - otlphttp/otlp
       processors:
       - agentmetrics/hostmetrics_0
       - filter/hostmetrics_1
       - metricstransform/hostmetrics_2
+      - resource/hostmetrics_3
+      - transform/hostmetrics_4
+      - transform/hostmetrics_5
+      - batch/hostmetrics_6
       - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
       receivers:
@@ -789,9 +822,10 @@ service:
       processors:
       - transform/prometheus_0
       - resource/prometheus_1
-      - transform/prometheus_2
-      - metricstarttime/prometheus_3
-      - batch/prometheus__pipeline_prometheus_0
+      - batch/prometheus_2
+      - transform/prometheus_3
+      - metricstarttime/prometheus_4
+      - metricstransform/prometheus_5
       receivers:
       - prometheus/prometheus
   telemetry:
