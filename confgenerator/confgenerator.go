@@ -81,7 +81,7 @@ func otelLogsExporterProcessors() []otel.Component {
 	return []otel.Component{otel.BatchLogsProcessor()}
 }
 
-func otlpMericsExporterProcessors() []otel.Component {
+func otlpMetricsExporterProcessors() []otel.Component {
 	// The OTLP exporter doesn't batch by default like the googlecloud.* exporters.
 	// We need this to avoid the API point limits.
 	return []otel.Component{otel.BatchOTLPMetricsProcessor()}
@@ -104,7 +104,7 @@ func exporterComponents(userAgent string) map[otel.ExporterType]otel.ExporterCom
 		},
 		otel.OTLP: {
 			Exporter:   otlpExporter(userAgent),
-			Processors: otlpMericsExporterProcessors(),
+			Processors: otlpMetricsExporterProcessors(),
 		},
 	}
 }
