@@ -419,7 +419,7 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 				},
 			},
 		},
-	}.Generate(ctx)
+	}.Generate(ctx, false)
 }
 
 type mockLoggingServer struct {
