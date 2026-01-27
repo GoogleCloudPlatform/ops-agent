@@ -59,7 +59,6 @@ func googleCloudExporter(userAgent string, instrumentationLabels bool, serviceRe
 
 func googleCloudLoggingExporter(userAgent string) otel.Component {
 	config := map[string]interface{}{
-		"user_agent": userAgent,
 		"log": map[string]any{
 			"grpc_pool_size": 10,
 		},

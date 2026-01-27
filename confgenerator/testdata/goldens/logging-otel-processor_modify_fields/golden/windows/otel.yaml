@@ -14,7 +14,6 @@ exporters:
       enabled: true
       num_consumers: 20
     timeout: 60s
-    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
