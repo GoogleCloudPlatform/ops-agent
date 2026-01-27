@@ -7,7 +7,6 @@ template config build = {
 
   params {
     environment = {
-      SKIP_SIGNING = 'true'
     }
 
     keystore_keys = []

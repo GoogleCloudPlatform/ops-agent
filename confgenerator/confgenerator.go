@@ -84,14 +84,17 @@ func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, 
 		return pipeline
 	}
 	pipeline.ExporterTypes["metrics"] = otel.OTLP
-
 	pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.GCPProjectID(resource.ProjectName()))
 	if isSystem {
 		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveInstrumentationLibraryLabelsAttributes())
+		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveServiceAttributes())
 	}
+
+	// The OTLP exporter doesn't batch by default like the googlecloud.* exporters. We need this to avoid the API point limits.
+	pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.Batch())
 	if isPrometheus {
 		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricUnknownCounter())
-
+		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricStartTime())
 	}
 	return pipeline
 }
@@ -171,7 +174,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 			otel.GMP:    googleManagedPrometheusExporter(userAgent),
 			otel.OTLP:   otlpExporter(userAgent),
 		},
-	}.Generate(ctx, expOtlpExporter)
+	}.Generate(ctx)
 	if err != nil {
 		return "", err
 	}

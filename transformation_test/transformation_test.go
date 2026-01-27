@@ -32,7 +32,7 @@ import (
 	"time"
 
 	logpb "cloud.google.com/go/logging/apiv2/loggingpb"
-	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
+	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -59,7 +59,41 @@ const (
 var (
 	flbPath        = flag.String("flb", os.Getenv("FLB"), "path to fluent-bit")
 	otelopscolPath = flag.String("otelopscol", os.Getenv("OTELOPSCOL"), "path to otelopscol")
+
+	multilineTestPatterns = newTestMatchPatterns([]string{
+		".*cassandra.*",
+		".*couchdb.*",
+		".*elasticsearch.*",
+		".*flink.*",
+		".*hadoop.*",
+		".*hbase.*",
+		".*kafka.*",
+		".*mysql.*",
+		".*oracledb.*",
+		".*postgresql.*",
+		".*rabbitmq.*",
+		".*saphana.*",
+		".*solr.*",
+		".*tomcat.*",
+		".*vault.*",
+		".*wildfly.*",
+		".*zookeeper.*",
+	})
 )
+
+func isMultilineTest(s string) bool {
+	return multilineTestPatterns.testMatch(s)
+}
+
+const flbMultilineTestKey = "fluent_bit_long_flush"
+
+func contextWithFlbMultilineTest(ctx context.Context) context.Context {
+	return context.WithValue(ctx, flbMultilineTestKey, true)
+}
+
+func contextHasFlbMulttilineTest(ctx context.Context) bool {
+	return ctx.Value(flbMultilineTestKey) == true
+}
 
 type transformationTest []loggingProcessor
 type loggingProcessor struct {
@@ -104,6 +138,11 @@ func TestTransformationTests(t *testing.T) {
 func (transformationConfig transformationTest) runFluentBitTest(t *testing.T, name string) {
 	ctx, cancel := context.WithCancel(testContext())
 	defer cancel()
+
+	if isMultilineTest(name) {
+		ctx = contextWithFlbMultilineTest(ctx)
+	}
+
 	// Generate config files
 	genFiles, err := generateFluentBitConfigs(ctx, name, transformationConfig)
 	if err != nil {
@@ -263,22 +302,35 @@ func generateFluentBitConfigs(ctx context.Context, name string, transformationTe
 		return nil, err
 	}
 
-	service := fluentbit.Component{
-		Kind: "SERVICE",
-		Config: map[string]string{
-			// The combination of Exit_On_Eof on a tail receiver with a multiline parser causes
-			// the last log in a file to be dropped. See :
-			// - https://github.com/fluent/fluent-bit/issues/8623
-			// - https://github.com/fluent/fluent-bit/issues/8353
-			// - https://github.com/fluent/fluent-bit/issues/3926
-			// Some attempts of a solution have been implemented :
-			// - https://github.com/fluent/fluent-bit/pull/8545
-			// On newer fluent-bit 4.0.x versions, last log in a file maybe (non-deterministically)
-			// dropped (~%85 retries) or sent (~15% retries) causing flaky tests.
-			// Set shutdown "Grace" period to 0s to avoid any unreliable logs to be sent after Exit_On_Eof.
-			// This forces the last log line from an multiline parser to always be dropped.
-			"Grace": "0",
-		},
+	components := []fluentbit.Component{}
+
+	if contextHasFlbMulttilineTest(ctx) {
+		service := fluentbit.Component{
+			Kind: "SERVICE",
+			Config: map[string]string{
+				// The combination of Exit_On_Eof on a tail receiver with a multiline parser causes
+				// the last log in a file to be dropped. See :
+				// - https://github.com/fluent/fluent-bit/issues/8623
+				// - https://github.com/fluent/fluent-bit/issues/8353
+				// - https://github.com/fluent/fluent-bit/issues/3926
+				// Some attempts of a solution have been implemented :
+				// - https://github.com/fluent/fluent-bit/pull/8545
+				// On newer fluent-bit 4.0.x versions, last log in a file maybe (non-deterministically)
+				// dropped (~%85 retries) or sent (~15% retries) causing flaky tests.
+
+				// Set shutdown "Grace" period to 0s to avoid any unreliable logs to be sent after Exit_On_Eof.
+				// Set the "Flush" time to 10s, which fixes a race condition in multiline tests that
+				// would sometimes perform a final flush and cause the last line to appear.
+				// (Started in Fluent Bit 4.0.13)
+				//
+				// These settings in combination forces the last log line from any multiline parser
+				// to always be dropped.
+				"Grace": "0",
+				"Flush": "10",
+			},
+		}
+
+		components = append(components, service)
 	}
 
 	pi := transformationTest.pipelineInstance(abs)
@@ -305,7 +357,6 @@ func generateFluentBitConfigs(ctx context.Context, name string, transformationTe
 			"export_to_project_id":          "my-project",
 		},
 	}
-	components := []fluentbit.Component{service}
 	components = append(components, fbSource.Components...)
 	components = append(components, output)
 	return fluentbit.ModularConfig{
@@ -368,7 +419,7 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 				},
 			},
 		},
-	}.Generate(ctx, false)
+	}.Generate(ctx)
 }
 
 type mockLoggingServer struct {
@@ -629,7 +680,29 @@ func sanitizeOtelStacktrace(t *testing.T, input string) string {
 	return result
 }
 
+type testMatchPatterns []*regexp.Regexp
+
+func newTestMatchPatterns(patterns []string) testMatchPatterns {
+	regexes := make([]*regexp.Regexp, 0, len(patterns))
+	for _, pattern := range patterns {
+		regexes = append(regexes, regexp.MustCompile(pattern))
+	}
+	return regexes
+}
+
+func (t testMatchPatterns) testMatch(s string) bool {
+	for _, r := range t {
+		if r.MatchString(s) {
+			return true
+		}
+	}
+	return false
+}
+
 func init() {
 	// The processors registered here are only meant to be used in transformation tests.
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &confgenerator.LoggingProcessorWindowsEventLogV1{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &confgenerator.LoggingProcessorWindowsEventLogV2{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &confgenerator.LoggingProcessorWindowsEventLogRawXML{} })
+	confgenerator.RegisterLoggingProcessorMacro[apps.LoggingProcessorMacroActiveDirectoryDS]()
 }

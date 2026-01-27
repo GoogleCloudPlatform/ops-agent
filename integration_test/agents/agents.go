@@ -52,6 +52,9 @@ const TrailingQueryWindow = 2 * time.Minute
 // OpsAgentPluginServerPort defines the port on which the Ops Agent UAP Plugin gRPC server runs.
 const OpsAgentPluginServerPort = "1234"
 
+// OpsAgentPluginEntryPointName is the name of the entry point binary for the Ops Agent UAP Plugin.
+const OpsAgentPluginEntryPointName = "ops_agent"
+
 //go:embed testdata
 var scriptsDir embed.FS
 
@@ -213,6 +216,9 @@ func getOpsAgentLogFilesList(imageSpec string) []string {
 		return []string{
 			gce.SyslogLocation(imageSpec),
 			OpsAgentConfigPath(imageSpec),
+			"~/uap_plugin_out.log",
+			"~/uap_plugin_ps.log",
+			"~/uap_plugin_ports.log",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/health-checks.log",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/subagents/logging-module.log",
 			"/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin/log/google-cloud-ops-agent/subagents/metrics-module.log",
@@ -866,8 +872,18 @@ func StartOpsAgentPluginServer(ctx context.Context, logger *log.Logger, vm *gce.
 		return nil
 	}
 
-	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo nohup ~/plugin --address=localhost:%s --errorlogfile=errorlog.txt --protocol=tcp 1>/dev/null 2>/dev/null &", port)); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo nohup ~/%s --address=localhost:%s --errorlogfile=errorlog.txt --protocol=tcp > ~/uap_plugin_out.log 2>&1 &", OpsAgentPluginEntryPointName, port)); err != nil {
 		return fmt.Errorf("StartOpsAgentPluginServer() failed to start the ops agent plugin: %v", err)
+	}
+	// TODO(b/456444594): just some printf debugging
+	for _, cmd := range []string{
+		"sleep 5",
+		fmt.Sprintf("ps ax | grep %s > ~/uap_plugin_ps.log", OpsAgentPluginEntryPointName),
+		"ss -tulpn > ~/uap_plugin_ports.log",
+	} {
+		if out, err := gce.RunRemotely(ctx, logger, vm, cmd); err != nil {
+			logger.Printf("StartOpsAgentPluginServer() failed to capture debugging info (non-fatal):\nstdout+stderr=%s\n%s\nerr=%v\n", out.Stdout, out.Stderr, err)
+		}
 	}
 	return nil
 
@@ -1077,7 +1093,7 @@ func InstallOpsAgentUAPPlugin(ctx context.Context, logger *log.Logger, vm *gce.V
 //
 // gcsPath must point to a GCS Path to a .tar.gz file to install on the testing VMs.
 func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, gcsPath string) error {
-	if err := gce.InstallGsutilIfNeeded(ctx, logger, vm); err != nil {
+	if err := gce.InstallGcloudIfNeeded(ctx, logger, vm); err != nil {
 		return err
 	}
 
@@ -1086,7 +1102,7 @@ func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm
 			return err
 		}
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf(`gsutil cp %s/google-cloud-ops-agent-plugin*.tar.gz C:\\agentPlugin`, gcsPath)); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf(`gcloud storage cp %s/google-cloud-ops-agent-plugin*.tar.gz C:\\agentPlugin`, gcsPath)); err != nil {
 			return fmt.Errorf("error copying down agent package from GCS: %v", err)
 		}
 
@@ -1106,7 +1122,7 @@ func InstallOpsAgentUAPPluginFromGCS(ctx context.Context, logger *log.Logger, vm
 			return err
 		}
 
-		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo gsutil cp "+gcsPath+"/google-cloud-ops-agent-plugin*.tar.gz /tmp/agentPlugin"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo gcloud storage cp "+gcsPath+"/google-cloud-ops-agent-plugin*.tar.gz /tmp/agentPlugin"); err != nil {
 			return fmt.Errorf("error copying down the agent uap plugin tarball from GCS: %v", err)
 		}
 
@@ -1142,10 +1158,10 @@ func InstallPackageFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM, 
 		if _, err := gce.RunRemotely(ctx, logger, vm, "mkdir -p /tmp/agentUpload /tmp/agentPlugin"); err != nil {
 			return err
 		}
-		if err := gce.InstallGsutilIfNeeded(ctx, logger, vm); err != nil {
+		if err := gce.InstallGcloudIfNeeded(ctx, logger, vm); err != nil {
 			return err
 		}
-		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo gsutil cp -r "+gcsPath+"/* /tmp/agentUpload"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "sudo gcloud storage cp -r "+gcsPath+"/* /tmp/agentUpload"); err != nil {
 			return fmt.Errorf("error copying down agent package from GCS: %v", err)
 		}
 		// Print the contents of /tmp/agentUpload into the logs.
@@ -1184,7 +1200,7 @@ func installWindowsPackageFromGCS(ctx context.Context, logger *log.Logger, vm *g
 	if _, err := gce.RunRemotely(ctx, logger, vm, "New-Item -ItemType directory -Path C:\\agentUpload"); err != nil {
 		return err
 	}
-	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("gsutil cp -r %s/*.goo C:\\agentUpload", gcsPath)); err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("gcloud storage cp -r %s/*.goo C:\\agentUpload", gcsPath)); err != nil {
 		return fmt.Errorf("error copying down agent package from GCS: %v", err)
 	}
 	if _, err := gce.RunRemotely(ctx, logger, vm, "googet -noconfirm -verbose install -reinstall (Get-ChildItem C:\\agentUpload\\*.goo | Select-Object -Expand FullName)"); err != nil {
@@ -1214,4 +1230,56 @@ func GetOtelConfigPath(imageSpec string) string {
 		return `C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\otel\otel.yaml`
 	}
 	return "/var/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml"
+}
+
+const (
+	OtelLoggingFeatureFlag      = "otel_logging"
+	OtlpHttpExporterFeatureFlag = "otlp_exporter"
+	DefaultFeatureFlag          = "default"
+)
+
+// setExperimentalFeatures sets the EXPERIMENTAL_FEATURES environment variable.
+func setExperimentalFeatures(ctx context.Context, logger *log.Logger, vm *gce.VM, feature string) error {
+	return gce.SetEnvironmentVariables(ctx, logger, vm, map[string]string{"EXPERIMENTAL_FEATURES": feature})
+}
+
+// defaultOtelLoggingConfig returns the default config that is required to use otel_logging.
+func defaultOtelLoggingConfig() string {
+	return `logging:
+  service:
+    experimental_otel_logging: true
+`
+}
+
+// setExperimentalOtelLoggingInConfig in an Ops Agent config
+func setExperimentalOtelLoggingInConfig(config string) string {
+	return strings.Replace(
+		config,
+		"service:\n",
+		"service:\n    experimental_otel_logging: true\n",
+		1,
+	)
+}
+
+// SetupOpsAgentWithFeatureFlag configures the VM and the config depending on the selected feature flag.
+func SetupOpsAgentWithFeatureFlag(ctx context.Context, logger *log.Logger, vm *gce.VM, config string, feature string) error {
+	switch feature {
+	case OtelLoggingFeatureFlag:
+		// Set feature flag in config.
+		if config == "" {
+			config = defaultOtelLoggingConfig()
+		} else {
+			config = setExperimentalOtelLoggingInConfig(config)
+		}
+		// Set experimental feature environment variable.
+		if err := setExperimentalFeatures(ctx, logger, vm, feature); err != nil {
+			return err
+		}
+	case OtlpHttpExporterFeatureFlag:
+		if err := setExperimentalFeatures(ctx, logger, vm, feature); err != nil {
+			return err
+		}
+
+	}
+	return SetupOpsAgent(ctx, logger, vm, config)
 }

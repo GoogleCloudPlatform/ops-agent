@@ -134,7 +134,7 @@ type ModularConfig struct {
 //	processors: [filter/mypipe_1, metrics_filter/mypipe_2, resourcedetection/_global_0]
 //	extensions: [googleclientauth]
 //	exporters: [googlecloud]
-func (c ModularConfig) Generate(ctx context.Context, expOtlpExporter bool) (string, error) {
+func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 	pl := platform.FromContext(ctx)
 	receivers := map[string]interface{}{}
 	processors := map[string]interface{}{}

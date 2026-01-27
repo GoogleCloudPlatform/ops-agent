@@ -174,10 +174,10 @@ RUN Copy-Item -Path C:\Windows\System32\msvcp140.dll -Destination /work/out/bin/
 #
 # Install Golang
 #
-ADD https://go.dev/dl/go1.24.3.windows-amd64.msi /local/go1.24.3.windows-amd64.msi
+ADD https://go.dev/dl/go1.24.11.windows-amd64.msi /local/go1.24.11.windows-amd64.msi
 
 RUN Start-Process msiexec.exe `
-    -ArgumentList '/i C:\local\go1.24.3.windows-amd64.msi ', '/quiet ', `
+    -ArgumentList '/i C:\local\go1.24.11.windows-amd64.msi ', '/quiet ', `
     '/norestart ', 'ALLUSERS=1,INSTALLDIR=C:\Go' -NoNewWindow -Wait;
 
 #
@@ -352,8 +352,8 @@ COPY . /work
 ARG WINDOWS_VERSION
 ARG BUILD_DISTRO=windows-$WINDOWS_VERSION
 RUN Get-Content VERSION | Where-Object length | ForEach-Object { Invoke-Expression "`$env:$_" }; `
-    go build -o bin/plugin.exe -ldflags \"-X github.com/GoogleCloudPlatform/ops-agent/internal/version.BuildDistro=$env:BUILD_DISTRO -X github.com/GoogleCloudPlatform/ops-agent/internal/version.Version=$env:PKG_VERSION\" ./cmd/ops_agent_uap_plugin; `
-    Copy-Item -Path bin/plugin.exe -Destination /work/out/bin/; `
+    go build -o bin/ops_agent.exe -ldflags \"-X github.com/GoogleCloudPlatform/ops-agent/internal/version.BuildDistro=$env:BUILD_DISTRO -X github.com/GoogleCloudPlatform/ops-agent/internal/version.Version=$env:PKG_VERSION\" ./cmd/ops_agent_uap_plugin; `
+    Copy-Item -Path bin/ops_agent.exe -Destination /work/out/bin/; `
     $env:PKG_VERSION | Out-File -FilePath /work/out/bin/OPS_AGENT_VERSION -Encoding UTF8;
 
 ###############################################################################

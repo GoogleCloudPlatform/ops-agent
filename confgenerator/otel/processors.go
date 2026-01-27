@@ -298,23 +298,6 @@ func MetricsRemoveInstrumentationLibraryLabelsAttributes() Component {
 	)
 }
 
-func CopyHostIDToInstanceID() Component {
-	return Component{
-		Type: "transform",
-		Config: map[string]any{
-			"metric_statements": []map[string]any{
-				{
-					"context":    "resource",
-					"error_mode": "silent",
-					"statements": []string{
-						`set(attributes["instance_id"], attributes["host.id"])`,
-					},
-				},
-			},
-		},
-	}
-}
-
 // TransformQueryContext is a type wrapper for the context of a query expression within the transoform processor
 type TransformQueryContext string
 
@@ -704,4 +687,14 @@ func MetricUnknownCounter() Component {
 		// Delete the extra suffix once we are done.
 		"set(metric.name, Substring(metric.name, 0, Len(metric.name)-Len(\":unknowncounter\"))) where HasSuffix(metric.name, \":unknowncounter\")",
 	})
+}
+
+func Batch() Component {
+	return Component{
+		Type: "batch",
+		Config: map[string]interface{}{
+			"send_batch_size":     200,
+			"send_batch_max_size": 200,
+		},
+	}
 }
