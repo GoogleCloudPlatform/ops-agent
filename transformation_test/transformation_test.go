@@ -403,7 +403,7 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 		LogLevel:          "debug",
 		ReceiverPipelines: rps,
 		Pipelines:         pls,
-		ExporterComponents: map[otel.ExporterType]otel.ExporterComponents{
+		ExporterComponents: map[otel.ExporterType]otel.ExporterComponent{
 			otel.OTelLogs: {
 				Processors: []otel.Component{otel.BatchLogsProcessor()},
 				Exporter: otel.Component{

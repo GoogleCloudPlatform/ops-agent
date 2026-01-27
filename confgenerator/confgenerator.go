@@ -87,8 +87,8 @@ func otlpMericsExporterProcessors() []otel.Component {
 	return []otel.Component{otel.BatchOTLPMetricsProcessor()}
 }
 
-func exporterComponents(userAgent string) map[otel.ExporterType]otel.ExporterComponents {
-	return map[otel.ExporterType]otel.ExporterComponents{
+func exporterComponents(userAgent string) map[otel.ExporterType]otel.ExporterComponent {
+	return map[otel.ExporterType]otel.ExporterComponent{
 		otel.System: {
 			Exporter: googleCloudExporter(userAgent, false, false),
 		},

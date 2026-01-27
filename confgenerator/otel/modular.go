@@ -61,7 +61,7 @@ func (t ExporterType) Name() string {
 	}
 }
 
-type ExporterComponents struct {
+type ExporterComponent struct {
 	Exporter   Component
 	Processors []Component
 }
@@ -124,7 +124,7 @@ type ModularConfig struct {
 	ReceiverPipelines  map[string]ReceiverPipeline
 	Pipelines          map[string]Pipeline
 	Extensions         map[string]interface{}
-	ExporterComponents map[ExporterType]ExporterComponents
+	ExporterComponents map[ExporterType]ExporterComponent
 
 	// Test-only options:
 	// Don't generate any self-metrics
