@@ -57,6 +57,10 @@ func googleCloudExporter(userAgent string, instrumentationLabels bool, serviceRe
 	}
 }
 
+func otelSetOtlpExporterComponents() []otel.Component {
+	return []otel.Component{otel.MetricStartTime()}
+}
+
 func ConvertPrometheusExporterToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
 	return ConvertToOtlpExporter(pipeline, ctx, true, false)
 }
@@ -92,9 +96,7 @@ func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, 
 	// b/476109839: For prometheus metrics using the OTLP exporter. The dots "." in the metric name are NOT replaced with underscore "_".
 	// This is diffrent from the GMP endpoint.
 	if isPrometheus {
-
 		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricUnknownCounter())
-		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricStartTime())
 		// If a metric already has a domain, it will not be considered a prometheus metric by the UTR endpoint unless we add the prefix.
 		// This behavior is the same as the GCM/GMP exporters.
 		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsTransform(otel.AddPrefix("prometheus.googleapis.com")))
@@ -144,6 +146,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 	userAgent, _ := p.UserAgent("Google-Cloud-Ops-Agent-Metrics")
 	metricVersionLabel, _ := p.VersionLabel("google-cloud-ops-agent-metrics")
 	loggingVersionLabel, _ := p.VersionLabel("google-cloud-ops-agent-logging")
+	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
 
 	receiverPipelines, pipelines, err := uc.generateOtelPipelines(ctx)
 	if err != nil {
@@ -158,9 +161,8 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 		OtelRuntimeDir:      outDir,
 		OtelLogging:         uc.Logging.Service.OTelLogging,
 	}
-	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines)
+	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines, ctx)
 
-	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
 	extensions := map[string]interface{}{}
 	if expOtlpExporter {
 		extensions["googleclientauth"] = map[string]interface{}{}
@@ -177,7 +179,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 			otel.GMP:    googleManagedPrometheusExporter(userAgent),
 			otel.OTLP:   otlpExporter(userAgent),
 		},
-	}.Generate(ctx)
+	}.Generate(ctx, expOtlpExporter)
 	if err != nil {
 		return "", err
 	}

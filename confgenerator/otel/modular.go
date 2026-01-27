@@ -134,7 +134,7 @@ type ModularConfig struct {
 //	processors: [filter/mypipe_1, metrics_filter/mypipe_2, resourcedetection/_global_0]
 //	extensions: [googleclientauth]
 //	exporters: [googlecloud]
-func (c ModularConfig) Generate(ctx context.Context) (string, error) {
+func (c ModularConfig) Generate(ctx context.Context, expOtlpExporter bool) (string, error) {
 	pl := platform.FromContext(ctx)
 	receivers := map[string]interface{}{}
 	processors := map[string]interface{}{}
@@ -251,6 +251,15 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 		if name, ok := resourceDetectionProcessorNames[rdm]; ok {
 			processorNames = append(processorNames, name)
 			processors[name] = resourceDetectionProcessors[rdm].Config
+			// b/459468648
+			if expOtlpExporter {
+				// Similar to the resource detector, for any pipeline that is using the
+				// otlphttp exporter, we add a MetricStartTime processor at the end of it.
+				// This mimics the current behavior on GCM exporter.
+				metricStartTime := MetricStartTime()
+				processorNames = append(processorNames, metricStartTime.name(fmt.Sprintf("%s_0", prefix)))
+				processors[metricStartTime.name(fmt.Sprintf("%s_0", prefix))] = metricStartTime.Config
+			}
 		}
 		exporterType := receiverPipeline.ExporterTypes[pipeline.Type]
 		if _, ok := exporterNames[exporterType]; !ok {
