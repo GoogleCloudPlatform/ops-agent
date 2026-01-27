@@ -647,6 +647,12 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  metricstransform/prometheus_5:
+    transforms:
+    - action: update
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: prometheus.googleapis.com/$${1}
   normalizesums/iis_2: {}
   resource/agent_prometheus_1:
     attributes:
@@ -1041,7 +1047,10 @@ service:
       processors:
       - transform/prometheus_0
       - resource/prometheus_1
-      - transform/prometheus_2
+      - batch/prometheus_2
+      - transform/prometheus_3
+      - metricstarttime/prometheus_4
+      - metricstransform/prometheus_5
       receivers:
       - prometheus/prometheus
   telemetry:
