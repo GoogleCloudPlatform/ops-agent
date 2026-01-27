@@ -180,6 +180,9 @@ var (
 
 	// This suffix helps Kokoro set the right Content-type for log files. See b/202432085.
 	txtSuffix = ".txt"
+
+	// approvedRPMKeyIDs is a list of short-form key IDs that are used to sign RPM packages.
+	approvedRPMKeyIDs = []string{"3e1ba8d5", "b64936f9"}
 )
 
 // RunOpsAgentDiagnostics will fetch as much debugging info as it can from the
@@ -1361,14 +1364,38 @@ func verifyWindowsBinaryIsSigned(ctx context.Context, logger *log.Logger, vm *gc
 }
 
 func verifyRPMPackageSignedImpl(ctx context.Context, logger *log.Logger, vm *gce.VM, path string) error {
-	out, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("rpm -q --qf '%%{NAME}-%%{VERSION}-%%{RELEASE} %%{SIGPGP:pgpsig} %%{SIGGPG:pgpsig}\\n' -p %s", path))
+	out, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("rpm --checksig -v %s", path))
 	if err != nil {
-		return fmt.Errorf("failed to run rpm -q: %v", err)
+		return fmt.Errorf("failed to run rpm --checksig: %v", err)
 	}
 	output := out.Stdout
-	if !strings.Contains(output, "Key ID") {
-		return fmt.Errorf("RPM was not signed, got output:\n %s", output)
+
+	var matchingKeyID string
+	for _, keyID := range approvedRPMKeyIDs {
+		if strings.Contains(output, "key ID "+keyID) {
+			matchingKeyID = keyID
+			break
+		}
 	}
+
+	if matchingKeyID == "" {
+		return fmt.Errorf("RPM is not signed with any of the approved keys. Output:\n%s", output)
+	}
+
+	// This is the expected output block for a successfully signed package.
+	// Note the two placeholders for the key ID.
+	expectedOutputTemplate := `    Header V4 RSA/SHA512 Signature, key ID %s: OK
+    Header SHA256 digest: OK
+    Header SHA1 digest: OK
+    Payload SHA256 digest: OK
+    V4 RSA/SHA512 Signature, key ID %s: OK
+    MD5 digest: OK`
+
+	expectedOutput := fmt.Sprintf(expectedOutputTemplate, matchingKeyID, matchingKeyID)
+	if !strings.Contains(output, expectedOutput) {
+		return fmt.Errorf("RPM signature check failed. Expected output:\n%s\nbut got:\n%s", expectedOutput, output)
+	}
+
 	return nil
 }
 
