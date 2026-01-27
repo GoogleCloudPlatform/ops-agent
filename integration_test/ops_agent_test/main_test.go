@@ -219,6 +219,7 @@ func RunForEachImageAndFeatureFlag(t *testing.T, features []string, testBody fun
 		})
 		for _, feature := range features {
 			t.Run(feature, func(t *testing.T) {
+				// Feature flags currently don't work with how Ops Agent UAP Plugin runs.
 				if gce.IsOpsAgentUAPPlugin() {
 					t.SkipNow()
 				}
@@ -4963,6 +4964,10 @@ traces:
 func TestOTLPMetricsOTLP(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		if gce.IsOpsAgentUAPPlugin() {
+			// Ops Agent Plugin does not restart subagents on termination.
+			t.SkipNow()
+		}
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		otlpConfig := `
