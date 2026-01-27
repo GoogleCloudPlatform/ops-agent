@@ -19,7 +19,13 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  batch/_global_3:
+  batch/default__pipeline_iis_0:
+    send_batch_max_size: 200
+    send_batch_size: 200
+  batch/default__pipeline_mssql_0:
+    send_batch_max_size: 200
+    send_batch_size: 200
+  batch/prometheus__pipeline_prometheus_0:
     send_batch_max_size: 200
     send_batch_size: 200
   casttosum/iis_1:
@@ -869,8 +875,8 @@ service:
       - transform/iis_3
       - resource/iis_4
       - filter/default__pipeline_iis_0
+      - batch/default__pipeline_iis_0
       - resourcedetection/_global_0
-      - batch/_global_3
       receivers:
       - windowsperfcounters/iis
     metrics/default__pipeline_mssql:
@@ -881,8 +887,8 @@ service:
       - transform/mssql_1
       - resource/mssql_2
       - filter/default__pipeline_mssql_0
+      - batch/default__pipeline_mssql_0
       - resourcedetection/_global_0
-      - batch/_global_3
       receivers:
       - windowsperfcounters/mssql
     metrics/fluentbit:
@@ -940,7 +946,7 @@ service:
       - resource/prometheus_1
       - transform/prometheus_2
       - metricstarttime/prometheus_3
-      - batch/_global_3
+      - batch/prometheus__pipeline_prometheus_0
       receivers:
       - prometheus/prometheus
   telemetry:

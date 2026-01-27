@@ -682,7 +682,7 @@ func MetricUnknownCounter() Component {
 	})
 }
 
-func BatchLogsExporter() Component {
+func BatchLogsProcessor() Component {
 	return Component{
 		Type: "batch",
 		Config: map[string]any{
@@ -693,7 +693,7 @@ func BatchLogsExporter() Component {
 	}
 }
 
-func BatchOLTPMetricExporter() Component {
+func BatchOTLPMetricsProcessor() Component {
 	return Component{
 		Type: "batch",
 		Config: map[string]interface{}{

@@ -9,23 +9,21 @@ exporters:
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
   googlecloud/logs:
     log:
-      grpc_pool_size: 20
-    metric:
-      instrumentation_library_labels: true
-      prefix: ""
-      resource_filters: []
-      service_resource_labels: true
-      skip_create_descriptor: true
+      grpc_pool_size: 10
     sending_queue:
       enabled: true
-      num_consumers: 40
+      num_consumers: 20
     timeout: 60s
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  batch/_global_2:
+  batch/logs_pipeline1_test__syslog__source__id__tcp_0:
+    send_batch_max_size: 1000
+    send_batch_size: 1000
+    timeout: 200s
+  batch/logs_pipeline2_test__syslog__source__id__udp_0:
     send_batch_max_size: 1000
     send_batch_size: 1000
     timeout: 200s
@@ -889,8 +887,8 @@ service:
       - transform/test__syslog__source__id__tcp_0
       - transform/test__syslog__source__id__tcp_1
       - transform/logs_pipeline1_test__syslog__source__id__tcp_0
+      - batch/logs_pipeline1_test__syslog__source__id__tcp_0
       - resourcedetection/_global_0
-      - batch/_global_2
       receivers:
       - syslog/test__syslog__source__id__tcp
     logs/logs_pipeline2_test__syslog__source__id__udp:
@@ -900,8 +898,8 @@ service:
       - transform/test__syslog__source__id__udp_0
       - transform/test__syslog__source__id__udp_1
       - transform/logs_pipeline2_test__syslog__source__id__udp_0
+      - batch/logs_pipeline2_test__syslog__source__id__udp_0
       - resourcedetection/_global_0
-      - batch/_global_2
       receivers:
       - syslog/test__syslog__source__id__udp
     metrics/default__pipeline_hostmetrics:

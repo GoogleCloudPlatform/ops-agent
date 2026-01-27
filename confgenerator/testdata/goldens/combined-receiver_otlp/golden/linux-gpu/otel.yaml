@@ -9,16 +9,10 @@ exporters:
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
   googlecloud/logs:
     log:
-      grpc_pool_size: 20
-    metric:
-      instrumentation_library_labels: true
-      prefix: ""
-      resource_filters: []
-      service_resource_labels: true
-      skip_create_descriptor: true
+      grpc_pool_size: 10
     sending_queue:
       enabled: true
-      num_consumers: 40
+      num_consumers: 20
     timeout: 60s
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
   googlecloud/otel:
@@ -37,7 +31,7 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  batch/_global_2:
+  batch/logs_otlp_otlp_0:
     send_batch_max_size: 1000
     send_batch_size: 1000
     timeout: 200s
@@ -753,8 +747,8 @@ service:
       - googlecloud/logs
       processors:
       - transform/otlp_0
+      - batch/logs_otlp_otlp_0
       - resourcedetection/_global_1
-      - batch/_global_2
       receivers:
       - otlp/otlp
     metrics/default__pipeline_hostmetrics:

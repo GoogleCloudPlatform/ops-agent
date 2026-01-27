@@ -403,18 +403,21 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 		LogLevel:          "debug",
 		ReceiverPipelines: rps,
 		Pipelines:         pls,
-		Exporters: map[otel.ExporterType]otel.Component{
+		ExporterComponents: map[otel.ExporterType]otel.ExporterComponents{
 			otel.OTelLogs: {
-				Type: "googlecloud",
-				Config: map[string]any{
-					"project": "my-project",
-					"sending_queue": map[string]any{
-						"enabled": false,
-					},
-					"log": map[string]any{
-						"default_log_name": "my-log-name",
-						"endpoint":         addr,
-						"use_insecure":     true,
+				Processors: []otel.Component{otel.BatchLogsProcessor()},
+				Exporter: otel.Component{
+					Type: "googlecloud",
+					Config: map[string]any{
+						"project": "my-project",
+						"sending_queue": map[string]any{
+							"enabled": false,
+						},
+						"log": map[string]any{
+							"default_log_name": "my-log-name",
+							"endpoint":         addr,
+							"use_insecure":     true,
+						},
 					},
 				},
 			},

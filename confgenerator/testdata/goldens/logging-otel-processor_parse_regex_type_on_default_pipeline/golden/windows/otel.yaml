@@ -9,23 +9,25 @@ exporters:
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
   googlecloud/logs:
     log:
-      grpc_pool_size: 20
-    metric:
-      instrumentation_library_labels: true
-      prefix: ""
-      resource_filters: []
-      service_resource_labels: true
-      skip_create_descriptor: true
+      grpc_pool_size: 10
     sending_queue:
       enabled: true
-      num_consumers: 40
+      num_consumers: 20
     timeout: 60s
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  batch/_global_2:
+  batch/logs_default__pipeline_windows__event__log_0:
+    send_batch_max_size: 1000
+    send_batch_size: 1000
+    timeout: 200s
+  batch/logs_default__pipeline_windows__event__log_1_0:
+    send_batch_max_size: 1000
+    send_batch_size: 1000
+    timeout: 200s
+  batch/logs_default__pipeline_windows__event__log_2_0:
     send_batch_max_size: 1000
     send_batch_size: 1000
     timeout: 200s
@@ -1291,8 +1293,8 @@ service:
       - transform/windows__event__log_0
       - transform/windows__event__log_1
       - transform/logs_default__pipeline_windows__event__log_0
+      - batch/logs_default__pipeline_windows__event__log_0
       - resourcedetection/_global_0
-      - batch/_global_2
       receivers:
       - windowseventlog/windows__event__log
     logs/logs_default__pipeline_windows__event__log_1:
@@ -1302,8 +1304,8 @@ service:
       - transform/windows__event__log_1_0
       - transform/windows__event__log_1_1
       - transform/logs_default__pipeline_windows__event__log_1_0
+      - batch/logs_default__pipeline_windows__event__log_1_0
       - resourcedetection/_global_0
-      - batch/_global_2
       receivers:
       - windowseventlog/windows__event__log_1
     logs/logs_default__pipeline_windows__event__log_2:
@@ -1313,8 +1315,8 @@ service:
       - transform/windows__event__log_2_0
       - transform/windows__event__log_2_1
       - transform/logs_default__pipeline_windows__event__log_2_0
+      - batch/logs_default__pipeline_windows__event__log_2_0
       - resourcedetection/_global_0
-      - batch/_global_2
       receivers:
       - windowseventlog/windows__event__log_2
     metrics/default__pipeline_hostmetrics:

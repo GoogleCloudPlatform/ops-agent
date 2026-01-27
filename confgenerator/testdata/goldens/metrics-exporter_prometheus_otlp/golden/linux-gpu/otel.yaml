@@ -19,7 +19,7 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  batch/_global_3:
+  batch/prometheus__pipeline_prometheus_0:
     send_batch_max_size: 200
     send_batch_size: 200
   cumulativetodelta/loggingmetrics_4:
@@ -831,7 +831,7 @@ service:
       - resource/prometheus_1
       - transform/prometheus_2
       - metricstarttime/prometheus_3
-      - batch/_global_3
+      - batch/prometheus__pipeline_prometheus_0
       receivers:
       - prometheus/prometheus
   telemetry:
