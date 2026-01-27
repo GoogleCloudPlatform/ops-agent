@@ -1,12 +1,4 @@
 exporters:
-  googlecloud:
-    metric:
-      instrumentation_library_labels: false
-      prefix: ""
-      resource_filters: []
-      service_resource_labels: false
-      skip_create_descriptor: true
-    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
   otlphttp/otlp:
     auth:
       authenticator: googleclientauth
@@ -19,6 +11,9 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
+  batch/agent_prometheus_4:
+    send_batch_max_size: 200
+    send_batch_size: 200
   batch/hostmetrics_6:
     send_batch_max_size: 200
     send_batch_size: 200
@@ -26,6 +21,9 @@ processors:
     send_batch_max_size: 200
     send_batch_size: 200
   batch/mssql_5:
+    send_batch_max_size: 200
+    send_batch_size: 200
+  batch/ops_agent_4:
     send_batch_max_size: 200
     send_batch_size: 200
   batch/prometheus_2:
@@ -647,7 +645,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/prometheus_5:
+  metricstransform/prometheus_4:
     transforms:
     - action: update
       include: ^(.*)$$
@@ -655,6 +653,11 @@ processors:
       new_name: prometheus.googleapis.com/$${1}
   normalizesums/iis_2: {}
   resource/agent_prometheus_1:
+    attributes:
+    - action: insert
+      key: gcp.project_id
+      value: test-project
+  resource/hostmetrics_3:
     attributes:
     - action: insert
       key: gcp.project_id
@@ -697,6 +700,30 @@ processors:
       statements:
       - set(name, "")
       - set(version, "")
+  transform/agent_prometheus_3:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
+  transform/hostmetrics_4:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/hostmetrics_5:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
   transform/iis_3:
     metric_statements:
     - context: scope
@@ -772,6 +799,15 @@ processors:
       statements:
       - set(name, "")
       - set(version, "")
+  transform/ops_agent_3:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
   transform/otel_0:
     error_mode: ignore
     metric_statements:
@@ -940,7 +976,6 @@ service:
       - batch/hostmetrics_6
       - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
-      - transform/_global_0
       - metricstarttime/default__pipeline_hostmetrics_0
       receivers:
       - hostmetrics/hostmetrics
@@ -958,7 +993,6 @@ service:
       - batch/iis_7
       - filter/default__pipeline_iis_0
       - resourcedetection/_global_0
-      - transform/_global_0
       - metricstarttime/default__pipeline_iis_0
       receivers:
       - windowsperfcounters/iis
@@ -974,7 +1008,6 @@ service:
       - batch/mssql_5
       - filter/default__pipeline_mssql_0
       - resourcedetection/_global_0
-      - transform/_global_0
       - metricstarttime/default__pipeline_mssql_0
       receivers:
       - windowsperfcounters/mssql
@@ -985,10 +1018,11 @@ service:
       - transform/agent_prometheus_0
       - resource/agent_prometheus_1
       - transform/agent_prometheus_2
+      - transform/agent_prometheus_3
+      - batch/agent_prometheus_4
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
       - resourcedetection/_global_0
-      - transform/_global_0
       - metricstarttime/fluentbit_0
       receivers:
       - prometheus/agent_prometheus
@@ -999,6 +1033,8 @@ service:
       - transform/agent_prometheus_0
       - resource/agent_prometheus_1
       - transform/agent_prometheus_2
+      - transform/agent_prometheus_3
+      - batch/agent_prometheus_4
       - transform/loggingmetrics_0
       - filter/loggingmetrics_1
       - filter/loggingmetrics_2
@@ -1009,7 +1045,6 @@ service:
       - interval/loggingmetrics_7
       - metricstransform/loggingmetrics_8
       - resourcedetection/_global_0
-      - transform/_global_0
       - metricstarttime/loggingmetrics_0
       receivers:
       - prometheus/agent_prometheus
@@ -1020,8 +1055,9 @@ service:
       - transform/ops_agent_0
       - resource/ops_agent_1
       - transform/ops_agent_2
+      - transform/ops_agent_3
+      - batch/ops_agent_4
       - resourcedetection/_global_0
-      - transform/_global_0
       - metricstarttime/opsagent_0
       receivers:
       - otlpjsonfile/ops_agent
@@ -1032,12 +1068,13 @@ service:
       - transform/agent_prometheus_0
       - resource/agent_prometheus_1
       - transform/agent_prometheus_2
+      - transform/agent_prometheus_3
+      - batch/agent_prometheus_4
       - transform/otel_0
       - filter/otel_1
       - filter/otel_2
       - metricstransform/otel_3
       - resourcedetection/_global_0
-      - transform/_global_0
       - metricstarttime/otel_0
       receivers:
       - prometheus/agent_prometheus
@@ -1049,8 +1086,7 @@ service:
       - resource/prometheus_1
       - batch/prometheus_2
       - transform/prometheus_3
-      - metricstarttime/prometheus_4
-      - metricstransform/prometheus_5
+      - metricstransform/prometheus_4
       receivers:
       - prometheus/prometheus
   telemetry:
