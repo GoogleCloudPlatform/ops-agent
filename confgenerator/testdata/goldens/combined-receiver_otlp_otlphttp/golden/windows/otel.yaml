@@ -648,6 +648,12 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  metricstransform/otlp_7:
+    transforms:
+    - action: update
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: prometheus.googleapis.com/$${1}
   normalizesums/iis_2: {}
   resource/hostmetrics_3:
     attributes:
@@ -979,6 +985,7 @@ service:
       - batch/otlp_4
       - transform/otlp_5
       - metricstarttime/otlp_6
+      - metricstransform/otlp_7
       receivers:
       - otlp/otlp
     traces/traces_otlp_otlp:
