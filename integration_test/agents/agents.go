@@ -1297,7 +1297,7 @@ func verifyRPMPackageSigned(ctx context.Context, logger *log.Logger, vm *gce.VM,
 	}
 
 	if location.packagesInGCS != "" {
-		return verifyRPMPackageSignedFromGCS(ctx, logger, vm)
+		return verifyRPMPackageSignedImpl(ctx, logger, vm, fmt.Sprintf("%s/*.rpm", linuxAgentGCSDownloadPath))
 	}
 
 	// Assumes the Ops Agent was set up using the install script (with REPO_SUFFIX).
@@ -1310,20 +1310,12 @@ func verifyRPMPackageSigned(ctx context.Context, logger *log.Logger, vm *gce.VM,
 	return verifyRPMPackageSignedImpl(ctx, logger, vm, "./*.rpm")
 }
 
-func verifyRPMPackageSignedFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
-	return verifyRPMPackageSignedImpl(ctx, logger, vm, fmt.Sprintf("%s/*.rpm", linuxAgentGCSDownloadPath))
-}
-
-func verifyWindowsBinarySignedFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
-	return verifyWindowsBinaryIsSigned(ctx, logger, vm, fmt.Sprintf("%s\\*.goo", windowsAgentGCSDownloadPath))
-}
-
 func verifyWindowsBinarySigned(ctx context.Context, logger *log.Logger, vm *gce.VM, location PackageLocation) error {
 	if !gce.IsWindows(vm.ImageSpec) {
 		return fmt.Errorf(fmt.Sprintf("VM spec: %s, is not windows based", vm.ImageSpec))
 	}
 	if location.packagesInGCS != "" {
-		return verifyWindowsBinarySignedFromGCS(ctx, logger, vm)
+		return verifyWindowsBinaryIsSigned(ctx, logger, vm, fmt.Sprintf("%s\\*.goo", windowsAgentGCSDownloadPath))
 	}
 
 	// Assumes the Ops Agent was set up using the install script (with REPO_SUFFIX).
