@@ -1300,16 +1300,15 @@ func verifyRPMPackageSigned(ctx context.Context, logger *log.Logger, vm *gce.VM,
 	// Assumes the Ops Agent was set up using the install script (with REPO_SUFFIX).
 	// Since the script has already added the repository to the VM, we only need
 	// to download the package.
-	_, err := gce.RunRemotely(ctx, logger, vm, "dnf download google-cloud-ops-agent")
-	if err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "dnf download google-cloud-ops-agent"); err != nil {
 		return fmt.Errorf("failed to run dnf download: %v", err)
 	}
 
-	return verifyIfRPMIsSigned(ctx, logger, vm, "./*.rpm")
+	return verifyRPMPackageSignedImpl(ctx, logger, vm, "./*.rpm")
 }
 
 func verifyRPMPackageSignedFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
-	return verifyIfRPMIsSigned(ctx, logger, vm, fmt.Sprintf("%s/*.rpm", linuxAgentGCSDownloadPath))
+	return verifyRPMPackageSignedImpl(ctx, logger, vm, fmt.Sprintf("%s/*.rpm", linuxAgentGCSDownloadPath))
 }
 
 func verifyWindowsBinarySignedFromGCS(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
@@ -1327,8 +1326,7 @@ func verifyWindowsBinarySigned(ctx context.Context, logger *log.Logger, vm *gce.
 	// Assumes the Ops Agent was set up using the install script (with REPO_SUFFIX).
 	// Since the script has already added the repository to the VM, we only need
 	// to download the package.
-	_, err := gce.RunRemotely(ctx, logger, vm, "googet download google-cloud-ops-agent")
-	if err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, "googet download google-cloud-ops-agent"); err != nil {
 		return fmt.Errorf("failed to run googet download: %v", err)
 	}
 	return verifyWindowsBinaryIsSigned(ctx, logger, vm, "*.goo")
@@ -1343,8 +1341,7 @@ func verifyWindowsBinaryIsSigned(ctx context.Context, logger *log.Logger, vm *gc
 		"cd expand",
 	}, ";")
 
-	_, err := gce.RunRemotely(ctx, logger, vm, cmd)
-	if err != nil {
+	if _, err := gce.RunRemotely(ctx, logger, vm, cmd); err != nil {
 		return fmt.Errorf("failed to run cmd: \n%s\nerror:\n%v", cmd, err)
 	}
 
@@ -1363,7 +1360,7 @@ func verifyWindowsBinaryIsSigned(ctx context.Context, logger *log.Logger, vm *gc
 	return nil
 }
 
-func verifyIfRPMIsSigned(ctx context.Context, logger *log.Logger, vm *gce.VM, path string) error {
+func verifyRPMPackageSignedImpl(ctx context.Context, logger *log.Logger, vm *gce.VM, path string) error {
 	out, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("rpm -q --qf '%%{NAME}-%%{VERSION}-%%{RELEASE} %%{SIGPGP:pgpsig} %%{SIGGPG:pgpsig}\\n' -p %s", path))
 	if err != nil {
 		return fmt.Errorf("failed to run rpm -q: %v", err)
