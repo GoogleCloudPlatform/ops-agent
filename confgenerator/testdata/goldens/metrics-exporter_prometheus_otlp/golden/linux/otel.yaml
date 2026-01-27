@@ -19,10 +19,10 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  batch/hostmetrics_6:
+  batch/default__pipeline_hostmetrics_0:
     send_batch_max_size: 200
     send_batch_size: 200
-  batch/prometheus_2:
+  batch/prometheus__pipeline_prometheus_0:
     send_batch_max_size: 200
     send_batch_size: 200
   cumulativetodelta/loggingmetrics_4:
@@ -564,7 +564,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/prometheus_5:
+  metricstransform/prometheus_4:
     transforms:
     - action: update
       include: ^(.*)$$
@@ -764,8 +764,8 @@ service:
       - resource/hostmetrics_3
       - transform/hostmetrics_4
       - transform/hostmetrics_5
-      - batch/hostmetrics_6
       - filter/default__pipeline_hostmetrics_0
+      - batch/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
       receivers:
       - hostmetrics/hostmetrics
@@ -822,10 +822,10 @@ service:
       processors:
       - transform/prometheus_0
       - resource/prometheus_1
-      - batch/prometheus_2
-      - transform/prometheus_3
-      - metricstarttime/prometheus_4
-      - metricstransform/prometheus_5
+      - transform/prometheus_2
+      - metricstarttime/prometheus_3
+      - metricstransform/prometheus_4
+      - batch/prometheus__pipeline_prometheus_0
       receivers:
       - prometheus/prometheus
   telemetry:

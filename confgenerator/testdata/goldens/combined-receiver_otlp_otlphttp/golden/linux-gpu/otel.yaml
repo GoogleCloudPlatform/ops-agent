@@ -27,13 +27,13 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  batch/hostmetrics_1_4:
+  batch/default__pipeline_hostmetrics_0:
     send_batch_max_size: 200
     send_batch_size: 200
-  batch/hostmetrics_6:
+  batch/default__pipeline_hostmetrics_1_0:
     send_batch_max_size: 200
     send_batch_size: 200
-  batch/otlp_4:
+  batch/otlp_otlp_0:
     send_batch_max_size: 200
     send_batch_size: 200
   cumulativetodelta/loggingmetrics_4:
@@ -108,7 +108,7 @@ processors:
     - location
   interval/loggingmetrics_7:
     interval: 1m
-  metricstarttime/otlp_6:
+  metricstarttime/otlp_5:
     strategy: subtract_initial_point
   metricstransform/fluentbit_1:
     transforms:
@@ -609,7 +609,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/otlp_7:
+  metricstransform/otlp_6:
     transforms:
     - action: update
       include: ^(.*)$$
@@ -723,7 +723,7 @@ processors:
       - set(attributes["cluster"], "__gce__") where "__gce__" != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
       - set(attributes["instance_name"], resource.attributes["host.name"]) where resource.attributes["host.name"] != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
       - set(attributes["machine_type"], resource.attributes["host.type"]) where resource.attributes["host.type"] != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
-  transform/otlp_5:
+  transform/otlp_4:
     error_mode: ignore
     metric_statements:
     - context: metric
@@ -787,8 +787,8 @@ service:
       - resource/hostmetrics_3
       - transform/hostmetrics_4
       - transform/hostmetrics_5
-      - batch/hostmetrics_6
       - filter/default__pipeline_hostmetrics_0
+      - batch/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
       receivers:
       - hostmetrics/hostmetrics
@@ -800,8 +800,8 @@ service:
       - resource/hostmetrics_1_1
       - transform/hostmetrics_1_2
       - transform/hostmetrics_1_3
-      - batch/hostmetrics_1_4
       - filter/default__pipeline_hostmetrics_1_0
+      - batch/default__pipeline_hostmetrics_1_0
       - resourcedetection/_global_0
       receivers:
       - nvml/hostmetrics_1
@@ -860,10 +860,10 @@ service:
       - transform/otlp_1
       - groupbyattrs/otlp_2
       - resource/otlp_3
-      - batch/otlp_4
-      - transform/otlp_5
-      - metricstarttime/otlp_6
-      - metricstransform/otlp_7
+      - transform/otlp_4
+      - metricstarttime/otlp_5
+      - metricstransform/otlp_6
+      - batch/otlp_otlp_0
       receivers:
       - otlp/otlp
     traces/traces_otlp_otlp:
