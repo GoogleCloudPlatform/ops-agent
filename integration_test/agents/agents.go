@@ -1376,13 +1376,11 @@ func verifyRPMPackageSignedImpl(ctx context.Context, logger *log.Logger, vm *gce
 // Supported: RPM based VMs and Windows.
 func VerifyOpsAgentSigned(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	location := LocationFromEnvVars()
-	if !IsRPMBased(vm.ImageSpec) && !gce.IsWindows(vm.ImageSpec) {
-		return fmt.Errorf(fmt.Sprintf("VM image: %s, is not suported for signing", vm.ImageSpec))
-	}
-
 	if IsRPMBased(vm.ImageSpec) {
 		return verifyRPMPackageSigned(ctx, logger, vm, location)
+	} else if gce.IsWindows(vm.ImageSpec) {
+		return verifyWindowsBinarySigned(ctx, logger, vm, location)
+	} else {
+		return fmt.Errorf(fmt.Sprintf("VM image: %s, is not suported for signing", vm.ImageSpec))
 	}
-
-	return verifyWindowsBinarySigned(ctx, logger, vm, location)
 }
