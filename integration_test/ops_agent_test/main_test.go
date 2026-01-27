@@ -5079,7 +5079,7 @@ traces:
 			},
 			{
 				MetricSpec: metadata.MetricSpec{
-					Type:               "prometheus.googleapis.com/invalid.googleapis.com/otlp.test.prefix2/gauge",
+					Type:               "prometheus.googleapis.com/.invalid.googleapis.com/otlp.test.prefix2/gauge",
 					Kind:               metric.MetricDescriptor_GAUGE.String(),
 					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
 					Value:              5.0,
@@ -5090,7 +5090,7 @@ traces:
 			},
 			{
 				MetricSpec: metadata.MetricSpec{
-					Type:               "prometheus.googleapis.com/otlp.test.prefix3/workload.googleapis.com.abc/gauge",
+					Type:               "prometheus.googleapis.com/otlp.test.prefix3/workload.googleapis.com/abc/gauge",
 					Kind:               metric.MetricDescriptor_GAUGE.String(),
 					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
 					Value:              5.0,
