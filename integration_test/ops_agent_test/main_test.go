@@ -5004,8 +5004,7 @@ traces:
 		if err := installGolang(ctx, logger, vm); err != nil {
 			t.Fatal(err)
 		}
-		serviceName := "otlp-metric-googlemanagedprometheus-test"
-		if err = runGoCode(ctx, logger, vm, metricFile, "-service_name", serviceName); err != nil {
+		if err = runGoCode(ctx, logger, vm, metricFile); err != nil {
 			t.Fatal(err)
 		}
 		expectedLabels := []*metadata.MetricLabel{
