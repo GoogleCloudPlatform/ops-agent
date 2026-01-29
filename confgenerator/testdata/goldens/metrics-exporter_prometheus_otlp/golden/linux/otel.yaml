@@ -19,12 +19,10 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  batch/hostmetrics_6:
+  batch/otlphttp/otlp_metrics_0:
     send_batch_max_size: 200
     send_batch_size: 200
-  batch/prometheus_2:
-    send_batch_max_size: 200
-    send_batch_size: 200
+    timeout: 200ms
   cumulativetodelta/loggingmetrics_4:
     include:
       match_type: strict
@@ -87,7 +85,7 @@ processors:
         - googlecloudmonitoring/point_count
   interval/loggingmetrics_7:
     interval: 1m
-  metricstarttime/prometheus_4:
+  metricstarttime/prometheus_3:
     strategy: subtract_initial_point
   metricstransform/fluentbit_1:
     transforms:
@@ -564,7 +562,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/prometheus_5:
+  metricstransform/prometheus_4:
     transforms:
     - action: update
       include: ^(.*)$$
@@ -650,7 +648,7 @@ processors:
       - delete_key(attributes, "location")
       - delete_key(attributes, "cluster")
       - delete_key(attributes, "namespace")
-  transform/prometheus_3:
+  transform/prometheus_2:
     error_mode: ignore
     metric_statements:
     - context: metric
@@ -764,9 +762,9 @@ service:
       - resource/hostmetrics_3
       - transform/hostmetrics_4
       - transform/hostmetrics_5
-      - batch/hostmetrics_6
       - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
+      - batch/otlphttp/otlp_metrics_0
       receivers:
       - hostmetrics/hostmetrics
     metrics/fluentbit:
@@ -822,10 +820,10 @@ service:
       processors:
       - transform/prometheus_0
       - resource/prometheus_1
-      - batch/prometheus_2
-      - transform/prometheus_3
-      - metricstarttime/prometheus_4
-      - metricstransform/prometheus_5
+      - transform/prometheus_2
+      - metricstarttime/prometheus_3
+      - metricstransform/prometheus_4
+      - batch/otlphttp/otlp_metrics_0
       receivers:
       - prometheus/prometheus
   telemetry:
