@@ -68,35 +68,6 @@ func googleCloudLoggingExporter() otel.Component {
 	}
 }
 
-func otelLogsExporterComponents() otel.ExporterComponents {
-	return otel.ExporterComponents{
-		Exporter: googleCloudLoggingExporter(),
-		ProcessorsByType: map[string][]otel.Component{
-			// Batching logs improves log export performance.
-			"logs": {
-				otel.BatchProcessor(1000, 1000, "200s"),
-			},
-		},
-	}
-}
-
-func otlpExporterComponents(userAgent string) otel.ExporterComponents {
-	return otel.ExporterComponents{
-		Exporter: otlpExporter(userAgent),
-		ProcessorsByType: map[string][]otel.Component{
-			// The OTLP exporter doesn't batch by default like the googlecloud.* exporters.
-			// We need this to avoid the API point limits.
-			"metrics": {
-				otel.BatchProcessor(200, 200, "200s"),
-			},
-			// Batching logs improves log export performance.
-			"logs": {
-				otel.BatchProcessor(1000, 1000, "200s"),
-			},
-		},
-	}
-}
-
 func ConvertPrometheusExporterToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
 	return ConvertToOtlpExporter(pipeline, ctx, true, false)
 }
@@ -215,11 +186,32 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 			otel.OTel: {
 				Exporter: googleCloudExporter(userAgent, true, true),
 			},
-			otel.Logging: otelLogsExporterComponents(),
 			otel.GMP: {
 				Exporter: googleManagedPrometheusExporter(userAgent),
 			},
-			otel.OTLP: otlpExporterComponents(userAgent),
+			otel.OTLP: {
+				Exporter: otlpExporter(userAgent),
+				ProcessorsByType: map[string][]otel.Component{
+					// The OTLP exporter doesn't batch by default like the googlecloud.* exporters.
+					// We need this to avoid the API point limits.
+					"metrics": {
+						otel.BatchProcessor(200, 200, "200s"),
+					},
+					// Batching logs improves log export performance.
+					"logs": {
+						otel.BatchProcessor(1000, 1000, "200s"),
+					},
+				},
+			},
+			otel.Logging: {
+				Exporter: googleCloudLoggingExporter(),
+				ProcessorsByType: map[string][]otel.Component{
+					// Batching logs improves log export performance.
+					"logs": {
+						otel.BatchProcessor(1000, 1000, "200s"),
+					},
+				},
+			},
 		},
 	}.Generate(ctx)
 	if err != nil {
