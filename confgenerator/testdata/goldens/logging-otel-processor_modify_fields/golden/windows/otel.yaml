@@ -7,7 +7,7 @@ exporters:
       service_resource_labels: false
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
-  googlecloud/logs:
+  googlecloud/logging:
     log:
       grpc_pool_size: 10
     sending_queue:
@@ -18,19 +18,7 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  batch/logs_default__pipeline_windows__event__log_0:
-    send_batch_max_size: 1000
-    send_batch_size: 1000
-    timeout: 200s
-  batch/logs_default__pipeline_windows__event__log_1_0:
-    send_batch_max_size: 1000
-    send_batch_size: 1000
-    timeout: 200s
-  batch/logs_default__pipeline_windows__event__log_2_0:
-    send_batch_max_size: 1000
-    send_batch_size: 1000
-    timeout: 200s
-  batch/logs_p1_sample__logs_0:
+  batch/googlecloud/logging_logs_0:
     send_batch_max_size: 1000
     send_batch_size: 1000
     timeout: 200s
@@ -1257,42 +1245,42 @@ service:
   pipelines:
     logs/logs_default__pipeline_windows__event__log:
       exporters:
-      - googlecloud/logs
+      - googlecloud/logging
       processors:
       - transform/windows__event__log_0
       - transform/windows__event__log_1
-      - batch/logs_default__pipeline_windows__event__log_0
       - resourcedetection/_global_0
+      - batch/googlecloud/logging_logs_0
       receivers:
       - windowseventlog/windows__event__log
     logs/logs_default__pipeline_windows__event__log_1:
       exporters:
-      - googlecloud/logs
+      - googlecloud/logging
       processors:
       - transform/windows__event__log_1_0
       - transform/windows__event__log_1_1
-      - batch/logs_default__pipeline_windows__event__log_1_0
       - resourcedetection/_global_0
+      - batch/googlecloud/logging_logs_0
       receivers:
       - windowseventlog/windows__event__log_1
     logs/logs_default__pipeline_windows__event__log_2:
       exporters:
-      - googlecloud/logs
+      - googlecloud/logging
       processors:
       - transform/windows__event__log_2_0
       - transform/windows__event__log_2_1
-      - batch/logs_default__pipeline_windows__event__log_2_0
       - resourcedetection/_global_0
+      - batch/googlecloud/logging_logs_0
       receivers:
       - windowseventlog/windows__event__log_2
     logs/logs_p1_sample__logs:
       exporters:
-      - googlecloud/logs
+      - googlecloud/logging
       processors:
       - transform/sample__logs_0
       - transform/logs_p1_sample__logs_0
-      - batch/logs_p1_sample__logs_0
       - resourcedetection/_global_0
+      - batch/googlecloud/logging_logs_0
       receivers:
       - filelog/sample__logs
     metrics/default__pipeline_hostmetrics:

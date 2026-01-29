@@ -19,18 +19,10 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  batch/default__pipeline_hostmetrics_0:
+  batch/otlphttp/otlp_metrics_0:
     send_batch_max_size: 200
     send_batch_size: 200
-  batch/default__pipeline_iis_0:
-    send_batch_max_size: 200
-    send_batch_size: 200
-  batch/default__pipeline_mssql_0:
-    send_batch_max_size: 200
-    send_batch_size: 200
-  batch/prometheus__pipeline_prometheus_0:
-    send_batch_max_size: 200
-    send_batch_size: 200
+    timeout: 200s
   casttosum/iis_1:
     metrics:
     - agent.googleapis.com/iis/network/transferred_bytes_count
@@ -924,8 +916,8 @@ service:
       - transform/hostmetrics_4
       - transform/hostmetrics_5
       - filter/default__pipeline_hostmetrics_0
-      - batch/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
+      - batch/otlphttp/otlp_metrics_0
       receivers:
       - hostmetrics/hostmetrics
     metrics/default__pipeline_iis:
@@ -940,8 +932,8 @@ service:
       - transform/iis_5
       - transform/iis_6
       - filter/default__pipeline_iis_0
-      - batch/default__pipeline_iis_0
       - resourcedetection/_global_0
+      - batch/otlphttp/otlp_metrics_0
       receivers:
       - windowsperfcounters/iis
     metrics/default__pipeline_mssql:
@@ -954,8 +946,8 @@ service:
       - transform/mssql_3
       - transform/mssql_4
       - filter/default__pipeline_mssql_0
-      - batch/default__pipeline_mssql_0
       - resourcedetection/_global_0
+      - batch/otlphttp/otlp_metrics_0
       receivers:
       - windowsperfcounters/mssql
     metrics/fluentbit:
@@ -1014,7 +1006,7 @@ service:
       - transform/prometheus_2
       - metricstarttime/prometheus_3
       - metricstransform/prometheus_4
-      - batch/prometheus__pipeline_prometheus_0
+      - batch/otlphttp/otlp_metrics_0
       receivers:
       - prometheus/prometheus
   telemetry:

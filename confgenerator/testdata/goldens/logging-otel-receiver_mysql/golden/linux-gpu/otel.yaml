@@ -7,7 +7,7 @@ exporters:
       service_resource_labels: false
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
-  googlecloud/logs:
+  googlecloud/logging:
     log:
       grpc_pool_size: 10
     sending_queue:
@@ -18,19 +18,7 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  batch/logs_default__pipeline_syslog_0:
-    send_batch_max_size: 1000
-    send_batch_size: 1000
-    timeout: 200s
-  batch/logs_mysql_mysql__error_0:
-    send_batch_max_size: 1000
-    send_batch_size: 1000
-    timeout: 200s
-  batch/logs_mysql_mysql__general_0:
-    send_batch_max_size: 1000
-    send_batch_size: 1000
-    timeout: 200s
-  batch/logs_mysql_mysql__slow_0:
+  batch/googlecloud/logging_logs_0:
     send_batch_max_size: 1000
     send_batch_size: 1000
     timeout: 200s
@@ -1401,50 +1389,50 @@ service:
   pipelines:
     logs/logs_default__pipeline_syslog:
       exporters:
-      - googlecloud/logs
+      - googlecloud/logging
       processors:
       - transform/syslog_0
-      - batch/logs_default__pipeline_syslog_0
       - resourcedetection/_global_0
+      - batch/googlecloud/logging_logs_0
       receivers:
       - filelog/syslog
     logs/logs_mysql_mysql__error:
       exporters:
-      - googlecloud/logs
+      - googlecloud/logging
       processors:
       - transform/mysql__error_0
       - transform/mysql__error_1
       - transform/mysql__error_2
       - transform/mysql__error_3
       - transform/mysql__error_4
-      - batch/logs_mysql_mysql__error_0
       - resourcedetection/_global_0
+      - batch/googlecloud/logging_logs_0
       receivers:
       - filelog/mysql__error
     logs/logs_mysql_mysql__general:
       exporters:
-      - googlecloud/logs
+      - googlecloud/logging
       processors:
       - logstransform/mysql__general_0
       - transform/mysql__general_1
       - transform/mysql__general_2
       - transform/mysql__general_3
       - transform/mysql__general_4
-      - batch/logs_mysql_mysql__general_0
       - resourcedetection/_global_0
+      - batch/googlecloud/logging_logs_0
       receivers:
       - filelog/mysql__general
     logs/logs_mysql_mysql__slow:
       exporters:
-      - googlecloud/logs
+      - googlecloud/logging
       processors:
       - logstransform/mysql__slow_0
       - transform/mysql__slow_1
       - transform/mysql__slow_2
       - transform/mysql__slow_3
       - transform/mysql__slow_4
-      - batch/logs_mysql_mysql__slow_0
       - resourcedetection/_global_0
+      - batch/googlecloud/logging_logs_0
       receivers:
       - filelog/mysql__slow
     metrics/default__pipeline_hostmetrics:

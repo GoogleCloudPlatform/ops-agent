@@ -19,12 +19,10 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  batch/default__pipeline_hostmetrics_0:
+  batch/otlphttp/otlp_metrics_0:
     send_batch_max_size: 200
     send_batch_size: 200
-  batch/prometheus__pipeline_prometheus_0:
-    send_batch_max_size: 200
-    send_batch_size: 200
+    timeout: 200s
   cumulativetodelta/loggingmetrics_4:
     include:
       match_type: strict
@@ -765,8 +763,8 @@ service:
       - transform/hostmetrics_4
       - transform/hostmetrics_5
       - filter/default__pipeline_hostmetrics_0
-      - batch/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
+      - batch/otlphttp/otlp_metrics_0
       receivers:
       - hostmetrics/hostmetrics
     metrics/fluentbit:
@@ -825,7 +823,7 @@ service:
       - transform/prometheus_2
       - metricstarttime/prometheus_3
       - metricstransform/prometheus_4
-      - batch/prometheus__pipeline_prometheus_0
+      - batch/otlphttp/otlp_metrics_0
       receivers:
       - prometheus/prometheus
   telemetry:
