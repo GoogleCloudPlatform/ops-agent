@@ -157,6 +157,10 @@ targets:
           exhaustive:
           - rhel-cloud:rhel-9
           - rocky-linux-cloud:rocky-linux-9-optimized-gcp
+          - rhel-sap-cloud:rhel-9-0-sap-ha
+          - rhel-sap-cloud:rhel-9-2-sap-ha
+          - rhel-sap-cloud:rhel-9-4-sap-ha
+          - rhel-sap-cloud:rhel-9-6-sap-ha
       aarch64:
         test_distros:
           representative:
@@ -164,6 +168,29 @@ targets:
           exhaustive:
           - rhel-cloud:rhel-9-arm64
           - rocky-linux-cloud:rocky-linux-9-optimized-gcp-arm64
+
+rockylinux10:
+    os_versions: [centos-10*,rocky-10*,rhel-10*]
+    package_extension:
+      rpm
+    repo_name:
+      el10
+    architectures:
+      x86_64:
+        test_distros:
+          representative:
+          - rocky-linux-cloud:rocky-linux-10
+          exhaustive:
+          - rhel-cloud:rhel-10
+          - rocky-linux-cloud:rocky-linux-10-optimized-gcp
+
+      aarch64:
+        test_distros:
+          representative:
+          - rocky-linux-cloud:rocky-linux-10-arm64
+          exhaustive:
+          - rhel-cloud:rhel-10-arm64
+          - rocky-linux-cloud:rocky-linux-10-optimized-gcp-arm64
   sles12:
     os_versions: [sles-12*]
     package_extension:
