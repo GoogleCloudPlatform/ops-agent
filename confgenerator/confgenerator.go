@@ -57,7 +57,7 @@ func googleCloudExporter(userAgent string, instrumentationLabels bool, serviceRe
 	}
 }
 
-func googleCloudLoggingExporter(userAgent string) otel.Component {
+func googleCloudLoggingExporter() otel.Component {
 	config := map[string]interface{}{
 		"log": map[string]any{
 			"grpc_pool_size": 10,
@@ -77,34 +77,31 @@ func googleCloudLoggingExporter(userAgent string) otel.Component {
 	}
 }
 
-func otelLogsExporterProcessors() []otel.Component {
-	return []otel.Component{otel.BatchLogsProcessor()}
+func otelLogsExporterComponents() otel.ExporterComponents {
+	return otel.ExporterComponents{
+		Exporter: googleCloudLoggingExporter(),
+		ProcessorsByType: map[string][]otel.Component{
+			// Batching logs improves log export performance.
+			"logs": {
+				otel.BatchProcessor(1000, 1000, "200s"),
+			},
+		},
+	}
 }
 
-func otlpMetricsExporterProcessors() []otel.Component {
-	// The OTLP exporter doesn't batch by default like the googlecloud.* exporters.
-	// We need this to avoid the API point limits.
-	return []otel.Component{otel.BatchOTLPMetricsProcessor()}
-}
-
-func exporterComponents(userAgent string) map[otel.ExporterType]otel.ExporterComponent {
-	return map[otel.ExporterType]otel.ExporterComponent{
-		otel.System: {
-			Exporter: googleCloudExporter(userAgent, false, false),
-		},
-		otel.OTel: {
-			Exporter: googleCloudExporter(userAgent, true, true),
-		},
-		otel.OTelLogs: {
-			Exporter:   googleCloudLoggingExporter(userAgent),
-			Processors: otelLogsExporterProcessors(),
-		},
-		otel.GMP: {
-			Exporter: googleManagedPrometheusExporter(userAgent),
-		},
-		otel.OTLP: {
-			Exporter:   otlpExporter(userAgent),
-			Processors: otlpMetricsExporterProcessors(),
+func otlpExporterComponents(userAgent string) otel.ExporterComponents {
+	return otel.ExporterComponents{
+		Exporter: otlpExporter(userAgent),
+		ProcessorsByType: map[string][]otel.Component{
+			// The OTLP exporter doesn't batch by default like the googlecloud.* exporters.
+			// We need this to avoid the API point limits.
+			"metrics": {
+				otel.BatchProcessor(200, 200, "200s"),
+			},
+			// Batching logs improves log export performance.
+			"logs": {
+				otel.BatchProcessor(1000, 1000, "200s"),
+			},
 		},
 	}
 }
@@ -216,11 +213,23 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 	}
 
 	otelConfig, err := otel.ModularConfig{
-		LogLevel:           uc.getOTelLogLevel(),
-		ReceiverPipelines:  receiverPipelines,
-		Pipelines:          pipelines,
-		Extensions:         extensions,
-		ExporterComponents: exporterComponents(userAgent),
+		LogLevel:          uc.getOTelLogLevel(),
+		ReceiverPipelines: receiverPipelines,
+		Pipelines:         pipelines,
+		Extensions:        extensions,
+		Exporters: map[otel.ExporterType]otel.ExporterComponents{
+			otel.System: {
+				Exporter: googleCloudExporter(userAgent, false, false),
+			},
+			otel.OTel: {
+				Exporter: googleCloudExporter(userAgent, true, true),
+			},
+			otel.Logging: otelLogsExporterComponents(),
+			otel.GMP: {
+				Exporter: googleManagedPrometheusExporter(userAgent),
+			},
+			otel.OTLP: otlpExporterComponents(userAgent),
+		},
 	}.Generate(ctx)
 	if err != nil {
 		return "", err

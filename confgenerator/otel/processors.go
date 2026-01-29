@@ -689,23 +689,13 @@ func MetricUnknownCounter() Component {
 	})
 }
 
-func BatchLogsProcessor() Component {
+func BatchProcessor(sendBatchSize, sendBatchMaxSize int, timeout string) Component {
 	return Component{
 		Type: "batch",
 		Config: map[string]any{
-			"send_batch_max_size": 1000,
-			"send_batch_size":     1000,
-			"timeout":             "200s",
-		},
-	}
-}
-
-func BatchOTLPMetricsProcessor() Component {
-	return Component{
-		Type: "batch",
-		Config: map[string]interface{}{
-			"send_batch_size":     200,
-			"send_batch_max_size": 200,
+			"send_batch_size":     sendBatchSize,
+			"send_batch_max_size": sendBatchMaxSize,
+			"timeout":             timeout,
 		},
 	}
 }
