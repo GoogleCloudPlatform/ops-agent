@@ -88,9 +88,16 @@ func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, 
 
 	// The OTLP exporter doesn't batch by default like the googlecloud.* exporters. We need this to avoid the API point limits.
 	pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.Batch())
+
+	// b/476109839: For prometheus metrics using the OTLP exporter. The dots "." in the metric name are NOT replaced with underscore "_".
+	// This is diffrent from the GMP endpoint.
 	if isPrometheus {
+
 		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricUnknownCounter())
 		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricStartTime())
+		// If a metric already has a domain, it will not be considered a prometheus metric by the UTR endpoint unless we add the prefix.
+		// This behavior is the same as the GCM/GMP exporters.
+		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsTransform(otel.AddPrefix("prometheus.googleapis.com")))
 	}
 	return pipeline
 }
