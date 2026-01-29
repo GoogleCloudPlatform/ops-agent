@@ -195,11 +195,11 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 					// The OTLP exporter doesn't batch by default like the googlecloud.* exporters.
 					// We need this to avoid the API point limits.
 					"metrics": {
-						otel.BatchProcessor(200, 200, "200s"),
+						otel.BatchProcessor(200, 200, "200ms"),
 					},
 					// Batching logs improves log export performance.
 					"logs": {
-						otel.BatchProcessor(1000, 1000, "200s"),
+						otel.BatchProcessor(1000, 1000, "200ms"),
 					},
 				},
 			},
@@ -208,7 +208,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 				ProcessorsByType: map[string][]otel.Component{
 					// Batching logs improves log export performance.
 					"logs": {
-						otel.BatchProcessor(1000, 1000, "200s"),
+						otel.BatchProcessor(1000, 1000, "200ms"),
 					},
 				},
 			},

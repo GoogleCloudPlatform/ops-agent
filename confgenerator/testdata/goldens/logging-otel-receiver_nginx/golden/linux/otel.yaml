@@ -16,7 +16,7 @@ processors:
   batch/googlecloud/logging_logs_0:
     send_batch_max_size: 1000
     send_batch_size: 1000
-    timeout: 200s
+    timeout: 200ms
   cumulativetodelta/loggingmetrics_4:
     include:
       match_type: strict

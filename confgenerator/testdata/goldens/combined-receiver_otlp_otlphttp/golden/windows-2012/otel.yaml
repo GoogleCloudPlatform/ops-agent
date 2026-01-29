@@ -30,7 +30,7 @@ processors:
   batch/otlphttp/otlp_metrics_0:
     send_batch_max_size: 200
     send_batch_size: 200
-    timeout: 200s
+    timeout: 200ms
   casttosum/iis_1:
     metrics:
     - agent.googleapis.com/iis/network/transferred_bytes_count
