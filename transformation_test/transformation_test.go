@@ -406,8 +406,9 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 		Exporters: map[otel.ExporterType]otel.ExporterComponents{
 			otel.Logging: {
 				ProcessorsByType: map[string][]otel.Component{
+					// Batch with 2s timeout to accomodate for multiline parsing flush period.
 					"logs": {
-						otel.BatchProcessor(500, 500, "200s"),
+						otel.BatchProcessor(500, 500, "2000ms"),
 					},
 				},
 				Exporter: otel.Component{
