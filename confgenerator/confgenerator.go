@@ -58,22 +58,13 @@ func googleCloudExporter(userAgent string, instrumentationLabels bool, serviceRe
 }
 
 func googleCloudLoggingExporter() otel.Component {
-	config := map[string]interface{}{
-		"log": map[string]any{
-			"grpc_pool_size": 10,
-		},
-		"sending_queue": map[string]any{
-			"enabled":       true,
-			"num_consumers": 20,
-		},
-		// Set to mirror the 60s max limit of default retry window in Google Cloud Logging apiv2 go client :
-		// https://github.com/googleapis/google-cloud-go/blob/logging/v1.4.2/logging/apiv2/logging_client.go#L78-L90
-		"timeout": "60s",
-	}
-
 	return otel.Component{
-		Type:   "googlecloud",
-		Config: config,
+		Type: "googlecloud",
+		Config: map[string]interface{}{
+			// Set to mirror the 60s max limit of default retry window in Google Cloud Logging apiv2 go client :
+			// https://github.com/googleapis/google-cloud-go/blob/logging/v1.4.2/logging/apiv2/logging_client.go#L78-L90
+			"timeout": "60s",
+		},
 	}
 }
 
