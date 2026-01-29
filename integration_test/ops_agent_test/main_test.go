@@ -5955,7 +5955,7 @@ func TestLogCompression(t *testing.T) {
 
 func TestFileOffset(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
@@ -5976,7 +5976,7 @@ func TestFileOffset(t *testing.T) {
 			t.Fatalf("Error writing dummy log lines: %v", err)
 		}
 
-		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
