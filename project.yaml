@@ -169,7 +169,7 @@ targets:
           - rhel-cloud:rhel-9-arm64
           - rocky-linux-cloud:rocky-linux-9-optimized-gcp-arm64
 
-rockylinux10:
+  rockylinux10:
     os_versions: [centos-10*,rocky-10*,rhel-10*]
     package_extension:
       rpm
