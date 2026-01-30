@@ -87,6 +87,8 @@ github.com/GoogleCloudPlatform/google-guest-agent v0.0.0-20250924181420-23412fbd
 github.com/GoogleCloudPlatform/google-guest-agent v0.0.0-20250924181420-23412fbd6228/go.mod h1:31SvkAl6ORtir1odRpTl92XpTtn52GnBAHPtCKDSePo=
 github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20260130171200-8bbc62976af0 h1:QeKYB2SRm5fOk6l91p8kNd6XkDBk/nwaeWnTwwBqwYQ=
 github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20260130171200-8bbc62976af0/go.mod h1:hmqK+hsg2z+Xo/Yz16sNxb6TZX+q0KxKsrgYzdpV0P8=
+github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20260130180344-32b5f554a82f h1:7hnK8SzHatAweP8mioWEDd9N2BYa6Un0RMXP7xB1Njg=
+github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20260130180344-32b5f554a82f/go.mod h1:hmqK+hsg2z+Xo/Yz16sNxb6TZX+q0KxKsrgYzdpV0P8=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.29.0 h1:UQUsRi8WTzhZntp5313l+CHIAT95ojUI2lpP/ExlZa4=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.29.0/go.mod h1:Cz6ft6Dkn3Et6l2v2a9/RpN7epQ1GtDlO6lj8bEcOvw=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.53.0 h1:owcC2UnmsZycprQ5RfRgjydWhuoxg71LUfyiQdijZuM=
