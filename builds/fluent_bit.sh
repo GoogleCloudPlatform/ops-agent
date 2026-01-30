@@ -32,7 +32,7 @@ cmake .. -DCMAKE_INSTALL_PREFIX=$fluent_bit_dir \
   -DFLB_IN_SYSTEMD=On \
   -DFLB_MSGPACK_TO_JSON_INIT_BUFFER_SIZE=1.5 -DFLB_MSGPACK_TO_JSON_REALLOC_BUFFER_SIZE=.10 \
   -DFLB_CONFIG_YAML=OFF
-make VERBOSE=1
+make -j8
 make DESTDIR="$DESTDIR" install
 
 # We don't want fluent-bit's service or configuration, but there are no cmake
