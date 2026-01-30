@@ -19,9 +19,14 @@ set -ex
 . VERSION
 
 # Build .rpms
+RPMBUILD_ARGS=()
+if [[ -n "${SLE_VERSION}" ]]; then
+  RPMBUILD_ARGS+=(--define "sle_version ${SLE_VERSION}")
+fi
 rpmbuild --define "_source_filedigest_algorithm md5" \
   --define "package_version ${PKG_VERSION//[^a-zA-Z0-9.]/.}" \
   --define "_sourcedir $(pwd)" \
   --define "_rpmdir $(pwd)" \
+  "${RPMBUILD_ARGS[@]}" \
   -ba pkg/rpm/google-cloud-ops-agent.spec
 cp $(uname -m)/google-cloud-ops-agent*.rpm /
