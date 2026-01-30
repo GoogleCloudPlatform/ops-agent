@@ -50,6 +50,11 @@ platforms_to_skip:
   - debian-cloud:debian-12-arm64
   - debian-cloud:debian-13
   - debian-cloud:debian-13-arm64
+  # Same as above, RL10 only has Java 21 which is not supported by HBase
+  - rocky-linux-cloud:rocky-linux-10
+  - rocky-linux-cloud:rocky-linux-10-optimized-gcp
+  - rocky-linux-cloud:rocky-linux-10-arm64
+  - rocky-linux-cloud:rocky-linux-10-optimized-gcp-arm64
 supported_operating_systems: linux
 supported_app_version: ["1.7.x", "2.3.x", "2.4.x"]
 expected_metrics:
