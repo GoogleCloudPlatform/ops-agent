@@ -206,7 +206,7 @@ targets:
       x86_64:
         test_distros:
           representative:
-          - suse-cloud: sles-16-0-x86-64
+          - suse-cloud:sles-16-0-x86-64
           exhaustive:
           - suse-sap-cloud:sles-sap-16-0-x86-64
       aarch64:
