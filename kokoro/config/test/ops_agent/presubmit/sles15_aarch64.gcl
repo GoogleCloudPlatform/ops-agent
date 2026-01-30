@@ -3,7 +3,7 @@ import 'common.gcl' as common
 config build = common.ops_agent_test {
   params {
     environment {
-      TARGET = 'sles15'
+      TARGET = 'sles16'
       ARCH = 'aarch64'
     }
   }
