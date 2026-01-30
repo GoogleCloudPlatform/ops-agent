@@ -1,5 +1,59 @@
-- exit_error: exit status 1
-- collector_errors:
-  - stderr: |
-      Error: invalid configuration: processors::transform/logs_transformation__test_my-log-name_0: unable to parse OTTL statement "set(log.cache[\"__parsed_regex\"], ExtractPatternsRubyRegex(log.body[\"message\"], \"^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \\\\[(?<time>[^\\\\]]*)\\\\] \\\"(?<http_request_requestMethod>\\\\S+)(?: +(?<http_request_requestUrl>[^\\\\\\\"]*?)(?: +(?<http_request_protocol>\\\\S+))?)?\\\" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*)(?: \\\"(?<http_request_referer>[^\\\\\\\"]*)\\\" \\\"(?<http_request_userAgent>[^\\\\\\\"]*)\\\")?(?: \\\"(?<gzip_ratio>[^\\\\\\\"]*)\\\")?$\", true)) where ((log.body != nil and log.body[\"message\"] != nil) and IsMatchRubyRegex(log.body[\"message\"], \"^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \\\\[(?<time>[^\\\\]]*)\\\\] \\\"(?<http_request_requestMethod>\\\\S+)(?: +(?<http_request_requestUrl>[^\\\\\\\"]*?)(?: +(?<http_request_protocol>\\\\S+))?)?\\\" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*)(?: \\\"(?<http_request_referer>[^\\\\\\\"]*)\\\" \\\"(?<http_request_userAgent>[^\\\\\\\"]*)\\\")?(?: \\\"(?<gzip_ratio>[^\\\\\\\"]*)\\\")?$\"))": error while parsing arguments for call to "set": invalid argument at position 1: error while parsing arguments for call to "ExtractPatternsRubyRegex": incorrect number of arguments. Expected: 2 Received: 3
-      YYYY/MM/DD HH:MM:SS collector server run finished with error: invalid configuration: processors::transform/logs_transformation__test_my-log-name_0: unable to parse OTTL statement "set(log.cache[\"__parsed_regex\"], ExtractPatternsRubyRegex(log.body[\"message\"], \"^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \\\\[(?<time>[^\\\\]]*)\\\\] \\\"(?<http_request_requestMethod>\\\\S+)(?: +(?<http_request_requestUrl>[^\\\\\\\"]*?)(?: +(?<http_request_protocol>\\\\S+))?)?\\\" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*)(?: \\\"(?<http_request_referer>[^\\\\\\\"]*)\\\" \\\"(?<http_request_userAgent>[^\\\\\\\"]*)\\\")?(?: \\\"(?<gzip_ratio>[^\\\\\\\"]*)\\\")?$\", true)) where ((log.body != nil and log.body[\"message\"] != nil) and IsMatchRubyRegex(log.body[\"message\"], \"^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \\\\[(?<time>[^\\\\]]*)\\\\] \\\"(?<http_request_requestMethod>\\\\S+)(?: +(?<http_request_requestUrl>[^\\\\\\\"]*?)(?: +(?<http_request_protocol>\\\\S+))?)?\\\" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*)(?: \\\"(?<http_request_referer>[^\\\\\\\"]*)\\\" \\\"(?<http_request_userAgent>[^\\\\\\\"]*)\\\")?(?: \\\"(?<gzip_ratio>[^\\\\\\\"]*)\\\")?$\"))": error while parsing arguments for call to "set": invalid argument at position 1: error while parsing arguments for call to "ExtractPatternsRubyRegex": incorrect number of arguments. Expected: 2 Received: 3
+- entries:
+  - jsonPayload: {}
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/jetty_access
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2000-10-10T20:55:36Z
+  - jsonPayload: {}
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/jetty_access
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2021-08-26T16:49:43Z
+  - jsonPayload:
+      user: frank
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/jetty_access
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2000-10-10T20:55:36Z
+  - jsonPayload: {}
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/jetty_access
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2021-08-26T16:50:15Z
+  - jsonPayload:
+      user: admin
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/jetty_access
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2021-08-26T16:51:22Z
+  partialSuccess: true

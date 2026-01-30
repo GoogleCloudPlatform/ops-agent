@@ -1,5 +1,214 @@
-- exit_error: exit status 1
-- collector_errors:
-  - stderr: |
-      Error: invalid configuration: processors::transform/logs_transformation__test_my-log-name_1: unable to parse OTTL statement "set(log.cache[\"__parsed_regex\"], ExtractPatternsRubyRegex(log.body[\"message\"], \"^(?<time>\\\\d{4}-\\\\d{2}-\\\\d{2}\\\\s+\\\\d{2}:\\\\d{2}:\\\\d{2},\\\\d+)\\\\s+(?<level>[A-Z]+)\\\\s+(?<source>[^ ]*)(?<message>[\\\\s\\\\S]*)\", true)) where ((log.body != nil and log.body[\"message\"] != nil) and IsMatchRubyRegex(log.body[\"message\"], \"^(?<time>\\\\d{4}-\\\\d{2}-\\\\d{2}\\\\s+\\\\d{2}:\\\\d{2}:\\\\d{2},\\\\d+)\\\\s+(?<level>[A-Z]+)\\\\s+(?<source>[^ ]*)(?<message>[\\\\s\\\\S]*)\"))": error while parsing arguments for call to "set": invalid argument at position 1: error while parsing arguments for call to "ExtractPatternsRubyRegex": incorrect number of arguments. Expected: 2 Received: 3
-      YYYY/MM/DD HH:MM:SS collector server run finished with error: invalid configuration: processors::transform/logs_transformation__test_my-log-name_1: unable to parse OTTL statement "set(log.cache[\"__parsed_regex\"], ExtractPatternsRubyRegex(log.body[\"message\"], \"^(?<time>\\\\d{4}-\\\\d{2}-\\\\d{2}\\\\s+\\\\d{2}:\\\\d{2}:\\\\d{2},\\\\d+)\\\\s+(?<level>[A-Z]+)\\\\s+(?<source>[^ ]*)(?<message>[\\\\s\\\\S]*)\", true)) where ((log.body != nil and log.body[\"message\"] != nil) and IsMatchRubyRegex(log.body[\"message\"], \"^(?<time>\\\\d{4}-\\\\d{2}-\\\\d{2}\\\\s+\\\\d{2}:\\\\d{2}:\\\\d{2},\\\\d+)\\\\s+(?<level>[A-Z]+)\\\\s+(?<source>[^ ]*)(?<message>[\\\\s\\\\S]*)\"))": error while parsing arguments for call to "set": invalid argument at position 1: error while parsing arguments for call to "ExtractPatternsRubyRegex": incorrect number of arguments. Expected: 2 Received: 3
+- entries:
+  - jsonPayload:
+      level: INFO
+      message: "    [] - Initializing heap keyed state backend with stream factory."
+      source: org.apache.flink.runtime.state.heap.HeapKeyedStateBackend
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/flink
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-05-21T21:54:31.709Z
+  - jsonPayload:
+      level: INFO
+      message: " [] - Start SessionDispatcherLeaderProcess."
+      source: org.apache.flink.runtime.dispatcher.runner.SessionDispatcherLeaderProcess
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/flink
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-05-21T04:34:14.071Z
+  - jsonPayload:
+      level: INFO
+      message: " [] - Starting resource manager service."
+      source: org.apache.flink.runtime.resourcemanager.ResourceManagerServiceImpl
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/flink
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-05-21T04:34:14.087Z
+  - jsonPayload:
+      level: INFO
+      message: " [] - Recover all persisted job graphs."
+      source: org.apache.flink.runtime.dispatcher.runner.SessionDispatcherLeaderProcess
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/flink
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-05-21T04:34:14.094Z
+  - jsonPayload:
+      level: INFO
+      message: " [] - Successfully recovered 0 persisted job graphs."
+      source: org.apache.flink.runtime.dispatcher.runner.SessionDispatcherLeaderProcess
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/flink
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-05-21T04:34:14.095Z
+  - jsonPayload:
+      level: INFO
+      message: " [] - Resource manager service is granted leadership with session id 00000000-0000-0000-0000-000000000000."
+      source: org.apache.flink.runtime.resourcemanager.ResourceManagerServiceImpl
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/flink
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-05-21T04:34:14.103Z
+  - jsonPayload:
+      level: INFO
+      message: "             [] - Starting RPC endpoint for org.apache.flink.runtime.dispatcher.StandaloneDispatcher at akka://flink/user/rpc/dispatcher_0 ."
+      source: org.apache.flink.runtime.rpc.akka.AkkaRpcService
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/flink
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-05-21T04:34:14.152Z
+  - jsonPayload:
+      level: INFO
+      message: "             [] - Starting RPC endpoint for org.apache.flink.runtime.resourcemanager.StandaloneResourceManager at akka://flink/user/rpc/resourcemanager_1 ."
+      source: org.apache.flink.runtime.rpc.akka.AkkaRpcService
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/flink
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-05-21T04:34:14.229Z
+  - jsonPayload:
+      level: INFO
+      message: " [] - Starting the resource manager."
+      source: org.apache.flink.runtime.resourcemanager.StandaloneResourceManager
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/flink
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2025-05-21T04:34:14.270Z
+  - jsonPayload:
+      level: FATAL
+      message: "    [] - Initializing heap keyed state backend with stream factory."
+      source: org.apache.flink.runtime.state.heap.HeapKeyedStateBackend
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/flink
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: CRITICAL
+    timestamp: 2025-05-21T21:54:31.709Z
+  - jsonPayload:
+      level: WARN
+      message: " [] - Start SessionDispatcherLeaderProcess."
+      source: org.apache.flink.runtime.dispatcher.runner.SessionDispatcherLeaderProcess
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/flink
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: WARNING
+    timestamp: 2025-05-21T04:34:14.071Z
+  - jsonPayload:
+      level: ERROR
+      message: " [] - Starting resource manager service."
+      source: org.apache.flink.runtime.resourcemanager.ResourceManagerServiceImpl
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/flink
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: ERROR
+    timestamp: 2025-05-21T04:34:14.087Z
+  - jsonPayload:
+      level: DEBUG
+      message: " [] - Recover all persisted job graphs."
+      source: org.apache.flink.runtime.dispatcher.runner.SessionDispatcherLeaderProcess
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/flink
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: DEBUG
+    timestamp: 2025-05-21T04:34:14.094Z
+  partialSuccess: true
+- entries:
+  - jsonPayload:
+      level: TRACE
+      message: " [] - Successfully recovered 0 persisted job graphs."
+      source: org.apache.flink.runtime.dispatcher.runner.SessionDispatcherLeaderProcess
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/flink
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: DEBUG
+    timestamp: 2025-05-21T04:34:14.095Z
+  partialSuccess: true
