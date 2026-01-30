@@ -46,7 +46,6 @@ import (
 	"embed"
 	"encoding/json"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -2948,54 +2947,31 @@ func TestPrometheusMetrics(t *testing.T) {
 		// under normal circumstances. Based on some experiments, 2 minutes
 		// is normal; wait a bit longer to be on the safe side.
 		time.Sleep(3 * time.Minute)
+		expectedLabels := append([]*metadata.MetricLabel{
+			{Name: "instance_id", ValueRegex: fmt.Sprintf("%d", vm.ID)},
+			{Name: "instance_project_id", ValueRegex: vm.Project},
+			{Name: "zone", ValueRegex: vm.Zone},
+			{Name: "public_ip", ValueRegex: vm.IPAddress},
+			{Name: "hostname", ValueRegex: vm.Name},
+			{Name: "private_ip", ValueRegex: vm.IPAddress},
+			{Name: "network", ValueRegex: fmt.Sprintf("^projects/[0-9]+/networks/%s$", vm.Network)},
+		}, getCommonLabels(vm)...)
 
-		existingMetric := "prometheus.googleapis.com/fluentbit_uptime/counter"
-		window := time.Minute
-		metric, err := gce.WaitForMetric(ctx, logger, vm, existingMetric, window, nil, true)
+		expectedMetric := metadata.ExpectedMetric{
+			MetricSpec: metadata.MetricSpec{
+				Type:               "prometheus.googleapis.com/fluentbit_uptime/counter",
+				Kind:               metric.MetricDescriptor_CUMULATIVE.String(),
+				ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+				Value:              5.0,
+				MonitoredResources: []string{"prometheus_target"},
+				Labels:             expectedLabels,
+			},
+			Optional: false,
+		}
+
+		err := waitForAndAssertMetric(ctx, logger, vm, time.Hour, &expectedMetric, nil, true)
 		if err != nil {
-			t.Fatal(fmt.Errorf("failed to find metric %q in VM %q: %w", existingMetric, vm.Name, err))
-		}
-
-		var multiErr error
-		metricValueType := metric.ValueType.String()
-		metricKind := metric.MetricKind.String()
-		metricResource := metric.Resource.Type
-		metricLabels := metric.Metric.Labels
-
-		if metricValueType != "DOUBLE" {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected value type %q", existingMetric, metricValueType))
-		}
-		if metricKind != "CUMULATIVE" {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected kind %q", existingMetric, metricKind))
-		}
-		if metricResource != "prometheus_target" {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected resource type %q", existingMetric, metricResource))
-		}
-		if metricLabels["instance_name"] != vm.Name {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected instance_name label %q. But expected %q", existingMetric, metricLabels["instance_name"], vm.Name))
-		}
-		if metricLabels["instance_id"] != fmt.Sprintf("%d", vm.ID) {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected instance_id label %q. But expected %q", existingMetric, metricLabels["instance_id"], fmt.Sprintf("%d", vm.ID)))
-		}
-		expectedMachineType := regexp.MustCompile(fmt.Sprintf("^projects/[0-9]+/machineTypes/%s$", vm.MachineType))
-		if !expectedMachineType.MatchString(metricLabels["machine_type"]) {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected machine_type label %q. But expected %q", existingMetric, metricLabels["machine_type"], vm.MachineType))
-		}
-		if metricLabels["instance_project_id"] != vm.Project {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected instance_project_id label %q. But expected %q", existingMetric, metricLabels["instance_project_id"], vm.Project))
-		}
-		if metricLabels["zone"] != vm.Zone {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected zone label %q. But expected %q", existingMetric, metricLabels["zone"], vm.Zone))
-		}
-		expectedNetworkURL := regexp.MustCompile(fmt.Sprintf("^projects/[0-9]+/networks/%s$", vm.Network))
-		if !expectedNetworkURL.MatchString(metricLabels["network"]) {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q has unexpected network label %q. But expected %q", existingMetric, metricLabels["network"], vm.Network))
-		}
-		if metricLabels["public_ip"] != vm.IPAddress && metricLabels["private_ip"] != vm.IPAddress {
-			multiErr = multierr.Append(multiErr, fmt.Errorf("metric %q doesn't hace VM IP %q. Public IP %q Private IP %q", existingMetric, vm.IPAddress, metricLabels["public_ip"], metricLabels["private_ip"]))
-		}
-		if multiErr != nil {
-			t.Error(multiErr)
+			t.Error(err)
 		}
 
 		expectedFeatures := []*feature_tracking_metadata.FeatureTracking{
@@ -3109,17 +3085,25 @@ func TestPrometheusMetricsWithMetadata(t *testing.T) {
 		// under normal circumstances. Based on some experiments, 2 minutes
 		// is normal; wait a bit longer to be on the safe side.
 		time.Sleep(3 * time.Minute)
+		expectedLabels := append([]*metadata.MetricLabel{
+			{Name: "hostname", ValueRegex: vm.Name},
+			{Name: "test", ValueRegex: escapedMetadataValue},
+		}, getCommonLabels(vm)...)
 
-		existingMetric := "prometheus.googleapis.com/fluentbit_uptime/counter"
-		window := time.Minute
-		metric, err := gce.WaitForMetric(ctx, logger.ToMainLog(), vm, existingMetric, window, nil, true)
-		if err != nil {
-			t.Fatal(fmt.Errorf("failed to find metric %q in VM %q: %w", existingMetric, vm.Name, err))
+		expectedMetric := metadata.ExpectedMetric{
+			MetricSpec: metadata.MetricSpec{
+				Type:               "prometheus.googleapis.com/fluentbit_uptime/counter",
+				Kind:               metric.MetricDescriptor_CUMULATIVE.String(),
+				ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+				Value:              5.0,
+				MonitoredResources: []string{"prometheus_target"},
+				Labels:             expectedLabels,
+			},
+			Optional: false,
 		}
-
-		metricLabels := metric.Metric.Labels
-		if metricLabels[metadataKey] != escapedMetadataValue {
-			t.Errorf("metric %q has VM metadata %q set to %q instead of %q", existingMetric, metadataKey, metricLabels[metadataKey], escapedMetadataValue)
+		err := waitForAndAssertMetric(ctx, logger.ToMainLog(), vm, time.Minute, &expectedMetric, nil, true)
+		if err != nil {
+			t.Error(err)
 		}
 	})
 }
@@ -3249,7 +3233,6 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 		// under normal circumstances. Based on some experiments, 2 minutes
 		// is normal; wait a bit longer to be on the safe side.
 		time.Sleep(3 * time.Minute)
-		window := time.Minute
 		tests := []metadata.ExpectedMetric{
 			{
 				MetricSpec: metadata.MetricSpec{
@@ -3308,7 +3291,7 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 
 		var multiErr error
 		for _, test := range tests {
-			multiErr = multierr.Append(multiErr, waitForAndAssertMetric(ctx, logger, vm, window, &test, nil, true))
+			multiErr = multierr.Append(multiErr, waitForAndAssertMetric(ctx, logger, vm, time.Minute, &test, nil, true))
 		}
 		if multiErr != nil {
 			t.Error(multiErr)
@@ -3348,18 +3331,30 @@ func TestPrometheusRelabelConfigs(t *testing.T) {
 			remote: path.Join(remoteWorkDir, "data"),
 		},
 		check: func(ctx context.Context, logger *log.Logger, vm *gce.VM, window time.Duration) error {
-			if pts, err := gce.WaitForMetric(ctx, logger, vm, "prometheus.googleapis.com/test_metric/gauge", window, nil, true); err != nil {
-				return err
-			} else {
-				labelValue, ok := pts.Metric.Labels["test_label"]
-				if !ok {
-					return errors.New("test_label label not found in metric")
-				}
-				if labelValue != "group/capture" {
-					return fmt.Errorf("Expected test_label to be 'group/capture' but got %s", labelValue)
-				}
+			tests := []metadata.ExpectedMetric{
+				{
+					MetricSpec: metadata.MetricSpec{
+						Type:               "prometheus.googleapis.com/test_metric/gauge",
+						Kind:               metric.MetricDescriptor_GAUGE.String(),
+						ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+						Value:              1000.0,
+						MonitoredResources: []string{"prometheus_target"},
+						Labels: append([]*metadata.MetricLabel{
+							{Name: "destination", ValueRegex: "group/capture"},
+						}, getCommonLabels(vm)...),
+					},
+					Optional: false,
+				},
 			}
-			return nil
+
+			var multiErr error
+			for _, test := range tests {
+				multiErr = multierr.Append(multiErr, waitForAndAssertMetric(ctx, logger, vm, window, &test, nil, true))
+			}
+			if multiErr != nil {
+				t.Error(multiErr)
+			}
+			return multiErr
 		},
 	})
 	testPrometheusMetrics(t, config, testChecks)

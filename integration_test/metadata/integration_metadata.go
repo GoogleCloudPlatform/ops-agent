@@ -17,6 +17,8 @@ package metadata
 import (
 	"bytes"
 	"fmt"
+	"net"
+	"os"
 	"reflect"
 	"regexp"
 	"slices"
@@ -303,12 +305,30 @@ func assertMetricLabels(metric *ExpectedMetric, series *monitoringpb.TimeSeries)
 	}
 	// All expected labels must be present and match the given pattern
 	for _, expectedLabel := range metric.Labels {
+
 		actualValue, ok := series.Metric.Labels[expectedLabel.Name]
 		if !ok {
 			err = multierr.Append(err, fmt.Errorf("expected label not found: %s", expectedLabel))
 			continue
 		}
-		match, matchErr := regexp.MatchString(fmt.Sprintf("^(?:%s)$", expectedLabel.ValueRegex), actualValue)
+		var matchErr error
+		// public_ip and private_ip labels will be different according to where the test is running (kokoro or cloudtop).
+		// https://github.com/GoogleCloudPlatform/opentelemetry-operations-collector/blob/32b5f554a82ff840e690eaf325d83cbff83f3f62/integration_test/gce-testing-internal/gce/gce_testing.go#L2158
+		useInternalIP := os.Getenv("USE_INTERNAL_IP") != ""
+		if (expectedLabel.Name == "public_ip" && useInternalIP) || (expectedLabel.Name == "private_ip" && !useInternalIP) {
+			// just check if it is a valid IP address
+			validIP := net.ParseIP(actualValue)
+			if validIP == nil {
+				err = multierr.Append(err, fmt.Errorf("error parsing pattern. label=%s, pattern=%s, err=%v",
+					expectedLabel.Name,
+					expectedLabel.ValueRegex,
+					matchErr,
+				))
+			}
+			continue
+		}
+		var match bool
+		match, matchErr = regexp.MatchString(fmt.Sprintf("^(?:%s)$", expectedLabel.ValueRegex), actualValue)
 		if matchErr != nil {
 			err = multierr.Append(err, fmt.Errorf("error parsing pattern. label=%s, pattern=%s, err=%v",
 				expectedLabel.Name,
