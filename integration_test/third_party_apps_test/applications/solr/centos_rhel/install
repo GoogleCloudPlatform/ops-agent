@@ -9,8 +9,13 @@ SELINUX=disabled
 SELINUXTYPE=targeted
 EOF
 
+JAVA_VERSION=1.8.0
+if [[ "$ID" == "rocky" && "$MAJOR_VERSION_ID" == "10" ]]; then
+  JAVA_VERSION=21
+fi
+
 sudo yum install -y \
-    java-1.8.0-openjdk java-1.8.0-openjdk-devel curl lsof chkconfig
+    java-${JAVA_VERSION}-openjdk java-${JAVA_VERSION}-openjdk-devel curl lsof chkconfig
 
 # https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/README.md#vendored-dependencies
 curl -L -o \
