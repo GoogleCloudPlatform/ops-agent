@@ -1,5 +1,1 @@
-- exit_error: exit status 1
-- collector_errors:
-  - stderr: |
-      Error: invalid configuration: processors::filter/logs_transformation__test_my-log-name_2: unable to parse OTTL condition "((trace_id.string != nil) and IsMatchRubyRegex(trace_id.string, \"deadcafedeadc0defacefeedb0bacafe\"))": undefined function "IsMatchRubyRegex"
-      YYYY/MM/DD HH:MM:SS collector server run finished with error: invalid configuration: processors::filter/logs_transformation__test_my-log-name_2: unable to parse OTTL condition "((trace_id.string != nil) and IsMatchRubyRegex(trace_id.string, \"deadcafedeadc0defacefeedb0bacafe\"))": undefined function "IsMatchRubyRegex"
+[]

@@ -1,5 +1,14 @@
-- exit_error: exit status 1
-- collector_errors:
-  - stderr: |
-      Error: invalid configuration: processors::filter/logs_transformation__test_my-log-name_1: unable to parse OTTL condition "(((body != nil and body[\"field1\"] != nil) and IsMatchRubyRegex(body[\"field1\"], \"(?i)^first$\")) and ((body != nil and body[\"field2\"] != nil) and IsMatchRubyRegex(body[\"field2\"], \"second\")))": undefined function "IsMatchRubyRegex"
-      YYYY/MM/DD HH:MM:SS collector server run finished with error: invalid configuration: processors::filter/logs_transformation__test_my-log-name_1: unable to parse OTTL condition "(((body != nil and body[\"field1\"] != nil) and IsMatchRubyRegex(body[\"field1\"], \"(?i)^first$\")) and ((body != nil and body[\"field2\"] != nil) and IsMatchRubyRegex(body[\"field2\"], \"second\")))": undefined function "IsMatchRubyRegex"
+- entries:
+  - jsonPayload:
+      field1: nope, include me!
+      field2: second
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
+  partialSuccess: true

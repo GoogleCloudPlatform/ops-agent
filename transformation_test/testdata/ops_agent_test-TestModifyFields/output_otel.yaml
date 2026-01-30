@@ -1,9 +1,48 @@
-- exit_error: exit status 1
-- collector_errors:
-  - stderr: |
-      Error: invalid configuration: processors::transform/logs_transformation__test_my-log-name_1: unable to parse OTTL statement "set(log.cache[\"__omit_0\"], true) where ((log.body != nil and log.body[\"missing_field\"] != nil) and IsMatchRubyRegex(log.body[\"missing_field\"], \"(?i)^present$\"))": undefined function "IsMatchRubyRegex"
-      unable to parse OTTL statement "set(log.cache[\"__omit_1\"], true) where ((log.body != nil and log.body[\"field\"] != nil) and IsMatchRubyRegex(log.body[\"field\"], \"(?i)^field value$\"))": undefined function "IsMatchRubyRegex"
-      unable to parse OTTL statement "set(log.cache[\"__omit_2\"], true) where ((log.body != nil and log.body[\"field\"] != nil) and (not IsMatchRubyRegex(log.body[\"field\"], \"(?i)^foo$\")))": undefined function "IsMatchRubyRegex"
-      YYYY/MM/DD HH:MM:SS collector server run finished with error: invalid configuration: processors::transform/logs_transformation__test_my-log-name_1: unable to parse OTTL statement "set(log.cache[\"__omit_0\"], true) where ((log.body != nil and log.body[\"missing_field\"] != nil) and IsMatchRubyRegex(log.body[\"missing_field\"], \"(?i)^present$\"))": undefined function "IsMatchRubyRegex"
-      unable to parse OTTL statement "set(log.cache[\"__omit_1\"], true) where ((log.body != nil and log.body[\"field\"] != nil) and IsMatchRubyRegex(log.body[\"field\"], \"(?i)^field value$\"))": undefined function "IsMatchRubyRegex"
-      unable to parse OTTL statement "set(log.cache[\"__omit_2\"], true) where ((log.body != nil and log.body[\"field\"] != nil) and (not IsMatchRubyRegex(log.body[\"field\"], \"(?i)^foo$\")))": undefined function "IsMatchRubyRegex"
+- entries:
+  - jsonPayload:
+      default_absent: default
+      default_present: original
+      field2: field value
+      float: 10.5
+      integer: 15
+      mapped_field: field value
+      spanId: facefeedb0bacafe
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      label2: label1 value
+      my.cool.service/foo: field value
+      static: hello world
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: WARNING
+    spanId: facefeedb0bacafe
+    timestamp: now
+    trace: projects/my-project/traces/deadcafedeadc0defacefeedb0bacafe
+  - jsonPayload:
+      default_absent: default
+      default_present: original
+      field2: field value
+      float: 10.5
+      integer: 15
+      mapped_field: field value
+      spanId: facefeedb0bacafe
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      label2: label1 value
+      my.cool.service/foo: field value
+      static: hello world
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: WARNING
+    spanId: facefeedb0bacafe
+    timestamp: now
+    trace: projects/my-project/traces/deadcafedeadc0defacefeedb0bacafe
+  partialSuccess: true
