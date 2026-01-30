@@ -91,6 +91,8 @@ github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_te
 github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20260120154602-32b459e9b286/go.mod h1:hmqK+hsg2z+Xo/Yz16sNxb6TZX+q0KxKsrgYzdpV0P8=
 github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20260129162040-944f6e3a0433 h1:5N1C4ESbt3RAXieKBon8A+ml/FbMXS1zm7/eg4iLKxY=
 github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20260129162040-944f6e3a0433/go.mod h1:hmqK+hsg2z+Xo/Yz16sNxb6TZX+q0KxKsrgYzdpV0P8=
+github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20260130165754-553034284065 h1:mHjusYHi8vyFZa23dt0CYg5s7rUsjebTTKGL0GBjlyM=
+github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20260130165754-553034284065/go.mod h1:hmqK+hsg2z+Xo/Yz16sNxb6TZX+q0KxKsrgYzdpV0P8=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.29.0 h1:UQUsRi8WTzhZntp5313l+CHIAT95ojUI2lpP/ExlZa4=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.29.0/go.mod h1:Cz6ft6Dkn3Et6l2v2a9/RpN7epQ1GtDlO6lj8bEcOvw=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.53.0 h1:owcC2UnmsZycprQ5RfRgjydWhuoxg71LUfyiQdijZuM=
