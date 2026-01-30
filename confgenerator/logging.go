@@ -22,6 +22,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
@@ -75,6 +76,22 @@ func otelSetLogNameComponents(ctx context.Context, logName string) []otel.Compon
 		panic(err)
 	}
 	return components
+}
+
+func otelFluentForwardSetLogNameComponents() []otel.Component {
+	bodyFluentTag := ottl.LValue{"body", "fluent.tag"}
+	logName := ottl.LValue{"attributes", "gcp.log_name"}
+
+	return []otel.Component{
+		otel.Transform(
+			"log", "log",
+			ottl.NewStatements(
+				logName.SetIf(ottl.Concat([]ottl.Value{logName, bodyFluentTag}, "."),
+					ottl.And(logName.IsPresent(), bodyFluentTag.IsPresent())),
+				bodyFluentTag.DeleteIf(bodyFluentTag.IsPresent()),
+			),
+		),
+	}
 }
 
 // stackdriverOutputComponent generates a component that outputs logs matching the regex `match` using `userAgent`.
