@@ -4,13 +4,13 @@
     labels:
       compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/transformation_test
-    timestamp: 2025-07-02T20:38:45.026077400Z
+    timestamp: now
   - jsonPayload:
       message: This processor is only used for testing otel.
     labels:
       compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/transformation_test
-    timestamp: 2025-07-02T20:39:32.339006100Z
+    timestamp: now
   - jsonPayload:
       message: This processor is only used for testing otel.
     labels:

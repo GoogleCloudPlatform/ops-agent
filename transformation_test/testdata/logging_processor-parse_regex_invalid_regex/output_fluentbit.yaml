@@ -1,8 +1,8 @@
 - exit_error: exit status 255
 - collector_errors:
     stderr: |-
-      [YYYY/MM/DD HH:MM:SS] [error] [parser:transformation_test.transformation_test.0] Invalid regex pattern ^(?<time>[^ ]*) (?<severity>[^ ]*) (?<msg>[^ ]*) (?<msg1>\k<m]sg>)$
-      [YYYY/MM/DD HH:MM:SS] [error] [filter:parser:parser.1] requested parser 'transformation_test.transformation_test.0' not found
-      [YYYY/MM/DD HH:MM:SS] [error] [filter:parser:parser.1] Invalid 'parser'
-      [YYYY/MM/DD HH:MM:SS] [error] Failed initialize filter parser.1
-      [YYYY/MM/DD HH:MM:SS] [error] [engine] filter initialization failed
+      [YYYY/MM/DD HH:MM:SS.725447354] [error] [parser:transformation_test.transformation_test.0] Invalid regex pattern ^(?<time>[^ ]*) (?<severity>[^ ]*) (?<msg>[^ ]*) (?<msg1>\k<m]sg>)$
+      [YYYY/MM/DD HH:MM:SS.727676063] [error] [filter:parser:parser.1] requested parser 'transformation_test.transformation_test.0' not found
+      [YYYY/MM/DD HH:MM:SS.727694283] [error] [filter:parser:parser.1] Invalid 'parser'
+      [YYYY/MM/DD HH:MM:SS.727700763] [error] Failed initialize filter parser.1
+      [YYYY/MM/DD HH:MM:SS.727710013] [error] [engine] filter initialization failed
