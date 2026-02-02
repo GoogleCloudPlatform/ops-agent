@@ -24,7 +24,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: 2025-07-02T20:38:45.026077400Z
+    timestamp: now
   - jsonPayload:
       Channel: System
       ComputerName: test-computer
@@ -50,7 +50,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: 2025-07-02T20:39:32.339006100Z
+    timestamp: now
   - jsonPayload:
       Channel: System
       ComputerName: test-computer
@@ -160,3 +160,30 @@
       type: gce_instance
     timestamp: now
   partialSuccess: true
+- collector_errors:
+  - caller: ottl@v0.138.0/parser.go:410
+    error: "parsing time \"2025-07-02T20:38:45.026077400Z\" as \"%Y-%m-%dT%H:%M:%S.%L%Z\": cannot parse \"Z\" as \"%Z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_0
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.138.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M:%S.%L%Z") != nil)
+  - caller: ottl@v0.138.0/parser.go:410
+    error: "parsing time \"2025-07-02T20:39:32.339006100Z\" as \"%Y-%m-%dT%H:%M:%S.%L%Z\": cannot parse \"Z\" as \"%Z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_0
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.138.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M:%S.%L%Z") != nil)

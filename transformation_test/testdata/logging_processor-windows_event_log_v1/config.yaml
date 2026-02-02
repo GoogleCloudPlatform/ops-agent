@@ -2,5 +2,5 @@
 # a log entry output format similar to the fluent-bit windows event log receiver.
 - type: parse_json
   time_key: time
-  time_format: "%Y-%m-%dT%H:%M:%S.%L%z"
+  time_format: "%Y-%m-%dT%H:%M:%S.%L%Z"
 - type: windows_event_log_v1

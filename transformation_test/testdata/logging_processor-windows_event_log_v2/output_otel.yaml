@@ -29,7 +29,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: 2025-07-02T20:38:45.026077400Z
+    timestamp: now
   - jsonPayload:
       Channel: System
       Computer: test-computer
@@ -60,7 +60,7 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: 2025-07-02T20:39:32.339006100Z
+    timestamp: now
   - jsonPayload:
       Channel: System
       Computer: test-computer
@@ -81,7 +81,7 @@
       - "12345"
       Task: 0
       ThreadId: 8328
-      TimeCreated: 2025-12-02 23:57:13.294444911 +0000
+      TimeCreated: 2025-12-02 23:57:13.2944449 +0000
       UserId: ""
     labels:
       compute.googleapis.com/resource_name: hostname
@@ -111,7 +111,7 @@
       - RulesEngine
       Task: 0
       ThreadId: 0
-      TimeCreated: 2025-12-02 23:45:19.636677711 +0000
+      TimeCreated: 2025-12-02 23:45:19.6366777 +0000
       UserId: ""
     labels:
       compute.googleapis.com/resource_name: hostname
@@ -145,7 +145,7 @@
       - "5212"
       Task: 0
       ThreadId: 7152
-      TimeCreated: 2025-12-03 00:13:07.268214011 +0000
+      TimeCreated: 2025-12-03 00:13:07.268214 +0000
       UserId: ""
     labels:
       compute.googleapis.com/resource_name: hostname
@@ -156,4 +156,61 @@
         zone: test-zone
       type: gce_instance
     timestamp: now
+  - jsonPayload:
+      Channel: System
+      Computer: test-computer
+      EventID: 1796
+      EventRecordID: 2133
+      Keywords:
+      - "0x8000000000000000"
+      Level: 2
+      Message: The Secure Boot update failed to update a Secure Boot variable with error Secure Boot is not enabled on this machine.. For more information, please see https://go.microsoft.com/fwlink/?linkid=2169931
+      Opcode: Info
+      ProcessID: 6456
+      ProviderGuid: "{7d5387b0-cbe0-11da-a94d-0800200c9a66}"
+      ProviderName: Microsoft-Windows-TPM-WMI
+      Qualifiers: 0
+      StringInserts:
+      - "-2147020471"
+      - "1024"
+      Task: 0
+      ThreadId: 6424
+      TimeCreated: 2025-12-02 22:49:40.4939915 +0000
+      UserId: S-1-5-18
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
   partialSuccess: true
+- collector_errors:
+  - caller: ottl@v0.138.0/parser.go:410
+    error: "parsing time \"2025-07-02T20:38:45.026077400Z\" as \"%Y-%m-%dT%H:%M:%S.%L%Z\": cannot parse \"Z\" as \"%Z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_0
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.138.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M:%S.%L%Z") != nil)
+  - caller: ottl@v0.138.0/parser.go:410
+    error: "parsing time \"2025-07-02T20:39:32.339006100Z\" as \"%Y-%m-%dT%H:%M:%S.%L%Z\": cannot parse \"Z\" as \"%Z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_0
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.138.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M:%S.%L%Z") != nil)
