@@ -820,7 +820,7 @@ Config file - Fluent Bit - Main config. Only present when the systemd fluent-bit
 Config file - Fluent Bit - Parsers config. Only present when the systemd fluent-bit unit is running. | `/var/run/google-cloud-ops-agent-fluent-bit/fluent_bit_parser.conf`
 Config file - OT Metrics Agent                                                                       | `/var/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml`
 Buffer files - Fluent Bit                                                                            | `/var/lib/google-cloud-ops-agent/fluent-bit/buffers/`
-Bookmark files - OTel Collector                                                                      | `/var/lib/google-cloud-ops-agent/opentelemetry-collector/file_storage/`
+File Offset files - OTel Collector                                                                   | `/var/lib/google-cloud-ops-agent/opentelemetry-collector/file_storage/`
 
 <a id="windows-where-to-find-things"></a>
 #### Windows
