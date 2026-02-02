@@ -1,14 +1,21 @@
 set -e
 
+# Detect version to handle MySQL 8.4+ changes on RHEL/Rocky 10
+source /etc/os-release
+EXTRA_FLAGS=""
+if [[ $VERSION_ID =~ ^10 ]]; then
+    EXTRA_FLAGS="--mysql-native-password=ON"
+fi
+
 cat <<EOF > config-user
 [client]
 user=root
 password='Ss123%321'
 EOF
 
-# initialize and start replation source
-sudo mysqld --defaults-group-suffix=2 --initialize --default-authentication-plugin=mysql_native_password
-nohup sudo mysqld --defaults-group-suffix=2 --default-authentication-plugin=mysql_native_password 2>/dev/null >/dev/null </dev/null &
+# initialize and start replication source
+sudo mysqld --defaults-group-suffix=2 --initialize --default-authentication-plugin=mysql_native_password $EXTRA_FLAGS
+nohup sudo mysqld --defaults-group-suffix=2 --default-authentication-plugin=mysql_native_password $EXTRA_FLAGS 2>/dev/null >/dev/null </dev/null &
 # give it time to start, since we put it in the background
 sleep 10
 
@@ -30,7 +37,6 @@ sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse
 sudo mysqldump --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock --all-databases --source-data > /tmp/dbdump.sql
 
 # Capture status to seed replica
-raw_status=$(sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "SHOW MASTER STATUS;") || raw_status=$(sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "SHOW BINARY LOG STATUS;")
 raw_status=$(sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "SHOW MASTER STATUS;") || raw_status=$(sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "SHOW BINARY LOG STATUS;")
 read -r logfile logpos <<< $raw_status
 
