@@ -6004,10 +6004,7 @@ func TestFileOffset(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		if len(matchingLogs) == 0 {
-			t.Errorf(`Expected to find at least one instance of "first line" log in the backend. Found %d instances.`, len(matchingLogs))
-		}
-		if len(matchingLogs) >= 2 {
+		if len(matchingLogs) != 1 {
 			t.Errorf(`Expected to find only one instance of "first line" log in the backend. Found %d instances.`, len(matchingLogs))
 		}
 		// Verify second log was ingested.
