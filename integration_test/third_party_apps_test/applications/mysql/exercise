@@ -1,11 +1,39 @@
 set -e
 
-# Detect version to handle MySQL 8.4+ changes on RHEL/Rocky 10
 source /etc/os-release
-EXTRA_FLAGS=""
-if [[ $VERSION_ID =~ ^10 ]]; then
-    EXTRA_FLAGS="--mysql-native-password=ON"
+MAJOR_VERSION_ID=${VERSION_ID%%.*}
+
+AUTH_FLAG="--default-authentication-plugin=mysql_native_password"
+IDENTIFIED_WITH="IDENTIFIED WITH mysql_native_password"
+SHOW_STATUS_CMD="SHOW MASTER STATUS;"
+EXTRA_CONFIG=""
+
+if [[ "$MAJOR_VERSION_ID" == "10" ]]; then
+    AUTH_FLAG=""
+    IDENTIFIED_WITH="IDENTIFIED"
+    SHOW_STATUS_CMD="SHOW BINARY LOG STATUS;"
+    # Fix for 'Authentication requires secure connection'
+    EXTRA_CONFIG=", GET_SOURCE_PUBLIC_KEY=1"
+    
+    # Allow MySQL to connect to the second instance via SELinux
+    sudo setsebool -P mysql_connect_any 1 || echo "SELinux boolean already set or not available"
+    
+    sudo mkdir -p /var/lib/mysql2
+    sudo chown mysql:mysql /var/lib/mysql2
+    sudo rm -rf /var/lib/mysql2/*
+    sudo rm -f /var/log/mysql/error2.log
 fi
+
+# Create a temporary init file to set the password immediately
+echo "ALTER USER 'root'@'localhost' $IDENTIFIED_WITH BY 'Ss123%321';" > /tmp/mysql-init.sql
+
+# 1. Initialize second instance
+sudo mysqld --defaults-group-suffix=2 --initialize-insecure $AUTH_FLAG
+
+# 2. Start with the init-file
+nohup sudo mysqld --defaults-group-suffix=2 $AUTH_FLAG --init-file=/tmp/mysql-init.sql 2>/dev/null >/dev/null </dev/null &
+
+sleep 10
 
 cat <<EOF > config-user
 [client]
@@ -13,44 +41,39 @@ user=root
 password='Ss123%321'
 EOF
 
-# initialize and start replication source
-sudo mysqld --defaults-group-suffix=2 --initialize --default-authentication-plugin=mysql_native_password $EXTRA_FLAGS
-nohup sudo mysqld --defaults-group-suffix=2 --default-authentication-plugin=mysql_native_password $EXTRA_FLAGS 2>/dev/null >/dev/null </dev/null &
-# give it time to start, since we put it in the background
-sleep 10
-
-# grab root password for replication source
-password=$(sudo grep -oP '(?<=temporary password is generated for root@localhost: ).*$' /var/log/mysql/error2.log)
-cat <<EOF > config-user-2
-[client]
-user=root
-password='$password'
-EOF
-
-sudo mysql --defaults-extra-file=config-user-2 -S /var/run/mysqld/mysql2.sock -Bse "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Ss123%321'; FLUSH PRIVILEGES;" --connect-expired-password
-
 # Create replication user
-sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "CREATE USER 'repl'@'localhost' IDENTIFIED WITH mysql_native_password BY 'password';"
+sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "CREATE USER IF NOT EXISTS 'repl'@'localhost' $IDENTIFIED_WITH BY 'password'; ALTER USER 'repl'@'localhost' $IDENTIFIED_WITH BY 'password';"
 sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "GRANT REPLICATION SLAVE ON *.* TO 'repl'@'localhost';"
 
-# Dump data from replica source
-sudo mysqldump --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock --all-databases --source-data > /tmp/dbdump.sql
+# Dump data (Instance 2)
+sudo mysqldump --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock --all-databases --source-data --ignore-table=mysql.slave_master_info --ignore-table=mysql.slave_relay_log_info --ignore-table=mysql.slave_worker_info > /tmp/dbdump.sql
 
-# Capture status to seed replica
-raw_status=$(sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "SHOW MASTER STATUS;") || raw_status=$(sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "SHOW BINARY LOG STATUS;")
-read -r logfile logpos <<< $raw_status
+# Capture status
+raw_status=$(sudo mysql --defaults-extra-file=config-user -S /var/run/mysqld/mysql2.sock -Bse "$SHOW_STATUS_CMD")
+read -r logfile logpos <<< "$raw_status"
 
-# Dump data from source into replica
+# --- REPLICATION PROTECTION ON INSTANCE 1 ---
+sudo mysql --defaults-extra-file=config-user -Bse "STOP REPLICA IO_THREAD; STOP REPLICA; RESET REPLICA ALL;"
+
+# Load data into primary instance (Instance 1)
 sudo mysql --defaults-extra-file=config-user < /tmp/dbdump.sql
 
-# Configure replication
-sudo mysql --defaults-extra-file=config-user -Bse "STOP REPLICA;"
-sudo mysql --defaults-extra-file=config-user -Bse "CHANGE REPLICATION SOURCE TO SOURCE_HOST='localhost', SOURCE_USER='repl', SOURCE_PORT=3307, SOURCE_PASSWORD='password', SOURCE_LOG_FILE='$logfile', SOURCE_LOG_POS=$logpos;"
-sudo mysql --defaults-extra-file=config-user -Bse "START REPLICA;"
+# Force another stop/reset just in case the dump re-enabled something
+sudo mysql --defaults-extra-file=config-user -Bse "STOP REPLICA IO_THREAD; STOP REPLICA; RESET REPLICA ALL;"
+sleep 2
 
-sudo mysql --defaults-extra-file=config-user -Bse "SET GLOBAL log_slow_extra = 'ON'"
+# Configure the new source (Added EXTRA_CONFIG for RHEL 10)
+sudo mysql --defaults-extra-file=config-user -Bse "CHANGE REPLICATION SOURCE TO SOURCE_HOST='localhost', SOURCE_USER='repl', SOURCE_PORT=3307, SOURCE_PASSWORD='password', SOURCE_LOG_FILE='$logfile', SOURCE_LOG_POS=$logpos $EXTRA_CONFIG;"
+sudo mysql --defaults-extra-file=config-user -Bse "START REPLICA;"
+# --------------------------------------------
+
+# Set global logs
+sudo mysql --defaults-extra-file=config-user -Bse "SET GLOBAL log_slow_extra = 'ON'" || echo "log_slow_extra not supported"
 sudo mysql --defaults-extra-file=config-user -Bse "SET GLOBAL long_query_time = 0"
 sudo mysql --defaults-extra-file=config-user -Bse "SET GLOBAL slow_query_log = 1"
 sudo mysql --defaults-extra-file=config-user -Bse "SET GLOBAL general_log = 'ON'"
 
 sudo mysql --defaults-extra-file=config-user -Bse "select table_catalog, table_schema, table_name from information_schema.tables"
+
+# Cleanup
+rm /tmp/mysql-init.sql

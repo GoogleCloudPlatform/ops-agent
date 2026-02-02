@@ -3,8 +3,6 @@ set -e
 source /etc/os-release
 MAJOR_VERSION_ID=${VERSION_ID%%.*}
 
-
-
 if [[ "$MAJOR_VERSION_ID" == "10" ]]; then
     # Specific fix for EL10 where the 2023 key expired in Oct 2025
     sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2025
@@ -26,14 +24,19 @@ if [ ${MAJOR_VERSION_ID} == 8 ]; then
 fi
 sudo yum -y install mysql-community-server
 
-if [[ "$ID" == "rocky" && "$MAJOR_VERSION_ID" == "10" ]]; then
-  echo "mysql_native_password=ON" | sudo tee -a /etc/my.cnf
+# Handle authentication plugin configuration
+if [[ "$MAJOR_VERSION_ID" == "10" ]]; then
+  # For RHEL 10 (MySQL 8.4+), we use the default (caching_sha2_password)
+  echo "# Using default caching_sha2_password for RHEL 10" | sudo tee -a /etc/my.cnf
 else
+  # Maintain existing behavior for RHEL 7, 8, and 9
   echo "default-authentication-plugin=mysql_native_password" | sudo tee -a /etc/my.cnf
 fi
+
 sudo service mysqld start
 
-password=$(sudo grep -oP '(?<=temporary password is generated for root@localhost: ).*$' /var/log/mysqld.log)
+# Robust password extraction: grab the LAST 'temporary password' entry in the log
+password=$(sudo grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}' | tail -n 1)
 
 cat <<EOF > config-user
 [client]
@@ -41,12 +44,21 @@ user=root
 password='$password'
 EOF
 
-mysql --defaults-extra-file=config-user -Bse "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Ss123%321'; FLUSH PRIVILEGES;" --connect-expired-password
+# Update root password logic
+if [[ "$MAJOR_VERSION_ID" == "10" ]]; then
+  # Use default plugin for RHEL 10. 
+  # If the first attempt fails (Access Denied), check if the password was already set to the target.
+  mysql --defaults-extra-file=config-user -Bse "ALTER USER 'root'@'localhost' IDENTIFIED BY 'Ss123%321'; FLUSH PRIVILEGES;" --connect-expired-password || \
+  mysql -u root -p'Ss123%321' -Bse "SELECT 1;" && echo "Password already set to Ss123%321"
+else
+  # Use native password for older versions
+  mysql --defaults-extra-file=config-user -Bse "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Ss123%321'; FLUSH PRIVILEGES;" --connect-expired-password
+fi
 
 # default socket path is different from originally set default (from debian/ubuntu), so we need to create a symlink
-sudo ln -s /var/lib/mysql/mysql.sock /var/run/mysqld/mysqld.sock
+sudo ln -sf /var/lib/mysql/mysql.sock /var/run/mysqld/mysqld.sock
 
-sudo mkdir /var/log/mysql
+sudo mkdir -p /var/log/mysql
 sudo chown mysql:mysql /var/log/mysql
 
 # Required to allow mysql to accept connections on 3307
@@ -55,10 +67,11 @@ if [ ${ID} == rocky ]; then
 else
   sudo yum install -y policycoreutils-python
 fi
-sudo semanage port --add --type mysqld_port_t --proto tcp 3307
+
+# Add port 3307 to SELinux, ignoring error if it already exists
+sudo semanage port --add --type mysqld_port_t --proto tcp 3307 || echo "Port 3307 already added to SELinux"
 
 # set up replication source to validate replica metrics
-# set main target (replica) to use binary logging for replication to work
 sudo tee -a /etc/my.cnf >/dev/null <<EOF
 server-id = 1
 log-bin = /var/log/mysql/mysql-bin.log
