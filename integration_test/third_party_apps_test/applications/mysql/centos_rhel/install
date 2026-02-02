@@ -3,8 +3,16 @@ set -e
 source /etc/os-release
 MAJOR_VERSION_ID=${VERSION_ID%%.*}
 
-sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2023
-sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2022
+
+
+if [[ "$MAJOR_VERSION_ID" == "10" ]]; then
+    # Specific fix for EL10 where the 2023 key expired in Oct 2025
+    sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2025
+else
+    # Maintain existing behavior for RHEL 7, 8, and 9
+    sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2023
+    sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2022
+fi
 
 MYSQL_VERSION="mysql80"
 if [[ "$ID" == "rocky" && "$MAJOR_VERSION_ID" == "10" ]]; then
