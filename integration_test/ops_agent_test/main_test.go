@@ -6005,7 +6005,7 @@ func TestFileOffset(t *testing.T) {
 			t.Error(err)
 		}
 		if len(matchingLogs) != 1 {
-			t.Errorf(`Expected to find only one instance of "first line" log in the backend. Found %d instances.`, len(matchingLogs))
+			t.Errorf(`Expected to find exactly one instance of "first line" log in the backend. Found %d instances.`, len(matchingLogs))
 		}
 		// Verify second log was ingested.
 		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="second line"`); err != nil {
