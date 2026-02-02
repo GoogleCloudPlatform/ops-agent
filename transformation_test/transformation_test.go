@@ -658,7 +658,6 @@ func sanitizeFluentBitStderr(t *testing.T, input string) string {
 	result := strings.Join(regexp.MustCompile(`(?m)^.*\[error\].*$`).FindAllString(input, -1), "\n")
 	// Remove timestamps
 	result = regexp.MustCompile(`\d{4}/\d{2}/\d{2}\s\d{2}:\d{2}:\d{2}`).ReplaceAllString(result, "YYYY/MM/DD HH:MM:SS")
-
 	result = strings.ReplaceAll(result, "\t", "  ")
 	return result
 }

@@ -198,6 +198,22 @@ targets:
           - suse-cloud:sles-15-sp6-arm64
           - opensuse-cloud:opensuse-leap-arm64
           - opensuse-cloud=opensuse-leap-15-6-v20250724-arm64 
+  sles16:
+    os_versions: [sles-16*, opensuse-leap-16*]
+    package_extension:
+      rpm
+    architectures:
+      x86_64:
+        test_distros:
+          representative:
+          - suse-cloud:sles-16-0-x86-64
+          exhaustive:
+          - suse-sap-cloud:sles-sap-16-0-x86-64
+      aarch64:
+        test_distros:
+          representative:
+          - suse-cloud:sles-16-0-arm64
+          exhaustive:
   windows:
     package_extension:
       goo
