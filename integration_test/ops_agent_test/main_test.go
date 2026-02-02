@@ -92,7 +92,7 @@ func logPathForImage(imageSpec string) string {
 
 func workDirForImage(imageSpec string) string {
 	if gce.IsWindows(imageSpec) {
-		return `C:\work`
+		return `C:\tmp\work`
 	}
 	return "/tmp/work"
 }
@@ -5948,6 +5948,67 @@ func TestLogCompression(t *testing.T) {
 
 		// Expect to see the log with the modifications applied
 		if err := gce.WaitForLog(ctx, logger, vm, "f1", time.Hour, `jsonPayload.message="google"`); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
+func TestFileOffset(t *testing.T) {
+	t.Parallel()
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+		t.Parallel()
+
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+
+		logPath := logPathForImage(vm.ImageSpec)
+		config := fmt.Sprintf(`logging:
+  receivers:
+    files_1:
+      type: files
+      include_paths: [%s]
+  service:
+    pipelines:
+      p1:
+        receivers: [files_1]
+`, logPath)
+
+		if err := writeLinesToRemoteFile(ctx, logger, vm, imageSpec, logPath, "first line"); err != nil {
+			t.Fatalf("Error writing dummy log lines: %v", err)
+		}
+
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+			t.Fatal(err)
+		}
+
+		// Wait 1 min for all logs to be ingested after first start.
+		time.Sleep(1 * time.Minute)
+
+		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StopCommandForImage(vm.ImageSpec)); err != nil {
+			t.Fatal(err)
+		}
+
+		// Additional log to test succesful agent restart.
+		if err := writeLinesToRemoteFile(ctx, logger, vm, imageSpec, logPath, "second line"); err != nil {
+			t.Fatalf("Error writing dummy log lines: %v", err)
+		}
+
+		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartCommandForImage(vm.ImageSpec)); err != nil {
+			t.Fatal(err)
+		}
+
+		// Wait 1 min for logs to be ingested after restart.
+		time.Sleep(1 * time.Minute)
+
+		// We should only observe one instance of the "first line" log.
+		matchingLogs, err := gce.QueryAllLogs(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="first line"`, gce.LogQueryMaxAttempts)
+		if err != nil {
+			t.Error(err)
+		}
+		if len(matchingLogs) != 1 {
+			t.Errorf(`Expected to find exactly one instance of "first line" log in the backend. Found %d instances.`, len(matchingLogs))
+		}
+		// Verify second log was ingested.
+		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="second line"`); err != nil {
 			t.Error(err)
 		}
 	})

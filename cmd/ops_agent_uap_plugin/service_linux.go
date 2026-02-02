@@ -43,6 +43,7 @@ const (
 	LogsDirectory               = "log/google-cloud-ops-agent"
 	FluentBitStateDiectory      = "state/fluent-bit"
 	FluentBitRuntimeDirectory   = "run/google-cloud-ops-agent-fluent-bit"
+	OtelStateDiectory           = "state/opentelemetry-collector"
 	OtelRuntimeDirectory        = "run/google-cloud-ops-agent-opentelemetry-collector"
 	DefaultPluginStateDirectory = "/var/lib/google-guest-agent/agent_state/plugins/ops-agent-plugin"
 )
@@ -209,7 +210,8 @@ func generateSubagentConfigs(ctx context.Context, runCommand RunCommandFunc, plu
 		"-service", "otel",
 		"-in", OpsAgentConfigLocationLinux,
 		"-out", path.Join(pluginStateDirectory, OtelRuntimeDirectory),
-		"-logs", path.Join(pluginStateDirectory, LogsDirectory))
+		"-logs", path.Join(pluginStateDirectory, LogsDirectory),
+		"-state", path.Join(pluginStateDirectory, OtelStateDiectory))
 
 	if output, err := runCommand(otelConfigGenerationCmd); err != nil {
 		return fmt.Errorf("failed to generate Otel config:\ncommand output: %s\ncommand error: %s", output, err)
@@ -220,7 +222,8 @@ func generateSubagentConfigs(ctx context.Context, runCommand RunCommandFunc, plu
 		"-service", "fluentbit",
 		"-in", OpsAgentConfigLocationLinux,
 		"-out", path.Join(pluginStateDirectory, FluentBitRuntimeDirectory),
-		"-logs", path.Join(pluginStateDirectory, LogsDirectory), "-state", path.Join(pluginStateDirectory, FluentBitStateDiectory))
+		"-logs", path.Join(pluginStateDirectory, LogsDirectory),
+		"-state", path.Join(pluginStateDirectory, FluentBitStateDiectory))
 
 	if output, err := runCommand(fluentBitConfigGenerationCmd); err != nil {
 		return fmt.Errorf("failed to generate Fluntbit config:\ncommand output: %s\ncommand error: %s", output, err)
