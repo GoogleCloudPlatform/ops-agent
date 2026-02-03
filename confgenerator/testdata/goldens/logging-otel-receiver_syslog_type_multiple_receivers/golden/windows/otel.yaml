@@ -7,18 +7,20 @@ exporters:
       service_resource_labels: false
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
-  googlecloud/otel:
-    metric:
-      instrumentation_library_labels: true
-      prefix: ""
-      resource_filters: []
-      service_resource_labels: true
-      skip_create_descriptor: true
-    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
+  googlecloud/logging:
+    timeout: 60s
+extensions:
+  file_storage:
+    create_directory: true
+    directory: file_storage
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
+  batch/googlecloud/logging_logs_0:
+    send_batch_max_size: 1000
+    send_batch_size: 1000
+    timeout: 200ms
   casttosum/iis_1:
     metrics:
     - agent.googleapis.com/iis/network/transferred_bytes_count
@@ -953,25 +955,29 @@ receivers:
       - _Total
       object: SQLServer:Databases
 service:
+  extensions:
+  - file_storage
   pipelines:
     logs/logs_pipeline1_test__syslog__source__id__tcp:
       exporters:
-      - googlecloud/otel
+      - googlecloud/logging
       processors:
       - transform/test__syslog__source__id__tcp_0
       - transform/test__syslog__source__id__tcp_1
       - transform/logs_pipeline1_test__syslog__source__id__tcp_0
       - resourcedetection/_global_0
+      - batch/googlecloud/logging_logs_0
       receivers:
       - syslog/test__syslog__source__id__tcp
     logs/logs_pipeline2_test__syslog__source__id__udp:
       exporters:
-      - googlecloud/otel
+      - googlecloud/logging
       processors:
       - transform/test__syslog__source__id__udp_0
       - transform/test__syslog__source__id__udp_1
       - transform/logs_pipeline2_test__syslog__source__id__udp_0
       - resourcedetection/_global_0
+      - batch/googlecloud/logging_logs_0
       receivers:
       - syslog/test__syslog__source__id__udp
     metrics/default__pipeline_hostmetrics:

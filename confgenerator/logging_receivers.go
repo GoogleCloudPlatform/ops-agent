@@ -207,6 +207,9 @@ func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.Receiv
 		"preserve_leading_whitespaces":  true,
 		"preserve_trailing_whitespaces": true,
 	}
+	if !r.TransformationTest {
+		receiver_config["storage"] = fileStorageExtensionID()
+	}
 	if i := r.WildcardRefreshInterval; i != nil {
 		receiver_config["poll_interval"] = i.String()
 	}
@@ -241,7 +244,7 @@ func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.Receiv
 			"logs": nil,
 		},
 		ExporterTypes: map[string]otel.ExporterType{
-			"logs": otel.OTel,
+			"logs": otel.Logging,
 		},
 	}}, nil
 }
@@ -366,7 +369,7 @@ func (r LoggingReceiverSyslog) Pipelines(ctx context.Context) ([]otel.ReceiverPi
 		},
 
 		ExporterTypes: map[string]otel.ExporterType{
-			"logs": otel.OTel,
+			"logs": otel.Logging,
 		},
 	}}, nil
 }
@@ -606,7 +609,7 @@ func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.R
 			"start_at":              "beginning",
 			"poll_interval":         "1s",
 			"ignore_channel_errors": true,
-			// TODO: Configure storage
+			"storage":               fileStorageExtensionID(),
 		}
 
 		var p []otel.Component
@@ -633,7 +636,7 @@ func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.R
 				"logs": p,
 			},
 			ExporterTypes: map[string]otel.ExporterType{
-				"logs": otel.OTel,
+				"logs": otel.Logging,
 			},
 		})
 	}
@@ -966,6 +969,7 @@ func (r LoggingReceiverSystemd) Pipelines(ctx context.Context) ([]otel.ReceiverP
 	receiver_config := map[string]any{
 		"start_at": "beginning",
 		"priority": "debug",
+		"storage":  fileStorageExtensionID(),
 	}
 
 	modify_fields_processors, err := LoggingProcessorModifyFields{
@@ -1011,7 +1015,7 @@ func (r LoggingReceiverSystemd) Pipelines(ctx context.Context) ([]otel.ReceiverP
 		},
 
 		ExporterTypes: map[string]otel.ExporterType{
-			"logs": otel.OTel,
+			"logs": otel.Logging,
 		},
 	}}, nil
 }

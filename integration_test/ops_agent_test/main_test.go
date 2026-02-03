@@ -92,7 +92,7 @@ func logPathForImage(imageSpec string) string {
 
 func workDirForImage(imageSpec string) string {
 	if gce.IsWindows(imageSpec) {
-		return `C:\work`
+		return `C:\tmp\work`
 	}
 	return "/tmp/work"
 }
@@ -5953,6 +5953,67 @@ func TestLogCompression(t *testing.T) {
 	})
 }
 
+func TestFileOffset(t *testing.T) {
+	t.Parallel()
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+		t.Parallel()
+
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+
+		logPath := logPathForImage(vm.ImageSpec)
+		config := fmt.Sprintf(`logging:
+  receivers:
+    files_1:
+      type: files
+      include_paths: [%s]
+  service:
+    pipelines:
+      p1:
+        receivers: [files_1]
+`, logPath)
+
+		if err := writeLinesToRemoteFile(ctx, logger, vm, imageSpec, logPath, "first line"); err != nil {
+			t.Fatalf("Error writing dummy log lines: %v", err)
+		}
+
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+			t.Fatal(err)
+		}
+
+		// Wait 1 min for all logs to be ingested after first start.
+		time.Sleep(1 * time.Minute)
+
+		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StopCommandForImage(vm.ImageSpec)); err != nil {
+			t.Fatal(err)
+		}
+
+		// Additional log to test succesful agent restart.
+		if err := writeLinesToRemoteFile(ctx, logger, vm, imageSpec, logPath, "second line"); err != nil {
+			t.Fatalf("Error writing dummy log lines: %v", err)
+		}
+
+		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartCommandForImage(vm.ImageSpec)); err != nil {
+			t.Fatal(err)
+		}
+
+		// Wait 1 min for logs to be ingested after restart.
+		time.Sleep(1 * time.Minute)
+
+		// We should only observe one instance of the "first line" log.
+		matchingLogs, err := gce.QueryAllLogs(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="first line"`, gce.LogQueryMaxAttempts)
+		if err != nil {
+			t.Error(err)
+		}
+		if len(matchingLogs) != 1 {
+			t.Errorf(`Expected to find exactly one instance of "first line" log in the backend. Found %d instances.`, len(matchingLogs))
+		}
+		// Verify second log was ingested.
+		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="second line"`); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
 // listAndDeleteResources lists all gcloud resources of a given resourceType that match the gcloudFilter.
 // All the found listed resources are then deleted sequentially.
 // extraArguments can be used for different type of gcloud command requirements.
@@ -6106,6 +6167,28 @@ func TestAppHubLogLabels(t *testing.T) {
 
 		if err := gce.WaitForLog(ctx, logger, migVM.VM, tag, time.Hour, query); err != nil {
 			t.Error(err)
+		}
+	})
+}
+
+func TestOpsAgentSigning(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+		if testing.Short() {
+			t.Skip("skipping test in short mode.")
+		}
+		if !gce.IsRpm(imageSpec) && !gce.IsWindows(imageSpec) {
+			t.Skip("This test only applies to RPM-based or Windows OSes.")
+		}
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		err := agents.VerifyOpsAgentSigned(ctx, logger, vm)
+		if err != nil {
+			t.Fatal(err)
 		}
 	})
 }

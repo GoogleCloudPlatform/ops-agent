@@ -7,18 +7,20 @@ exporters:
       service_resource_labels: false
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
-  googlecloud/otel:
-    metric:
-      instrumentation_library_labels: true
-      prefix: ""
-      resource_filters: []
-      service_resource_labels: true
-      skip_create_descriptor: true
-    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
+  googlecloud/logging:
+    timeout: 60s
+extensions:
+  file_storage:
+    create_directory: true
+    directory: file_storage
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
+  batch/googlecloud/logging_logs_0:
+    send_batch_max_size: 1000
+    send_batch_size: 1000
+    timeout: 200ms
   casttosum/iis_1:
     metrics:
     - agent.googleapis.com/iis/network/transferred_bytes_count
@@ -1180,6 +1182,7 @@ receivers:
     preserve_leading_whitespaces: true
     preserve_trailing_whitespaces: true
     start_at: beginning
+    storage: file_storage
   hostmetrics/hostmetrics:
     collection_interval: 60s
     scrapers:
@@ -1223,16 +1226,19 @@ receivers:
     ignore_channel_errors: true
     poll_interval: 1s
     start_at: beginning
+    storage: file_storage
   windowseventlog/windows__event__log_1:
     channel: Application
     ignore_channel_errors: true
     poll_interval: 1s
     start_at: beginning
+    storage: file_storage
   windowseventlog/windows__event__log_2:
     channel: Security
     ignore_channel_errors: true
     poll_interval: 1s
     start_at: beginning
+    storage: file_storage
   windowsperfcounters/iis:
     collection_interval: 60s
     perfcounters:
@@ -1266,37 +1272,42 @@ receivers:
       - _Total
       object: SQLServer:Databases
 service:
+  extensions:
+  - file_storage
   pipelines:
     logs/logs_default__pipeline_windows__event__log:
       exporters:
-      - googlecloud/otel
+      - googlecloud/logging
       processors:
       - transform/windows__event__log_0
       - transform/windows__event__log_1
       - resourcedetection/_global_0
+      - batch/googlecloud/logging_logs_0
       receivers:
       - windowseventlog/windows__event__log
     logs/logs_default__pipeline_windows__event__log_1:
       exporters:
-      - googlecloud/otel
+      - googlecloud/logging
       processors:
       - transform/windows__event__log_1_0
       - transform/windows__event__log_1_1
       - resourcedetection/_global_0
+      - batch/googlecloud/logging_logs_0
       receivers:
       - windowseventlog/windows__event__log_1
     logs/logs_default__pipeline_windows__event__log_2:
       exporters:
-      - googlecloud/otel
+      - googlecloud/logging
       processors:
       - transform/windows__event__log_2_0
       - transform/windows__event__log_2_1
       - resourcedetection/_global_0
+      - batch/googlecloud/logging_logs_0
       receivers:
       - windowseventlog/windows__event__log_2
     logs/logs_p1_sample__logs:
       exporters:
-      - googlecloud/otel
+      - googlecloud/logging
       processors:
       - transform/sample__logs_0
       - filter/logs_p1_sample__logs_0
@@ -1323,6 +1334,7 @@ service:
       - filter/logs_p1_sample__logs_21
       - filter/logs_p1_sample__logs_22
       - resourcedetection/_global_0
+      - batch/googlecloud/logging_logs_0
       receivers:
       - filelog/sample__logs
     metrics/default__pipeline_hostmetrics:
