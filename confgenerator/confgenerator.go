@@ -57,10 +57,6 @@ func googleCloudExporter(userAgent string, instrumentationLabels bool, serviceRe
 	}
 }
 
-func otelSetOtlpExporterComponents() []otel.Component {
-  return []otel.Component{otel.MetricStartTime()}
-}
-
 func googleCloudLoggingExporter() otel.Component {
 	return otel.Component{
 		Type: "googlecloud",
@@ -86,7 +82,6 @@ func ConvertGCMSystemExporterToOtlpExporter(pipeline otel.ReceiverPipeline, ctx 
 
 func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, isPrometheus bool, isSystem bool) otel.ReceiverPipeline {
 	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
-	resource, _ := platform.FromContext(ctx).GetResource()
 	if !expOtlpExporter {
 		return pipeline
 	}
@@ -95,7 +90,6 @@ func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, 
 		return pipeline
 	}
 	pipeline.ExporterTypes["metrics"] = otel.OTLP
-	pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.GCPProjectID(resource.ProjectName()))
 	if isSystem {
 		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveInstrumentationLibraryLabelsAttributes())
 		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveServiceAttributes())
@@ -195,6 +189,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 		OtelLogging:         uc.Logging.Service.OTelLogging,
 	}
 	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines, ctx)
+	resource, _ := p.GetResource()
 
 	otelConfig, err := otel.ModularConfig{
 		LogLevel:          uc.getOTelLogLevel(),
@@ -217,6 +212,8 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 					// The OTLP exporter doesn't batch by default like the googlecloud.* exporters.
 					// We need this to avoid the API point limits.
 					"metrics": {
+						otel.GCPProjectID(resource.ProjectName()),
+						otel.MetricStartTime(),
 						otel.BatchProcessor(200, 200, "200ms"),
 					},
 					// Batching logs improves log export performance.
