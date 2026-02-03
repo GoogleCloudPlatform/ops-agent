@@ -13,6 +13,18 @@
 # limitations under the License.
 
 targets:
+  rockylinux10:
+    package_extension:
+      rpm
+    repo_name:
+      el10
+    architectures:
+      x86_64:
+        test_distros:
+          representative:
+          - rocky-linux-cloud:rocky-linux-10
+          exhaustive:
+          - rocky-linux-cloud:rocky-linux-10-optimized-gcp
   questing:
     os_versions: [ubuntu-25.10*]
     package_extension:
