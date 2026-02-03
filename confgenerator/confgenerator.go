@@ -173,7 +173,6 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 	userAgent, _ := p.UserAgent("Google-Cloud-Ops-Agent-Metrics")
 	metricVersionLabel, _ := p.VersionLabel("google-cloud-ops-agent-metrics")
 	loggingVersionLabel, _ := p.VersionLabel("google-cloud-ops-agent-logging")
-	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
 
 	receiverPipelines, pipelines, err := uc.generateOtelPipelines(ctx)
 	if err != nil {
@@ -232,7 +231,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 				},
 			},
 		},
-	}.Generate(ctx, expOtlpExporter)
+	}.Generate(ctx)
 	if err != nil {
 		return "", err
 	}

@@ -82,18 +82,6 @@ processors:
         - googlecloudmonitoring/point_count
   interval/loggingmetrics_7:
     interval: 1m
-  metricstarttime/default__pipeline_hostmetrics_0:
-    strategy: subtract_initial_point
-  metricstarttime/default__pipeline_hostmetrics_1_0:
-    strategy: subtract_initial_point
-  metricstarttime/fluentbit_0:
-    strategy: subtract_initial_point
-  metricstarttime/loggingmetrics_0:
-    strategy: subtract_initial_point
-  metricstarttime/opsagent_0:
-    strategy: subtract_initial_point
-  metricstarttime/otel_0:
-    strategy: subtract_initial_point
   metricstarttime/otlphttp/otlp_metrics_1:
     strategy: subtract_initial_point
   metricstransform/fluentbit_1:
@@ -838,7 +826,6 @@ service:
       - transform/hostmetrics_4
       - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
-      - metricstarttime/default__pipeline_hostmetrics_0
       - resource/otlphttp/otlp_metrics_0
       - metricstarttime/otlphttp/otlp_metrics_1
       - batch/otlphttp/otlp_metrics_2
@@ -853,7 +840,6 @@ service:
       - transform/hostmetrics_1_2
       - filter/default__pipeline_hostmetrics_1_0
       - resourcedetection/_global_0
-      - metricstarttime/default__pipeline_hostmetrics_1_0
       - resource/otlphttp/otlp_metrics_0
       - metricstarttime/otlphttp/otlp_metrics_1
       - batch/otlphttp/otlp_metrics_2
@@ -869,7 +855,6 @@ service:
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
       - resourcedetection/_global_0
-      - metricstarttime/fluentbit_0
       - resource/otlphttp/otlp_metrics_0
       - metricstarttime/otlphttp/otlp_metrics_1
       - batch/otlphttp/otlp_metrics_2
@@ -892,7 +877,6 @@ service:
       - interval/loggingmetrics_7
       - metricstransform/loggingmetrics_8
       - resourcedetection/_global_0
-      - metricstarttime/loggingmetrics_0
       - resource/otlphttp/otlp_metrics_0
       - metricstarttime/otlphttp/otlp_metrics_1
       - batch/otlphttp/otlp_metrics_2
@@ -906,7 +890,6 @@ service:
       - transform/ops_agent_1
       - transform/ops_agent_2
       - resourcedetection/_global_0
-      - metricstarttime/opsagent_0
       - resource/otlphttp/otlp_metrics_0
       - metricstarttime/otlphttp/otlp_metrics_1
       - batch/otlphttp/otlp_metrics_2
@@ -924,7 +907,6 @@ service:
       - filter/otel_2
       - metricstransform/otel_3
       - resourcedetection/_global_0
-      - metricstarttime/otel_0
       - resource/otlphttp/otlp_metrics_0
       - metricstarttime/otlphttp/otlp_metrics_1
       - batch/otlphttp/otlp_metrics_2
