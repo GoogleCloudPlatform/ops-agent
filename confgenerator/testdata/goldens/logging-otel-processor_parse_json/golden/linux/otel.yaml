@@ -9,6 +9,10 @@ exporters:
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
   googlecloud/logging:
     timeout: 60s
+extensions:
+  file_storage:
+    create_directory: true
+    directory: file_storage
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
@@ -727,6 +731,7 @@ receivers:
     preserve_leading_whitespaces: true
     preserve_trailing_whitespaces: true
     start_at: beginning
+    storage: file_storage
   filelog/syslog:
     exclude: []
     include:
@@ -741,6 +746,7 @@ receivers:
     preserve_leading_whitespaces: true
     preserve_trailing_whitespaces: true
     start_at: beginning
+    storage: file_storage
   hostmetrics/hostmetrics:
     collection_interval: 60s
     scrapers:
@@ -777,6 +783,8 @@ receivers:
         - targets:
           - 0.0.0.0:20201
 service:
+  extensions:
+  - file_storage
   pipelines:
     logs/logs_default__pipeline_syslog:
       exporters:
