@@ -1,92 +1,11 @@
-- entries:
-  - jsonPayload:
-      host: nohost
-      level: notice
-      message: otelu PUT /oteld 201 ok 16
-      node: nonode
-      path: /oteld
-      pid: 0.17165.1
-      remote_user: otelu
-      status_message: ok
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchdb
-    logName: projects/my-project/logs/my-log-name
-    resource:
-      labels:
-        instance_id: test-instance-id
-        zone: test-zone
-      type: gce_instance
-    severity: NOTICE
-    timestamp: 2021-12-02T23:36:42.555157Z
-  - jsonPayload:
-      host: nohost
-      level: info
-      message: <0.216.0> -------- Apache CouchDB has started. Time to relax.
-      node: nonode
-      pid: 0.216.0
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchdb
-    logName: projects/my-project/logs/my-log-name
-    resource:
-      labels:
-        instance_id: test-instance-id
-        zone: test-zone
-      type: gce_instance
-    severity: INFO
-    timestamp: 2022-01-12T16:52:56.998128Z
-  - jsonPayload:
-      host: nohost
-      level: error
-      message: |-
-        emulator -------- Error in process <0.463.0> with exit value:
-        					{database_does_not_exist,[{mem3_shards,load_shards_from_db,"_users",[{file,"src/mem3_shards.erl"},{line,399}]},{mem3_shards,load_shards_from_disk,1,[{file,"src/mem3_shards.erl"},{line,374}]},{mem3_shards,load_shards_from_disk,2,[{file,"src/mem3_shards.erl"},{line,403}]},{mem3_shards,for_docid,3,[{file,"src/mem3_shards.erl"},{line,96}]},{fabric_doc_open,go,3,[{file,"src/fabric_doc_open.erl"},{line,39}]},{chttpd_auth_cache,ensure_auth_ddoc_exists,2,[{file,"src/chttpd_auth_cache.erl"},{line,198}]},{chttpd_auth_cache,listen_for_changes,1,[{file,"src/chttpd_auth_cache.erl"},{line,145}]}]}
-      node: nonode
-      pid: 0.463.0
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchdb
-    logName: projects/my-project/logs/my-log-name
-    resource:
-      labels:
-        instance_id: test-instance-id
-        zone: test-zone
-      type: gce_instance
-    severity: ERROR
-    timestamp: 2022-01-12T16:53:03.094488Z
-  - jsonPayload:
-      host: nohost
-      level: warning
-      message: <0.892.0> 3d2f1a8bc7 localhost:5984 192.168.1.100 GET /myapp/_design/users/_view/by_email 404 not_found 8
-      node: nonode
-      pid: 0.892.0
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchdb
-    logName: projects/my-project/logs/my-log-name
-    resource:
-      labels:
-        instance_id: test-instance-id
-        zone: test-zone
-      type: gce_instance
-    severity: WARNING
-    timestamp: 2022-01-12T16:55:21.782456Z
-  - jsonPayload:
-      host: nohost
-      level: info
-      message: <0.1024.0> b8e4c93f12 localhost:5984 172.16.0.25 POST /inventory/_bulk_docs 200 ok 142
-      node: nonode
-      pid: 0.1024.0
-    labels:
-      compute.googleapis.com/resource_name: hostname
-      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchdb
-    logName: projects/my-project/logs/my-log-name
-    resource:
-      labels:
-        instance_id: test-instance-id
-        zone: test-zone
-      type: gce_instance
-    severity: INFO
-    timestamp: 2022-01-12T16:56:14.334567Z
-  partialSuccess: true
+- exit_error: exit status 1
+- collector_errors:
+  - stderr: |
+      Error: failed to get config: cannot unmarshal the configuration: decoding failed due to the following error(s):
+      
+      'exporters' '' in "/logging" id: the part before / should not be empty
+      'service.pipelines[logs/logs_transformation__test_my-log-name].exporters[0]' in "/logging" id: the part before / should not be empty
+      YYYY/MM/DD HH:MM:SS collector server run finished with error: failed to get config: cannot unmarshal the configuration: decoding failed due to the following error(s):
+      
+      'exporters' '' in "/logging" id: the part before / should not be empty
+      'service.pipelines[logs/logs_transformation__test_my-log-name].exporters[0]' in "/logging" id: the part before / should not be empty

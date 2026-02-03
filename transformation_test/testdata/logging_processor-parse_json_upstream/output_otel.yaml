@@ -1,26 +1,11 @@
-- entries:
-  - jsonPayload:
-      key1: 12345
-      key2: abc
-    labels:
-      compute.googleapis.com/resource_name: hostname
-    logName: projects/my-project/logs/my-log-name
-    resource:
-      labels:
-        instance_id: test-instance-id
-        zone: test-zone
-      type: gce_instance
-    timestamp: 2006-07-28T13:22:04Z
-  - jsonPayload:
-      key1: 12345
-      key2: abc
-    labels:
-      compute.googleapis.com/resource_name: hostname
-    logName: projects/my-project/logs/my-log-name
-    resource:
-      labels:
-        instance_id: test-instance-id
-        zone: test-zone
-      type: gce_instance
-    timestamp: 2006-07-28T12:22:04Z
-  partialSuccess: true
+- exit_error: exit status 1
+- collector_errors:
+  - stderr: |
+      Error: failed to get config: cannot unmarshal the configuration: decoding failed due to the following error(s):
+      
+      'exporters' '' in "/logging" id: the part before / should not be empty
+      'service.pipelines[logs/logs_transformation__test_my-log-name].exporters[0]' in "/logging" id: the part before / should not be empty
+      YYYY/MM/DD HH:MM:SS collector server run finished with error: failed to get config: cannot unmarshal the configuration: decoding failed due to the following error(s):
+      
+      'exporters' '' in "/logging" id: the part before / should not be empty
+      'service.pipelines[logs/logs_transformation__test_my-log-name].exporters[0]' in "/logging" id: the part before / should not be empty
