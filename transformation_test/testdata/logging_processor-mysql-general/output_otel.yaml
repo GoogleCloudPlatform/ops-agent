@@ -1,11 +1,128 @@
-- exit_error: exit status 1
-- collector_errors:
-  - stderr: |
-      Error: failed to get config: cannot unmarshal the configuration: decoding failed due to the following error(s):
-      
-      'exporters' '' in "/logging" id: the part before / should not be empty
-      'service.pipelines[logs/logs_transformation__test_my-log-name].exporters[0]' in "/logging" id: the part before / should not be empty
-      YYYY/MM/DD HH:MM:SS collector server run finished with error: failed to get config: cannot unmarshal the configuration: decoding failed due to the following error(s):
-      
-      'exporters' '' in "/logging" id: the part before / should not be empty
-      'service.pipelines[logs/logs_transformation__test_my-log-name].exporters[0]' in "/logging" id: the part before / should not be empty
+- entries:
+  - jsonPayload:
+      command: Query
+      message: SELECT * FROM users;
+      tid: 14
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2025-07-22T16:00:01.123456Z
+  - jsonPayload:
+      command: Query
+      message: SELECT id, name FROM products WHERE price > 100;
+      tid: 15
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2025-07-22T16:00:02.234567Z
+  - jsonPayload:
+      command: Query
+      message: UPDATE orders SET status = 'processing' WHERE id = 101;
+      tid: 16
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2025-07-22T16:00:03.345678Z
+  - jsonPayload:
+      command: Query
+      message: DELETE FROM logs WHERE created_at < NOW() - INTERVAL 30 DAY;
+      tid: 17
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2025-07-22T16:00:04.456789Z
+  - jsonPayload:
+      command: Query
+      message: INSERT INTO users (name, email) VALUES ('Alice', 'alice@example.com');
+      tid: 18
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2025-07-22T16:00:05.567890Z
+  - jsonPayload:
+      command: Query
+      message: CREATE INDEX idx_name ON users(name);
+      tid: 19
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2025-07-22T16:00:06.678901Z
+  - jsonPayload:
+      command: Query
+      message: ALTER TABLE products ADD COLUMN stock INT DEFAULT 0;
+      tid: 20
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2025-07-22T16:00:07.789012Z
+  - jsonPayload:
+      command: Query
+      message: SHOW TABLES;
+      tid: 21
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2025-07-22T16:00:08.890123Z
+  - jsonPayload:
+      command: Query
+      message: SELECT * FROM sessions WHERE active = 1;
+      tid: 22
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/mysql_general
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2025-07-22T16:00:09.901234Z
+  partialSuccess: true

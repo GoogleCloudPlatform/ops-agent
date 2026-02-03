@@ -1,11 +1,41 @@
-- exit_error: exit status 1
+- entries:
+  - jsonPayload:
+      key1: 12345
+      key2: abc
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2006-07-28T20:22:00Z
+  - jsonPayload:
+      key1: 12345
+      key2: abc
+      time: unparsable time
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
+  partialSuccess: true
 - collector_errors:
-  - stderr: |
-      Error: failed to get config: cannot unmarshal the configuration: decoding failed due to the following error(s):
-      
-      'exporters' '' in "/logging" id: the part before / should not be empty
-      'service.pipelines[logs/logs_transformation__test_my-log-name].exporters[0]' in "/logging" id: the part before / should not be empty
-      YYYY/MM/DD HH:MM:SS collector server run finished with error: failed to get config: cannot unmarshal the configuration: decoding failed due to the following error(s):
-      
-      'exporters' '' in "/logging" id: the part before / should not be empty
-      'service.pipelines[logs/logs_transformation__test_my-log-name].exporters[0]' in "/logging" id: the part before / should not be empty
+  - caller: ottl@v0.138.0/parser.go:410
+    error: "parsing time \"unparsable time\" as \"%Y-%m-%dT%H:%M\": cannot parse \"unparsable time\" as \"%Y\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_0
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.138.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M") != nil)

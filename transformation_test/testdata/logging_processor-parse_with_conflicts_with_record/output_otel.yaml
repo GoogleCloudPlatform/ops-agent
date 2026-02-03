@@ -1,11 +1,23 @@
-- exit_error: exit status 1
-- collector_errors:
-  - stderr: |
-      Error: failed to get config: cannot unmarshal the configuration: decoding failed due to the following error(s):
-      
-      'exporters' '' in "/logging" id: the part before / should not be empty
-      'service.pipelines[logs/logs_transformation__test_my-log-name].exporters[0]' in "/logging" id: the part before / should not be empty
-      YYYY/MM/DD HH:MM:SS collector server run finished with error: failed to get config: cannot unmarshal the configuration: decoding failed due to the following error(s):
-      
-      'exporters' '' in "/logging" id: the part before / should not be empty
-      'service.pipelines[logs/logs_transformation__test_my-log-name].exporters[0]' in "/logging" id: the part before / should not be empty
+- entries:
+  - jsonPayload:
+      non-overwritten-field: non-overwritten
+      original-field: original-value
+      overwritten-field: overwritten
+      parsed-field: parsed-value
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      non-overwritten-label: non-overwritten
+      original-label: original-label
+      overwritten-label: overwritten
+      parsed-label: parsed-label
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: WARNING
+    sourceLocation:
+      file: overwritten-file-path
+    timestamp: now
+  partialSuccess: true
