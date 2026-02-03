@@ -11,18 +11,10 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  batch/agent_prometheus_4:
+  batch/otlphttp/otlp_metrics_0:
     send_batch_max_size: 200
     send_batch_size: 200
-  batch/hostmetrics_6:
-    send_batch_max_size: 200
-    send_batch_size: 200
-  batch/ops_agent_4:
-    send_batch_max_size: 200
-    send_batch_size: 200
-  batch/prometheus_2:
-    send_batch_max_size: 200
-    send_batch_size: 200
+    timeout: 200ms
   cumulativetodelta/loggingmetrics_4:
     include:
       match_type: strict
@@ -85,15 +77,7 @@ processors:
         - googlecloudmonitoring/point_count
   interval/loggingmetrics_7:
     interval: 1m
-  metricstarttime/default__pipeline_hostmetrics_0:
-    strategy: subtract_initial_point
-  metricstarttime/fluentbit_0:
-    strategy: subtract_initial_point
-  metricstarttime/loggingmetrics_0:
-    strategy: subtract_initial_point
-  metricstarttime/opsagent_0:
-    strategy: subtract_initial_point
-  metricstarttime/otel_0:
+  metricstarttime/prometheus_3:
     strategy: subtract_initial_point
   metricstransform/fluentbit_1:
     transforms:
@@ -696,7 +680,7 @@ processors:
       - delete_key(attributes, "location")
       - delete_key(attributes, "cluster")
       - delete_key(attributes, "namespace")
-  transform/prometheus_3:
+  transform/prometheus_2:
     error_mode: ignore
     metric_statements:
     - context: metric
@@ -810,10 +794,9 @@ service:
       - resource/hostmetrics_3
       - transform/hostmetrics_4
       - transform/hostmetrics_5
-      - batch/hostmetrics_6
       - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
-      - metricstarttime/default__pipeline_hostmetrics_0
+      - batch/otlphttp/otlp_metrics_0
       receivers:
       - hostmetrics/hostmetrics
     metrics/fluentbit:
@@ -889,9 +872,10 @@ service:
       processors:
       - transform/prometheus_0
       - resource/prometheus_1
-      - batch/prometheus_2
-      - transform/prometheus_3
+      - transform/prometheus_2
+      - metricstarttime/prometheus_3
       - metricstransform/prometheus_4
+      - batch/otlphttp/otlp_metrics_0
       receivers:
       - prometheus/prometheus
   telemetry:

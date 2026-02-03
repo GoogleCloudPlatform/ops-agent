@@ -72,8 +72,6 @@
         zone: test-zone
       type: gce_instance
     timestamp: 2025-07-22T13:45:30.678Z
-  partialSuccess: true
-- entries:
   - jsonPayload:
       message: "2025-07-22T14:51:23.332+0000][4.595s][5195][5217][info ] Total time for which application threads were stopped: 0.0003091 seconds, Stopping threads took: 0.0000181 seconds"
     labels:

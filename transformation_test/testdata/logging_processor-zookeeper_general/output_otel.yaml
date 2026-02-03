@@ -82,8 +82,6 @@
       type: gce_instance
     severity: WARNING
     timestamp: 2022-02-01T08:46:33.626Z
-  partialSuccess: true
-- entries:
   - jsonPayload:
       level: ERROR
       line: 1520
