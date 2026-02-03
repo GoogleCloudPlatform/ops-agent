@@ -16,8 +16,6 @@
       type: gce_instance
     severity: ALERT
     timestamp: now
-  partialSuccess: true
-- entries:
   - jsonPayload:
       message: |-
         Checkpoint not complete, extending checkpoint until all current

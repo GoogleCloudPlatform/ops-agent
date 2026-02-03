@@ -57,6 +57,17 @@ func googleCloudExporter(userAgent string, instrumentationLabels bool, serviceRe
 	}
 }
 
+func googleCloudLoggingExporter() otel.Component {
+	return otel.Component{
+		Type: "googlecloud",
+		Config: map[string]interface{}{
+			// Set to mirror the 60s max limit of default retry window in Google Cloud Logging apiv2 go client :
+			// https://github.com/googleapis/google-cloud-go/blob/logging/v1.4.2/logging/apiv2/logging_client.go#L78-L90
+			"timeout": "60s",
+		},
+	}
+}
+
 func ConvertPrometheusExporterToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
 	return ConvertToOtlpExporter(pipeline, ctx, true, false)
 }
@@ -85,9 +96,6 @@ func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, 
 		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveInstrumentationLibraryLabelsAttributes())
 		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveServiceAttributes())
 	}
-
-	// The OTLP exporter doesn't batch by default like the googlecloud.* exporters. We need this to avoid the API point limits.
-	pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.Batch())
 
 	// b/476109839: For prometheus metrics using the OTLP exporter. The dots "." in the metric name are NOT replaced with underscore "_".
 	// This is diffrent from the GMP endpoint.
@@ -190,11 +198,39 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 		ReceiverPipelines: receiverPipelines,
 		Pipelines:         pipelines,
 		Extensions:        uc.getEnabledExtensions(ctx, stateDir),
-		Exporters: map[otel.ExporterType]otel.Component{
-			otel.System: googleCloudExporter(userAgent, false, false),
-			otel.OTel:   googleCloudExporter(userAgent, true, true),
-			otel.GMP:    googleManagedPrometheusExporter(userAgent),
-			otel.OTLP:   otlpExporter(userAgent),
+		Exporters: map[otel.ExporterType]otel.ExporterComponents{
+			otel.System: {
+				Exporter: googleCloudExporter(userAgent, false, false),
+			},
+			otel.OTel: {
+				Exporter: googleCloudExporter(userAgent, true, true),
+			},
+			otel.GMP: {
+				Exporter: googleManagedPrometheusExporter(userAgent),
+			},
+			otel.OTLP: {
+				Exporter: otlpExporter(userAgent),
+				ProcessorsByType: map[string][]otel.Component{
+					// The OTLP exporter doesn't batch by default like the googlecloud.* exporters.
+					// We need this to avoid the API point limits.
+					"metrics": {
+						otel.BatchProcessor(200, 200, "200ms"),
+					},
+					// Batching logs improves log export performance.
+					"logs": {
+						otel.BatchProcessor(1000, 1000, "200ms"),
+					},
+				},
+			},
+			otel.Logging: {
+				Exporter: googleCloudLoggingExporter(),
+				ProcessorsByType: map[string][]otel.Component{
+					// Batching logs improves log export performance.
+					"logs": {
+						otel.BatchProcessor(1000, 1000, "200ms"),
+					},
+				},
+			},
 		},
 	}.Generate(ctx)
 	if err != nil {

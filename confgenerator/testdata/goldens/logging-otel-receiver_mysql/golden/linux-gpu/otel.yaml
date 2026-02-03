@@ -7,14 +7,8 @@ exporters:
       service_resource_labels: false
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
-  googlecloud/otel:
-    metric:
-      instrumentation_library_labels: true
-      prefix: ""
-      resource_filters: []
-      service_resource_labels: true
-      skip_create_descriptor: true
-    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
+  googlecloud/logging:
+    timeout: 60s
 extensions:
   file_storage:
     create_directory: true
@@ -23,6 +17,10 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
+  batch/googlecloud/logging_logs_0:
+    send_batch_max_size: 1000
+    send_batch_size: 1000
+    timeout: 200ms
   cumulativetodelta/loggingmetrics_4:
     include:
       match_type: strict
@@ -1396,15 +1394,16 @@ service:
   pipelines:
     logs/logs_default__pipeline_syslog:
       exporters:
-      - googlecloud/otel
+      - googlecloud/logging
       processors:
       - transform/syslog_0
       - resourcedetection/_global_0
+      - batch/googlecloud/logging_logs_0
       receivers:
       - filelog/syslog
     logs/logs_mysql_mysql__error:
       exporters:
-      - googlecloud/otel
+      - googlecloud/logging
       processors:
       - transform/mysql__error_0
       - transform/mysql__error_1
@@ -1412,11 +1411,12 @@ service:
       - transform/mysql__error_3
       - transform/mysql__error_4
       - resourcedetection/_global_0
+      - batch/googlecloud/logging_logs_0
       receivers:
       - filelog/mysql__error
     logs/logs_mysql_mysql__general:
       exporters:
-      - googlecloud/otel
+      - googlecloud/logging
       processors:
       - logstransform/mysql__general_0
       - transform/mysql__general_1
@@ -1424,11 +1424,12 @@ service:
       - transform/mysql__general_3
       - transform/mysql__general_4
       - resourcedetection/_global_0
+      - batch/googlecloud/logging_logs_0
       receivers:
       - filelog/mysql__general
     logs/logs_mysql_mysql__slow:
       exporters:
-      - googlecloud/otel
+      - googlecloud/logging
       processors:
       - logstransform/mysql__slow_0
       - transform/mysql__slow_1
@@ -1436,6 +1437,7 @@ service:
       - transform/mysql__slow_3
       - transform/mysql__slow_4
       - resourcedetection/_global_0
+      - batch/googlecloud/logging_logs_0
       receivers:
       - filelog/mysql__slow
     metrics/default__pipeline_hostmetrics:
