@@ -77,7 +77,15 @@ processors:
         - googlecloudmonitoring/point_count
   interval/loggingmetrics_7:
     interval: 1m
-  metricstarttime/prometheus_3:
+  metricstarttime/default__pipeline_hostmetrics_0:
+    strategy: subtract_initial_point
+  metricstarttime/fluentbit_0:
+    strategy: subtract_initial_point
+  metricstarttime/loggingmetrics_0:
+    strategy: subtract_initial_point
+  metricstarttime/opsagent_0:
+    strategy: subtract_initial_point
+  metricstarttime/otel_0:
     strategy: subtract_initial_point
   metricstransform/fluentbit_1:
     transforms:
@@ -554,7 +562,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/prometheus_4:
+  metricstransform/prometheus_3:
     transforms:
     - action: update
       include: ^(.*)$$
@@ -796,6 +804,7 @@ service:
       - transform/hostmetrics_5
       - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
+      - metricstarttime/default__pipeline_hostmetrics_0
       - batch/otlphttp/otlp_metrics_0
       receivers:
       - hostmetrics/hostmetrics
@@ -807,11 +816,11 @@ service:
       - resource/agent_prometheus_1
       - transform/agent_prometheus_2
       - transform/agent_prometheus_3
-      - batch/agent_prometheus_4
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
       - resourcedetection/_global_0
       - metricstarttime/fluentbit_0
+      - batch/otlphttp/otlp_metrics_0
       receivers:
       - prometheus/agent_prometheus
     metrics/loggingmetrics:
@@ -822,7 +831,6 @@ service:
       - resource/agent_prometheus_1
       - transform/agent_prometheus_2
       - transform/agent_prometheus_3
-      - batch/agent_prometheus_4
       - transform/loggingmetrics_0
       - filter/loggingmetrics_1
       - filter/loggingmetrics_2
@@ -834,6 +842,7 @@ service:
       - metricstransform/loggingmetrics_8
       - resourcedetection/_global_0
       - metricstarttime/loggingmetrics_0
+      - batch/otlphttp/otlp_metrics_0
       receivers:
       - prometheus/agent_prometheus
     metrics/opsagent:
@@ -844,9 +853,9 @@ service:
       - resource/ops_agent_1
       - transform/ops_agent_2
       - transform/ops_agent_3
-      - batch/ops_agent_4
       - resourcedetection/_global_0
       - metricstarttime/opsagent_0
+      - batch/otlphttp/otlp_metrics_0
       receivers:
       - otlpjsonfile/ops_agent
     metrics/otel:
@@ -857,13 +866,13 @@ service:
       - resource/agent_prometheus_1
       - transform/agent_prometheus_2
       - transform/agent_prometheus_3
-      - batch/agent_prometheus_4
       - transform/otel_0
       - filter/otel_1
       - filter/otel_2
       - metricstransform/otel_3
       - resourcedetection/_global_0
       - metricstarttime/otel_0
+      - batch/otlphttp/otlp_metrics_0
       receivers:
       - prometheus/agent_prometheus
     metrics/prometheus__pipeline_prometheus:
@@ -873,8 +882,7 @@ service:
       - transform/prometheus_0
       - resource/prometheus_1
       - transform/prometheus_2
-      - metricstarttime/prometheus_3
-      - metricstransform/prometheus_4
+      - metricstransform/prometheus_3
       - batch/otlphttp/otlp_metrics_0
       receivers:
       - prometheus/prometheus
