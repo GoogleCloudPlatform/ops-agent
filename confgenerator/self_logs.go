@@ -115,7 +115,7 @@ func generateInputFluentBitSelfLogsComponents(ctx context.Context, logLevel stri
 		PreserveKey: true,
 		ParserShared: ParserShared{
 			TimeKey:    "time",
-			TimeFormat: "%Y/%m/%d %H:%M:%S.%L",
+			TimeFormat: "%Y/%m/%d %H:%M:%S",
 			Types: map[string]string{
 				"severity": "string",
 			},
