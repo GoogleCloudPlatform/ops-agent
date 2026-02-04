@@ -6181,6 +6181,9 @@ func TestOpsAgentSigning(t *testing.T) {
 		if !gce.IsRpm(imageSpec) && !gce.IsWindows(imageSpec) {
 			t.Skip("This test only applies to RPM-based or Windows OSes.")
 		}
+		if gce.IsOpsAgentUAPPlugin() {
+			t.Skip("This test isn't supported for UAP.")
+		}
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
 			t.Fatal(err)
