@@ -1,24 +1,25 @@
 - entries:
   - jsonPayload:
-      msg: start
-      msg1: start
+      msg: start start
       severity: INFO
     labels:
       compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/transformation_test
     timestamp: 2023-01-01T20:04:05.000000000Z
   - jsonPayload:
-      message: 2024-06-15T14:30:00Z ERROR failed to connect
+      msg: failed to connect
+      severity: ERROR
     labels:
       compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/transformation_test
-    timestamp: now
+    timestamp: 2024-06-15T14:30:00.000000000Z
   - jsonPayload:
-      message: 2022-12-31T23:59:59-0800 WARNING low disk space
+      msg: low disk space
+      severity: WARNING
     labels:
       compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/transformation_test
-    timestamp: now
+    timestamp: 2023-01-01T07:59:59.000000000Z
   partialSuccess: true
   resource:
     labels: {}

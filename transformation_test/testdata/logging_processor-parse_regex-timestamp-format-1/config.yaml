@@ -1,5 +1,5 @@
 - type: parse_regex
   field: message
-  regex: ^(?<time>[^ ]*) (?<severity>[^ ]*) (?<msg>[^ ]*) (?<msg1>\k<msg>)$
+  regex: ^(?<time>\S+)\s+(?<severity>[A-Z]+)\s+(?<msg>.*)$
   time_key: time
   time_format: "%Y-%m-%dT%H:%M:%S%z"
