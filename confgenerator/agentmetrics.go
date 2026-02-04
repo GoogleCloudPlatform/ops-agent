@@ -156,6 +156,10 @@ func (r AgentSelfMetrics) OtelPipelineProcessors(ctx context.Context) []otel.Com
 			// delete grpc_client_method dimension & service.version label, retaining only state
 			otel.AggregateLabels("sum", "state"),
 		)
+	metricFilter := otel.MetricsOTTLFilter([]string{}, []string{
+		// Filter out histogram datapoints where the grpc.target is not related to monitoring.
+		`metric.name == "grpc.client.attempt.duration_count" and (not IsMatch(datapoint.attributes["grpc.target"], "monitoring.googleapis"))`,
+	})
 	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
 	if expOtlpExporter {
 		apiRequestCount =
@@ -165,16 +169,17 @@ func (r AgentSelfMetrics) OtelPipelineProcessors(ctx context.Context) []otel.Com
 				// delete grpc_client_method dimension & service.version label, retaining only state
 				otel.AggregateLabels("sum", "state"),
 			)
+		metricFilter = otel.MetricsOTTLFilter([]string{}, []string{
+			// Filter out histogram datapoints where the server_address is not related to monitoring.
+			`metric.name == "http_client_request_duration_count" and (not IsMatch(datapoint.attributes["server_address"], "telemetry.googleapis.com"))`,
+		})
 	}
 
 	return []otel.Component{
 		otel.Transform("metric", "metric",
 			ottl.ExtractCountMetric(true, "grpc.client.attempt.duration"),
 		),
-		otel.MetricsOTTLFilter([]string{}, []string{
-			// Filter out histogram datapoints where the grpc.target is not related to monitoring.
-			`metric.name == "grpc.client.attempt.duration_count" and (not IsMatch(datapoint.attributes["grpc.target"], "monitoring.googleapis"))`,
-		}),
+		metricFilter,
 		otel.MetricsFilter(
 			"include",
 			"strict",

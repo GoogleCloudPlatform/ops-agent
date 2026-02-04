@@ -78,7 +78,7 @@ processors:
   filter/otel_1:
     metrics:
       datapoint:
-      - metric.name == "grpc.client.attempt.duration_count" and (not IsMatch(datapoint.attributes["grpc.target"], "monitoring.googleapis"))
+      - metric.name == "http_client_request_duration_count" and (not IsMatch(datapoint.attributes["server_address"], "telemetry.googleapis.com"))
   filter/otel_2:
     metrics:
       include:
