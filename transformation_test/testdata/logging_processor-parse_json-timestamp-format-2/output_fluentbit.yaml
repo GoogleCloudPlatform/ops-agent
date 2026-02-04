@@ -13,6 +13,13 @@
       compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/transformation_test
     timestamp: 2024-06-15T19:30:00.000000000Z
+  - jsonPayload:
+      key1: 11121.0
+      key2: ghi
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2022-12-31T23:59:59.000000000Z
   partialSuccess: true
   resource:
     labels: {}

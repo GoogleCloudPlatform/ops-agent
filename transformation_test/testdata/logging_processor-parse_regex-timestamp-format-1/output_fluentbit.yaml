@@ -13,6 +13,12 @@
       compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/transformation_test
     timestamp: now
+  - jsonPayload:
+      message: 2022-12-31T23:59:59-0800 WARNING low disk space
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
   partialSuccess: true
   resource:
     labels: {}
