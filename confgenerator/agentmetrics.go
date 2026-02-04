@@ -15,6 +15,7 @@
 package confgenerator
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"time"
@@ -56,7 +57,24 @@ var grpcToHTTPStatus = map[string]string{
 	"DEADLINE_EXCEEDED":   "504",
 }
 
-func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]otel.ReceiverPipeline, pipelines map[string]otel.Pipeline) {
+// Source: https://github.com/googleapis/googleapis/blob/master/google/rpc/code.proto
+// HTTPStringToGRPC maps string representations of HTTP status codes to gRPC codes.
+var HTTPStringToGRPC = map[string]string{
+	"200": "OK",
+	"400": "INVALID_ARGUMENT", // Chosen over FAILED_PRECONDITION, OUT_OF_RANGE
+	"401": "UNAUTHENTICATED",
+	"403": "PERMISSION_DENIED",
+	"404": "NOT_FOUND",
+	"409": "ABORTED", // Chosen over ALREADY_EXISTS
+	"429": "RESOURCE_EXHAUSTED",
+	"499": "CANCELLED",
+	"500": "INTERNAL", // Chosen over UNKNOWN, DATA_LOSS
+	"501": "UNIMPLEMENTED",
+	"503": "UNAVAILABLE",
+	"504": "DEADLINE_EXCEEDED",
+}
+
+func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]otel.ReceiverPipeline, pipelines map[string]otel.Pipeline, ctx context.Context) {
 	// Receiver pipelines names should have 1 underscore to avoid collision with user configurations.
 	receiverPipelines["agent_prometheus"] = r.PrometheusMetricsPipeline()
 
@@ -64,7 +82,7 @@ func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]o
 	pipelines["otel"] = otel.Pipeline{
 		Type:                 "metrics",
 		ReceiverPipelineName: "agent_prometheus",
-		Processors:           r.OtelPipelineProcessors(),
+		Processors:           r.OtelPipelineProcessors(ctx),
 	}
 
 	pipelines["fluentbit"] = otel.Pipeline{
@@ -131,7 +149,24 @@ func (r AgentSelfMetrics) PrometheusMetricsPipeline() otel.ReceiverPipeline {
 	}
 }
 
-func (r AgentSelfMetrics) OtelPipelineProcessors() []otel.Component {
+func (r AgentSelfMetrics) OtelPipelineProcessors(ctx context.Context) []otel.Component {
+	apiRequestCount :=
+		otel.RenameMetric("grpc.client.attempt.duration_count", "agent/api_request_count",
+			otel.RenameLabel("grpc.status", "state"),
+			// delete grpc_client_method dimension & service.version label, retaining only state
+			otel.AggregateLabels("sum", "state"),
+		)
+	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
+	if expOtlpExporter {
+		apiRequestCount =
+			otel.RenameMetric("http_client_request_duration_count", "agent/api_request_count",
+				otel.RenameLabel("http_response_status_code", "state"),
+				otel.RenameLabelValues("http_response_status_code", HTTPStringToGRPC),
+				// delete grpc_client_method dimension & service.version label, retaining only state
+				otel.AggregateLabels("sum", "state"),
+			)
+	}
+
 	return []otel.Component{
 		otel.Transform("metric", "metric",
 			ottl.ExtractCountMetric(true, "grpc.client.attempt.duration"),
@@ -160,11 +195,7 @@ func (r AgentSelfMetrics) OtelPipelineProcessors() []otel.Component {
 				// remove service.version label
 				otel.AggregateLabels("sum"),
 			),
-			otel.RenameMetric("grpc.client.attempt.duration_count", "agent/api_request_count",
-				otel.RenameLabel("grpc.status", "state"),
-				// delete grpc_client_method dimension & service.version label, retaining only state
-				otel.AggregateLabels("sum", "state"),
-			),
+			apiRequestCount,
 			otel.RenameMetric("googlecloudmonitoring/point_count", "agent/monitoring/point_count",
 				// change data type from double -> int64
 				otel.ToggleScalarDataType,

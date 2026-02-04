@@ -539,12 +539,39 @@ processors:
         aggregation_type: sum
         label_set: []
     - action: update
-      include: grpc.client.attempt.duration_count
+      include: http_client_request_duration_count
       new_name: agent/api_request_count
       operations:
       - action: update_label
-        label: grpc.status
+        label: http_response_status_code
         new_label: state
+      - action: update_label
+        label: http_response_status_code
+        value_actions:
+        - new_value: OK
+          value: "200"
+        - new_value: INVALID_ARGUMENT
+          value: "400"
+        - new_value: UNAUTHENTICATED
+          value: "401"
+        - new_value: PERMISSION_DENIED
+          value: "403"
+        - new_value: NOT_FOUND
+          value: "404"
+        - new_value: ABORTED
+          value: "409"
+        - new_value: RESOURCE_EXHAUSTED
+          value: "429"
+        - new_value: CANCELLED
+          value: "499"
+        - new_value: INTERNAL
+          value: "500"
+        - new_value: UNIMPLEMENTED
+          value: "501"
+        - new_value: UNAVAILABLE
+          value: "503"
+        - new_value: DEADLINE_EXCEEDED
+          value: "504"
       - action: aggregate_labels
         aggregation_type: sum
         label_set:
@@ -828,6 +855,7 @@ service:
       - prometheus/prometheus
   telemetry:
     metrics:
+      level: detailed
       readers:
       - pull:
           exporter:

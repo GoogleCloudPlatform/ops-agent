@@ -870,6 +870,7 @@ service:
       - zookeeper/zookeeper
   telemetry:
     metrics:
+      level: detailed
       readers:
       - pull:
           exporter:
