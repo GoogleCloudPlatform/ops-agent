@@ -1,0 +1,19 @@
+- entries:
+  - jsonPayload:
+      level: info
+      message: start
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2023-01-02T03:04:05.123456789Z
+  - jsonPayload:
+      level: error
+      message: failed to connect
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2024-06-15T14:30:00.987654321Z
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance

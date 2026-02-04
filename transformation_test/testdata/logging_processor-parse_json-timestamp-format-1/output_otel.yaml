@@ -1,0 +1,41 @@
+- entries:
+  - jsonPayload:
+      level: info
+      message: start
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2023-01-02T11:04:05.123456789Z
+  - jsonPayload:
+      level: error
+      message: failed to connect
+      time: 2024-06-15T14:30:00.987654321Z
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
+  partialSuccess: true
+- collector_errors:
+  - caller: ottl@v0.138.0/parser.go:410
+    error: "parsing time \"2024-06-15T14:30:00.987654321Z\": extra text: \"Z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_0
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.138.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M:%S.%L") != nil)

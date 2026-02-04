@@ -1,0 +1,19 @@
+- entries:
+  - jsonPayload:
+      key1: 12345.0
+      key2: abc
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2023-01-01T20:04:05.000000000Z
+  - jsonPayload:
+      key1: 67890.0
+      key2: def
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2024-06-15T19:30:00.000000000Z
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance
