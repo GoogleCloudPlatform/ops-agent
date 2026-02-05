@@ -191,7 +191,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 		OtelRuntimeDir:      outDir,
 		OtelLogging:         uc.Logging.Service.OTelLogging,
 	}
-	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines)
+	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines, ctx)
 
 	otelConfig, err := otel.ModularConfig{
 		LogLevel:          uc.getOTelLogLevel(),
