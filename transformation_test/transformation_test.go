@@ -404,7 +404,7 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 		ReceiverPipelines: rps,
 		Pipelines:         pls,
 		Exporters: map[otel.ExporterType]otel.ExporterComponents{
-			otel.Logging: {
+			otel.LoggingNonPersistentQueue: {
 				ProcessorsByType: map[string][]otel.Component{
 					// Batch with 1.5s timeout to group in the same log request
 					// all late entries flushed from a multiline parser after 1s.
