@@ -38,7 +38,8 @@ const (
 	System
 	GMP
 	OTLP
-	Logging
+	LoggingPersistentQueue
+	LoggingNonPersistentQueue
 )
 const (
 	Override ResourceDetectionMode = iota
@@ -52,8 +53,10 @@ func (t ExporterType) Name() string {
 		return ""
 	} else if t == OTel {
 		return "otel"
-	} else if t == Logging {
-		return "logging"
+	} else if t == LoggingPersistentQueue {
+		return "logging_persistent_queue"
+	} else if t == LoggingNonPersistentQueue {
+		return "logging_non_persistent_queue"
 	} else if t == OTLP {
 		return "otlp"
 	} else {
