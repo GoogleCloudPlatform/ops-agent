@@ -17,10 +17,8 @@ package main
 import (
 	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"log"
-	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -29,7 +27,6 @@ import (
 	"buf.build/go/protoyaml"
 	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
 )
 
 var (
@@ -53,7 +50,8 @@ type RunCommandFunc func(cmd *exec.Cmd) (string, error)
 type RunSubAgentCommandFunc func(ctx context.Context, cancel CancelContextAndSetPluginErrorFunc, cmd *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup)
 
 // CancelContextAndSetPluginErrorFunc defines a function type that terminates the Ops Agent from running and records the latest error that occurred.
-// This abstraction is introduced primarily to facilitate testing by allowing the injection of mock implementations.
+// This abstraction is introduced primarily to facilitate testing by allowing the injection of mock
+// implementations.
 type CancelContextAndSetPluginErrorFunc func(err *OpsAgentPluginError)
 
 type OpsAgentPluginError struct {
@@ -131,49 +129,6 @@ func (ps *OpsAgentPluginServer) cancelAndSetPluginError(e *OpsAgentPluginError) 
 		ps.pluginError = e
 		log.Print(e.Message)
 	}
-}
-
-func init() {
-	flag.StringVar(&protocol, "protocol", "", "protocol to use uds/tcp")
-	flag.StringVar(&address, "address", "", "address to start server listening on")
-	flag.StringVar(&logfile, "errorlogfile", "", "path to the error log file")
-}
-
-func main() {
-	flag.Parse()
-
-	if _, err := os.Stat(address); err == nil {
-		if err := os.RemoveAll(address); err != nil {
-			// Unix sockets must be unlinked (listener.Close()) before
-			// being reused again. If file already exist bind can fail.
-			log.Fatalf("Failed to remove %q: %v\n", address, err)
-		}
-	}
-
-	listener, err := net.Listen(protocol, address)
-	if err != nil {
-		log.Fatalf("Failed to start listening on %q using %q: %v\n", address, protocol, err)
-	}
-	log.Printf("Listening on %q using %q\n", address, protocol)
-	defer listener.Close()
-
-	// This is the grpc server in communication with the Guest Agent.
-	server := grpc.NewServer()
-	defer server.GracefulStop()
-
-	ps := &OpsAgentPluginServer{server: server, runCommand: runCommand}
-	// Successfully registering the server and starting to listen on the address
-	// offered mean Guest Agent was successful in installing/launching the plugin
-	// & will manage the lifecycle (start, stop, or revision change) here onwards.
-	pb.RegisterGuestAgentPluginServer(server, ps)
-	log.Println("Registered plugin server")
-
-	reflection.Register(server)
-	log.Println("Registered service reflection service")
-	if err := server.Serve(listener); err != nil {
-		log.Fatalf("Exiting, cannot continue serving: %v\n", err)
-	}
-	log.Println("Exiting")
 }
 
 func runSubAgentCommand(ctx context.Context, cancelAndSetError CancelContextAndSetPluginErrorFunc, cmd *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup) {

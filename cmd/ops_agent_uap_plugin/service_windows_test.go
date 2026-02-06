@@ -112,22 +112,6 @@ func Test_findPreExistentAgents(t *testing.T) {
 	}
 }
 
-// mockWindowsEventLogger is a mock implementation of the debug.Log interface.
-type mockWindowsEventLogger struct{}
-
-func (m *mockWindowsEventLogger) Info(eid uint32, msg string) error {
-	return nil
-}
-func (m *mockWindowsEventLogger) Warning(eid uint32, msg string) error {
-	return nil
-}
-func (m *mockWindowsEventLogger) Error(eid uint32, msg string) error {
-	return nil
-}
-func (m *mockWindowsEventLogger) Close() error {
-	return nil
-}
-
 // mockHealthCheckLogger is a mock implementation of the logs.StructuredLogger interface.
 type mockHealthCheckLogger struct {
 	logFile *os.File
@@ -169,10 +153,9 @@ func Test_runHealthChecks_LogFileNonEmpty(t *testing.T) {
 		t.Fatalf("Failed to create health-checks.log: %v", err)
 	}
 	defer os.Remove(healthCheckLogFile.Name())
-	mockLogger := &mockWindowsEventLogger{}
 	mockHealthCheckLogger := &mockHealthCheckLogger{logFile: healthCheckLogFile}
 
-	runHealthChecks(mockHealthCheckLogger, mockLogger)
+	runHealthChecks(mockHealthCheckLogger)
 
 	// Check if the log file has content
 	fileInfo, err := os.Stat(healthCheckLogFile.Name())
@@ -220,9 +203,8 @@ func Test_generateSubAgentConfigs(t *testing.T) {
 				t.Fatalf("Failed to write user config content: %v", err)
 			}
 			userConfigFile.Close()
-			logger := &mockWindowsEventLogger{}
 
-			err = generateSubAgentConfigs(ctx, userConfigFile.Name(), tc.pluginStateDir, logger)
+			err = generateSubAgentConfigs(ctx, userConfigFile.Name(), tc.pluginStateDir)
 			if (err != nil) != tc.wantError {
 				t.Errorf("generateSubAgentConfigs() returned error: %v, want error: %v", err, tc.wantError)
 			}
