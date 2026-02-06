@@ -41,15 +41,13 @@ import (
 )
 
 const (
-	GeneratedConfigsOutDir           = "generated_configs"
-	LogsDirectory                    = "log"
-	RuntimeDirectory                 = "run"
-	OpsAgentUAPPluginEventID  uint32 = 8
-	WindowsEventLogIdentifier        = "google-cloud-ops-agent-uap-plugin"
-	WindowJobHandleIdentifier        = "google-cloud-ops-agent-uap-plugin-job-handle"
-	AgentWrapperBinary               = "google-cloud-ops-agent-wrapper.exe"
-	FluentbitBinary                  = "fluent-bit.exe"
-	OtelBinary                       = "google-cloud-metrics-agent_windows_amd64.exe"
+	GeneratedConfigsOutDir    = "generated_configs"
+	LogsDirectory             = "log"
+	RuntimeDirectory          = "run"
+	WindowJobHandleIdentifier = "google-cloud-ops-agent-uap-plugin-job-handle"
+	AgentWrapperBinary        = "google-cloud-ops-agent-wrapper.exe"
+	FluentbitBinary           = "fluent-bit.exe"
+	OtelBinary                = "google-cloud-metrics-agent_windows_amd64.exe"
 )
 
 var (
