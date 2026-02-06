@@ -11,7 +11,7 @@ EXTRA_CONFIG=""
 
 MYSQL_VERSION=$(rpm -q mysql-community-server --qf "%{VERSION}")
 [[ $MYSQL_VERSION =~ ^([0-9]+\.[0-9]+) ]] && MYSQL_VERSION="${BASH_REMATCH[1]}"
-if [[ "$MYSQL_VERSION == "8.4" ]]; then
+if [[ "$MYSQL_VERSION" == "8.4" ]]; then
     AUTH_FLAG=""
     IDENTIFIED_WITH="IDENTIFIED"
     SHOW_STATUS_CMD="SHOW BINARY LOG STATUS;"
