@@ -129,7 +129,6 @@ func (ps *OpsAgentPluginServer) cancelAndSetPluginError(e *OpsAgentPluginError) 
 	}
 	if e != nil {
 		ps.pluginError = e
-		log.Print(e.Message)
 	}
 }
 
