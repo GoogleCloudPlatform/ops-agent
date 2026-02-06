@@ -8,9 +8,20 @@ IDENTIFIED_WITH="IDENTIFIED WITH mysql_native_password"
 SHOW_STATUS_CMD="SHOW MASTER STATUS;"
 EXTRA_CONFIG=""
 
+# Update: OS-aware version detection
+if command -v rpm >/dev/null 2>&1; then
+    MYSQL_VERSION=$(rpm -q mysql-community-server --qf "%{VERSION}" 2>/dev/null || rpm -q mysql-server --qf "%{VERSION}" 2>/dev/null)
+elif command -v dpkg >/dev/null 2>&1; then
+    MYSQL_VERSION=$(dpkg-query -W -f='${Version}' mysql-server 2>/dev/null | cut -d: -f2 | cut -d- -f1)
+fi
 
-MYSQL_VERSION=$(rpm -q mysql-community-server --qf "%{VERSION}")
+# Fallback: Query binary directly if package managers fail
+if [[ -z "$MYSQL_VERSION" ]]; then
+    MYSQL_VERSION=$(mysqld --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+fi
+
 [[ $MYSQL_VERSION =~ ^([0-9]+\.[0-9]+) ]] && MYSQL_VERSION="${BASH_REMATCH[1]}"
+
 if [[ "$MYSQL_VERSION" == "8.4" ]]; then
     AUTH_FLAG=""
     IDENTIFIED_WITH="IDENTIFIED"
