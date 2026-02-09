@@ -253,6 +253,10 @@ func findPreExistentAgents(ctx context.Context, runCommand RunCommandFunc, agent
 	return true, fmt.Errorf("conflicting installations identified: %v", alreadyInstalledAgents)
 }
 
+type nopCloser struct{}
+
+func (nopCloser) Close() error { return nil }
+
 func createLogger() (io.Closer, error) {
-	return func() error { return nil }, nil
+	return nopCloser{}, nil
 }
