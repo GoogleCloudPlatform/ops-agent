@@ -4,7 +4,17 @@ set -e
 # wget https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-distribution/9.4.46.v20220331/jetty-distribution-9.4.46.v20220331.tar.gz
 # wget https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-home/10.0.9/jetty-home-10.0.9.tar.gz
 
-sudo yum install -y wget java-11-openjdk-devel tzdata-java
+source /etc/os-release
+MAJOR_VERSION_ID=${VERSION_ID%%.*}
+
+JAVA_VERSION=11
+if [[ "$ID" == "rocky" && "$MAJOR_VERSION_ID" == "10" ]]; then
+  JAVA_VERSION=21
+fi
+
+sudo yum install -y java-${JAVA_VERSION}-openjdk-devel
+
+sudo yum install -y wget tzdata-java
 sudo wget -O jetty.tar.gz https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-home/11.0.9/jetty-home-11.0.9.tar.gz
 sudo mkdir -p /opt/jetty
 

@@ -1303,11 +1303,17 @@ func verifyRPMPackageSigned(ctx context.Context, logger *log.Logger, vm *gce.VM,
 	// Assumes the Ops Agent was set up using the install script (with REPO_SUFFIX).
 	// Since the script has already added the repository to the VM, we only need
 	// to download the package.
-	if _, err := gce.RunRemotely(ctx, logger, vm, "dnf download google-cloud-ops-agent"); err != nil {
-		return fmt.Errorf("failed to run dnf download: %v", err)
+	command := "dnf download google-cloud-ops-agent"
+	rpmPath := "./*.rpm"
+	if gce.IsSUSEImageSpec(vm.ImageSpec) {
+		command = "sudo zypper --pkg-cache-dir=$(pwd) download google-cloud-ops-agent"
+		rpmPath = "./google-cloud-ops-agent/Packages/*.rpm"
+	}
+	if _, err := gce.RunRemotely(ctx, logger, vm, command); err != nil {
+		return fmt.Errorf("failed to download agent package: %v", err)
 	}
 
-	return verifyRPMPackageSignedImpl(ctx, logger, vm, "./*.rpm")
+	return verifyRPMPackageSignedImpl(ctx, logger, vm, rpmPath)
 }
 
 func verifyWindowsBinarySigned(ctx context.Context, logger *log.Logger, vm *gce.VM, location PackageLocation) error {
@@ -1384,6 +1390,14 @@ func verifyRPMPackageSignedImpl(ctx context.Context, logger *log.Logger, vm *gce
     MD5 digest: OK`
 
 	expectedOutput := fmt.Sprintf(expectedOutputTemplate, matchingKeyID, matchingKeyID)
+	// SLES12 produces a different output for rpm --checksig -v
+	if strings.Contains(vm.ImageSpec, "sles-12") {
+		expectedOutput = `    Header V4 RSA/SHA512 Signature, key ID 3e1ba8d5: OK
+    Header SHA1 digest: OK (b71efe433fc76051f49574d766d4e44a4087bad4)
+    V4 RSA/SHA512 Signature, key ID 3e1ba8d5: OK
+    MD5 digest: OK (6827c3dbddbbe29b8a19d64fe3d84eec)`
+	}
+
 	if !strings.Contains(output, expectedOutput) {
 		return fmt.Errorf("RPM signature check failed. Expected output:\n%s\nbut got:\n%s", expectedOutput, output)
 	}
