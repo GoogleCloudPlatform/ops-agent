@@ -202,6 +202,8 @@ func TestStart(t *testing.T) {
 			t.Parallel()
 			ps := &OpsAgentPluginServer{cancel: tc.cancel, runCommand: tc.mockRunCommandFunc}
 			ps.Start(context.Background(), &pb.StartRequest{})
+			ps.mu.Lock()
+			defer ps.mu.Unlock()
 			if (ps.cancel == nil) != tc.wantCancelNil {
 				t.Errorf("%v: Start() got cancel function: %v, want cancel function to be reset to nil: %v", tc.name, ps.cancel, tc.wantCancelNil)
 			}
