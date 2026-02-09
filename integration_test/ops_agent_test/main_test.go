@@ -610,7 +610,7 @@ func TestParseMultilineFileMissingParser(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		if !gce.IsWindows(imageSpec) {
+		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
 		}
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
@@ -1202,6 +1202,9 @@ func TestCustomStringConfigReceivedFromUAP(t *testing.T) {
 	}
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
+		if gce.IsWindows(imageSpec) {
+			t.SkipNow()
+		}
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
 		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
