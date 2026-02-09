@@ -20,6 +20,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -35,19 +36,22 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"github.com/kardianos/osext"
 	"golang.org/x/sys/windows"
+	"golang.org/x/sys/windows/svc/eventlog"
 	"golang.org/x/sys/windows/svc/mgr"
 
 	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
 )
 
 const (
-	GeneratedConfigsOutDir    = "generated_configs"
-	LogsDirectory             = "log"
-	RuntimeDirectory          = "run"
-	WindowJobHandleIdentifier = "google-cloud-ops-agent-uap-plugin-job-handle"
-	AgentWrapperBinary        = "google-cloud-ops-agent-wrapper.exe"
-	FluentbitBinary           = "fluent-bit.exe"
-	OtelBinary                = "google-cloud-metrics-agent_windows_amd64.exe"
+	GeneratedConfigsOutDir           = "generated_configs"
+	LogsDirectory                    = "log"
+	RuntimeDirectory                 = "run"
+	OpsAgentUAPPluginEventID  uint32 = 8
+	WindowsEventLogIdentifier        = "google-cloud-ops-agent-uap-plugin"
+	WindowJobHandleIdentifier        = "google-cloud-ops-agent-uap-plugin-job-handle"
+	AgentWrapperBinary               = "google-cloud-ops-agent-wrapper.exe"
+	FluentbitBinary                  = "fluent-bit.exe"
+	OtelBinary                       = "google-cloud-metrics-agent_windows_amd64.exe"
 )
 
 var (
@@ -323,4 +327,32 @@ func runCommand(cmd *exec.Cmd) (string, error) {
 		log.Printf("Command %s failed, \ncommand output: %s\ncommand error: %s", cmd.Args, string(out), err)
 	}
 	return string(out), err
+}
+
+// eventLogWriter implements the io.Writer interface. It writes logs to the Windows Event Log.
+type eventLogWriter struct {
+	EventID  uint32
+	EventLog *eventlog.Log
+}
+
+func (w *eventLogWriter) Write(p []byte) (int, error) {
+	err := w.EventLog.Info(w.EventID, string(p))
+	if err != nil {
+		return 0, err
+	}
+	return len(p), nil
+}
+
+func createLogger() (io.Closer, error) {
+	eventlog.InstallAsEventCreate(WindowsEventLogIdentifier, eventlog.Error|eventlog.Warning|eventlog.Info)
+	elog, err := eventlog.Open(WindowsEventLogIdentifier)
+	if err != nil {
+		return nil, err
+	}
+
+	log.SetOutput(&eventLogWriter{
+		EventID:  OpsAgentUAPPluginEventID,
+		EventLog: elog,
+	})
+	return elog, nil
 }
