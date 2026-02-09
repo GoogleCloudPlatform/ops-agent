@@ -213,7 +213,7 @@ func Test_generateSubAgentConfigs(t *testing.T) {
 	}
 }
 
-func TestStart(t *testing.T) {
+func TestStart_subagentsRunning(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name               string
@@ -221,7 +221,7 @@ func TestStart(t *testing.T) {
 		mockRunCommandFunc RunCommandFunc
 	}{
 		{
-			name:   "Happy path: plugin not already started",
+			name:   "Happy path: Start() starts the plugin successfully when plugin is not already started, sub-agent processes are running",
 			cancel: nil,
 			mockRunCommandFunc: func(cmd *exec.Cmd) (string, error) {
 				time.Sleep(2 * time.Minute) // Simulate subagent running.
@@ -229,7 +229,7 @@ func TestStart(t *testing.T) {
 			},
 		},
 		{
-			name:   "Plugin already started",
+			name:   "Plugin already started, sub-agent processes are running",
 			cancel: func() {}, // Non-nil function
 			mockRunCommandFunc: func(cmd *exec.Cmd) (string, error) {
 				return "", nil
@@ -247,15 +247,50 @@ func TestStart(t *testing.T) {
 			ps.mu.Lock()
 			defer ps.mu.Unlock()
 			if ps.cancel == nil {
-				t.Errorf("%v: Start() got nil cancel function, want non-nil", tc.name)
+				t.Errorf("%v: got nil cancel function, want non-nil", tc.name)
+			}
+			if ps.pluginError != nil {
+				t.Errorf("%v: got pluginError: %v, want nil, because sub-agent processes are running", tc.name, ps.pluginError)
 			}
 		})
+	}
+}
+
+func TestStart_subagentsExitedWithError(t *testing.T) {
+	t.Parallel()
+	ps := &OpsAgentPluginServer{runCommand: runCommandAndFailed}
+	ps.Start(context.Background(), &pb.StartRequest{})
+	time.Sleep(2 * time.Second)
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
+	if ps.cancel != nil {
+		t.Errorf("got cancel function: %v, want cancel function to be reset to nil, because sub-agent processes exited with errors", ps.cancel)
+	}
+	if ps.pluginError == nil {
+		t.Error("got nil pluginError, want pluginError to be set, because sub-agent processes exited with errors")
+	}
+}
+
+func TestStart_subagentsExitedSuccessfully(t *testing.T) {
+	t.Parallel()
+	ps := &OpsAgentPluginServer{runCommand: runCommandSuccessfully}
+
+	ps.Start(context.Background(), &pb.StartRequest{})
+	time.Sleep(2 * time.Second)
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
+	if ps.cancel != nil {
+		t.Errorf("got cancel function: %v, want cancel function to be reset to nil, because sub-agent processes exited with errors", ps.cancel)
+	}
+	if ps.pluginError != nil {
+		t.Errorf("got pluginError: %v, want nil pluginError, because sub-agent processes exited successfully", ps.pluginError)
 	}
 }
 
 func runCommandSuccessfully(_ *exec.Cmd) (string, error) {
 	return "success", nil
 }
+
 func Test_runSubAgentCommand_CancelContextWhenCmdExitsSuccessfully(t *testing.T) {
 	t.Parallel()
 	ctx, cancel := context.WithCancel(context.Background())

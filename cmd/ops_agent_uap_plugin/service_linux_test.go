@@ -175,42 +175,21 @@ func mockRunCommandSuccess(cmd *exec.Cmd) (string, error) {
 	}
 }
 
-func mockRunCommandFailure(cmd *exec.Cmd) (string, error) {
-	switch {
-	case strings.HasSuffix(cmd.Path, "systemctl"):
-		return "0 unit files listed.", nil
-	case strings.HasSuffix(cmd.Path, "google_cloud_ops_agent_engine"):
-		return "", nil
-	default:
-		return "", fmt.Errorf("error") // Simulate subagent process exiting with error.
-	}
-
-}
-func TestStart(t *testing.T) {
+func TestStart_subagentsRunning(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
-		name                    string
-		cancel                  context.CancelFunc
-		mockRunCommandFunc      RunCommandFunc
-		wantCancelNil           bool
-		wantOpsAgentPluginError bool
+		name               string
+		cancel             context.CancelFunc
+		mockRunCommandFunc RunCommandFunc
 	}{
 		{
-			name:               "Happy path: plugin not already started",
-			cancel:             nil,
+			name:               "Happy path: Start() starts the plugin successfully when plugin is not already started, sub-agent processes are running",
 			mockRunCommandFunc: mockRunCommandSuccess,
 		},
 		{
-			name:               "Plugin already started",
+			name:               "Plugin already started, sub-agent processes are running",
 			cancel:             func() {}, // Non-nil function
 			mockRunCommandFunc: mockRunCommandSuccess,
-		},
-		{
-			name:                    "Subagent process exits with error",
-			cancel:                  nil,
-			mockRunCommandFunc:      mockRunCommandFailure,
-			wantCancelNil:           true,
-			wantOpsAgentPluginError: true,
 		},
 	}
 
@@ -223,13 +202,57 @@ func TestStart(t *testing.T) {
 			time.Sleep(2 * time.Second)
 			ps.mu.Lock()
 			defer ps.mu.Unlock()
-			if (ps.cancel == nil) != tc.wantCancelNil {
-				t.Errorf("%v: Start() got cancel function: %v, want cancel function to be reset to nil: %v", tc.name, ps.cancel, tc.wantCancelNil)
+			if ps.cancel == nil {
+				t.Errorf("%v: got nil cancel function, want non-nil", tc.name)
 			}
-			if (ps.pluginError != nil) != tc.wantOpsAgentPluginError {
-				t.Errorf("%v: Start() got pluginError: %v, want pluginError to be set: %v", tc.name, ps.pluginError, tc.wantOpsAgentPluginError)
+			if ps.pluginError != nil {
+				t.Errorf("%v: got pluginError: %v, want nil, because sub-agent processes are running", tc.name, ps.pluginError)
 			}
 		})
+	}
+}
+
+func mockRunCommandFailure(cmd *exec.Cmd) (string, error) {
+	switch {
+	case strings.HasSuffix(cmd.Path, "systemctl"):
+		return "0 unit files listed.", nil
+	case strings.HasSuffix(cmd.Path, "google_cloud_ops_agent_engine"):
+		return "", nil
+	default:
+		return "", fmt.Errorf("error") // Simulate subagent process exiting with error.
+	}
+}
+
+func TestStart_subagentsExitedWithError(t *testing.T) {
+	t.Parallel()
+	ps := &OpsAgentPluginServer{runCommand: mockRunCommandFailure}
+	ps.Start(context.Background(), &pb.StartRequest{})
+	time.Sleep(2 * time.Second)
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
+	if ps.cancel != nil {
+		t.Errorf("got cancel function: %v, want cancel function to be reset to nil, because sub-agent processes exited with errors", ps.cancel)
+	}
+	if ps.pluginError == nil {
+		t.Error("got nil pluginError, want pluginError to be set, because sub-agent processes exited with errors")
+	}
+}
+
+func TestStart_subagentsExitedSuccessfully(t *testing.T) {
+	t.Parallel()
+	ps := &OpsAgentPluginServer{runCommand: func(cmd *exec.Cmd) (string, error) {
+		return "", nil // Simulate subagent process exiting successfully.
+	}}
+
+	ps.Start(context.Background(), &pb.StartRequest{})
+	time.Sleep(2 * time.Second)
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
+	if ps.cancel != nil {
+		t.Errorf("got cancel function: %v, want cancel function to be reset to nil, because sub-agent processes exited with errors", ps.cancel)
+	}
+	if ps.pluginError != nil {
+		t.Errorf("got pluginError: %v, want nil pluginError, because sub-agent processes exited successfully", ps.pluginError)
 	}
 }
 
