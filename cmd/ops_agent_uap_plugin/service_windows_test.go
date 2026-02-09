@@ -221,8 +221,7 @@ func TestStart_subagentsRunning(t *testing.T) {
 		mockRunCommandFunc RunCommandFunc
 	}{
 		{
-			name:   "Happy path: Start() starts the plugin successfully when plugin is not already started, sub-agent processes are running",
-			cancel: nil,
+			name: "Happy path: Start() starts the plugin successfully when plugin is not already started, sub-agent processes are running",
 			mockRunCommandFunc: func(cmd *exec.Cmd) (string, error) {
 				time.Sleep(2 * time.Minute) // Simulate subagent running.
 				return "", nil
@@ -247,10 +246,10 @@ func TestStart_subagentsRunning(t *testing.T) {
 			ps.mu.Lock()
 			defer ps.mu.Unlock()
 			if ps.cancel == nil {
-				t.Errorf("%v: got nil cancel function, want non-nil", tc.name)
+				t.Errorf("%v: got nil cancel function, want non-nil, because sub-agent processes are running", tc.name)
 			}
 			if ps.pluginError != nil {
-				t.Errorf("%v: got pluginError: %v, want nil, because sub-agent processes are running", tc.name, ps.pluginError)
+				t.Errorf("%v: got pluginError: %v, want nil", tc.name, ps.pluginError)
 			}
 		})
 	}
@@ -280,7 +279,7 @@ func TestStart_subagentsExitedSuccessfully(t *testing.T) {
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
 	if ps.cancel != nil {
-		t.Errorf("got cancel function: %v, want cancel function to be reset to nil, because sub-agent processes exited with errors", ps.cancel)
+		t.Errorf("got cancel function: %v, want cancel function to be reset to nil, because sub-agent processes exited successfully", ps.cancel)
 	}
 	if ps.pluginError != nil {
 		t.Errorf("got pluginError: %v, want nil pluginError, because sub-agent processes exited successfully", ps.pluginError)
