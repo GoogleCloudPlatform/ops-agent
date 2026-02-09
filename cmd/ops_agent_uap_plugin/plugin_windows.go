@@ -105,3 +105,9 @@ func main() {
 	}
 	log.Println("Exiting")
 }
+
+func init() {
+	flag.StringVar(&protocol, "protocol", "", "protocol to use uds/tcp")
+	flag.StringVar(&address, "address", "", "address to start server listening on")
+	flag.StringVar(&logfile, "errorlogfile", "", "path to the error log file")
+}
