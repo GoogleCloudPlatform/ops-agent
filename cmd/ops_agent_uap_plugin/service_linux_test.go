@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"syscall"
 	"testing"
@@ -162,6 +163,29 @@ func Test_generateSubagentConfigs(t *testing.T) {
 	}
 }
 
+func mockRunCommandSuccess(cmd *exec.Cmd) (string, error) {
+	switch {
+	case strings.HasSuffix(cmd.Path, "systemctl"):
+		return "0 unit files listed.", nil
+	case strings.HasSuffix(cmd.Path, "google_cloud_ops_agent_engine"):
+		return "", nil
+	default:
+		time.Sleep(2 * time.Minute) // Simulate subagent running.
+		return "", nil
+	}
+}
+
+func mockRunCommandFailure(cmd *exec.Cmd) (string, error) {
+	switch {
+	case strings.HasSuffix(cmd.Path, "systemctl"):
+		return "0 unit files listed.", nil
+	case strings.HasSuffix(cmd.Path, "google_cloud_ops_agent_engine"):
+		return "", nil
+	default:
+		return "", fmt.Errorf("error") // Simulate subagent process exiting with error.
+	}
+
+}
 func TestStart(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
@@ -172,25 +196,19 @@ func TestStart(t *testing.T) {
 		wantOpsAgentPluginError bool
 	}{
 		{
-			name:   "Happy path: plugin not already started, Start() exits successfully",
-			cancel: nil,
-			mockRunCommandFunc: func(cmd *exec.Cmd) (string, error) {
-				return "", nil
-			},
+			name:               "Happy path: plugin not already started",
+			cancel:             nil,
+			mockRunCommandFunc: mockRunCommandSuccess,
 		},
 		{
-			name:   "Plugin already started",
-			cancel: func() {}, // Non-nil function
-			mockRunCommandFunc: func(cmd *exec.Cmd) (string, error) {
-				return "", nil
-			},
+			name:               "Plugin already started",
+			cancel:             func() {}, // Non-nil function
+			mockRunCommandFunc: mockRunCommandSuccess,
 		},
 		{
-			name:   "Substeps in Start() fail, cancel() function should be reset to nil",
-			cancel: nil,
-			mockRunCommandFunc: func(cmd *exec.Cmd) (string, error) {
-				return "", fmt.Errorf("error")
-			},
+			name:                    "Subagent process exits with error",
+			cancel:                  nil,
+			mockRunCommandFunc:      mockRunCommandFailure,
 			wantCancelNil:           true,
 			wantOpsAgentPluginError: true,
 		},
@@ -202,6 +220,7 @@ func TestStart(t *testing.T) {
 			t.Parallel()
 			ps := &OpsAgentPluginServer{cancel: tc.cancel, runCommand: tc.mockRunCommandFunc}
 			ps.Start(context.Background(), &pb.StartRequest{})
+			time.Sleep(2 * time.Second)
 			ps.mu.Lock()
 			defer ps.mu.Unlock()
 			if (ps.cancel == nil) != tc.wantCancelNil {

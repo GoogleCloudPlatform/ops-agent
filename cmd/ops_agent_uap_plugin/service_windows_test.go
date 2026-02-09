@@ -221,9 +221,10 @@ func TestStart(t *testing.T) {
 		mockRunCommandFunc RunCommandFunc
 	}{
 		{
-			name:   "Happy path: plugin not already started, Start() exits successfully",
+			name:   "Happy path: plugin not already started",
 			cancel: nil,
 			mockRunCommandFunc: func(cmd *exec.Cmd) (string, error) {
+				time.Sleep(2 * time.Minute) // Simulate subagent running.
 				return "", nil
 			},
 		},
@@ -242,6 +243,9 @@ func TestStart(t *testing.T) {
 			t.Parallel()
 			ps := &OpsAgentPluginServer{cancel: tc.cancel, runCommand: tc.mockRunCommandFunc}
 			ps.Start(context.Background(), &pb.StartRequest{})
+			time.Sleep(2 * time.Second)
+			ps.mu.Lock()
+			defer ps.mu.Unlock()
 			if ps.cancel == nil {
 				t.Errorf("%v: Start() got nil cancel function, want non-nil", tc.name)
 			}
