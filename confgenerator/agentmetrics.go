@@ -156,7 +156,7 @@ func (r AgentSelfMetrics) OtelPipelineProcessors(ctx context.Context) []otel.Com
 			),
 			otel.UpdateMetric("otelcol_exporter_send_failed_metric_points",
 				otel.ToggleScalarDataType,
-				otel.AddLabel("status", "UNKNOWN"),
+				otel.AddLabel("status", "ERROR"),
 			),
 		}
 		// b/468059325: Factor in partial success after upstream bug is fixed.
