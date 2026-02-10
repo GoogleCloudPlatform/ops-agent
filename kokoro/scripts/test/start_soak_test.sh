@@ -30,7 +30,7 @@ source kokoro/scripts/utils/louhi.sh
 populate_env_vars_from_louhi_tag_if_present
 
 # Ops Agent feature label
-feature_label=${FEATURE:+-${FEATURE}}
+feature_label=${FEATURE:+-${FEATURE//_/-}}}
 
 # if TARGET & ARCH are set, retrieve the soak distro from project.yaml
 if [[ -n "${TARGET:-}" && -n "${ARCH:-}" ]]; then
