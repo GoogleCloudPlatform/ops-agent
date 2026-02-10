@@ -35,7 +35,7 @@ feature_label=${FEATURE:+-${FEATURE}}
 # if TARGET & ARCH are set, retrieve the soak distro from project.yaml
 if [[ -n "${TARGET:-}" && -n "${ARCH:-}" ]]; then
   DISTRO=$(yaml project.yaml "['targets']['${TARGET}']['architectures']['${ARCH}']['soak_distro']")
-  export VM_NAME="soak-test${feature_label}-${_LOUHI_EXECUTION_ID}-${TARGET}-${ARCH//_/-}-${LABEL}"
+  export VM_NAME="soak-test-${_LOUHI_EXECUTION_ID}-${TARGET}-${ARCH//_/-}${feature_label}-${LABEL}"
   export DISTRO
 fi
 
