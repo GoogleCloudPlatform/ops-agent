@@ -852,8 +852,8 @@ receivers:
       listen_address: 2.2.2.2:2222
 service:
   extensions:
-  - file_storage
   - db_storage
+  - file_storage
   pipelines:
     logs/logs_pipeline1_test__syslog__source__id__tcp:
       exporters:

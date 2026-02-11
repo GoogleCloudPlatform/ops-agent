@@ -1820,8 +1820,8 @@ receivers:
       object: SQLServer:Databases
 service:
   extensions:
-  - file_storage
   - db_storage
+  - file_storage
   pipelines:
     logs/logs_default__pipeline_windows__event__log:
       exporters:
