@@ -2579,7 +2579,7 @@ func TestSystemLogByDefault(t *testing.T) {
 	})
 }
 
-func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, vm *gce.VM, window time.Duration, otlpHTTPExperiment bool) {
+func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, vm *gce.VM, window time.Duration) {
 	if !gce.IsWindows(vm.ImageSpec) {
 		// Enable swap file: https://linuxize.com/post/create-a-linux-swap-file/
 		// We do this so that swap file metrics will show up.
@@ -2619,10 +2619,6 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 
 		if err != nil {
 			t.Fatal(err)
-		}
-		// b/468059325: This bug prevents us from having accurate labels for point_count. Disabling this check for now.
-		if metric.Type == "agent.googleapis.com/agent/monitoring/point_count" && otlpHTTPExperiment {
-			continue
 		}
 		err = metadata.AssertMetric(metric, series)
 		if err != nil {
@@ -2711,7 +2707,7 @@ func TestDefaultMetricsNoProxy(t *testing.T) {
 		// metrics are sent one minute after agent startup
 		time.Sleep(2 * time.Minute)
 
-		testDefaultMetrics(ctx, t, logger, vm, time.Hour, feature == agents.OtlpHttpExporterFeatureFlag)
+		testDefaultMetrics(ctx, t, logger, vm, time.Hour)
 	})
 }
 
@@ -2744,7 +2740,7 @@ func TestDefaultMetricsWithProxy(t *testing.T) {
 		}
 		// Sleep for 3 minutes to make sure that if any metrics were sent between agent install and removal of the IP address, then they will fall out of the 2 minute window.
 		time.Sleep(3 * time.Minute)
-		testDefaultMetrics(ctx, t, logger, vm, 2*time.Minute, feature == agents.OtlpHttpExporterFeatureFlag)
+		testDefaultMetrics(ctx, t, logger, vm, 2*time.Minute)
 	})
 }
 
