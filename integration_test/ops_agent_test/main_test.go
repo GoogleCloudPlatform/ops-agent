@@ -2744,7 +2744,7 @@ func TestDefaultMetricsWithProxy(t *testing.T) {
 		}
 		// Sleep for 3 minutes to make sure that if any metrics were sent between agent install and removal of the IP address, then they will fall out of the 2 minute window.
 		time.Sleep(3 * time.Minute)
-		testDefaultMetrics(ctx, t, logger, vm, 2*time.Minute, feature == agents.OtlpHttpExporterFeatureFlag))
+		testDefaultMetrics(ctx, t, logger, vm, 2*time.Minute, feature == agents.OtlpHttpExporterFeatureFlag)
 	})
 }
 
