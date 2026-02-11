@@ -576,7 +576,7 @@ processors:
       - action: toggle_scalar_data_type
       - action: add_label
         new_label: status
-        new_value: ERROR
+        new_value: UNKNOWN
     - action: combine
       include: otelcol_exporter_sent_metric_points|otelcol_exporter_send_failed_metric_points
       match_type: regexp
