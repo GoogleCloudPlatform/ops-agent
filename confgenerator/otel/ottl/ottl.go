@@ -242,6 +242,10 @@ func IsNotNil(a Value) Value {
 	return valuef(`%s != nil`, a)
 }
 
+func IsNotEmptyString(a Value) Value {
+	return valuef(`%s != ""`, a)
+}
+
 // ExtractCountMetric creates a new metric based on the count value of a Histogram metric
 func ExtractCountMetric(monotonic bool, metricName string) Statements {
 	monotonicStr := "false"
