@@ -38,7 +38,6 @@ const (
 	System
 	GMP
 	OTLP
-	OTLPStagingUTR
 	Logging
 )
 const (
@@ -57,8 +56,6 @@ func (t ExporterType) Name() string {
 		return "logging"
 	} else if t == OTLP {
 		return "otlp"
-	} else if t == OTLPStagingUTR {
-		return "otlp-utr-logging"
 	} else {
 		panic("unknown ExporterType")
 	}

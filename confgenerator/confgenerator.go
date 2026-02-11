@@ -107,7 +107,7 @@ func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, 
 	}
 
 	if _, ok := pipeline.ExporterTypes["logs"]; ok {
-		pipeline.ExporterTypes["logs"] = otel.OTLPStagingUTR
+		pipeline.ExporterTypes["logs"] = otel.OTLP
 		pipeline.Processors["logs"] = append(pipeline.Processors["logs"], otel.GCPProjectID(resource.ProjectName()))
 		pipeline.Processors["logs"] = append(pipeline.Processors["logs"], otel.DisableOtlpRoundTrip())
 		pipeline.Processors["logs"] = append(pipeline.Processors["logs"], otel.InstrumentationScope())
@@ -123,22 +123,6 @@ func otlpExporter(userAgent string) otel.Component {
 		Type: "otlphttp",
 		Config: map[string]interface{}{
 			"endpoint": "https://telemetry.googleapis.com",
-			"auth": map[string]interface{}{
-				"authenticator": "googleclientauth",
-			},
-			"headers": map[string]string{
-				"User-Agent": userAgent,
-			},
-		},
-	}
-}
-
-// This will merge with the otlp exporter above once the prod UTR logging endpoint is ready.
-func otlpExporterUTRLoggingStaging(userAgent string) otel.Component {
-	return otel.Component{
-		Type: "otlphttp",
-		Config: map[string]interface{}{
-			"endpoint": "https://test-us-central2-telemetry.sandbox.googleapis.com",
 			"auth": map[string]interface{}{
 				"authenticator": "googleclientauth",
 			},
