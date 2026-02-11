@@ -1,5 +1,12 @@
 - entries:
-  - jsonPayload:
+  - httpRequest:
+      protocol: HTTP/1.1
+      remoteIp: 127.0.0.1
+      requestMethod: PUT
+      responseSize: "16"
+      serverIp: localhost:5984
+      status: 201
+    jsonPayload:
       host: nohost
       level: notice
       message: otelu PUT /oteld 201 ok 16
@@ -72,8 +79,6 @@
       type: gce_instance
     severity: WARNING
     timestamp: 2022-01-12T16:55:21.782456Z
-  partialSuccess: true
-- entries:
   - jsonPayload:
       host: nohost
       level: info

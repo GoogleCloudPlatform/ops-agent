@@ -403,18 +403,27 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 		LogLevel:          "debug",
 		ReceiverPipelines: rps,
 		Pipelines:         pls,
-		Exporters: map[otel.ExporterType]otel.Component{
-			otel.OTel: {
-				Type: "googlecloud",
-				Config: map[string]any{
-					"project": "my-project",
-					"sending_queue": map[string]any{
-						"enabled": false,
+		Exporters: map[otel.ExporterType]otel.ExporterComponents{
+			otel.Logging: {
+				ProcessorsByType: map[string][]otel.Component{
+					// Batch with 1.5s timeout to group in the same log request
+					// all late entries flushed from a multiline parser after 1s.
+					"logs": {
+						otel.BatchProcessor(500, 500, "1500ms"),
 					},
-					"log": map[string]any{
-						"default_log_name": "my-log-name",
-						"endpoint":         addr,
-						"use_insecure":     true,
+				},
+				Exporter: otel.Component{
+					Type: "googlecloud",
+					Config: map[string]any{
+						"project": "my-project",
+						"sending_queue": map[string]any{
+							"enabled": false,
+						},
+						"log": map[string]any{
+							"default_log_name": "my-log-name",
+							"endpoint":         addr,
+							"use_insecure":     true,
+						},
 					},
 				},
 			},
@@ -657,7 +666,7 @@ func sanitizeFluentBitStderr(t *testing.T, input string) string {
 	// Only keep "[error]" lines.
 	result := strings.Join(regexp.MustCompile(`(?m)^.*\[error\].*$`).FindAllString(input, -1), "\n")
 	// Remove timestamps
-	result = regexp.MustCompile(`\d{4}/\d{2}/\d{2}\s\d{2}:\d{2}:\d{2}`).ReplaceAllString(result, "YYYY/MM/DD HH:MM:SS")
+	result = regexp.MustCompile(`\d{4}/\d{2}/\d{2}\s\d{2}:\d{2}:\d{2}(?:.\d+)?`).ReplaceAllString(result, "YYYY/MM/DD HH:MM:SS")
 
 	result = strings.ReplaceAll(result, "\t", "  ")
 	return result

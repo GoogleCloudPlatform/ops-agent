@@ -735,12 +735,13 @@ func ConvertSeverityTextToLowercase() Component {
 
 }
 
-func Batch() Component {
+func BatchProcessor(sendBatchSize, sendBatchMaxSize int, timeout string) Component {
 	return Component{
 		Type: "batch",
-		Config: map[string]interface{}{
-			"send_batch_size":     200,
-			"send_batch_max_size": 200,
+		Config: map[string]any{
+			"send_batch_size":     sendBatchSize,
+			"send_batch_max_size": sendBatchMaxSize,
+			"timeout":             timeout,
 		},
 	}
 }

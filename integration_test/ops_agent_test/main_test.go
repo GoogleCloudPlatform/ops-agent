@@ -92,7 +92,7 @@ func logPathForImage(imageSpec string) string {
 
 func workDirForImage(imageSpec string) string {
 	if gce.IsWindows(imageSpec) {
-		return `C:\work`
+		return `C:\tmp\work`
 	}
 	return "/tmp/work"
 }
@@ -219,6 +219,7 @@ func RunForEachImageAndFeatureFlag(t *testing.T, features []string, testBody fun
 		})
 		for _, feature := range features {
 			t.Run(feature, func(t *testing.T) {
+				// Feature flags currently don't work with how Ops Agent UAP Plugin runs.
 				if gce.IsOpsAgentUAPPlugin() {
 					t.SkipNow()
 				}
@@ -4960,9 +4961,13 @@ traces:
 	)
 }
 
-func TestOTLPMetricsGMP(t *testing.T) {
+func TestOTLPMetricsOTLP(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		if gce.IsOpsAgentUAPPlugin() {
+			// Ops Agent Plugin does not restart subagents on termination.
+			t.SkipNow()
+		}
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		otlpConfig := `
@@ -4981,7 +4986,218 @@ traces:
   service:
     pipelines:
 `
-		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, otlpConfig, feature); err != nil {
+		// Only run the test for the OTLP http exporter
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, otlpConfig, agents.OtlpHttpExporterFeatureFlag); err != nil {
+			t.Fatal(err)
+		}
+
+		// Have to wait for startup feature tracking metrics to be sent
+		// before we tear down the service.
+		time.Sleep(2 * time.Minute)
+
+		// Generate metric traffic with dummy app
+		metricFile, err := testdataDir.Open(path.Join("testdata", "otlp", "metrics.go"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer metricFile.Close()
+		if err := installGolang(ctx, logger, vm); err != nil {
+			t.Fatal(err)
+		}
+		serviceName := "otlp-metric-googlemanagedprometheus-test"
+		if err = runGoCode(ctx, logger, vm, metricFile, "-service_name", serviceName); err != nil {
+			t.Fatal(err)
+		}
+		expectedLabels := []*metadata.MetricLabel{
+			{Name: "otel_scope_name", ValueRegex: "foo"},
+			{Name: "instance_name", ValueRegex: vm.Name},
+			{Name: "machine_type", ValueRegex: fmt.Sprintf("projects/[0-9]+/machineTypes/%s", vm.MachineType)},
+		}
+		tests := []metadata.ExpectedMetric{
+			{
+				MetricSpec: metadata.MetricSpec{
+					Type:               "prometheus.googleapis.com/otlp.test.gauge/gauge",
+					Kind:               metric.MetricDescriptor_GAUGE.String(),
+					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+					Value:              5.0,
+					MonitoredResources: []string{"prometheus_target"},
+					Labels:             expectedLabels,
+				},
+				Optional: false,
+			},
+			{
+				MetricSpec: metadata.MetricSpec{
+					Type:               "prometheus.googleapis.com/otlp.test.cumulative/counter",
+					Kind:               metric.MetricDescriptor_CUMULATIVE.String(),
+					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+					Value:              15.0,
+					MonitoredResources: []string{"prometheus_target"},
+					Labels:             expectedLabels,
+				},
+				Optional: false,
+			},
+			{
+				MetricSpec: metadata.MetricSpec{
+					Type:      "prometheus.googleapis.com/otlp.test.histogram/histogram",
+					Kind:      metric.MetricDescriptor_CUMULATIVE.String(),
+					ValueType: metric.MetricDescriptor_DISTRIBUTION.String(),
+					Value: &distribution.Distribution{
+						Count:                 3,
+						Mean:                  2,
+						SumOfSquaredDeviation: 0.75,
+						BucketOptions: &distribution.Distribution_BucketOptions{
+							Options: &distribution.Distribution_BucketOptions_ExplicitBuckets{
+								ExplicitBuckets: &distribution.Distribution_BucketOptions_Explicit{
+									Bounds: []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
+								},
+							},
+						},
+						BucketCounts: []int64{0, 3},
+					},
+					MonitoredResources: []string{"prometheus_target"},
+					Labels:             expectedLabels,
+				},
+				Optional: false,
+			},
+			{
+				MetricSpec: metadata.MetricSpec{
+					Type: "prometheus.googleapis.com/otlp.test.updowncounter/gauge",
+					Kind: metric.MetricDescriptor_GAUGE.String(),
+					// b/476112381: New OTLP endpoint for prometheus converts INT metrics types to DOUBLE
+					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+					Value:              3.0,
+					MonitoredResources: []string{"prometheus_target"},
+					Labels:             expectedLabels,
+				},
+				Optional: false,
+			},
+			{
+				MetricSpec: metadata.MetricSpec{
+					Type:               "prometheus.googleapis.com/workload.googleapis.com/otlp.test.prefix1/gauge",
+					Kind:               metric.MetricDescriptor_GAUGE.String(),
+					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+					Value:              5.0,
+					MonitoredResources: []string{"prometheus_target"},
+					Labels:             expectedLabels,
+				},
+				Optional: false,
+			},
+			{
+				MetricSpec: metadata.MetricSpec{
+					Type:               "prometheus.googleapis.com/.invalid.googleapis.com/otlp.test.prefix2/gauge",
+					Kind:               metric.MetricDescriptor_GAUGE.String(),
+					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+					Value:              5.0,
+					MonitoredResources: []string{"prometheus_target"},
+					Labels:             expectedLabels,
+				},
+				Optional: false,
+			},
+			{
+				MetricSpec: metadata.MetricSpec{
+					Type:               "prometheus.googleapis.com/otlp.test.prefix3/workload.googleapis.com/abc/gauge",
+					Kind:               metric.MetricDescriptor_GAUGE.String(),
+					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+					Value:              5.0,
+					MonitoredResources: []string{"prometheus_target"},
+					Labels:             expectedLabels,
+				},
+				Optional: false,
+			},
+			{
+				MetricSpec: metadata.MetricSpec{
+					Type:               "prometheus.googleapis.com/WORKLOAD.GOOGLEAPIS.COM/otlp.test.prefix4/gauge",
+					Kind:               metric.MetricDescriptor_GAUGE.String(),
+					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+					Value:              5.0,
+					MonitoredResources: []string{"prometheus_target"},
+					Labels:             expectedLabels,
+				},
+				Optional: false,
+			},
+			{
+				MetricSpec: metadata.MetricSpec{
+					Type:               "prometheus.googleapis.com/WORKLOAD.googleapis.com/otlp.test.prefix5/gauge",
+					Kind:               metric.MetricDescriptor_GAUGE.String(),
+					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+					Value:              5.0,
+					MonitoredResources: []string{"prometheus_target"},
+					Labels:             expectedLabels,
+				},
+				Optional: false,
+			},
+		}
+		var multiErr error
+		for _, test := range tests {
+			multiErr = multierr.Append(multiErr, waitForAndAssertMetric(ctx, logger, vm, time.Hour, &test, nil, true))
+		}
+		if multiErr != nil {
+			t.Error(multiErr)
+		}
+
+		expectedFeatures := []*feature_tracking_metadata.FeatureTracking{
+			{
+				Module:  "logging",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "false",
+			},
+			{
+				Module:  "metrics",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "false",
+			},
+			{
+				Module:  "combined",
+				Feature: "receivers:otlp",
+				Key:     "[0].enabled",
+				Value:   "true",
+			},
+			{
+				Module:  "combined",
+				Feature: "receivers:otlp",
+				Key:     "[0].grpc_endpoint",
+				Value:   "endpoint",
+			},
+		}
+
+		series, err := gce.WaitForMetricSeries(ctx, logger, vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", time.Hour, nil, false, len(expectedFeatures))
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, expectedFeatures)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+	})
+}
+
+func TestOTLPMetricsGMP(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		otlpConfig := `
+combined:
+  receivers:
+    otlp:
+      type: otlp
+      grpc_endpoint: 0.0.0.0:4317
+metrics:
+  service:
+    pipelines:
+      otlp:
+        receivers:
+        - otlp
+traces:
+  service:
+    pipelines:
+`
+		if err := agents.SetupOpsAgent(ctx, logger, vm, otlpConfig); err != nil {
 			t.Fatal(err)
 		}
 
@@ -5737,6 +5953,67 @@ func TestLogCompression(t *testing.T) {
 	})
 }
 
+func TestFileOffset(t *testing.T) {
+	t.Parallel()
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+		t.Parallel()
+
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+
+		logPath := logPathForImage(vm.ImageSpec)
+		config := fmt.Sprintf(`logging:
+  receivers:
+    files_1:
+      type: files
+      include_paths: [%s]
+  service:
+    pipelines:
+      p1:
+        receivers: [files_1]
+`, logPath)
+
+		if err := writeLinesToRemoteFile(ctx, logger, vm, imageSpec, logPath, "first line"); err != nil {
+			t.Fatalf("Error writing dummy log lines: %v", err)
+		}
+
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+			t.Fatal(err)
+		}
+
+		// Wait 1 min for all logs to be ingested after first start.
+		time.Sleep(1 * time.Minute)
+
+		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StopCommandForImage(vm.ImageSpec)); err != nil {
+			t.Fatal(err)
+		}
+
+		// Additional log to test succesful agent restart.
+		if err := writeLinesToRemoteFile(ctx, logger, vm, imageSpec, logPath, "second line"); err != nil {
+			t.Fatalf("Error writing dummy log lines: %v", err)
+		}
+
+		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartCommandForImage(vm.ImageSpec)); err != nil {
+			t.Fatal(err)
+		}
+
+		// Wait 1 min for logs to be ingested after restart.
+		time.Sleep(1 * time.Minute)
+
+		// We should only observe one instance of the "first line" log.
+		matchingLogs, err := gce.QueryAllLogs(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="first line"`, gce.LogQueryMaxAttempts)
+		if err != nil {
+			t.Error(err)
+		}
+		if len(matchingLogs) != 1 {
+			t.Errorf(`Expected to find exactly one instance of "first line" log in the backend. Found %d instances.`, len(matchingLogs))
+		}
+		// Verify second log was ingested.
+		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="second line"`); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
 // listAndDeleteResources lists all gcloud resources of a given resourceType that match the gcloudFilter.
 // All the found listed resources are then deleted sequentially.
 // extraArguments can be used for different type of gcloud command requirements.
@@ -5890,6 +6167,31 @@ func TestAppHubLogLabels(t *testing.T) {
 
 		if err := gce.WaitForLog(ctx, logger, migVM.VM, tag, time.Hour, query); err != nil {
 			t.Error(err)
+		}
+	})
+}
+
+func TestOpsAgentSigning(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+		if testing.Short() {
+			t.Skip("skipping test in short mode.")
+		}
+		if !gce.IsRpm(imageSpec) && !gce.IsWindows(imageSpec) {
+			t.Skip("This test only applies to RPM-based or Windows OSes.")
+		}
+		if gce.IsOpsAgentUAPPlugin() {
+			t.Skip("This test isn't supported for UAP.")
+		}
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		err := agents.VerifyOpsAgentSigned(ctx, logger, vm)
+		if err != nil {
+			t.Fatal(err)
 		}
 	})
 }
