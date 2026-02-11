@@ -1382,24 +1382,28 @@ func verifyRPMPackageSignedImpl(ctx context.Context, logger *log.Logger, vm *gce
 
 	// This is the expected output block for a successfully signed package.
 	// Note the two placeholders for the key ID.
-	expectedOutputTemplate := `    Header V4 RSA/SHA512 Signature, key ID %s: OK
+	pattern := fmt.Sprintf(`    Header V4 RSA/SHA512 Signature, key ID %s: OK
     Header SHA256 digest: OK
     Header SHA1 digest: OK
     Payload SHA256 digest: OK
     V4 RSA/SHA512 Signature, key ID %s: OK
-    MD5 digest: OK`
+    MD5 digest: OK`, matchingKeyID, matchingKeyID)
 
-	expectedOutput := fmt.Sprintf(expectedOutputTemplate, matchingKeyID, matchingKeyID)
-	// SLES12 produces a different output for rpm --checksig -v
+	// Overwrite pattern for SLES12
 	if strings.Contains(vm.ImageSpec, "sles-12") {
-		expectedOutput = `    Header V4 RSA/SHA512 Signature, key ID 3e1ba8d5: OK
-    Header SHA1 digest: OK (b71efe433fc76051f49574d766d4e44a4087bad4)
-    V4 RSA/SHA512 Signature, key ID 3e1ba8d5: OK
-    MD5 digest: OK (6827c3dbddbbe29b8a19d64fe3d84eec)`
+		pattern = fmt.Sprintf(`    Header V4 RSA/SHA512 Signature, key ID %s: OK
+    Header SHA1 digest: OK \([a-f0-9]+\)
+    V4 RSA/SHA512 Signature, key ID %s: OK
+    MD5 digest: OK \([a-f0-9]+\)`, matchingKeyID, matchingKeyID)
 	}
 
-	if !strings.Contains(output, expectedOutput) {
-		return fmt.Errorf("RPM signature check failed. Expected output:\n%s\nbut got:\n%s", expectedOutput, output)
+	matched, err := regexp.MatchString(pattern, output)
+	if err != nil {
+		return fmt.Errorf("regex error: %v", err)
+	}
+
+	if !matched {
+		return fmt.Errorf("RPM signature check failed. Expected pattern:\n%s\nActual output:\n%s", pattern, output)
 	}
 
 	return nil
