@@ -1303,11 +1303,17 @@ func verifyRPMPackageSigned(ctx context.Context, logger *log.Logger, vm *gce.VM,
 	// Assumes the Ops Agent was set up using the install script (with REPO_SUFFIX).
 	// Since the script has already added the repository to the VM, we only need
 	// to download the package.
-	if _, err := gce.RunRemotely(ctx, logger, vm, "dnf download google-cloud-ops-agent"); err != nil {
-		return fmt.Errorf("failed to run dnf download: %v", err)
+	command := "dnf download google-cloud-ops-agent"
+	rpmPath := "./*.rpm"
+	if gce.IsSUSEImageSpec(vm.ImageSpec) {
+		command = "sudo zypper --pkg-cache-dir=$(pwd) download google-cloud-ops-agent"
+		rpmPath = "./google-cloud-ops-agent/Packages/*.rpm"
+	}
+	if _, err := gce.RunRemotely(ctx, logger, vm, command); err != nil {
+		return fmt.Errorf("failed to download agent package: %v", err)
 	}
 
-	return verifyRPMPackageSignedImpl(ctx, logger, vm, "./*.rpm")
+	return verifyRPMPackageSignedImpl(ctx, logger, vm, rpmPath)
 }
 
 func verifyWindowsBinarySigned(ctx context.Context, logger *log.Logger, vm *gce.VM, location PackageLocation) error {
@@ -1376,16 +1382,28 @@ func verifyRPMPackageSignedImpl(ctx context.Context, logger *log.Logger, vm *gce
 
 	// This is the expected output block for a successfully signed package.
 	// Note the two placeholders for the key ID.
-	expectedOutputTemplate := `    Header V4 RSA/SHA512 Signature, key ID %s: OK
+	pattern := fmt.Sprintf(`    Header V4 RSA/SHA512 Signature, key ID %s: OK
     Header SHA256 digest: OK
     Header SHA1 digest: OK
     Payload SHA256 digest: OK
     V4 RSA/SHA512 Signature, key ID %s: OK
-    MD5 digest: OK`
+    MD5 digest: OK`, matchingKeyID, matchingKeyID)
 
-	expectedOutput := fmt.Sprintf(expectedOutputTemplate, matchingKeyID, matchingKeyID)
-	if !strings.Contains(output, expectedOutput) {
-		return fmt.Errorf("RPM signature check failed. Expected output:\n%s\nbut got:\n%s", expectedOutput, output)
+	// Overwrite pattern for SLES12
+	if strings.Contains(vm.ImageSpec, "sles-12") {
+		pattern = fmt.Sprintf(`    Header V4 RSA/SHA512 Signature, key ID %s: OK
+    Header SHA1 digest: OK \([a-f0-9]+\)
+    V4 RSA/SHA512 Signature, key ID %s: OK
+    MD5 digest: OK \([a-f0-9]+\)`, matchingKeyID, matchingKeyID)
+	}
+
+	matched, err := regexp.MatchString(pattern, output)
+	if err != nil {
+		return fmt.Errorf("regex error: %v", err)
+	}
+
+	if !matched {
+		return fmt.Errorf("RPM signature check failed. Expected pattern:\n%s\nActual output:\n%s", pattern, output)
 	}
 
 	return nil

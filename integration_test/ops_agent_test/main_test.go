@@ -2620,7 +2620,6 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 		if err != nil {
 			t.Fatal(err)
 		}
-
 		err = metadata.AssertMetric(metric, series)
 		if err != nil {
 			t.Fatal(err)
