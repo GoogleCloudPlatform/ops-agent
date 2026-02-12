@@ -161,7 +161,7 @@ func (r AgentSelfMetrics) OtelPipelineProcessors(ctx context.Context) []otel.Com
 		filteredMetrics = []string{
 			"otelcol_exporter_sent_metric_points",
 			"otelcol_exporter_send_failed_metric_points",
-			"rpc_client_duration",
+			"rpc_client_duration_count",
 		}
 		extraTransforms = []map[string]interface{}{
 			otel.UpdateMetric("otelcol_exporter_sent_metric_points",
@@ -178,10 +178,10 @@ func (r AgentSelfMetrics) OtelPipelineProcessors(ctx context.Context) []otel.Com
 			otel.AggregateLabels("sum", "status"))
 		apiRequestCount = otel.RenameMetric("rpc_client_duration_count", "agent/api_request_count",
 			otel.RenameLabel("rpc_grpc_status_code", "state"),
-			// delete grpc_client_method dimension & service.version label, retaining only state
+			// delete all other labels, retaining only state
 			otel.AggregateLabels("sum", "state"))
 		metricFilter = otel.MetricsOTTLFilter([]string{}, []string{
-			// Filter out histogram datapoints where the server_address is not related to monitoring.
+			// Filter out histogram datapoints where the rpc_service is not related to monitoring.
 			`metric.name == "rpc_client_duration_count" and (not IsMatch(datapoint.attributes["rpc_service"], "opentelemetry.proto.collector.metrics.v1.MetricsService"))`,
 		})
 	}
@@ -201,7 +201,6 @@ func (r AgentSelfMetrics) OtelPipelineProcessors(ctx context.Context) []otel.Com
 		apiRequestCount,
 	}
 
-	// transforms = append(transforms, metricFilter)
 	transforms = append(transforms, extraTransforms...)
 	transforms = append(transforms, pointCountMetric)
 	transforms = append(transforms, otel.AddPrefix("agent.googleapis.com"))
