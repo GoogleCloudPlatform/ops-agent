@@ -295,7 +295,7 @@ RUN set -x; dnf -y update && \
 		dnf -y install git systemd \
 		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel \
 		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros \
-		expect rpm-sign zip tzdata-java
+		expect rpm-sign zip tzdata-java libzstd-devel
 
 		ENV JAVA_HOME /usr/lib/jvm/java-${OPENJDK_MAJOR_VERSION}-openjdk/
 COPY --from=openjdk-install /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/ /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk

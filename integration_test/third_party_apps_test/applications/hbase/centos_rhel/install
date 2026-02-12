@@ -3,6 +3,7 @@ set -o pipefail
 
 HBASE_VERSION=2.4.11
 
+# Hbase and Java compatibility: https://hbase.apache.org/book.html#java
 sudo yum -y install \
     java-1.8.0-openjdk java-1.8.0-openjdk-devel wget
 

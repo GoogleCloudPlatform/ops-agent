@@ -150,6 +150,12 @@ func main() {
 		}
 	}
 
+	loggerCloser, err := createLogger()
+	if err != nil {
+		log.Fatalf("Failed to create logger: %v", err)
+	}
+	defer loggerCloser.Close()
+
 	listener, err := net.Listen(protocol, address)
 	if err != nil {
 		log.Fatalf("Failed to start listening on %q using %q: %v\n", address, protocol, err)
