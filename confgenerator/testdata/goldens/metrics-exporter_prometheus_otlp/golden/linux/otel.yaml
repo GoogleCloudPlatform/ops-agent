@@ -73,7 +73,7 @@ processors:
   filter/otel_1:
     metrics:
       datapoint:
-      - metric.name == "http_client_request_duration_count" and (not IsMatch(datapoint.attributes["server_address"], "telemetry.googleapis.com"))
+      - metric.name == "rpc_client_duration_count" and (not IsMatch(datapoint.attributes["rpc_service"], "opentelemetry.proto.collector.metrics.v1.MetricsService"))
   filter/otel_2:
     metrics:
       include:
@@ -81,9 +81,9 @@ processors:
         metric_names:
         - otelcol_process_uptime
         - otelcol_process_memory_rss
-        - grpc.client.attempt.duration_count
         - otelcol_exporter_sent_metric_points
         - otelcol_exporter_send_failed_metric_points
+        - rpc_client_duration
   interval/loggingmetrics_7:
     interval: 1m
   metricstarttime/prometheus_3:
@@ -540,39 +540,12 @@ processors:
         aggregation_type: sum
         label_set: []
     - action: update
-      include: http_client_request_duration_count
+      include: rpc_client_duration_count
       new_name: agent/api_request_count
       operations:
       - action: update_label
-        label: http_response_status_code
+        label: rpc_grpc_status_code
         new_label: state
-      - action: update_label
-        label: http_response_status_code
-        value_actions:
-        - new_value: OK
-          value: "200"
-        - new_value: INVALID_ARGUMENT
-          value: "400"
-        - new_value: UNAUTHENTICATED
-          value: "401"
-        - new_value: PERMISSION_DENIED
-          value: "403"
-        - new_value: NOT_FOUND
-          value: "404"
-        - new_value: ABORTED
-          value: "409"
-        - new_value: RESOURCE_EXHAUSTED
-          value: "429"
-        - new_value: CANCELLED
-          value: "499"
-        - new_value: INTERNAL
-          value: "500"
-        - new_value: UNIMPLEMENTED
-          value: "501"
-        - new_value: UNAVAILABLE
-          value: "503"
-        - new_value: DEADLINE_EXCEEDED
-          value: "504"
       - action: aggregate_labels
         aggregation_type: sum
         label_set:
@@ -680,7 +653,7 @@ processors:
     metric_statements:
     - context: metric
       statements:
-      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
+      - extract_count_metric(true) where name == "rpc_client_duration"
   transform/prometheus_0:
     metric_statements:
     - context: datapoint
