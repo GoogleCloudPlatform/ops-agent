@@ -63,6 +63,10 @@ platforms_to_skip:
   - rocky-linux-cloud:rocky-linux-9-optimized-gcp
   - rocky-linux-cloud:rocky-linux-9-arm64
   - rocky-linux-cloud:rocky-linux-9-optimized-gcp-arm64
+  - rocky-linux-cloud:rocky-linux-10
+  - rocky-linux-cloud:rocky-linux-10-optimized-gcp
+  - rocky-linux-cloud:rocky-linux-10-arm64
+  - rocky-linux-cloud:rocky-linux-10-optimized-gcp-arm64
   - suse-cloud:sles-12
   - suse-cloud:sles-15
   - suse-cloud:sles-15-arm64

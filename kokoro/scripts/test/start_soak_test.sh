@@ -28,10 +28,14 @@ source kokoro/scripts/utils/louhi.sh
 
 # For soak tests run by Louhi
 populate_env_vars_from_louhi_tag_if_present
+
+# Ops Agent feature label
+feature_label=${FEATURE:+-${FEATURE}}
+
 # if TARGET & ARCH are set, retrieve the soak distro from project.yaml
 if [[ -n "${TARGET:-}" && -n "${ARCH:-}" ]]; then
   DISTRO=$(yaml project.yaml "['targets']['${TARGET}']['architectures']['${ARCH}']['soak_distro']")
-  export VM_NAME="soak-test-${_LOUHI_EXECUTION_ID}-${TARGET}-${ARCH//_/-}-${LABEL}"
+  export VM_NAME="soak-test-${_LOUHI_EXECUTION_ID}-${TARGET}-${ARCH//_/-}${feature_label}-${LABEL}"
   export DISTRO
 fi
 
@@ -45,6 +49,6 @@ done
 
 LOG_RATE=${LOG_RATE-1000} \
 LOG_SIZE_IN_BYTES=${LOG_SIZE_IN_BYTES-1000} \
-VM_NAME="${VM_NAME:-github-soak-test-${KOKORO_BUILD_ID}}" \
+VM_NAME="${VM_NAME:-github-soak-test${feature_label}-${KOKORO_BUILD_ID}}" \
 TTL="${TTL:-30m}" \
   go run -tags=integration_test .

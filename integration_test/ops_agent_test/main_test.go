@@ -2619,7 +2619,6 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 		if err != nil {
 			t.Fatal(err)
 		}
-
 		err = metadata.AssertMetric(metric, series)
 		if err != nil {
 			t.Fatal(err)
@@ -6221,6 +6220,9 @@ func TestOpsAgentSigning(t *testing.T) {
 		}
 		if !gce.IsRpm(imageSpec) && !gce.IsWindows(imageSpec) {
 			t.Skip("This test only applies to RPM-based or Windows OSes.")
+		}
+		if gce.IsOpsAgentUAPPlugin() {
+			t.Skip("This test isn't supported for UAP.")
 		}
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {

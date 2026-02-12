@@ -7,7 +7,14 @@ case "$VERSION_ID" in
     9*) sudo update-crypto-policies --set LEGACY;;
 esac
 
-sudo yum install -y java-1.8.0-openjdk
+MAJOR_VERSION_ID=${VERSION_ID%%.*}
+
+JAVA_VERSION=1.8.0
+if [[ "$ID" == "rocky" && "$MAJOR_VERSION_ID" == "10" ]]; then
+  JAVA_VERSION=21
+fi
+
+sudo yum install -y java-${JAVA_VERSION}-openjdk
 
 sudo rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
 
@@ -26,7 +33,7 @@ sudo mv elasticsearch.repo /etc/yum.repos.d/elasticsearch.repo
 sudo chown root:root /etc/yum.repos.d/elasticsearch.repo
 sudo chmod 0644 /etc/yum.repos.d/elasticsearch.repo
 
-sudo yum install -y --enablerepo=elasticsearch elasticsearch 
+sudo yum install -y --enablerepo=elasticsearch elasticsearch
 
 sudo systemctl daemon-reload
 sudo systemctl enable elasticsearch
