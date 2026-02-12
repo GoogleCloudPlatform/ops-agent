@@ -59,7 +59,7 @@ var grpcToHTTPStatus = map[string]string{
 
 func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]otel.ReceiverPipeline, pipelines map[string]otel.Pipeline, ctx context.Context) {
 	// Receiver pipelines names should have 1 underscore to avoid collision with user configurations.
-	receiverPipelines["agent_prometheus"] = r.PrometheusMetricsPipeline()
+	receiverPipelines["agent_prometheus"] = r.PrometheusMetricsPipeline(ctx)
 
 	// Pipeline names should have no underscores to avoid collision with user configurations.
 	pipelines["otel"] = otel.Pipeline{
@@ -80,15 +80,15 @@ func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]o
 		Processors:           r.LoggingMetricsPipelineProcessors(),
 	}
 
-	receiverPipelines["ops_agent"] = r.OpsAgentPipeline()
+	receiverPipelines["ops_agent"] = r.OpsAgentPipeline(ctx)
 	pipelines["opsagent"] = otel.Pipeline{
 		Type:                 "metrics",
 		ReceiverPipelineName: "ops_agent",
 	}
 }
 
-func (r AgentSelfMetrics) PrometheusMetricsPipeline() otel.ReceiverPipeline {
-	return otel.ReceiverPipeline{
+func (r AgentSelfMetrics) PrometheusMetricsPipeline(ctx context.Context) otel.ReceiverPipeline {
+	return ConvertGCMSystemExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "prometheus",
 			Config: map[string]interface{}{
@@ -129,7 +129,7 @@ func (r AgentSelfMetrics) PrometheusMetricsPipeline() otel.ReceiverPipeline {
 				),
 			},
 		},
-	}
+	}, ctx)
 }
 
 func (r AgentSelfMetrics) OtelPipelineProcessors(ctx context.Context) []otel.Component {
@@ -335,18 +335,18 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors() []otel.Component {
 	}
 }
 
-func (r AgentSelfMetrics) OpsAgentPipeline() otel.ReceiverPipeline {
-	receiver_config := map[string]any{
+func (r AgentSelfMetrics) OpsAgentPipeline(ctx context.Context) otel.ReceiverPipeline {
+	receiverConfig := map[string]any{
 		"include": []string{
 			filepath.Join(r.OtelRuntimeDir, "enabled_receivers_otlp.json"),
 			filepath.Join(r.OtelRuntimeDir, "feature_tracking_otlp.json")},
 		"replay_file":   true,
 		"poll_interval": time.Duration(60 * time.Second).String(),
 	}
-	return otel.ReceiverPipeline{
+	return ConvertGCMSystemExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type:   "otlpjsonfile",
-			Config: receiver_config,
+			Config: receiverConfig,
 		},
 		ExporterTypes: map[string]otel.ExporterType{
 			"metrics": otel.System,
@@ -356,7 +356,7 @@ func (r AgentSelfMetrics) OpsAgentPipeline() otel.ReceiverPipeline {
 				otel.Transform("metric", "datapoint", []ottl.Statement{"set(time, Now())"}),
 			},
 		},
-	}
+	}, ctx)
 }
 
 // intentionally not registered as a component because this is not created by users
