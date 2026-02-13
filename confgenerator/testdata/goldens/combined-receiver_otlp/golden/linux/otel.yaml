@@ -16,7 +16,6 @@ exporters:
         sizer: items
       block_on_overflow: true
       enabled: true
-      wait_for_result: true
     timeout: 60s
   googlecloud/otel:
     metric:
