@@ -29,8 +29,8 @@ source kokoro/scripts/utils/louhi.sh
 # For soak tests run by Louhi
 populate_env_vars_from_louhi_tag_if_present
 
-# Ops Agent feature label
-feature_label=${FEATURE:+-${FEATURE//_/-}}
+# Ops Agent feature label. Only keep first word to avoid long vm names.
+feature_label=${FEATURE:+-${FEATURE%%_*}}
 
 # if TARGET & ARCH are set, retrieve the soak distro from project.yaml
 if [[ -n "${TARGET:-}" && -n "${ARCH:-}" ]]; then
