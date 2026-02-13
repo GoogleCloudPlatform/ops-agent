@@ -918,8 +918,9 @@ const (
 	SAPHANAImageSpec = "stackdriver-test-143416:sles-15-sp6-sap-saphana"
 	SAPHANAApp       = "saphana"
 
-	OracleDBApp  = "oracledb"
-	AerospikeApp = "aerospike"
+	OracleDBApp      = "oracledb"
+	AerospikeApp     = "aerospike"
+	ElasticsearchApp = "elasticsearch"
 )
 
 // incompatibleOperatingSystem looks at the supported_operating_systems field
@@ -1082,6 +1083,13 @@ func TestThirdPartyApps(t *testing.T) {
 							options.MachineType = "t2a-standard-16"
 						}
 						options.ExtraCreateArguments = append(options.ExtraCreateArguments, "--boot-disk-size=150GB", "--boot-disk-type=pd-ssd")
+					}
+					if strings.Contains(tc.app, ElasticsearchApp) && strings.Contains(options.MachineType, "-standard-2") {
+						// elasticsearch(9) tends to OOM on -standard-2, so go one step up
+						options.MachineType = "e2-highmem-2"
+						if gce.IsARM(tc.imageSpec) {
+							options.MachineType = "t2a-standard-4"
+						}
 					}
 
 					vm := gce.SetupVM(ctx, t, logger.ToFile("VM_initialization.txt"), options)
