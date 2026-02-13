@@ -8,6 +8,15 @@ exporters:
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
   googlecloud/logging:
+    sending_queue:
+      batch:
+        flush_timeout: 200ms
+        max_size: 1000
+        min_size: 1
+        sizer: items
+      block_on_overflow: true
+      enabled: true
+      wait_for_result: true
     timeout: 60s
 extensions:
   file_storage:
@@ -17,10 +26,6 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  batch/googlecloud/logging_logs_0:
-    send_batch_max_size: 1000
-    send_batch_size: 1000
-    timeout: 200ms
   casttosum/iis_1:
     metrics:
     - agent.googleapis.com/iis/network/transferred_bytes_count
@@ -1456,7 +1461,6 @@ service:
       - transform/windows__event__log_1
       - transform/windows__event__log_2
       - resourcedetection/_global_0
-      - batch/googlecloud/logging_logs_0
       receivers:
       - windowseventlog/windows__event__log
     logs/logs_default__pipeline_windows__event__log_1:
@@ -1467,7 +1471,6 @@ service:
       - transform/windows__event__log_1_1
       - transform/windows__event__log_1_2
       - resourcedetection/_global_0
-      - batch/googlecloud/logging_logs_0
       receivers:
       - windowseventlog/windows__event__log_1
     logs/logs_default__pipeline_windows__event__log_2:
@@ -1478,7 +1481,6 @@ service:
       - transform/windows__event__log_2_1
       - transform/windows__event__log_2_2
       - resourcedetection/_global_0
-      - batch/googlecloud/logging_logs_0
       receivers:
       - windowseventlog/windows__event__log_2
     logs/logs_nginx_nginx__access:
@@ -1489,7 +1491,6 @@ service:
       - transform/nginx__access_1
       - transform/nginx__access_2
       - resourcedetection/_global_0
-      - batch/googlecloud/logging_logs_0
       receivers:
       - filelog/nginx__access
     logs/logs_nginx_nginx__error:
@@ -1500,7 +1501,6 @@ service:
       - transform/nginx__error_1
       - transform/nginx__error_2
       - resourcedetection/_global_0
-      - batch/googlecloud/logging_logs_0
       receivers:
       - filelog/nginx__error
     metrics/default__pipeline_hostmetrics:
