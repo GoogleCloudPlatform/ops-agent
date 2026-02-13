@@ -12,7 +12,7 @@ exporters:
       batch:
         flush_timeout: 200ms
         max_size: 1000
-        min_size: 1
+        min_size: 1000
         sizer: items
       block_on_overflow: true
       enabled: true
