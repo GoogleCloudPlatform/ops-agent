@@ -3,7 +3,7 @@
     error: "could not process attribute gcp.source_location: json: cannot unmarshal string into Go struct field LogEntrySourceLocation.line of type int64"
     level: error
     msg: Exporting failed. Rejecting data. Try enabling sending_queue to survive temporary failures.
-    otelcol.component.id: googlecloud/logging
+    otelcol.component.id: googlecloud/logging_non_persistent_queue
     otelcol.component.kind: exporter
     otelcol.signal: logs
     rejected_items: 1.0
@@ -32,7 +32,7 @@
     error: "could not process attribute gcp.source_location: json: cannot unmarshal string into Go struct field LogEntrySourceLocation.line of type int64"
     level: warn
     msg: Sender failed
-    otelcol.component.id: batch/googlecloud/logging_logs_0
+    otelcol.component.id: batch/googlecloud/logging_non_persistent_queue_logs_0
     otelcol.component.kind: processor
     otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
     otelcol.signal: logs
