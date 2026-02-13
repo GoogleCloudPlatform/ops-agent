@@ -83,7 +83,7 @@ processors:
         - otelcol_process_memory_rss
         - otelcol_exporter_sent_metric_points
         - otelcol_exporter_send_failed_metric_points
-        - rpc_client_duration
+        - rpc_client_duration_count
   interval/loggingmetrics_7:
     interval: 1m
   metricstarttime/prometheus_3:
