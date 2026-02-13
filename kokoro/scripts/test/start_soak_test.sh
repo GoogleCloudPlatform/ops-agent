@@ -46,6 +46,6 @@ done
 
 LOG_RATE=${LOG_RATE-1000} \
 LOG_SIZE_IN_BYTES=${LOG_SIZE_IN_BYTES-1000} \
-VM_NAME="${VM_NAME:-github-soak-test-${KOKORO_BUILD_ID}}" \
+VM_NAME="${VM_NAME:-github-soak-test${FEATURE_LABEL:+-${FEATURE_LABEL}}-${KOKORO_BUILD_ID}}" \
 TTL="${TTL:-30m}" \
   go run -tags=integration_test .
