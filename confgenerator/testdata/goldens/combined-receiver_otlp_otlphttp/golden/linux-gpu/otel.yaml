@@ -86,7 +86,7 @@ processors:
   filter/otel_1:
     metrics:
       datapoint:
-      - metric.name == "grpc.client.attempt.duration_count" and (not IsMatch(datapoint.attributes["grpc.target"], "monitoring.googleapis"))
+      - metric.name == "rpc_client_duration_count" and (not IsMatch(datapoint.attributes["rpc_service"], "opentelemetry.proto.collector.metrics.v1.MetricsService"))
   filter/otel_2:
     metrics:
       include:
@@ -94,9 +94,9 @@ processors:
         metric_names:
         - otelcol_process_uptime
         - otelcol_process_memory_rss
-        - grpc.client.attempt.duration_count
         - otelcol_exporter_sent_metric_points
         - otelcol_exporter_send_failed_metric_points
+        - rpc_client_duration_count
   groupbyattrs/otlp_2:
     keys:
     - namespace
@@ -582,11 +582,11 @@ processors:
         aggregation_type: sum
         label_set: []
     - action: update
-      include: grpc.client.attempt.duration_count
+      include: rpc_client_duration_count
       new_name: agent/api_request_count
       operations:
       - action: update_label
-        label: grpc.status
+        label: rpc_grpc_status_code
         new_label: state
       - action: aggregate_labels
         aggregation_type: sum
@@ -723,7 +723,7 @@ processors:
     metric_statements:
     - context: metric
       statements:
-      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
+      - extract_count_metric(true) where name == "rpc_client_duration"
   transform/otlp_1:
     error_mode: ignore
     metric_statements:
@@ -886,6 +886,7 @@ service:
       - otlp/otlp
   telemetry:
     metrics:
+      level: detailed
       readers:
       - pull:
           exporter:
