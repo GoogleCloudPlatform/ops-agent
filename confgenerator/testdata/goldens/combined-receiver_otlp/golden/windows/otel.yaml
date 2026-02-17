@@ -11,11 +11,13 @@ exporters:
     sending_queue:
       batch:
         flush_timeout: 200ms
-        max_size: 1000
+        max_size: 2000
         min_size: 1000
         sizer: items
       block_on_overflow: true
       enabled: true
+      queue_size: 2000
+      wait_for_result: true
     timeout: 60s
   googlecloud/otel:
     metric:
