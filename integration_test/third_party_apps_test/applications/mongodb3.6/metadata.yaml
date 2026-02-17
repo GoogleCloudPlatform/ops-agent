@@ -57,8 +57,6 @@ platforms_to_skip:
   - ubuntu-os-cloud:ubuntu-2204-lts-arm64
   - ubuntu-os-cloud:ubuntu-2404-lts-amd64
   - ubuntu-os-cloud:ubuntu-2404-lts-arm64
-  - ubuntu-os-cloud:ubuntu-2504-amd64
-  - ubuntu-os-cloud:ubuntu-2504-arm64
   - ubuntu-os-cloud:ubuntu-2510-amd64
   - ubuntu-os-cloud:ubuntu-2510-arm64
 supported_app_version: ["2.6", "3.0+", "4.0+", "5.0"]
