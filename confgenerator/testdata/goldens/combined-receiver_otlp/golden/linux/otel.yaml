@@ -17,7 +17,6 @@ exporters:
       block_on_overflow: true
       enabled: true
       queue_size: 2000
-      wait_for_result: true
     timeout: 60s
   googlecloud/otel:
     metric:
