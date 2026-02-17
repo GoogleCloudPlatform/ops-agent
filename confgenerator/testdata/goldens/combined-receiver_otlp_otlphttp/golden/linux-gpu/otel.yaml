@@ -95,7 +95,8 @@ processors:
         - otelcol_process_uptime
         - otelcol_process_memory_rss
         - grpc.client.attempt.duration_count
-        - googlecloudmonitoring/point_count
+        - otelcol_exporter_sent_metric_points
+        - otelcol_exporter_send_failed_metric_points
   groupbyattrs/otlp_2:
     keys:
     - namespace
@@ -592,14 +593,29 @@ processors:
         label_set:
         - state
     - action: update
-      include: googlecloudmonitoring/point_count
-      new_name: agent/monitoring/point_count
+      include: otelcol_exporter_sent_metric_points
       operations:
       - action: toggle_scalar_data_type
+      - action: add_label
+        new_label: status
+        new_value: OK
+    - action: update
+      include: otelcol_exporter_send_failed_metric_points
+      operations:
+      - action: toggle_scalar_data_type
+      - action: add_label
+        new_label: status
+        new_value: UNKNOWN
+    - action: combine
+      include: otelcol_exporter_sent_metric_points|otelcol_exporter_send_failed_metric_points
+      match_type: regexp
+      new_name: agent/monitoring/point_count
+      operations:
       - action: aggregate_labels
         aggregation_type: sum
         label_set:
         - status
+      submatch_case: lower
     - action: update
       include: ^(.*)$$
       match_type: regexp
