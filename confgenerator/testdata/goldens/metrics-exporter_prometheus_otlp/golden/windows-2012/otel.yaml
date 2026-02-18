@@ -10,7 +10,7 @@ exporters:
   otlp/otlp:
     auth:
       authenticator: googleclientauth
-    balancer_name: first_pick
+    balancer_name: pick_first
     endpoint: telemetry.googleapis.com:443
     headers:
       User-Agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
