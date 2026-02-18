@@ -112,9 +112,10 @@ func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, 
 
 func otlpExporter(userAgent string) otel.Component {
 	return otel.Component{
-		Type: "otlphttp",
+		Type: "otlp",
 		Config: map[string]interface{}{
-			"endpoint": "https://telemetry.googleapis.com",
+			"endpoint":      "telemetry.googleapis.com:443",
+			"balancer_name": "first_pick",
 			"auth": map[string]interface{}{
 				"authenticator": "googleclientauth",
 			},
