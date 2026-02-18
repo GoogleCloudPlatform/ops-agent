@@ -39,8 +39,10 @@ platforms_to_skip:
   - debian-cloud:debian-12
   - debian-cloud:debian-12-arm64
   - suse-cloud:sles-15-arm64
-  - ubuntu-os-cloud:ubuntu-2504-amd64
-  - ubuntu-os-cloud:ubuntu-2504-arm64
+  - rocky-linux-cloud:rocky-linux-10 # No mongodb repo for rh10 yet
+  - rocky-linux-cloud:rocky-linux-10-optimized-gcp
+  - rocky-linux-cloud:rocky-linux-10-arm64
+  - rocky-linux-cloud:rocky-linux-10-optimized-gcp-arm64
   - ubuntu-os-cloud:ubuntu-2510-amd64
   - ubuntu-os-cloud:ubuntu-2510-arm64
 supported_app_version: ["2.6", "3.x", "4.x", "5.0", "6.0"]
