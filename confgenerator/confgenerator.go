@@ -114,7 +114,8 @@ func otlpExporter(userAgent string) otel.Component {
 	return otel.Component{
 		Type: "otlp",
 		Config: map[string]interface{}{
-			"endpoint":      "telemetry.googleapis.com:443",
+			"endpoint": "telemetry.googleapis.com:443",
+			// b/485538253: Use first_pick balancer until we can understand why round_robin is failing.
 			"balancer_name": "first_pick",
 			"auth": map[string]interface{}{
 				"authenticator": "googleclientauth",
