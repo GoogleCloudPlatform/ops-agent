@@ -182,12 +182,20 @@ func ParseJSON(a Value) Value {
 	return valuef(`ParseJSON(%s)`, a)
 }
 
+func ParseSimplifiedXML(a Value) Value {
+	return valuef(`ParseSimplifiedXML(%s)`, a)
+}
+
 func ExtractPatternsRubyRegex(a Value, pattern string, omitEmptyValues bool) Value {
 	return valuef(`ExtractPatternsRubyRegex(%s, %q, %v)`, a, pattern, omitEmptyValues)
 }
 
 func ConvertCase(a Value, toCase string) Value {
 	return valuef(`ConvertCase(%s, %q)`, a, toCase)
+}
+
+func ContainsValue(a Value, value string) Value {
+	return valuef(`ContainsValue(%s, %q)`, a, value)
 }
 
 func FormatTime(a Value, format string) Value {

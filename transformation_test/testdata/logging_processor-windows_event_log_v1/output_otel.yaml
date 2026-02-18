@@ -2,72 +2,20 @@
   - jsonPayload:
       Channel: System
       ComputerName: test-computer
-      Data: "12345"
+      Data: 43006c00690070005300560043002f0034000000
       EventCategory: 0
-      EventID: 4444
+      EventID: 7654
       EventType: Information
-      Message: The Windows Modules Installer service entered the running state.
-      Qualifiers: 33333
-      RecordNumber: 1111
+      Message: The Client License Service (ClipSVC) service entered the running state.
+      Qualifiers: 12345
+      RecordNumber: 2257
       Sid: ""
       SourceName: Service Control Manager
       StringInserts:
-      - Windows Modules Installer
+      - Client License Service (ClipSVC)
       - running
-      TimeGenerated: 2025-07-02 20:38:45.0260774 +0000
-      TimeWritten: 2025-07-02 20:38:45.0260774 +0000
-    labels:
-      compute.googleapis.com/resource_name: hostname
-    logName: projects/my-project/logs/my-log-name
-    resource:
-      labels:
-        instance_id: test-instance-id
-        zone: test-zone
-      type: gce_instance
-    timestamp: 2025-07-02T20:38:45.026077400Z
-  - jsonPayload:
-      Channel: System
-      ComputerName: test-computer
-      Data: "12345"
-      EventCategory: 0
-      EventID: 4444
-      EventType: Information
-      Message: The Software Protection service entered the stopped state.
-      Qualifiers: 33333
-      RecordNumber: 1111
-      Sid: ""
-      SourceName: Service Control Manager
-      StringInserts:
-      - Software Protection
-      - stopped
-      TimeGenerated: 2025-07-02 20:39:32.3390061 +0000
-      TimeWritten: 2025-07-02 20:39:32.3390061 +0000
-    labels:
-      compute.googleapis.com/resource_name: hostname
-    logName: projects/my-project/logs/my-log-name
-    resource:
-      labels:
-        instance_id: test-instance-id
-        zone: test-zone
-      type: gce_instance
-    timestamp: 2025-07-02T20:39:32.339006100Z
-  - jsonPayload:
-      Channel: System
-      ComputerName: test-computer
-      Data: "12345"
-      EventCategory: 0
-      EventID: 7036
-      EventType: Information
-      Message: The Network Setup Service service entered the running state.
-      Qualifiers: 16384
-      RecordNumber: 2273
-      Sid: ""
-      SourceName: Service Control Manager
-      StringInserts:
-      - Network Setup Service
-      - running
-      TimeGenerated: 2025-12-02 23:57:13.2944449 +0000
-      TimeWritten: 2025-12-02 23:57:13.2944449 +0000
+      TimeGenerated: 2025-12-02 23:43:11.8975092 +0000
+      TimeWritten: 2025-12-02 23:43:11.8975092 +0000
     labels:
       compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/my-log-name
@@ -78,52 +26,41 @@
       type: gce_instance
     timestamp: now
   - jsonPayload:
-      Channel: Application
+      Channel: Security
       ComputerName: test-computer
       Data: ""
-      EventCategory: 0
-      EventID: 16384
-      EventType: Information
-      Message: "Successfully scheduled Software Protection service for re-start at 2025-12-09T22:44:19Z. Reason: RulesEngine."
-      Qualifiers: 16384
-      RecordNumber: 24567
-      Sid: ""
-      SourceName: Software Protection Platform Service
-      StringInserts:
-      - 2025-12-09T22:44:19Z
-      - RulesEngine
-      TimeGenerated: 2025-12-02 23:45:19.6366777 +0000
-      TimeWritten: 2025-12-02 23:45:19.6366777 +0000
-    labels:
-      compute.googleapis.com/resource_name: hostname
-    logName: projects/my-project/logs/my-log-name
-    resource:
-      labels:
-        instance_id: test-instance-id
-        zone: test-zone
-      type: gce_instance
-    timestamp: now
-  - jsonPayload:
-      Channel: System
-      ComputerName: test-computer
-      Data: ""
-      EventCategory: 0
-      EventID: 7039
-      EventType: Warning
+      EventCategory: 13824
+      EventID: 9876
+      EventType: SuccessAudit
       Message: |-
-        A service process other than the one launched by the Service Control Manager connected when starting the Google Cloud Ops Agent - Logging Agent service.  The Service Control Manager launched process 8856 and process 5212 connected instead.
+        Credential Manager credentials were read.
         
-          Note that if this service is configured to start under a debugger, this behavior is expected.
-      Qualifiers: 32768
-      RecordNumber: 2285
+        Subject:
+                Security ID:            S-0-0-0
+                Account Name:           TEST-COMPUTER$
+                Account Domain:         WORKGROUP
+                Logon ID:               0x3E5
+                Read Operation:         Enumerate Credentials
+        
+        This event occurs when a user performs a read operation on stored credentials in Credential Manager.
+      Qualifiers: 0
+      RecordNumber: 24007
       Sid: ""
-      SourceName: Service Control Manager
+      SourceName: Microsoft-Windows-Security-Auditing
       StringInserts:
-      - Google Cloud Ops Agent - Logging Agent
-      - "8856"
-      - "5212"
-      TimeGenerated: 2025-12-03 00:13:07.268214 +0000
-      TimeWritten: 2025-12-03 00:13:07.268214 +0000
+      - S-0-0-00
+      - TEST-COMPUTER$
+      - WORKGROUP
+      - "0x3e5"
+      - WindowsLive:target=virtualapp/didlogical
+      - "0"
+      - "1"
+      - "%%8100"
+      - "0"
+      - 2025-12-23T20:55:56.6615132Z
+      - "1234"
+      TimeGenerated: 2025-12-23 20:55:56.6898286 +0000
+      TimeWritten: 2025-12-23 20:55:56.6898286 +0000
     labels:
       compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/my-log-name
@@ -134,22 +71,41 @@
       type: gce_instance
     timestamp: now
   - jsonPayload:
-      Channel: System
+      Channel: Security
       ComputerName: test-computer
       Data: ""
-      EventCategory: 0
-      EventID: 1796
-      EventType: Error
-      Message: The Secure Boot update failed to update a Secure Boot variable with error Secure Boot is not enabled on this machine.. For more information, please see https://go.microsoft.com/fwlink/?linkid=2169931
+      EventCategory: 13824
+      EventID: 9876
+      EventType: FailureAudit
+      Message: |-
+        Credential Manager credentials were read.
+        
+        Subject:
+                Security ID:            S-0-0-0
+                Account Name:           TEST-COMPUTER$
+                Account Domain:         WORKGROUP
+                Logon ID:               0x3E5
+                Read Operation:         Enumerate Credentials
+        
+        This event occurs when a user performs a read operation on stored credentials in Credential Manager.
       Qualifiers: 0
-      RecordNumber: 2133
-      Sid: S-1-5-18
-      SourceName: Microsoft-Windows-TPM-WMI
+      RecordNumber: 24007
+      Sid: ""
+      SourceName: Microsoft-Windows-Security-Auditing
       StringInserts:
-      - "-2147020471"
-      - "1024"
-      TimeGenerated: 2025-12-02 22:49:40.4939915 +0000
-      TimeWritten: 2025-12-02 22:49:40.4939915 +0000
+      - S-0-0-00
+      - TEST-COMPUTER$
+      - WORKGROUP
+      - "0x3e5"
+      - WindowsLive:target=virtualapp/didlogical
+      - "0"
+      - "1"
+      - "%%8100"
+      - "0"
+      - 2025-12-23T20:55:56.6615132Z
+      - "1234"
+      TimeGenerated: 2025-12-23 20:55:56.6898286 +0000
+      TimeWritten: 2025-12-23 20:55:56.6898286 +0000
     labels:
       compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/my-log-name

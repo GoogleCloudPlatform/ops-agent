@@ -3,8 +3,8 @@ import 'common.gcl' as common
 config build = common.third_party_apps_test {
   params {
     environment {
-      TARGET = 'plucky'
-      ARCH = 'aarch64'
+      TARGET = 'rockylinux10'
+      ARCH = 'x86_64'
     }
   }
 }

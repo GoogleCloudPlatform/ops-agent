@@ -20,6 +20,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -35,7 +36,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"github.com/kardianos/osext"
 	"golang.org/x/sys/windows"
-	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
 	"golang.org/x/sys/windows/svc/mgr"
 
@@ -102,19 +102,8 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	}
 	log.Printf("Determined pluginInstallDir: %v, and pluginStateDir: %v", pluginInstallDir, pluginStateDir)
 
-	// Create a windows Event logger. This is used to log generated subagent configs, and health check results.
-	windowsEventLogger, err := createWindowsEventLogger()
-	if err != nil {
-		ps.cancelAndSetPluginError(&OpsAgentPluginError{
-			Message:       fmt.Sprintf("Start() failed, because it failed to create Windows event logger: %s", err),
-			ShouldRestart: false,
-		})
-		return &pb.StartResponse{}, nil
-	}
-
 	// Receive config from the Start request and write it to the Ops Agent config file.
 	if err := writeCustomConfigToFile(msg, OpsAgentConfigLocationWindows); err != nil {
-		windowsEventLogger.Close()
 		ps.cancelAndSetPluginError(&OpsAgentPluginError{
 			Message:       fmt.Sprintf("Start() failed to write the custom Ops Agent config to file: %s", err),
 			ShouldRestart: false,
@@ -123,8 +112,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	}
 
 	// Subagents config validation and generation.
-	if err := generateSubAgentConfigs(ctx, OpsAgentConfigLocationWindows, pluginStateDir, windowsEventLogger); err != nil {
-		windowsEventLogger.Close()
+	if err := generateSubAgentConfigs(ctx, OpsAgentConfigLocationWindows, pluginStateDir); err != nil {
 		ps.cancelAndSetPluginError(&OpsAgentPluginError{
 			Message:       fmt.Sprintf("Start() failed to validate the custom Ops Agent config, and generate sub-agents config: %s", err),
 			ShouldRestart: false,
@@ -134,12 +122,11 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 
 	// Trigger Healthchecks.
 	healthCheckFileLogger := healthchecks.CreateHealthChecksLogger(filepath.Join(pluginStateDir, LogsDirectory))
-	runHealthChecks(healthCheckFileLogger, windowsEventLogger)
+	runHealthChecks(healthCheckFileLogger)
 
 	// Create a Windows Job object and stores its handle, to ensure that all child processes are killed when the parent process exits.
 	_, err = createWindowsJobHandle()
 	if err != nil {
-		windowsEventLogger.Close()
 		ps.cancelAndSetPluginError(&OpsAgentPluginError{
 			Message:       fmt.Sprintf("Start() failed, because it failed to create a Windows Job object: %s", err),
 			ShouldRestart: false,
@@ -149,7 +136,6 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 
 	cancelAndSetPluginErr := func(e *OpsAgentPluginError) {
 		ps.cancelAndSetPluginError(e)
-		windowsEventLogger.Close()
 	}
 
 	go runSubagents(pContext, cancelAndSetPluginErr, pluginInstallDir, pluginStateDir, runSubAgentCommand, ps.runCommand)
@@ -220,43 +206,14 @@ func findPreExistentAgents(mgr serviceManager, agentWindowsServiceNames []string
 	return alreadyInstalledAgentServiceNames, nil
 }
 
-// eventLogWriter implements the io.Writer interface. It writes logs to the Windows Event Log.
-type eventLogWriter struct {
-	EventID  uint32
-	EventLog *eventlog.Log
-}
-
-func (w *eventLogWriter) Write(p []byte) (int, error) {
-	err := w.EventLog.Info(w.EventID, string(p))
-	if err != nil {
-		return 0, err
-	}
-	return len(p), nil
-}
-
-func createWindowsEventLogger() (debug.Log, error) {
-	eventlog.InstallAsEventCreate(WindowsEventLogIdentifier, eventlog.Error|eventlog.Warning|eventlog.Info)
-	elog, err := eventlog.Open(WindowsEventLogIdentifier)
-	if err != nil {
-		return nil, err
-	}
-
-	// ConfGenerator might log messages to stdout, redirect them to the windows event log.
-	log.SetOutput(&eventLogWriter{
-		EventID:  OpsAgentUAPPluginEventID,
-		EventLog: elog,
-	})
-	return elog, nil
-}
-
-func generateSubAgentConfigs(ctx context.Context, userConfigPath string, pluginStateDir string, windowsEventLogger debug.Log) error {
+func generateSubAgentConfigs(ctx context.Context, userConfigPath string, pluginStateDir string) error {
 	uc, err := confgenerator.MergeConfFiles(ctx, userConfigPath, apps.BuiltInConfStructs)
 	if err != nil {
 		return err
 	}
 
-	windowsEventLogger.Info(OpsAgentUAPPluginEventID, fmt.Sprintf("Built-in config:\n%s\n", apps.BuiltInConfStructs["windows"]))
-	windowsEventLogger.Info(OpsAgentUAPPluginEventID, fmt.Sprintf("Merged config:\n%s\n", uc))
+	log.Printf("Built-in config:\n%s\n", apps.BuiltInConfStructs["windows"])
+	log.Printf("Merged config:\n%s\n", uc)
 
 	// The generated otlp metric json files are used only by the otel service.
 	if err = self_metrics.GenerateOpsAgentSelfMetricsOTLPJSON(ctx, userConfigPath, filepath.Join(pluginStateDir, GeneratedConfigsOutDir, "otel")); err != nil {
@@ -279,16 +236,13 @@ func generateSubAgentConfigs(ctx context.Context, userConfigPath string, pluginS
 	return nil
 }
 
-func runHealthChecks(healthCheckFileLogger logs.StructuredLogger, windowsEventLogger debug.Log) {
+func runHealthChecks(healthCheckFileLogger logs.StructuredLogger) {
 	gceHealthChecks := healthchecks.HealthCheckRegistryFactory()
 
 	// Log health check results to health-checks.log log file.
-	healthCheckResults := gceHealthChecks.RunAllHealthChecks(healthCheckFileLogger)
+	gceHealthChecks.RunAllHealthChecks(healthCheckFileLogger)
 
-	// Log health check results to windows event log too.
-	healthCheckWindowsEventLogger := logs.WindowsServiceLogger{EventID: OpsAgentUAPPluginEventID, Logger: windowsEventLogger}
-	healthchecks.LogHealthCheckResults(healthCheckResults, healthCheckWindowsEventLogger)
-	windowsEventLogger.Info(OpsAgentUAPPluginEventID, "Health checks completed")
+	log.Println("Health checks completed")
 }
 
 func createWindowsJobHandle() (windows.Handle, error) {
@@ -373,4 +327,32 @@ func runCommand(cmd *exec.Cmd) (string, error) {
 		log.Printf("Command %s failed, \ncommand output: %s\ncommand error: %s", cmd.Args, string(out), err)
 	}
 	return string(out), err
+}
+
+// eventLogWriter implements the io.Writer interface. It writes logs to the Windows Event Log.
+type eventLogWriter struct {
+	EventID  uint32
+	EventLog *eventlog.Log
+}
+
+func (w *eventLogWriter) Write(p []byte) (int, error) {
+	err := w.EventLog.Info(w.EventID, string(p))
+	if err != nil {
+		return 0, err
+	}
+	return len(p), nil
+}
+
+func createLogger() (io.Closer, error) {
+	eventlog.InstallAsEventCreate(WindowsEventLogIdentifier, eventlog.Error|eventlog.Warning|eventlog.Info)
+	elog, err := eventlog.Open(WindowsEventLogIdentifier)
+	if err != nil {
+		return nil, err
+	}
+
+	log.SetOutput(&eventLogWriter{
+		EventID:  OpsAgentUAPPluginEventID,
+		EventLog: elog,
+	})
+	return elog, nil
 }

@@ -615,6 +615,8 @@ func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.R
 		var p []otel.Component
 		var err error
 		if r.IsDefaultVersion() {
+			// When "include_log_record_original = true", the event original XML string is set in `attributes."log.record.original"`.
+			receiver_config["include_log_record_original"] = true
 			p, err = windowsEventLogV1Processors(ctx)
 		} else if r.RenderAsXML {
 			// When "include_log_record_original = true", the event original XML string is set in `attributes."log.record.original"`.
@@ -664,8 +666,22 @@ func (p LoggingProcessorWindowsEventLogV1) Processors(ctx context.Context) ([]ot
 func windowsEventLogV1Processors(ctx context.Context) ([]otel.Component, error) {
 	// The winlog input in fluent-bit has a completely different structure.
 	// We need to convert the OTel format into the fluent-bit format.
+
+	// Parse original XML (attributes."log.record.original") to preserve non-rendered `Event.System.Task` and non-parsed `Event.RenderingInfo.Message`.
+	logRecordOriginal := ottl.LValue{"attributes", "log.record.original"}
+	bodyParsedXML := ottl.LValue{"body", "parsed_xml"}
+	processors := []otel.Component{
+		otel.Transform(
+			"log", "log",
+			ottl.NewStatements(
+				bodyParsedXML.SetIf(ottl.ParseSimplifiedXML(logRecordOriginal), logRecordOriginal.IsPresent()),
+				logRecordOriginal.Delete(),
+			),
+		),
+	}
+
 	var empty string
-	p := &LoggingProcessorModifyFields{
+	modifyFields := &LoggingProcessorModifyFields{
 		EmptyBody: true,
 		Fields: map[string]*ModifyField{
 			"jsonPayload.Channel":      {CopyFrom: "jsonPayload.channel"},
@@ -677,29 +693,19 @@ func windowsEventLogV1Processors(ctx context.Context) ([]otel.Component, error) 
 					return v.Set(ottl.ConvertCase(v, "lower"))
 				},
 			},
-			"jsonPayload.EventCategory": {CopyFrom: "jsonPayload.task", Type: "integer"},
+			"jsonPayload.EventCategory": {CopyFrom: "jsonPayload.parsed_xml.Event.System.Task", Type: "integer"},
 			"jsonPayload.EventID":       {CopyFrom: "jsonPayload.event_id.id"},
 			"jsonPayload.EventType": {
 				CopyFrom: "jsonPayload.level",
 				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
-					// TODO: What if there are multiple keywords?
 					keywords := ottl.LValue{"cache", "body", "keywords"}
-					keyword0 := ottl.RValue(`cache["body"]["keywords"][0]`)
 					return ottl.NewStatements(
-						v.SetIf(ottl.StringLiteral("SuccessAudit"), ottl.And(
-							keywords.IsPresent(),
-							ottl.IsNotNil(keyword0),
-							ottl.Equals(keyword0, ottl.StringLiteral("Audit Success")),
-						)),
-						v.SetIf(ottl.StringLiteral("FailureAudit"), ottl.And(
-							keywords.IsPresent(),
-							ottl.IsNotNil(keyword0),
-							ottl.Equals(keyword0, ottl.StringLiteral("Audit Failure")),
-						)),
+						v.SetIf(ottl.StringLiteral("SuccessAudit"), ottl.ContainsValue(keywords, "Audit Success")),
+						v.SetIf(ottl.StringLiteral("FailureAudit"), ottl.ContainsValue(keywords, "Audit Failure")),
 					)
 				},
 			},
-			"jsonPayload.Message":      {CopyFrom: "jsonPayload.message"},
+			"jsonPayload.Message":      {CopyFrom: "jsonPayload.parsed_xml.Event.RenderingInfo.Message"},
 			"jsonPayload.Qualifiers":   {CopyFrom: "jsonPayload.event_id.qualifiers"},
 			"jsonPayload.RecordNumber": {CopyFrom: "jsonPayload.record_id"},
 			"jsonPayload.Sid": {
@@ -738,7 +744,13 @@ func windowsEventLogV1Processors(ctx context.Context) ([]otel.Component, error) 
 				CustomConvertFunc: formatSystemTime,
 			},
 		}}
-	return p.Processors(ctx)
+
+	p, err := modifyFields.Processors(ctx)
+	if err != nil {
+		return nil, err
+	}
+	processors = append(processors, p...)
+	return processors, nil
 }
 
 // LoggingProcessorWindowsEventLogV2 contains the otel logging processors for ReceiverVersion=2.
@@ -868,6 +880,7 @@ func noFluentBitImplementation(ctx context.Context, tag, uid string) []fluentbit
 		Fields: map[string]*ModifyField{
 			"jsonPayload.channel":          {OmitIf: `jsonPayload.channel =~ ".*"`},
 			"jsonPayload.computer":         {OmitIf: `jsonPayload.computer =~ ".*"`},
+			"jsonPayload.details":          {OmitIf: `jsonPayload.details != nil`},
 			"jsonPayload.event_data":       {OmitIf: `jsonPayload.event_data != nil`},
 			"jsonPayload.event_id":         {OmitIf: `jsonPayload.event_id != nil`},
 			"jsonPayload.execution":        {OmitIf: `jsonPayload.execution != nil`},

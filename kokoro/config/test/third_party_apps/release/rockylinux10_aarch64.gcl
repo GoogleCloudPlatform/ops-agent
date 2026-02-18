@@ -1,9 +1,9 @@
 import 'common.gcl' as common
 
-config build = common.ops_agent_test {
+config build = common.third_party_apps_test {
   params {
     environment {
-      TARGET = 'plucky'
+      TARGET = 'rockylinux10'
       ARCH = 'aarch64'
     }
   }

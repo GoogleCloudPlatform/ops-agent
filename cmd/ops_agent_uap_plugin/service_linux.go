@@ -19,6 +19,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -250,4 +251,12 @@ func findPreExistentAgents(ctx context.Context, runCommand RunCommandFunc, agent
 	}
 	log.Printf("The following systemd services are already installed on the VM: %v\n command output: %v\ncommand error: %v", alreadyInstalledAgents, output, err)
 	return true, fmt.Errorf("conflicting installations identified: %v", alreadyInstalledAgents)
+}
+
+type nopCloser struct{}
+
+func (nopCloser) Close() error { return nil }
+
+func createLogger() (io.Closer, error) {
+	return nopCloser{}, nil
 }
