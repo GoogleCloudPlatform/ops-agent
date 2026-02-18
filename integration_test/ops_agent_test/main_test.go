@@ -2560,11 +2560,11 @@ func TestSystemdLog(t *testing.T) {
 
 func TestSystemLogByDefault(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
-		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, "", feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -4287,8 +4287,8 @@ func terminateProcess(ctx context.Context, logger *log.Logger, vm *gce.VM, proce
 	return nil
 }
 
-func testAgentCrashRestart(ctx context.Context, t *testing.T, logger *log.Logger, vm *gce.VM, processNames []string, livenessChecker func(context.Context, *log.Logger, *gce.VM) error) {
-	if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
+func testAgentCrashRestart(ctx context.Context, t *testing.T, logger *log.Logger, vm *gce.VM, feature string, processNames []string, livenessChecker func(context.Context, *log.Logger, *gce.VM) error) {
+	if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, "", feature); err != nil {
 		t.Fatal(err)
 	}
 
@@ -4331,7 +4331,7 @@ func metricsLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM)
 
 func TestMetricsAgentCrashRestart(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if gce.IsOpsAgentUAPPlugin() {
 			// Ops Agent Plugin does not restart subagents on termination.
@@ -4339,7 +4339,7 @@ func TestMetricsAgentCrashRestart(t *testing.T) {
 		}
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
-		testAgentCrashRestart(ctx, t, logger, vm, metricsAgentProcessNamesForImage(vm.ImageSpec), metricsLivenessChecker)
+		testAgentCrashRestart(ctx, t, logger, vm, feature, metricsAgentProcessNamesForImage(vm.ImageSpec), metricsLivenessChecker)
 	})
 }
 
@@ -4354,7 +4354,7 @@ func loggingLivenessChecker(ctx context.Context, logger *log.Logger, vm *gce.VM)
 
 func TestLoggingAgentCrashRestart(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if gce.IsOpsAgentUAPPlugin() {
 			// Ops Agent Plugin does not restart subagents on termination.
@@ -4362,7 +4362,7 @@ func TestLoggingAgentCrashRestart(t *testing.T) {
 		}
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
-		testAgentCrashRestart(ctx, t, logger, vm, []string{"fluent-bit"}, loggingLivenessChecker)
+		testAgentCrashRestart(ctx, t, logger, vm, feature, []string{"fluent-bit"}, loggingLivenessChecker)
 	})
 }
 
