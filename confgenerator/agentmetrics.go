@@ -57,6 +57,26 @@ var grpcToHTTPStatus = map[string]string{
 	"DEADLINE_EXCEEDED":   "504",
 }
 
+// Following reference : https://github.com/googleapis/googleapis/blob/master/google/rpc/code.proto
+var grpcToStringStatus = map[string]string{
+	"0":  "OK",
+	"1":  "CANCELLED",
+	"2":  "UNKNOWN",
+	"3":  "INVALID_ARGUMENT",
+	"4":  "DEADLINE_EXCEEDED",
+	"5":  "NOT_FOUND",
+	"6":  "ALREADY_EXISTS",
+	"7":  "PERMISSION_DENIED",
+	"8":  "RESOURCE_EXHAUSTED",
+	"9":  "FAILED_PRECONDITION",
+	"10": "ABORTED",
+	"11": "OUT_OF_RANGE",
+	"12": "UNIMPLEMENTED",
+	"13": "INTERNAL",
+	"14": "UNAVAILABLE",
+	"15": "DATA_LOSS",
+}
+
 func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]otel.ReceiverPipeline, pipelines map[string]otel.Pipeline, ctx context.Context) {
 	// Receiver pipelines names should have 1 underscore to avoid collision with user configurations.
 	receiverPipelines["agent_prometheus"] = r.PrometheusMetricsPipeline()
@@ -177,9 +197,11 @@ func (r AgentSelfMetrics) OtelPipelineProcessors(ctx context.Context) []otel.Com
 		pointCountMetric = otel.CombineMetrics("otelcol_exporter_sent_metric_points|otelcol_exporter_send_failed_metric_points", "agent/monitoring/point_count",
 			otel.AggregateLabels("sum", "status"))
 		apiRequestCount = otel.RenameMetric("rpc.client.duration_count", "agent/api_request_count",
+			otel.RenameLabelValues("rpc.grpc.status_code", grpcToStringStatus),
 			otel.RenameLabel("rpc.grpc.status_code", "state"),
 			// delete all other labels, retaining only state
 			otel.AggregateLabels("sum", "state"))
+
 		metricFilter = otel.MetricsOTTLFilter([]string{}, []string{
 			// Filter out histogram datapoints where the rpc.service is not related to monitoring.
 			`metric.name == "rpc.client.duration_count" and (not IsMatch(datapoint.attributes["rpc.service"], "opentelemetry.proto.collector.metrics.v1.MetricsService"))`,
