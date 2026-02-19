@@ -1303,7 +1303,7 @@ func verifyRPMPackageSigned(ctx context.Context, logger *log.Logger, vm *gce.VM,
 	// Assumes the Ops Agent was set up using the install script (with REPO_SUFFIX).
 	// Since the script has already added the repository to the VM, we only need
 	// to download the package.
-	command := "dnf download google-cloud-ops-agent"
+	command := "sudo dnf download google-cloud-ops-agent"
 	rpmPath := "./*.rpm"
 	if gce.IsSUSEImageSpec(vm.ImageSpec) {
 		command = "sudo zypper --pkg-cache-dir=$(pwd) download google-cloud-ops-agent"
