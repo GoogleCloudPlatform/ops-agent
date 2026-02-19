@@ -214,7 +214,6 @@ func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.Receiv
 	if i := r.WildcardRefreshInterval; i != nil {
 		receiver_config["poll_interval"] = i.String()
 	}
-	// TODO: Configure `storage` to store file checkpoints
 	if len(r.MultilineRules) > 0 {
 		return nil, fmt.Errorf("setting multiline rules in otel filelog receiver is not supported")
 	}
