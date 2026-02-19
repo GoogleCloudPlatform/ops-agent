@@ -719,7 +719,6 @@ processors:
 receivers:
   filelog/syslog:
     exclude: []
-    fingerprint_size: 30kb
     include:
     - /var/log/messages
     - /var/log/syslog

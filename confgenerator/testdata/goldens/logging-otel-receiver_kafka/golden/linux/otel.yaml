@@ -753,7 +753,6 @@ processors:
 receivers:
   filelog/kafka:
     exclude: []
-    fingerprint_size: 30kb
     include:
     - /var/log/kafka/*.log
     - /opt/kafka/logs/server.log
@@ -770,7 +769,6 @@ receivers:
     storage: file_storage
   filelog/syslog:
     exclude: []
-    fingerprint_size: 30kb
     include:
     - /var/log/messages
     - /var/log/syslog

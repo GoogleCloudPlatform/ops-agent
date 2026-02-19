@@ -1325,7 +1325,6 @@ processors:
 receivers:
   filelog/nginx__access:
     exclude: []
-    fingerprint_size: 30kb
     include:
     - /var/log/nginx/access.log
     include_file_name: false
@@ -1340,7 +1339,6 @@ receivers:
     storage: file_storage
   filelog/nginx__error:
     exclude: []
-    fingerprint_size: 30kb
     include:
     - /var/log/nginx/error.log
     include_file_name: false
