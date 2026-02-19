@@ -748,6 +748,7 @@ processors:
 receivers:
   filelog/log__source__id1:
     exclude: []
+    fingerprint_size: 30kb
     include:
     - /path/to/log/1/*
     include_file_name: false
@@ -763,6 +764,7 @@ receivers:
     storage: file_storage
   filelog/syslog:
     exclude: []
+    fingerprint_size: 30kb
     include:
     - /var/log/messages
     - /var/log/syslog

@@ -1165,6 +1165,7 @@ processors:
 receivers:
   filelog/kafka:
     exclude: []
+    fingerprint_size: 30kb
     include:
     - /var/log/kafka/*.log
     - /opt/kafka/logs/server.log

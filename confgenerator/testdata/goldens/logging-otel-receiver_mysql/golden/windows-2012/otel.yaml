@@ -1675,6 +1675,7 @@ processors:
 receivers:
   filelog/mysql__error:
     exclude: []
+    fingerprint_size: 30kb
     include:
     - /var/log/mysqld.log
     - /var/log/mysql/mysqld.log
@@ -1693,6 +1694,7 @@ receivers:
     storage: file_storage
   filelog/mysql__general:
     exclude: []
+    fingerprint_size: 30kb
     include:
     - /var/lib/mysql/${HOSTNAME}.log
     include_file_name: false
@@ -1707,6 +1709,7 @@ receivers:
     storage: file_storage
   filelog/mysql__slow:
     exclude: []
+    fingerprint_size: 30kb
     include:
     - /var/lib/mysql/${HOSTNAME}-slow.log
     include_file_name: false
