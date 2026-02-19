@@ -1465,6 +1465,7 @@ service:
       - prometheus/vault
   telemetry:
     metrics:
+      level: detailed
       readers:
       - pull:
           exporter:

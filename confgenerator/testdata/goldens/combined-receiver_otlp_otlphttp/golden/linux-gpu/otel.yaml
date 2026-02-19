@@ -15,10 +15,11 @@ exporters:
       service_resource_labels: true
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
-  otlphttp/otlp:
+  otlp/otlp:
     auth:
       authenticator: googleclientauth
-    endpoint: https://telemetry.googleapis.com
+    balancer_name: pick_first
+    endpoint: telemetry.googleapis.com:443
     headers:
       User-Agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
 extensions:
@@ -27,7 +28,7 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  batch/otlphttp/otlp_metrics_0:
+  batch/otlp/otlp_metrics_0:
     send_batch_max_size: 200
     send_batch_size: 200
     timeout: 200ms
@@ -790,7 +791,7 @@ service:
   pipelines:
     metrics/default__pipeline_hostmetrics:
       exporters:
-      - otlphttp/otlp
+      - otlp/otlp
       processors:
       - agentmetrics/hostmetrics_0
       - filter/hostmetrics_1
@@ -800,12 +801,12 @@ service:
       - transform/hostmetrics_5
       - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
-      - batch/otlphttp/otlp_metrics_0
+      - batch/otlp/otlp_metrics_0
       receivers:
       - hostmetrics/hostmetrics
     metrics/default__pipeline_hostmetrics_1:
       exporters:
-      - otlphttp/otlp
+      - otlp/otlp
       processors:
       - metricstransform/hostmetrics_1_0
       - resource/hostmetrics_1_1
@@ -813,7 +814,7 @@ service:
       - transform/hostmetrics_1_3
       - filter/default__pipeline_hostmetrics_1_0
       - resourcedetection/_global_0
-      - batch/otlphttp/otlp_metrics_0
+      - batch/otlp/otlp_metrics_0
       receivers:
       - nvml/hostmetrics_1
     metrics/fluentbit:
@@ -865,7 +866,7 @@ service:
       - prometheus/agent_prometheus
     metrics/otlp_otlp:
       exporters:
-      - otlphttp/otlp
+      - otlp/otlp
       processors:
       - resourcedetection/otlp_0
       - transform/otlp_1
@@ -874,7 +875,7 @@ service:
       - transform/otlp_4
       - metricstarttime/otlp_5
       - metricstransform/otlp_6
-      - batch/otlphttp/otlp_metrics_0
+      - batch/otlp/otlp_metrics_0
       receivers:
       - otlp/otlp
     traces/traces_otlp_otlp:
@@ -886,6 +887,7 @@ service:
       - otlp/otlp
   telemetry:
     metrics:
+      level: detailed
       readers:
       - pull:
           exporter:
