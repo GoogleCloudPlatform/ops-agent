@@ -221,8 +221,7 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 func getOpsAgentLogFilesList(imageSpec string) []string {
 	if gce.IsOpsAgentUAPPlugin() {
 		return []string{
-			"/var/log/messages",
-			"/var/log/syslog",
+			gce.SyslogLocation(imageSpec),
 			OpsAgentConfigPath(imageSpec),
 			"~/uap_plugin_out.log",
 			"~/uap_plugin_ps.log",
@@ -239,7 +238,8 @@ func getOpsAgentLogFilesList(imageSpec string) []string {
 		}
 	}
 	return []string{
-		gce.SyslogLocation(imageSpec),
+		"/var/log/messages",
+		"/var/log/syslog",
 		OpsAgentConfigPath(imageSpec),
 		"/var/log/google-cloud-ops-agent/health-checks.log",
 		"/var/log/google-cloud-ops-agent/subagents/logging-module.log",
