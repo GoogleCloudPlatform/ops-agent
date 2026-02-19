@@ -223,18 +223,6 @@ RUN ln -fs /usr/lib/systemd /lib/systemd` + installJava + installCMake,
 		package_extension: "deb",
 	},
 	{
-		from_image:  "ubuntu:plucky",
-		target_name: "plucky",
-		install_packages: `RUN set -x; apt-get update && \
-		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
-		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-		build-essential cmake bison flex file systemd-dev debhelper libsystemd-dev tzdata \
-		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip`,
-		package_build:     "RUN ./pkg/deb/build.sh",
-		tar_distro_name:   "ubuntu-plucky",
-		package_extension: "deb",
-	},
-	{
 		from_image:  "ubuntu:questing",
 		target_name: "questing",
 		install_packages: `RUN set -x; apt-get update && \
