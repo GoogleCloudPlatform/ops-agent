@@ -157,11 +157,11 @@ func (r AgentSelfMetrics) OtelPipelineProcessors(ctx context.Context) []otel.Com
 	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
 	var extraTransforms []map[string]interface{}
 	if expOtlpExporter {
-		durationMetric = "rpc_client_duration"
+		durationMetric = "rpc.client.duration"
 		filteredMetrics = []string{
 			"otelcol_exporter_sent_metric_points",
 			"otelcol_exporter_send_failed_metric_points",
-			"rpc_client_duration_count",
+			"rpc.client.duration_count",
 		}
 		extraTransforms = []map[string]interface{}{
 			otel.UpdateMetric("otelcol_exporter_sent_metric_points",
@@ -176,13 +176,13 @@ func (r AgentSelfMetrics) OtelPipelineProcessors(ctx context.Context) []otel.Com
 		// b/468059325: Factor in partial success after upstream bug is fixed.
 		pointCountMetric = otel.CombineMetrics("otelcol_exporter_sent_metric_points|otelcol_exporter_send_failed_metric_points", "agent/monitoring/point_count",
 			otel.AggregateLabels("sum", "status"))
-		apiRequestCount = otel.RenameMetric("rpc_client_duration_count", "agent/api_request_count",
-			otel.RenameLabel("rpc_grpc_status_code", "state"),
+		apiRequestCount = otel.RenameMetric("rpc.client.duration_count", "agent/api_request_count",
+			otel.RenameLabel("rpc.grpc.status_code", "state"),
 			// delete all other labels, retaining only state
 			otel.AggregateLabels("sum", "state"))
 		metricFilter = otel.MetricsOTTLFilter([]string{}, []string{
-			// Filter out histogram datapoints where the rpc_service is not related to monitoring.
-			`metric.name == "rpc_client_duration_count" and (not IsMatch(datapoint.attributes["rpc_service"], "opentelemetry.proto.collector.metrics.v1.MetricsService"))`,
+			// Filter out histogram datapoints where the rpc.service is not related to monitoring.
+			`metric.name == "rpc.client.duration_count" and (not IsMatch(datapoint.attributes["rpc.service"], "opentelemetry.proto.collector.metrics.v1.MetricsService"))`,
 		})
 	}
 

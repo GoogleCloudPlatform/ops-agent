@@ -79,7 +79,7 @@ processors:
   filter/otel_1:
     metrics:
       datapoint:
-      - metric.name == "rpc_client_duration_count" and (not IsMatch(datapoint.attributes["rpc_service"], "opentelemetry.proto.collector.metrics.v1.MetricsService"))
+      - metric.name == "rpc.client.duration_count" and (not IsMatch(datapoint.attributes["rpc.service"], "opentelemetry.proto.collector.metrics.v1.MetricsService"))
   filter/otel_2:
     metrics:
       include:
@@ -89,7 +89,7 @@ processors:
         - otelcol_process_memory_rss
         - otelcol_exporter_sent_metric_points
         - otelcol_exporter_send_failed_metric_points
-        - rpc_client_duration_count
+        - rpc.client.duration_count
   interval/loggingmetrics_7:
     interval: 1m
   metricstarttime/prometheus_3:
@@ -570,11 +570,11 @@ processors:
         aggregation_type: sum
         label_set: []
     - action: update
-      include: rpc_client_duration_count
+      include: rpc.client.duration_count
       new_name: agent/api_request_count
       operations:
       - action: update_label
-        label: rpc_grpc_status_code
+        label: rpc.grpc.status_code
         new_label: state
       - action: aggregate_labels
         aggregation_type: sum
@@ -703,7 +703,7 @@ processors:
     metric_statements:
     - context: metric
       statements:
-      - extract_count_metric(true) where name == "rpc_client_duration"
+      - extract_count_metric(true) where name == "rpc.client.duration"
   transform/prometheus_0:
     metric_statements:
     - context: datapoint
