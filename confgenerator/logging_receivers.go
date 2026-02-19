@@ -623,6 +623,8 @@ func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.R
 			receiver_config["include_log_record_original"] = true
 			p, err = windowsEventLogRawXMLProcessors(ctx)
 		} else {
+			// When "include_log_record_original = true", the event original XML string is set in `attributes."log.record.original"`.
+			receiver_config["include_log_record_original"] = true
 			p, err = windowsEventLogV2Processors(ctx)
 		}
 		if err != nil {
@@ -774,15 +776,28 @@ func (p LoggingProcessorWindowsEventLogV2) Processors(ctx context.Context) ([]ot
 func windowsEventLogV2Processors(ctx context.Context) ([]otel.Component, error) {
 	// The winevtlog input in fluent-bit has a completely different structure.
 	// We need to convert the OTel format into the fluent-bit format.
+
+	// Parse original XML (attributes."log.record.original") to preserve non-rendered `Event.System.Task` and non-parsed `Event.RenderingInfo.Message`.
+	logRecordOriginal := ottl.LValue{"attributes", "log.record.original"}
+	bodyParsedXML := ottl.LValue{"body", "parsed_xml"}
+	processors := []otel.Component{
+		otel.Transform(
+			"log", "log",
+			ottl.NewStatements(
+				bodyParsedXML.SetIf(ottl.ParseSimplifiedXML(logRecordOriginal), logRecordOriginal.IsPresent()),
+				logRecordOriginal.Delete(),
+			),
+		),
+	}
 	var empty string
-	p := &LoggingProcessorModifyFields{
+	modifyFields := &LoggingProcessorModifyFields{
 		EmptyBody: true,
 		Fields: map[string]*ModifyField{
 			"jsonPayload.Channel":       {CopyFrom: "jsonPayload.channel"},
 			"jsonPayload.Computer":      {CopyFrom: "jsonPayload.computer"},
 			"jsonPayload.EventID":       {CopyFrom: "jsonPayload.event_id.id"},
 			"jsonPayload.EventRecordID": {CopyFrom: "jsonPayload.record_id"},
-			"jsonPayload.Keywords":      {CopyFrom: "jsonPayload.keywords"},
+			"jsonPayload.Keywords":      {CopyFrom: "jsonPayload.parsed_xml.Event.System.Keywords"},
 			"jsonPayload.Level": {
 				CopyFrom: "jsonPayload.level",
 				MapValues: map[string]string{
@@ -823,8 +838,16 @@ func windowsEventLogV2Processors(ctx context.Context) ([]otel.Component, error) 
 				CopyFrom:     "jsonPayload.security.user_id",
 				DefaultValue: &empty,
 			},
+			"jsonPayload.ActivityID":        {CopyFrom: "jsonPayload.correlation.activity_id"},
+			"jsonPayload.RelatedActivityID": {CopyFrom: "jsonPayload.correlation.related_activity_id"},
+			"jsonPayload.Version":           {CopyFrom: "jsonPayload.version", Type: "integer"},
 		}}
-	return p.Processors(ctx)
+	p, err := modifyFields.Processors(ctx)
+	if err != nil {
+		return nil, err
+	}
+	processors = append(processors, p...)
+	return processors, nil
 }
 
 // LoggingProcessorWindowsEventLogRawXML contains the otel logging processors for RenderAsXML=true.
