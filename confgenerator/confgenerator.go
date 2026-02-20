@@ -120,9 +120,11 @@ func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, 
 
 func otlpExporter(userAgent string) otel.Component {
 	return otel.Component{
-		Type: "otlphttp",
+		Type: "otlp",
 		Config: map[string]interface{}{
-			"endpoint": "https://telemetry.googleapis.com",
+			"endpoint": "telemetry.googleapis.com:443",
+			// b/485538253: Use pick_first balancer until we can understand why round_robin is failing.
+			"balancer_name": "pick_first",
 			"auth": map[string]interface{}{
 				"authenticator": "googleclientauth",
 			},
@@ -200,7 +202,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 		OtelRuntimeDir:      outDir,
 		OtelLogging:         uc.Logging.Service.OTelLogging,
 	}
-	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines)
+	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines, ctx)
 
 	otelConfig, err := otel.ModularConfig{
 		LogLevel:          uc.getOTelLogLevel(),
