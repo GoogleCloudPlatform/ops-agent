@@ -137,6 +137,14 @@ expected_logs:
         type: string
         description: "Authenticated username for the request"
         optional: true
+      - name: jsonPayload.sc_bytes
+        type: string
+        description: "Bytes sent by the server"
+        optional: true
+      - name: jsonPayload.cs_bytes
+        type: string
+        description: "Bytes received by the server"
+        optional: true
       - name: severity
         type: string
         description: ''
