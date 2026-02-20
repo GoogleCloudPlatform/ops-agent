@@ -1,12 +1,4 @@
 exporters:
-  googlecloud:
-    metric:
-      instrumentation_library_labels: false
-      prefix: ""
-      resource_filters: []
-      service_resource_labels: false
-      skip_create_descriptor: true
-    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
   otlp/otlp:
     auth:
       authenticator: googleclientauth
@@ -20,7 +12,7 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  batch/otlp/otlp_metrics_0:
+  batch/otlp/otlp_metrics_2:
     send_batch_max_size: 200
     send_batch_size: 200
     timeout: 200ms
@@ -102,7 +94,7 @@ processors:
         - rpc.client.duration_count
   interval/loggingmetrics_7:
     interval: 1m
-  metricstarttime/otlphttp/otlp_metrics_1:
+  metricstarttime/otlp/otlp_metrics_1:
     strategy: subtract_initial_point
   metricstransform/fluentbit_1:
     transforms:
@@ -688,7 +680,7 @@ processors:
       match_type: regexp
       new_name: prometheus.googleapis.com/$${1}
   normalizesums/iis_2: {}
-  resource/otlphttp/otlp_metrics_0:
+  resource/otlp/otlp_metrics_0:
     attributes:
     - action: insert
       key: gcp.project_id
@@ -985,7 +977,9 @@ service:
       - transform/hostmetrics_4
       - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
-      - batch/otlp/otlp_metrics_0
+      - resource/otlp/otlp_metrics_0
+      - metricstarttime/otlp/otlp_metrics_1
+      - batch/otlp/otlp_metrics_2
       receivers:
       - hostmetrics/hostmetrics
     metrics/default__pipeline_iis:
@@ -1000,7 +994,9 @@ service:
       - transform/iis_5
       - filter/default__pipeline_iis_0
       - resourcedetection/_global_0
-      - batch/otlp/otlp_metrics_0
+      - resource/otlp/otlp_metrics_0
+      - metricstarttime/otlp/otlp_metrics_1
+      - batch/otlp/otlp_metrics_2
       receivers:
       - windowsperfcounters/iis
     metrics/default__pipeline_mssql:
@@ -1013,12 +1009,14 @@ service:
       - transform/mssql_3
       - filter/default__pipeline_mssql_0
       - resourcedetection/_global_0
-      - batch/otlp/otlp_metrics_0
+      - resource/otlp/otlp_metrics_0
+      - metricstarttime/otlp/otlp_metrics_1
+      - batch/otlp/otlp_metrics_2
       receivers:
       - windowsperfcounters/mssql
     metrics/fluentbit:
       exporters:
-      - otlphttp/otlp
+      - otlp/otlp
       processors:
       - transform/agent_prometheus_0
       - transform/agent_prometheus_1
@@ -1026,14 +1024,14 @@ service:
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
       - resourcedetection/_global_0
-      - resource/otlphttp/otlp_metrics_0
-      - metricstarttime/otlphttp/otlp_metrics_1
-      - batch/otlphttp/otlp_metrics_2
+      - resource/otlp/otlp_metrics_0
+      - metricstarttime/otlp/otlp_metrics_1
+      - batch/otlp/otlp_metrics_2
       receivers:
       - prometheus/agent_prometheus
     metrics/loggingmetrics:
       exporters:
-      - otlphttp/otlp
+      - otlp/otlp
       processors:
       - transform/agent_prometheus_0
       - transform/agent_prometheus_1
@@ -1048,27 +1046,27 @@ service:
       - interval/loggingmetrics_7
       - metricstransform/loggingmetrics_8
       - resourcedetection/_global_0
-      - resource/otlphttp/otlp_metrics_0
-      - metricstarttime/otlphttp/otlp_metrics_1
-      - batch/otlphttp/otlp_metrics_2
+      - resource/otlp/otlp_metrics_0
+      - metricstarttime/otlp/otlp_metrics_1
+      - batch/otlp/otlp_metrics_2
       receivers:
       - prometheus/agent_prometheus
     metrics/opsagent:
       exporters:
-      - otlphttp/otlp
+      - otlp/otlp
       processors:
       - transform/ops_agent_0
       - transform/ops_agent_1
       - transform/ops_agent_2
       - resourcedetection/_global_0
-      - resource/otlphttp/otlp_metrics_0
-      - metricstarttime/otlphttp/otlp_metrics_1
-      - batch/otlphttp/otlp_metrics_2
+      - resource/otlp/otlp_metrics_0
+      - metricstarttime/otlp/otlp_metrics_1
+      - batch/otlp/otlp_metrics_2
       receivers:
       - otlpjsonfile/ops_agent
     metrics/otel:
       exporters:
-      - otlphttp/otlp
+      - otlp/otlp
       processors:
       - transform/agent_prometheus_0
       - transform/agent_prometheus_1
@@ -1078,9 +1076,9 @@ service:
       - filter/otel_2
       - metricstransform/otel_3
       - resourcedetection/_global_0
-      - resource/otlphttp/otlp_metrics_0
-      - metricstarttime/otlphttp/otlp_metrics_1
-      - batch/otlphttp/otlp_metrics_2
+      - resource/otlp/otlp_metrics_0
+      - metricstarttime/otlp/otlp_metrics_1
+      - batch/otlp/otlp_metrics_2
       receivers:
       - prometheus/agent_prometheus
     metrics/prometheus__pipeline_prometheus:
@@ -1088,11 +1086,11 @@ service:
       - otlp/otlp
       processors:
       - transform/prometheus_0
-      - resource/prometheus_1
-      - transform/prometheus_2
-      - metricstarttime/prometheus_3
-      - metricstransform/prometheus_4
-      - batch/otlp/otlp_metrics_0
+      - transform/prometheus_1
+      - metricstransform/prometheus_2
+      - resource/otlp/otlp_metrics_0
+      - metricstarttime/otlp/otlp_metrics_1
+      - batch/otlp/otlp_metrics_2
       receivers:
       - prometheus/prometheus
   telemetry:
