@@ -19,7 +19,6 @@ exporters:
     auth:
       authenticator: googleclientauth
     balancer_name: pick_first
-    encoding: json
     endpoint: telemetry.googleapis.com:443
     headers:
       User-Agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)

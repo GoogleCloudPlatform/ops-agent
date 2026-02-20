@@ -129,7 +129,6 @@ func otlpExporter(userAgent string) otel.Component {
 			"headers": map[string]string{
 				"User-Agent": userAgent,
 			},
-			"encoding": "json",
 		},
 	}
 }
