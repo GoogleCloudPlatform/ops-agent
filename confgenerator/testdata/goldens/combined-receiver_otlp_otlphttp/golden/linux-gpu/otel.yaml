@@ -1,12 +1,4 @@
 exporters:
-  googlecloud:
-    metric:
-      instrumentation_library_labels: false
-      prefix: ""
-      resource_filters: []
-      service_resource_labels: false
-      skip_create_descriptor: true
-    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
   googlecloud/otel:
     metric:
       instrumentation_library_labels: true
@@ -28,7 +20,7 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  batch/otlp/otlp_metrics_0:
+  batch/otlp/otlp_metrics_2:
     send_batch_max_size: 200
     send_batch_size: 200
     timeout: 200ms
@@ -105,7 +97,7 @@ processors:
     - location
   interval/loggingmetrics_7:
     interval: 1m
-  metricstarttime/otlp_5:
+  metricstarttime/otlp/otlp_metrics_1:
     strategy: subtract_initial_point
   metricstransform/fluentbit_1:
     transforms:
@@ -658,23 +650,13 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/otlp_6:
+  metricstransform/otlp_4:
     transforms:
     - action: update
       include: ^(.*)$$
       match_type: regexp
       new_name: prometheus.googleapis.com/$${1}
-  resource/hostmetrics_1_1:
-    attributes:
-    - action: insert
-      key: gcp.project_id
-      value: test-project
-  resource/hostmetrics_3:
-    attributes:
-    - action: insert
-      key: gcp.project_id
-      value: test-project
-  resource/otlp_3:
+  resource/otlp/otlp_metrics_0:
     attributes:
     - action: insert
       key: gcp.project_id
@@ -699,13 +681,13 @@ processors:
       - delete_key(resource.attributes, "service.instance.id")
       - delete_key(resource.attributes, "server.port")
       - delete_key(resource.attributes, "url.scheme")
-  transform/hostmetrics_1_2:
+  transform/agent_prometheus_1:
     metric_statements:
     - context: scope
       statements:
       - set(name, "")
       - set(version, "")
-  transform/hostmetrics_1_3:
+  transform/agent_prometheus_2:
     metric_statements:
     - context: resource
       error_mode: silent
@@ -714,13 +696,28 @@ processors:
       - delete_key(attributes, "service.instance.id")
       - delete_key(attributes, "service.namespace")
       - delete_key(attributes, "service.version")
-  transform/hostmetrics_4:
+  transform/hostmetrics_1_1:
     metric_statements:
     - context: scope
       statements:
       - set(name, "")
       - set(version, "")
-  transform/hostmetrics_5:
+  transform/hostmetrics_1_2:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
+  transform/hostmetrics_3:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/hostmetrics_4:
     metric_statements:
     - context: resource
       error_mode: silent
@@ -756,6 +753,21 @@ processors:
     - context: datapoint
       statements:
       - set(time, Now())
+  transform/ops_agent_1:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/ops_agent_2:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
   transform/otel_0:
     error_mode: ignore
     metric_statements:
@@ -772,7 +784,7 @@ processors:
       - set(attributes["cluster"], "__gce__") where "__gce__" != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
       - set(attributes["instance_name"], resource.attributes["host.name"]) where resource.attributes["host.name"] != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
       - set(attributes["machine_type"], resource.attributes["host.type"]) where resource.attributes["host.type"] != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
-  transform/otlp_4:
+  transform/otlp_3:
     error_mode: ignore
     metric_statements:
     - context: metric
@@ -833,12 +845,13 @@ service:
       - agentmetrics/hostmetrics_0
       - filter/hostmetrics_1
       - metricstransform/hostmetrics_2
-      - resource/hostmetrics_3
+      - transform/hostmetrics_3
       - transform/hostmetrics_4
-      - transform/hostmetrics_5
       - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
-      - batch/otlp/otlp_metrics_0
+      - resource/otlp/otlp_metrics_0
+      - metricstarttime/otlp/otlp_metrics_1
+      - batch/otlp/otlp_metrics_2
       receivers:
       - hostmetrics/hostmetrics
     metrics/default__pipeline_hostmetrics_1:
@@ -846,29 +859,37 @@ service:
       - otlp/otlp
       processors:
       - metricstransform/hostmetrics_1_0
-      - resource/hostmetrics_1_1
+      - transform/hostmetrics_1_1
       - transform/hostmetrics_1_2
-      - transform/hostmetrics_1_3
       - filter/default__pipeline_hostmetrics_1_0
       - resourcedetection/_global_0
-      - batch/otlp/otlp_metrics_0
+      - resource/otlp/otlp_metrics_0
+      - metricstarttime/otlp/otlp_metrics_1
+      - batch/otlp/otlp_metrics_2
       receivers:
       - nvml/hostmetrics_1
     metrics/fluentbit:
       exporters:
-      - googlecloud
+      - otlp/otlp
       processors:
       - transform/agent_prometheus_0
+      - transform/agent_prometheus_1
+      - transform/agent_prometheus_2
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
       - resourcedetection/_global_0
+      - resource/otlp/otlp_metrics_0
+      - metricstarttime/otlp/otlp_metrics_1
+      - batch/otlp/otlp_metrics_2
       receivers:
       - prometheus/agent_prometheus
     metrics/loggingmetrics:
       exporters:
-      - googlecloud
+      - otlp/otlp
       processors:
       - transform/agent_prometheus_0
+      - transform/agent_prometheus_1
+      - transform/agent_prometheus_2
       - transform/loggingmetrics_0
       - filter/loggingmetrics_1
       - filter/loggingmetrics_2
@@ -879,26 +900,39 @@ service:
       - interval/loggingmetrics_7
       - metricstransform/loggingmetrics_8
       - resourcedetection/_global_0
+      - resource/otlp/otlp_metrics_0
+      - metricstarttime/otlp/otlp_metrics_1
+      - batch/otlp/otlp_metrics_2
       receivers:
       - prometheus/agent_prometheus
     metrics/opsagent:
       exporters:
-      - googlecloud
+      - otlp/otlp
       processors:
       - transform/ops_agent_0
+      - transform/ops_agent_1
+      - transform/ops_agent_2
       - resourcedetection/_global_0
+      - resource/otlp/otlp_metrics_0
+      - metricstarttime/otlp/otlp_metrics_1
+      - batch/otlp/otlp_metrics_2
       receivers:
       - otlpjsonfile/ops_agent
     metrics/otel:
       exporters:
-      - googlecloud
+      - otlp/otlp
       processors:
       - transform/agent_prometheus_0
+      - transform/agent_prometheus_1
+      - transform/agent_prometheus_2
       - transform/otel_0
       - filter/otel_1
       - filter/otel_2
       - metricstransform/otel_3
       - resourcedetection/_global_0
+      - resource/otlp/otlp_metrics_0
+      - metricstarttime/otlp/otlp_metrics_1
+      - batch/otlp/otlp_metrics_2
       receivers:
       - prometheus/agent_prometheus
     metrics/otlp_otlp:
@@ -908,11 +942,11 @@ service:
       - resourcedetection/otlp_0
       - transform/otlp_1
       - groupbyattrs/otlp_2
-      - resource/otlp_3
-      - transform/otlp_4
-      - metricstarttime/otlp_5
-      - metricstransform/otlp_6
-      - batch/otlp/otlp_metrics_0
+      - transform/otlp_3
+      - metricstransform/otlp_4
+      - resource/otlp/otlp_metrics_0
+      - metricstarttime/otlp/otlp_metrics_1
+      - batch/otlp/otlp_metrics_2
       receivers:
       - otlp/otlp
     traces/traces_otlp_otlp:
