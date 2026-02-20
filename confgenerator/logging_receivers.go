@@ -629,7 +629,7 @@ func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.R
 			return nil, err
 		}
 
-		out = append(out, otel.ReceiverPipeline{
+		out = append(out, ConvertToOtlpExporter(otel.ReceiverPipeline{
 			Receiver: otel.Component{
 				Type:   "windowseventlog",
 				Config: receiver_config,
@@ -640,7 +640,7 @@ func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.R
 			ExporterTypes: map[string]otel.ExporterType{
 				"logs": otel.Logging,
 			},
-		})
+		}, ctx, false, false))
 	}
 	return out, nil
 }
