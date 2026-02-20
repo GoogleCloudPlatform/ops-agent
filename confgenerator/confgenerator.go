@@ -112,6 +112,7 @@ func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, 
 		pipeline.Processors["logs"] = append(pipeline.Processors["logs"], otel.DisableOtlpRoundTrip())
 		pipeline.Processors["logs"] = append(pipeline.Processors["logs"], otel.InstrumentationScope())
 		pipeline.Processors["logs"] = append(pipeline.Processors["logs"], otel.CopyServiceResourceLabels())
+		pipeline.Processors["logs"] = append(pipeline.Processors["logs"], otel.ZeroOutSeverityNumber())
 	}
 	return pipeline
 }

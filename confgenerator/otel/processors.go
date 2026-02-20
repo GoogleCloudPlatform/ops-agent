@@ -720,6 +720,11 @@ func CopyServiceResourceLabels() Component {
 	))
 }
 
+func ZeroOutSeverityNumber() Component {
+	return Transform("log", "log", ottl.NewStatements(
+		ottl.LValue{"severity_number"}.SetIf(ottl.IntLiteral(0), ottl.IsNotEmptyString(ottl.RValue("severity_text"))),
+	))
+}
 func BatchProcessor(sendBatchSize, sendBatchMaxSize int, timeout string) Component {
 	return Component{
 		Type: "batch",
