@@ -1192,6 +1192,7 @@ processors:
 receivers:
   filelog/sample__logs:
     exclude: []
+    fingerprint_size: 5kb
     include:
     - /tmp/*.log
     include_file_name: false

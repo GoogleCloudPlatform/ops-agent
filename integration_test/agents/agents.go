@@ -238,7 +238,8 @@ func getOpsAgentLogFilesList(imageSpec string) []string {
 		}
 	}
 	return []string{
-		gce.SyslogLocation(imageSpec),
+		"/var/log/messages",
+		"/var/log/syslog",
 		OpsAgentConfigPath(imageSpec),
 		"/var/log/google-cloud-ops-agent/health-checks.log",
 		"/var/log/google-cloud-ops-agent/subagents/logging-module.log",
