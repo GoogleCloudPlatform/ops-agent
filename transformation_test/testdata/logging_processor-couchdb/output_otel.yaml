@@ -1,12 +1,5 @@
 - entries:
-  - httpRequest:
-      protocol: HTTP/1.1
-      remoteIp: 127.0.0.1
-      requestMethod: PUT
-      responseSize: "16"
-      serverIp: localhost:5984
-      status: 201
-    jsonPayload:
+  - jsonPayload:
       host: nohost
       level: notice
       message: otelu PUT /oteld 201 ok 16

@@ -1,5 +1,5 @@
 - collector_errors:
-  - caller: internal/base_exporter.go:115
+  - caller: internal/base_exporter.go:114
     error: "could not process attribute gcp.source_location: json: cannot unmarshal string into Go struct field LogEntrySourceLocation.line of type int64"
     level: error
     msg: Exporting failed. Rejecting data. Try enabling sending_queue to survive temporary failures.
@@ -10,25 +10,25 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.145.0
+      service.version: v0.138.0
     stacktrace: |-
       go.opentelemetry.io/collector/exporter/exporterhelper/internal.(*BaseExporter).Send
-        go.opentelemetry.io/collector/exporter/exporterhelper@v0.145.0/internal/base_exporter.go:115
+        go.opentelemetry.io/collector/exporter/exporterhelper@v0.138.0/internal/base_exporter.go:114
       go.opentelemetry.io/collector/exporter/exporterhelper/internal.NewLogsRequest.newConsumeLogs.func1
-        go.opentelemetry.io/collector/exporter/exporterhelper@v0.145.0/internal/new_request.go:70
+        go.opentelemetry.io/collector/exporter/exporterhelper@v0.138.0/internal/new_request.go:70
       go.opentelemetry.io/collector/consumer.ConsumeLogsFunc.ConsumeLogs
-        go.opentelemetry.io/collector/consumer@v1.51.0/logs.go:27
+        go.opentelemetry.io/collector/consumer@v1.44.0/logs.go:27
       go.opentelemetry.io/collector/service/internal/refconsumer.refLogs.ConsumeLogs
-        go.opentelemetry.io/collector/service@v0.145.0/internal/refconsumer/logs.go:29
+        go.opentelemetry.io/collector/service@v0.138.0/internal/refconsumer/logs.go:29
       go.opentelemetry.io/collector/internal/fanoutconsumer.(*logsConsumer).ConsumeLogs
-        go.opentelemetry.io/collector/internal/fanoutconsumer@v0.145.0/logs.go:62
+        go.opentelemetry.io/collector/internal/fanoutconsumer@v0.138.0/logs.go:62
       go.opentelemetry.io/collector/processor/batchprocessor.(*batchLogs).export
-        go.opentelemetry.io/collector/processor/batchprocessor@v0.145.0/batch_processor.go:548
+        go.opentelemetry.io/collector/processor/batchprocessor@v0.138.0/batch_processor.go:548
       go.opentelemetry.io/collector/processor/batchprocessor.(*shard[...]).sendItems
-        go.opentelemetry.io/collector/processor/batchprocessor@v0.145.0/batch_processor.go:273
+        go.opentelemetry.io/collector/processor/batchprocessor@v0.138.0/batch_processor.go:273
       go.opentelemetry.io/collector/processor/batchprocessor.(*shard[...]).startLoop
-        go.opentelemetry.io/collector/processor/batchprocessor@v0.145.0/batch_processor.go:216
-  - caller: batchprocessor@v0.145.0/batch_processor.go:275
+        go.opentelemetry.io/collector/processor/batchprocessor@v0.138.0/batch_processor.go:216
+  - caller: batchprocessor@v0.138.0/batch_processor.go:275
     error: "could not process attribute gcp.source_location: json: cannot unmarshal string into Go struct field LogEntrySourceLocation.line of type int64"
     level: warn
     msg: Sender failed
@@ -39,4 +39,4 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.145.0
+      service.version: v0.138.0

@@ -39,7 +39,7 @@
     timestamp: now
   partialSuccess: true
 - collector_errors:
-  - caller: ottl@v0.145.0/parser.go:410
+  - caller: ottl@v0.138.0/parser.go:410
     error: "parsing time \"2024-06-15T14:30:00.987654321Z\": extra text: \"Z\""
     level: warn
     msg: failed to execute statement
@@ -50,9 +50,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.145.0
+      service.version: v0.138.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M:%S.%L") != nil)
-  - caller: ottl@v0.145.0/parser.go:410
+  - caller: ottl@v0.138.0/parser.go:410
     error: "parsing time \"2022-12-31T23:59:59.000000000-0800\": extra text: \"-0800\""
     level: warn
     msg: failed to execute statement
@@ -63,5 +63,5 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.145.0
+      service.version: v0.138.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M:%S.%L") != nil)
