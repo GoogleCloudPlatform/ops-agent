@@ -641,6 +641,8 @@ processors:
           value: "14"
         - new_value: DATA_LOSS
           value: "15"
+        - new_value: UNAUTHENTICATED
+          value: "16"
         - new_value: UNKNOWN
           value: "2"
         - new_value: INVALID_ARGUMENT

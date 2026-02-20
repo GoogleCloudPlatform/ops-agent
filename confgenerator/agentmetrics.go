@@ -75,6 +75,7 @@ var grpcToStringStatus = map[string]string{
 	"13": "INTERNAL",
 	"14": "UNAVAILABLE",
 	"15": "DATA_LOSS",
+	"16": "UNAUTHENTICATED",
 }
 
 func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]otel.ReceiverPipeline, pipelines map[string]otel.Pipeline, ctx context.Context) {
