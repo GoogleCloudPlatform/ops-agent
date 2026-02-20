@@ -676,6 +676,12 @@ func GCPProjectID(projectID string) Component {
 	)
 }
 
+func DisableOtlpRoundTrip() Component {
+	return ResourceTransform(
+		map[string]string{"gcp.internal.omit_otlp": "true"}, false,
+	)
+}
+
 // MetricUnknownCounter is necessary to handle prometheus unknown type metrics
 // go/ops-agent-otlp-migration
 func MetricUnknownCounter() Component {
@@ -689,6 +695,36 @@ func MetricUnknownCounter() Component {
 	})
 }
 
+func InstrumentationScope() Component {
+	return Transform("log", "log", ottl.NewStatements(
+		ottl.LValue{"attributes", "instrumentation_source"}.SetIf(ottl.RValue("instrumentation_scope.name"), ottl.IsNotEmptyString(ottl.RValue("instrumentation_scope.name"))),
+		ottl.LValue{"attributes", "instrumentation_version"}.SetIf(ottl.RValue("instrumentation_scope.version"), ottl.IsNotEmptyString(ottl.RValue("instrumentation_scope.version"))),
+	))
+}
+
+func FlattenSourceLocation() Component {
+	return Transform("log", "log", ottl.NewStatements(
+		ottl.LValue{"attributes", "code.file.path"}.SetIf(ottl.RValue(`attributes["gcp.source_location"]["file"]`), ottl.IsNotNil(ottl.RValue(`attributes["gcp.source_location"]["file"]`))),
+		ottl.LValue{"attributes", "code.function.name"}.SetIf(ottl.RValue(`attributes["gcp.source_location"]["func"]`), ottl.IsNotNil(ottl.RValue(`attributes["gcp.source_location"]["func"]`))),
+		ottl.LValue{"attributes", "code.line.number"}.SetIf(ottl.RValue(`attributes["gcp.source_location"]["line"]`), ottl.IsNotNil(ottl.RValue(`attributes["gcp.source_location"]["line"]`))),
+		ottl.LValue{"attributes", "gcp.source_location"}.Delete(),
+	))
+}
+
+// This processor copies the service.* attributes from the resource to the log attributes, if they exist.
+func CopyServiceResourceLabels() Component {
+	return Transform("log", "log", ottl.NewStatements(
+		ottl.LValue{"attributes", "service.name"}.SetIf(ottl.RValue(`resource.attributes["service.name"]`), ottl.IsNotNil(ottl.RValue(`resource.attributes["service.name"]`))),
+		ottl.LValue{"attributes", "service.namespace"}.SetIf(ottl.RValue(`resource.attributes["service.namespace"]`), ottl.IsNotNil(ottl.RValue(`resource.attributes["service.namespace"]`))),
+		ottl.LValue{"attributes", "service.instance.id"}.SetIf(ottl.RValue(`resource.attributes["service.instance.id"]`), ottl.IsNotNil(ottl.RValue(`resource.attributes["service.instance.id"]`))),
+	))
+}
+
+func ZeroOutSeverityNumber() Component {
+	return Transform("log", "log", ottl.NewStatements(
+		ottl.LValue{"severity_number"}.SetIf(ottl.IntLiteral(0), ottl.IsNotEmptyString(ottl.RValue("severity_text"))),
+	))
+}
 func BatchProcessor(sendBatchSize, sendBatchMaxSize int, timeout string) Component {
 	return Component{
 		Type: "batch",

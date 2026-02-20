@@ -86,26 +86,33 @@ func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, 
 	if !expOtlpExporter {
 		return pipeline
 	}
-	_, err := pipeline.ExporterTypes["metrics"]
-	if !err {
-		return pipeline
-	}
-	pipeline.ExporterTypes["metrics"] = otel.OTLP
-	pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.GCPProjectID(resource.ProjectName()))
-	if isSystem {
-		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveInstrumentationLibraryLabelsAttributes())
-		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveServiceAttributes())
+
+	if _, ok := pipeline.ExporterTypes["metrics"]; ok {
+		pipeline.ExporterTypes["metrics"] = otel.OTLP
+		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.GCPProjectID(resource.ProjectName()))
+		if isSystem {
+			pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveInstrumentationLibraryLabelsAttributes())
+			pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveServiceAttributes())
+		}
+
+		// b/476109839: For prometheus metrics using the OTLP exporter. The dots "." in the metric name are NOT replaced with underscore "_".
+		// This is diffrent from the GMP endpoint.
+		if isPrometheus {
+			pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricUnknownCounter())
+			pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricStartTime())
+			// If a metric already has a domain, it will not be considered a prometheus metric by the UTR endpoint unless we add the prefix.
+			// This behavior is the same as the GCM/GMP exporters.
+			pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsTransform(otel.AddPrefix("prometheus.googleapis.com")))
+		}
 	}
 
-	// b/476109839: For prometheus metrics using the OTLP exporter. The dots "." in the metric name are NOT replaced with underscore "_".
-	// This is diffrent from the GMP endpoint.
-	if isPrometheus {
-
-		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricUnknownCounter())
-		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricStartTime())
-		// If a metric already has a domain, it will not be considered a prometheus metric by the UTR endpoint unless we add the prefix.
-		// This behavior is the same as the GCM/GMP exporters.
-		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsTransform(otel.AddPrefix("prometheus.googleapis.com")))
+	if _, ok := pipeline.ExporterTypes["logs"]; ok {
+		pipeline.ExporterTypes["logs"] = otel.OTLP
+		pipeline.Processors["logs"] = append(pipeline.Processors["logs"], otel.GCPProjectID(resource.ProjectName()))
+		pipeline.Processors["logs"] = append(pipeline.Processors["logs"], otel.DisableOtlpRoundTrip())
+		pipeline.Processors["logs"] = append(pipeline.Processors["logs"], otel.InstrumentationScope())
+		pipeline.Processors["logs"] = append(pipeline.Processors["logs"], otel.CopyServiceResourceLabels())
+		pipeline.Processors["logs"] = append(pipeline.Processors["logs"], otel.ZeroOutSeverityNumber())
 	}
 	return pipeline
 }
@@ -443,6 +450,7 @@ func (uc *UnifiedConfig) GenerateFluentBitConfigs(ctx context.Context, logsDir s
 	}
 	return c.Generate()
 }
+
 func contains(s []string, str string) bool {
 	for _, v := range s {
 		if v == str {
