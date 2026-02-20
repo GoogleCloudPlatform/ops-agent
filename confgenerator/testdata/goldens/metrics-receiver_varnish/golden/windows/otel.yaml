@@ -871,6 +871,7 @@ service:
       - varnish/varnish
   telemetry:
     metrics:
+      level: detailed
       readers:
       - pull:
           exporter:
