@@ -187,7 +187,7 @@ targets:
           exhaustive:
           - suse-sap-cloud:sles-12-sp5-sap
   sles15:
-    os_versions: [sles-15*, opensuse-leap-15*]
+    os_versions: [sles-15*]
     package_extension:
       rpm
     architectures:
@@ -199,16 +199,12 @@ targets:
           - suse-cloud:sles-15-sp6
           - suse-sap-cloud:sles-15-sp6-sap
           - suse-sap-cloud:sles-15-sp7-sap
-          - opensuse-cloud:opensuse-leap
-          - opensuse-cloud=opensuse-leap-15-6-v20250724-x86-64
       aarch64:
         test_distros:
           representative:
           - suse-cloud:sles-15-arm64
           exhaustive:
           - suse-cloud:sles-15-sp6-arm64
-          - opensuse-cloud:opensuse-leap-arm64
-          - opensuse-cloud=opensuse-leap-15-6-v20250724-arm64 
   windows:
     package_extension:
       goo
