@@ -1049,8 +1049,14 @@ processors:
     log_statements:
     - context: log
       statements:
+      - set(body["parsed_xml"], ParseSimplifiedXML(attributes["log.record.original"])) where (attributes != nil and attributes["log.record.original"] != nil)
+  transform/winlog2_1:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["__field_0"], body["message"]) where (body != nil and body["message"] != nil)
+      - set(cache["__field_0"], body["parsed_xml"]["Event"]["RenderingInfo"]["Message"]) where (body != nil and body["parsed_xml"] != nil and body["parsed_xml"]["Event"] != nil and body["parsed_xml"]["Event"]["RenderingInfo"] != nil and body["parsed_xml"]["Event"]["RenderingInfo"]["Message"] != nil)
       - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
       - set(cache["__field_1"], body["event_data"]) where (body != nil and body["event_data"] != nil)
       - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
@@ -1070,7 +1076,39 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_2"])
       - set(body["raw_xml"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/winlog2_1:
+  transform/winlog2_1_0:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - set(body["parsed_xml"], ParseSimplifiedXML(attributes["log.record.original"])) where (attributes != nil and attributes["log.record.original"] != nil)
+  transform/winlog2_1_1:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["parsed_xml"]["Event"]["RenderingInfo"]["Message"]) where (body != nil and body["parsed_xml"] != nil and body["parsed_xml"]["Event"] != nil and body["parsed_xml"]["Event"]["RenderingInfo"] != nil and body["parsed_xml"]["Event"]["RenderingInfo"]["Message"] != nil)
+      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["__field_1"], body["event_data"]) where (body != nil and body["event_data"] != nil)
+      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["__field_2"], attributes["log.record.original"]) where (attributes != nil and attributes["log.record.original"] != nil)
+      - delete_key(attributes, "log.record.original") where (attributes != nil and attributes["log.record.original"] != nil)
+      - set(cache["body"], body)
+      - keep_keys(body, [])
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"])
+      - set(body["Message"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_1"])
+      - set(cache["__event_data"], ToValues(cache["value"]["data"])) where (cache["value"] != nil and cache["value"]["data"] != nil)
+      - append(cache["__event_data"], cache["value"]["binary"]) where ((cache != nil and cache["__event_data"] != nil) and (cache["value"] != nil and cache["value"]["binary"] != nil))
+      - set(cache["value"], cache["__event_data"]) where (cache != nil and cache["__event_data"] != nil)
+      - set(body["StringInserts"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_2"])
+      - set(body["raw_xml"], cache["value"]) where (cache != nil and cache["value"] != nil)
+  transform/winlog2_1_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1099,33 +1137,7 @@ processors:
       - set(cache["value"], cache["__field_3"])
       - set(cache["value"], "winlog2") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/winlog2_1_0:
-    error_mode: ignore
-    log_statements:
-    - context: log
-      statements:
-      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["__field_0"], body["message"]) where (body != nil and body["message"] != nil)
-      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
-      - set(cache["__field_1"], body["event_data"]) where (body != nil and body["event_data"] != nil)
-      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
-      - set(cache["__field_2"], attributes["log.record.original"]) where (attributes != nil and attributes["log.record.original"] != nil)
-      - delete_key(attributes, "log.record.original") where (attributes != nil and attributes["log.record.original"] != nil)
-      - set(cache["body"], body)
-      - keep_keys(body, [])
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_0"])
-      - set(body["Message"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_1"])
-      - set(cache["__event_data"], ToValues(cache["value"]["data"])) where (cache["value"] != nil and cache["value"]["data"] != nil)
-      - append(cache["__event_data"], cache["value"]["binary"]) where ((cache != nil and cache["__event_data"] != nil) and (cache["value"] != nil and cache["value"]["binary"] != nil))
-      - set(cache["value"], cache["__event_data"]) where (cache != nil and cache["__event_data"] != nil)
-      - set(body["StringInserts"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_2"])
-      - set(body["raw_xml"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/winlog2_1_1:
+  transform/winlog2_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1303,6 +1315,7 @@ service:
       processors:
       - transform/winlog2_0
       - transform/winlog2_1
+      - transform/winlog2_2
       - resourcedetection/_global_0
       - batch/googlecloud/logging_logs_0
       receivers:
@@ -1313,6 +1326,7 @@ service:
       processors:
       - transform/winlog2_1_0
       - transform/winlog2_1_1
+      - transform/winlog2_1_2
       - resourcedetection/_global_0
       - batch/googlecloud/logging_logs_0
       receivers:
