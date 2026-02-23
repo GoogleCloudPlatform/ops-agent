@@ -1,5 +1,1 @@
-- exit_error: exit status 1
-- collector_errors:
-  - stderr: |
-      Error: invalid configuration: empty configuration file
-      service::pipelines: service must have at least one pipeline
+[]

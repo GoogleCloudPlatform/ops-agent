@@ -1,5 +1,48 @@
-- exit_error: exit status 1
-- collector_errors:
-  - stderr: |
-      Error: invalid configuration: empty configuration file
-      service::pipelines: service must have at least one pipeline
+- entries:
+  - jsonPayload:
+      extradata: "n"
+      ident: my_app_id
+      msgid: "n"
+      pid: "n"
+      pri: "13"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2006-01-02T08:04:05Z
+  - jsonPayload:
+      ident: my_app_id
+      message: qqqqrrrr
+      msgid: "n"
+      pid: "n"
+      pri: "14"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2006-01-02T08:03:05Z
+  - jsonPayload:
+      extradata: "n"
+      host: vm_name_1
+      ident: my_app_id
+      msgid: "n"
+      pid: "n"
+      pri: "15"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2006-01-02T08:04:05Z
+  partialSuccess: true

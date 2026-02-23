@@ -1,5 +1,71 @@
-- exit_error: exit status 1
-- collector_errors:
-  - stderr: |
-      Error: invalid configuration: empty configuration file
-      service::pipelines: service must have at least one pipeline
+- entries:
+  - jsonPayload:
+      client: 72.15.99.187
+      errorCode: (13)Permission denied
+      level: error
+      message: "File does not exist: /usr/local/apache2/htdocs/favicon.ico"
+      module: core
+      pid: 35708
+      tid: 4328636416
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_error
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: ERROR
+    timestamp: 2011-09-09T17:42:29.902022Z
+  - jsonPayload:
+      errorCode: AH02217
+      level: error
+      message: "ssl_stapling_init_cert: Can't retrieve issuer certificate!"
+      module: ssl
+      pid: 2451
+      tid: 140169666050176
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_error
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: ERROR
+    timestamp: 2021-09-30T10:18:29.239182Z
+  - jsonPayload:
+      client: 72.15.99.187
+      level: error
+      message: "File does not exist: /usr/local/apache2/htdocs/favicon.ico"
+      pid: 35708
+      tid: 4328636416
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_error
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: ERROR
+    timestamp: 2011-09-09T17:42:29.902022Z
+  - jsonPayload:
+      client: 127.0.0.1
+      level: error
+      message: "client denied by server configuration: /export/home/live/ap/htdocs/test "
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_error
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: ERROR
+    timestamp: 2000-10-11T21:32:52Z
+  partialSuccess: true
