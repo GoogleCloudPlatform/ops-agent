@@ -662,7 +662,7 @@ func (p LoggingProcessorWindowsEventLogV1) Processors(ctx context.Context) ([]ot
 }
 
 func parseLogRecordOriginal(deleteOriginalField bool) otel.Component {
-	// Parse original XML (attributes."log.record.original") to preserve non-rendered `Event.System` fiels and non-parsed `Event.RenderingInfo.Message`.
+	// Parse original XML (attributes."log.record.original") to preserve non-rendered `Event.System` fields and non-parsed `Event.RenderingInfo.Message`.
 	logRecordOriginal := ottl.LValue{"attributes", "log.record.original"}
 	bodyParsedXML := ottl.LValue{"body", "parsed_xml"}
 	statements := []ottl.Statements{
