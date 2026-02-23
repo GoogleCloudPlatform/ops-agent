@@ -1,6 +1,22 @@
 set -e
 
-# Run the bandwidthTest demo with a large range to create a process that uses
-# GPU for a period that is longer than default collection interval of 60s
-/usr/local/cuda/extras/demo_suite/bandwidthTest --memory=pinned --mode=range \
-  --start=1024 --end=20480 --increment=1
+# Run a CUDA program to create a process that uses GPU for a period that is 
+# longer than default collection interval of 60s
+if [ -x "/usr/local/cuda/extras/demo_suite/bandwidthTest" ]; then
+  # bandwidthTest from the CUDA demo package is available with CUDA 12 and earlier
+  echo "Found bandwidthTest. Running..."
+  /usr/local/cuda/extras/demo_suite/bandwidthTest --memory=pinned --mode=range \
+    --start=1024 --end=20480 --increment=1
+else
+  # For CUDA 13+: 
+  # demos are no longer available as a package but require compiling from 
+  # GitHub source.
+  # bandwidthTest is also replaced by https://github.com/nvidia/nvbandwidth 
+  # which has dependencies such as Boost.
+  # Use gpu-burn instead - easy to compile and run. 
+  echo "CUDA 13+ environment detected. Using gpu-burn..."
+  git clone --depth 1 https://github.com/wilicc/gpu-burn
+  cd gpu-burn
+  make
+  ./gpu_burn -d 180
+fi
