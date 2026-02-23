@@ -596,6 +596,12 @@ processors:
     log_statements:
     - context: log
       statements:
+      - set(severity_number, 0) where severity_text != ""
+  transform/nginx__access_1:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
       - "set(cache[\"__parsed_regex\"], ExtractPatternsRubyRegex(body[\"message\"], \"^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \\\\[(?<time>[^\\\\]]*)\\\\] \\\"(?<http_request_requestMethod>\\\\S+)(?: +(?<http_request_requestUrl>[^\\\\\\\"]*?)(?: +(?<http_request_protocol>\\\\S+))?)?\\\" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*)(?: \\\"(?<http_request_referer>[^\\\\\\\"]*)\\\" \\\"(?<http_request_userAgent>[^\\\\\\\"]*)\\\")?(?: \\\"(?<gzip_ratio>[^\\\\\\\"]*)\\\")?$\", true)) where ((body != nil and body[\"message\"] != nil) and IsMatchRubyRegex(body[\"message\"], \"^(?<http_request_remoteIp>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \\\\[(?<time>[^\\\\]]*)\\\\] \\\"(?<http_request_requestMethod>\\\\S+)(?: +(?<http_request_requestUrl>[^\\\\\\\"]*?)(?: +(?<http_request_protocol>\\\\S+))?)?\\\" (?<http_request_status>[^ ]*) (?<http_request_responseSize>[^ ]*)(?: \\\"(?<http_request_referer>[^\\\\\\\"]*)\\\" \\\"(?<http_request_userAgent>[^\\\\\\\"]*)\\\")?(?: \\\"(?<gzip_ratio>[^\\\\\\\"]*)\\\")?$\"))"
       - delete_key(body, "message") where ((body != nil and body["message"] != nil) and (cache != nil and cache["__parsed_regex"] != nil))
       - merge_maps(body, cache["__parsed_regex"], "upsert") where (cache != nil and cache["__parsed_regex"] != nil)
@@ -647,7 +653,7 @@ processors:
       - set(cache["__setif_value"], cache["value"])
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "")
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/nginx__access_1:
+  transform/nginx__access_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -730,7 +736,7 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], "agent.googleapis.com/nginx_access")
       - set(attributes["logging.googleapis.com/instrumentation_source"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/nginx__access_2:
+  transform/nginx__access_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -760,6 +766,12 @@ processors:
       - set(cache["value"], "nginx_access") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/nginx__error_0:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - set(severity_number, 0) where severity_text != ""
+  transform/nginx__error_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -817,7 +829,7 @@ processors:
       - set(cache["__setif_value"], cache["value"])
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "")
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/nginx__error_1:
+  transform/nginx__error_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -840,7 +852,7 @@ processors:
       - set(cache["mapped_value"], "WARNING") where cache["value"] == "warn"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-  transform/nginx__error_2:
+  transform/nginx__error_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -882,6 +894,12 @@ processors:
       statements:
       - extract_count_metric(true) where name == "grpc.client.attempt.duration"
   transform/syslog_0:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - set(severity_number, 0) where severity_text != ""
+  transform/syslog_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -998,6 +1016,7 @@ service:
       - googlecloud/logging
       processors:
       - transform/syslog_0
+      - transform/syslog_1
       - resourcedetection/_global_0
       - batch/googlecloud/logging_logs_0
       receivers:
@@ -1009,6 +1028,7 @@ service:
       - transform/nginx__access_0
       - transform/nginx__access_1
       - transform/nginx__access_2
+      - transform/nginx__access_3
       - resourcedetection/_global_0
       - batch/googlecloud/logging_logs_0
       receivers:
@@ -1020,6 +1040,7 @@ service:
       - transform/nginx__error_0
       - transform/nginx__error_1
       - transform/nginx__error_2
+      - transform/nginx__error_3
       - resourcedetection/_global_0
       - batch/googlecloud/logging_logs_0
       receivers:
