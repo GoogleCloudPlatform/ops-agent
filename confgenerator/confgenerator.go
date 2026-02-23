@@ -237,8 +237,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 				},
 			},
 			otel.Logging: {
-				Exporter:         googleCloudLoggingExporter(),
-				ProcessorsByType: map[string][]otel.Component{},
+				Exporter: googleCloudLoggingExporter(),
 			},
 		},
 	}.Generate(ctx)
