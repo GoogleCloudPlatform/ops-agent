@@ -52,6 +52,7 @@ otelopscol_local: dist/opt/google-cloud-ops-agent/subagents/opentelemetry-collec
 
 .PHONY: clean_submodules
 clean_submodules:
+	cd submodules/opentelemetry-operations-collector/otelopscol/ && make clean
 	rm -rf dist
 
 ############
