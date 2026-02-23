@@ -1,25 +1,158 @@
 - entries:
   - jsonPayload:
+      ActivityID: "{8a149361-b6dd-0002-4547-593fcd85dc01}"
+      Channel: Security
+      Computer: test-computer
+      EventID: 4567
+      EventRecordID: 34567
+      Keywords: "0x8020000000000000"
+      Level: 4
+      Message: |-
+        Special privileges assigned to new logon.
+        
+        Subject:
+        	Security ID:		S-0-0-00
+        	Account Name:		SYSTEM
+        	Account Domain:		NT AUTHORITY
+        	Logon ID:		0x000
+        
+        Privileges:		SeAssignPrimaryTokenPrivilege
+        			SeTcbPrivilege
+        			SeSecurityPrivilege
+        			SeTakeOwnershipPrivilege
+        			SeLoadDriverPrivilege
+        			SeBackupPrivilege
+        			SeRestorePrivilege
+        			SeDebugPrivilege
+        			SeAuditPrivilege
+        			SeSystemEnvironmentPrivilege
+        			SeImpersonatePrivilege
+        			SeDelegateSessionUserImpersonatePrivilege
+      Opcode: Info
+      ProcessID: 820
+      ProviderGuid: "{11111111-2222-3333-4444-555555555555}"
+      ProviderName: Microsoft-Windows-Security-Auditing
+      Qualifiers: 0
+      StringInserts:
+      - S-0-0-00
+      - SYSTEM
+      - NT AUTHORITY
+      - "0x000"
+      - |-
+        SeAssignPrimaryTokenPrivilege
+        			SeTcbPrivilege
+        			SeSecurityPrivilege
+        			SeTakeOwnershipPrivilege
+        			SeLoadDriverPrivilege
+        			SeBackupPrivilege
+        			SeRestorePrivilege
+        			SeDebugPrivilege
+        			SeAuditPrivilege
+        			SeSystemEnvironmentPrivilege
+        			SeImpersonatePrivilege
+        			SeDelegateSessionUserImpersonatePrivilege
+      Task: Special Logon
+      ThreadId: 6080
+      TimeCreated: 2026-01-16 18:45:59.5782153 +0000
+      UserId: ""
+      Version: 0
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
+  - jsonPayload:
+      ActivityID: "{8a149361-b6dd-0002-4547-593fcd85dc01}"
+      Channel: Security
+      Computer: test-computer
+      EventID: 4567
+      EventRecordID: 34567
+      Keywords: "0x8020000000000000"
+      Level: 4
+      Message: |-
+        Special privileges assigned to new logon.
+        
+        Subject:
+        	Security ID:		S-0-0-00
+        	Account Name:		SYSTEM
+        	Account Domain:		NT AUTHORITY
+        	Logon ID:		0x000
+        
+        Privileges:		SeAssignPrimaryTokenPrivilege
+        			SeTcbPrivilege
+        			SeSecurityPrivilege
+        			SeTakeOwnershipPrivilege
+        			SeLoadDriverPrivilege
+        			SeBackupPrivilege
+        			SeRestorePrivilege
+        			SeDebugPrivilege
+        			SeAuditPrivilege
+        			SeSystemEnvironmentPrivilege
+        			SeImpersonatePrivilege
+        			SeDelegateSessionUserImpersonatePrivilege
+      Opcode: Info
+      ProcessID: 820
+      ProviderGuid: "{11111111-2222-3333-4444-555555555555}"
+      ProviderName: Microsoft-Windows-Security-Auditing
+      Qualifiers: 0
+      StringInserts:
+      - S-0-0-00
+      - SYSTEM
+      - NT AUTHORITY
+      - "0x000"
+      - |-
+        SeAssignPrimaryTokenPrivilege
+        			SeTcbPrivilege
+        			SeSecurityPrivilege
+        			SeTakeOwnershipPrivilege
+        			SeLoadDriverPrivilege
+        			SeBackupPrivilege
+        			SeRestorePrivilege
+        			SeDebugPrivilege
+        			SeAuditPrivilege
+        			SeSystemEnvironmentPrivilege
+        			SeImpersonatePrivilege
+        			SeDelegateSessionUserImpersonatePrivilege
+      Task: Special Logon
+      ThreadId: 6080
+      TimeCreated: 2026-01-16 18:45:59.5782153 +0000
+      UserId: ""
+      Version: 0
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
+  - jsonPayload:
       Channel: System
       Computer: test-computer
-      EventID: 7654
-      EventRecordID: 2257
+      EventID: 7036
+      EventRecordID: 11223
       Keywords: "0x8080000000000000"
       Level: 4
-      Message: The Client License Service (ClipSVC) service entered the running state.
+      Message: The Software Protection service entered the stopped state.
       Opcode: 0
-      ProcessID: 780
-      ProviderGuid: "{555908d1-a6d7-4695-8e1e-26931d2012f4}"
+      ProcessID: 789
+      ProviderGuid: "{11111111-2222-3333-4444-555555555555}"
       ProviderName: Service Control Manager
       Qualifiers: 12345
       StringInserts:
-      - Client License Service (ClipSVC)
-      - running
-      - 43006C00690070005300560043002F0034000000
+      - Software Protection
+      - stopped
+      - 7300700070007300760063002F0031000000
       Task: 0
-      ThreadId: 7548
-      TimeCreated: 2025-12-02 23:43:11.8975092 +0000
+      ThreadId: 5678
+      TimeCreated: 2025-12-14 05:26:29.0709018 +0000
       UserId: ""
+      Version: 0
     labels:
       compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/my-log-name
@@ -30,92 +163,27 @@
       type: gce_instance
     timestamp: now
   - jsonPayload:
-      Channel: Security
+      Channel: System
       Computer: test-computer
-      EventID: 9876
-      EventRecordID: 24007
-      Keywords: "0x8020000000000000"
+      EventID: 7036
+      EventRecordID: 22334
+      Keywords: "0x8080000000000000"
       Level: 4
-      Message: |-
-        Credential Manager credentials were read.
-        
-        Subject:
-                Security ID:            S-0-0-00
-                Account Name:           TEST-COMPUTER$
-                Account Domain:         WORKGROUP
-                Logon ID:               0x3E5
-                Read Operation:         Enumerate Credentials
-        
-        This event occurs when a user performs a read operation on stored credentials in Credential Manager.
-      Opcode: Info
-      ProcessID: 812
-      ProviderGuid: "{54849625-5478-4994-a5ba-3e3b0328c30d}"
-      ProviderName: Microsoft-Windows-Security-Auditing
-      Qualifiers: 0
+      Message: The Software Protection service entered the running state.
+      Opcode: 0
+      ProcessID: 789
+      ProviderGuid: "{11111111-2222-3333-4444-555555555555}"
+      ProviderName: Service Control Manager
+      Qualifiers: 12345
       StringInserts:
-      - S-0-0-00
-      - TEST-COMPUTER$
-      - WORKGROUP
-      - "0x3e5"
-      - WindowsLive:target=virtualapp/didlogical
-      - "0"
-      - "1"
-      - "%%8100"
-      - "0"
-      - 2025-12-23T20:55:56.6615132Z
-      - "1234"
-      Task: User Account Management
-      ThreadId: 2820
-      TimeCreated: 2025-12-23 20:55:56.6898286 +0000
+      - Software Protection
+      - running
+      - 7300700070007300760063002F0034000000
+      Task: 0
+      ThreadId: 9876
+      TimeCreated: 2025-12-14 05:25:55.5387001 +0000
       UserId: ""
-    labels:
-      compute.googleapis.com/resource_name: hostname
-    logName: projects/my-project/logs/my-log-name
-    resource:
-      labels:
-        instance_id: test-instance-id
-        zone: test-zone
-      type: gce_instance
-    timestamp: now
-  - jsonPayload:
-      Channel: Security
-      Computer: test-computer
-      EventID: 9876
-      EventRecordID: 24007
-      Keywords: "0x8020000000000000"
-      Level: 4
-      Message: |-
-        Credential Manager credentials were read.
-        
-        Subject:
-                Security ID:            S-0-0-00
-                Account Name:           TEST-COMPUTER$
-                Account Domain:         WORKGROUP
-                Logon ID:               0x3E5
-                Read Operation:         Enumerate Credentials
-        
-        This event occurs when a user performs a read operation on stored credentials in Credential Manager.
-      Opcode: Info
-      ProcessID: 812
-      ProviderGuid: "{54849625-5478-4994-a5ba-3e3b0328c30d}"
-      ProviderName: Microsoft-Windows-Security-Auditing
-      Qualifiers: 0
-      StringInserts:
-      - S-0-0-00
-      - TEST-COMPUTER$
-      - WORKGROUP
-      - "0x3e5"
-      - WindowsLive:target=virtualapp/didlogical
-      - "0"
-      - "1"
-      - "%%8100"
-      - "0"
-      - 2025-12-23T20:55:56.6615132Z
-      - "1234"
-      Task: User Account Management
-      ThreadId: 2820
-      TimeCreated: 2025-12-23 20:55:56.6898286 +0000
-      UserId: ""
+      Version: 0
     labels:
       compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/my-log-name
