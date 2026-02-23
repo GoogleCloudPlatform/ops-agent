@@ -1,16 +1,5 @@
-- entries:
-  - jsonPayload:
-      level: info
-      message: start
-      overwritten: "yes"
-      preserved: "yes"
-    labels:
-      compute.googleapis.com/resource_name: hostname
-    logName: projects/my-project/logs/my-log-name
-    resource:
-      labels:
-        instance_id: test-instance-id
-        zone: test-zone
-      type: gce_instance
-    timestamp: 2009-11-10T23:00:00.000001Z
-  partialSuccess: true
+- exit_error: exit status 1
+- collector_errors:
+  - stderr: |
+      Error: invalid configuration: empty configuration file
+      service::pipelines: service must have at least one pipeline

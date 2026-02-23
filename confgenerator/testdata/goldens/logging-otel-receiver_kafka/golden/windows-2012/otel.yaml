@@ -98,7 +98,7 @@ processors:
         - googlecloudmonitoring/point_count
   interval/loggingmetrics_7:
     interval: 1m
-  logstransform/kafka_1:
+  logstransform/kafka_0:
     operators:
     - field: attributes.__source_identifier
       type: add
@@ -655,13 +655,7 @@ processors:
       statements:
       - set(name, "agent.googleapis.com/iis")
       - set(version, "1.0")
-  transform/kafka_0:
-    error_mode: ignore
-    log_statements:
-    - context: log
-      statements:
-      - set(severity_number, 0) where severity_text != ""
-  transform/kafka_2:
+  transform/kafka_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -716,7 +710,7 @@ processors:
       - set(cache["__setif_value"], cache["value"])
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "")
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/kafka_3:
+  transform/kafka_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -737,7 +731,7 @@ processors:
       - set(cache["mapped_value"], "WARNING") where cache["value"] == "WARN"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-  transform/kafka_4:
+  transform/kafka_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1317,11 +1311,10 @@ service:
       exporters:
       - googlecloud/logging
       processors:
-      - transform/kafka_0
-      - logstransform/kafka_1
+      - logstransform/kafka_0
+      - transform/kafka_1
       - transform/kafka_2
       - transform/kafka_3
-      - transform/kafka_4
       - resourcedetection/_global_0
       - batch/googlecloud/logging_logs_0
       receivers:

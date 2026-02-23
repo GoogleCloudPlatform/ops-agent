@@ -83,7 +83,7 @@ processors:
         - googlecloudmonitoring/point_count
   interval/loggingmetrics_7:
     interval: 1m
-  logstransform/mysql__general_1:
+  logstransform/mysql__general_0:
     operators:
     - field: attributes.__source_identifier
       type: add
@@ -96,7 +96,7 @@ processors:
       type: recombine
     - field: attributes.__source_identifier
       type: remove
-  logstransform/mysql__slow_1:
+  logstransform/mysql__slow_0:
     operators:
     - field: attributes.__source_identifier
       type: add
@@ -622,12 +622,6 @@ processors:
     log_statements:
     - context: log
       statements:
-      - set(severity_number, 0) where severity_text != ""
-  transform/mysql__error_1:
-    error_mode: ignore
-    log_statements:
-    - context: log
-      statements:
       - "set(cache[\"__parsed_regex\"], ExtractPatternsRubyRegex(body[\"message\"], \"^(?<time>\\\\d{4}-\\\\d{2}-\\\\d{2}T\\\\d{2}:\\\\d{2}:\\\\d{2}.\\\\d+(?:Z|[+-]\\\\d{2}:?\\\\d{2})?)\\\\s+(?<tid>\\\\d+)\\\\s+\\\\[(?<level>[^\\\\]]+)](?:\\\\s+\\\\[(?<errorCode>[^\\\\]]+)])?(?:\\\\s+\\\\[(?<subsystem>[^\\\\]]+)])?\\\\s+(?<message>.*)$\", true)) where ((body != nil and body[\"message\"] != nil) and IsMatchRubyRegex(body[\"message\"], \"^(?<time>\\\\d{4}-\\\\d{2}-\\\\d{2}T\\\\d{2}:\\\\d{2}:\\\\d{2}.\\\\d+(?:Z|[+-]\\\\d{2}:?\\\\d{2})?)\\\\s+(?<tid>\\\\d+)\\\\s+\\\\[(?<level>[^\\\\]]+)](?:\\\\s+\\\\[(?<errorCode>[^\\\\]]+)])?(?:\\\\s+\\\\[(?<subsystem>[^\\\\]]+)])?\\\\s+(?<message>.*)$\"))"
       - delete_key(body, "message") where ((body != nil and body["message"] != nil) and (cache != nil and cache["__parsed_regex"] != nil))
       - merge_maps(body, cache["__parsed_regex"], "upsert") where (cache != nil and cache["__parsed_regex"] != nil)
@@ -679,7 +673,7 @@ processors:
       - set(cache["__setif_value"], cache["value"])
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "")
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/mysql__error_2:
+  transform/mysql__error_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -734,7 +728,7 @@ processors:
       - set(cache["__setif_value"], cache["value"])
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "")
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/mysql__error_3:
+  transform/mysql__error_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -790,7 +784,7 @@ processors:
       - set(cache["__setif_value"], cache["value"])
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "")
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/mysql__error_4:
+  transform/mysql__error_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -813,7 +807,7 @@ processors:
       - set(cache["mapped_value"], "WARNING") where cache["value"] == "Warning"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
-  transform/mysql__error_5:
+  transform/mysql__error_4:
     error_mode: ignore
     log_statements:
     - context: log
@@ -842,13 +836,7 @@ processors:
       - set(cache["value"], cache["__field_3"])
       - set(cache["value"], "mysql_error") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/mysql__general_0:
-    error_mode: ignore
-    log_statements:
-    - context: log
-      statements:
-      - set(severity_number, 0) where severity_text != ""
-  transform/mysql__general_2:
+  transform/mysql__general_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -904,7 +892,7 @@ processors:
       - set(cache["__setif_value"], cache["value"])
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "")
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/mysql__general_3:
+  transform/mysql__general_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -960,7 +948,7 @@ processors:
       - set(cache["__setif_value"], cache["value"])
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "")
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/mysql__general_4:
+  transform/mysql__general_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -968,7 +956,7 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], "agent.googleapis.com/mysql_general")
       - set(attributes["logging.googleapis.com/instrumentation_source"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/mysql__general_5:
+  transform/mysql__general_4:
     error_mode: ignore
     log_statements:
     - context: log
@@ -997,13 +985,7 @@ processors:
       - set(cache["value"], cache["__field_3"])
       - set(cache["value"], "mysql_general") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/mysql__slow_0:
-    error_mode: ignore
-    log_statements:
-    - context: log
-      statements:
-      - set(severity_number, 0) where severity_text != ""
-  transform/mysql__slow_2:
+  transform/mysql__slow_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1080,7 +1062,7 @@ processors:
       - set(cache["__setif_value"], cache["value"])
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "")
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/mysql__slow_3:
+  transform/mysql__slow_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1146,7 +1128,7 @@ processors:
       - set(cache["__setif_value"], cache["value"])
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "")
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/mysql__slow_4:
+  transform/mysql__slow_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1208,7 +1190,7 @@ processors:
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], "agent.googleapis.com/mysql_slow")
       - set(attributes["logging.googleapis.com/instrumentation_source"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/mysql__slow_5:
+  transform/mysql__slow_4:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1250,12 +1232,6 @@ processors:
       statements:
       - extract_count_metric(true) where name == "grpc.client.attempt.duration"
   transform/syslog_0:
-    error_mode: ignore
-    log_statements:
-    - context: log
-      statements:
-      - set(severity_number, 0) where severity_text != ""
-  transform/syslog_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1390,7 +1366,6 @@ service:
       - googlecloud/logging
       processors:
       - transform/syslog_0
-      - transform/syslog_1
       - resourcedetection/_global_0
       - batch/googlecloud/logging_logs_0
       receivers:
@@ -1404,7 +1379,6 @@ service:
       - transform/mysql__error_2
       - transform/mysql__error_3
       - transform/mysql__error_4
-      - transform/mysql__error_5
       - resourcedetection/_global_0
       - batch/googlecloud/logging_logs_0
       receivers:
@@ -1413,12 +1387,11 @@ service:
       exporters:
       - googlecloud/logging
       processors:
-      - transform/mysql__general_0
-      - logstransform/mysql__general_1
+      - logstransform/mysql__general_0
+      - transform/mysql__general_1
       - transform/mysql__general_2
       - transform/mysql__general_3
       - transform/mysql__general_4
-      - transform/mysql__general_5
       - resourcedetection/_global_0
       - batch/googlecloud/logging_logs_0
       receivers:
@@ -1427,12 +1400,11 @@ service:
       exporters:
       - googlecloud/logging
       processors:
-      - transform/mysql__slow_0
-      - logstransform/mysql__slow_1
+      - logstransform/mysql__slow_0
+      - transform/mysql__slow_1
       - transform/mysql__slow_2
       - transform/mysql__slow_3
       - transform/mysql__slow_4
-      - transform/mysql__slow_5
       - resourcedetection/_global_0
       - batch/googlecloud/logging_logs_0
       receivers:

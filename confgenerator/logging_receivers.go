@@ -241,9 +241,7 @@ func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.Receiv
 			Config: receiver_config,
 		},
 		Processors: map[string][]otel.Component{
-			"logs": {
-				otel.ZeroOutSeverityNumber(),
-			},
+			"logs": nil,
 		},
 		ExporterTypes: map[string]otel.ExporterType{
 			"logs": otel.Logging,
@@ -352,6 +350,7 @@ func (r LoggingReceiverSyslog) Pipelines(ctx context.Context) ([]otel.ReceiverPi
 				cacheBodyString.Delete(),
 			),
 		),
+		otel.ZeroOutSeverityNumber(),
 	}
 
 	config := map[string]any{

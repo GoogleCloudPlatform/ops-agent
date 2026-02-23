@@ -731,6 +731,12 @@ processors:
     log_statements:
     - context: log
       statements:
+      - set(severity_number, 0) where severity_text != ""
+  transform/test__syslog__source__id__tcp_2:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
       - set(cache["__field_0"], attributes["compute.googleapis.com/instance_group_manager/name"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/name"] != nil)
       - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
@@ -769,6 +775,12 @@ processors:
       - delete_key(cache, "__body_map") where (cache != nil and cache["__body_map"] != nil)
       - delete_key(cache, "__body_string") where (cache != nil and cache["__body_string"] != nil)
   transform/test__syslog__source__id__udp_1:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - set(severity_number, 0) where severity_text != ""
+  transform/test__syslog__source__id__udp_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -851,6 +863,7 @@ service:
       processors:
       - transform/test__syslog__source__id__tcp_0
       - transform/test__syslog__source__id__tcp_1
+      - transform/test__syslog__source__id__tcp_2
       - transform/logs_pipeline1_test__syslog__source__id__tcp_0
       - resourcedetection/_global_0
       - batch/googlecloud/logging_logs_0
@@ -862,6 +875,7 @@ service:
       processors:
       - transform/test__syslog__source__id__udp_0
       - transform/test__syslog__source__id__udp_1
+      - transform/test__syslog__source__id__udp_2
       - transform/logs_pipeline2_test__syslog__source__id__udp_0
       - resourcedetection/_global_0
       - batch/googlecloud/logging_logs_0

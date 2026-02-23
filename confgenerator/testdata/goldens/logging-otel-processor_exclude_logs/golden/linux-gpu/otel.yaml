@@ -753,12 +753,6 @@ processors:
     log_statements:
     - context: log
       statements:
-      - set(severity_number, 0) where severity_text != ""
-  transform/sample__logs_1:
-    error_mode: ignore
-    log_statements:
-    - context: log
-      statements:
       - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
       - set(cache["__field_0"], attributes["compute.googleapis.com/instance_group_manager/name"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/name"] != nil)
       - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
@@ -784,12 +778,6 @@ processors:
       - set(cache["value"], "sample_logs") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/syslog_0:
-    error_mode: ignore
-    log_statements:
-    - context: log
-      statements:
-      - set(severity_number, 0) where severity_text != ""
-  transform/syslog_1:
     error_mode: ignore
     log_statements:
     - context: log
@@ -894,7 +882,6 @@ service:
       - googlecloud/logging
       processors:
       - transform/syslog_0
-      - transform/syslog_1
       - resourcedetection/_global_0
       - batch/googlecloud/logging_logs_0
       receivers:
@@ -904,7 +891,6 @@ service:
       - googlecloud/logging
       processors:
       - transform/sample__logs_0
-      - transform/sample__logs_1
       - filter/logs_p1_sample__logs_0
       - filter/logs_p1_sample__logs_1
       - filter/logs_p1_sample__logs_2

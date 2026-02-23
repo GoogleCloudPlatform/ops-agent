@@ -1,38 +1,5 @@
-- entries:
-  - jsonPayload:
-      key1: 12345
-      key2: abc
-    labels:
-      compute.googleapis.com/resource_name: hostname
-    logName: projects/my-project/logs/my-log-name
-    resource:
-      labels:
-        instance_id: test-instance-id
-        zone: test-zone
-      type: gce_instance
-    timestamp: 2023-01-01T20:04:05Z
-  - jsonPayload:
-      key1: 67890
-      key2: def
-    labels:
-      compute.googleapis.com/resource_name: hostname
-    logName: projects/my-project/logs/my-log-name
-    resource:
-      labels:
-        instance_id: test-instance-id
-        zone: test-zone
-      type: gce_instance
-    timestamp: 2024-06-15T19:30:00Z
-  - jsonPayload:
-      key1: 11121
-      key2: ghi
-    labels:
-      compute.googleapis.com/resource_name: hostname
-    logName: projects/my-project/logs/my-log-name
-    resource:
-      labels:
-        instance_id: test-instance-id
-        zone: test-zone
-      type: gce_instance
-    timestamp: 2022-12-31T23:59:59Z
-  partialSuccess: true
+- exit_error: exit status 1
+- collector_errors:
+  - stderr: |
+      Error: invalid configuration: empty configuration file
+      service::pipelines: service must have at least one pipeline
