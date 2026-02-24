@@ -1069,11 +1069,11 @@ processors:
       - delete_key(cache, "__field_5") where (cache != nil and cache["__field_5"] != nil)
       - set(cache["__field_5"], body["parsed_xml"]["Event"]["System"]["Keywords"]) where (body != nil and body["parsed_xml"] != nil and body["parsed_xml"]["Event"] != nil and body["parsed_xml"]["Event"]["System"] != nil and body["parsed_xml"]["Event"]["System"]["Keywords"] != nil)
       - delete_key(cache, "__field_6") where (cache != nil and cache["__field_6"] != nil)
-      - set(cache["__field_6"], body["level"]) where (body != nil and body["level"] != nil)
+      - set(cache["__field_6"], body["parsed_xml"]["Event"]["System"]["Level"]) where (body != nil and body["parsed_xml"] != nil and body["parsed_xml"]["Event"] != nil and body["parsed_xml"]["Event"]["System"] != nil and body["parsed_xml"]["Event"]["System"]["Level"] != nil)
       - delete_key(cache, "__field_7") where (cache != nil and cache["__field_7"] != nil)
       - set(cache["__field_7"], body["parsed_xml"]["Event"]["RenderingInfo"]["Message"]) where (body != nil and body["parsed_xml"] != nil and body["parsed_xml"]["Event"] != nil and body["parsed_xml"]["Event"]["RenderingInfo"] != nil and body["parsed_xml"]["Event"]["RenderingInfo"]["Message"] != nil)
       - delete_key(cache, "__field_8") where (cache != nil and cache["__field_8"] != nil)
-      - set(cache["__field_8"], body["opcode"]) where (body != nil and body["opcode"] != nil)
+      - set(cache["__field_8"], body["parsed_xml"]["Event"]["System"]["Opcode"]) where (body != nil and body["parsed_xml"] != nil and body["parsed_xml"]["Event"] != nil and body["parsed_xml"]["Event"]["System"] != nil and body["parsed_xml"]["Event"]["System"]["Opcode"] != nil)
       - delete_key(cache, "__field_9") where (cache != nil and cache["__field_9"] != nil)
       - set(cache["__field_9"], body["execution"]["process_id"]) where (body != nil and body["execution"] != nil and body["execution"]["process_id"] != nil)
       - delete_key(cache, "__field_10") where (cache != nil and cache["__field_10"] != nil)
@@ -1087,7 +1087,7 @@ processors:
       - delete_key(cache, "__field_14") where (cache != nil and cache["__field_14"] != nil)
       - set(cache["__field_14"], body["event_data"]) where (body != nil and body["event_data"] != nil)
       - delete_key(cache, "__field_15") where (cache != nil and cache["__field_15"] != nil)
-      - set(cache["__field_15"], body["task"]) where (body != nil and body["task"] != nil)
+      - set(cache["__field_15"], body["parsed_xml"]["Event"]["System"]["Task"]) where (body != nil and body["parsed_xml"] != nil and body["parsed_xml"]["Event"] != nil and body["parsed_xml"]["Event"]["System"] != nil and body["parsed_xml"]["Event"]["System"]["Task"] != nil)
       - delete_key(cache, "__field_16") where (cache != nil and cache["__field_16"] != nil)
       - set(cache["__field_16"], body["execution"]["thread_id"]) where (body != nil and body["execution"] != nil and body["execution"]["thread_id"] != nil)
       - delete_key(cache, "__field_17") where (cache != nil and cache["__field_17"] != nil)
@@ -1100,6 +1100,7 @@ processors:
       - keep_keys(body, [])
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_0"])
+      - set(cache["value"], "") where cache["value"] == nil
       - set(body["ActivityID"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_1"])
@@ -1118,13 +1119,8 @@ processors:
       - set(body["Keywords"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_6"])
-      - delete_key(cache, "mapped_value") where (cache != nil and cache["mapped_value"] != nil)
-      - set(cache["mapped_value"], "1") where cache["value"] == "Critical"
-      - set(cache["mapped_value"], "2") where cache["value"] == "Error"
-      - set(cache["mapped_value"], "4") where cache["value"] == "Information"
-      - set(cache["mapped_value"], "3") where cache["value"] == "Warning"
-      - set(cache["mapped_value"], Int(cache["mapped_value"]))
-      - set(body["Level"], cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
+      - set(cache["value"], Int(cache["value"]))
+      - set(body["Level"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_7"])
       - set(body["Message"], cache["value"]) where (cache != nil and cache["value"] != nil)
@@ -1147,6 +1143,7 @@ processors:
       - set(body["Qualifiers"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_13"])
+      - set(cache["value"], "") where cache["value"] == nil
       - set(body["RelatedActivityID"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_14"])
@@ -1199,11 +1196,11 @@ processors:
       - delete_key(cache, "__field_5") where (cache != nil and cache["__field_5"] != nil)
       - set(cache["__field_5"], body["parsed_xml"]["Event"]["System"]["Keywords"]) where (body != nil and body["parsed_xml"] != nil and body["parsed_xml"]["Event"] != nil and body["parsed_xml"]["Event"]["System"] != nil and body["parsed_xml"]["Event"]["System"]["Keywords"] != nil)
       - delete_key(cache, "__field_6") where (cache != nil and cache["__field_6"] != nil)
-      - set(cache["__field_6"], body["level"]) where (body != nil and body["level"] != nil)
+      - set(cache["__field_6"], body["parsed_xml"]["Event"]["System"]["Level"]) where (body != nil and body["parsed_xml"] != nil and body["parsed_xml"]["Event"] != nil and body["parsed_xml"]["Event"]["System"] != nil and body["parsed_xml"]["Event"]["System"]["Level"] != nil)
       - delete_key(cache, "__field_7") where (cache != nil and cache["__field_7"] != nil)
       - set(cache["__field_7"], body["parsed_xml"]["Event"]["RenderingInfo"]["Message"]) where (body != nil and body["parsed_xml"] != nil and body["parsed_xml"]["Event"] != nil and body["parsed_xml"]["Event"]["RenderingInfo"] != nil and body["parsed_xml"]["Event"]["RenderingInfo"]["Message"] != nil)
       - delete_key(cache, "__field_8") where (cache != nil and cache["__field_8"] != nil)
-      - set(cache["__field_8"], body["opcode"]) where (body != nil and body["opcode"] != nil)
+      - set(cache["__field_8"], body["parsed_xml"]["Event"]["System"]["Opcode"]) where (body != nil and body["parsed_xml"] != nil and body["parsed_xml"]["Event"] != nil and body["parsed_xml"]["Event"]["System"] != nil and body["parsed_xml"]["Event"]["System"]["Opcode"] != nil)
       - delete_key(cache, "__field_9") where (cache != nil and cache["__field_9"] != nil)
       - set(cache["__field_9"], body["execution"]["process_id"]) where (body != nil and body["execution"] != nil and body["execution"]["process_id"] != nil)
       - delete_key(cache, "__field_10") where (cache != nil and cache["__field_10"] != nil)
@@ -1217,7 +1214,7 @@ processors:
       - delete_key(cache, "__field_14") where (cache != nil and cache["__field_14"] != nil)
       - set(cache["__field_14"], body["event_data"]) where (body != nil and body["event_data"] != nil)
       - delete_key(cache, "__field_15") where (cache != nil and cache["__field_15"] != nil)
-      - set(cache["__field_15"], body["task"]) where (body != nil and body["task"] != nil)
+      - set(cache["__field_15"], body["parsed_xml"]["Event"]["System"]["Task"]) where (body != nil and body["parsed_xml"] != nil and body["parsed_xml"]["Event"] != nil and body["parsed_xml"]["Event"]["System"] != nil and body["parsed_xml"]["Event"]["System"]["Task"] != nil)
       - delete_key(cache, "__field_16") where (cache != nil and cache["__field_16"] != nil)
       - set(cache["__field_16"], body["execution"]["thread_id"]) where (body != nil and body["execution"] != nil and body["execution"]["thread_id"] != nil)
       - delete_key(cache, "__field_17") where (cache != nil and cache["__field_17"] != nil)
@@ -1230,6 +1227,7 @@ processors:
       - keep_keys(body, [])
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_0"])
+      - set(cache["value"], "") where cache["value"] == nil
       - set(body["ActivityID"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_1"])
@@ -1248,13 +1246,8 @@ processors:
       - set(body["Keywords"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_6"])
-      - delete_key(cache, "mapped_value") where (cache != nil and cache["mapped_value"] != nil)
-      - set(cache["mapped_value"], "1") where cache["value"] == "Critical"
-      - set(cache["mapped_value"], "2") where cache["value"] == "Error"
-      - set(cache["mapped_value"], "4") where cache["value"] == "Information"
-      - set(cache["mapped_value"], "3") where cache["value"] == "Warning"
-      - set(cache["mapped_value"], Int(cache["mapped_value"]))
-      - set(body["Level"], cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
+      - set(cache["value"], Int(cache["value"]))
+      - set(body["Level"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_7"])
       - set(body["Message"], cache["value"]) where (cache != nil and cache["value"] != nil)
@@ -1277,6 +1270,7 @@ processors:
       - set(body["Qualifiers"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_13"])
+      - set(cache["value"], "") where cache["value"] == nil
       - set(body["RelatedActivityID"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_14"])
@@ -1387,11 +1381,11 @@ processors:
       - delete_key(cache, "__field_5") where (cache != nil and cache["__field_5"] != nil)
       - set(cache["__field_5"], body["parsed_xml"]["Event"]["System"]["Keywords"]) where (body != nil and body["parsed_xml"] != nil and body["parsed_xml"]["Event"] != nil and body["parsed_xml"]["Event"]["System"] != nil and body["parsed_xml"]["Event"]["System"]["Keywords"] != nil)
       - delete_key(cache, "__field_6") where (cache != nil and cache["__field_6"] != nil)
-      - set(cache["__field_6"], body["level"]) where (body != nil and body["level"] != nil)
+      - set(cache["__field_6"], body["parsed_xml"]["Event"]["System"]["Level"]) where (body != nil and body["parsed_xml"] != nil and body["parsed_xml"]["Event"] != nil and body["parsed_xml"]["Event"]["System"] != nil and body["parsed_xml"]["Event"]["System"]["Level"] != nil)
       - delete_key(cache, "__field_7") where (cache != nil and cache["__field_7"] != nil)
       - set(cache["__field_7"], body["parsed_xml"]["Event"]["RenderingInfo"]["Message"]) where (body != nil and body["parsed_xml"] != nil and body["parsed_xml"]["Event"] != nil and body["parsed_xml"]["Event"]["RenderingInfo"] != nil and body["parsed_xml"]["Event"]["RenderingInfo"]["Message"] != nil)
       - delete_key(cache, "__field_8") where (cache != nil and cache["__field_8"] != nil)
-      - set(cache["__field_8"], body["opcode"]) where (body != nil and body["opcode"] != nil)
+      - set(cache["__field_8"], body["parsed_xml"]["Event"]["System"]["Opcode"]) where (body != nil and body["parsed_xml"] != nil and body["parsed_xml"]["Event"] != nil and body["parsed_xml"]["Event"]["System"] != nil and body["parsed_xml"]["Event"]["System"]["Opcode"] != nil)
       - delete_key(cache, "__field_9") where (cache != nil and cache["__field_9"] != nil)
       - set(cache["__field_9"], body["execution"]["process_id"]) where (body != nil and body["execution"] != nil and body["execution"]["process_id"] != nil)
       - delete_key(cache, "__field_10") where (cache != nil and cache["__field_10"] != nil)
@@ -1405,7 +1399,7 @@ processors:
       - delete_key(cache, "__field_14") where (cache != nil and cache["__field_14"] != nil)
       - set(cache["__field_14"], body["event_data"]) where (body != nil and body["event_data"] != nil)
       - delete_key(cache, "__field_15") where (cache != nil and cache["__field_15"] != nil)
-      - set(cache["__field_15"], body["task"]) where (body != nil and body["task"] != nil)
+      - set(cache["__field_15"], body["parsed_xml"]["Event"]["System"]["Task"]) where (body != nil and body["parsed_xml"] != nil and body["parsed_xml"]["Event"] != nil and body["parsed_xml"]["Event"]["System"] != nil and body["parsed_xml"]["Event"]["System"]["Task"] != nil)
       - delete_key(cache, "__field_16") where (cache != nil and cache["__field_16"] != nil)
       - set(cache["__field_16"], body["execution"]["thread_id"]) where (body != nil and body["execution"] != nil and body["execution"]["thread_id"] != nil)
       - delete_key(cache, "__field_17") where (cache != nil and cache["__field_17"] != nil)
@@ -1418,6 +1412,7 @@ processors:
       - keep_keys(body, [])
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_0"])
+      - set(cache["value"], "") where cache["value"] == nil
       - set(body["ActivityID"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_1"])
@@ -1436,13 +1431,8 @@ processors:
       - set(body["Keywords"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_6"])
-      - delete_key(cache, "mapped_value") where (cache != nil and cache["mapped_value"] != nil)
-      - set(cache["mapped_value"], "1") where cache["value"] == "Critical"
-      - set(cache["mapped_value"], "2") where cache["value"] == "Error"
-      - set(cache["mapped_value"], "4") where cache["value"] == "Information"
-      - set(cache["mapped_value"], "3") where cache["value"] == "Warning"
-      - set(cache["mapped_value"], Int(cache["mapped_value"]))
-      - set(body["Level"], cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
+      - set(cache["value"], Int(cache["value"]))
+      - set(body["Level"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_7"])
       - set(body["Message"], cache["value"]) where (cache != nil and cache["value"] != nil)
@@ -1465,6 +1455,7 @@ processors:
       - set(body["Qualifiers"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_13"])
+      - set(cache["value"], "") where cache["value"] == nil
       - set(body["RelatedActivityID"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_14"])
