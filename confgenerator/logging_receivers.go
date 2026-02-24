@@ -787,23 +787,13 @@ func windowsEventLogV2Processors(ctx context.Context) ([]otel.Component, error) 
 			"jsonPayload.EventID":       {CopyFrom: "jsonPayload.event_id.id"},
 			"jsonPayload.EventRecordID": {CopyFrom: "jsonPayload.record_id"},
 			"jsonPayload.Keywords":      {CopyFrom: "jsonPayload.parsed_xml.Event.System.Keywords"},
-			"jsonPayload.Level": {
-				CopyFrom: "jsonPayload.level",
-				MapValues: map[string]string{
-					"Critical":    "1",
-					"Error":       "2",
-					"Warning":     "3",
-					"Information": "4",
-				},
-				Type:               "integer",
-				MapValuesExclusive: true,
-			},
-			"jsonPayload.Message":      {CopyFrom: "jsonPayload.parsed_xml.Event.RenderingInfo.Message"},
-			"jsonPayload.Opcode":       {CopyFrom: "jsonPayload.opcode", Type: "integer"},
-			"jsonPayload.ProcessID":    {CopyFrom: "jsonPayload.execution.process_id", Type: "integer"},
-			"jsonPayload.ProviderGuid": {CopyFrom: "jsonPayload.provider.guid"},
-			"jsonPayload.ProviderName": {CopyFrom: "jsonPayload.provider.name"},
-			"jsonPayload.Qualifiers":   {CopyFrom: "jsonPayload.event_id.qualifiers"},
+			"jsonPayload.Level":         {CopyFrom: "jsonPayload.parsed_xml.Event.System.Level", Type: "integer"},
+			"jsonPayload.Message":       {CopyFrom: "jsonPayload.parsed_xml.Event.RenderingInfo.Message"},
+			"jsonPayload.Opcode":        {CopyFrom: "jsonPayload.parsed_xml.Event.System.Opcode", Type: "integer"},
+			"jsonPayload.ProcessID":     {CopyFrom: "jsonPayload.execution.process_id", Type: "integer"},
+			"jsonPayload.ProviderGuid":  {CopyFrom: "jsonPayload.provider.guid"},
+			"jsonPayload.ProviderName":  {CopyFrom: "jsonPayload.provider.name"},
+			"jsonPayload.Qualifiers":    {CopyFrom: "jsonPayload.event_id.qualifiers"},
 			"jsonPayload.StringInserts": {
 				CopyFrom: "jsonPayload.event_data",
 				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
@@ -817,7 +807,7 @@ func windowsEventLogV2Processors(ctx context.Context) ([]otel.Component, error) 
 					)
 				},
 			},
-			"jsonPayload.Task":     {CopyFrom: "jsonPayload.task", Type: "integer"},
+			"jsonPayload.Task":     {CopyFrom: "jsonPayload.parsed_xml.Event.System.Task", Type: "integer"},
 			"jsonPayload.ThreadId": {CopyFrom: "jsonPayload.execution.thread_id", Type: "integer"},
 			"jsonPayload.TimeCreated": {
 				CopyFrom:          "jsonPayload.system_time",
@@ -827,8 +817,8 @@ func windowsEventLogV2Processors(ctx context.Context) ([]otel.Component, error) 
 				CopyFrom:     "jsonPayload.security.user_id",
 				DefaultValue: &empty,
 			},
-			"jsonPayload.ActivityID":        {CopyFrom: "jsonPayload.correlation.activity_id"},
-			"jsonPayload.RelatedActivityID": {CopyFrom: "jsonPayload.correlation.related_activity_id"},
+			"jsonPayload.ActivityID":        {CopyFrom: "jsonPayload.correlation.activity_id", DefaultValue: &empty},
+			"jsonPayload.RelatedActivityID": {CopyFrom: "jsonPayload.correlation.related_activity_id", DefaultValue: &empty},
 			"jsonPayload.Version":           {CopyFrom: "jsonPayload.version", Type: "integer"},
 		}}
 	p, err := modifyFields.Processors(ctx)
