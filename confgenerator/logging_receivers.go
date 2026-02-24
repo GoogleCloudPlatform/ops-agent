@@ -783,18 +783,18 @@ func windowsEventLogV2Processors(ctx context.Context) ([]otel.Component, error) 
 	modifyFields := &LoggingProcessorModifyFields{
 		EmptyBody: true,
 		Fields: map[string]*ModifyField{
-			"jsonPayload.Channel":       {CopyFrom: "jsonPayload.channel"},
-			"jsonPayload.Computer":      {CopyFrom: "jsonPayload.computer"},
-			"jsonPayload.EventID":       {CopyFrom: "jsonPayload.event_id.id"},
-			"jsonPayload.EventRecordID": {CopyFrom: "jsonPayload.record_id"},
+			"jsonPayload.Channel":       {CopyFrom: "jsonPayload.channel", DefaultValue: &empty},
+			"jsonPayload.Computer":      {CopyFrom: "jsonPayload.computer", DefaultValue: &empty},
+			"jsonPayload.EventID":       {CopyFrom: "jsonPayload.event_id.id", Type: "integer", DefaultValue: &zero},
+			"jsonPayload.EventRecordID": {CopyFrom: "jsonPayload.record_id", Type: "integer", DefaultValue: &zero},
 			"jsonPayload.Keywords":      {CopyFrom: "jsonPayload.parsed_xml.Event.System.Keywords"},
-			"jsonPayload.Level":         {CopyFrom: "jsonPayload.parsed_xml.Event.System.Level", Type: "integer"},
-			"jsonPayload.Message":       {CopyFrom: "jsonPayload.parsed_xml.Event.RenderingInfo.Message"},
+			"jsonPayload.Level":         {CopyFrom: "jsonPayload.parsed_xml.Event.System.Level", Type: "integer", DefaultValue: &zero},
+			"jsonPayload.Message":       {CopyFrom: "jsonPayload.parsed_xml.Event.RenderingInfo.Message", DefaultValue: &empty},
 			"jsonPayload.Opcode":        {CopyFrom: "jsonPayload.parsed_xml.Event.System.Opcode", Type: "integer", DefaultValue: &zero},
-			"jsonPayload.ProcessID":     {CopyFrom: "jsonPayload.execution.process_id", Type: "integer"},
-			"jsonPayload.ProviderGuid":  {CopyFrom: "jsonPayload.provider.guid"},
-			"jsonPayload.ProviderName":  {CopyFrom: "jsonPayload.provider.name"},
-			"jsonPayload.Qualifiers":    {CopyFrom: "jsonPayload.event_id.qualifiers"},
+			"jsonPayload.ProcessID":     {CopyFrom: "jsonPayload.execution.process_id", Type: "integer", DefaultValue: &zero},
+			"jsonPayload.ProviderGuid":  {CopyFrom: "jsonPayload.provider.guid", DefaultValue: &empty},
+			"jsonPayload.ProviderName":  {CopyFrom: "jsonPayload.provider.name", DefaultValue: &empty},
+			"jsonPayload.Qualifiers":    {CopyFrom: "jsonPayload.event_id.qualifiers", Type: "integer", DefaultValue: &zero},
 			"jsonPayload.StringInserts": {
 				CopyFrom: "jsonPayload.event_data",
 				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
@@ -808,8 +808,8 @@ func windowsEventLogV2Processors(ctx context.Context) ([]otel.Component, error) 
 					)
 				},
 			},
-			"jsonPayload.Task":     {CopyFrom: "jsonPayload.parsed_xml.Event.System.Task", Type: "integer"},
-			"jsonPayload.ThreadId": {CopyFrom: "jsonPayload.execution.thread_id", Type: "integer"},
+			"jsonPayload.Task":     {CopyFrom: "jsonPayload.parsed_xml.Event.System.Task", Type: "integer", DefaultValue: &zero},
+			"jsonPayload.ThreadId": {CopyFrom: "jsonPayload.execution.thread_id", Type: "integer", DefaultValue: &zero},
 			"jsonPayload.TimeCreated": {
 				CopyFrom:          "jsonPayload.system_time",
 				CustomConvertFunc: formatSystemTime,
@@ -820,7 +820,7 @@ func windowsEventLogV2Processors(ctx context.Context) ([]otel.Component, error) 
 			},
 			"jsonPayload.ActivityID":        {CopyFrom: "jsonPayload.correlation.activity_id", DefaultValue: &empty},
 			"jsonPayload.RelatedActivityID": {CopyFrom: "jsonPayload.correlation.related_activity_id", DefaultValue: &empty},
-			"jsonPayload.Version":           {CopyFrom: "jsonPayload.version", Type: "integer"},
+			"jsonPayload.Version":           {CopyFrom: "jsonPayload.version", Type: "integer", DefaultValue: &zero},
 		}}
 	p, err := modifyFields.Processors(ctx)
 	if err != nil {
@@ -855,10 +855,11 @@ func windowsEventLogRawXMLProcessors(ctx context.Context) ([]otel.Component, err
 	// event original XML.
 	processors := []otel.Component{parseLogRecordOriginal(false)}
 
+	var empty string
 	modifyFields := &LoggingProcessorModifyFields{
 		EmptyBody: true,
 		Fields: map[string]*ModifyField{
-			"jsonPayload.Message": {CopyFrom: "jsonPayload.parsed_xml.Event.RenderingInfo.Message"},
+			"jsonPayload.Message": {CopyFrom: "jsonPayload.parsed_xml.Event.RenderingInfo.Message", DefaultValue: &empty},
 			`jsonPayload.raw_xml`: {MoveFrom: `labels."log.record.original"`},
 			"jsonPayload.StringInserts": {
 				CopyFrom: "jsonPayload.event_data",
