@@ -1,12 +1,12 @@
 - entries:
   - jsonPayload:
-      ActivityID: "{8a149361-b6dd-0002-4547-593fcd85dc01}"
+      ActivityID: "{000000000-0000-0000-0000-000000000000}"
       Channel: Security
       Computer: test-computer
       EventID: 4567
       EventRecordID: 34567
       Keywords: "0x8020000000000000"
-      Level: 4
+      Level: 0
       Message: |-
         Special privileges assigned to new logon.
         
@@ -28,11 +28,12 @@
         			SeSystemEnvironmentPrivilege
         			SeImpersonatePrivilege
         			SeDelegateSessionUserImpersonatePrivilege
-      Opcode: Info
+      Opcode: 0
       ProcessID: 820
       ProviderGuid: "{11111111-2222-3333-4444-555555555555}"
       ProviderName: Microsoft-Windows-Security-Auditing
       Qualifiers: 0
+      RelatedActivityID: ""
       StringInserts:
       - S-0-0-00
       - SYSTEM
@@ -51,7 +52,7 @@
         			SeSystemEnvironmentPrivilege
         			SeImpersonatePrivilege
         			SeDelegateSessionUserImpersonatePrivilege
-      Task: Special Logon
+      Task: 56789
       ThreadId: 6080
       TimeCreated: 2026-01-16 18:45:59.5782153 +0000
       UserId: ""
@@ -66,13 +67,13 @@
       type: gce_instance
     timestamp: now
   - jsonPayload:
-      ActivityID: "{8a149361-b6dd-0002-4547-593fcd85dc01}"
+      ActivityID: "{000000000-0000-0000-0000-000000000000}"
       Channel: Security
       Computer: test-computer
       EventID: 4567
       EventRecordID: 34567
       Keywords: "0x8020000000000000"
-      Level: 4
+      Level: 0
       Message: |-
         Special privileges assigned to new logon.
         
@@ -94,11 +95,12 @@
         			SeSystemEnvironmentPrivilege
         			SeImpersonatePrivilege
         			SeDelegateSessionUserImpersonatePrivilege
-      Opcode: Info
+      Opcode: 0
       ProcessID: 820
       ProviderGuid: "{11111111-2222-3333-4444-555555555555}"
       ProviderName: Microsoft-Windows-Security-Auditing
       Qualifiers: 0
+      RelatedActivityID: ""
       StringInserts:
       - S-0-0-00
       - SYSTEM
@@ -117,7 +119,7 @@
         			SeSystemEnvironmentPrivilege
         			SeImpersonatePrivilege
         			SeDelegateSessionUserImpersonatePrivilege
-      Task: Special Logon
+      Task: 56789
       ThreadId: 6080
       TimeCreated: 2026-01-16 18:45:59.5782153 +0000
       UserId: ""
@@ -132,6 +134,7 @@
       type: gce_instance
     timestamp: now
   - jsonPayload:
+      ActivityID: ""
       Channel: System
       Computer: test-computer
       EventID: 7036
@@ -144,6 +147,7 @@
       ProviderGuid: "{11111111-2222-3333-4444-555555555555}"
       ProviderName: Service Control Manager
       Qualifiers: 12345
+      RelatedActivityID: ""
       StringInserts:
       - Software Protection
       - stopped
@@ -163,6 +167,7 @@
       type: gce_instance
     timestamp: now
   - jsonPayload:
+      ActivityID: ""
       Channel: System
       Computer: test-computer
       EventID: 7036
@@ -175,6 +180,7 @@
       ProviderGuid: "{11111111-2222-3333-4444-555555555555}"
       ProviderName: Service Control Manager
       Qualifiers: 12345
+      RelatedActivityID: ""
       StringInserts:
       - Software Protection
       - running
