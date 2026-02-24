@@ -1126,6 +1126,7 @@ processors:
       - set(body["Message"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_8"])
+      - set(cache["value"], "0") where cache["value"] == nil
       - set(cache["value"], Int(cache["value"]))
       - set(body["Opcode"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
@@ -1253,6 +1254,7 @@ processors:
       - set(body["Message"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_8"])
+      - set(cache["value"], "0") where cache["value"] == nil
       - set(cache["value"], Int(cache["value"]))
       - set(body["Opcode"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
@@ -1438,6 +1440,7 @@ processors:
       - set(body["Message"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_8"])
+      - set(cache["value"], "0") where cache["value"] == nil
       - set(cache["value"], Int(cache["value"]))
       - set(body["Opcode"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
