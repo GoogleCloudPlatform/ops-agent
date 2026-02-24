@@ -427,6 +427,20 @@ func (r *componentTypeRegistry[CI, M]) RegisterType(constructor func() CI, platf
 	r.TypeMap[name] = &componentFactory[CI]{constructor, platformsValue}
 }
 
+// Helper for Transformation Tests
+func (r *componentTypeRegistry[CI, M]) unregisterType(constructor func() CI) {
+	if r.TypeMap != nil {
+		name := constructor().Type()
+		delete(r.TypeMap, name)
+	}
+}
+
+// Helper for Transformation Tests
+func (r *componentTypeRegistry[CI, M]) ReplaceType(constructor func() CI, platforms ...platform.Type) {
+	r.unregisterType(constructor)
+	r.RegisterType(constructor, platforms...)
+}
+
 // UnmarshalComponentYaml is the custom unmarshaller for reading a component's configuration from the config file.
 // It first unmarshals into a struct containing only the "type" field, then looks up the config struct with the full set of fields for that type, and finally unmarshals into an instance of that struct.
 func (r *componentTypeRegistry[CI, M]) UnmarshalComponentYaml(ctx context.Context, inner *CI, unmarshal func(interface{}) error) error {
