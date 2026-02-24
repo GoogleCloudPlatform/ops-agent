@@ -779,6 +779,7 @@ func windowsEventLogV2Processors(ctx context.Context) ([]otel.Component, error) 
 	processors := []otel.Component{parseLogRecordOriginal(true)}
 
 	var empty string
+	var zero string = "0"
 	modifyFields := &LoggingProcessorModifyFields{
 		EmptyBody: true,
 		Fields: map[string]*ModifyField{
@@ -789,7 +790,7 @@ func windowsEventLogV2Processors(ctx context.Context) ([]otel.Component, error) 
 			"jsonPayload.Keywords":      {CopyFrom: "jsonPayload.parsed_xml.Event.System.Keywords"},
 			"jsonPayload.Level":         {CopyFrom: "jsonPayload.parsed_xml.Event.System.Level", Type: "integer"},
 			"jsonPayload.Message":       {CopyFrom: "jsonPayload.parsed_xml.Event.RenderingInfo.Message"},
-			"jsonPayload.Opcode":        {CopyFrom: "jsonPayload.parsed_xml.Event.System.Opcode", Type: "integer"},
+			"jsonPayload.Opcode":        {CopyFrom: "jsonPayload.parsed_xml.Event.System.Opcode", Type: "integer", DefaultValue: &zero},
 			"jsonPayload.ProcessID":     {CopyFrom: "jsonPayload.execution.process_id", Type: "integer"},
 			"jsonPayload.ProviderGuid":  {CopyFrom: "jsonPayload.provider.guid"},
 			"jsonPayload.ProviderName":  {CopyFrom: "jsonPayload.provider.name"},
