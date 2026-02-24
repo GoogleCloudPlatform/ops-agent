@@ -428,7 +428,7 @@ func (r *componentTypeRegistry[CI, M]) RegisterType(constructor func() CI, platf
 }
 
 // Helper for Transformation Tests
-func (r *componentTypeRegistry[CI, M]) UnregisterType(constructor func() CI) {
+func (r *componentTypeRegistry[CI, M]) unregisterType(constructor func() CI) {
 	if r.TypeMap != nil {
 		name := constructor().Type()
 		delete(r.TypeMap, name)
@@ -436,8 +436,8 @@ func (r *componentTypeRegistry[CI, M]) UnregisterType(constructor func() CI) {
 }
 
 // Helper for Transformation Tests
-func (r *componentTypeRegistry[CI, M]) ReregisterType(constructor func() CI, platforms ...platform.Type) {
-	r.UnregisterType(constructor)
+func (r *componentTypeRegistry[CI, M]) ReplaceType(constructor func() CI, platforms ...platform.Type) {
+	r.unregisterType(constructor)
 	r.RegisterType(constructor, platforms...)
 }
 

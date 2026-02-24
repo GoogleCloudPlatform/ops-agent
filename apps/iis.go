@@ -191,8 +191,9 @@ const (
 
 func (p *LoggingProcessorIisAccess) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	c := confgenerator.LoggingProcessorParseRegex{
-		// There's now 2 different default formats.
-		// The new format has new fields sc_bytes and cs_bytes added right before time_taken
+		// Microsoft updated the default format in Feb 2026.
+		// The new format now has fields sc_bytes and cs_bytes added right before time_taken
+		// To ensure backwards compatibility, we added an optional capture group right before time_taken
 		// Documentation:
 		// https://docs.microsoft.com/en-us/windows/win32/http/w3c-logging
 		// sample line old format: 2022-03-10 17:26:30 ::1 GET /iisstart.png - 80 - ::1 Mozilla/5.0+(Windows+NT+10.0;+WOW64;+Trident/7.0;+rv:11.0)+like+Gecko http://localhost/ 200 0 0 18
