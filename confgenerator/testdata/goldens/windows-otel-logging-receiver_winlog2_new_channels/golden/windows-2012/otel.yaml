@@ -1104,25 +1104,33 @@ processors:
       - set(body["ActivityID"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_1"])
+      - set(cache["value"], "") where cache["value"] == nil
       - set(body["Channel"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_2"])
+      - set(cache["value"], "") where cache["value"] == nil
       - set(body["Computer"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_3"])
+      - set(cache["value"], "0") where cache["value"] == nil
+      - set(cache["value"], Int(cache["value"]))
       - set(body["EventID"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_4"])
+      - set(cache["value"], "0") where cache["value"] == nil
+      - set(cache["value"], Int(cache["value"]))
       - set(body["EventRecordID"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_5"])
       - set(body["Keywords"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_6"])
+      - set(cache["value"], "0") where cache["value"] == nil
       - set(cache["value"], Int(cache["value"]))
       - set(body["Level"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_7"])
+      - set(cache["value"], "") where cache["value"] == nil
       - set(body["Message"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_8"])
@@ -1131,16 +1139,21 @@ processors:
       - set(body["Opcode"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_9"])
+      - set(cache["value"], "0") where cache["value"] == nil
       - set(cache["value"], Int(cache["value"]))
       - set(body["ProcessID"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_10"])
+      - set(cache["value"], "") where cache["value"] == nil
       - set(body["ProviderGuid"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_11"])
+      - set(cache["value"], "") where cache["value"] == nil
       - set(body["ProviderName"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_12"])
+      - set(cache["value"], "0") where cache["value"] == nil
+      - set(cache["value"], Int(cache["value"]))
       - set(body["Qualifiers"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_13"])
@@ -1154,10 +1167,12 @@ processors:
       - set(body["StringInserts"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_15"])
+      - set(cache["value"], "0") where cache["value"] == nil
       - set(cache["value"], Int(cache["value"]))
       - set(body["Task"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_16"])
+      - set(cache["value"], "0") where cache["value"] == nil
       - set(cache["value"], Int(cache["value"]))
       - set(body["ThreadId"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
@@ -1170,6 +1185,7 @@ processors:
       - set(body["UserId"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_19"])
+      - set(cache["value"], "0") where cache["value"] == nil
       - set(cache["value"], Int(cache["value"]))
       - set(body["Version"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/winlog2_1_0:
@@ -1232,25 +1248,33 @@ processors:
       - set(body["ActivityID"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_1"])
+      - set(cache["value"], "") where cache["value"] == nil
       - set(body["Channel"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_2"])
+      - set(cache["value"], "") where cache["value"] == nil
       - set(body["Computer"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_3"])
+      - set(cache["value"], "0") where cache["value"] == nil
+      - set(cache["value"], Int(cache["value"]))
       - set(body["EventID"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_4"])
+      - set(cache["value"], "0") where cache["value"] == nil
+      - set(cache["value"], Int(cache["value"]))
       - set(body["EventRecordID"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_5"])
       - set(body["Keywords"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_6"])
+      - set(cache["value"], "0") where cache["value"] == nil
       - set(cache["value"], Int(cache["value"]))
       - set(body["Level"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_7"])
+      - set(cache["value"], "") where cache["value"] == nil
       - set(body["Message"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_8"])
@@ -1259,16 +1283,21 @@ processors:
       - set(body["Opcode"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_9"])
+      - set(cache["value"], "0") where cache["value"] == nil
       - set(cache["value"], Int(cache["value"]))
       - set(body["ProcessID"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_10"])
+      - set(cache["value"], "") where cache["value"] == nil
       - set(body["ProviderGuid"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_11"])
+      - set(cache["value"], "") where cache["value"] == nil
       - set(body["ProviderName"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_12"])
+      - set(cache["value"], "0") where cache["value"] == nil
+      - set(cache["value"], Int(cache["value"]))
       - set(body["Qualifiers"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_13"])
@@ -1282,10 +1311,12 @@ processors:
       - set(body["StringInserts"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_15"])
+      - set(cache["value"], "0") where cache["value"] == nil
       - set(cache["value"], Int(cache["value"]))
       - set(body["Task"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_16"])
+      - set(cache["value"], "0") where cache["value"] == nil
       - set(cache["value"], Int(cache["value"]))
       - set(body["ThreadId"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
@@ -1298,6 +1329,7 @@ processors:
       - set(body["UserId"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_19"])
+      - set(cache["value"], "0") where cache["value"] == nil
       - set(cache["value"], Int(cache["value"]))
       - set(body["Version"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/winlog2_1_2:
@@ -1418,25 +1450,33 @@ processors:
       - set(body["ActivityID"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_1"])
+      - set(cache["value"], "") where cache["value"] == nil
       - set(body["Channel"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_2"])
+      - set(cache["value"], "") where cache["value"] == nil
       - set(body["Computer"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_3"])
+      - set(cache["value"], "0") where cache["value"] == nil
+      - set(cache["value"], Int(cache["value"]))
       - set(body["EventID"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_4"])
+      - set(cache["value"], "0") where cache["value"] == nil
+      - set(cache["value"], Int(cache["value"]))
       - set(body["EventRecordID"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_5"])
       - set(body["Keywords"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_6"])
+      - set(cache["value"], "0") where cache["value"] == nil
       - set(cache["value"], Int(cache["value"]))
       - set(body["Level"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_7"])
+      - set(cache["value"], "") where cache["value"] == nil
       - set(body["Message"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_8"])
@@ -1445,16 +1485,21 @@ processors:
       - set(body["Opcode"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_9"])
+      - set(cache["value"], "0") where cache["value"] == nil
       - set(cache["value"], Int(cache["value"]))
       - set(body["ProcessID"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_10"])
+      - set(cache["value"], "") where cache["value"] == nil
       - set(body["ProviderGuid"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_11"])
+      - set(cache["value"], "") where cache["value"] == nil
       - set(body["ProviderName"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_12"])
+      - set(cache["value"], "0") where cache["value"] == nil
+      - set(cache["value"], Int(cache["value"]))
       - set(body["Qualifiers"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_13"])
@@ -1468,10 +1513,12 @@ processors:
       - set(body["StringInserts"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_15"])
+      - set(cache["value"], "0") where cache["value"] == nil
       - set(cache["value"], Int(cache["value"]))
       - set(body["Task"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_16"])
+      - set(cache["value"], "0") where cache["value"] == nil
       - set(cache["value"], Int(cache["value"]))
       - set(body["ThreadId"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
@@ -1484,6 +1531,7 @@ processors:
       - set(body["UserId"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_19"])
+      - set(cache["value"], "0") where cache["value"] == nil
       - set(cache["value"], Int(cache["value"]))
       - set(body["Version"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/winlog2_2_2:

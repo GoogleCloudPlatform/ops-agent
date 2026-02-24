@@ -1066,6 +1066,7 @@ processors:
       - keep_keys(body, [])
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_0"])
+      - set(cache["value"], "") where cache["value"] == nil
       - set(body["Message"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_1"])
@@ -1098,6 +1099,7 @@ processors:
       - keep_keys(body, [])
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_0"])
+      - set(cache["value"], "") where cache["value"] == nil
       - set(body["Message"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_1"])
