@@ -734,7 +734,7 @@ func windowsEventLogV1Processors(ctx context.Context) ([]otel.Component, error) 
 			"jsonPayload.StringInserts": {
 				CopyFrom: "jsonPayload.event_data.data",
 				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
-					return v.Set(ottl.ToValues(v))
+					return v.SetIf(ottl.ToValues(v), v.IsPresent())
 				},
 			},
 			"jsonPayload.TimeGenerated": {
