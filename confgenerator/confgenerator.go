@@ -75,7 +75,7 @@ func googleCloudLoggingExporter() otel.Component {
 				// Set batch in "sending_queue" is recommended instead of using batch processor.
 				"batch": map[string]interface{}{
 					"flush_timeout": "200ms",
-					"min_size":      1,
+					"min_size":      1000,
 					"max_size":      1000,
 					"sizer":         "items",
 				},
