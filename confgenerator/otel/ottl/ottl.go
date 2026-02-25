@@ -123,6 +123,12 @@ func (a LValue) SetIf(b, condition Value) Statements {
 	return statements
 }
 
+func (a LValue) AppendValuesIf(b, condition Value) Statements {
+	return Statements{
+		statementf(`append(%s, %s) where %s`, a, b, condition),
+	}
+}
+
 func (a LValue) MergeMaps(source Value, strategy string) Statements {
 	return a.MergeMapsIf(source, strategy, IsNotNil(source))
 }
@@ -176,6 +182,10 @@ func ParseJSON(a Value) Value {
 	return valuef(`ParseJSON(%s)`, a)
 }
 
+func ParseSimplifiedXML(a Value) Value {
+	return valuef(`ParseSimplifiedXML(%s)`, a)
+}
+
 func ExtractPatternsRubyRegex(a Value, pattern string, omitEmptyValues bool) Value {
 	return valuef(`ExtractPatternsRubyRegex(%s, %q, %v)`, a, pattern, omitEmptyValues)
 }
@@ -190,6 +200,10 @@ func Concat(values []Value, delimiter string) Value {
 
 func ConvertCase(a Value, toCase string) Value {
 	return valuef(`ConvertCase(%s, %q)`, a, toCase)
+}
+
+func ContainsValue(a Value, value string) Value {
+	return valuef(`ContainsValue(%s, %q)`, a, value)
 }
 
 func FormatTime(a Value, format string) Value {

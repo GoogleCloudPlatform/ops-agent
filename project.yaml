@@ -30,23 +30,6 @@ targets:
           - ubuntu-os-cloud:ubuntu-2510-arm64
           exhaustive:
           - ubuntu-os-cloud:ubuntu-minimal-2510-arm64
-  plucky:
-    os_versions: [ubuntu-25.04*]
-    package_extension:
-      deb
-    architectures:
-      x86_64:
-        test_distros:
-          representative:
-          - ubuntu-os-cloud:ubuntu-2504-amd64
-          exhaustive:
-          - ubuntu-os-cloud:ubuntu-minimal-2504-amd64
-      aarch64:
-        test_distros:
-          representative:
-          - ubuntu-os-cloud:ubuntu-2504-arm64
-          exhaustive:
-          - ubuntu-os-cloud:ubuntu-minimal-2504-arm64
   trixie:
     os_versions: [debian-13*]
     package_extension:
@@ -157,6 +140,10 @@ targets:
           exhaustive:
           - rhel-cloud:rhel-9
           - rocky-linux-cloud:rocky-linux-9-optimized-gcp
+          - rhel-sap-cloud:rhel-9-0-sap-ha
+          - rhel-sap-cloud:rhel-9-2-sap-ha
+          - rhel-sap-cloud:rhel-9-4-sap-ha
+          - rhel-sap-cloud:rhel-9-6-sap-ha
       aarch64:
         test_distros:
           representative:
@@ -164,6 +151,30 @@ targets:
           exhaustive:
           - rhel-cloud:rhel-9-arm64
           - rocky-linux-cloud:rocky-linux-9-optimized-gcp-arm64
+
+  rockylinux10:
+    os_versions: [centos-10*,rocky-10*,rhel-10*]
+    package_extension:
+      rpm
+    repo_name:
+      el10
+    architectures:
+      x86_64:
+        test_distros:
+          representative:
+          - rocky-linux-cloud:rocky-linux-10
+          exhaustive:
+          - rhel-cloud:rhel-10
+          - centos-cloud:centos-stream-10
+          - rocky-linux-cloud:rocky-linux-10-optimized-gcp
+      aarch64:
+        test_distros:
+          representative:
+          - rocky-linux-cloud:rocky-linux-10-arm64
+          exhaustive:
+          - rhel-cloud:rhel-10-arm64
+          - centos-cloud:centos-stream-10-arm64
+          - rocky-linux-cloud:rocky-linux-10-optimized-gcp-arm64
   sles12:
     os_versions: [sles-12*]
     package_extension:
@@ -176,7 +187,7 @@ targets:
           exhaustive:
           - suse-sap-cloud:sles-12-sp5-sap
   sles15:
-    os_versions: [sles-15*, opensuse-leap-15*]
+    os_versions: [sles-15*]
     package_extension:
       rpm
     architectures:
@@ -188,16 +199,12 @@ targets:
           - suse-cloud:sles-15-sp6
           - suse-sap-cloud:sles-15-sp6-sap
           - suse-sap-cloud:sles-15-sp7-sap
-          - opensuse-cloud:opensuse-leap
-          - opensuse-cloud=opensuse-leap-15-6-v20250724-x86-64
       aarch64:
         test_distros:
           representative:
           - suse-cloud:sles-15-arm64
           exhaustive:
           - suse-cloud:sles-15-sp6-arm64
-          - opensuse-cloud:opensuse-leap-arm64
-          - opensuse-cloud=opensuse-leap-15-6-v20250724-arm64 
   windows:
     package_extension:
       goo
@@ -209,7 +216,7 @@ targets:
           representative:
           - windows-cloud:windows-2016-core
           - windows-cloud:windows-2025
-          - windows-sql-cloud:sql-std-2019-win-2022
+          - windows-sql-cloud:sql-std-2019-win-2019
           - windows-sql-cloud:sql-std-2022-win-2025
           exhaustive:
           - windows-cloud:windows-2016
@@ -218,5 +225,4 @@ targets:
           - windows-cloud:windows-2019-core
           - windows-cloud:windows-2022-core
           - windows-cloud:windows-2025-core
-          - windows-sql-cloud:sql-std-2022-win-2019
           - windows-sql-cloud:sql-std-2022-win-2022

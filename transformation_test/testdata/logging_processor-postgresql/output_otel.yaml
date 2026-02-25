@@ -356,8 +356,6 @@
       type: gce_instance
     severity: INFO
     timestamp: now
-  partialSuccess: true
-- entries:
   - jsonPayload:
       level: LOG
       message: database system is ready to accept connections
@@ -376,7 +374,7 @@
     timestamp: now
   partialSuccess: true
 - collector_errors:
-  - caller: ottl@v0.138.0/parser.go:410
+  - caller: ottl@v0.145.0/parser.go:410
     error: "parsing time \"2025-07-21 10:14:21.123 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
     level: warn
     msg: failed to execute statement
@@ -387,9 +385,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.138.0
+      service.version: v0.145.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
-  - caller: ottl@v0.138.0/parser.go:410
+  - caller: ottl@v0.145.0/parser.go:410
     error: "parsing time \"2025-07-21 10:14:21.124 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
     level: warn
     msg: failed to execute statement
@@ -400,9 +398,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.138.0
+      service.version: v0.145.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
-  - caller: ottl@v0.138.0/parser.go:410
+  - caller: ottl@v0.145.0/parser.go:410
     error: "parsing time \"2025-07-21 10:14:21.125 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
     level: warn
     msg: failed to execute statement
@@ -413,9 +411,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.138.0
+      service.version: v0.145.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
-  - caller: ottl@v0.138.0/parser.go:410
+  - caller: ottl@v0.145.0/parser.go:410
     error: "parsing time \"2025-07-21 10:14:22.301 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
     level: warn
     msg: failed to execute statement
@@ -426,9 +424,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.138.0
+      service.version: v0.145.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
-  - caller: ottl@v0.138.0/parser.go:410
+  - caller: ottl@v0.145.0/parser.go:410
     error: "parsing time \"2025-07-21 10:14:25.411 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
     level: warn
     msg: failed to execute statement
@@ -439,9 +437,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.138.0
+      service.version: v0.145.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
-  - caller: ottl@v0.138.0/parser.go:410
+  - caller: ottl@v0.145.0/parser.go:410
     error: "parsing time \"2025-07-21 10:14:25.411 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
     level: warn
     msg: failed to execute statement
@@ -452,9 +450,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.138.0
+      service.version: v0.145.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
-  - caller: ottl@v0.138.0/parser.go:410
+  - caller: ottl@v0.145.0/parser.go:410
     error: "parsing time \"2025-07-21 10:14:27.123 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
     level: warn
     msg: failed to execute statement
@@ -465,9 +463,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.138.0
+      service.version: v0.145.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
-  - caller: ottl@v0.138.0/parser.go:410
+  - caller: ottl@v0.145.0/parser.go:410
     error: "parsing time \"2025-07-21 10:14:30.673 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
     level: warn
     msg: failed to execute statement
@@ -478,9 +476,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.138.0
+      service.version: v0.145.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
-  - caller: ottl@v0.138.0/parser.go:410
+  - caller: ottl@v0.145.0/parser.go:410
     error: "parsing time \"2025-07-21 10:14:30.673 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
     level: warn
     msg: failed to execute statement
@@ -491,9 +489,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.138.0
+      service.version: v0.145.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
-  - caller: ottl@v0.138.0/parser.go:410
+  - caller: ottl@v0.145.0/parser.go:410
     error: "parsing time \"2025-07-21 10:14:35.987 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
     level: warn
     msg: failed to execute statement
@@ -504,5 +502,5 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.138.0
+      service.version: v0.145.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)

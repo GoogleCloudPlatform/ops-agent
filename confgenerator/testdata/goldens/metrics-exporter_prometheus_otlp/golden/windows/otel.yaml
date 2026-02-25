@@ -1,16 +1,9 @@
 exporters:
-  googlecloud:
-    metric:
-      instrumentation_library_labels: false
-      prefix: ""
-      resource_filters: []
-      service_resource_labels: false
-      skip_create_descriptor: true
-    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
-  otlphttp/otlp:
+  otlp/otlp:
     auth:
       authenticator: googleclientauth
-    endpoint: https://telemetry.googleapis.com
+    balancer_name: pick_first
+    endpoint: telemetry.googleapis.com:443
     headers:
       User-Agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
 extensions:
@@ -19,6 +12,10 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
+  batch/otlp/otlp_metrics_2:
+    send_batch_max_size: 200
+    send_batch_size: 200
+    timeout: 200ms
   casttosum/iis_1:
     metrics:
     - agent.googleapis.com/iis/network/transferred_bytes_count
@@ -84,7 +81,7 @@ processors:
   filter/otel_1:
     metrics:
       datapoint:
-      - metric.name == "grpc.client.attempt.duration_count" and (not IsMatch(datapoint.attributes["grpc.target"], "monitoring.googleapis"))
+      - metric.name == "rpc.client.duration_count" and (not IsMatch(datapoint.attributes["rpc.service"], "opentelemetry.proto.collector.metrics.v1.MetricsService"))
   filter/otel_2:
     metrics:
       include:
@@ -92,11 +89,12 @@ processors:
         metric_names:
         - otelcol_process_uptime
         - otelcol_process_memory_rss
-        - grpc.client.attempt.duration_count
-        - googlecloudmonitoring/point_count
+        - otelcol_exporter_sent_metric_points
+        - otelcol_exporter_send_failed_metric_points
+        - rpc.client.duration_count
   interval/loggingmetrics_7:
     interval: 1m
-  metricstarttime/prometheus_3:
+  metricstarttime/otlp/otlp_metrics_1:
     strategy: subtract_initial_point
   metricstransform/fluentbit_1:
     transforms:
@@ -600,41 +598,89 @@ processors:
         aggregation_type: sum
         label_set: []
     - action: update
-      include: grpc.client.attempt.duration_count
+      include: rpc.client.duration_count
       new_name: agent/api_request_count
       operations:
       - action: update_label
-        label: grpc.status
+        label: rpc.grpc.status_code
+        value_actions:
+        - new_value: OK
+          value: "0"
+        - new_value: CANCELLED
+          value: "1"
+        - new_value: ABORTED
+          value: "10"
+        - new_value: OUT_OF_RANGE
+          value: "11"
+        - new_value: UNIMPLEMENTED
+          value: "12"
+        - new_value: INTERNAL
+          value: "13"
+        - new_value: UNAVAILABLE
+          value: "14"
+        - new_value: DATA_LOSS
+          value: "15"
+        - new_value: UNAUTHENTICATED
+          value: "16"
+        - new_value: UNKNOWN
+          value: "2"
+        - new_value: INVALID_ARGUMENT
+          value: "3"
+        - new_value: DEADLINE_EXCEEDED
+          value: "4"
+        - new_value: NOT_FOUND
+          value: "5"
+        - new_value: ALREADY_EXISTS
+          value: "6"
+        - new_value: PERMISSION_DENIED
+          value: "7"
+        - new_value: RESOURCE_EXHAUSTED
+          value: "8"
+        - new_value: FAILED_PRECONDITION
+          value: "9"
+      - action: update_label
+        label: rpc.grpc.status_code
         new_label: state
       - action: aggregate_labels
         aggregation_type: sum
         label_set:
         - state
     - action: update
-      include: googlecloudmonitoring/point_count
-      new_name: agent/monitoring/point_count
+      include: otelcol_exporter_sent_metric_points
       operations:
       - action: toggle_scalar_data_type
+      - action: add_label
+        new_label: status
+        new_value: OK
+    - action: update
+      include: otelcol_exporter_send_failed_metric_points
+      operations:
+      - action: toggle_scalar_data_type
+      - action: add_label
+        new_label: status
+        new_value: UNKNOWN
+    - action: combine
+      include: otelcol_exporter_sent_metric_points|otelcol_exporter_send_failed_metric_points
+      match_type: regexp
+      new_name: agent/monitoring/point_count
+      operations:
       - action: aggregate_labels
         aggregation_type: sum
         label_set:
         - status
+      submatch_case: lower
     - action: update
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  metricstransform/prometheus_2:
+    transforms:
+    - action: update
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: prometheus.googleapis.com/$${1}
   normalizesums/iis_2: {}
-  resource/iis_4:
-    attributes:
-    - action: insert
-      key: gcp.project_id
-      value: test-project
-  resource/mssql_2:
-    attributes:
-    - action: insert
-      key: gcp.project_id
-      value: test-project
-  resource/prometheus_1:
+  resource/otlp/otlp_metrics_0:
     attributes:
     - action: insert
       key: gcp.project_id
@@ -642,12 +688,6 @@ processors:
   resourcedetection/_global_0:
     detectors:
     - gcp
-  transform/_global_0:
-    metric_statements:
-    - context: resource
-      error_mode: silent
-      statements:
-      - set(attributes["instance_id"], attributes["host.id"])
   transform/agent_prometheus_0:
     metric_statements:
     - context: metric
@@ -657,12 +697,57 @@ processors:
       - delete_key(resource.attributes, "service.instance.id")
       - delete_key(resource.attributes, "server.port")
       - delete_key(resource.attributes, "url.scheme")
+  transform/agent_prometheus_1:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/agent_prometheus_2:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
+  transform/hostmetrics_3:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/hostmetrics_4:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
   transform/iis_3:
     metric_statements:
     - context: scope
       statements:
       - set(name, "agent.googleapis.com/iis")
       - set(version, "1.0")
+  transform/iis_4:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/iis_5:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
   transform/loggingmetrics_0:
     error_mode: ignore
     metric_statements:
@@ -690,18 +775,48 @@ processors:
       statements:
       - set(name, "agent.googleapis.com/mssql")
       - set(version, "1.0")
+  transform/mssql_2:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/mssql_3:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
     - context: datapoint
       statements:
       - set(time, Now())
+  transform/ops_agent_1:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/ops_agent_2:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
   transform/otel_0:
     error_mode: ignore
     metric_statements:
     - context: metric
       statements:
-      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
+      - extract_count_metric(true) where name == "rpc.client.duration"
   transform/prometheus_0:
     metric_statements:
     - context: datapoint
@@ -712,7 +827,7 @@ processors:
       - delete_key(attributes, "location")
       - delete_key(attributes, "cluster")
       - delete_key(attributes, "namespace")
-  transform/prometheus_2:
+  transform/prometheus_1:
     error_mode: ignore
     metric_statements:
     - context: metric
@@ -853,58 +968,74 @@ service:
   pipelines:
     metrics/default__pipeline_hostmetrics:
       exporters:
-      - googlecloud
+      - otlp/otlp
       processors:
       - agentmetrics/hostmetrics_0
       - filter/hostmetrics_1
       - metricstransform/hostmetrics_2
+      - transform/hostmetrics_3
+      - transform/hostmetrics_4
       - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
-      - transform/_global_0
+      - resource/otlp/otlp_metrics_0
+      - metricstarttime/otlp/otlp_metrics_1
+      - batch/otlp/otlp_metrics_2
       receivers:
       - hostmetrics/hostmetrics
     metrics/default__pipeline_iis:
       exporters:
-      - otlphttp/otlp
+      - otlp/otlp
       processors:
       - metricstransform/iis_0
       - casttosum/iis_1
       - normalizesums/iis_2
       - transform/iis_3
-      - resource/iis_4
+      - transform/iis_4
+      - transform/iis_5
       - filter/default__pipeline_iis_0
       - resourcedetection/_global_0
-      - transform/_global_0
+      - resource/otlp/otlp_metrics_0
+      - metricstarttime/otlp/otlp_metrics_1
+      - batch/otlp/otlp_metrics_2
       receivers:
       - windowsperfcounters/iis
     metrics/default__pipeline_mssql:
       exporters:
-      - otlphttp/otlp
+      - otlp/otlp
       processors:
       - metricstransform/mssql_0
       - transform/mssql_1
-      - resource/mssql_2
+      - transform/mssql_2
+      - transform/mssql_3
       - filter/default__pipeline_mssql_0
       - resourcedetection/_global_0
-      - transform/_global_0
+      - resource/otlp/otlp_metrics_0
+      - metricstarttime/otlp/otlp_metrics_1
+      - batch/otlp/otlp_metrics_2
       receivers:
       - windowsperfcounters/mssql
     metrics/fluentbit:
       exporters:
-      - googlecloud
+      - otlp/otlp
       processors:
       - transform/agent_prometheus_0
+      - transform/agent_prometheus_1
+      - transform/agent_prometheus_2
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
       - resourcedetection/_global_0
-      - transform/_global_0
+      - resource/otlp/otlp_metrics_0
+      - metricstarttime/otlp/otlp_metrics_1
+      - batch/otlp/otlp_metrics_2
       receivers:
       - prometheus/agent_prometheus
     metrics/loggingmetrics:
       exporters:
-      - googlecloud
+      - otlp/otlp
       processors:
       - transform/agent_prometheus_0
+      - transform/agent_prometheus_1
+      - transform/agent_prometheus_2
       - transform/loggingmetrics_0
       - filter/loggingmetrics_1
       - filter/loggingmetrics_2
@@ -915,43 +1046,56 @@ service:
       - interval/loggingmetrics_7
       - metricstransform/loggingmetrics_8
       - resourcedetection/_global_0
-      - transform/_global_0
+      - resource/otlp/otlp_metrics_0
+      - metricstarttime/otlp/otlp_metrics_1
+      - batch/otlp/otlp_metrics_2
       receivers:
       - prometheus/agent_prometheus
     metrics/opsagent:
       exporters:
-      - googlecloud
+      - otlp/otlp
       processors:
       - transform/ops_agent_0
+      - transform/ops_agent_1
+      - transform/ops_agent_2
       - resourcedetection/_global_0
-      - transform/_global_0
+      - resource/otlp/otlp_metrics_0
+      - metricstarttime/otlp/otlp_metrics_1
+      - batch/otlp/otlp_metrics_2
       receivers:
       - otlpjsonfile/ops_agent
     metrics/otel:
       exporters:
-      - googlecloud
+      - otlp/otlp
       processors:
       - transform/agent_prometheus_0
+      - transform/agent_prometheus_1
+      - transform/agent_prometheus_2
       - transform/otel_0
       - filter/otel_1
       - filter/otel_2
       - metricstransform/otel_3
       - resourcedetection/_global_0
-      - transform/_global_0
+      - resource/otlp/otlp_metrics_0
+      - metricstarttime/otlp/otlp_metrics_1
+      - batch/otlp/otlp_metrics_2
       receivers:
       - prometheus/agent_prometheus
     metrics/prometheus__pipeline_prometheus:
       exporters:
-      - otlphttp/otlp
+      - otlp/otlp
       processors:
       - transform/prometheus_0
-      - resource/prometheus_1
-      - transform/prometheus_2
-      - metricstarttime/prometheus_3
+      - transform/prometheus_1
+      - metricstransform/prometheus_2
+      - resource/otlp/otlp_metrics_0
+      - metricstarttime/otlp/otlp_metrics_1
+      - batch/otlp/otlp_metrics_2
       receivers:
       - prometheus/prometheus
   telemetry:
     metrics:
+      level: detailed
       readers:
       - pull:
           exporter:
