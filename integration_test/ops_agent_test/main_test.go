@@ -2103,7 +2103,7 @@ func TestTCPLog(t *testing.T) {
 
 func TestFluentForwardLog(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
@@ -2119,7 +2119,7 @@ func TestFluentForwardLog(t *testing.T) {
       fluent_pipeline:
         receivers: [fluent_logs]
 `
-		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
