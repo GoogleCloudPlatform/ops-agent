@@ -610,17 +610,15 @@ func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.R
 			"poll_interval":         "1s",
 			"ignore_channel_errors": true,
 			"storage":               fileStorageExtensionID(),
+			// When "include_log_record_original = true", the event original XML string is set in `attributes."log.record.original"`.
+			"include_log_record_original": true,
 		}
 
 		var p []otel.Component
 		var err error
 		if r.IsDefaultVersion() {
-			// When "include_log_record_original = true", the event original XML string is set in `attributes."log.record.original"`.
-			receiver_config["include_log_record_original"] = true
 			p, err = windowsEventLogV1Processors(ctx)
 		} else if r.RenderAsXML {
-			// When "include_log_record_original = true", the event original XML string is set in `attributes."log.record.original"`.
-			receiver_config["include_log_record_original"] = true
 			p, err = windowsEventLogRawXMLProcessors(ctx)
 		} else {
 			p, err = windowsEventLogV2Processors(ctx)
@@ -663,22 +661,26 @@ func (p LoggingProcessorWindowsEventLogV1) Processors(ctx context.Context) ([]ot
 	return windowsEventLogV1Processors(ctx)
 }
 
+func parseLogRecordOriginal(deleteOriginalField bool) otel.Component {
+	// Parse original XML (attributes."log.record.original") to preserve non-rendered `Event.System` fields and non-parsed `Event.RenderingInfo.Message`.
+	logRecordOriginal := ottl.LValue{"attributes", "log.record.original"}
+	bodyParsedXML := ottl.LValue{"body", "parsed_xml"}
+	statements := []ottl.Statements{
+		bodyParsedXML.SetIf(ottl.ParseSimplifiedXML(logRecordOriginal), logRecordOriginal.IsPresent()),
+	}
+	if deleteOriginalField {
+		statements = append(statements, logRecordOriginal.Delete())
+	}
+	return otel.Transform(
+		"log", "log",
+		ottl.NewStatements(statements...),
+	)
+}
+
 func windowsEventLogV1Processors(ctx context.Context) ([]otel.Component, error) {
 	// The winlog input in fluent-bit has a completely different structure.
 	// We need to convert the OTel format into the fluent-bit format.
-
-	// Parse original XML (attributes."log.record.original") to preserve non-rendered `Event.System.Task` and non-parsed `Event.RenderingInfo.Message`.
-	logRecordOriginal := ottl.LValue{"attributes", "log.record.original"}
-	bodyParsedXML := ottl.LValue{"body", "parsed_xml"}
-	processors := []otel.Component{
-		otel.Transform(
-			"log", "log",
-			ottl.NewStatements(
-				bodyParsedXML.SetIf(ottl.ParseSimplifiedXML(logRecordOriginal), logRecordOriginal.IsPresent()),
-				logRecordOriginal.Delete(),
-			),
-		),
-	}
+	processors := []otel.Component{parseLogRecordOriginal(true)}
 
 	var empty string
 	modifyFields := &LoggingProcessorModifyFields{
@@ -732,7 +734,7 @@ func windowsEventLogV1Processors(ctx context.Context) ([]otel.Component, error) 
 			"jsonPayload.StringInserts": {
 				CopyFrom: "jsonPayload.event_data.data",
 				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
-					return v.Set(ottl.ToValues(v))
+					return v.SetIf(ottl.ToValues(v), v.IsPresent())
 				},
 			},
 			"jsonPayload.TimeGenerated": {
@@ -774,32 +776,25 @@ func (p LoggingProcessorWindowsEventLogV2) Processors(ctx context.Context) ([]ot
 func windowsEventLogV2Processors(ctx context.Context) ([]otel.Component, error) {
 	// The winevtlog input in fluent-bit has a completely different structure.
 	// We need to convert the OTel format into the fluent-bit format.
+	processors := []otel.Component{parseLogRecordOriginal(true)}
+
 	var empty string
-	p := &LoggingProcessorModifyFields{
+	var zero string = "0"
+	modifyFields := &LoggingProcessorModifyFields{
 		EmptyBody: true,
 		Fields: map[string]*ModifyField{
-			"jsonPayload.Channel":       {CopyFrom: "jsonPayload.channel"},
-			"jsonPayload.Computer":      {CopyFrom: "jsonPayload.computer"},
-			"jsonPayload.EventID":       {CopyFrom: "jsonPayload.event_id.id"},
-			"jsonPayload.EventRecordID": {CopyFrom: "jsonPayload.record_id"},
-			"jsonPayload.Keywords":      {CopyFrom: "jsonPayload.keywords"},
-			"jsonPayload.Level": {
-				CopyFrom: "jsonPayload.level",
-				MapValues: map[string]string{
-					"Critical":    "1",
-					"Error":       "2",
-					"Warning":     "3",
-					"Information": "4",
-				},
-				Type:               "integer",
-				MapValuesExclusive: true,
-			},
-			"jsonPayload.Message":      {CopyFrom: "jsonPayload.message"},
-			"jsonPayload.Opcode":       {CopyFrom: "jsonPayload.opcode", Type: "integer"},
-			"jsonPayload.ProcessID":    {CopyFrom: "jsonPayload.execution.process_id", Type: "integer"},
-			"jsonPayload.ProviderGuid": {CopyFrom: "jsonPayload.provider.guid"},
-			"jsonPayload.ProviderName": {CopyFrom: "jsonPayload.provider.name"},
-			"jsonPayload.Qualifiers":   {CopyFrom: "jsonPayload.event_id.qualifiers"},
+			"jsonPayload.Channel":       {CopyFrom: "jsonPayload.channel", DefaultValue: &empty},
+			"jsonPayload.Computer":      {CopyFrom: "jsonPayload.computer", DefaultValue: &empty},
+			"jsonPayload.EventID":       {CopyFrom: "jsonPayload.event_id.id", Type: "integer", DefaultValue: &zero},
+			"jsonPayload.EventRecordID": {CopyFrom: "jsonPayload.record_id", Type: "integer", DefaultValue: &zero},
+			"jsonPayload.Keywords":      {CopyFrom: "jsonPayload.parsed_xml.Event.System.Keywords"},
+			"jsonPayload.Level":         {CopyFrom: "jsonPayload.parsed_xml.Event.System.Level", Type: "integer", DefaultValue: &zero},
+			"jsonPayload.Message":       {CopyFrom: "jsonPayload.parsed_xml.Event.RenderingInfo.Message", DefaultValue: &empty},
+			"jsonPayload.Opcode":        {CopyFrom: "jsonPayload.parsed_xml.Event.System.Opcode", Type: "integer", DefaultValue: &zero},
+			"jsonPayload.ProcessID":     {CopyFrom: "jsonPayload.execution.process_id", Type: "integer", DefaultValue: &zero},
+			"jsonPayload.ProviderGuid":  {CopyFrom: "jsonPayload.provider.guid", DefaultValue: &empty},
+			"jsonPayload.ProviderName":  {CopyFrom: "jsonPayload.provider.name", DefaultValue: &empty},
+			"jsonPayload.Qualifiers":    {CopyFrom: "jsonPayload.event_id.qualifiers", Type: "integer", DefaultValue: &zero},
 			"jsonPayload.StringInserts": {
 				CopyFrom: "jsonPayload.event_data",
 				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
@@ -813,8 +808,8 @@ func windowsEventLogV2Processors(ctx context.Context) ([]otel.Component, error) 
 					)
 				},
 			},
-			"jsonPayload.Task":     {CopyFrom: "jsonPayload.task", Type: "integer"},
-			"jsonPayload.ThreadId": {CopyFrom: "jsonPayload.execution.thread_id", Type: "integer"},
+			"jsonPayload.Task":     {CopyFrom: "jsonPayload.parsed_xml.Event.System.Task", Type: "integer", DefaultValue: &zero},
+			"jsonPayload.ThreadId": {CopyFrom: "jsonPayload.execution.thread_id", Type: "integer", DefaultValue: &zero},
 			"jsonPayload.TimeCreated": {
 				CopyFrom:          "jsonPayload.system_time",
 				CustomConvertFunc: formatSystemTime,
@@ -823,8 +818,16 @@ func windowsEventLogV2Processors(ctx context.Context) ([]otel.Component, error) 
 				CopyFrom:     "jsonPayload.security.user_id",
 				DefaultValue: &empty,
 			},
+			"jsonPayload.ActivityID":        {CopyFrom: "jsonPayload.correlation.activity_id", DefaultValue: &empty},
+			"jsonPayload.RelatedActivityID": {CopyFrom: "jsonPayload.correlation.related_activity_id", DefaultValue: &empty},
+			"jsonPayload.Version":           {CopyFrom: "jsonPayload.version", Type: "integer", DefaultValue: &zero},
 		}}
-	return p.Processors(ctx)
+	p, err := modifyFields.Processors(ctx)
+	if err != nil {
+		return nil, err
+	}
+	processors = append(processors, p...)
+	return processors, nil
 }
 
 // LoggingProcessorWindowsEventLogRawXML contains the otel logging processors for RenderAsXML=true.
@@ -850,10 +853,13 @@ func windowsEventLogRawXMLProcessors(ctx context.Context) ([]otel.Component, err
 	// the fields "Message", "System" (raw_xml) and "StringInserts". We replicate that structure in otel
 	// by setting `include_log_record_original: true` which sets `labels."log.record.original"` with the
 	// event original XML.
-	p := &LoggingProcessorModifyFields{
+	processors := []otel.Component{parseLogRecordOriginal(false)}
+
+	var empty string
+	modifyFields := &LoggingProcessorModifyFields{
 		EmptyBody: true,
 		Fields: map[string]*ModifyField{
-			"jsonPayload.Message": {CopyFrom: "jsonPayload.message"},
+			"jsonPayload.Message": {CopyFrom: "jsonPayload.parsed_xml.Event.RenderingInfo.Message", DefaultValue: &empty},
 			`jsonPayload.raw_xml`: {MoveFrom: `labels."log.record.original"`},
 			"jsonPayload.StringInserts": {
 				CopyFrom: "jsonPayload.event_data",
@@ -870,7 +876,12 @@ func windowsEventLogRawXMLProcessors(ctx context.Context) ([]otel.Component, err
 			},
 		},
 	}
-	return p.Processors(ctx)
+	p, err := modifyFields.Processors(ctx)
+	if err != nil {
+		return nil, err
+	}
+	processors = append(processors, p...)
+	return processors, nil
 }
 
 func noFluentBitImplementation(ctx context.Context, tag, uid string) []fluentbit.Component {
@@ -880,6 +891,7 @@ func noFluentBitImplementation(ctx context.Context, tag, uid string) []fluentbit
 		Fields: map[string]*ModifyField{
 			"jsonPayload.channel":          {OmitIf: `jsonPayload.channel =~ ".*"`},
 			"jsonPayload.computer":         {OmitIf: `jsonPayload.computer =~ ".*"`},
+			"jsonPayload.correlation":      {OmitIf: `jsonPayload.correlation != nil`},
 			"jsonPayload.details":          {OmitIf: `jsonPayload.details != nil`},
 			"jsonPayload.event_data":       {OmitIf: `jsonPayload.event_data != nil`},
 			"jsonPayload.event_id":         {OmitIf: `jsonPayload.event_id != nil`},
@@ -893,6 +905,7 @@ func noFluentBitImplementation(ctx context.Context, tag, uid string) []fluentbit
 			"jsonPayload.security":         {OmitIf: `jsonPayload.security != nil`},
 			"jsonPayload.system_time":      {OmitIf: `jsonPayload.system_time =~ ".*"`},
 			"jsonPayload.task":             {OmitIf: `jsonPayload.task =~ ".*"`},
+			"jsonPayload.version":          {OmitIf: `jsonPayload.version != nil`},
 			`labels."log.record.original"`: {OmitIf: `labels."log.record.original" =~ ".*"`},
 		},
 	}.Components(ctx, tag, uid)

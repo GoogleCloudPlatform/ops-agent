@@ -1,26 +1,62 @@
 - entries:
   - jsonPayload:
-      Channel: System
+      ActivityID: "{000000000-0000-0000-0000-000000000000}"
+      Channel: Security
       Computer: test-computer
-      EventID: 4444
-      EventRecordID: 1111
-      Keywords:
-      - Classic
-      Level: 4
-      Message: The Windows Modules Installer service entered the running state.
+      EventID: 4567
+      EventRecordID: 34567
+      Keywords: "0x8020000000000000"
+      Level: 0
+      Message: |-
+        Special privileges assigned to new logon.
+        
+        Subject:
+        	Security ID:		S-0-0-00
+        	Account Name:		SYSTEM
+        	Account Domain:		NT AUTHORITY
+        	Logon ID:		0x000
+        
+        Privileges:		SeAssignPrimaryTokenPrivilege
+        			SeTcbPrivilege
+        			SeSecurityPrivilege
+        			SeTakeOwnershipPrivilege
+        			SeLoadDriverPrivilege
+        			SeBackupPrivilege
+        			SeRestorePrivilege
+        			SeDebugPrivilege
+        			SeAuditPrivilege
+        			SeSystemEnvironmentPrivilege
+        			SeImpersonatePrivilege
+        			SeDelegateSessionUserImpersonatePrivilege
       Opcode: 0
-      ProcessID: 222
-      ProviderGuid: "{11111111}"
-      ProviderName: Service Control Manager
-      Qualifiers: 33333
+      ProcessID: 820
+      ProviderGuid: "{11111111-2222-3333-4444-555555555555}"
+      ProviderName: Microsoft-Windows-Security-Auditing
+      Qualifiers: 0
+      RelatedActivityID: ""
       StringInserts:
-      - Windows Modules Installer
-      - running
-      - "12345"
-      Task: 0
-      ThreadId: 0
-      TimeCreated: 2025-07-02 20:38:45.0260774 +0000
+      - S-0-0-00
+      - SYSTEM
+      - NT AUTHORITY
+      - "0x000"
+      - |-
+        SeAssignPrimaryTokenPrivilege
+        			SeTcbPrivilege
+        			SeSecurityPrivilege
+        			SeTakeOwnershipPrivilege
+        			SeLoadDriverPrivilege
+        			SeBackupPrivilege
+        			SeRestorePrivilege
+        			SeDebugPrivilege
+        			SeAuditPrivilege
+        			SeSystemEnvironmentPrivilege
+        			SeImpersonatePrivilege
+        			SeDelegateSessionUserImpersonatePrivilege
+      Task: 56789
+      ThreadId: 6080
+      TimeCreated: 2026-01-16 18:45:59.5782153 +0000
       UserId: ""
+      Version: 0
     labels:
       compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/my-log-name
@@ -29,29 +65,65 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: 2025-07-02T20:38:45.026077400Z
+    timestamp: now
   - jsonPayload:
-      Channel: System
+      ActivityID: "{000000000-0000-0000-0000-000000000000}"
+      Channel: Security
       Computer: test-computer
-      EventID: 4444
-      EventRecordID: 1111
-      Keywords:
-      - Classic
-      Level: 4
-      Message: The Software Protection service entered the stopped state.
+      EventID: 4567
+      EventRecordID: 34567
+      Keywords: "0x8020000000000000"
+      Level: 0
+      Message: |-
+        Special privileges assigned to new logon.
+        
+        Subject:
+        	Security ID:		S-0-0-00
+        	Account Name:		SYSTEM
+        	Account Domain:		NT AUTHORITY
+        	Logon ID:		0x000
+        
+        Privileges:		SeAssignPrimaryTokenPrivilege
+        			SeTcbPrivilege
+        			SeSecurityPrivilege
+        			SeTakeOwnershipPrivilege
+        			SeLoadDriverPrivilege
+        			SeBackupPrivilege
+        			SeRestorePrivilege
+        			SeDebugPrivilege
+        			SeAuditPrivilege
+        			SeSystemEnvironmentPrivilege
+        			SeImpersonatePrivilege
+        			SeDelegateSessionUserImpersonatePrivilege
       Opcode: 0
-      ProcessID: 222
-      ProviderGuid: "{11111111}"
-      ProviderName: Service Control Manager
-      Qualifiers: 33333
+      ProcessID: 820
+      ProviderGuid: "{11111111-2222-3333-4444-555555555555}"
+      ProviderName: Microsoft-Windows-Security-Auditing
+      Qualifiers: 0
+      RelatedActivityID: ""
       StringInserts:
-      - Software Protection
-      - stopped
-      - "12345"
-      Task: 0
-      ThreadId: 0
-      TimeCreated: 2025-07-02 20:39:32.3390061 +0000
+      - S-0-0-00
+      - SYSTEM
+      - NT AUTHORITY
+      - "0x000"
+      - |-
+        SeAssignPrimaryTokenPrivilege
+        			SeTcbPrivilege
+        			SeSecurityPrivilege
+        			SeTakeOwnershipPrivilege
+        			SeLoadDriverPrivilege
+        			SeBackupPrivilege
+        			SeRestorePrivilege
+        			SeDebugPrivilege
+        			SeAuditPrivilege
+        			SeSystemEnvironmentPrivilege
+        			SeImpersonatePrivilege
+        			SeDelegateSessionUserImpersonatePrivilege
+      Task: 56789
+      ThreadId: 6080
+      TimeCreated: 2026-01-16 18:45:59.5782153 +0000
       UserId: ""
+      Version: 0
     labels:
       compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/my-log-name
@@ -60,123 +132,64 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: 2025-07-02T20:39:32.339006100Z
+    timestamp: now
   - jsonPayload:
+      ActivityID: ""
       Channel: System
       Computer: test-computer
       EventID: 7036
-      EventRecordID: 2273
-      Keywords:
-      - Classic
+      EventRecordID: 11223
+      Keywords: "0x8080000000000000"
       Level: 4
-      Message: The Network Setup Service service entered the running state.
+      Message: The Software Protection service entered the stopped state.
       Opcode: 0
-      ProcessID: 780
-      ProviderGuid: "{11111111}"
+      ProcessID: 789
+      ProviderGuid: "{11111111-2222-3333-4444-555555555555}"
       ProviderName: Service Control Manager
-      Qualifiers: 16384
+      Qualifiers: 12345
+      RelatedActivityID: ""
       StringInserts:
-      - Network Setup Service
+      - Software Protection
+      - stopped
+      - 7300700070007300760063002F0031000000
+      Task: 0
+      ThreadId: 5678
+      TimeCreated: 2025-12-14 05:26:29.0709018 +0000
+      UserId: ""
+      Version: 0
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
+  - jsonPayload:
+      ActivityID: ""
+      Channel: System
+      Computer: test-computer
+      EventID: 7036
+      EventRecordID: 22334
+      Keywords: "0x8080000000000000"
+      Level: 4
+      Message: The Software Protection service entered the running state.
+      Opcode: 0
+      ProcessID: 789
+      ProviderGuid: "{11111111-2222-3333-4444-555555555555}"
+      ProviderName: Service Control Manager
+      Qualifiers: 12345
+      RelatedActivityID: ""
+      StringInserts:
+      - Software Protection
       - running
-      - "12345"
+      - 7300700070007300760063002F0034000000
       Task: 0
-      ThreadId: 8328
-      TimeCreated: 2025-12-02 23:57:13.2944449 +0000
+      ThreadId: 9876
+      TimeCreated: 2025-12-14 05:25:55.5387001 +0000
       UserId: ""
-    labels:
-      compute.googleapis.com/resource_name: hostname
-    logName: projects/my-project/logs/my-log-name
-    resource:
-      labels:
-        instance_id: test-instance-id
-        zone: test-zone
-      type: gce_instance
-    timestamp: now
-  - jsonPayload:
-      Channel: Application
-      Computer: test-computer
-      EventID: 16384
-      EventRecordID: 24567
-      Keywords:
-      - Classic
-      Level: 4
-      Message: "Successfully scheduled Software Protection service for re-start at 2025-12-09T22:44:19Z. Reason: RulesEngine."
-      Opcode: 0
-      ProcessID: 0
-      ProviderGuid: "{11111111}"
-      ProviderName: Microsoft-Windows-Security-SPP
-      Qualifiers: 16384
-      StringInserts:
-      - 2025-12-09T22:44:19Z
-      - RulesEngine
-      Task: 0
-      ThreadId: 0
-      TimeCreated: 2025-12-02 23:45:19.6366777 +0000
-      UserId: ""
-    labels:
-      compute.googleapis.com/resource_name: hostname
-    logName: projects/my-project/logs/my-log-name
-    resource:
-      labels:
-        instance_id: test-instance-id
-        zone: test-zone
-      type: gce_instance
-    timestamp: now
-  - jsonPayload:
-      Channel: System
-      Computer: test-computer
-      EventID: 7039
-      EventRecordID: 2285
-      Keywords:
-      - Classic
-      Level: 3
-      Message: |-
-        A service process other than the one launched by the Service Control Manager connected when starting the Google Cloud Ops Agent - Logging Agent service.  The Service Control Manager launched process 8856 and process 5212 connected instead.
-        
-          Note that if this service is configured to start under a debugger, this behavior is expected.
-      Opcode: 0
-      ProcessID: 780
-      ProviderGuid: "{555908d1-a6d7-4695-8e1e-26931d2012f4}"
-      ProviderName: Service Control Manager
-      Qualifiers: 32768
-      StringInserts:
-      - Google Cloud Ops Agent - Logging Agent
-      - "8856"
-      - "5212"
-      Task: 0
-      ThreadId: 7152
-      TimeCreated: 2025-12-03 00:13:07.268214 +0000
-      UserId: ""
-    labels:
-      compute.googleapis.com/resource_name: hostname
-    logName: projects/my-project/logs/my-log-name
-    resource:
-      labels:
-        instance_id: test-instance-id
-        zone: test-zone
-      type: gce_instance
-    timestamp: now
-  - jsonPayload:
-      Channel: System
-      Computer: test-computer
-      EventID: 1796
-      EventRecordID: 2133
-      Keywords:
-      - "0x8000000000000000"
-      Level: 2
-      Message: The Secure Boot update failed to update a Secure Boot variable with error Secure Boot is not enabled on this machine.. For more information, please see https://go.microsoft.com/fwlink/?linkid=2169931
-      Opcode: Info
-      ProcessID: 6456
-      ProviderGuid: "{7d5387b0-cbe0-11da-a94d-0800200c9a66}"
-      ProviderName: Microsoft-Windows-TPM-WMI
-      Qualifiers: 0
-      StringInserts:
-      - "-2147020471"
-      - "1024"
-      Task: 0
-      ThreadId: 6424
-      TimeCreated: 2025-12-02 22:49:40.4939915 +0000
-      UserId: S-1-5-18
+      Version: 0
     labels:
       compute.googleapis.com/resource_name: hostname
     logName: projects/my-project/logs/my-log-name
