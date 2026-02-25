@@ -65,7 +65,11 @@ func googleCloudLoggingExporter() otel.Component {
 			// https://github.com/googleapis/google-cloud-go/blob/logging/v1.4.2/logging/apiv2/logging_client.go#L78-L90
 			"timeout": "60s",
 			"sending_queue": map[string]interface{}{
-				"enabled": true,
+				"enabled":       true,
+				"num_consumers": 10,
+				// Set queue_size to "num_consumers + 1" to always have a new batch ready.
+				"queue_size": 11,
+				"sizer":      "requests",
 				// Blocks the "sending_queue" on overflow to reduce log loss.
 				"block_on_overflow": true,
 				// Set batch in "sending_queue" is recommended instead of using batch processor.
