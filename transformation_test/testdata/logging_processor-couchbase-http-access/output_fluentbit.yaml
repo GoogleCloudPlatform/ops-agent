@@ -17,7 +17,7 @@
     jsonPayload:
       host: couchbase.local
       message: Request took 5ms
-      user: -
+      user: test_user
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
@@ -41,7 +41,7 @@
     jsonPayload:
       host: couchbase.local
       message: Request took 12ms
-      user: -
+      user: test_user
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
@@ -65,7 +65,7 @@
     jsonPayload:
       host: couchbase.local
       message: Request took 2ms
-      user: -
+      user: test_user
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
@@ -89,7 +89,7 @@
     jsonPayload:
       host: couchbase.local
       message: Internal Server Error
-      user: -
+      user: test_user
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
@@ -113,7 +113,7 @@
     jsonPayload:
       host: couchbase.local
       message: Unauthorized delete attempt
-      user: -
+      user: test_user
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
@@ -137,7 +137,7 @@
     jsonPayload:
       host: couchbase.local
       message: Redirected to login
-      user: -
+      user: test_user
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
@@ -161,7 +161,7 @@
     jsonPayload:
       host: couchbase.local
       message: Not modified
-      user: -
+      user: test_user
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
@@ -185,7 +185,7 @@
     jsonPayload:
       host: couchbase.local
       message: Preflight check passed
-      user: -
+      user: test_user
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
@@ -209,7 +209,7 @@
     jsonPayload:
       host: couchbase.local
       message: Payload too large
-      user: -
+      user: test_user
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
@@ -233,7 +233,7 @@
     jsonPayload:
       host: couchbase.local
       message: Document conflict
-      user: -
+      user: test_user
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
