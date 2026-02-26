@@ -485,7 +485,6 @@ func (r LoggingReceiverFluentForward) Pipelines(ctx context.Context) ([]otel.Rec
 	bodyMessage := ottl.LValue{"body", "message"}
 	attributes := ottl.LValue{"attributes"}
 	cacheBodyString := ottl.LValue{"cache", "body_string"}
-	cacheBodyMap := ottl.LValue{"cache", "body_map"}
 
 	processors := []otel.Component{
 		otel.Transform(
@@ -496,11 +495,9 @@ func (r LoggingReceiverFluentForward) Pipelines(ctx context.Context) ([]otel.Rec
 			ottl.NewStatements(
 				// "fluentforwardreceiver" sets "log" and "message" as "body". All other fields are set as "attributes".
 				cacheBodyString.SetIf(body, body.IsString()),
-				cacheBodyMap.SetIf(body, body.IsMap()),
-				// Merge "cache['body_string']", "cache['body_map']" and "attributes" into "body" (jsonPayload).
+				// Merge "cache['body_string']" and "attributes" into "body" (jsonPayload).
 				body.Set(ottl.RValue("{}")),
 				bodyMessage.SetIf(cacheBodyString, cacheBodyString.IsPresent()),
-				body.MergeMapsIf(cacheBodyMap, "upsert", cacheBodyMap.IsPresent()),
 				body.MergeMapsIf(attributes, "upsert", attributes.IsPresent()),
 				attributes.Set(ottl.RValue("{}")),
 			),

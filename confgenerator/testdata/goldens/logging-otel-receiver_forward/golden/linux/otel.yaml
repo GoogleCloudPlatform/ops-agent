@@ -584,10 +584,8 @@ processors:
     - context: log
       statements:
       - set(cache["body_string"], body) where IsString(body)
-      - set(cache["body_map"], body) where IsMap(body)
       - set(body, {})
       - set(body["message"], cache["body_string"]) where (cache != nil and cache["body_string"] != nil)
-      - merge_maps(body, cache["body_map"], "upsert") where (cache != nil and cache["body_map"] != nil)
       - merge_maps(body, attributes, "upsert") where (attributes != nil)
       - set(attributes, {})
   transform/fluent__forward_1:
