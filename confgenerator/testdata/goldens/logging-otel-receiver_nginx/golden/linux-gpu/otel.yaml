@@ -17,7 +17,7 @@ exporters:
       block_on_overflow: true
       enabled: true
       num_consumers: 10
-      queue_size: 11
+      queue_size: 20
       sizer: requests
     timeout: 60s
 extensions:
