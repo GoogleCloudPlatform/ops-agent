@@ -1,0 +1,47 @@
+- entries:
+  - jsonPayload:
+      level: INFO
+      log_type: PipelineManager
+      message: Starting replication pipeline for bucket travel-data
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_goxdcr
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-08-18T14:27:02.452000000Z
+  - jsonPayload:
+      level: WARN
+      log_type: XDCR.CheckpointService
+      message: Failed to save checkpoint due to timeout
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_goxdcr
+    logName: projects/my-project/logs/transformation_test
+    severity: 400.0
+    timestamp: 2025-08-18T14:27:10.874000000Z
+  - jsonPayload:
+      level: ERROR
+      log_type: Router
+      message: |-
+        Failed to route mutation for key "user:12345", retrying...
+        Additional detail: document size exceeded configured threshold
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_goxdcr
+    logName: projects/my-project/logs/transformation_test
+    severity: 500.0
+    timestamp: 2025-08-18T14:27:22.345000000Z
+  - jsonPayload:
+      level: DEBUG
+      log_type: BackfillManager
+      message: Backfill task created for vbucket 102
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_goxdcr
+    logName: projects/my-project/logs/transformation_test
+    severity: 100.0
+    timestamp: 2025-08-18T14:27:45.657000000Z
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance
