@@ -57,39 +57,62 @@ func googleCloudExporter(userAgent string, instrumentationLabels bool, serviceRe
 	}
 }
 
-func ConvertPrometheusExporterToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
-	return ConvertToOtlpExporter(receiver, ctx, true)
+func googleCloudLoggingExporter() otel.Component {
+	return otel.Component{
+		Type: "googlecloud",
+		Config: map[string]interface{}{
+			// Set to mirror the 60s max limit of default retry window in Google Cloud Logging apiv2 go client :
+			// https://github.com/googleapis/google-cloud-go/blob/logging/v1.4.2/logging/apiv2/logging_client.go#L78-L90
+			"timeout": "60s",
+		},
+	}
 }
 
-func ConvertGCMOtelExporterToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
-	return ConvertToOtlpExporter(receiver, ctx, false)
+func ConvertPrometheusExporterToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
+	return ConvertToOtlpExporter(pipeline, ctx, true, false)
 }
 
-func ConvertToOtlpExporter(receiver otel.ReceiverPipeline, ctx context.Context, isPrometheus bool) otel.ReceiverPipeline {
+func ConvertGCMOtelExporterToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
+	return ConvertToOtlpExporter(pipeline, ctx, false, false)
+}
+
+func ConvertGCMSystemExporterToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
+	return ConvertToOtlpExporter(pipeline, ctx, false, true)
+}
+
+func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, isPrometheus bool, isSystem bool) otel.ReceiverPipeline {
 	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
-	resource, _ := platform.FromContext(ctx).GetResource()
 	if !expOtlpExporter {
-		return receiver
+		return pipeline
 	}
-	_, err := receiver.ExporterTypes["metrics"]
+	_, err := pipeline.ExporterTypes["metrics"]
 	if !err {
-		return receiver
+		return pipeline
 	}
-	receiver.ExporterTypes["metrics"] = otel.OTLP
+	pipeline.ExporterTypes["metrics"] = otel.OTLP
+	if isSystem {
+		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveInstrumentationLibraryLabelsAttributes())
+		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveServiceAttributes())
+	}
 
-	receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.GCPProjectID(resource.ProjectName()))
+	// b/476109839: For prometheus metrics using the OTLP exporter. The dots "." in the metric name are NOT replaced with underscore "_".
+	// This is diffrent from the GMP endpoint.
 	if isPrometheus {
-		receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.MetricUnknownCounter())
-		receiver.Processors["metrics"] = append(receiver.Processors["metrics"], otel.MetricStartTime())
+		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricUnknownCounter())
+		// If a metric already has a domain, it will not be considered a prometheus metric by the UTR endpoint unless we add the prefix.
+		// This behavior is the same as the GCM/GMP exporters.
+		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsTransform(otel.AddPrefix("prometheus.googleapis.com")))
 	}
-	return receiver
+	return pipeline
 }
 
 func otlpExporter(userAgent string) otel.Component {
 	return otel.Component{
-		Type: "otlphttp",
+		Type: "otlp",
 		Config: map[string]interface{}{
-			"endpoint": "https://telemetry.googleapis.com",
+			"endpoint": "telemetry.googleapis.com:443",
+			// b/485538253: Use pick_first balancer until we can understand why round_robin is failing.
+			"balancer_name": "pick_first",
 			"auth": map[string]interface{}{
 				"authenticator": "googleclientauth",
 			},
@@ -122,7 +145,32 @@ func (uc *UnifiedConfig) getOTelLogLevel() string {
 	return logLevel
 }
 
-func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) (string, error) {
+// fileStorageExtensionID returns the file_storage extension used by all receivers and exporters.
+func fileStorageExtensionID() string {
+	return "file_storage"
+}
+
+// fileStorageExtensionConfig returns a configured file_storage extension to be used by all receivers and exporters.
+func fileStorageExtensionConfig(stateDir string) map[string]interface{} {
+	return map[string]interface{}{
+		"directory":        path.Join(stateDir, "file_storage"),
+		"create_directory": true,
+	}
+}
+
+func (uc *UnifiedConfig) getEnabledExtensions(ctx context.Context, stateDir string) map[string]interface{} {
+	extensions := map[string]interface{}{}
+	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
+	if expOtlpExporter {
+		extensions["googleclientauth"] = map[string]interface{}{}
+	}
+	if uc.Logging.Service.OTelLogging {
+		extensions["file_storage"] = fileStorageExtensionConfig(stateDir)
+	}
+	return extensions
+}
+
+func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDir string) (string, error) {
 	p := platform.FromContext(ctx)
 	userAgent, _ := p.UserAgent("Google-Cloud-Ops-Agent-Metrics")
 	metricVersionLabel, _ := p.VersionLabel("google-cloud-ops-agent-metrics")
@@ -141,26 +189,54 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir string) 
 		OtelRuntimeDir:      outDir,
 		OtelLogging:         uc.Logging.Service.OTelLogging,
 	}
-	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines)
-
-	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
-	extensions := map[string]interface{}{}
-	if expOtlpExporter {
-		extensions["googleclientauth"] = map[string]interface{}{}
+	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines, ctx)
+	resource, err := p.GetResource()
+	if err != nil {
+		return "", err
 	}
 
 	otelConfig, err := otel.ModularConfig{
 		LogLevel:          uc.getOTelLogLevel(),
 		ReceiverPipelines: receiverPipelines,
 		Pipelines:         pipelines,
-		Extensions:        extensions,
-		Exporters: map[otel.ExporterType]otel.Component{
-			otel.System: googleCloudExporter(userAgent, false, false),
-			otel.OTel:   googleCloudExporter(userAgent, true, true),
-			otel.GMP:    googleManagedPrometheusExporter(userAgent),
-			otel.OTLP:   otlpExporter(userAgent),
+		Extensions:        uc.getEnabledExtensions(ctx, stateDir),
+		Exporters: map[otel.ExporterType]otel.ExporterComponents{
+			otel.System: {
+				Exporter: googleCloudExporter(userAgent, false, false),
+			},
+			otel.OTel: {
+				Exporter: googleCloudExporter(userAgent, true, true),
+			},
+			otel.GMP: {
+				Exporter: googleManagedPrometheusExporter(userAgent),
+			},
+			otel.OTLP: {
+				Exporter: otlpExporter(userAgent),
+				ProcessorsByType: map[string][]otel.Component{
+					// The OTLP exporter doesn't batch by default like the googlecloud.* exporters.
+					// We need this to avoid the API point limits.
+					"metrics": {
+						otel.GCPProjectID(resource.ProjectName()),
+						otel.MetricStartTime(),
+						otel.BatchProcessor(200, 200, "200ms"),
+					},
+					// Batching logs improves log export performance.
+					"logs": {
+						otel.BatchProcessor(1000, 1000, "200ms"),
+					},
+				},
+			},
+			otel.Logging: {
+				Exporter: googleCloudLoggingExporter(),
+				ProcessorsByType: map[string][]otel.Component{
+					// Batching logs improves log export performance.
+					"logs": {
+						otel.BatchProcessor(1000, 1000, "200ms"),
+					},
+				},
+			},
 		},
-	}.Generate(ctx, expOtlpExporter)
+	}.Generate(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -299,11 +375,17 @@ func (p PipelineInstance) OTelComponents(ctx context.Context) (map[string]otel.R
 			prefix = fmt.Sprintf("%s_%s", p.PipelineType, prefix)
 		}
 
-		if processors, ok := receiverPipeline.Processors["logs"]; ok {
+		if _, ok := receiverPipeline.Processors["logs"]; ok {
 			receiverPipeline.Processors["logs"] = append(
-				processors,
+				receiverPipeline.Processors["logs"],
 				otelSetLogNameComponents(ctx, p.RID)...,
 			)
+			if p.Receiver.Type() == "fluent_forward" {
+				receiverPipeline.Processors["logs"] = append(
+					receiverPipeline.Processors["logs"],
+					otelFluentForwardSetLogNameComponents()...,
+				)
+			}
 		}
 
 		outR[receiverPipelineName] = receiverPipeline

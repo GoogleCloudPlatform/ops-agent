@@ -432,8 +432,6 @@
       type: gce_instance
     severity: INFO
     timestamp: 2025-07-22T01:05:22.347Z
-  partialSuccess: true
-- entries:
   - jsonPayload:
       level: INFO
       message: org.apache.catalina.core.StandardService Catalina service stopped.
