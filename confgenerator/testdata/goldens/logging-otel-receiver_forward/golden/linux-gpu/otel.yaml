@@ -615,7 +615,7 @@ processors:
       - set(cache["body_string"], body) where IsString(body)
       - set(body, {})
       - set(body["message"], cache["body_string"]) where (cache != nil and cache["body_string"] != nil)
-      - merge_maps(body, attributes, "upsert") where (attributes != nil)
+      - merge_maps(body, attributes, "upsert") where attributes != nil
       - set(attributes, {})
   transform/fluent__forward_1:
     error_mode: ignore

@@ -498,7 +498,7 @@ func (r LoggingReceiverFluentForward) Pipelines(ctx context.Context) ([]otel.Rec
 				// Merge "cache['body_string']" and "attributes" into "body" (jsonPayload).
 				body.Set(ottl.RValue("{}")),
 				bodyMessage.SetIf(cacheBodyString, cacheBodyString.IsPresent()),
-				body.MergeMapsIf(attributes, "upsert", attributes.IsPresent()),
+				body.MergeMaps(attributes, "upsert"),
 				attributes.Set(ottl.RValue("{}")),
 			),
 		),
