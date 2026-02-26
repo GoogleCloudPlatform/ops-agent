@@ -1,6 +1,12 @@
 - entries:
-  - jsonPayload:
-      gzip_ratio: ""
+  - httpRequest:
+      protocol: HTTP/1.1
+      remoteIp: 127.0.0.1
+      requestMethod: GET
+      requestUrl: /apache_pb.gif
+      responseSize: "2326"
+      status: 200
+    jsonPayload: {}
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_access
@@ -11,8 +17,16 @@
         zone: test-zone
       type: gce_instance
     timestamp: 2000-10-10T20:55:36Z
-  - jsonPayload:
-      gzip_ratio: ""
+  - httpRequest:
+      protocol: HTTP/1.1
+      referer: http://www.example.com/start.html
+      remoteIp: 192.168.1.100
+      requestMethod: GET
+      requestUrl: /apache_pb.gif
+      responseSize: "2326"
+      status: 200
+      userAgent: Mozilla/4.08 [en] (Win98; I ;Nav)
+    jsonPayload:
       user: frank
     labels:
       compute.googleapis.com/resource_name: hostname
@@ -24,8 +38,16 @@
         zone: test-zone
       type: gce_instance
     timestamp: 2000-10-10T20:55:36Z
-  - jsonPayload:
-      gzip_ratio: ""
+  - httpRequest:
+      protocol: HTTP/1.1
+      referer: https://example.com/register
+      remoteIp: 10.0.0.1
+      requestMethod: POST
+      requestUrl: /api/users
+      responseSize: "445"
+      status: 201
+      userAgent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
+    jsonPayload: {}
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_access
@@ -36,8 +58,15 @@
         zone: test-zone
       type: gce_instance
     timestamp: 2021-08-26T16:50:15Z
-  - jsonPayload:
-      gzip_ratio: ""
+  - httpRequest:
+      protocol: HTTP/1.1
+      remoteIp: 203.0.113.4
+      requestMethod: GET
+      requestUrl: /admin/dashboard
+      responseSize: "1234"
+      status: 403
+      userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
+    jsonPayload:
       user: admin
     labels:
       compute.googleapis.com/resource_name: hostname
@@ -50,7 +79,7 @@
       type: gce_instance
     timestamp: 2021-08-26T16:51:22Z
   - jsonPayload:
-      gzip_ratio: ""
+      message: "172.16.0.1 - - [26/Aug/2021:16:53:05 +0000] \"PUT /api/data/123 HTTP/1.1\" 500 789 \"https://api.example.com/docs\" \"python-requests/2.25.1\" "
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_access
@@ -60,5 +89,5 @@
         instance_id: test-instance-id
         zone: test-zone
       type: gce_instance
-    timestamp: 2021-08-26T16:53:05Z
+    timestamp: now
   partialSuccess: true

@@ -1,22 +1,33 @@
 exporters:
-  googlecloud:
-    metric:
-      instrumentation_library_labels: false
-      prefix: ""
-      resource_filters: []
-      service_resource_labels: false
-      skip_create_descriptor: true
-    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
-  googlemanagedprometheus:
-    metric:
-      add_metric_suffixes: false
-    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
+  otlp/otlp:
+    auth:
+      authenticator: googleclientauth
+    balancer_name: pick_first
+    endpoint: telemetry.googleapis.com:443
+    headers:
+      User-Agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
 extensions:
   googleclientauth: {}
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
+  batch/otlp/otlp_metrics_2:
+    send_batch_max_size: 200
+    send_batch_size: 200
+    timeout: 200ms
+  cumulativetodelta/loggingmetrics_4:
+    include:
+      match_type: strict
+      metrics:
+      - otel_log_entry_count
+      - otel_log_entry_retry_count
+      - otel_request_count
+      - fluentbit_log_entry_count
+      - fluentbit_log_entry_retry_count
+      - fluentbit_request_count
+    initial_value: drop
+  deltatocumulative/loggingmetrics_6: {}
   filter/default__pipeline_hostmetrics_0:
     metrics:
       exclude:
@@ -33,9 +44,6 @@ processors:
         match_type: strict
         metric_names:
         - fluentbit_uptime
-        - fluentbit_stackdriver_requests_total
-        - fluentbit_stackdriver_proc_records_total
-        - fluentbit_stackdriver_retried_records_total
   filter/hostmetrics_1:
     metrics:
       exclude:
@@ -45,15 +53,25 @@ processors:
         - system.filesystem.inodes.usage
         - system.paging.faults
         - system.disk.operation_time
-  filter/otel_0:
+  filter/loggingmetrics_1:
+    metrics:
+      datapoint:
+      - metric.name == "grpc.client.attempt.duration_count" and (not IsMatch(datapoint.attributes["grpc.target"], "logging.googleapis"))
+  filter/loggingmetrics_2:
     metrics:
       include:
         match_type: strict
         metric_names:
-        - otelcol_process_uptime
-        - otelcol_process_memory_rss
-        - grpc.client.attempt.duration
-        - googlecloudmonitoring/point_count
+        - fluentbit_stackdriver_requests_total
+        - fluentbit_stackdriver_proc_records_total
+        - fluentbit_stackdriver_retried_records_total
+        - otelcol_exporter_sent_log_records
+        - otelcol_exporter_send_failed_log_records
+        - grpc.client.attempt.duration_count
+  filter/otel_1:
+    metrics:
+      datapoint:
+      - metric.name == "rpc.client.duration_count" and (not IsMatch(datapoint.attributes["rpc.service"], "opentelemetry.proto.collector.metrics.v1.MetricsService"))
   filter/otel_2:
     metrics:
       include:
@@ -61,9 +79,12 @@ processors:
         metric_names:
         - otelcol_process_uptime
         - otelcol_process_memory_rss
-        - grpc.client.attempt.duration_count
-        - googlecloudmonitoring/point_count
-  metricstarttime/prometheus_2:
+        - otelcol_exporter_sent_metric_points
+        - otelcol_exporter_send_failed_metric_points
+        - rpc.client.duration_count
+  interval/loggingmetrics_7:
+    interval: 1m
+  metricstarttime/otlp/otlp_metrics_1:
     strategy: subtract_initial_point
   metricstransform/fluentbit_1:
     transforms:
@@ -79,42 +100,6 @@ processors:
         aggregation_type: sum
         label_set:
         - version
-    - action: update
-      include: fluentbit_stackdriver_requests_total
-      new_name: agent/request_count
-      operations:
-      - action: toggle_scalar_data_type
-      - action: update_label
-        label: status
-        new_label: response_code
-      - action: aggregate_labels
-        aggregation_type: sum
-        label_set:
-        - response_code
-    - action: update
-      include: fluentbit_stackdriver_proc_records_total
-      new_name: agent/log_entry_count
-      operations:
-      - action: toggle_scalar_data_type
-      - action: update_label
-        label: status
-        new_label: response_code
-      - action: aggregate_labels
-        aggregation_type: sum
-        label_set:
-        - response_code
-    - action: update
-      include: fluentbit_stackdriver_retried_records_total
-      new_name: agent/log_entry_retry_count
-      operations:
-      - action: toggle_scalar_data_type
-      - action: update_label
-        label: status
-        new_label: response_code
-      - action: aggregate_labels
-        aggregation_type: sum
-        label_set:
-        - response_code
     - action: update
       include: ^(.*)$$
       match_type: regexp
@@ -417,6 +402,144 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  metricstransform/loggingmetrics_3:
+    transforms:
+    - action: update
+      include: fluentbit_stackdriver_retried_records_total
+      new_name: fluentbit_log_entry_retry_count
+      operations:
+      - action: toggle_scalar_data_type
+      - action: update_label
+        label: status
+        new_label: response_code
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+    - action: insert
+      include: otelcol_exporter_send_failed_log_records
+      new_name: otel_log_entry_retry_count
+      operations:
+      - action: toggle_scalar_data_type
+      - action: add_label
+        new_label: response_code
+        new_value: "400"
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+    - action: update
+      include: fluentbit_stackdriver_requests_total
+      new_name: fluentbit_request_count
+      operations:
+      - action: toggle_scalar_data_type
+      - action: update_label
+        label: status
+        new_label: response_code
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+    - action: update
+      include: grpc.client.attempt.duration_count
+      new_name: otel_request_count
+      operations:
+      - action: update_label
+        label: grpc.status
+        new_label: response_code
+      - action: update_label
+        label: response_code
+        value_actions:
+        - new_value: "409"
+          value: ABORTED
+        - new_value: "409"
+          value: ALREADY_EXISTS
+        - new_value: "499"
+          value: CANCELLED
+        - new_value: "500"
+          value: DATA_LOSS
+        - new_value: "504"
+          value: DEADLINE_EXCEEDED
+        - new_value: "400"
+          value: FAILED_PRECONDITION
+        - new_value: "500"
+          value: INTERNAL
+        - new_value: "400"
+          value: INVALID_ARGUMENT
+        - new_value: "404"
+          value: NOT_FOUND
+        - new_value: "200"
+          value: OK
+        - new_value: "400"
+          value: OUT_OF_RANGE
+        - new_value: "403"
+          value: PERMISSION_DENIED
+        - new_value: "429"
+          value: RESOURCE_EXHAUSTED
+        - new_value: "401"
+          value: UNAUTHENTICATED
+        - new_value: "503"
+          value: UNAVAILABLE
+        - new_value: "501"
+          value: UNIMPLEMENTED
+        - new_value: "500"
+          value: UNKNOWN
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+    - action: update
+      include: fluentbit_stackdriver_proc_records_total
+      new_name: fluentbit_log_entry_count
+      operations:
+      - action: toggle_scalar_data_type
+      - action: update_label
+        label: status
+        new_label: response_code
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+    - action: update
+      include: otelcol_exporter_sent_log_records
+      new_name: otel_log_entry_count
+      operations:
+      - action: toggle_scalar_data_type
+      - action: add_label
+        new_label: response_code
+        new_value: "200"
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+    - action: update
+      include: otelcol_exporter_send_failed_log_records
+      new_name: otel_log_entry_count
+      operations:
+      - action: toggle_scalar_data_type
+      - action: add_label
+        new_label: response_code
+        new_value: "400"
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+    - action: combine
+      include: ^otel_log_entry_count$$
+      match_type: regexp
+      new_name: otel_log_entry_count
+      operations:
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+      submatch_case: lower
+  metricstransform/loggingmetrics_8:
+    transforms:
+    - action: update
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: agent.googleapis.com/$${1}
   metricstransform/otel_3:
     transforms:
     - action: update
@@ -439,30 +562,88 @@ processors:
         aggregation_type: sum
         label_set: []
     - action: update
-      include: grpc.client.attempt.duration_count
+      include: rpc.client.duration_count
       new_name: agent/api_request_count
       operations:
       - action: update_label
-        label: grpc.status
+        label: rpc.grpc.status_code
+        value_actions:
+        - new_value: OK
+          value: "0"
+        - new_value: CANCELLED
+          value: "1"
+        - new_value: ABORTED
+          value: "10"
+        - new_value: OUT_OF_RANGE
+          value: "11"
+        - new_value: UNIMPLEMENTED
+          value: "12"
+        - new_value: INTERNAL
+          value: "13"
+        - new_value: UNAVAILABLE
+          value: "14"
+        - new_value: DATA_LOSS
+          value: "15"
+        - new_value: UNAUTHENTICATED
+          value: "16"
+        - new_value: UNKNOWN
+          value: "2"
+        - new_value: INVALID_ARGUMENT
+          value: "3"
+        - new_value: DEADLINE_EXCEEDED
+          value: "4"
+        - new_value: NOT_FOUND
+          value: "5"
+        - new_value: ALREADY_EXISTS
+          value: "6"
+        - new_value: PERMISSION_DENIED
+          value: "7"
+        - new_value: RESOURCE_EXHAUSTED
+          value: "8"
+        - new_value: FAILED_PRECONDITION
+          value: "9"
+      - action: update_label
+        label: rpc.grpc.status_code
         new_label: state
       - action: aggregate_labels
         aggregation_type: sum
         label_set:
         - state
     - action: update
-      include: googlecloudmonitoring/point_count
-      new_name: agent/monitoring/point_count
+      include: otelcol_exporter_sent_metric_points
       operations:
       - action: toggle_scalar_data_type
+      - action: add_label
+        new_label: status
+        new_value: OK
+    - action: update
+      include: otelcol_exporter_send_failed_metric_points
+      operations:
+      - action: toggle_scalar_data_type
+      - action: add_label
+        new_label: status
+        new_value: UNKNOWN
+    - action: combine
+      include: otelcol_exporter_sent_metric_points|otelcol_exporter_send_failed_metric_points
+      match_type: regexp
+      new_name: agent/monitoring/point_count
+      operations:
       - action: aggregate_labels
         aggregation_type: sum
         label_set:
         - status
+      submatch_case: lower
     - action: update
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  resource/prometheus_3:
+  metricstransform/prometheus_2:
+    transforms:
+    - action: update
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: prometheus.googleapis.com/$${1}
+  resource/otlp/otlp_metrics_0:
     attributes:
     - action: insert
       key: gcp.project_id
@@ -470,18 +651,108 @@ processors:
   resourcedetection/_global_0:
     detectors:
     - gcp
+  transform/agent_prometheus_0:
+    metric_statements:
+    - context: metric
+      statements:
+      - delete_key(resource.attributes, "service.name")
+      - delete_key(resource.attributes, "service.version")
+      - delete_key(resource.attributes, "service.instance.id")
+      - delete_key(resource.attributes, "server.port")
+      - delete_key(resource.attributes, "url.scheme")
+  transform/agent_prometheus_1:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/agent_prometheus_2:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
+  transform/hostmetrics_1_1:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/hostmetrics_1_2:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
+  transform/hostmetrics_3:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/hostmetrics_4:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
+  transform/loggingmetrics_0:
+    error_mode: ignore
+    metric_statements:
+    - context: metric
+      statements:
+      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
+  transform/loggingmetrics_5:
+    metric_statements:
+    - context: metric
+      statements:
+      - set(unit, "1")
+    - context: datapoint
+      statements:
+      - set(time, Now())
+      - set(start_time_unix_nano, 0)
+      - set(metric.name, "agent/log_entry_count") where metric.name == "fluentbit_log_entry_count"
+      - set(metric.name, "agent/log_entry_retry_count") where metric.name == "fluentbit_log_entry_retry_count"
+      - set(metric.name, "agent/request_count") where metric.name == "fluentbit_request_count"
+      - set(metric.name, "agent/log_entry_count") where metric.name == "otel_log_entry_count"
+      - set(metric.name, "agent/log_entry_retry_count") where metric.name == "otel_log_entry_retry_count"
+      - set(metric.name, "agent/request_count") where metric.name == "otel_request_count"
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
     - context: datapoint
       statements:
       - set(time, Now())
-  transform/otel_1:
+  transform/ops_agent_1:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/ops_agent_2:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
+  transform/otel_0:
     error_mode: ignore
     metric_statements:
     - context: metric
       statements:
-      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
+      - extract_count_metric(true) where name == "rpc.client.duration"
   transform/prometheus_0:
     metric_statements:
     - context: datapoint
@@ -524,7 +795,7 @@ receivers:
     - feature_tracking_otlp.json
     poll_interval: 1m0s
     replay_file: true
-  prometheus/fluentbit:
+  prometheus/agent_prometheus:
     config:
       scrape_configs:
       - job_name: logging-collector
@@ -533,9 +804,6 @@ receivers:
         static_configs:
         - targets:
           - 0.0.0.0:20202
-  prometheus/otel:
-    config:
-      scrape_configs:
       - job_name: otel-collector
         scrape_interval: 1m
         static_configs:
@@ -551,6 +819,8 @@ receivers:
         - OpenMetricsText0.0.1
         - PrometheusText0.0.4
         evaluation_interval: 1m
+      runtime:
+        gogc: 75
       scrape_configs:
       - job_name: node
         honor_timestamps: true
@@ -601,64 +871,116 @@ service:
   pipelines:
     metrics/default__pipeline_hostmetrics:
       exporters:
-      - googlecloud
+      - otlp/otlp
       processors:
       - agentmetrics/hostmetrics_0
       - filter/hostmetrics_1
       - metricstransform/hostmetrics_2
+      - transform/hostmetrics_3
+      - transform/hostmetrics_4
       - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
+      - resource/otlp/otlp_metrics_0
+      - metricstarttime/otlp/otlp_metrics_1
+      - batch/otlp/otlp_metrics_2
       receivers:
       - hostmetrics/hostmetrics
     metrics/default__pipeline_hostmetrics_1:
       exporters:
-      - googlecloud
+      - otlp/otlp
       processors:
       - metricstransform/hostmetrics_1_0
+      - transform/hostmetrics_1_1
+      - transform/hostmetrics_1_2
       - filter/default__pipeline_hostmetrics_1_0
       - resourcedetection/_global_0
+      - resource/otlp/otlp_metrics_0
+      - metricstarttime/otlp/otlp_metrics_1
+      - batch/otlp/otlp_metrics_2
       receivers:
       - nvml/hostmetrics_1
     metrics/fluentbit:
       exporters:
-      - googlecloud
+      - otlp/otlp
       processors:
+      - transform/agent_prometheus_0
+      - transform/agent_prometheus_1
+      - transform/agent_prometheus_2
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
       - resourcedetection/_global_0
+      - resource/otlp/otlp_metrics_0
+      - metricstarttime/otlp/otlp_metrics_1
+      - batch/otlp/otlp_metrics_2
       receivers:
-      - prometheus/fluentbit
-    metrics/ops_agent:
+      - prometheus/agent_prometheus
+    metrics/loggingmetrics:
       exporters:
-      - googlecloud
+      - otlp/otlp
+      processors:
+      - transform/agent_prometheus_0
+      - transform/agent_prometheus_1
+      - transform/agent_prometheus_2
+      - transform/loggingmetrics_0
+      - filter/loggingmetrics_1
+      - filter/loggingmetrics_2
+      - metricstransform/loggingmetrics_3
+      - cumulativetodelta/loggingmetrics_4
+      - transform/loggingmetrics_5
+      - deltatocumulative/loggingmetrics_6
+      - interval/loggingmetrics_7
+      - metricstransform/loggingmetrics_8
+      - resourcedetection/_global_0
+      - resource/otlp/otlp_metrics_0
+      - metricstarttime/otlp/otlp_metrics_1
+      - batch/otlp/otlp_metrics_2
+      receivers:
+      - prometheus/agent_prometheus
+    metrics/opsagent:
+      exporters:
+      - otlp/otlp
       processors:
       - transform/ops_agent_0
+      - transform/ops_agent_1
+      - transform/ops_agent_2
       - resourcedetection/_global_0
+      - resource/otlp/otlp_metrics_0
+      - metricstarttime/otlp/otlp_metrics_1
+      - batch/otlp/otlp_metrics_2
       receivers:
       - otlpjsonfile/ops_agent
     metrics/otel:
       exporters:
-      - googlecloud
+      - otlp/otlp
       processors:
-      - filter/otel_0
-      - transform/otel_1
+      - transform/agent_prometheus_0
+      - transform/agent_prometheus_1
+      - transform/agent_prometheus_2
+      - transform/otel_0
+      - filter/otel_1
       - filter/otel_2
       - metricstransform/otel_3
       - resourcedetection/_global_0
+      - resource/otlp/otlp_metrics_0
+      - metricstarttime/otlp/otlp_metrics_1
+      - batch/otlp/otlp_metrics_2
       receivers:
-      - prometheus/otel
+      - prometheus/agent_prometheus
     metrics/prometheus__pipeline_prometheus:
       exporters:
-      - googlemanagedprometheus
+      - otlp/otlp
       processors:
       - transform/prometheus_0
       - transform/prometheus_1
-      - metricstarttime/prometheus_2
-      - resource/prometheus_3
+      - metricstransform/prometheus_2
+      - resource/otlp/otlp_metrics_0
+      - metricstarttime/otlp/otlp_metrics_1
+      - batch/otlp/otlp_metrics_2
       receivers:
       - prometheus/prometheus
   telemetry:
     metrics:
+      level: detailed
       readers:
       - pull:
           exporter:

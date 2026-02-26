@@ -427,6 +427,20 @@ func (r *componentTypeRegistry[CI, M]) RegisterType(constructor func() CI, platf
 	r.TypeMap[name] = &componentFactory[CI]{constructor, platformsValue}
 }
 
+// Helper for Transformation Tests
+func (r *componentTypeRegistry[CI, M]) unregisterType(constructor func() CI) {
+	if r.TypeMap != nil {
+		name := constructor().Type()
+		delete(r.TypeMap, name)
+	}
+}
+
+// Helper for Transformation Tests
+func (r *componentTypeRegistry[CI, M]) ReplaceType(constructor func() CI, platforms ...platform.Type) {
+	r.unregisterType(constructor)
+	r.RegisterType(constructor, platforms...)
+}
+
 // UnmarshalComponentYaml is the custom unmarshaller for reading a component's configuration from the config file.
 // It first unmarshals into a struct containing only the "type" field, then looks up the config struct with the full set of fields for that type, and finally unmarshals into an instance of that struct.
 func (r *componentTypeRegistry[CI, M]) UnmarshalComponentYaml(ctx context.Context, inner *CI, unmarshal func(interface{}) error) error {
@@ -702,7 +716,7 @@ func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, proces
 	if err != nil {
 		return nil, fmt.Errorf("failed to discover the location of the JMX metrics exporter: %w", err)
 	}
-
+	ctx := context.Background()
 	config := map[string]interface{}{
 		"target_system":       targetSystem,
 		"collection_interval": m.CollectionIntervalString(),
@@ -723,13 +737,13 @@ func (m MetricsReceiverSharedJVM) ConfigurePipelines(targetSystem string, proces
 		config["password"] = secretPassword
 	}
 
-	return []otel.ReceiverPipeline{{
+	return []otel.ReceiverPipeline{ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type:   "jmx",
 			Config: config,
 		},
 		Processors: map[string][]otel.Component{"metrics": processors},
-	}}, nil
+	}, ctx)}, nil
 }
 
 type MetricsReceiverSharedCollectJVM struct {
@@ -1179,7 +1193,7 @@ func (uc *UnifiedConfig) OTelLoggingSupported(ctx context.Context) bool {
 		ucLoggingCopy.Logging.Service = &LoggingService{}
 	}
 	ucLoggingCopy.Logging.Service.OTelLogging = true
-	_, err = ucLoggingCopy.GenerateOtelConfig(ctx, "")
+	_, err = ucLoggingCopy.GenerateOtelConfig(ctx, "", "")
 	return err == nil
 }
 
@@ -1222,6 +1236,9 @@ func (uc *UnifiedConfig) ValidateMetrics(ctx context.Context) error {
 
 		if len(p.ExporterIDs) > 0 {
 			log.Printf(`The "metrics.service.pipelines.%s.exporters" field is deprecated and will be ignored. Please remove it from your configuration.`, id)
+		}
+		if err := validateAllowCustomProcessors(receivers, p.ReceiverIDs, p.ProcessorIDs); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -1290,6 +1307,31 @@ func validateComponentKeys[V any](components map[string]V, refs []string, subage
 	for _, componentRef := range refs {
 		if !componentSet.Contains(componentRef) {
 			return fmt.Errorf("%s %s %q from pipeline %q is not defined.", subagent, kind, componentRef, pipeline)
+		}
+	}
+	return nil
+}
+
+// CustomProcessorValidator checks if receiver or pipeline allows Ops Agent to have processors
+// Ops Agent cannot have processors if the receiver is of prometheus type, or if it
+// is an OTLP receiver that exports metrics to googlemanagedprometheus
+type CustomProcessorValidator interface {
+	AllowCustomProcessors() bool
+}
+
+// Pipelines that export prometheus metrics are not allowed to have Ops Agent processors
+func validateAllowCustomProcessors(receivers metricsReceiverMap, receiverIDs, processorIDs []string) error {
+	for _, ID := range receiverIDs {
+		receiver, ok := receivers[ID]
+		if !ok {
+			return fmt.Errorf("metric receiver %q is not defined", ID)
+		}
+		if v, ok := receiver.(CustomProcessorValidator); !ok || v.AllowCustomProcessors() {
+			continue
+		}
+
+		if len(processorIDs) > 0 {
+			return fmt.Errorf("%s receiver is incompatible with Ops Agent processors", ID)
 		}
 	}
 	return nil

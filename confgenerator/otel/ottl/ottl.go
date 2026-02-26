@@ -123,6 +123,12 @@ func (a LValue) SetIf(b, condition Value) Statements {
 	return statements
 }
 
+func (a LValue) AppendValuesIf(b, condition Value) Statements {
+	return Statements{
+		statementf(`append(%s, %s) where %s`, a, b, condition),
+	}
+}
+
 func (a LValue) MergeMaps(source Value, strategy string) Statements {
 	return a.MergeMapsIf(source, strategy, IsNotNil(source))
 }
@@ -144,6 +150,14 @@ func (a LValue) IsPresent() Value {
 		conditions = append(conditions, IsNotNil(a[:i]))
 	}
 	return And(conditions...)
+}
+
+func (a LValue) IsMap() Value {
+	return valuef(`IsMap(%s)`, a)
+}
+
+func (a LValue) IsString() Value {
+	return valuef(`IsString(%s)`, a)
 }
 
 func ToString(a Value) Value {
@@ -168,12 +182,28 @@ func ParseJSON(a Value) Value {
 	return valuef(`ParseJSON(%s)`, a)
 }
 
-func ExtractPatternsRubyRegex(a Value, pattern string) Value {
-	return valuef(`ExtractPatternsRubyRegex(%s, %q)`, a, pattern)
+func ParseSimplifiedXML(a Value) Value {
+	return valuef(`ParseSimplifiedXML(%s)`, a)
+}
+
+func ExtractPatternsRubyRegex(a Value, pattern string, omitEmptyValues bool) Value {
+	return valuef(`ExtractPatternsRubyRegex(%s, %q, %v)`, a, pattern, omitEmptyValues)
+}
+
+func Concat(values []Value, delimiter string) Value {
+	stringValues := []string{}
+	for _, v := range values {
+		stringValues = append(stringValues, v.String())
+	}
+	return valuef(`Concat([%s], "%s")`, strings.Join(stringValues, ","), delimiter)
 }
 
 func ConvertCase(a Value, toCase string) Value {
 	return valuef(`ConvertCase(%s, %q)`, a, toCase)
+}
+
+func ContainsValue(a Value, value string) Value {
+	return valuef(`ContainsValue(%s, %q)`, a, value)
 }
 
 func FormatTime(a Value, format string) Value {
@@ -186,6 +216,10 @@ func ToValues(a Value) Value {
 
 func IsMatch(target Value, pattern string) Value {
 	return valuef(`IsMatch(%s, %q)`, target, pattern)
+}
+
+func IsMatchRubyRegex(target Value, pattern string) Value {
+	return valuef(`IsMatchRubyRegex(%s, %q)`, target, pattern)
 }
 
 func Equals(a, b Value) Value {
@@ -238,6 +272,17 @@ func (a LValue) SetToBool(b Value) Statements {
 		statementf(`set(%s, true) where %s == "true"`, a, b),
 		statementf(`set(%s, false) where %s == "false"`, a, b),
 	)
+	return out
+}
+
+func (a LValue) SetToYesNoBoolean(b Value) Statements {
+	cache := LValue{"cache", "__yes_no_bool"}
+	out := Statements{
+		statementf(`set(%s, true) where (%s and %s == "Yes")`, cache, IsNotNil(b), b),
+		statementf(`set(%s, false) where (%s and %s != "Yes")`, cache, IsNotNil(b), b),
+	}
+	out = out.Append(a.SetIf(cache, cache.IsPresent()))
+	out = out.Append(cache.Delete())
 	return out
 }
 

@@ -20,6 +20,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -35,12 +36,10 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"github.com/kardianos/osext"
 	"golang.org/x/sys/windows"
-	"golang.org/x/sys/windows/svc/debug"
 	"golang.org/x/sys/windows/svc/eventlog"
 	"golang.org/x/sys/windows/svc/mgr"
-	"google.golang.org/grpc/status"
 
-	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
+	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
 )
 
 const (
@@ -61,19 +60,6 @@ var (
 	OpsAgentConfigLocationWindows = filepath.Join("C:", "Program Files/Google/Cloud Operations/Ops Agent/config/config.yaml")
 )
 
-// RunSubAgentCommandFunc defines a function type that starts a subagent. If one subagent execution exited, other sugagents are also terminated via context cancellation. This abstraction is introduced
-// primarily to facilitate testing by allowing the injection of mock
-// implementations.
-type RunSubAgentCommandFunc func(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup)
-
-// Apply applies the config sent or performs the work defined in the message.
-// ApplyRequest is opaque to the agent and is expected to be well known contract
-// between Plugin and the server itself. For e.g. service might want to update
-// plugin config to enable/disable feature here plugins can react to such requests.
-func (ps *OpsAgentPluginServer) Apply(ctx context.Context, msg *pb.ApplyRequest) (*pb.ApplyResponse, error) {
-	panic("Apply method is not implemented on Windows yet")
-}
-
 // Start starts the plugin and initiates the plugin functionality.
 // Until plugin receives Start request plugin is expected to be not functioning
 // and just listening on the address handed off waiting for the request.
@@ -84,8 +70,8 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 		ps.mu.Unlock()
 		return &pb.StartResponse{}, nil
 	}
-	log.Printf("Received a Start request: %s. Starting the Ops Agent", msg)
 
+	log.Printf("Received a Start request: %s. Starting the Ops Agent", msg)
 	pContext, cancel := context.WithCancel(context.Background())
 	ps.cancel = cancel
 	ps.mu.Unlock()
@@ -93,17 +79,21 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	// Detect conflicting installations.
 	preInstalledAgents, err := findPreExistentAgents(&windowsServiceManager{}, AgentWindowsServiceName)
 	if len(preInstalledAgents) != 0 || err != nil {
-		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
-		log.Printf("Start() failed: %s", err)
-		return nil, status.Error(9, err.Error()) // FailedPrecondition
+		ps.cancelAndSetPluginError(&OpsAgentPluginError{
+			Message:       fmt.Sprintf("Start() failed, because it detected agent installations unmanaged by the VM Extension Manager: %v %s", preInstalledAgents, err),
+			ShouldRestart: false,
+		})
+		return &pb.StartResponse{}, nil
 	}
 
 	// Calculate plugin install and state dirs.
 	pluginInstallDir, err := osext.ExecutableFolder()
 	if err != nil {
-		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
-		log.Printf("Start() failed, because it cannot determine the plugin install location: %s", err)
-		return nil, status.Error(13, err.Error()) // Internal
+		ps.cancelAndSetPluginError(&OpsAgentPluginError{
+			Message:       fmt.Sprintf("Start() failed, because it cannot determine the plugin install location: %s", err),
+			ShouldRestart: false,
+		})
+		return &pb.StartResponse{}, nil
 	}
 
 	pluginStateDir := msg.GetConfig().GetStateDirectoryPath()
@@ -112,85 +102,44 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 	}
 	log.Printf("Determined pluginInstallDir: %v, and pluginStateDir: %v", pluginInstallDir, pluginStateDir)
 
-	// Create a windows Event logger. This is used to log generated subagent configs, and health check results.
-	windowsEventLogger, err := createWindowsEventLogger()
-	if err != nil {
-		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
-		log.Printf("Start() failed, because it failed to create Windows event logger: %s", err)
-		return nil, status.Error(13, err.Error()) // Internal
-	}
-
 	// Receive config from the Start request and write it to the Ops Agent config file.
 	if err := writeCustomConfigToFile(msg, OpsAgentConfigLocationWindows); err != nil {
-		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
-		windowsEventLogger.Close()
-		log.Printf("Start() failed, because it failed to write the custom Ops Agent config to file: %s", err)
-		return nil, status.Errorf(13, "failed to write the custom Ops Agent config to file: %s", err) // Internal
+		ps.cancelAndSetPluginError(&OpsAgentPluginError{
+			Message:       fmt.Sprintf("Start() failed to write the custom Ops Agent config to file: %s", err),
+			ShouldRestart: false,
+		})
+		return &pb.StartResponse{}, nil
 	}
 
 	// Subagents config validation and generation.
-	if err := generateSubAgentConfigs(ctx, OpsAgentConfigLocationWindows, pluginStateDir, windowsEventLogger); err != nil {
-		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
-		windowsEventLogger.Close()
-		log.Printf("Start() failed at the subagent config validation and generation step: %s", err)
-		return nil, status.Error(9, err.Error()) // FailedPrecondition
+	if err := generateSubAgentConfigs(ctx, OpsAgentConfigLocationWindows, pluginStateDir); err != nil {
+		ps.cancelAndSetPluginError(&OpsAgentPluginError{
+			Message:       fmt.Sprintf("Start() failed to validate the custom Ops Agent config, and generate sub-agents config: %s", err),
+			ShouldRestart: false,
+		})
+		return &pb.StartResponse{}, nil
 	}
 
 	// Trigger Healthchecks.
 	healthCheckFileLogger := healthchecks.CreateHealthChecksLogger(filepath.Join(pluginStateDir, LogsDirectory))
-	runHealthChecks(healthCheckFileLogger, windowsEventLogger)
+	runHealthChecks(healthCheckFileLogger)
 
 	// Create a Windows Job object and stores its handle, to ensure that all child processes are killed when the parent process exits.
 	_, err = createWindowsJobHandle()
 	if err != nil {
-		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
-		windowsEventLogger.Close()
-		log.Printf("Start() failed, because it failed to create a Windows Job object: %s", err)
-		return nil, status.Error(13, err.Error()) // Internal
+		ps.cancelAndSetPluginError(&OpsAgentPluginError{
+			Message:       fmt.Sprintf("Start() failed, because it failed to create a Windows Job object: %s", err),
+			ShouldRestart: false,
+		})
+		return &pb.StartResponse{}, nil
 	}
 
-	cancelFunc := func() {
-		ps.Stop(ctx, &pb.StopRequest{Cleanup: false})
-		windowsEventLogger.Close()
+	cancelAndSetPluginErr := func(e *OpsAgentPluginError) {
+		ps.cancelAndSetPluginError(e)
 	}
 
-	go runSubagents(pContext, cancelFunc, pluginInstallDir, pluginStateDir, runSubAgentCommand, ps.runCommand)
-
+	go runSubagents(pContext, cancelAndSetPluginErr, pluginInstallDir, pluginStateDir, runSubAgentCommand, ps.runCommand)
 	return &pb.StartResponse{}, nil
-}
-
-// Stop is the stop hook and implements any cleanup if required.
-// Stop maybe called if plugin revision is being changed.
-// For e.g. if plugins want to stop some task it was performing or remove some
-// state before exiting it can be done on this request.
-func (ps *OpsAgentPluginServer) Stop(ctx context.Context, msg *pb.StopRequest) (*pb.StopResponse, error) {
-	ps.mu.Lock()
-	defer ps.mu.Unlock()
-	if ps.cancel == nil {
-		log.Printf("The Ops Agent plugin is stopped already, skipping the current request")
-		return &pb.StopResponse{}, nil
-	}
-	log.Printf("Received a Stop request: %s. Stopping the Ops Agent", msg)
-	ps.cancel()
-	ps.cancel = nil
-	return &pb.StopResponse{}, nil
-}
-
-// GetStatus is the health check agent would perform to make sure plugin process
-// is alive. If request fails process is considered dead and relaunched. Plugins
-// can share any additional information to report it to the service. For e.g. if
-// plugins detect some non-fatal errors causing it unable to offer some features
-// it can reported in status which is sent back to the service by agent.
-func (ps *OpsAgentPluginServer) GetStatus(ctx context.Context, msg *pb.GetStatusRequest) (*pb.Status, error) {
-	log.Println("Received a GetStatus request")
-	ps.mu.Lock()
-	defer ps.mu.Unlock()
-	if ps.cancel == nil {
-		log.Println("The Ops Agent plugin is not running")
-		return &pb.Status{Code: 1, Results: []string{"The Ops Agent Plugin is not running."}}, nil
-	}
-	log.Println("The Ops Agent plugin is running")
-	return &pb.Status{Code: 0, Results: []string{"The Ops Agent Plugin is running ok."}}, nil
 }
 
 // serviceManager is an interface to abstract the Windows service manager. This is used to facilitate testing.
@@ -257,43 +206,14 @@ func findPreExistentAgents(mgr serviceManager, agentWindowsServiceNames []string
 	return alreadyInstalledAgentServiceNames, nil
 }
 
-// eventLogWriter implements the io.Writer interface. It writes logs to the Windows Event Log.
-type eventLogWriter struct {
-	EventID  uint32
-	EventLog *eventlog.Log
-}
-
-func (w *eventLogWriter) Write(p []byte) (int, error) {
-	err := w.EventLog.Info(w.EventID, string(p))
-	if err != nil {
-		return 0, err
-	}
-	return len(p), nil
-}
-
-func createWindowsEventLogger() (debug.Log, error) {
-	eventlog.InstallAsEventCreate(WindowsEventLogIdentifier, eventlog.Error|eventlog.Warning|eventlog.Info)
-	elog, err := eventlog.Open(WindowsEventLogIdentifier)
-	if err != nil {
-		return nil, err
-	}
-
-	// ConfGenerator might log messages to stdout, redirect them to the windows event log.
-	log.SetOutput(&eventLogWriter{
-		EventID:  OpsAgentUAPPluginEventID,
-		EventLog: elog,
-	})
-	return elog, nil
-}
-
-func generateSubAgentConfigs(ctx context.Context, userConfigPath string, pluginStateDir string, windowsEventLogger debug.Log) error {
+func generateSubAgentConfigs(ctx context.Context, userConfigPath string, pluginStateDir string) error {
 	uc, err := confgenerator.MergeConfFiles(ctx, userConfigPath, apps.BuiltInConfStructs)
 	if err != nil {
 		return err
 	}
 
-	windowsEventLogger.Info(OpsAgentUAPPluginEventID, fmt.Sprintf("Built-in config:\n%s\n", apps.BuiltInConfStructs["windows"]))
-	windowsEventLogger.Info(OpsAgentUAPPluginEventID, fmt.Sprintf("Merged config:\n%s\n", uc))
+	log.Printf("Built-in config:\n%s\n", apps.BuiltInConfStructs["windows"])
+	log.Printf("Merged config:\n%s\n", uc)
 
 	// The generated otlp metric json files are used only by the otel service.
 	if err = self_metrics.GenerateOpsAgentSelfMetricsOTLPJSON(ctx, userConfigPath, filepath.Join(pluginStateDir, GeneratedConfigsOutDir, "otel")); err != nil {
@@ -316,16 +236,13 @@ func generateSubAgentConfigs(ctx context.Context, userConfigPath string, pluginS
 	return nil
 }
 
-func runHealthChecks(healthCheckFileLogger logs.StructuredLogger, windowsEventLogger debug.Log) {
+func runHealthChecks(healthCheckFileLogger logs.StructuredLogger) {
 	gceHealthChecks := healthchecks.HealthCheckRegistryFactory()
 
 	// Log health check results to health-checks.log log file.
-	healthCheckResults := gceHealthChecks.RunAllHealthChecks(healthCheckFileLogger)
+	gceHealthChecks.RunAllHealthChecks(healthCheckFileLogger)
 
-	// Log health check results to windows event log too.
-	healthCheckWindowsEventLogger := logs.WindowsServiceLogger{EventID: OpsAgentUAPPluginEventID, Logger: windowsEventLogger}
-	healthchecks.LogHealthCheckResults(healthCheckResults, healthCheckWindowsEventLogger)
-	windowsEventLogger.Info(OpsAgentUAPPluginEventID, "Health checks completed")
+	log.Println("Health checks completed")
 }
 
 func createWindowsJobHandle() (windows.Handle, error) {
@@ -371,7 +288,7 @@ func createWindowsJobHandle() (windows.Handle, error) {
 //
 // cancel: the cancel function for the parent context. By calling this function, the parent context is canceled,
 // and GetStatus() returns a non-healthy status, signaling UAP to re-trigger Start().
-func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallDirectory string, pluginStateDirectory string, runSubAgentCommand RunSubAgentCommandFunc, runCommand RunCommandFunc) {
+func runSubagents(ctx context.Context, cancelAndSetError CancelContextAndSetPluginErrorFunc, pluginInstallDirectory string, pluginStateDirectory string, runSubAgentCommand RunSubAgentCommandFunc, runCommand RunCommandFunc) {
 
 	var wg sync.WaitGroup
 
@@ -379,9 +296,10 @@ func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallD
 	runOtelCmd := exec.CommandContext(ctx,
 		path.Join(pluginInstallDirectory, OtelBinary),
 		"--config", path.Join(pluginStateDirectory, GeneratedConfigsOutDir, "otel/otel.yaml"),
+		"--feature-gates=receiver.prometheusreceiver.RemoveStartTimeAdjustment",
 	)
 	wg.Add(1)
-	go runSubAgentCommand(ctx, cancel, runOtelCmd, runCommand, &wg)
+	go runSubAgentCommand(ctx, cancelAndSetError, runOtelCmd, runCommand, &wg)
 
 	// Starting Fluentbit
 	runFluentBitCmd := exec.CommandContext(ctx,
@@ -394,7 +312,7 @@ func runSubagents(ctx context.Context, cancel context.CancelFunc, pluginInstallD
 		"--storage_path", path.Join(pluginStateDirectory, "run/buffers"),
 	)
 	wg.Add(1)
-	go runSubAgentCommand(ctx, cancel, runFluentBitCmd, runCommand, &wg)
+	go runSubAgentCommand(ctx, cancelAndSetError, runFluentBitCmd, runCommand, &wg)
 
 	wg.Wait()
 }
@@ -411,24 +329,30 @@ func runCommand(cmd *exec.Cmd) (string, error) {
 	return string(out), err
 }
 
-func runSubAgentCommand(ctx context.Context, cancel context.CancelFunc, cmd *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup) {
+// eventLogWriter implements the io.Writer interface. It writes logs to the Windows Event Log.
+type eventLogWriter struct {
+	EventID  uint32
+	EventLog *eventlog.Log
+}
 
-	defer wg.Done()
-	if cmd == nil {
-		return
-	}
-	if ctx.Err() != nil {
-		// context has been cancelled
-		log.Printf("cannot execute command: %s, because the context has been cancelled", cmd.Args)
-		return
-	}
-
-	output, err := runCommand(cmd)
+func (w *eventLogWriter) Write(p []byte) (int, error) {
+	err := w.EventLog.Info(w.EventID, string(p))
 	if err != nil {
-		log.Printf("command: %s exited with errors, not restarting.\nCommand output: %s\n Command error:%s", cmd.Args, string(output), err)
-	} else {
-		log.Printf("command: %s %s exited successfully.\nCommand output: %s", cmd.Path, cmd.Args, string(output))
+		return 0, err
 	}
-	cancel() // cancels the parent context which also stops other Ops Agent sub-binaries from running.
-	return
+	return len(p), nil
+}
+
+func createLogger() (io.Closer, error) {
+	eventlog.InstallAsEventCreate(WindowsEventLogIdentifier, eventlog.Error|eventlog.Warning|eventlog.Info)
+	elog, err := eventlog.Open(WindowsEventLogIdentifier)
+	if err != nil {
+		return nil, err
+	}
+
+	log.SetOutput(&eventLogWriter{
+		EventID:  OpsAgentUAPPluginEventID,
+		EventLog: elog,
+	})
+	return elog, nil
 }

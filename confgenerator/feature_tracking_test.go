@@ -30,11 +30,14 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/google/go-cmp/cmp"
 	"github.com/prometheus/common/model"
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	"github.com/prometheus/prometheus/model/relabel"
+	"github.com/shirou/gopsutil/host"
 	"gotest.tools/v3/golden"
 )
 
@@ -172,8 +175,29 @@ var expectedOtelLoggingNotSupported = []confgenerator.Feature{
 	},
 }
 
+func testContext() context.Context {
+	pl := platform.Platform{
+		Type: platform.Linux,
+		HostInfo: &host.InfoStat{
+			Hostname:        "hostname",
+			OS:              "linux",
+			Platform:        "linux_platform",
+			PlatformVersion: "linux_platform_version",
+		},
+		ResourceOverride: resourcedetector.GCEResource{
+			Project:    "my-project",
+			Zone:       "test-zone",
+			InstanceID: "test-instance-id",
+		},
+	}
+	return pl.TestContext(context.Background())
+}
+
 func TestEmptyConfig(t *testing.T) {
-	features, err := confgenerator.ExtractFeatures(context.Background(), &emptyUc, builtInConfLinux)
+	ctx, cancel := context.WithCancel(testContext())
+	defer cancel()
+
+	features, err := confgenerator.ExtractFeatures(ctx, &emptyUc, builtInConfLinux)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -664,7 +688,9 @@ func TestBed(t *testing.T) {
 		test := test
 		t.Run(test.Name, func(t *testing.T) {
 			t.Parallel()
-			actual, err := confgenerator.ExtractFeatures(context.Background(), test.UserConfig, test.MergedConfig)
+			ctx, cancel := context.WithCancel(testContext())
+			defer cancel()
+			actual, err := confgenerator.ExtractFeatures(ctx, test.UserConfig, test.MergedConfig)
 			if test.ExpectedError != nil {
 				if test.Expected != nil {
 					t.Fatalf("invalid test: %v", test.Name)
@@ -734,8 +760,9 @@ type MetricsReceiverInnerPointer struct {
 
 func TestOtelLoggingSupported(t *testing.T) {
 	userUc := emptyUc
-
-	features, err := confgenerator.ExtractFeatures(context.Background(), &userUc, builtInConfLinux)
+	ctx, cancel := context.WithCancel(testContext())
+	defer cancel()
+	features, err := confgenerator.ExtractFeatures(ctx, &userUc, builtInConfLinux)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -778,8 +805,9 @@ func TestOtelLoggingNotSupported(t *testing.T) {
 		Logging: NoOtelLoggingSupportPipeline,
 		Metrics: builtInConfLinux.Metrics,
 	}
-
-	features, err := confgenerator.ExtractFeatures(context.Background(), &userUc, mergedUc)
+	ctx, cancel := context.WithCancel(testContext())
+	defer cancel()
+	features, err := confgenerator.ExtractFeatures(ctx, &userUc, mergedUc)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -802,8 +830,9 @@ func TestOverrideDefaultPipeline(t *testing.T) {
 			},
 		},
 	}
-
-	features, err := confgenerator.ExtractFeatures(context.Background(), &uc, &emptyUc)
+	ctx, cancel := context.WithCancel(testContext())
+	defer cancel()
+	features, err := confgenerator.ExtractFeatures(ctx, &uc, &emptyUc)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -876,8 +905,9 @@ func TestPrometheusFeatureMetrics(t *testing.T) {
 	uc.Metrics = &confgenerator.Metrics{
 		Receivers: receivers,
 	}
-
-	features, err := confgenerator.ExtractFeatures(context.Background(), &uc, &emptyUc)
+	ctx, cancel := context.WithCancel(testContext())
+	defer cancel()
+	features, err := confgenerator.ExtractFeatures(ctx, &uc, &emptyUc)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1096,7 +1126,9 @@ func TestNestedStructs(t *testing.T) {
 	uc.Metrics = &confgenerator.Metrics{
 		Receivers: receivers,
 	}
-	features, err := confgenerator.ExtractFeatures(context.Background(), &uc, &emptyUc)
+	ctx, cancel := context.WithCancel(testContext())
+	defer cancel()
+	features, err := confgenerator.ExtractFeatures(ctx, &uc, &emptyUc)
 	if err != nil {
 		t.Fatal(err)
 	}

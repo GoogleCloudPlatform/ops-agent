@@ -282,6 +282,113 @@ COPY --from=rockylinux9-build /google-cloud-ops-agent*.rpm /
 COPY --from=rockylinux9-build /google-cloud-ops-agent-plugin*.tar.gz /
 
 # ======================================
+# Build Ops Agent for rockylinux-10
+# ======================================
+
+FROM rockylinux/rockylinux:10 AS rockylinux10-build-base
+ARG OPENJDK_MAJOR_VERSION
+
+RUN set -x; dnf -y update && \
+		dnf -y install 'dnf-command(config-manager)' && \
+		dnf config-manager --set-enabled crb && \
+		dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm && \
+		dnf -y install git systemd \
+		autoconf libtool libcurl-devel libtool-ltdl-devel openssl-devel \
+		gcc gcc-c++ make cmake bison flex file systemd-devel zlib-devel gtest-devel rpm-build systemd-rpm-macros \
+		expect rpm-sign zip tzdata-java libzstd-devel
+
+		ENV JAVA_HOME /usr/lib/jvm/java-${OPENJDK_MAJOR_VERSION}-openjdk/
+COPY --from=openjdk-install /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/ /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk
+ENV JAVA_HOME /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/
+
+SHELL ["/bin/bash", "-c"]
+
+# Install golang
+ARG TARGETARCH
+ARG GO_VERSION
+ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
+ENV PATH="${PATH}:/usr/local/go/bin"
+
+
+FROM rockylinux10-build-base AS rockylinux10-build-otel
+WORKDIR /work
+# Download golang deps
+COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
+RUN cd submodules/opentelemetry-operations-collector && go mod download
+
+COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
+# Install gradle. The first invocation of gradlew does this
+RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
+COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
+COPY ./builds/otel.sh .
+RUN \
+    unset OTEL_TRACES_EXPORTER && \
+    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
+    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
+    ./otel.sh /work/cache/
+
+FROM rockylinux10-build-base AS rockylinux10-build-fluent-bit
+WORKDIR /work
+COPY ./submodules/fluent-bit submodules/fluent-bit
+COPY ./builds/fluent_bit.sh .
+RUN ./fluent_bit.sh /work/cache/
+
+
+FROM rockylinux10-build-base AS rockylinux10-build-systemd
+WORKDIR /work
+COPY ./systemd systemd
+COPY ./builds/systemd.sh .
+RUN ./systemd.sh /work/cache/
+
+
+FROM rockylinux10-build-base AS rockylinux10-build-golang-base
+WORKDIR /work
+COPY go.mod go.sum ./
+# Fetch dependencies
+RUN go mod download
+COPY confgenerator confgenerator
+COPY apps apps
+COPY internal internal
+
+
+FROM rockylinux10-build-golang-base AS rockylinux10-build-wrapper
+WORKDIR /work
+COPY cmd/agent_wrapper cmd/agent_wrapper
+COPY ./builds/agent_wrapper.sh .
+RUN ./agent_wrapper.sh /work/cache/
+
+
+FROM rockylinux10-build-golang-base AS rockylinux10-build
+WORKDIR /work
+COPY . /work
+
+# Run the build script once to build the ops agent engine to a cache
+RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
+WORKDIR /tmp/cache_run/golang
+RUN ./pkg/rpm/build.sh &> /dev/null || true
+WORKDIR /work
+
+COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
+COPY --from=rockylinux10-build-otel /work/cache /work/cache
+COPY --from=rockylinux10-build-fluent-bit /work/cache /work/cache
+COPY --from=rockylinux10-build-systemd /work/cache /work/cache
+COPY --from=rockylinux10-build-wrapper /work/cache /work/cache
+RUN ./pkg/rpm/build.sh
+
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache/
+RUN ./pkg/plugin/build.sh /work/cache rockylinux10
+
+
+FROM scratch AS rockylinux10
+COPY --from=rockylinux10-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-rockylinux-10.tgz
+COPY --from=rockylinux10-build /google-cloud-ops-agent*.rpm /
+COPY --from=rockylinux10-build /google-cloud-ops-agent-plugin*.tar.gz /
+
+# ======================================
 # Build Ops Agent for debian-bookworm
 # ======================================
 
@@ -391,8 +498,11 @@ ARG OPENJDK_MAJOR_VERSION
 RUN set -x; apt-get update && \
 		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
 		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
-		build-essential cmake bison flex file libsystemd-dev \
+		build-essential bison flex file libsystemd-dev \
 		devscripts cdbs pkg-config openjdk-${OPENJDK_MAJOR_VERSION}-jdk zip
+COPY --from=cmake-install-recent /cmake.sh /cmake.sh
+RUN set -x; bash /cmake.sh --skip-license --prefix=/usr/local
+
 
 SHELL ["/bin/bash", "-c"]
 
@@ -482,6 +592,108 @@ COPY --from=bullseye-build /google-cloud-ops-agent*.deb /
 COPY --from=bullseye-build /google-cloud-ops-agent-plugin*.tar.gz /
 
 # ======================================
+# Build Ops Agent for debian-trixie
+# ======================================
+
+FROM debian:trixie AS trixie-build-base
+ARG OPENJDK_MAJOR_VERSION
+
+RUN set -x; apt-get update && \
+		DEBIAN_FRONTEND=noninteractive apt-get -y install git systemd \
+		autoconf libtool libcurl4-openssl-dev libltdl-dev libssl-dev libyajl-dev \
+		build-essential cmake bison flex file systemd-dev libsystemd-dev \
+		devscripts cdbs pkg-config zip
+COPY --from=openjdk-install /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/ /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk
+ENV JAVA_HOME /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/
+
+SHELL ["/bin/bash", "-c"]
+
+# Install golang
+ARG TARGETARCH
+ARG GO_VERSION
+ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VERSION}.tar.gz
+RUN set -xe; \
+    tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
+ENV PATH="${PATH}:/usr/local/go/bin"
+
+
+FROM trixie-build-base AS trixie-build-otel
+WORKDIR /work
+# Download golang deps
+COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
+RUN cd submodules/opentelemetry-operations-collector && go mod download
+
+COPY ./submodules/opentelemetry-java-contrib submodules/opentelemetry-java-contrib
+# Install gradle. The first invocation of gradlew does this
+RUN cd submodules/opentelemetry-java-contrib && ./gradlew --no-daemon -Djdk.lang.Process.launchMechanism=vfork tasks
+COPY ./submodules/opentelemetry-operations-collector submodules/opentelemetry-operations-collector
+COPY ./builds/otel.sh .
+RUN \
+    unset OTEL_TRACES_EXPORTER && \
+    unset OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && \
+    unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
+    ./otel.sh /work/cache/
+
+FROM trixie-build-base AS trixie-build-fluent-bit
+WORKDIR /work
+COPY ./submodules/fluent-bit submodules/fluent-bit
+COPY ./builds/fluent_bit.sh .
+RUN ./fluent_bit.sh /work/cache/
+
+
+FROM trixie-build-base AS trixie-build-systemd
+WORKDIR /work
+COPY ./systemd systemd
+COPY ./builds/systemd.sh .
+RUN ./systemd.sh /work/cache/
+
+
+FROM trixie-build-base AS trixie-build-golang-base
+WORKDIR /work
+COPY go.mod go.sum ./
+# Fetch dependencies
+RUN go mod download
+COPY confgenerator confgenerator
+COPY apps apps
+COPY internal internal
+
+
+FROM trixie-build-golang-base AS trixie-build-wrapper
+WORKDIR /work
+COPY cmd/agent_wrapper cmd/agent_wrapper
+COPY ./builds/agent_wrapper.sh .
+RUN ./agent_wrapper.sh /work/cache/
+
+
+FROM trixie-build-golang-base AS trixie-build
+WORKDIR /work
+COPY . /work
+
+# Run the build script once to build the ops agent engine to a cache
+RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
+WORKDIR /tmp/cache_run/golang
+RUN ./pkg/deb/build.sh &> /dev/null || true
+WORKDIR /work
+
+COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
+COPY --from=trixie-build-otel /work/cache /work/cache
+COPY --from=trixie-build-fluent-bit /work/cache /work/cache
+COPY --from=trixie-build-systemd /work/cache /work/cache
+COPY --from=trixie-build-wrapper /work/cache /work/cache
+RUN ./pkg/deb/build.sh
+
+COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
+COPY ./builds/ops_agent_plugin.sh .
+RUN ./ops_agent_plugin.sh /work/cache/
+RUN ./pkg/plugin/build.sh /work/cache trixie
+
+
+FROM scratch AS trixie
+COPY --from=trixie-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-trixie.tgz
+COPY --from=trixie-build /google-cloud-ops-agent*.deb /
+COPY --from=trixie-build /google-cloud-ops-agent-plugin*.tar.gz /
+
+# ======================================
 # Build Ops Agent for sles-12
 # ======================================
 
@@ -494,7 +706,7 @@ RUN set -x; \
 		# The 'OSS Update' repo signature is no longer valid, so verify the checksum instead.
 		zypper --no-gpg-check refresh 'OSS Update' && \
 		(echo '6dd0b89202b19dae873434c5f2ba01164205071581fc02365712be801e304b3b /var/cache/zypp/raw/OSS Update/repodata/repomd.xml' | sha256sum --check) && \
-		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip && \
+		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc8 gcc8-c++ zlib-devel rpm-build expect systemd-devel systemd-rpm-macros unzip zip && \
 		# Remove expired root certificate.
 		mv /var/lib/ca-certificates/pem/DST_Root_CA_X3.pem /etc/pki/trust/blacklist/ && \
 		update-ca-certificates && \
@@ -506,7 +718,11 @@ RUN set -x; \
 		# If this bug happens to trigger in the future, adding a "zypper -n download" of a subset of the packages can avoid the segfault.
 		zypper -n install 'bison>3' && \
 		# Allow fluent-bit to find systemd
-		ln -fs /usr/lib/systemd /lib/systemd
+		ln -fs /usr/lib/systemd /lib/systemd && \
+		# Set newer GCC as default with priority 1
+		update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 1 \
+    		--slave /usr/bin/g++ g++ /usr/bin/g++-8 && \
+		update-alternatives --set gcc /usr/bin/gcc-8
 COPY --from=openjdk-install /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/ /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk
 ENV JAVA_HOME /usr/local/java-${OPENJDK_MAJOR_VERSION}-openjdk/
 COPY --from=cmake-install-recent /cmake.sh /cmake.sh
@@ -906,10 +1122,10 @@ COPY --from=noble-build /google-cloud-ops-agent*.deb /
 COPY --from=noble-build /google-cloud-ops-agent-plugin*.tar.gz /
 
 # ======================================
-# Build Ops Agent for ubuntu-plucky
+# Build Ops Agent for ubuntu-questing
 # ======================================
 
-FROM ubuntu:plucky AS plucky-build-base
+FROM ubuntu:questing AS questing-build-base
 ARG OPENJDK_MAJOR_VERSION
 
 RUN set -x; apt-get update && \
@@ -929,7 +1145,7 @@ RUN set -xe; \
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 
-FROM plucky-build-base AS plucky-build-otel
+FROM questing-build-base AS questing-build-otel
 WORKDIR /work
 # Download golang deps
 COPY ./submodules/opentelemetry-operations-collector/go.mod ./submodules/opentelemetry-operations-collector/go.sum submodules/opentelemetry-operations-collector/
@@ -946,21 +1162,21 @@ RUN \
     unset OTEL_EXPORTER_OTLP_TRACES_PROTOCOL && \
     ./otel.sh /work/cache/
 
-FROM plucky-build-base AS plucky-build-fluent-bit
+FROM questing-build-base AS questing-build-fluent-bit
 WORKDIR /work
 COPY ./submodules/fluent-bit submodules/fluent-bit
 COPY ./builds/fluent_bit.sh .
 RUN ./fluent_bit.sh /work/cache/
 
 
-FROM plucky-build-base AS plucky-build-systemd
+FROM questing-build-base AS questing-build-systemd
 WORKDIR /work
 COPY ./systemd systemd
 COPY ./builds/systemd.sh .
 RUN ./systemd.sh /work/cache/
 
 
-FROM plucky-build-base AS plucky-build-golang-base
+FROM questing-build-base AS questing-build-golang-base
 WORKDIR /work
 COPY go.mod go.sum ./
 # Fetch dependencies
@@ -970,14 +1186,14 @@ COPY apps apps
 COPY internal internal
 
 
-FROM plucky-build-golang-base AS plucky-build-wrapper
+FROM questing-build-golang-base AS questing-build-wrapper
 WORKDIR /work
 COPY cmd/agent_wrapper cmd/agent_wrapper
 COPY ./builds/agent_wrapper.sh .
 RUN ./agent_wrapper.sh /work/cache/
 
 
-FROM plucky-build-golang-base AS plucky-build
+FROM questing-build-golang-base AS questing-build
 WORKDIR /work
 COPY . /work
 
@@ -988,30 +1204,32 @@ RUN ./pkg/deb/build.sh &> /dev/null || true
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
-COPY --from=plucky-build-otel /work/cache /work/cache
-COPY --from=plucky-build-fluent-bit /work/cache /work/cache
-COPY --from=plucky-build-systemd /work/cache /work/cache
-COPY --from=plucky-build-wrapper /work/cache /work/cache
+COPY --from=questing-build-otel /work/cache /work/cache
+COPY --from=questing-build-fluent-bit /work/cache /work/cache
+COPY --from=questing-build-systemd /work/cache /work/cache
+COPY --from=questing-build-wrapper /work/cache /work/cache
 RUN ./pkg/deb/build.sh
 
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
 COPY ./builds/ops_agent_plugin.sh .
 RUN ./ops_agent_plugin.sh /work/cache/
-RUN ./pkg/plugin/build.sh /work/cache plucky
+RUN ./pkg/plugin/build.sh /work/cache questing
 
 
-FROM scratch AS plucky
-COPY --from=plucky-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-plucky.tgz
-COPY --from=plucky-build /google-cloud-ops-agent*.deb /
-COPY --from=plucky-build /google-cloud-ops-agent-plugin*.tar.gz /
+FROM scratch AS questing
+COPY --from=questing-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-questing.tgz
+COPY --from=questing-build /google-cloud-ops-agent*.deb /
+COPY --from=questing-build /google-cloud-ops-agent-plugin*.tar.gz /
 
 FROM scratch
 COPY --from=centos8 /* /
 COPY --from=rockylinux9 /* /
+COPY --from=rockylinux10 /* /
 COPY --from=bookworm /* /
 COPY --from=bullseye /* /
+COPY --from=trixie /* /
 COPY --from=sles12 /* /
 COPY --from=sles15 /* /
 COPY --from=jammy /* /
 COPY --from=noble /* /
-COPY --from=plucky /* /
+COPY --from=questing /* /

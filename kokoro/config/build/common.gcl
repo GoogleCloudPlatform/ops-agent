@@ -7,7 +7,6 @@ template config build = {
 
   params {
     environment = {
-      SKIP_SIGNING = 'true'
     }
 
     keystore_keys = []
@@ -30,5 +29,13 @@ template config build = {
 }
 
 template config windows_build = build {
-  build_file = 'unified_agents/kokoro/scripts/build/build_package.bat'
+  build_file = 'unified_agents/kokoro/scripts/build/build.bat'
+}
+
+template config windows_sign = build {
+  build_file = 'unified_agents/kokoro/scripts/build/signing/sign.bat'
+}
+
+template config windows_package = build {
+  build_file = 'unified_agents/kokoro/scripts/build/packaging/package.bat'
 }

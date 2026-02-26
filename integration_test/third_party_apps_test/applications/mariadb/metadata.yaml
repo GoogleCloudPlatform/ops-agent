@@ -49,13 +49,21 @@ platforms_to_skip:
   - rocky-linux-cloud:rocky-linux-8
   - rocky-linux-cloud:rocky-linux-8-optimized-gcp
   - rocky-linux-cloud:rocky-linux-8-optimized-gcp-arm64
+  - rocky-linux-cloud:rocky-linux-8-arm64
+  - rhel-cloud:rhel-8-arm64
   - rocky-linux-cloud:rocky-linux-9
   - rocky-linux-cloud:rocky-linux-9-optimized-gcp
   - rocky-linux-cloud:rocky-linux-9-arm64
   - rocky-linux-cloud:rocky-linux-9-optimized-gcp-arm64
+  - rocky-linux-cloud:rocky-linux-10
+  - rocky-linux-cloud:rocky-linux-10-optimized-gcp
+  - rocky-linux-cloud:rocky-linux-10-arm64
+  - rocky-linux-cloud:rocky-linux-10-optimized-gcp-arm64
   - suse-cloud:sles-12
   - suse-cloud:sles-15
   - suse-cloud:sles-15-arm64
+  - ubuntu-os-cloud:ubuntu-2510-amd64 # Possible support in the future
+  - ubuntu-os-cloud:ubuntu-2510-arm64 # Possible support in the future
 supported_app_version: ["10.1.X through 10.7.X", ""] # Indicate multiple versions.
 expected_metrics:
   - type: workload.googleapis.com/mysql.buffer_pool_data_pages
@@ -146,11 +154,17 @@ expected_metrics:
   - type: workload.googleapis.com/mysql.replica.time_behind_source
     value_type: INT64
     kind: GAUGE
+    unavailable_on:
+      - debian-cloud:debian-13
+      - debian-cloud:debian-13-arm64
     monitored_resources: [gce_instance]
   - type: workload.googleapis.com/mysql.replica.sql_delay
     value_type: INT64
     kind: GAUGE
     monitored_resources: [gce_instance]
+    unavailable_on:
+      - debian-cloud:debian-13
+      - debian-cloud:debian-13-arm64
   - type: workload.googleapis.com/mysql.row_locks
     value_type: INT64
     kind: CUMULATIVE
@@ -169,6 +183,8 @@ expected_metrics:
       - ubuntu-os-cloud:ubuntu-2404-lts-amd64
       - ubuntu-os-cloud:ubuntu-2404-lts-arm64
       - debian-cloud:debian-12-arm64
+      - debian-cloud:debian-13
+      - debian-cloud:debian-13-arm64
   - type: workload.googleapis.com/mysql.sorts
     value_type: INT64
     kind: CUMULATIVE

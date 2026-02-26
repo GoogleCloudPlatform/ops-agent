@@ -37,6 +37,8 @@ const (
 	OTel ExporterType = iota
 	System
 	GMP
+	OTLP
+	Logging
 )
 const (
 	Override ResourceDetectionMode = iota
@@ -50,9 +52,18 @@ func (t ExporterType) Name() string {
 		return ""
 	} else if t == OTel {
 		return "otel"
+	} else if t == Logging {
+		return "logging"
+	} else if t == OTLP {
+		return "otlp"
 	} else {
 		panic("unknown ExporterType")
 	}
+}
+
+type ExporterComponents struct {
+	Exporter         Component
+	ProcessorsByType map[string][]Component
 }
 
 // ReceiverPipeline represents a single OT receiver and zero or more processors that must be chained after that receiver.
@@ -113,7 +124,7 @@ type ModularConfig struct {
 	ReceiverPipelines map[string]ReceiverPipeline
 	Pipelines         map[string]Pipeline
 	Extensions        map[string]interface{}
-	Exporters         map[ExporterType]Component
+	Exporters         map[ExporterType]ExporterComponents
 
 	// Test-only options:
 	// Don't generate any self-metrics
@@ -146,6 +157,7 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 		"pipelines": pipelines,
 		"telemetry": map[string]interface{}{
 			"metrics": map[string]interface{}{
+				"level": "detailed",
 				"readers": []map[string]interface{}{{
 					"pull": map[string]interface{}{
 						"exporter": map[string]interface{}{
@@ -184,6 +196,7 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 			telemetryMap["logs"] = logs
 		}
 	}
+
 	configMap := map[string]interface{}{
 		"receivers":  receivers,
 		"processors": processors,
@@ -192,7 +205,7 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 	}
 
 	if len(c.Extensions) > 0 {
-		extensionsList := []string{}
+		var extensionsList []string
 		for extensionName := range c.Extensions {
 			extensions[extensionName] = c.Extensions[extensionName]
 			extensionsList = append(extensionsList, extensionName)
@@ -248,12 +261,20 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 			processorNames = append(processorNames, name)
 			processors[name] = resourceDetectionProcessors[rdm].Config
 		}
+
 		exporterType := receiverPipeline.ExporterTypes[pipeline.Type]
+		exporter := c.Exporters[exporterType]
 		if _, ok := exporterNames[exporterType]; !ok {
-			exporter := c.Exporters[exporterType]
-			name := exporter.name(exporterType.Name())
+			name := exporter.Exporter.name(exporterType.Name())
 			exporterNames[exporterType] = name
-			exporters[name] = exporter.Config
+			exporters[name] = exporter.Exporter.Config
+		}
+		for i, processor := range exporter.ProcessorsByType[pipeline.Type] {
+			name := processor.name(fmt.Sprintf("%s_%s_%d", exporterNames[exporterType], pipeline.Type, i))
+			processorNames = append(processorNames, name)
+			if _, ok := processors[name]; !ok {
+				processors[name] = processor.Config
+			}
 		}
 
 		pipelines[pipeline.Type+"/"+prefix] = map[string]interface{}{

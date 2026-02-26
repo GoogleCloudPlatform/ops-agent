@@ -1,14 +1,21 @@
 set -e
 
 sudo setenforce 0
+source /etc/os-release
+MAJOR_VERSION_ID=${VERSION_ID%%.*}
 
 cat <<EOF | sudo tee /etc/selinux/config
 SELINUX=disabled
 SELINUXTYPE=targeted
 EOF
 
+JAVA_VERSION=1.8.0
+if [[ "$ID" == "rocky" && "$MAJOR_VERSION_ID" == "10" ]]; then
+  JAVA_VERSION=21
+fi
+
 sudo yum install -y \
-    java-1.8.0-openjdk java-1.8.0-openjdk-devel curl lsof chkconfig
+    java-${JAVA_VERSION}-openjdk java-${JAVA_VERSION}-openjdk-devel curl lsof chkconfig
 
 # https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/README.md#vendored-dependencies
 curl -L -o \
@@ -26,6 +33,11 @@ sudo chown -R solr:solr /opt/solr*
 
 sudo sed -i '/ENABLE_REMOTE_JMX_OPTS/s/false/true/' /etc/default/solr.in.sh
 sudo sed -i '/ENABLE_REMOTE_JMX_OPTS/s/^# *//' /etc/default/solr.in.sh
+
+# Adjust stack size due to bigger page size on aarch64 architecture
+if [[ "$ID" == "rocky" && "$MAJOR_VERSION_ID" == "8" && "$(uname -m)" == "aarch64" ]]; then
+    sudo sed -i '$a\SOLR_JAVA_STACK_SIZE="-Xss512k"' /etc/default/solr.in.sh
+fi
 
 sudo systemctl daemon-reload
 sudo systemctl enable solr

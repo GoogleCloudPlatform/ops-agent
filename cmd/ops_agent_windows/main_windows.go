@@ -106,6 +106,10 @@ func initServices() error {
 	if err := os.MkdirAll(fluentbitStoragePath, 0644); err != nil {
 		return err
 	}
+	otelStoragePath := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "run", "file_storage")
+	if err := os.MkdirAll(otelStoragePath, 0644); err != nil {
+		return err
+	}
 	logDirectory := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log")
 	if err := os.MkdirAll(logDirectory, 0644); err != nil {
 		return err
@@ -133,6 +137,7 @@ func initServices() error {
 			filepath.Join(base, "google-cloud-metrics-agent_windows_amd64.exe"),
 			[]string{
 				"--config=" + filepath.Join(configOutDir, `otel\otel.yaml`),
+				"--feature-gates=receiver.prometheusreceiver.RemoveStartTimeAdjustment",
 			},
 		},
 		{

@@ -21,12 +21,13 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"syscall"
 	"testing"
 	"time"
 
-	pb "github.com/GoogleCloudPlatform/ops-agent/cmd/ops_agent_uap_plugin/google_guest_agent/plugin"
+	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
 )
 
 func Test_runCommand(t *testing.T) {
@@ -162,37 +163,33 @@ func Test_generateSubagentConfigs(t *testing.T) {
 	}
 }
 
-func TestStart(t *testing.T) {
+func mockRunCommandSuccess(cmd *exec.Cmd) (string, error) {
+	switch {
+	case strings.HasSuffix(cmd.Path, "systemctl"):
+		return "0 unit files listed.", nil
+	case strings.HasSuffix(cmd.Path, "google_cloud_ops_agent_engine"):
+		return "", nil
+	default:
+		time.Sleep(2 * time.Minute) // Simulate subagent running.
+		return "", nil
+	}
+}
+
+func TestStart_subagentsRunning(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name               string
 		cancel             context.CancelFunc
 		mockRunCommandFunc RunCommandFunc
-		wantError          bool
-		wantCancelNil      bool
 	}{
 		{
-			name:   "Happy path: plugin not already started, Start() exits successfully",
-			cancel: nil,
-			mockRunCommandFunc: func(cmd *exec.Cmd) (string, error) {
-				return "", nil
-			},
+			name:               "Happy path: Start() starts the plugin successfully when plugin is not already started, sub-agent processes are running",
+			mockRunCommandFunc: mockRunCommandSuccess,
 		},
 		{
-			name:   "Plugin already started",
-			cancel: func() {}, // Non-nil function
-			mockRunCommandFunc: func(cmd *exec.Cmd) (string, error) {
-				return "", nil
-			},
-		},
-		{
-			name:   "Start() returns errors, cancel() function should be reset to nil",
-			cancel: nil,
-			mockRunCommandFunc: func(cmd *exec.Cmd) (string, error) {
-				return "", fmt.Errorf("error")
-			},
-			wantError:     true,
-			wantCancelNil: true,
+			name:               "Plugin already started, sub-agent processes are running",
+			cancel:             func() {}, // Non-nil function
+			mockRunCommandFunc: mockRunCommandSuccess,
 		},
 	}
 
@@ -201,114 +198,110 @@ func TestStart(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			ps := &OpsAgentPluginServer{cancel: tc.cancel, runCommand: tc.mockRunCommandFunc}
-			_, err := ps.Start(context.Background(), &pb.StartRequest{})
-			gotError := (err != nil)
-			if gotError != tc.wantError {
-				t.Errorf("%v: Start() got error: %v, err msg: %v, want error:%v", tc.name, gotError, err, tc.wantError)
+			ps.Start(context.Background(), &pb.StartRequest{})
+			time.Sleep(2 * time.Second)
+			ps.mu.Lock()
+			defer ps.mu.Unlock()
+			if ps.cancel == nil {
+				t.Errorf("%v: got nil cancel function, want non-nil", tc.name)
 			}
-			if (ps.cancel == nil) != tc.wantCancelNil {
-				t.Errorf("%v: Start() got cancel function: %v, want cancel function to be reset to nil: %v", tc.name, ps.cancel, tc.wantCancelNil)
+			if ps.pluginError != nil {
+				t.Errorf("%v: got pluginError: %v, want nil", tc.name, ps.pluginError)
 			}
 		})
 	}
 }
-func TestStop(t *testing.T) {
+
+func mockRunCommandFailure(cmd *exec.Cmd) (string, error) {
+	switch {
+	case strings.HasSuffix(cmd.Path, "systemctl"):
+		return "0 unit files listed.", nil
+	case strings.HasSuffix(cmd.Path, "google_cloud_ops_agent_engine"):
+		return "", nil
+	default:
+		return "", fmt.Errorf("error") // Simulate subagent process exiting with error.
+	}
+}
+
+func TestStart_subagentsExitedWithError(t *testing.T) {
 	t.Parallel()
-	cases := []struct {
-		name   string
-		cancel context.CancelFunc
-	}{
-		{
-			name:   "PluginAlreadyStopped",
-			cancel: nil,
-		},
-		{
-			name:   "PluginRunning",
-			cancel: func() {}, // Non-nil function
-
-		},
+	ps := &OpsAgentPluginServer{runCommand: mockRunCommandFailure}
+	ps.Start(context.Background(), &pb.StartRequest{})
+	time.Sleep(2 * time.Second)
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
+	if ps.cancel != nil {
+		t.Errorf("got cancel function: %v, want cancel function to be reset to nil, because sub-agent processes exited with errors", ps.cancel)
 	}
-
-	for _, tc := range cases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			ps := &OpsAgentPluginServer{cancel: tc.cancel}
-			_, err := ps.Stop(context.Background(), &pb.StopRequest{})
-			if err != nil {
-				t.Errorf("got error from Stop(): %v, wanted nil", err)
-			}
-
-			if ps.cancel != nil {
-				t.Error("got non-nil cancel function after calling Stop(), want nil")
-			}
-		})
+	if ps.pluginError == nil {
+		t.Error("got nil pluginError, want pluginError to be set, because sub-agent processes exited with errors")
 	}
 }
 
-func TestGetStatus(t *testing.T) {
+func TestStart_subagentsExitedSuccessfully(t *testing.T) {
 	t.Parallel()
-	cases := []struct {
-		name           string
-		cancel         context.CancelFunc
-		wantStatusCode int32
-	}{
-		{
-			name:           "PluginNotRunning",
-			cancel:         nil,
-			wantStatusCode: 1,
-		},
-		{
-			name:           "PluginRunning",
-			cancel:         func() {}, // Non-nil function
-			wantStatusCode: 0,
-		},
+	ps := &OpsAgentPluginServer{runCommand: func(cmd *exec.Cmd) (string, error) {
+		return "", nil // Simulate subagent process exiting successfully.
+	}}
+
+	ps.Start(context.Background(), &pb.StartRequest{})
+	time.Sleep(2 * time.Second)
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
+	if ps.cancel != nil {
+		t.Errorf("got cancel function: %v, want cancel function to be reset to nil, because sub-agent processes exited successfully", ps.cancel)
 	}
-
-	for _, tc := range cases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			ps := &OpsAgentPluginServer{cancel: tc.cancel}
-			status, err := ps.GetStatus(context.Background(), &pb.GetStatusRequest{})
-			if err != nil {
-				t.Errorf("got error from GetStatus: %v, wanted nil", err)
-			}
-			gotStatusCode := status.Code
-			if gotStatusCode != tc.wantStatusCode {
-				t.Errorf("Got status code %d from GetStatus(), wanted %d", gotStatusCode, tc.wantStatusCode)
-			}
-
-		})
+	if ps.pluginError != nil {
+		t.Errorf("got pluginError: %v, want nil pluginError, because sub-agent processes exited successfully", ps.pluginError)
 	}
 }
 
-func Test_runSubAgentCommand_CancelContextWhenCmdExitsWithErrors(t *testing.T) {
+func Test_runSubAgentCommand_CancelContextAndSetPluginErrorWhenCmdExitsWithErrors(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", "GO_HELPER_FAILURE=1"}
 	var wg sync.WaitGroup
 	wg.Add(1)
-	runSubAgentCommand(ctx, cancel, cmd, runCommand, &wg)
-	if ctx.Err() == nil {
+
+	pluginServer := &OpsAgentPluginServer{}
+	pluginServer.cancel = cancel
+
+	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, runCommand, &wg)
+	if ctx.Err() != context.Canceled {
 		t.Error("runSubAgentCommand() did not cancel context but should")
+	}
+	if pluginServer.pluginError == nil {
+		t.Error("runSubAgentCommand() did not set pluginError but should")
+	}
+	if !pluginServer.pluginError.ShouldRestart {
+		t.Error("runSubAgentCommand() set pluginError.ShouldRestart to false, want true")
 	}
 }
 
 func Test_runSubAgentCommand_CancelContextWhenCmdExitsSuccessfully(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
+	pluginServer := &OpsAgentPluginServer{}
+	pluginServer.cancel = cancel
+
 	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
 	var wg sync.WaitGroup
 	wg.Add(1)
-	runSubAgentCommand(ctx, cancel, cmd, runCommand, &wg)
-	if ctx.Err() == nil {
+
+	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, runCommand, &wg)
+	if ctx.Err() != context.Canceled {
 		t.Error("runSubAgentCommand() did not cancel context but should")
+	}
+	if pluginServer.pluginError != nil {
+		t.Errorf("runSubAgentCommand() set pluginError: %v, want nil", pluginServer.pluginError)
 	}
 }
 
 func Test_runSubAgentCommand_CancelContextWhenCmdTerminatedBySignals(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
+	pluginServer := &OpsAgentPluginServer{}
+	pluginServer.cancel = cancel
+
 	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", "GO_HELPER_KILL_BY_SIGNALS=1"}
 	var wg sync.WaitGroup
@@ -322,40 +315,51 @@ func Test_runSubAgentCommand_CancelContextWhenCmdTerminatedBySignals(t *testing.
 		err := cmd.Wait()
 		return "", err
 	}
-	runSubAgentCommand(ctx, cancel, cmd, mockRunCommandFunc, &wg)
-	if ctx.Err() == nil {
+
+	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, mockRunCommandFunc, &wg)
+	if ctx.Err() != context.Canceled {
 		t.Error("runSubAgentCommand() didn't cancel the context but should")
+	}
+	if pluginServer.pluginError == nil {
+		t.Errorf("runSubAgentCommand() did not set pluginError but should")
+	}
+	if !pluginServer.pluginError.ShouldRestart {
+		t.Error("runSubAgentCommand() set pluginError.ShouldRestart to false, want true")
+	}
+}
+
+func Test_runSubAgentCommand_WhenCmdExitsBecauseCtxIsCancelled(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	pluginServer := &OpsAgentPluginServer{}
+	pluginServer.cancel = cancel
+
+	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
+	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	runSubAgentCommand(ctx, pluginServer.cancelAndSetPluginError, cmd, runCommand, &wg)
+	time.Sleep(3 * time.Second)
+	cancel()
+
+	if ctx.Err() != context.Canceled {
+		t.Error("runSubAgentCommand() didn't cancel the context but should")
+	}
+	if pluginServer.pluginError != nil {
+		t.Errorf("runSubAgentCommand() set pluginError %v, want nil", pluginServer.pluginError)
 	}
 }
 
 func Test_runSubagents_TerminatesWhenSpawnedGoRoutinesReturn(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
+	pluginServer := &OpsAgentPluginServer{}
+	pluginServer.cancel = cancel
+
 	mockCmd := exec.CommandContext(ctx, os.Args[0], "-test.run=TestHelperProcess")
 	mockCmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", "GO_HELPER_FAILURE=1"}
 
-	mockRestartCommandFunc := func(ctx context.Context, cancel context.CancelFunc, _ *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup) {
+	mockRunSubAgentCmd := func(ctx context.Context, cancel CancelContextAndSetPluginErrorFunc, _ *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup) {
 		runSubAgentCommand(ctx, cancel, mockCmd, runCommand, wg)
 	}
-	cancel() // child go routines return immediately, because the parent context has been cancelled.
-	// the test times out and fails if runSubagents does not returns
-	runSubagents(ctx, cancel, "", "", mockRestartCommandFunc, runCommand)
-}
-
-// TestHelperProcess isn't a real test. It's used as a helper process to mock
-// command executions.
-func TestHelperProcess(t *testing.T) {
-	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
-		// Skip this test if it's not invoked explicitly as a helper
-		// process. return allows the next tests to continue running.
-		return
-	}
-	switch {
-	case os.Getenv("GO_HELPER_FAILURE") == "1":
-		os.Exit(1)
-	case os.Getenv("GO_HELPER_KILL_BY_SIGNALS") == "1":
-		time.Sleep(1 * time.Minute)
-	default:
-		// A "successful" mock execution exits with a successful (zero) exit code.
-		os.Exit(0)
-	}
+	runSubagents(ctx, pluginServer.cancelAndSetPluginError, "", "", mockRunSubAgentCmd, runCommand)
 }

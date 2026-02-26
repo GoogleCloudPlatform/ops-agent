@@ -32,7 +32,7 @@ import (
 	"time"
 
 	logpb "cloud.google.com/go/logging/apiv2/loggingpb"
-	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
+	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -59,7 +59,41 @@ const (
 var (
 	flbPath        = flag.String("flb", os.Getenv("FLB"), "path to fluent-bit")
 	otelopscolPath = flag.String("otelopscol", os.Getenv("OTELOPSCOL"), "path to otelopscol")
+
+	multilineTestPatterns = newTestMatchPatterns([]string{
+		".*cassandra.*",
+		".*couchdb.*",
+		".*elasticsearch.*",
+		".*flink.*",
+		".*hadoop.*",
+		".*hbase.*",
+		".*kafka.*",
+		".*mysql.*",
+		".*oracledb.*",
+		".*postgresql.*",
+		".*rabbitmq.*",
+		".*saphana.*",
+		".*solr.*",
+		".*tomcat.*",
+		".*vault.*",
+		".*wildfly.*",
+		".*zookeeper.*",
+	})
 )
+
+func isMultilineTest(s string) bool {
+	return multilineTestPatterns.testMatch(s)
+}
+
+const flbMultilineTestKey = "fluent_bit_long_flush"
+
+func contextWithFlbMultilineTest(ctx context.Context) context.Context {
+	return context.WithValue(ctx, flbMultilineTestKey, true)
+}
+
+func contextHasFlbMulttilineTest(ctx context.Context) bool {
+	return ctx.Value(flbMultilineTestKey) == true
+}
 
 type transformationTest []loggingProcessor
 type loggingProcessor struct {
@@ -104,6 +138,11 @@ func TestTransformationTests(t *testing.T) {
 func (transformationConfig transformationTest) runFluentBitTest(t *testing.T, name string) {
 	ctx, cancel := context.WithCancel(testContext())
 	defer cancel()
+
+	if isMultilineTest(name) {
+		ctx = contextWithFlbMultilineTest(ctx)
+	}
+
 	// Generate config files
 	genFiles, err := generateFluentBitConfigs(ctx, name, transformationConfig)
 	if err != nil {
@@ -134,17 +173,20 @@ func (transformationConfig transformationTest) runFluentBitTest(t *testing.T, na
 		fmt.Sprintf("--config=%s", filepath.Join(tempPath, flbMainConf)),
 		fmt.Sprintf("--parser=%s", filepath.Join(filepath.Join(tempPath, flbParserConf))))
 
+	// unmarshal output
+	data := []map[string]any{}
+
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
 		t.Log(stderr.String())
-		t.Fatal("Failed to run command:", err)
+		t.Log("Failed to run command:", err)
+		data = append(data, map[string]any{"exit_error": err.Error()})
+		sanitizedStderr := sanitizeFluentBitStderr(t, stderr.String())
+		data = append(data, map[string]any{"collector_errors": map[string]any{"stderr": sanitizedStderr}})
 	}
 	t.Logf("stderr: %s\n", stderr.Bytes())
-
-	// unmarshal output
-	data := []map[string]any{}
 
 	dec := json.NewDecoder(strings.NewReader(stdout.String()))
 	for {
@@ -260,6 +302,37 @@ func generateFluentBitConfigs(ctx context.Context, name string, transformationTe
 		return nil, err
 	}
 
+	components := []fluentbit.Component{}
+
+	if contextHasFlbMulttilineTest(ctx) {
+		service := fluentbit.Component{
+			Kind: "SERVICE",
+			Config: map[string]string{
+				// The combination of Exit_On_Eof on a tail receiver with a multiline parser causes
+				// the last log in a file to be dropped. See :
+				// - https://github.com/fluent/fluent-bit/issues/8623
+				// - https://github.com/fluent/fluent-bit/issues/8353
+				// - https://github.com/fluent/fluent-bit/issues/3926
+				// Some attempts of a solution have been implemented :
+				// - https://github.com/fluent/fluent-bit/pull/8545
+				// On newer fluent-bit 4.0.x versions, last log in a file maybe (non-deterministically)
+				// dropped (~%85 retries) or sent (~15% retries) causing flaky tests.
+
+				// Set shutdown "Grace" period to 0s to avoid any unreliable logs to be sent after Exit_On_Eof.
+				// Set the "Flush" time to 10s, which fixes a race condition in multiline tests that
+				// would sometimes perform a final flush and cause the last line to appear.
+				// (Started in Fluent Bit 4.0.13)
+				//
+				// These settings in combination forces the last log line from any multiline parser
+				// to always be dropped.
+				"Grace": "0",
+				"Flush": "10",
+			},
+		}
+
+		components = append(components, service)
+	}
+
 	pi := transformationTest.pipelineInstance(abs)
 	fbSource, err := pi.FluentBitComponents(ctx)
 	if err != nil {
@@ -284,8 +357,10 @@ func generateFluentBitConfigs(ctx context.Context, name string, transformationTe
 			"export_to_project_id":          "my-project",
 		},
 	}
+	components = append(components, fbSource.Components...)
+	components = append(components, output)
 	return fluentbit.ModularConfig{
-		Components: append(fbSource.Components, output),
+		Components: components,
 	}.Generate()
 }
 
@@ -328,18 +403,27 @@ func (transformationConfig transformationTest) generateOTelConfig(ctx context.Co
 		LogLevel:          "debug",
 		ReceiverPipelines: rps,
 		Pipelines:         pls,
-		Exporters: map[otel.ExporterType]otel.Component{
-			otel.OTel: {
-				Type: "googlecloud",
-				Config: map[string]any{
-					"project": "my-project",
-					"sending_queue": map[string]any{
-						"enabled": false,
+		Exporters: map[otel.ExporterType]otel.ExporterComponents{
+			otel.Logging: {
+				ProcessorsByType: map[string][]otel.Component{
+					// Batch with 1.5s timeout to group in the same log request
+					// all late entries flushed from a multiline parser after 1s.
+					"logs": {
+						otel.BatchProcessor(500, 500, "1500ms"),
 					},
-					"log": map[string]any{
-						"default_log_name": "my-log-name",
-						"endpoint":         addr,
-						"use_insecure":     true,
+				},
+				Exporter: otel.Component{
+					Type: "googlecloud",
+					Config: map[string]any{
+						"project": "my-project",
+						"sending_queue": map[string]any{
+							"enabled": false,
+						},
+						"log": map[string]any{
+							"default_log_name": "my-log-name",
+							"endpoint":         addr,
+							"use_insecure":     true,
+						},
 					},
 				},
 			},
@@ -485,7 +569,7 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 				}
 				stderr := fmt.Sprintf("%s%s", string(buf), string(buf2))
 				t.Logf("collector stderr:\n%s", stderr)
-				stderr = sanitizeStacktrace(t, stderr)
+				stderr = sanitizeOtelStacktrace(t, stderr)
 				errors = append(errors, map[string]any{"stderr": stderr})
 				return nil
 			}
@@ -503,7 +587,7 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 			msg, _ := log["msg"].(string)
 			if strings.HasPrefix(msg, "Consuming files") {
 				consumingCount += 1
-				if consumingCount == 2 {
+				if consumingCount == 3 {
 					// We've processed the entire input file. Signal the collector to stop.
 					if err := cmd.Process.Signal(os.Interrupt); err != nil {
 						t.Errorf("failed to signal process: %v", err)
@@ -512,7 +596,7 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 			}
 			stacktrace, ok := log["stacktrace"].(string)
 			if ok {
-				log["stacktrace"] = sanitizeStacktrace(t, stacktrace)
+				log["stacktrace"] = sanitizeOtelStacktrace(t, stacktrace)
 			}
 			// Set "service.instance.id" to "test-service-instance-id" since it is a generated "uuid".
 			if resource, ok := log["resource"].(map[string]any); ok {
@@ -577,7 +661,18 @@ func sanitizeWriteLogEntriesRequest(t *testing.T, r *logpb.WriteLogEntriesReques
 	return req
 }
 
-func sanitizeStacktrace(t *testing.T, input string) string {
+func sanitizeFluentBitStderr(t *testing.T, input string) string {
+	// We need to remove non-deterministic information from fluent-bit stderr so the goldens don't keep changing.
+	// Only keep "[error]" lines.
+	result := strings.Join(regexp.MustCompile(`(?m)^.*\[error\].*$`).FindAllString(input, -1), "\n")
+	// Remove timestamps
+	result = regexp.MustCompile(`\d{4}/\d{2}/\d{2}\s\d{2}:\d{2}:\d{2}(?:.\d+)?`).ReplaceAllString(result, "YYYY/MM/DD HH:MM:SS")
+
+	result = strings.ReplaceAll(result, "\t", "  ")
+	return result
+}
+
+func sanitizeOtelStacktrace(t *testing.T, input string) string {
 	// We need to remove non-deterministic information from stacktraces so the goldens don't keep changing.
 	// Remove $GOPATH
 	result := regexp.MustCompile(`(?m)^\t(.*?)pkg/mod/`).ReplaceAllString(input, "  ")
@@ -587,12 +682,37 @@ func sanitizeStacktrace(t *testing.T, input string) string {
 	result = regexp.MustCompile(`0x[0-9a-f]+`).ReplaceAllString(result, "0xX")
 	// Remove goroutine numbers
 	result = regexp.MustCompile(`goroutine \d+`).ReplaceAllString(result, "goroutine N")
+	// Remove timestamps
+	result = regexp.MustCompile(`\d{4}/\d{2}/\d{2}\s\d{2}:\d{2}:\d{2}`).ReplaceAllString(result, "YYYY/MM/DD HH:MM:SS")
 
 	result = strings.ReplaceAll(result, "\t", "  ")
 	return result
 }
 
+type testMatchPatterns []*regexp.Regexp
+
+func newTestMatchPatterns(patterns []string) testMatchPatterns {
+	regexes := make([]*regexp.Regexp, 0, len(patterns))
+	for _, pattern := range patterns {
+		regexes = append(regexes, regexp.MustCompile(pattern))
+	}
+	return regexes
+}
+
+func (t testMatchPatterns) testMatch(s string) bool {
+	for _, r := range t {
+		if r.MatchString(s) {
+			return true
+		}
+	}
+	return false
+}
+
 func init() {
 	// The processors registered here are only meant to be used in transformation tests.
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &confgenerator.LoggingProcessorWindowsEventLogV1{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &confgenerator.LoggingProcessorWindowsEventLogV2{} })
+	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &confgenerator.LoggingProcessorWindowsEventLogRawXML{} })
+	confgenerator.LoggingProcessorTypes.ReplaceType(func() confgenerator.LoggingProcessor { return &apps.LoggingProcessorIisAccess{} })
+	confgenerator.RegisterLoggingProcessorMacro[apps.LoggingProcessorMacroActiveDirectoryDS]()
 }

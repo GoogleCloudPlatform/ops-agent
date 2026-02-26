@@ -1,6 +1,12 @@
 - entries:
-  - jsonPayload:
-      gzip_ratio: ""
+  - httpRequest:
+      protocol: HTTP/1.1
+      remoteIp: 127.0.0.1
+      requestMethod: GET
+      requestUrl: /myapp/home
+      responseSize: "4523"
+      status: 200
+    jsonPayload: {}
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_access
@@ -11,8 +17,14 @@
         zone: test-zone
       type: gce_instance
     timestamp: 2025-07-21T14:23:15Z
-  - jsonPayload:
-      gzip_ratio: ""
+  - httpRequest:
+      protocol: HTTP/1.1
+      remoteIp: 192.168.1.10
+      requestMethod: POST
+      requestUrl: /myapp/login
+      responseSize: "112"
+      status: 302
+    jsonPayload:
       user: john
     labels:
       compute.googleapis.com/resource_name: hostname
@@ -24,8 +36,14 @@
         zone: test-zone
       type: gce_instance
     timestamp: 2025-07-21T14:24:02Z
-  - jsonPayload:
-      gzip_ratio: ""
+  - httpRequest:
+      protocol: HTTP/1.1
+      remoteIp: 10.0.0.23
+      requestMethod: GET
+      requestUrl: /myapp/dashboard
+      responseSize: "6741"
+      status: 200
+    jsonPayload: {}
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_access
@@ -36,8 +54,14 @@
         zone: test-zone
       type: gce_instance
     timestamp: 2025-07-21T14:25:44Z
-  - jsonPayload:
-      gzip_ratio: ""
+  - httpRequest:
+      protocol: HTTP/1.1
+      remoteIp: 203.0.113.45
+      requestMethod: GET
+      requestUrl: /myapp/profile
+      responseSize: "3589"
+      status: 200
+    jsonPayload:
       user: alice
     labels:
       compute.googleapis.com/resource_name: hostname
@@ -49,8 +73,14 @@
         zone: test-zone
       type: gce_instance
     timestamp: 2025-07-21T14:27:33Z
-  - jsonPayload:
-      gzip_ratio: ""
+  - httpRequest:
+      protocol: HTTP/1.1
+      remoteIp: 192.168.1.15
+      requestMethod: GET
+      requestUrl: /favicon.ico
+      responseSize: "209"
+      status: 404
+    jsonPayload: {}
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_access
@@ -61,8 +91,14 @@
         zone: test-zone
       type: gce_instance
     timestamp: 2025-07-21T14:28:51Z
-  - jsonPayload:
-      gzip_ratio: ""
+  - httpRequest:
+      protocol: HTTP/1.1
+      remoteIp: 127.0.0.1
+      requestMethod: GET
+      requestUrl: /myapp/settings
+      responseSize: "723"
+      status: 403
+    jsonPayload: {}
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_access
@@ -73,8 +109,14 @@
         zone: test-zone
       type: gce_instance
     timestamp: 2025-07-21T15:00:01Z
-  - jsonPayload:
-      gzip_ratio: ""
+  - httpRequest:
+      protocol: HTTP/1.1
+      remoteIp: 172.16.0.12
+      requestMethod: GET
+      requestUrl: /myapp/home
+      responseSize: "4512"
+      status: 200
+    jsonPayload: {}
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_access
@@ -85,8 +127,14 @@
         zone: test-zone
       type: gce_instance
     timestamp: 2025-07-21T15:04:12Z
-  - jsonPayload:
-      gzip_ratio: ""
+  - httpRequest:
+      protocol: HTTP/1.1
+      remoteIp: 10.0.0.25
+      requestMethod: POST
+      requestUrl: /myapp/upload
+      responseSize: "998"
+      status: 201
+    jsonPayload:
       user: bob
     labels:
       compute.googleapis.com/resource_name: hostname
@@ -98,8 +146,14 @@
         zone: test-zone
       type: gce_instance
     timestamp: 2025-07-21T15:06:55Z
-  - jsonPayload:
-      gzip_ratio: ""
+  - httpRequest:
+      protocol: HTTP/1.1
+      remoteIp: 203.0.113.76
+      requestMethod: GET
+      requestUrl: /myapp/logout
+      responseSize: "88"
+      status: 302
+    jsonPayload: {}
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_access
@@ -110,8 +164,14 @@
         zone: test-zone
       type: gce_instance
     timestamp: 2025-07-21T15:10:42Z
-  - jsonPayload:
-      gzip_ratio: ""
+  - httpRequest:
+      protocol: HTTP/1.1
+      remoteIp: 192.168.1.20
+      requestMethod: GET
+      requestUrl: /robots.txt
+      responseSize: "68"
+      status: 200
+    jsonPayload: {}
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/tomcat_access
