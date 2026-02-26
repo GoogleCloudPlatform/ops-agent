@@ -85,14 +85,14 @@ var testdataDir embed.FS
 
 func logPathForImage(imageSpec string) string {
 	if gce.IsWindows(imageSpec) {
-		return `C:\mylog`
+		return `C:\tmp\mylog`
 	}
 	return "/tmp/mylog"
 }
 
 func workDirForImage(imageSpec string) string {
 	if gce.IsWindows(imageSpec) {
-		return `C:\work`
+		return `C:\tmp\work`
 	}
 	return "/tmp/work"
 }
@@ -214,11 +214,12 @@ func RunForEachImageAndFeatureFlag(t *testing.T, features []string, testBody fun
 	t.Helper()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
-		t.Run(DefaultFeatureFlag, func(t *testing.T) {
-			testBody(t, imageSpec, DefaultFeatureFlag)
+		t.Run(agents.DefaultFeatureFlag, func(t *testing.T) {
+			testBody(t, imageSpec, agents.DefaultFeatureFlag)
 		})
 		for _, feature := range features {
 			t.Run(feature, func(t *testing.T) {
+				// Feature flags currently don't work with how Ops Agent UAP Plugin runs.
 				if gce.IsOpsAgentUAPPlugin() {
 					t.SkipNow()
 				}
@@ -226,58 +227,6 @@ func RunForEachImageAndFeatureFlag(t *testing.T, features []string, testBody fun
 			})
 		}
 	})
-}
-
-const (
-	OtelLoggingFeatureFlag      = "otel_logging"
-	OtlpHttpExporterFeatureFlag = "otlp_exporter"
-	DefaultFeatureFlag          = "default"
-)
-
-// setExperimentalFeatures sets the EXPERIMENTAL_FEATURES environment variable.
-func setExperimentalFeatures(ctx context.Context, logger *log.Logger, vm *gce.VM, feature string) error {
-	return gce.SetEnvironmentVariables(ctx, logger, vm, map[string]string{"EXPERIMENTAL_FEATURES": feature})
-}
-
-// defaultOtelLoggingConfig returns the default config that is required to use otel_logging.
-func defaultOtelLoggingConfig() string {
-	return `logging:
-  service:
-    experimental_otel_logging: true
-`
-}
-
-// setExperimentalOtelLoggingInConfig in an Ops Agent config
-func setExperimentalOtelLoggingInConfig(config string) string {
-	return strings.Replace(
-		config,
-		"service:\n",
-		"service:\n    experimental_otel_logging: true\n",
-		1,
-	)
-}
-
-// SetupOpsAgentWithFeatureFlag configures the VM and the config depending on the selected feature flag.
-func SetupOpsAgentWithFeatureFlag(ctx context.Context, logger *log.Logger, vm *gce.VM, config string, feature string) error {
-	switch feature {
-	case OtelLoggingFeatureFlag:
-		// Set feature flag in config.
-		if config == "" {
-			config = defaultOtelLoggingConfig()
-		} else {
-			config = setExperimentalOtelLoggingInConfig(config)
-		}
-		// Set experimental feature environment variable.
-		if err := setExperimentalFeatures(ctx, logger, vm, feature); err != nil {
-			return err
-		}
-	case OtlpHttpExporterFeatureFlag:
-		if err := setExperimentalFeatures(ctx, logger, vm, feature); err != nil {
-			return err
-		}
-
-	}
-	return agents.SetupOpsAgent(ctx, logger, vm, config)
 }
 
 func TestParseMultilineFileJava(t *testing.T) {
@@ -770,7 +719,7 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 
 func TestCustomLogFile(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		logPath := logPathForImage(vm.ImageSpec)
@@ -917,7 +866,7 @@ func TestKillChildJobsWhenPluginServerProcessTerminates(t *testing.T) {
 			t.Error("expected the plugin to report that the Ops Agent is running")
 		}
 
-		_, processName, err := fetchPIDAndProcessName(ctx, logger, vm, []string{"plugin"})
+		_, processName, err := fetchPIDAndProcessName(ctx, logger, vm, []string{agents.OpsAgentPluginEntryPointName})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -944,7 +893,7 @@ func TestKillChildJobsWhenPluginServerProcessTerminates(t *testing.T) {
 
 func TestCustomLogFormat(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
@@ -972,14 +921,14 @@ func TestCustomLogFormat(t *testing.T) {
         exporters: [google]
 `, logPath, "%Y-%m-%dT%H:%M:%S.%L%z")
 
-		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
 		zone := time.FixedZone("UTC-8", int((-8 * time.Hour).Seconds()))
 		line := fmt.Sprintf("<13>1 %s %s my_app_id - - - qqqqrrrr\n", time.Now().In(zone).Format(time.RFC3339Nano), vm.Name)
 		// TODO: b/413446913 Enable non-UTC timestamp when otel logging parsing differences are fixed.
-		if feature == OtelLoggingFeatureFlag {
+		if feature == agents.OtelLoggingFeatureFlag {
 			line = fmt.Sprintf("<13>1 %s %s my_app_id - - - qqqqrrrr\n", time.Now().UTC().Format(time.RFC3339Nano), vm.Name)
 		}
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), logPath); err != nil {
@@ -1375,7 +1324,7 @@ func TestProcessorOrder(t *testing.T) {
 
 func TestSyslogTCP(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -1405,7 +1354,7 @@ func TestSyslogTCP(t *testing.T) {
         exporters: [google]
 `
 
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1414,15 +1363,18 @@ func TestSyslogTCP(t *testing.T) {
 		// detecting a failure if the exclusion message were to actually be included.
 
 		// Write test message for exclusion using the program called logger.
-		if _, err := gce.RunRemotely(ctx, logger, vm, "logger -n 0.0.0.0 --tcp --port=5140 -- abc test pattern xyz"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "logger -n 0.0.0.0 --tcp --port=5140 --rfc5424 -- abc test pattern xyz"); err != nil {
 			t.Fatalf("Error writing dummy log line: %v", err)
 		}
 		// Write test message for inclusion.
-		if _, err := gce.RunRemotely(ctx, logger, vm, "logger -n 0.0.0.0 --tcp --port=5140 -- abcdefg"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "logger -n 0.0.0.0 --tcp --port=5140 --rfc5424 -- abcdefg"); err != nil {
 			t.Fatalf("Error writing dummy log line: %v", err)
 		}
 
-		if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, "jsonPayload.message:abcdefg"); err != nil {
+		// Verify the ingested log preserves the syslog rfc5424 format and no additional labels are added.
+		rfc5424LogQuery := `jsonPayload.message =~ "^<\d+>1 \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}) \S+ \S+ \S+ \S+ \[[^\]]+\] abcdefg$"`
+		logQuery := rfc5424LogQuery + ` AND (NOT labels.message :*) AND (NOT labels.hostname :*) AND (NOT labels.priority :*)`
+		if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, logQuery); err != nil {
 			t.Error(err)
 		}
 		time.Sleep(60 * time.Second)
@@ -1437,7 +1389,7 @@ func TestSyslogTCP(t *testing.T) {
 
 func TestSyslogUDP(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -1461,16 +1413,19 @@ func TestSyslogUDP(t *testing.T) {
         exporters: [google]
 `
 
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
 		// Write "abcdefg" using the program called logger.
-		if _, err := gce.RunRemotely(ctx, logger, vm, "logger -n 0.0.0.0 --udp --port=5140 -- abcdefg"); err != nil {
+		if _, err := gce.RunRemotely(ctx, logger, vm, "logger -n 0.0.0.0 --udp --port=5140 --rfc5424 -- abcdefg"); err != nil {
 			t.Fatalf("Error writing dummy log line: %v", err)
 		}
 
-		if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, "jsonPayload.message:abcdefg"); err != nil {
+		// Verify the ingested log preserves the syslog rfc5424 format and no additional labels are added.
+		rfc5424LogQuery := `jsonPayload.message =~ "^<\d+>1 \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}) \S+ \S+ \S+ \S+ \[[^\]]+\] abcdefg$"`
+		logQuery := rfc5424LogQuery + ` AND (NOT labels.message :*) AND (NOT labels.hostname :*) AND (NOT labels.priority :*)`
+		if err := gce.WaitForLog(ctx, logger, vm, "mylog_source", time.Hour, logQuery); err != nil {
 			t.Error(err)
 		}
 	})
@@ -1478,7 +1433,7 @@ func TestSyslogUDP(t *testing.T) {
 
 func TestExcludeLogs(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
@@ -1518,7 +1473,7 @@ func TestExcludeLogs(t *testing.T) {
         processors: [json, exclude2]
 `, file1, file2)
 
-		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1567,7 +1522,7 @@ func TestExcludeLogs(t *testing.T) {
 
 func TestExcludeLogsParseJsonOrder(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
@@ -1617,7 +1572,7 @@ func TestExcludeLogsParseJsonOrder(t *testing.T) {
         exporters: [google]
 `, file1, file2)
 
-		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1646,7 +1601,7 @@ func TestExcludeLogsParseJsonOrder(t *testing.T) {
 
 func TestExcludeLogsModifyFieldsOrder(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
@@ -1710,7 +1665,7 @@ func TestExcludeLogsModifyFieldsOrder(t *testing.T) {
         processors: [json, exclude_trace, modify]
 `, file1, file2, file3)
 
-		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1740,7 +1695,7 @@ func TestExcludeLogsModifyFieldsOrder(t *testing.T) {
 
 func TestModifyFields(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
@@ -1801,7 +1756,7 @@ func TestModifyFields(t *testing.T) {
         exporters: [google]
 `, file1)
 
-		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1926,7 +1881,7 @@ func TestResourceNameLabel(t *testing.T) {
 
 func TestLogFilePathLabel(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
@@ -1948,7 +1903,7 @@ func TestLogFilePathLabel(t *testing.T) {
         processors: [json]
 `, file1)
 
-		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -1957,11 +1912,11 @@ func TestLogFilePathLabel(t *testing.T) {
 			t.Fatalf("error uploading log: %v", err)
 		}
 
-		// In Windows the generated log_file_path "C:\mylog_1" uses a backslash.
+		// In Windows the generated log_file_path "C:\tmp\mylog_1" uses a backslash.
 		// When constructing the query in WaithForLog the backslashes are escaped so
-		// replacing with two backslahes correctly queries for "C:\mylog_1" label.
+		// replacing with two backslahes correctly queries for "C:\tmp\mylog_1" label.
 		if gce.IsWindows(imageSpec) {
-			file1 = strings.Replace(file1, `\`, `\\`, 1)
+			file1 = strings.Replace(file1, `\`, `\\`, -1)
 		}
 
 		// Expect to see log with label added.
@@ -2190,7 +2145,7 @@ func TestFluentForwardLog(t *testing.T) {
 
 func TestWindowsEventLog(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if !gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -2211,7 +2166,7 @@ func TestWindowsEventLog(t *testing.T) {
         receivers: [windows_event_log]
         exporters: [google]
 `
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2235,7 +2190,7 @@ func TestWindowsEventLog(t *testing.T) {
 
 func TestWindowsEventLogV1UnsupportedChannel(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if !gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -2256,7 +2211,7 @@ func TestWindowsEventLogV1UnsupportedChannel(t *testing.T) {
       default_pipeline:
         receivers: [%s]
 `, log, channel, log)
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2270,7 +2225,7 @@ func TestWindowsEventLogV1UnsupportedChannel(t *testing.T) {
 
 func TestWindowsEventLogV2(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if !gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -2311,7 +2266,7 @@ func TestWindowsEventLogV2(t *testing.T) {
       pipeline_xml:
         receivers: [winlog2_xml]
 `
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2518,7 +2473,7 @@ func hasKeyWithValueType[V any](m map[string]any, k string) bool {
 
 func TestWindowsEventLogWithNonDefaultTimeZone(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if !gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -2527,7 +2482,7 @@ func TestWindowsEventLogWithNonDefaultTimeZone(t *testing.T) {
 		if _, err := gce.RunRemotely(ctx, logger, vm, `Set-TimeZone -Id "Eastern Standard Time"`); err != nil {
 			t.Fatal(err)
 		}
-		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, "", feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2553,7 +2508,7 @@ func TestWindowsEventLogWithNonDefaultTimeZone(t *testing.T) {
 
 func TestSystemdLog(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -2570,7 +2525,7 @@ func TestSystemdLog(t *testing.T) {
         receivers: [systemd_logs]
 `
 
-		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2605,11 +2560,11 @@ func TestSystemdLog(t *testing.T) {
 
 func TestSystemLogByDefault(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
-		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, "", feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2665,7 +2620,6 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 		if err != nil {
 			t.Fatal(err)
 		}
-
 		err = metadata.AssertMetric(metric, series)
 		if err != nil {
 			t.Fatal(err)
@@ -2742,10 +2696,10 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 
 func TestDefaultMetricsNoProxy(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, "", feature); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, "", feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2760,7 +2714,7 @@ func TestDefaultMetricsNoProxy(t *testing.T) {
 // go/sdi-integ-test#proxy-testing
 func TestDefaultMetricsWithProxy(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if !gce.IsWindows(imageSpec) {
 			t.Skip("Proxy test is currently only supported on windows.")
@@ -2777,7 +2731,7 @@ func TestDefaultMetricsWithProxy(t *testing.T) {
 		if err := gce.SetEnvironmentVariables(ctx, logger, vm, settings); err != nil {
 			t.Fatal(err)
 		}
-		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, "", feature); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, "", feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2931,7 +2885,7 @@ func TestGoogleSecretManagerProvider(t *testing.T) {
 }
 func TestPrometheusMetrics(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
@@ -2985,7 +2939,7 @@ func TestPrometheusMetrics(t *testing.T) {
           - prometheus
 `
 
-		if err := agents.SetupOpsAgent(ctx, logger, vm, promConfig); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, promConfig, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -3116,7 +3070,7 @@ func TestPrometheusMetrics(t *testing.T) {
 
 func TestPrometheusMetricsWithMetadata(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		metadataKey, metadataValue := "test", "${test:value}"
 		escapedMetadataValue := "_{test:value}"
@@ -3146,7 +3100,7 @@ func TestPrometheusMetricsWithMetadata(t *testing.T) {
           - prometheus
 `, metadataKey, metadataKey)
 
-		if err := agents.SetupOpsAgent(ctx, logger.ToMainLog(), vm, promConfig); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger.ToMainLog(), vm, promConfig, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -3182,7 +3136,7 @@ func getCommonLabels(vm *gce.VM) []*metadata.MetricLabel {
 // The JSON exporter will connect to a http server that serve static JSON files
 func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		// TODO: Set up JSON exporter stuff on Windows
 		if gce.IsWindows(imageSpec) {
@@ -3286,7 +3240,7 @@ func TestPrometheusMetricsWithJSONExporter(t *testing.T) {
       prom_pipeline:
         receivers: [prom_app]
 `
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -3930,7 +3884,7 @@ func buildGoBinary(ctx context.Context, logger *log.Logger, vm *gce.VM, source, 
 // correctly received and processed
 func testPrometheusMetrics(t *testing.T, opsAgentConfig string, testChecks []mockPrometheusCheck) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -3981,7 +3935,7 @@ func testPrometheusMetrics(t *testing.T, opsAgentConfig string, testChecks []moc
 			t.Fatalf("Http server failed to start with stdout %s and stderr %s", liveCheckOut.Stdout, liveCheckOut.Stderr)
 		}
 		// 3. Config and start the agent
-		if err := agents.SetupOpsAgent(ctx, logger, vm, opsAgentConfig); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, opsAgentConfig, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -4722,7 +4676,7 @@ func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	// To update this, first run `mirror_content.sh` under `integration_test`. Example:
 	//   ./mirror_content.sh https://go.dev/dl/go1.21.4.linux-{amd64,arm64}.tar.gz
 	// Then update this version.
-	goVersion := "1.23.0"
+	goVersion := "1.24.11"
 
 	goArch := "amd64"
 	if gce.IsARM(vm.ImageSpec) {
@@ -4738,7 +4692,7 @@ func installGolang(ctx context.Context, logger *log.Logger, vm *gce.VM) error {
 	} else {
 		installCmd = fmt.Sprintf(`
 			set -o pipefail
-			gsutil cp \
+			gcloud storage cp \
 				"gs://ops-agents-public-buckets-vendored-deps/mirrored-content/go.dev/dl/go%s.linux-%s.tar.gz" - | \
 				sudo tar --directory /usr/local -xzf /dev/stdin`, goVersion, goArch)
 	}
@@ -4774,7 +4728,7 @@ func runGoCode(ctx context.Context, logger *log.Logger, vm *gce.VM, content io.R
 
 func TestOTLPMetricsGCM(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		otlpConfig := `
@@ -4794,7 +4748,7 @@ traces:
   service:
     pipelines:
 `
-		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, otlpConfig, feature); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, otlpConfig, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -5006,9 +4960,13 @@ traces:
 	)
 }
 
-func TestOTLPMetricsGMP(t *testing.T) {
+func TestOTLPMetricsOTLP(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		if gce.IsOpsAgentUAPPlugin() {
+			// Ops Agent Plugin does not restart subagents on termination.
+			t.SkipNow()
+		}
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		otlpConfig := `
@@ -5027,7 +4985,218 @@ traces:
   service:
     pipelines:
 `
-		if err := SetupOpsAgentWithFeatureFlag(ctx, logger, vm, otlpConfig, feature); err != nil {
+		// Only run the test for the OTLP http exporter
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, otlpConfig, agents.OtlpHttpExporterFeatureFlag); err != nil {
+			t.Fatal(err)
+		}
+
+		// Have to wait for startup feature tracking metrics to be sent
+		// before we tear down the service.
+		time.Sleep(2 * time.Minute)
+
+		// Generate metric traffic with dummy app
+		metricFile, err := testdataDir.Open(path.Join("testdata", "otlp", "metrics.go"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer metricFile.Close()
+		if err := installGolang(ctx, logger, vm); err != nil {
+			t.Fatal(err)
+		}
+		serviceName := "otlp-metric-googlemanagedprometheus-test"
+		if err = runGoCode(ctx, logger, vm, metricFile, "-service_name", serviceName); err != nil {
+			t.Fatal(err)
+		}
+		expectedLabels := []*metadata.MetricLabel{
+			{Name: "otel_scope_name", ValueRegex: "foo"},
+			{Name: "instance_name", ValueRegex: vm.Name},
+			{Name: "machine_type", ValueRegex: fmt.Sprintf("projects/[0-9]+/machineTypes/%s", vm.MachineType)},
+		}
+		tests := []metadata.ExpectedMetric{
+			{
+				MetricSpec: metadata.MetricSpec{
+					Type:               "prometheus.googleapis.com/otlp.test.gauge/gauge",
+					Kind:               metric.MetricDescriptor_GAUGE.String(),
+					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+					Value:              5.0,
+					MonitoredResources: []string{"prometheus_target"},
+					Labels:             expectedLabels,
+				},
+				Optional: false,
+			},
+			{
+				MetricSpec: metadata.MetricSpec{
+					Type:               "prometheus.googleapis.com/otlp.test.cumulative/counter",
+					Kind:               metric.MetricDescriptor_CUMULATIVE.String(),
+					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+					Value:              15.0,
+					MonitoredResources: []string{"prometheus_target"},
+					Labels:             expectedLabels,
+				},
+				Optional: false,
+			},
+			{
+				MetricSpec: metadata.MetricSpec{
+					Type:      "prometheus.googleapis.com/otlp.test.histogram/histogram",
+					Kind:      metric.MetricDescriptor_CUMULATIVE.String(),
+					ValueType: metric.MetricDescriptor_DISTRIBUTION.String(),
+					Value: &distribution.Distribution{
+						Count:                 3,
+						Mean:                  2,
+						SumOfSquaredDeviation: 0.75,
+						BucketOptions: &distribution.Distribution_BucketOptions{
+							Options: &distribution.Distribution_BucketOptions_ExplicitBuckets{
+								ExplicitBuckets: &distribution.Distribution_BucketOptions_Explicit{
+									Bounds: []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
+								},
+							},
+						},
+						BucketCounts: []int64{0, 3},
+					},
+					MonitoredResources: []string{"prometheus_target"},
+					Labels:             expectedLabels,
+				},
+				Optional: false,
+			},
+			{
+				MetricSpec: metadata.MetricSpec{
+					Type: "prometheus.googleapis.com/otlp.test.updowncounter/gauge",
+					Kind: metric.MetricDescriptor_GAUGE.String(),
+					// b/476112381: New OTLP endpoint for prometheus converts INT metrics types to DOUBLE
+					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+					Value:              3.0,
+					MonitoredResources: []string{"prometheus_target"},
+					Labels:             expectedLabels,
+				},
+				Optional: false,
+			},
+			{
+				MetricSpec: metadata.MetricSpec{
+					Type:               "prometheus.googleapis.com/workload.googleapis.com/otlp.test.prefix1/gauge",
+					Kind:               metric.MetricDescriptor_GAUGE.String(),
+					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+					Value:              5.0,
+					MonitoredResources: []string{"prometheus_target"},
+					Labels:             expectedLabels,
+				},
+				Optional: false,
+			},
+			{
+				MetricSpec: metadata.MetricSpec{
+					Type:               "prometheus.googleapis.com/.invalid.googleapis.com/otlp.test.prefix2/gauge",
+					Kind:               metric.MetricDescriptor_GAUGE.String(),
+					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+					Value:              5.0,
+					MonitoredResources: []string{"prometheus_target"},
+					Labels:             expectedLabels,
+				},
+				Optional: false,
+			},
+			{
+				MetricSpec: metadata.MetricSpec{
+					Type:               "prometheus.googleapis.com/otlp.test.prefix3/workload.googleapis.com/abc/gauge",
+					Kind:               metric.MetricDescriptor_GAUGE.String(),
+					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+					Value:              5.0,
+					MonitoredResources: []string{"prometheus_target"},
+					Labels:             expectedLabels,
+				},
+				Optional: false,
+			},
+			{
+				MetricSpec: metadata.MetricSpec{
+					Type:               "prometheus.googleapis.com/WORKLOAD.GOOGLEAPIS.COM/otlp.test.prefix4/gauge",
+					Kind:               metric.MetricDescriptor_GAUGE.String(),
+					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+					Value:              5.0,
+					MonitoredResources: []string{"prometheus_target"},
+					Labels:             expectedLabels,
+				},
+				Optional: false,
+			},
+			{
+				MetricSpec: metadata.MetricSpec{
+					Type:               "prometheus.googleapis.com/WORKLOAD.googleapis.com/otlp.test.prefix5/gauge",
+					Kind:               metric.MetricDescriptor_GAUGE.String(),
+					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+					Value:              5.0,
+					MonitoredResources: []string{"prometheus_target"},
+					Labels:             expectedLabels,
+				},
+				Optional: false,
+			},
+		}
+		var multiErr error
+		for _, test := range tests {
+			multiErr = multierr.Append(multiErr, waitForAndAssertMetric(ctx, logger, vm, time.Hour, &test, nil, true))
+		}
+		if multiErr != nil {
+			t.Error(multiErr)
+		}
+
+		expectedFeatures := []*feature_tracking_metadata.FeatureTracking{
+			{
+				Module:  "logging",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "false",
+			},
+			{
+				Module:  "metrics",
+				Feature: "service:pipelines",
+				Key:     "default_pipeline_overridden",
+				Value:   "false",
+			},
+			{
+				Module:  "combined",
+				Feature: "receivers:otlp",
+				Key:     "[0].enabled",
+				Value:   "true",
+			},
+			{
+				Module:  "combined",
+				Feature: "receivers:otlp",
+				Key:     "[0].grpc_endpoint",
+				Value:   "endpoint",
+			},
+		}
+
+		series, err := gce.WaitForMetricSeries(ctx, logger, vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", time.Hour, nil, false, len(expectedFeatures))
+		if err != nil {
+			t.Error(err)
+			return
+		}
+
+		err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, expectedFeatures)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+	})
+}
+
+func TestOTLPMetricsGMP(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		otlpConfig := `
+combined:
+  receivers:
+    otlp:
+      type: otlp
+      grpc_endpoint: 0.0.0.0:4317
+metrics:
+  service:
+    pipelines:
+      otlp:
+        receivers:
+        - otlp
+traces:
+  service:
+    pipelines:
+`
+		if err := agents.SetupOpsAgent(ctx, logger, vm, otlpConfig); err != nil {
 			t.Fatal(err)
 		}
 
@@ -5783,6 +5952,67 @@ func TestLogCompression(t *testing.T) {
 	})
 }
 
+func TestFileOffset(t *testing.T) {
+	t.Parallel()
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+		t.Parallel()
+
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+
+		logPath := logPathForImage(vm.ImageSpec)
+		config := fmt.Sprintf(`logging:
+  receivers:
+    files_1:
+      type: files
+      include_paths: [%s]
+  service:
+    pipelines:
+      p1:
+        receivers: [files_1]
+`, logPath)
+
+		if err := writeLinesToRemoteFile(ctx, logger, vm, imageSpec, logPath, "first line"); err != nil {
+			t.Fatalf("Error writing dummy log lines: %v", err)
+		}
+
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
+			t.Fatal(err)
+		}
+
+		// Wait 1 min for all logs to be ingested after first start.
+		time.Sleep(1 * time.Minute)
+
+		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StopCommandForImage(vm.ImageSpec)); err != nil {
+			t.Fatal(err)
+		}
+
+		// Additional log to test succesful agent restart.
+		if err := writeLinesToRemoteFile(ctx, logger, vm, imageSpec, logPath, "second line"); err != nil {
+			t.Fatalf("Error writing dummy log lines: %v", err)
+		}
+
+		if _, err := gce.RunRemotely(ctx, logger, vm, agents.StartCommandForImage(vm.ImageSpec)); err != nil {
+			t.Fatal(err)
+		}
+
+		// Wait 1 min for logs to be ingested after restart.
+		time.Sleep(1 * time.Minute)
+
+		// We should only observe one instance of the "first line" log.
+		matchingLogs, err := gce.QueryAllLogs(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="first line"`, gce.LogQueryMaxAttempts)
+		if err != nil {
+			t.Error(err)
+		}
+		if len(matchingLogs) != 1 {
+			t.Errorf(`Expected to find exactly one instance of "first line" log in the backend. Found %d instances.`, len(matchingLogs))
+		}
+		// Verify second log was ingested.
+		if err := gce.WaitForLog(ctx, logger, vm, "files_1", time.Hour, `jsonPayload.message="second line"`); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
 // listAndDeleteResources lists all gcloud resources of a given resourceType that match the gcloudFilter.
 // All the found listed resources are then deleted sequentially.
 // extraArguments can be used for different type of gcloud command requirements.
@@ -5936,6 +6166,31 @@ func TestAppHubLogLabels(t *testing.T) {
 
 		if err := gce.WaitForLog(ctx, logger, migVM.VM, tag, time.Hour, query); err != nil {
 			t.Error(err)
+		}
+	})
+}
+
+func TestOpsAgentSigning(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+		if testing.Short() {
+			t.Skip("skipping test in short mode.")
+		}
+		if !gce.IsRpm(imageSpec) && !gce.IsWindows(imageSpec) {
+			t.Skip("This test only applies to RPM-based or Windows OSes.")
+		}
+		if gce.IsOpsAgentUAPPlugin() {
+			t.Skip("This test isn't supported for UAP.")
+		}
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		err := agents.VerifyOpsAgentSigned(ctx, logger, vm)
+		if err != nil {
+			t.Fatal(err)
 		}
 	})
 }

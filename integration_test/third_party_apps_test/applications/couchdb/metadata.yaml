@@ -68,10 +68,13 @@ platforms_to_skip:
   - rocky-linux-cloud:rocky-linux-9-optimized-gcp
   - rocky-linux-cloud:rocky-linux-9-arm64
   - rocky-linux-cloud:rocky-linux-9-optimized-gcp-arm64
+  # repo not available for rh10
+  - rocky-linux-cloud:rocky-linux-10
+  - rocky-linux-cloud:rocky-linux-10-optimized-gcp
+  - rocky-linux-cloud:rocky-linux-10-arm64
+  - rocky-linux-cloud:rocky-linux-10-optimized-gcp-arm64
   - ubuntu-os-cloud:ubuntu-2404-lts-amd64
   - ubuntu-os-cloud:ubuntu-2404-lts-arm64
-  - ubuntu-os-cloud:ubuntu-2504-amd64
-  - ubuntu-os-cloud:ubuntu-2504-arm64
   - ubuntu-os-cloud:ubuntu-2510-amd64 # couchdb not available for 25.10 yet: https://docs.couchdb.org/en/stable/install/unix.html
   - ubuntu-os-cloud:ubuntu-2510-arm64
   - debian-cloud:debian-12

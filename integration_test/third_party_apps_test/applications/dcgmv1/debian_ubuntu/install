@@ -19,18 +19,17 @@ if [[ $ID == debian ]]; then
 fi
 sudo apt update
 
-# TODO(b/357944360): confirm if the older GPUs can use >= 560 driver (CUDA 12.6
-# or newer) and then remove this case statement
-# In https://docs.nvidia.com/datacenter/tesla/index.html once the 560 doc is up,
-# check supported GPU section https://screenshot.googleplex.com/9hzxLLvaWVZHu9E
 DEVICE_CODE=$(lspci -n | grep -Po '10de:[\w\d]{4}')
 case $DEVICE_CODE in
     # V100 | P4 | P100
     # Device PCIe ID lookup: https://envytools.readthedocs.io/en/latest/hw/pciid.html
     10de:1db1|10de:1bb3|10de:15f8)
-        # For GPUs older than Turing (Volta: V100, Pascal: P4, P100), ping the
-        # version to CUDA 12.5 (driver 555)
-        sudo apt -y install cuda-12-5
+        # For GPUs older than Turing (Volta: V100, Pascal: P4, P100):
+        # 1. R580 is the last driver branch to support the Pascal (P4 and P100) and Volta architecture (V100).
+        # https://docs.cloud.google.com/compute/docs/gpus/install-drivers-gpu#recommended-driver-branches
+        # 2. They need proprietary kernel modules, not the open kernel modules (nvidia-open-*)
+        sudo apt -y install nvidia-driver-575
+        sudo apt -y install cuda-12-9
         ;;
     *)
         # For newer GPUs, install the latest version
@@ -38,8 +37,9 @@ case $DEVICE_CODE in
             # cuda-12-6 is the latest version that supports Debian 11
             sudo apt -y install cuda-12-6
         else
-            sudo apt -y install nvidia-driver-575
-            sudo apt -y install cuda-12-9
+            sudo apt -y install nvidia-driver-pinning-590.48.01
+            sudo apt -y install cuda-drivers
+            sudo apt -y install cuda-toolkit-13-1
         fi
         ;;
 esac

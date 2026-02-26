@@ -7,18 +7,20 @@ exporters:
       service_resource_labels: false
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
-  googlecloud/otel:
-    metric:
-      instrumentation_library_labels: true
-      prefix: ""
-      resource_filters: []
-      service_resource_labels: true
-      skip_create_descriptor: true
-    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
+  googlecloud/logging:
+    timeout: 60s
+extensions:
+  file_storage:
+    create_directory: true
+    directory: file_storage
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
+  batch/googlecloud/logging_logs_0:
+    send_batch_max_size: 1000
+    send_batch_size: 1000
+    timeout: 200ms
   cumulativetodelta/loggingmetrics_4:
     include:
       match_type: strict
@@ -746,6 +748,7 @@ processors:
 receivers:
   filelog/log__source__id1:
     exclude: []
+    fingerprint_size: 5kb
     include:
     - /path/to/log/1/*
     include_file_name: false
@@ -758,8 +761,10 @@ receivers:
     preserve_leading_whitespaces: true
     preserve_trailing_whitespaces: true
     start_at: beginning
+    storage: file_storage
   filelog/syslog:
     exclude: []
+    fingerprint_size: 5kb
     include:
     - /var/log/messages
     - /var/log/syslog
@@ -772,6 +777,7 @@ receivers:
     preserve_leading_whitespaces: true
     preserve_trailing_whitespaces: true
     start_at: beginning
+    storage: file_storage
   hostmetrics/hostmetrics:
     collection_interval: 60s
     scrapers:
@@ -810,22 +816,26 @@ receivers:
         - targets:
           - 0.0.0.0:20201
 service:
+  extensions:
+  - file_storage
   pipelines:
     logs/logs_default__pipeline_syslog:
       exporters:
-      - googlecloud/otel
+      - googlecloud/logging
       processors:
       - transform/syslog_0
       - resourcedetection/_global_0
+      - batch/googlecloud/logging_logs_0
       receivers:
       - filelog/syslog
     logs/logs_pipeline1_log__source__id1:
       exporters:
-      - googlecloud/otel
+      - googlecloud/logging
       processors:
       - transform/log__source__id1_0
       - transform/logs_pipeline1_log__source__id1_0
       - resourcedetection/_global_0
+      - batch/googlecloud/logging_logs_0
       receivers:
       - filelog/log__source__id1
     metrics/default__pipeline_hostmetrics:
@@ -897,6 +907,7 @@ service:
       - prometheus/agent_prometheus
   telemetry:
     metrics:
+      level: detailed
       readers:
       - pull:
           exporter:
