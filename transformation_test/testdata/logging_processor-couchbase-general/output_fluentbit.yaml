@@ -1,0 +1,68 @@
+- entries:
+  - jsonPayload:
+      level: info
+      message: Bucket 'travel-data' created with 3 replicas
+      node_name: ns_1@127.0.0.1
+      source: menelaus_web
+      type: ns_server
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_general
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-08-18T09:15:12.123000000Z
+  - jsonPayload:
+      level: warn
+      message: Index build taking longer than expected on bucket 'travel-data'
+      node_name: ns_1@127.0.0.1
+      source: index_updater
+      type: ns_server
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_general
+    logName: projects/my-project/logs/transformation_test
+    severity: 400.0
+    timestamp: 2025-08-18T09:16:05.452000000Z
+  - jsonPayload:
+      level: error
+      message: "Failed to allocate memory for vbuckets: insufficient quota"
+      node_name: ns_1@127.0.0.1
+      source: bucket_engine
+      type: ns_server
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_general
+    logName: projects/my-project/logs/transformation_test
+    severity: 500.0
+    timestamp: 2025-08-18T09:16:33.764000000Z
+  - jsonPayload:
+      level: debug
+      message: |-
+        Rebalance progress: 45% completed
+        Continuation line giving rebalance details
+        Still continuing additional rebalance logs with memory usage stats...
+      node_name: ns_1@127.0.0.1
+      source: rebalance
+      type: ns_server
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_general
+    logName: projects/my-project/logs/transformation_test
+    severity: 100.0
+    timestamp: 2025-08-18T09:16:55.987000000Z
+  - jsonPayload:
+      level: info
+      message: Node 'ns_1@127.0.0.1' added to cluster
+      node_name: ns_1@127.0.0.1
+      source: cluster_manager
+      type: ns_server
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_general
+    logName: projects/my-project/logs/transformation_test
+    severity: 200.0
+    timestamp: 2025-08-18T09:17:30.333000000Z
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance
