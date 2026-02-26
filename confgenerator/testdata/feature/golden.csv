@@ -1,15 +1,5 @@
 App,Field,Override,
 *apps.LoggingProcessorIisAccess,confgenerator.ConfigComponent.Type,
-<<<<<<< feat/couchbase-refactor
-*apps.LoggingProcessorOracleDBAlert,confgenerator.ConfigComponent.Type,
-*apps.LoggingProcessorOracleDBAudit,confgenerator.ConfigComponent.Type,
-*apps.LoggingReceiverActiveDirectoryDS,confgenerator.ConfigComponent.Type,
-=======
-*apps.LoggingReceiverCouchbase,confgenerator.ConfigComponent.Type,
-*apps.LoggingReceiverCouchbase,confgenerator.LoggingReceiverFilesMixin.BufferInMemory,
-*apps.LoggingReceiverCouchbase,confgenerator.LoggingReceiverFilesMixin.RecordLogFilePath,
-*apps.LoggingReceiverCouchbase,confgenerator.LoggingReceiverFilesMixin.WildcardRefreshInterval,
->>>>>>> master
 *apps.LoggingReceiverIisAccess,apps.LoggingProcessorIisAccess.confgenerator.ConfigComponent.Type,
 *apps.LoggingReceiverIisAccess,confgenerator.LoggingReceiverFilesMixin.BufferInMemory,
 *apps.LoggingReceiverIisAccess,confgenerator.LoggingReceiverFilesMixin.RecordLogFilePath,
