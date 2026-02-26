@@ -71,7 +71,7 @@ func googleCloudLoggingExporter() otel.Component {
 				// "queue_size": 11,
 				// "sizer":      "requests",
 				// Blocks the "sending_queue" on overflow to reduce log loss.
-				// "block_on_overflow": true,
+				"block_on_overflow": true,
 				// Set batch in "sending_queue" is recommended instead of using batch processor.
 				"batch": map[string]interface{}{
 					"flush_timeout": "200ms",
