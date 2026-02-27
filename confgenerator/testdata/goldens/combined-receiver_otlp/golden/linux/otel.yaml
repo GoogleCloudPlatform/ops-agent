@@ -8,6 +8,17 @@ exporters:
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
   googlecloud/logging:
+    sending_queue:
+      batch:
+        flush_timeout: 200ms
+        max_size: 1000
+        min_size: 1000
+        sizer: items
+      block_on_overflow: true
+      enabled: true
+      num_consumers: 10
+      queue_size: 20
+      sizer: requests
     timeout: 60s
   googlecloud/otel:
     metric:
@@ -25,10 +36,6 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  batch/googlecloud/logging_logs_0:
-    send_batch_max_size: 1000
-    send_batch_size: 1000
-    timeout: 200ms
   cumulativetodelta/loggingmetrics_4:
     include:
       match_type: strict
@@ -711,7 +718,6 @@ service:
       processors:
       - transform/otlp_0
       - resourcedetection/_global_1
-      - batch/googlecloud/logging_logs_0
       receivers:
       - otlp/otlp
     metrics/default__pipeline_hostmetrics:

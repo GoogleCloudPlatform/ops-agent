@@ -64,6 +64,22 @@ func googleCloudLoggingExporter() otel.Component {
 			// Set to mirror the 60s max limit of default retry window in Google Cloud Logging apiv2 go client :
 			// https://github.com/googleapis/google-cloud-go/blob/logging/v1.4.2/logging/apiv2/logging_client.go#L78-L90
 			"timeout": "60s",
+			"sending_queue": map[string]interface{}{
+				"enabled": true,
+				// Set queue_size to "num_consumers + 1" to always have a new batch ready.
+				"queue_size":    20,
+				"num_consumers": 10,
+				"sizer":         "requests",
+				// Blocks the "sending_queue" on overflow to reduce log loss.
+				"block_on_overflow": true,
+				// Set batch in "sending_queue" is recommended instead of using batch processor.
+				"batch": map[string]interface{}{
+					"flush_timeout": "200ms",
+					"min_size":      1000,
+					"max_size":      1000,
+					"sizer":         "items",
+				},
+			},
 		},
 	}
 }
@@ -228,12 +244,6 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 			},
 			otel.Logging: {
 				Exporter: googleCloudLoggingExporter(),
-				ProcessorsByType: map[string][]otel.Component{
-					// Batching logs improves log export performance.
-					"logs": {
-						otel.BatchProcessor(1000, 1000, "200ms"),
-					},
-				},
 			},
 		},
 	}.Generate(ctx)
