@@ -204,47 +204,59 @@ func (IISConcatFields) Components(ctx context.Context, tag, uid string) []fluent
 
 // Processors implements the OTEL concatenation using ModifyFields + CustomConvertFunc
 func (IISConcatFields) Processors(ctx context.Context) ([]otel.Component, error) {
+	// Required OTTL fields
+	bodyHttpRequestServerIp := ottl.LValue{"body", "http_request_serverIp"}
+	bodySPort := ottl.LValue{"body", "s_port"}
+	bodyUriQuery := ottl.LValue{"body", "cs_uri_query"}
+	bodyUriStem := ottl.LValue{"body", "cs_uri_stem"}
+
 	modifyFields := confgenerator.LoggingProcessorModifyFields{
 		Fields: map[string]*confgenerator.ModifyField{
+			// Omit fields equal to "-"
+			"jsonPayload.cs_uri_query": {
+				OmitIf: `jsonPayload.cs_uri_query = "-"`,
+			},
+			"jsonPayload.http_request_referer": {
+				OmitIf: `jsonPayload.referer = "-"`,
+			},
+			"jsonPayload.user": {
+				OmitIf: `jsonPayload.user = "-"`,
+			},
 			// Concatenate serverIp with port
 			"jsonPayload.http_request_serverIp": {
 				CopyFrom: "jsonPayload.http_request_serverIp",
-				CustomConvertFunc: func(value ottl.LValue) ottl.Statements {
-					return ottl.Statements{}.Append(
-						value.Set(ottl.RValue(`Concat([body["http_request_serverIp"], body["s_port"]], ":")`)),
-						ottl.LValue{"body", "s_port"}.Delete(),
+				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
+					return ottl.NewStatements(
+						v.Set(ottl.Concat([]ottl.Value{bodyHttpRequestServerIp, bodySPort}, ":")),
+						bodySPort.Delete(),
 					)
 				},
 			},
 			// Build requestUrl from stem and query
 			"jsonPayload.http_request_requestUrl": {
 				CopyFrom: "jsonPayload.cs_uri_stem",
-				CustomConvertFunc: func(value ottl.LValue) ottl.Statements {
-					return ottl.Statements{}.Append(
-						// Check if query is valid (not empty, not "-")
-						ottl.LValue{"cache", "clean_query"}.Delete(),
-						ottl.LValue{"cache", "clean_query"}.SetIf(
-							ottl.LValue{"body", "cs_uri_query"},
+				CustomConvertFunc: func(v ottl.LValue) ottl.Statements {
+					return ottl.NewStatements(
+						// Set requestUrl to stem when query is empty/"-"
+						v.SetIf(
+							bodyUriStem,
 							ottl.And(
-								ottl.LValue{"body", "cs_uri_query"}.IsPresent(),
-								ottl.Not(ottl.Equals(ottl.LValue{"body", "cs_uri_query"}, ottl.StringLiteral(""))),
-								ottl.Not(ottl.Equals(ottl.LValue{"body", "cs_uri_query"}, ottl.StringLiteral("-"))),
+								bodyUriStem.IsPresent(),
+								ottl.Or(
+									ottl.Not(ottl.IsNotNil(bodyUriQuery)),
+									ottl.Equals(bodyUriQuery, ottl.StringLiteral("")),
+									ottl.Equals(bodyUriQuery, ottl.StringLiteral("-")),
+								),
 							),
 						),
-						// Set requestUrl to stem when query is empty/"-"
-						value.SetIf(
-							ottl.LValue{"body", "cs_uri_stem"},
-							ottl.Not(ottl.LValue{"cache", "clean_query"}.IsPresent()),
-						),
 						// Set requestUrl to stem + "?" + query when query has content
-						value.SetIf(
-							ottl.RValue(`Concat([body["cs_uri_stem"], cache["clean_query"]], "?")`),
-							ottl.LValue{"cache", "clean_query"}.IsPresent(),
+						v.SetIf(
+							ottl.Concat([]ottl.Value{bodyUriStem, bodyUriQuery}, "?"),
+							ottl.And(bodyUriStem.IsPresent(), bodyUriQuery.IsPresent()),
 						),
 						// Clean up intermediate fields
-						ottl.LValue{"body", "cs_uri_stem"}.Delete(),
-						ottl.LValue{"body", "cs_uri_query"}.Delete(),
-						ottl.LValue{"cache", "clean_query"}.Delete(),
+						bodyUriQuery.Delete(),
+						bodyUriStem.Delete(),
 					)
 				},
 			},
@@ -256,9 +268,6 @@ func (IISConcatFields) Processors(ctx context.Context) ([]otel.Component, error)
 
 func (p LoggingProcessorMacroIisAccess) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
 	parseRegex := confgenerator.LoggingProcessorParseRegex{
-
-func (p *LoggingProcessorIisAccess) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	c := confgenerator.LoggingProcessorParseRegex{
 		// Microsoft updated the default format in Feb 2026.
 		// The new format now has fields sc_bytes and cs_bytes added right before time_taken
 		// To ensure backwards compatibility, we added an optional capture group right before time_taken
@@ -268,7 +277,7 @@ func (p *LoggingProcessorIisAccess) Components(ctx context.Context, tag, uid str
 		// sample line old format: 2022-03-10 17:26:30 ::1 GET / - 80 - ::1 Mozilla/5.0+(Windows+NT+10.0;+WOW64;+Trident/7.0;+rv:11.0)+like+Gecko - 200 0 0 352
 		// sample line old format: 2022-03-10 17:26:32 ::1 GET /favicon.ico - 80 - ::1 Mozilla/5.0+(Windows+NT+10.0;+WOW64;+Trident/7.0;+rv:11.0)+like+Gecko - 404 0 2 49
 		// sample line new format: 2026-02-19 10:28:49 ::1 GET /forbidden something=something 80 - ::1 Mozilla/5.0+(Windows+NT;+Windows+NT+10.0;+en-US)+WindowsPowerShell/5.1.26100.32370 - 404 0 2 5035 184 189
-		Regex: `/^(?<timestamp>\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2})\s(?<http_request_serverIp>[^\s]+)\s(?<http_request_requestMethod>[^\s]+)\s(?<cs_uri_stem>\/[^\s]*)\s(?<cs_uri_query>[^\s]*)\s(?<s_port>\d*)\s(?<user>[^\s]+)\s(?<http_request_remoteIp>[^\s]+)\s(?<http_request_userAgent>[^\s]+)\s(?<http_request_referer>[^\s]+)\s(?<http_request_status>\d{3})\s(?<sc_substatus>\d+)\s(?<sc_win32_status>\d+)(?:\s(?<sc_bytes>\d+)\s(?<cs_bytes>\d+))?\s(?<time_taken>\d+)$/`,
+		Regex: `^(?<timestamp>\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2})\s(?<http_request_serverIp>[^\s]+)\s(?<http_request_requestMethod>[^\s]+)\s(?<cs_uri_stem>\/[^\s]*)\s(?<cs_uri_query>[^\s]*)\s(?<s_port>\d*)\s(?<user>[^\s]+)\s(?<http_request_remoteIp>[^\s]+)\s(?<http_request_userAgent>[^\s]+)\s(?<http_request_referer>[^\s]+)\s(?<http_request_status>\d{3})\s(?<sc_substatus>\d+)\s(?<sc_win32_status>\d+)(?:\s(?<sc_bytes>\d+)\s(?<cs_bytes>\d+))?\s(?<time_taken>\d+)$`,
 		ParserShared: confgenerator.ParserShared{
 			TimeKey:    "timestamp",
 			TimeFormat: "%Y-%m-%d %H:%M:%S",
