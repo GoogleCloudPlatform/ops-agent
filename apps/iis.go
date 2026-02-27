@@ -290,6 +290,15 @@ func (p LoggingProcessorMacroIisAccess) Expand(ctx context.Context) []confgenera
 	// Handle field concatenation (serverIp+port, requestUrl)
 	concatFields := IISConcatFields{}
 
+	// This is used to exclude the header lines above the logs
+	// EXAMPLE LINES:
+	// #Software: Microsoft Internet Information Services 10.0
+	// #Version: 1.0
+	// #Date: 2022-04-11 12:53:50
+	excludeLogs := confgenerator.LoggingProcessorExcludeLogs{
+		MatchAny: []string{`jsonPayload.message=~"^#(?:Fields|Date|Version|Software):"`},
+	}
+
 	// Create fields map for simple field operations and moves
 	fields := map[string]*confgenerator.ModifyField{
 		InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
@@ -317,6 +326,7 @@ func (p LoggingProcessorMacroIisAccess) Expand(ctx context.Context) []confgenera
 	return []confgenerator.InternalLoggingProcessor{
 		parseRegex,
 		concatFields,
+		excludeLogs,
 		modifyFields,
 	}
 }
