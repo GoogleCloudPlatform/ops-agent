@@ -534,6 +534,83 @@ func (p LoggingProcessorNestWildcard) Components(ctx context.Context, tag, uid s
 	}
 }
 
+type LoggingProcessorRemoveField struct {
+	Field string
+}
+
+func (p LoggingProcessorRemoveField) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
+	filter := fluentbit.Component{
+		Kind: "FILTER",
+		Config: map[string]string{
+			"Name":   "modify",
+			"Match":  tag,
+			"Remove": p.Field,
+		},
+	}
+	return []fluentbit.Component{filter}
+}
+
+type LoggingProcessorParseTimestamp struct {
+	ParserShared `yaml:",inline"`
+}
+
+func (p LoggingProcessorParseTimestamp) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
+	parser, parserName := p.ParserShared.Component(tag, uid)
+
+	parser.Config["Format"] = "regex"
+	parser.Config["Regex"] = fmt.Sprintf("^(?<%s>.*)$", p.TimeKey)
+
+	components := []fluentbit.Component{}
+	components = append(components, parser)
+
+	components = append(components,
+		fluentbit.ParserFilterComponents(tag, p.TimeKey, []string{parserName}, false)...,
+	)
+
+	return components
+}
+
+type LoggingProcessorRenameIfExists struct {
+	Field   string
+	NewName string
+}
+
+func (p LoggingProcessorRenameIfExists) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
+	return []fluentbit.Component{modify.NewHardRenameOptions(p.Field, p.NewName).Component(tag)}
+}
+
+func (p LoggingProcessorRenameIfExists) Processors(ctx context.Context) ([]otel.Component, error) {
+	fromMember, err := filter.NewMemberLegacy(p.Field)
+	if err != nil {
+		return nil, err
+	}
+	fromAccessor, err := fromMember.OTTLAccessor()
+	if err != nil {
+		return nil, err
+	}
+
+	toMember, err := filter.NewMemberLegacy(p.NewName)
+	if err != nil {
+		return nil, err
+	}
+	toAccessor, err := toMember.OTTLAccessor()
+	if err != nil {
+		return nil, err
+	}
+
+	// Rename only if the source field exists
+	statements := ottl.NewStatements(
+		toAccessor.SetIf(fromAccessor, fromAccessor.IsPresent()),
+		fromAccessor.DeleteIf(fromAccessor.IsPresent()),
+	)
+
+	return []otel.Component{otel.Transform(
+		"log", "log",
+		statements,
+	)}, nil
+
+}
+
 var LegacyBuiltinProcessors = map[string]LoggingProcessor{
 	"lib:default_message_parser": &LoggingProcessorParseRegex{
 		Regex: `^(?<message>.*)$`,
