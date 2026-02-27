@@ -24,7 +24,6 @@
     timestamp: 2022-03-11T01:26:30Z
   - httpRequest:
       protocol: HTTP/1.1
-      referer: -
       remoteIp: "::1"
       requestMethod: GET
       requestUrl: /
@@ -62,7 +61,6 @@
     timestamp: now
   - httpRequest:
       protocol: HTTP/1.1
-      referer: -
       remoteIp: "::1"
       requestMethod: GET
       requestUrl: /forbidden?something=something

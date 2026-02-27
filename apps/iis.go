@@ -210,7 +210,7 @@ func (IISConcatFields) Processors(ctx context.Context) ([]otel.Component, error)
 				OmitIf: `jsonPayload.cs_uri_query = "-"`,
 			},
 			"jsonPayload.http_request_referer": {
-				OmitIf: `jsonPayload.referer = "-"`,
+				OmitIf: `jsonPayload.http_request_referer = "-"`,
 			},
 			"jsonPayload.user": {
 				OmitIf: `jsonPayload.user = "-"`,
