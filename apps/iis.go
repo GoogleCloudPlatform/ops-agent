@@ -164,9 +164,11 @@ type IISConcatFields struct{}
 
 // Components implements the Fluent-bit concatenation using Lua
 func (IISConcatFields) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	luaScript := `
-	function iis_concat_fields(tag, timestamp, record)
-		if (record["cs_uri_query"] == "-") then
+	iisMergeRecordFieldsLuaFunction := `iis_merge_fields`
+	iisMergeRecordFieldsLuaScriptContents := `
+	function iis_merge_fields(tag, timestamp, record)
+
+	  if (record["cs_uri_query"] == "-") then
 	    record["cs_uri_query"] = nil
 	  end
 	  if (record["http_request_referer"] == "-") then
@@ -175,31 +177,22 @@ func (IISConcatFields) Components(ctx context.Context, tag, uid string) []fluent
 	  if (record["user"] == "-") then
 	    record["user"] = nil
 	  end
-		
-	  -- Concatenate serverIp with port
-	  if record["http_request_serverIp"] ~= nil and record["s_port"] ~= nil then
-		record["http_request_serverIp"] = table.concat({record["http_request_serverIp"], ":", record["s_port"]})
+
+	  record["http_request_serverIp"] = table.concat({record["http_request_serverIp"], ":", record["s_port"]})
+	  if (record["cs_uri_query"] == nil or record["cs_uri_query"] == '') then
+		record["http_request_requestUrl"] = record["cs_uri_stem"]
+	  else
+		record["http_request_requestUrl"] = table.concat({record["cs_uri_stem"], "?", record["cs_uri_query"]})
 	  end
-	  
-	  -- Build requestUrl from stem and query
-	  if record["cs_uri_stem"] ~= nil then
-		if record["cs_uri_query"] == nil or record["cs_uri_query"] == "" or record["cs_uri_query"] == "-" then
-		  record["http_request_requestUrl"] = record["cs_uri_stem"]
-		else
-		  record["http_request_requestUrl"] = table.concat({record["cs_uri_stem"], "?", record["cs_uri_query"]})
-		end
-	  end
-	  
-	  -- Clean up intermediate fields
-	  record["cs_uri_stem"] = nil
+
 	  record["cs_uri_query"] = nil
+	  record["cs_uri_stem"] = nil
 	  record["s_port"] = nil
-	  
 	  return 2, timestamp, record
 	end
 	`
 
-	return fluentbit.LuaFilterComponents(tag, "iis_concat_fields", luaScript)
+	return fluentbit.LuaFilterComponents(tag, iisMergeRecordFieldsLuaFunction, iisMergeRecordFieldsLuaScriptContents)
 }
 
 // Processors implements the OTEL concatenation using ModifyFields + CustomConvertFunc
