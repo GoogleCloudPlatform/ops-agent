@@ -1,1 +1,86 @@
-- config_error: "processor \"processor0\" has invalid configuration: unimplemented"
+- entries:
+  - httpRequest:
+      protocol: HTTP/1.1
+      referer: http://localhost/
+      remoteIp: "::1"
+      requestMethod: GET
+      requestUrl: /iisstart.png
+      serverIp: "::1:80"
+      status: 200
+      userAgent: Mozilla/5.0+(Windows+NT+10.0;+WOW64;+Trident/7.0;+rv:11.0)+like+Gecko
+    jsonPayload:
+      sc_substatus: "0"
+      sc_win32_status: "0"
+      time_taken: "18"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/iis_access
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2022-03-11T01:26:30Z
+  - httpRequest:
+      protocol: HTTP/1.1
+      referer: -
+      remoteIp: "::1"
+      requestMethod: GET
+      requestUrl: /
+      serverIp: "::1:80"
+      status: 200
+      userAgent: Mozilla/5.0+(Windows+NT+10.0;+WOW64;+Trident/7.0;+rv:11.0)+like+Gecko
+    jsonPayload:
+      sc_substatus: "0"
+      sc_win32_status: "0"
+      time_taken: "352"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/iis_access
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2022-03-11T01:26:30Z
+  - httpRequest:
+      protocol: HTTP/1.1
+      serverIp: <nil>:<nil>
+    jsonPayload:
+      message: "2022-03-10 17:26:32 ::1 GET /favicon.ico - 80 - ::1 Mozilla/5.0+(Windows+NT+10.0;+WOW64;+Trident/7.0;+rv:11.0)+like+Gecko - 404 0 2 49 "
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/iis_access
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
+  - httpRequest:
+      protocol: HTTP/1.1
+      referer: -
+      remoteIp: "::1"
+      requestMethod: GET
+      requestUrl: /forbidden?something=something
+      serverIp: "::1:80"
+      status: 404
+      userAgent: Mozilla/5.0+(Windows+NT;+Windows+NT+10.0;+en-US)+WindowsPowerShell/5.1.26100.32370
+    jsonPayload:
+      sc_substatus: "0"
+      sc_win32_status: "2"
+      time_taken: "189"
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/iis_access
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: 2026-02-19T18:28:49Z
+  partialSuccess: true
