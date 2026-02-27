@@ -94,10 +94,16 @@ type LoggingProcessorMacro interface {
 	Expand(ctx context.Context) []InternalLoggingProcessor
 }
 
-func RegisterLoggingProcessorMacro[LPM LoggingProcessorMacro]() {
+func RegisterLoggingProcessorMacro[LPM LoggingProcessorMacro](platforms ...platform.Type) {
 	LoggingProcessorTypes.RegisterType(func() LoggingProcessor {
 		return &loggingProcessorMacroAdapter[LPM]{}
-	})
+	}, platforms...)
+}
+
+func ReplaceLoggingProcessorMacro[LPM LoggingProcessorMacro](platforms ...platform.Type) {
+	LoggingProcessorTypes.ReplaceType(func() LoggingProcessor {
+		return &loggingProcessorMacroAdapter[LPM]{}
+	}, platforms...)
 }
 
 // loggingProcessorMacroAdapter is the type used to unmarshal user configuration for a LoggingProcessorMacro and adapt its interface to the LoggingProcessor interface.
@@ -139,13 +145,13 @@ func (cp loggingProcessorMacroAdapter[LPM]) Processors(ctx context.Context) ([]o
 }
 
 // RegisterLoggingFilesProcessorMacro registers a LoggingProcessorMacro as a processor type and also registers a receiver that combines a LoggingReceiverFilesMixin with that LoggingProcessorMacro.
-func RegisterLoggingFilesProcessorMacro[LPM LoggingProcessorMacro](filesMixinConstructor func() LoggingReceiverFilesMixin) {
-	RegisterLoggingProcessorMacro[LPM]()
+func RegisterLoggingFilesProcessorMacro[LPM LoggingProcessorMacro](filesMixinConstructor func() LoggingReceiverFilesMixin, platforms ...platform.Type) {
+	RegisterLoggingProcessorMacro[LPM](platforms...)
 	RegisterLoggingReceiverMacro[*loggingFilesProcessorMacroAdapter[LPM]](func() *loggingFilesProcessorMacroAdapter[LPM] {
 		return &loggingFilesProcessorMacroAdapter[LPM]{
 			LoggingReceiverFilesMixin: filesMixinConstructor(),
 		}
-	})
+	}, platforms...)
 }
 
 type loggingFilesProcessorMacroAdapter[LPM LoggingProcessorMacro] struct {
