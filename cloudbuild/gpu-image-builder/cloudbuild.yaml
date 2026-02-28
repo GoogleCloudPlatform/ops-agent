@@ -1,0 +1,52 @@
+# cloudbuild.yaml
+steps:
+# Check for new source image. Runs 'check_source_image.sh'.
+- id: 'check-source-image'
+  name: 'gcr.io/cloud-builders/gcloud'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    chmod +x /workspace/louhi_ws/ops-agent/cloudbuild/gpu-image-builder/gpu-check_source_image.sh
+    /workspace/louhi_ws/ops-agent/cloudbuild/gpu-image-builder/check_source_image.sh "${PROJECT_ID}" \
+      "${_LOUHI_PARAM_SOURCE_IMAGE_FAMILY}" \
+      "${_LOUHI_PARAM_SOURCE_IMAGE_PROJECT}" \
+      "${_LOUHI_PARAM_OUTPUT_IMAGE_FAMILY}" \
+      "${_LOUHI_TRIGGER_TYPE}"
+  waitFor: ['-']
+
+# Conditionally build the Packer builder image. Runs 'build_packer_builder.sh'.
+- id: 'build-packer-builder'
+  name: 'gcr.io/cloud-builders/gcloud'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    chmod +x /workspace/louhi_ws/ops-agent/cloudbuild/gpu-image-builder/build_packer_builder.sh
+    /workspace/louhi_ws/ops-agent/cloudbuild/gpu-image-builder/build_packer_builder.sh "${PROJECT_ID}"
+  waitFor: ['-'] # Can run in parallel with check-source-image
+
+# Run Packer to build the GCE image, but only if 'check-source-image' signaled to RUN.
+- id: 'packer-build-gpu-image'
+  name: 'gcr.io/${PROJECT_ID}/packer'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    if [[ "$(cat /workspace/build_status.txt)" == "SKIP" ]]; then
+      echo "Skipping Packer build as source image has not changed."
+      exit 0
+    fi
+
+    /usr/bin/packer build \
+      -var "project_id=${PROJECT_ID}" \
+      -var "image_name=${_LOUHI_PARAM_OUTPUT_IMAGE_FAMILY}-$(date  -u +%Y%m%d-%H%M%S)" \
+      -var "image_family=${_LOUHI_PARAM_OUTPUT_IMAGE_FAMILY}" \
+      -var "source_image=$(cat /workspace/new_source_image.txt)" \
+      -var "source_image_project=${_LOUHI_PARAM_SOURCE_IMAGE_PROJECT}" \
+      -var "zone=us-central1-a" \
+      -var "build_id=${BUILD_ID}" \
+      /workspace/louhi_ws/ops-agent/cloudbuild/gpu-image-builder/packer.pkr.hcl
+  waitFor: ['check-source-image', 'build-packer-builder']
+
+timeout: 14400s
