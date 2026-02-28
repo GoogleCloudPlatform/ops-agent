@@ -22,6 +22,7 @@ import (
 	"slices"
 
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
+	"github.com/GoogleCloudPlatform/ops-agent/integration_test/util"
 	"github.com/go-playground/validator/v10"
 	yaml "github.com/goccy/go-yaml"
 	"go.uber.org/multierr"
@@ -294,6 +295,18 @@ func assertMetricLabels(metric *ExpectedMetric, series *monitoringpb.TimeSeries)
 	// Only expected labels must be present
 	expectedLabels := make(map[string]bool)
 	for _, expectedLabel := range metric.Labels {
+		// This is an attempt to catch a segfault we have not been
+		// able to reproduce yet. b/477046139
+		// - braydonk
+		if expectedLabel == nil {
+			panic(fmt.Sprintf(
+				`this failure case appears to occur at random in a way we can't reproduce. this panic exists to dump more information for the scenario where it occurs.
+				metric name: %v
+				expected labels: %v`,
+				metric.Type,
+				util.DumpPointerArray(metric.Labels, "%v"),
+			))
+		}
 		expectedLabels[expectedLabel.Name] = true
 	}
 	for actualLabel, actualValue := range series.Metric.Labels {
