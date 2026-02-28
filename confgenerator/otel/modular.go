@@ -18,6 +18,7 @@ package otel
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	yaml "github.com/goccy/go-yaml"
@@ -38,7 +39,8 @@ const (
 	System
 	GMP
 	OTLP
-	Logging
+	LoggingPersistentQueue
+	LoggingNonPersistentQueue
 )
 const (
 	Override ResourceDetectionMode = iota
@@ -52,8 +54,10 @@ func (t ExporterType) Name() string {
 		return ""
 	} else if t == OTel {
 		return "otel"
-	} else if t == Logging {
-		return "logging"
+	} else if t == LoggingPersistentQueue {
+		return "logging_persistent_queue"
+	} else if t == LoggingNonPersistentQueue {
+		return "logging_non_persistent_queue"
 	} else if t == OTLP {
 		return "otlp"
 	} else {
@@ -210,6 +214,7 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 			extensions[extensionName] = c.Extensions[extensionName]
 			extensionsList = append(extensionsList, extensionName)
 		}
+		slices.Sort(extensionsList)
 		service["extensions"] = extensionsList
 		configMap["extensions"] = extensions
 	}
