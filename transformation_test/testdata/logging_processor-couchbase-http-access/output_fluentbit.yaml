@@ -1,0 +1,245 @@
+- entries:
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: ""
+      remoteIp: 192.168.1.10
+      requestMethod: GET
+      requestSize: 0.0
+      requestUrl: /pools/default/buckets/travel-data
+      responseSize: 512.0
+      serverIp: ""
+      status: 200.0
+      userAgent: curl/7.68.0
+    jsonPayload:
+      host: couchbase.local
+      message: Request took 5ms
+      user: test_user
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2025-08-18T09:20:11.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: ""
+      remoteIp: 192.168.1.12
+      requestMethod: POST
+      requestSize: 0.0
+      requestUrl: /pools/default/buckets/travel-data/docs
+      responseSize: 123.0
+      serverIp: ""
+      status: 201.0
+      userAgent: python-requests/2.26.0
+    jsonPayload:
+      host: couchbase.local
+      message: Request took 12ms
+      user: test_user
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2025-08-18T09:20:42.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: ""
+      remoteIp: 192.168.1.13
+      requestMethod: GET
+      requestSize: 0.0
+      requestUrl: /pools/default/buckets/missing-data
+      responseSize: 0.0
+      serverIp: ""
+      status: 404.0
+      userAgent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)
+    jsonPayload:
+      host: couchbase.local
+      message: Request took 2ms
+      user: test_user
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2025-08-18T09:21:10.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: ""
+      remoteIp: 192.168.1.14
+      requestMethod: PUT
+      requestSize: 0.0
+      requestUrl: /pools/default/buckets/travel-data/docs/user:123
+      responseSize: 64.0
+      serverIp: ""
+      status: 500.0
+      userAgent: node-fetch/1.0
+    jsonPayload:
+      host: couchbase.local
+      message: Internal Server Error
+      user: test_user
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2025-08-18T09:21:25.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: ""
+      remoteIp: 192.168.1.15
+      requestMethod: DELETE
+      requestSize: 0.0
+      requestUrl: /pools/default/buckets/old-data
+      responseSize: 64.0
+      serverIp: ""
+      status: 403.0
+      userAgent: curl/7.88.1
+    jsonPayload:
+      host: couchbase.local
+      message: Unauthorized delete attempt
+      user: test_user
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2025-08-18T09:22:00.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: http://referrer.example.com
+      remoteIp: 192.168.1.16
+      requestMethod: GET
+      requestSize: 0.0
+      requestUrl: /pools/default/buckets/travel-data/docs?include_docs=true
+      responseSize: 0.0
+      serverIp: ""
+      status: 302.0
+      userAgent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36
+    jsonPayload:
+      host: couchbase.local
+      message: Redirected to login
+      user: test_user
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2025-08-18T09:22:35.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: ""
+      remoteIp: 192.168.1.17
+      requestMethod: HEAD
+      requestSize: 0.0
+      requestUrl: /pools/default/buckets/travel-data/docs/user:999
+      responseSize: 0.0
+      serverIp: ""
+      status: 304.0
+      userAgent: Go-http-client/1.1
+    jsonPayload:
+      host: couchbase.local
+      message: Not modified
+      user: test_user
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2025-08-18T09:23:01.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: ""
+      remoteIp: 192.168.1.18
+      requestMethod: OPTIONS
+      requestSize: 0.0
+      requestUrl: /pools/default/buckets/travel-data
+      responseSize: 0.0
+      serverIp: ""
+      status: 204.0
+      userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)
+    jsonPayload:
+      host: couchbase.local
+      message: Preflight check passed
+      user: test_user
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2025-08-18T09:23:40.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: ""
+      remoteIp: 192.168.1.19
+      requestMethod: GET
+      requestSize: 0.0
+      requestUrl: /pools/default/buckets/travel-data/docs?limit=1000
+      responseSize: 0.0
+      serverIp: ""
+      status: 413.0
+      userAgent: curl/8.0.1
+    jsonPayload:
+      host: couchbase.local
+      message: Payload too large
+      user: test_user
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2025-08-18T09:24:15.000000000Z
+  - httpRequest:
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: HTTP/1.1
+      referer: ""
+      remoteIp: 192.168.1.20
+      requestMethod: PATCH
+      requestSize: 0.0
+      requestUrl: /pools/default/buckets/travel-data/docs/user:321
+      responseSize: 128.0
+      serverIp: ""
+      status: 409.0
+      userAgent: python-requests/2.31.0
+    jsonPayload:
+      host: couchbase.local
+      message: Document conflict
+      user: test_user
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/couchbase_http_access
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2025-08-18T09:25:00.000000000Z
+  partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance
