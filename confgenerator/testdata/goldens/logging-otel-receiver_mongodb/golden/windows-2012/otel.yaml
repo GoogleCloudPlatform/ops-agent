@@ -732,17 +732,6 @@ processors:
     log_statements:
     - context: log
       statements:
-      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["__field_0"], body["json_message"]) where (body != nil and body["json_message"] != nil)
-      - delete_key(body, "json_message") where (body != nil and body["json_message"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_0"])
-      - set(body["message"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/mongodb_11:
-    error_mode: ignore
-    log_statements:
-    - context: log
-      statements:
       - "set(cache[\"__parsed_regex\"], ExtractPatternsRubyRegex(body[\"message\"], \"^(?<timestamp>[^ ]*)\\\\s+(?<s>\\\\w)\\\\s+(?<component>[^ ]+)\\\\s+\\\\[(?<context>[^\\\\]]+)]\\\\s+(?<message>.*?) *(?<ms>(\\\\d+))?(:?ms)?$\", true)) where ((body != nil and body[\"message\"] != nil) and IsMatchRubyRegex(body[\"message\"], \"^(?<timestamp>[^ ]*)\\\\s+(?<s>\\\\w)\\\\s+(?<component>[^ ]+)\\\\s+\\\\[(?<context>[^\\\\]]+)]\\\\s+(?<message>.*?) *(?<ms>(\\\\d+))?(:?ms)?$\"))"
       - delete_key(body, "message") where ((body != nil and body["message"] != nil) and (cache != nil and cache["__parsed_regex"] != nil))
       - merge_maps(body, cache["__parsed_regex"], "upsert") where (cache != nil and cache["__parsed_regex"] != nil)
@@ -798,7 +787,7 @@ processors:
       - set(cache["__setif_value"], cache["value"])
       - replace_pattern(cache["__setif_value"], "^projects/([^/]*)/traces/", "")
       - set(trace_id.string, cache["__setif_value"]) where (cache != nil and cache["value"] != nil)
-  transform/mongodb_12:
+  transform/mongodb_11:
     error_mode: ignore
     log_statements:
     - context: log
@@ -827,6 +816,25 @@ processors:
       - set(cache["mapped_value"], "WARNING") where cache["value"] == "W"
       - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
       - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
+  transform/mongodb_12:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["attributes"]) where (body != nil and body["attributes"] != nil)
+      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["__field_1"], body["json_message"]) where (body != nil and body["json_message"] != nil)
+      - set(cache["__omit_0"], false)
+      - "set(cache[\"__omit_0\"], true) where ((body != nil and body[\"attributes\"] != nil) and IsMatchRubyRegex(body[\"attributes\"], \"(?i)^\\\\{\\\\}$\"))"
+      - delete_key(body, "json_message") where (body != nil and body["json_message"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"])
+      - set(body["attributes"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(body, "attributes") where ((body != nil and body["attributes"] != nil) and cache["__omit_0"] == true)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_1"])
+      - set(body["message"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/mongodb_13:
     error_mode: ignore
     log_statements:

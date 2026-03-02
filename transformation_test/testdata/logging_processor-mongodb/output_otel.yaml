@@ -261,11 +261,19 @@
     severity: INFO
     timestamp: now
   - jsonPayload:
-      attributes: {}
       component: WTRECOV
       context: initandlisten
       id: 22430
-      message: "{\"category\":\"WT_VERB_RECOVERY_PROGRESS\",\"category_id\":34,\"msg\":\"recovery log replay has successfully finished and ran for 0 milliseconds\",\"session_name\":\"txn-recover\",\"thread\":\"1:0xffffbec76040\",\"ts_sec\":1753110028,\"ts_usec\":542739,\"verbose_level\":\"DEBUG_1\",\"verbose_level_id\":1}"
+      message:
+        category: WT_VERB_RECOVERY_PROGRESS
+        category_id: 34
+        msg: recovery log replay has successfully finished and ran for 0 milliseconds
+        session_name: txn-recover
+        thread: 1:0xffffbec76040
+        ts_sec: 1753110028
+        ts_usec: 542739
+        verbose_level: DEBUG_1
+        verbose_level_id: 1
       severity: I
       time: 2025-07-21T15:00:28.542+00:00
     labels:
@@ -280,11 +288,19 @@
     severity: INFO
     timestamp: now
   - jsonPayload:
-      attributes: {}
       component: WTRECOV
       context: initandlisten
       id: 22430
-      message: "{\"category\":\"WT_VERB_RECOVERY_PROGRESS\",\"category_id\":34,\"msg\":\"Set global recovery timestamp: (0, 0)\",\"session_name\":\"txn-recover\",\"thread\":\"1:0xffffbec76040\",\"ts_sec\":1753110028,\"ts_usec\":542790,\"verbose_level\":\"DEBUG_1\",\"verbose_level_id\":1}"
+      message:
+        category: WT_VERB_RECOVERY_PROGRESS
+        category_id: 34
+        msg: "Set global recovery timestamp: (0, 0)"
+        session_name: txn-recover
+        thread: 1:0xffffbec76040
+        ts_sec: 1753110028
+        ts_usec: 542790
+        verbose_level: DEBUG_1
+        verbose_level_id: 1
       severity: I
       time: 2025-07-21T15:00:28.542+00:00
     labels:
@@ -299,11 +315,19 @@
     severity: INFO
     timestamp: now
   - jsonPayload:
-      attributes: {}
       component: WTRECOV
       context: initandlisten
       id: 22430
-      message: "{\"category\":\"WT_VERB_RECOVERY_PROGRESS\",\"category_id\":34,\"msg\":\"Set global oldest timestamp: (0, 0)\",\"session_name\":\"txn-recover\",\"thread\":\"1:0xffffbec76040\",\"ts_sec\":1753110028,\"ts_usec\":542801,\"verbose_level\":\"DEBUG_1\",\"verbose_level_id\":1}"
+      message:
+        category: WT_VERB_RECOVERY_PROGRESS
+        category_id: 34
+        msg: "Set global oldest timestamp: (0, 0)"
+        session_name: txn-recover
+        thread: 1:0xffffbec76040
+        ts_sec: 1753110028
+        ts_usec: 542801
+        verbose_level: DEBUG_1
+        verbose_level_id: 1
       severity: I
       time: 2025-07-21T15:00:28.542+00:00
     labels:
@@ -318,11 +342,19 @@
     severity: INFO
     timestamp: now
   - jsonPayload:
-      attributes: {}
       component: WTRECOV
       context: initandlisten
       id: 22430
-      message: "{\"category\":\"WT_VERB_RECOVERY_PROGRESS\",\"category_id\":34,\"msg\":\"recovery was completed successfully and took 0ms, including 0ms for the log replay, 0ms for the rollback to stable, and 0ms for the checkpoint.\",\"session_name\":\"txn-recover\",\"thread\":\"1:0xffffbec76040\",\"ts_sec\":1753110028,\"ts_usec\":542814,\"verbose_level\":\"DEBUG_1\",\"verbose_level_id\":1}"
+      message:
+        category: WT_VERB_RECOVERY_PROGRESS
+        category_id: 34
+        msg: recovery was completed successfully and took 0ms, including 0ms for the log replay, 0ms for the rollback to stable, and 0ms for the checkpoint.
+        session_name: txn-recover
+        thread: 1:0xffffbec76040
+        ts_sec: 1753110028
+        ts_usec: 542814
+        verbose_level: DEBUG_1
+        verbose_level_id: 1
       severity: I
       time: 2025-07-21T15:00:28.542+00:00
     labels:
@@ -1244,11 +1276,19 @@
     severity: WARNING
     timestamp: now
   - jsonPayload:
-      attributes: {}
       component: WTCHKPT
       context: Checkpointer
       id: 22430
-      message: "{\"category\":\"WT_VERB_CHECKPOINT_PROGRESS\",\"category_id\":7,\"msg\":\"saving checkpoint snapshot min: 33, snapshot max: 33 snapshot count: 0, oldest timestamp: (0, 0) , meta checkpoint timestamp: (0, 0) base write gen: 1\",\"session_name\":\"WT_SESSION.checkpoint\",\"thread\":\"1:0xffffab20e680\",\"ts_sec\":1753110088,\"ts_usec\":555981,\"verbose_level\":\"DEBUG_1\",\"verbose_level_id\":1}"
+      message:
+        category: WT_VERB_CHECKPOINT_PROGRESS
+        category_id: 7
+        msg: "saving checkpoint snapshot min: 33, snapshot max: 33 snapshot count: 0, oldest timestamp: (0, 0) , meta checkpoint timestamp: (0, 0) base write gen: 1"
+        session_name: WT_SESSION.checkpoint
+        thread: 1:0xffffab20e680
+        ts_sec: 1753110088
+        ts_usec: 555981
+        verbose_level: DEBUG_1
+        verbose_level_id: 1
       severity: I
       time: 2025-07-21T15:01:28.556+00:00
     labels:
@@ -1263,11 +1303,19 @@
     severity: INFO
     timestamp: now
   - jsonPayload:
-      attributes: {}
       component: WTCHKPT
       context: Checkpointer
       id: 22430
-      message: "{\"category\":\"WT_VERB_CHECKPOINT_PROGRESS\",\"category_id\":7,\"msg\":\"saving checkpoint snapshot min: 35, snapshot max: 35 snapshot count: 0, oldest timestamp: (0, 0) , meta checkpoint timestamp: (0, 0) base write gen: 1\",\"session_name\":\"WT_SESSION.checkpoint\",\"thread\":\"1:0xffffab20e680\",\"ts_sec\":1753110148,\"ts_usec\":572218,\"verbose_level\":\"DEBUG_1\",\"verbose_level_id\":1}"
+      message:
+        category: WT_VERB_CHECKPOINT_PROGRESS
+        category_id: 7
+        msg: "saving checkpoint snapshot min: 35, snapshot max: 35 snapshot count: 0, oldest timestamp: (0, 0) , meta checkpoint timestamp: (0, 0) base write gen: 1"
+        session_name: WT_SESSION.checkpoint
+        thread: 1:0xffffab20e680
+        ts_sec: 1753110148
+        ts_usec: 572218
+        verbose_level: DEBUG_1
+        verbose_level_id: 1
       severity: I
       time: 2025-07-21T15:02:28.572+00:00
     labels:
@@ -1282,11 +1330,19 @@
     severity: INFO
     timestamp: now
   - jsonPayload:
-      attributes: {}
       component: WTCHKPT
       context: Checkpointer
       id: 22430
-      message: "{\"category\":\"WT_VERB_CHECKPOINT_PROGRESS\",\"category_id\":7,\"msg\":\"saving checkpoint snapshot min: 36, snapshot max: 36 snapshot count: 0, oldest timestamp: (0, 0) , meta checkpoint timestamp: (0, 0) base write gen: 1\",\"session_name\":\"WT_SESSION.checkpoint\",\"thread\":\"1:0xffffab20e680\",\"ts_sec\":1753110208,\"ts_usec\":584957,\"verbose_level\":\"DEBUG_1\",\"verbose_level_id\":1}"
+      message:
+        category: WT_VERB_CHECKPOINT_PROGRESS
+        category_id: 7
+        msg: "saving checkpoint snapshot min: 36, snapshot max: 36 snapshot count: 0, oldest timestamp: (0, 0) , meta checkpoint timestamp: (0, 0) base write gen: 1"
+        session_name: WT_SESSION.checkpoint
+        thread: 1:0xffffab20e680
+        ts_sec: 1753110208
+        ts_usec: 584957
+        verbose_level: DEBUG_1
+        verbose_level_id: 1
       severity: I
       time: 2025-07-21T15:03:28.585+00:00
     labels:
@@ -1301,11 +1357,19 @@
     severity: INFO
     timestamp: now
   - jsonPayload:
-      attributes: {}
       component: WTCHKPT
       context: Checkpointer
       id: 22430
-      message: "{\"category\":\"WT_VERB_CHECKPOINT_PROGRESS\",\"category_id\":7,\"msg\":\"saving checkpoint snapshot min: 37, snapshot max: 37 snapshot count: 0, oldest timestamp: (0, 0) , meta checkpoint timestamp: (0, 0) base write gen: 1\",\"session_name\":\"WT_SESSION.checkpoint\",\"thread\":\"1:0xffffab20e680\",\"ts_sec\":1753110268,\"ts_usec\":600180,\"verbose_level\":\"DEBUG_1\",\"verbose_level_id\":1}"
+      message:
+        category: WT_VERB_CHECKPOINT_PROGRESS
+        category_id: 7
+        msg: "saving checkpoint snapshot min: 37, snapshot max: 37 snapshot count: 0, oldest timestamp: (0, 0) , meta checkpoint timestamp: (0, 0) base write gen: 1"
+        session_name: WT_SESSION.checkpoint
+        thread: 1:0xffffab20e680
+        ts_sec: 1753110268
+        ts_usec: 600180
+        verbose_level: DEBUG_1
+        verbose_level_id: 1
       severity: I
       time: 2025-07-21T15:04:28.600+00:00
     labels:
@@ -1320,11 +1384,19 @@
     severity: INFO
     timestamp: now
   - jsonPayload:
-      attributes: {}
       component: WTCHKPT
       context: Checkpointer
       id: 22430
-      message: "{\"category\":\"WT_VERB_CHECKPOINT_PROGRESS\",\"category_id\":7,\"msg\":\"saving checkpoint snapshot min: 38, snapshot max: 38 snapshot count: 0, oldest timestamp: (0, 0) , meta checkpoint timestamp: (0, 0) base write gen: 1\",\"session_name\":\"WT_SESSION.checkpoint\",\"thread\":\"1:0xffffab20e680\",\"ts_sec\":1753110328,\"ts_usec\":612727,\"verbose_level\":\"DEBUG_1\",\"verbose_level_id\":1}"
+      message:
+        category: WT_VERB_CHECKPOINT_PROGRESS
+        category_id: 7
+        msg: "saving checkpoint snapshot min: 38, snapshot max: 38 snapshot count: 0, oldest timestamp: (0, 0) , meta checkpoint timestamp: (0, 0) base write gen: 1"
+        session_name: WT_SESSION.checkpoint
+        thread: 1:0xffffab20e680
+        ts_sec: 1753110328
+        ts_usec: 612727
+        verbose_level: DEBUG_1
+        verbose_level_id: 1
       severity: I
       time: 2025-07-21T15:05:28.612+00:00
     labels:
