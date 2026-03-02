@@ -57,9 +57,6 @@
       client: 127.0.0.1
       level: error
       message: "client denied by server configuration: /export/home/live/ap/htdocs/test "
-      module: ""
-      pid: ""
-      tid: ""
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/apache_error

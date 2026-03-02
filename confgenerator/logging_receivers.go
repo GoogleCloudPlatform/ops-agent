@@ -206,6 +206,10 @@ func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.Receiv
 		"include_file_name":             false,
 		"preserve_leading_whitespaces":  true,
 		"preserve_trailing_whitespaces": true,
+		"fingerprint_size":              "5kb",
+	}
+	if !r.TransformationTest {
+		receiver_config["storage"] = fileStorageExtensionID()
 	}
 	if i := r.WildcardRefreshInterval; i != nil {
 		receiver_config["poll_interval"] = i.String()
