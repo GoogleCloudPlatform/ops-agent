@@ -33,7 +33,7 @@ func (MetricsReceiverVarnish) Type() string {
 }
 
 func (r MetricsReceiverVarnish) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
-	return []otel.ReceiverPipeline{confgenerator.ConvertToOtlpExporter(otel.ReceiverPipeline{
+	return []otel.ReceiverPipeline{confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "varnish",
 			Config: map[string]interface{}{

@@ -1,0 +1,202 @@
+- entries:
+  - jsonPayload:
+      ActivityID: "{000000000-0000-0000-0000-000000000000}"
+      Channel: Security
+      Computer: test-computer
+      EventID: 4567
+      EventRecordID: 34567
+      Keywords: "0x8020000000000000"
+      Level: 0
+      Message: |-
+        Special privileges assigned to new logon.
+        
+        Subject:
+        	Security ID:		S-0-0-00
+        	Account Name:		SYSTEM
+        	Account Domain:		NT AUTHORITY
+        	Logon ID:		0x000
+        
+        Privileges:		SeAssignPrimaryTokenPrivilege
+        			SeTcbPrivilege
+        			SeSecurityPrivilege
+        			SeTakeOwnershipPrivilege
+        			SeLoadDriverPrivilege
+        			SeBackupPrivilege
+        			SeRestorePrivilege
+        			SeDebugPrivilege
+        			SeAuditPrivilege
+        			SeSystemEnvironmentPrivilege
+        			SeImpersonatePrivilege
+        			SeDelegateSessionUserImpersonatePrivilege
+      Opcode: 0
+      ProcessID: 820
+      ProviderGuid: "{11111111-2222-3333-4444-555555555555}"
+      ProviderName: Microsoft-Windows-Security-Auditing
+      Qualifiers: 0
+      RelatedActivityID: ""
+      StringInserts:
+      - S-0-0-00
+      - SYSTEM
+      - NT AUTHORITY
+      - "0x000"
+      - |-
+        SeAssignPrimaryTokenPrivilege
+        			SeTcbPrivilege
+        			SeSecurityPrivilege
+        			SeTakeOwnershipPrivilege
+        			SeLoadDriverPrivilege
+        			SeBackupPrivilege
+        			SeRestorePrivilege
+        			SeDebugPrivilege
+        			SeAuditPrivilege
+        			SeSystemEnvironmentPrivilege
+        			SeImpersonatePrivilege
+        			SeDelegateSessionUserImpersonatePrivilege
+      Task: 56789
+      ThreadId: 6080
+      TimeCreated: 2026-01-16 18:45:59.5782153 +0000
+      UserId: ""
+      Version: 0
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
+  - jsonPayload:
+      ActivityID: "{000000000-0000-0000-0000-000000000000}"
+      Channel: Security
+      Computer: test-computer
+      EventID: 4567
+      EventRecordID: 34567
+      Keywords: "0x8020000000000000"
+      Level: 0
+      Message: |-
+        Special privileges assigned to new logon.
+        
+        Subject:
+        	Security ID:		S-0-0-00
+        	Account Name:		SYSTEM
+        	Account Domain:		NT AUTHORITY
+        	Logon ID:		0x000
+        
+        Privileges:		SeAssignPrimaryTokenPrivilege
+        			SeTcbPrivilege
+        			SeSecurityPrivilege
+        			SeTakeOwnershipPrivilege
+        			SeLoadDriverPrivilege
+        			SeBackupPrivilege
+        			SeRestorePrivilege
+        			SeDebugPrivilege
+        			SeAuditPrivilege
+        			SeSystemEnvironmentPrivilege
+        			SeImpersonatePrivilege
+        			SeDelegateSessionUserImpersonatePrivilege
+      Opcode: 0
+      ProcessID: 820
+      ProviderGuid: "{11111111-2222-3333-4444-555555555555}"
+      ProviderName: Microsoft-Windows-Security-Auditing
+      Qualifiers: 0
+      RelatedActivityID: ""
+      StringInserts:
+      - S-0-0-00
+      - SYSTEM
+      - NT AUTHORITY
+      - "0x000"
+      - |-
+        SeAssignPrimaryTokenPrivilege
+        			SeTcbPrivilege
+        			SeSecurityPrivilege
+        			SeTakeOwnershipPrivilege
+        			SeLoadDriverPrivilege
+        			SeBackupPrivilege
+        			SeRestorePrivilege
+        			SeDebugPrivilege
+        			SeAuditPrivilege
+        			SeSystemEnvironmentPrivilege
+        			SeImpersonatePrivilege
+        			SeDelegateSessionUserImpersonatePrivilege
+      Task: 56789
+      ThreadId: 6080
+      TimeCreated: 2026-01-16 18:45:59.5782153 +0000
+      UserId: ""
+      Version: 0
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
+  - jsonPayload:
+      ActivityID: ""
+      Channel: System
+      Computer: test-computer
+      EventID: 7036
+      EventRecordID: 11223
+      Keywords: "0x8080000000000000"
+      Level: 4
+      Message: The Software Protection service entered the stopped state.
+      Opcode: 0
+      ProcessID: 789
+      ProviderGuid: "{11111111-2222-3333-4444-555555555555}"
+      ProviderName: Service Control Manager
+      Qualifiers: 12345
+      RelatedActivityID: ""
+      StringInserts:
+      - Software Protection
+      - stopped
+      - 7300700070007300760063002F0031000000
+      Task: 0
+      ThreadId: 5678
+      TimeCreated: 2025-12-14 05:26:29.0709018 +0000
+      UserId: ""
+      Version: 0
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
+  - jsonPayload:
+      ActivityID: ""
+      Channel: System
+      Computer: test-computer
+      EventID: 7036
+      EventRecordID: 22334
+      Keywords: "0x8080000000000000"
+      Level: 4
+      Message: The Software Protection service entered the running state.
+      Opcode: 0
+      ProcessID: 789
+      ProviderGuid: "{11111111-2222-3333-4444-555555555555}"
+      ProviderName: Service Control Manager
+      Qualifiers: 12345
+      RelatedActivityID: ""
+      StringInserts:
+      - Software Protection
+      - running
+      - 7300700070007300760063002F0034000000
+      Task: 0
+      ThreadId: 9876
+      TimeCreated: 2025-12-14 05:25:55.5387001 +0000
+      UserId: ""
+      Version: 0
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
+  partialSuccess: true

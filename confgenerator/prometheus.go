@@ -90,28 +90,19 @@ func (r PrometheusMetrics) Pipelines(ctx context.Context) ([]otel.ReceiverPipeli
 			}
 		}
 	}
-	exp_otlp_exporter := experimentsFromContext(ctx)["otlp_exporter"]
-	metrics_components := []otel.Component{otel.GroupByGMPAttrs_OTTL()}
-	exporter := map[string]otel.ExporterType{
-		"metrics": otel.GMP,
-	}
-	if exp_otlp_exporter {
-		metrics_components = append(metrics_components, otel.MetricUnknownCounter())
-		metrics_components = append(metrics_components, otel.MetricStartTime())
-		metrics_components = append(metrics_components, otel.GCPProjectID(resource.ProjectName()))
-		exporter["metrics"] = otel.OTLP
-	}
-	return []otel.ReceiverPipeline{{
+	return []otel.ReceiverPipeline{ConvertPrometheusExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: prometheusToOtelComponent(r),
 		Processors: map[string][]otel.Component{
 			// Expect metrics, without any additional processing.
-			"metrics": metrics_components,
+			"metrics": []otel.Component{otel.GroupByGMPAttrs_OTTL()},
 		},
-		ExporterTypes: exporter,
+		ExporterTypes: map[string]otel.ExporterType{
+			"metrics": otel.GMP,
+		},
 		ResourceDetectionModes: map[string]otel.ResourceDetectionMode{
 			"metrics": otel.None,
 		},
-	}}, nil
+	}, ctx)}, nil
 }
 
 // Generate otel components for the prometheus config used. It is the same config except

@@ -15,3 +15,15 @@ SELECT * FROM logs ORDER BY created_at DESC LIMIT 100;
 # Query_time: 5.875439  Lock_time: 0.000311 Rows_sent: 0  Rows_examined: 50000
 SET timestamp=1753065665;
 SELECT COUNT(*) FROM sessions WHERE last_active < NOW() - INTERVAL 1 MONTH;
+
+# Time: 2025-08-22T16:01:05.333333Z
+# User@Host: user1[user1] @ 172.18.0.2 []
+# Full_scan: Yes  Full_join: No  Tmp_table: No  Tmp_table_on_disk: Yes
+SET timestamp=1753065669;
+SELECT * FROM logs ORDER BY created_at DESC LIMIT 100;
+
+# Time: 2025-09-22T16:01:05.333333Z
+# User@Host: user1[user1] @ 172.18.0.2 []
+# Query_time: 5.875439  Lock_time: 0.000311 Rows_sent: 0  Rows_examined: 50000
+SET timestamp=1753065671;
+SELECT * FROM logs ORDER BY created_at DESC LIMIT 100;

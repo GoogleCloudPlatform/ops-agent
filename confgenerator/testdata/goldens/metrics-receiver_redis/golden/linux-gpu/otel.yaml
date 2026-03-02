@@ -787,6 +787,7 @@ service:
       - redis/redis
   telemetry:
     metrics:
+      level: detailed
       readers:
       - pull:
           exporter:

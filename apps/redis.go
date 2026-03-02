@@ -51,7 +51,7 @@ func (r MetricsReceiverRedis) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 		transport = "tcp"
 	}
 
-	return []otel.ReceiverPipeline{confgenerator.ConvertToOtlpExporter(otel.ReceiverPipeline{
+	return []otel.ReceiverPipeline{confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "redis",
 			Config: map[string]interface{}{

@@ -727,6 +727,7 @@ service:
       - otlp/otlp
   telemetry:
     metrics:
+      level: detailed
       readers:
       - pull:
           exporter:

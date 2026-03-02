@@ -53,7 +53,7 @@ to run the tests on something other than the defaults (`us-central1-b` for
 ZONES and `debian-cloud:debian-11` for `IMAGE_SPECS`).
 
 The above command will run the tests against the stable Ops Agent. To test
-against a pre-built but unreleased agent, you can use add the
+against a pre-built but unreleased agent, you can add the
 `AGENT_PACKAGES_IN_GCS` environment variable onto your command like this:
 
 ```
@@ -74,6 +74,27 @@ Googlers can also provide a `REPO_SUFFIX` to test an agent built by our release 
 When doing so, you may need to supply `ARTIFACT_REGISTRY_REGION=us` as well, once
 b/266410466 is completed.
 
+To run a specific test instead of the entire suite, you can add the
+`INTEGRATION_TEST_FILTER` environment variable onto your command like this:
+
+```
+INTEGRATION_TEST_FILTER=TestDefaultMetricsNoProxy \
+```
+
+This internally gets passed to `go test -test.run=...`, so regexp is also supported. For example, to run two tests at once:
+
+```
+INTEGRATION_TEST_FILTER='(TestDefaultMetricsNoProxy|TestSyslogTCP)' \
+```
+
+To only run the `default` logs test and not the `otel_logging` experiment:
+
+```
+INTEGRATION_TEST_FILTER='TestDefaultMetricsNoProxy/.*/default' \
+```
+
+(Note that the `/.*/` is needed to account for the image spec.)
+
 ## Third Party Apps Test
 
 This test attempts to verify, for each application in `supported_applications.txt`,
@@ -91,16 +112,28 @@ make third_party_apps_test PROJECT=${PROJECT} TRANSFERS_BUCKET=${TRANSFERS_BUCKE
 
 As above, you can supply `AGENT_PACKAGES_IN_GCS` or `REPO_SUFFIX` to test a pre-built agent.
 
-Additionally, to run specific third party applications you can use the command:
-
-```
-go test -v ./integration_test \
-    -tags=integration_test \
-    -test.run="TestThirdPartyApps/.*/(nvml|dcgm)"
-```
-
 Make sure the platform you specify is included in the `IMAGE_SPECS` environment
 variable.
+
+To run specific third party applications you can add
+`THIRD_PARTY_APPS`:
+
+```
+THIRD_PARTY_APPS=nvml \
+```
+
+You can test multiple apps at once:
+
+```
+THIRD_PARTY_APPS='(nvml|dcgm)' \
+```
+
+The default endpoint under test is `googlecloudmonitoring`. To change this, you
+can add `THIRD_PARTY_APPS_ENDPOINT`:
+
+```
+THIRD_PARTY_APPS_ENDPOINT=otlphttp \
+```
 
 ### Testing Flow
 

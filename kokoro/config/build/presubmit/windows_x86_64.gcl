@@ -1,3 +1,10 @@
 import '../common.gcl' as common
 
-config build = common.windows_build {}
+config build = common.windows_build {
+  params {
+    environment {
+      // For presubmit to tell the build script to also package
+      PACKAGE = 'true'
+    }
+  }
+}

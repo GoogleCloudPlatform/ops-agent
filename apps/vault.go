@@ -125,7 +125,7 @@ func (r MetricsReceiverVault) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 	queries = append(queries, metricRenewRevokeTransforms...)
 	queries = append(queries, metricDetailTransforms...)
 
-	return []otel.ReceiverPipeline{confgenerator.ConvertToOtlpExporter(otel.ReceiverPipeline{
+	return []otel.ReceiverPipeline{confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "prometheus",
 			Config: map[string]interface{}{

@@ -1,0 +1,13 @@
+# This test is only intended to verify the Otel transformations required to generate
+# a log entry output format similar to the fluent-bit windows event log receiver.
+# When setting "include_log_record_original: true" the "windowseventlogreceiver" sets
+# `attributes."log.record.original"` with the original XML. We replicate this behaviour
+# in the test by moving the parsed "log.record.original" JSON field to "labels" (otel "attributes").
+- type: parse_json
+  time_key: time
+  time_format: "%Y-%m-%dT%H:%M:%S.%L%z"
+- type: modify_fields
+  fields:
+    labels."log.record.original":
+      move_from: jsonPayload."log.record.original"
+- type: windows_event_log_v2

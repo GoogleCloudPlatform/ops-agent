@@ -136,7 +136,7 @@ func (r MetricsReceiverRabbitmq) Pipelines(ctx context.Context) ([]otel.Receiver
 		"tls":                 r.TLSConfig(true),
 	}
 
-	return []otel.ReceiverPipeline{confgenerator.ConvertToOtlpExporter(otel.ReceiverPipeline{
+	return []otel.ReceiverPipeline{confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type:   "rabbitmq",
 			Config: cfg,

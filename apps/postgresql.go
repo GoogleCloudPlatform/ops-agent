@@ -75,7 +75,7 @@ func (r MetricsReceiverPostgresql) Pipelines(ctx context.Context) ([]otel.Receiv
 		cfg["tls"] = r.TLSConfig(true)
 	}
 
-	return []otel.ReceiverPipeline{confgenerator.ConvertToOtlpExporter(otel.ReceiverPipeline{
+	return []otel.ReceiverPipeline{confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type:   "postgresql",
 			Config: cfg,

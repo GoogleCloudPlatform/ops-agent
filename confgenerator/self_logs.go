@@ -111,7 +111,7 @@ func generateInputFluentBitSelfLogsComponents(ctx context.Context, logLevel stri
 		BufferInMemory: true,
 	}.Components(ctx, fluentBitSelfLogsTag)...)
 	out = append(out, LoggingProcessorParseRegex{
-		Regex:       `(?<message>\[[ ]*(?<time>\d+\/\d+\/\d+ \d+:\d+:\d+)] \[[ ]*(?<severity>[a-z]+)\].*)`,
+		Regex:       `(?<message>\[[ ]*(?<time>\d+\/\d+\/\d+ \d+:\d+:\d+)(?:\.\d+)?\] \[[ ]*(?<severity>[a-z]+)\].*)`,
 		PreserveKey: true,
 		ParserShared: ParserShared{
 			TimeKey:    "time",

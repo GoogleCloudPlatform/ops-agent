@@ -13,8 +13,12 @@
 - module: logging
   feature: service:otel_logging
   key: otel_logging_supported_config
-  value: "false"
+  value: "true"
 - module: logging
   feature: receivers:iis_access
   key: "[0].enabled"
   value: "true"
+- module: logging
+  feature: receivers:iis_access
+  key: "[0].include_paths.__length"
+  value: "1"

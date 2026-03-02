@@ -76,7 +76,7 @@ func (r MetricsReceiverAerospike) Pipelines(ctx context.Context) ([]otel.Receive
 		endpoint = r.Endpoint
 	}
 
-	return []otel.ReceiverPipeline{confgenerator.ConvertToOtlpExporter(otel.ReceiverPipeline{
+	return []otel.ReceiverPipeline{confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "aerospike",
 			Config: map[string]interface{}{
