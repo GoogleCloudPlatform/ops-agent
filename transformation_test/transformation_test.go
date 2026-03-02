@@ -78,6 +78,7 @@ var (
 		".*vault.*",
 		".*wildfly.*",
 		".*zookeeper.*",
+		".*ParseMultiline.*",
 	})
 )
 
