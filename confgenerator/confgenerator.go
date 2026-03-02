@@ -375,11 +375,17 @@ func (p PipelineInstance) OTelComponents(ctx context.Context) (map[string]otel.R
 			prefix = fmt.Sprintf("%s_%s", p.PipelineType, prefix)
 		}
 
-		if processors, ok := receiverPipeline.Processors["logs"]; ok {
+		if _, ok := receiverPipeline.Processors["logs"]; ok {
 			receiverPipeline.Processors["logs"] = append(
-				processors,
+				receiverPipeline.Processors["logs"],
 				otelSetLogNameComponents(ctx, p.RID)...,
 			)
+			if p.Receiver.Type() == "fluent_forward" {
+				receiverPipeline.Processors["logs"] = append(
+					receiverPipeline.Processors["logs"],
+					otelFluentForwardSetLogNameComponents()...,
+				)
+			}
 		}
 
 		outR[receiverPipelineName] = receiverPipeline
