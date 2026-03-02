@@ -147,7 +147,7 @@ func (p MongodbProcessors) Processors(ctx context.Context) ([]otel.Component, er
 // FluentBitJsonLogComponents are the fluentbit components for parsing log messages that are json formatted.
 // these are generally messages from mongo with versions greater than or equal to 4.4
 // documentation: https://docs.mongodb.com/v4.4/reference/log-messages/#log-message-format
-func (p *MongodbProcessors) FluentBitJsonLogComponents(ctx context.Context, tag, uid string) []fluentbit.Component {
+func (p MongodbProcessors) FluentBitJsonLogComponents(ctx context.Context, tag, uid string) []fluentbit.Component {
 	c := p.FluentbitJsonParserWithTimeKey(ctx, tag, uid)
 
 	c = append(c, p.FluentbitPromoteWiredTiger(tag, uid)...)
@@ -156,7 +156,7 @@ func (p *MongodbProcessors) FluentBitJsonLogComponents(ctx context.Context, tag,
 	return c
 }
 
-// JsonLogComponents are the fluentbit components for parsing log messages that are json formatted.
+// JsonLogComponents are the components for parsing log messages that are json formatted.
 // these are generally messages from mongo with versions greater than or equal to 4.4
 // documentation: https://docs.mongodb.com/v4.4/reference/log-messages/#log-message-format
 func (p MongodbProcessors) JsonLogComponents() []confgenerator.InternalLoggingProcessor {
@@ -170,7 +170,7 @@ func (p MongodbProcessors) JsonLogComponents() []confgenerator.InternalLoggingPr
 
 // FluentbitJsonParserWithTimeKey requires promotion of the nested timekey for the json parser so we must
 // first promote the $date field from the "t" field before declaring the parser
-func (p *MongodbProcessors) FluentbitJsonParserWithTimeKey(ctx context.Context, tag, uid string) []fluentbit.Component {
+func (p MongodbProcessors) FluentbitJsonParserWithTimeKey(ctx context.Context, tag, uid string) []fluentbit.Component {
 	c := []fluentbit.Component{}
 
 	jsonParser := &confgenerator.LoggingProcessorParseJson{
@@ -259,8 +259,7 @@ func (p MongodbProcessors) jsonParserWithTimeKey() []confgenerator.InternalLoggi
 		},
 	})
 
-	// have to bring $date to top level in order for it to be parsed as timeKey
-	// see https://github.com/fluent/fluent-bit/issues/1013
+	// bring $date to top level in order for it to parse as timeKey
 	c = append(c, &confgenerator.LoggingProcessorModifyFields{
 		Fields: map[string]*confgenerator.ModifyField{
 			"jsonPayload.time": {
@@ -290,7 +289,7 @@ func (p MongodbProcessors) jsonParserWithTimeKey() []confgenerator.InternalLoggi
 
 // severityParser is used by both regex and json parser to ensure an "s" field on the entry gets translated
 // to a valid logging.googleapis.com/seveirty field
-func (p *MongodbProcessors) severityParser() confgenerator.InternalLoggingProcessor {
+func (p MongodbProcessors) severityParser() confgenerator.InternalLoggingProcessor {
 	return confgenerator.LoggingProcessorModifyFields{
 		Fields: map[string]*confgenerator.ModifyField{
 			"jsonPayload.severity": {
@@ -317,7 +316,7 @@ func (p *MongodbProcessors) severityParser() confgenerator.InternalLoggingProces
 	}
 }
 
-func (p *MongodbProcessors) FluentbitRenames(tag, uid string) []fluentbit.Component {
+func (p MongodbProcessors) FluentbitRenames(tag, uid string) []fluentbit.Component {
 	r := []fluentbit.Component{}
 	renames := []struct {
 		src  string
@@ -361,7 +360,7 @@ func (p MongodbProcessors) renames() []confgenerator.InternalLoggingProcessor {
 	return r
 }
 
-func (p *MongodbProcessors) FluentbitPromoteWiredTiger(tag, uid string) []fluentbit.Component {
+func (p MongodbProcessors) FluentbitPromoteWiredTiger(tag, uid string) []fluentbit.Component {
 	// promote messages that are WiredTiger messages and are nested in attr.message
 	addPrefix := "temp_attributes_"
 	upNest := fluentbit.Component{
@@ -415,7 +414,7 @@ func (p MongodbProcessors) promoteWiredTiger() []confgenerator.InternalLoggingPr
 	return c
 }
 
-func (p *MongodbProcessors) FluentBitRegexLogComponents(tag, uid string) []fluentbit.Component {
+func (p MongodbProcessors) FluentBitRegexLogComponents(tag, uid string) []fluentbit.Component {
 	c := []fluentbit.Component{}
 	parseKey := "message"
 	parser, parserName := fluentbit.ParserComponentBase("%Y-%m-%dT%H:%M:%S.%L%z", "timestamp", map[string]string{
