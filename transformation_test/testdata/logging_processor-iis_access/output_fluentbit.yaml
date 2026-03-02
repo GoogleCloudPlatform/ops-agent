@@ -1,12 +1,18 @@
 - entries:
   - httpRequest:
-      protocol: HTTP/1.1
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: ""
       referer: http://localhost/
       remoteIp: "::1"
       requestMethod: GET
+      requestSize: 0.0
       requestUrl: /iisstart.png
+      responseSize: 0.0
       serverIp: "::1:80"
-      status: 200
+      status: 200.0
       userAgent: Mozilla/5.0+(Windows+NT+10.0;+WOW64;+Trident/7.0;+rv:11.0)+like+Gecko
     jsonPayload:
       sc_substatus: "0"
@@ -15,20 +21,22 @@
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/iis_access
-    logName: projects/my-project/logs/my-log-name
-    resource:
-      labels:
-        instance_id: test-instance-id
-        zone: test-zone
-      type: gce_instance
-    timestamp: 2022-03-11T01:26:30Z
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2022-03-10T17:26:30.000000000Z
   - httpRequest:
-      protocol: HTTP/1.1
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: ""
+      referer: ""
       remoteIp: "::1"
       requestMethod: GET
+      requestSize: 0.0
       requestUrl: /
+      responseSize: 0.0
       serverIp: "::1:80"
-      status: 200
+      status: 200.0
       userAgent: Mozilla/5.0+(Windows+NT+10.0;+WOW64;+Trident/7.0;+rv:11.0)+like+Gecko
     jsonPayload:
       sc_substatus: "0"
@@ -37,57 +45,55 @@
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/iis_access
-    logName: projects/my-project/logs/my-log-name
-    resource:
-      labels:
-        instance_id: test-instance-id
-        zone: test-zone
-      type: gce_instance
-    timestamp: 2022-03-11T01:26:30Z
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2022-03-10T17:26:30.000000000Z
   - httpRequest:
-      protocol: HTTP/1.1
-      remoteIp: "::1"
-      requestMethod: GET
-      requestUrl: /favicon.ico
-      serverIp: "::1:80"
-      status: 404
-      userAgent: Mozilla/5.0+(Windows+NT+10.0;+WOW64;+Trident/7.0;+rv:11.0)+like+Gecko
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: ""
+      referer: ""
+      remoteIp: ""
+      requestMethod: ""
+      requestSize: 0.0
+      requestUrl: ""
+      responseSize: 0.0
+      serverIp: ""
+      status: 0.0
+      userAgent: ""
     jsonPayload:
-      sc_substatus: "0"
-      sc_win32_status: "2"
-      time_taken: "49"
+      message: "2022-03-10 17:26:32 ::1 GET /favicon.ico - 80 - ::1 Mozilla/5.0+(Windows+NT+10.0;+WOW64;+Trident/7.0;+rv:11.0)+like+Gecko - 404 0 2 49 "
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/iis_access
-    logName: projects/my-project/logs/my-log-name
-    resource:
-      labels:
-        instance_id: test-instance-id
-        zone: test-zone
-      type: gce_instance
-    timestamp: 2022-03-11T01:26:32Z
+    logName: projects/my-project/logs/transformation_test
+    timestamp: now
   - httpRequest:
-      protocol: HTTP/1.1
+      cacheFillBytes: 0.0
+      cacheHit: false
+      cacheLookup: false
+      cacheValidatedWithOriginServer: false
+      protocol: ""
+      referer: ""
       remoteIp: "::1"
       requestMethod: GET
+      requestSize: 0.0
       requestUrl: /forbidden?something=something
+      responseSize: 0.0
       serverIp: "::1:80"
-      status: 404
+      status: 404.0
       userAgent: Mozilla/5.0+(Windows+NT;+Windows+NT+10.0;+en-US)+WindowsPowerShell/5.1.26100.32370
     jsonPayload:
-      cs_bytes: "184"
-      sc_bytes: "5035"
       sc_substatus: "0"
       sc_win32_status: "2"
       time_taken: "189"
     labels:
       compute.googleapis.com/resource_name: hostname
       logging.googleapis.com/instrumentation_source: agent.googleapis.com/iis_access
-    logName: projects/my-project/logs/my-log-name
-    resource:
-      labels:
-        instance_id: test-instance-id
-        zone: test-zone
-      type: gce_instance
-    timestamp: 2026-02-19T18:28:49Z
+    logName: projects/my-project/logs/transformation_test
+    timestamp: 2026-02-19T10:28:49.000000000Z
   partialSuccess: true
+  resource:
+    labels: {}
+    type: gce_instance
