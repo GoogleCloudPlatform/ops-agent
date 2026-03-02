@@ -631,6 +631,15 @@ processors:
       statements:
       - set(name, "agent.googleapis.com/mongodb")
       - set(version, "1.0")
+  transform/mongodb_3:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
@@ -746,6 +755,7 @@ service:
       - normalizesums/mongodb_0
       - metricstransform/mongodb_1
       - transform/mongodb_2
+      - transform/mongodb_3
       - resourcedetection/_global_0
       receivers:
       - mongodb/mongodb
