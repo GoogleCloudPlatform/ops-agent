@@ -122,36 +122,23 @@ func (p MongodbProcessors) Components(ctx context.Context, tag, uid string) []fl
 }
 
 func (p MongodbProcessors) Processors(ctx context.Context) ([]otel.Component, error) {
-	c := []otel.Component{}
+	processors := []confgenerator.InternalLoggingProcessor{}
+	processors = append(processors, p.JsonLogComponents()...)
+	processors = append(processors, p.RegexLogComponents())
+	processors = append(processors, p.severityParser())
+	processors = append(processors, p.PostProcessing())
 
-	for _, p := range p.JsonLogComponents() {
-		p, ok := p.(confgenerator.InternalOTelProcessor)
+	c := []otel.Component{}
+	for _, p := range processors {
+		op, ok := p.(confgenerator.InternalOTelProcessor)
 		if !ok {
 			continue
 		}
-		processors, err := p.Processors(ctx)
+		components, err := op.Processors(ctx)
 		if err != nil {
 			return nil, err
 		}
-		c = append(c, processors...)
-	}
-
-	rlc, ok := p.RegexLogComponents().(confgenerator.InternalOTelProcessor)
-	if ok {
-		processors, err := rlc.Processors(ctx)
-		if err != nil {
-			return nil, err
-		}
-		c = append(c, processors...)
-	}
-
-	sp, ok := p.severityParser().(confgenerator.InternalOTelProcessor)
-	if ok {
-		processors, err := sp.Processors(ctx)
-		if err != nil {
-			return nil, err
-		}
-		c = append(c, processors...)
+		c = append(c, components...)
 	}
 
 	return c, nil
@@ -177,13 +164,6 @@ func (p MongodbProcessors) JsonLogComponents() []confgenerator.InternalLoggingPr
 
 	c = append(c, p.promoteWiredTiger()...)
 	c = append(c, p.renames()...)
-	c = append(c, &confgenerator.LoggingProcessorModifyFields{
-		Fields: map[string]*confgenerator.ModifyField{
-			`jsonPayload.message`: {
-				MoveFrom: `jsonPayload.json_message`,
-			},
-		},
-	})
 
 	return c
 }
@@ -485,6 +465,19 @@ func (p MongodbProcessors) RegexLogComponents() confgenerator.InternalLoggingPro
 		},
 		Regex: `^(?<timestamp>[^ ]*)\s+(?<s>\w)\s+(?<component>[^ ]+)\s+\[(?<context>[^\]]+)]\s+(?<message>.*?) *(?<ms>(\d+))?(:?ms)?$`,
 		Field: "message",
+	}
+}
+
+func (p MongodbProcessors) PostProcessing() confgenerator.InternalLoggingProcessor {
+	return confgenerator.LoggingProcessorModifyFields{
+		Fields: map[string]*confgenerator.ModifyField{
+			`jsonPayload.message`: {
+				MoveFrom: `jsonPayload.json_message`,
+			},
+			`jsonPayload.attributes`: {
+				OmitIf: `jsonPayload.attributes = {}`,
+			},
+		},
 	}
 }
 
