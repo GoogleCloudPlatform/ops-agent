@@ -20,6 +20,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
 // LoggingReceiverMacro is a logging component that generates other
@@ -30,10 +31,10 @@ type LoggingReceiverMacro interface {
 	Expand(ctx context.Context) (InternalLoggingReceiver, []InternalLoggingProcessor)
 }
 
-func RegisterLoggingReceiverMacro[LRM LoggingReceiverMacro](constructor func() LRM) {
+func RegisterLoggingReceiverMacro[LRM LoggingReceiverMacro](constructor func() LRM, platforms ...platform.Type) {
 	LoggingReceiverTypes.RegisterType(func() LoggingReceiver {
 		return &loggingReceiverMacroAdapter[LRM]{ReceiverMacro: constructor()}
-	})
+	}, platforms...)
 }
 
 // loggingReceiverMacroAdapter is the type used to unmarshal user configuration for a LoggingReceiverMacro and adapt its interface to the LoggingReceiver interface.
@@ -62,14 +63,14 @@ func (cr loggingReceiverMacroAdapter[LRM]) Components(ctx context.Context, tag s
 
 func (cr loggingReceiverMacroAdapter[LRM]) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	receiver, processors := cr.Expand(ctx)
-	if r, ok := any(receiver).(OTelReceiver); ok {
+	if r, ok := any(receiver).(InternalOTelReceiver); ok {
 		rps, err := r.Pipelines(ctx)
 		if err != nil {
 			return nil, err
 		}
 		for _, pipeline := range rps {
 			for _, p := range processors {
-				if p, ok := p.(OTelProcessor); ok {
+				if p, ok := p.(InternalOTelProcessor); ok {
 					c, err := p.Processors(ctx)
 					if err != nil {
 						return nil, err
@@ -93,10 +94,16 @@ type LoggingProcessorMacro interface {
 	Expand(ctx context.Context) []InternalLoggingProcessor
 }
 
-func RegisterLoggingProcessorMacro[LPM LoggingProcessorMacro]() {
+func RegisterLoggingProcessorMacro[LPM LoggingProcessorMacro](platforms ...platform.Type) {
 	LoggingProcessorTypes.RegisterType(func() LoggingProcessor {
 		return &loggingProcessorMacroAdapter[LPM]{}
-	})
+	}, platforms...)
+}
+
+func ReplaceLoggingProcessorMacro[LPM LoggingProcessorMacro](platforms ...platform.Type) {
+	LoggingProcessorTypes.ReplaceType(func() LoggingProcessor {
+		return &loggingProcessorMacroAdapter[LPM]{}
+	}, platforms...)
 }
 
 // loggingProcessorMacroAdapter is the type used to unmarshal user configuration for a LoggingProcessorMacro and adapt its interface to the LoggingProcessor interface.
@@ -124,7 +131,7 @@ func (cp loggingProcessorMacroAdapter[LPM]) Components(ctx context.Context, tag 
 func (cp loggingProcessorMacroAdapter[LPM]) Processors(ctx context.Context) ([]otel.Component, error) {
 	var processors []otel.Component
 	for _, lp := range cp.Expand(ctx) {
-		if p, ok := any(lp).(OTelProcessor); ok {
+		if p, ok := any(lp).(InternalOTelProcessor); ok {
 			c, err := p.Processors(ctx)
 			if err != nil {
 				return nil, err
@@ -138,13 +145,13 @@ func (cp loggingProcessorMacroAdapter[LPM]) Processors(ctx context.Context) ([]o
 }
 
 // RegisterLoggingFilesProcessorMacro registers a LoggingProcessorMacro as a processor type and also registers a receiver that combines a LoggingReceiverFilesMixin with that LoggingProcessorMacro.
-func RegisterLoggingFilesProcessorMacro[LPM LoggingProcessorMacro](filesMixinConstructor func() LoggingReceiverFilesMixin) {
-	RegisterLoggingProcessorMacro[LPM]()
+func RegisterLoggingFilesProcessorMacro[LPM LoggingProcessorMacro](filesMixinConstructor func() LoggingReceiverFilesMixin, platforms ...platform.Type) {
+	RegisterLoggingProcessorMacro[LPM](platforms...)
 	RegisterLoggingReceiverMacro[*loggingFilesProcessorMacroAdapter[LPM]](func() *loggingFilesProcessorMacroAdapter[LPM] {
 		return &loggingFilesProcessorMacroAdapter[LPM]{
 			LoggingReceiverFilesMixin: filesMixinConstructor(),
 		}
-	})
+	}, platforms...)
 }
 
 type loggingFilesProcessorMacroAdapter[LPM LoggingProcessorMacro] struct {

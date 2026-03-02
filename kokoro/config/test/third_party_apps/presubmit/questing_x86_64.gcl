@@ -1,0 +1,10 @@
+import 'common.gcl' as common
+
+config build = common.third_party_apps_test {
+  params {
+    environment {
+      TARGET = 'questing'
+      ARCH = 'x86_64'
+    }
+  }
+}

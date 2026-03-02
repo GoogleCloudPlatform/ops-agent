@@ -785,6 +785,7 @@ service:
       - rabbitmq/rabbitmq
   telemetry:
     metrics:
+      level: detailed
       readers:
       - pull:
           exporter:

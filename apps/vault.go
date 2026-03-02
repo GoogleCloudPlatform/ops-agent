@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 )
@@ -75,7 +74,7 @@ func (r MetricsReceiverVault) Type() string {
 	return "vault"
 }
 
-func (r MetricsReceiverVault) Pipelines(_ context.Context) ([]otel.ReceiverPipeline, error) {
+func (r MetricsReceiverVault) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	if r.Endpoint == "" {
 		r.Endpoint = defaultVaultEndpoint
 	}
@@ -126,7 +125,7 @@ func (r MetricsReceiverVault) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 	queries = append(queries, metricRenewRevokeTransforms...)
 	queries = append(queries, metricDetailTransforms...)
 
-	return []otel.ReceiverPipeline{{
+	return []otel.ReceiverPipeline{confgenerator.ConvertGCMOtelExporterToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "prometheus",
 			Config: map[string]interface{}{
@@ -180,7 +179,7 @@ func (r MetricsReceiverVault) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 			),
 			otel.MetricsRemoveServiceAttributes(),
 		}},
-	}}, nil
+	}, ctx)}, nil
 }
 
 type metricTransformer struct {
@@ -313,63 +312,56 @@ func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverVault{} })
 }
 
-type LoggingProcessorVaultJson struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
-}
+type LoggingProcessorMacroVaultJson struct{}
 
-func (LoggingProcessorVaultJson) Type() string {
+func (LoggingProcessorMacroVaultJson) Type() string {
 	return "vault_audit"
 }
 
-func (p LoggingProcessorVaultJson) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
-	c := []fluentbit.Component{}
-
-	// sample log line:
-	// {"time":"2022-06-07T20:34:34.392078404Z","type":"request","auth":{"token_type":"default"},"request":{"id":"aa005196-0280-381d-ebeb-1a083bdf5675","operation":"update","namespace":{"id":"root"},"path":"sys/audit/test"}}
-	jsonParser := &confgenerator.LoggingProcessorParseJson{
-		ParserShared: confgenerator.ParserShared{
-			TimeKey:    "time",
-			TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
+func (p LoggingProcessorMacroVaultJson) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
+	return []confgenerator.InternalLoggingProcessor{
+		confgenerator.LoggingProcessorParseMultilineRegex{
+			Rules: []confgenerator.MultilineRule{
+				{
+					StateName: "start_state",
+					NextState: "cont",
+					Regex:     `^{.*`,
+				},
+				{
+					StateName: "cont",
+					NextState: "cont",
+					Regex:     `^(?!{.*)`,
+				},
+			},
 		},
-	}
-
-	c = append(c,
 		confgenerator.LoggingProcessorModifyFields{
 			Fields: map[string]*confgenerator.ModifyField{
 				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
 			},
-		}.Components(ctx, tag, uid)...,
-	)
-	c = append(c, jsonParser.Components(ctx, tag, uid)...)
-	return c
-}
-
-type LoggingReceiverVaultAuditJson struct {
-	LoggingProcessorVaultJson `yaml:",inline"`
-	ReceiverMixin             confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
-	IncludePaths              []string                                `yaml:"include_paths,omitempty" validate:"required"`
-}
-
-func (r LoggingReceiverVaultAuditJson) Components(ctx context.Context, tag string) []fluentbit.Component {
-	r.ReceiverMixin.IncludePaths = r.IncludePaths
-
-	r.ReceiverMixin.MultilineRules = []confgenerator.MultilineRule{
-		{
-			StateName: "start_state",
-			NextState: "cont",
-			Regex:     `^{.*`,
 		},
-		{
-			StateName: "cont",
-			NextState: "cont",
-			Regex:     `^(?!{.*)`,
+		// sample log line:
+		// {"time":"2022-06-07T20:34:34.392078404Z","type":"request","auth":{"token_type":"default"},"request":{"id":"aa005196-0280-381d-ebeb-1a083bdf5675","operation":"update","namespace":{"id":"root"},"path":"sys/audit/test"}}
+		confgenerator.LoggingProcessorParseJson{
+			ParserShared: confgenerator.ParserShared{
+				TimeKey:    "time",
+				TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
+			},
 		},
 	}
+}
 
-	c := r.ReceiverMixin.Components(ctx, tag)
-	return append(c, r.LoggingProcessorVaultJson.Components(ctx, tag, r.LoggingProcessorVaultJson.Type())...)
+type LoggingReceiverMacroVaultAuditJson struct {
+	LoggingProcessorMacroVaultJson `yaml:",inline"`
+	ReceiverMixin                  confgenerator.LoggingReceiverFilesMixin `yaml:",inline"`
+	IncludePaths                   []string                                `yaml:"include_paths,omitempty" validate:"required"`
+}
+
+func (r LoggingReceiverMacroVaultAuditJson) Expand(ctx context.Context) (confgenerator.InternalLoggingReceiver, []confgenerator.InternalLoggingProcessor) {
+	r.ReceiverMixin.IncludePaths = r.IncludePaths
+	return &r.ReceiverMixin, r.LoggingProcessorMacroVaultJson.Expand(ctx)
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverVaultAuditJson{} })
+	confgenerator.RegisterLoggingReceiverMacro(func() LoggingReceiverMacroVaultAuditJson { return LoggingReceiverMacroVaultAuditJson{} })
+	confgenerator.RegisterLoggingProcessorMacro[LoggingProcessorMacroVaultJson]()
 }

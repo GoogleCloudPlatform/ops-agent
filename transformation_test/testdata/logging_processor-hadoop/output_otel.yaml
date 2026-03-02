@@ -1,1 +1,99 @@
-- config_error: "processor \"processor0\" has invalid configuration: unimplemented"
+- entries:
+  - jsonPayload:
+      message: Edit logging is async:true
+      severity: INFO
+      source: org.apache.hadoop.hdfs.server.namenode.FSEditLog
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hadoop
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2022-02-02T02:09:47.136Z
+  - jsonPayload:
+      message: Warning message here
+      severity: WARN
+      source: org.apache.hadoop.hdfs.server.datanode.DataNode
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hadoop
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: WARNING
+    timestamp: 2022-02-02T02:09:48.200Z
+  - jsonPayload:
+      message: Error occurred
+      severity: ERROR
+      source: org.apache.hadoop.hdfs.server.namenode.FSNamesystem
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hadoop
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: ERROR
+    timestamp: 2022-02-02T02:09:49.300Z
+  - jsonPayload:
+      message: Debug message
+      severity: DEBUG
+      source: org.apache.hadoop.hdfs.server.datanode.DataNode
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hadoop
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: DEBUG
+    timestamp: 2022-02-02T02:09:50.400Z
+  - jsonPayload:
+      message: |-
+        Failed to start namenode
+        java.io.IOException: Cannot create directory /hadoop/logs/hdfs
+        	at org.apache.hadoop.hdfs.server.common.Storage.createDir(Storage.java:157)
+        	at org.apache.hadoop.hdfs.server.namenode.FSImage.format(FSImage.java:183)
+        	at org.apache.hadoop.hdfs.server.namenode.NameNode.format(NameNode.java:977)
+        	at org.apache.hadoop.hdfs.server.namenode.NameNode.createNameNode(NameNode.java:1421)
+        	at org.apache.hadoop.hdfs.server.namenode.NameNode.main(NameNode.java:1540)
+      severity: ERROR
+      source: org.apache.hadoop.hdfs.server.namenode.NameNode
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hadoop
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: ERROR
+    timestamp: 2022-02-02T02:09:51.500Z
+  - jsonPayload:
+      message: Successfully started datanode on port 9866
+      severity: INFO
+      source: org.apache.hadoop.hdfs.server.datanode.DataNode
+    labels:
+      compute.googleapis.com/resource_name: hostname
+      logging.googleapis.com/instrumentation_source: agent.googleapis.com/hadoop
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    severity: INFO
+    timestamp: 2022-02-02T02:09:52.600Z
+  partialSuccess: true

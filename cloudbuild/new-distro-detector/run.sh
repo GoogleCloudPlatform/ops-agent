@@ -23,7 +23,6 @@ set -o pipefail
 PATTERNS_FILE="irrelevant_family_patterns.txt"
 echo '^cos-
 ^fedora-
-^rhel-
 ^rocky-linux-[0-9]+-optimized-gcp
 ^sql-
 ^ubuntu-pro-
@@ -51,7 +50,7 @@ gcloud compute images list --sort-by=FAMILY --format='value(FAMILY)' --standard-
 
 # Fetch the list of relevant families as of the last run.
 LAST_KNOWN_LIST="gs://stackdriver-test-143416-new-distro-detector/list_of_families.txt"
-gsutil -q cp "${LAST_KNOWN_LIST}" - \
+gcloud storage -q cp "${LAST_KNOWN_LIST}" - \
   | tee known_families.txt
 
 # If there is a difference, print the diff, and...
@@ -67,7 +66,7 @@ if ! diff --ignore-all-space --ignore-blank-lines known_families.txt current_fam
   '
   set -x
   # Upload the current list to the GCS bucket so that the next run passes.
-  gsutil -q cp current_families.txt "${LAST_KNOWN_LIST}"
+  gcloud storage -q cp current_families.txt "${LAST_KNOWN_LIST}"
   # Report an error, which will result in a bug being filed.
   exit 1
 fi

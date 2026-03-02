@@ -423,7 +423,7 @@ speed up the build.
 
 To get a package out of a Windows VM, GCS is one of the few available options.
 
-In `Windows PowerShell`, use gsutil to upload the artifacts to GCS.
+In `Windows PowerShell`, use gcloud storage to upload the artifacts to GCS.
 
 ```powershell
 # [Required] Adjust the GCS bucket ID
@@ -438,14 +438,14 @@ $env:LOCAL_ARTIFACTS_DIR=$env:UserProfile+'\tmp\out'
 # Create the directory if not exist
 $env:GCP_BUCKET_DIR='ops_agent_windows'
 
-gsutil cp -r $env:LOCAL_ARTIFACTS_DIR\* gs://${env:GCP_BUCKET_ID}/${env:GCP_BUCKET_DIR}
+gcloud storage cp -r $env:LOCAL_ARTIFACTS_DIR\* gs://${env:GCP_BUCKET_ID}/${env:GCP_BUCKET_DIR}
 ```
 
 To overwrite existing contents in the bucket:
 
 ```powershell
-gsutil rm -r gs://${env:GCP_BUCKET_ID}/${env:GCP_BUCKET_DIR}
-gsutil cp -r $env:LOCAL_ARTIFACTS_DIR\* gs://${env:GCP_BUCKET_ID}/${env:GCP_BUCKET_DIR}
+gcloud storage rm -r gs://${env:GCP_BUCKET_ID}/${env:GCP_BUCKET_DIR}
+gcloud storage cp -r $env:LOCAL_ARTIFACTS_DIR\* gs://${env:GCP_BUCKET_ID}/${env:GCP_BUCKET_DIR}
 ```
 
 <details>
@@ -476,10 +476,10 @@ you need to:
     ```
 
 2.  [Connect](#connect-to-windows-build-vm) to the Windows VM, open a `Windows
-    PowerShell`, delete the cached credential, and redo gcloud login:
+    PowerShell`, delete the cached credentials, and redo gcloud login:
 
     ```
-    rd -r $env:USERPROFILE\.gsutil
+    gcloud auth revoke --all
     ```
 
 </details>
@@ -502,7 +502,7 @@ export WINDOWS_RELEASE_DIR=/tmp/google-cloud-ops-agent/windows-release
 
 rm -rf $WINDOWS_RELEASE_DIR/$GCP_BUCKET_DIR
 mkdir -p $WINDOWS_RELEASE_DIR/$GCP_BUCKET_DIR
-gsutil cp -r gs://$GCP_BUCKET_ID/$GCP_BUCKET_DIR/* $WINDOWS_RELEASE_DIR/$GCP_BUCKET_DIR
+gcloud storage cp -r gs://$GCP_BUCKET_ID/$GCP_BUCKET_DIR/* $WINDOWS_RELEASE_DIR/$GCP_BUCKET_DIR
 ls $WINDOWS_RELEASE_DIR/$GCP_BUCKET_DIR/google-cloud-ops-agent.x86_64.*.goo
 ```
 </details>
@@ -543,7 +543,7 @@ See [Create a GCE Windows test VM](create-gce-windows-test-vm.md).
     $env:LOCAL_ARTIFACTS_DIR=$env:UserProfile+'\tmp\out'
 
     md $env:LOCAL_ARTIFACTS_DIR
-    gsutil cp -r gs://${env:GCP_BUCKET_ID}/${env:GCP_BUCKET_DIR}/* $env:LOCAL_ARTIFACTS_DIR
+    gcloud storage cp -r gs://${env:GCP_BUCKET_ID}/${env:GCP_BUCKET_DIR}/* $env:LOCAL_ARTIFACTS_DIR
     ls $env:LOCAL_ARTIFACTS_DIR
     ```
 
@@ -553,7 +553,7 @@ See [Create a GCE Windows test VM](create-gce-windows-test-vm.md).
     Stop-Service google-cloud-ops-agent -Force
     rm -r -force $env:LOCAL_ARTIFACTS_DIR
     md $env:LOCAL_ARTIFACTS_DIR
-    gsutil cp -r gs://${env:GCP_BUCKET_ID}/${env:GCP_BUCKET_DIR}/* $env:LOCAL_ARTIFACTS_DIR
+    gcloud storage cp -r gs://${env:GCP_BUCKET_ID}/${env:GCP_BUCKET_DIR}/* $env:LOCAL_ARTIFACTS_DIR
     ls $LOCAL_ARTIFACTS_DIR
     ```
 
@@ -820,6 +820,7 @@ Config file - Fluent Bit - Main config. Only present when the systemd fluent-bit
 Config file - Fluent Bit - Parsers config. Only present when the systemd fluent-bit unit is running. | `/var/run/google-cloud-ops-agent-fluent-bit/fluent_bit_parser.conf`
 Config file - OT Metrics Agent                                                                       | `/var/run/google-cloud-ops-agent-opentelemetry-collector/otel.yaml`
 Buffer files - Fluent Bit                                                                            | `/var/lib/google-cloud-ops-agent/fluent-bit/buffers/`
+File Offset files - OTel Collector                                                                   | `/var/lib/google-cloud-ops-agent/opentelemetry-collector/file_storage/`
 
 <a id="windows-where-to-find-things"></a>
 #### Windows
@@ -834,6 +835,7 @@ Config file - Fluent Bit - Main config    | `C:\ProgramData\Google\Cloud Operati
 Config file - Fluent Bit - Parsers config | `C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\fluentbit\fluent_bit_parser.conf`
 Config file - OpenTelemetry               | `C:\ProgramData\Google\Cloud Operations\Ops Agent\generated_configs\otel\otel.yaml`
 Buffer files - Fluent Bit                 | `C:\ProgramData\Google\Cloud Operations\Ops Agent\run\buffers`
+Bookmark files - OTel Collector           | `C:\ProgramData\Google\Cloud Operations\Ops Agent\run\file_storage`
 
 ### Check logs
 

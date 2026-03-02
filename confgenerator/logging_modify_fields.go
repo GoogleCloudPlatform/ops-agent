@@ -407,8 +407,7 @@ func (p LoggingProcessorModifyFields) statements(_ context.Context) (ottl.Statem
 		case "float":
 			statements = statements.Append(value.Set(ottl.ToFloat(value)))
 		case "YesNoBoolean":
-			// TODO
-			return nil, fmt.Errorf("YesNoBoolean unsupported")
+			statements = statements.Append(value.SetToYesNoBoolean(value))
 		}
 
 		if field.CustomConvertFunc != nil {
