@@ -38,6 +38,17 @@
           File "/base/data/home/apps/s~nearfieldspy/1.378705245900539993/nearfieldspy.py", line 5, in get
             raise Exception('spam', 'eggs')
         Exception: ('spam', 'eggs')
+    labels:
+      compute.googleapis.com/resource_name: hostname
+    logName: projects/my-project/logs/my-log-name
+    resource:
+      labels:
+        instance_id: test-instance-id
+        zone: test-zone
+      type: gce_instance
+    timestamp: now
+  - jsonPayload:
+      message: |-
         2023-07-09 00:00:00,000 ERROR    some_app custom string prefix to the exception: Traceback (most recent call last):
           File "/base/data/home/runtimes/python27/python27_lib/versions/third_party/webapp2-2.5.2/webapp2.py", line 1535, in __call__
             rv = self.handle_exception(request, response, e)

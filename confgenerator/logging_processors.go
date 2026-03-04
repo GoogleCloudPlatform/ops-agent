@@ -79,7 +79,8 @@ var otelSecondMultilineMap = map[string][]string{
 		`^\s*for\s+[\w, \s]+ in\s+[\w\.]+\(.*\):$`,
 		`^\s*([\w\.]+) = ([\w\.]+)\($`,
 		`^\s*[\w\.]+\.[\w]+\(.*\)$`,
-		`^\s*.*[+\-*/%|&^~<>].*$`,
+		`^[ \t]{4,}.*`,
+		`\[Errno -?\d+\]`,
 	},
 	"go": []string{
 		`^\[signal `,
