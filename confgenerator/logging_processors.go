@@ -45,15 +45,14 @@ func (r ParseMultiline) Type() string {
 	return "parse_multiline"
 }
 
-// This map lists regexes that apply to any line that is part of a previous line.
+// This map lists regexes that should match the first line of a multiline log for each language.
 var otelFirstMultilineMap = map[string][]string{
 	"java": []string{
 		// Line starts with a java exception class name
-		`(?:Exception|Error|Throwable|V8 errors stack trace)[:\r\n]`,
+		`(?:(?:[a-zA-Z0-9_]+\.)+[a-zA-Z0-9_]*(?:Exception|Error|Throwable)|V8 errors stack trace)[:\r\n]`,
 	},
 	"python": []string{
 		`Traceback \(most recent call last\):`,
-		// `^Exception:\s*\(.*\)$`,
 	},
 	"go": []string{
 		`\bpanic: `,
@@ -61,10 +60,9 @@ var otelFirstMultilineMap = map[string][]string{
 	},
 }
 
+// This map lists regexes that should match all the secondary lines of a multiline log for each language.
 var otelSecondMultilineMap = map[string][]string{
 	"java": []string{
-		// Line starts with a java exception class name
-		//`^(?:[a-zA-Z$_][a-zA-Z$_0-9]*\.)+[a-zA-Z$_][a-zA-Z$_0-9]*: `,
 		`^[\t ]*nested exception is:[\\t ]*`,
 		`^[\t ]+(?:eval ?)?at `,
 		`^[\t ]+--- End of inner exception stack trace ---$`,
@@ -74,20 +72,17 @@ var otelSecondMultilineMap = map[string][]string{
 	},
 	"python": []string{
 		`^[\t ]+File`,
-		//`[^\t ]`,
+		`^[a-zA-Z0-9_]*(?:Error|Exception|Warning|Interrupt|Exit|Iteration):`,
 		`^\s*return\s+[\w\.]+\(.*\)$`,
 		`raise Exception\(.*\)$`,
 		`^\s*[\w\.]+ = [\w\.]+\(.*\)$`,
-		//`^(?:[^\s.():]+\.)*[^\s.():]+:`,
 		`^\s*for\s+[\w, \s]+ in\s+[\w\.]+\(.*\):$`,
 		`^\s*([\w\.]+) = ([\w\.]+)\($`,
-		//`^\s*self\.[\w]+\(.*\)$`,
 		`^\s*[\w\.]+\.[\w]+\(.*\)$`,
 		`^\s*.*[+\-*/%|&^~<>].*$`,
-		//`^Traceback \(most recent call last\):$`,
+		`^TypeError:.*$`,
 	},
 	"go": []string{
-		//`^$`,
 		`^\[signal `,
 		`^goroutine \d+ \[[^\]]+\]:$`,
 		`^(?:[^\s.:]+\.)*[^\s.():]+\(|^created by `,
@@ -95,6 +90,7 @@ var otelSecondMultilineMap = map[string][]string{
 	},
 }
 
+// This map lists regexes that should match the transition lines of a multiline log for each language.
 var otelTransitionMultilineMap = map[string][]string{
 	"java": []string{
 		// Line transitions
@@ -212,7 +208,7 @@ func (p ParseMultiline) Processors(ctx context.Context) ([]otel.Component, error
 	firstExprSlice := []string{}
 	for lang, expr := range firstLinesExpr {
 		if len(expr) > 0 {
-			firstExprSlice = append(firstExprSlice, "( ("+strings.Join(expr, " or ")+") and ("+strings.Join(secondLinesExpr[lang], "and ")+") )")
+			firstExprSlice = append(firstExprSlice, "( ("+strings.Join(expr, " or ")+") and ("+strings.Join(secondLinesExpr[lang], " and ")+") )")
 		}
 	}
 	secondExprSlice := []string{}
