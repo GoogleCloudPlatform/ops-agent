@@ -72,14 +72,10 @@ var otelSecondMultilineMap = map[string][]string{
 	},
 	"python": []string{
 		`^[\t ]+File`,
-		`^[a-zA-Z0-9_]*(?:Error|Exception|Warning|Interrupt|Exit|Iteration):`,
-		`^\s*return\s+[\w\.]+\(.*\)$`,
-		`raise Exception\(.*\)$`,
-		`^\s*[\w\.]+ = [\w\.]+\(.*\)$`,
-		`^\s*for\s+[\w, \s]+ in\s+[\w\.]+\(.*\):$`,
-		`^\s*([\w\.]+) = ([\w\.]+)\($`,
-		`^\s*[\w\.]+\.[\w]+\(.*\)$`,
 		`^[ \t]{4,}.*`,
+		`^(?:[^\s.():]+\.)*[^\s.():]+:`,
+		`^[a-zA-Z0-9_]*(?:Error|Exception|Warning|Interrupt|Exit|Iteration):`,
+		`raise Exception\(.*\)$`,
 		`\[Errno -?\d+\]`,
 	},
 	"go": []string{
