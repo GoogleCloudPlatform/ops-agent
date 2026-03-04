@@ -94,13 +94,13 @@ processors:
       type: add
       value: EXPR(attributes["agent.googleapis.com/log_file_path"] ?? "")
     - combine_field: body.message
-      force_flush_period: 100ms
+      force_flush_period: 1000ms
       is_first_entry: "( (body.message matches \"(?:(?:[a-zA-Z0-9_]+\\\\.)+[a-zA-Z0-9_]*(?:Exception|Error|Throwable)|V8 errors stack trace)[:\\\\r\\\\n]\") and (not(body.message matches \"^[\\\\t ]*nested exception is:[\\\\\\\\t ]*\") and not(body.message matches \"^[\\\\t ]+(?:eval ?)?at \") and not(body.message matches \"^[\\\\t ]+--- End of inner exception stack trace ---$\") and not(body.message matches \"^--- End of stack trace from previous location where exception was thrown ---$\") and not(body.message matches \"^[\\\\t ]*(?:Caused by|Suppressed):\") and not(body.message matches \"^[\\\\t ]*... \\\\d+ (?:more|common frames omitted)\")) ) or ((not(body.message matches \"^[\\\\t ]*nested exception is:[\\\\\\\\t ]*\") and not(body.message matches \"^[\\\\t ]+(?:eval ?)?at \") and not(body.message matches \"^[\\\\t ]+--- End of inner exception stack trace ---$\") and not(body.message matches \"^--- End of stack trace from previous location where exception was thrown ---$\") and not(body.message matches \"^[\\\\t ]*(?:Caused by|Suppressed):\") and not(body.message matches \"^[\\\\t ]*... \\\\d+ (?:more|common frames omitted)\")))"
       overwrite_with: oldest
       source_identifier: attributes.__source_identifier
       type: recombine
     - combine_field: body.message
-      force_flush_period: 100ms
+      force_flush_period: 1000ms
       is_last_entry: "not(body.message matches \"nested exception is:[\\\\\\\\t ]*$\")"
       overwrite_with: oldest
       source_identifier: attributes.__source_identifier

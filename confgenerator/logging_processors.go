@@ -190,12 +190,14 @@ func (p ParseMultiline) Processors(ctx context.Context) ([]otel.Component, error
 			b := otelSecondMultilineMap[g.Language]
 			if len(b) > 0 {
 				for _, r := range b {
+					// Negate the second lines to enforce this log are not matched as `is_first_entry`.
 					secondLinesExpr[g.Language] = append(secondLinesExpr[g.Language], fmt.Sprintf("not(body.message matches %q)", r))
 				}
 			}
 			c := otelTransitionMultilineMap[g.Language]
 			if len(c) > 0 {
 				for _, r := range c {
+					// Negate the transition lines to enforce `is_last_entry` matches only "nested" logs".
 					transitionLinesExpr[g.Language] = append(transitionLinesExpr[g.Language], fmt.Sprintf("not(body.message matches %q)", r))
 				}
 			}
@@ -204,6 +206,7 @@ func (p ParseMultiline) Processors(ctx context.Context) ([]otel.Component, error
 		return nil, errors.New("unsupported in otel")
 	}
 
+	// A log is `is_first_entry` if it's a "first line" of a log and it's not a "second line".
 	firstExprSlice := []string{}
 	for lang, expr := range firstLinesExpr {
 		if len(expr) > 0 {
@@ -216,8 +219,9 @@ func (p ParseMultiline) Processors(ctx context.Context) ([]otel.Component, error
 			secondExprSlice = append(secondExprSlice, "("+strings.Join(expr, " and ")+")")
 		}
 	}
-	firstExpr := strings.Join(firstExprSlice, "  or ") + " or (" + strings.Join(secondExprSlice, " and ") + ")"
+	firstExpr := strings.Join(firstExprSlice, " or ") + " or (" + strings.Join(secondExprSlice, " and ") + ")"
 
+	// Determining transitions between nested stacktraces
 	javaTransitionsExpr := strings.Join(transitionLinesExpr["java"], " and ")
 	pythonTransitionsExpr := strings.Join(transitionLinesExpr["python"], " and ")
 	transitionsExprSlice := []string{}
@@ -252,9 +256,8 @@ func (p ParseMultiline) Processors(ctx context.Context) ([]otel.Component, error
 					"overwrite_with": "oldest",
 					// Use the log file path to disambiguate if present.
 					"source_identifier": `attributes.__source_identifier`,
-					// How long to wait for more log lines.
-					// Set to half of the file receiver's poll_interval to guarantee it is flushed every poll.
-					"force_flush_period": "100ms",
+					// Set time interval (same as fluent-bit "flush_timeout") to wait for secondary logs to be appended.
+					"force_flush_period": "1000ms",
 				},
 				{
 					"type":          "recombine",
@@ -266,9 +269,8 @@ func (p ParseMultiline) Processors(ctx context.Context) ([]otel.Component, error
 					"overwrite_with": "oldest",
 					// Use the log file path to disambiguate if present.
 					"source_identifier": `attributes.__source_identifier`,
-					// How long to wait for more log lines.
-					// Set to half of the file receiver's poll_interval to guarantee it is flushed every poll.
-					"force_flush_period": "100ms",
+					// Set time interval (same as fluent-bit "flush_timeout") to wait for secondary logs to be appended.
+					"force_flush_period": "1000ms",
 				},
 				{
 					"type":  "remove",
