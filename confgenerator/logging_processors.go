@@ -170,14 +170,17 @@ func (p ParseMultiline) Processors(ctx context.Context) ([]otel.Component, error
 	var firstLinesExpr map[string][]string = map[string][]string{
 		"java":   []string{},
 		"python": []string{},
+		"go":     []string{},
 	}
 	var secondLinesExpr map[string][]string = map[string][]string{
 		"java":   []string{},
 		"python": []string{},
+		"go":     []string{},
 	}
 	var transitionLinesExpr map[string][]string = map[string][]string{
 		"java":   []string{},
 		"python": []string{},
+		"go":     []string{},
 	}
 	for _, g := range p.MultilineGroups {
 		if g.Type == "language_exceptions" {
