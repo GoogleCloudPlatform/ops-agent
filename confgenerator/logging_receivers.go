@@ -350,7 +350,6 @@ func (r LoggingReceiverSyslog) Pipelines(ctx context.Context) ([]otel.ReceiverPi
 				cacheBodyString.Delete(),
 			),
 		),
-		otel.ZeroOutSeverityNumber(),
 	}
 
 	config := map[string]any{

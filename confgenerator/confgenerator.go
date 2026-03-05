@@ -88,7 +88,6 @@ func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, 
 
 	if _, ok := pipeline.ExporterTypes["metrics"]; ok {
 		pipeline.ExporterTypes["metrics"] = otel.OTLP
-		pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.GCPProjectID(resource.ProjectName()))
 		if isSystem {
 			pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveInstrumentationLibraryLabelsAttributes())
 			pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveServiceAttributes())
@@ -106,7 +105,6 @@ func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, 
 
 	if _, ok := pipeline.ExporterTypes["logs"]; ok {
 		pipeline.ExporterTypes["logs"] = otel.OTLP
-		pipeline.Processors["logs"] = append(pipeline.Processors["logs"], otel.GCPProjectID(resource.ProjectName()))
 		pipeline.Processors["logs"] = append(pipeline.Processors["logs"], otel.DisableOtlpRoundTrip())
 		pipeline.Processors["logs"] = append(pipeline.Processors["logs"], otel.InstrumentationScope())
 		pipeline.Processors["logs"] = append(pipeline.Processors["logs"], otel.CopyServiceResourceLabels())
@@ -230,6 +228,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 					},
 					// Batching logs improves log export performance.
 					"logs": {
+						otel.GCPProjectID(resource.ProjectName()),
 						otel.BatchProcessor(1000, 1000, "200ms"),
 					},
 				},
