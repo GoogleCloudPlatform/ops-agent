@@ -29,3 +29,10 @@ traces:
       otlp:
         receivers:
           - otlp
+logging:
+  service:
+    experimental_otel_logging: true
+    pipelines:
+      otlp:
+        receivers:
+          - otlp

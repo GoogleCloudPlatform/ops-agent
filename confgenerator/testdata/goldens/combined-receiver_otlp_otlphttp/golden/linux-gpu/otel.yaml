@@ -15,11 +15,18 @@ exporters:
     headers:
       User-Agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
 extensions:
+  file_storage:
+    create_directory: true
+    directory: file_storage
   googleclientauth: {}
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
+  batch/otlp/otlp_logs_1:
+    send_batch_max_size: 1000
+    send_batch_size: 1000
+    timeout: 200ms
   batch/otlp/otlp_metrics_2:
     send_batch_max_size: 200
     send_batch_size: 200
@@ -656,11 +663,26 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: prometheus.googleapis.com/$${1}
+  resource/otlp/otlp_logs_0:
+    attributes:
+    - action: insert
+      key: gcp.project_id
+      value: test-project
   resource/otlp/otlp_metrics_0:
     attributes:
     - action: insert
       key: gcp.project_id
       value: test-project
+  resource/otlp_0:
+    attributes:
+    - action: insert
+      key: gcp.internal.omit_otlp
+      value: "true"
+  resource/syslog_0:
+    attributes:
+    - action: insert
+      key: gcp.internal.omit_otlp
+      value: "true"
   resourcedetection/_global_0:
     detectors:
     - gcp
@@ -776,23 +798,109 @@ processors:
       - extract_count_metric(true) where name == "rpc.client.duration"
   transform/otlp_1:
     error_mode: ignore
-    metric_statements:
-    - context: datapoint
+    log_statements:
+    - context: log
       statements:
-      - set(attributes["location"], resource.attributes["cloud.availability_zone"]) where resource.attributes["cloud.availability_zone"] != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
-      - set(attributes["namespace"], Concat([resource.attributes["host.id"], resource.attributes["host.name"]], "/")) where Concat([resource.attributes["host.id"], resource.attributes["host.name"]], "/") != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
-      - set(attributes["cluster"], "__gce__") where "__gce__" != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
-      - set(attributes["instance_name"], resource.attributes["host.name"]) where resource.attributes["host.name"] != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
-      - set(attributes["machine_type"], resource.attributes["host.type"]) where resource.attributes["host.type"] != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
+      - set(attributes["instrumentation_source"], instrumentation_scope.name) where instrumentation_scope.name != ""
+      - set(attributes["instrumentation_version"], instrumentation_scope.version) where instrumentation_scope.version != ""
+  transform/otlp_2:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - set(attributes["service.name"], resource.attributes["service.name"]) where resource.attributes["service.name"] != nil
+      - set(attributes["service.namespace"], resource.attributes["service.namespace"]) where resource.attributes["service.namespace"] != nil
+      - set(attributes["service.instance.id"], resource.attributes["service.instance.id"]) where resource.attributes["service.instance.id"] != nil
   transform/otlp_3:
     error_mode: ignore
-    metric_statements:
-    - context: metric
+    log_statements:
+    - context: log
       statements:
-      - copy_metric(Concat([metric.name, "unknowncounter"], ":")) where metric.metadata["prometheus.type"] == "unknown" and not HasSuffix(metric.name, ":unknowncounter")
-      - convert_gauge_to_sum("cumulative", true) where HasSuffix(metric.name, ":unknowncounter")
-      - set(metric.name, Substring(metric.name, 0, Len(metric.name)-Len(":unknowncounter"))) where HasSuffix(metric.name, ":unknowncounter")
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], attributes["compute.googleapis.com/instance_group_manager/name"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/name"] != nil)
+      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["__field_1"], attributes["compute.googleapis.com/instance_group_manager/zone"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/zone"] != nil)
+      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["__field_2"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
+      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["__field_3"], attributes["gcp.log_name"]) where (attributes != nil and attributes["gcp.log_name"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"])
+      - set(cache["value"], "test-mig") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_1"])
+      - set(cache["value"], "test-zone") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/zone"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_2"])
+      - set(cache["value"], "") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_3"])
+      - set(cache["value"], "otlp") where cache["value"] == nil
+      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+  transform/syslog_1:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - set(attributes["instrumentation_source"], instrumentation_scope.name) where instrumentation_scope.name != ""
+      - set(attributes["instrumentation_version"], instrumentation_scope.version) where instrumentation_scope.version != ""
+  transform/syslog_2:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - set(attributes["service.name"], resource.attributes["service.name"]) where resource.attributes["service.name"] != nil
+      - set(attributes["service.namespace"], resource.attributes["service.namespace"]) where resource.attributes["service.namespace"] != nil
+      - set(attributes["service.instance.id"], resource.attributes["service.instance.id"]) where resource.attributes["service.instance.id"] != nil
+  transform/syslog_3:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], attributes["compute.googleapis.com/instance_group_manager/name"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/name"] != nil)
+      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["__field_1"], attributes["compute.googleapis.com/instance_group_manager/zone"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/zone"] != nil)
+      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["__field_2"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
+      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["__field_3"], attributes["gcp.log_name"]) where (attributes != nil and attributes["gcp.log_name"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"])
+      - set(cache["value"], "test-mig") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_1"])
+      - set(cache["value"], "test-zone") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/zone"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_2"])
+      - set(cache["value"], "") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_3"])
+      - set(cache["value"], "syslog") where cache["value"] == nil
+      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
 receivers:
+  filelog/syslog:
+    exclude: []
+    fingerprint_size: 5kb
+    include:
+    - /var/log/messages
+    - /var/log/syslog
+    include_file_name: false
+    operators:
+    - from: body
+      id: body
+      to: body.message
+      type: move
+    preserve_leading_whitespaces: true
+    preserve_trailing_whitespaces: true
+    start_at: beginning
+    storage: file_storage
   hostmetrics/hostmetrics:
     collection_interval: 60s
     scrapers:
@@ -837,7 +945,34 @@ receivers:
 service:
   extensions:
   - googleclientauth
+  - file_storage
   pipelines:
+    logs/logs_default__pipeline_syslog:
+      exporters:
+      - otlp/otlp
+      processors:
+      - resource/syslog_0
+      - transform/syslog_1
+      - transform/syslog_2
+      - transform/syslog_3
+      - resourcedetection/_global_0
+      - resource/otlp/otlp_logs_0
+      - batch/otlp/otlp_logs_1
+      receivers:
+      - filelog/syslog
+    logs/logs_otlp_otlp:
+      exporters:
+      - otlp/otlp
+      processors:
+      - resource/otlp_0
+      - transform/otlp_1
+      - transform/otlp_2
+      - transform/otlp_3
+      - resourcedetection/_global_1
+      - resource/otlp/otlp_logs_0
+      - batch/otlp/otlp_logs_1
+      receivers:
+      - otlp/otlp
     metrics/default__pipeline_hostmetrics:
       exporters:
       - otlp/otlp
