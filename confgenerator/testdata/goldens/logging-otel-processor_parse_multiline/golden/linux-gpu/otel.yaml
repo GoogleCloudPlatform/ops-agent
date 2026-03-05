@@ -101,7 +101,7 @@ processors:
       type: recombine
     - combine_field: body.message
       force_flush_period: 1000ms
-      is_last_entry: "not(body.message matches \"nested exception is:[\\\\\\\\t ]*$\")"
+      is_last_entry: not(body.message matches "nested exception is:")
       overwrite_with: oldest
       source_identifier: attributes.__source_identifier
       type: recombine
