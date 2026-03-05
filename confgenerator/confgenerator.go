@@ -82,7 +82,6 @@ func ConvertGCMSystemExporterToOtlpExporter(pipeline otel.ReceiverPipeline, ctx 
 
 func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, isPrometheus bool, isSystem bool) otel.ReceiverPipeline {
 	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
-	resource, _ := platform.FromContext(ctx).GetResource()
 	if !expOtlpExporter {
 		return pipeline
 	}
@@ -99,7 +98,6 @@ func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, 
 		// This is diffrent from the GMP endpoint.
 		if isPrometheus {
 			pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricUnknownCounter())
-			pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricStartTime())
 			// If a metric already has a domain, it will not be considered a prometheus metric by the UTR endpoint unless we add the prefix.
 			// This behavior is the same as the GCM/GMP exporters.
 			pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsTransform(otel.AddPrefix("prometheus.googleapis.com")))
@@ -200,6 +198,10 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 		OtelLogging:         uc.Logging.Service.OTelLogging,
 	}
 	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines, ctx)
+	resource, err := p.GetResource()
+	if err != nil {
+		return "", err
+	}
 
 	otelConfig, err := otel.ModularConfig{
 		LogLevel:          uc.getOTelLogLevel(),
@@ -222,6 +224,8 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 					// The OTLP exporter doesn't batch by default like the googlecloud.* exporters.
 					// We need this to avoid the API point limits.
 					"metrics": {
+						otel.GCPProjectID(resource.ProjectName()),
+						otel.MetricStartTime(),
 						otel.BatchProcessor(200, 200, "200ms"),
 					},
 					// Batching logs improves log export performance.
@@ -379,11 +383,17 @@ func (p PipelineInstance) OTelComponents(ctx context.Context) (map[string]otel.R
 			prefix = fmt.Sprintf("%s_%s", p.PipelineType, prefix)
 		}
 
-		if processors, ok := receiverPipeline.Processors["logs"]; ok {
+		if _, ok := receiverPipeline.Processors["logs"]; ok {
 			receiverPipeline.Processors["logs"] = append(
-				processors,
+				receiverPipeline.Processors["logs"],
 				otelSetLogNameComponents(ctx, p.RID)...,
 			)
+			if p.Receiver.Type() == "fluent_forward" {
+				receiverPipeline.Processors["logs"] = append(
+					receiverPipeline.Processors["logs"],
+					otelFluentForwardSetLogNameComponents()...,
+				)
+			}
 		}
 
 		outR[receiverPipelineName] = receiverPipeline
