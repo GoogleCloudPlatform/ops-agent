@@ -90,11 +90,7 @@ var otelSecondMultilineMap = map[string][]string{
 var otelTransitionMultilineMap = map[string][]string{
 	"java": []string{
 		// Line transitions
-		`nested exception is:[\\t ]*$`,
-	},
-	"python": []string{
-		// Line transitions
-		`raise Exception\(.*\)$`,
+		`nested exception is:`,
 	},
 }
 
