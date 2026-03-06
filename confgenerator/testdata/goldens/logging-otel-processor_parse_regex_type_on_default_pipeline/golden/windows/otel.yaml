@@ -7,9 +7,21 @@ exporters:
       service_resource_labels: false
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
-  googlecloud/logging:
+  googlecloud/logging_non_persistent_queue:
+    sending_queue:
+      batch:
+        flush_timeout: 200ms
+        max_size: 1000
+        min_size: 1
+        sizer: items
+      block_on_overflow: true
+      enabled: true
+      wait_for_result: true
     timeout: 60s
 extensions:
+  db_storage:
+    datasource: file://db_storage.db?_pragma=busy_timeout(10000)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)
+    driver: sqlite
   file_storage:
     create_directory: true
     directory: file_storage
@@ -17,10 +29,6 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  batch/googlecloud/logging_logs_0:
-    send_batch_max_size: 1000
-    send_batch_size: 1000
-    timeout: 200ms
   casttosum/iis_1:
     metrics:
     - agent.googleapis.com/iis/network/transferred_bytes_count
@@ -1303,42 +1311,40 @@ receivers:
       object: SQLServer:Databases
 service:
   extensions:
+  - db_storage
   - file_storage
   pipelines:
     logs/logs_default__pipeline_windows__event__log:
       exporters:
-      - googlecloud/logging
+      - googlecloud/logging_non_persistent_queue
       processors:
       - transform/windows__event__log_0
       - transform/windows__event__log_1
       - transform/windows__event__log_2
       - transform/logs_default__pipeline_windows__event__log_0
       - resourcedetection/_global_0
-      - batch/googlecloud/logging_logs_0
       receivers:
       - windowseventlog/windows__event__log
     logs/logs_default__pipeline_windows__event__log_1:
       exporters:
-      - googlecloud/logging
+      - googlecloud/logging_non_persistent_queue
       processors:
       - transform/windows__event__log_1_0
       - transform/windows__event__log_1_1
       - transform/windows__event__log_1_2
       - transform/logs_default__pipeline_windows__event__log_1_0
       - resourcedetection/_global_0
-      - batch/googlecloud/logging_logs_0
       receivers:
       - windowseventlog/windows__event__log_1
     logs/logs_default__pipeline_windows__event__log_2:
       exporters:
-      - googlecloud/logging
+      - googlecloud/logging_non_persistent_queue
       processors:
       - transform/windows__event__log_2_0
       - transform/windows__event__log_2_1
       - transform/windows__event__log_2_2
       - transform/logs_default__pipeline_windows__event__log_2_0
       - resourcedetection/_global_0
-      - batch/googlecloud/logging_logs_0
       receivers:
       - windowseventlog/windows__event__log_2
     metrics/default__pipeline_hostmetrics:

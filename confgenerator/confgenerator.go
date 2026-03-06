@@ -57,14 +57,33 @@ func googleCloudExporter(userAgent string, instrumentationLabels bool, serviceRe
 	}
 }
 
-func googleCloudLoggingExporter() otel.Component {
-	return otel.Component{
-		Type: "googlecloud",
-		Config: map[string]interface{}{
-			// Set to mirror the 60s max limit of default retry window in Google Cloud Logging apiv2 go client :
-			// https://github.com/googleapis/google-cloud-go/blob/logging/v1.4.2/logging/apiv2/logging_client.go#L78-L90
-			"timeout": "60s",
+func googleCloudLoggingExporter(persistent_queue bool) otel.Component {
+	config := map[string]interface{}{
+		// Set to mirror the 60s max limit of default retry window in Google Cloud Logging apiv2 go client :
+		// https://github.com/googleapis/google-cloud-go/blob/logging/v1.4.2/logging/apiv2/logging_client.go#L78-L90
+		"timeout": "60s",
+		"sending_queue": map[string]interface{}{
+			"enabled":           true,
+			"block_on_overflow": true,
+			"wait_for_result":   true,
+			"batch": map[string]interface{}{
+				"flush_timeout": "200ms",
+				"min_size":      1,
+				"max_size":      1000,
+				"sizer":         "items",
+			},
 		},
+	}
+
+	if persistent_queue {
+		if sq, ok := config["sending_queue"].(map[string]interface{}); ok {
+			sq["storage"] = dbStorageExtensionID()
+		}
+	}
+
+	return otel.Component{
+		Type:   "googlecloud",
+		Config: config,
 	}
 }
 
@@ -150,11 +169,24 @@ func fileStorageExtensionID() string {
 	return "file_storage"
 }
 
+// dbStorageExtensionID returns the file_storage extension used by all receivers and exporters.
+func dbStorageExtensionID() string {
+	return "db_storage"
+}
+
 // fileStorageExtensionConfig returns a configured file_storage extension to be used by all receivers and exporters.
 func fileStorageExtensionConfig(stateDir string) map[string]interface{} {
 	return map[string]interface{}{
 		"directory":        path.Join(stateDir, "file_storage"),
 		"create_directory": true,
+	}
+}
+
+// dbStorageExtensionConfig returns a configured file_storage extension to be used by all receivers and exporters.
+func dbStorageExtensionConfig(stateDir string) map[string]interface{} {
+	return map[string]interface{}{
+		"driver":     "sqlite",
+		"datasource": fmt.Sprintf("file://%s?_pragma=busy_timeout(10000)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)", path.Join(stateDir, "db_storage.db")),
 	}
 }
 
@@ -166,6 +198,7 @@ func (uc *UnifiedConfig) getEnabledExtensions(ctx context.Context, stateDir stri
 	}
 	if uc.Logging.Service.OTelLogging {
 		extensions["file_storage"] = fileStorageExtensionConfig(stateDir)
+		extensions["db_storage"] = dbStorageExtensionConfig(stateDir)
 	}
 	return extensions
 }
@@ -226,14 +259,11 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 					},
 				},
 			},
-			otel.Logging: {
-				Exporter: googleCloudLoggingExporter(),
-				ProcessorsByType: map[string][]otel.Component{
-					// Batching logs improves log export performance.
-					"logs": {
-						otel.BatchProcessor(1000, 1000, "200ms"),
-					},
-				},
+			otel.LoggingPersistentQueue: {
+				Exporter: googleCloudLoggingExporter(true),
+			},
+			otel.LoggingNonPersistentQueue: {
+				Exporter: googleCloudLoggingExporter(false),
 			},
 		},
 	}.Generate(ctx)

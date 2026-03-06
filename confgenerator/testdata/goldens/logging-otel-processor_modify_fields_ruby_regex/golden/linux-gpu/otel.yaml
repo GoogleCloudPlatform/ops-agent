@@ -7,9 +7,33 @@ exporters:
       service_resource_labels: false
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
-  googlecloud/logging:
+  googlecloud/logging_non_persistent_queue:
+    sending_queue:
+      batch:
+        flush_timeout: 200ms
+        max_size: 1000
+        min_size: 1
+        sizer: items
+      block_on_overflow: true
+      enabled: true
+      wait_for_result: true
+    timeout: 60s
+  googlecloud/logging_persistent_queue:
+    sending_queue:
+      batch:
+        flush_timeout: 200ms
+        max_size: 1000
+        min_size: 1
+        sizer: items
+      block_on_overflow: true
+      enabled: true
+      storage: db_storage
+      wait_for_result: true
     timeout: 60s
 extensions:
+  db_storage:
+    datasource: file://db_storage.db?_pragma=busy_timeout(10000)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)
+    driver: sqlite
   file_storage:
     create_directory: true
     directory: file_storage
@@ -17,10 +41,6 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  batch/googlecloud/logging_logs_0:
-    send_batch_max_size: 1000
-    send_batch_size: 1000
-    timeout: 200ms
   cumulativetodelta/loggingmetrics_4:
     include:
       match_type: strict
@@ -765,25 +785,24 @@ receivers:
           - 0.0.0.0:20201
 service:
   extensions:
+  - db_storage
   - file_storage
   pipelines:
     logs/logs_default__pipeline_syslog:
       exporters:
-      - googlecloud/logging
+      - googlecloud/logging_non_persistent_queue
       processors:
       - transform/syslog_0
       - resourcedetection/_global_0
-      - batch/googlecloud/logging_logs_0
       receivers:
       - filelog/syslog
     logs/logs_p1_sample__logs:
       exporters:
-      - googlecloud/logging
+      - googlecloud/logging_persistent_queue
       processors:
       - transform/sample__logs_0
       - transform/logs_p1_sample__logs_0
       - resourcedetection/_global_1
-      - batch/googlecloud/logging_logs_0
       receivers:
       - otlp/sample__logs
     metrics/default__pipeline_hostmetrics:
