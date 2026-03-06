@@ -1190,7 +1190,6 @@ func (uc *UnifiedConfig) OTelLoggingSupported(ctx context.Context) bool {
 		return false
 	}
 	if ucLoggingCopy.Logging == nil {
-		log.Printf("otel logging supported: %v", ucLoggingCopy.Logging)
 		return true
 	}
 	if ucLoggingCopy.Logging.Service == nil {
