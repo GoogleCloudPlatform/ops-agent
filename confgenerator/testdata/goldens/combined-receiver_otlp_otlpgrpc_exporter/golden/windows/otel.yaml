@@ -1400,8 +1400,8 @@ receivers:
       object: SQLServer:Databases
 service:
   extensions:
-  - googleclientauth
   - file_storage
+  - googleclientauth
   pipelines:
     logs/logs_default__pipeline_windows__event__log:
       exporters:
