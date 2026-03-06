@@ -908,7 +908,7 @@ processors:
       - set(body["SourceName"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_11"])
-      - set(cache["value"], ToValues(cache["value"]))
+      - set(cache["value"], ToValues(cache["value"])) where (cache != nil and cache["value"] != nil)
       - set(body["StringInserts"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_12"])
@@ -1000,7 +1000,7 @@ processors:
       - set(body["SourceName"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_11"])
-      - set(cache["value"], ToValues(cache["value"]))
+      - set(cache["value"], ToValues(cache["value"])) where (cache != nil and cache["value"] != nil)
       - set(body["StringInserts"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_12"])
@@ -1150,7 +1150,7 @@ processors:
       - set(body["SourceName"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_11"])
-      - set(cache["value"], ToValues(cache["value"]))
+      - set(cache["value"], ToValues(cache["value"])) where (cache != nil and cache["value"] != nil)
       - set(body["StringInserts"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_12"])
@@ -1192,6 +1192,7 @@ processors:
 receivers:
   filelog/sample__logs:
     exclude: []
+    fingerprint_size: 5kb
     include:
     - /tmp/*.log
     include_file_name: false
@@ -1446,6 +1447,7 @@ service:
       - prometheus/agent_prometheus
   telemetry:
     metrics:
+      level: detailed
       readers:
       - pull:
           exporter:

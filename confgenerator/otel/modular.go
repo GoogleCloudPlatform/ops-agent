@@ -157,6 +157,7 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 		"pipelines": pipelines,
 		"telemetry": map[string]interface{}{
 			"metrics": map[string]interface{}{
+				"level": "detailed",
 				"readers": []map[string]interface{}{{
 					"pull": map[string]interface{}{
 						"exporter": map[string]interface{}{

@@ -190,6 +190,14 @@ func ExtractPatternsRubyRegex(a Value, pattern string, omitEmptyValues bool) Val
 	return valuef(`ExtractPatternsRubyRegex(%s, %q, %v)`, a, pattern, omitEmptyValues)
 }
 
+func Concat(values []Value, delimiter string) Value {
+	stringValues := []string{}
+	for _, v := range values {
+		stringValues = append(stringValues, v.String())
+	}
+	return valuef(`Concat([%s], "%s")`, strings.Join(stringValues, ","), delimiter)
+}
+
 func ConvertCase(a Value, toCase string) Value {
 	return valuef(`ConvertCase(%s, %q)`, a, toCase)
 }

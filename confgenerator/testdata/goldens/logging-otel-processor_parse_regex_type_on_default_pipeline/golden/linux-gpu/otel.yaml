@@ -719,6 +719,7 @@ processors:
 receivers:
   filelog/syslog:
     exclude: []
+    fingerprint_size: 5kb
     include:
     - /var/log/messages
     - /var/log/syslog
@@ -852,6 +853,7 @@ service:
       - prometheus/agent_prometheus
   telemetry:
     metrics:
+      level: detailed
       readers:
       - pull:
           exporter:

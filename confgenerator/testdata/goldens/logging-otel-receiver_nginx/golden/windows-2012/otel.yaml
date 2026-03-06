@@ -1041,7 +1041,7 @@ processors:
       - set(body["SourceName"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_11"])
-      - set(cache["value"], ToValues(cache["value"]))
+      - set(cache["value"], ToValues(cache["value"])) where (cache != nil and cache["value"] != nil)
       - set(body["StringInserts"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_12"])
@@ -1133,7 +1133,7 @@ processors:
       - set(body["SourceName"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_11"])
-      - set(cache["value"], ToValues(cache["value"]))
+      - set(cache["value"], ToValues(cache["value"])) where (cache != nil and cache["value"] != nil)
       - set(body["StringInserts"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_12"])
@@ -1283,7 +1283,7 @@ processors:
       - set(body["SourceName"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_11"])
-      - set(cache["value"], ToValues(cache["value"]))
+      - set(cache["value"], ToValues(cache["value"])) where (cache != nil and cache["value"] != nil)
       - set(body["StringInserts"], cache["value"]) where (cache != nil and cache["value"] != nil)
       - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
       - set(cache["value"], cache["__field_12"])
@@ -1325,6 +1325,7 @@ processors:
 receivers:
   filelog/nginx__access:
     exclude: []
+    fingerprint_size: 5kb
     include:
     - /var/log/nginx/access.log
     include_file_name: false
@@ -1339,6 +1340,7 @@ receivers:
     storage: file_storage
   filelog/nginx__error:
     exclude: []
+    fingerprint_size: 5kb
     include:
     - /var/log/nginx/error.log
     include_file_name: false
@@ -1583,6 +1585,7 @@ service:
       - prometheus/agent_prometheus
   telemetry:
     metrics:
+      level: detailed
       readers:
       - pull:
           exporter:
