@@ -1186,9 +1186,7 @@ func (uc *UnifiedConfig) OTelLoggingSupported(ctx context.Context) bool {
 		Combined: uc.Combined,
 	}
 	ucLoggingCopy, err := ucLogging.DeepCopy(ctx)
-
 	if err != nil {
-		log.Printf("otel logging not supported, error: %v", err)
 		return false
 	}
 	if ucLoggingCopy.Logging == nil {
@@ -1200,9 +1198,6 @@ func (uc *UnifiedConfig) OTelLoggingSupported(ctx context.Context) bool {
 	}
 	ucLoggingCopy.Logging.Service.OTelLogging = true
 	_, err = ucLoggingCopy.GenerateOtelConfig(ctx, "", "")
-	if err != nil {
-		log.Printf("otel logging not supported again, error: %v", err)
-	}
 	return err == nil
 }
 
