@@ -18,6 +18,7 @@ package otel
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	yaml "github.com/goccy/go-yaml"
@@ -210,6 +211,7 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 			extensions[extensionName] = c.Extensions[extensionName]
 			extensionsList = append(extensionsList, extensionName)
 		}
+		sort.Strings(extensionsList)
 		service["extensions"] = extensionsList
 		configMap["extensions"] = extensions
 	}

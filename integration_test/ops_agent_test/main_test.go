@@ -719,7 +719,7 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 
 func TestCustomLogFile(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.UTRLoggingFlagTriplet}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		logPath := logPathForImage(vm.ImageSpec)
@@ -893,7 +893,7 @@ func TestKillChildJobsWhenPluginServerProcessTerminates(t *testing.T) {
 
 func TestCustomLogFormat(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.UTRLoggingFlagTriplet}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
@@ -1324,7 +1324,7 @@ func TestProcessorOrder(t *testing.T) {
 
 func TestSyslogTCP(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.UTRLoggingFlagTriplet}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -1389,7 +1389,7 @@ func TestSyslogTCP(t *testing.T) {
 
 func TestSyslogUDP(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.UTRLoggingFlagTriplet}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -1433,7 +1433,7 @@ func TestSyslogUDP(t *testing.T) {
 
 func TestExcludeLogs(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.UTRLoggingFlagTriplet}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
@@ -1522,7 +1522,7 @@ func TestExcludeLogs(t *testing.T) {
 
 func TestExcludeLogsParseJsonOrder(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.UTRLoggingFlagTriplet}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
@@ -1601,7 +1601,7 @@ func TestExcludeLogsParseJsonOrder(t *testing.T) {
 
 func TestExcludeLogsModifyFieldsOrder(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.UTRLoggingFlagTriplet}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
@@ -1695,7 +1695,7 @@ func TestExcludeLogsModifyFieldsOrder(t *testing.T) {
 
 func TestModifyFields(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.UTRLoggingFlagTriplet}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
@@ -1881,7 +1881,7 @@ func TestResourceNameLabel(t *testing.T) {
 
 func TestLogFilePathLabel(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.UTRLoggingFlagTriplet}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
@@ -2150,7 +2150,7 @@ func TestFluentForwardLog(t *testing.T) {
 
 func TestWindowsEventLog(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.UTRLoggingFlagTriplet}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if !gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -2195,7 +2195,7 @@ func TestWindowsEventLog(t *testing.T) {
 
 func TestWindowsEventLogV1UnsupportedChannel(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.UTRLoggingFlagTriplet}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if !gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -2230,7 +2230,7 @@ func TestWindowsEventLogV1UnsupportedChannel(t *testing.T) {
 
 func TestWindowsEventLogV2(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.UTRLoggingFlagTriplet}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if !gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -2478,7 +2478,7 @@ func hasKeyWithValueType[V any](m map[string]any, k string) bool {
 
 func TestWindowsEventLogWithNonDefaultTimeZone(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.UTRLoggingFlagTriplet}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if !gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -2513,7 +2513,7 @@ func TestWindowsEventLogWithNonDefaultTimeZone(t *testing.T) {
 
 func TestSystemdLog(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.UTRLoggingFlagTriplet}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -2701,7 +2701,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 
 func TestDefaultMetricsNoProxy(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.UTRLoggingFlagTriplet, agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, "", feature); err != nil {
@@ -2719,7 +2719,7 @@ func TestDefaultMetricsNoProxy(t *testing.T) {
 // go/sdi-integ-test#proxy-testing
 func TestDefaultMetricsWithProxy(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.UTRLoggingFlagTriplet, agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if !gce.IsWindows(imageSpec) {
 			t.Skip("Proxy test is currently only supported on windows.")
@@ -5959,7 +5959,7 @@ func TestLogCompression(t *testing.T) {
 
 func TestFileOffset(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.UTRLoggingFlagTriplet}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
