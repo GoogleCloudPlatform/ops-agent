@@ -1181,7 +1181,10 @@ func (uc *UnifiedConfig) OTelLoggingReceivers(ctx context.Context) (map[string]O
 }
 
 func (uc *UnifiedConfig) OTelLoggingSupported(ctx context.Context) bool {
-	ucLogging := UnifiedConfig{Logging: uc.Logging}
+	ucLogging := UnifiedConfig{
+		Logging:  uc.Logging,
+		Combined: uc.Combined,
+	}
 	ucLoggingCopy, err := ucLogging.DeepCopy(ctx)
 	if err != nil {
 		return false
