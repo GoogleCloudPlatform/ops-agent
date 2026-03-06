@@ -918,8 +918,8 @@ receivers:
           - 0.0.0.0:20201
 service:
   extensions:
-  - googleclientauth
   - file_storage
+  - googleclientauth
   pipelines:
     logs/logs_default__pipeline_syslog:
       exporters:
