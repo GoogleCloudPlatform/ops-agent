@@ -17,12 +17,18 @@ combined:
     otlp:
       type: otlp
       metrics_mode: googlemanagedprometheus
+    otlpgooglecloudmonitoring:
+      type: otlp
+      metrics_mode: googlecloudmonitoring
 metrics:
   service:
     pipelines:
       otlp:
         receivers:
           - otlp
+      otlp2:
+        receivers:
+          - otlpgooglecloudmonitoring
 traces:
   service:
     pipelines:

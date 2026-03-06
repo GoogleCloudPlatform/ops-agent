@@ -22,3 +22,11 @@
   feature: receivers:otlp
   key: "[0].metrics_mode"
   value: googlemanagedprometheus
+- module: combined
+  feature: receivers:otlp
+  key: "[1].enabled"
+  value: "true"
+- module: combined
+  feature: receivers:otlp
+  key: "[1].metrics_mode"
+  value: googlecloudmonitoring
