@@ -211,6 +211,7 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 		for _, extensionName := range extensionsList {
 			extensions[extensionName] = c.Extensions[extensionName]
 		}
+
 		service["extensions"] = extensionsList
 		configMap["extensions"] = extensions
 	}
