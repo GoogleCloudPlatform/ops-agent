@@ -36,7 +36,6 @@ import (
 	"github.com/kardianos/osext"
 	promconfig "github.com/prometheus/prometheus/config"
 	"go.uber.org/multierr"
-	"golang.org/x/exp/constraints"
 )
 
 // Ops Agent config.
@@ -891,7 +890,7 @@ func (uc *UnifiedConfig) ValidateLogging() error {
 		validProcessors[k] = nil
 	}
 	portTaken := map[uint16]string{} // port -> receiverId map
-	for _, id := range sortedKeys(l.Service.Pipelines) {
+	for _, id := range otel.SortedKeys(l.Service.Pipelines) {
 		p := l.Service.Pipelines[id]
 		if err := validateComponentKeys(validReceivers, p.ReceiverIDs, subagent, "receiver", id); err != nil {
 			return err
@@ -1088,7 +1087,7 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]PipelineInstan
 	exp_otlp := experimentsFromContext(ctx)["otlp_logging"]
 	exp_otel := l.Service.OTelLogging
 	var out []PipelineInstance
-	for _, pID := range sortedKeys(l.Service.Pipelines) {
+	for _, pID := range otel.SortedKeys(l.Service.Pipelines) {
 		p := l.Service.Pipelines[pID]
 		for _, rID := range p.ReceiverIDs {
 			receiver, ok := receivers[rID]
@@ -1214,7 +1213,7 @@ func (uc *UnifiedConfig) ValidateMetrics(ctx context.Context) error {
 	if m.Service == nil {
 		return nil
 	}
-	for _, id := range sortedKeys(m.Service.Pipelines) {
+	for _, id := range otel.SortedKeys(m.Service.Pipelines) {
 		p := m.Service.Pipelines[id]
 		if err := validateComponentKeys(receivers, p.ReceiverIDs, subagent, "receiver", id); err != nil {
 			return err
@@ -1258,7 +1257,7 @@ func (uc *UnifiedConfig) ValidateTraces() error {
 	if err != nil {
 		return err
 	}
-	for _, id := range sortedKeys(t.Service.Pipelines) {
+	for _, id := range otel.SortedKeys(t.Service.Pipelines) {
 		p := t.Service.Pipelines[id]
 		if err := validateComponentKeys(receivers, p.ReceiverIDs, subagent, "receiver", id); err != nil {
 			return err
@@ -1293,18 +1292,6 @@ var (
 		"mssql":                   1,
 	}
 )
-
-// sortedKeys returns sorted keys from a Set if the Set has a type that can be ordered.
-func sortedKeys[K constraints.Ordered, V any](m map[K]V) []K {
-	keys := []K{}
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Slice(keys, func(i, j int) bool {
-		return keys[i] < keys[j]
-	})
-	return keys
-}
 
 func validateComponentKeys[V any](components map[string]V, refs []string, subagent string, kind string, pipeline string) error {
 	componentSet := set.FromMapKeys(components)
