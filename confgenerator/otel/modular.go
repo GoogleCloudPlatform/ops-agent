@@ -24,6 +24,7 @@ import (
 	yaml "github.com/goccy/go-yaml"
 	"github.com/mitchellh/mapstructure"
 	commonconfig "github.com/prometheus/common/config"
+	"golang.org/x/exp/constraints"
 )
 
 const MetricsPort = 20201
@@ -206,12 +207,10 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 	}
 
 	if len(c.Extensions) > 0 {
-		var extensionsList []string
-		for extensionName := range c.Extensions {
+		extensionsList := SortedKeys(c.Extensions)
+		for _, extensionName := range extensionsList {
 			extensions[extensionName] = c.Extensions[extensionName]
-			extensionsList = append(extensionsList, extensionName)
 		}
-		sort.Strings(extensionsList)
 		service["extensions"] = extensionsList
 		configMap["extensions"] = extensions
 	}
@@ -302,4 +301,16 @@ func contains(s []string, str string) bool {
 	}
 
 	return false
+}
+
+// sortedKeys returns sorted keys from a Set if the Set has a type that can be ordered.
+func SortedKeys[K constraints.Ordered, V any](m map[K]V) []K {
+	keys := []K{}
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
+	return keys
 }
