@@ -5435,6 +5435,61 @@ metrics:
 	})
 }
 
+func TestOTLPLogs(t *testing.T) {
+	t.Parallel()
+	RunForEachImageAndFeatureFlag(t, []string{agents.UTRLoggingFlagTriplet}, func(t *testing.T, imageSpec string, feature string) {
+		t.Parallel()
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		otlpConfig := `
+combined:
+  receivers:
+    otlp:
+      type: otlp
+      grpc_endpoint: 0.0.0.0:4317
+logging:
+  service:
+    pipelines:
+      otlp:
+        receivers:
+        - otlp
+`
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, otlpConfig, feature); err != nil {
+			t.Fatal(err)
+		}
+
+		// Generate log traffic with dummy app
+		logFile, err := testdataDir.Open(path.Join("testdata", "otlp", "logs.go"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer logFile.Close()
+		if err := installGolang(ctx, logger, vm); err != nil {
+			t.Fatal(err)
+		}
+
+		scopeName := "test-scope"
+		scopeVersion := "1.2.3"
+		serviceName := "test-service"
+		serviceNamespace := "test-namespace"
+		serviceInstanceId := "test-instance"
+
+		if err = runGoCode(ctx, logger, vm, logFile, 
+			"-scope_name", scopeName, 
+			"-scope_version", scopeVersion, 
+			"-service_name", serviceName, 
+			"-service_namespace", serviceNamespace, 
+			"-service_instance_id", serviceInstanceId,
+		); err != nil {
+			t.Fatal(err)
+		}
+
+		query := fmt.Sprintf(`labels.instrumentation_source="%s" AND labels.instrumentation_version="%s" AND labels.service.name="%s" AND labels.service.namespace="%s" AND labels.service.instance.id="%s"`, scopeName, scopeVersion, serviceName, serviceNamespace, serviceInstanceId)
+		if err := gce.WaitForLog(ctx, logger, vm, "", time.Hour, query); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
 func isHealthCheckTestImage(imageSpec string) bool {
 	return strings.HasSuffix(imageSpec, "windows-2022") || strings.HasSuffix(imageSpec, "debian-11")
 }
