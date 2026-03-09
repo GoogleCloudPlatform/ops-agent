@@ -5452,6 +5452,12 @@ logging:
       otlp:
         receivers:
         - otlp
+traces:
+  service:
+    pipelines:
+metrics:
+  service:
+	pipelines:
 `
 		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, otlpConfig, feature); err != nil {
 			t.Fatal(err)
@@ -5473,11 +5479,11 @@ logging:
 		serviceNamespace := "test-namespace"
 		serviceInstanceId := "test-instance"
 
-		if err = runGoCode(ctx, logger, vm, logFile, 
-			"-scope_name", scopeName, 
-			"-scope_version", scopeVersion, 
-			"-service_name", serviceName, 
-			"-service_namespace", serviceNamespace, 
+		if err = runGoCode(ctx, logger, vm, logFile,
+			"-scope_name", scopeName,
+			"-scope_version", scopeVersion,
+			"-service_name", serviceName,
+			"-service_namespace", serviceNamespace,
 			"-service_instance_id", serviceInstanceId,
 		); err != nil {
 			t.Fatal(err)
