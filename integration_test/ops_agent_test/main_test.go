@@ -5428,6 +5428,9 @@ metrics:
 
 		options := gce.WaitForTraceOptions{
 			Window: time.Hour,
+			Filters: []string{
+				fmt.Sprintf("+g.co/r/gce_instance/instance_id:%d", vm.ID),
+			},
 		}
 		if _, err := gce.WaitForTrace(ctx, logger, vm, options); err != nil {
 			t.Error(err)
