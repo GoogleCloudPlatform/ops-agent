@@ -23,7 +23,7 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  batch/otlp/otlp_logs_4:
+  batch/otlp/otlp_logs_3:
     send_batch_max_size: 1000
     send_batch_size: 1000
     timeout: 200ms
@@ -686,11 +686,6 @@ processors:
     - action: insert
       key: gcp.project_id
       value: test-project
-  resource/otlp/otlp_logs_1:
-    attributes:
-    - action: insert
-      key: gcp.internal.omit_otlp
-      value: "true"
   resource/otlp/otlp_metrics_0:
     attributes:
     - action: insert
@@ -809,14 +804,14 @@ processors:
     - context: metric
       statements:
       - extract_count_metric(true) where name == "rpc.client.duration"
-  transform/otlp/otlp_logs_2:
+  transform/otlp/otlp_logs_1:
     error_mode: ignore
     log_statements:
     - context: log
       statements:
       - set(attributes["instrumentation_source"], instrumentation_scope.name) where instrumentation_scope.name != ""
       - set(attributes["instrumentation_version"], instrumentation_scope.version) where instrumentation_scope.version != ""
-  transform/otlp/otlp_logs_3:
+  transform/otlp/otlp_logs_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -974,10 +969,9 @@ service:
       - transform/syslog_0
       - resourcedetection/_global_0
       - resource/otlp/otlp_logs_0
-      - resource/otlp/otlp_logs_1
+      - transform/otlp/otlp_logs_1
       - transform/otlp/otlp_logs_2
-      - transform/otlp/otlp_logs_3
-      - batch/otlp/otlp_logs_4
+      - batch/otlp/otlp_logs_3
       receivers:
       - filelog/syslog
     logs/logs_otlp_otlp:
@@ -987,10 +981,9 @@ service:
       - transform/otlp_0
       - resourcedetection/_global_1
       - resource/otlp/otlp_logs_0
-      - resource/otlp/otlp_logs_1
+      - transform/otlp/otlp_logs_1
       - transform/otlp/otlp_logs_2
-      - transform/otlp/otlp_logs_3
-      - batch/otlp/otlp_logs_4
+      - batch/otlp/otlp_logs_3
       receivers:
       - otlp/otlp
     metrics/default__pipeline_hostmetrics:

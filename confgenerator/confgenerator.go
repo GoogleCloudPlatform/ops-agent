@@ -226,7 +226,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 					// Batching logs improves log export performance.
 					"logs": {
 						otel.GCPProjectID(resource.ProjectName()),
-						otel.DisableOtlpRoundTrip(),
+						// otel.DisableOtlpRoundTrip(), // Disable it until b/491102815 is fixed.
 						otel.InstrumentationScope(),
 						otel.CopyServiceResourceLabels(),
 						otel.BatchProcessor(1000, 1000, "200ms"),
