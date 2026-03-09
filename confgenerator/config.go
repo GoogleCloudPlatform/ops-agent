@@ -1182,7 +1182,8 @@ func (uc *UnifiedConfig) OTelLoggingReceivers(ctx context.Context) (map[string]O
 
 func (uc *UnifiedConfig) OTelLoggingSupported(ctx context.Context) bool {
 	ucLogging := UnifiedConfig{
-		Logging:  uc.Logging,
+		Logging: uc.Logging,
+		// The OTLP receiver can be enabled via a combined field to collect OTLP logs using OTel. Therefore, we must include the combined receivers when verifying OTel logging support.
 		Combined: uc.Combined,
 	}
 	ucLoggingCopy, err := ucLogging.DeepCopy(ctx)
