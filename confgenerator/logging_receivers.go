@@ -504,7 +504,7 @@ func (r LoggingReceiverFluentForward) Pipelines(ctx context.Context) ([]otel.Rec
 		),
 	}
 
-	return []otel.ReceiverPipeline{{
+	return []otel.ReceiverPipeline{ConvertToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
 			Type: "fluentforward",
 			Config: map[string]any{
@@ -516,9 +516,9 @@ func (r LoggingReceiverFluentForward) Pipelines(ctx context.Context) ([]otel.Rec
 		},
 
 		ExporterTypes: map[string]otel.ExporterType{
-			"logs": otel.OTel,
+			"logs": otel.Logging,
 		},
-	}}, nil
+	}, ctx, false, false)}, nil
 }
 
 func init() {

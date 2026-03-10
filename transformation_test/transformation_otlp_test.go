@@ -56,7 +56,7 @@ func (transformationConfig transformationTest) generateOTelOTLPExporterConfig(ct
 					"logs": {
 						otel.GCPProjectID("fake-project"),
 						otel.DisableOtlpRoundTrip(),
-						otel.InstrumentationScope(),
+						otel.PreserveInstrumentationScope(),
 						otel.CopyServiceResourceLabels(),
 						otel.BatchProcessor(500, 500, "1500ms"),
 					},

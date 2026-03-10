@@ -676,11 +676,6 @@ func GCPProjectID(projectID string) Component {
 	)
 }
 
-func DisableOtlpRoundTrip() Component {
-	return ResourceTransform(
-		map[string]string{"gcp.internal.omit_otlp": "true"}, false,
-	)
-}
 
 // MetricUnknownCounter is necessary to handle prometheus unknown type metrics
 // go/ops-agent-otlp-migration
@@ -695,19 +690,40 @@ func MetricUnknownCounter() Component {
 	})
 }
 
-func InstrumentationScope() Component {
+// This processor prevents telemetry.googleapis.com from populating the LogEntry.otlp field by setting the gcp.internal.omit_otlp resource attribute to true.
+func DisableOtlpRoundTrip() Component {
+	return ResourceTransform(
+		map[string]string{"gcp.internal.omit_otlp": "true"}, false,
+	)
+}
+
+// This processor preserves instrumentation scope name and version in logRecord attributes, if they exist. This processor is required to send logs to telemetry.googleapis.com through an otlp exporter.
+func PreserveInstrumentationScope() Component {
+	scopeName := ottl.RValue("instrumentation_scope.name")
+	scopeVersion := ottl.RValue("instrumentation_scope.version")
+	scopeNameLogAttribute := ottl.LValue{"attributes", "instrumentation_source"}
+	scopeVersionLogAttribute := ottl.LValue{"attributes", "instrumentation_version"}
+
 	return Transform("log", "log", ottl.NewStatements(
-		ottl.LValue{"attributes", "instrumentation_source"}.SetIf(ottl.RValue("instrumentation_scope.name"), ottl.IsNotEmptyString(ottl.RValue("instrumentation_scope.name"))),
-		ottl.LValue{"attributes", "instrumentation_version"}.SetIf(ottl.RValue("instrumentation_scope.version"), ottl.IsNotEmptyString(ottl.RValue("instrumentation_scope.version"))),
+		scopeNameLogAttribute.SetIf(scopeName, ottl.IsNotEmptyString(scopeName)),
+		scopeVersionLogAttribute.SetIf(scopeVersion, ottl.IsNotEmptyString(scopeVersion)),
 	))
 }
 
-// This processor copies the service.* attributes from the resource to the log attributes, if they exist.
+// This processor copies the service.* attributes from the resource to the logRecord attributes, if they exist. This processor is required to send logs to telemetry.googleapis.com through an otlp exporter.
 func CopyServiceResourceLabels() Component {
+	serviceNameResourceAttribute := ottl.RValue(`resource.attributes["service.name"]`)
+	serviceNamespaceResourceAttribute := ottl.RValue(`resource.attributes["service.namespace"]`)
+	serviceInstanceIdResourceAttribute := ottl.RValue(`resource.attributes["service.instance.id"]`)
+
+	serviceNameLogAttribute := ottl.LValue{"attributes", "service.name"}
+	serviceNamespaceLogAttribute := ottl.LValue{"attributes", "service.namespace"}
+	serviceInstanceIdLogAttribute := ottl.LValue{"attributes", "service.instance.id"}
+
 	return Transform("log", "log", ottl.NewStatements(
-		ottl.LValue{"attributes", "service.name"}.SetIf(ottl.RValue(`resource.attributes["service.name"]`), ottl.IsNotNil(ottl.RValue(`resource.attributes["service.name"]`))),
-		ottl.LValue{"attributes", "service.namespace"}.SetIf(ottl.RValue(`resource.attributes["service.namespace"]`), ottl.IsNotNil(ottl.RValue(`resource.attributes["service.namespace"]`))),
-		ottl.LValue{"attributes", "service.instance.id"}.SetIf(ottl.RValue(`resource.attributes["service.instance.id"]`), ottl.IsNotNil(ottl.RValue(`resource.attributes["service.instance.id"]`))),
+		serviceNameLogAttribute.SetIf(serviceNameResourceAttribute, ottl.IsNotNil(serviceNameResourceAttribute)),
+		serviceNamespaceLogAttribute.SetIf(serviceNamespaceResourceAttribute, ottl.IsNotNil(serviceNamespaceResourceAttribute)),
+		serviceInstanceIdLogAttribute.SetIf(serviceInstanceIdResourceAttribute, ottl.IsNotNil(serviceInstanceIdResourceAttribute)),
 	))
 }
 
