@@ -19,6 +19,7 @@ func main() {
 	serviceInstanceId := flag.String("service_instance_id", "my-instance", "service.instance.id attribute value")
 	scopeName := flag.String("scope_name", "my-scope", "scope.name attribute value")
 	scopeVersion := flag.String("scope_version", "1.0.0", "scope.version attribute value")
+	logBody := flag.String("log_body", "This is a test log", "log body text")
 	flag.Parse()
 
 	ctx := context.Background()
@@ -43,7 +44,7 @@ func main() {
 
 	lr := sl.LogRecords().AppendEmpty()
 	lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-	lr.Body().SetStr("This is a test log")
+	lr.Body().SetStr(*logBody)
 
 	req := plogotlp.NewExportRequestFromLogs(ld)
 	_, err = client.Export(ctx, req)

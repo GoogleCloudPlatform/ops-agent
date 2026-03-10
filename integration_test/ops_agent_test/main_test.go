@@ -5457,7 +5457,7 @@ traces:
     pipelines:
 metrics:
   service:
-	pipelines:
+    pipelines:
 `
 		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, otlpConfig, feature); err != nil {
 			t.Fatal(err)
@@ -5478,6 +5478,7 @@ metrics:
 		serviceName := "test-service"
 		serviceNamespace := "test-namespace"
 		serviceInstanceId := "test-instance"
+		logBody := "test-log-body"
 
 		if err = runGoCode(ctx, logger, vm, logFile,
 			"-scope_name", scopeName,
@@ -5485,11 +5486,12 @@ metrics:
 			"-service_name", serviceName,
 			"-service_namespace", serviceNamespace,
 			"-service_instance_id", serviceInstanceId,
+			"-log_body", logBody,
 		); err != nil {
 			t.Fatal(err)
 		}
 
-		query := fmt.Sprintf(`labels.instrumentation_source="%s" AND labels.instrumentation_version="%s" AND labels.service.name="%s" AND labels.service.namespace="%s" AND labels.service.instance.id="%s"`, scopeName, scopeVersion, serviceName, serviceNamespace, serviceInstanceId)
+		query := fmt.Sprintf(`textPayload="%s" AND labels.instrumentation_source="%s" AND labels.instrumentation_version="%s" AND labels.service.name="%s" AND labels.service.namespace="%s" AND labels.service.instance.id="%s"`, logBody, scopeName, scopeVersion, serviceName, serviceNamespace, serviceInstanceId)
 		if err := gce.WaitForLog(ctx, logger, vm, "", time.Hour, query); err != nil {
 			t.Error(err)
 		}
