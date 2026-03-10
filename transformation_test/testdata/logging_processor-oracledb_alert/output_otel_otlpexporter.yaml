@@ -1,0 +1,128 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.internal.omit_otlp
+        value:
+          stringValue: "true"
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/oracledb_alert
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: |-
+                  Thread 1 opened at log sequence 1
+                  Current log# 1 seq# 1 mem# 0: /u01/oracle/oradata/DB19C/redo01.log
+                  Successful open of redo thread 1
+            - key: timestamp
+              value:
+                stringValue: 2021-12-21T10:19:47.339827-05:00
+        observedTimeUnixNano: now
+        severityText: ALERT
+      scope: {}
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.internal.omit_otlp
+        value:
+          stringValue: "true"
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/oracledb_alert
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: |-
+                  Checkpoint not complete, extending checkpoint until all current
+                  log writes have been written to disk
+                  Warning: LGWR switched to log 2 before checkpoint completed
+            - key: timestamp
+              value:
+                stringValue: 2022-03-15T14:32:18.456789+00:00
+        observedTimeUnixNano: now
+        severityText: ALERT
+      scope: {}
+- collector_errors:
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2021-12-21T10:19:47.339827-05:00\" as \"%Y-%m-%dT%H:%M:%S.%L%z\": cannot parse \"-05:00\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%dT%H:%M:%S.%L%z") != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2022-03-15T14:32:18.456789+00:00\" as \"%Y-%m-%dT%H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%dT%H:%M:%S.%L%z") != nil)

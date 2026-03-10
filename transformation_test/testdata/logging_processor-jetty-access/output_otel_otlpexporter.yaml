@@ -1,0 +1,233 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.internal.omit_otlp
+        value:
+          stringValue: "true"
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: protocol
+                value:
+                  stringValue: HTTP/1.1
+              - key: remoteIp
+                value:
+                  stringValue: 127.0.0.1
+              - key: requestMethod
+                value:
+                  stringValue: GET
+              - key: requestUrl
+                value:
+                  stringValue: /index.html
+              - key: responseSize
+                value:
+                  stringValue: "2326"
+              - key: status
+                value:
+                  intValue: "200"
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/jetty_access
+        body:
+          kvlistValue: {}
+        observedTimeUnixNano: now
+        timeUnixNano: "971211336000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: protocol
+                value:
+                  stringValue: HTTP/1.1
+              - key: remoteIp
+                value:
+                  stringValue: "::1"
+              - key: requestMethod
+                value:
+                  stringValue: GET
+              - key: requestUrl
+                value:
+                  stringValue: /
+              - key: responseSize
+                value:
+                  stringValue: "10701"
+              - key: status
+                value:
+                  intValue: "200"
+              - key: userAgent
+                value:
+                  stringValue: curl/7.64.0
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/jetty_access
+        body:
+          kvlistValue: {}
+        observedTimeUnixNano: now
+        timeUnixNano: "1629996583000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: protocol
+                value:
+                  stringValue: HTTP/1.0
+              - key: referer
+                value:
+                  stringValue: http://www.example.com/start.html
+              - key: remoteIp
+                value:
+                  stringValue: 192.168.1.100
+              - key: requestMethod
+                value:
+                  stringValue: GET
+              - key: requestUrl
+                value:
+                  stringValue: /forbidden.html?something=something
+              - key: responseSize
+                value:
+                  stringValue: "2326"
+              - key: status
+                value:
+                  intValue: "403"
+              - key: userAgent
+                value:
+                  stringValue: Mozilla/4.08 [en] (Win98; I ;Nav)
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/jetty_access
+        body:
+          kvlistValue:
+            values:
+            - key: user
+              value:
+                stringValue: frank
+        observedTimeUnixNano: now
+        timeUnixNano: "971211336000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: protocol
+                value:
+                  stringValue: HTTP/1.1
+              - key: referer
+                value:
+                  stringValue: https://example.com/register
+              - key: remoteIp
+                value:
+                  stringValue: 10.0.0.1
+              - key: requestMethod
+                value:
+                  stringValue: POST
+              - key: requestUrl
+                value:
+                  stringValue: /api/users
+              - key: responseSize
+                value:
+                  stringValue: "445"
+              - key: status
+                value:
+                  intValue: "201"
+              - key: userAgent
+                value:
+                  stringValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/jetty_access
+        body:
+          kvlistValue: {}
+        observedTimeUnixNano: now
+        timeUnixNano: "1629996615000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: protocol
+                value:
+                  stringValue: HTTP/1.1
+              - key: remoteIp
+                value:
+                  stringValue: 203.0.113.4
+              - key: requestMethod
+                value:
+                  stringValue: GET
+              - key: requestUrl
+                value:
+                  stringValue: /admin/dashboard
+              - key: responseSize
+                value:
+                  stringValue: "1234"
+              - key: status
+                value:
+                  intValue: "403"
+              - key: userAgent
+                value:
+                  stringValue: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/jetty_access
+        body:
+          kvlistValue:
+            values:
+            - key: user
+              value:
+                stringValue: admin
+        observedTimeUnixNano: now
+        timeUnixNano: "1629996682000000000"
+      scope: {}

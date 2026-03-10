@@ -1,0 +1,112 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.internal.omit_otlp
+        value:
+          stringValue: "true"
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: info
+            - key: message
+              value:
+                stringValue: start
+        observedTimeUnixNano: now
+        timeUnixNano: "1672657445123456789"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: error
+            - key: message
+              value:
+                stringValue: failed to connect
+            - key: time
+              value:
+                stringValue: 2024-06-15T14:30:00.987654321Z
+        observedTimeUnixNano: now
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: warning
+            - key: message
+              value:
+                stringValue: low disk space
+            - key: time
+              value:
+                stringValue: 2022-12-31T23:59:59.000000000-0800
+        observedTimeUnixNano: now
+      scope: {}
+- collector_errors:
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2024-06-15T14:30:00.987654321Z\": extra text: \"Z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_0
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M:%S.%L") != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2022-12-31T23:59:59.000000000-0800\": extra text: \"-0800\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_0
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M:%S.%L") != nil)

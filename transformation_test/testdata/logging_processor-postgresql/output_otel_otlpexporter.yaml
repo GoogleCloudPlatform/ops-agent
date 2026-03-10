@@ -1,0 +1,810 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.internal.omit_otlp
+        value:
+          stringValue: "true"
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/postgresql_general
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: LOG
+            - key: message
+              value:
+                stringValue: "connection received: host=192.168.1.10 port=5432 user=admin database=mydb"
+            - key: tid
+              value:
+                intValue: "21763"
+            - key: time
+              value:
+                stringValue: 2025-07-21 10:14:21.123 UTC
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/postgresql_general
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: LOG
+            - key: message
+              value:
+                stringValue: "connection authorized: user=admin database=mydb application_name=psql"
+            - key: tid
+              value:
+                intValue: "21763"
+            - key: time
+              value:
+                stringValue: 2025-07-21 10:14:21.124 UTC
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/postgresql_general
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: STATEMENT
+            - key: message
+              value:
+                stringValue: SELECT * FROM customers WHERE last_login > now() - interval '30 days';
+            - key: tid
+              value:
+                intValue: "21763"
+            - key: time
+              value:
+                stringValue: 2025-07-21 10:14:21.125 UTC
+        observedTimeUnixNano: now
+        severityText: DEBUG
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/postgresql_general
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: LOG
+            - key: message
+              value:
+                stringValue: "disconnection: session time: 0:00:01.178 user=admin database=mydb host=192.168.1.10 port=5432"
+            - key: tid
+              value:
+                intValue: "21765"
+            - key: time
+              value:
+                stringValue: 2025-07-21 10:14:22.301 UTC
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/postgresql_general
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: ERROR
+            - key: message
+              value:
+                stringValue: syntax error at or near "FROMM" at character 15
+            - key: tid
+              value:
+                intValue: "21767"
+            - key: time
+              value:
+                stringValue: 2025-07-21 10:14:25.411 UTC
+        observedTimeUnixNano: now
+        severityText: ERROR
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/postgresql_general
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: STATEMENT
+            - key: message
+              value:
+                stringValue: SELECT name, email FROMM users;
+            - key: tid
+              value:
+                intValue: "21767"
+            - key: time
+              value:
+                stringValue: 2025-07-21 10:14:25.411 UTC
+        observedTimeUnixNano: now
+        severityText: DEBUG
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/postgresql_general
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: LOG
+            - key: message
+              value:
+                stringValue: "duration: 5.345 ms  statement: INSERT INTO orders (user_id, amount, created_at) VALUES (42, 199.99, now());"
+            - key: tid
+              value:
+                intValue: "21770"
+            - key: time
+              value:
+                stringValue: 2025-07-21 10:14:27.123 UTC
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/postgresql_general
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: WARNING
+            - key: message
+              value:
+                stringValue: there is already a transaction in progress
+            - key: tid
+              value:
+                intValue: "21772"
+            - key: time
+              value:
+                stringValue: 2025-07-21 10:14:30.673 UTC
+        observedTimeUnixNano: now
+        severityText: WARNING
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/postgresql_general
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: STATEMENT
+            - key: message
+              value:
+                stringValue: BEGIN;
+            - key: tid
+              value:
+                intValue: "21772"
+            - key: time
+              value:
+                stringValue: 2025-07-21 10:14:30.673 UTC
+        observedTimeUnixNano: now
+        severityText: DEBUG
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/postgresql_general
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: LOG
+            - key: message
+              value:
+                stringValue: |-
+                  automatic vacuum of table "public.sessions": index scans: 1
+                          pages: 1000 removed, 4323 remain
+                          tuples: 12345 removed, 54232 remain
+                          buffer usage: 753 hits, 945 misses, 3 dirtied
+                          avg read rate: 10.45 MB/s, avg write rate: 3.32 MB/s
+            - key: tid
+              value:
+                intValue: "21775"
+            - key: time
+              value:
+                stringValue: 2025-07-21 10:14:35.987 UTC
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/postgresql_general
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: FATAL
+            - key: message
+              value:
+                stringValue: password authentication failed for user "invalid_user"
+            - key: tid
+              value:
+                intValue: "21778"
+            - key: time
+              value:
+                stringValue: 2025-07-21 10:14:40.118 UTC
+        observedTimeUnixNano: now
+        severityText: CRITICAL
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/postgresql_general
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: DETAIL
+            - key: message
+              value:
+                stringValue: "Connection matched pg_hba.conf line 90: \"host all all 0.0.0.0/0 md5\""
+            - key: tid
+              value:
+                intValue: "21778"
+            - key: time
+              value:
+                stringValue: 2025-07-21 10:14:40.118 UTC
+        observedTimeUnixNano: now
+        severityText: DEBUG
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/postgresql_general
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: LOG
+            - key: message
+              value:
+                stringValue: "checkpoint starting: time"
+            - key: tid
+              value:
+                intValue: "21782"
+            - key: time
+              value:
+                stringValue: 2025-07-21 10:14:45.721 UTC
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/postgresql_general
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: LOG
+            - key: message
+              value:
+                stringValue: "checkpoint complete: wrote 1523 buffers (1.2%); 0 WAL file(s) added, 0 removed, 1 recycled; write=0.091 s, sync=0.063 s, total=0.332 s; sync files=32, longest=0.021 s, average=0.004 s"
+            - key: tid
+              value:
+                intValue: "21782"
+            - key: time
+              value:
+                stringValue: 2025-07-21 10:14:46.053 UTC
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/postgresql_general
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: LOG
+            - key: message
+              value:
+                stringValue: background worker "logical replication launcher" (PID 21784) started
+            - key: tid
+              value:
+                intValue: "21784"
+            - key: time
+              value:
+                stringValue: 2025-07-21 10:14:49.215 UTC
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/postgresql_general
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: LOG
+            - key: message
+              value:
+                stringValue: "duration: 13.212 ms  statement: UPDATE inventory SET quantity = quantity - 1 WHERE product_id = 502;"
+            - key: tid
+              value:
+                intValue: "21790"
+            - key: time
+              value:
+                stringValue: 2025-07-21 10:14:52.800 UTC
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/postgresql_general
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: PANIC
+            - key: message
+              value:
+                stringValue: "could not write to log file: No space left on device"
+            - key: tid
+              value:
+                intValue: "21793"
+            - key: time
+              value:
+                stringValue: 2025-07-21 10:14:55.029 UTC
+        observedTimeUnixNano: now
+        severityText: CRITICAL
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/postgresql_general
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: LOG
+            - key: message
+              value:
+                stringValue: "server process (PID 21793) was terminated by signal 6: Aborted"
+            - key: tid
+              value:
+                intValue: "21793"
+            - key: time
+              value:
+                stringValue: 2025-07-21 10:14:55.029 UTC
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/postgresql_general
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: DETAIL
+            - key: message
+              value:
+                stringValue: "Failed process was running: COPY logs TO '/var/tmp/log_backup.csv' CSV"
+            - key: tid
+              value:
+                intValue: "21793"
+            - key: time
+              value:
+                stringValue: 2025-07-21 10:14:55.029 UTC
+        observedTimeUnixNano: now
+        severityText: DEBUG
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/postgresql_general
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: LOG
+            - key: message
+              value:
+                stringValue: database system is shutting down
+            - key: tid
+              value:
+                intValue: "1"
+            - key: time
+              value:
+                stringValue: 2025-07-21 10:14:56.000 UTC
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/postgresql_general
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: LOG
+            - key: message
+              value:
+                stringValue: database system shut down at 2025-07-21 10:14:56 UTC
+            - key: tid
+              value:
+                intValue: "1"
+            - key: time
+              value:
+                stringValue: 2025-07-21 10:14:56.650 UTC
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/postgresql_general
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: LOG
+            - key: message
+              value:
+                stringValue: database system was shut down at 2025-07-21 10:14:56 UTC
+            - key: tid
+              value:
+                intValue: "1"
+            - key: time
+              value:
+                stringValue: 2025-07-21 10:14:57.012 UTC
+        observedTimeUnixNano: now
+        severityText: INFO
+      scope: {}
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.internal.omit_otlp
+        value:
+          stringValue: "true"
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/postgresql_general
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: LOG
+            - key: message
+              value:
+                stringValue: database system is ready to accept connections
+            - key: tid
+              value:
+                intValue: "1"
+            - key: time
+              value:
+                stringValue: 2025-07-21 10:14:57.012 UTC
+        observedTimeUnixNano: now
+        severityText: INFO
+      scope: {}
+- collector_errors:
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-07-21 10:14:21.123 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-07-21 10:14:21.124 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-07-21 10:14:21.125 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-07-21 10:14:22.301 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-07-21 10:14:25.411 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-07-21 10:14:25.411 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-07-21 10:14:27.123 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-07-21 10:14:30.673 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-07-21 10:14:30.673 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-07-21 10:14:35.987 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%d %H:%M:%S.%L %z") != nil)

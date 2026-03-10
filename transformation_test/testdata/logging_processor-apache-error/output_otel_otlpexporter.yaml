@@ -1,0 +1,154 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.internal.omit_otlp
+        value:
+          stringValue: "true"
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/apache_error
+        body:
+          kvlistValue:
+            values:
+            - key: client
+              value:
+                stringValue: 72.15.99.187
+            - key: errorCode
+              value:
+                stringValue: (13)Permission denied
+            - key: level
+              value:
+                stringValue: error
+            - key: message
+              value:
+                stringValue: "File does not exist: /usr/local/apache2/htdocs/favicon.ico"
+            - key: module
+              value:
+                stringValue: core
+            - key: pid
+              value:
+                intValue: "35708"
+            - key: tid
+              value:
+                intValue: "4328636416"
+        observedTimeUnixNano: now
+        severityText: ERROR
+        timeUnixNano: "1315590149902022000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/apache_error
+        body:
+          kvlistValue:
+            values:
+            - key: errorCode
+              value:
+                stringValue: AH02217
+            - key: level
+              value:
+                stringValue: error
+            - key: message
+              value:
+                stringValue: "ssl_stapling_init_cert: Can't retrieve issuer certificate!"
+            - key: module
+              value:
+                stringValue: ssl
+            - key: pid
+              value:
+                intValue: "2451"
+            - key: tid
+              value:
+                intValue: "140169666050176"
+        observedTimeUnixNano: now
+        severityText: ERROR
+        timeUnixNano: "1632997109239182000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/apache_error
+        body:
+          kvlistValue:
+            values:
+            - key: client
+              value:
+                stringValue: 72.15.99.187
+            - key: level
+              value:
+                stringValue: error
+            - key: message
+              value:
+                stringValue: "File does not exist: /usr/local/apache2/htdocs/favicon.ico"
+            - key: pid
+              value:
+                intValue: "35708"
+            - key: tid
+              value:
+                intValue: "4328636416"
+        observedTimeUnixNano: now
+        severityText: ERROR
+        timeUnixNano: "1315590149902022000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/apache_error
+        body:
+          kvlistValue:
+            values:
+            - key: client
+              value:
+                stringValue: 127.0.0.1
+            - key: level
+              value:
+                stringValue: error
+            - key: message
+              value:
+                stringValue: "client denied by server configuration: /export/home/live/ap/htdocs/test "
+        observedTimeUnixNano: now
+        severityText: ERROR
+        timeUnixNano: "971299972000000000"
+      scope: {}

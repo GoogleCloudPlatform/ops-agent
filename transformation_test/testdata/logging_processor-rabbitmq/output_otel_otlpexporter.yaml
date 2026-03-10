@@ -1,0 +1,552 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.internal.omit_otlp
+        value:
+          stringValue: "true"
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/rabbitmq
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: "** Connection attempt from node 'rabbit_ctl_17@keith-testing-rabbitmq' rejected. Invalid challenge reply. **"
+            - key: process_id
+              value:
+                stringValue: 0.692.0
+            - key: severity
+              value:
+                stringValue: erro
+            - key: timestamp
+              value:
+                stringValue: 2025-08-18 01:01:20.441571+00:00
+        observedTimeUnixNano: now
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/rabbitmq
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: Successfully set user tags for user 'admin' to [administrator]
+            - key: process_id
+              value:
+                stringValue: 0.801.0
+            - key: severity
+              value:
+                stringValue: info
+            - key: timestamp
+              value:
+                stringValue: 2025-08-18 01:05:10.000123+02:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/rabbitmq
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: "Login failed for user 'guest': invalid credentials"
+            - key: process_id
+              value:
+                stringValue: 0.310.0
+            - key: severity
+              value:
+                stringValue: error
+            - key: timestamp
+              value:
+                stringValue: 2025-08-18 02:15:45.987+00:00
+        observedTimeUnixNano: now
+        severityText: ERROR
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/rabbitmq
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: User 'guest' attempted to access vhost '/' but was denied
+            - key: process_id
+              value:
+                stringValue: 0.312.0
+            - key: severity
+              value:
+                stringValue: warning
+            - key: timestamp
+              value:
+                stringValue: 2025-08-18 02:16:01.001+00:00
+        observedTimeUnixNano: now
+        severityText: WARNING
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/rabbitmq
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: "Node rabbit@node1 down: lost connection"
+            - key: process_id
+              value:
+                stringValue: 0.400.0
+            - key: severity
+              value:
+                stringValue: noti
+            - key: timestamp
+              value:
+                stringValue: 2025-08-18 02:22:33.444+00:00
+        observedTimeUnixNano: now
+        severityText: DEFAULT
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/rabbitmq
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: Node rabbit@node1 recovered and rejoined cluster
+            - key: process_id
+              value:
+                stringValue: 0.401.0
+            - key: severity
+              value:
+                stringValue: info
+            - key: timestamp
+              value:
+                stringValue: 2025-08-18 02:23:00.999+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/rabbitmq
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: "Memory high watermark reached (used: 2048MB, limit: 2000MB)"
+            - key: process_id
+              value:
+                stringValue: 0.500.0
+            - key: severity
+              value:
+                stringValue: warning
+            - key: timestamp
+              value:
+                stringValue: 2025-08-18 02:55:55.123+00:00
+        observedTimeUnixNano: now
+        severityText: WARNING
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/rabbitmq
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: "Disk free space too low. Free bytes: 500000, limit: 1000000"
+            - key: process_id
+              value:
+                stringValue: 0.501.0
+            - key: severity
+              value:
+                stringValue: erro
+            - key: timestamp
+              value:
+                stringValue: 2025-08-18 03:56:01.456+00:00
+        observedTimeUnixNano: now
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/rabbitmq
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: "AMQP connection <0.600.0> (10.0.0.1:5672 -> 10.0.0.2:5672): connection closed unexpectedly"
+            - key: process_id
+              value:
+                stringValue: 0.600.0
+            - key: severity
+              value:
+                stringValue: erro
+            - key: timestamp
+              value:
+                stringValue: 2025-08-18 04:06:06.789+00:00
+        observedTimeUnixNano: now
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/rabbitmq
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: Re-establishing connection to peer rabbit@node2
+            - key: process_id
+              value:
+                stringValue: 0.601.0
+            - key: severity
+              value:
+                stringValue: debug
+            - key: timestamp
+              value:
+                stringValue: 2025-08-18 04:06:10.101+00:00
+        observedTimeUnixNano: now
+        severityText: DEBUG
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/rabbitmq
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: "{shutdown,{connection_closed, \"Broken pipe\"}}"
+            - key: process_id
+              value:
+                stringValue: 123.456.789
+            - key: severity
+              value:
+                stringValue: noti
+            - key: timestamp
+              value:
+                stringValue: 2025-08-18 04:07:07.777+00:00
+        observedTimeUnixNano: now
+        severityText: DEFAULT
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/rabbitmq
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: |-
+                  2025-08-18 05:07:43.557042+00:00 [erro] <0.130.0>
+                  BOOT FAILED
+                  ===========
+                  ERROR: could not bind to distribution port 25672, it is in use by another node: rabbit@keith-testing-rabbitmq
+        observedTimeUnixNano: now
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/rabbitmq
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: "Disk free space too low. Free bytes: 500000, limit: 1000000"
+            - key: process_id
+              value:
+                stringValue: 0.501.0
+            - key: severity
+              value:
+                stringValue: erro
+            - key: timestamp
+              value:
+                stringValue: 2025-08-18 06:56:01.456+00:00
+        observedTimeUnixNano: now
+      scope: {}
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.internal.omit_otlp
+        value:
+          stringValue: "true"
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/rabbitmq
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: "{shutdown,{connection_closed, \"Broken pipe\"}}"
+            - key: process_id
+              value:
+                stringValue: 123.456.789
+            - key: severity
+              value:
+                stringValue: noti
+            - key: timestamp
+              value:
+                stringValue: 2025-08-18 07:07:07.777+00:00
+        observedTimeUnixNano: now
+        severityText: DEFAULT
+      scope: {}
+- collector_errors:
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-08-18 01:01:20.441571+00:00\" as \"%Y-%m-%d %H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%d %H:%M:%S.%L%z") != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-08-18 01:05:10.000123+02:00\" as \"%Y-%m-%d %H:%M:%S.%L%z\": cannot parse \"+02:00\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%d %H:%M:%S.%L%z") != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-08-18 02:15:45.987+00:00\" as \"%Y-%m-%d %H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%d %H:%M:%S.%L%z") != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-08-18 02:16:01.001+00:00\" as \"%Y-%m-%d %H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%d %H:%M:%S.%L%z") != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-08-18 02:22:33.444+00:00\" as \"%Y-%m-%d %H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%d %H:%M:%S.%L%z") != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-08-18 02:23:00.999+00:00\" as \"%Y-%m-%d %H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%d %H:%M:%S.%L%z") != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-08-18 02:55:55.123+00:00\" as \"%Y-%m-%d %H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%d %H:%M:%S.%L%z") != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-08-18 03:56:01.456+00:00\" as \"%Y-%m-%d %H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%d %H:%M:%S.%L%z") != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-08-18 04:06:06.789+00:00\" as \"%Y-%m-%d %H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%d %H:%M:%S.%L%z") != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-08-18 04:06:10.101+00:00\" as \"%Y-%m-%d %H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%d %H:%M:%S.%L%z") != nil)

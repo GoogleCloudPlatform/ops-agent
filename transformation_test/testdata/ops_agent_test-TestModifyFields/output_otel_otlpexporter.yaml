@@ -1,0 +1,115 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.internal.omit_otlp
+        value:
+          stringValue: "true"
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: label2
+          value:
+            stringValue: label1 value
+        - key: my.cool.service/foo
+          value:
+            stringValue: field value
+        - key: static
+          value:
+            stringValue: hello world
+        body:
+          kvlistValue:
+            values:
+            - key: default_absent
+              value:
+                stringValue: default
+            - key: default_present
+              value:
+                stringValue: original
+            - key: field2
+              value:
+                stringValue: field value
+            - key: float
+              value:
+                doubleValue: 10.5
+            - key: integer
+              value:
+                intValue: "15"
+            - key: mapped_field
+              value:
+                stringValue: field value
+            - key: spanId
+              value:
+                stringValue: facefeedb0bacafe
+        observedTimeUnixNano: now
+        severityText: WARNING
+        spanId: facefeedb0bacafe
+        traceId: deadcafedeadc0defacefeedb0bacafe
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: label2
+          value:
+            stringValue: label1 value
+        - key: my.cool.service/foo
+          value:
+            stringValue: field value
+        - key: static
+          value:
+            stringValue: hello world
+        body:
+          kvlistValue:
+            values:
+            - key: default_absent
+              value:
+                stringValue: default
+            - key: default_present
+              value:
+                stringValue: original
+            - key: field2
+              value:
+                stringValue: field value
+            - key: float
+              value:
+                doubleValue: 10.5
+            - key: integer
+              value:
+                intValue: "15"
+            - key: mapped_field
+              value:
+                stringValue: field value
+            - key: spanId
+              value:
+                stringValue: facefeedb0bacafe
+        observedTimeUnixNano: now
+        severityText: WARNING
+        spanId: facefeedb0bacafe
+        traceId: deadcafedeadc0defacefeedb0bacafe
+      scope: {}

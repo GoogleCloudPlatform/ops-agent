@@ -131,6 +131,10 @@ func TestTransformationTests(t *testing.T) {
 				t.Parallel()
 				transformationConfig.runOTelTest(t, dir.Name())
 			})
+			t.Run("otel-otlpexporter", func(t *testing.T) {
+				t.Parallel()
+				transformationConfig.runOtelOTLPExporterTest(t, dir.Name())
+			})
 		})
 	}
 }

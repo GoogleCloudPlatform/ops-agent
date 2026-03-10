@@ -1,0 +1,238 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.internal.omit_otlp
+        value:
+          stringValue: "true"
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: remoteIp
+                value:
+                  stringValue: 127.0.0.1
+              - key: requestMethod
+                value:
+                  stringValue: PUT
+              - key: responseSize
+                value:
+                  stringValue: "16"
+              - key: serverIp
+                value:
+                  stringValue: localhost:5984
+              - key: status
+                value:
+                  intValue: "201"
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/couchdb
+        body:
+          kvlistValue:
+            values:
+            - key: host
+              value:
+                stringValue: nohost
+            - key: level
+              value:
+                stringValue: notice
+            - key: message
+              value:
+                stringValue: otelu PUT /oteld 201 ok 16
+            - key: node
+              value:
+                stringValue: nonode
+            - key: path
+              value:
+                stringValue: /oteld
+            - key: pid
+              value:
+                stringValue: 0.17165.1
+            - key: remote_user
+              value:
+                stringValue: otelu
+            - key: status_message
+              value:
+                stringValue: ok
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1638488202555157000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/couchdb
+        body:
+          kvlistValue:
+            values:
+            - key: host
+              value:
+                stringValue: nohost
+            - key: level
+              value:
+                stringValue: info
+            - key: message
+              value:
+                stringValue: <0.216.0> -------- Apache CouchDB has started. Time to relax.
+            - key: node
+              value:
+                stringValue: nonode
+            - key: pid
+              value:
+                stringValue: 0.216.0
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1642006376998128000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/couchdb
+        body:
+          kvlistValue:
+            values:
+            - key: host
+              value:
+                stringValue: nohost
+            - key: level
+              value:
+                stringValue: error
+            - key: message
+              value:
+                stringValue: |-
+                  emulator -------- Error in process <0.463.0> with exit value:
+                  					{database_does_not_exist,[{mem3_shards,load_shards_from_db,"_users",[{file,"src/mem3_shards.erl"},{line,399}]},{mem3_shards,load_shards_from_disk,1,[{file,"src/mem3_shards.erl"},{line,374}]},{mem3_shards,load_shards_from_disk,2,[{file,"src/mem3_shards.erl"},{line,403}]},{mem3_shards,for_docid,3,[{file,"src/mem3_shards.erl"},{line,96}]},{fabric_doc_open,go,3,[{file,"src/fabric_doc_open.erl"},{line,39}]},{chttpd_auth_cache,ensure_auth_ddoc_exists,2,[{file,"src/chttpd_auth_cache.erl"},{line,198}]},{chttpd_auth_cache,listen_for_changes,1,[{file,"src/chttpd_auth_cache.erl"},{line,145}]}]}
+            - key: node
+              value:
+                stringValue: nonode
+            - key: pid
+              value:
+                stringValue: 0.463.0
+        observedTimeUnixNano: now
+        severityText: ERROR
+        timeUnixNano: "1642006383094488000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/couchdb
+        body:
+          kvlistValue:
+            values:
+            - key: host
+              value:
+                stringValue: nohost
+            - key: level
+              value:
+                stringValue: warning
+            - key: message
+              value:
+                stringValue: <0.892.0> 3d2f1a8bc7 localhost:5984 192.168.1.100 GET /myapp/_design/users/_view/by_email 404 not_found 8
+            - key: node
+              value:
+                stringValue: nonode
+            - key: pid
+              value:
+                stringValue: 0.892.0
+        observedTimeUnixNano: now
+        severityText: WARNING
+        timeUnixNano: "1642006521782456000"
+      scope: {}
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.internal.omit_otlp
+        value:
+          stringValue: "true"
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/couchdb
+        body:
+          kvlistValue:
+            values:
+            - key: host
+              value:
+                stringValue: nohost
+            - key: level
+              value:
+                stringValue: info
+            - key: message
+              value:
+                stringValue: <0.1024.0> b8e4c93f12 localhost:5984 172.16.0.25 POST /inventory/_bulk_docs 200 ok 142
+            - key: node
+              value:
+                stringValue: nonode
+            - key: pid
+              value:
+                stringValue: 0.1024.0
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1642006574334567000"
+      scope: {}

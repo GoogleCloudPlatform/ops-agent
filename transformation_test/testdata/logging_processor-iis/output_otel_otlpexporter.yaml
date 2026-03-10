@@ -1,0 +1,220 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.internal.omit_otlp
+        value:
+          stringValue: "true"
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: referer
+                value:
+                  stringValue: http://localhost/
+              - key: remoteIp
+                value:
+                  stringValue: "::1"
+              - key: requestMethod
+                value:
+                  stringValue: GET
+              - key: requestUrl
+                value:
+                  stringValue: /iisstart.png
+              - key: serverIp
+                value:
+                  stringValue: "::1:80"
+              - key: status
+                value:
+                  intValue: "200"
+              - key: userAgent
+                value:
+                  stringValue: Mozilla/5.0+(Windows+NT+10.0;+WOW64;+Trident/7.0;+rv:11.0)+like+Gecko
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/iis_access
+        body:
+          kvlistValue:
+            values:
+            - key: sc_substatus
+              value:
+                stringValue: "0"
+            - key: sc_win32_status
+              value:
+                stringValue: "0"
+            - key: time_taken
+              value:
+                stringValue: "18"
+        observedTimeUnixNano: now
+        timeUnixNano: "1646961990000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: remoteIp
+                value:
+                  stringValue: "::1"
+              - key: requestMethod
+                value:
+                  stringValue: GET
+              - key: requestUrl
+                value:
+                  stringValue: /
+              - key: serverIp
+                value:
+                  stringValue: "::1:80"
+              - key: status
+                value:
+                  intValue: "200"
+              - key: userAgent
+                value:
+                  stringValue: Mozilla/5.0+(Windows+NT+10.0;+WOW64;+Trident/7.0;+rv:11.0)+like+Gecko
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/iis_access
+        body:
+          kvlistValue:
+            values:
+            - key: sc_substatus
+              value:
+                stringValue: "0"
+            - key: sc_win32_status
+              value:
+                stringValue: "0"
+            - key: time_taken
+              value:
+                stringValue: "352"
+        observedTimeUnixNano: now
+        timeUnixNano: "1646961990000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: remoteIp
+                value:
+                  stringValue: "::1"
+              - key: requestMethod
+                value:
+                  stringValue: GET
+              - key: requestUrl
+                value:
+                  stringValue: /favicon.ico
+              - key: serverIp
+                value:
+                  stringValue: "::1:80"
+              - key: status
+                value:
+                  intValue: "404"
+              - key: userAgent
+                value:
+                  stringValue: Mozilla/5.0+(Windows+NT+10.0;+WOW64;+Trident/7.0;+rv:11.0)+like+Gecko
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/iis_access
+        body:
+          kvlistValue:
+            values:
+            - key: sc_substatus
+              value:
+                stringValue: "0"
+            - key: sc_win32_status
+              value:
+                stringValue: "2"
+            - key: time_taken
+              value:
+                stringValue: "49"
+        observedTimeUnixNano: now
+        timeUnixNano: "1646961992000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: remoteIp
+                value:
+                  stringValue: "::1"
+              - key: requestMethod
+                value:
+                  stringValue: GET
+              - key: requestUrl
+                value:
+                  stringValue: /forbidden?something=something
+              - key: serverIp
+                value:
+                  stringValue: "::1:80"
+              - key: status
+                value:
+                  intValue: "404"
+              - key: userAgent
+                value:
+                  stringValue: Mozilla/5.0+(Windows+NT;+Windows+NT+10.0;+en-US)+WindowsPowerShell/5.1.26100.32370
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/iis_access
+        body:
+          kvlistValue:
+            values:
+            - key: cs_bytes
+              value:
+                stringValue: "184"
+            - key: sc_bytes
+              value:
+                stringValue: "5035"
+            - key: sc_substatus
+              value:
+                stringValue: "0"
+            - key: sc_win32_status
+              value:
+                stringValue: "2"
+            - key: time_taken
+              value:
+                stringValue: "189"
+        observedTimeUnixNano: now
+        timeUnixNano: "1771525729000000000"
+      scope: {}

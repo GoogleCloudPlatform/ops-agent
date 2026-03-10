@@ -1,0 +1,269 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.internal.omit_otlp
+        value:
+          stringValue: "true"
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/wildfly_system
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "ELY00001: WildFly Elytron version 1.18.1.Final"
+            - key: messageCode
+              value:
+                stringValue: ELY00001
+            - key: source
+              value:
+                stringValue: org.wildfly.security
+            - key: thread
+              value:
+                stringValue: ServerService Thread Pool -- 27
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1642542275372000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/wildfly_system
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: DEBUG
+            - key: message
+              value:
+                stringValue: "VM Arguments: -D[Standalone] -Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true  --add-exports=java.desktop/sun.awt=ALL-UNNAMED --add-exports=java.naming/com.sun.jndi.ldap=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.security=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.management/javax.management=ALL-UNNAMED --add-opens=java.naming/javax.naming=ALL-UNNAMED -Dlogging.configuration=file:/opt/wildfly/standalone/configuration/logging.properties"
+            - key: source
+              value:
+                stringValue: org.jboss.as.config
+            - key: thread
+              value:
+                stringValue: MSC service thread 1-1
+        observedTimeUnixNano: now
+        severityText: DEBUG
+        timeUnixNano: "1643931481509000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/wildfly_system
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "WFLYSRV0039: Creating http management service using socket-binding (management-http)"
+            - key: messageCode
+              value:
+                stringValue: WFLYSRV0039
+            - key: source
+              value:
+                stringValue: org.jboss.as.server
+            - key: thread
+              value:
+                stringValue: Controller Boot Thread
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1643931483548000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/wildfly_system
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "WFLYPC0018: Starting process 'Server:server-one'"
+            - key: messageCode
+              value:
+                stringValue: WFLYPC0018
+            - key: source
+              value:
+                stringValue: org.jboss.as.process.Server:server-one.status
+            - key: thread
+              value:
+                stringValue: ProcessController-threads - 3
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1644618596734000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/wildfly_system
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "WFLYPC0018: Starting process 'Host Controller'"
+            - key: messageCode
+              value:
+                stringValue: WFLYPC0018
+            - key: source
+              value:
+                stringValue: org.jboss.as.process.Host Controller.status
+            - key: thread
+              value:
+                stringValue: main
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1644618592217000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/wildfly_system
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: DEBUG
+            - key: message
+              value:
+                stringValue: |-
+                  Configured system properties:
+                                    [Standalone] = 
+                                    awt.toolkit = sun.awt.X11.XToolkit
+                                    file.encoding = UTF-8
+                                    file.separator = /
+            - key: source
+              value:
+                stringValue: org.jboss.as.config
+            - key: thread
+              value:
+                stringValue: MSC service thread 1-1
+        observedTimeUnixNano: now
+        severityText: DEBUG
+        timeUnixNano: "1643931481506000000"
+      scope: {}
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.internal.omit_otlp
+        value:
+          stringValue: "true"
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/wildfly_system
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "WFLYSRV0010: Deployed \"example.war\" (runtime-name : \"example.war\")"
+            - key: messageCode
+              value:
+                stringValue: WFLYSRV0010
+            - key: source
+              value:
+                stringValue: org.jboss.as.server
+            - key: thread
+              value:
+                stringValue: ServerService Thread Pool -- 34
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1644618615892000000"
+      scope: {}

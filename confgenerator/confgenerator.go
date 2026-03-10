@@ -111,7 +111,7 @@ func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, 
 
 func otlpExporter(userAgent string) otel.Component {
 	return otel.Component{
-		Type: "otlp",
+		Type: "otlp_grpc",
 		Config: map[string]interface{}{
 			"endpoint": "telemetry.googleapis.com:443",
 			// b/485538253: Use pick_first balancer until we can understand why round_robin is failing.

@@ -1,0 +1,403 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.internal.omit_otlp
+        value:
+          stringValue: "true"
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/flink
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "    [] - Initializing heap keyed state backend with stream factory."
+            - key: source
+              value:
+                stringValue: org.apache.flink.runtime.state.heap.HeapKeyedStateBackend
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1747864471709000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/flink
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: " [] - Start SessionDispatcherLeaderProcess."
+            - key: source
+              value:
+                stringValue: org.apache.flink.runtime.dispatcher.runner.SessionDispatcherLeaderProcess
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1747802054071000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/flink
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: " [] - Starting resource manager service."
+            - key: source
+              value:
+                stringValue: org.apache.flink.runtime.resourcemanager.ResourceManagerServiceImpl
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1747802054087000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/flink
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: " [] - Recover all persisted job graphs."
+            - key: source
+              value:
+                stringValue: org.apache.flink.runtime.dispatcher.runner.SessionDispatcherLeaderProcess
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1747802054094000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/flink
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: " [] - Successfully recovered 0 persisted job graphs."
+            - key: source
+              value:
+                stringValue: org.apache.flink.runtime.dispatcher.runner.SessionDispatcherLeaderProcess
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1747802054095000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/flink
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: " [] - Resource manager service is granted leadership with session id 00000000-0000-0000-0000-000000000000."
+            - key: source
+              value:
+                stringValue: org.apache.flink.runtime.resourcemanager.ResourceManagerServiceImpl
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1747802054103000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/flink
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "             [] - Starting RPC endpoint for org.apache.flink.runtime.dispatcher.StandaloneDispatcher at akka://flink/user/rpc/dispatcher_0 ."
+            - key: source
+              value:
+                stringValue: org.apache.flink.runtime.rpc.akka.AkkaRpcService
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1747802054152000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/flink
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "             [] - Starting RPC endpoint for org.apache.flink.runtime.resourcemanager.StandaloneResourceManager at akka://flink/user/rpc/resourcemanager_1 ."
+            - key: source
+              value:
+                stringValue: org.apache.flink.runtime.rpc.akka.AkkaRpcService
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1747802054229000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/flink
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: " [] - Starting the resource manager."
+            - key: source
+              value:
+                stringValue: org.apache.flink.runtime.resourcemanager.StandaloneResourceManager
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1747802054270000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/flink
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: FATAL
+            - key: message
+              value:
+                stringValue: "    [] - Initializing heap keyed state backend with stream factory."
+            - key: source
+              value:
+                stringValue: org.apache.flink.runtime.state.heap.HeapKeyedStateBackend
+        observedTimeUnixNano: now
+        severityText: CRITICAL
+        timeUnixNano: "1747864471709000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/flink
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: WARN
+            - key: message
+              value:
+                stringValue: " [] - Start SessionDispatcherLeaderProcess."
+            - key: source
+              value:
+                stringValue: org.apache.flink.runtime.dispatcher.runner.SessionDispatcherLeaderProcess
+        observedTimeUnixNano: now
+        severityText: WARNING
+        timeUnixNano: "1747802054071000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/flink
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: ERROR
+            - key: message
+              value:
+                stringValue: " [] - Starting resource manager service."
+            - key: source
+              value:
+                stringValue: org.apache.flink.runtime.resourcemanager.ResourceManagerServiceImpl
+        observedTimeUnixNano: now
+        severityText: ERROR
+        timeUnixNano: "1747802054087000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/flink
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: DEBUG
+            - key: message
+              value:
+                stringValue: " [] - Recover all persisted job graphs."
+            - key: source
+              value:
+                stringValue: org.apache.flink.runtime.dispatcher.runner.SessionDispatcherLeaderProcess
+        observedTimeUnixNano: now
+        severityText: DEBUG
+        timeUnixNano: "1747802054094000000"
+      scope: {}
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.internal.omit_otlp
+        value:
+          stringValue: "true"
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/flink
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: TRACE
+            - key: message
+              value:
+                stringValue: " [] - Successfully recovered 0 persisted job graphs."
+            - key: source
+              value:
+                stringValue: org.apache.flink.runtime.dispatcher.runner.SessionDispatcherLeaderProcess
+        observedTimeUnixNano: now
+        severityText: TRACE
+        timeUnixNano: "1747802054095000000"
+      scope: {}

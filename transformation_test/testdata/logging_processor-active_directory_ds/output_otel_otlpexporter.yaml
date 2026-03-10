@@ -1,0 +1,95 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.internal.omit_otlp
+        value:
+          stringValue: "true"
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/active_directory_ds
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: "2023-01-15T10:30:45.123456Z INFO Directory Service: Successful authentication for user DOMAIN\\user1 from workstation WS001"
+        observedTimeUnixNano: now
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/active_directory_ds
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: "2023-01-15T10:31:12.654321Z WARNING Active Directory Web Services: LDAP search operation took longer than expected (2.5 seconds)"
+        observedTimeUnixNano: now
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/active_directory_ds
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: "2023-01-15T10:32:05.789012Z ERROR Directory Service: Failed authentication attempt for user DOMAIN\\user2 from IP 192.168.1.100"
+        observedTimeUnixNano: now
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/active_directory_ds
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: "2023-01-15T10:33:18.345678Z INFO Active Directory Web Services: Certificate renewal completed successfully for domain controller DC01 "
+        observedTimeUnixNano: now
+      scope: {}

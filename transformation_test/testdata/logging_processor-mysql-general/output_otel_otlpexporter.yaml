@@ -1,0 +1,269 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.internal.omit_otlp
+        value:
+          stringValue: "true"
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mysql_general
+        body:
+          kvlistValue:
+            values:
+            - key: command
+              value:
+                stringValue: Query
+            - key: message
+              value:
+                stringValue: SELECT * FROM users;
+            - key: tid
+              value:
+                intValue: "14"
+        observedTimeUnixNano: now
+        timeUnixNano: "1753200001123456000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mysql_general
+        body:
+          kvlistValue:
+            values:
+            - key: command
+              value:
+                stringValue: Query
+            - key: message
+              value:
+                stringValue: SELECT id, name FROM products WHERE price > 100;
+            - key: tid
+              value:
+                intValue: "15"
+        observedTimeUnixNano: now
+        timeUnixNano: "1753200002234567000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mysql_general
+        body:
+          kvlistValue:
+            values:
+            - key: command
+              value:
+                stringValue: Query
+            - key: message
+              value:
+                stringValue: UPDATE orders SET status = 'processing' WHERE id = 101;
+            - key: tid
+              value:
+                intValue: "16"
+        observedTimeUnixNano: now
+        timeUnixNano: "1753200003345678000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mysql_general
+        body:
+          kvlistValue:
+            values:
+            - key: command
+              value:
+                stringValue: Query
+            - key: message
+              value:
+                stringValue: DELETE FROM logs WHERE created_at < NOW() - INTERVAL 30 DAY;
+            - key: tid
+              value:
+                intValue: "17"
+        observedTimeUnixNano: now
+        timeUnixNano: "1753200004456789000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mysql_general
+        body:
+          kvlistValue:
+            values:
+            - key: command
+              value:
+                stringValue: Query
+            - key: message
+              value:
+                stringValue: INSERT INTO users (name, email) VALUES ('Alice', 'alice@example.com');
+            - key: tid
+              value:
+                intValue: "18"
+        observedTimeUnixNano: now
+        timeUnixNano: "1753200005567890000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mysql_general
+        body:
+          kvlistValue:
+            values:
+            - key: command
+              value:
+                stringValue: Query
+            - key: message
+              value:
+                stringValue: CREATE INDEX idx_name ON users(name);
+            - key: tid
+              value:
+                intValue: "19"
+        observedTimeUnixNano: now
+        timeUnixNano: "1753200006678901000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mysql_general
+        body:
+          kvlistValue:
+            values:
+            - key: command
+              value:
+                stringValue: Query
+            - key: message
+              value:
+                stringValue: ALTER TABLE products ADD COLUMN stock INT DEFAULT 0;
+            - key: tid
+              value:
+                intValue: "20"
+        observedTimeUnixNano: now
+        timeUnixNano: "1753200007789012000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mysql_general
+        body:
+          kvlistValue:
+            values:
+            - key: command
+              value:
+                stringValue: Query
+            - key: message
+              value:
+                stringValue: SHOW TABLES;
+            - key: tid
+              value:
+                intValue: "21"
+        observedTimeUnixNano: now
+        timeUnixNano: "1753200008890123000"
+      scope: {}
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.internal.omit_otlp
+        value:
+          stringValue: "true"
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mysql_general
+        body:
+          kvlistValue:
+            values:
+            - key: command
+              value:
+                stringValue: Query
+            - key: message
+              value:
+                stringValue: SELECT * FROM sessions WHERE active = 1;
+            - key: tid
+              value:
+                intValue: "22"
+        observedTimeUnixNano: now
+        timeUnixNano: "1753200009901234000"
+      scope: {}

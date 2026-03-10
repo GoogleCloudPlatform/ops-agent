@@ -1,0 +1,317 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.internal.omit_otlp
+        value:
+          stringValue: "true"
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mysql_slow
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: "# Time: 2025-07-22T16:01:01.111111Z"
+        observedTimeUnixNano: now
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mysql_slow
+        body:
+          kvlistValue:
+            values:
+            - key: host
+              value:
+                stringValue: localhost
+            - key: lockTime
+              value:
+                doubleValue: 0.00015
+            - key: message
+              value:
+                stringValue: |-
+                  SET timestamp=1753065661;
+                  SELECT * FROM transactions WHERE amount > 10000;
+            - key: queryTime
+              value:
+                doubleValue: 3.103221
+            - key: rowsExamined
+              value:
+                intValue: "10000"
+            - key: rowsSent
+              value:
+                intValue: "1"
+            - key: user
+              value:
+                stringValue: admin
+        observedTimeUnixNano: now
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mysql_slow
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: "# Time: 2025-07-22T16:01:03.222222Z"
+        observedTimeUnixNano: now
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mysql_slow
+        body:
+          kvlistValue:
+            values:
+            - key: host
+              value:
+                stringValue: 172.18.0.1
+            - key: lockTime
+              value:
+                doubleValue: 0.000221
+            - key: message
+              value:
+                stringValue: |-
+                  SET timestamp=1753065663;
+                  SELECT * FROM logs ORDER BY created_at DESC LIMIT 100;
+            - key: queryTime
+              value:
+                doubleValue: 2.504332
+            - key: rowsExamined
+              value:
+                intValue: "100000"
+            - key: rowsSent
+              value:
+                intValue: "100"
+            - key: user
+              value:
+                stringValue: root
+        observedTimeUnixNano: now
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mysql_slow
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: "# Time: 2025-07-22T16:01:05.333333Z"
+        observedTimeUnixNano: now
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mysql_slow
+        body:
+          kvlistValue:
+            values:
+            - key: host
+              value:
+                stringValue: 172.18.0.2
+            - key: lockTime
+              value:
+                doubleValue: 0.000311
+            - key: message
+              value:
+                stringValue: |-
+                  SET timestamp=1753065665;
+                  SELECT COUNT(*) FROM sessions WHERE last_active < NOW() - INTERVAL 1 MONTH;
+            - key: queryTime
+              value:
+                doubleValue: 5.875439
+            - key: rowsExamined
+              value:
+                intValue: "50000"
+            - key: rowsSent
+              value:
+                intValue: "0"
+            - key: user
+              value:
+                stringValue: user1
+        observedTimeUnixNano: now
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mysql_slow
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: "# Time: 2025-08-22T16:01:05.333333Z"
+        observedTimeUnixNano: now
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mysql_slow
+        body:
+          kvlistValue:
+            values:
+            - key: fullJoin
+              value:
+                boolValue: false
+            - key: fullScan
+              value:
+                boolValue: true
+            - key: host
+              value:
+                stringValue: 172.18.0.2
+            - key: message
+              value:
+                stringValue: |-
+                  SET timestamp=1753065669;
+                  SELECT * FROM logs ORDER BY created_at DESC LIMIT 100;
+            - key: user
+              value:
+                stringValue: user1
+        observedTimeUnixNano: now
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mysql_slow
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: "# Time: 2025-09-22T16:01:05.333333Z"
+        observedTimeUnixNano: now
+      scope: {}
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.internal.omit_otlp
+        value:
+          stringValue: "true"
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mysql_slow
+        body:
+          kvlistValue:
+            values:
+            - key: host
+              value:
+                stringValue: 172.18.0.2
+            - key: lockTime
+              value:
+                doubleValue: 0.000311
+            - key: message
+              value:
+                stringValue: |-
+                  SET timestamp=1753065671;
+                  SELECT * FROM logs ORDER BY created_at DESC LIMIT 100;
+            - key: queryTime
+              value:
+                doubleValue: 5.875439
+            - key: rowsExamined
+              value:
+                intValue: "50000"
+            - key: rowsSent
+              value:
+                intValue: "0"
+            - key: user
+              value:
+                stringValue: user1
+        observedTimeUnixNano: now
+      scope: {}

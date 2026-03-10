@@ -1,0 +1,232 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.internal.omit_otlp
+        value:
+          stringValue: "true"
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mysql_error
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: Note
+            - key: message
+              value:
+                stringValue: "mysqld: ready for connections."
+            - key: tid
+              value:
+                intValue: "0"
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1753200120000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mysql_error
+        body:
+          kvlistValue:
+            values:
+            - key: errorCode
+              value:
+                stringValue: MY-010055
+            - key: level
+              value:
+                stringValue: ERROR
+            - key: message
+              value:
+                stringValue: Unknown database 'invalid_db'
+            - key: subsystem
+              value:
+                stringValue: Server
+            - key: tid
+              value:
+                intValue: "10"
+        observedTimeUnixNano: now
+        severityText: ERROR
+        timeUnixNano: "1753200121000001000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mysql_error
+        body:
+          kvlistValue:
+            values:
+            - key: errorCode
+              value:
+                stringValue: MY-010068
+            - key: level
+              value:
+                stringValue: Warning
+            - key: message
+              value:
+                stringValue: CA certificate ca.pem is self signed.
+            - key: subsystem
+              value:
+                stringValue: Server
+            - key: tid
+              value:
+                intValue: "11"
+        observedTimeUnixNano: now
+        severityText: WARNING
+        timeUnixNano: "1753200122000002000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mysql_error
+        body:
+          kvlistValue:
+            values:
+            - key: errorCode
+              value:
+                stringValue: MY-013360
+            - key: level
+              value:
+                stringValue: ERROR
+            - key: message
+              value:
+                stringValue: "Plugin 'auth_socket' could not be loaded: Error loading shared library."
+            - key: subsystem
+              value:
+                stringValue: Server
+            - key: tid
+              value:
+                intValue: "12"
+        observedTimeUnixNano: now
+        severityText: ERROR
+        timeUnixNano: "1753200123000003000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mysql_error
+        body:
+          kvlistValue:
+            values:
+            - key: errorCode
+              value:
+                stringValue: MY-010123
+            - key: level
+              value:
+                stringValue: ERROR
+            - key: message
+              value:
+                stringValue: Table './app/logs' is marked as crashed and should be repaired
+            - key: subsystem
+              value:
+                stringValue: Server
+            - key: tid
+              value:
+                intValue: "13"
+        observedTimeUnixNano: now
+        severityText: ERROR
+        timeUnixNano: "1753200124000004000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mysql_error
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: Warning
+            - key: message
+              value:
+                stringValue: "Aborted connection 47 to db: 'test' user: 'user' host: '172.18.0.3' (Got timeout reading communication packets)"
+            - key: tid
+              value:
+                intValue: "14"
+        observedTimeUnixNano: now
+        severityText: WARNING
+        timeUnixNano: "1753200125000005000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mysql_error
+        body:
+          kvlistValue:
+            values:
+            - key: errorCode
+              value:
+                stringValue: MY-012345
+            - key: level
+              value:
+                stringValue: ERROR
+            - key: message
+              value:
+                stringValue: Cannot allocate memory for the buffer pool
+            - key: subsystem
+              value:
+                stringValue: InnoDB
+            - key: tid
+              value:
+                intValue: "15"
+        observedTimeUnixNano: now
+        severityText: ERROR
+        timeUnixNano: "1753200126000006000"
+      scope: {}

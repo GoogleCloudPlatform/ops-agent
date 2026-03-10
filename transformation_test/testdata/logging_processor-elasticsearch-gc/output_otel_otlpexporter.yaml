@@ -1,0 +1,867 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.internal.omit_otlp
+        value:
+          stringValue: "true"
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "0"
+            - key: message
+              value:
+                stringValue: Pause Young (Normal) (G1 Evacuation Pause)
+            - key: type
+              value:
+                stringValue: gc,start
+        observedTimeUnixNano: now
+        timeUnixNano: "1755512077240000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "0"
+            - key: message
+              value:
+                stringValue: "Eden regions: 48->0(47)"
+            - key: type
+              value:
+                stringValue: gc,heap
+        observedTimeUnixNano: now
+        timeUnixNano: "1755512077242000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "0"
+            - key: message
+              value:
+                stringValue: "Survivor regions: 0->1(7)"
+            - key: type
+              value:
+                stringValue: gc,heap
+        observedTimeUnixNano: now
+        timeUnixNano: "1755512077242000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "0"
+            - key: message
+              value:
+                stringValue: "Old regions: 0->2"
+            - key: type
+              value:
+                stringValue: gc,heap
+        observedTimeUnixNano: now
+        timeUnixNano: "1755512077242000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "0"
+            - key: message
+              value:
+                stringValue: "Metaspace: 18000K->18000K(1064960K)"
+            - key: type
+              value:
+                stringValue: gc,metaspace
+        observedTimeUnixNano: now
+        timeUnixNano: "1755512077242000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "0"
+            - key: message
+              value:
+                stringValue: Pause Young (Normal) (G1 Evacuation Pause) 48M->10M(1024M) 3.456ms
+            - key: type
+              value:
+                stringValue: gc
+        observedTimeUnixNano: now
+        timeUnixNano: "1755512077243000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "1"
+            - key: message
+              value:
+                stringValue: Pause Young (Concurrent Start) (G1 Evacuation Pause)
+            - key: type
+              value:
+                stringValue: gc,start
+        observedTimeUnixNano: now
+        timeUnixNano: "1755512412555000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "1"
+            - key: message
+              value:
+                stringValue: "Eden regions: 47->0(45)"
+            - key: type
+              value:
+                stringValue: gc,heap
+        observedTimeUnixNano: now
+        timeUnixNano: "1755512412559000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "1"
+            - key: message
+              value:
+                stringValue: "Survivor regions: 1->2(7)"
+            - key: type
+              value:
+                stringValue: gc,heap
+        observedTimeUnixNano: now
+        timeUnixNano: "1755512412559000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "1"
+            - key: message
+              value:
+                stringValue: "Old regions: 2->3"
+            - key: type
+              value:
+                stringValue: gc,heap
+        observedTimeUnixNano: now
+        timeUnixNano: "1755512412559000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "1"
+            - key: message
+              value:
+                stringValue: "Metaspace: 18250K->18250K(1064960K)"
+            - key: type
+              value:
+                stringValue: gc,metaspace
+        observedTimeUnixNano: now
+        timeUnixNano: "1755512412559000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "1"
+            - key: message
+              value:
+                stringValue: Pause Young (Concurrent Start) (G1 Evacuation Pause) 58M->15M(1024M) 5.623ms
+            - key: type
+              value:
+                stringValue: gc
+        observedTimeUnixNano: now
+        timeUnixNano: "1755512412561000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "1"
+            - key: message
+              value:
+                stringValue: Concurrent Cycle
+            - key: type
+              value:
+                stringValue: gc
+        observedTimeUnixNano: now
+        timeUnixNano: "1755512412561000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "1"
+            - key: message
+              value:
+                stringValue: Concurrent Clear Claimed Marks
+            - key: type
+              value:
+                stringValue: gc,marking
+        observedTimeUnixNano: now
+        timeUnixNano: "1755512412561000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "1"
+            - key: message
+              value:
+                stringValue: Concurrent Scan Root Regions
+            - key: type
+              value:
+                stringValue: gc,marking
+        observedTimeUnixNano: now
+        timeUnixNano: "1755512412561000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "1"
+            - key: message
+              value:
+                stringValue: Concurrent Mark
+            - key: type
+              value:
+                stringValue: gc,marking
+        observedTimeUnixNano: now
+        timeUnixNano: "1755512412563000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "1"
+            - key: message
+              value:
+                stringValue: Concurrent Preclean
+            - key: type
+              value:
+                stringValue: gc,marking
+        observedTimeUnixNano: now
+        timeUnixNano: "1755512412567000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "1"
+            - key: message
+              value:
+                stringValue: Pause Remark
+            - key: type
+              value:
+                stringValue: gc,start
+        observedTimeUnixNano: now
+        timeUnixNano: "1755512412568000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "1"
+            - key: message
+              value:
+                stringValue: Pause Remark 20M->20M(1024M) 1.234ms
+            - key: type
+              value:
+                stringValue: gc
+        observedTimeUnixNano: now
+        timeUnixNano: "1755512412569000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "1"
+            - key: message
+              value:
+                stringValue: Concurrent Mark Cleanup
+            - key: type
+              value:
+                stringValue: gc,marking
+        observedTimeUnixNano: now
+        timeUnixNano: "1755512412569000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "1"
+            - key: message
+              value:
+                stringValue: Pause Cleanup
+            - key: type
+              value:
+                stringValue: gc,start
+        observedTimeUnixNano: now
+        timeUnixNano: "1755512412570000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "1"
+            - key: message
+              value:
+                stringValue: Pause Cleanup 20M->20M(1024M) 0.234ms
+            - key: type
+              value:
+                stringValue: gc
+        observedTimeUnixNano: now
+        timeUnixNano: "1755512412570000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "1"
+            - key: message
+              value:
+                stringValue: Concurrent Cycle 10.123ms
+            - key: type
+              value:
+                stringValue: gc
+        observedTimeUnixNano: now
+        timeUnixNano: "1755512412571000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "2"
+            - key: message
+              value:
+                stringValue: Pause Young (Normal) (G1 Evacuation Pause)
+            - key: type
+              value:
+                stringValue: gc,start
+        observedTimeUnixNano: now
+        timeUnixNano: "1755513945125000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "2"
+            - key: message
+              value:
+                stringValue: "Eden regions: 46->0(48)"
+            - key: type
+              value:
+                stringValue: gc,heap
+        observedTimeUnixNano: now
+        timeUnixNano: "1755513945129000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "2"
+            - key: message
+              value:
+                stringValue: "Survivor regions: 2->3(7)"
+            - key: type
+              value:
+                stringValue: gc,heap
+        observedTimeUnixNano: now
+        timeUnixNano: "1755513945129000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "2"
+            - key: message
+              value:
+                stringValue: "Old regions: 3->3"
+            - key: type
+              value:
+                stringValue: gc,heap
+        observedTimeUnixNano: now
+        timeUnixNano: "1755513945129000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "2"
+            - key: message
+              value:
+                stringValue: "Metaspace: 18500K->18500K(1064960K)"
+            - key: type
+              value:
+                stringValue: gc,metaspace
+        observedTimeUnixNano: now
+        timeUnixNano: "1755513945129000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "2"
+            - key: message
+              value:
+                stringValue: Pause Young (Normal) (G1 Evacuation Pause) 75M->25M(1024M) 4.543ms
+            - key: type
+              value:
+                stringValue: gc
+        observedTimeUnixNano: now
+        timeUnixNano: "1755513945130000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "3"
+            - key: message
+              value:
+                stringValue: Pause Full (System.gc())
+            - key: type
+              value:
+                stringValue: gc,start
+        observedTimeUnixNano: now
+        timeUnixNano: "1755514930341000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "3"
+            - key: message
+              value:
+                stringValue: "Eden regions: 45->0(45)"
+            - key: type
+              value:
+                stringValue: gc,heap
+        observedTimeUnixNano: now
+        timeUnixNano: "1755514930348000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "3"
+            - key: message
+              value:
+                stringValue: "Survivor regions: 3->0(7)"
+            - key: type
+              value:
+                stringValue: gc,heap
+        observedTimeUnixNano: now
+        timeUnixNano: "1755514930348000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "3"
+            - key: message
+              value:
+                stringValue: "Old regions: 3->1"
+            - key: type
+              value:
+                stringValue: gc,heap
+        observedTimeUnixNano: now
+        timeUnixNano: "1755514930348000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "3"
+            - key: message
+              value:
+                stringValue: "Metaspace: 18700K->18650K(1064960K)"
+            - key: type
+              value:
+                stringValue: gc,metaspace
+        observedTimeUnixNano: now
+        timeUnixNano: "1755514930349000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/elasticsearch_gc
+        body:
+          kvlistValue:
+            values:
+            - key: gc_run
+              value:
+                intValue: "3"
+            - key: message
+              value:
+                stringValue: Pause Full (System.gc()) 100M->15M(1024M) 8.765ms
+            - key: type
+              value:
+                stringValue: gc
+        observedTimeUnixNano: now
+        timeUnixNano: "1755514930350000000"
+      scope: {}

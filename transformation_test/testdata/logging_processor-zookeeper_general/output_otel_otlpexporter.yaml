@@ -1,0 +1,230 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.internal.omit_otlp
+        value:
+          stringValue: "true"
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/zookeeper_general
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: line
+              value:
+                intValue: "514"
+            - key: message
+              value:
+                stringValue: Processing mntr command from /0:0:0:0:0:0:0:1:50284
+            - key: myid
+              value:
+                intValue: "1"
+            - key: source
+              value:
+                stringValue: NIOServerCnxn
+            - key: thread
+              value:
+                stringValue: NIOWorkerThread-3
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1643680305451000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/zookeeper_general
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: WARN
+            - key: line
+              value:
+                intValue: "1283"
+            - key: message
+              value:
+                stringValue: |-
+                  Interrupted while waiting for message on queue
+                  java.lang.InterruptedException
+                  	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.reportInterruptAfterWait(AbstractQueuedSynchronizer.java:2056)
+                  	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.awaitNanos(AbstractQueuedSynchronizer.java:2133)
+                  	at org.apache.zookeeper.util.CircularBlockingQueue.poll(CircularBlockingQueue.java:105)
+                  	at org.apache.zookeeper.server.quorum.QuorumCnxManager.pollSendQueue(QuorumCnxManager.java:1448)
+                  	at org.apache.zookeeper.server.quorum.QuorumCnxManager.access$900(QuorumCnxManager.java:99)
+                  	at org.apache.zookeeper.server.quorum.QuorumCnxManager$SendWorker.run(QuorumCnxManager.java:1272)
+            - key: myid
+              value:
+                intValue: "1"
+            - key: source
+              value:
+                stringValue: QuorumCnxManager$SendWorker
+            - key: thread
+              value:
+                stringValue: SendWorker:2
+        observedTimeUnixNano: now
+        severityText: WARNING
+        timeUnixNano: "1643705193626000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/zookeeper_general
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: line
+              value:
+                intValue: "514"
+            - key: message
+              value:
+                stringValue: Processing mntr command from /0:0:0:0:0:0:0:1:50284
+            - key: source
+              value:
+                stringValue: NIOServerCnxn
+            - key: thread
+              value:
+                stringValue: NIOWorkerThread-3
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1643680305451000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/zookeeper_general
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: WARN
+            - key: line
+              value:
+                intValue: "1283"
+            - key: message
+              value:
+                stringValue: |-
+                  Interrupted while waiting for message on queue
+                  java.lang.InterruptedException
+                  	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.reportInterruptAfterWait(AbstractQueuedSynchronizer.java:2056)
+                  	at java.base/java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.awaitNanos(AbstractQueuedSynchronizer.java:2133)
+                  	at org.apache.zookeeper.util.CircularBlockingQueue.poll(CircularBlockingQueue.java:105)
+            - key: source
+              value:
+                stringValue: QuorumCnxManager$SendWorker
+            - key: thread
+              value:
+                stringValue: SendWorker:2
+        observedTimeUnixNano: now
+        severityText: WARNING
+        timeUnixNano: "1643705193626000000"
+      scope: {}
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.internal.omit_otlp
+        value:
+          stringValue: "true"
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/zookeeper_general
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: ERROR
+            - key: line
+              value:
+                intValue: "1520"
+            - key: message
+              value:
+                stringValue: Unable to load database on disk
+            - key: myid
+              value:
+                intValue: "2"
+            - key: source
+              value:
+                stringValue: QuorumPeer
+            - key: thread
+              value:
+                stringValue: QuorumPeer[myid=2](plain=0.0.0.0:2181)(secure=disabled)
+        observedTimeUnixNano: now
+        severityText: ERROR
+        timeUnixNano: "1643732122789000000"
+      scope: {}

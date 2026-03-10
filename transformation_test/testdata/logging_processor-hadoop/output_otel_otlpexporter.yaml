@@ -1,0 +1,210 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.internal.omit_otlp
+        value:
+          stringValue: "true"
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/hadoop
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: Edit logging is async:true
+            - key: severity
+              value:
+                stringValue: INFO
+            - key: source
+              value:
+                stringValue: org.apache.hadoop.hdfs.server.namenode.FSEditLog
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1643767787136000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/hadoop
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: Warning message here
+            - key: severity
+              value:
+                stringValue: WARN
+            - key: source
+              value:
+                stringValue: org.apache.hadoop.hdfs.server.datanode.DataNode
+        observedTimeUnixNano: now
+        severityText: WARNING
+        timeUnixNano: "1643767788200000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/hadoop
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: Error occurred
+            - key: severity
+              value:
+                stringValue: ERROR
+            - key: source
+              value:
+                stringValue: org.apache.hadoop.hdfs.server.namenode.FSNamesystem
+        observedTimeUnixNano: now
+        severityText: ERROR
+        timeUnixNano: "1643767789300000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/hadoop
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: Debug message
+            - key: severity
+              value:
+                stringValue: DEBUG
+            - key: source
+              value:
+                stringValue: org.apache.hadoop.hdfs.server.datanode.DataNode
+        observedTimeUnixNano: now
+        severityText: DEBUG
+        timeUnixNano: "1643767790400000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/hadoop
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: |-
+                  Failed to start namenode
+                  java.io.IOException: Cannot create directory /hadoop/logs/hdfs
+                  	at org.apache.hadoop.hdfs.server.common.Storage.createDir(Storage.java:157)
+                  	at org.apache.hadoop.hdfs.server.namenode.FSImage.format(FSImage.java:183)
+                  	at org.apache.hadoop.hdfs.server.namenode.NameNode.format(NameNode.java:977)
+                  	at org.apache.hadoop.hdfs.server.namenode.NameNode.createNameNode(NameNode.java:1421)
+                  	at org.apache.hadoop.hdfs.server.namenode.NameNode.main(NameNode.java:1540)
+            - key: severity
+              value:
+                stringValue: ERROR
+            - key: source
+              value:
+                stringValue: org.apache.hadoop.hdfs.server.namenode.NameNode
+        observedTimeUnixNano: now
+        severityText: ERROR
+        timeUnixNano: "1643767791500000000"
+      scope: {}
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.internal.omit_otlp
+        value:
+          stringValue: "true"
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/hadoop
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: Successfully started datanode on port 9866
+            - key: severity
+              value:
+                stringValue: INFO
+            - key: source
+              value:
+                stringValue: org.apache.hadoop.hdfs.server.datanode.DataNode
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1643767792600000000"
+      scope: {}

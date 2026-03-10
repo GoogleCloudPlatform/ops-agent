@@ -1,0 +1,1763 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.internal.omit_otlp
+        value:
+          stringValue: "true"
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: Starting Redis Server
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: RDB/AOF_writing_child
+            - key: roleChar
+              value:
+                stringValue: C
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885257000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: RDB/AOF_writing_child
+            - key: roleChar
+              value:
+                stringValue: C
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885264000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: Redis version=8.0.3, bits=64, commit=00000000, modified=1, pid=1, just started
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: RDB/AOF_writing_child
+            - key: roleChar
+              value:
+                stringValue: C
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885264000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: Configuration loaded
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: RDB/AOF_writing_child
+            - key: roleChar
+              value:
+                stringValue: C
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885264000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: "monotonic clock: POSIX clock_gettime"
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885265000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: Running mode=standalone, port=6379.
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885265000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: <bf> RedisBloom version 8.0.1 (Git=unknown)
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885265000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: "<bf> Registering configuration options: ["
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885265000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: "<bf> \t{ bf-error-rate       :      0.01 }"
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885265000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: "<bf> \t{ bf-initial-size     :       100 }"
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885265000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: "<bf> \t{ bf-expansion-factor :         2 }"
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885265000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: "<bf> \t{ cf-bucket-size      :         2 }"
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885265000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: "<bf> \t{ cf-initial-size     :      1024 }"
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885265000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: "<bf> \t{ cf-max-iterations   :        20 }"
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885265000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: "<bf> \t{ cf-expansion-factor :         1 }"
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885265000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: "<bf> \t{ cf-max-expansions   :        32 }"
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885265000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: <bf> ]
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885265000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: Module 'bf' loaded from /usr/local/lib/redis/modules//redisbloom.so
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885265000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: "<search> Redis version found by RedisSearch : 8.0.3 - oss"
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885267000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: <search> RediSearch version 8.0.1 (Git=5688fcc)
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885267000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: <search> Low level api version 1 initialized successfully
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885267000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: "<search> gc: ON, prefix min length: 2, min word length to stem: 4, prefix max expansions: 200, query timeout (ms): 500, timeout policy: return, cursor read size: 1000, cursor max idle (ms): 300000, max doctable size: 1000000, max number of search results:  1000000, "
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885267000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: <search> Initialized thread pools!
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885267000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: <search> Disabled workers threadpool of size 0
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885267000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: <search> Subscribe to config changes
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885267000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: <search> Enabled role change notification
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885267000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: "<search> Cluster configuration: AUTO partitions, type: 0, coordinator timeout: 0ms"
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885267000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: <search> Register write commands
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885267000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: Module 'search' loaded from /usr/local/lib/redis/modules//redisearch.so
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885267000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: <timeseries> RedisTimeSeries version 80001, git_sha=577bfa8b5909e7ee572f0b651399be8303dc6641
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885267000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: "<timeseries> Redis version found by RedisTimeSeries : 8.0.3 - oss"
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885267000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: "<timeseries> Registering configuration options: ["
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885267000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: "<timeseries> \t{ ts-compaction-policy   :              }"
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885267000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: "<timeseries> \t{ ts-num-threads         :            3 }"
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885267000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: "<timeseries> \t{ ts-retention-policy    :            0 }"
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885267000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: "<timeseries> \t{ ts-duplicate-policy    :        block }"
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885267000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: "<timeseries> \t{ ts-chunk-size-bytes    :         4096 }"
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885267000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: "<timeseries> \t{ ts-encoding            :   compressed }"
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885267000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: "<timeseries> \t{ ts-ignore-max-time-diff:            0 }"
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885267000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: "<timeseries> \t{ ts-ignore-max-val-diff :     0.000000 }"
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885267000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: <timeseries> ]
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885267000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: <timeseries> Detected redis oss
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885267000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: Module 'timeseries' loaded from /usr/local/lib/redis/modules//redistimeseries.so
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885267000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: <ReJSON> Created new data type 'ReJSON-RL'
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885268000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: "<ReJSON> version: 80001 git sha: unknown branch: unknown"
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885268000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: <ReJSON> Exported RedisJSON_V1 API
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885268000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: <ReJSON> Exported RedisJSON_V2 API
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885268000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: <ReJSON> Exported RedisJSON_V3 API
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885268000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: <ReJSON> Exported RedisJSON_V4 API
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885268000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: <ReJSON> Exported RedisJSON_V5 API
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885268000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: <ReJSON> Enabled diskless replication
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885268000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: "<ReJSON> Initialized shared string cache, thread safe: false."
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885268000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: Module 'ReJSON' loaded from /usr/local/lib/redis/modules//rejson.so
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885268000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: <search> Acquired RedisJSON_V5 API
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885268000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: Server initialized
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885268000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/redis
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: "*"
+            - key: message
+              value:
+                stringValue: Ready to accept connections tcp
+            - key: pid
+              value:
+                intValue: "1"
+            - key: role
+              value:
+                stringValue: master
+            - key: roleChar
+              value:
+                stringValue: M
+        observedTimeUnixNano: now
+        severityText: NOTICE
+        timeUnixNano: "1752890885268000000"
+      scope: {}
