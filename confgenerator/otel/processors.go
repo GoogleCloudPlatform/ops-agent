@@ -676,7 +676,6 @@ func GCPProjectID(projectID string) Component {
 	)
 }
 
-
 // MetricUnknownCounter is necessary to handle prometheus unknown type metrics
 // go/ops-agent-otlp-migration
 func MetricUnknownCounter() Component {

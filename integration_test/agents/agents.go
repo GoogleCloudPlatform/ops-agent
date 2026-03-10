@@ -1243,7 +1243,6 @@ const (
 	OtelLoggingFeatureFlag      = "otel_logging"
 	OtlpHttpExporterFeatureFlag = "otlp_exporter"
 	DefaultFeatureFlag          = "default"
-	UTRLoggingFlagTriplet              = "otel_logging,otlp_exporter,otlp_logging"
 	OtelLoggingOTLPExporterFeatureFlag = "otel_logging,otlp_exporter"
 	OTLPLoggingOTLPExporterFeatureFlag = "otlp_logging,otlp_exporter"
 )
