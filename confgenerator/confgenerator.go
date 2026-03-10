@@ -243,7 +243,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 					"logs": {
 						otel.GCPProjectID(resource.ProjectName()),
 						// otel.DisableOtlpRoundTrip(), // Disable it until b/491102815 is fixed.
-						otel.InstrumentationScope(),
+						otel.PreserveInstrumentationScope(),
 						otel.CopyServiceResourceLabels(),
 						otel.BatchProcessor(1000, 1000, "200ms"),
 					},
