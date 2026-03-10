@@ -5435,10 +5435,13 @@ metrics:
 	})
 }
 
-func TestOTLPLogs(t *testing.T) {
+func TestOTLPLogsWithOtlpExporter(t *testing.T) {
 	t.Parallel()
 	RunForEachImageAndFeatureFlag(t, []string{agents.OTLPLoggingOTLPExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
+		if feature == agents.DefaultFeatureFlag {
+			t.Skip("This test requires otlp_logging+otlp_exporter experimental flags to be enabled")
+		}
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		otlpConfig := `
 combined:
