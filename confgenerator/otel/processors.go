@@ -698,9 +698,11 @@ func DisableOtlpRoundTrip() Component {
 
 // This processor preserves instrumentation scope name and version in logRecord attributes, if they exist. This processor is required to send logs to telemetry.googleapis.com through an otlp exporter.
 func PreserveInstrumentationScope() Component {
+	scopeName := ottl.RValue("instrumentation_scope.name")
+	scopeVersion := ottl.RValue("instrumentation_scope.version")
 	return Transform("log", "log", ottl.NewStatements(
-		ottl.LValue{"attributes", "instrumentation_source"}.SetIf(ottl.RValue("instrumentation_scope.name"), ottl.IsNotEmptyString(ottl.RValue("instrumentation_scope.name"))),
-		ottl.LValue{"attributes", "instrumentation_version"}.SetIf(ottl.RValue("instrumentation_scope.version"), ottl.IsNotEmptyString(ottl.RValue("instrumentation_scope.version"))),
+		ottl.LValue{"attributes", "instrumentation_source"}.SetIf(scopeName, ottl.IsNotEmptyString(scopeName)),
+		ottl.LValue{"attributes", "instrumentation_version"}.SetIf(scopeVersion, ottl.IsNotEmptyString(scopeVersion)),
 	))
 }
 
