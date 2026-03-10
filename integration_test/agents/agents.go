@@ -1284,7 +1284,7 @@ func SetupOpsAgentWithFeatureFlag(ctx context.Context, logger *log.Logger, vm *g
 		if err := setExperimentalFeatures(ctx, logger, vm, feature); err != nil {
 			return err
 		}
-	case OtlpHttpExporterFeatureFlag:
+	case OtlpHttpExporterFeatureFlag, OTLPLoggingOTLPExporterFeatureFlag:
 		if err := setExperimentalFeatures(ctx, logger, vm, feature); err != nil {
 			return err
 		}
