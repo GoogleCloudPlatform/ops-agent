@@ -5491,7 +5491,7 @@ metrics:
 			t.Fatal(err)
 		}
 
-		query := fmt.Sprintf(`textPayload="%s" AND labels.instrumentation_source="%s" AND labels.instrumentation_version="%s" AND labels.service.name="%s" AND labels.service.namespace="%s" AND labels.service.instance.id="%s"`, logBody, scopeName, scopeVersion, serviceName, serviceNamespace, serviceInstanceId)
+		query := fmt.Sprintf(`textPayload="%s" AND labels."instrumentation_source"="%s" AND labels."instrumentation_version"="%s" AND labels."service.name"="%s" AND labels."service.namespace"="%s" AND labels."service.instance.id"="%s"`, logBody, scopeName, scopeVersion, serviceName, serviceNamespace, serviceInstanceId)
 		if err := gce.WaitForLog(ctx, logger, vm, "", time.Hour, query); err != nil {
 			t.Error(err)
 		}
