@@ -1243,7 +1243,8 @@ const (
 	OtelLoggingFeatureFlag      = "otel_logging"
 	OtlpHttpExporterFeatureFlag = "otlp_exporter"
 	DefaultFeatureFlag          = "default"
-	UTRLoggingFlagTriplet       = "otel_logging,otlp_exporter,otlp_logging"
+	OtelLoggingOTLPExporterFeatureFlag = "otel_logging,otlp_exporter"
+	OTLPLoggingOTLPExporterFeatureFlag = "otlp_logging,otlp_exporter"
 )
 
 // setExperimentalFeatures sets the EXPERIMENTAL_FEATURES environment variable.
@@ -1272,7 +1273,7 @@ func setExperimentalOtelLoggingInConfig(config string) string {
 // SetupOpsAgentWithFeatureFlag configures the VM and the config depending on the selected feature flag.
 func SetupOpsAgentWithFeatureFlag(ctx context.Context, logger *log.Logger, vm *gce.VM, config string, feature string) error {
 	switch feature {
-	case OtelLoggingFeatureFlag, UTRLoggingFlagTriplet:
+	case OtelLoggingFeatureFlag, OtelLoggingOTLPExporterFeatureFlag:
 		// Set feature flag in config.
 		if config == "" {
 			config = defaultOtelLoggingConfig()
