@@ -101,6 +101,7 @@ ENV PATH="${PATH}:/usr/local/go/bin"
 ENV GOTOOLCHAIN=local
 
 
+
 FROM centos8-build-base AS centos8-build-otel
 WORKDIR /work
 # Download golang deps
@@ -205,6 +206,7 @@ RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 ENV GOTOOLCHAIN=local
+
 
 
 FROM rockylinux9-build-base AS rockylinux9-build-otel
@@ -315,6 +317,7 @@ ENV PATH="${PATH}:/usr/local/go/bin"
 ENV GOTOOLCHAIN=local
 
 
+
 FROM rockylinux10-build-base AS rockylinux10-build-otel
 WORKDIR /work
 # Download golang deps
@@ -414,6 +417,7 @@ RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 ENV GOTOOLCHAIN=local
+
 
 
 FROM bookworm-build-base AS bookworm-build-otel
@@ -520,6 +524,7 @@ ENV PATH="${PATH}:/usr/local/go/bin"
 ENV GOTOOLCHAIN=local
 
 
+
 FROM bullseye-build-base AS bullseye-build-otel
 WORKDIR /work
 # Download golang deps
@@ -621,6 +626,7 @@ RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 ENV GOTOOLCHAIN=local
+
 
 
 FROM trixie-build-base AS trixie-build-otel
@@ -747,6 +753,7 @@ ENV PATH="${PATH}:/usr/local/go/bin"
 ENV GOTOOLCHAIN=local
 
 
+
 FROM sles12-build-base AS sles12-build-otel
 WORKDIR /work
 # Download golang deps
@@ -853,6 +860,7 @@ ENV PATH="${PATH}:/usr/local/go/bin"
 ENV GOTOOLCHAIN=local
 
 
+
 FROM sles15-build-base AS sles15-build-otel
 WORKDIR /work
 # Download golang deps
@@ -952,6 +960,7 @@ RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 ENV GOTOOLCHAIN=local
+
 
 
 FROM jammy-build-base AS jammy-build-otel
@@ -1055,6 +1064,7 @@ ENV PATH="${PATH}:/usr/local/go/bin"
 ENV GOTOOLCHAIN=local
 
 
+
 FROM noble-build-base AS noble-build-otel
 WORKDIR /work
 # Download golang deps
@@ -1154,6 +1164,7 @@ RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
 ENV GOTOOLCHAIN=local
+
 
 
 FROM questing-build-base AS questing-build-otel
