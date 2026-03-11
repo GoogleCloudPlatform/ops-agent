@@ -1,33 +1,36 @@
 exporters:
-  googlecloud:
+  googlecloud/otel:
     metric:
-      instrumentation_library_labels: false
+      instrumentation_library_labels: true
       prefix: ""
       resource_filters: []
-      service_resource_labels: false
+      service_resource_labels: true
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
-  googlecloud/logging:
-    sending_queue:
-      batch:
-        flush_timeout: 200ms
-        max_size: 1000
-        min_size: 1000
-        sizer: items
-      block_on_overflow: true
-      enabled: true
-      num_consumers: 10
-      queue_size: 12000
-      sizer: items
-    timeout: 60s
+  otlp_grpc/otlp:
+    auth:
+      authenticator: googleclientauth
+    balancer_name: pick_first
+    endpoint: telemetry.googleapis.com:443
+    headers:
+      User-Agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
 extensions:
   file_storage:
     create_directory: true
     directory: file_storage
+  googleclientauth: {}
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
+  batch/otlp_grpc/otlp_logs_3:
+    send_batch_max_size: 1000
+    send_batch_size: 1000
+    timeout: 200ms
+  batch/otlp_grpc/otlp_metrics_2:
+    send_batch_max_size: 200
+    send_batch_size: 200
+    timeout: 200ms
   cumulativetodelta/loggingmetrics_4:
     include:
       match_type: strict
@@ -41,11 +44,6 @@ processors:
     initial_value: drop
   deltatocumulative/loggingmetrics_6: {}
   filter/default__pipeline_hostmetrics_0:
-    metrics:
-      exclude:
-        match_type: regexp
-        metric_names: []
-  filter/default__pipeline_hostmetrics_1_0:
     metrics:
       exclude:
         match_type: regexp
@@ -83,7 +81,7 @@ processors:
   filter/otel_1:
     metrics:
       datapoint:
-      - metric.name == "grpc.client.attempt.duration_count" and (not IsMatch(datapoint.attributes["grpc.target"], "monitoring.googleapis"))
+      - metric.name == "rpc.client.duration_count" and (not IsMatch(datapoint.attributes["rpc.service"], "opentelemetry.proto.collector.metrics.v1.MetricsService"))
   filter/otel_2:
     metrics:
       include:
@@ -91,10 +89,18 @@ processors:
         metric_names:
         - otelcol_process_uptime
         - otelcol_process_memory_rss
-        - grpc.client.attempt.duration_count
-        - googlecloudmonitoring/point_count
+        - otelcol_exporter_sent_metric_points
+        - otelcol_exporter_send_failed_metric_points
+        - rpc.client.duration_count
+  groupbyattrs/otlp_2:
+    keys:
+    - namespace
+    - cluster
+    - location
   interval/loggingmetrics_7:
     interval: 1m
+  metricstarttime/otlp_grpc/otlp_metrics_1:
+    strategy: subtract_initial_point
   metricstransform/fluentbit_1:
     transforms:
     - action: update
@@ -109,30 +115,6 @@ processors:
         aggregation_type: sum
         label_set:
         - version
-    - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: agent.googleapis.com/$${1}
-  metricstransform/hostmetrics_1_0:
-    transforms:
-    - action: update
-      include: nvml.gpu.utilization
-      new_name: gpu/utilization
-      operations:
-      - action: experimental_scale_value
-        experimental_scale: 100.0
-    - action: update
-      include: nvml.gpu.memory.bytes_used
-      new_name: gpu/memory/bytes_used
-    - action: update
-      include: nvml.gpu.processes.utilization
-      new_name: gpu/processes/utilization
-      operations:
-      - action: experimental_scale_value
-        experimental_scale: 100.0
-    - action: update
-      include: nvml.gpu.processes.max_bytes_used
-      new_name: gpu/processes/max_bytes_used
     - action: update
       include: ^(.*)$$
       match_type: regexp
@@ -571,32 +553,126 @@ processors:
         aggregation_type: sum
         label_set: []
     - action: update
-      include: grpc.client.attempt.duration_count
+      include: rpc.client.duration_count
       new_name: agent/api_request_count
       operations:
       - action: update_label
-        label: grpc.status
+        label: rpc.grpc.status_code
+        value_actions:
+        - new_value: OK
+          value: "0"
+        - new_value: CANCELLED
+          value: "1"
+        - new_value: ABORTED
+          value: "10"
+        - new_value: OUT_OF_RANGE
+          value: "11"
+        - new_value: UNIMPLEMENTED
+          value: "12"
+        - new_value: INTERNAL
+          value: "13"
+        - new_value: UNAVAILABLE
+          value: "14"
+        - new_value: DATA_LOSS
+          value: "15"
+        - new_value: UNAUTHENTICATED
+          value: "16"
+        - new_value: UNKNOWN
+          value: "2"
+        - new_value: INVALID_ARGUMENT
+          value: "3"
+        - new_value: DEADLINE_EXCEEDED
+          value: "4"
+        - new_value: NOT_FOUND
+          value: "5"
+        - new_value: ALREADY_EXISTS
+          value: "6"
+        - new_value: PERMISSION_DENIED
+          value: "7"
+        - new_value: RESOURCE_EXHAUSTED
+          value: "8"
+        - new_value: FAILED_PRECONDITION
+          value: "9"
+      - action: update_label
+        label: rpc.grpc.status_code
         new_label: state
       - action: aggregate_labels
         aggregation_type: sum
         label_set:
         - state
     - action: update
-      include: googlecloudmonitoring/point_count
-      new_name: agent/monitoring/point_count
+      include: otelcol_exporter_sent_metric_points
       operations:
       - action: toggle_scalar_data_type
+      - action: add_label
+        new_label: status
+        new_value: OK
+    - action: update
+      include: otelcol_exporter_send_failed_metric_points
+      operations:
+      - action: toggle_scalar_data_type
+      - action: add_label
+        new_label: status
+        new_value: UNKNOWN
+    - action: combine
+      include: otelcol_exporter_sent_metric_points|otelcol_exporter_send_failed_metric_points
+      match_type: regexp
+      new_name: agent/monitoring/point_count
+      operations:
       - action: aggregate_labels
         aggregation_type: sum
         label_set:
         - status
+      submatch_case: lower
     - action: update
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  metricstransform/otlp_4:
+    transforms:
+    - action: update
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: prometheus.googleapis.com/$${1}
+  metricstransform/otlpgooglecloudmonitoring_0:
+    transforms:
+    - action: update
+      include: ^(.*)$$
+      match_type: regexp
+      new_name: A$${1}
+    - action: update
+      include: "^A((?:[a-z]+\\.)*(?:googleapis\\.com|kubernetes\\.io|istio\\.io|knative\\.dev)/.+)$$"
+      match_type: regexp
+      new_name: B$${1}
+    - action: update
+      include: ^A(.*)$$
+      match_type: regexp
+      new_name: Aworkload.googleapis.com/$${1}
+    - action: update
+      include: ^[AB](.*)$$
+      match_type: regexp
+      new_name: $${1}
+  resource/otlp_grpc/otlp_logs_0:
+    attributes:
+    - action: insert
+      key: gcp.project_id
+      value: test-project
+  resource/otlp_grpc/otlp_metrics_0:
+    attributes:
+    - action: insert
+      key: gcp.project_id
+      value: test-project
   resourcedetection/_global_0:
     detectors:
     - gcp
+  resourcedetection/_global_1:
+    detectors:
+    - gcp
+    override: false
+  resourcedetection/otlp_0:
+    detectors:
+    - gcp
+    override: false
   transform/agent_prometheus_0:
     metric_statements:
     - context: metric
@@ -606,52 +682,36 @@ processors:
       - delete_key(resource.attributes, "service.instance.id")
       - delete_key(resource.attributes, "server.port")
       - delete_key(resource.attributes, "url.scheme")
-  transform/fluent__forward_0:
-    error_mode: ignore
-    log_statements:
-    - context: log
+  transform/agent_prometheus_1:
+    metric_statements:
+    - context: scope
       statements:
-      - set(cache["body_string"], body) where IsString(body)
-      - set(body, {})
-      - set(body["message"], cache["body_string"]) where (cache != nil and cache["body_string"] != nil)
-      - merge_maps(body, attributes, "upsert") where attributes != nil
-      - set(attributes, {})
-  transform/fluent__forward_1:
-    error_mode: ignore
-    log_statements:
-    - context: log
+      - set(name, "")
+      - set(version, "")
+  transform/agent_prometheus_2:
+    metric_statements:
+    - context: resource
+      error_mode: silent
       statements:
-      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["__field_0"], attributes["compute.googleapis.com/instance_group_manager/name"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/name"] != nil)
-      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
-      - set(cache["__field_1"], attributes["compute.googleapis.com/instance_group_manager/zone"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/zone"] != nil)
-      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
-      - set(cache["__field_2"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
-      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
-      - set(cache["__field_3"], attributes["gcp.log_name"]) where (attributes != nil and attributes["gcp.log_name"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_0"])
-      - set(cache["value"], "test-mig") where cache["value"] == nil
-      - set(attributes["compute.googleapis.com/instance_group_manager/name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_1"])
-      - set(cache["value"], "test-zone") where cache["value"] == nil
-      - set(attributes["compute.googleapis.com/instance_group_manager/zone"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_2"])
-      - set(cache["value"], "") where cache["value"] == nil
-      - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_3"])
-      - set(cache["value"], "fluent_forward") where cache["value"] == nil
-      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-  transform/fluent__forward_2:
-    error_mode: ignore
-    log_statements:
-    - context: log
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
+  transform/hostmetrics_3:
+    metric_statements:
+    - context: scope
       statements:
-      - set(attributes["gcp.log_name"], Concat([attributes["gcp.log_name"],body["fluent.tag"]], ".")) where ((attributes != nil and attributes["gcp.log_name"] != nil) and (body != nil and body["fluent.tag"] != nil))
-      - delete_key(body, "fluent.tag") where ((body != nil and body["fluent.tag"] != nil) and (body != nil and body["fluent.tag"] != nil))
+      - set(name, "")
+      - set(version, "")
+  transform/hostmetrics_4:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
   transform/loggingmetrics_0:
     error_mode: ignore
     metric_statements:
@@ -679,12 +739,89 @@ processors:
     - context: datapoint
       statements:
       - set(time, Now())
+  transform/ops_agent_1:
+    metric_statements:
+    - context: scope
+      statements:
+      - set(name, "")
+      - set(version, "")
+  transform/ops_agent_2:
+    metric_statements:
+    - context: resource
+      error_mode: silent
+      statements:
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "service.namespace")
+      - delete_key(attributes, "service.version")
   transform/otel_0:
     error_mode: ignore
     metric_statements:
     - context: metric
       statements:
-      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
+      - extract_count_metric(true) where name == "rpc.client.duration"
+  transform/otlp_0:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], attributes["compute.googleapis.com/instance_group_manager/name"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/name"] != nil)
+      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["__field_1"], attributes["compute.googleapis.com/instance_group_manager/zone"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/zone"] != nil)
+      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["__field_2"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
+      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["__field_3"], attributes["gcp.log_name"]) where (attributes != nil and attributes["gcp.log_name"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"])
+      - set(cache["value"], "test-mig") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_1"])
+      - set(cache["value"], "test-zone") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/zone"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_2"])
+      - set(cache["value"], "") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_3"])
+      - set(cache["value"], "otlp") where cache["value"] == nil
+      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+  transform/otlp_1:
+    error_mode: ignore
+    metric_statements:
+    - context: datapoint
+      statements:
+      - set(attributes["location"], resource.attributes["cloud.availability_zone"]) where resource.attributes["cloud.availability_zone"] != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
+      - set(attributes["namespace"], Concat([resource.attributes["host.id"], resource.attributes["host.name"]], "/")) where Concat([resource.attributes["host.id"], resource.attributes["host.name"]], "/") != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
+      - set(attributes["cluster"], "__gce__") where "__gce__" != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
+      - set(attributes["instance_name"], resource.attributes["host.name"]) where resource.attributes["host.name"] != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
+      - set(attributes["machine_type"], resource.attributes["host.type"]) where resource.attributes["host.type"] != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
+  transform/otlp_3:
+    error_mode: ignore
+    metric_statements:
+    - context: metric
+      statements:
+      - copy_metric(Concat([metric.name, "unknowncounter"], ":")) where metric.metadata["prometheus.type"] == "unknown" and not HasSuffix(metric.name, ":unknowncounter")
+      - convert_gauge_to_sum("cumulative", true) where HasSuffix(metric.name, ":unknowncounter")
+      - set(metric.name, Substring(metric.name, 0, Len(metric.name)-Len(":unknowncounter"))) where HasSuffix(metric.name, ":unknowncounter")
+  transform/otlp_grpc/otlp_logs_1:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - set(attributes["instrumentation_source"], instrumentation_scope.name) where instrumentation_scope.name != ""
+      - set(attributes["instrumentation_version"], instrumentation_scope.version) where instrumentation_scope.version != ""
+  transform/otlp_grpc/otlp_logs_2:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - set(attributes["service.name"], resource.attributes["service.name"]) where resource.attributes["service.name"] != nil
+      - set(attributes["service.namespace"], resource.attributes["service.namespace"]) where resource.attributes["service.namespace"] != nil
+      - set(attributes["service.instance.id"], resource.attributes["service.instance.id"]) where resource.attributes["service.instance.id"] != nil
   transform/syslog_0:
     error_mode: ignore
     log_statements:
@@ -731,8 +868,6 @@ receivers:
     preserve_trailing_whitespaces: true
     start_at: beginning
     storage: file_storage
-  fluentforward/fluent__forward:
-    endpoint: 1.2.3.4:5678
   hostmetrics/hostmetrics:
     collection_interval: 60s
     scrapers:
@@ -748,8 +883,14 @@ receivers:
         mute_process_exe_error: true
         mute_process_name_error: true
       processes: {}
-  nvml/hostmetrics_1:
-    collection_interval: 60s
+  otlp/otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+  otlp/otlpgooglecloudmonitoring:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
   otlpjsonfile/ops_agent:
     include:
     - enabled_receivers_otlp.json
@@ -773,60 +914,70 @@ receivers:
 service:
   extensions:
   - file_storage
+  - googleclientauth
   pipelines:
     logs/logs_default__pipeline_syslog:
       exporters:
-      - googlecloud/logging
+      - otlp_grpc/otlp
       processors:
       - transform/syslog_0
       - resourcedetection/_global_0
+      - resource/otlp_grpc/otlp_logs_0
+      - transform/otlp_grpc/otlp_logs_1
+      - transform/otlp_grpc/otlp_logs_2
+      - batch/otlp_grpc/otlp_logs_3
       receivers:
       - filelog/syslog
-    logs/logs_fluent__forward_fluent__forward:
+    logs/logs_otlp_otlp:
       exporters:
-      - googlecloud/logging
+      - otlp_grpc/otlp
       processors:
-      - transform/fluent__forward_0
-      - transform/fluent__forward_1
-      - transform/fluent__forward_2
-      - resourcedetection/_global_0
+      - transform/otlp_0
+      - resourcedetection/_global_1
+      - resource/otlp_grpc/otlp_logs_0
+      - transform/otlp_grpc/otlp_logs_1
+      - transform/otlp_grpc/otlp_logs_2
+      - batch/otlp_grpc/otlp_logs_3
       receivers:
-      - fluentforward/fluent__forward
+      - otlp/otlp
     metrics/default__pipeline_hostmetrics:
       exporters:
-      - googlecloud
+      - otlp_grpc/otlp
       processors:
       - agentmetrics/hostmetrics_0
       - filter/hostmetrics_1
       - metricstransform/hostmetrics_2
+      - transform/hostmetrics_3
+      - transform/hostmetrics_4
       - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
+      - resource/otlp_grpc/otlp_metrics_0
+      - metricstarttime/otlp_grpc/otlp_metrics_1
+      - batch/otlp_grpc/otlp_metrics_2
       receivers:
       - hostmetrics/hostmetrics
-    metrics/default__pipeline_hostmetrics_1:
-      exporters:
-      - googlecloud
-      processors:
-      - metricstransform/hostmetrics_1_0
-      - filter/default__pipeline_hostmetrics_1_0
-      - resourcedetection/_global_0
-      receivers:
-      - nvml/hostmetrics_1
     metrics/fluentbit:
       exporters:
-      - googlecloud
+      - otlp_grpc/otlp
       processors:
       - transform/agent_prometheus_0
+      - transform/agent_prometheus_1
+      - transform/agent_prometheus_2
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
       - resourcedetection/_global_0
+      - resource/otlp_grpc/otlp_metrics_0
+      - metricstarttime/otlp_grpc/otlp_metrics_1
+      - batch/otlp_grpc/otlp_metrics_2
       receivers:
       - prometheus/agent_prometheus
     metrics/loggingmetrics:
       exporters:
-      - googlecloud
+      - otlp_grpc/otlp
       processors:
       - transform/agent_prometheus_0
+      - transform/agent_prometheus_1
+      - transform/agent_prometheus_2
       - transform/loggingmetrics_0
       - filter/loggingmetrics_1
       - filter/loggingmetrics_2
@@ -837,28 +988,73 @@ service:
       - interval/loggingmetrics_7
       - metricstransform/loggingmetrics_8
       - resourcedetection/_global_0
+      - resource/otlp_grpc/otlp_metrics_0
+      - metricstarttime/otlp_grpc/otlp_metrics_1
+      - batch/otlp_grpc/otlp_metrics_2
       receivers:
       - prometheus/agent_prometheus
     metrics/opsagent:
       exporters:
-      - googlecloud
+      - otlp_grpc/otlp
       processors:
       - transform/ops_agent_0
+      - transform/ops_agent_1
+      - transform/ops_agent_2
       - resourcedetection/_global_0
+      - resource/otlp_grpc/otlp_metrics_0
+      - metricstarttime/otlp_grpc/otlp_metrics_1
+      - batch/otlp_grpc/otlp_metrics_2
       receivers:
       - otlpjsonfile/ops_agent
     metrics/otel:
       exporters:
-      - googlecloud
+      - otlp_grpc/otlp
       processors:
       - transform/agent_prometheus_0
+      - transform/agent_prometheus_1
+      - transform/agent_prometheus_2
       - transform/otel_0
       - filter/otel_1
       - filter/otel_2
       - metricstransform/otel_3
       - resourcedetection/_global_0
+      - resource/otlp_grpc/otlp_metrics_0
+      - metricstarttime/otlp_grpc/otlp_metrics_1
+      - batch/otlp_grpc/otlp_metrics_2
       receivers:
       - prometheus/agent_prometheus
+    metrics/otlp2_otlpgooglecloudmonitoring:
+      exporters:
+      - otlp_grpc/otlp
+      processors:
+      - metricstransform/otlpgooglecloudmonitoring_0
+      - resourcedetection/_global_1
+      - resource/otlp_grpc/otlp_metrics_0
+      - metricstarttime/otlp_grpc/otlp_metrics_1
+      - batch/otlp_grpc/otlp_metrics_2
+      receivers:
+      - otlp/otlpgooglecloudmonitoring
+    metrics/otlp_otlp:
+      exporters:
+      - otlp_grpc/otlp
+      processors:
+      - resourcedetection/otlp_0
+      - transform/otlp_1
+      - groupbyattrs/otlp_2
+      - transform/otlp_3
+      - metricstransform/otlp_4
+      - resource/otlp_grpc/otlp_metrics_0
+      - metricstarttime/otlp_grpc/otlp_metrics_1
+      - batch/otlp_grpc/otlp_metrics_2
+      receivers:
+      - otlp/otlp
+    traces/traces_otlp_otlp:
+      exporters:
+      - googlecloud/otel
+      processors:
+      - resourcedetection/_global_1
+      receivers:
+      - otlp/otlp
   telemetry:
     metrics:
       level: detailed

@@ -20,14 +20,6 @@ exporters:
       queue_size: 12000
       sizer: items
     timeout: 60s
-  googlecloud/otel:
-    metric:
-      instrumentation_library_labels: true
-      prefix: ""
-      resource_filters: []
-      service_resource_labels: true
-      skip_create_descriptor: true
-    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
 extensions:
   file_storage:
     create_directory: true
@@ -761,7 +753,7 @@ service:
       - filelog/syslog
     logs/logs_fluent__forward_fluent__forward:
       exporters:
-      - googlecloud/otel
+      - googlecloud/logging
       processors:
       - transform/fluent__forward_0
       - transform/fluent__forward_1
