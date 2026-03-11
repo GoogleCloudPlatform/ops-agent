@@ -719,7 +719,7 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 
 func TestCustomLogFile(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.OtelLoggingOTLPExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		logPath := logPathForImage(vm.ImageSpec)
@@ -893,7 +893,7 @@ func TestKillChildJobsWhenPluginServerProcessTerminates(t *testing.T) {
 
 func TestCustomLogFormat(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.OtelLoggingOTLPExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
@@ -1324,7 +1324,7 @@ func TestProcessorOrder(t *testing.T) {
 
 func TestSyslogTCP(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.OtelLoggingOTLPExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -1389,7 +1389,7 @@ func TestSyslogTCP(t *testing.T) {
 
 func TestSyslogUDP(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.OtelLoggingOTLPExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -1433,7 +1433,7 @@ func TestSyslogUDP(t *testing.T) {
 
 func TestExcludeLogs(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.OtelLoggingOTLPExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
@@ -1522,7 +1522,7 @@ func TestExcludeLogs(t *testing.T) {
 
 func TestExcludeLogsParseJsonOrder(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.OtelLoggingOTLPExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
@@ -1881,7 +1881,7 @@ func TestResourceNameLabel(t *testing.T) {
 
 func TestLogFilePathLabel(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.OtelLoggingOTLPExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
@@ -2150,7 +2150,7 @@ func TestFluentForwardLog(t *testing.T) {
 
 func TestWindowsEventLog(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.OtelLoggingOTLPExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if !gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -2195,7 +2195,7 @@ func TestWindowsEventLog(t *testing.T) {
 
 func TestWindowsEventLogV1UnsupportedChannel(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.OtelLoggingOTLPExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if !gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -2230,7 +2230,7 @@ func TestWindowsEventLogV1UnsupportedChannel(t *testing.T) {
 
 func TestWindowsEventLogV2(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.OtelLoggingOTLPExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if !gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -2478,7 +2478,7 @@ func hasKeyWithValueType[V any](m map[string]any, k string) bool {
 
 func TestWindowsEventLogWithNonDefaultTimeZone(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.OtelLoggingOTLPExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if !gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -2513,7 +2513,7 @@ func TestWindowsEventLogWithNonDefaultTimeZone(t *testing.T) {
 
 func TestSystemdLog(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.OtelLoggingOTLPExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -2701,7 +2701,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 
 func TestDefaultMetricsNoProxy(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.OtelLoggingOTLPExporterFeatureFlag, agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, "", feature); err != nil {
@@ -2719,7 +2719,7 @@ func TestDefaultMetricsNoProxy(t *testing.T) {
 // go/sdi-integ-test#proxy-testing
 func TestDefaultMetricsWithProxy(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.OtelLoggingOTLPExporterFeatureFlag, agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if !gce.IsWindows(imageSpec) {
 			t.Skip("Proxy test is currently only supported on windows.")
@@ -5428,8 +5428,77 @@ metrics:
 
 		options := gce.WaitForTraceOptions{
 			Window: time.Hour,
+			Filters: []string{
+				fmt.Sprintf("+g.co/r/gce_instance/instance_id:%d", vm.ID),
+			},
 		}
 		if _, err := gce.WaitForTrace(ctx, logger, vm, options); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
+func TestOTLPLogsWithOtlpExporter(t *testing.T) {
+	t.Parallel()
+	RunForEachImageAndFeatureFlag(t, []string{agents.OTLPLoggingOTLPExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+		t.Parallel()
+		if feature == agents.DefaultFeatureFlag {
+			t.Skip("This test requires otlp_logging+otlp_exporter experimental flags to be enabled")
+		}
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		otlpConfig := `
+combined:
+  receivers:
+    otlp:
+      type: otlp
+      grpc_endpoint: 0.0.0.0:4317
+logging:
+  service:
+    pipelines:
+      otlp:
+        receivers:
+        - otlp
+traces:
+  service:
+    pipelines:
+metrics:
+  service:
+    pipelines:
+`
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, otlpConfig, feature); err != nil {
+			t.Fatal(err)
+		}
+
+		// Generate log traffic with dummy app
+		logFile, err := testdataDir.Open(path.Join("testdata", "otlp", "logs.go"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer logFile.Close()
+		if err := installGolang(ctx, logger, vm); err != nil {
+			t.Fatal(err)
+		}
+
+		scopeName := "test-scope"
+		scopeVersion := "1.2.3"
+		serviceName := "test-service"
+		serviceNamespace := "test-namespace"
+		serviceInstanceId := "test-instance"
+		logBody := "test-log-body"
+
+		if err = runGoCode(ctx, logger, vm, logFile,
+			"-scope_name", scopeName,
+			"-scope_version", scopeVersion,
+			"-service_name", serviceName,
+			"-service_namespace", serviceNamespace,
+			"-service_instance_id", serviceInstanceId,
+			"-log_body", logBody,
+		); err != nil {
+			t.Fatal(err)
+		}
+
+		query := fmt.Sprintf(`textPayload="%s" AND labels."instrumentation_source"="%s" AND labels."instrumentation_version"="%s" AND labels."service.name"="%s" AND labels."service.namespace"="%s" AND labels."service.instance.id"="%s"`, logBody, scopeName, scopeVersion, serviceName, serviceNamespace, serviceInstanceId)
+		if err := gce.WaitForLog(ctx, logger, vm, "", time.Hour, query); err != nil {
 			t.Error(err)
 		}
 	})
@@ -5959,7 +6028,7 @@ func TestLogCompression(t *testing.T) {
 
 func TestFileOffset(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.OtelLoggingOTLPExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
