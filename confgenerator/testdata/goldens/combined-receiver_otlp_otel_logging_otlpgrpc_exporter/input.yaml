@@ -36,8 +36,22 @@ traces:
         receivers:
           - otlp
 logging:
+  receivers:
+    syslog_custom:
+      type: syslog
+      transport_protocol: tcp
+      listen_host: 0.0.0.0
+      listen_port: 5141
+    file_logs:
+      type: files
+      include_paths: ["/var/log/messages"]
   service:
+    experimental_otel_logging: true
     pipelines:
       otlp:
         receivers:
           - otlp
+      syslog_custom:
+        receivers: [syslog_custom]
+      file_pipeline:
+        receivers: [file_logs]
