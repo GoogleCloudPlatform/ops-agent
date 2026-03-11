@@ -13,9 +13,6 @@
       - key: cloud.region
         value:
           stringValue: test-zone
-      - key: gcp.internal.omit_otlp
-        value:
-          stringValue: "true"
       - key: gcp.project_id
         value:
           stringValue: fake-project
@@ -182,9 +179,6 @@
       - key: cloud.region
         value:
           stringValue: test-zone
-      - key: gcp.internal.omit_otlp
-        value:
-          stringValue: "true"
       - key: gcp.project_id
         value:
           stringValue: fake-project

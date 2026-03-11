@@ -55,7 +55,6 @@ func (transformationConfig transformationTest) generateOTelOTLPExporterConfig(ct
 					// all late entries flushed from a multiline parser after 1s.
 					"logs": {
 						otel.GCPProjectID("fake-project"),
-						otel.DisableOtlpRoundTrip(),
 						otel.PreserveInstrumentationScope(),
 						otel.CopyServiceResourceLabels(),
 						otel.BatchProcessor(500, 500, "1500ms"),
