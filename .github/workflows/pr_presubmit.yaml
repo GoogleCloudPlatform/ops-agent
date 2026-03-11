@@ -55,5 +55,3 @@ jobs:
         ADDED_FILES: ${{ steps.files.outputs.added }}
         MODIFIED_FILES: ${{ steps.files.outputs.modified }}
         PR_LABELS: ${{ steps.get_labels.outputs.labels }}
-
-
