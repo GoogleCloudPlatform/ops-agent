@@ -209,7 +209,7 @@ func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.Receiv
 		"fingerprint_size":              "5kb",
 	}
 	if !r.TransformationTest {
-		receiver_config["storage"] = fileStorageExtensionID()
+		receiver_config["storage"] = fileStorageExtensionID
 	}
 	if i := r.WildcardRefreshInterval; i != nil {
 		receiver_config["poll_interval"] = i.String()
@@ -650,7 +650,7 @@ func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.R
 			"start_at":              "beginning",
 			"poll_interval":         "1s",
 			"ignore_channel_errors": true,
-			"storage":               fileStorageExtensionID(),
+			"storage":               fileStorageExtensionID,
 			// When "include_log_record_original = true", the event original XML string is set in `attributes."log.record.original"`.
 			"include_log_record_original": true,
 		}
@@ -1036,7 +1036,7 @@ func (r LoggingReceiverSystemd) Pipelines(ctx context.Context) ([]otel.ReceiverP
 	receiver_config := map[string]any{
 		"start_at": "beginning",
 		"priority": "debug",
-		"storage":  fileStorageExtensionID(),
+		"storage":  fileStorageExtensionID,
 	}
 
 	modify_fields_processors, err := LoggingProcessorModifyFields{
