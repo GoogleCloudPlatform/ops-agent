@@ -102,6 +102,19 @@ func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, 
 		return pipeline
 	}
 
+	// Clone maps and slices to avoid cross-contamination of shared structs
+	clonedProcessors := make(map[string][]otel.Component)
+	for k, v := range pipeline.Processors {
+		clonedProcessors[k] = append([]otel.Component{}, v...)
+	}
+	pipeline.Processors = clonedProcessors
+
+	clonedExporterTypes := make(map[string]otel.ExporterType)
+	for k, v := range pipeline.ExporterTypes {
+		clonedExporterTypes[k] = v
+	}
+	pipeline.ExporterTypes = clonedExporterTypes
+
 	if _, ok := pipeline.ExporterTypes["metrics"]; ok {
 		pipeline.ExporterTypes["metrics"] = otel.OTLP
 		if isSystem {

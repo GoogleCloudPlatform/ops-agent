@@ -357,7 +357,9 @@ func generateOtelConfigDiffWithOtlpExporterEnabled(got map[string]string, experi
 	if err == nil {
 		otelGeneratedConfigOtlp, err := mergedUcOtlp.GenerateOtelConfig(ctxOtlp, "", "")
 		if err == nil {
-			diffString := cmp.Diff(sortYamlString(otelGeneratedConfig), sortYamlString(otelGeneratedConfigOtlp))
+			configA := strings.ReplaceAll(sortYamlString(otelGeneratedConfig), "\r\n", "\n")
+			configB := strings.ReplaceAll(sortYamlString(otelGeneratedConfigOtlp), "\r\n", "\n")
+			diffString := cmp.Diff(configA, configB)
 			if diffString != "" {
 				got["otel_otlp_exporter.yaml.diff"] = diffString
 			}
@@ -433,7 +435,10 @@ func assertGolden(t *testing.T, actual string, file string, testDir string) {
 		return
 	}
 	expected, err := os.ReadFile(filepath.Join("testdata", testDir, file))
-	if err != nil {
+	if os.IsNotExist(err) {
+		golden.Assert(t, actual, filepath.Join(testDir, file))
+		return
+	} else if err != nil {
 		t.Fatalf("failed to read golden file %s: %s", file, err)
 	}
 	if strings.ReplaceAll(string(expected), "\r\n", "\n") == strings.ReplaceAll(actual, "\r\n", "\n") {
