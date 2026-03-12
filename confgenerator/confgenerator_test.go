@@ -333,15 +333,15 @@ func generateConfigs(pc platformConfig, testDir string) (got map[string]string, 
 	}
 	got["enabled_receivers_otlp.json"] = string(generatedEnabledReceiversOTLPJSON)
 
-	// If otel_logging is the only experiment, generate a otel config diff with otlp_exporter enabled.
+	// If the confgenerator test is designed to test the otel_logging experiment, generate an OTEL config with both otlp_exporter and otel_logging enabled.
 	if len(experiments) == 1 && experiments["otel_logging"] {
-		generateOtelConfigDiffWithOtlpExporterEnabled(got, experiments, pc, testDir, otelGeneratedConfig)
+		generateOtelConfigWithOtlpExporterEnabled(got, experiments, pc, testDir, otelGeneratedConfig)
 	}
 
 	return
 }
 
-func generateOtelConfigDiffWithOtlpExporterEnabled(got map[string]string, experiments map[string]bool, pc platformConfig, testDir string, otelGeneratedConfig string) {
+func generateOtelConfigWithOtlpExporterEnabled(got map[string]string, experiments map[string]bool, pc platformConfig, testDir string, otelGeneratedConfig string) {
 	experimentsOtlp := map[string]bool{
 		"otlp_exporter": true,
 		"otel_logging":  true,
