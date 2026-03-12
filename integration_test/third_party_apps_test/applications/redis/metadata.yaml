@@ -32,6 +32,11 @@ platforms_to_skip:
   - suse-cloud:sles-12 # File '/repositories/server:/monitoring/SLE_12/server:monitoring.repo' not found
   - suse-cloud:sles-15 # File '/repositories/server:database/SLE_15/server:database.repo' not found
   - suse-cloud:sles-15-arm64
+  # redis repo not available for rh10 yet
+  - rocky-linux-cloud:rocky-linux-10
+  - rocky-linux-cloud:rocky-linux-10-optimized-gcp
+  - rocky-linux-cloud:rocky-linux-10-arm64
+  - rocky-linux-cloud:rocky-linux-10-optimized-gcp-arm64
 supported_app_version: ["6.2"]
 expected_metrics:
   - type: workload.googleapis.com/redis.clients.blocked

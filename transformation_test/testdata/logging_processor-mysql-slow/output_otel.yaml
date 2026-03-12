@@ -137,8 +137,6 @@
         zone: test-zone
       type: gce_instance
     timestamp: now
-  partialSuccess: true
-- entries:
   - jsonPayload:
       host: 172.18.0.2
       lockTime: 0.000311

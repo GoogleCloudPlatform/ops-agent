@@ -3,7 +3,37 @@ source /etc/os-release
 
 sudo apt update
 KERNEL_VERSION=`uname -r`
-sudo apt install -y linux-headers-${KERNEL_VERSION} software-properties-common pciutils gcc make dkms wget
+sudo apt install -y wget
+
+# NVIDIA driver needs linux headers matching the kernel version. This section 
+# handles the cases when GCE images are behind on kernel updates. Kernel updates
+# require reboot, but our tests can't handle disconnections. When the matching
+# linux header is not in the standard repo, we download from Debian archives and
+# install manually (b/489714959).
+HEADER_PKG="linux-headers-${KERNEL_VERSION}"
+if apt-cache show "$HEADER_PKG" > /dev/null 2>&1; then
+    echo "Matching headers found in the repository. Installing..."
+    sudo apt-get install -y "$HEADER_PKG"
+else
+    echo "Headers not found. Temporarily adding Debian Snapshot to apt sources..."
+    DEB_VERSION=$(dpkg-query -W -f='${Version}' "linux-image-${KERNEL_VERSION}")
+    ABI=$(echo "$KERNEL_VERSION" | grep -oP '^[0-9]+\.[0-9]+\.[0-9]+-[0-9]+')
+    BASE_KVER=$(echo "$KERNEL_VERSION" | cut -d. -f1,2)
+
+    PKG_COMMON="linux-headers-${ABI}-common_${DEB_VERSION}_all.deb"
+    PKG_ARCH="linux-headers-${KERNEL_VERSION}_${DEB_VERSION}_amd64.deb"
+    PKG_KBUILD="linux-kbuild-${BASE_KVER}_${DEB_VERSION}_amd64.deb"
+    PKG_COMPILER="linux-compiler-gcc-10-x86_${DEB_VERSION}_amd64.deb"
+
+    # Update the archive timestamp to point to the archive containing the 
+    # matching headers.
+    ARCHIVE_TIME="20260210T181756Z"
+    BASE_URL="https://snapshot.debian.org/archive/debian-security/${ARCHIVE_TIME}/pool/updates/main/l/linux"
+
+    wget "$BASE_URL/$PKG_COMMON" "$BASE_URL/$PKG_ARCH" "$BASE_URL/$PKG_KBUILD" "$BASE_URL/$PKG_COMPILER"
+    sudo apt-get install -y "./$PKG_COMMON" "./$PKG_ARCH" "./$PKG_KBUILD" "./$PKG_COMPILER"
+fi
+sudo apt install -y software-properties-common pciutils gcc make dkms git
 
 # Install CUDA and driver together, since the `exercise` script needs to run a
 # CUDA sample app to generating GPU process metrics
@@ -37,8 +67,9 @@ case $DEVICE_CODE in
             # cuda-12-6 is the latest version that supports Debian 11
             sudo apt -y install cuda-12-6
         else
-            sudo apt -y install nvidia-driver-575
-            sudo apt -y install cuda-12-9
+            sudo apt -y install nvidia-driver-pinning-590.48.01
+            sudo apt -y install cuda-drivers
+            sudo apt -y install cuda-toolkit-13-1
         fi
         ;;
 esac

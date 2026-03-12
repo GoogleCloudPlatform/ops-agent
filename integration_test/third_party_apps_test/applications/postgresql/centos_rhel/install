@@ -2,6 +2,10 @@ set -e
 
 source /etc/os-release
 ARCH=$(uname -m)
+
+# Default to 14 for RHEL 7, 8, and 9
+PG_VER=14
+
 case "${VERSION_ID}" in
   7)
     sudo yum -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-"${ARCH}"/pgdg-redhat-repo-latest.noarch.rpm
@@ -13,23 +17,32 @@ case "${VERSION_ID}" in
   9|9.*)
     sudo yum -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-"${ARCH}"/pgdg-redhat-repo-latest.noarch.rpm
     ;;
+  10|10.*)
+    # Upgrade to 16 for RHEL 10 to ensure stability on modern kernels/libraries
+    PG_VER=16
+    sudo yum -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-10-"${ARCH}"/pgdg-redhat-repo-latest.noarch.rpm
+    ;;
   *)
     echo -n "unknown version"
     exit 1
     ;;
 esac
 
-sudo yum install -y postgresql14-server postgresql14-contrib
-sudo systemctl enable postgresql-14
+# Install the version determined above
+sudo yum install -y postgresql${PG_VER}-server postgresql${PG_VER}-contrib
+sudo systemctl enable postgresql-${PG_VER}
 
-sudo /usr/pgsql-14/bin/postgresql-14-setup initdb
-sudo service postgresql-14 restart
+# Setup paths based on the dynamic version
+DATA_ROOT=/var/lib/pgsql/${PG_VER}
+CFG_ROOT=/var/lib/pgsql/${PG_VER}
 
+# Initialize and start
+sudo /usr/pgsql-${PG_VER}/bin/postgresql-${PG_VER}-setup initdb
+sudo systemctl start postgresql-${PG_VER}
+
+# User setup
 sudo su postgres -c "psql postgres -c \"ALTER ROLE postgres WITH PASSWORD 'abc123';\""
 sudo su postgres -c "psql postgres -c \"CREATE ROLE replica_user WITH REPLICATION LOGIN PASSWORD 'abc123';\""
-
-DATA_ROOT=/var/lib/pgsql/14
-CFG_ROOT=/var/lib/pgsql/14
 
 ### Everything following this comment is designed to set up a paused replica to get replication metrics
 sudo tee -a ${CFG_ROOT}/data/postgresql.conf << EOF
@@ -40,7 +53,7 @@ archive_command = 'test ! -f $DATA_ROOT/data/archive/%f && cp %p $DATA_ROOT/data
 archive_timeout = 10s
 EOF
 
-sudo mkdir $DATA_ROOT/data/archive/
+sudo mkdir -p $DATA_ROOT/data/archive/
 sudo chown postgres:postgres $DATA_ROOT/data/archive/
 
 # allow replica connection from localhost
@@ -48,7 +61,7 @@ sudo tee -a ${CFG_ROOT}/data/pg_hba.conf << EOF
 host  replication   replica_user  localhost  md5
 EOF
 
-sudo systemctl restart postgresql-14
+sudo systemctl restart postgresql-${PG_VER}
 
 # backup from primary to repl directory and configure replication
 sudo tee ${DATA_ROOT}/.pgpass << EOF
@@ -56,7 +69,9 @@ sudo tee ${DATA_ROOT}/.pgpass << EOF
 EOF
 sudo chown postgres:postgres ${DATA_ROOT}/.pgpass
 sudo chmod 600 ${DATA_ROOT}/.pgpass
-sudo PGPASSFILE=${DATA_ROOT}/.pgpass pg_basebackup -h localhost -U replica_user -X stream -C -S replica_2 -v -R -w -D ${DATA_ROOT}/repl/
+
+# Use version-specific pg_basebackup
+sudo PGPASSFILE=${DATA_ROOT}/.pgpass /usr/pgsql-${PG_VER}/bin/pg_basebackup -h localhost -U replica_user -X stream -C -S replica_2 -v -R -w -D ${DATA_ROOT}/repl/
 
 sudo touch ${DATA_ROOT}/repl/pg_hba.conf
 sudo chown postgres:postgres ${DATA_ROOT}/repl/pg_hba.conf
@@ -81,7 +96,7 @@ EOF
 sudo chown -R postgres:postgres ${DATA_ROOT}/repl
 
 # start the replica in the background
-nohup sudo su postgres -c "/usr/pgsql-14/bin/postgres -D ${DATA_ROOT}/repl" 2>/dev/null >/dev/null </dev/null &
+nohup sudo su postgres -c "/usr/pgsql-${PG_VER}/bin/postgres -D ${DATA_ROOT}/repl" > /tmp/replica_postgres.log 2>&1 &
 # give it time to start, since we put it in the background
 sleep 5
 # pause the replication so we see delay metrics populated

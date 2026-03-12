@@ -828,6 +828,7 @@ service:
     logs:
       level: debug
     metrics:
+      level: detailed
       readers:
       - pull:
           exporter:

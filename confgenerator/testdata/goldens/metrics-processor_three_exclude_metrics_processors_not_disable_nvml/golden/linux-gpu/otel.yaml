@@ -761,6 +761,7 @@ service:
       - prometheus/agent_prometheus
   telemetry:
     metrics:
+      level: detailed
       readers:
       - pull:
           exporter:

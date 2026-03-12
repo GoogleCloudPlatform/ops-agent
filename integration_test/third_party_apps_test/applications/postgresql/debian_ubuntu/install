@@ -4,7 +4,7 @@ source /etc/os-release
 
 postgres_version=16
 
-if [[ "${VERSION_ID}" == 25.04 || "${VERSION_ID}" == 25.10 ]]; then
+if [[ "${VERSION_ID}" == 25.10 ]]; then
   postgres_version=17
 fi
 

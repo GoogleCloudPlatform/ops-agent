@@ -28,10 +28,11 @@ source kokoro/scripts/utils/louhi.sh
 
 # For soak tests run by Louhi
 populate_env_vars_from_louhi_tag_if_present
+
 # if TARGET & ARCH are set, retrieve the soak distro from project.yaml
 if [[ -n "${TARGET:-}" && -n "${ARCH:-}" ]]; then
   DISTRO=$(yaml project.yaml "['targets']['${TARGET}']['architectures']['${ARCH}']['soak_distro']")
-  export VM_NAME="soak-test-${_LOUHI_EXECUTION_ID}-${TARGET}-${ARCH//_/-}-${LABEL}"
+  export VM_NAME="soak-test-${_LOUHI_EXECUTION_ID}-${TARGET}-${ARCH//_/-}${FEATURE_LABEL:+-${FEATURE_LABEL}}-${LABEL}"
   export DISTRO
 fi
 

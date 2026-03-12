@@ -1,0 +1,3 @@
+{"log":"{\"level\":\"info\",\"message\":\"start\"}\n","time":"2023-01-02T03:04:05.123456789"}
+{"log":"{\"level\":\"error\",\"message\":\"failed to connect\"}\n","time":"2024-06-15T14:30:00.987654321Z"}
+{"log":"{\"level\":\"warning\",\"message\":\"low disk space\"}\n","time":"2022-12-31T23:59:59.000000000-0800"}
