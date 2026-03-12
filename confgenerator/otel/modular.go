@@ -232,8 +232,7 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 		SetIfMissing: resourceDetectionProcessors[SetIfMissing].name("_global_1"),
 	}
 
-	for _, prefix := range SortedKeys(c.Pipelines) {
-		pipeline := c.Pipelines[prefix]
+	for prefix, pipeline := range c.Pipelines {
 		// Receiver pipelines need to be instantiated once, since they might have more than one type.
 		// We do this work more than once if it's in more than one pipeline, but it should just overwrite the same names.
 		receiverPipeline := c.ReceiverPipelines[pipeline.ReceiverPipelineName]

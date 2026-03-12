@@ -31,7 +31,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"github.com/goccy/go-yaml"
-	"github.com/google/go-cmp/cmp"
 	"github.com/shirou/gopsutil/host"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/golden"
@@ -357,12 +356,7 @@ func generateOtelConfigDiffWithOtlpExporterEnabled(got map[string]string, experi
 	if err == nil {
 		otelGeneratedConfigOtlp, err := mergedUcOtlp.GenerateOtelConfig(ctxOtlp, "", "")
 		if err == nil {
-			configA := strings.ReplaceAll(sortYamlString(otelGeneratedConfig), "\r\n", "\n")
-			configB := strings.ReplaceAll(sortYamlString(otelGeneratedConfigOtlp), "\r\n", "\n")
-			diffString := cmp.Diff(configA, configB)
-			if diffString != "" {
-				got["otel_otlp_exporter.yaml.diff"] = diffString
-			}
+			got["otel_otlp_exporter.yaml"] = sortYamlString(otelGeneratedConfigOtlp)
 		}
 	}
 }
@@ -441,10 +435,7 @@ func assertGolden(t *testing.T, actual string, file string, testDir string) {
 	} else if err != nil {
 		t.Fatalf("failed to read golden file %s: %s", file, err)
 	}
-	if strings.ReplaceAll(string(expected), "\r\n", "\n") == strings.ReplaceAll(actual, "\r\n", "\n") {
-		return
-	}
-	golden.Assert(t, actual, filepath.Join(testDir, file))
+	assert.Equal(t, strings.ReplaceAll(string(expected), "\r\n", "\n"), strings.ReplaceAll(actual, "\r\n", "\n"))
 }
 
 func TestMain(m *testing.M) {
