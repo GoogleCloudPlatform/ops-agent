@@ -1,0 +1,3203 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: component
+              value:
+                stringValue: NETWORK
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: message
+              value:
+                stringValue: waiting for connections on port
+            - key: ms
+              value:
+                stringValue: "27017"
+            - key: severity
+              value:
+                stringValue: I
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1415057312450000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: component
+              value:
+                stringValue: CONTROL
+            - key: context
+              value:
+                stringValue: main
+            - key: id
+              value:
+                intValue: "23285"
+            - key: message
+              value:
+                stringValue: Automatically disabling TLS 1.0, to force-enable TLS 1.0 specify --sslDisabledProtocols 'none'
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.308+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: component
+              value:
+                stringValue: CONTROL
+            - key: context
+              value:
+                stringValue: main
+            - key: id
+              value:
+                intValue: "5945603"
+            - key: message
+              value:
+                stringValue: Multi threading initialized
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.309+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: relatedParameters
+                    value:
+                      arrayValue:
+                        values:
+                        - stringValue: tcpFastOpenServer
+                        - stringValue: tcpFastOpenClient
+                        - stringValue: tcpFastOpenQueueSize
+            - key: component
+              value:
+                stringValue: NETWORK
+            - key: context
+              value:
+                stringValue: main
+            - key: id
+              value:
+                intValue: "4648601"
+            - key: message
+              value:
+                stringValue: Implicit TCP FastOpen unavailable. If TCP FastOpen is required, set at least one of the related parameters
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.309+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: spec
+                    value:
+                      kvlistValue:
+                        values:
+                        - key: incomingExternalClient
+                          value:
+                            kvlistValue:
+                              values:
+                              - key: maxWireVersion
+                                value:
+                                  doubleValue: 25
+                              - key: minWireVersion
+                                value:
+                                  doubleValue: 0
+                        - key: incomingInternalClient
+                          value:
+                            kvlistValue:
+                              values:
+                              - key: maxWireVersion
+                                value:
+                                  doubleValue: 25
+                              - key: minWireVersion
+                                value:
+                                  doubleValue: 0
+                        - key: isInternalClient
+                          value:
+                            boolValue: true
+                        - key: outgoing
+                          value:
+                            kvlistValue:
+                              values:
+                              - key: maxWireVersion
+                                value:
+                                  doubleValue: 25
+                              - key: minWireVersion
+                                value:
+                                  doubleValue: 6
+            - key: component
+              value:
+                stringValue: NETWORK
+            - key: context
+              value:
+                stringValue: main
+            - key: id
+              value:
+                intValue: "4915701"
+            - key: message
+              value:
+                stringValue: Initialized wire specification
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.310+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: component
+              value:
+                stringValue: TENANT_M
+            - key: context
+              value:
+                stringValue: main
+            - key: id
+              value:
+                intValue: "7091600"
+            - key: message
+              value:
+                stringValue: Starting TenantMigrationAccessBlockerRegistry
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.310+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: architecture
+                    value:
+                      stringValue: 64-bit
+                  - key: dbPath
+                    value:
+                      stringValue: /data/db
+                  - key: host
+                    value:
+                      stringValue: 0093111b5a52
+                  - key: pid
+                    value:
+                      doubleValue: 1
+                  - key: port
+                    value:
+                      doubleValue: 27017
+            - key: component
+              value:
+                stringValue: CONTROL
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "4615611"
+            - key: message
+              value:
+                stringValue: MongoDB starting
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.310+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: buildInfo
+                    value:
+                      kvlistValue:
+                        values:
+                        - key: allocator
+                          value:
+                            stringValue: tcmalloc-google
+                        - key: environment
+                          value:
+                            kvlistValue:
+                              values:
+                              - key: distarch
+                                value:
+                                  stringValue: aarch64
+                              - key: distmod
+                                value:
+                                  stringValue: ubuntu2404
+                              - key: target_arch
+                                value:
+                                  stringValue: aarch64
+                        - key: gitVersion
+                          value:
+                            stringValue: bed99f699da6cb2b74262aa6d473446c41476643
+                        - key: modules
+                          value:
+                            arrayValue: {}
+                        - key: openSSLVersion
+                          value:
+                            stringValue: OpenSSL 3.0.13 30 Jan 2024
+                        - key: version
+                          value:
+                            stringValue: 8.0.11
+            - key: component
+              value:
+                stringValue: CONTROL
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "23403"
+            - key: message
+              value:
+                stringValue: Build Info
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.310+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: os
+                    value:
+                      kvlistValue:
+                        values:
+                        - key: name
+                          value:
+                            stringValue: Ubuntu
+                        - key: version
+                          value:
+                            stringValue: "24.04"
+            - key: component
+              value:
+                stringValue: CONTROL
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "51765"
+            - key: message
+              value:
+                stringValue: Operating System
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.310+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: options
+                    value:
+                      kvlistValue:
+                        values:
+                        - key: net
+                          value:
+                            kvlistValue:
+                              values:
+                              - key: bindIp
+                                value:
+                                  stringValue: "*"
+            - key: component
+              value:
+                stringValue: CONTROL
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "21951"
+            - key: message
+              value:
+                stringValue: Options set by command line
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.310+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: component
+              value:
+                stringValue: STORAGE
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "22297"
+            - key: message
+              value:
+                stringValue: Using the XFS filesystem is strongly recommended with the WiredTiger storage engine. See http://dochub.mongodb.org/core/prodnotes-filesystem
+            - key: severity
+              value:
+                stringValue: I
+            - key: tags
+              value:
+                arrayValue:
+                  values:
+                  - stringValue: startupWarnings
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.311+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: config
+                    value:
+                      stringValue: create,cache_size=3406M,session_max=33000,eviction=(threads_min=4,threads_max=4),config_base=false,statistics=(fast),log=(enabled=true,remove=true,path=journal,compressor=snappy),builtin_extension_config=(zstd=(compression_level=6)),file_manager=(close_idle_time=600,close_scan_interval=10,close_handle_minimum=2000),statistics_log=(wait=0),json_output=(error,message),verbose=[recovery_progress:1,checkpoint_progress:1,compact_progress:1,backup:0,checkpoint:0,compact:0,evict:0,history_store:0,recovery:0,rts:0,salvage:0,tiered:0,timestamp:0,transaction:0,verify:0,log:0],prefetch=(available=true,default=false),
+            - key: component
+              value:
+                stringValue: STORAGE
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "22315"
+            - key: message
+              value:
+                stringValue: Opening WiredTiger
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.311+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: component
+              value:
+                stringValue: WTRECOV
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "22430"
+            - key: message
+              value:
+                kvlistValue:
+                  values:
+                  - key: category
+                    value:
+                      stringValue: WT_VERB_RECOVERY_PROGRESS
+                  - key: category_id
+                    value:
+                      doubleValue: 34
+                  - key: msg
+                    value:
+                      stringValue: recovery log replay has successfully finished and ran for 0 milliseconds
+                  - key: session_name
+                    value:
+                      stringValue: txn-recover
+                  - key: thread
+                    value:
+                      stringValue: 1:0xffffbec76040
+                  - key: ts_sec
+                    value:
+                      doubleValue: 1753110028
+                  - key: ts_usec
+                    value:
+                      doubleValue: 542739
+                  - key: verbose_level
+                    value:
+                      stringValue: DEBUG_1
+                  - key: verbose_level_id
+                    value:
+                      doubleValue: 1
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.542+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: component
+              value:
+                stringValue: WTRECOV
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "22430"
+            - key: message
+              value:
+                kvlistValue:
+                  values:
+                  - key: category
+                    value:
+                      stringValue: WT_VERB_RECOVERY_PROGRESS
+                  - key: category_id
+                    value:
+                      doubleValue: 34
+                  - key: msg
+                    value:
+                      stringValue: "Set global recovery timestamp: (0, 0)"
+                  - key: session_name
+                    value:
+                      stringValue: txn-recover
+                  - key: thread
+                    value:
+                      stringValue: 1:0xffffbec76040
+                  - key: ts_sec
+                    value:
+                      doubleValue: 1753110028
+                  - key: ts_usec
+                    value:
+                      doubleValue: 542790
+                  - key: verbose_level
+                    value:
+                      stringValue: DEBUG_1
+                  - key: verbose_level_id
+                    value:
+                      doubleValue: 1
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.542+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: component
+              value:
+                stringValue: WTRECOV
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "22430"
+            - key: message
+              value:
+                kvlistValue:
+                  values:
+                  - key: category
+                    value:
+                      stringValue: WT_VERB_RECOVERY_PROGRESS
+                  - key: category_id
+                    value:
+                      doubleValue: 34
+                  - key: msg
+                    value:
+                      stringValue: "Set global oldest timestamp: (0, 0)"
+                  - key: session_name
+                    value:
+                      stringValue: txn-recover
+                  - key: thread
+                    value:
+                      stringValue: 1:0xffffbec76040
+                  - key: ts_sec
+                    value:
+                      doubleValue: 1753110028
+                  - key: ts_usec
+                    value:
+                      doubleValue: 542801
+                  - key: verbose_level
+                    value:
+                      stringValue: DEBUG_1
+                  - key: verbose_level_id
+                    value:
+                      doubleValue: 1
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.542+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: component
+              value:
+                stringValue: WTRECOV
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "22430"
+            - key: message
+              value:
+                kvlistValue:
+                  values:
+                  - key: category
+                    value:
+                      stringValue: WT_VERB_RECOVERY_PROGRESS
+                  - key: category_id
+                    value:
+                      doubleValue: 34
+                  - key: msg
+                    value:
+                      stringValue: recovery was completed successfully and took 0ms, including 0ms for the log replay, 0ms for the rollback to stable, and 0ms for the checkpoint.
+                  - key: session_name
+                    value:
+                      stringValue: txn-recover
+                  - key: thread
+                    value:
+                      stringValue: 1:0xffffbec76040
+                  - key: ts_sec
+                    value:
+                      doubleValue: 1753110028
+                  - key: ts_usec
+                    value:
+                      doubleValue: 542814
+                  - key: verbose_level
+                    value:
+                      stringValue: DEBUG_1
+                  - key: verbose_level_id
+                    value:
+                      doubleValue: 1
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.542+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: durationMillis
+                    value:
+                      doubleValue: 235
+            - key: component
+              value:
+                stringValue: STORAGE
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "4795906"
+            - key: message
+              value:
+                stringValue: WiredTiger opened
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.546+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: recoveryTimestamp
+                    value:
+                      kvlistValue:
+                        values:
+                        - key: $timestamp
+                          value:
+                            kvlistValue:
+                              values:
+                              - key: i
+                                value:
+                                  doubleValue: 0
+                              - key: t
+                                value:
+                                  doubleValue: 0
+            - key: component
+              value:
+                stringValue: RECOVERY
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "23987"
+            - key: message
+              value:
+                stringValue: WiredTiger recoveryTimestamp
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.546+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: numRecords
+                    value:
+                      doubleValue: 0
+            - key: component
+              value:
+                stringValue: STORAGE
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "9529901"
+            - key: message
+              value:
+                stringValue: Initializing durable catalog
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.549+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: component
+              value:
+                stringValue: STORAGE
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "9529902"
+            - key: message
+              value:
+                stringValue: Retrieving all idents from storage engine
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.549+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: numEntries
+                    value:
+                      doubleValue: 0
+            - key: component
+              value:
+                stringValue: STORAGE
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "9529903"
+            - key: message
+              value:
+                stringValue: Initializing all collections in durable catalog
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.549+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: component
+              value:
+                stringValue: CONTROL
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "22120"
+            - key: message
+              value:
+                stringValue: Access control is not enabled for the database. Read and write access to data and configuration is unrestricted
+            - key: severity
+              value:
+                stringValue: W
+            - key: tags
+              value:
+                arrayValue:
+                  values:
+                  - stringValue: startupWarnings
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.550+00:00
+        observedTimeUnixNano: now
+        severityText: WARNING
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: allocator
+                    value:
+                      stringValue: tcmalloc-google
+                  - key: currentValue
+                    value:
+                      stringValue: madvise
+                  - key: desiredValue
+                    value:
+                      stringValue: defer+madvise
+                  - key: sysfsFile
+                    value:
+                      stringValue: /sys/kernel/mm/transparent_hugepage/defrag
+            - key: component
+              value:
+                stringValue: CONTROL
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "9068900"
+            - key: message
+              value:
+                stringValue: For customers running the current memory allocator, we suggest changing the contents of the following sysfsFile
+            - key: severity
+              value:
+                stringValue: W
+            - key: tags
+              value:
+                arrayValue:
+                  values:
+                  - stringValue: startupWarnings
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.551+00:00
+        observedTimeUnixNano: now
+        severityText: WARNING
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: currentValue
+                    value:
+                      doubleValue: 511
+                  - key: sysfsFile
+                    value:
+                      stringValue: /sys/kernel/mm/transparent_hugepage/khugepaged/max_ptes_none
+            - key: component
+              value:
+                stringValue: CONTROL
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "8640302"
+            - key: message
+              value:
+                stringValue: We suggest setting the contents of sysfsFile to 0.
+            - key: severity
+              value:
+                stringValue: W
+            - key: tags
+              value:
+                arrayValue:
+                  values:
+                  - stringValue: startupWarnings
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.551+00:00
+        observedTimeUnixNano: now
+        severityText: WARNING
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: currentValue
+                    value:
+                      doubleValue: 262144
+                  - key: maxConns
+                    value:
+                      doubleValue: 838860
+                  - key: recommendedMinimum
+                    value:
+                      doubleValue: 1677720
+            - key: component
+              value:
+                stringValue: NETWORK
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "5123300"
+            - key: message
+              value:
+                stringValue: vm.max_map_count is too low
+            - key: severity
+              value:
+                stringValue: W
+            - key: tags
+              value:
+                arrayValue:
+                  values:
+                  - stringValue: startupWarnings
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.551+00:00
+        observedTimeUnixNano: now
+        severityText: WARNING
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: currentValue
+                    value:
+                      doubleValue: 60
+                  - key: sysfsFile
+                    value:
+                      stringValue: /proc/sys/vm/swappiness
+            - key: component
+              value:
+                stringValue: CONTROL
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "8386700"
+            - key: message
+              value:
+                stringValue: We suggest setting swappiness to 0 or 1, as swapping can cause performance problems.
+            - key: severity
+              value:
+                stringValue: W
+            - key: tags
+              value:
+                arrayValue:
+                  values:
+                  - stringValue: startupWarnings
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.551+00:00
+        observedTimeUnixNano: now
+        severityText: WARNING
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: namespace
+                    value:
+                      stringValue: admin.system.version
+                  - key: options
+                    value:
+                      kvlistValue:
+                        values:
+                        - key: uuid
+                          value:
+                            kvlistValue:
+                              values:
+                              - key: $uuid
+                                value:
+                                  stringValue: d2aa3324-da83-4514-8930-750b069145f9
+                  - key: uuid
+                    value:
+                      kvlistValue:
+                        values:
+                        - key: uuid
+                          value:
+                            kvlistValue:
+                              values:
+                              - key: $uuid
+                                value:
+                                  stringValue: d2aa3324-da83-4514-8930-750b069145f9
+                  - key: uuidDisposition
+                    value:
+                      stringValue: provided
+            - key: component
+              value:
+                stringValue: STORAGE
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "20320"
+            - key: message
+              value:
+                stringValue: createCollection
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.551+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: buildUUID
+                    value: {}
+                  - key: collectionIdent
+                    value:
+                      stringValue: collection-0-3956073341144391669
+                  - key: collectionUUID
+                    value:
+                      kvlistValue:
+                        values:
+                        - key: uuid
+                          value:
+                            kvlistValue:
+                              values:
+                              - key: $uuid
+                                value:
+                                  stringValue: d2aa3324-da83-4514-8930-750b069145f9
+                  - key: commitTimestamp
+                    value: {}
+                  - key: ident
+                    value:
+                      stringValue: index-1-3956073341144391669
+                  - key: index
+                    value:
+                      stringValue: _id_
+                  - key: namespace
+                    value:
+                      stringValue: admin.system.version
+            - key: component
+              value:
+                stringValue: INDEX
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "20345"
+            - key: message
+              value:
+                stringValue: "Index build: done building"
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.554+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: newVersion
+                    value:
+                      stringValue: "8.0"
+            - key: component
+              value:
+                stringValue: REPL
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "20459"
+            - key: message
+              value:
+                stringValue: Setting featureCompatibilityVersion
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.554+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: context
+                    value:
+                      stringValue: setFCV
+                  - key: featureCompatibilityVersion
+                    value:
+                      stringValue: "8.0"
+            - key: component
+              value:
+                stringValue: REPL
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "5853300"
+            - key: message
+              value:
+                stringValue: current featureCompatibilityVersion value
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.554+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: newSpec
+                    value:
+                      kvlistValue:
+                        values:
+                        - key: incomingExternalClient
+                          value:
+                            kvlistValue:
+                              values:
+                              - key: maxWireVersion
+                                value:
+                                  doubleValue: 25
+                              - key: minWireVersion
+                                value:
+                                  doubleValue: 0
+                        - key: incomingInternalClient
+                          value:
+                            kvlistValue:
+                              values:
+                              - key: maxWireVersion
+                                value:
+                                  doubleValue: 25
+                              - key: minWireVersion
+                                value:
+                                  doubleValue: 25
+                        - key: isInternalClient
+                          value:
+                            boolValue: true
+                        - key: outgoing
+                          value:
+                            kvlistValue:
+                              values:
+                              - key: maxWireVersion
+                                value:
+                                  doubleValue: 25
+                              - key: minWireVersion
+                                value:
+                                  doubleValue: 25
+                  - key: oldSpec
+                    value:
+                      kvlistValue:
+                        values:
+                        - key: incomingExternalClient
+                          value:
+                            kvlistValue:
+                              values:
+                              - key: maxWireVersion
+                                value:
+                                  doubleValue: 25
+                              - key: minWireVersion
+                                value:
+                                  doubleValue: 0
+                        - key: incomingInternalClient
+                          value:
+                            kvlistValue:
+                              values:
+                              - key: maxWireVersion
+                                value:
+                                  doubleValue: 25
+                              - key: minWireVersion
+                                value:
+                                  doubleValue: 0
+                        - key: isInternalClient
+                          value:
+                            boolValue: true
+                        - key: outgoing
+                          value:
+                            kvlistValue:
+                              values:
+                              - key: maxWireVersion
+                                value:
+                                  doubleValue: 25
+                              - key: minWireVersion
+                                value:
+                                  doubleValue: 6
+            - key: component
+              value:
+                stringValue: NETWORK
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "4915702"
+            - key: message
+              value:
+                stringValue: Updated wire specification
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.554+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: newSpec
+                    value:
+                      kvlistValue:
+                        values:
+                        - key: incomingExternalClient
+                          value:
+                            kvlistValue:
+                              values:
+                              - key: maxWireVersion
+                                value:
+                                  doubleValue: 25
+                              - key: minWireVersion
+                                value:
+                                  doubleValue: 0
+                        - key: incomingInternalClient
+                          value:
+                            kvlistValue:
+                              values:
+                              - key: maxWireVersion
+                                value:
+                                  doubleValue: 25
+                              - key: minWireVersion
+                                value:
+                                  doubleValue: 25
+                        - key: isInternalClient
+                          value:
+                            boolValue: true
+                        - key: outgoing
+                          value:
+                            kvlistValue:
+                              values:
+                              - key: maxWireVersion
+                                value:
+                                  doubleValue: 25
+                              - key: minWireVersion
+                                value:
+                                  doubleValue: 25
+                  - key: oldSpec
+                    value:
+                      kvlistValue:
+                        values:
+                        - key: incomingExternalClient
+                          value:
+                            kvlistValue:
+                              values:
+                              - key: maxWireVersion
+                                value:
+                                  doubleValue: 25
+                              - key: minWireVersion
+                                value:
+                                  doubleValue: 0
+                        - key: incomingInternalClient
+                          value:
+                            kvlistValue:
+                              values:
+                              - key: maxWireVersion
+                                value:
+                                  doubleValue: 25
+                              - key: minWireVersion
+                                value:
+                                  doubleValue: 25
+                        - key: isInternalClient
+                          value:
+                            boolValue: true
+                        - key: outgoing
+                          value:
+                            kvlistValue:
+                              values:
+                              - key: maxWireVersion
+                                value:
+                                  doubleValue: 25
+                              - key: minWireVersion
+                                value:
+                                  doubleValue: 25
+            - key: component
+              value:
+                stringValue: NETWORK
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "4915702"
+            - key: message
+              value:
+                stringValue: Updated wire specification
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.554+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: context
+                    value:
+                      stringValue: startup
+                  - key: featureCompatibilityVersion
+                    value:
+                      stringValue: "8.0"
+            - key: component
+              value:
+                stringValue: REPL
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "5853300"
+            - key: message
+              value:
+                stringValue: current featureCompatibilityVersion value
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.554+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: component
+              value:
+                stringValue: STORAGE
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "5071100"
+            - key: message
+              value:
+                stringValue: Clearing temp directory
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.554+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: component
+              value:
+                stringValue: CONTROL
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "6608200"
+            - key: message
+              value:
+                stringValue: Initializing cluster server parameters from disk
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.554+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: component
+              value:
+                stringValue: CONTROL
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "20536"
+            - key: message
+              value:
+                stringValue: Flow Control is enabled on this deployment
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.554+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: dataDirectory
+                    value:
+                      stringValue: /data/db/diagnostic.data
+            - key: component
+              value:
+                stringValue: FTDC
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "20625"
+            - key: message
+              value:
+                stringValue: Initializing full-time diagnostic data capture
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.554+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: namespace
+                    value:
+                      stringValue: local.startup_log
+                  - key: options
+                    value:
+                      kvlistValue:
+                        values:
+                        - key: capped
+                          value:
+                            boolValue: true
+                        - key: size
+                          value:
+                            doubleValue: 10485760
+                  - key: uuid
+                    value:
+                      kvlistValue:
+                        values:
+                        - key: uuid
+                          value:
+                            kvlistValue:
+                              values:
+                              - key: $uuid
+                                value:
+                                  stringValue: 4db69adb-ed35-47b4-ad78-264f6bf62996
+                  - key: uuidDisposition
+                    value:
+                      stringValue: generated
+            - key: component
+              value:
+                stringValue: STORAGE
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "20320"
+            - key: message
+              value:
+                stringValue: createCollection
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.555+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: buildUUID
+                    value: {}
+                  - key: collectionIdent
+                    value:
+                      stringValue: collection-2-3956073341144391669
+                  - key: collectionUUID
+                    value:
+                      kvlistValue:
+                        values:
+                        - key: uuid
+                          value:
+                            kvlistValue:
+                              values:
+                              - key: $uuid
+                                value:
+                                  stringValue: 4db69adb-ed35-47b4-ad78-264f6bf62996
+                  - key: commitTimestamp
+                    value: {}
+                  - key: ident
+                    value:
+                      stringValue: index-3-3956073341144391669
+                  - key: index
+                    value:
+                      stringValue: _id_
+                  - key: namespace
+                    value:
+                      stringValue: local.startup_log
+            - key: component
+              value:
+                stringValue: INDEX
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "20345"
+            - key: message
+              value:
+                stringValue: "Index build: done building"
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.558+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: newState
+                    value:
+                      stringValue: ConfigReplicationDisabled
+                  - key: oldState
+                    value:
+                      stringValue: ConfigPreStart
+            - key: component
+              value:
+                stringValue: REPL
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "6015317"
+            - key: message
+              value:
+                stringValue: Setting new configuration state
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.558+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: component
+              value:
+                stringValue: STORAGE
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "22262"
+            - key: message
+              value:
+                stringValue: Timestamp monitor starting
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.558+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: component
+              value:
+                stringValue: STORAGE
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "7333401"
+            - key: message
+              value:
+                stringValue: Starting the DiskSpaceMonitor
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.558+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: address
+                    value:
+                      stringValue: /tmp/mongodb-27017.sock
+            - key: component
+              value:
+                stringValue: NETWORK
+            - key: context
+              value:
+                stringValue: listener
+            - key: id
+              value:
+                intValue: "23015"
+            - key: message
+              value:
+                stringValue: Listening on
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.559+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: address
+                    value:
+                      stringValue: 0.0.0.0:27017
+            - key: component
+              value:
+                stringValue: NETWORK
+            - key: context
+              value:
+                stringValue: listener
+            - key: id
+              value:
+                intValue: "23015"
+            - key: message
+              value:
+                stringValue: Listening on
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.559+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: port
+                    value:
+                      doubleValue: 27017
+                  - key: ssl
+                    value:
+                      stringValue: "off"
+            - key: component
+              value:
+                stringValue: NETWORK
+            - key: context
+              value:
+                stringValue: listener
+            - key: id
+              value:
+                intValue: "23016"
+            - key: message
+              value:
+                stringValue: Waiting for connections
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.559+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: Summary of time elapsed
+                    value:
+                      kvlistValue:
+                        values:
+                        - key: Startup from clean shutdown?
+                          value:
+                            boolValue: true
+                        - key: Statistics
+                          value:
+                            kvlistValue:
+                              values:
+                              - key: Build user and roles graph
+                                value:
+                                  stringValue: 0 ms
+                              - key: Create storage engine
+                                value:
+                                  stringValue: 238 ms
+                              - key: Create storage engine lock file in the data directory
+                                value:
+                                  stringValue: 0 ms
+                              - key: Drop abandoned idents and get back indexes that need to be rebuilt or builds that need to be restarted
+                                value:
+                                  stringValue: 0 ms
+                              - key: Ensure the change stream collections on startup contain consistent data
+                                value:
+                                  stringValue: 0 ms
+                              - key: Get metadata describing storage engine
+                                value:
+                                  stringValue: 0 ms
+                              - key: Initialize FCV before rebuilding indexes
+                                value:
+                                  stringValue: 0 ms
+                              - key: Load cluster parameters from disk for a standalone
+                                value:
+                                  stringValue: 0 ms
+                              - key: Rebuild indexes for collections
+                                value:
+                                  stringValue: 0 ms
+                              - key: Run initial syncer crash recovery
+                                value:
+                                  stringValue: 0 ms
+                              - key: Set up online certificate status protocol manager
+                                value:
+                                  stringValue: 0 ms
+                              - key: Set up periodic runner
+                                value:
+                                  stringValue: 0 ms
+                              - key: Set up the background thread pool responsible for waiting for opTimes to be majority committed
+                                value:
+                                  stringValue: 0 ms
+                              - key: Start transport layer
+                                value:
+                                  stringValue: 0 ms
+                              - key: Start up the replication coordinator
+                                value:
+                                  stringValue: 0 ms
+                              - key: Transport layer setup
+                                value:
+                                  stringValue: 0 ms
+                              - key: Write a new metadata for storage engine
+                                value:
+                                  stringValue: 0 ms
+                              - key: Write current PID to file
+                                value:
+                                  stringValue: 0 ms
+                              - key: Write startup options to the audit log
+                                value:
+                                  stringValue: 0 ms
+                              - key: _initAndListen total elapsed time
+                                value:
+                                  stringValue: 249 ms
+            - key: component
+              value:
+                stringValue: CONTROL
+            - key: context
+              value:
+                stringValue: initandlisten
+            - key: id
+              value:
+                intValue: "8423403"
+            - key: message
+              value:
+                stringValue: mongod startup complete
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.559+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: error
+                    value:
+                      stringValue: "NamespaceNotFound: config.system.sessions does not exist"
+            - key: component
+              value:
+                stringValue: CONTROL
+            - key: context
+              value:
+                stringValue: LogicalSessionCacheReap
+            - key: id
+              value:
+                intValue: "20712"
+            - key: message
+              value:
+                stringValue: Sessions collection is not set up; waiting until next sessions reap interval
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.559+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: namespace
+                    value:
+                      stringValue: config.system.sessions
+                  - key: options
+                    value:
+                      kvlistValue: {}
+                  - key: uuid
+                    value:
+                      kvlistValue:
+                        values:
+                        - key: uuid
+                          value:
+                            kvlistValue:
+                              values:
+                              - key: $uuid
+                                value:
+                                  stringValue: cc5d7417-27c1-4110-8873-0e83b22c9de4
+                  - key: uuidDisposition
+                    value:
+                      stringValue: generated
+            - key: component
+              value:
+                stringValue: STORAGE
+            - key: context
+              value:
+                stringValue: LogicalSessionCacheRefresh
+            - key: id
+              value:
+                intValue: "20320"
+            - key: message
+              value:
+                stringValue: createCollection
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.559+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: buildUUID
+                    value: {}
+                  - key: collectionIdent
+                    value:
+                      stringValue: collection-4-3956073341144391669
+                  - key: collectionUUID
+                    value:
+                      kvlistValue:
+                        values:
+                        - key: uuid
+                          value:
+                            kvlistValue:
+                              values:
+                              - key: $uuid
+                                value:
+                                  stringValue: cc5d7417-27c1-4110-8873-0e83b22c9de4
+                  - key: commitTimestamp
+                    value: {}
+                  - key: ident
+                    value:
+                      stringValue: index-5-3956073341144391669
+                  - key: index
+                    value:
+                      stringValue: _id_
+                  - key: namespace
+                    value:
+                      stringValue: config.system.sessions
+            - key: component
+              value:
+                stringValue: INDEX
+            - key: context
+              value:
+                stringValue: LogicalSessionCacheRefresh
+            - key: id
+              value:
+                intValue: "20345"
+            - key: message
+              value:
+                stringValue: "Index build: done building"
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.564+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: buildUUID
+                    value: {}
+                  - key: collectionIdent
+                    value:
+                      stringValue: collection-4-3956073341144391669
+                  - key: collectionUUID
+                    value:
+                      kvlistValue:
+                        values:
+                        - key: uuid
+                          value:
+                            kvlistValue:
+                              values:
+                              - key: $uuid
+                                value:
+                                  stringValue: cc5d7417-27c1-4110-8873-0e83b22c9de4
+                  - key: commitTimestamp
+                    value: {}
+                  - key: ident
+                    value:
+                      stringValue: index-6-3956073341144391669
+                  - key: index
+                    value:
+                      stringValue: lsidTTLIndex
+                  - key: namespace
+                    value:
+                      stringValue: config.system.sessions
+            - key: component
+              value:
+                stringValue: INDEX
+            - key: context
+              value:
+                stringValue: LogicalSessionCacheRefresh
+            - key: id
+              value:
+                intValue: "20345"
+            - key: message
+              value:
+                stringValue: "Index build: done building"
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:28.564+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: canonicalName
+                    value:
+                      stringValue: internalQueryCacheMaxEntriesPerCollection
+                  - key: deprecatedName
+                    value:
+                      stringValue: internalQueryCacheSize
+            - key: component
+              value:
+                stringValue: CONTROL
+            - key: context
+              value:
+                stringValue: ftdc
+            - key: id
+              value:
+                intValue: "636300"
+            - key: message
+              value:
+                stringValue: Use of deprecated server parameter name
+            - key: severity
+              value:
+                stringValue: W
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:29.004+00:00
+        observedTimeUnixNano: now
+        severityText: WARNING
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: canonicalName
+                    value:
+                      stringValue: collectionSamplingLogIntervalSeconds
+                  - key: deprecatedName
+                    value:
+                      stringValue: oplogSamplingLogIntervalSeconds
+            - key: component
+              value:
+                stringValue: CONTROL
+            - key: context
+              value:
+                stringValue: ftdc
+            - key: id
+              value:
+                intValue: "636300"
+            - key: message
+              value:
+                stringValue: Use of deprecated server parameter name
+            - key: severity
+              value:
+                stringValue: W
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:29.004+00:00
+        observedTimeUnixNano: now
+        severityText: WARNING
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: component
+              value:
+                stringValue: NETWORK
+            - key: context
+              value:
+                stringValue: ftdc
+            - key: id
+              value:
+                intValue: "23803"
+            - key: message
+              value:
+                stringValue: Use of deprecated server parameter 'sslMode', please use 'tlsMode' instead.
+            - key: severity
+              value:
+                stringValue: W
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:29.004+00:00
+        observedTimeUnixNano: now
+        severityText: WARNING
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: canonicalName
+                    value:
+                      stringValue: storageEngineConcurrentReadTransactions
+                  - key: deprecatedName
+                    value:
+                      stringValue: wiredTigerConcurrentReadTransactions
+            - key: component
+              value:
+                stringValue: CONTROL
+            - key: context
+              value:
+                stringValue: ftdc
+            - key: id
+              value:
+                intValue: "636300"
+            - key: message
+              value:
+                stringValue: Use of deprecated server parameter name
+            - key: severity
+              value:
+                stringValue: W
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:29.004+00:00
+        observedTimeUnixNano: now
+        severityText: WARNING
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: attributes
+              value:
+                kvlistValue:
+                  values:
+                  - key: canonicalName
+                    value:
+                      stringValue: storageEngineConcurrentWriteTransactions
+                  - key: deprecatedName
+                    value:
+                      stringValue: wiredTigerConcurrentWriteTransactions
+            - key: component
+              value:
+                stringValue: CONTROL
+            - key: context
+              value:
+                stringValue: ftdc
+            - key: id
+              value:
+                intValue: "636300"
+            - key: message
+              value:
+                stringValue: Use of deprecated server parameter name
+            - key: severity
+              value:
+                stringValue: W
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:00:29.004+00:00
+        observedTimeUnixNano: now
+        severityText: WARNING
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: component
+              value:
+                stringValue: WTCHKPT
+            - key: context
+              value:
+                stringValue: Checkpointer
+            - key: id
+              value:
+                intValue: "22430"
+            - key: message
+              value:
+                kvlistValue:
+                  values:
+                  - key: category
+                    value:
+                      stringValue: WT_VERB_CHECKPOINT_PROGRESS
+                  - key: category_id
+                    value:
+                      doubleValue: 7
+                  - key: msg
+                    value:
+                      stringValue: "saving checkpoint snapshot min: 33, snapshot max: 33 snapshot count: 0, oldest timestamp: (0, 0) , meta checkpoint timestamp: (0, 0) base write gen: 1"
+                  - key: session_name
+                    value:
+                      stringValue: WT_SESSION.checkpoint
+                  - key: thread
+                    value:
+                      stringValue: 1:0xffffab20e680
+                  - key: ts_sec
+                    value:
+                      doubleValue: 1753110088
+                  - key: ts_usec
+                    value:
+                      doubleValue: 555981
+                  - key: verbose_level
+                    value:
+                      stringValue: DEBUG_1
+                  - key: verbose_level_id
+                    value:
+                      doubleValue: 1
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:01:28.556+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: component
+              value:
+                stringValue: WTCHKPT
+            - key: context
+              value:
+                stringValue: Checkpointer
+            - key: id
+              value:
+                intValue: "22430"
+            - key: message
+              value:
+                kvlistValue:
+                  values:
+                  - key: category
+                    value:
+                      stringValue: WT_VERB_CHECKPOINT_PROGRESS
+                  - key: category_id
+                    value:
+                      doubleValue: 7
+                  - key: msg
+                    value:
+                      stringValue: "saving checkpoint snapshot min: 35, snapshot max: 35 snapshot count: 0, oldest timestamp: (0, 0) , meta checkpoint timestamp: (0, 0) base write gen: 1"
+                  - key: session_name
+                    value:
+                      stringValue: WT_SESSION.checkpoint
+                  - key: thread
+                    value:
+                      stringValue: 1:0xffffab20e680
+                  - key: ts_sec
+                    value:
+                      doubleValue: 1753110148
+                  - key: ts_usec
+                    value:
+                      doubleValue: 572218
+                  - key: verbose_level
+                    value:
+                      stringValue: DEBUG_1
+                  - key: verbose_level_id
+                    value:
+                      doubleValue: 1
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:02:28.572+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: component
+              value:
+                stringValue: WTCHKPT
+            - key: context
+              value:
+                stringValue: Checkpointer
+            - key: id
+              value:
+                intValue: "22430"
+            - key: message
+              value:
+                kvlistValue:
+                  values:
+                  - key: category
+                    value:
+                      stringValue: WT_VERB_CHECKPOINT_PROGRESS
+                  - key: category_id
+                    value:
+                      doubleValue: 7
+                  - key: msg
+                    value:
+                      stringValue: "saving checkpoint snapshot min: 36, snapshot max: 36 snapshot count: 0, oldest timestamp: (0, 0) , meta checkpoint timestamp: (0, 0) base write gen: 1"
+                  - key: session_name
+                    value:
+                      stringValue: WT_SESSION.checkpoint
+                  - key: thread
+                    value:
+                      stringValue: 1:0xffffab20e680
+                  - key: ts_sec
+                    value:
+                      doubleValue: 1753110208
+                  - key: ts_usec
+                    value:
+                      doubleValue: 584957
+                  - key: verbose_level
+                    value:
+                      stringValue: DEBUG_1
+                  - key: verbose_level_id
+                    value:
+                      doubleValue: 1
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:03:28.585+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: component
+              value:
+                stringValue: WTCHKPT
+            - key: context
+              value:
+                stringValue: Checkpointer
+            - key: id
+              value:
+                intValue: "22430"
+            - key: message
+              value:
+                kvlistValue:
+                  values:
+                  - key: category
+                    value:
+                      stringValue: WT_VERB_CHECKPOINT_PROGRESS
+                  - key: category_id
+                    value:
+                      doubleValue: 7
+                  - key: msg
+                    value:
+                      stringValue: "saving checkpoint snapshot min: 37, snapshot max: 37 snapshot count: 0, oldest timestamp: (0, 0) , meta checkpoint timestamp: (0, 0) base write gen: 1"
+                  - key: session_name
+                    value:
+                      stringValue: WT_SESSION.checkpoint
+                  - key: thread
+                    value:
+                      stringValue: 1:0xffffab20e680
+                  - key: ts_sec
+                    value:
+                      doubleValue: 1753110268
+                  - key: ts_usec
+                    value:
+                      doubleValue: 600180
+                  - key: verbose_level
+                    value:
+                      stringValue: DEBUG_1
+                  - key: verbose_level_id
+                    value:
+                      doubleValue: 1
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:04:28.600+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/mongodb
+        body:
+          kvlistValue:
+            values:
+            - key: component
+              value:
+                stringValue: WTCHKPT
+            - key: context
+              value:
+                stringValue: Checkpointer
+            - key: id
+              value:
+                intValue: "22430"
+            - key: message
+              value:
+                kvlistValue:
+                  values:
+                  - key: category
+                    value:
+                      stringValue: WT_VERB_CHECKPOINT_PROGRESS
+                  - key: category_id
+                    value:
+                      doubleValue: 7
+                  - key: msg
+                    value:
+                      stringValue: "saving checkpoint snapshot min: 38, snapshot max: 38 snapshot count: 0, oldest timestamp: (0, 0) , meta checkpoint timestamp: (0, 0) base write gen: 1"
+                  - key: session_name
+                    value:
+                      stringValue: WT_SESSION.checkpoint
+                  - key: thread
+                    value:
+                      stringValue: 1:0xffffab20e680
+                  - key: ts_sec
+                    value:
+                      doubleValue: 1753110328
+                  - key: ts_usec
+                    value:
+                      doubleValue: 612727
+                  - key: verbose_level
+                    value:
+                      stringValue: DEBUG_1
+                  - key: verbose_level_id
+                    value:
+                      doubleValue: 1
+            - key: severity
+              value:
+                stringValue: I
+            - key: time
+              value:
+                stringValue: 2025-07-21T15:05:28.612+00:00
+        observedTimeUnixNano: now
+        severityText: INFO
+      scope: {}
+- collector_errors:
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "json: float unexpected end of JSON input"
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_0
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__parsed_json"], ParseJSON(log.body["message"])) where (log.body != nil and log.body["message"] != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-07-21T15:00:28.308+00:00\" as \"%Y-%m-%dT%H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_3
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M:%S.%L%z") != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-07-21T15:00:28.309+00:00\" as \"%Y-%m-%dT%H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_3
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M:%S.%L%z") != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-07-21T15:00:28.309+00:00\" as \"%Y-%m-%dT%H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_3
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M:%S.%L%z") != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-07-21T15:00:28.310+00:00\" as \"%Y-%m-%dT%H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_3
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M:%S.%L%z") != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-07-21T15:00:28.310+00:00\" as \"%Y-%m-%dT%H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_3
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M:%S.%L%z") != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-07-21T15:00:28.310+00:00\" as \"%Y-%m-%dT%H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_3
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M:%S.%L%z") != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-07-21T15:00:28.310+00:00\" as \"%Y-%m-%dT%H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_3
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M:%S.%L%z") != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-07-21T15:00:28.310+00:00\" as \"%Y-%m-%dT%H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_3
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M:%S.%L%z") != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-07-21T15:00:28.310+00:00\" as \"%Y-%m-%dT%H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_3
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M:%S.%L%z") != nil)

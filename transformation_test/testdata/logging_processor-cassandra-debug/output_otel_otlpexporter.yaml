@@ -1,0 +1,698 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_debug
+        body:
+          kvlistValue:
+            values:
+            - key: javaClass
+              value:
+                stringValue: CassandraDaemon.java
+            - key: level
+              value:
+                stringValue: DEBUG
+            - key: lineNumber
+              value:
+                intValue: "401"
+            - key: message
+              value:
+                stringValue: "CassandraDaemon.java:401 - JVM vendor/version: OpenJDK 64-Bit Server VM/17.0.9+9"
+            - key: module
+              value:
+                stringValue: main
+        observedTimeUnixNano: now
+        severityText: DEBUG
+        timeUnixNano: "1753196712118000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_debug
+        body:
+          kvlistValue:
+            values:
+            - key: javaClass
+              value:
+                stringValue: CassandraDaemon.java
+            - key: level
+              value:
+                stringValue: DEBUG
+            - key: lineNumber
+              value:
+                intValue: "402"
+            - key: message
+              value:
+                stringValue: "CassandraDaemon.java:402 - JVM heap size: 2.0 GiB / 8.0 GiB (young 1.0 GiB)"
+            - key: module
+              value:
+                stringValue: main
+        observedTimeUnixNano: now
+        severityText: DEBUG
+        timeUnixNano: "1753196712119000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_debug
+        body:
+          kvlistValue:
+            values:
+            - key: javaClass
+              value:
+                stringValue: YamlConfigurationLoader.java
+            - key: level
+              value:
+                stringValue: DEBUG
+            - key: lineNumber
+              value:
+                intValue: "116"
+            - key: message
+              value:
+                stringValue: YamlConfigurationLoader.java:116 - Loading settings from file:/etc/cassandra/cassandra.yaml
+            - key: module
+              value:
+                stringValue: main
+        observedTimeUnixNano: now
+        severityText: DEBUG
+        timeUnixNano: "1753196713207000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_debug
+        body:
+          kvlistValue:
+            values:
+            - key: javaClass
+              value:
+                stringValue: Config.java
+            - key: level
+              value:
+                stringValue: DEBUG
+            - key: lineNumber
+              value:
+                intValue: "555"
+            - key: message
+              value:
+                stringValue: Config.java:555 - Initializing keyspace system_schema
+            - key: module
+              value:
+                stringValue: main
+        observedTimeUnixNano: now
+        severityText: DEBUG
+        timeUnixNano: "1753196713241000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_debug
+        body:
+          kvlistValue:
+            values:
+            - key: javaClass
+              value:
+                stringValue: DatabaseDescriptor.java
+            - key: level
+              value:
+                stringValue: DEBUG
+            - key: lineNumber
+              value:
+                intValue: "621"
+            - key: message
+              value:
+                stringValue: DatabaseDescriptor.java:621 - DiskAccessMode 'mmap_index_only' selected automatically
+            - key: module
+              value:
+                stringValue: main
+        observedTimeUnixNano: now
+        severityText: DEBUG
+        timeUnixNano: "1753196713249000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_debug
+        body:
+          kvlistValue:
+            values:
+            - key: javaClass
+              value:
+                stringValue: ColumnFamilyStore.java
+            - key: level
+              value:
+                stringValue: DEBUG
+            - key: lineNumber
+              value:
+                intValue: "402"
+            - key: message
+              value:
+                stringValue: ColumnFamilyStore.java:402 - Initializing system.local
+            - key: module
+              value:
+                stringValue: main
+        observedTimeUnixNano: now
+        severityText: DEBUG
+        timeUnixNano: "1753196713311000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_debug
+        body:
+          kvlistValue:
+            values:
+            - key: javaClass
+              value:
+                stringValue: SSTableReader.java
+            - key: level
+              value:
+                stringValue: DEBUG
+            - key: lineNumber
+              value:
+                intValue: "443"
+            - key: message
+              value:
+                stringValue: SSTableReader.java:443 - Opening /var/lib/cassandra/data/system/local-7ad54392bcdd35a684174e047860b377/na-1-big-Data.db
+            - key: module
+              value:
+                stringValue: main
+        observedTimeUnixNano: now
+        severityText: DEBUG
+        timeUnixNano: "1753196713428000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_debug
+        body:
+          kvlistValue:
+            values:
+            - key: javaClass
+              value:
+                stringValue: StorageService.java
+            - key: level
+              value:
+                stringValue: DEBUG
+            - key: lineNumber
+              value:
+                intValue: "1451"
+            - key: message
+              value:
+                stringValue: "StorageService.java:1451 - Joined ring with token ranges: [-9223372036854775808]"
+            - key: module
+              value:
+                stringValue: main
+        observedTimeUnixNano: now
+        severityText: DEBUG
+        timeUnixNano: "1753196713529000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_debug
+        body:
+          kvlistValue:
+            values:
+            - key: javaClass
+              value:
+                stringValue: MessagingService.java
+            - key: level
+              value:
+                stringValue: DEBUG
+            - key: lineNumber
+              value:
+                intValue: "227"
+            - key: message
+              value:
+                stringValue: MessagingService.java:227 - Starting messaging service on 127.0.0.1:7000 (rack1)
+            - key: module
+              value:
+                stringValue: main
+        observedTimeUnixNano: now
+        severityText: DEBUG
+        timeUnixNano: "1753196713622000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_debug
+        body:
+          kvlistValue:
+            values:
+            - key: javaClass
+              value:
+                stringValue: Gossiper.java
+            - key: level
+              value:
+                stringValue: DEBUG
+            - key: lineNumber
+              value:
+                intValue: "958"
+            - key: message
+              value:
+                stringValue: Gossiper.java:958 - Gossiper gossiping to 127.0.0.2
+            - key: module
+              value:
+                stringValue: main
+        observedTimeUnixNano: now
+        severityText: DEBUG
+        timeUnixNano: "1753196713735000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_debug
+        body:
+          kvlistValue:
+            values:
+            - key: javaClass
+              value:
+                stringValue: Gossiper.java
+            - key: level
+              value:
+                stringValue: DEBUG
+            - key: lineNumber
+              value:
+                intValue: "999"
+            - key: message
+              value:
+                stringValue: Gossiper.java:999 - Received SYN from /127.0.0.2
+            - key: module
+              value:
+                stringValue: main
+        observedTimeUnixNano: now
+        severityText: DEBUG
+        timeUnixNano: "1753196713822000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_debug
+        body:
+          kvlistValue:
+            values:
+            - key: javaClass
+              value:
+                stringValue: CompactionStrategyManager.java
+            - key: level
+              value:
+                stringValue: DEBUG
+            - key: lineNumber
+              value:
+                intValue: "301"
+            - key: message
+              value:
+                stringValue: CompactionStrategyManager.java:301 - Checking compaction candidates for ks1.tbl1
+            - key: module
+              value:
+                stringValue: CompactionExecutor:1
+        observedTimeUnixNano: now
+        severityText: DEBUG
+        timeUnixNano: "1753197021409000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_debug
+        body:
+          kvlistValue:
+            values:
+            - key: javaClass
+              value:
+                stringValue: Memtable.java
+            - key: level
+              value:
+                stringValue: DEBUG
+            - key: lineNumber
+              value:
+                intValue: "320"
+            - key: message
+              value:
+                stringValue: Memtable.java:320 - Flushing Memtable (172.4 KiB) for ks1.tbl1
+            - key: module
+              value:
+                stringValue: MemtableFlushWriter:1
+        observedTimeUnixNano: now
+        severityText: DEBUG
+        timeUnixNano: "1753197023667000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_debug
+        body:
+          kvlistValue:
+            values:
+            - key: javaClass
+              value:
+                stringValue: Memtable.java
+            - key: level
+              value:
+                stringValue: DEBUG
+            - key: lineNumber
+              value:
+                intValue: "354"
+            - key: message
+              value:
+                stringValue: Memtable.java:354 - Writing to /var/lib/cassandra/data/ks1/tbl1-123abc/tmp-123abc-Data.db
+            - key: module
+              value:
+                stringValue: MemtableFlushWriter:1
+        observedTimeUnixNano: now
+        severityText: DEBUG
+        timeUnixNano: "1753197023912000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_debug
+        body:
+          kvlistValue:
+            values:
+            - key: javaClass
+              value:
+                stringValue: SSTable.java
+            - key: level
+              value:
+                stringValue: DEBUG
+            - key: lineNumber
+              value:
+                intValue: "197"
+            - key: message
+              value:
+                stringValue: "SSTable.java:197 - New SSTable added: ks1.tbl1-123abc-Data.db"
+            - key: module
+              value:
+                stringValue: MemtableFlushWriter:1
+        observedTimeUnixNano: now
+        severityText: DEBUG
+        timeUnixNano: "1753197024102000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_debug
+        body:
+          kvlistValue:
+            values:
+            - key: javaClass
+              value:
+                stringValue: StorageProxy.java
+            - key: level
+              value:
+                stringValue: DEBUG
+            - key: lineNumber
+              value:
+                intValue: "2342"
+            - key: message
+              value:
+                stringValue: StorageProxy.java:2342 - Mutation completed in 13 ms at consistency QUORUM
+            - key: module
+              value:
+                stringValue: MutationStage-3
+        observedTimeUnixNano: now
+        severityText: DEBUG
+        timeUnixNano: "1753197125314000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_debug
+        body:
+          kvlistValue:
+            values:
+            - key: javaClass
+              value:
+                stringValue: HintsService.java
+            - key: level
+              value:
+                stringValue: DEBUG
+            - key: lineNumber
+              value:
+                intValue: "489"
+            - key: message
+              value:
+                stringValue: HintsService.java:489 - Writing hint for node /127.0.0.3
+            - key: module
+              value:
+                stringValue: HintsService:1
+        observedTimeUnixNano: now
+        severityText: DEBUG
+        timeUnixNano: "1753197191011000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_debug
+        body:
+          kvlistValue:
+            values:
+            - key: javaClass
+              value:
+                stringValue: HintsWriteExecutor.java
+            - key: level
+              value:
+                stringValue: DEBUG
+            - key: lineNumber
+              value:
+                intValue: "120"
+            - key: message
+              value:
+                stringValue: HintsWriteExecutor.java:120 - Wrote 1 hint(s) in 4 ms
+            - key: module
+              value:
+                stringValue: HintsService:1
+        observedTimeUnixNano: now
+        severityText: DEBUG
+        timeUnixNano: "1753197191018000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_debug
+        body:
+          kvlistValue:
+            values:
+            - key: javaClass
+              value:
+                stringValue: Gossiper.java
+            - key: level
+              value:
+                stringValue: DEBUG
+            - key: lineNumber
+              value:
+                intValue: "1160"
+            - key: message
+              value:
+                stringValue: "Gossiper.java:1160 - Delaying status update due to peer being unreachable: /127.0.0.4"
+            - key: module
+              value:
+                stringValue: GossipStage:1
+        observedTimeUnixNano: now
+        severityText: DEBUG
+        timeUnixNano: "1753197295409000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_debug
+        body:
+          kvlistValue:
+            values:
+            - key: javaClass
+              value:
+                stringValue: RepairSession.java
+            - key: level
+              value:
+                stringValue: DEBUG
+            - key: lineNumber
+              value:
+                intValue: "238"
+            - key: message
+              value:
+                stringValue: RepairSession.java:238 - Starting validation for range (-9223372036854775808, 0] on ks1.tbl1
+            - key: module
+              value:
+                stringValue: AntiEntropyStage:1
+        observedTimeUnixNano: now
+        severityText: DEBUG
+        timeUnixNano: "1753197342200000000"
+      scope: {}
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_debug
+        body:
+          kvlistValue:
+            values:
+            - key: javaClass
+              value:
+                stringValue: MerkleTree.java
+            - key: level
+              value:
+                stringValue: DEBUG
+            - key: lineNumber
+              value:
+                intValue: "197"
+            - key: message
+              value:
+                stringValue: "MerkleTree.java:197 - Generated Merkle tree for ks1.tbl1: 512 leaves, 256 KB"
+            - key: module
+              value:
+                stringValue: ValidationExecutor:1
+        observedTimeUnixNano: now
+        severityText: DEBUG
+        timeUnixNano: "1753197342841000000"
+      scope: {}
