@@ -1,0 +1,250 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/couchbase_goxdcr
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: log_type
+              value:
+                stringValue: PipelineManager
+            - key: message
+              value:
+                stringValue: Starting replication pipeline for bucket travel-data
+            - key: timestamp
+              value:
+                stringValue: 2025-08-18T14:27:02.452Z
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/couchbase_goxdcr
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: WARN
+            - key: log_type
+              value:
+                stringValue: XDCR.CheckpointService
+            - key: message
+              value:
+                stringValue: Failed to save checkpoint due to timeout
+            - key: timestamp
+              value:
+                stringValue: 2025-08-18T14:27:10.874Z
+        observedTimeUnixNano: now
+        severityText: WARNING
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/couchbase_goxdcr
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: ERROR
+            - key: log_type
+              value:
+                stringValue: Router
+            - key: message
+              value:
+                stringValue: |-
+                  Failed to route mutation for key "user:12345", retrying...
+                  Additional detail: document size exceeded configured threshold
+            - key: timestamp
+              value:
+                stringValue: 2025-08-18T14:27:22.345Z
+        observedTimeUnixNano: now
+        severityText: ERROR
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/couchbase_goxdcr
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: DEBUG
+            - key: log_type
+              value:
+                stringValue: BackfillManager
+            - key: message
+              value:
+                stringValue: Backfill task created for vbucket 102
+            - key: timestamp
+              value:
+                stringValue: 2025-08-18T14:27:45.657Z
+        observedTimeUnixNano: now
+        severityText: DEBUG
+      scope: {}
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/couchbase_goxdcr
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: log_type
+              value:
+                stringValue: PipelineManager
+            - key: message
+              value:
+                stringValue: Replication pipeline stopped successfully
+            - key: timestamp
+              value:
+                stringValue: 2025-08-18T14:28:00.998Z
+        observedTimeUnixNano: now
+        severityText: INFO
+      scope: {}
+- collector_errors:
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-08-18T14:27:02.452Z\": extra text: \"Z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%dT%H:%M:%S.%L") != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-08-18T14:27:10.874Z\": extra text: \"Z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%dT%H:%M:%S.%L") != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-08-18T14:27:22.345Z\": extra text: \"Z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%dT%H:%M:%S.%L") != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-08-18T14:27:45.657Z\": extra text: \"Z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%dT%H:%M:%S.%L") != nil)
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"2025-08-18T14:28:00.998Z\": extra text: \"Z\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_1
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%dT%H:%M:%S.%L") != nil)
