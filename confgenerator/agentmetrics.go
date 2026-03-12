@@ -58,9 +58,9 @@ var grpcToHTTPStatus = map[string]string{
 }
 
 var grpcCamelToSnake = map[string]string{
-	"OK":                  "OK",
-	"Canceled":            "CANCELLED",
-	"Unknown":             "UNKNOWN",
+	"OK":                 "OK",
+	"Canceled":           "CANCELLED",
+	"Unknown":            "UNKNOWN",
 	"InvalidArgument":    "INVALID_ARGUMENT",
 	"DeadlineExceeded":   "DEADLINE_EXCEEDED",
 	"NotFound":           "NOT_FOUND",
@@ -68,13 +68,13 @@ var grpcCamelToSnake = map[string]string{
 	"PermissionDenied":   "PERMISSION_DENIED",
 	"ResourceExhausted":  "RESOURCE_EXHAUSTED",
 	"FailedPrecondition": "FAILED_PRECONDITION",
-	"Aborted":             "ABORTED",
-	"OutOfRange":        "OUT_OF_RANGE",
-	"Unimplemented":       "UNIMPLEMENTED",
-	"Internal":            "INTERNAL",
-	"Unavailable":         "UNAVAILABLE",
-	"DataLoss":            "DATA_LOSS",
-	"Unauthenticated":     "UNAUTHENTICATED",
+	"Aborted":            "ABORTED",
+	"OutOfRange":         "OUT_OF_RANGE",
+	"Unimplemented":      "UNIMPLEMENTED",
+	"Internal":           "INTERNAL",
+	"Unavailable":        "UNAVAILABLE",
+	"DataLoss":           "DATA_LOSS",
+	"Unauthenticated":    "UNAUTHENTICATED",
 }
 
 func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]otel.ReceiverPipeline, pipelines map[string]otel.Pipeline, ctx context.Context) {
