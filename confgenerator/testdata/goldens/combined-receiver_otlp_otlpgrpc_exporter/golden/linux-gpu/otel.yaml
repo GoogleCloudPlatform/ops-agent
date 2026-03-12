@@ -86,7 +86,7 @@ processors:
   filter/otel_1:
     metrics:
       datapoint:
-      - metric.name == "rpc.client.duration_count" and (not IsMatch(datapoint.attributes["rpc.service"], "opentelemetry.proto.collector.metrics.v1.MetricsService"))
+      - metric.name == "rpc.client.call.duration_count" and (not IsMatch(datapoint.attributes["rpc.method"], "opentelemetry.proto.collector.metrics.v1.MetricsService/Export"))
   filter/otel_2:
     metrics:
       include:
@@ -96,7 +96,7 @@ processors:
         - otelcol_process_memory_rss
         - otelcol_exporter_sent_metric_points
         - otelcol_exporter_send_failed_metric_points
-        - rpc.client.duration_count
+        - rpc.client.call.duration_count
   groupbyattrs/otlp_2:
     keys:
     - namespace
@@ -582,48 +582,11 @@ processors:
         aggregation_type: sum
         label_set: []
     - action: update
-      include: rpc.client.duration_count
+      include: rpc.client.call.duration_count
       new_name: agent/api_request_count
       operations:
       - action: update_label
-        label: rpc.grpc.status_code
-        value_actions:
-        - new_value: OK
-          value: "0"
-        - new_value: CANCELLED
-          value: "1"
-        - new_value: ABORTED
-          value: "10"
-        - new_value: OUT_OF_RANGE
-          value: "11"
-        - new_value: UNIMPLEMENTED
-          value: "12"
-        - new_value: INTERNAL
-          value: "13"
-        - new_value: UNAVAILABLE
-          value: "14"
-        - new_value: DATA_LOSS
-          value: "15"
-        - new_value: UNAUTHENTICATED
-          value: "16"
-        - new_value: UNKNOWN
-          value: "2"
-        - new_value: INVALID_ARGUMENT
-          value: "3"
-        - new_value: DEADLINE_EXCEEDED
-          value: "4"
-        - new_value: NOT_FOUND
-          value: "5"
-        - new_value: ALREADY_EXISTS
-          value: "6"
-        - new_value: PERMISSION_DENIED
-          value: "7"
-        - new_value: RESOURCE_EXHAUSTED
-          value: "8"
-        - new_value: FAILED_PRECONDITION
-          value: "9"
-      - action: update_label
-        label: rpc.grpc.status_code
+        label: rpc.response.status_code
         new_label: state
       - action: aggregate_labels
         aggregation_type: sum
@@ -803,36 +766,7 @@ processors:
     metric_statements:
     - context: metric
       statements:
-      - extract_count_metric(true) where name == "rpc.client.duration"
-  transform/otlp_0:
-    error_mode: ignore
-    log_statements:
-    - context: log
-      statements:
-      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
-      - set(cache["__field_0"], attributes["compute.googleapis.com/instance_group_manager/name"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/name"] != nil)
-      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
-      - set(cache["__field_1"], attributes["compute.googleapis.com/instance_group_manager/zone"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/zone"] != nil)
-      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
-      - set(cache["__field_2"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
-      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
-      - set(cache["__field_3"], attributes["gcp.log_name"]) where (attributes != nil and attributes["gcp.log_name"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_0"])
-      - set(cache["value"], "test-mig") where cache["value"] == nil
-      - set(attributes["compute.googleapis.com/instance_group_manager/name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_1"])
-      - set(cache["value"], "test-zone") where cache["value"] == nil
-      - set(attributes["compute.googleapis.com/instance_group_manager/zone"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_2"])
-      - set(cache["value"], "") where cache["value"] == nil
-      - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
-      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
-      - set(cache["value"], cache["__field_3"])
-      - set(cache["value"], "otlp") where cache["value"] == nil
-      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - extract_count_metric(true) where name == "rpc.client.call.duration"
   transform/otlp_1:
     error_mode: ignore
     metric_statements:
