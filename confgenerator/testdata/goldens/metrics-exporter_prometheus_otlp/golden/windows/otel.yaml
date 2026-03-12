@@ -603,6 +603,43 @@ processors:
       operations:
       - action: update_label
         label: rpc.response.status_code
+        value_actions:
+        - new_value: ABORTED
+          value: Aborted
+        - new_value: ALREADY_EXISTS
+          value: AlreadyExists
+        - new_value: CANCELLED
+          value: Canceled
+        - new_value: DATA_LOSS
+          value: DataLoss
+        - new_value: DEADLINE_EXCEEDED
+          value: DeadlineExceeded
+        - new_value: FAILED_PRECONDITION
+          value: FailedPrecondition
+        - new_value: INTERNAL
+          value: Internal
+        - new_value: INVALID_ARGUMENT
+          value: InvalidArgument
+        - new_value: NOT_FOUND
+          value: NotFound
+        - new_value: OK
+          value: OK
+        - new_value: OUT_OF_RANGE
+          value: OutOfRange
+        - new_value: PERMISSION_DENIED
+          value: PermissionDenied
+        - new_value: RESOURCE_EXHAUSTED
+          value: ResourceExhausted
+        - new_value: UNAUTHENTICATED
+          value: Unauthenticated
+        - new_value: UNAVAILABLE
+          value: Unavailable
+        - new_value: UNIMPLEMENTED
+          value: Unimplemented
+        - new_value: UNKNOWN
+          value: Unknown
+      - action: update_label
+        label: rpc.response.status_code
         new_label: state
       - action: aggregate_labels
         aggregation_type: sum
