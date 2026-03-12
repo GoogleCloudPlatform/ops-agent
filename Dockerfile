@@ -176,7 +176,6 @@ COPY --from=centos8-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agen
 COPY --from=centos8-build /google-cloud-ops-agent*.rpm /
 COPY --from=centos8-build /google-cloud-ops-agent-plugin*.tar.gz /
 
-
 # ======================================
 # Build Ops Agent for rockylinux-9
 # ======================================
@@ -281,7 +280,6 @@ FROM scratch AS rockylinux9
 COPY --from=rockylinux9-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-rockylinux-9.tgz
 COPY --from=rockylinux9-build /google-cloud-ops-agent*.rpm /
 COPY --from=rockylinux9-build /google-cloud-ops-agent-plugin*.tar.gz /
-
 
 # ======================================
 # Build Ops Agent for rockylinux-10
@@ -390,7 +388,6 @@ COPY --from=rockylinux10-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops
 COPY --from=rockylinux10-build /google-cloud-ops-agent*.rpm /
 COPY --from=rockylinux10-build /google-cloud-ops-agent-plugin*.tar.gz /
 
-
 # ======================================
 # Build Ops Agent for debian-bookworm
 # ======================================
@@ -490,7 +487,6 @@ FROM scratch AS bookworm
 COPY --from=bookworm-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-bookworm.tgz
 COPY --from=bookworm-build /google-cloud-ops-agent*.deb /
 COPY --from=bookworm-build /google-cloud-ops-agent-plugin*.tar.gz /
-
 
 # ======================================
 # Build Ops Agent for debian-bullseye
@@ -595,7 +591,6 @@ COPY --from=bullseye-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-age
 COPY --from=bullseye-build /google-cloud-ops-agent*.deb /
 COPY --from=bullseye-build /google-cloud-ops-agent-plugin*.tar.gz /
 
-
 # ======================================
 # Build Ops Agent for debian-trixie
 # ======================================
@@ -697,7 +692,6 @@ FROM scratch AS trixie
 COPY --from=trixie-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-debian-trixie.tgz
 COPY --from=trixie-build /google-cloud-ops-agent*.deb /
 COPY --from=trixie-build /google-cloud-ops-agent-plugin*.tar.gz /
-
 
 # ======================================
 # Build Ops Agent for sles-12
@@ -822,7 +816,6 @@ COPY --from=sles12-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent
 COPY --from=sles12-build /google-cloud-ops-agent*.rpm /
 COPY --from=sles12-build /google-cloud-ops-agent-plugin*.tar.gz /
 
-
 # ======================================
 # Build Ops Agent for sles-15
 # ======================================
@@ -928,7 +921,6 @@ COPY --from=sles15-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent
 COPY --from=sles15-build /google-cloud-ops-agent*.rpm /
 COPY --from=sles15-build /google-cloud-ops-agent-plugin*.tar.gz /
 
-
 # ======================================
 # Build Ops Agent for ubuntu-jammy
 # ======================================
@@ -1028,7 +1020,6 @@ FROM scratch AS jammy
 COPY --from=jammy-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-jammy.tgz
 COPY --from=jammy-build /google-cloud-ops-agent*.deb /
 COPY --from=jammy-build /google-cloud-ops-agent-plugin*.tar.gz /
-
 
 # ======================================
 # Build Ops Agent for ubuntu-noble
@@ -1130,7 +1121,6 @@ COPY --from=noble-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-
 COPY --from=noble-build /google-cloud-ops-agent*.deb /
 COPY --from=noble-build /google-cloud-ops-agent-plugin*.tar.gz /
 
-
 # ======================================
 # Build Ops Agent for ubuntu-questing
 # ======================================
@@ -1230,7 +1220,6 @@ FROM scratch AS questing
 COPY --from=questing-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-questing.tgz
 COPY --from=questing-build /google-cloud-ops-agent*.deb /
 COPY --from=questing-build /google-cloud-ops-agent-plugin*.tar.gz /
-
 
 FROM scratch
 COPY --from=centos8 /* /
