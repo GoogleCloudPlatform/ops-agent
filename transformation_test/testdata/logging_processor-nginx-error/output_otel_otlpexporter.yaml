@@ -1,0 +1,279 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/nginx_error
+        body:
+          kvlistValue:
+            values:
+            - key: client
+              value:
+                stringValue: "::1"
+            - key: connection
+              value:
+                intValue: "2191"
+            - key: host
+              value:
+                stringValue: localhost:8080
+            - key: level
+              value:
+                stringValue: error
+            - key: message
+              value:
+                stringValue: "open() \"/var/www/html/forbidden.html\" failed (13: Permission denied)"
+            - key: pid
+              value:
+                intValue: "29060"
+            - key: request
+              value:
+                stringValue: GET /forbidden.html HTTP/1.1
+            - key: server
+              value:
+                stringValue: _
+            - key: tid
+              value:
+                intValue: "29060"
+        observedTimeUnixNano: now
+        severityText: ERROR
+        timeUnixNano: "1630021817000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/nginx_error
+        body:
+          kvlistValue:
+            values:
+            - key: client
+              value:
+                stringValue: 192.168.1.100
+            - key: connection
+              value:
+                intValue: "2192"
+            - key: host
+              value:
+                stringValue: example.com
+            - key: level
+              value:
+                stringValue: error
+            - key: message
+              value:
+                stringValue: access forbidden by rule
+            - key: pid
+              value:
+                intValue: "29060"
+            - key: request
+              value:
+                stringValue: POST /admin HTTP/1.1
+            - key: server
+              value:
+                stringValue: example.com
+            - key: tid
+              value:
+                intValue: "29060"
+        observedTimeUnixNano: now
+        severityText: ERROR
+        timeUnixNano: "1630021883000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/nginx_error
+        body:
+          kvlistValue:
+            values:
+            - key: client
+              value:
+                stringValue: 10.0.0.50
+            - key: connection
+              value:
+                intValue: "2193"
+            - key: host
+              value:
+                stringValue: api.example.com
+            - key: level
+              value:
+                stringValue: error
+            - key: message
+              value:
+                stringValue: "connect() failed (111: Connection refused) while connecting to upstream"
+            - key: pid
+              value:
+                intValue: "29060"
+            - key: request
+              value:
+                stringValue: GET /api/v1/users HTTP/1.1
+            - key: server
+              value:
+                stringValue: api.example.com
+            - key: tid
+              value:
+                intValue: "29060"
+            - key: upstream
+              value:
+                stringValue: http://127.0.0.1:8080/users
+        observedTimeUnixNano: now
+        severityText: ERROR
+        timeUnixNano: "1630021965000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/nginx_error
+        body:
+          kvlistValue:
+            values:
+            - key: client
+              value:
+                stringValue: "::1"
+            - key: connection
+              value:
+                intValue: "2194"
+            - key: host
+              value:
+                stringValue: localhost
+            - key: level
+              value:
+                stringValue: error
+            - key: message
+              value:
+                stringValue: directory index of "/var/www/html/" is forbidden
+            - key: pid
+              value:
+                intValue: "29060"
+            - key: request
+              value:
+                stringValue: GET / HTTP/1.1
+            - key: server
+              value:
+                stringValue: localhost
+            - key: tid
+              value:
+                intValue: "29060"
+        observedTimeUnixNano: now
+        severityText: ERROR
+        timeUnixNano: "1630021992000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/nginx_error
+        body:
+          kvlistValue:
+            values:
+            - key: client
+              value:
+                stringValue: 172.16.0.100
+            - key: connection
+              value:
+                intValue: "2195"
+            - key: level
+              value:
+                stringValue: error
+            - key: message
+              value:
+                stringValue: "SSL_do_handshake() failed (SSL: error:1408F10B:SSL routines:ssl3_get_record:wrong version number) while SSL handshaking"
+            - key: pid
+              value:
+                intValue: "29060"
+            - key: server
+              value:
+                stringValue: secure.example.com
+            - key: tid
+              value:
+                intValue: "29060"
+        observedTimeUnixNano: now
+        severityText: ERROR
+        timeUnixNano: "1630022041000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/nginx_error
+        body:
+          kvlistValue:
+            values:
+            - key: client
+              value:
+                stringValue: 192.168.1.50
+            - key: connection
+              value:
+                intValue: "2196"
+            - key: host
+              value:
+                stringValue: www.example.com
+            - key: level
+              value:
+                stringValue: error
+            - key: message
+              value:
+                stringValue: "\"/var/www/html/images/logo.png\" is not found (2: No such file or directory)"
+            - key: pid
+              value:
+                intValue: "29060"
+            - key: request
+              value:
+                stringValue: GET /images/logo.png HTTP/1.1
+            - key: server
+              value:
+                stringValue: www.example.com
+            - key: tid
+              value:
+                intValue: "29060"
+        observedTimeUnixNano: now
+        severityText: ERROR
+        timeUnixNano: "1630022130000000000"
+      scope: {}
