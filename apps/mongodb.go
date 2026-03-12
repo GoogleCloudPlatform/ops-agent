@@ -95,39 +95,83 @@ func init() {
 	confgenerator.MetricsReceiverTypes.RegisterType(func() confgenerator.MetricsReceiver { return &MetricsReceiverMongoDB{} })
 }
 
-type LoggingProcessorMongodb struct {
-	confgenerator.ConfigComponent `yaml:",inline"`
+type LoggingProcessorMacroMongodb struct {
 }
 
-func (*LoggingProcessorMongodb) Type() string {
+func (LoggingProcessorMacroMongodb) Type() string {
 	return "mongodb"
 }
 
-func (p *LoggingProcessorMongodb) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
+func (p LoggingProcessorMacroMongodb) Expand(ctx context.Context) []confgenerator.InternalLoggingProcessor {
+	return []confgenerator.InternalLoggingProcessor{MongodbProcessors{}}
+}
+
+type MongodbProcessors struct{}
+
+func (MongodbProcessors) Type() string {
+	return "mongodb"
+}
+
+func (p MongodbProcessors) Components(ctx context.Context, tag, uid string) []fluentbit.Component {
 	c := []fluentbit.Component{}
 
-	c = append(c, p.JsonLogComponents(ctx, tag, uid)...)
-	c = append(c, p.RegexLogComponents(tag, uid)...)
-	c = append(c, p.severityParser(ctx, tag, uid)...)
+	c = append(c, p.FluentBitJsonLogComponents(ctx, tag, uid)...)
+	c = append(c, p.FluentBitRegexLogComponents(tag, uid)...)
+	c = append(c, p.severityParser().Components(ctx, tag, uid)...)
 
 	return c
 }
 
-// JsonLogComponents are the fluentbit components for parsing log messages that are json formatted.
+func (p MongodbProcessors) Processors(ctx context.Context) ([]otel.Component, error) {
+	processors := []confgenerator.InternalLoggingProcessor{}
+	processors = append(processors, p.JsonLogComponents()...)
+	processors = append(processors, p.RegexLogComponents())
+	processors = append(processors, p.severityParser())
+	processors = append(processors, p.PostProcessing())
+
+	c := []otel.Component{}
+	for _, p := range processors {
+		op, ok := p.(confgenerator.InternalOTelProcessor)
+		if !ok {
+			continue
+		}
+		components, err := op.Processors(ctx)
+		if err != nil {
+			return nil, err
+		}
+		c = append(c, components...)
+	}
+
+	return c, nil
+}
+
+// FluentBitJsonLogComponents are the fluentbit components for parsing log messages that are json formatted.
 // these are generally messages from mongo with versions greater than or equal to 4.4
 // documentation: https://docs.mongodb.com/v4.4/reference/log-messages/#log-message-format
-func (p *LoggingProcessorMongodb) JsonLogComponents(ctx context.Context, tag, uid string) []fluentbit.Component {
-	c := p.jsonParserWithTimeKey(ctx, tag, uid)
+func (p MongodbProcessors) FluentBitJsonLogComponents(ctx context.Context, tag, uid string) []fluentbit.Component {
+	c := p.FluentbitJsonParserWithTimeKey(ctx, tag, uid)
 
-	c = append(c, p.promoteWiredTiger(tag, uid)...)
-	c = append(c, p.renames(tag, uid)...)
+	c = append(c, p.FluentbitPromoteWiredTiger(tag, uid)...)
+	c = append(c, p.FluentbitRenames(tag, uid)...)
 
 	return c
 }
 
-// jsonParserWithTimeKey requires promotion of the nested timekey for the json parser so we must
+// JsonLogComponents are the components for parsing log messages that are json formatted.
+// these are generally messages from mongo with versions greater than or equal to 4.4
+// documentation: https://docs.mongodb.com/v4.4/reference/log-messages/#log-message-format
+func (p MongodbProcessors) JsonLogComponents() []confgenerator.InternalLoggingProcessor {
+	c := p.jsonParserWithTimeKey()
+
+	c = append(c, p.promoteWiredTiger()...)
+	c = append(c, p.renames()...)
+
+	return c
+}
+
+// FluentbitJsonParserWithTimeKey requires promotion of the nested timekey for the json parser so we must
 // first promote the $date field from the "t" field before declaring the parser
-func (p *LoggingProcessorMongodb) jsonParserWithTimeKey(ctx context.Context, tag, uid string) []fluentbit.Component {
+func (p MongodbProcessors) FluentbitJsonParserWithTimeKey(ctx context.Context, tag, uid string) []fluentbit.Component {
 	c := []fluentbit.Component{}
 
 	jsonParser := &confgenerator.LoggingProcessorParseJson{
@@ -202,42 +246,78 @@ func (p *LoggingProcessorMongodb) jsonParserWithTimeKey(ctx context.Context, tag
 	return c
 }
 
-// severityParser is used by both regex and json parser to ensure an "s" field on the entry gets translated
-// to a valid logging.googleapis.com/seveirty field
-func (p *LoggingProcessorMongodb) severityParser(ctx context.Context, tag, uid string) []fluentbit.Component {
-	severityComponents := []fluentbit.Component{}
+// jsonParserWithTimeKey requires promotion of the nested timekey for the json parser so we must
+// first promote the $date field from the "t" field before declaring the parser
+func (p MongodbProcessors) jsonParserWithTimeKey() []confgenerator.InternalLoggingProcessor {
+	c := []confgenerator.InternalLoggingProcessor{}
 
-	severityComponents = append(severityComponents,
-		confgenerator.LoggingProcessorModifyFields{
-			Fields: map[string]*confgenerator.ModifyField{
-				"jsonPayload.severity": {
-					MoveFrom: "jsonPayload.s",
-				},
-				"severity": {
-					CopyFrom: "jsonPayload.s",
-					MapValues: map[string]string{
-						"D":  "DEBUG",
-						"D1": "DEBUG",
-						"D2": "DEBUG",
-						"D3": "DEBUG",
-						"D4": "DEBUG",
-						"D5": "DEBUG",
-						"I":  "INFO",
-						"E":  "ERROR",
-						"F":  "FATAL",
-						"W":  "WARNING",
-					},
-					MapValuesExclusive: true,
-				},
-				InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+	c = append(c, &confgenerator.LoggingProcessorParseJson{
+		ParserShared: confgenerator.ParserShared{
+			Types: map[string]string{
+				"id":      "integer",
+				"message": "string",
 			},
-		}.Components(ctx, tag, uid)...,
-	)
+		},
+	})
 
-	return severityComponents
+	// bring $date to top level in order for it to parse as timeKey
+	c = append(c, &confgenerator.LoggingProcessorModifyFields{
+		Fields: map[string]*confgenerator.ModifyField{
+			"jsonPayload.time": {
+				MoveFrom: "jsonPayload.t.$date",
+			},
+		},
+	})
+
+	c = append(c, &confgenerator.LoggingProcessorRemoveField{
+		Field: "t",
+	})
+
+	// IMPORTANT: now that we have lifted the json to top level
+	// we need to re-parse in order to properly set time at the
+	// parser level
+	c = append(c, &confgenerator.LoggingProcessorParseRegex{
+		ParserShared: confgenerator.ParserShared{
+			TimeKey:    "time",
+			TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
+		},
+		Regex: `^(?<time>.*)$`,
+		Field: "time",
+	})
+
+	return c
 }
 
-func (p *LoggingProcessorMongodb) renames(tag, uid string) []fluentbit.Component {
+// severityParser is used by both regex and json parser to ensure an "s" field on the entry gets translated
+// to a valid logging.googleapis.com/seveirty field
+func (p MongodbProcessors) severityParser() confgenerator.InternalLoggingProcessor {
+	return confgenerator.LoggingProcessorModifyFields{
+		Fields: map[string]*confgenerator.ModifyField{
+			"jsonPayload.severity": {
+				MoveFrom: "jsonPayload.s",
+			},
+			"severity": {
+				CopyFrom: "jsonPayload.s",
+				MapValues: map[string]string{
+					"D":  "DEBUG",
+					"D1": "DEBUG",
+					"D2": "DEBUG",
+					"D3": "DEBUG",
+					"D4": "DEBUG",
+					"D5": "DEBUG",
+					"I":  "INFO",
+					"E":  "ERROR",
+					"F":  "FATAL",
+					"W":  "WARNING",
+				},
+				MapValuesExclusive: true,
+			},
+			InstrumentationSourceLabel: instrumentationSourceValue(p.Type()),
+		},
+	}
+}
+
+func (p MongodbProcessors) FluentbitRenames(tag, uid string) []fluentbit.Component {
 	r := []fluentbit.Component{}
 	renames := []struct {
 		src  string
@@ -256,7 +336,32 @@ func (p *LoggingProcessorMongodb) renames(tag, uid string) []fluentbit.Component
 	return r
 }
 
-func (p *LoggingProcessorMongodb) promoteWiredTiger(tag, uid string) []fluentbit.Component {
+func (p MongodbProcessors) renames() []confgenerator.InternalLoggingProcessor {
+	r := []confgenerator.InternalLoggingProcessor{}
+	renames := []struct {
+		src  string
+		dest string
+	}{
+		{"jsonPayload.c", "jsonPayload.component"},
+		{"jsonPayload.ctx", "jsonPayload.context"},
+		{"jsonPayload.msg", "jsonPayload.json_message"},
+		{"jsonPayload.attr", "jsonPayload.attributes"},
+	}
+
+	for _, rename := range renames {
+		r = append(r, &confgenerator.LoggingProcessorModifyFields{
+			Fields: map[string]*confgenerator.ModifyField{
+				rename.dest: {
+					MoveFrom: rename.src,
+				},
+			},
+		})
+	}
+
+	return r
+}
+
+func (p MongodbProcessors) FluentbitPromoteWiredTiger(tag, uid string) []fluentbit.Component {
 	// promote messages that are WiredTiger messages and are nested in attr.message
 	addPrefix := "temp_attributes_"
 	upNest := fluentbit.Component{
@@ -288,7 +393,29 @@ func (p *LoggingProcessorMongodb) promoteWiredTiger(tag, uid string) []fluentbit
 	return []fluentbit.Component{upNest, wiredTigerRename, renameRemainingAttributes}
 }
 
-func (p *LoggingProcessorMongodb) RegexLogComponents(tag, uid string) []fluentbit.Component {
+func (p MongodbProcessors) promoteWiredTiger() []confgenerator.InternalLoggingProcessor {
+	// promote messages that are WiredTiger messages and are nested in attr.message
+	c := []confgenerator.InternalLoggingProcessor{}
+
+	addPrefix := "temp_attributes_"
+
+	c = append(c, &confgenerator.LoggingProcessorModifyFields{
+		Fields: map[string]*confgenerator.ModifyField{
+			"jsonPayload.temp_attributes_message": {
+				MoveFrom: "jsonPayload.attr.message",
+			},
+		},
+	})
+
+	c = append(c, &confgenerator.LoggingProcessorRenameIfExists{
+		Field:   addPrefix + "message",
+		NewName: "msg",
+	})
+
+	return c
+}
+
+func (p MongodbProcessors) FluentBitRegexLogComponents(tag, uid string) []fluentbit.Component {
 	c := []fluentbit.Component{}
 	parseKey := "message"
 	parser, parserName := fluentbit.ParserComponentBase("%Y-%m-%dT%H:%M:%S.%L%z", "timestamp", map[string]string{
@@ -323,23 +450,43 @@ func (p *LoggingProcessorMongodb) RegexLogComponents(tag, uid string) []fluentbi
 	return c
 }
 
-type LoggingReceiverMongodb struct {
-	LoggingProcessorMongodb `yaml:",inline"`
-	ReceiverMixin           confgenerator.LoggingReceiverFilesMixin `yaml:",inline" validate:"structonly"`
+func (p MongodbProcessors) RegexLogComponents() confgenerator.InternalLoggingProcessor {
+	return confgenerator.LoggingProcessorParseRegex{
+		ParserShared: confgenerator.ParserShared{
+			TimeKey:    "timestamp",
+			TimeFormat: "%Y-%m-%dT%H:%M:%S.%L%z",
+			Types: map[string]string{
+				"message":   "string",
+				"id":        "integer",
+				"s":         "string",
+				"component": "string",
+				"context":   "string",
+			},
+		},
+		Regex: `^(?<timestamp>[^ ]*)\s+(?<s>\w)\s+(?<component>[^ ]+)\s+\[(?<context>[^\]]+)]\s+(?<message>.*?) *(?<ms>(\d+))?(:?ms)?$`,
+		Field: "message",
+	}
 }
 
-func (r *LoggingReceiverMongodb) Components(ctx context.Context, tag string) []fluentbit.Component {
-	if len(r.ReceiverMixin.IncludePaths) == 0 {
-		r.ReceiverMixin.IncludePaths = []string{
-			// default logging location
-			"/var/log/mongodb/mongod.log*",
-		}
+func (p MongodbProcessors) PostProcessing() confgenerator.InternalLoggingProcessor {
+	return confgenerator.LoggingProcessorModifyFields{
+		Fields: map[string]*confgenerator.ModifyField{
+			`jsonPayload.message`: {
+				MoveFrom: `jsonPayload.json_message`,
+			},
+			`jsonPayload.attributes`: {
+				OmitIf: `jsonPayload.attributes = {}`,
+			},
+		},
 	}
-	c := r.ReceiverMixin.Components(ctx, tag)
-	c = append(c, r.LoggingProcessorMongodb.Components(ctx, tag, "mongodb")...)
-	return c
+}
+
+func loggingReceiverFilesMixinMongodb() confgenerator.LoggingReceiverFilesMixin {
+	return confgenerator.LoggingReceiverFilesMixin{
+		IncludePaths: []string{"/var/log/mongodb/mongod.log*"},
+	}
 }
 
 func init() {
-	confgenerator.LoggingReceiverTypes.RegisterType(func() confgenerator.LoggingReceiver { return &LoggingReceiverMongodb{} })
+	confgenerator.RegisterLoggingFilesProcessorMacro[LoggingProcessorMacroMongodb](loggingReceiverFilesMixinMongodb)
 }

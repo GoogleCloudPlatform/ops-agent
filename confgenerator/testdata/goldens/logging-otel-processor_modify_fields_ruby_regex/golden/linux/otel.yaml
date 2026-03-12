@@ -7,14 +7,23 @@ exporters:
       service_resource_labels: false
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
-  googlecloud/otel:
-    metric:
-      instrumentation_library_labels: true
-      prefix: ""
-      resource_filters: []
-      service_resource_labels: true
-      skip_create_descriptor: true
-    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
+  googlecloud/logging:
+    sending_queue:
+      batch:
+        flush_timeout: 200ms
+        max_size: 1000
+        min_size: 1000
+        sizer: items
+      block_on_overflow: true
+      enabled: true
+      num_consumers: 10
+      queue_size: 12000
+      sizer: items
+    timeout: 60s
+extensions:
+  file_storage:
+    create_directory: true
+    directory: file_storage
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
@@ -677,6 +686,7 @@ processors:
 receivers:
   filelog/syslog:
     exclude: []
+    fingerprint_size: 5kb
     include:
     - /var/log/messages
     - /var/log/syslog
@@ -689,6 +699,7 @@ receivers:
     preserve_leading_whitespaces: true
     preserve_trailing_whitespaces: true
     start_at: beginning
+    storage: file_storage
   hostmetrics/hostmetrics:
     collection_interval: 60s
     scrapers:
@@ -729,10 +740,12 @@ receivers:
         - targets:
           - 0.0.0.0:20201
 service:
+  extensions:
+  - file_storage
   pipelines:
     logs/logs_default__pipeline_syslog:
       exporters:
-      - googlecloud/otel
+      - googlecloud/logging
       processors:
       - transform/syslog_0
       - resourcedetection/_global_0
@@ -740,7 +753,7 @@ service:
       - filelog/syslog
     logs/logs_p1_sample__logs:
       exporters:
-      - googlecloud/otel
+      - googlecloud/logging
       processors:
       - transform/sample__logs_0
       - transform/logs_p1_sample__logs_0
@@ -807,6 +820,7 @@ service:
       - prometheus/agent_prometheus
   telemetry:
     metrics:
+      level: detailed
       readers:
       - pull:
           exporter:

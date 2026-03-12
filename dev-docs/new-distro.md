@@ -140,6 +140,16 @@ The instructions are very similar to the instructions for `ops_agent_test`.
     temporary changes to the Kokoro configs (the various `bullseye_$arch.gcl`
     files in the earlier step). Get your PR reviewed and merge it to `master`.
 
+## Adding a new RPM signing key
+
+If you are adding a new RPM-based distro, you may need to add a new signing key. Retrieve the new key's public key URL and run the following command:
+
+```shell
+curl -sL <KEY_URL> | gpg --show-keys --keyid-format short
+```
+
+The command gives an output like `pub rsa2048/3E1BA8D5`. Identify the code after `rsa2048/`, convert it to lowercase (e.g., `3e1ba8d5`), and add it to the `approvedRPMKeyIDs` list in [integration_test/agents/agents.go](https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/agents/agents.go).
+
 ## Troubleshooting
 
 Error: `failed to solve with frontend dockerfile.v0: failed to create LLB definition: target stage $DISTRO_SHORT could not be found`

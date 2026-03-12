@@ -18,11 +18,13 @@ package otel
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	yaml "github.com/goccy/go-yaml"
 	"github.com/mitchellh/mapstructure"
 	commonconfig "github.com/prometheus/common/config"
+	"golang.org/x/exp/constraints"
 )
 
 const MetricsPort = 20201
@@ -38,6 +40,7 @@ const (
 	System
 	GMP
 	OTLP
+	Logging
 )
 const (
 	Override ResourceDetectionMode = iota
@@ -51,11 +54,18 @@ func (t ExporterType) Name() string {
 		return ""
 	} else if t == OTel {
 		return "otel"
+	} else if t == Logging {
+		return "logging"
 	} else if t == OTLP {
 		return "otlp"
 	} else {
 		panic("unknown ExporterType")
 	}
+}
+
+type ExporterComponents struct {
+	Exporter         Component
+	ProcessorsByType map[string][]Component
 }
 
 // ReceiverPipeline represents a single OT receiver and zero or more processors that must be chained after that receiver.
@@ -116,7 +126,7 @@ type ModularConfig struct {
 	ReceiverPipelines map[string]ReceiverPipeline
 	Pipelines         map[string]Pipeline
 	Extensions        map[string]interface{}
-	Exporters         map[ExporterType]Component
+	Exporters         map[ExporterType]ExporterComponents
 
 	// Test-only options:
 	// Don't generate any self-metrics
@@ -149,6 +159,7 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 		"pipelines": pipelines,
 		"telemetry": map[string]interface{}{
 			"metrics": map[string]interface{}{
+				"level": "detailed",
 				"readers": []map[string]interface{}{{
 					"pull": map[string]interface{}{
 						"exporter": map[string]interface{}{
@@ -196,11 +207,11 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 	}
 
 	if len(c.Extensions) > 0 {
-		var extensionsList []string
-		for extensionName := range c.Extensions {
+		extensionsList := SortedKeys(c.Extensions)
+		for _, extensionName := range extensionsList {
 			extensions[extensionName] = c.Extensions[extensionName]
-			extensionsList = append(extensionsList, extensionName)
 		}
+
 		service["extensions"] = extensionsList
 		configMap["extensions"] = extensions
 	}
@@ -252,12 +263,20 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 			processorNames = append(processorNames, name)
 			processors[name] = resourceDetectionProcessors[rdm].Config
 		}
+
 		exporterType := receiverPipeline.ExporterTypes[pipeline.Type]
+		exporter := c.Exporters[exporterType]
 		if _, ok := exporterNames[exporterType]; !ok {
-			exporter := c.Exporters[exporterType]
-			name := exporter.name(exporterType.Name())
+			name := exporter.Exporter.name(exporterType.Name())
 			exporterNames[exporterType] = name
-			exporters[name] = exporter.Config
+			exporters[name] = exporter.Exporter.Config
+		}
+		for i, processor := range exporter.ProcessorsByType[pipeline.Type] {
+			name := processor.name(fmt.Sprintf("%s_%s_%d", exporterNames[exporterType], pipeline.Type, i))
+			processorNames = append(processorNames, name)
+			if _, ok := processors[name]; !ok {
+				processors[name] = processor.Config
+			}
 		}
 
 		pipelines[pipeline.Type+"/"+prefix] = map[string]interface{}{
@@ -283,4 +302,16 @@ func contains(s []string, str string) bool {
 	}
 
 	return false
+}
+
+// sortedKeys returns sorted keys from a Set if the Set has a type that can be ordered.
+func SortedKeys[K constraints.Ordered, V any](m map[K]V) []K {
+	keys := []K{}
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
+	return keys
 }

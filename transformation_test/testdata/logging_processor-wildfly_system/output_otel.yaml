@@ -104,8 +104,6 @@
       type: gce_instance
     severity: DEBUG
     timestamp: 2022-02-03T23:38:01.506Z
-  partialSuccess: true
-- entries:
   - jsonPayload:
       level: INFO
       message: "WFLYSRV0010: Deployed \"example.war\" (runtime-name : \"example.war\")"

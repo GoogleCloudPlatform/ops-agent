@@ -1,0 +1,719 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/hbase_system
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "master.HMaster: STARTING service HMaster"
+            - key: module
+              value:
+                stringValue: main
+            - key: source
+              value:
+                stringValue: master.HMaster
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753197304212000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/hbase_system
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "metrics.MetricRegistries: Loaded MetricRegistries class org.apache.hadoop.hbase.metrics.impl.MetricRegistriesImpl"
+            - key: module
+              value:
+                stringValue: main
+            - key: source
+              value:
+                stringValue: metrics.MetricRegistries
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753197306437000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/hbase_system
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: WARN
+            - key: message
+              value:
+                stringValue: "util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable"
+            - key: module
+              value:
+                stringValue: main
+            - key: source
+              value:
+                stringValue: util.NativeCodeLoader
+        observedTimeUnixNano: now
+        severityText: WARNING
+        timeUnixNano: "1753197306503000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/hbase_system
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "zookeeper.ZooKeeper: Initiating client connection, connectString=zookeeper1:2181 sessionTimeout=180000 watcher=org.apache.hadoop.hbase.zookeeper.RecoverableZooKeeper@24a0a5c1"
+            - key: module
+              value:
+                stringValue: main
+            - key: source
+              value:
+                stringValue: zookeeper.ZooKeeper
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753197307128000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/hbase_system
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "zookeeper.ClientCnxn: Opening socket connection to server zookeeper1/192.168.1.101:2181"
+            - key: module
+              value:
+                stringValue: main-SendThread(zookeeper1:2181)
+            - key: source
+              value:
+                stringValue: zookeeper.ClientCnxn
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753197307285000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/hbase_system
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "zookeeper.ClientCnxn: Socket connection established to zookeeper1/192.168.1.101:2181, initiating session"
+            - key: module
+              value:
+                stringValue: main-SendThread(zookeeper1:2181)
+            - key: source
+              value:
+                stringValue: zookeeper.ClientCnxn
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753197307378000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/hbase_system
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "zookeeper.ClientCnxn: Session establishment complete on server zookeeper1/192.168.1.101:2181, sessionid = 0x15f23c54a00003d, negotiated timeout = 180000"
+            - key: module
+              value:
+                stringValue: main-SendThread(zookeeper1:2181)
+            - key: source
+              value:
+                stringValue: zookeeper.ClientCnxn
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753197307412000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/hbase_system
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "master.HMaster: Active Master running"
+            - key: module
+              value:
+                stringValue: main
+            - key: source
+              value:
+                stringValue: master.HMaster
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753197308004000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/hbase_system
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "regionserver.HRegionServer: Starting RegionServer services"
+            - key: module
+              value:
+                stringValue: master-server-0
+            - key: source
+              value:
+                stringValue: regionserver.HRegionServer
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753197308147000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/hbase_system
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "util.ServerRegionReplicaUtil: Region replicas enabled: false"
+            - key: module
+              value:
+                stringValue: master-server-0
+            - key: source
+              value:
+                stringValue: util.ServerRegionReplicaUtil
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753197308603000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/hbase_system
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "wal.FSHLog: WAL initialization successful for hdfs://namenode:8020/hbase/WALs/hbase-master, replication enabled = false"
+            - key: module
+              value:
+                stringValue: master-server-0
+            - key: source
+              value:
+                stringValue: wal.FSHLog
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753197308981000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/hbase_system
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "ipc.RpcServer: IPC Server listener on 16000: starting"
+            - key: module
+              value:
+                stringValue: RpcServer.listener.on.pool-1-thread-1
+            - key: source
+              value:
+                stringValue: ipc.RpcServer
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753197309125000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/hbase_system
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: WARN
+            - key: message
+              value:
+                stringValue: "procedure.ProcedureExecutor: ProcedureExecutor load average is high: 6.3"
+            - key: module
+              value:
+                stringValue: ProcedureExecutorThread-0
+            - key: source
+              value:
+                stringValue: procedure.ProcedureExecutor
+        observedTimeUnixNano: now
+        severityText: WARNING
+        timeUnixNano: "1753197309641000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/hbase_system
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "master.AssignmentManager: Assigning meta region"
+            - key: module
+              value:
+                stringValue: master-event-0
+            - key: source
+              value:
+                stringValue: master.AssignmentManager
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753197310202000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/hbase_system
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "master.HMaster: Master has completed initialization"
+            - key: module
+              value:
+                stringValue: master-event-0
+            - key: source
+              value:
+                stringValue: master.HMaster
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753197310578000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/hbase_system
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "regionserver.HRegionServer: Region hbase:meta assigned to server hbase-regionserver-1,16020,1723457715211"
+            - key: module
+              value:
+                stringValue: RS_OPEN_REGION-hbase-regionserver-1:16020-0
+            - key: source
+              value:
+                stringValue: regionserver.HRegionServer
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753197382134000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/hbase_system
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "client.ScannerCallable: Scanner opened for 'test_table', start row='row1'"
+            - key: module
+              value:
+                stringValue: Scanner-0
+            - key: source
+              value:
+                stringValue: client.ScannerCallable
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753200197808000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/hbase_system
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "client.ScannerCallable: Scanner closed for 'test_table', scanned 50 rows"
+            - key: module
+              value:
+                stringValue: Scanner-0
+            - key: source
+              value:
+                stringValue: client.ScannerCallable
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753200198412000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/hbase_system
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: WARN
+            - key: message
+              value:
+                stringValue: "wal.FSHLog: Slow sync cost: 245ms, regions: [test_table,,1723457715211.abcdef1234567890]"
+            - key: module
+              value:
+                stringValue: RS_CLOSE_REGION-hbase-regionserver-2:16020-3
+            - key: source
+              value:
+                stringValue: wal.FSHLog
+        observedTimeUnixNano: now
+        severityText: WARNING
+        timeUnixNano: "1753212644182000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/hbase_system
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "ipc.CallRunner: Served: get from test_table in 4ms"
+            - key: module
+              value:
+                stringValue: B.defaultRpcServer.handler=3,queue=0,port=16000
+            - key: source
+              value:
+                stringValue: ipc.CallRunner
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753214538943000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/hbase_system
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "regionserver.HRegionServer: Opening region test_table,,1723457715211"
+            - key: module
+              value:
+                stringValue: RS_OPEN_REGION-hbase-regionserver-3:16020-7
+            - key: source
+              value:
+                stringValue: regionserver.HRegionServer
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753228029332000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/hbase_system
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "master.HMaster: Shutting down HMaster"
+            - key: module
+              value:
+                stringValue: ShutdownHook
+            - key: source
+              value:
+                stringValue: master.HMaster
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753247996721000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/hbase_system
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "zookeeper.ZooKeeper: Session 0x15f23c54a00003d closed"
+            - key: module
+              value:
+                stringValue: ShutdownHook
+            - key: source
+              value:
+                stringValue: zookeeper.ZooKeeper
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753247998105000000"
+      scope: {}
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/hbase_system
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "master.HMaster: HMaster shutdown completed"
+            - key: module
+              value:
+                stringValue: ShutdownHook
+            - key: source
+              value:
+                stringValue: master.HMaster
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753247998204000000"
+      scope: {}

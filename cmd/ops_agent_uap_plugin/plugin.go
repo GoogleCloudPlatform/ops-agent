@@ -146,16 +146,21 @@ func main() {
 		if err := os.RemoveAll(address); err != nil {
 			// Unix sockets must be unlinked (listener.Close()) before
 			// being reused again. If file already exist bind can fail.
-			fmt.Fprintf(os.Stderr, "Failed to remove %q: %v\n", address, err)
-			os.Exit(1)
+			log.Fatalf("Failed to remove %q: %v\n", address, err)
 		}
 	}
 
+	loggerCloser, err := createLogger()
+	if err != nil {
+		log.Fatalf("Failed to create logger: %v", err)
+	}
+	defer loggerCloser.Close()
+
 	listener, err := net.Listen(protocol, address)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to start listening on %q using %q: %v\n", address, protocol, err)
-		os.Exit(1)
+		log.Fatalf("Failed to start listening on %q using %q: %v\n", address, protocol, err)
 	}
+	log.Printf("Listening on %q using %q\n", address, protocol)
 	defer listener.Close()
 
 	// This is the grpc server in communication with the Guest Agent.
@@ -167,11 +172,14 @@ func main() {
 	// offered mean Guest Agent was successful in installing/launching the plugin
 	// & will manage the lifecycle (start, stop, or revision change) here onwards.
 	pb.RegisterGuestAgentPluginServer(server, ps)
+	log.Println("Registered plugin server")
+
 	reflection.Register(server)
+	log.Println("Registered service reflection service")
 	if err := server.Serve(listener); err != nil {
-		fmt.Fprintf(os.Stderr, "Exiting, cannot continue serving: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("Exiting, cannot continue serving: %v\n", err)
 	}
+	log.Println("Exiting")
 }
 
 func runSubAgentCommand(ctx context.Context, cancelAndSetError CancelContextAndSetPluginErrorFunc, cmd *exec.Cmd, runCommand RunCommandFunc, wg *sync.WaitGroup) {
