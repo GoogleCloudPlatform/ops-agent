@@ -31,6 +31,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"github.com/goccy/go-yaml"
+	"github.com/google/go-cmp/cmp"
 	"github.com/shirou/gopsutil/host"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/golden"
@@ -243,8 +244,10 @@ func getTestsInDir(t *testing.T, testDir string) []string {
 func generateConfigs(pc platformConfig, testDir string) (got map[string]string, err error) {
 	ctx := pc.platform.TestContext(context.Background())
 
+	var experiments map[string]bool
 	if features, err := os.ReadFile(filepath.Join("testdata", testDir, "EXPERIMENTAL_FEATURES")); err == nil {
-		ctx = confgenerator.ContextWithExperiments(ctx, confgenerator.ParseExperimentalFeatures(string(features)))
+		experiments = confgenerator.ParseExperimentalFeatures(string(features))
+		ctx = confgenerator.ContextWithExperiments(ctx, experiments)
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return nil, err
 	}
@@ -284,7 +287,6 @@ func generateConfigs(pc platformConfig, testDir string) (got map[string]string, 
 		return
 	}
 	got["otel.yaml"] = otelGeneratedConfig
-
 	inputBytes, err := os.ReadFile(filepath.Join("testdata", testDir, inputFileName))
 
 	userUc, err := confgenerator.UnmarshalYamlToUnifiedConfig(ctx, inputBytes)
@@ -332,7 +334,47 @@ func generateConfigs(pc platformConfig, testDir string) (got map[string]string, 
 	}
 	got["enabled_receivers_otlp.json"] = string(generatedEnabledReceiversOTLPJSON)
 
+	// If otel_logging is the only experiment, generate a otel config diff with otlp_exporter enabled.
+	if len(experiments) == 1 && experiments["otel_logging"] {
+		generateOtelConfigDiffWithOtlpExporterEnabled(got, experiments, pc, testDir, otelGeneratedConfig)
+	}
+
 	return
+}
+
+func generateOtelConfigDiffWithOtlpExporterEnabled(got map[string]string, experiments map[string]bool, pc platformConfig, testDir string, otelGeneratedConfig string) {
+	experimentsOtlp := map[string]bool{
+		"otlp_exporter": true,
+		"otel_logging":  true,
+	}
+	ctxOtlp := confgenerator.ContextWithExperiments(pc.platform.TestContext(context.Background()), experimentsOtlp)
+
+	mergedUcOtlp, err := confgenerator.MergeConfFiles(
+		ctxOtlp,
+		filepath.Join("testdata", testDir, inputFileName),
+		apps.BuiltInConfStructs,
+	)
+	if err == nil {
+		otelGeneratedConfigOtlp, err := mergedUcOtlp.GenerateOtelConfig(ctxOtlp, "", "")
+		if err == nil {
+			diffString := cmp.Diff(sortYamlString(otelGeneratedConfig), sortYamlString(otelGeneratedConfigOtlp))
+			if diffString != "" {
+				got["otel_otlp_exporter.yaml.diff"] = diffString
+			}
+		}
+	}
+}
+
+func sortYamlString(s string) string {
+	var m map[string]interface{}
+	if err := yaml.Unmarshal([]byte(s), &m); err != nil {
+		return s
+	}
+	b, err := yaml.Marshal(m)
+	if err != nil {
+		return s
+	}
+	return string(b)
 }
 
 func testGeneratedFiles(t *testing.T, generatedFiles map[string]string, testDir string) error {
@@ -364,7 +406,7 @@ func testGeneratedFiles(t *testing.T, generatedFiles map[string]string, testDir 
 	// If the file is new, the test will fail if not currently doing a golden
 	// update (`-update` flag).
 	for file, content := range generatedFiles {
-		golden.Assert(t, content, filepath.Join(testDir, file))
+		assertGolden(t, content, file, testDir)
 		delete(existingFiles, file)
 	}
 
@@ -383,6 +425,21 @@ func testGeneratedFiles(t *testing.T, generatedFiles map[string]string, testDir 
 	}
 
 	return nil
+}
+
+func assertGolden(t *testing.T, actual string, file string, testDir string) {
+	if golden.FlagUpdate() {
+		golden.Assert(t, actual, filepath.Join(testDir, file))
+		return
+	}
+	expected, err := os.ReadFile(filepath.Join("testdata", testDir, file))
+	if err != nil {
+		t.Fatalf("failed to read golden file %s: %s", file, err)
+	}
+	if strings.ReplaceAll(string(expected), "\r\n", "\n") == strings.ReplaceAll(actual, "\r\n", "\n") {
+		return
+	}
+	golden.Assert(t, actual, filepath.Join(testDir, file))
 }
 
 func TestMain(m *testing.M) {
