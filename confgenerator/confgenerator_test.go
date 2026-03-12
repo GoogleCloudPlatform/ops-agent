@@ -356,21 +356,9 @@ func generateOtelConfigDiffWithOtlpExporterEnabled(got map[string]string, experi
 	if err == nil {
 		otelGeneratedConfigOtlp, err := mergedUcOtlp.GenerateOtelConfig(ctxOtlp, "", "")
 		if err == nil {
-			got["otel_otlp_exporter.yaml"] = sortYamlString(otelGeneratedConfigOtlp)
+			got["otel_otlp_exporter.yaml"] = otelGeneratedConfigOtlp
 		}
 	}
-}
-
-func sortYamlString(s string) string {
-	var m map[string]interface{}
-	if err := yaml.Unmarshal([]byte(s), &m); err != nil {
-		return s
-	}
-	b, err := yaml.Marshal(m)
-	if err != nil {
-		return s
-	}
-	return string(b)
 }
 
 func testGeneratedFiles(t *testing.T, generatedFiles map[string]string, testDir string) error {
@@ -402,7 +390,7 @@ func testGeneratedFiles(t *testing.T, generatedFiles map[string]string, testDir 
 	// If the file is new, the test will fail if not currently doing a golden
 	// update (`-update` flag).
 	for file, content := range generatedFiles {
-		assertGolden(t, content, file, testDir)
+		golden.Assert(t, content, filepath.Join(testDir, file))
 		delete(existingFiles, file)
 	}
 
@@ -423,20 +411,7 @@ func testGeneratedFiles(t *testing.T, generatedFiles map[string]string, testDir 
 	return nil
 }
 
-func assertGolden(t *testing.T, actual string, file string, testDir string) {
-	if golden.FlagUpdate() {
-		golden.Assert(t, actual, filepath.Join(testDir, file))
-		return
-	}
-	expected, err := os.ReadFile(filepath.Join("testdata", testDir, file))
-	if os.IsNotExist(err) {
-		golden.Assert(t, actual, filepath.Join(testDir, file))
-		return
-	} else if err != nil {
-		t.Fatalf("failed to read golden file %s: %s", file, err)
-	}
-	assert.Equal(t, strings.ReplaceAll(string(expected), "\r\n", "\n"), strings.ReplaceAll(actual, "\r\n", "\n"))
-}
+
 
 func TestMain(m *testing.M) {
 	// Hardcode the path to the JMX JAR to make tests repeatable.
