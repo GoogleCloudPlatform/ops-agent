@@ -16,8 +16,6 @@ ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VER
 RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
-ENV GOTOOLCHAIN=local
-
 
 
 FROM {target_name}-build-base AS {target_name}-build-otel

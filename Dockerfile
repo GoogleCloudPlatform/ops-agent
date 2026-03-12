@@ -98,8 +98,6 @@ ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VER
 RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
-ENV GOTOOLCHAIN=local
-
 
 
 FROM centos8-build-base AS centos8-build-otel
@@ -178,6 +176,7 @@ COPY --from=centos8-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agen
 COPY --from=centos8-build /google-cloud-ops-agent*.rpm /
 COPY --from=centos8-build /google-cloud-ops-agent-plugin*.tar.gz /
 
+
 # ======================================
 # Build Ops Agent for rockylinux-9
 # ======================================
@@ -205,8 +204,6 @@ ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VER
 RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
-ENV GOTOOLCHAIN=local
-
 
 
 FROM rockylinux9-build-base AS rockylinux9-build-otel
@@ -285,6 +282,7 @@ COPY --from=rockylinux9-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-
 COPY --from=rockylinux9-build /google-cloud-ops-agent*.rpm /
 COPY --from=rockylinux9-build /google-cloud-ops-agent-plugin*.tar.gz /
 
+
 # ======================================
 # Build Ops Agent for rockylinux-10
 # ======================================
@@ -314,8 +312,6 @@ ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VER
 RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
-ENV GOTOOLCHAIN=local
-
 
 
 FROM rockylinux10-build-base AS rockylinux10-build-otel
@@ -394,6 +390,7 @@ COPY --from=rockylinux10-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops
 COPY --from=rockylinux10-build /google-cloud-ops-agent*.rpm /
 COPY --from=rockylinux10-build /google-cloud-ops-agent-plugin*.tar.gz /
 
+
 # ======================================
 # Build Ops Agent for debian-bookworm
 # ======================================
@@ -416,8 +413,6 @@ ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VER
 RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
-ENV GOTOOLCHAIN=local
-
 
 
 FROM bookworm-build-base AS bookworm-build-otel
@@ -496,6 +491,7 @@ COPY --from=bookworm-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-age
 COPY --from=bookworm-build /google-cloud-ops-agent*.deb /
 COPY --from=bookworm-build /google-cloud-ops-agent-plugin*.tar.gz /
 
+
 # ======================================
 # Build Ops Agent for debian-bullseye
 # ======================================
@@ -521,8 +517,6 @@ ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VER
 RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
-ENV GOTOOLCHAIN=local
-
 
 
 FROM bullseye-build-base AS bullseye-build-otel
@@ -601,6 +595,7 @@ COPY --from=bullseye-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-age
 COPY --from=bullseye-build /google-cloud-ops-agent*.deb /
 COPY --from=bullseye-build /google-cloud-ops-agent-plugin*.tar.gz /
 
+
 # ======================================
 # Build Ops Agent for debian-trixie
 # ======================================
@@ -625,8 +620,6 @@ ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VER
 RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
-ENV GOTOOLCHAIN=local
-
 
 
 FROM trixie-build-base AS trixie-build-otel
@@ -705,6 +698,7 @@ COPY --from=trixie-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent
 COPY --from=trixie-build /google-cloud-ops-agent*.deb /
 COPY --from=trixie-build /google-cloud-ops-agent-plugin*.tar.gz /
 
+
 # ======================================
 # Build Ops Agent for sles-12
 # ======================================
@@ -750,8 +744,6 @@ ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VER
 RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
-ENV GOTOOLCHAIN=local
-
 
 
 FROM sles12-build-base AS sles12-build-otel
@@ -830,6 +822,7 @@ COPY --from=sles12-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent
 COPY --from=sles12-build /google-cloud-ops-agent*.rpm /
 COPY --from=sles12-build /google-cloud-ops-agent-plugin*.tar.gz /
 
+
 # ======================================
 # Build Ops Agent for sles-15
 # ======================================
@@ -857,8 +850,6 @@ ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VER
 RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
-ENV GOTOOLCHAIN=local
-
 
 
 FROM sles15-build-base AS sles15-build-otel
@@ -937,6 +928,7 @@ COPY --from=sles15-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent
 COPY --from=sles15-build /google-cloud-ops-agent*.rpm /
 COPY --from=sles15-build /google-cloud-ops-agent-plugin*.tar.gz /
 
+
 # ======================================
 # Build Ops Agent for ubuntu-jammy
 # ======================================
@@ -959,8 +951,6 @@ ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VER
 RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
-ENV GOTOOLCHAIN=local
-
 
 
 FROM jammy-build-base AS jammy-build-otel
@@ -1039,6 +1029,7 @@ COPY --from=jammy-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-
 COPY --from=jammy-build /google-cloud-ops-agent*.deb /
 COPY --from=jammy-build /google-cloud-ops-agent-plugin*.tar.gz /
 
+
 # ======================================
 # Build Ops Agent for ubuntu-noble
 # ======================================
@@ -1061,8 +1052,6 @@ ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VER
 RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
-ENV GOTOOLCHAIN=local
-
 
 
 FROM noble-build-base AS noble-build-otel
@@ -1141,6 +1130,7 @@ COPY --from=noble-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-
 COPY --from=noble-build /google-cloud-ops-agent*.deb /
 COPY --from=noble-build /google-cloud-ops-agent-plugin*.tar.gz /
 
+
 # ======================================
 # Build Ops Agent for ubuntu-questing
 # ======================================
@@ -1163,8 +1153,6 @@ ADD https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz /tmp/go${GO_VER
 RUN set -xe; \
     tar -xf /tmp/go${GO_VERSION}.tar.gz -C /usr/local
 ENV PATH="${PATH}:/usr/local/go/bin"
-ENV GOTOOLCHAIN=local
-
 
 
 FROM questing-build-base AS questing-build-otel
@@ -1242,6 +1230,7 @@ FROM scratch AS questing
 COPY --from=questing-build /tmp/google-cloud-ops-agent.tgz /google-cloud-ops-agent-ubuntu-questing.tgz
 COPY --from=questing-build /google-cloud-ops-agent*.deb /
 COPY --from=questing-build /google-cloud-ops-agent-plugin*.tar.gz /
+
 
 FROM scratch
 COPY --from=centos8 /* /
