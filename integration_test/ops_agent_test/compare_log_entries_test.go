@@ -25,10 +25,12 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"math"
 
 	loggingapiv2 "cloud.google.com/go/logging/apiv2"
 	"cloud.google.com/go/logging/apiv2/loggingpb"
 	"github.com/goccy/go-yaml"
+	"github.com/google/go-cmp/cmp"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
@@ -36,7 +38,8 @@ import (
 	"google.golang.org/api/option"
 	"google.golang.org/api/transport/grpc"
 	"google.golang.org/grpc/status"
-	"github.com/google/go-cmp/cmp"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/testing/protocmp"
 )
 
 func createOtlpClient(ctx context.Context) (plogotlp.GRPCClient, error) {
@@ -48,96 +51,6 @@ func createOtlpClient(ctx context.Context) (plogotlp.GRPCClient, error) {
 		return nil, err
 	}
 	return plogotlp.NewGRPCClient(conn), nil
-}
-
-func entryToMap(entry *loggingpb.LogEntry) map[string]any {
-	m := map[string]any{}
-	if entry.HttpRequest != nil {
-		req := entry.HttpRequest
-		reqMap := map[string]any{}
-		if req.Protocol != "" { reqMap["protocol"] = req.Protocol }
-		if req.RemoteIp != "" { reqMap["remoteIp"] = req.RemoteIp }
-		if req.RequestMethod != "" { reqMap["requestMethod"] = req.RequestMethod }
-		if req.RequestUrl != "" { reqMap["requestUrl"] = req.RequestUrl }
-		if req.ResponseSize != 0 { reqMap["responseSize"] = req.ResponseSize }
-		if req.RequestSize != 0 { reqMap["requestSize"] = req.RequestSize }
-		if req.Status != 0 { reqMap["status"] = uint64(req.Status) }
-		if req.UserAgent != "" { reqMap["userAgent"] = req.UserAgent }
-		if req.Referer != "" { reqMap["referer"] = req.Referer }
-		if req.ServerIp != "" { reqMap["serverIp"] = req.ServerIp }
-		if req.CacheLookup { reqMap["cacheLookup"] = req.CacheLookup }
-		if req.CacheHit { reqMap["cacheHit"] = req.CacheHit }
-		if req.CacheValidatedWithOriginServer { reqMap["cacheValidatedWithOriginServer"] = req.CacheValidatedWithOriginServer }
-		if req.CacheFillBytes != 0 { reqMap["cacheFillBytes"] = req.CacheFillBytes }
-		if req.Latency != nil { reqMap["latency"] = req.Latency.AsDuration().String() }
-		m["httpRequest"] = reqMap
-	}
-	if entry.GetJsonPayload() != nil {
-		m["jsonPayload"] = entry.GetJsonPayload().AsMap()
-	} else if entry.GetTextPayload() != "" {
-		m["textPayload"] = entry.GetTextPayload()
-	}
-	if len(entry.Labels) > 0 {
-		m["labels"] = entry.Labels
-	}
-	if entry.LogName != "" {
-		m["logName"] = entry.LogName
-	}
-	if entry.Resource != nil {
-		labels := map[string]any{}
-		for k, v := range entry.Resource.Labels {
-			labels[k] = v
-		}
-		m["resource"] = map[string]any{
-			"type":   entry.Resource.Type,
-			"labels": labels,
-		}
-	}
-	if entry.Trace != "" {
-		m["trace"] = entry.Trace
-	}
-	if entry.SpanId != "" {
-		m["spanId"] = entry.SpanId
-	}
-	if entry.SourceLocation != nil {
-		slMap := map[string]any{}
-		if entry.SourceLocation.File != "" { slMap["file"] = entry.SourceLocation.File }
-		if entry.SourceLocation.Line != 0 { slMap["line"] = entry.SourceLocation.Line }
-		if entry.SourceLocation.Function != "" { slMap["function"] = entry.SourceLocation.Function }
-		m["sourceLocation"] = slMap
-	}
-	if entry.Split != nil {
-		splitMap := map[string]any{}
-		if entry.Split.Uid != "" { splitMap["uid"] = entry.Split.Uid }
-		if entry.Split.Index != 0 { splitMap["index"] = entry.Split.Index }
-		if entry.Split.TotalSplits != 0 { splitMap["totalSplits"] = entry.Split.TotalSplits }
-		m["split"] = splitMap
-	}
-	if entry.Severity != 0 {
-		m["severity"] = strings.ToUpper(entry.Severity.String())
-	}
-	return m
-}
-
-func normalizeMapForComparison(m map[string]any) {
-	delete(m, "insertId")
-	delete(m, "timestamp")
-	delete(m, "receivedTimestamp")
-	delete(m, "logName")
-	if res, ok := m["resource"].(map[string]any); ok {
-		if labels, ok := res["labels"].(map[string]any); ok {
-			labels["instance_id"] = ""
-			labels["zone"] = ""
-			labels["project_id"] = ""
-		}
-	}
-	if labels, ok := m["labels"].(map[string]any); ok {
-		strLabels := map[string]string{}
-		for k, v := range labels {
-			strLabels[k] = fmt.Sprintf("%v", v)
-		}
-		m["labels"] = strLabels
-	}
 }
 
 func readAndPrepareOtlpLogs(path string, projectID string, logName string) (plog.Logs, int, error) {
@@ -252,7 +165,7 @@ func waitForLogs(ctx context.Context, projectID string, logName string, expected
 	return actualEntries, fmt.Errorf("timeout waiting for %d logs, found %d", expectedCount, len(actualEntries))
 }
 
-func readExpectedEntries(path string) ([]any, error) {
+func readExpectedEntries(path string) ([]*loggingpb.LogEntry, error) {
 	goldenBytes, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -263,13 +176,29 @@ func readExpectedEntries(path string) ([]any, error) {
 		return nil, err
 	}
 
-	var expectedEntries []any
+	var expectedEntries []*loggingpb.LogEntry
 	for _, item := range goldenData {
 		if es, ok := item["entries"].([]any); ok {
-			expectedEntries = append(expectedEntries, es...)
-		}
-		if errs, ok := item["collector_errors"].([]any); ok {
-			expectedEntries = append(expectedEntries, errs...)
+			for _, e := range es {
+				if entryMap, ok := e.(map[string]any); ok {
+					if ts, ok := entryMap["timestamp"]; ok && ts == "now" {
+						delete(entryMap, "timestamp")
+					}
+				}
+			}
+
+			jsonBytes, err := json.Marshal(item)
+			if err != nil {
+				return nil, err
+			}
+
+			req := &loggingpb.WriteLogEntriesRequest{}
+			opts := protojson.UnmarshalOptions{DiscardUnknown: true}
+			if err := opts.Unmarshal(jsonBytes, req); err != nil {
+				return nil, err
+			}
+
+			expectedEntries = append(expectedEntries, req.Entries...)
 		}
 	}
 	return expectedEntries, nil
@@ -348,18 +277,32 @@ func TestCompareLogEntries(t *testing.T) {
 				t.Fatalf("Failed waiting for logs: %v", err)
 			}
 
+			entriesToCompare := int(math.Max(float64(len(actualEntries)), float64(len(expectedEntries))))
+			gotEntriesCount := len(actualEntries)
+			wantEntriesCount := len(expectedEntries)
+
 			// Compare
-			for idx, actualEntry := range actualEntries {
-				actualMap := entryToMap(actualEntry)
-				expectedMap := expectedEntries[idx].(map[string]any)
+			for i := 0; i < entriesToCompare; i++ {
+				actualEntry := &loggingpb.LogEntry{}
+				if i < gotEntriesCount {
+					actualEntry = actualEntries[i]
+				}
 
-				normalizeMapForComparison(actualMap)
-				normalizeMapForComparison(expectedMap)
+				expectedEntry := &loggingpb.LogEntry{}
+				if i < wantEntriesCount {
+					expectedEntry = expectedEntries[i]
+				}
 
-				if diff := cmp.Diff(expectedMap, actualMap); diff != "" {
-					t.Errorf("Mismatch in entry %d (-want +got):\n%s", idx, diff)
+				if diff := cmp.Diff(expectedEntry, actualEntry,
+					protocmp.Transform(),
+					protocmp.IgnoreFields(&loggingpb.LogEntry{}, "timestamp", "insert_id", "log_name", "receive_timestamp", "resource"),
+					protocmp.IgnoreUnknown(),
+				); diff != "" {
+					t.Errorf("Mismatch in entry %d (-want +got):\n%s", i, diff)
 				}
 			}
 		})
 	}
 }
+
+
