@@ -243,8 +243,10 @@ func getTestsInDir(t *testing.T, testDir string) []string {
 func generateConfigs(pc platformConfig, testDir string) (got map[string]string, err error) {
 	ctx := pc.platform.TestContext(context.Background())
 
+	var experiments map[string]bool
 	if features, err := os.ReadFile(filepath.Join("testdata", testDir, "EXPERIMENTAL_FEATURES")); err == nil {
-		ctx = confgenerator.ContextWithExperiments(ctx, confgenerator.ParseExperimentalFeatures(string(features)))
+		experiments = confgenerator.ParseExperimentalFeatures(string(features))
+		ctx = confgenerator.ContextWithExperiments(ctx, experiments)
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return nil, err
 	}
@@ -284,7 +286,6 @@ func generateConfigs(pc platformConfig, testDir string) (got map[string]string, 
 		return
 	}
 	got["otel.yaml"] = otelGeneratedConfig
-
 	inputBytes, err := os.ReadFile(filepath.Join("testdata", testDir, inputFileName))
 
 	userUc, err := confgenerator.UnmarshalYamlToUnifiedConfig(ctx, inputBytes)
@@ -332,7 +333,32 @@ func generateConfigs(pc platformConfig, testDir string) (got map[string]string, 
 	}
 	got["enabled_receivers_otlp.json"] = string(generatedEnabledReceiversOTLPJSON)
 
+	// If the confgenerator test is designed to test the otel_logging experiment, generate an OTEL config with both otlp_exporter and otel_logging enabled.
+	if len(experiments) == 1 && experiments["otel_logging"] {
+		generateOtelConfigWithOtlpExporterEnabled(got, experiments, pc, testDir, otelGeneratedConfig)
+	}
+
 	return
+}
+
+func generateOtelConfigWithOtlpExporterEnabled(got map[string]string, experiments map[string]bool, pc platformConfig, testDir string, otelGeneratedConfig string) {
+	experimentsOtlp := map[string]bool{
+		"otlp_exporter": true,
+		"otel_logging":  true,
+	}
+	ctxOtlp := confgenerator.ContextWithExperiments(pc.platform.TestContext(context.Background()), experimentsOtlp)
+
+	mergedUcOtlp, err := confgenerator.MergeConfFiles(
+		ctxOtlp,
+		filepath.Join("testdata", testDir, inputFileName),
+		apps.BuiltInConfStructs,
+	)
+	if err == nil {
+		otelGeneratedConfigOtlp, err := mergedUcOtlp.GenerateOtelConfig(ctxOtlp, "", "")
+		if err == nil {
+			got["otel_otlp_exporter.yaml"] = otelGeneratedConfigOtlp
+		}
+	}
 }
 
 func testGeneratedFiles(t *testing.T, generatedFiles map[string]string, testDir string) error {
