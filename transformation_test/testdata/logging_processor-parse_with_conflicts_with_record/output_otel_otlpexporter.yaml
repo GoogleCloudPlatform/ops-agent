@@ -1,0 +1,67 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: gcp.source_location
+          value:
+            kvlistValue:
+              values:
+              - key: file
+                value:
+                  stringValue: overwritten-file-path
+        - key: non-overwritten-label
+          value:
+            stringValue: non-overwritten
+        - key: original-label
+          value:
+            stringValue: original-label
+        - key: overwritten-label
+          value:
+            stringValue: overwritten
+        - key: parsed-label
+          value:
+            stringValue: parsed-label
+        body:
+          kvlistValue:
+            values:
+            - key: non-overwritten-field
+              value:
+                stringValue: non-overwritten
+            - key: original-field
+              value:
+                stringValue: original-value
+            - key: overwritten-field
+              value:
+                stringValue: overwritten
+            - key: parsed-field
+              value:
+                stringValue: parsed-value
+        observedTimeUnixNano: now
+        severityText: WARNING
+      scope: {}

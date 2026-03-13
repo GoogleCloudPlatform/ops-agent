@@ -1,0 +1,123 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        body:
+          kvlistValue:
+            values:
+            - key: extradata
+              value:
+                stringValue: "n"
+            - key: host
+              value:
+                stringValue: vm_name_1
+            - key: ident
+              value:
+                stringValue: my_app_id
+            - key: message
+              value:
+                stringValue: qqqqrrrr
+            - key: msgid
+              value:
+                stringValue: "n"
+            - key: pid
+              value:
+                stringValue: "n"
+            - key: pri
+              value:
+                stringValue: "13"
+        observedTimeUnixNano: now
+        timeUnixNano: "1136189045000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        body:
+          kvlistValue:
+            values:
+            - key: extradata
+              value:
+                stringValue: "n"
+            - key: host
+              value:
+                stringValue: vm_name_1
+            - key: ident
+              value:
+                stringValue: my_app_id
+            - key: message
+              value:
+                stringValue: qqqqrrrr
+            - key: msgid
+              value:
+                stringValue: "n"
+            - key: pid
+              value:
+                stringValue: "n"
+            - key: pri
+              value:
+                stringValue: "14"
+        observedTimeUnixNano: now
+        timeUnixNano: "1136188985000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        body:
+          kvlistValue:
+            values:
+            - key: extradata
+              value:
+                stringValue: "n"
+            - key: host
+              value:
+                stringValue: vm_name_1
+            - key: ident
+              value:
+                stringValue: my_app_id
+            - key: message
+              value:
+                stringValue: qqqqrrrr
+            - key: msgid
+              value:
+                stringValue: "n"
+            - key: pid
+              value:
+                stringValue: "n"
+            - key: pri
+              value:
+                stringValue: "15"
+        observedTimeUnixNano: now
+        timeUnixNano: "1136189045000000000"
+      scope: {}

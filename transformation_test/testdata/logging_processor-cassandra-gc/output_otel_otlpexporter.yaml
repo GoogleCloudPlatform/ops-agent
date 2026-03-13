@@ -1,0 +1,181 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_gc
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: "[GC (Allocation Failure) [PSYoungGen: 15000K->2000K(20480K)] 45000K->33000K(71680K), 0.0123456 secs] [Times: user=0.02 sys=0.00, real=0.01 secs]"
+            - key: uptime
+              value:
+                doubleValue: 9.344
+        observedTimeUnixNano: now
+        timeUnixNano: "1753179552544000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_gc
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: "[Full GC (Ergonomics) [PSYoungGen: 20480K->0K(20480K)] [ParOldGen: 51200K->25000K(51200K)] 71680K->25000K(71680K), [Metaspace: 31000K->31000K(1064960K)], 0.4456789 secs] [Times: user=0.56 sys=0.01, real=0.45 secs]"
+            - key: uptime
+              value:
+                doubleValue: 432.693
+        observedTimeUnixNano: now
+        timeUnixNano: "1753179955893000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_gc
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: "[GC (G1 Humongous Allocation) [G1 Young Generation: 16384K->1024K(19456K)] 60000K->45000K(90000K), 0.0678901 secs] [Times: user=0.04 sys=0.00, real=0.07 secs]"
+            - key: uptime
+              value:
+                doubleValue: 962.923
+        observedTimeUnixNano: now
+        timeUnixNano: "1753182002123000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_gc
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: "Total time for which application threads were stopped: 0.0002390 seconds, Stopping threads took: 0.0000281 seconds"
+            - key: timeStopped
+              value:
+                doubleValue: 0.000239
+            - key: timeStopping
+              value:
+                doubleValue: 2.81e-05
+            - key: uptime
+              value:
+                doubleValue: 3.315
+        observedTimeUnixNano: now
+        timeUnixNano: "1753186708284000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_gc
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: |-
+                  [Full GC (System.gc()) 
+                  [PSYoungGen: 10240K->0K(15360K)] 
+                  [ParOldGen: 40960K->20480K(51200K)] 
+                  51200K->20480K(66560K), 
+                  [Metaspace: 32000K->31900K(1064960K)], 0.3852345 secs] 
+                  [Times: user=0.50 sys=0.02, real=0.39 secs]
+            - key: uptime
+              value:
+                doubleValue: 1203.478
+        observedTimeUnixNano: now
+        timeUnixNano: "1753191930678000000"
+      scope: {}
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_gc
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: "2025-07-22T14:51:23.332+0000][4.595s][5195][5217][info ] Total time for which application threads were stopped: 0.0003091 seconds, Stopping threads took: 0.0000181 seconds"
+        observedTimeUnixNano: now
+      scope: {}

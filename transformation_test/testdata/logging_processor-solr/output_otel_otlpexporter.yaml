@@ -1,0 +1,442 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/solr_system
+        body:
+          kvlistValue:
+            values:
+            - key: collection
+              value:
+                stringValue: collection1
+            - key: core
+              value:
+                stringValue: core1
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "[collection1]  webapp=/solr path=/select params={q=*:*&wt=json} hits=2435 status=0 QTime=17"
+            - key: replica
+              value:
+                stringValue: replica1
+            - key: shard
+              value:
+                stringValue: shard1
+            - key: source
+              value:
+                stringValue: o.a.s.c.S.Request
+            - key: thread
+              value:
+                stringValue: qtp1038934055-15
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753110197987000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/solr_system
+        body:
+          kvlistValue:
+            values:
+            - key: collection
+              value:
+                stringValue: collection1
+            - key: core
+              value:
+                stringValue: core1
+            - key: level
+              value:
+                stringValue: DEBUG
+            - key: message
+              value:
+                stringValue: handleRequest start select
+            - key: replica
+              value:
+                stringValue: replica1
+            - key: shard
+              value:
+                stringValue: shard1
+            - key: source
+              value:
+                stringValue: o.a.s.h.RequestHandlerBase
+            - key: thread
+              value:
+                stringValue: qtp1038934055-19
+        observedTimeUnixNano: now
+        severityText: DEBUG
+        timeUnixNano: "1753110198123000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/solr_system
+        body:
+          kvlistValue:
+            values:
+            - key: collection
+              value:
+                stringValue: collection1
+            - key: core
+              value:
+                stringValue: core1
+            - key: level
+              value:
+                stringValue: WARN
+            - key: message
+              value:
+                stringValue: "Problem loading core: collection1"
+            - key: replica
+              value:
+                stringValue: replica1
+            - key: shard
+              value:
+                stringValue: shard1
+            - key: source
+              value:
+                stringValue: o.a.s.c.CoreContainer
+            - key: thread
+              value:
+                stringValue: coreLoadExecutor-7-thread-1
+        observedTimeUnixNano: now
+        severityText: WARNING
+        timeUnixNano: "1753110655456000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/solr_system
+        body:
+          kvlistValue:
+            values:
+            - key: collection
+              value:
+                stringValue: collection1
+            - key: core
+              value:
+                stringValue: core1
+            - key: exception
+              value:
+                stringValue: |-
+                  
+                  org.apache.solr.common.SolrException:org.apache.solr.common.SolrException: Could not load config for collection1
+                      at org.apache.solr.core.SolrCore.<init>(SolrCore.java:XXX)
+                      at org.apache.solr.core.CoreContainer.load(CoreContainer.java:YYY)
+            - key: level
+              value:
+                stringValue: ERROR
+            - key: message
+              value:
+                stringValue: "Error initializing core: collection1"
+            - key: replica
+              value:
+                stringValue: replica1
+            - key: shard
+              value:
+                stringValue: shard1
+            - key: source
+              value:
+                stringValue: o.a.s.c.CoreContainer
+            - key: thread
+              value:
+                stringValue: coreLoadExecutor-7-thread-1
+        observedTimeUnixNano: now
+        severityText: ERROR
+        timeUnixNano: "1753110655458000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/solr_system
+        body:
+          kvlistValue:
+            values:
+            - key: collection
+              value:
+                stringValue: collection2
+            - key: core
+              value:
+                stringValue: core2
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "[collection2]  webapp=/solr path=/update params={commit=true} status=0 QTime=128"
+            - key: replica
+              value:
+                stringValue: replica2
+            - key: shard
+              value:
+                stringValue: shard2
+            - key: source
+              value:
+                stringValue: o.a.s.c.S.Request
+            - key: thread
+              value:
+                stringValue: qtp1038934055-16
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753114954122000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/solr_system
+        body:
+          kvlistValue:
+            values:
+            - key: collection
+              value:
+                stringValue: collection1
+            - key: core
+              value:
+                stringValue: core1
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "[collection1]  webapp=/solr path=/select params={q=id:42&wt=json} hits=1 status=0 QTime=6"
+            - key: replica
+              value:
+                stringValue: replica1
+            - key: shard
+              value:
+                stringValue: shard1
+            - key: source
+              value:
+                stringValue: o.a.s.c.S.Request
+            - key: thread
+              value:
+                stringValue: qtp1038934055-15
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753119912213000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/solr_system
+        body:
+          kvlistValue:
+            values:
+            - key: collection
+              value:
+                stringValue: collection2
+            - key: core
+              value:
+                stringValue: core2
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "[collection2]  webapp=/solr path=/admin/metrics params={group=core&prefix=QUERY./select} status=0 QTime=4"
+            - key: replica
+              value:
+                stringValue: replica2
+            - key: shard
+              value:
+                stringValue: shard2
+            - key: source
+              value:
+                stringValue: o.a.s.c.S.Request
+            - key: thread
+              value:
+                stringValue: qtp1038934055-17
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753126425678000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/solr_system
+        body:
+          kvlistValue:
+            values:
+            - key: collection
+              value:
+                stringValue: collection1
+            - key: core
+              value:
+                stringValue: core1
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "[collection1]  webapp=/solr path=/select params={q=*:*&fq=category:electronics&wt=xml} hits=154 status=0 QTime=12"
+            - key: replica
+              value:
+                stringValue: replica1
+            - key: shard
+              value:
+                stringValue: shard1
+            - key: source
+              value:
+                stringValue: o.a.s.c.S.Request
+            - key: thread
+              value:
+                stringValue: qtp1038934055-18
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753132325342000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/solr_system
+        body:
+          kvlistValue:
+            values:
+            - key: collection
+              value:
+                stringValue: collection1
+            - key: core
+              value:
+                stringValue: core1
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: "[collection1]  webapp=/solr path=/update params={commit=true} status=0 QTime=95"
+            - key: replica
+              value:
+                stringValue: replica1
+            - key: shard
+              value:
+                stringValue: shard1
+            - key: source
+              value:
+                stringValue: o.a.s.c.S.Request
+            - key: thread
+              value:
+                stringValue: qtp1038934055-20
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753142335013000000"
+      scope: {}
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/solr_system
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: message
+              value:
+                stringValue: Startup complete. Ready to accept requests.
+            - key: source
+              value:
+                stringValue: o.a.s.SolrServer
+            - key: thread
+              value:
+                stringValue: main
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753142700999000000"
+      scope: {}

@@ -1,0 +1,78 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        body:
+          kvlistValue:
+            values:
+            - key: msg
+              value:
+                stringValue: start start
+            - key: severity
+              value:
+                stringValue: INFO
+        observedTimeUnixNano: now
+        timeUnixNano: "1672603445000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        body:
+          kvlistValue:
+            values:
+            - key: msg
+              value:
+                stringValue: failed to connect
+            - key: severity
+              value:
+                stringValue: ERROR
+        observedTimeUnixNano: now
+        timeUnixNano: "1718461800000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        body:
+          kvlistValue:
+            values:
+            - key: msg
+              value:
+                stringValue: low disk space
+            - key: severity
+              value:
+                stringValue: WARNING
+        observedTimeUnixNano: now
+        timeUnixNano: "1672559999000000000"
+      scope: {}

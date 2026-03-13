@@ -1,0 +1,380 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/vault_audit
+        body:
+          kvlistValue:
+            values:
+            - key: auth
+              value:
+                kvlistValue:
+                  values:
+                  - key: token_type
+                    value:
+                      stringValue: default
+            - key: request
+              value:
+                kvlistValue:
+                  values:
+                  - key: id
+                    value:
+                      stringValue: req-001
+                  - key: namespace
+                    value:
+                      kvlistValue:
+                        values:
+                        - key: id
+                          value:
+                            stringValue: root
+                  - key: operation
+                    value:
+                      stringValue: update
+                  - key: path
+                    value:
+                      stringValue: sys/audit/test
+            - key: type
+              value:
+                stringValue: request
+        observedTimeUnixNano: now
+        timeUnixNano: "1756130400123456789"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/vault_audit
+        body:
+          kvlistValue:
+            values:
+            - key: auth
+              value:
+                kvlistValue:
+                  values:
+                  - key: token_type
+                    value:
+                      stringValue: root
+            - key: request
+              value:
+                kvlistValue:
+                  values:
+                  - key: id
+                    value:
+                      stringValue: req-002
+                  - key: namespace
+                    value:
+                      kvlistValue:
+                        values:
+                        - key: id
+                          value:
+                            stringValue: root
+                  - key: operation
+                    value:
+                      stringValue: delete
+                  - key: path
+                    value:
+                      stringValue: sys/secrets/data
+            - key: type
+              value:
+                stringValue: request
+        observedTimeUnixNano: now
+        timeUnixNano: "1756130460987654321"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/vault_audit
+        body:
+          kvlistValue:
+            values:
+            - key: auth
+              value:
+                kvlistValue:
+                  values:
+                  - key: token_type
+                    value:
+                      stringValue: default
+            - key: response
+              value:
+                kvlistValue:
+                  values:
+                  - key: id
+                    value:
+                      stringValue: res-001
+                  - key: status
+                    value:
+                      stringValue: success
+            - key: type
+              value:
+                stringValue: response
+        observedTimeUnixNano: now
+        timeUnixNano: "1756130520111213141"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/vault_audit
+        body:
+          kvlistValue:
+            values:
+            - key: auth
+              value:
+                kvlistValue:
+                  values:
+                  - key: token_type
+                    value:
+                      stringValue: default
+            - key: response
+              value:
+                kvlistValue:
+                  values:
+                  - key: error
+                    value:
+                      stringValue: permission denied
+                  - key: id
+                    value:
+                      stringValue: res-002
+                  - key: status
+                    value:
+                      stringValue: failure
+            - key: type
+              value:
+                stringValue: response
+        observedTimeUnixNano: now
+        timeUnixNano: "1756130580999888777"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/vault_audit
+        body:
+          kvlistValue:
+            values:
+            - key: auth
+              value:
+                kvlistValue:
+                  values:
+                  - key: token_type
+                    value:
+                      stringValue: default
+            - key: request
+              value:
+                kvlistValue:
+                  values:
+                  - key: id
+                    value:
+                      stringValue: req-003
+                  - key: namespace
+                    value:
+                      kvlistValue:
+                        values:
+                        - key: id
+                          value:
+                            stringValue: root
+                  - key: operation
+                    value:
+                      stringValue: create
+                  - key: path
+                    value:
+                      stringValue: sys/audit/new
+            - key: type
+              value:
+                stringValue: request
+        observedTimeUnixNano: now
+        timeUnixNano: "1756130640222333444"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/vault_audit
+        body:
+          kvlistValue:
+            values:
+            - key: auth
+              value:
+                kvlistValue:
+                  values:
+                  - key: token_type
+                    value:
+                      stringValue: default
+            - key: request
+              value:
+                kvlistValue:
+                  values:
+                  - key: id
+                    value:
+                      stringValue: req-004
+                  - key: namespace
+                    value:
+                      kvlistValue:
+                        values:
+                        - key: id
+                          value:
+                            stringValue: root
+                  - key: operation
+                    value:
+                      stringValue: update
+                  - key: path
+                    value:
+                      stringValue: sys/audit/multi
+            - key: type
+              value:
+                stringValue: request
+        observedTimeUnixNano: now
+        timeUnixNano: "1756130700555666777"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/vault_audit
+        body:
+          kvlistValue:
+            values:
+            - key: auth
+              value:
+                kvlistValue:
+                  values:
+                  - key: token_type
+                    value:
+                      stringValue: default
+            - key: response
+              value:
+                kvlistValue:
+                  values:
+                  - key: id
+                    value:
+                      stringValue: res-001
+                  - key: status
+                    value:
+                      stringValue: success
+            - key: type
+              value:
+                stringValue: response
+        observedTimeUnixNano: now
+        timeUnixNano: "1756134120111213141"
+      scope: {}
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/vault_audit
+        body:
+          kvlistValue:
+            values:
+            - key: auth
+              value:
+                kvlistValue:
+                  values:
+                  - key: token_type
+                    value:
+                      stringValue: default
+            - key: request
+              value:
+                kvlistValue:
+                  values:
+                  - key: id
+                    value:
+                      stringValue: req-003
+                  - key: namespace
+                    value:
+                      kvlistValue:
+                        values:
+                        - key: id
+                          value:
+                            stringValue: root
+                  - key: operation
+                    value:
+                      stringValue: create
+                  - key: path
+                    value:
+                      stringValue: sys/audit/new
+            - key: type
+              value:
+                stringValue: request
+        observedTimeUnixNano: now
+        timeUnixNano: "1756137840222333444"
+      scope: {}

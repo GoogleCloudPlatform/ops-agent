@@ -1,0 +1,394 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/kafka
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: logger
+              value:
+                stringValue: org.apache.zookeeper.ZooKeeper
+            - key: message
+              value:
+                stringValue: Initiating client connection, connectString=zookeeper:2181 sessionTimeout=18000 watcher=kafka.zookeeper.ZooKeeperClient$ZooKeeperClientWatcher$@4b2f7dd4
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753197735466000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/kafka
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: logger
+              value:
+                stringValue: kafka.zookeeper.ZooKeeperClient
+            - key: message
+              value:
+                stringValue: Waiting until connected.
+            - key: source
+              value:
+                stringValue: ZooKeeperClient Kafka server
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753197735485000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/kafka
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: logger
+              value:
+                stringValue: org.apache.zookeeper.ZooKeeper
+            - key: message
+              value:
+                stringValue: Client environment:java.class.path=/opt/kafka/libs/kafka-clients-3.7.0.jar:/opt/kafka/libs/slf4j-api-1.7.30.jar:/opt/kafka/libs/zookeeper-3.6.3.jar:/opt/kafka/libs/...
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753197735492000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/kafka
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: logger
+              value:
+                stringValue: kafka.server.KafkaConfig
+            - key: message
+              value:
+                stringValue: |-
+                  KafkaConfig values:
+                  	advertised.listeners = PLAINTEXT://localhost:9092
+                  	alter.config.policy.class.name = null
+                  	alter.log.dirs.replication.quota.window.num = 11
+                  	alter.log.dirs.replication.quota.window.size.seconds = 1
+                  	background.threads = 10
+                  	broker.id = 0
+                  	compression.type = producer
+                  	controlled.shutdown.enable = true
+                  	log.dirs = /var/lib/kafka/data
+                  	num.partitions = 1
+                  	(zookeeper.connect = zookeeper:2181)
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753197736107000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/kafka
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: logger
+              value:
+                stringValue: kafka.server.BrokerToControllerRequestThread
+            - key: message
+              value:
+                stringValue: "Recorded new controller, from now on will use broker kafka-controller.internal:9092 (id: 0 rack: null)"
+            - key: source
+              value:
+                stringValue: BrokerToControllerChannelManager broker=0 name=alterIsr
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753197737884000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/kafka
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: logger
+              value:
+                stringValue: kafka.server.DelayedOperationPurgatory$ExpiredOperationReaper
+            - key: message
+              value:
+                stringValue: Starting
+            - key: source
+              value:
+                stringValue: ExpirationReaper-0-Produce
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753197738230000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/kafka
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: logger
+              value:
+                stringValue: kafka.log.Log$
+            - key: message
+              value:
+                stringValue: Loading producer state till offset 0 with message format version 2
+            - key: source
+              value:
+                stringValue: LogLoader partition=events-1, dir=/var/lib/kafka/data
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753197740063000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/kafka
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: logger
+              value:
+                stringValue: kafka.log.Log$
+            - key: message
+              value:
+                stringValue: Completed load. Log start offset = 0, Log end offset = 151
+            - key: source
+              value:
+                stringValue: LogLoader partition=events-1, dir=/var/lib/kafka/data
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753197740075000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/kafka
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: WARN
+            - key: logger
+              value:
+                stringValue: kafka.network.Acceptor
+            - key: message
+              value:
+                stringValue: "Unexpected exception caught by acceptor thread: java.net.SocketTimeoutException: Accept timed out"
+            - key: source
+              value:
+                stringValue: SocketServer brokerId=0
+        observedTimeUnixNano: now
+        severityText: WARNING
+        timeUnixNano: "1753197881123000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/kafka
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: logger
+              value:
+                stringValue: kafka.server.ReplicaFetcherThread
+            - key: message
+              value:
+                stringValue: |
+                  Error fetching data for partition events-0 from leader kafka-broker-1:9092
+                  	java.io.IOException: Connection reset by peer
+                  		at sun.nio.ch.FileDispatcherImpl.read0(Native Method)
+                  		at sun.nio.ch.SocketDispatcher.read(SocketDispatcher.java:39)
+                  		at sun.nio.ch.IOUtil.readIntoNativeBuffer(IOUtil.java:223)
+                  		at sun.nio.ch.IOUtil.read(IOUtil.java:197)
+                  		at sun.nio.ch.SocketChannelImpl.read(SocketChannelImpl.java:379)
+                  		... 6 more
+            - key: source
+              value:
+                stringValue: ReplicaFetcherThread-0-1
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753197912901000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/kafka
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: logger
+              value:
+                stringValue: kafka.coordinator.group.GroupCoordinator
+            - key: message
+              value:
+                stringValue: Preparing to rebalance group consumer-group-1 in state PreparingRebalance with old generation 42
+            - key: source
+              value:
+                stringValue: GroupCoordinator 0
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753200131567000000"
+      scope: {}
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/kafka
+        body:
+          kvlistValue:
+            values:
+            - key: level
+              value:
+                stringValue: INFO
+            - key: logger
+              value:
+                stringValue: kafka.coordinator.group.GroupCoordinator
+            - key: message
+              value:
+                stringValue: Stabilized group consumer-group-1 generation 43
+            - key: source
+              value:
+                stringValue: GroupCoordinator 0
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753200131984000000"
+      scope: {}
