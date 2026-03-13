@@ -41,6 +41,7 @@ import (
 	"github.com/goccy/go-yaml"
 	"github.com/google/go-cmp/cmp"
 	"github.com/shirou/gopsutil/host"
+	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	_ "google.golang.org/grpc/encoding/gzip"
@@ -472,12 +473,12 @@ func cloudLoggingOnGRPCServer(ln net.Listener) (*mockLoggingServer, <-chan *logp
 }
 
 func (transformationConfig transformationTest) runOTelTest(t *testing.T, name string) {
-	got := transformationConfig.runOTelTestInner(t, name)
+	got := transformationConfig.runOTelTestInner(t, name, false)
 
 	checkOutput(t, filepath.Join(name, "output_otel.yaml"), got)
 }
 
-func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, name string) []map[string]any {
+func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, name string, isOTLP bool) []map[string]any {
 	ctx, cancel := context.WithCancel(testContext())
 	defer cancel()
 
@@ -486,7 +487,20 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 	if err != nil {
 		t.Fatalf("Failed to find an available address to run the gRPC server: %v", err)
 	}
-	s, requestCh := cloudLoggingOnGRPCServer(ln)
+
+	var s interface{ GracefulStop() }
+	var requestChWriteLogEntries <-chan *logpb.WriteLogEntriesRequest
+	var requestChOTLP <-chan plogotlp.ExportRequest
+
+	if isOTLP {
+		var mockS *mockOTLPServer
+		mockS, requestChOTLP = otlpOnGRPCServer(ln)
+		s = mockS
+	} else {
+		var mockS *mockLoggingServer
+		mockS, requestChWriteLogEntries = cloudLoggingOnGRPCServer(ln)
+		s = mockS
+	}
 
 	eg, ctx := errgroup.WithContext(ctx)
 	eg.Go(func() error {
@@ -497,7 +511,12 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 
 	got := []map[string]any{}
 
-	config, err := transformationConfig.generateOTelConfig(ctx, t, name, ln.Addr().String())
+	var config string
+	if isOTLP {
+		config, err = transformationConfig.generateOTelOTLPExporterConfig(ctx, t, name, ln.Addr().String())
+	} else {
+		config, err = transformationConfig.generateOTelConfig(ctx, t, name, ln.Addr().String())
+	}
 	if err != nil {
 		got = append(got, map[string]any{"config_error": err.Error()})
 		return got
@@ -614,8 +633,14 @@ func (transformationConfig transformationTest) runOTelTestInner(t *testing.T, na
 
 	// Read and sanitize requests.
 	eg.Go(func() error {
-		for r := range requestCh {
-			got = append(got, sanitizeWriteLogEntriesRequest(t, r, testStartTime))
+		if isOTLP {
+			for r := range requestChOTLP {
+				got = append(got, sanitizeOTLPExportRequest(t, r, testStartTime))
+			}
+		} else {
+			for r := range requestChWriteLogEntries {
+				got = append(got, sanitizeWriteLogEntriesRequest(t, r, testStartTime))
+			}
 		}
 		return nil
 	})
