@@ -25,7 +25,7 @@ import (
 	"strings"
 	"testing"
 	"time"
-	"math"
+	"strconv"
 
 	loggingapiv2 "cloud.google.com/go/logging/apiv2"
 	"cloud.google.com/go/logging/apiv2/loggingpb"
@@ -40,6 +40,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func createOtlpClient(ctx context.Context) (plogotlp.GRPCClient, error) {
@@ -277,31 +278,56 @@ func TestCompareLogEntries(t *testing.T) {
 				t.Fatalf("Failed waiting for logs: %v", err)
 			}
 
-			entriesToCompare := int(math.Max(float64(len(actualEntries)), float64(len(expectedEntries))))
-			gotEntriesCount := len(actualEntries)
-			wantEntriesCount := len(expectedEntries)
-
-			// Compare
-			for i := 0; i < entriesToCompare; i++ {
-				actualEntry := &loggingpb.LogEntry{}
-				if i < gotEntriesCount {
-					actualEntry = actualEntries[i]
-				}
-
-				expectedEntry := &loggingpb.LogEntry{}
-				if i < wantEntriesCount {
-					expectedEntry = expectedEntries[i]
-				}
-
-				if diff := cmp.Diff(expectedEntry, actualEntry,
-					protocmp.Transform(),
-					protocmp.IgnoreFields(&loggingpb.LogEntry{}, "timestamp", "insert_id", "log_name", "receive_timestamp", "resource"),
-					protocmp.IgnoreUnknown(),
-				); diff != "" {
-					t.Errorf("Mismatch in entry %d (-want +got):\n%s", i, diff)
+			// Normalize payloads
+			for _, e := range actualEntries {
+				if e.GetJsonPayload() != nil {
+					normalizeStruct(e.GetJsonPayload())
 				}
 			}
+			for _, e := range expectedEntries {
+				if e.GetJsonPayload() != nil {
+					normalizeStruct(e.GetJsonPayload())
+				}
+			}
+
+			// Compare slices directly
+			if diff := cmp.Diff(expectedEntries, actualEntries,
+				protocmp.Transform(),
+				protocmp.IgnoreFields(&loggingpb.LogEntry{}, "timestamp", "insert_id", "log_name", "receive_timestamp", "resource"),
+				protocmp.IgnoreUnknown(),
+			); diff != "" {
+				t.Errorf("Mismatch in entries (-want +got):\n%s", diff)
+			}
 		})
+	}
+}
+
+func normalizeStruct(s *structpb.Struct) {
+	if s == nil {
+		return
+	}
+	for _, v := range s.Fields {
+		normalizeValue(v)
+	}
+}
+
+func normalizeValue(v *structpb.Value) {
+	if v == nil {
+		return
+	}
+	switch kind := v.Kind.(type) {
+	case *structpb.Value_StringValue:
+		if f, err := strconv.ParseFloat(kind.StringValue, 64); err == nil {
+			v.Kind = &structpb.Value_NumberValue{NumberValue: f}
+		}
+	case *structpb.Value_StructValue:
+		normalizeStruct(kind.StructValue)
+	case *structpb.Value_ListValue:
+		if kind.ListValue != nil {
+			for _, item := range kind.ListValue.Values {
+				normalizeValue(item)
+			}
+		}
 	}
 }
 
