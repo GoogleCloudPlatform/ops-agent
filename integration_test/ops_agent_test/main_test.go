@@ -231,7 +231,7 @@ func RunForEachImageAndFeatureFlag(t *testing.T, features []string, testBody fun
 
 func TestParseMultilineFileJava(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -317,7 +317,7 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 			t.Fatalf("error writing dummy log lines for Java: %v", err)
 		}
 
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -332,7 +332,7 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 
 func TestParseMultilineFileJavaPython(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -451,7 +451,7 @@ TypeError: can only concatenate str (not "int") to str
 			t.Fatalf("error writing dummy log lines for Java + Python: %v", err)
 		}
 
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -489,7 +489,7 @@ TypeError: can only concatenate str (not "int") to str
 
 func TestParseMultilineFileGolangJavaPython(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -580,7 +580,7 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 			t.Fatalf("error writing dummy log lines for Go + Java + Python: %v", err)
 		}
 
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
@@ -608,7 +608,7 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 
 func TestParseMultilineFileMissingParser(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -688,7 +688,7 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 			t.Fatalf("error writing dummy log lines for Go + Java + Python: %v", err)
 		}
 
-		if err := agents.SetupOpsAgent(ctx, logger, vm, config); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, config, feature); err != nil {
 			t.Fatal(err)
 		}
 
