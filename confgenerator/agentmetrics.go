@@ -275,7 +275,7 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors(ctx context.Context) 
 		`metric.name == "grpc.client.attempt.duration_count" and (not IsMatch(datapoint.attributes["grpc.target"], "logging.googleapis"))`,
 	})
 
-	otelRequestCount := otel.RenameMetric("grpc.client.attempt.duration_count", "otel_request_count",
+	otelRequestCount := otel.RenameMetric(durationCountMetric, "otel_request_count",
 		otel.RenameLabel("grpc.status", "response_code"),
 		otel.RenameLabelValues("response_code", grpcToHTTPStatus),
 		// delete grpc_client_method dimension & service.version label, retaining only response_code
@@ -292,7 +292,7 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors(ctx context.Context) 
 			`metric.name == "rpc.client.duration_count" and (not IsMatch(datapoint.attributes["rpc.service"], "opentelemetry.proto.collector.logs.v1.LogsService"))`,
 		})
 
-		otelRequestCount = otel.RenameMetric("rpc.client.duration_count", "otel_request_count",
+		otelRequestCount = otel.RenameMetric(durationCountMetric, "otel_request_count",
 			otel.RenameLabelValues("rpc.grpc.status_code", grpcToStringStatus),
 			otel.RenameLabel("rpc.grpc.status_code", "response_code"),
 			otel.RenameLabelValues("response_code", grpcToHTTPStatus),
