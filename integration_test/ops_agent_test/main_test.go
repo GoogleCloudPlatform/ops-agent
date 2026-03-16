@@ -2588,12 +2588,23 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 	if !gce.IsWindows(vm.ImageSpec) {
 		// Enable swap file: https://linuxize.com/post/create-a-linux-swap-file/
 		// We do this so that swap file metrics will show up.
-		_, err := gce.RunRemotely(ctx, logger, vm, strings.Join([]string{
+		swapCmds := []string{
 			"sudo dd if=/dev/zero of=/swapfile bs=1024 count=102400",
 			"sudo chmod 600 /swapfile",
 			"(sudo mkswap /swapfile || sudo /usr/sbin/mkswap /swapfile)",
 			"(sudo swapon /swapfile || sudo /usr/sbin/swapon /swapfile)",
-		}, " && "))
+		}
+		// TODO: moving isSLES16 to gce_testing.go
+		isSles16 := strings.Contains(vm.ImageSpec, "sles-16")
+		if isSles16 {
+			// SLES 16 uses btrfs by default, which does not support swapfiles created via dd without special handling.
+			// https://www.suse.com/support/kb/doc/?id=000019943
+			swapCmds = []string{
+				"sudo btrfs filesystem mkswapfile --size 100M --uuid clear /swapfile",
+				"(sudo swapon /swapfile || sudo /usr/sbin/swapon /swapfile)",
+			}
+		}
+		_, err := gce.RunRemotely(ctx, logger, vm, strings.Join(swapCmds, " && "))
 		if err != nil {
 			t.Fatalf("Failed to enable swap file: %v", err)
 		}
