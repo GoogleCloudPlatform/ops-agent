@@ -277,10 +277,6 @@ func TestCompareLogEntries(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed waiting for logs: %v", err)
 			}
-
-			normalizeLogEntries(actualEntries)
-			normalizeLogEntries(expectedEntries)
-
 			// Compare slices directly
 			if diff := cmp.Diff(expectedEntries, actualEntries,
 				protocmp.Transform(),
@@ -290,58 +286,6 @@ func TestCompareLogEntries(t *testing.T) {
 				t.Errorf("Mismatch in entries (-want +got):\n%s", diff)
 			}
 		})
-	}
-}
-
-func normalizeLogEntries(list []*loggingpb.LogEntry) {
-	for _, e := range list {
-		normalizeLogEntry(e)
-	}
-}
-
-func normalizeStruct(s *structpb.Struct) {
-	if s == nil {
-		return
-	}
-	for _, v := range s.Fields {
-		normalizeValue(v)
-	}
-}
-
-func normalizeValue(v *structpb.Value) {
-	if v == nil {
-		return
-	}
-	switch kind := v.Kind.(type) {
-	case *structpb.Value_StringValue:
-		if f, err := strconv.ParseFloat(kind.StringValue, 64); err == nil {
-			v.Kind = &structpb.Value_NumberValue{NumberValue: f}
-		}
-	case *structpb.Value_StructValue:
-		normalizeStruct(kind.StructValue)
-	case *structpb.Value_ListValue:
-		if kind.ListValue != nil {
-			for _, item := range kind.ListValue.Values {
-				normalizeValue(item)
-			}
-		}
-	}
-}
-
-func normalizeLogEntry(e *loggingpb.LogEntry) {
-	if e == nil {
-		return
-	}
-	if e.GetJsonPayload() != nil {
-		normalizeStruct(e.GetJsonPayload())
-	}
-
-	// redact the project id in LogEntry.Trace.
-	if e.Trace != "" {
-		parts := strings.Split(e.Trace, "/")
-		if len(parts) == 4 && parts[0] == "projects" && parts[2] == "traces" {
-			e.Trace = "projects/xxx/traces/" + parts[3]
-		}
 	}
 }
 
