@@ -63,7 +63,7 @@ processors:
   filter/loggingmetrics_1:
     metrics:
       datapoint:
-      - metric.name == "grpc.client.attempt.duration_count" and (not IsMatch(datapoint.attributes["grpc.target"], "logging.googleapis"))
+      - metric.name == "rpc.client.duration_count" and (not IsMatch(datapoint.attributes["rpc.service"], "opentelemetry.proto.collector.logs.v1.LogsService"))
   filter/loggingmetrics_2:
     metrics:
       include:
@@ -74,7 +74,7 @@ processors:
         - fluentbit_stackdriver_retried_records_total
         - otelcol_exporter_sent_log_records
         - otelcol_exporter_send_failed_log_records
-        - grpc.client.attempt.duration_count
+        - rpc.client.duration_count
   filter/otel_1:
     metrics:
       datapoint:
@@ -461,11 +461,48 @@ processors:
         label_set:
         - response_code
     - action: update
-      include: grpc.client.attempt.duration_count
+      include: rpc.client.duration_count
       new_name: otel_request_count
       operations:
       - action: update_label
-        label: grpc.status
+        label: rpc.grpc.status_code
+        value_actions:
+        - new_value: OK
+          value: "0"
+        - new_value: CANCELLED
+          value: "1"
+        - new_value: ABORTED
+          value: "10"
+        - new_value: OUT_OF_RANGE
+          value: "11"
+        - new_value: UNIMPLEMENTED
+          value: "12"
+        - new_value: INTERNAL
+          value: "13"
+        - new_value: UNAVAILABLE
+          value: "14"
+        - new_value: DATA_LOSS
+          value: "15"
+        - new_value: UNAUTHENTICATED
+          value: "16"
+        - new_value: UNKNOWN
+          value: "2"
+        - new_value: INVALID_ARGUMENT
+          value: "3"
+        - new_value: DEADLINE_EXCEEDED
+          value: "4"
+        - new_value: NOT_FOUND
+          value: "5"
+        - new_value: ALREADY_EXISTS
+          value: "6"
+        - new_value: PERMISSION_DENIED
+          value: "7"
+        - new_value: RESOURCE_EXHAUSTED
+          value: "8"
+        - new_value: FAILED_PRECONDITION
+          value: "9"
+      - action: update_label
+        label: rpc.grpc.status_code
         new_label: response_code
       - action: update_label
         label: response_code
@@ -834,7 +871,7 @@ processors:
     metric_statements:
     - context: metric
       statements:
-      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
+      - extract_count_metric(true) where name == "rpc.client.duration"
   transform/loggingmetrics_5:
     metric_statements:
     - context: metric
