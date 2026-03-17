@@ -79,7 +79,7 @@ func googleCloudLoggingExporter() otel.Component {
 					"sizer":         "items",
 				},
 				// Persist logs on disk to survive restarts during network outages.
-				"storage": fileStorageExtensionID,
+				"storage": fileStorageExtensionType,
 			},
 		},
 	}
@@ -166,27 +166,18 @@ func (uc *UnifiedConfig) getOTelLogLevel() string {
 }
 
 const (
-	fileStorageExtensionID = "file_storage"
+	fileStorageExtensionType = "file_storage"
 )
 
-// fileStorageExtensionConfig returns a configured file_storage extension to be used by all receivers and exporters.
-func fileStorageExtensionConfig(stateDir string) map[string]interface{} {
-	return map[string]interface{}{
-		"directory":        path.Join(stateDir, "file_storage"),
-		"create_directory": true,
+// fileStorageExtension returns a configured file_storage extension to be used by all receivers and exporters.
+func fileStorageExtension(stateDir string) otel.Component {
+	return otel.Component{
+		Type: fileStorageExtensionType,
+		Config: map[string]interface{}{
+			"directory":        path.Join(stateDir, "file_storage"),
+			"create_directory": true,
+		},
 	}
-}
-
-func (uc *UnifiedConfig) getEnabledExtensions(ctx context.Context, stateDir string) map[string]interface{} {
-	extensions := map[string]interface{}{}
-	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
-	if expOtlpExporter {
-		extensions["googleclientauth"] = map[string]interface{}{}
-	}
-	if uc.Logging.Service.OTelLogging {
-		extensions[fileStorageExtensionID] = fileStorageExtensionConfig(stateDir)
-	}
-	return extensions
 }
 
 func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDir string) (string, error) {
@@ -218,7 +209,6 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 		LogLevel:          uc.getOTelLogLevel(),
 		ReceiverPipelines: receiverPipelines,
 		Pipelines:         pipelines,
-		Extensions:        uc.getEnabledExtensions(ctx, stateDir),
 		Exporters: map[otel.ExporterType]otel.ExporterComponents{
 			otel.System: {
 				Exporter: googleCloudExporter(userAgent, false, false),
@@ -230,7 +220,8 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 				Exporter: googleManagedPrometheusExporter(userAgent),
 			},
 			otel.OTLP: {
-				Exporter: otlpExporter(userAgent),
+				Exporter:       otlpExporter(userAgent),
+				UsedExtensions: []string{"googleclientauth"},
 				ProcessorsByType: map[string][]otel.Component{
 					// The OTLP exporter doesn't batch by default like the googlecloud.* exporters.
 					// We need this to avoid the API point limits.
@@ -250,8 +241,13 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 				},
 			},
 			otel.Logging: {
-				Exporter: googleCloudLoggingExporter(),
+				Exporter:       googleCloudLoggingExporter(),
+				UsedExtensions: []string{fileStorageExtensionType},
 			},
+		},
+		Extensions: map[string]otel.Component{
+			"googleclientauth":       {Type: "googleclientauth", Config: map[string]string{}},
+			fileStorageExtensionType: fileStorageExtension(stateDir),
 		},
 	}.Generate(ctx)
 	if err != nil {
