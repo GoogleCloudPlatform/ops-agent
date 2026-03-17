@@ -98,7 +98,7 @@ func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]o
 	pipelines["loggingmetrics"] = otel.Pipeline{
 		Type:                 "metrics",
 		ReceiverPipelineName: "agent_prometheus",
-		Processors:           r.LoggingMetricsPipelineProcessors(),
+		Processors:           r.LoggingMetricsPipelineProcessors(ctx),
 	}
 
 	receiverPipelines["ops_agent"] = r.OpsAgentPipeline(ctx)
@@ -266,15 +266,45 @@ func (r AgentSelfMetrics) FluentBitPipelineProcessors() []otel.Component {
 	}
 }
 
-func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors() []otel.Component {
+func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors(ctx context.Context) []otel.Component {
+	durationMetric := "grpc.client.attempt.duration"
+	durationCountMetric := "grpc.client.attempt.duration_count"
+
+	metricFilter := otel.MetricsOTTLFilter([]string{}, []string{
+		// Filter out histogram datapoints where the grpc.target is not related to logging.
+		`metric.name == "grpc.client.attempt.duration_count" and (not IsMatch(datapoint.attributes["grpc.target"], "logging.googleapis"))`,
+	})
+
+	otelRequestCount := otel.RenameMetric(durationCountMetric, "otel_request_count",
+		otel.RenameLabel("grpc.status", "response_code"),
+		otel.RenameLabelValues("response_code", grpcToHTTPStatus),
+		// delete grpc_client_method dimension & service.version label, retaining only response_code
+		otel.AggregateLabels("sum", "response_code"),
+	)
+
+	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
+	if expOtlpExporter {
+		durationMetric = "rpc.client.duration"
+		durationCountMetric = "rpc.client.duration_count"
+
+		metricFilter = otel.MetricsOTTLFilter([]string{}, []string{
+			// Filter out histogram datapoints where the rpc.service is not related to logging.
+			`metric.name == "rpc.client.duration_count" and (not IsMatch(datapoint.attributes["rpc.service"], "opentelemetry.proto.collector.logs.v1.LogsService"))`,
+		})
+
+		otelRequestCount = otel.RenameMetric(durationCountMetric, "otel_request_count",
+			otel.RenameLabelValues("rpc.grpc.status_code", grpcToStringStatus),
+			otel.RenameLabel("rpc.grpc.status_code", "response_code"),
+			otel.RenameLabelValues("response_code", grpcToHTTPStatus),
+			otel.AggregateLabels("sum", "response_code"),
+		)
+	}
+
 	return []otel.Component{
 		otel.Transform("metric", "metric",
-			ottl.ExtractCountMetric(true, "grpc.client.attempt.duration"),
+			ottl.ExtractCountMetric(true, durationMetric),
 		),
-		otel.MetricsOTTLFilter([]string{}, []string{
-			// Filter out histogram datapoints where the grpc.target is not related to logging.
-			`metric.name == "grpc.client.attempt.duration_count" and (not IsMatch(datapoint.attributes["grpc.target"], "logging.googleapis"))`,
-		}),
+		metricFilter,
 		otel.MetricsFilter(
 			"include",
 			"strict",
@@ -283,7 +313,7 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors() []otel.Component {
 			"fluentbit_stackdriver_retried_records_total",
 			"otelcol_exporter_sent_log_records",
 			"otelcol_exporter_send_failed_log_records",
-			"grpc.client.attempt.duration_count",
+			durationCountMetric,
 		),
 		// Format fluentbit and otel logging metrics before aggregation.
 		otel.MetricsTransform(
@@ -305,12 +335,7 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors() []otel.Component {
 				otel.RenameLabel("status", "response_code"),
 				otel.AggregateLabels("sum", "response_code"),
 			),
-			otel.RenameMetric("grpc.client.attempt.duration_count", "otel_request_count",
-				otel.RenameLabel("grpc.status", "response_code"),
-				otel.RenameLabelValues("response_code", grpcToHTTPStatus),
-				// delete grpc_client_method dimension & service.version label, retaining only response_code
-				otel.AggregateLabels("sum", "response_code"),
-			),
+			otelRequestCount,
 			otel.RenameMetric("fluentbit_stackdriver_proc_records_total", "fluentbit_log_entry_count",
 				// change data type from double -> int64
 				otel.ToggleScalarDataType,

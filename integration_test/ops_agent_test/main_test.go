@@ -928,7 +928,7 @@ func TestCustomLogFormat(t *testing.T) {
 		zone := time.FixedZone("UTC-8", int((-8 * time.Hour).Seconds()))
 		line := fmt.Sprintf("<13>1 %s %s my_app_id - - - qqqqrrrr\n", time.Now().In(zone).Format(time.RFC3339Nano), vm.Name)
 		// TODO: b/413446913 Enable non-UTC timestamp when otel logging parsing differences are fixed.
-		if feature == agents.OtelLoggingFeatureFlag {
+		if feature == agents.OtelLoggingFeatureFlag || feature == agents.OtelLoggingOTLPExporterFeatureFlag {
 			line = fmt.Sprintf("<13>1 %s %s my_app_id - - - qqqqrrrr\n", time.Now().UTC().Format(time.RFC3339Nano), vm.Name)
 		}
 		if err := gce.UploadContent(ctx, logger, vm, strings.NewReader(line), logPath); err != nil {
@@ -1601,7 +1601,7 @@ func TestExcludeLogsParseJsonOrder(t *testing.T) {
 
 func TestExcludeLogsModifyFieldsOrder(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.OtelLoggingOTLPExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		file1 := fmt.Sprintf("%s_1", logPathForImage(vm.ImageSpec))
@@ -2103,7 +2103,7 @@ func TestTCPLog(t *testing.T) {
 
 func TestFluentForwardLog(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.OtelLoggingOTLPExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
@@ -2565,7 +2565,7 @@ func TestSystemdLog(t *testing.T) {
 
 func TestSystemLogByDefault(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag, agents.OtelLoggingOTLPExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
