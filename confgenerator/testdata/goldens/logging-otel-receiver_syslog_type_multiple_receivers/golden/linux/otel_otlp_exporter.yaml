@@ -7,9 +7,6 @@ exporters:
     headers:
       User-Agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
 extensions:
-  file_storage:
-    create_directory: true
-    directory: file_storage
   googleclientauth: {}
 processors:
   agentmetrics/hostmetrics_0:
@@ -1007,7 +1004,6 @@ receivers:
       listen_address: 2.2.2.2:2222
 service:
   extensions:
-  - file_storage
   - googleclientauth
   pipelines:
     logs/logs_pipeline1_test__syslog__source__id__tcp:

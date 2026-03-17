@@ -7,9 +7,6 @@ exporters:
     headers:
       User-Agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
 extensions:
-  file_storage:
-    create_directory: true
-    directory: file_storage
   googleclientauth: {}
 processors:
   agentmetrics/hostmetrics_0:
@@ -1150,7 +1147,6 @@ receivers:
       object: SQLServer:Databases
 service:
   extensions:
-  - file_storage
   - googleclientauth
   pipelines:
     logs/logs_pipeline1_test__syslog__source__id__tcp:
