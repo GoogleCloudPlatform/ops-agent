@@ -74,7 +74,14 @@ var expectedFeatureBase = []confgenerator.Feature{
 		Value:  "true",
 	},
 	{
-		Module: "global",
+		Module: "metrics",
+		Kind:   "experiment",
+		Type:   "otlp_exporter",
+		Key:    []string{"experiment_otlp_exporter"},
+		Value:  "false",
+	},
+	{
+		Module: "logging",
 		Kind:   "experiment",
 		Type:   "otlp_exporter",
 		Key:    []string{"experiment_otlp_exporter"},
@@ -112,7 +119,14 @@ var expectedMetricsPipelineOverriden = []confgenerator.Feature{
 		Value:  "true",
 	},
 	{
-		Module: "global",
+		Module: "metrics",
+		Kind:   "experiment",
+		Type:   "otlp_exporter",
+		Key:    []string{"experiment_otlp_exporter"},
+		Value:  "false",
+	},
+	{
+		Module: "logging",
 		Kind:   "experiment",
 		Type:   "otlp_exporter",
 		Key:    []string{"experiment_otlp_exporter"},
@@ -150,7 +164,14 @@ var expectedTestFeatureBase = []confgenerator.Feature{
 		Value:  "true",
 	},
 	{
-		Module: "global",
+		Module: "metrics",
+		Kind:   "experiment",
+		Type:   "otlp_exporter",
+		Key:    []string{"experiment_otlp_exporter"},
+		Value:  "false",
+	},
+	{
+		Module: "logging",
 		Kind:   "experiment",
 		Type:   "otlp_exporter",
 		Key:    []string{"experiment_otlp_exporter"},
@@ -195,7 +216,14 @@ var expectedOtelLoggingNotSupported = []confgenerator.Feature{
 		Value:  "false",
 	},
 	{
-		Module: "global",
+		Module: "metrics",
+		Kind:   "experiment",
+		Type:   "otlp_exporter",
+		Key:    []string{"experiment_otlp_exporter"},
+		Value:  "false",
+	},
+	{
+		Module: "logging",
 		Kind:   "experiment",
 		Type:   "otlp_exporter",
 		Key:    []string{"experiment_otlp_exporter"},

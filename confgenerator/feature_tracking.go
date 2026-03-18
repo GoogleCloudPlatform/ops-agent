@@ -76,7 +76,7 @@ func ExtractFeatures(ctx context.Context, userUc, mergedUc *UnifiedConfig) ([]Fe
 	allFeatures := getOverriddenDefaultPipelines(userUc)
 	allFeatures = append(allFeatures, getSelfLogCollection(userUc))
 	allFeatures = append(allFeatures, getOTelLoggingSupportedConfig(ctx, mergedUc))
-	allFeatures = append(allFeatures, getOtlpExporterExperimentConfig(ctx))
+	allFeatures = append(allFeatures, getOtlpExporterExperimentConfig(ctx)...)
 
 	var err error
 	var tempTrackedFeatures []Feature
@@ -473,20 +473,28 @@ func getSelfLogCollection(uc *UnifiedConfig) Feature {
 	return feature
 }
 
-func getOtlpExporterExperimentConfig(ctx context.Context) Feature {
-	feature := Feature{
-		Module: "global",
-		Kind:   "experiment",
-		Type:   "otlp_exporter",
-		Key:    []string{"experiment_otlp_exporter"},
-		Value:  "false",
-	}
-
+func getOtlpExporterExperimentConfig(ctx context.Context) []Feature {
+	featureEnabled := "false"
 	if experimentsFromContext(ctx)["otlp_exporter"] {
-		feature.Value = "true"
+		featureEnabled = "true"
 	}
 
-	return feature
+	return []Feature{
+		{
+			Module: "metrics",
+			Kind:   "experiment",
+			Type:   "otlp_exporter",
+			Key:    []string{"experiment_otlp_exporter"},
+			Value:  featureEnabled,
+		},
+		{
+			Module: "logging",
+			Kind:   "experiment",
+			Type:   "otlp_exporter",
+			Key:    []string{"experiment_otlp_exporter"},
+			Value:  featureEnabled,
+		},
+	}
 }
 
 func getOverriddenDefaultPipelines(uc *UnifiedConfig) []Feature {
