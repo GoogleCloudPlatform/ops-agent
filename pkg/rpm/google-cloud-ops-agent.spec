@@ -54,6 +54,12 @@ BUILD_DISTRO=${build_distro#.} DESTDIR="%{buildroot}" ./build.sh
 
 %post
 %systemd_post google-cloud-ops-agent.service
+
+# For SLES 16: due the change of rpm macros, need to enable the service explicitly
+if [ $1 -eq 1 ] && [ 0%{?suse_version} -ge 1600 ]; then
+  systemctl preset google-cloud-ops-agent.service >/dev/null 2>&1 || :
+fi
+
 # rhel7 systemctl does not support --value
 if [ "$(systemctl show -p LoadState google-cloud-ops-agent.target 2>/dev/null || :)" = "LoadState=loaded" ]; then
   systemctl stop google-cloud-ops-agent.target > /dev/null 2>&1 || :
