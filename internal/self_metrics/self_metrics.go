@@ -23,7 +23,6 @@ import (
 	"time"
 
 	mexporter "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric"
-	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/contrib/detectors/gcp"
@@ -343,7 +342,7 @@ func getUserAndMergedConfigs(ctx context.Context, userConfPath string) (*confgen
 		userUc = &confgenerator.UnifiedConfig{}
 	}
 
-	mergedUc, err := confgenerator.MergeConfFiles(ctx, userConfPath, apps.BuiltInConfStructs)
+		mergedUc, err := confgenerator.MergeConfFiles(ctx, userConfPath)
 	if err != nil {
 		return nil, nil, err
 	}

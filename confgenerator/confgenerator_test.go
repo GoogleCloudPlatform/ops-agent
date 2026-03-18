@@ -25,7 +25,7 @@ import (
 	"testing"
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
-	"github.com/GoogleCloudPlatform/ops-agent/apps"
+	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
@@ -261,12 +261,11 @@ func generateConfigs(pc platformConfig, testDir string) (got map[string]string, 
 	mergedUc, err := confgenerator.MergeConfFiles(
 		ctx,
 		filepath.Join("testdata", testDir, inputFileName),
-		apps.BuiltInConfStructs,
 	)
 	if err != nil {
 		return
 	}
-	got[builtinConfigFileName] = apps.BuiltInConfStructs[pc.platform.Name()].String()
+	got[builtinConfigFileName] = confgenerator.BuiltInConfStructs[pc.platform.Name()].String()
 
 	// Fluent Bit configs
 	flbGeneratedConfigs, err := mergedUc.GenerateFluentBitConfigs(ctx,
@@ -351,7 +350,6 @@ func generateOtelConfigWithOtlpExporterEnabled(got map[string]string, experiment
 	mergedUcOtlp, err := confgenerator.MergeConfFiles(
 		ctxOtlp,
 		filepath.Join("testdata", testDir, inputFileName),
-		apps.BuiltInConfStructs,
 	)
 	if err == nil {
 		otelGeneratedConfigOtlp, err := mergedUcOtlp.GenerateOtelConfig(ctxOtlp, "", "")

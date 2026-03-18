@@ -26,7 +26,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GoogleCloudPlatform/ops-agent/apps"
+	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -42,7 +42,7 @@ import (
 )
 
 var emptyUc = confgenerator.UnifiedConfig{}
-var builtInConfLinux = apps.BuiltInConfStructs["linux"]
+var builtInConfLinux = confgenerator.BuiltInConfStructs["linux"]
 
 var expectedFeatureBase = []confgenerator.Feature{
 	{
