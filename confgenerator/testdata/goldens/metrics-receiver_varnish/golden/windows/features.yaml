@@ -15,12 +15,12 @@
   key: otel_logging_supported_config
   value: "true"
 - module: metrics
-  feature: experiment:otlp_exporter
-  key: experiment_otlp_exporter
+  feature: exporter:otlp_exporter
+  key: otlp_exporter
   value: "false"
 - module: logging
-  feature: experiment:otlp_exporter
-  key: experiment_otlp_exporter
+  feature: exporter:otlp_exporter
+  key: otlp_exporter
   value: "false"
 - module: metrics
   feature: receivers:varnish

@@ -75,16 +75,16 @@ var expectedFeatureBase = []confgenerator.Feature{
 	},
 	{
 		Module: "metrics",
-		Kind:   "experiment",
+		Kind:   "exporter",
 		Type:   "otlp_exporter",
-		Key:    []string{"experiment_otlp_exporter"},
+		Key:    []string{"otlp_exporter"},
 		Value:  "false",
 	},
 	{
 		Module: "logging",
-		Kind:   "experiment",
+		Kind:   "exporter",
 		Type:   "otlp_exporter",
-		Key:    []string{"experiment_otlp_exporter"},
+		Key:    []string{"otlp_exporter"},
 		Value:  "false",
 	},
 }
@@ -120,16 +120,16 @@ var expectedMetricsPipelineOverriden = []confgenerator.Feature{
 	},
 	{
 		Module: "metrics",
-		Kind:   "experiment",
+		Kind:   "exporter",
 		Type:   "otlp_exporter",
-		Key:    []string{"experiment_otlp_exporter"},
+		Key:    []string{"otlp_exporter"},
 		Value:  "false",
 	},
 	{
 		Module: "logging",
-		Kind:   "experiment",
+		Kind:   "exporter",
 		Type:   "otlp_exporter",
-		Key:    []string{"experiment_otlp_exporter"},
+		Key:    []string{"otlp_exporter"},
 		Value:  "false",
 	},
 }
@@ -165,16 +165,16 @@ var expectedTestFeatureBase = []confgenerator.Feature{
 	},
 	{
 		Module: "metrics",
-		Kind:   "experiment",
+		Kind:   "exporter",
 		Type:   "otlp_exporter",
-		Key:    []string{"experiment_otlp_exporter"},
+		Key:    []string{"otlp_exporter"},
 		Value:  "false",
 	},
 	{
 		Module: "logging",
-		Kind:   "experiment",
+		Kind:   "exporter",
 		Type:   "otlp_exporter",
-		Key:    []string{"experiment_otlp_exporter"},
+		Key:    []string{"otlp_exporter"},
 		Value:  "false",
 	},
 	{
@@ -217,16 +217,16 @@ var expectedOtelLoggingNotSupported = []confgenerator.Feature{
 	},
 	{
 		Module: "metrics",
-		Kind:   "experiment",
+		Kind:   "exporter",
 		Type:   "otlp_exporter",
-		Key:    []string{"experiment_otlp_exporter"},
+		Key:    []string{"otlp_exporter"},
 		Value:  "false",
 	},
 	{
 		Module: "logging",
-		Kind:   "experiment",
+		Kind:   "exporter",
 		Type:   "otlp_exporter",
-		Key:    []string{"experiment_otlp_exporter"},
+		Key:    []string{"otlp_exporter"},
 		Value:  "false",
 	},
 }
