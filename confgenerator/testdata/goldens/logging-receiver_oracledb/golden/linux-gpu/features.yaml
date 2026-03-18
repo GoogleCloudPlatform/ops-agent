@@ -14,6 +14,14 @@
   feature: service:otel_logging
   key: otel_logging_supported_config
   value: "false"
+- module: metrics
+  feature: experiment:otlp_exporter
+  key: experiment_otlp_exporter
+  value: "false"
+- module: logging
+  feature: experiment:otlp_exporter
+  key: experiment_otlp_exporter
+  value: "false"
 - module: logging
   feature: receivers:oracledb_alert
   key: "[0].enabled"

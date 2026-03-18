@@ -73,6 +73,13 @@ var expectedFeatureBase = []confgenerator.Feature{
 		Key:    []string{"otel_logging_supported_config"},
 		Value:  "true",
 	},
+	{
+		Module: "global",
+		Kind:   "experiment",
+		Type:   "otlp_exporter",
+		Key:    []string{"experiment_otlp_exporter"},
+		Value:  "false",
+	},
 }
 
 var expectedMetricsPipelineOverriden = []confgenerator.Feature{
@@ -104,6 +111,13 @@ var expectedMetricsPipelineOverriden = []confgenerator.Feature{
 		Key:    []string{"otel_logging_supported_config"},
 		Value:  "true",
 	},
+	{
+		Module: "global",
+		Kind:   "experiment",
+		Type:   "otlp_exporter",
+		Key:    []string{"experiment_otlp_exporter"},
+		Value:  "false",
+	},
 }
 
 var expectedTestFeatureBase = []confgenerator.Feature{
@@ -134,6 +148,13 @@ var expectedTestFeatureBase = []confgenerator.Feature{
 		Type:   "otel_logging",
 		Key:    []string{"otel_logging_supported_config"},
 		Value:  "true",
+	},
+	{
+		Module: "global",
+		Kind:   "experiment",
+		Type:   "otlp_exporter",
+		Key:    []string{"experiment_otlp_exporter"},
+		Value:  "false",
 	},
 	{
 		Module: confgenerator.MetricsReceiverTypes.Subagent,
@@ -171,6 +192,13 @@ var expectedOtelLoggingNotSupported = []confgenerator.Feature{
 		Kind:   "service",
 		Type:   "otel_logging",
 		Key:    []string{"otel_logging_supported_config"},
+		Value:  "false",
+	},
+	{
+		Module: "global",
+		Kind:   "experiment",
+		Type:   "otlp_exporter",
+		Key:    []string{"experiment_otlp_exporter"},
 		Value:  "false",
 	},
 }

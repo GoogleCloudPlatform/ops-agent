@@ -76,6 +76,7 @@ func ExtractFeatures(ctx context.Context, userUc, mergedUc *UnifiedConfig) ([]Fe
 	allFeatures := getOverriddenDefaultPipelines(userUc)
 	allFeatures = append(allFeatures, getSelfLogCollection(userUc))
 	allFeatures = append(allFeatures, getOTelLoggingSupportedConfig(ctx, mergedUc))
+	allFeatures = append(allFeatures, getOtlpExporterExperimentConfig(ctx))
 
 	var err error
 	var tempTrackedFeatures []Feature
@@ -467,6 +468,22 @@ func getSelfLogCollection(uc *UnifiedConfig) Feature {
 	}
 	if uc.Global != nil {
 		feature.Value = strconv.FormatBool(uc.Global.GetDefaultSelfLogFileCollection())
+	}
+
+	return feature
+}
+
+func getOtlpExporterExperimentConfig(ctx context.Context) Feature {
+	feature := Feature{
+		Module: "global",
+		Kind:   "experiment",
+		Type:   "otlp_exporter",
+		Key:    []string{"experiment_otlp_exporter"},
+		Value:  "false",
+	}
+
+	if experimentsFromContext(ctx)["otlp_exporter"] {
+		feature.Value = "true"
 	}
 
 	return feature

@@ -1,0 +1,274 @@
+--- FAIL: TestEmptyConfig (0.00s)
+    feature_tracking_test.go:205: expected: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true}], actual: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {global experiment otlp_exporter [experiment_otlp_exporter] false}]
+--- FAIL: TestBed (0.00s)
+    --- FAIL: TestBed/StringWithTracking (0.00s)
+        feature_tracking_test.go:704: expected: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {metrics receivers metricsReceiverFoo [[0] enabled] true} {metrics receivers metricsReceiverFoo [[0] stringWithTracking] foo}], actual: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {global experiment otlp_exporter [experiment_otlp_exporter] false} {metrics receivers metricsReceiverFoo [[0] enabled] true} {metrics receivers metricsReceiverFoo [[0] stringWithTracking] foo}], 
+            diff:   []confgenerator.Feature{
+              	... // 2 identical elements
+              	{Module: "global", Kind: "default", Type: "self_log", Key: {"default_self_log_file_collection"}, ...},
+              	{Module: "logging", Kind: "service", Type: "otel_logging", Key: {"otel_logging_supported_config"}, ...},
+            + 	{
+            + 		Module: "global",
+            + 		Kind:   "experiment",
+            + 		Type:   "otlp_exporter",
+            + 		Key:    []string{"experiment_otlp_exporter"},
+            + 		Value:  "false",
+            + 	},
+              	{Module: "metrics", Kind: "receivers", Type: "metricsReceiverFoo", Key: {"[0]", "enabled"}, ...},
+              	{Module: "metrics", Kind: "receivers", Type: "metricsReceiverFoo", Key: {"[0]", "stringWithTracking"}, ...},
+              }
+    --- FAIL: TestBed/BoolWithAutoTracking#01 (0.00s)
+        feature_tracking_test.go:704: expected: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {metrics receivers metricsReceiverFoo [[0] enabled] true} {metrics receivers metricsReceiverFoo [[0] bool] true}], actual: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {global experiment otlp_exporter [experiment_otlp_exporter] false} {metrics receivers metricsReceiverFoo [[0] enabled] true} {metrics receivers metricsReceiverFoo [[0] bool] true}], 
+            diff:   []confgenerator.Feature{
+              	... // 2 identical elements
+              	{Module: "global", Kind: "default", Type: "self_log", Key: {"default_self_log_file_collection"}, ...},
+              	{Module: "logging", Kind: "service", Type: "otel_logging", Key: {"otel_logging_supported_config"}, ...},
+            + 	{
+            + 		Module: "global",
+            + 		Kind:   "experiment",
+            + 		Type:   "otlp_exporter",
+            + 		Key:    []string{"experiment_otlp_exporter"},
+            + 		Value:  "false",
+            + 	},
+              	{Module: "metrics", Kind: "receivers", Type: "metricsReceiverFoo", Key: {"[0]", "enabled"}, ...},
+              	{Module: "metrics", Kind: "receivers", Type: "metricsReceiverFoo", Key: {"[0]", "bool"}, ...},
+              }
+    --- FAIL: TestBed/MapStringWithTracking (0.00s)
+        feature_tracking_test.go:704: expected: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {metrics receivers metricsReceiverFoo [[0] enabled] true} {metrics receivers metricsReceiverFoo [[0] stringMap __length] 2} {metrics receivers metricsReceiverFoo [[0] stringMap [0]] baz} {metrics receivers metricsReceiverFoo [[0] stringMap [1]] goo}], actual: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {global experiment otlp_exporter [experiment_otlp_exporter] false} {metrics receivers metricsReceiverFoo [[0] enabled] true} {metrics receivers metricsReceiverFoo [[0] stringMap __length] 2} {metrics receivers metricsReceiverFoo [[0] stringMap [0]] baz} {metrics receivers metricsReceiverFoo [[0] stringMap [1]] goo}], 
+            diff:   []confgenerator.Feature{
+              	... // 2 identical elements
+              	{Module: "global", Kind: "default", Type: "self_log", Key: {"default_self_log_file_collection"}, ...},
+              	{Module: "logging", Kind: "service", Type: "otel_logging", Key: {"otel_logging_supported_config"}, ...},
+            + 	{
+            + 		Module: "global",
+            + 		Kind:   "experiment",
+            + 		Type:   "otlp_exporter",
+            + 		Key:    []string{"experiment_otlp_exporter"},
+            + 		Value:  "false",
+            + 	},
+              	{Module: "metrics", Kind: "receivers", Type: "metricsReceiverFoo", Key: {"[0]", "enabled"}, ...},
+              	{Module: "metrics", Kind: "receivers", Type: "metricsReceiverFoo", Key: {"[0]", "stringMap", "__length"}, ...},
+              	... // 2 identical elements
+              }
+    --- FAIL: TestBed/PointerBool (0.00s)
+        feature_tracking_test.go:704: expected: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {metrics receivers metricsReceiverFoo [[0] enabled] true} {metrics receivers metricsReceiverFoo [[0] ptr] true}], actual: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {global experiment otlp_exporter [experiment_otlp_exporter] false} {metrics receivers metricsReceiverFoo [[0] enabled] true} {metrics receivers metricsReceiverFoo [[0] ptr] true}], 
+            diff:   []confgenerator.Feature{
+              	... // 2 identical elements
+              	{Module: "global", Kind: "default", Type: "self_log", Key: {"default_self_log_file_collection"}, ...},
+              	{Module: "logging", Kind: "service", Type: "otel_logging", Key: {"otel_logging_supported_config"}, ...},
+            + 	{
+            + 		Module: "global",
+            + 		Kind:   "experiment",
+            + 		Type:   "otlp_exporter",
+            + 		Key:    []string{"experiment_otlp_exporter"},
+            + 		Value:  "false",
+            + 	},
+              	{Module: "metrics", Kind: "receivers", Type: "metricsReceiverFoo", Key: {"[0]", "enabled"}, ...},
+              	{Module: "metrics", Kind: "receivers", Type: "metricsReceiverFoo", Key: {"[0]", "ptr"}, ...},
+              }
+    --- FAIL: TestBed/EmptyStruct#01 (0.00s)
+        feature_tracking_test.go:704: expected: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {metrics receivers metricsReceiverFoo [[0] enabled] true}], actual: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {global experiment otlp_exporter [experiment_otlp_exporter] false} {metrics receivers metricsReceiverFoo [[0] enabled] true}], 
+            diff:   []confgenerator.Feature{
+              	... // 2 identical elements
+              	{Module: "global", Kind: "default", Type: "self_log", Key: {"default_self_log_file_collection"}, ...},
+              	{Module: "logging", Kind: "service", Type: "otel_logging", Key: {"otel_logging_supported_config"}, ...},
+            + 	{
+            + 		Module: "global",
+            + 		Kind:   "experiment",
+            + 		Type:   "otlp_exporter",
+            + 		Key:    []string{"experiment_otlp_exporter"},
+            + 		Value:  "false",
+            + 	},
+              	{Module: "metrics", Kind: "receivers", Type: "metricsReceiverFoo", Key: {"[0]", "enabled"}, ...},
+              }
+    --- FAIL: TestBed/MapLength (0.00s)
+        feature_tracking_test.go:704: expected: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {metrics receivers metricsReceiverFoo [[0] enabled] true} {metrics receivers metricsReceiverFoo [[0] stringMap __length] 4}], actual: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {global experiment otlp_exporter [experiment_otlp_exporter] false} {metrics receivers metricsReceiverFoo [[0] enabled] true} {metrics receivers metricsReceiverFoo [[0] stringMap __length] 4}], 
+            diff:   []confgenerator.Feature{
+              	... // 2 identical elements
+              	{Module: "global", Kind: "default", Type: "self_log", Key: {"default_self_log_file_collection"}, ...},
+              	{Module: "logging", Kind: "service", Type: "otel_logging", Key: {"otel_logging_supported_config"}, ...},
+            + 	{
+            + 		Module: "global",
+            + 		Kind:   "experiment",
+            + 		Type:   "otlp_exporter",
+            + 		Key:    []string{"experiment_otlp_exporter"},
+            + 		Value:  "false",
+            + 	},
+              	{Module: "metrics", Kind: "receivers", Type: "metricsReceiverFoo", Key: {"[0]", "enabled"}, ...},
+              	{Module: "metrics", Kind: "receivers", Type: "metricsReceiverFoo", Key: {"[0]", "stringMap", "__length"}, ...},
+              }
+    --- FAIL: TestBed/Struct (0.00s)
+        feature_tracking_test.go:704: expected: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {metrics receivers metricsReceiverFoo [[0] enabled] true} {metrics receivers metricsReceiverFoo [[0] struct] override} {metrics receivers metricsReceiverFoo [[0] struct foo] true}], actual: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {global experiment otlp_exporter [experiment_otlp_exporter] false} {metrics receivers metricsReceiverFoo [[0] enabled] true} {metrics receivers metricsReceiverFoo [[0] struct] override} {metrics receivers metricsReceiverFoo [[0] struct foo] true}], 
+            diff:   []confgenerator.Feature{
+              	... // 2 identical elements
+              	{Module: "global", Kind: "default", Type: "self_log", Key: {"default_self_log_file_collection"}, ...},
+              	{Module: "logging", Kind: "service", Type: "otel_logging", Key: {"otel_logging_supported_config"}, ...},
+            + 	{
+            + 		Module: "global",
+            + 		Kind:   "experiment",
+            + 		Type:   "otlp_exporter",
+            + 		Key:    []string{"experiment_otlp_exporter"},
+            + 		Value:  "false",
+            + 	},
+              	{Module: "metrics", Kind: "receivers", Type: "metricsReceiverFoo", Key: {"[0]", "enabled"}, ...},
+              	{Module: "metrics", Kind: "receivers", Type: "metricsReceiverFoo", Key: {"[0]", "struct"}, ...},
+              	{Module: "metrics", Kind: "receivers", Type: "metricsReceiverFoo", Key: {"[0]", "struct", "foo"}, ...},
+              }
+    --- FAIL: TestBed/SliceNil (0.00s)
+        feature_tracking_test.go:704: expected: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {metrics receivers metricsReceiverFoo [[0] enabled] true}], actual: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {global experiment otlp_exporter [experiment_otlp_exporter] false} {metrics receivers metricsReceiverFoo [[0] enabled] true}], 
+            diff:   []confgenerator.Feature{
+              	... // 2 identical elements
+              	{Module: "global", Kind: "default", Type: "self_log", Key: {"default_self_log_file_collection"}, ...},
+              	{Module: "logging", Kind: "service", Type: "otel_logging", Key: {"otel_logging_supported_config"}, ...},
+            + 	{
+            + 		Module: "global",
+            + 		Kind:   "experiment",
+            + 		Type:   "otlp_exporter",
+            + 		Key:    []string{"experiment_otlp_exporter"},
+            + 		Value:  "false",
+            + 	},
+              	{Module: "metrics", Kind: "receivers", Type: "metricsReceiverFoo", Key: {"[0]", "enabled"}, ...},
+              }
+    --- FAIL: TestBed/UnexportedBool#01 (0.00s)
+        feature_tracking_test.go:704: expected: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {metrics receivers metricsReceiverFoo [[0] enabled] true}], actual: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {global experiment otlp_exporter [experiment_otlp_exporter] false} {metrics receivers metricsReceiverFoo [[0] enabled] true}], 
+            diff:   []confgenerator.Feature{
+              	... // 2 identical elements
+              	{Module: "global", Kind: "default", Type: "self_log", Key: {"default_self_log_file_collection"}, ...},
+              	{Module: "logging", Kind: "service", Type: "otel_logging", Key: {"otel_logging_supported_config"}, ...},
+            + 	{
+            + 		Module: "global",
+            + 		Kind:   "experiment",
+            + 		Type:   "otlp_exporter",
+            + 		Key:    []string{"experiment_otlp_exporter"},
+            + 		Value:  "false",
+            + 	},
+              	{Module: "metrics", Kind: "receivers", Type: "metricsReceiverFoo", Key: {"[0]", "enabled"}, ...},
+              }
+    --- FAIL: TestBed/SliceString#01 (0.00s)
+        feature_tracking_test.go:704: expected: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {metrics receivers metricsReceiverFoo [[0] enabled] true} {metrics receivers metricsReceiverFoo [[0] string __length] 3} {metrics receivers metricsReceiverFoo [[0] string [0]] foo} {metrics receivers metricsReceiverFoo [[0] string [1]] goo} {metrics receivers metricsReceiverFoo [[0] string [2]] bar}], actual: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {global experiment otlp_exporter [experiment_otlp_exporter] false} {metrics receivers metricsReceiverFoo [[0] enabled] true} {metrics receivers metricsReceiverFoo [[0] string __length] 3} {metrics receivers metricsReceiverFoo [[0] string [0]] foo} {metrics receivers metricsReceiverFoo [[0] string [1]] goo} {metrics receivers metricsReceiverFoo [[0] string [2]] bar}], 
+            diff:   []confgenerator.Feature{
+              	... // 2 identical elements
+              	{Module: "global", Kind: "default", Type: "self_log", Key: {"default_self_log_file_collection"}, ...},
+              	{Module: "logging", Kind: "service", Type: "otel_logging", Key: {"otel_logging_supported_config"}, ...},
+            + 	{
+            + 		Module: "global",
+            + 		Kind:   "experiment",
+            + 		Type:   "otlp_exporter",
+            + 		Key:    []string{"experiment_otlp_exporter"},
+            + 		Value:  "false",
+            + 	},
+              	{Module: "metrics", Kind: "receivers", Type: "metricsReceiverFoo", Key: {"[0]", "enabled"}, ...},
+              	{Module: "metrics", Kind: "receivers", Type: "metricsReceiverFoo", Key: {"[0]", "string", "__length"}, ...},
+              	... // 3 identical elements
+              }
+    --- FAIL: TestBed/StringWithoutTracking#01 (0.00s)
+        feature_tracking_test.go:704: expected: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {metrics receivers metricsReceiverFoo [[0] enabled] true}], actual: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {global experiment otlp_exporter [experiment_otlp_exporter] false} {metrics receivers metricsReceiverFoo [[0] enabled] true}], 
+            diff:   []confgenerator.Feature{
+              	... // 2 identical elements
+              	{Module: "global", Kind: "default", Type: "self_log", Key: {"default_self_log_file_collection"}, ...},
+              	{Module: "logging", Kind: "service", Type: "otel_logging", Key: {"otel_logging_supported_config"}, ...},
+            + 	{
+            + 		Module: "global",
+            + 		Kind:   "experiment",
+            + 		Type:   "otlp_exporter",
+            + 		Key:    []string{"experiment_otlp_exporter"},
+            + 		Value:  "false",
+            + 	},
+              	{Module: "metrics", Kind: "receivers", Type: "metricsReceiverFoo", Key: {"[0]", "enabled"}, ...},
+              }
+    --- FAIL: TestBed/SliceEmpty (0.00s)
+        feature_tracking_test.go:704: expected: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {metrics receivers metricsReceiverFoo [[0] enabled] true} {metrics receivers metricsReceiverFoo [[0] sliceStruct __length] 0}], actual: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {global experiment otlp_exporter [experiment_otlp_exporter] false} {metrics receivers metricsReceiverFoo [[0] enabled] true} {metrics receivers metricsReceiverFoo [[0] sliceStruct __length] 0}], 
+            diff:   []confgenerator.Feature{
+              	... // 2 identical elements
+              	{Module: "global", Kind: "default", Type: "self_log", Key: {"default_self_log_file_collection"}, ...},
+              	{Module: "logging", Kind: "service", Type: "otel_logging", Key: {"otel_logging_supported_config"}, ...},
+            + 	{
+            + 		Module: "global",
+            + 		Kind:   "experiment",
+            + 		Type:   "otlp_exporter",
+            + 		Key:    []string{"experiment_otlp_exporter"},
+            + 		Value:  "false",
+            + 	},
+              	{Module: "metrics", Kind: "receivers", Type: "metricsReceiverFoo", Key: {"[0]", "enabled"}, ...},
+              	{Module: "metrics", Kind: "receivers", Type: "metricsReceiverFoo", Key: {"[0]", "sliceStruct", "__length"}, ...},
+              }
+    --- FAIL: TestBed/MapStringKeyGeneration (0.00s)
+        feature_tracking_test.go:704: expected: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {metrics receivers metricsReceiverFoo [[0] enabled] true} {metrics receivers metricsReceiverFoo [[0] mapKeys __length] 1} {metrics receivers metricsReceiverFoo [[0] mapKeys [0] __key] a} {metrics receivers metricsReceiverFoo [[0] mapKeys [0]] overrideValue2}], actual: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {global experiment otlp_exporter [experiment_otlp_exporter] false} {metrics receivers metricsReceiverFoo [[0] enabled] true} {metrics receivers metricsReceiverFoo [[0] mapKeys __length] 1} {metrics receivers metricsReceiverFoo [[0] mapKeys [0] __key] a} {metrics receivers metricsReceiverFoo [[0] mapKeys [0]] overrideValue2}], 
+            diff:   []confgenerator.Feature{
+              	... // 2 identical elements
+              	{Module: "global", Kind: "default", Type: "self_log", Key: {"default_self_log_file_collection"}, ...},
+              	{Module: "logging", Kind: "service", Type: "otel_logging", Key: {"otel_logging_supported_config"}, ...},
+            + 	{
+            + 		Module: "global",
+            + 		Kind:   "experiment",
+            + 		Type:   "otlp_exporter",
+            + 		Key:    []string{"experiment_otlp_exporter"},
+            + 		Value:  "false",
+            + 	},
+              	{Module: "metrics", Kind: "receivers", Type: "metricsReceiverFoo", Key: {"[0]", "enabled"}, ...},
+              	{Module: "metrics", Kind: "receivers", Type: "metricsReceiverFoo", Key: {"[0]", "mapKeys", "__length"}, ...},
+              	... // 2 identical elements
+              }
+    --- FAIL: TestBed/SliceInt (0.00s)
+        feature_tracking_test.go:704: expected: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {metrics receivers metricsReceiverFoo [[0] enabled] true} {metrics receivers metricsReceiverFoo [[0] int __length] 3} {metrics receivers metricsReceiverFoo [[0] int [0]] 1} {metrics receivers metricsReceiverFoo [[0] int [1]] 2} {metrics receivers metricsReceiverFoo [[0] int [2]] 3}], actual: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {global experiment otlp_exporter [experiment_otlp_exporter] false} {metrics receivers metricsReceiverFoo [[0] enabled] true} {metrics receivers metricsReceiverFoo [[0] int __length] 3} {metrics receivers metricsReceiverFoo [[0] int [0]] 1} {metrics receivers metricsReceiverFoo [[0] int [1]] 2} {metrics receivers metricsReceiverFoo [[0] int [2]] 3}], 
+            diff:   []confgenerator.Feature{
+              	... // 2 identical elements
+              	{Module: "global", Kind: "default", Type: "self_log", Key: {"default_self_log_file_collection"}, ...},
+              	{Module: "logging", Kind: "service", Type: "otel_logging", Key: {"otel_logging_supported_config"}, ...},
+            + 	{
+            + 		Module: "global",
+            + 		Kind:   "experiment",
+            + 		Type:   "otlp_exporter",
+            + 		Key:    []string{"experiment_otlp_exporter"},
+            + 		Value:  "false",
+            + 	},
+              	{Module: "metrics", Kind: "receivers", Type: "metricsReceiverFoo", Key: {"[0]", "enabled"}, ...},
+              	{Module: "metrics", Kind: "receivers", Type: "metricsReceiverFoo", Key: {"[0]", "int", "__length"}, ...},
+              	... // 3 identical elements
+              }
+--- FAIL: TestOtelLoggingSupported (0.00s)
+    feature_tracking_test.go:771: expected: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true}], actual: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {global experiment otlp_exporter [experiment_otlp_exporter] false}]
+[{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] false} {global experiment otlp_exporter [experiment_otlp_exporter] false}]
+--- FAIL: TestOtelLoggingNotSupported (0.00s)
+    feature_tracking_test.go:818: expected: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] false}], actual: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] false} {global experiment otlp_exporter [experiment_otlp_exporter] false}]
+--- FAIL: TestOverrideDefaultPipeline (0.00s)
+    feature_tracking_test.go:841: expected: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] true} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true}], actual: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] true} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {global experiment otlp_exporter [experiment_otlp_exporter] false}]
+--- FAIL: TestPrometheusFeatureMetrics (0.00s)
+    feature_tracking_test.go:989: Expected 17 features but got 18
+        
+    feature_tracking_test.go:990: Diff:   []confgenerator.Feature{
+          	... // 2 identical elements
+          	{Module: "global", Kind: "default", Type: "self_log", Key: {"default_self_log_file_collection"}, ...},
+          	{Module: "logging", Kind: "service", Type: "otel_logging", Key: {"otel_logging_supported_config"}, ...},
+        + 	{
+        + 		Module: "global",
+        + 		Kind:   "experiment",
+        + 		Type:   "otlp_exporter",
+        + 		Key:    []string{"experiment_otlp_exporter"},
+        + 		Value:  "false",
+        + 	},
+          	{Module: "metrics", Kind: "receivers", Type: "prometheus", Key: {"[0]", "enabled"}, ...},
+          	{Module: "metrics", Kind: "receivers", Type: "prometheus", Key: {"[0]", "config", "[0]", "scrape_configs", ...}, ...},
+          	... // 11 identical elements
+          }
+--- FAIL: TestNestedStructs (0.00s)
+    feature_tracking_test.go:1179: expected: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {metrics receivers example [[0] enabled] true} {metrics receivers example [[0] a] nestedOverride} {metrics receivers example [[0] a str] foo} {metrics receivers example [[0] a int] 32} {metrics receivers example [[0] b str] goo} {metrics receivers example [[0] b int] 64}], actual: [{logging service pipelines [default_pipeline_overridden] false} {metrics service pipelines [default_pipeline_overridden] false} {global default self_log [default_self_log_file_collection] true} {logging service otel_logging [otel_logging_supported_config] true} {global experiment otlp_exporter [experiment_otlp_exporter] false} {metrics receivers example [[0] enabled] true} {metrics receivers example [[0] a] nestedOverride} {metrics receivers example [[0] a str] foo} {metrics receivers example [[0] a int] 32} {metrics receivers example [[0] b str] goo} {metrics receivers example [[0] b int] 64}]
+2026/03/18 21:14:23 scrape_interval must be at least 10s; adjusting to minimum accepted value
+2026/03/18 21:14:23 scrape_interval must be at least 10s; adjusting to minimum accepted value
+2026/03/18 21:14:23 scrape_interval must be at least 10s; adjusting to minimum accepted value
+2026/03/18 21:14:23 scrape_interval must be at least 10s; adjusting to minimum accepted value
+2026/03/18 21:14:23 scrape_interval must be at least 10s; adjusting to minimum accepted value
+2026/03/18 21:14:24 scrape_interval must be at least 10s; adjusting to minimum accepted value
+2026/03/18 21:14:24 scrape_interval must be at least 10s; adjusting to minimum accepted value
+2026/03/18 21:14:24 scrape_interval must be at least 10s; adjusting to minimum accepted value
+Prometheus config validation failed with error: error validating scrape_config for job prometheus: relabel_configs cannot rename location, namespace or clusterPrometheus config validation failed with error: error validating scrape_config for job prometheus: relabel_configs cannot rename location, namespace or clusterPrometheus config validation failed with error: error validating scrape_config for job prometheus: relabel_configs cannot rename location, namespace or clusterPrometheus config validation failed with error: unsupported features:
+	remote_read
+	remote_writePrometheus config validation failed with error: error validating scrape_config for job prometheus: relabel_configs cannot rename location, namespace or clusterPrometheus config validation failed with error: error validating scrape_config for job prometheus: metric_relabel_configs cannot rename location, namespace or clusterPrometheus config validation failed with error: unsupported features:
+	remote_read
+	remote_writePrometheus config validation failed with error: error validating scrape_config for job prometheus: honor_labels is not supportedPrometheus config validation failed with error: error checking client cert file "/path/to/cert": file "/path/to/cert" does not existPrometheus config validation failed with error: error validating scrape_config for job prometheus: honor_labels is not supportedPrometheus config validation failed with error: error checking client cert file "/path/to/cert": file "/path/to/cert" does not existPrometheus config validation failed with error: error validating scrape_config for job prometheus: honor_labels is not supportedPrometheus config validation failed with error: unsupported features:
+	remote_read
+	remote_writePrometheus config validation failed with error: error validating scrape_config for job prometheus: metric_relabel_configs cannot rename location, namespace or clusterPrometheus config validation failed with error: error checking client cert file "/path/to/cert": file "/path/to/cert" does not existPrometheus config validation failed with error: unsupported features:
+	remote_read
+	remote_writePrometheus config validation failed with error: error validating scrape_config for job prometheus: metric_relabel_configs cannot rename location, namespace or clusterPrometheus config validation failed with error: error validating scrape_config for job prometheus: honor_labels is not supportedPrometheus config validation failed with error: error checking client cert file "/path/to/cert": file "/path/to/cert" does not existPrometheus config validation failed with error: error validating scrape_config for job prometheus: metric_relabel_configs cannot rename location, namespace or clusterPrometheus config validation failed with error: unsupported service discovery config *file.SDConfigPrometheus config validation failed with error: unsupported service discovery config *file.SDConfigPrometheus config validation failed with error: unsupported service discovery config *file.SDConfigPrometheus config validation failed with error: unsupported service discovery config *file.SDConfigFAIL
+FAIL	github.com/GoogleCloudPlatform/ops-agent/confgenerator	4.554s
+FAIL
