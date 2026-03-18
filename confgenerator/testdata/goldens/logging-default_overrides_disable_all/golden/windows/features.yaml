@@ -15,10 +15,10 @@
   key: otel_logging_supported_config
   value: "true"
 - module: metrics
-  feature: exporter:otlp_exporter
+  feature: exporter:otlp
   key: otlp_exporter
   value: "false"
 - module: logging
-  feature: exporter:otlp_exporter
+  feature: exporter:otlp
   key: otlp_exporter
   value: "false"
