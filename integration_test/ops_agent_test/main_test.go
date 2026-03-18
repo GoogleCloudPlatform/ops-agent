@@ -5778,7 +5778,7 @@ func TestDisableSelfLogCollection(t *testing.T) {
 
 func TestBufferLimitSizeOpsAgent(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtelLoggingFeatureFlag}, func(t *testing.T, imageSpec, feature string) {
 		t.Parallel()
 		if gce.IsWindows(imageSpec) {
 			t.SkipNow()
@@ -5819,6 +5819,9 @@ func TestBufferLimitSizeOpsAgent(t *testing.T) {
 		}
 
 		bufferDir = "/var/lib/google-cloud-ops-agent/fluent-bit/buffers/tail.1/"
+		if feature == agents.OtelLoggingFeatureFlag {
+			bufferDir = "/var/lib/google-cloud-ops-agent/file_storage"
+		}
 
 		generateLogsScript := fmt.Sprintf(`
 			mkdir -p %s
