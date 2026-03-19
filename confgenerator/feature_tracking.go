@@ -482,14 +482,14 @@ func getOtlpExporterExperimentConfig(ctx context.Context) []Feature {
 	return []Feature{
 		{
 			Module: "metrics",
-			Kind:   "exporter",
+			Kind:   "exporters",
 			Type:   "otlp",
 			Key:    []string{"otlp_exporter"},
 			Value:  featureEnabled,
 		},
 		{
 			Module: "logging",
-			Kind:   "exporter",
+			Kind:   "exporters",
 			Type:   "otlp",
 			Key:    []string{"otlp_exporter"},
 			Value:  featureEnabled,
