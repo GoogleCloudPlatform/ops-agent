@@ -342,7 +342,7 @@ func getUserAndMergedConfigs(ctx context.Context, userConfPath string) (*confgen
 		userUc = &confgenerator.UnifiedConfig{}
 	}
 
-		mergedUc, err := confgenerator.MergeConfFiles(ctx, userConfPath)
+	mergedUc, err := confgenerator.MergeConfFiles(ctx, userConfPath)
 	if err != nil {
 		return nil, nil, err
 	}
