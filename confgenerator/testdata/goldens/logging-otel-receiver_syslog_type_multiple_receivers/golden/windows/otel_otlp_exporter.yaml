@@ -70,7 +70,7 @@ processors:
   filter/loggingmetrics_1:
     metrics:
       datapoint:
-      - metric.name == "rpc.client.duration_count" and (not IsMatch(datapoint.attributes["rpc.service"], "opentelemetry.proto.collector.logs.v1.LogsService"))
+      - metric.name == "rpc.client.call.duration_count" and (not IsMatch(datapoint.attributes["rpc.method"], "opentelemetry.proto.collector.logs.v1.LogsService/Export"))
   filter/loggingmetrics_2:
     metrics:
       include:
@@ -81,11 +81,11 @@ processors:
         - fluentbit_stackdriver_retried_records_total
         - otelcol_exporter_sent_log_records
         - otelcol_exporter_send_failed_log_records
-        - rpc.client.duration_count
+        - rpc.client.call.duration_count
   filter/otel_1:
     metrics:
       datapoint:
-      - metric.name == "rpc.client.duration_count" and (not IsMatch(datapoint.attributes["rpc.service"], "opentelemetry.proto.collector.metrics.v1.MetricsService"))
+      - metric.name == "rpc.client.call.duration_count" and (not IsMatch(datapoint.attributes["rpc.method"], "opentelemetry.proto.collector.metrics.v1.MetricsService/Export"))
   filter/otel_2:
     metrics:
       include:
@@ -95,7 +95,7 @@ processors:
         - otelcol_process_memory_rss
         - otelcol_exporter_sent_metric_points
         - otelcol_exporter_send_failed_metric_points
-        - rpc.client.duration_count
+        - rpc.client.call.duration_count
   interval/loggingmetrics_7:
     interval: 1m
   metricstarttime/otlp_grpc/otlp_metrics_1:
@@ -466,48 +466,48 @@ processors:
         label_set:
         - response_code
     - action: update
-      include: rpc.client.duration_count
+      include: rpc.client.call.duration_count
       new_name: otel_request_count
       operations:
       - action: update_label
-        label: rpc.grpc.status_code
+        label: rpc.response.status_code
         value_actions:
-        - new_value: OK
-          value: "0"
-        - new_value: CANCELLED
-          value: "1"
         - new_value: ABORTED
-          value: "10"
-        - new_value: OUT_OF_RANGE
-          value: "11"
-        - new_value: UNIMPLEMENTED
-          value: "12"
-        - new_value: INTERNAL
-          value: "13"
-        - new_value: UNAVAILABLE
-          value: "14"
-        - new_value: DATA_LOSS
-          value: "15"
-        - new_value: UNAUTHENTICATED
-          value: "16"
-        - new_value: UNKNOWN
-          value: "2"
-        - new_value: INVALID_ARGUMENT
-          value: "3"
-        - new_value: DEADLINE_EXCEEDED
-          value: "4"
-        - new_value: NOT_FOUND
-          value: "5"
+          value: Aborted
         - new_value: ALREADY_EXISTS
-          value: "6"
-        - new_value: PERMISSION_DENIED
-          value: "7"
-        - new_value: RESOURCE_EXHAUSTED
-          value: "8"
+          value: AlreadyExists
+        - new_value: CANCELLED
+          value: Canceled
+        - new_value: DATA_LOSS
+          value: DataLoss
+        - new_value: DEADLINE_EXCEEDED
+          value: DeadlineExceeded
         - new_value: FAILED_PRECONDITION
-          value: "9"
+          value: FailedPrecondition
+        - new_value: INTERNAL
+          value: Internal
+        - new_value: INVALID_ARGUMENT
+          value: InvalidArgument
+        - new_value: NOT_FOUND
+          value: NotFound
+        - new_value: OK
+          value: OK
+        - new_value: OUT_OF_RANGE
+          value: OutOfRange
+        - new_value: PERMISSION_DENIED
+          value: PermissionDenied
+        - new_value: RESOURCE_EXHAUSTED
+          value: ResourceExhausted
+        - new_value: UNAUTHENTICATED
+          value: Unauthenticated
+        - new_value: UNAVAILABLE
+          value: Unavailable
+        - new_value: UNIMPLEMENTED
+          value: Unimplemented
+        - new_value: UNKNOWN
+          value: Unknown
       - action: update_label
-        label: rpc.grpc.status_code
+        label: rpc.response.status_code
         new_label: response_code
       - action: update_label
         label: response_code
@@ -639,48 +639,48 @@ processors:
         aggregation_type: sum
         label_set: []
     - action: update
-      include: rpc.client.duration_count
+      include: rpc.client.call.duration_count
       new_name: agent/api_request_count
       operations:
       - action: update_label
-        label: rpc.grpc.status_code
+        label: rpc.response.status_code
         value_actions:
-        - new_value: OK
-          value: "0"
-        - new_value: CANCELLED
-          value: "1"
         - new_value: ABORTED
-          value: "10"
-        - new_value: OUT_OF_RANGE
-          value: "11"
-        - new_value: UNIMPLEMENTED
-          value: "12"
-        - new_value: INTERNAL
-          value: "13"
-        - new_value: UNAVAILABLE
-          value: "14"
-        - new_value: DATA_LOSS
-          value: "15"
-        - new_value: UNAUTHENTICATED
-          value: "16"
-        - new_value: UNKNOWN
-          value: "2"
-        - new_value: INVALID_ARGUMENT
-          value: "3"
-        - new_value: DEADLINE_EXCEEDED
-          value: "4"
-        - new_value: NOT_FOUND
-          value: "5"
+          value: Aborted
         - new_value: ALREADY_EXISTS
-          value: "6"
-        - new_value: PERMISSION_DENIED
-          value: "7"
-        - new_value: RESOURCE_EXHAUSTED
-          value: "8"
+          value: AlreadyExists
+        - new_value: CANCELLED
+          value: Canceled
+        - new_value: DATA_LOSS
+          value: DataLoss
+        - new_value: DEADLINE_EXCEEDED
+          value: DeadlineExceeded
         - new_value: FAILED_PRECONDITION
-          value: "9"
+          value: FailedPrecondition
+        - new_value: INTERNAL
+          value: Internal
+        - new_value: INVALID_ARGUMENT
+          value: InvalidArgument
+        - new_value: NOT_FOUND
+          value: NotFound
+        - new_value: OK
+          value: OK
+        - new_value: OUT_OF_RANGE
+          value: OutOfRange
+        - new_value: PERMISSION_DENIED
+          value: PermissionDenied
+        - new_value: RESOURCE_EXHAUSTED
+          value: ResourceExhausted
+        - new_value: UNAUTHENTICATED
+          value: Unauthenticated
+        - new_value: UNAVAILABLE
+          value: Unavailable
+        - new_value: UNIMPLEMENTED
+          value: Unimplemented
+        - new_value: UNKNOWN
+          value: Unknown
       - action: update_label
-        label: rpc.grpc.status_code
+        label: rpc.response.status_code
         new_label: state
       - action: aggregate_labels
         aggregation_type: sum
@@ -793,7 +793,7 @@ processors:
     metric_statements:
     - context: metric
       statements:
-      - extract_count_metric(true) where name == "rpc.client.duration"
+      - extract_count_metric(true) where name == "rpc.client.call.duration"
   transform/loggingmetrics_5:
     metric_statements:
     - context: metric
@@ -966,7 +966,7 @@ processors:
     metric_statements:
     - context: metric
       statements:
-      - extract_count_metric(true) where name == "rpc.client.duration"
+      - extract_count_metric(true) where name == "rpc.client.call.duration"
   transform/otlp_grpc/otlp_logs_1:
     error_mode: ignore
     log_statements:
