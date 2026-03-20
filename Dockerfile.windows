@@ -192,6 +192,8 @@ WORKDIR /goget
 # https://github.com/google/googet/issues/83#issuecomment-2536975624
 RUN go install github.com/google/googet/v2/goopack@v2.18.4;
 
+ENV GO_BIN_PATH="C:\Go\bin" `
+
 ###############################################################################
 # Build fluent-bit
 ###############################################################################
