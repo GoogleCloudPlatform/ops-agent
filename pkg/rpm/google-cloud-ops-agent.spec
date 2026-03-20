@@ -52,8 +52,14 @@ BUILD_DISTRO=${build_distro#.} DESTDIR="%{buildroot}" ./build.sh
 %{_unitdir}/%{name}*
 %{_unitdir}-preset/*-%{name}*
 
+%pre
+%if 0%{?suse_version} >= 1600
+%systemd_pre google-cloud-ops-agent.service
+%endif
+
 %post
 %systemd_post google-cloud-ops-agent.service
+
 # rhel7 systemctl does not support --value
 if [ "$(systemctl show -p LoadState google-cloud-ops-agent.target 2>/dev/null || :)" = "LoadState=loaded" ]; then
   systemctl stop google-cloud-ops-agent.target > /dev/null 2>&1 || :

@@ -182,7 +182,7 @@ RUN set -x; \
 		update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 1 \
     		--slave /usr/bin/g++ g++ /usr/bin/g++-8 && \
 		update-alternatives --set gcc /usr/bin/gcc-8` + installJava + installCMake,
-		package_build:     "RUN ./pkg/rpm/build.sh",
+		package_build:     "RUN SLE_VERSION=12 ./pkg/rpm/build.sh",
 		tar_distro_name:   "sles-12",
 		package_extension: "rpm",
 	},
@@ -194,8 +194,20 @@ RUN set -x; \
 		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip 'bison>3'
 # Allow fluent-bit to find systemd
 RUN ln -fs /usr/lib/systemd /lib/systemd` + installJava + installCMake,
-		package_build:     "RUN ./pkg/rpm/build.sh",
+		package_build:     "RUN SLE_VERSION=15 ./pkg/rpm/build.sh",
 		tar_distro_name:   "sles-15",
+		package_extension: "rpm",
+	},
+	{
+		from_image:  "opensuse/leap:16.0",
+		target_name: "sles16",
+		install_packages: `RUN set -x; zypper -n refresh && \
+		zypper -n update && \
+		zypper -n install git systemd autoconf automake flex libtool libcurl-devel libopenssl-devel libyajl-devel gcc gcc-c++ zlib-devel rpm-build expect cmake systemd-devel systemd-rpm-macros unzip zip 'bison>3'
+# Allow fluent-bit to find systemd
+RUN ln -fs /usr/lib/systemd /lib/systemd` + installJava + installCMake,
+		package_build:     "RUN SLE_VERSION=16 ./pkg/rpm/build.sh",
+		tar_distro_name:   "sles-16",
 		package_extension: "rpm",
 	},
 	{
