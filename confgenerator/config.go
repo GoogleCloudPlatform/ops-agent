@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -37,6 +38,10 @@ import (
 	promconfig "github.com/prometheus/prometheus/config"
 	"go.uber.org/multierr"
 )
+
+// BuiltInConfStructs contains the default configuration for each platform.
+// It is populated by an initializer in the `apps` package.
+var BuiltInConfStructs map[string]*UnifiedConfig
 
 // Ops Agent config.
 type UnifiedConfig struct {
@@ -583,7 +588,7 @@ type LoggingService struct {
 	Compress    string               `yaml:"compress,omitempty" validate:"omitempty,oneof=gzip,experimental=log_compression"`
 	LogLevel    string               `yaml:"log_level,omitempty" validate:"omitempty,oneof=error warn info debug trace"`
 	Pipelines   map[string]*Pipeline `validate:"dive,keys,startsnotwith=lib:"`
-	OTelLogging bool                 `yaml:"experimental_otel_logging,omitempty" validate:"omitempty,experimental=otel_logging"`
+	OTelLogging *bool                `yaml:"experimental_otel_logging,omitempty" validate:"omitempty"`
 }
 
 type Pipeline struct {
@@ -1084,15 +1089,22 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]PipelineInstan
 	if err != nil {
 		return nil, err
 	}
+	platformDefaultConfig := BuiltInConfStructs[platform.FromContext(ctx).Name()].Logging
 	exp_otlp := experimentsFromContext(ctx)["otlp_logging"]
 	exp_otel := l.Service.OTelLogging
 	var out []PipelineInstance
 	for _, pID := range otel.SortedKeys(l.Service.Pipelines) {
 		p := l.Service.Pipelines[pID]
+		defaultP, ok := platformDefaultConfig.Service.Pipelines[pID]
+		isDefaultPipeline := ok && slices.Equal(p.ReceiverIDs, defaultP.ReceiverIDs) && slices.Equal(p.ProcessorIDs, defaultP.ProcessorIDs)
 		for _, rID := range p.ReceiverIDs {
 			receiver, ok := receivers[rID]
 			if !ok {
 				return nil, fmt.Errorf("logging receiver %q not found", rID)
+			}
+			defaultReceiver, ok := platformDefaultConfig.Receivers[rID]
+			if !ok || !reflect.DeepEqual(receiver, defaultReceiver) {
+				isDefaultPipeline = false
 			}
 			var processors []struct {
 				ID string
@@ -1120,7 +1132,9 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]PipelineInstan
 				Receiver:     receiver,
 				Processors:   processors,
 			}
-			if exp_otel || (receiver.Type() == "otlp" && exp_otlp) {
+			if (exp_otel != nil && *exp_otel) || // User asked for OTel logging
+				(exp_otel == nil && isDefaultPipeline) || // Unmodified default pipeline
+				(receiver.Type() == "otlp" && exp_otlp) { // OTLP receiver
 				instance.Backend = BackendOTel
 			}
 			out = append(out, instance)
@@ -1195,7 +1209,8 @@ func (uc *UnifiedConfig) OTelLoggingSupported(ctx context.Context) bool {
 	if ucLoggingCopy.Logging.Service == nil {
 		ucLoggingCopy.Logging.Service = &LoggingService{}
 	}
-	ucLoggingCopy.Logging.Service.OTelLogging = true
+	t := true
+	ucLoggingCopy.Logging.Service.OTelLogging = &t
 	_, err = ucLoggingCopy.GenerateOtelConfig(ctx, "", "")
 	return err == nil
 }
