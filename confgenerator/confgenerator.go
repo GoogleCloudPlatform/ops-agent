@@ -255,7 +255,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 				Exporter: googleManagedPrometheusExporter(userAgent),
 			},
 			otel.OTLP_Metrics: {
-				Exporter: otlpExporterForMetrics(userAgent),
+				Exporter:       otlpExporterForMetrics(userAgent),
 				UsedExtensions: []string{googleClientAuthExtensionType},
 				ProcessorsByType: map[string][]otel.Component{
 					"metrics": {
@@ -266,7 +266,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 				},
 			},
 			otel.OTLP_Logs: {
-				Exporter: otlpExporterForLogs(userAgent),
+				Exporter:       otlpExporterForLogs(userAgent),
 				UsedExtensions: []string{fileStorageExtensionType, googleClientAuthExtensionType},
 				ProcessorsByType: map[string][]otel.Component{
 					"logs": {
