@@ -7,7 +7,25 @@ exporters:
       service_resource_labels: true
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
-  otlp_grpc/otlp:
+  otlp_grpc/otlp_logs:
+    auth:
+      authenticator: googleclientauth
+    balancer_name: pick_first
+    endpoint: telemetry.googleapis.com:443
+    headers:
+      User-Agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
+    sending_queue:
+      batch:
+        flush_timeout: 200ms
+        max_size: 5000000
+        min_size: 5000000
+        sizer: bytes
+      block_on_overflow: true
+      enabled: true
+      num_consumers: 10
+      queue_size: 60000000
+      sizer: bytes
+  otlp_grpc/otlp_metrics:
     auth:
       authenticator: googleclientauth
     balancer_name: pick_first
@@ -18,16 +36,11 @@ extensions:
   file_storage:
     create_directory: true
     directory: file_storage
-  googleclientauth: {}
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  batch/otlp_grpc/otlp_logs_3:
-    send_batch_max_size: 1000
-    send_batch_size: 1000
-    timeout: 200ms
-  batch/otlp_grpc/otlp_metrics_2:
+  batch/otlp_grpc/otlp_metrics_metrics_2:
     send_batch_max_size: 200
     send_batch_size: 200
     timeout: 200ms
@@ -114,7 +127,7 @@ processors:
     - location
   interval/loggingmetrics_7:
     interval: 1m
-  metricstarttime/otlp_grpc/otlp_metrics_1:
+  metricstarttime/otlp_grpc/otlp_metrics_metrics_1:
     strategy: subtract_initial_point
   metricstransform/fluentbit_1:
     transforms:
@@ -755,12 +768,12 @@ processors:
       match_type: regexp
       new_name: $${1}
   normalizesums/iis_2: {}
-  resource/otlp_grpc/otlp_logs_0:
+  resource/otlp_grpc/otlp_logs_logs_0:
     attributes:
     - action: insert
       key: gcp.project_id
       value: test-project
-  resource/otlp_grpc/otlp_metrics_0:
+  resource/otlp_grpc/otlp_metrics_metrics_0:
     attributes:
     - action: insert
       key: gcp.project_id
@@ -981,14 +994,14 @@ processors:
       - copy_metric(Concat([metric.name, "unknowncounter"], ":")) where metric.metadata["prometheus.type"] == "unknown" and not HasSuffix(metric.name, ":unknowncounter")
       - convert_gauge_to_sum("cumulative", true) where HasSuffix(metric.name, ":unknowncounter")
       - set(metric.name, Substring(metric.name, 0, Len(metric.name)-Len(":unknowncounter"))) where HasSuffix(metric.name, ":unknowncounter")
-  transform/otlp_grpc/otlp_logs_1:
+  transform/otlp_grpc/otlp_logs_logs_1:
     error_mode: ignore
     log_statements:
     - context: log
       statements:
       - set(attributes["instrumentation_source"], instrumentation_scope.name) where instrumentation_scope.name != ""
       - set(attributes["instrumentation_version"], instrumentation_scope.version) where instrumentation_scope.version != ""
-  transform/otlp_grpc/otlp_logs_2:
+  transform/otlp_grpc/otlp_logs_logs_2:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1523,90 +1536,83 @@ receivers:
 service:
   extensions:
   - file_storage
-  - googleclientauth
   pipelines:
     logs/logs_default__pipeline_windows__event__log:
       exporters:
-      - otlp_grpc/otlp
+      - otlp_grpc/otlp_logs
       processors:
       - transform/windows__event__log_0
       - transform/windows__event__log_1
       - transform/windows__event__log_2
       - resourcedetection/_global_0
-      - resource/otlp_grpc/otlp_logs_0
-      - transform/otlp_grpc/otlp_logs_1
-      - transform/otlp_grpc/otlp_logs_2
-      - batch/otlp_grpc/otlp_logs_3
+      - resource/otlp_grpc/otlp_logs_logs_0
+      - transform/otlp_grpc/otlp_logs_logs_1
+      - transform/otlp_grpc/otlp_logs_logs_2
       receivers:
       - windowseventlog/windows__event__log
     logs/logs_default__pipeline_windows__event__log_1:
       exporters:
-      - otlp_grpc/otlp
+      - otlp_grpc/otlp_logs
       processors:
       - transform/windows__event__log_1_0
       - transform/windows__event__log_1_1
       - transform/windows__event__log_1_2
       - resourcedetection/_global_0
-      - resource/otlp_grpc/otlp_logs_0
-      - transform/otlp_grpc/otlp_logs_1
-      - transform/otlp_grpc/otlp_logs_2
-      - batch/otlp_grpc/otlp_logs_3
+      - resource/otlp_grpc/otlp_logs_logs_0
+      - transform/otlp_grpc/otlp_logs_logs_1
+      - transform/otlp_grpc/otlp_logs_logs_2
       receivers:
       - windowseventlog/windows__event__log_1
     logs/logs_default__pipeline_windows__event__log_2:
       exporters:
-      - otlp_grpc/otlp
+      - otlp_grpc/otlp_logs
       processors:
       - transform/windows__event__log_2_0
       - transform/windows__event__log_2_1
       - transform/windows__event__log_2_2
       - resourcedetection/_global_0
-      - resource/otlp_grpc/otlp_logs_0
-      - transform/otlp_grpc/otlp_logs_1
-      - transform/otlp_grpc/otlp_logs_2
-      - batch/otlp_grpc/otlp_logs_3
+      - resource/otlp_grpc/otlp_logs_logs_0
+      - transform/otlp_grpc/otlp_logs_logs_1
+      - transform/otlp_grpc/otlp_logs_logs_2
       receivers:
       - windowseventlog/windows__event__log_2
     logs/logs_file__pipeline_file__logs:
       exporters:
-      - otlp_grpc/otlp
+      - otlp_grpc/otlp_logs
       processors:
       - transform/file__logs_0
       - resourcedetection/_global_0
-      - resource/otlp_grpc/otlp_logs_0
-      - transform/otlp_grpc/otlp_logs_1
-      - transform/otlp_grpc/otlp_logs_2
-      - batch/otlp_grpc/otlp_logs_3
+      - resource/otlp_grpc/otlp_logs_logs_0
+      - transform/otlp_grpc/otlp_logs_logs_1
+      - transform/otlp_grpc/otlp_logs_logs_2
       receivers:
       - filelog/file__logs
     logs/logs_otlp_otlp:
       exporters:
-      - otlp_grpc/otlp
+      - otlp_grpc/otlp_logs
       processors:
       - transform/otlp_0
       - resourcedetection/_global_1
-      - resource/otlp_grpc/otlp_logs_0
-      - transform/otlp_grpc/otlp_logs_1
-      - transform/otlp_grpc/otlp_logs_2
-      - batch/otlp_grpc/otlp_logs_3
+      - resource/otlp_grpc/otlp_logs_logs_0
+      - transform/otlp_grpc/otlp_logs_logs_1
+      - transform/otlp_grpc/otlp_logs_logs_2
       receivers:
       - otlp/otlp
     logs/logs_syslog__custom_syslog__custom:
       exporters:
-      - otlp_grpc/otlp
+      - otlp_grpc/otlp_logs
       processors:
       - transform/syslog__custom_0
       - transform/syslog__custom_1
       - resourcedetection/_global_0
-      - resource/otlp_grpc/otlp_logs_0
-      - transform/otlp_grpc/otlp_logs_1
-      - transform/otlp_grpc/otlp_logs_2
-      - batch/otlp_grpc/otlp_logs_3
+      - resource/otlp_grpc/otlp_logs_logs_0
+      - transform/otlp_grpc/otlp_logs_logs_1
+      - transform/otlp_grpc/otlp_logs_logs_2
       receivers:
       - syslog/syslog__custom
     metrics/default__pipeline_hostmetrics:
       exporters:
-      - otlp_grpc/otlp
+      - otlp_grpc/otlp_metrics
       processors:
       - agentmetrics/hostmetrics_0
       - filter/hostmetrics_1
@@ -1615,14 +1621,14 @@ service:
       - transform/hostmetrics_4
       - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
-      - resource/otlp_grpc/otlp_metrics_0
-      - metricstarttime/otlp_grpc/otlp_metrics_1
-      - batch/otlp_grpc/otlp_metrics_2
+      - resource/otlp_grpc/otlp_metrics_metrics_0
+      - metricstarttime/otlp_grpc/otlp_metrics_metrics_1
+      - batch/otlp_grpc/otlp_metrics_metrics_2
       receivers:
       - hostmetrics/hostmetrics
     metrics/default__pipeline_iis:
       exporters:
-      - otlp_grpc/otlp
+      - otlp_grpc/otlp_metrics
       processors:
       - metricstransform/iis_0
       - casttosum/iis_1
@@ -1632,14 +1638,14 @@ service:
       - transform/iis_5
       - filter/default__pipeline_iis_0
       - resourcedetection/_global_0
-      - resource/otlp_grpc/otlp_metrics_0
-      - metricstarttime/otlp_grpc/otlp_metrics_1
-      - batch/otlp_grpc/otlp_metrics_2
+      - resource/otlp_grpc/otlp_metrics_metrics_0
+      - metricstarttime/otlp_grpc/otlp_metrics_metrics_1
+      - batch/otlp_grpc/otlp_metrics_metrics_2
       receivers:
       - windowsperfcounters/iis
     metrics/default__pipeline_mssql:
       exporters:
-      - otlp_grpc/otlp
+      - otlp_grpc/otlp_metrics
       processors:
       - metricstransform/mssql_0
       - transform/mssql_1
@@ -1647,14 +1653,14 @@ service:
       - transform/mssql_3
       - filter/default__pipeline_mssql_0
       - resourcedetection/_global_0
-      - resource/otlp_grpc/otlp_metrics_0
-      - metricstarttime/otlp_grpc/otlp_metrics_1
-      - batch/otlp_grpc/otlp_metrics_2
+      - resource/otlp_grpc/otlp_metrics_metrics_0
+      - metricstarttime/otlp_grpc/otlp_metrics_metrics_1
+      - batch/otlp_grpc/otlp_metrics_metrics_2
       receivers:
       - windowsperfcounters/mssql
     metrics/fluentbit:
       exporters:
-      - otlp_grpc/otlp
+      - otlp_grpc/otlp_metrics
       processors:
       - transform/agent_prometheus_0
       - transform/agent_prometheus_1
@@ -1662,14 +1668,14 @@ service:
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
       - resourcedetection/_global_0
-      - resource/otlp_grpc/otlp_metrics_0
-      - metricstarttime/otlp_grpc/otlp_metrics_1
-      - batch/otlp_grpc/otlp_metrics_2
+      - resource/otlp_grpc/otlp_metrics_metrics_0
+      - metricstarttime/otlp_grpc/otlp_metrics_metrics_1
+      - batch/otlp_grpc/otlp_metrics_metrics_2
       receivers:
       - prometheus/agent_prometheus
     metrics/loggingmetrics:
       exporters:
-      - otlp_grpc/otlp
+      - otlp_grpc/otlp_metrics
       processors:
       - transform/agent_prometheus_0
       - transform/agent_prometheus_1
@@ -1684,27 +1690,27 @@ service:
       - interval/loggingmetrics_7
       - metricstransform/loggingmetrics_8
       - resourcedetection/_global_0
-      - resource/otlp_grpc/otlp_metrics_0
-      - metricstarttime/otlp_grpc/otlp_metrics_1
-      - batch/otlp_grpc/otlp_metrics_2
+      - resource/otlp_grpc/otlp_metrics_metrics_0
+      - metricstarttime/otlp_grpc/otlp_metrics_metrics_1
+      - batch/otlp_grpc/otlp_metrics_metrics_2
       receivers:
       - prometheus/agent_prometheus
     metrics/opsagent:
       exporters:
-      - otlp_grpc/otlp
+      - otlp_grpc/otlp_metrics
       processors:
       - transform/ops_agent_0
       - transform/ops_agent_1
       - transform/ops_agent_2
       - resourcedetection/_global_0
-      - resource/otlp_grpc/otlp_metrics_0
-      - metricstarttime/otlp_grpc/otlp_metrics_1
-      - batch/otlp_grpc/otlp_metrics_2
+      - resource/otlp_grpc/otlp_metrics_metrics_0
+      - metricstarttime/otlp_grpc/otlp_metrics_metrics_1
+      - batch/otlp_grpc/otlp_metrics_metrics_2
       receivers:
       - otlpjsonfile/ops_agent
     metrics/otel:
       exporters:
-      - otlp_grpc/otlp
+      - otlp_grpc/otlp_metrics
       processors:
       - transform/agent_prometheus_0
       - transform/agent_prometheus_1
@@ -1714,34 +1720,34 @@ service:
       - filter/otel_2
       - metricstransform/otel_3
       - resourcedetection/_global_0
-      - resource/otlp_grpc/otlp_metrics_0
-      - metricstarttime/otlp_grpc/otlp_metrics_1
-      - batch/otlp_grpc/otlp_metrics_2
+      - resource/otlp_grpc/otlp_metrics_metrics_0
+      - metricstarttime/otlp_grpc/otlp_metrics_metrics_1
+      - batch/otlp_grpc/otlp_metrics_metrics_2
       receivers:
       - prometheus/agent_prometheus
     metrics/otlp2_otlpgooglecloudmonitoring:
       exporters:
-      - otlp_grpc/otlp
+      - otlp_grpc/otlp_metrics
       processors:
       - metricstransform/otlpgooglecloudmonitoring_0
       - resourcedetection/_global_1
-      - resource/otlp_grpc/otlp_metrics_0
-      - metricstarttime/otlp_grpc/otlp_metrics_1
-      - batch/otlp_grpc/otlp_metrics_2
+      - resource/otlp_grpc/otlp_metrics_metrics_0
+      - metricstarttime/otlp_grpc/otlp_metrics_metrics_1
+      - batch/otlp_grpc/otlp_metrics_metrics_2
       receivers:
       - otlp/otlpgooglecloudmonitoring
     metrics/otlp_otlp:
       exporters:
-      - otlp_grpc/otlp
+      - otlp_grpc/otlp_metrics
       processors:
       - resourcedetection/otlp_0
       - transform/otlp_1
       - groupbyattrs/otlp_2
       - transform/otlp_3
       - metricstransform/otlp_4
-      - resource/otlp_grpc/otlp_metrics_0
-      - metricstarttime/otlp_grpc/otlp_metrics_1
-      - batch/otlp_grpc/otlp_metrics_2
+      - resource/otlp_grpc/otlp_metrics_metrics_0
+      - metricstarttime/otlp_grpc/otlp_metrics_metrics_1
+      - batch/otlp_grpc/otlp_metrics_metrics_2
       receivers:
       - otlp/otlp
     traces/traces_otlp_otlp:

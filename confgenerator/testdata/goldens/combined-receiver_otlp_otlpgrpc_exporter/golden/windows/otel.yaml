@@ -32,8 +32,6 @@ exporters:
     endpoint: telemetry.googleapis.com:443
     headers:
       User-Agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
-extensions:
-  googleclientauth: {}
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
@@ -1058,48 +1056,7 @@ receivers:
       - _Total
       object: SQLServer:Databases
 service:
-  extensions:
-  - googleclientauth
   pipelines:
-    logs/logs_default__pipeline_windows__event__log:
-      exporters:
-      - otlp_grpc/otlp_logs
-      processors:
-      - transform/windows__event__log_0
-      - transform/windows__event__log_1
-      - transform/windows__event__log_2
-      - resourcedetection/_global_0
-      - resource/otlp_grpc/otlp_logs_logs_0
-      - transform/otlp_grpc/otlp_logs_logs_1
-      - transform/otlp_grpc/otlp_logs_logs_2
-      receivers:
-      - windowseventlog/windows__event__log
-    logs/logs_default__pipeline_windows__event__log_1:
-      exporters:
-      - otlp_grpc/otlp_logs
-      processors:
-      - transform/windows__event__log_1_0
-      - transform/windows__event__log_1_1
-      - transform/windows__event__log_1_2
-      - resourcedetection/_global_0
-      - resource/otlp_grpc/otlp_logs_logs_0
-      - transform/otlp_grpc/otlp_logs_logs_1
-      - transform/otlp_grpc/otlp_logs_logs_2
-      receivers:
-      - windowseventlog/windows__event__log_1
-    logs/logs_default__pipeline_windows__event__log_2:
-      exporters:
-      - otlp_grpc/otlp_logs
-      processors:
-      - transform/windows__event__log_2_0
-      - transform/windows__event__log_2_1
-      - transform/windows__event__log_2_2
-      - resourcedetection/_global_0
-      - resource/otlp_grpc/otlp_logs_logs_0
-      - transform/otlp_grpc/otlp_logs_logs_1
-      - transform/otlp_grpc/otlp_logs_logs_2
-      receivers:
-      - windowseventlog/windows__event__log_2
     logs/logs_otlp_otlp:
       exporters:
       - otlp_grpc/otlp_logs
