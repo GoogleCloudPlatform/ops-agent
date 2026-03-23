@@ -156,6 +156,7 @@ func otlpExporterForLogs(userAgent string) otel.Component {
 			"headers": map[string]string{
 				"User-Agent": userAgent,
 			},
+			"timeout": "3600s",
 			"sending_queue": map[string]interface{}{
 				"enabled": true,
 				// Set queue_size to "(num_consumers + 2)*5MB" to always have a new batch ready.
@@ -171,6 +172,7 @@ func otlpExporterForLogs(userAgent string) otel.Component {
 					"max_size":      5000000,
 					"sizer":         "bytes",
 				},
+				"storage": fileStorageExtensionType,
 			},
 		},
 	}
@@ -264,6 +266,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 			},
 			otel.OTLP_Logs: {
 				Exporter: otlpExporterForLogs(userAgent),
+				UsedExtensions: []string{fileStorageExtensionType},
 				ProcessorsByType: map[string][]otel.Component{
 					"logs": {
 						otel.GCPProjectID(resource.ProjectName()),

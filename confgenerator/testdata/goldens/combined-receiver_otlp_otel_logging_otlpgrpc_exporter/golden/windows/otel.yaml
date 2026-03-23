@@ -25,6 +25,8 @@ exporters:
       num_consumers: 10
       queue_size: 60000000
       sizer: bytes
+      storage: file_storage
+    timeout: 3600s
   otlp_grpc/otlp_metrics:
     auth:
       authenticator: googleclientauth
