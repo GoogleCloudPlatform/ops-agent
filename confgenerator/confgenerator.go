@@ -201,7 +201,8 @@ func (uc *UnifiedConfig) getOTelLogLevel() string {
 }
 
 const (
-	fileStorageExtensionType = "file_storage"
+	fileStorageExtensionType      = "file_storage"
+	googleClientAuthExtensionType = "googleclientauth"
 )
 
 // fileStorageExtension returns a configured file_storage extension to be used by all receivers and exporters.
@@ -256,6 +257,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 			},
 			otel.OTLP_Metrics: {
 				Exporter: otlpExporterForMetrics(userAgent),
+				UsedExtensions: []string{googleClientAuthExtensionType},
 				ProcessorsByType: map[string][]otel.Component{
 					"metrics": {
 						otel.GCPProjectID(resource.ProjectName()),
@@ -266,7 +268,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 			},
 			otel.OTLP_Logs: {
 				Exporter: otlpExporterForLogs(userAgent),
-				UsedExtensions: []string{fileStorageExtensionType},
+				UsedExtensions: []string{fileStorageExtensionType, googleClientAuthExtensionType},
 				ProcessorsByType: map[string][]otel.Component{
 					"logs": {
 						otel.GCPProjectID(resource.ProjectName()),
@@ -282,8 +284,8 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 			},
 		},
 		Extensions: map[string]otel.Component{
-			"googleclientauth":       {Type: "googleclientauth", Config: map[string]string{}},
-			fileStorageExtensionType: fileStorageExtension(stateDir),
+			googleClientAuthExtensionType: {Type: googleClientAuthExtensionType, Config: map[string]string{}},
+			fileStorageExtensionType:      fileStorageExtension(stateDir),
 		},
 	}.Generate(ctx)
 	if err != nil {

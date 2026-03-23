@@ -30,6 +30,7 @@ extensions:
   file_storage:
     create_directory: true
     directory: file_storage
+  googleclientauth: {}
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
@@ -1166,6 +1167,7 @@ receivers:
 service:
   extensions:
   - file_storage
+  - googleclientauth
   pipelines:
     logs/logs_pipeline1_test__syslog__source__id__tcp:
       exporters:
