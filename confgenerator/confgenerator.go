@@ -156,7 +156,6 @@ func otlpExporterForLogs(userAgent string) otel.Component {
 			"headers": map[string]string{
 				"User-Agent": userAgent,
 			},
-			"timeout": "3600s",
 			"sending_queue": map[string]interface{}{
 				"enabled": true,
 				// Set queue_size to "(num_consumers + 2)*5MB" to always have a new batch ready.
