@@ -69,11 +69,14 @@ func (t ExporterType) Name() string {
 type ExporterComponents struct {
 	Exporter         Component
 	ProcessorsByType map[string][]Component
+	UsedExtensions   []string
 }
 
 // ReceiverPipeline represents a single OT receiver and zero or more processors that must be chained after that receiver.
 type ReceiverPipeline struct {
 	Receiver Component
+	// UsedExtensions is a list of extensions used by this receiver.
+	UsedExtensions []string
 	// Processors is a map with processors for each pipeline type ("metrics" or "traces").
 	// If a key is not in the map, the receiver pipeline will not be used for that pipeline type.
 	Processors map[string][]Component
@@ -128,8 +131,8 @@ type ModularConfig struct {
 	LogLevel          string
 	ReceiverPipelines map[string]ReceiverPipeline
 	Pipelines         map[string]Pipeline
-	Extensions        map[string]interface{}
 	Exporters         map[ExporterType]ExporterComponents
+	Extensions        map[string]Component
 
 	// Test-only options:
 	// Don't generate any self-metrics
@@ -209,16 +212,6 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 		"service":    service,
 	}
 
-	if len(c.Extensions) > 0 {
-		extensionsList := SortedKeys(c.Extensions)
-		for _, extensionName := range extensionsList {
-			extensions[extensionName] = c.Extensions[extensionName]
-		}
-
-		service["extensions"] = extensionsList
-		configMap["extensions"] = extensions
-	}
-
 	resourceDetectionProcessors := map[ResourceDetectionMode]Component{
 		Override:     GCPResourceDetector(true),
 		SetIfMissing: GCPResourceDetector(false),
@@ -252,6 +245,9 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 			processors[name] = processor.Config
 		}
 		receivers[receiverName] = receiverPipeline.Receiver.Config
+		for _, name := range receiverPipeline.UsedExtensions {
+			extensions[name] = c.Extensions[name].Config
+		}
 
 		// Everything else in the pipeline is specific to this Type.
 		var processorNames []string
@@ -273,6 +269,9 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 			name := exporter.Exporter.name(exporterType.Name())
 			exporterNames[exporterType] = name
 			exporters[name] = exporter.Exporter.Config
+			for _, name := range exporter.UsedExtensions {
+				extensions[name] = c.Extensions[name].Config
+			}
 		}
 		for i, processor := range exporter.ProcessorsByType[pipeline.Type] {
 			name := processor.name(fmt.Sprintf("%s_%s_%d", exporterNames[exporterType], pipeline.Type, i))
@@ -287,6 +286,11 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 			"processors": processorNames,
 			"exporters":  []string{exporterNames[exporterType]},
 		}
+	}
+
+	if len(extensions) > 0 {
+		service["extensions"] = SortedKeys(extensions)
+		configMap["extensions"] = extensions
 	}
 
 	out, err := configToYaml(configMap)
