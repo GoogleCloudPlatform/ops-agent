@@ -1,0 +1,76 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: gcp.source_location
+          value:
+            kvlistValue:
+              values:
+              - key: file
+                value:
+                  stringValue: file
+              - key: function
+                value:
+                  stringValue: function
+              - key: line
+                value:
+                  stringValue: "1"
+        - key: label1
+          value:
+            stringValue: value1
+        - key: label2
+          value:
+            stringValue: value2
+        body:
+          kvlistValue:
+            values:
+            - key: logging.googleapis.com/operation
+              value:
+                kvlistValue:
+                  values:
+                  - key: first
+                    value:
+                      boolValue: true
+                  - key: id
+                    value:
+                      stringValue: id
+                  - key: last
+                    value:
+                      boolValue: true
+                  - key: producer
+                    value:
+                      stringValue: producer
+            - key: normal_field
+              value:
+                stringValue: value
+        observedTimeUnixNano: now
+        severityText: WARNING
+        spanId: facefeedb0bacafe
+        traceId: deadcafedeadc0defacefeedb0bacafe
+      scope: {}

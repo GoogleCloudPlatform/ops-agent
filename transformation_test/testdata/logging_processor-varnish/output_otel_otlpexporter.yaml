@@ -1,0 +1,279 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: protocol
+                value:
+                  stringValue: HTTP/1.1
+              - key: remoteIp
+                value:
+                  stringValue: 127.0.0.1
+              - key: requestMethod
+                value:
+                  stringValue: GET
+              - key: requestUrl
+                value:
+                  stringValue: http://localhost:8080/test
+              - key: responseSize
+                value:
+                  stringValue: "273"
+              - key: status
+                value:
+                  intValue: "404"
+              - key: userAgent
+                value:
+                  stringValue: curl/7.64.0
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/varnish
+        body:
+          kvlistValue: {}
+        observedTimeUnixNano: now
+        timeUnixNano: "1646236505000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: protocol
+                value:
+                  stringValue: HTTP/1.1
+              - key: referer
+                value:
+                  stringValue: https://example.com/login
+              - key: remoteIp
+                value:
+                  stringValue: 192.168.1.10
+              - key: requestMethod
+                value:
+                  stringValue: POST
+              - key: requestUrl
+                value:
+                  stringValue: /api/v1/login
+              - key: responseSize
+                value:
+                  stringValue: "512"
+              - key: status
+                value:
+                  intValue: "200"
+              - key: userAgent
+                value:
+                  stringValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64)
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/varnish
+        body:
+          kvlistValue:
+            values:
+            - key: user
+              value:
+                stringValue: john
+        observedTimeUnixNano: now
+        timeUnixNano: "1646302365000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: protocol
+                value:
+                  stringValue: HTTP/2.0
+              - key: remoteIp
+                value:
+                  stringValue: 10.0.0.5
+              - key: requestMethod
+                value:
+                  stringValue: GET
+              - key: requestUrl
+                value:
+                  stringValue: /static/image.png
+              - key: responseSize
+                value:
+                  stringValue: "0"
+              - key: status
+                value:
+                  intValue: "304"
+              - key: userAgent
+                value:
+                  stringValue: curl/7.68.0
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/varnish
+        body:
+          kvlistValue: {}
+        observedTimeUnixNano: now
+        timeUnixNano: "1646382612000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: protocol
+                value:
+                  stringValue: HTTP/1.1
+              - key: referer
+                value:
+                  stringValue: https://example.com/profile
+              - key: remoteIp
+                value:
+                  stringValue: 203.0.113.42
+              - key: requestMethod
+                value:
+                  stringValue: PUT
+              - key: requestUrl
+                value:
+                  stringValue: /user/profile
+              - key: responseSize
+                value:
+                  stringValue: "128"
+              - key: status
+                value:
+                  intValue: "401"
+              - key: userAgent
+                value:
+                  stringValue: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/varnish
+        body:
+          kvlistValue:
+            values:
+            - key: user
+              value:
+                stringValue: alice
+        observedTimeUnixNano: now
+        timeUnixNano: "1646517719000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: protocol
+                value:
+                  stringValue: HTTP/1.1
+              - key: remoteIp
+                value:
+                  stringValue: 127.0.0.1
+              - key: requestMethod
+                value:
+                  stringValue: DELETE
+              - key: requestUrl
+                value:
+                  stringValue: /api/v1/item/123
+              - key: responseSize
+                value:
+                  stringValue: "0"
+              - key: status
+                value:
+                  intValue: "204"
+              - key: userAgent
+                value:
+                  stringValue: PostmanRuntime/7.28.4
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/varnish
+        body:
+          kvlistValue: {}
+        observedTimeUnixNano: now
+        timeUnixNano: "1646576591000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: protocol
+                value:
+                  stringValue: HTTP/1.1
+              - key: referer
+                value:
+                  stringValue: https://example.com/
+              - key: remoteIp
+                value:
+                  stringValue: 172.16.0.2
+              - key: requestMethod
+                value:
+                  stringValue: GET
+              - key: requestUrl
+                value:
+                  stringValue: /dashboard
+              - key: responseSize
+                value:
+                  stringValue: "1024"
+              - key: status
+                value:
+                  intValue: "500"
+              - key: userAgent
+                value:
+                  stringValue: Mozilla/5.0 (X11; Linux x86_64)
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/varnish
+        body:
+          kvlistValue:
+            values:
+            - key: user
+              value:
+                stringValue: bob
+        observedTimeUnixNano: now
+        timeUnixNano: "1646682333000000000"
+      scope: {}

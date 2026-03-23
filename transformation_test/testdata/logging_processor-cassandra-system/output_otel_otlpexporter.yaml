@@ -1,0 +1,407 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_system
+        body:
+          kvlistValue:
+            values:
+            - key: javaClass
+              value:
+                stringValue: CassandraDaemon.java
+            - key: level
+              value:
+                stringValue: INFO
+            - key: lineNumber
+              value:
+                intValue: "687"
+            - key: message
+              value:
+                stringValue: CassandraDaemon.java:687 - Starting Cassandra Server...
+            - key: module
+              value:
+                stringValue: main
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753204544001000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_system
+        body:
+          kvlistValue:
+            values:
+            - key: javaClass
+              value:
+                stringValue: NativeTransportService.java
+            - key: level
+              value:
+                stringValue: INFO
+            - key: lineNumber
+              value:
+                intValue: "65"
+            - key: message
+              value:
+                stringValue: NativeTransportService.java:65 - Netty using Java NIO event loop
+            - key: module
+              value:
+                stringValue: main
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753204545005000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_system
+        body:
+          kvlistValue:
+            values:
+            - key: javaClass
+              value:
+                stringValue: HintsService.java
+            - key: level
+              value:
+                stringValue: INFO
+            - key: lineNumber
+              value:
+                intValue: "141"
+            - key: message
+              value:
+                stringValue: HintsService.java:141 - Started HintsService with 1024 queued hints
+            - key: module
+              value:
+                stringValue: main
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753204545104000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_system
+        body:
+          kvlistValue:
+            values:
+            - key: javaClass
+              value:
+                stringValue: StorageService.java
+            - key: level
+              value:
+                stringValue: INFO
+            - key: lineNumber
+              value:
+                intValue: "1443"
+            - key: message
+              value:
+                stringValue: StorageService.java:1443 - Node localhost/127.0.0.1 is now part of the ring
+            - key: module
+              value:
+                stringValue: main
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753204545123000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_system
+        body:
+          kvlistValue:
+            values:
+            - key: javaClass
+              value:
+                stringValue: FailureDetector.java
+            - key: level
+              value:
+                stringValue: WARN
+            - key: lineNumber
+              value:
+                intValue: "305"
+            - key: message
+              value:
+                stringValue: FailureDetector.java:305 - Not enough live nodes to maintain quorum
+            - key: module
+              value:
+                stringValue: GossipTasks:1
+        observedTimeUnixNano: now
+        severityText: WARNING
+        timeUnixNano: "1753204823334000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_system
+        body:
+          kvlistValue:
+            values:
+            - key: javaClass
+              value:
+                stringValue: Memtable.java
+            - key: level
+              value:
+                stringValue: INFO
+            - key: lineNumber
+              value:
+                intValue: "353"
+            - key: message
+              value:
+                stringValue: Memtable.java:353 - Writing Memtable for ks1.tbl1 (172.4 KiB)
+            - key: module
+              value:
+                stringValue: MemtableFlushWriter:1
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753204935667000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_system
+        body:
+          kvlistValue:
+            values:
+            - key: javaClass
+              value:
+                stringValue: Memtable.java
+            - key: level
+              value:
+                stringValue: INFO
+            - key: lineNumber
+              value:
+                intValue: "376"
+            - key: message
+              value:
+                stringValue: Memtable.java:376 - Completed flushing ks1.tbl1 to /var/lib/cassandra/data/ks1/tbl1-123abc
+            - key: module
+              value:
+                stringValue: MemtableFlushWriter:1
+        observedTimeUnixNano: now
+        severityText: INFO
+        timeUnixNano: "1753204935912000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_system
+        body:
+          kvlistValue:
+            values:
+            - key: javaClass
+              value:
+                stringValue: CommitLog.java
+            - key: level
+              value:
+                stringValue: ERROR
+            - key: lineNumber
+              value:
+                intValue: "874"
+            - key: message
+              value:
+                stringValue: "CommitLog.java:874 - Commit log sync failed: java.io.IOException: Disk full"
+            - key: module
+              value:
+                stringValue: ScheduledTasks:1
+        observedTimeUnixNano: now
+        severityText: ERROR
+        timeUnixNano: "1753207823801000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_system
+        body:
+          kvlistValue:
+            values:
+            - key: javaClass
+              value:
+                stringValue: CompactionTask.java
+            - key: level
+              value:
+                stringValue: ERROR
+            - key: lineNumber
+              value:
+                intValue: "322"
+            - key: message
+              value:
+                stringValue: |-
+                  CompactionTask.java:322 - Error during compaction
+                  java.lang.RuntimeException: Out of memory while compacting sstable
+                  	at org.apache.cassandra.db.compaction.CompactionTask.runWith(CompactionTask.java:315)
+                  	at org.apache.cassandra.db.compaction.CompactionTask.run(CompactionTask.java:236)
+                  	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+                  	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+                  	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+                  	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+                  	at java.base/java.lang.Thread.run(Thread.java:840)
+            - key: module
+              value:
+                stringValue: CompactionExecutor:2
+        observedTimeUnixNano: now
+        severityText: ERROR
+        timeUnixNano: "1753208742154000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_system
+        body:
+          kvlistValue:
+            values:
+            - key: javaClass
+              value:
+                stringValue: Gossiper.java
+            - key: level
+              value:
+                stringValue: WARN
+            - key: lineNumber
+              value:
+                intValue: "1125"
+            - key: message
+              value:
+                stringValue: Gossiper.java:1125 - Skipping status update for unreachable node /127.0.0.2
+            - key: module
+              value:
+                stringValue: GossipStage:1
+        observedTimeUnixNano: now
+        severityText: WARNING
+        timeUnixNano: "1753209600409000000"
+      scope: {}
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/cassandra_system
+        body:
+          kvlistValue:
+            values:
+            - key: javaClass
+              value:
+                stringValue: HintsWriteExecutor.java
+            - key: level
+              value:
+                stringValue: ERROR
+            - key: lineNumber
+              value:
+                intValue: "134"
+            - key: message
+              value:
+                stringValue: |-
+                  HintsWriteExecutor.java:134 - Failed to write hint
+                  org.apache.cassandra.io.FSWriteError: java.io.IOException: No space left on device
+                  	at org.apache.cassandra.io.util.FileUtils.handleFSError(FileUtils.java:165)
+                  	at org.apache.cassandra.io.util.SequentialWriter.write(SequentialWriter.java:135)
+                  	at org.apache.cassandra.hints.HintsWriteExecutor.write(HintsWriteExecutor.java:128)
+                  	at org.apache.cassandra.hints.HintsWriteExecutor.writeHint(HintsWriteExecutor.java:110)
+                  	at org.apache.cassandra.hints.HintsService$WriteHints.run(HintsService.java:549)
+                  	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+                  	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+                  	at java.base/java.lang.Thread.run(Thread.java:840)
+            - key: module
+              value:
+                stringValue: HintsService:1
+        observedTimeUnixNano: now
+        severityText: ERROR
+        timeUnixNano: "1753210811991000000"
+      scope: {}

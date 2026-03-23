@@ -19,15 +19,24 @@ else
     DEB_VERSION=$(dpkg-query -W -f='${Version}' "linux-image-${KERNEL_VERSION}")
     ABI=$(echo "$KERNEL_VERSION" | grep -oP '^[0-9]+\.[0-9]+\.[0-9]+-[0-9]+')
     BASE_KVER=$(echo "$KERNEL_VERSION" | cut -d. -f1,2)
+    if [[ "${VERSION_ID}" == "11" ]]; then
+        COMPILER_VER="10"
+    else
+        COMPILER_VER="12"
+    fi
 
     PKG_COMMON="linux-headers-${ABI}-common_${DEB_VERSION}_all.deb"
     PKG_ARCH="linux-headers-${KERNEL_VERSION}_${DEB_VERSION}_amd64.deb"
     PKG_KBUILD="linux-kbuild-${BASE_KVER}_${DEB_VERSION}_amd64.deb"
-    PKG_COMPILER="linux-compiler-gcc-10-x86_${DEB_VERSION}_amd64.deb"
+    PKG_COMPILER="linux-compiler-gcc-${COMPILER_VER}-x86_${DEB_VERSION}_amd64.deb"
 
-    # Update the archive timestamp to point to the archive containing the 
-    # matching headers.
-    ARCHIVE_TIME="20260210T181756Z"
+
+    # TODO(b/495363636): 
+    #   Update the archive timestamp to point to the archive containing the 
+    #   matching headers This will need to be updated with every kernel update.
+    #   Long term, we need a query logic to query a working archive repo. 
+    # YYYYMMDDT000000Z: snapshot.debian.org can take rounded timestamps
+    ARCHIVE_TIME="20260312T000000Z"
     BASE_URL="https://snapshot.debian.org/archive/debian-security/${ARCHIVE_TIME}/pool/updates/main/l/linux"
 
     wget "$BASE_URL/$PKG_COMMON" "$BASE_URL/$PKG_ARCH" "$BASE_URL/$PKG_KBUILD" "$BASE_URL/$PKG_COMPILER"
