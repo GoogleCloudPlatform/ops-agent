@@ -2594,7 +2594,7 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 			"(sudo mkswap /swapfile || sudo /usr/sbin/mkswap /swapfile)",
 			"(sudo swapon /swapfile || sudo /usr/sbin/swapon /swapfile)",
 		}
-
+		// TODO: moving isSLES16 to gce_testing.go
 		isSles16 := strings.Contains(vm.ImageSpec, "sles-16")
 		if isSles16 {
 			// SLES 16 uses btrfs by default, which does not support swapfiles created via dd without special handling.

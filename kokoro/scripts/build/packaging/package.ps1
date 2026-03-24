@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 $global:ProgressPreference = 'SilentlyContinue'
 
-$GoVersion = "1.24.11"
+$GoVersion = "1.25.0"
 $GoInstallerUrl = "https://go.dev/dl/go$GoVersion.windows-amd64.msi"
 $GoInstallDir = "C:\Go"
 
