@@ -158,8 +158,7 @@ func otlpExporterForLogs(userAgent string) otel.Component {
 			},
 			"sending_queue": map[string]interface{}{
 				"enabled": true,
-				// Set queue_size to "(num_consumers + 2)*5MB" to always have a new batch ready.
-				"queue_size":    60000000,
+				"queue_size":    20000000,
 				"num_consumers": 10,
 				"sizer":         "bytes",
 				// Blocks the "sending_queue" on overflow to reduce log loss.
@@ -167,7 +166,7 @@ func otlpExporterForLogs(userAgent string) otel.Component {
 				// Set batch in "sending_queue" is recommended instead of using the batch processor.
 				"batch": map[string]interface{}{
 					"flush_timeout": "200ms",
-					"min_size":      5000000,
+					"min_size":      1000000,
 					"max_size":      5000000,
 					"sizer":         "bytes",
 				},

@@ -10,12 +10,12 @@ exporters:
       batch:
         flush_timeout: 200ms
         max_size: 5000000
-        min_size: 5000000
+        min_size: 1000000
         sizer: bytes
       block_on_overflow: true
       enabled: true
       num_consumers: 10
-      queue_size: 60000000
+      queue_size: 20000000
       sizer: bytes
       storage: file_storage
   otlp_grpc/otlp_metrics:
