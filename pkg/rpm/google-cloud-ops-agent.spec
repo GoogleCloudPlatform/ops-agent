@@ -1,4 +1,8 @@
-%if 0%{?sle_version} > 0
+%if 0%{?suse_version} > 0
+# On OpenSUSE 16, sle_version is defined as literal string sle_version, and the
+# if check will cause an infinite expanding loop - So we check suse_version first
+%global dist .sles%(expr substr %{suse_version} 1 2)
+%elif 0%{?sle_version} > 0
 # we expect the distro suffix
 %global dist .sles%(expr substr %{sle_version} 1 2)
 %if %{sle_version} <= 12
@@ -53,7 +57,7 @@ BUILD_DISTRO=${build_distro#.} DESTDIR="%{buildroot}" ./build.sh
 %{_unitdir}-preset/*-%{name}*
 
 %pre
-%if 0%{sle_version} >= 16
+%if 0%{?suse_version} >= 16
 %systemd_pre google-cloud-ops-agent.service
 %endif
 

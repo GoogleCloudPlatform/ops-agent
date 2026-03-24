@@ -795,7 +795,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN SLE_VERSION=12 ./pkg/rpm/build.sh &> /dev/null || true
+RUN ./pkg/rpm/build.sh &> /dev/null || true
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -803,7 +803,7 @@ COPY --from=sles12-build-otel /work/cache /work/cache
 COPY --from=sles12-build-fluent-bit /work/cache /work/cache
 COPY --from=sles12-build-systemd /work/cache /work/cache
 COPY --from=sles12-build-wrapper /work/cache /work/cache
-RUN SLE_VERSION=12 ./pkg/rpm/build.sh
+RUN ./pkg/rpm/build.sh
 
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
 COPY ./builds/ops_agent_plugin.sh .
@@ -900,7 +900,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN SLE_VERSION=15 ./pkg/rpm/build.sh &> /dev/null || true
+RUN ./pkg/rpm/build.sh &> /dev/null || true
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -908,7 +908,7 @@ COPY --from=sles15-build-otel /work/cache /work/cache
 COPY --from=sles15-build-fluent-bit /work/cache /work/cache
 COPY --from=sles15-build-systemd /work/cache /work/cache
 COPY --from=sles15-build-wrapper /work/cache /work/cache
-RUN SLE_VERSION=15 ./pkg/rpm/build.sh
+RUN ./pkg/rpm/build.sh
 
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
 COPY ./builds/ops_agent_plugin.sh .
@@ -1005,7 +1005,7 @@ COPY . /work
 # Run the build script once to build the ops agent engine to a cache
 RUN mkdir -p /tmp/cache_run/golang && cp -r . /tmp/cache_run/golang
 WORKDIR /tmp/cache_run/golang
-RUN SLE_VERSION=16 ./pkg/rpm/build.sh &> /dev/null || true
+RUN ./pkg/rpm/build.sh &> /dev/null || true
 WORKDIR /work
 
 COPY ./confgenerator/default-config.yaml /work/cache/etc/google-cloud-ops-agent/config.yaml
@@ -1013,7 +1013,7 @@ COPY --from=sles16-build-otel /work/cache /work/cache
 COPY --from=sles16-build-fluent-bit /work/cache /work/cache
 COPY --from=sles16-build-systemd /work/cache /work/cache
 COPY --from=sles16-build-wrapper /work/cache /work/cache
-RUN SLE_VERSION=16 ./pkg/rpm/build.sh
+RUN ./pkg/rpm/build.sh
 
 COPY cmd/ops_agent_uap_plugin cmd/ops_agent_uap_plugin
 COPY ./builds/ops_agent_plugin.sh .
