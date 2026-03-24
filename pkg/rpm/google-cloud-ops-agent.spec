@@ -53,7 +53,7 @@ BUILD_DISTRO=${build_distro#.} DESTDIR="%{buildroot}" ./build.sh
 %{_unitdir}-preset/*-%{name}*
 
 %pre
-%if 0%{?suse_version} >= 1600
+%if 0%{sle_version} >= 16
 %systemd_pre google-cloud-ops-agent.service
 %endif
 
