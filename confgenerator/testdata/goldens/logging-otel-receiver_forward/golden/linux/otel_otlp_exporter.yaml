@@ -58,7 +58,7 @@ processors:
   filter/loggingmetrics_1:
     metrics:
       datapoint:
-      - metric.name == "rpc.client.call.duration_count" and (not IsMatch(datapoint.attributes["rpc.method"], "opentelemetry.proto.collector.logs.v1.LogsService/Export"))
+      - metric.name == "rpc_client_call_duration_count" and (not IsMatch(datapoint.attributes["rpc_method"], "opentelemetry.proto.collector.logs.v1.LogsService/Export"))
   filter/loggingmetrics_2:
     metrics:
       include:
@@ -69,11 +69,11 @@ processors:
         - fluentbit_stackdriver_retried_records_total
         - otelcol_exporter_sent_log_records
         - otelcol_exporter_send_failed_log_records
-        - rpc.client.call.duration_count
+        - rpc_client_call_duration_count
   filter/otel_1:
     metrics:
       datapoint:
-      - metric.name == "rpc.client.call.duration_count" and (not IsMatch(datapoint.attributes["rpc.method"], "opentelemetry.proto.collector.metrics.v1.MetricsService/Export"))
+      - metric.name == "rpc_client_call_duration_count" and (not IsMatch(datapoint.attributes["rpc_method"], "opentelemetry.proto.collector.metrics.v1.MetricsService/Export"))
   filter/otel_2:
     metrics:
       include:
@@ -83,7 +83,7 @@ processors:
         - otelcol_process_memory_rss
         - otelcol_exporter_sent_metric_points
         - otelcol_exporter_send_failed_metric_points
-        - rpc.client.call.duration_count
+        - rpc_client_call_duration_count
   interval/loggingmetrics_7:
     interval: 1m
   metricstarttime/otlp_grpc/otlp_metrics_1:
@@ -419,11 +419,11 @@ processors:
         label_set:
         - response_code
     - action: update
-      include: rpc.client.call.duration_count
+      include: rpc_client_call_duration_count
       new_name: otel_request_count
       operations:
       - action: update_label
-        label: rpc.response.status_code
+        label: rpc_response_status_code
         value_actions:
         - new_value: ABORTED
           value: Aborted
@@ -460,7 +460,7 @@ processors:
         - new_value: UNKNOWN
           value: Unknown
       - action: update_label
-        label: rpc.response.status_code
+        label: rpc_response_status_code
         new_label: response_code
       - action: update_label
         label: response_code
@@ -577,11 +577,11 @@ processors:
         aggregation_type: sum
         label_set: []
     - action: update
-      include: rpc.client.call.duration_count
+      include: rpc_client_call_duration_count
       new_name: agent/api_request_count
       operations:
       - action: update_label
-        label: rpc.response.status_code
+        label: rpc_response_status_code
         value_actions:
         - new_value: ABORTED
           value: Aborted
@@ -618,7 +618,7 @@ processors:
         - new_value: UNKNOWN
           value: Unknown
       - action: update_label
-        label: rpc.response.status_code
+        label: rpc_response_status_code
         new_label: state
       - action: aggregate_labels
         aggregation_type: sum
@@ -755,7 +755,7 @@ processors:
     metric_statements:
     - context: metric
       statements:
-      - extract_count_metric(true) where name == "rpc.client.call.duration"
+      - extract_count_metric(true) where name == "rpc_client_call_duration"
   transform/loggingmetrics_5:
     metric_statements:
     - context: metric
@@ -797,7 +797,7 @@ processors:
     metric_statements:
     - context: metric
       statements:
-      - extract_count_metric(true) where name == "rpc.client.call.duration"
+      - extract_count_metric(true) where name == "rpc_client_call_duration"
   transform/otlp_grpc/otlp_logs_1:
     error_mode: ignore
     log_statements:
