@@ -12,6 +12,7 @@ sudo apt-get -y update
 sudo apt-get -y install gnupg wget
 sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
 sudo wget --no-verbose --output-document=/etc/apt/trusted.gpg.d/postgresql.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+sudo apt-get -y update
 sudo apt-get install -y postgresql-${postgres_version}
 
 sudo service postgresql restart
