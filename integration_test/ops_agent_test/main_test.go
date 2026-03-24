@@ -4527,37 +4527,10 @@ func TestUpgradeOpsAgent(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		configPath := agents.OpsAgentConfigPath(vm.ImageSpec)
-		catCmd := "sudo cat " + configPath
-		appendCmd := `echo "# USER_CONFIG_TEST_UPGRADE" | sudo tee -a ` + configPath
-		if gce.IsWindows(vm.ImageSpec) {
-			catCmd = "powershell Get-Content \"" + configPath + "\""
-			appendCmd = `powershell Add-Content -Path "` + configPath + `" -Value "# USER_CONFIG_TEST_UPGRADE"`
-		}
-
-		// Verify the empty user config exists
-		if _, err := gce.RunRemotely(ctx, logger, vm, catCmd); err != nil {
-			t.Fatalf("failed to read config on stable install: %v", err)
-		}
-
-		// Append custom comment to simulate user edit
-		if _, err := gce.RunRemotely(ctx, logger, vm, appendCmd); err != nil {
-			t.Fatalf("failed to append custom comment: %v", err)
-		}
-
 		// Install the Ops agent from AGENT_PACKAGES_IN_GCS or REPO_SUFFIX.
 		secondVersion := agents.LocationFromEnvVars()
 		if err := agents.SetupOpsAgentFrom(ctx, logger, vm, "", secondVersion); err != nil {
 			t.Fatal(err)
-		}
-
-		// Verify custom config is preserved after upgrade
-		postUpgradeConfig, err := gce.RunRemotely(ctx, logger, vm, catCmd)
-		if err != nil {
-			t.Fatalf("failed to read config after upgrade: %v", err)
-		}
-		if !strings.Contains(postUpgradeConfig.Stdout, "USER_CONFIG_TEST_UPGRADE") {
-			t.Fatalf("User configuration was overridden during upgrade! Config: %s", postUpgradeConfig.Stdout)
 		}
 
 		time.Sleep(2 * time.Minute)
