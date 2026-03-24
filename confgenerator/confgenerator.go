@@ -157,7 +157,7 @@ func otlpExporterForLogs(userAgent string) otel.Component {
 				"User-Agent": userAgent,
 			},
 			"sending_queue": map[string]interface{}{
-				"enabled": true,
+				"enabled":       true,
 				"queue_size":    20000000,
 				"num_consumers": 10,
 				"sizer":         "bytes",
