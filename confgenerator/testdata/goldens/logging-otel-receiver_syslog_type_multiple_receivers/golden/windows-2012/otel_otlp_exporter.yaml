@@ -732,11 +732,11 @@ processors:
     metric_statements:
     - context: metric
       statements:
-      - delete_key(resource.attributes, "service.name")
-      - delete_key(resource.attributes, "service.version")
-      - delete_key(resource.attributes, "service.instance.id")
-      - delete_key(resource.attributes, "server.port")
-      - delete_key(resource.attributes, "url.scheme")
+      - delete_key(resource.attributes, "service_name")
+      - delete_key(resource.attributes, "service_version")
+      - delete_key(resource.attributes, "service_instance_id")
+      - delete_key(resource.attributes, "server_port")
+      - delete_key(resource.attributes, "url_scheme")
   transform/agent_prometheus_1:
     metric_statements:
     - context: scope
