@@ -6283,6 +6283,51 @@ func TestOpsAgentSigning(t *testing.T) {
 	})
 }
 
+// TestUninstallRemovesService tests to make sure the agent service is removed
+// when the agent is uninstalled
+func TestUninstallRemovesService(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+		if gce.IsOpsAgentUAPPlugin() {
+			t.Skip("Uninstall test not supported for UAP plugin.")
+		}
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+
+		// Install the agent
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		// Uninstall the agent
+		var uninstallCmd string
+		if gce.IsWindows(imageSpec) {
+			uninstallCmd = "googet -noconfirm remove google-cloud-ops-agent"
+		} else if strings.Contains(imageSpec, "sles") || strings.Contains(imageSpec, "suse") {
+			uninstallCmd = "sudo zypper remove -y google-cloud-ops-agent"
+		} else if gce.IsRpm(imageSpec) {
+			uninstallCmd = "sudo yum remove -y google-cloud-ops-agent"
+		} else {
+			uninstallCmd = "sudo DEBIAN_FRONTEND=noninteractive apt-get purge -y google-cloud-ops-agent"
+		}
+
+		if _, err := gce.RunRemotely(ctx, logger, vm, uninstallCmd); err != nil {
+			t.Fatalf("Failed to uninstall Ops Agent: %v", err)
+		}
+
+		var checkServiceCmd string
+		if gce.IsWindows(imageSpec) {
+			checkServiceCmd = "if (Get-Service google-cloud-ops-agent* -ErrorAction SilentlyContinue) { Write-Output 'Service exists'; exit 1 }"
+		} else {
+			checkServiceCmd = `output=$(systemctl status 'google-cloud-ops-agent*' 2>/dev/null); if [ -n "$output" ]; then echo "Service exists: $output"; exit 1; fi`
+		}
+
+		if out, err := gce.RunRemotely(ctx, logger, vm, checkServiceCmd); err != nil {
+			t.Fatalf("Service still exists after uninstall, or error checking status: %v. Output: %s", err, out.Stdout)
+		}
+	})
+}
+
 func TestMain(m *testing.M) {
 	code := m.Run()
 	gce.CleanupKeysOrDie()
