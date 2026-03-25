@@ -83,7 +83,7 @@ processors:
         - otelcol_process_uptime
         - otelcol_process_memory_rss
         - grpc_client_attempt_duration_count
-        - googlecloudmonitoring/point_count
+        - googlecloudmonitoring_point_count
   filter/vault_1:
     metrics:
       include:
@@ -595,7 +595,7 @@ processors:
         label_set:
         - state
     - action: update
-      include: googlecloudmonitoring/point_count
+      include: googlecloudmonitoring_point_count
       new_name: agent/monitoring/point_count
       operations:
       - action: toggle_scalar_data_type

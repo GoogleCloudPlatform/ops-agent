@@ -157,9 +157,9 @@ func (r AgentSelfMetrics) OtelPipelineProcessors(ctx context.Context) []otel.Com
 	durationCountMetric := "grpc_client_attempt_duration_count"
 	filteredMetrics := []string{
 		durationCountMetric,
-		"googlecloudmonitoring/point_count",
+		"googlecloudmonitoring_point_count",
 	}
-	pointCountMetric := otel.RenameMetric("googlecloudmonitoring/point_count", "agent/monitoring/point_count",
+	pointCountMetric := otel.RenameMetric("googlecloudmonitoring_point_count", "agent/monitoring/point_count",
 		// change data type from double -> int64
 		otel.ToggleScalarDataType,
 		// Remove service.version label
