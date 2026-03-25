@@ -39,7 +39,8 @@ const (
 	OTel ExporterType = iota
 	System
 	GMP
-	OTLP
+	OTLP_Metrics
+	OTLP_Logs
 	Logging
 )
 const (
@@ -56,8 +57,10 @@ func (t ExporterType) Name() string {
 		return "otel"
 	} else if t == Logging {
 		return "logging"
-	} else if t == OTLP {
-		return "otlp"
+	} else if t == OTLP_Metrics {
+		return "otlp_metrics"
+	} else if t == OTLP_Logs {
+		return "otlp_logs"
 	} else {
 		panic("unknown ExporterType")
 	}
