@@ -1,18 +1,12 @@
+# we expect the distro suffix
 %if 0%{?suse_version} >= 1600
-  # On OpenSUSE 16, sle_version is defined as literal string sle_version, and the
-  # if check will cause an infinite expanding loop - So we check suse_version first
-  %global dist .sles%(expr substr %{suse_version} 1 2)
+# On OpenSUSE 16, sle_version is defined as literal string sle_version, and the
+# if check will cause an infinite expanding loop - So we check suse_version first
+%global dist .sles%(expr substr %{suse_version} 1 2)
 %else
-  %if 0%{?sle_version} > 0
-  # we expect the distro suffix
-  %global dist .sles%(expr substr %{sle_version} 1 2)
-    %if %{sle_version} <= 12
-      # systemd macros have different names
-      %global systemd_post %{service_add_post %1}
-      %global systemd_preun %{service_del_preun %1}
-      %global systemd_postun %{service_del_postun %1}
-    %endif
-  %endif
+%if 0%{?sle_version} > 0
+%global dist .sles%(expr substr %{sle_version} 1 2)
+%endif
 %endif
 
 # Disabling stripping to prevent changing jar hash
@@ -59,7 +53,7 @@ BUILD_DISTRO=${build_distro#.} DESTDIR="%{buildroot}" ./build.sh
 %{_unitdir}-preset/*-%{name}*
 
 %pre
-%if 0%{?suse_version} >= 16
+%if 0%{?suse_version} >= 1600
 %systemd_pre google-cloud-ops-agent.service
 %endif
 
