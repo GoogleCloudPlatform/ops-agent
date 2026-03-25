@@ -14,6 +14,14 @@
   feature: service:otel_logging
   key: otel_logging_supported_config
   value: "true"
+- module: metrics
+  feature: exporters:otlp
+  key: otlp_exporter
+  value: "false"
+- module: logging
+  feature: exporters:otlp
+  key: otlp_exporter
+  value: "false"
 - module: logging
   feature: processors:modify_fields
   key: "[0].enabled"
