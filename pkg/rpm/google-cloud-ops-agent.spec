@@ -89,6 +89,11 @@ fi
 %preun
 %systemd_preun google-cloud-ops-agent.service
 
+# SLES 16 systemd_preun does not automatically stop the service on uninstallation
+if [ $1 -eq 0 ]; then
+    systemctl stop google-cloud-ops-agent.service >/dev/null 2>&1 || :
+fi
+
 %postun
 %systemd_postun_with_restart google-cloud-ops-agent.service
 
