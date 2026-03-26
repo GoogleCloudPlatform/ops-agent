@@ -1241,10 +1241,9 @@ func GetOtelConfigPath(imageSpec string) string {
 
 const (
 	OtelLoggingFeatureFlag      = "otel_logging"
+	OTLPLoggingFeatureFlag      = "otlp_logging"
 	OtlpHttpExporterFeatureFlag = "otlp_exporter"
 	DefaultFeatureFlag          = "default"
-	OtelLoggingOTLPExporterFeatureFlag = "otel_logging,otlp_exporter"
-	OTLPLoggingOTLPExporterFeatureFlag = "otlp_logging,otlp_exporter"
 )
 
 // setExperimentalFeatures sets the EXPERIMENTAL_FEATURES environment variable.
