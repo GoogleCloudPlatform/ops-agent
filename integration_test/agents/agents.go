@@ -1241,6 +1241,7 @@ func GetOtelConfigPath(imageSpec string) string {
 
 const (
 	OtelLoggingFeatureFlag      = "otel_logging"
+	OTLPLoggingFeatureFlag      = "otlp_logging"
 	OtlpHttpExporterFeatureFlag = "otlp_exporter"
 	DefaultFeatureFlag          = "default"
 )
