@@ -73,6 +73,20 @@ var expectedFeatureBase = []confgenerator.Feature{
 		Key:    []string{"otel_logging_supported_config"},
 		Value:  "true",
 	},
+	{
+		Module: "metrics",
+		Kind:   "exporters",
+		Type:   "otlp",
+		Key:    []string{"otlp_exporter"},
+		Value:  "false",
+	},
+	{
+		Module: "logging",
+		Kind:   "exporters",
+		Type:   "otlp",
+		Key:    []string{"otlp_exporter"},
+		Value:  "false",
+	},
 }
 
 var expectedMetricsPipelineOverriden = []confgenerator.Feature{
@@ -104,6 +118,20 @@ var expectedMetricsPipelineOverriden = []confgenerator.Feature{
 		Key:    []string{"otel_logging_supported_config"},
 		Value:  "true",
 	},
+	{
+		Module: "metrics",
+		Kind:   "exporters",
+		Type:   "otlp",
+		Key:    []string{"otlp_exporter"},
+		Value:  "false",
+	},
+	{
+		Module: "logging",
+		Kind:   "exporters",
+		Type:   "otlp",
+		Key:    []string{"otlp_exporter"},
+		Value:  "false",
+	},
 }
 
 var expectedTestFeatureBase = []confgenerator.Feature{
@@ -134,6 +162,20 @@ var expectedTestFeatureBase = []confgenerator.Feature{
 		Type:   "otel_logging",
 		Key:    []string{"otel_logging_supported_config"},
 		Value:  "true",
+	},
+	{
+		Module: "metrics",
+		Kind:   "exporters",
+		Type:   "otlp",
+		Key:    []string{"otlp_exporter"},
+		Value:  "false",
+	},
+	{
+		Module: "logging",
+		Kind:   "exporters",
+		Type:   "otlp",
+		Key:    []string{"otlp_exporter"},
+		Value:  "false",
 	},
 	{
 		Module: confgenerator.MetricsReceiverTypes.Subagent,
@@ -171,6 +213,20 @@ var expectedOtelLoggingNotSupported = []confgenerator.Feature{
 		Kind:   "service",
 		Type:   "otel_logging",
 		Key:    []string{"otel_logging_supported_config"},
+		Value:  "false",
+	},
+	{
+		Module: "metrics",
+		Kind:   "exporters",
+		Type:   "otlp",
+		Key:    []string{"otlp_exporter"},
+		Value:  "false",
+	},
+	{
+		Module: "logging",
+		Kind:   "exporters",
+		Type:   "otlp",
+		Key:    []string{"otlp_exporter"},
 		Value:  "false",
 	},
 }
