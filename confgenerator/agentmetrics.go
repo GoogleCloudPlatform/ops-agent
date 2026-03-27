@@ -78,6 +78,28 @@ var grpcToStringStatus = map[string]string{
 	"16": "UNAUTHENTICATED",
 }
 
+var otelErrorTypeToStatus = map[string]string{
+	"Cancelled":          "CANCELLED",
+	"canceled":           "CANCELLED",
+	"Unknown":            "UNKNOWN",
+	"InvalidArgument":    "INVALID_ARGUMENT",
+	"DeadlineExceeded":   "DEADLINE_EXCEEDED",
+	"deadline_exceeded":  "DEADLINE_EXCEEDED",
+	"NotFound":           "NOT_FOUND",
+	"AlreadyExists":      "ALREADY_EXISTS",
+	"PermissionDenied":   "PERMISSION_DENIED",
+	"ResourceExhausted":  "RESOURCE_EXHAUSTED",
+	"FailedPrecondition": "FAILED_PRECONDITION",
+	"Aborted":            "ABORTED",
+	"OutOfRange":         "OUT_OF_RANGE",
+	"Unimplemented":      "UNIMPLEMENTED",
+	"Internal":           "INTERNAL",
+	"Unavailable":        "UNAVAILABLE",
+	"DataLoss":           "DATA_LOSS",
+	"Unauthenticated":    "UNAUTHENTICATED",
+	"shutdown":           "UNKNOWN",
+}
+
 func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]otel.ReceiverPipeline, pipelines map[string]otel.Pipeline, ctx context.Context) {
 	// Receiver pipelines names should have 1 underscore to avoid collision with user configurations.
 	receiverPipelines["agent_prometheus"] = r.PrometheusMetricsPipeline(ctx)
@@ -191,7 +213,8 @@ func (r AgentSelfMetrics) OtelPipelineProcessors(ctx context.Context) []otel.Com
 			),
 			otel.UpdateMetric("otelcol_exporter_send_failed_metric_points",
 				otel.ToggleScalarDataType,
-				otel.AddLabel("status", "UNKNOWN"),
+				otel.RenameLabel("error.type", "status"),
+				otel.RenameLabelValues("status", otelErrorTypeToStatus),
 			),
 		}
 		// b/468059325: Factor in partial success after upstream bug is fixed.
