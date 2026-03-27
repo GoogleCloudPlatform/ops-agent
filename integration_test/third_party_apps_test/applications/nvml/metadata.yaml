@@ -133,3 +133,7 @@ configuration_options:
           description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
 minimum_supported_agent_version:
   metrics: 2.38.0
+
+platforms_to_skip:
+  - suse-cloud:sles-16
+  - suse-cloud:sles-16-arm64

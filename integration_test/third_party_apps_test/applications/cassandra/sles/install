@@ -13,7 +13,7 @@ fi
 sudo zypper -n refresh
 
 # SLES 15 SP5 has moved Java 8 to a legacy module
-if [[ "${ID}" == sles && "${SUSE_VERSION}" == 15 ]]; then
+if [[ "${ID}" == sles ]] && ([[ "${SUSE_VERSION}" == 15 ]] || [[ "${SUSE_VERSION}" == 16 ]]); then
   sudo SUSEConnect --product "sle-module-legacy/${VERSION_ID}/$(uname -m)"
 fi
 

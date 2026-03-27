@@ -45,6 +45,8 @@ minimum_supported_agent_version:
   metrics: 2.11.0
   logging: 2.11.0
 platforms_to_skip:
+  - suse-cloud:sles-16
+  - suse-cloud:sles-16-arm64
   # Hbase only supports Java 11, which has no installation candidate for Debian 12 and 13.
   - debian-cloud:debian-12
   - debian-cloud:debian-12-arm64

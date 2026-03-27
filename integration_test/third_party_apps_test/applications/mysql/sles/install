@@ -14,7 +14,7 @@ if [[ "${ID}" == opensuse-leap && "${VERSION_ID}" == 15.[01] ]]; then
   sudo zypper -n install mariadb
 else
   mysql_repo_pkg_name=''
-  if [[ "${SUSE_VERSION}" == 15 ]]; then
+  if [[ "${SUSE_VERSION}" == 15 ]] || [[ "${SUSE_VERSION}" == 16 ]]; then
     mysql_repo_pkg_name=mysql84-community-release-sl15-1.noarch.rpm
   fi
 
@@ -31,7 +31,7 @@ else
   sudo zypper -n install mysql-community-server
 fi
 
-if [[ "${SUSE_VERSION}" == 15 ]]; then
+if [[ "${SUSE_VERSION}" == 15 ]] || [[ "${SUSE_VERSION}" == 16 ]]; then
   sudo zypper -n install libmariadb3
 fi
 

@@ -473,3 +473,7 @@ configuration_options:
         - name: ca_file
           default: null
           description: Path to the CA certificate. As a client, this verifies the server certificate. If empty, the receiver uses the system root CA.
+
+platforms_to_skip:
+  - suse-cloud:sles-16
+  - suse-cloud:sles-16-arm64

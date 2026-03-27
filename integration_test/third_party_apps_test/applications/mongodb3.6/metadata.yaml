@@ -33,6 +33,8 @@ minimum_supported_agent_version:
   logging: 2.10.0
 supported_operating_systems: linux
 platforms_to_skip:
+  - suse-cloud:sles-16
+  - suse-cloud:sles-16-arm64
   # MongoDB3.6 hit end of life in 2021 and is not supported on various distros.
   - debian-cloud:debian-13
   - debian-cloud:debian-13-arm64

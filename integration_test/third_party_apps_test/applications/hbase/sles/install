@@ -6,7 +6,7 @@ SUSE_VERSION="${VERSION_ID%%.*}"
 SERVICE_PACK="${VERSION_ID##*.}"
 
 # SLES 15 SP6 moved Java 11 to a legacy module
-if [[ "$SUSE_VERSION" == 15 ]] && (( $SERVICE_PACK >= 6 )); then
+if [[ "$SUSE_VERSION" == 16 ]] || ([[ "$SUSE_VERSION" == 15 ]] && (( $SERVICE_PACK >= 6 ))); then
   sudo SUSEConnect --product sle-module-legacy/${VERSION_ID}/$(uname -m)
 fi
 
