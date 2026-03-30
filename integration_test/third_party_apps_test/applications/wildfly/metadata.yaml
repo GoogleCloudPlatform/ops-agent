@@ -39,10 +39,9 @@ supported_operating_systems: linux
 # As wildfly does not have package installers & is installed from tar,
 # we only want to test on one distribution to help reduce integration test size
 platforms_to_skip:
-  - suse-cloud:sles-16
-  - suse-cloud:sles-16-arm64
   - rocky-linux-cloud:rocky-linux-8
   - rocky-linux-cloud:rocky-linux-8-optimized-gcp
+  - sles-cloud: sles-16
   - suse-cloud:sles-12
   - suse-cloud:sles-15
 supported_app_version: ["26.x", "25.x"]

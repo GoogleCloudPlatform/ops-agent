@@ -115,8 +115,6 @@ minimum_supported_agent_version:
 supported_operating_systems: linux
 # TODO: Fix errors and enable tests on all platforms.
 platforms_to_skip:
-  - suse-cloud:sles-16
-  - suse-cloud:sles-16-arm64
   - suse-cloud:sles-12 # QueryLog() failed: nginx_access not found, exhausted retries; QueryLog() failed: nginx_error not found, exhausted retries
   - suse-cloud:sles-15 # QueryLog() failed: nginx_access not found, exhausted retries; QueryLog() failed: nginx_error not found, exhausted retries
   - suse-cloud:sles-15-arm64 # QueryLog() failed: nginx_access not found, exhausted retries; QueryLog() failed: nginx_error not found, exhausted retries
