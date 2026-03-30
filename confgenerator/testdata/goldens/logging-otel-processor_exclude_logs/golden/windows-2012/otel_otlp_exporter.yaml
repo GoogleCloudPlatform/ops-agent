@@ -827,6 +827,10 @@ processors:
       - action: add_label
         new_label: status
         new_value: OK
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - status
     - action: update
       include: otelcol_exporter_send_failed_metric_points
       operations:
@@ -834,6 +838,10 @@ processors:
       - action: add_label
         new_label: status
         new_value: UNKNOWN
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - status
     - action: combine
       include: otelcol_exporter_sent_metric_points|otelcol_exporter_send_failed_metric_points
       match_type: regexp

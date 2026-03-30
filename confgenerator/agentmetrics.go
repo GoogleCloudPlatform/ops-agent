@@ -189,10 +189,12 @@ func (r AgentSelfMetrics) OtelPipelineProcessors(ctx context.Context) []otel.Com
 			otel.UpdateMetric("otelcol_exporter_sent_metric_points",
 				otel.ToggleScalarDataType,
 				otel.AddLabel("status", "OK"),
+				otel.AggregateLabels("sum", "status"),
 			),
 			otel.UpdateMetric("otelcol_exporter_send_failed_metric_points",
 				otel.ToggleScalarDataType,
 				otel.AddLabel("status", "UNKNOWN"),
+				otel.AggregateLabels("sum", "status"),
 			),
 		}
 		// b/468059325: Factor in partial success after upstream bug is fixed.
