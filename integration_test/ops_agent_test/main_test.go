@@ -6320,6 +6320,12 @@ func TestUninstallRemovesService(t *testing.T) {
 			t.Fatalf("Failed to uninstall Ops Agent: %v", err)
 		}
 
+		// Give systemd some time to clean up the service.
+		// Sometimes the service enters a "failed" state with "Loaded: not-found"
+		// while it's being stopped/uninstalled, and it takes a bit for systemd
+		// to fully remove it from memory.
+		time.Sleep(60 * time.Second)
+
 		var checkServiceCmd string
 		if gce.IsWindows(imageSpec) {
 			checkServiceCmd = "if (Get-Service google-cloud-ops-agent* -ErrorAction SilentlyContinue) { Write-Output 'Service exists'; exit 1 }"
