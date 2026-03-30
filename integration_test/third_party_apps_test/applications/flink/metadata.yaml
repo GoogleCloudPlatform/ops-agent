@@ -21,7 +21,6 @@ description: |-
   and parses them into a JSON payload.  The result includes fields for source,
   level, and message.
 platforms_to_skip:
-  - sles-cloud: sles-16
   # Flink only supports Java 11, which has no installation candidate for Debian 12 and 13.
   - debian-cloud:debian-12
   - debian-cloud:debian-12-arm64

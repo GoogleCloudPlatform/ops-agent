@@ -134,4 +134,4 @@ configuration_options:
 minimum_supported_agent_version:
   metrics: 2.38.0
 platforms_to_skip:
-  - sles-cloud: sles-16
+  - suse-cloud:sles-16

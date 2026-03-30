@@ -6,11 +6,16 @@ SUSE_VERSION="${VERSION_ID%%.*}"
 SERVICE_PACK="${VERSION_ID##*.}"
 
 # SLES 15 SP6 moved Java 11 to a legacy module
-if [[ "$SUSE_VERSION" == 16 ]] || ([[ "$SUSE_VERSION" == 15 ]] && (( $SERVICE_PACK >= 6 ))); then
+if [[ "$SUSE_VERSION" == 15 ]] && (( $SERVICE_PACK >= 6 )); then
   sudo SUSEConnect --product sle-module-legacy/${VERSION_ID}/$(uname -m)
 fi
 
-sudo zypper install -y wget java-11-openjdk
+
+if [[ "$SUSE_VERSION" == 16 ]]; then
+  sudo zypper install -y wget java-17-openjdk
+else
+  sudo zypper install -y wget java-11-openjdk
+fi
 
 HBASE_VERSION=2.4.11
 
@@ -25,7 +30,11 @@ export HBASE_MASTER_OPTS="\$HBASE_MASTER_OPTS \$HBASE_JMX_BASE -Dcom.sun.managem
 EOF
 sudo chmod +x /opt/hbase/conf/hbase-env.sh
 
-JAVA_HOME="$(dirname "$(dirname "$(readlink "$(readlink "$(which java)")")")")"
+if [[ "$SUSE_VERSION" == 16 ]]; then
+  JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(which java)")")")"
+else
+  JAVA_HOME="$(dirname "$(dirname "$(readlink "$(readlink "$(which java)")")")")"
+fi
 export JAVA_HOME
 
 sudo --preserve-env=JAVA_HOME /opt/hbase/bin/start-hbase.sh

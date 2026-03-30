@@ -5,11 +5,16 @@ SUSE_VERSION="${VERSION_ID%%.*}"
 SERVICE_PACK="${VERSION_ID##*.}"
 
 # SLES 15 SP6 moved Java 11 to a legacy module
-if [[ "$SUSE_VERSION" == 16 ]] || ([[ "$SUSE_VERSION" == 15 ]] && (( $SERVICE_PACK >= 6 ))); then
+if [[ "$SUSE_VERSION" == 15 ]] && (( $SERVICE_PACK >= 6 )); then
   sudo SUSEConnect --product sle-module-legacy/${VERSION_ID}/$(uname -m)
 fi
 
-sudo zypper install -y wget java-11-openjdk java-11-openjdk-devel
+
+if [[ "$SUSE_VERSION" == 16 ]]; then
+  sudo zypper install -y wget java-17-openjdk java-17-openjdk-devel
+else
+  sudo zypper install -y wget java-11-openjdk java-11-openjdk-devel
+fi
 
 sudo mkdir -p \
     /opt/hadoop/logs \
@@ -20,7 +25,11 @@ sudo mkdir -p \
 wget --no-verbose https://storage.googleapis.com/ops-agents-public-buckets-vendored-deps/mirrored-content/archive.apache.org/dist/hadoop/common/hadoop-3.3.1/hadoop-3.3.1.tar.gz
 sudo tar -xf hadoop-3.3.1.tar.gz -C /opt/hadoop --strip 1
 
-JAVA_HOME="$(dirname "$(dirname "$(readlink "$(readlink "$(which javac)")")")")"
+if [[ "$SUSE_VERSION" == 16 ]]; then
+  JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")"
+else
+  JAVA_HOME="$(dirname "$(dirname "$(readlink "$(readlink "$(which javac)")")")")"
+fi
 
 cat <<EOF | sudo tee /opt/hadoop/env
 export JAVA_HOME=$JAVA_HOME

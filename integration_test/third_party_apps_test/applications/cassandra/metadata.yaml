@@ -52,7 +52,6 @@ platforms_to_skip:
   - debian-cloud:debian-12-arm64 # QueryLog() failed: cassandra_system not found, exhausted retries; QueryLog() failed: cassandra_debug not found, exhausted retries; QueryLog() failed: cassandra_gc not found, exhausted retries
   - debian-cloud:debian-13 # openjdk-11-jre not available on Debian 13. 
   - debian-cloud:debian-13-arm64  # openjdk-11-jre not available on Debian 13. 
-  - sles-cloud: sles-16
   # rocky-linux-10 - nothing provides (java-1.8.0-headless or java-11-headless) needed by cassandra-4.1.10-1.noarch from cassandra
   - rocky-linux-cloud:rocky-linux-10
   - rocky-linux-cloud:rocky-linux-10-optimized-gcp

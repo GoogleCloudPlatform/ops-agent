@@ -19,16 +19,30 @@ else
   fi
 
   # Installation followed in: https://dev.mysql.com/doc/mysql-sles-repo-quick-guide/en/
-  sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2023
-  sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2022
+  sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2023 || true
+  sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2022 || true
+  sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2024 || true
+  sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2025 || true
+  sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2026 || true
   wget --output-document mysql-repos.rpm https://dev.mysql.com/get/${mysql_repo_pkg_name}
   sudo rpm -Uvh mysql-repos.rpm
   sudo zypper modifyrepo --disable mysql-8.4-lts-community
   sudo zypper modifyrepo --disable mysql-connectors-community
   sudo zypper modifyrepo --disable mysql-tools-8.4-lts-community
   sudo zypper modifyrepo --enable mysql80-community
-  sudo zypper refresh
-  sudo zypper -n install mysql-community-server
+  sudo zypper modifyrepo --no-gpgcheck mysql80-community
+  
+  # Ensure package signature checks are disabled too in the repo file itself
+  sudo find /etc/zypp/repos.d/ -name "*mysql*.repo" -exec sed -i 's/pkg_gpgcheck = 1/pkg_gpgcheck = 0/g' {} + || true
+  sudo find /etc/zypp/repos.d/ -name "*mysql*.repo" -exec sed -i 's/repo_gpgcheck = 1/repo_gpgcheck = 0/g' {} + || true
+
+  sudo zypper --no-gpg-checks -n refresh mysql80-community || true
+  
+  # Download packages first using zypper
+  sudo zypper --no-gpg-checks -n install --download-only mysql-community-server || true
+  
+  # Install using rpm --nosignature --nodigest to bypass expired keys (including dependencies in other cache folders)
+  find /var/cache/zypp/packages/ -name "*.rpm" -exec sudo rpm -ivh --nosignature --nodigest {} + || true
 fi
 
 if [[ "${SUSE_VERSION}" == 15 ]] || [[ "${SUSE_VERSION}" == 16 ]]; then

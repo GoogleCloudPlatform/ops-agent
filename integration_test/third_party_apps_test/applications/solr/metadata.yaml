@@ -231,4 +231,4 @@ configuration_options:
           default: 60s
           description: A [time duration](https://pkg.go.dev/time#ParseDuration) value, such as `30s` or `5m`.
 platforms_to_skip:
-  - sles-cloud: sles-16
+  - suse-cloud:sles-16

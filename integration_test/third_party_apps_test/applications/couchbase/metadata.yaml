@@ -205,7 +205,7 @@ minimum_supported_agent_version:
   logging: 2.18.2
 supported_operating_systems: linux
 platforms_to_skip:
-  - sles-cloud: sles-16
+  - suse-cloud:sles-16
   # couchbase is not supported on various distros.
   # https://docs.couchbase.com/server/current/install/install-platforms.html
   - rocky-linux-cloud:rocky-linux-8-arm64
