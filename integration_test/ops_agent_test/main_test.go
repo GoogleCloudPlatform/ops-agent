@@ -5456,7 +5456,7 @@ metrics:
 
 func TestOTLPLogsWithOtlpExporter(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{OTLPLoggingOTLPExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{OTLPLoggingOTLPExporterFeatureFlag, agents.OTLPLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if feature == agents.DefaultFeatureFlag {
 			t.Skip("This test requires otlp_logging+otlp_exporter experimental flags to be enabled")
