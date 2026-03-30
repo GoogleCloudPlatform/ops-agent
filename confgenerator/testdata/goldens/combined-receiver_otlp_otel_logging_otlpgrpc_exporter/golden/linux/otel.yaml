@@ -709,6 +709,11 @@ processors:
     - action: insert
       key: gcp.project_id
       value: test-project
+  resource/otlp_grpc/otlp_logs_logs_1:
+    attributes:
+    - action: insert
+      key: gcp.use_legacy_mapping
+      value: "true"
   resource/otlp_grpc/otlp_metrics_metrics_0:
     attributes:
     - action: insert
@@ -888,14 +893,14 @@ processors:
       - copy_metric(Concat([metric.name, "unknowncounter"], ":")) where metric.metadata["prometheus.type"] == "unknown" and not HasSuffix(metric.name, ":unknowncounter")
       - convert_gauge_to_sum("cumulative", true) where HasSuffix(metric.name, ":unknowncounter")
       - set(metric.name, Substring(metric.name, 0, Len(metric.name)-Len(":unknowncounter"))) where HasSuffix(metric.name, ":unknowncounter")
-  transform/otlp_grpc/otlp_logs_logs_1:
+  transform/otlp_grpc/otlp_logs_logs_2:
     error_mode: ignore
     log_statements:
     - context: log
       statements:
       - set(attributes["instrumentation_source"], instrumentation_scope.name) where instrumentation_scope.name != ""
       - set(attributes["instrumentation_version"], instrumentation_scope.version) where instrumentation_scope.version != ""
-  transform/otlp_grpc/otlp_logs_logs_2:
+  transform/otlp_grpc/otlp_logs_logs_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1065,8 +1070,9 @@ service:
       - transform/syslog_0
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_logs_logs_0
-      - transform/otlp_grpc/otlp_logs_logs_1
+      - resource/otlp_grpc/otlp_logs_logs_1
       - transform/otlp_grpc/otlp_logs_logs_2
+      - transform/otlp_grpc/otlp_logs_logs_3
       receivers:
       - filelog/syslog
     logs/logs_file__pipeline_file__logs:
@@ -1076,8 +1082,9 @@ service:
       - transform/file__logs_0
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_logs_logs_0
-      - transform/otlp_grpc/otlp_logs_logs_1
+      - resource/otlp_grpc/otlp_logs_logs_1
       - transform/otlp_grpc/otlp_logs_logs_2
+      - transform/otlp_grpc/otlp_logs_logs_3
       receivers:
       - filelog/file__logs
     logs/logs_otlp_otlp:
@@ -1087,8 +1094,9 @@ service:
       - transform/otlp_0
       - resourcedetection/_global_1
       - resource/otlp_grpc/otlp_logs_logs_0
-      - transform/otlp_grpc/otlp_logs_logs_1
+      - resource/otlp_grpc/otlp_logs_logs_1
       - transform/otlp_grpc/otlp_logs_logs_2
+      - transform/otlp_grpc/otlp_logs_logs_3
       receivers:
       - otlp/otlp
     logs/logs_syslog__custom_syslog__custom:
@@ -1099,8 +1107,9 @@ service:
       - transform/syslog__custom_1
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_logs_logs_0
-      - transform/otlp_grpc/otlp_logs_logs_1
+      - resource/otlp_grpc/otlp_logs_logs_1
       - transform/otlp_grpc/otlp_logs_logs_2
+      - transform/otlp_grpc/otlp_logs_logs_3
       receivers:
       - syslog/syslog__custom
     metrics/default__pipeline_hostmetrics:

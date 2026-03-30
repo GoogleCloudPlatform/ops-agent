@@ -270,7 +270,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 				ProcessorsByType: map[string][]otel.Component{
 					"logs": {
 						otel.GCPProjectID(resource.ProjectName()),
-						// otel.DisableOtlpRoundTrip(), // Disable it until b/491102815 is fixed.
+						otel.DisableOtlpRoundTrip(),
 						otel.PreserveInstrumentationScope(),
 						otel.CopyServiceResourceLabels(),
 					},

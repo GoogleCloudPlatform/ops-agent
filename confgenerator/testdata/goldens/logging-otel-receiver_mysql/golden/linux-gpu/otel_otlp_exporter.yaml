@@ -727,6 +727,11 @@ processors:
     - action: insert
       key: gcp.project_id
       value: test-project
+  resource/otlp_grpc/otlp_logs_logs_1:
+    attributes:
+    - action: insert
+      key: gcp.use_legacy_mapping
+      value: "true"
   resource/otlp_grpc/otlp_metrics_metrics_0:
     attributes:
     - action: insert
@@ -1439,14 +1444,14 @@ processors:
     - context: metric
       statements:
       - extract_count_metric(true) where name == "rpc.client.duration"
-  transform/otlp_grpc/otlp_logs_logs_1:
+  transform/otlp_grpc/otlp_logs_logs_2:
     error_mode: ignore
     log_statements:
     - context: log
       statements:
       - set(attributes["instrumentation_source"], instrumentation_scope.name) where instrumentation_scope.name != ""
       - set(attributes["instrumentation_version"], instrumentation_scope.version) where instrumentation_scope.version != ""
-  transform/otlp_grpc/otlp_logs_logs_2:
+  transform/otlp_grpc/otlp_logs_logs_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1598,8 +1603,9 @@ service:
       - transform/syslog_0
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_logs_logs_0
-      - transform/otlp_grpc/otlp_logs_logs_1
+      - resource/otlp_grpc/otlp_logs_logs_1
       - transform/otlp_grpc/otlp_logs_logs_2
+      - transform/otlp_grpc/otlp_logs_logs_3
       receivers:
       - filelog/syslog
     logs/logs_mysql_mysql__error:
@@ -1613,8 +1619,9 @@ service:
       - transform/mysql__error_4
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_logs_logs_0
-      - transform/otlp_grpc/otlp_logs_logs_1
+      - resource/otlp_grpc/otlp_logs_logs_1
       - transform/otlp_grpc/otlp_logs_logs_2
+      - transform/otlp_grpc/otlp_logs_logs_3
       receivers:
       - filelog/mysql__error
     logs/logs_mysql_mysql__general:
@@ -1628,8 +1635,9 @@ service:
       - transform/mysql__general_4
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_logs_logs_0
-      - transform/otlp_grpc/otlp_logs_logs_1
+      - resource/otlp_grpc/otlp_logs_logs_1
       - transform/otlp_grpc/otlp_logs_logs_2
+      - transform/otlp_grpc/otlp_logs_logs_3
       receivers:
       - filelog/mysql__general
     logs/logs_mysql_mysql__slow:
@@ -1643,8 +1651,9 @@ service:
       - transform/mysql__slow_4
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_logs_logs_0
-      - transform/otlp_grpc/otlp_logs_logs_1
+      - resource/otlp_grpc/otlp_logs_logs_1
       - transform/otlp_grpc/otlp_logs_logs_2
+      - transform/otlp_grpc/otlp_logs_logs_3
       receivers:
       - filelog/mysql__slow
     metrics/default__pipeline_hostmetrics:
