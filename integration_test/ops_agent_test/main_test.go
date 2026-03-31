@@ -5521,7 +5521,7 @@ metrics:
 }
 
 func isHealthCheckTestImage(imageSpec string) bool {
-	return strings.HasSuffix(imageSpec, "windows-2022") || strings.HasSuffix(imageSpec, "debian-11")
+	return strings.HasSuffix(imageSpec, "windows-2022") || strings.HasSuffix(imageSpec, "debian-12")
 }
 
 func healthCheckResultMessage(name string, result string, code string) string {
