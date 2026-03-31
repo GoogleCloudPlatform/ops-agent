@@ -218,7 +218,6 @@ func (r AgentSelfMetrics) OtelPipelineProcessors(ctx context.Context) []otel.Com
 				otel.RenameLabel("error.type", "status"),
 				otel.RenameLabelValues("status", otelErrorTypeToStatus),
 				otel.AggregateLabels("sum", "status"),
-
 			),
 		}
 		// b/468059325: Factor in partial success after upstream bug is fixed.
