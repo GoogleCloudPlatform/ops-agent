@@ -1402,6 +1402,7 @@ receivers:
           - 0.0.0.0:20201
   windowseventlog/windows__event__log:
     channel: System
+    event_data_format: array
     ignore_channel_errors: true
     include_log_record_original: true
     poll_interval: 1s
@@ -1409,6 +1410,7 @@ receivers:
     storage: file_storage
   windowseventlog/windows__event__log_1:
     channel: Application
+    event_data_format: array
     ignore_channel_errors: true
     include_log_record_original: true
     poll_interval: 1s
@@ -1416,6 +1418,7 @@ receivers:
     storage: file_storage
   windowseventlog/windows__event__log_2:
     channel: Security
+    event_data_format: array
     ignore_channel_errors: true
     include_log_record_original: true
     poll_interval: 1s
