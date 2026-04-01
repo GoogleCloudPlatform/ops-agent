@@ -6321,7 +6321,9 @@ func TestUninstallRemovesService(t *testing.T) {
 		}
 
 		// Give systemd some time to stop the service.
-		time.Sleep(30 * time.Second)
+		// Systemd has DefaultTimeoutStopSec of 90s - set this to 100s so that
+		// systemd can clean up failed to stop and timeout subagents
+		time.Sleep(100 * time.Second)
 
 		// Reload systemd daemon to ensure it reflects the uninstallation
 		if !gce.IsWindows(imageSpec) {
