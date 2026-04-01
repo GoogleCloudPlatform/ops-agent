@@ -472,10 +472,14 @@ processors:
           value: AlreadyExists
         - new_value: CANCELLED
           value: Canceled
+        - new_value: CANCELLED
+          value: Cancelled
         - new_value: DATA_LOSS
           value: DataLoss
         - new_value: DEADLINE_EXCEEDED
           value: DeadlineExceeded
+        - new_value: DEADLINE_EXCEEDED
+          value: Deadline_Exceeded
         - new_value: FAILED_PRECONDITION
           value: FailedPrecondition
         - new_value: INTERNAL
@@ -492,6 +496,8 @@ processors:
           value: PermissionDenied
         - new_value: RESOURCE_EXHAUSTED
           value: ResourceExhausted
+        - new_value: UNKNOWN
+          value: Shutdown
         - new_value: UNAUTHENTICATED
           value: Unauthenticated
         - new_value: UNAVAILABLE
@@ -500,6 +506,14 @@ processors:
           value: Unimplemented
         - new_value: UNKNOWN
           value: Unknown
+        - new_value: CANCELLED
+          value: canceled
+        - new_value: CANCELLED
+          value: cancelled
+        - new_value: DEADLINE_EXCEEDED
+          value: deadline_exceeded
+        - new_value: UNKNOWN
+          value: shutdown
       - action: update_label
         label: rpc_response_status_code
         new_label: response_code
@@ -630,10 +644,14 @@ processors:
           value: AlreadyExists
         - new_value: CANCELLED
           value: Canceled
+        - new_value: CANCELLED
+          value: Cancelled
         - new_value: DATA_LOSS
           value: DataLoss
         - new_value: DEADLINE_EXCEEDED
           value: DeadlineExceeded
+        - new_value: DEADLINE_EXCEEDED
+          value: Deadline_Exceeded
         - new_value: FAILED_PRECONDITION
           value: FailedPrecondition
         - new_value: INTERNAL
@@ -650,6 +668,8 @@ processors:
           value: PermissionDenied
         - new_value: RESOURCE_EXHAUSTED
           value: ResourceExhausted
+        - new_value: UNKNOWN
+          value: Shutdown
         - new_value: UNAUTHENTICATED
           value: Unauthenticated
         - new_value: UNAVAILABLE
@@ -658,6 +678,14 @@ processors:
           value: Unimplemented
         - new_value: UNKNOWN
           value: Unknown
+        - new_value: CANCELLED
+          value: canceled
+        - new_value: CANCELLED
+          value: cancelled
+        - new_value: DEADLINE_EXCEEDED
+          value: deadline_exceeded
+        - new_value: UNKNOWN
+          value: shutdown
       - action: update_label
         label: rpc_response_status_code
         new_label: state
@@ -680,9 +708,60 @@ processors:
       include: otelcol_exporter_send_failed_metric_points
       operations:
       - action: toggle_scalar_data_type
-      - action: add_label
+      - action: update_label
+        label: error.type
         new_label: status
-        new_value: UNKNOWN
+      - action: update_label
+        label: status
+        value_actions:
+        - new_value: ABORTED
+          value: Aborted
+        - new_value: ALREADY_EXISTS
+          value: AlreadyExists
+        - new_value: CANCELLED
+          value: Canceled
+        - new_value: CANCELLED
+          value: Cancelled
+        - new_value: DATA_LOSS
+          value: DataLoss
+        - new_value: DEADLINE_EXCEEDED
+          value: DeadlineExceeded
+        - new_value: DEADLINE_EXCEEDED
+          value: Deadline_Exceeded
+        - new_value: FAILED_PRECONDITION
+          value: FailedPrecondition
+        - new_value: INTERNAL
+          value: Internal
+        - new_value: INVALID_ARGUMENT
+          value: InvalidArgument
+        - new_value: NOT_FOUND
+          value: NotFound
+        - new_value: OK
+          value: OK
+        - new_value: OUT_OF_RANGE
+          value: OutOfRange
+        - new_value: PERMISSION_DENIED
+          value: PermissionDenied
+        - new_value: RESOURCE_EXHAUSTED
+          value: ResourceExhausted
+        - new_value: UNKNOWN
+          value: Shutdown
+        - new_value: UNAUTHENTICATED
+          value: Unauthenticated
+        - new_value: UNAVAILABLE
+          value: Unavailable
+        - new_value: UNIMPLEMENTED
+          value: Unimplemented
+        - new_value: UNKNOWN
+          value: Unknown
+        - new_value: CANCELLED
+          value: canceled
+        - new_value: CANCELLED
+          value: cancelled
+        - new_value: DEADLINE_EXCEEDED
+          value: deadline_exceeded
+        - new_value: UNKNOWN
+          value: shutdown
       - action: aggregate_labels
         aggregation_type: sum
         label_set:
