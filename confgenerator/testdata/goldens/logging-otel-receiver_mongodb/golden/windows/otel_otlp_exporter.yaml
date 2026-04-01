@@ -25,6 +25,17 @@ exporters:
     endpoint: telemetry.googleapis.com:443
     headers:
       User-Agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
+    sending_queue:
+      batch:
+        flush_timeout: 200ms
+        max_size: 200
+        min_size: 200
+        sizer: items
+      block_on_overflow: true
+      enabled: true
+      num_consumers: 10
+      queue_size: 12000
+      sizer: items
 extensions:
   file_storage:
     create_directory: true
@@ -34,10 +45,6 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  batch/otlp_grpc/otlp_metrics_metrics_2:
-    send_batch_max_size: 200
-    send_batch_size: 200
-    timeout: 200ms
   casttosum/iis_1:
     metrics:
     - agent.googleapis.com/iis/network/transferred_bytes_count
@@ -1855,7 +1862,6 @@ service:
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_metrics_metrics_0
       - metricstarttime/otlp_grpc/otlp_metrics_metrics_1
-      - batch/otlp_grpc/otlp_metrics_metrics_2
       receivers:
       - hostmetrics/hostmetrics
     metrics/default__pipeline_iis:
@@ -1872,7 +1878,6 @@ service:
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_metrics_metrics_0
       - metricstarttime/otlp_grpc/otlp_metrics_metrics_1
-      - batch/otlp_grpc/otlp_metrics_metrics_2
       receivers:
       - windowsperfcounters/iis
     metrics/default__pipeline_mssql:
@@ -1887,7 +1892,6 @@ service:
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_metrics_metrics_0
       - metricstarttime/otlp_grpc/otlp_metrics_metrics_1
-      - batch/otlp_grpc/otlp_metrics_metrics_2
       receivers:
       - windowsperfcounters/mssql
     metrics/fluentbit:
@@ -1902,7 +1906,6 @@ service:
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_metrics_metrics_0
       - metricstarttime/otlp_grpc/otlp_metrics_metrics_1
-      - batch/otlp_grpc/otlp_metrics_metrics_2
       receivers:
       - prometheus/agent_prometheus
     metrics/loggingmetrics:
@@ -1924,7 +1927,6 @@ service:
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_metrics_metrics_0
       - metricstarttime/otlp_grpc/otlp_metrics_metrics_1
-      - batch/otlp_grpc/otlp_metrics_metrics_2
       receivers:
       - prometheus/agent_prometheus
     metrics/opsagent:
@@ -1937,7 +1939,6 @@ service:
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_metrics_metrics_0
       - metricstarttime/otlp_grpc/otlp_metrics_metrics_1
-      - batch/otlp_grpc/otlp_metrics_metrics_2
       receivers:
       - otlpjsonfile/ops_agent
     metrics/otel:
@@ -1954,7 +1955,6 @@ service:
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_metrics_metrics_0
       - metricstarttime/otlp_grpc/otlp_metrics_metrics_1
-      - batch/otlp_grpc/otlp_metrics_metrics_2
       receivers:
       - prometheus/agent_prometheus
   telemetry:
