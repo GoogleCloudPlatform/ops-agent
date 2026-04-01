@@ -1,0 +1,76 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        body:
+          kvlistValue:
+            values:
+            - key: key1
+              value:
+                doubleValue: 12345
+            - key: key2
+              value:
+                stringValue: abc
+        observedTimeUnixNano: now
+        timeUnixNano: "1154118120000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        body:
+          kvlistValue:
+            values:
+            - key: key1
+              value:
+                doubleValue: 12345
+            - key: key2
+              value:
+                stringValue: abc
+            - key: time
+              value:
+                stringValue: unparsable time
+        observedTimeUnixNano: now
+      scope: {}
+- collector_errors:
+  - caller: ottl@v0.145.0/parser.go:410
+    error: "parsing time \"unparsable time\" as \"%Y-%m-%dT%H:%M\": cannot parse \"unparsable time\" as \"%Y\""
+    level: warn
+    msg: failed to execute statement
+    otelcol.component.id: transform/logs_transformation__test_my-log-name_0
+    otelcol.component.kind: processor
+    otelcol.pipeline.id: logs/logs_transformation__test_my-log-name
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.145.0
+    statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M") != nil)

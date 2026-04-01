@@ -1,0 +1,517 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: protocol
+                value:
+                  stringValue: HTTP/1.1
+              - key: remoteIp
+                value:
+                  stringValue: 192.168.1.10
+              - key: requestMethod
+                value:
+                  stringValue: GET
+              - key: requestUrl
+                value:
+                  stringValue: /pools/default/buckets/travel-data
+              - key: responseSize
+                value:
+                  stringValue: "512"
+              - key: status
+                value:
+                  stringValue: "200"
+              - key: userAgent
+                value:
+                  stringValue: curl/7.68.0
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/couchbase_http_access
+        body:
+          kvlistValue:
+            values:
+            - key: host
+              value:
+                stringValue: couchbase.local
+            - key: message
+              value:
+                stringValue: Request took 5ms
+            - key: user
+              value:
+                stringValue: test_user
+        observedTimeUnixNano: now
+        timeUnixNano: "1755508811000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: protocol
+                value:
+                  stringValue: HTTP/1.1
+              - key: remoteIp
+                value:
+                  stringValue: 192.168.1.12
+              - key: requestMethod
+                value:
+                  stringValue: POST
+              - key: requestUrl
+                value:
+                  stringValue: /pools/default/buckets/travel-data/docs
+              - key: responseSize
+                value:
+                  stringValue: "123"
+              - key: status
+                value:
+                  stringValue: "201"
+              - key: userAgent
+                value:
+                  stringValue: python-requests/2.26.0
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/couchbase_http_access
+        body:
+          kvlistValue:
+            values:
+            - key: host
+              value:
+                stringValue: couchbase.local
+            - key: message
+              value:
+                stringValue: Request took 12ms
+            - key: user
+              value:
+                stringValue: test_user
+        observedTimeUnixNano: now
+        timeUnixNano: "1755508842000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: protocol
+                value:
+                  stringValue: HTTP/1.1
+              - key: remoteIp
+                value:
+                  stringValue: 192.168.1.13
+              - key: requestMethod
+                value:
+                  stringValue: GET
+              - key: requestUrl
+                value:
+                  stringValue: /pools/default/buckets/missing-data
+              - key: responseSize
+                value:
+                  stringValue: "0"
+              - key: status
+                value:
+                  stringValue: "404"
+              - key: userAgent
+                value:
+                  stringValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64)
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/couchbase_http_access
+        body:
+          kvlistValue:
+            values:
+            - key: host
+              value:
+                stringValue: couchbase.local
+            - key: message
+              value:
+                stringValue: Request took 2ms
+            - key: user
+              value:
+                stringValue: test_user
+        observedTimeUnixNano: now
+        timeUnixNano: "1755508870000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: protocol
+                value:
+                  stringValue: HTTP/1.1
+              - key: remoteIp
+                value:
+                  stringValue: 192.168.1.14
+              - key: requestMethod
+                value:
+                  stringValue: PUT
+              - key: requestUrl
+                value:
+                  stringValue: /pools/default/buckets/travel-data/docs/user:123
+              - key: responseSize
+                value:
+                  stringValue: "64"
+              - key: status
+                value:
+                  stringValue: "500"
+              - key: userAgent
+                value:
+                  stringValue: node-fetch/1.0
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/couchbase_http_access
+        body:
+          kvlistValue:
+            values:
+            - key: host
+              value:
+                stringValue: couchbase.local
+            - key: message
+              value:
+                stringValue: Internal Server Error
+            - key: user
+              value:
+                stringValue: test_user
+        observedTimeUnixNano: now
+        timeUnixNano: "1755508885000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: protocol
+                value:
+                  stringValue: HTTP/1.1
+              - key: remoteIp
+                value:
+                  stringValue: 192.168.1.15
+              - key: requestMethod
+                value:
+                  stringValue: DELETE
+              - key: requestUrl
+                value:
+                  stringValue: /pools/default/buckets/old-data
+              - key: responseSize
+                value:
+                  stringValue: "64"
+              - key: status
+                value:
+                  stringValue: "403"
+              - key: userAgent
+                value:
+                  stringValue: curl/7.88.1
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/couchbase_http_access
+        body:
+          kvlistValue:
+            values:
+            - key: host
+              value:
+                stringValue: couchbase.local
+            - key: message
+              value:
+                stringValue: Unauthorized delete attempt
+            - key: user
+              value:
+                stringValue: test_user
+        observedTimeUnixNano: now
+        timeUnixNano: "1755508920000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: protocol
+                value:
+                  stringValue: HTTP/1.1
+              - key: referer
+                value:
+                  stringValue: http://referrer.example.com
+              - key: remoteIp
+                value:
+                  stringValue: 192.168.1.16
+              - key: requestMethod
+                value:
+                  stringValue: GET
+              - key: requestUrl
+                value:
+                  stringValue: /pools/default/buckets/travel-data/docs?include_docs=true
+              - key: responseSize
+                value:
+                  stringValue: "0"
+              - key: status
+                value:
+                  stringValue: "302"
+              - key: userAgent
+                value:
+                  stringValue: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/couchbase_http_access
+        body:
+          kvlistValue:
+            values:
+            - key: host
+              value:
+                stringValue: couchbase.local
+            - key: message
+              value:
+                stringValue: Redirected to login
+            - key: user
+              value:
+                stringValue: test_user
+        observedTimeUnixNano: now
+        timeUnixNano: "1755508955000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: protocol
+                value:
+                  stringValue: HTTP/1.1
+              - key: remoteIp
+                value:
+                  stringValue: 192.168.1.17
+              - key: requestMethod
+                value:
+                  stringValue: HEAD
+              - key: requestUrl
+                value:
+                  stringValue: /pools/default/buckets/travel-data/docs/user:999
+              - key: responseSize
+                value:
+                  stringValue: "0"
+              - key: status
+                value:
+                  stringValue: "304"
+              - key: userAgent
+                value:
+                  stringValue: Go-http-client/1.1
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/couchbase_http_access
+        body:
+          kvlistValue:
+            values:
+            - key: host
+              value:
+                stringValue: couchbase.local
+            - key: message
+              value:
+                stringValue: Not modified
+            - key: user
+              value:
+                stringValue: test_user
+        observedTimeUnixNano: now
+        timeUnixNano: "1755508981000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: protocol
+                value:
+                  stringValue: HTTP/1.1
+              - key: remoteIp
+                value:
+                  stringValue: 192.168.1.18
+              - key: requestMethod
+                value:
+                  stringValue: OPTIONS
+              - key: requestUrl
+                value:
+                  stringValue: /pools/default/buckets/travel-data
+              - key: responseSize
+                value:
+                  stringValue: "0"
+              - key: status
+                value:
+                  stringValue: "204"
+              - key: userAgent
+                value:
+                  stringValue: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/couchbase_http_access
+        body:
+          kvlistValue:
+            values:
+            - key: host
+              value:
+                stringValue: couchbase.local
+            - key: message
+              value:
+                stringValue: Preflight check passed
+            - key: user
+              value:
+                stringValue: test_user
+        observedTimeUnixNano: now
+        timeUnixNano: "1755509020000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: protocol
+                value:
+                  stringValue: HTTP/1.1
+              - key: remoteIp
+                value:
+                  stringValue: 192.168.1.19
+              - key: requestMethod
+                value:
+                  stringValue: GET
+              - key: requestUrl
+                value:
+                  stringValue: /pools/default/buckets/travel-data/docs?limit=1000
+              - key: responseSize
+                value:
+                  stringValue: "0"
+              - key: status
+                value:
+                  stringValue: "413"
+              - key: userAgent
+                value:
+                  stringValue: curl/8.0.1
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/couchbase_http_access
+        body:
+          kvlistValue:
+            values:
+            - key: host
+              value:
+                stringValue: couchbase.local
+            - key: message
+              value:
+                stringValue: Payload too large
+            - key: user
+              value:
+                stringValue: test_user
+        observedTimeUnixNano: now
+        timeUnixNano: "1755509055000000000"
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.http_request
+          value:
+            kvlistValue:
+              values:
+              - key: protocol
+                value:
+                  stringValue: HTTP/1.1
+              - key: remoteIp
+                value:
+                  stringValue: 192.168.1.20
+              - key: requestMethod
+                value:
+                  stringValue: PATCH
+              - key: requestUrl
+                value:
+                  stringValue: /pools/default/buckets/travel-data/docs/user:321
+              - key: responseSize
+                value:
+                  stringValue: "128"
+              - key: status
+                value:
+                  stringValue: "409"
+              - key: userAgent
+                value:
+                  stringValue: python-requests/2.31.0
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        - key: logging.googleapis.com/instrumentation_source
+          value:
+            stringValue: agent.googleapis.com/couchbase_http_access
+        body:
+          kvlistValue:
+            values:
+            - key: host
+              value:
+                stringValue: couchbase.local
+            - key: message
+              value:
+                stringValue: Document conflict
+            - key: user
+              value:
+                stringValue: test_user
+        observedTimeUnixNano: now
+        timeUnixNano: "1755509100000000000"
+      scope: {}

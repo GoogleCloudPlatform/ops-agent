@@ -199,6 +199,7 @@ func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) [
 
 func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, error) {
 	operators := []map[string]any{}
+	var extensions []string
 	receiver_config := map[string]any{
 		"include":                       r.IncludePaths,
 		"exclude":                       r.ExcludePaths,
@@ -209,7 +210,8 @@ func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.Receiv
 		"fingerprint_size":              "5kb",
 	}
 	if !r.TransformationTest {
-		receiver_config["storage"] = fileStorageExtensionID()
+		receiver_config["storage"] = fileStorageExtensionType
+		extensions = append(extensions, fileStorageExtensionType)
 	}
 	if i := r.WildcardRefreshInterval; i != nil {
 		receiver_config["poll_interval"] = i.String()
@@ -246,6 +248,7 @@ func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.Receiv
 		ExporterTypes: map[string]otel.ExporterType{
 			"logs": otel.Logging,
 		},
+		UsedExtensions: extensions,
 	}, ctx, false, false)}, nil
 }
 
@@ -650,7 +653,7 @@ func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.R
 			"start_at":              "beginning",
 			"poll_interval":         "1s",
 			"ignore_channel_errors": true,
-			"storage":               fileStorageExtensionID(),
+			"storage":               fileStorageExtensionType,
 			// When "include_log_record_original = true", the event original XML string is set in `attributes."log.record.original"`.
 			"include_log_record_original": true,
 		}
@@ -679,6 +682,7 @@ func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.R
 			ExporterTypes: map[string]otel.ExporterType{
 				"logs": otel.Logging,
 			},
+			UsedExtensions: []string{fileStorageExtensionType},
 		}, ctx, false, false))
 	}
 	return out, nil
@@ -1036,7 +1040,7 @@ func (r LoggingReceiverSystemd) Pipelines(ctx context.Context) ([]otel.ReceiverP
 	receiver_config := map[string]any{
 		"start_at": "beginning",
 		"priority": "debug",
-		"storage":  fileStorageExtensionID(),
+		"storage":  fileStorageExtensionType,
 	}
 
 	modify_fields_processors, err := LoggingProcessorModifyFields{
@@ -1084,6 +1088,8 @@ func (r LoggingReceiverSystemd) Pipelines(ctx context.Context) ([]otel.ReceiverP
 		ExporterTypes: map[string]otel.ExporterType{
 			"logs": otel.Logging,
 		},
+
+		UsedExtensions: []string{fileStorageExtensionType},
 	}, ctx, false, false)}, nil
 }
 

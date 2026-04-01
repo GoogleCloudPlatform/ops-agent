@@ -61,9 +61,8 @@ func googleCloudLoggingExporter() otel.Component {
 	return otel.Component{
 		Type: "googlecloud",
 		Config: map[string]interface{}{
-			// Set to mirror the 60s max limit of default retry window in Google Cloud Logging apiv2 go client :
-			// https://github.com/googleapis/google-cloud-go/blob/logging/v1.4.2/logging/apiv2/logging_client.go#L78-L90
-			"timeout": "60s",
+			// Keep trying to send log entries for 1 hour before we drop them.
+			"timeout": "3600s",
 			"sending_queue": map[string]interface{}{
 				"enabled": true,
 				// Set queue_size to "(num_consumers + 2)*1000" to always have a new batch ready.
@@ -79,6 +78,8 @@ func googleCloudLoggingExporter() otel.Component {
 					"max_size":      1000,
 					"sizer":         "items",
 				},
+				// Persist logs on disk to survive restarts during network outages.
+				"storage": fileStorageExtensionType,
 			},
 		},
 	}
@@ -103,7 +104,7 @@ func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, 
 	}
 
 	if _, ok := pipeline.ExporterTypes["metrics"]; ok {
-		pipeline.ExporterTypes["metrics"] = otel.OTLP
+		pipeline.ExporterTypes["metrics"] = otel.OTLP_Metrics
 		if isSystem {
 			pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveInstrumentationLibraryLabelsAttributes())
 			pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveServiceAttributes())
@@ -120,12 +121,12 @@ func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, 
 	}
 
 	if _, ok := pipeline.ExporterTypes["logs"]; ok {
-		pipeline.ExporterTypes["logs"] = otel.OTLP
+		pipeline.ExporterTypes["logs"] = otel.OTLP_Logs
 	}
 	return pipeline
 }
 
-func otlpExporter(userAgent string) otel.Component {
+func otlpExporterForMetrics(userAgent string) otel.Component {
 	return otel.Component{
 		Type: "otlp_grpc",
 		Config: map[string]interface{}{
@@ -137,6 +138,39 @@ func otlpExporter(userAgent string) otel.Component {
 			},
 			"headers": map[string]string{
 				"User-Agent": userAgent,
+			},
+		},
+	}
+}
+
+func otlpExporterForLogs(userAgent string) otel.Component {
+	return otel.Component{
+		Type: "otlp_grpc",
+		Config: map[string]interface{}{
+			"endpoint": "telemetry.googleapis.com:443",
+			// b/485538253: Use pick_first balancer until we can understand why round_robin is failing.
+			"balancer_name": "pick_first",
+			"auth": map[string]interface{}{
+				"authenticator": "googleclientauth",
+			},
+			"headers": map[string]string{
+				"User-Agent": userAgent,
+			},
+			"sending_queue": map[string]interface{}{
+				"enabled":       true,
+				"queue_size":    20000000,
+				"num_consumers": 10,
+				"sizer":         "bytes",
+				// Blocks the "sending_queue" on overflow to reduce log loss.
+				"block_on_overflow": true,
+				// Set batch in "sending_queue" is recommended instead of using the batch processor.
+				"batch": map[string]interface{}{
+					"flush_timeout": "200ms",
+					"min_size":      1000000,
+					"max_size":      5000000,
+					"sizer":         "bytes",
+				},
+				"storage": fileStorageExtensionType,
 			},
 		},
 	}
@@ -164,29 +198,20 @@ func (uc *UnifiedConfig) getOTelLogLevel() string {
 	return logLevel
 }
 
-// fileStorageExtensionID returns the file_storage extension used by all receivers and exporters.
-func fileStorageExtensionID() string {
-	return "file_storage"
-}
+const (
+	fileStorageExtensionType      = "file_storage"
+	googleClientAuthExtensionType = "googleclientauth"
+)
 
-// fileStorageExtensionConfig returns a configured file_storage extension to be used by all receivers and exporters.
-func fileStorageExtensionConfig(stateDir string) map[string]interface{} {
-	return map[string]interface{}{
-		"directory":        path.Join(stateDir, "file_storage"),
-		"create_directory": true,
+// fileStorageExtension returns a configured file_storage extension to be used by all receivers and exporters.
+func fileStorageExtension(stateDir string) otel.Component {
+	return otel.Component{
+		Type: fileStorageExtensionType,
+		Config: map[string]interface{}{
+			"directory":        path.Join(stateDir, "file_storage"),
+			"create_directory": true,
+		},
 	}
-}
-
-func (uc *UnifiedConfig) getEnabledExtensions(ctx context.Context, stateDir string) map[string]interface{} {
-	extensions := map[string]interface{}{}
-	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
-	if expOtlpExporter {
-		extensions["googleclientauth"] = map[string]interface{}{}
-	}
-	if uc.Logging.Service.OTelLogging {
-		extensions["file_storage"] = fileStorageExtensionConfig(stateDir)
-	}
-	return extensions
 }
 
 func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDir string) (string, error) {
@@ -218,7 +243,6 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 		LogLevel:          uc.getOTelLogLevel(),
 		ReceiverPipelines: receiverPipelines,
 		Pipelines:         pipelines,
-		Extensions:        uc.getEnabledExtensions(ctx, stateDir),
 		Exporters: map[otel.ExporterType]otel.ExporterComponents{
 			otel.System: {
 				Exporter: googleCloudExporter(userAgent, false, false),
@@ -229,29 +253,37 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 			otel.GMP: {
 				Exporter: googleManagedPrometheusExporter(userAgent),
 			},
-			otel.OTLP: {
-				Exporter: otlpExporter(userAgent),
+			otel.OTLP_Metrics: {
+				Exporter:       otlpExporterForMetrics(userAgent),
+				UsedExtensions: []string{googleClientAuthExtensionType},
 				ProcessorsByType: map[string][]otel.Component{
-					// The OTLP exporter doesn't batch by default like the googlecloud.* exporters.
-					// We need this to avoid the API point limits.
 					"metrics": {
 						otel.GCPProjectID(resource.ProjectName()),
 						otel.MetricStartTime(),
 						otel.BatchProcessor(200, 200, "200ms"),
 					},
-					// Batching logs improves log export performance.
+				},
+			},
+			otel.OTLP_Logs: {
+				Exporter:       otlpExporterForLogs(userAgent),
+				UsedExtensions: []string{fileStorageExtensionType, googleClientAuthExtensionType},
+				ProcessorsByType: map[string][]otel.Component{
 					"logs": {
 						otel.GCPProjectID(resource.ProjectName()),
 						// otel.DisableOtlpRoundTrip(), // Disable it until b/491102815 is fixed.
 						otel.PreserveInstrumentationScope(),
 						otel.CopyServiceResourceLabels(),
-						otel.BatchProcessor(1000, 1000, "200ms"),
 					},
 				},
 			},
 			otel.Logging: {
-				Exporter: googleCloudLoggingExporter(),
+				Exporter:       googleCloudLoggingExporter(),
+				UsedExtensions: []string{fileStorageExtensionType},
 			},
+		},
+		Extensions: map[string]otel.Component{
+			googleClientAuthExtensionType: {Type: googleClientAuthExtensionType, Config: map[string]string{}},
+			fileStorageExtensionType:      fileStorageExtension(stateDir),
 		},
 	}.Generate(ctx)
 	if err != nil {

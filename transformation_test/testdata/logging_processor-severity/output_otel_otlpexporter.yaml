@@ -1,0 +1,159 @@
+- resourceLogs:
+  - resource:
+      attributes:
+      - key: cloud.availability_zone
+        value:
+          stringValue: test-zone
+      - key: cloud.platform
+        value:
+          stringValue: gcp_compute_engine
+      - key: cloud.project
+        value:
+          stringValue: my-project
+      - key: cloud.region
+        value:
+          stringValue: test-zone
+      - key: gcp.project_id
+        value:
+          stringValue: fake-project
+      - key: host.id
+        value:
+          stringValue: test-instance-id
+    scopeLogs:
+    - logRecords:
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: message with DEFAULT severity
+        observedTimeUnixNano: now
+        severityText: DEFAULT
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: message with DEBUG severity
+        observedTimeUnixNano: now
+        severityText: DEBUG
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: message with INFO severity
+        observedTimeUnixNano: now
+        severityText: INFO
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: message with NOTICE severity
+        observedTimeUnixNano: now
+        severityText: NOTICE
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: message with WARNING severity
+        observedTimeUnixNano: now
+        severityText: WARNING
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: message with ERROR severity
+        observedTimeUnixNano: now
+        severityText: ERROR
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: message with CRITICAL severity
+        observedTimeUnixNano: now
+        severityText: CRITICAL
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: message with ALERT severity
+        observedTimeUnixNano: now
+        severityText: ALERT
+      - attributes:
+        - key: compute.googleapis.com/resource_name
+          value:
+            stringValue: hostname
+        - key: gcp.log_name
+          value:
+            stringValue: my-log-name
+        body:
+          kvlistValue:
+            values:
+            - key: message
+              value:
+                stringValue: message with EMERGENCY severity
+        observedTimeUnixNano: now
+        severityText: EMERGENCY
+      scope: {}
