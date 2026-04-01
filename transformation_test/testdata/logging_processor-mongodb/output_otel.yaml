@@ -1412,7 +1412,7 @@
     timestamp: now
   partialSuccess: true
 - collector_errors:
-  - caller: ottl@v0.145.0/parser.go:410
+  - caller: ottl@v0.148.0/parser.go:410
     error: "json: float unexpected end of JSON input"
     level: warn
     msg: failed to execute statement
@@ -1423,9 +1423,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.145.0
+      service.version: v0.148.0
     statement: set(log.cache["__parsed_json"], ParseJSON(log.body["message"])) where (log.body != nil and log.body["message"] != nil)
-  - caller: ottl@v0.145.0/parser.go:410
+  - caller: ottl@v0.148.0/parser.go:410
     error: "parsing time \"2025-07-21T15:00:28.308+00:00\" as \"%Y-%m-%dT%H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
     level: warn
     msg: failed to execute statement
@@ -1436,9 +1436,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.145.0
+      service.version: v0.148.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M:%S.%L%z") != nil)
-  - caller: ottl@v0.145.0/parser.go:410
+  - caller: ottl@v0.148.0/parser.go:410
     error: "parsing time \"2025-07-21T15:00:28.309+00:00\" as \"%Y-%m-%dT%H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
     level: warn
     msg: failed to execute statement
@@ -1449,9 +1449,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.145.0
+      service.version: v0.148.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M:%S.%L%z") != nil)
-  - caller: ottl@v0.145.0/parser.go:410
+  - caller: ottl@v0.148.0/parser.go:410
     error: "parsing time \"2025-07-21T15:00:28.309+00:00\" as \"%Y-%m-%dT%H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
     level: warn
     msg: failed to execute statement
@@ -1462,9 +1462,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.145.0
+      service.version: v0.148.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M:%S.%L%z") != nil)
-  - caller: ottl@v0.145.0/parser.go:410
+  - caller: ottl@v0.148.0/parser.go:410
     error: "parsing time \"2025-07-21T15:00:28.310+00:00\" as \"%Y-%m-%dT%H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
     level: warn
     msg: failed to execute statement
@@ -1475,9 +1475,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.145.0
+      service.version: v0.148.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M:%S.%L%z") != nil)
-  - caller: ottl@v0.145.0/parser.go:410
+  - caller: ottl@v0.148.0/parser.go:410
     error: "parsing time \"2025-07-21T15:00:28.310+00:00\" as \"%Y-%m-%dT%H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
     level: warn
     msg: failed to execute statement
@@ -1488,9 +1488,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.145.0
+      service.version: v0.148.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M:%S.%L%z") != nil)
-  - caller: ottl@v0.145.0/parser.go:410
+  - caller: ottl@v0.148.0/parser.go:410
     error: "parsing time \"2025-07-21T15:00:28.310+00:00\" as \"%Y-%m-%dT%H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
     level: warn
     msg: failed to execute statement
@@ -1501,9 +1501,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.145.0
+      service.version: v0.148.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M:%S.%L%z") != nil)
-  - caller: ottl@v0.145.0/parser.go:410
+  - caller: ottl@v0.148.0/parser.go:410
     error: "parsing time \"2025-07-21T15:00:28.310+00:00\" as \"%Y-%m-%dT%H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
     level: warn
     msg: failed to execute statement
@@ -1514,9 +1514,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.145.0
+      service.version: v0.148.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M:%S.%L%z") != nil)
-  - caller: ottl@v0.145.0/parser.go:410
+  - caller: ottl@v0.148.0/parser.go:410
     error: "parsing time \"2025-07-21T15:00:28.310+00:00\" as \"%Y-%m-%dT%H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
     level: warn
     msg: failed to execute statement
@@ -1527,9 +1527,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.145.0
+      service.version: v0.148.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M:%S.%L%z") != nil)
-  - caller: ottl@v0.145.0/parser.go:410
+  - caller: ottl@v0.148.0/parser.go:410
     error: "parsing time \"2025-07-21T15:00:28.310+00:00\" as \"%Y-%m-%dT%H:%M:%S.%L%z\": cannot parse \"+00:00\" as \"%z\""
     level: warn
     msg: failed to execute statement
@@ -1540,5 +1540,5 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.145.0
+      service.version: v0.148.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M:%S.%L%z") != nil)
