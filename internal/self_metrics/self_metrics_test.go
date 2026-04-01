@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
+	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"gotest.tools/v3/assert"
@@ -33,7 +34,7 @@ func TestEnabledReceiversDefaultConfig(t *testing.T) {
 	}{
 		{
 			name:   "builtin_linux",
-			config: apps.BuiltInConfStructs["linux"],
+			config: confgenerator.BuiltInConfStructs["linux"],
 			enabledReceivers: self_metrics.EnabledReceivers{
 				MetricsReceiverCountsByType: map[string]int{"hostmetrics": 1},
 				LogsReceiverCountsByType:    map[string]int{"files": 1},
@@ -41,7 +42,7 @@ func TestEnabledReceiversDefaultConfig(t *testing.T) {
 		},
 		{
 			name:   "builtin_windows",
-			config: apps.BuiltInConfStructs["windows"],
+			config: confgenerator.BuiltInConfStructs["windows"],
 			enabledReceivers: self_metrics.EnabledReceivers{
 				MetricsReceiverCountsByType: map[string]int{"hostmetrics": 1, "iis": 1, "mssql": 1},
 				LogsReceiverCountsByType:    map[string]int{"windows_event_log": 1},

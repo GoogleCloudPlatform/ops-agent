@@ -33,7 +33,6 @@ type AgentSelfMetrics struct {
 	FluentBitPort       int
 	OtelPort            int
 	OtelRuntimeDir      string
-	OtelLogging         bool
 }
 
 // Following reference : https://github.com/googleapis/googleapis/blob/master/google/rpc/code.proto
