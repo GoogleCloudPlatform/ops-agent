@@ -651,6 +651,7 @@ func (r LoggingReceiverWindowsEventLog) Pipelines(ctx context.Context) ([]otel.R
 		receiver_config := map[string]any{
 			"channel":               c,
 			"start_at":              "beginning",
+			"event_data_format":     "array",
 			"poll_interval":         "1s",
 			"ignore_channel_errors": true,
 			"storage":               fileStorageExtensionType,
