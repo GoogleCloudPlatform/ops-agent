@@ -5045,7 +5045,7 @@ traces:
 				Labels: []*metadata.MetricLabel{
 					{
 						Name:       "status",
-						ValueRegex: "INVALID_ARGUMENT|UNKNOWN",
+						ValueRegex: "INVALID_ARGUMENT",
 					},
 				},
 			},
