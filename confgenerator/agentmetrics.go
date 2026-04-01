@@ -57,32 +57,18 @@ var grpcToHTTPStatus = map[string]string{
 	"DEADLINE_EXCEEDED":   "504",
 }
 
-var grpcCamelToSnake = map[string]string{
+var otelErrorTypeToStatus = map[string]string{
 	"OK":                 "OK",
 	"Canceled":           "CANCELLED",
-	"Unknown":            "UNKNOWN",
-	"InvalidArgument":    "INVALID_ARGUMENT",
-	"DeadlineExceeded":   "DEADLINE_EXCEEDED",
-	"NotFound":           "NOT_FOUND",
-	"AlreadyExists":      "ALREADY_EXISTS",
-	"PermissionDenied":   "PERMISSION_DENIED",
-	"ResourceExhausted":  "RESOURCE_EXHAUSTED",
-	"FailedPrecondition": "FAILED_PRECONDITION",
-	"Aborted":            "ABORTED",
-	"OutOfRange":         "OUT_OF_RANGE",
-	"Unimplemented":      "UNIMPLEMENTED",
-	"Internal":           "INTERNAL",
-	"Unavailable":        "UNAVAILABLE",
-	"DataLoss":           "DATA_LOSS",
-	"Unauthenticated":    "UNAUTHENTICATED",
-}
-
-var otelErrorTypeToStatus = map[string]string{
 	"Cancelled":          "CANCELLED",
 	"canceled":           "CANCELLED",
+	"cancelled":          "CANCELLED",
 	"Unknown":            "UNKNOWN",
+	"Shutdown":           "UNKNOWN",
+	"shutdown":           "UNKNOWN",
 	"InvalidArgument":    "INVALID_ARGUMENT",
 	"DeadlineExceeded":   "DEADLINE_EXCEEDED",
+	"Deadline_Exceeded":  "DEADLINE_EXCEEDED",
 	"deadline_exceeded":  "DEADLINE_EXCEEDED",
 	"NotFound":           "NOT_FOUND",
 	"AlreadyExists":      "ALREADY_EXISTS",
@@ -96,7 +82,6 @@ var otelErrorTypeToStatus = map[string]string{
 	"Unavailable":        "UNAVAILABLE",
 	"DataLoss":           "DATA_LOSS",
 	"Unauthenticated":    "UNAUTHENTICATED",
-	"shutdown":           "UNKNOWN",
 }
 
 func (r AgentSelfMetrics) AddSelfMetricsPipelines(receiverPipelines map[string]otel.ReceiverPipeline, pipelines map[string]otel.Pipeline, ctx context.Context) {
@@ -224,7 +209,7 @@ func (r AgentSelfMetrics) OtelPipelineProcessors(ctx context.Context) []otel.Com
 		pointCountMetric = otel.CombineMetrics("otelcol_exporter_sent_metric_points|otelcol_exporter_send_failed_metric_points", "agent/monitoring/point_count",
 			otel.AggregateLabels("sum", "status"))
 		apiRequestCount = otel.RenameMetric(durationCountMetric, "agent/api_request_count",
-			otel.RenameLabelValues("rpc_response_status_code", grpcCamelToSnake),
+			otel.RenameLabelValues("rpc_response_status_code", otelErrorTypeToStatus),
 			otel.RenameLabel("rpc_response_status_code", "state"),
 			// delete all other labels, retaining only state
 			otel.AggregateLabels("sum", "state"))
@@ -318,7 +303,8 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors(ctx context.Context) 
 			`metric.name == "` + durationCountMetric + `" and (not IsMatch(datapoint.attributes["rpc_method"], "opentelemetry.proto.collector.logs.v1.LogsService/Export"))`,
 		})
 		otelRequestCount = otel.RenameMetric(durationCountMetric, "otel_request_count",
-			otel.RenameLabelValues("rpc_response_status_code", grpcCamelToSnake),
+			otel.RenameLabelValues("rpc_response_status_code", otelErrorTypeToStatus),
+
 			otel.RenameLabel("rpc_response_status_code", "response_code"),
 			otel.RenameLabelValues("response_code", grpcToHTTPStatus),
 			otel.AggregateLabels("sum", "response_code"),
