@@ -5024,7 +5024,7 @@ traces:
 
 		// 2. Verify self-metric for failed points
 		// Wait for point_count with status != "OK" to prove failed points are recorded
-		failedFilter := []string{`metric.labels.status != "OK"`}
+		// failedFilter := []string{`metric.labels.status != "OK"`}
 		failedMetric := metadata.ExpectedMetric{
 			MetricSpec: metadata.MetricSpec{
 				Type:               "agent.googleapis.com/agent/monitoring/point_count",
@@ -5034,11 +5034,12 @@ traces:
 				Labels: []*metadata.MetricLabel{
 					{
 						Name:       "status",
-						ValueRegex: ".*",
+						ValueRegex: "INVALID_ARGUMENT|UNKNOWN",
 					},
 				},
 			},
 		}
+		failedFilter := []string{`metric.labels.status != "OK"`}
 		if err := waitForAndAssertMetric(ctx, logger, vm, time.Hour, &failedMetric, failedFilter, false); err != nil {
 			t.Error(err)
 		}
