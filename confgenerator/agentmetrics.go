@@ -199,7 +199,7 @@ func (r AgentSelfMetrics) OtelPipelineProcessors(ctx context.Context) []otel.Com
 			),
 			otel.UpdateMetric("otelcol_exporter_send_failed_metric_points",
 				otel.ToggleScalarDataType,
-				otel.RenameLabel("error.type", "status"),
+				otel.RenameLabel("error_type", "status"),
 				otel.RenameLabelValues("status", otelErrorTypeToStatus),
 				otel.AggregateLabels("sum", "status"),
 			),
