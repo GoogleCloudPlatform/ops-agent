@@ -4981,6 +4981,83 @@ traces:
 	)
 }
 
+func TestOTLPMetricsPartialSuccess(t *testing.T) {
+	t.Parallel()
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+		t.Parallel()
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+		otlpConfig := `
+combined:
+  receivers:
+    otlp:
+      type: otlp
+      grpc_endpoint: 0.0.0.0:4317
+      metrics_mode: googlecloudmonitoring
+metrics:
+  service:
+    pipelines:
+      otlp:
+        receivers:
+        - otlp
+traces:
+  service:
+    pipelines:
+`
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, otlpConfig, feature); err != nil {
+			t.Fatal(err)
+		}
+
+		time.Sleep(2 * time.Minute)
+
+		// Generate metric traffic with dummy app
+		metricFile, err := testdataDir.Open(path.Join("testdata", "otlp", "metrics_partial_success.go"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer metricFile.Close()
+		if err := installGolang(ctx, logger, vm); err != nil {
+			t.Fatal(err)
+		}
+		serviceName := "otlp-metric-partial-success-test"
+		if err = runGoCode(
+			ctx, logger, vm, metricFile,
+			"-service_name", serviceName,
+		); err != nil {
+			t.Fatal(err)
+		}
+
+		// 1. Verify good metric arrives
+		expectedMetricType := "workload.googleapis.com/otlp.test.gauge_good"
+		_, err = gce.WaitForMetricSeries(ctx, logger, vm, expectedMetricType, time.Hour, nil, false, 1)
+		if err != nil {
+			t.Error(err)
+		}
+
+		// 2. Verify self-metric for failed points
+		// Wait for point_count with status != "OK" to prove failed points are recorded
+		// failedFilter := []string{`metric.labels.status != "OK"`}
+		failedMetric := metadata.ExpectedMetric{
+			MetricSpec: metadata.MetricSpec{
+				Type:               "agent.googleapis.com/agent/monitoring/point_count",
+				Kind:               metric.MetricDescriptor_CUMULATIVE.String(),
+				ValueType:          metric.MetricDescriptor_INT64.String(),
+				MonitoredResources: []string{"gce_instance"},
+				Labels: []*metadata.MetricLabel{
+					{
+						Name:       "status",
+						ValueRegex: "INVALID_ARGUMENT",
+					},
+				},
+			},
+		}
+		failedFilter := []string{`metric.labels.status != "OK"`}
+		if err := waitForAndAssertMetric(ctx, logger, vm, time.Hour, &failedMetric, failedFilter, false); err != nil {
+			t.Error(err)
+		}
+	})
+}
+
+
 func TestOTLPMetricsOTLP(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
