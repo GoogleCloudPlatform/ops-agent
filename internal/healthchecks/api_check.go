@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"cloud.google.com/go/logging"
@@ -28,7 +29,10 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/googleapis/gax-go/v2/apierror"
 	metricpb "google.golang.org/genproto/googleapis/api/metric"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/status"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -172,6 +176,36 @@ func runMonitoringCheck(logger logs.StructuredLogger, resource resourcedetector.
 	return nil
 }
 
+func runTelemetryCheck(logger logs.StructuredLogger, _ resourcedetector.Resource) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	conn, err := grpc.NewClient("telemetry.googleapis.com:443", grpc.WithTransportCredentials(credentials.NewTLS(nil)))
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	logger.Infof("telemetry client was created successfully")
+
+	// Try to call a non-existent method to see if the service is active.
+	err = conn.Invoke(ctx, "/google.rpc.Telemetry/Ping", nil, nil)
+	if err != nil {
+		stat, ok := status.FromError(err)
+		if ok {
+			if stat.Code() == codes.PermissionDenied && strings.Contains(stat.Message(), "disabled") {
+				return TelApiDisabledErr
+			}
+			// If it's Unimplemented or Unauthenticated, the service is likely enabled (we reached it).
+			if stat.Code() == codes.Unimplemented || stat.Code() == codes.Unauthenticated {
+				return nil
+			}
+		}
+		// If we get a connection error, it might be network, but we return it as we can't verify.
+		return err
+	}
+	return nil
+}
+
 type APICheck struct{}
 
 func (c APICheck) Name() string {
@@ -185,5 +219,6 @@ func (c APICheck) RunCheck(logger logs.StructuredLogger) error {
 	}
 	monErr := runMonitoringCheck(logger, resource)
 	logErr := runLoggingCheck(logger, resource)
-	return errors.Join(monErr, logErr)
+	telErr := runTelemetryCheck(logger, resource)
+	return errors.Join(monErr, logErr, telErr)
 }

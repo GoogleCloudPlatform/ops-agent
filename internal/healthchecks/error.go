@@ -149,6 +149,14 @@ var (
 		ResourceLink: "https://cloud.google.com/monitoring/api/enable-api",
 		IsFatal:      true,
 	}
+	TelApiDisabledErr = HealthCheckError{
+		Code:         "TelApiDisabledErr",
+		Class:        Api,
+		Message:      "The Telemetry API is disabled or not accessible in the current Google Cloud project.",
+		Action:       "Verify that telemetry.googleapis.com is enabled in your Google Cloud project.",
+		ResourceLink: "https://docs.cloud.google.com/stackdriver/docs/reference/api-overview",
+		IsFatal:      false,
+	}
 	LogApiUnauthenticatedErr = HealthCheckError{
 		Code:         "LogApiUnauthenticatedErr",
 		Class:        Api,
