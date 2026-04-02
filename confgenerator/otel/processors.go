@@ -665,7 +665,7 @@ func ResourceTransform(attributes map[string]string, override bool) Component {
 
 func MetricStartTime() Component {
 	return Component{
-		Type:   "metricstarttime",
+		Type:   "metric_start_time",
 		Config: map[string]string{"strategy": "subtract_initial_point"},
 	}
 }
