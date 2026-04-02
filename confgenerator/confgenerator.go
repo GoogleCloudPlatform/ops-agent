@@ -139,6 +139,19 @@ func otlpExporterForMetrics(userAgent string) otel.Component {
 			"headers": map[string]string{
 				"User-Agent": userAgent,
 			},
+			"sending_queue": map[string]interface{}{
+				"enabled":           true,
+				"queue_size":        12000,
+				"num_consumers":     10,
+				"sizer":             "items",
+				"block_on_overflow": true,
+				"batch": map[string]interface{}{
+					"flush_timeout": "200ms",
+					"min_size":      200,
+					"max_size":      200,
+					"sizer":         "items",
+				},
+			},
 		},
 	}
 }
@@ -259,7 +272,6 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 					"metrics": {
 						otel.GCPProjectID(resource.ProjectName()),
 						otel.MetricStartTime(),
-						otel.BatchProcessor(200, 200, "200ms"),
 					},
 				},
 			},
