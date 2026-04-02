@@ -725,7 +725,7 @@ processors:
       operations:
       - action: toggle_scalar_data_type
       - action: update_label
-        label: error.type
+        label: error_type
         new_label: status
       - action: update_label
         label: status
