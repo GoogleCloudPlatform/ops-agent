@@ -6320,11 +6320,18 @@ func TestUninstallRemovesService(t *testing.T) {
 			t.Fatalf("Failed to uninstall Ops Agent: %v", err)
 		}
 
-		// Give systemd some time to clean up the service.
-		// Sometimes the service enters a "failed" state with "Loaded: not-found"
-		// while it's being stopped/uninstalled, and it takes a bit for systemd
-		// to fully remove it from memory.
-		time.Sleep(60 * time.Second)
+		// Reload systemd daemon to ensure it reflects the uninstallation
+		if !gce.IsWindows(imageSpec) {
+			// Give systemd some time to stop the service.
+			// Systemd has DefaultTimeoutStopSec of 90s - set this to 100s so that
+			// systemd can clean up failed to stop and timeout subagents
+			time.Sleep(100 * time.Second)
+
+			//TODO(b/498924947): reset-failed is used here to temporarily suppress the FluentBit shutdown time issue
+			if _, err := gce.RunRemotely(ctx, logger, vm, "sudo systemctl daemon-reload && (sudo systemctl reset-failed 'google-cloud-ops-agent*' || true)"); err != nil {
+				t.Fatalf("Failed to reload systemd or reset failed services: %v", err)
+			}
+		}
 
 		var checkServiceCmd string
 		if gce.IsWindows(imageSpec) {
