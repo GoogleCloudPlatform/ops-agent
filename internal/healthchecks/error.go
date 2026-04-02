@@ -149,6 +149,30 @@ var (
 		ResourceLink: "https://cloud.google.com/monitoring/api/enable-api",
 		IsFatal:      true,
 	}
+	TelApiDisabledErr = HealthCheckError{
+		Code:         "TelApiDisabledErr",
+		Class:        Api,
+		Message:      "The Telemetry API is disabled or not accessible in the current Google Cloud project.",
+		Action:       "Verify that telemetry.googleapis.com is enabled in your Google Cloud project.",
+		ResourceLink: "https://docs.cloud.google.com/stackdriver/docs/reference/api-overview",
+		IsFatal:      true,
+	}
+	TelApiPermissionErr = HealthCheckError{
+		Code:         "TelApiPermissionErr",
+		Class:        Permission,
+		Message:      "Service account is missing required IAM roles for the Telemetry API.",
+		Action:       "Add the required IAM roles (e.g., Monitoring Metric Writer) to the service account.",
+		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/authorization#create-service-account",
+		IsFatal:      true,
+	}
+	TelApiUnauthenticatedErr = HealthCheckError{
+		Code:         "TelApiUnauthenticatedErr",
+		Class:        Api,
+		Message:      "The current VM couldn't authenticate to the Telemetry API.",
+		Action:       "Verify that your credential files, VM access scopes and permissions are set up correctly.",
+		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/authorization",
+		IsFatal:      true,
+	}
 	LogApiUnauthenticatedErr = HealthCheckError{
 		Code:         "LogApiUnauthenticatedErr",
 		Class:        Api,

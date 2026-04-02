@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"cloud.google.com/go/logging"
@@ -27,8 +28,14 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/googleapis/gax-go/v2/apierror"
+	metricspb "go.opentelemetry.io/proto/otlp/collector/metrics/v1"
+	"golang.org/x/oauth2/google"
 	metricpb "google.golang.org/genproto/googleapis/api/metric"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/oauth"
+	"google.golang.org/grpc/status"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -172,6 +179,59 @@ func runMonitoringCheck(logger logs.StructuredLogger, resource resourcedetector.
 	return nil
 }
 
+func runTelemetryCheck(logger logs.StructuredLogger, _ resourcedetector.Resource) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// We need to authenticate the gRPC call using Application Default Credentials (ADC).
+	// The edge server for telemetry.googleapis.com rejects requests from unregistered callers
+	// (missing credentials) with a generic PermissionDenied error before checking if the API
+	// is enabled for the project. By providing credentials, we ensure we pass this initial
+	// check and get a specific error if the API is actually disabled.
+	creds, err := google.FindDefaultCredentials(ctx,
+		"https://www.googleapis.com/auth/monitoring.write",
+		"https://www.googleapis.com/auth/logging.write",
+		"https://www.googleapis.com/auth/trace.append",
+	)
+	if err != nil {
+		return fmt.Errorf("failed to find default credentials: %v", err)
+	}
+
+	conn, err := grpc.NewClient(
+		"telemetry.googleapis.com:443",
+		grpc.WithTransportCredentials(credentials.NewTLS(nil)),
+		grpc.WithPerRPCCredentials(oauth.TokenSource{TokenSource: creds.TokenSource}),
+	)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	logger.Infof("telemetry client was created successfully")
+
+	// Try to call a valid OTLP metrics method using generated client.
+	client := metricspb.NewMetricsServiceClient(conn)
+	_, err = client.Export(ctx, &metricspb.ExportMetricsServiceRequest{})
+	if err != nil {
+		stat, ok := status.FromError(err)
+		if ok {
+			switch stat.Code() {
+			case codes.PermissionDenied:
+				if strings.Contains(stat.Message(), "disabled") {
+					return TelApiDisabledErr
+				}
+				return TelApiPermissionErr
+			case codes.Unauthenticated:
+				return TelApiUnauthenticatedErr
+			case codes.Internal:
+				// Handle Internal (unmarshal failure) as "enabled" because it reached backend with empty payload.
+				return nil
+			}
+		}
+		return err
+	}
+	return nil
+}
+
 type APICheck struct{}
 
 func (c APICheck) Name() string {
@@ -185,5 +245,6 @@ func (c APICheck) RunCheck(logger logs.StructuredLogger) error {
 	}
 	monErr := runMonitoringCheck(logger, resource)
 	logErr := runLoggingCheck(logger, resource)
-	return errors.Join(monErr, logErr)
+	telErr := runTelemetryCheck(logger, resource)
+	return errors.Join(monErr, logErr, telErr)
 }
