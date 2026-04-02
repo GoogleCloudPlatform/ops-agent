@@ -6320,13 +6320,13 @@ func TestUninstallRemovesService(t *testing.T) {
 			t.Fatalf("Failed to uninstall Ops Agent: %v", err)
 		}
 
-		// Give systemd some time to stop the service.
-		// Systemd has DefaultTimeoutStopSec of 90s - set this to 100s so that
-		// systemd can clean up failed to stop and timeout subagents
-		time.Sleep(100 * time.Second)
-
 		// Reload systemd daemon to ensure it reflects the uninstallation
 		if !gce.IsWindows(imageSpec) {
+			// Give systemd some time to stop the service.
+			// Systemd has DefaultTimeoutStopSec of 90s - set this to 100s so that
+			// systemd can clean up failed to stop and timeout subagents
+			time.Sleep(100 * time.Second)
+
 			if _, err := gce.RunRemotely(ctx, logger, vm, "sudo systemctl daemon-reload"); err != nil {
 				t.Fatalf("Failed to reload systemd: %v", err)
 			}
