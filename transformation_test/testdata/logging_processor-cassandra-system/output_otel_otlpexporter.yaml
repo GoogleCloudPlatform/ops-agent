@@ -16,6 +16,9 @@
       - key: gcp.project_id
         value:
           stringValue: fake-project
+      - key: gcp.use_legacy_mapping
+        value:
+          stringValue: "true"
       - key: host.id
         value:
           stringValue: test-instance-id
@@ -358,6 +361,9 @@
       - key: gcp.project_id
         value:
           stringValue: fake-project
+      - key: gcp.use_legacy_mapping
+        value:
+          stringValue: "true"
       - key: host.id
         value:
           stringValue: test-instance-id

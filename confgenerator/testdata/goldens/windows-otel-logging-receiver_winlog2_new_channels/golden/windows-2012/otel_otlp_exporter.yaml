@@ -825,6 +825,11 @@ processors:
     - action: insert
       key: gcp.project_id
       value: test-project
+  resource/otlp_grpc/otlp_logs_logs_1:
+    attributes:
+    - action: insert
+      key: gcp.use_legacy_mapping
+      value: "true"
   resource/otlp_grpc/otlp_metrics_metrics_0:
     attributes:
     - action: insert
@@ -962,14 +967,14 @@ processors:
     - context: metric
       statements:
       - extract_count_metric(true) where name == "rpc_client_call_duration"
-  transform/otlp_grpc/otlp_logs_logs_1:
+  transform/otlp_grpc/otlp_logs_logs_2:
     error_mode: ignore
     log_statements:
     - context: log
       statements:
       - set(attributes["instrumentation_source"], instrumentation_scope.name) where instrumentation_scope.name != ""
       - set(attributes["instrumentation_version"], instrumentation_scope.version) where instrumentation_scope.version != ""
-  transform/otlp_grpc/otlp_logs_logs_2:
+  transform/otlp_grpc/otlp_logs_logs_3:
     error_mode: ignore
     log_statements:
     - context: log
@@ -1992,8 +1997,9 @@ service:
       - transform/windows__event__log_2
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_logs_logs_0
-      - transform/otlp_grpc/otlp_logs_logs_1
+      - resource/otlp_grpc/otlp_logs_logs_1
       - transform/otlp_grpc/otlp_logs_logs_2
+      - transform/otlp_grpc/otlp_logs_logs_3
       receivers:
       - windowseventlog/windows__event__log
     logs/logs_default__pipeline_windows__event__log_1:
@@ -2005,8 +2011,9 @@ service:
       - transform/windows__event__log_1_2
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_logs_logs_0
-      - transform/otlp_grpc/otlp_logs_logs_1
+      - resource/otlp_grpc/otlp_logs_logs_1
       - transform/otlp_grpc/otlp_logs_logs_2
+      - transform/otlp_grpc/otlp_logs_logs_3
       receivers:
       - windowseventlog/windows__event__log_1
     logs/logs_default__pipeline_windows__event__log_2:
@@ -2018,8 +2025,9 @@ service:
       - transform/windows__event__log_2_2
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_logs_logs_0
-      - transform/otlp_grpc/otlp_logs_logs_1
+      - resource/otlp_grpc/otlp_logs_logs_1
       - transform/otlp_grpc/otlp_logs_logs_2
+      - transform/otlp_grpc/otlp_logs_logs_3
       receivers:
       - windowseventlog/windows__event__log_2
     logs/logs_winlog2_winlog2:
@@ -2031,8 +2039,9 @@ service:
       - transform/winlog2_2
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_logs_logs_0
-      - transform/otlp_grpc/otlp_logs_logs_1
+      - resource/otlp_grpc/otlp_logs_logs_1
       - transform/otlp_grpc/otlp_logs_logs_2
+      - transform/otlp_grpc/otlp_logs_logs_3
       receivers:
       - windowseventlog/winlog2
     logs/logs_winlog2_winlog2_1:
@@ -2044,8 +2053,9 @@ service:
       - transform/winlog2_1_2
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_logs_logs_0
-      - transform/otlp_grpc/otlp_logs_logs_1
+      - resource/otlp_grpc/otlp_logs_logs_1
       - transform/otlp_grpc/otlp_logs_logs_2
+      - transform/otlp_grpc/otlp_logs_logs_3
       receivers:
       - windowseventlog/winlog2_1
     logs/logs_winlog2_winlog2_2:
@@ -2057,8 +2067,9 @@ service:
       - transform/winlog2_2_2
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_logs_logs_0
-      - transform/otlp_grpc/otlp_logs_logs_1
+      - resource/otlp_grpc/otlp_logs_logs_1
       - transform/otlp_grpc/otlp_logs_logs_2
+      - transform/otlp_grpc/otlp_logs_logs_3
       receivers:
       - windowseventlog/winlog2_2
     metrics/default__pipeline_hostmetrics:
