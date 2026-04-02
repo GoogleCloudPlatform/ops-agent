@@ -9,7 +9,12 @@ if [[ "$SUSE_VERSION" == 15 ]] && (( $SERVICE_PACK >= 6 )); then
   sudo SUSEConnect --product sle-module-legacy/${VERSION_ID}/$(uname -m)
 fi
 
-sudo zypper install -y curl java-11-openjdk insserv-compat
+
+if [[ "$SUSE_VERSION" == 16 ]]; then
+  sudo zypper install -y curl java-17-openjdk
+else
+  sudo zypper install -y curl java-11-openjdk insserv-compat
+fi
 
 sudo rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
 
@@ -32,6 +37,6 @@ sudo zypper modifyrepo --enable elasticsearch
 sudo zypper install -y elasticsearch
 sudo zypper modifyrepo --disable elasticsearch
 
-sudo chkconfig elasticsearch on
-
+sudo systemctl daemon-reload
+sudo systemctl enable elasticsearch
 sudo systemctl restart elasticsearch

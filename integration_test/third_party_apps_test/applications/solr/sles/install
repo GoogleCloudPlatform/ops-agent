@@ -9,8 +9,12 @@ if [[ "$SUSE_VERSION" == 15 ]] && (( $SERVICE_PACK >= 6 )); then
   sudo SUSEConnect --product sle-module-legacy/${VERSION_ID}/$(uname -m)
 fi
 
-sudo zypper install -y \
-    java-11-openjdk java-11-openjdk-devel curl lsof insserv-compat
+
+if [[ "$SUSE_VERSION" == 16 ]]; then
+  sudo zypper install -y java-17-openjdk java-17-openjdk-devel curl lsof
+else
+  sudo zypper install -y java-11-openjdk java-11-openjdk-devel curl lsof insserv-compat
+fi
 
 # https://github.com/GoogleCloudPlatform/ops-agent/blob/master/integration_test/README.md#vendored-dependencies
 curl -L -o \
@@ -21,6 +25,12 @@ tar -xzf \
     solr-8.11.1.tgz \
     solr-8.11.1/bin/install_solr_service.sh \
     --strip-components=2
+
+sudo mkdir -p /etc/init.d
+if [[ "$SUSE_VERSION" == 16 ]] && ! command -v chkconfig > /dev/null; then
+  echo -e '#!/bin/bash\nexit 0' | sudo tee /usr/sbin/chkconfig > /dev/null
+  sudo chmod +x /usr/sbin/chkconfig
+fi
 
 sudo bash ./install_solr_service.sh solr-8.11.1.tgz -n
 
