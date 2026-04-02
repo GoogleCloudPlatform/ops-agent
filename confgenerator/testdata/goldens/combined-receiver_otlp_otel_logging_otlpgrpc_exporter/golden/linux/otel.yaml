@@ -114,7 +114,7 @@ processors:
     - location
   interval/loggingmetrics_7:
     interval: 1m
-  metricstarttime/otlp_grpc/otlp_metrics_metrics_1:
+  metric_start_time/otlp_grpc/otlp_metrics_metrics_1:
     strategy: subtract_initial_point
   metricstransform/fluentbit_1:
     transforms:
@@ -1202,7 +1202,7 @@ service:
       - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_metrics_metrics_0
-      - metricstarttime/otlp_grpc/otlp_metrics_metrics_1
+      - metric_start_time/otlp_grpc/otlp_metrics_metrics_1
       - batch/otlp_grpc/otlp_metrics_metrics_2
       receivers:
       - hostmetrics/hostmetrics
@@ -1217,7 +1217,7 @@ service:
       - metricstransform/fluentbit_1
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_metrics_metrics_0
-      - metricstarttime/otlp_grpc/otlp_metrics_metrics_1
+      - metric_start_time/otlp_grpc/otlp_metrics_metrics_1
       - batch/otlp_grpc/otlp_metrics_metrics_2
       receivers:
       - prometheus/agent_prometheus
@@ -1239,7 +1239,7 @@ service:
       - metricstransform/loggingmetrics_8
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_metrics_metrics_0
-      - metricstarttime/otlp_grpc/otlp_metrics_metrics_1
+      - metric_start_time/otlp_grpc/otlp_metrics_metrics_1
       - batch/otlp_grpc/otlp_metrics_metrics_2
       receivers:
       - prometheus/agent_prometheus
@@ -1252,7 +1252,7 @@ service:
       - transform/ops_agent_2
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_metrics_metrics_0
-      - metricstarttime/otlp_grpc/otlp_metrics_metrics_1
+      - metric_start_time/otlp_grpc/otlp_metrics_metrics_1
       - batch/otlp_grpc/otlp_metrics_metrics_2
       receivers:
       - otlpjsonfile/ops_agent
@@ -1269,7 +1269,7 @@ service:
       - metricstransform/otel_3
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_metrics_metrics_0
-      - metricstarttime/otlp_grpc/otlp_metrics_metrics_1
+      - metric_start_time/otlp_grpc/otlp_metrics_metrics_1
       - batch/otlp_grpc/otlp_metrics_metrics_2
       receivers:
       - prometheus/agent_prometheus
@@ -1280,7 +1280,7 @@ service:
       - metricstransform/otlpgooglecloudmonitoring_0
       - resourcedetection/_global_1
       - resource/otlp_grpc/otlp_metrics_metrics_0
-      - metricstarttime/otlp_grpc/otlp_metrics_metrics_1
+      - metric_start_time/otlp_grpc/otlp_metrics_metrics_1
       - batch/otlp_grpc/otlp_metrics_metrics_2
       receivers:
       - otlp/otlpgooglecloudmonitoring
@@ -1294,7 +1294,7 @@ service:
       - transform/otlp_3
       - metricstransform/otlp_4
       - resource/otlp_grpc/otlp_metrics_metrics_0
-      - metricstarttime/otlp_grpc/otlp_metrics_metrics_1
+      - metric_start_time/otlp_grpc/otlp_metrics_metrics_1
       - batch/otlp_grpc/otlp_metrics_metrics_2
       receivers:
       - otlp/otlp
