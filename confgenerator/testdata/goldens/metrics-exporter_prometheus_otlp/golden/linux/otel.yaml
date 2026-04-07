@@ -732,7 +732,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/prometheus_2:
+  metricstransform/prometheus_3:
     transforms:
     - action: update
       include: ^(.*)$$
@@ -851,6 +851,12 @@ processors:
       - copy_metric(Concat([metric.name, "unknowncounter"], ":")) where metric.metadata["prometheus.type"] == "unknown" and not HasSuffix(metric.name, ":unknowncounter")
       - convert_gauge_to_sum("cumulative", true) where HasSuffix(metric.name, ":unknowncounter")
       - set(metric.name, Substring(metric.name, 0, Len(metric.name)-Len(":unknowncounter"))) where HasSuffix(metric.name, ":unknowncounter")
+  transform/prometheus_2:
+    error_mode: ignore
+    metric_statements:
+    - context: metric
+      statements:
+      - replace_pattern(metric.name, "[./]", "_")
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
@@ -1047,7 +1053,8 @@ service:
       processors:
       - transform/prometheus_0
       - transform/prometheus_1
-      - metricstransform/prometheus_2
+      - transform/prometheus_2
+      - metricstransform/prometheus_3
       - resource/otlp_grpc/otlp_metrics_metrics_0
       - metric_start_time/otlp_grpc/otlp_metrics_metrics_1
       - batch/otlp_grpc/otlp_metrics_metrics_2

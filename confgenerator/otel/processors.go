@@ -689,6 +689,14 @@ func MetricUnknownCounter() Component {
 	})
 }
 
+// PrometheusMetricNormalize replaces dots and slashes with underscores in metric names.
+// This is to maintain behavior for Prometheus metrics when using the OTLP exporter.
+func PrometheusMetricNormalize() Component {
+	return Transform("metric", "metric", []ottl.Statement{
+		`replace_pattern(metric.name, "[./]", "_")`,
+	})
+}
+
 // This processor prevents telemetry.googleapis.com from populating the LogEntry.otlp field by setting the gcp.use_legacy_mapping resource attribute to true.
 func DisableOtlpRoundTrip() Component {
 	return ResourceTransform(

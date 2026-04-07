@@ -5036,7 +5036,7 @@ traces:
 		tests := []metadata.ExpectedMetric{
 			{
 				MetricSpec: metadata.MetricSpec{
-					Type:               "prometheus.googleapis.com/otlp.test.gauge/gauge",
+					Type:               "prometheus.googleapis.com/otlp_test_gauge/gauge",
 					Kind:               metric.MetricDescriptor_GAUGE.String(),
 					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
 					Value:              5.0,
@@ -5047,7 +5047,7 @@ traces:
 			},
 			{
 				MetricSpec: metadata.MetricSpec{
-					Type:               "prometheus.googleapis.com/otlp.test.cumulative/counter",
+					Type:               "prometheus.googleapis.com/otlp_test_cumulative/counter",
 					Kind:               metric.MetricDescriptor_CUMULATIVE.String(),
 					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
 					Value:              15.0,
@@ -5058,7 +5058,7 @@ traces:
 			},
 			{
 				MetricSpec: metadata.MetricSpec{
-					Type:      "prometheus.googleapis.com/otlp.test.histogram/histogram",
+					Type:      "prometheus.googleapis.com/otlp_test_histogram/histogram",
 					Kind:      metric.MetricDescriptor_CUMULATIVE.String(),
 					ValueType: metric.MetricDescriptor_DISTRIBUTION.String(),
 					Value: &distribution.Distribution{
@@ -5081,7 +5081,7 @@ traces:
 			},
 			{
 				MetricSpec: metadata.MetricSpec{
-					Type: "prometheus.googleapis.com/otlp.test.updowncounter/gauge",
+					Type: "prometheus.googleapis.com/otlp_test_updowncounter/gauge",
 					Kind: metric.MetricDescriptor_GAUGE.String(),
 					// b/476112381: New OTLP endpoint for prometheus converts INT metrics types to DOUBLE
 					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
@@ -5093,7 +5093,7 @@ traces:
 			},
 			{
 				MetricSpec: metadata.MetricSpec{
-					Type:               "prometheus.googleapis.com/workload.googleapis.com/otlp.test.prefix1/gauge",
+					Type:               "prometheus.googleapis.com/workload_googleapis_com_otlp_test_prefix1/gauge",
 					Kind:               metric.MetricDescriptor_GAUGE.String(),
 					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
 					Value:              5.0,
@@ -5104,7 +5104,7 @@ traces:
 			},
 			{
 				MetricSpec: metadata.MetricSpec{
-					Type:               "prometheus.googleapis.com/.invalid.googleapis.com/otlp.test.prefix2/gauge",
+					Type:               "prometheus.googleapis.com/_invalid_googleapis_com_otlp_test_prefix2/gauge",
 					Kind:               metric.MetricDescriptor_GAUGE.String(),
 					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
 					Value:              5.0,
@@ -5115,7 +5115,7 @@ traces:
 			},
 			{
 				MetricSpec: metadata.MetricSpec{
-					Type:               "prometheus.googleapis.com/otlp.test.prefix3/workload.googleapis.com/abc/gauge",
+					Type:               "prometheus.googleapis.com/otlp_test_prefix3_workload_googleapis_com_abc/gauge",
 					Kind:               metric.MetricDescriptor_GAUGE.String(),
 					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
 					Value:              5.0,
@@ -5126,7 +5126,7 @@ traces:
 			},
 			{
 				MetricSpec: metadata.MetricSpec{
-					Type:               "prometheus.googleapis.com/WORKLOAD.GOOGLEAPIS.COM/otlp.test.prefix4/gauge",
+					Type:               "prometheus.googleapis.com/WORKLOAD_GOOGLEAPIS_COM_otlp_test_prefix4/gauge",
 					Kind:               metric.MetricDescriptor_GAUGE.String(),
 					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
 					Value:              5.0,
@@ -5137,7 +5137,7 @@ traces:
 			},
 			{
 				MetricSpec: metadata.MetricSpec{
-					Type:               "prometheus.googleapis.com/WORKLOAD.googleapis.com/otlp.test.prefix5/gauge",
+					Type:               "prometheus.googleapis.com/WORKLOAD_googleapis_com_otlp_test_prefix5/gauge",
 					Kind:               metric.MetricDescriptor_GAUGE.String(),
 					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
 					Value:              5.0,
@@ -5198,7 +5198,7 @@ traces:
 
 func TestOTLPMetricsGMP(t *testing.T) {
 	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 		otlpConfig := `
@@ -5217,7 +5217,7 @@ traces:
   service:
     pipelines:
 `
-		if err := agents.SetupOpsAgent(ctx, logger, vm, otlpConfig); err != nil {
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, otlpConfig, feature); err != nil {
 			t.Fatal(err)
 		}
 
