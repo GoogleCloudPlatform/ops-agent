@@ -39,7 +39,6 @@ platforms_to_skip:
   - debian-cloud:debian-11
   - debian-cloud:debian-12
   - debian-cloud:debian-12-arm64
-  - ml-images:common-cu124-debian-11-py310
   - rocky-linux-cloud:rocky-linux-8-optimized-gcp-arm64
   - rocky-linux-cloud:rocky-linux-8-arm64
   - rhel-cloud:rhel-8-arm64
@@ -57,6 +56,7 @@ platforms_to_skip:
   - ubuntu-os-cloud:ubuntu-2204-lts-arm64
   - ubuntu-os-cloud:ubuntu-2404-lts-amd64
   - ubuntu-os-cloud:ubuntu-2404-lts-arm64
+  - ml-images:common-cu128-ubuntu-2404-nvidia-570
   - ubuntu-os-cloud:ubuntu-2510-amd64
   - ubuntu-os-cloud:ubuntu-2510-arm64
 supported_app_version: ["2.6", "3.0+", "4.0+", "5.0"]

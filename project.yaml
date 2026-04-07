@@ -65,7 +65,7 @@ targets:
         test_distros:
           representative:
           - debian-cloud:debian-11
-          - ml-images:common-cu124-debian-11-py310
+          - ml-images:common-cu128-ubuntu-2404-nvidia-570
   centos8:
     os_versions: [centos-8*,rocky-8*,rhel-8*]
     package_extension:
