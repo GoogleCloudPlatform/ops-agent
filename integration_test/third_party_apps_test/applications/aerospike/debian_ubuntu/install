@@ -20,7 +20,7 @@ install_6() {
 
 install_7() {
     # download, extract, install, and start aerospike community edition
-    wget -O aerospike.tgz "https://download.aerospike.com/artifacts/aerospike-server-community/7.2.0/aerospike-server-community_7.2.0.3_tools-11.1.0_${os_version}_$(uname -m).tgz"
+    wget -O aerospike.tgz "https://download.aerospike.com/artifacts/aerospike-server-community/7.2.0/aerospike-server-community_7.2.0.16_tools-12.1.1_${os_version}_$(uname -m).tgz"
     tar -xvf aerospike.tgz
     (cd aerospike-server-community_7.2.0.3*/ && sudo ./asinstall)
 }
