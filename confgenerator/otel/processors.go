@@ -689,11 +689,12 @@ func MetricUnknownCounter() Component {
 	})
 }
 
-// PrometheusMetricNormalize replaces dots and slashes with underscores in metric names.
-// This is to maintain behavior for Prometheus metrics when using the OTLP exporter.
+// PrometheusMetricNormalize normalizes metric names to match Prometheus conventions.
+// It strips leading dots and slashes, and replaces all other non-alphanumeric characters with underscores.
 func PrometheusMetricNormalize() Component {
 	return Transform("metric", "metric", []ottl.Statement{
-		`replace_pattern(metric.name, "[./]", "_")`,
+		`replace_pattern(metric.name, "^[./]+", "")`,
+		`replace_pattern(metric.name, "[^a-zA-Z0-9_]", "_")`,
 	})
 }
 
