@@ -31,6 +31,7 @@ import (
 	metricspb "go.opentelemetry.io/proto/otlp/collector/metrics/v1"
 	"golang.org/x/oauth2/google"
 	metricpb "google.golang.org/genproto/googleapis/api/metric"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -214,6 +215,13 @@ func runTelemetryCheck(logger logs.StructuredLogger, _ resourcedetector.Resource
 	if err != nil {
 		stat, ok := status.FromError(err)
 		if ok {
+			for _, detail := range stat.Details() {
+				if info, ok := detail.(*errdetails.ErrorInfo); ok {
+					if info.Reason == AccessTokenScopeInsufficient {
+						return TelApiScopeErr
+					}
+				}
+			}
 			switch stat.Code() {
 			case codes.PermissionDenied:
 				if strings.Contains(stat.Message(), "disabled") {
