@@ -5089,7 +5089,7 @@ traces:
 					MonitoredResources: []string{"prometheus_target"},
 					Labels:             expectedLabels,
 				},
-				Optional: false,
+				Optional: true,
 			},
 			{
 				MetricSpec: metadata.MetricSpec{
@@ -5239,9 +5239,11 @@ traces:
 		}
 		expectedLabels := []*metadata.MetricLabel{
 			{Name: "otel_scope_name", ValueRegex: "foo"},
-			{Name: "otel_scope_version", ValueRegex: ""},
 			{Name: "instance_name", ValueRegex: vm.Name},
 			{Name: "machine_type", ValueRegex: fmt.Sprintf("projects/[0-9]+/machineTypes/%s", vm.MachineType)},
+		}
+		if feature != agents.OtlpHttpExporterFeatureFlag {
+			expectedLabels = append(expectedLabels, &metadata.MetricLabel{Name: "otel_scope_version", ValueRegex: ""})
 		}
 		tests := []metadata.ExpectedMetric{
 			{
@@ -5355,6 +5357,18 @@ traces:
 				},
 				Optional: false,
 			},
+		}
+		if feature == agents.OtlpHttpExporterFeatureFlag {
+			for i, t := range tests {
+				if t.MetricSpec.Type == "prometheus.googleapis.com/otlp_test_updowncounter/gauge" {
+					tests[i].MetricSpec.ValueType = metric.MetricDescriptor_DOUBLE.String()
+					tests[i].MetricSpec.Value = 3.0
+					tests[i].Optional = true
+				}
+				if t.MetricSpec.Type == "prometheus.googleapis.com/invalid_googleapis_com_otlp_test_prefix2/gauge" {
+					tests[i].MetricSpec.Type = "prometheus.googleapis.com/_invalid_googleapis_com_otlp_test_prefix2/gauge"
+				}
+			}
 		}
 		var multiErr error
 		for _, test := range tests {
