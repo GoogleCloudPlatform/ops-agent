@@ -5,13 +5,14 @@ sudo apt update
 KERNEL_VERSION=`uname -r`
 sudo apt install -y wget
 
-DISTRIBUTION=$(echo $ID$VERSION_ID | sed -e 's/\.//g')
 # Need to add the keyring for installing CUDA and DCGM
+DISTRIBUTION=$(echo $ID$VERSION_ID | sed -e 's/\.//g')
 wget --no-verbose https://developer.download.nvidia.com/compute/cuda/repos/${DISTRIBUTION}/x86_64/cuda-keyring_1.1-1_all.deb
 sudo dpkg -i cuda-keyring_1.1-1_all.deb
 
-# Check if need to install the driver - Ubuntu DLVM has CUDA/driver pre-installed 
-if ! command -v nvidia-smi > /dev/null 2>&1; then
+if command -v nvidia-smi > /dev/null 2>&1; then
+    echo "NVIDIA driver already installed. Skipping driver and CUDA installation."
+else
     # NVIDIA driver needs linux headers matching the kernel version. This section 
     # handles the cases when GCE images are behind on kernel updates. Kernel updates
     # require reboot, but our tests can't handle disconnections. When the matching
