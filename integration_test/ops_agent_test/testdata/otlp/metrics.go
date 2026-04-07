@@ -97,6 +97,9 @@ func main() {
 	testGaugeMetric(meter, "otlp.test.prefix4")
 	testGaugeMetric(meter, "otlp.test.prefix5")
 
+	// Test leading numbers
+	testGaugeMetric(meter, "99otlp.test.number")
+
 	testHistogramMetric(ctx, meter, "otlp.test.histogram")
 	testUpDownCounterMetric(ctx, meter, "otlp.test.updowncounter")
 	testCumulativeMetric(ctx, meter, "otlp.test.cumulative")

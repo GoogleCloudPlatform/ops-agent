@@ -5089,7 +5089,7 @@ traces:
 					MonitoredResources: []string{"prometheus_target"},
 					Labels:             expectedLabels,
 				},
-				Optional: true,
+				Optional: false,
 			},
 			{
 				MetricSpec: metadata.MetricSpec{
@@ -5105,6 +5105,17 @@ traces:
 			{
 				MetricSpec: metadata.MetricSpec{
 					Type:               "prometheus.googleapis.com/invalid_googleapis_com_otlp_test_prefix2/gauge",
+					Kind:               metric.MetricDescriptor_GAUGE.String(),
+					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+					Value:              5.0,
+					MonitoredResources: []string{"prometheus_target"},
+					Labels:             expectedLabels,
+				},
+				Optional: false,
+			},
+			{
+				MetricSpec: metadata.MetricSpec{
+					Type:               "prometheus.googleapis.com/_99otlp_test_number/gauge",
 					Kind:               metric.MetricDescriptor_GAUGE.String(),
 					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
 					Value:              5.0,
@@ -5259,6 +5270,17 @@ traces:
 			},
 			{
 				MetricSpec: metadata.MetricSpec{
+					Type:               "prometheus.googleapis.com/_99otlp_test_number/gauge",
+					Kind:               metric.MetricDescriptor_GAUGE.String(),
+					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
+					Value:              5.0,
+					MonitoredResources: []string{"prometheus_target"},
+					Labels:             expectedLabels,
+				},
+				Optional: false,
+			},
+			{
+				MetricSpec: metadata.MetricSpec{
 					Type:               "prometheus.googleapis.com/otlp_test_cumulative/counter",
 					Kind:               metric.MetricDescriptor_CUMULATIVE.String(),
 					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
@@ -5363,7 +5385,6 @@ traces:
 				if t.MetricSpec.Type == "prometheus.googleapis.com/otlp_test_updowncounter/gauge" {
 					tests[i].MetricSpec.ValueType = metric.MetricDescriptor_DOUBLE.String()
 					tests[i].MetricSpec.Value = 3.0
-					tests[i].Optional = true
 				}
 			}
 		}
