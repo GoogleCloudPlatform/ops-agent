@@ -25,6 +25,7 @@ import (
 	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/googleapis/gax-go/v2/apierror"
@@ -213,6 +214,9 @@ func runTelemetryCheck(logger logs.StructuredLogger, _ resourcedetector.Resource
 	client := metricspb.NewMetricsServiceClient(conn)
 	_, err = client.Export(ctx, &metricspb.ExportMetricsServiceRequest{})
 	if err != nil {
+		// Note: We use status.FromError here instead of apierror.FromError (used in other health checks)
+		// because we are using a raw gRPC client (metricspb.NewMetricsServiceClient) which returns
+		// raw gRPC errors, not high-level cloud client errors that implement apierror.APIError.
 		stat, ok := status.FromError(err)
 		if ok {
 			for _, detail := range stat.Details() {
@@ -253,6 +257,13 @@ func (c APICheck) RunCheck(logger logs.StructuredLogger) error {
 	}
 	monErr := runMonitoringCheck(logger, resource)
 	logErr := runLoggingCheck(logger, resource)
-	telErr := runTelemetryCheck(logger, resource)
+	
+	var telErr error
+	if experiments.FromContext(context.Background())["otlp_exporter"] {
+		telErr = runTelemetryCheck(logger, resource)
+	} else {
+		logger.Infof("Skipping Telemetry API check because otlp_exporter experiment is not enabled")
+	}
+	
 	return errors.Join(monErr, logErr, telErr)
 }

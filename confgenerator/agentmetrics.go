@@ -22,6 +22,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel/ottl"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
 )
 
 // AgentSelfMetrics provides the agent.googleapis.com/agent/ metrics.
@@ -181,7 +182,7 @@ func (r AgentSelfMetrics) OtelPipelineProcessors(ctx context.Context) []otel.Com
 		`metric.name == "` + durationCountMetric + `" and (not IsMatch(datapoint.attributes["grpc_target"], "monitoring.googleapis"))`,
 	})
 
-	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
+	expOtlpExporter := experiments.FromContext(ctx)["otlp_exporter"]
 	var extraTransforms []map[string]interface{}
 	if expOtlpExporter {
 		durationMetric = "rpc_client_call_duration"
@@ -292,7 +293,7 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors(ctx context.Context) 
 		otel.AggregateLabels("sum", "response_code"),
 	)
 
-	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
+	expOtlpExporter := experiments.FromContext(ctx)["otlp_exporter"]
 	if expOtlpExporter {
 		durationMetric = "rpc_client_call_duration"
 		durationCountMetric = "rpc_client_call_duration_count"
