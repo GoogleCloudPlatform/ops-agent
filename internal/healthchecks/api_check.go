@@ -257,13 +257,13 @@ func (c APICheck) RunCheck(logger logs.StructuredLogger) error {
 	}
 	monErr := runMonitoringCheck(logger, resource)
 	logErr := runLoggingCheck(logger, resource)
-	
+
 	var telErr error
 	if experiments.FromContext(context.Background())["otlp_exporter"] {
 		telErr = runTelemetryCheck(logger, resource)
 	} else {
 		logger.Infof("Skipping Telemetry API check because otlp_exporter experiment is not enabled")
 	}
-	
+
 	return errors.Join(monErr, logErr, telErr)
 }
