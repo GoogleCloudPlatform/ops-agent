@@ -700,8 +700,6 @@ func PrometheusMetricNormalize() Component {
 		`replace_pattern(metric.name, "^_+", "")`,
 		// 4. Strip trailing underscores
 		`replace_pattern(metric.name, "_+$", "")`,
-		// 5. Prepend underscore if the name starts with a digit
-		`set(metric.name, Concat(["_", metric.name], "")) where IsMatch(metric.name, "^[0-9]")`,
 	})
 }
 

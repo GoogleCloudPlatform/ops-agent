@@ -5115,17 +5115,6 @@ traces:
 			},
 			{
 				MetricSpec: metadata.MetricSpec{
-					Type:               "prometheus.googleapis.com/_99otlp_test_number/gauge",
-					Kind:               metric.MetricDescriptor_GAUGE.String(),
-					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
-					Value:              5.0,
-					MonitoredResources: []string{"prometheus_target"},
-					Labels:             expectedLabels,
-				},
-				Optional: false,
-			},
-			{
-				MetricSpec: metadata.MetricSpec{
 					Type:               "prometheus.googleapis.com/otlp_test_prefix3_workload_googleapis_com_abc/gauge",
 					Kind:               metric.MetricDescriptor_GAUGE.String(),
 					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
@@ -5260,17 +5249,6 @@ traces:
 			{
 				MetricSpec: metadata.MetricSpec{
 					Type:               "prometheus.googleapis.com/otlp_test_gauge/gauge",
-					Kind:               metric.MetricDescriptor_GAUGE.String(),
-					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
-					Value:              5.0,
-					MonitoredResources: []string{"prometheus_target"},
-					Labels:             expectedLabels,
-				},
-				Optional: false,
-			},
-			{
-				MetricSpec: metadata.MetricSpec{
-					Type:               "prometheus.googleapis.com/_99otlp_test_number/gauge",
 					Kind:               metric.MetricDescriptor_GAUGE.String(),
 					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
 					Value:              5.0,

@@ -904,7 +904,6 @@ processors:
       - replace_pattern(metric.name, "_+", "_")
       - replace_pattern(metric.name, "^_+", "")
       - replace_pattern(metric.name, "_+$", "")
-      - set(metric.name, Concat(["_", metric.name], "")) where IsMatch(metric.name, "^[0-9]")
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
