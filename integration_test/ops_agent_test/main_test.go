@@ -5019,7 +5019,11 @@ traces:
 		if err := installGolang(ctx, logger, vm); err != nil {
 			t.Fatal(err)
 		}
-		if err = runGoCode(ctx, logger, vm, metricFile); err != nil {
+		var args []string
+		if feature == agents.OtlpHttpExporterFeatureFlag {
+			args = append(args, "-service_name", "otlp-metric-googlemanagedprometheus-test")
+		}
+		if err = runGoCode(ctx, logger, vm, metricFile, args...); err != nil {
 			t.Fatal(err)
 		}
 		expectedLabels := []*metadata.MetricLabel{
@@ -5076,17 +5080,7 @@ traces:
 				},
 				Optional: false,
 			},
-			{
-				MetricSpec: metadata.MetricSpec{
-					Type:               "prometheus.googleapis.com/otlp_test_updowncounter/gauge",
-					Kind:               metric.MetricDescriptor_GAUGE.String(),
-					ValueType:          metric.MetricDescriptor_INT64.String(),
-					Value:              3,
-					MonitoredResources: []string{"prometheus_target"},
-					Labels:             expectedLabels,
-				},
-				Optional: false,
-			},
+
 			{
 				MetricSpec: metadata.MetricSpec{
 					Type:               "prometheus.googleapis.com/workload_googleapis_com_otlp_test_prefix1/gauge",
@@ -5143,14 +5137,23 @@ traces:
 				Optional: false,
 			},
 		}
-		if feature == agents.OtlpHttpExporterFeatureFlag {
-			for i, t := range tests {
-				if t.MetricSpec.Type == "prometheus.googleapis.com/otlp_test_updowncounter/gauge" {
-					tests[i].MetricSpec.ValueType = metric.MetricDescriptor_DOUBLE.String()
-					tests[i].MetricSpec.Value = 3.0
-				}
-			}
+		updownMetric := metadata.ExpectedMetric{
+			MetricSpec: metadata.MetricSpec{
+				Type:               "prometheus.googleapis.com/otlp_test_updowncounter/gauge",
+				Kind:               metric.MetricDescriptor_GAUGE.String(),
+				MonitoredResources: []string{"prometheus_target"},
+				Labels:             expectedLabels,
+			},
+			Optional: false,
 		}
+		if feature == agents.OtlpHttpExporterFeatureFlag {
+			updownMetric.MetricSpec.ValueType = metric.MetricDescriptor_DOUBLE.String()
+			updownMetric.MetricSpec.Value = 3.0
+		} else {
+			updownMetric.MetricSpec.ValueType = metric.MetricDescriptor_INT64.String()
+			updownMetric.MetricSpec.Value = 3
+		}
+		tests = append(tests, updownMetric)
 		var multiErr error
 		for _, test := range tests {
 			multiErr = multierr.Append(multiErr, waitForAndAssertMetric(ctx, logger, vm, time.Hour, &test, nil, true))
