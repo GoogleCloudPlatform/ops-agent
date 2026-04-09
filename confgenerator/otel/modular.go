@@ -85,6 +85,8 @@ type ReceiverPipeline struct {
 	// ResourceDetectionModes indicates whether the resource should be forcibly set, set only if not already present, or never set.
 	// If a data type is not present, it will assume the zero value (Override).
 	ResourceDetectionModes map[string]ResourceDetectionMode
+	// AllowUTF8 indicates whether to allow UTF-8 characters in metric names (skips normalization).
+	AllowUTF8 bool
 }
 
 // Pipeline represents one (of potentially many) pipelines consuming data from a ReceiverPipeline.

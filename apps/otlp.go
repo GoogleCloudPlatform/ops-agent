@@ -37,6 +37,7 @@ type ReceiverOTLP struct {
 
 	GRPCEndpoint string `yaml:"grpc_endpoint" validate:"omitempty,hostname_port" tracking:"endpoint"`
 	MetricsMode  string `yaml:"metrics_mode" validate:"omitempty,oneof=googlecloudmonitoring googlemanagedprometheus" tracking:""`
+	AllowUTF8    *bool  `yaml:"allow_utf8" validate:"omitempty"`
 }
 
 func (r ReceiverOTLP) AllowCustomProcessors() bool {
@@ -142,6 +143,7 @@ func (r ReceiverOTLP) Pipelines(ctx context.Context) ([]otel.ReceiverPipeline, e
 		converter = confgenerator.ConvertPrometheusExporterToOtlpExporter
 	}
 	return []otel.ReceiverPipeline{converter(otel.ReceiverPipeline{
+		AllowUTF8: (r.AllowUTF8 != nil && *r.AllowUTF8),
 		ExporterTypes: map[string]otel.ExporterType{
 			"metrics": receiverPipelineType,
 			"traces":  otel.OTel,

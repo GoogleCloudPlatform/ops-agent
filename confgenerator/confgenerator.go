@@ -112,7 +112,9 @@ func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, 
 
 		if isPrometheus {
 			pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricUnknownCounter())
-			pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.PrometheusMetricNormalize())
+			if !pipeline.AllowUTF8 {
+				pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.PrometheusMetricNormalize())
+			}
 			// If a metric already has a domain, it will not be considered a prometheus metric by the UTR endpoint unless we add the prefix.
 			// This behavior is the same as the GCM/GMP exporters.
 			pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsTransform(otel.AddPrefix("prometheus.googleapis.com")))
