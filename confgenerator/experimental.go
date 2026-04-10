@@ -35,7 +35,6 @@ import (
 // intentionally left empty.
 var requiredFeatureForType = map[string]string{}
 
-
 func registerExperimentalValidations(v *validator.Validate) {
 	v.RegisterValidationCtx("experimental", func(ctx context.Context, fl validator.FieldLevel) bool {
 		return fl.Field().IsZero() || experiments.FromContext(ctx)[fl.Param()]
