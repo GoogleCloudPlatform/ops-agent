@@ -21,6 +21,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/apps"
 	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"gotest.tools/v3/assert"
 )
@@ -83,7 +84,7 @@ func TestEnabledReceiversDefaultConfig(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			ctx := confgenerator.ContextWithExperiments(context.Background(), confgenerator.ParseExperimentalFeatures(test.experimentalFeatures))
+			ctx := experiments.ContextWithExperiments(context.Background(), experiments.ParseExperimentalFeatures(test.experimentalFeatures))
 			eR, err := self_metrics.CountEnabledReceivers(ctx, test.config)
 			assert.NilError(t, err)
 			assert.DeepEqual(t, eR, test.enabledReceivers)
