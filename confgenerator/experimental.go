@@ -17,9 +17,8 @@ package confgenerator
 import (
 	"context"
 	"fmt"
-	"os"
-	"strings"
 
+	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -36,38 +35,10 @@ import (
 // intentionally left empty.
 var requiredFeatureForType = map[string]string{}
 
-var enabledExperimentalFeatures map[string]bool
-
-func ParseExperimentalFeatures(features string) map[string]bool {
-	out := map[string]bool{}
-	for _, f := range strings.Split(features, ",") {
-		out[strings.TrimSpace(f)] = true
-	}
-	return out
-}
-
-func init() {
-	enabledExperimentalFeatures = ParseExperimentalFeatures(os.Getenv("EXPERIMENTAL_FEATURES"))
-}
-
-type experimentsKeyType struct{}
-
-var experimentsKey = experimentsKeyType{}
-
-func ContextWithExperiments(ctx context.Context, experiments map[string]bool) context.Context {
-	return context.WithValue(ctx, experimentsKey, experiments)
-}
-
-func experimentsFromContext(ctx context.Context) map[string]bool {
-	if features := ctx.Value(experimentsKey); features != nil {
-		return features.(map[string]bool)
-	}
-	return enabledExperimentalFeatures
-}
 
 func registerExperimentalValidations(v *validator.Validate) {
 	v.RegisterValidationCtx("experimental", func(ctx context.Context, fl validator.FieldLevel) bool {
-		return fl.Field().IsZero() || experimentsFromContext(ctx)[fl.Param()]
+		return fl.Field().IsZero() || experiments.FromContext(ctx)[fl.Param()]
 	})
 	v.RegisterStructValidationCtx(componentValidator, ConfigComponent{})
 }
@@ -78,7 +49,7 @@ func componentValidator(ctx context.Context, sl validator.StructLevel) {
 		return
 	}
 	feature, ok := requiredFeatureForType[comp.Type]
-	if !ok || experimentsFromContext(ctx)[feature] {
+	if !ok || experiments.FromContext(ctx)[feature] {
 		return
 	}
 	sl.ReportError(comp, "type", "Type", "experimental", comp.Type)
