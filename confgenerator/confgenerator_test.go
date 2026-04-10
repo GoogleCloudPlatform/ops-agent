@@ -28,6 +28,7 @@ import (
 	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
 	"github.com/goccy/go-yaml"
@@ -243,10 +244,10 @@ func getTestsInDir(t *testing.T, testDir string) []string {
 func generateConfigs(pc platformConfig, testDir string) (got map[string]string, err error) {
 	ctx := pc.platform.TestContext(context.Background())
 
-	var experiments map[string]bool
+	var enabledExperiments map[string]bool
 	if features, err := os.ReadFile(filepath.Join("testdata", testDir, "EXPERIMENTAL_FEATURES")); err == nil {
-		experiments = confgenerator.ParseExperimentalFeatures(string(features))
-		ctx = confgenerator.ContextWithExperiments(ctx, experiments)
+		enabledExperiments = experiments.ParseExperimentalFeatures(string(features))
+		ctx = experiments.ContextWithExperiments(ctx, enabledExperiments)
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return nil, err
 	}
@@ -333,19 +334,19 @@ func generateConfigs(pc platformConfig, testDir string) (got map[string]string, 
 	got["enabled_receivers_otlp.json"] = string(generatedEnabledReceiversOTLPJSON)
 
 	// If the confgenerator test is designed to test the otel_logging experiment, generate an OTEL config with both otlp_exporter and otel_logging enabled.
-	if len(experiments) == 1 && experiments["otel_logging"] {
-		generateOtelConfigWithOtlpExporterEnabled(got, experiments, pc, testDir, otelGeneratedConfig)
+	if len(enabledExperiments) == 1 && enabledExperiments["otel_logging"] {
+		generateOtelConfigWithOtlpExporterEnabled(got, pc, testDir, otelGeneratedConfig)
 	}
 
 	return
 }
 
-func generateOtelConfigWithOtlpExporterEnabled(got map[string]string, experiments map[string]bool, pc platformConfig, testDir string, otelGeneratedConfig string) {
+func generateOtelConfigWithOtlpExporterEnabled(got map[string]string, pc platformConfig, testDir string, otelGeneratedConfig string) {
 	experimentsOtlp := map[string]bool{
 		"otlp_exporter": true,
 		"otel_logging":  true,
 	}
-	ctxOtlp := confgenerator.ContextWithExperiments(pc.platform.TestContext(context.Background()), experimentsOtlp)
+	ctxOtlp := experiments.ContextWithExperiments(pc.platform.TestContext(context.Background()), experimentsOtlp)
 
 	mergedUcOtlp, err := confgenerator.MergeConfFiles(
 		ctxOtlp,

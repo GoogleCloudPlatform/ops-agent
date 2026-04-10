@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/set"
@@ -1090,9 +1091,9 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]PipelineInstan
 		return nil, err
 	}
 	platformDefaultConfig := BuiltInConfStructs[platform.FromContext(ctx).Name()].Logging
-	exp_otlp := experimentsFromContext(ctx)["otlp_logging"]
+	exp_otlp := experiments.FromContext(ctx)["otlp_logging"]
 	// N.B. Temporarily gate the "auto" otel logging behind an experiment flag.
-	exp_otel := experimentsFromContext(ctx)["otel_logging"]
+	exp_otel := experiments.FromContext(ctx)["otel_logging"]
 	force_otel := l.Service.OTelLogging
 	var out []PipelineInstance
 	for _, pID := range otel.SortedKeys(l.Service.Pipelines) {
