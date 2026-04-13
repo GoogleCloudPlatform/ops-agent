@@ -2593,12 +2593,23 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 	if !gce.IsWindows(vm.ImageSpec) {
 		// Enable swap file: https://linuxize.com/post/create-a-linux-swap-file/
 		// We do this so that swap file metrics will show up.
-		_, err := gce.RunRemotely(ctx, logger, vm, strings.Join([]string{
+		swapCmds := []string{
 			"sudo dd if=/dev/zero of=/swapfile bs=1024 count=102400",
 			"sudo chmod 600 /swapfile",
 			"(sudo mkswap /swapfile || sudo /usr/sbin/mkswap /swapfile)",
 			"(sudo swapon /swapfile || sudo /usr/sbin/swapon /swapfile)",
-		}, " && "))
+		}
+
+		isSles16 := strings.Contains(vm.ImageSpec, "sles-16")
+		if isSles16 {
+			// SLES 16 uses btrfs by default, which does not support swapfiles created via dd without special handling.
+			// https://www.suse.com/support/kb/doc/?id=000019943
+			swapCmds = []string{
+				"sudo btrfs filesystem mkswapfile --size 100M --uuid clear /swapfile",
+				"(sudo swapon /swapfile || sudo /usr/sbin/swapon /swapfile)",
+			}
+		}
+		_, err := gce.RunRemotely(ctx, logger, vm, strings.Join(swapCmds, " && "))
 		if err != nil {
 			t.Fatalf("Failed to enable swap file: %v", err)
 		}
@@ -6273,6 +6284,64 @@ func TestOpsAgentSigning(t *testing.T) {
 		err := agents.VerifyOpsAgentSigned(ctx, logger, vm)
 		if err != nil {
 			t.Fatal(err)
+		}
+	})
+}
+
+// TestUninstallRemovesService tests to make sure the agent service is removed
+// when the agent is uninstalled
+func TestUninstallRemovesService(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+		if gce.IsOpsAgentUAPPlugin() {
+			t.Skip("Uninstall test not supported for UAP plugin.")
+		}
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+
+		// Install the agent
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		// Uninstall the agent
+		var uninstallCmd string
+		if gce.IsWindows(imageSpec) {
+			uninstallCmd = "googet -noconfirm remove google-cloud-ops-agent"
+		} else if strings.Contains(imageSpec, "sles") || strings.Contains(imageSpec, "suse") {
+			uninstallCmd = "sudo zypper remove -y google-cloud-ops-agent"
+		} else if gce.IsRpm(imageSpec) {
+			uninstallCmd = "sudo yum remove -y google-cloud-ops-agent"
+		} else {
+			uninstallCmd = "sudo DEBIAN_FRONTEND=noninteractive apt-get purge -y google-cloud-ops-agent"
+		}
+
+		if _, err := gce.RunRemotely(ctx, logger, vm, uninstallCmd); err != nil {
+			t.Fatalf("Failed to uninstall Ops Agent: %v", err)
+		}
+
+		// Reload systemd daemon to ensure it reflects the uninstallation
+		if !gce.IsWindows(imageSpec) {
+			// Give systemd some time to stop the service.
+			// Systemd has DefaultTimeoutStopSec of 90s - set this to 100s so that
+			// systemd can clean up failed to stop and timeout subagents
+			time.Sleep(100 * time.Second)
+
+			//TODO(b/498924947): reset-failed is used here to temporarily suppress the FluentBit shutdown time issue
+			if _, err := gce.RunRemotely(ctx, logger, vm, "sudo systemctl daemon-reload && (sudo systemctl reset-failed 'google-cloud-ops-agent*' || true)"); err != nil {
+				t.Fatalf("Failed to reload systemd or reset failed services: %v", err)
+			}
+		}
+
+		var checkServiceCmd string
+		if gce.IsWindows(imageSpec) {
+			checkServiceCmd = "if (Get-Service google-cloud-ops-agent* -ErrorAction SilentlyContinue) { Write-Output 'Service exists'; exit 1 }"
+		} else {
+			checkServiceCmd = `output=$(systemctl status 'google-cloud-ops-agent*' 2>/dev/null); if [ -n "$output" ]; then echo "Service exists: $output"; exit 1; fi`
+		}
+
+		if out, err := gce.RunRemotely(ctx, logger, vm, checkServiceCmd); err != nil {
+			t.Fatalf("Service still exists after uninstall, or error checking status: %v. Output: %s", err, out.Stdout)
 		}
 	})
 }

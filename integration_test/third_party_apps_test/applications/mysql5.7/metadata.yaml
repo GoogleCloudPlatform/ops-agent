@@ -60,11 +60,11 @@ platforms_to_skip:
   - debian-cloud:debian-12-arm64
   - debian-cloud:debian-13
   - debian-cloud:debian-13-arm64
-  - ml-images:common-gpu-debian-11-py310
   - ubuntu-os-cloud:ubuntu-2204-lts
   - ubuntu-os-cloud:ubuntu-2204-lts-arm64
   - ubuntu-os-cloud:ubuntu-2404-lts-amd64
   - ubuntu-os-cloud:ubuntu-2404-lts-arm64
+  - ml-images:common-cu128-ubuntu-2404-nvidia-570
   - ubuntu-os-cloud:ubuntu-2510-amd64
   - ubuntu-os-cloud:ubuntu-2510-arm64
 supported_app_version: ["5.7", "8.0"]

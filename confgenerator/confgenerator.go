@@ -31,6 +31,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 )
 
@@ -98,7 +99,7 @@ func ConvertGCMSystemExporterToOtlpExporter(pipeline otel.ReceiverPipeline, ctx 
 }
 
 func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, isPrometheus bool, isSystem bool) otel.ReceiverPipeline {
-	expOtlpExporter := experimentsFromContext(ctx)["otlp_exporter"]
+	expOtlpExporter := experiments.FromContext(ctx)["otlp_exporter"]
 	if !expOtlpExporter {
 		return pipeline
 	}
@@ -231,7 +232,6 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 		FluentBitPort:       fluentbit.MetricsPort,
 		OtelPort:            otel.MetricsPort,
 		OtelRuntimeDir:      outDir,
-		OtelLogging:         uc.Logging.Service.OTelLogging,
 	}
 	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines, ctx)
 	resource, err := p.GetResource()
@@ -270,7 +270,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 				ProcessorsByType: map[string][]otel.Component{
 					"logs": {
 						otel.GCPProjectID(resource.ProjectName()),
-						// otel.DisableOtlpRoundTrip(), // Disable it until b/491102815 is fixed.
+						otel.DisableOtlpRoundTrip(),
 						otel.PreserveInstrumentationScope(),
 						otel.CopyServiceResourceLabels(),
 					},
@@ -412,6 +412,10 @@ func (p PipelineInstance) OTelComponents(ctx context.Context) (map[string]otel.R
 	if err != nil {
 		return nil, nil, fmt.Errorf("receiver %q has invalid configuration: %w", p.RID, err)
 	}
+	gceMetadataAttributesProcessors, err := addGceMetadataAttributesProcessor(ctx).Processors(ctx)
+	if err != nil {
+		panic("Failed to generate static ModifyFields")
+	}
 	for i, receiverPipeline := range receiverPipelines {
 		receiverPipelineName := strings.ReplaceAll(p.RID, "_", "__")
 		if i > 0 {
@@ -435,6 +439,10 @@ func (p PipelineInstance) OTelComponents(ctx context.Context) (map[string]otel.R
 					otelFluentForwardSetLogNameComponents()...,
 				)
 			}
+			receiverPipeline.Processors["logs"] = append(
+				receiverPipeline.Processors["logs"],
+				gceMetadataAttributesProcessors...,
+			)
 		}
 
 		outR[receiverPipelineName] = receiverPipeline
@@ -524,42 +532,38 @@ const (
 	attributeLabelPrefix string = "compute.googleapis.com/attributes/"
 )
 
-// addGceMetadataAttributesComponents annotates logs with labels corresponding
-// to instance attributes from the GCE metadata server.
-func addGceMetadataAttributesComponents(ctx context.Context, attributes []string, tag, uid string) []fluentbit.Component {
-	processorName := fmt.Sprintf("%s.%s.gce_metadata", tag, uid)
+// addGceMetadataAttributesProcessor annotates logs with labels corresponding
+// to specific instance attributes from the GCE metadata server.
+func addGceMetadataAttributesProcessor(ctx context.Context) LoggingProcessorModifyFields {
+	attributes := []string{
+		"dataproc-cluster-name",
+		"dataproc-cluster-uuid",
+		"dataproc-region",
+	}
+
+	modifications := map[string]*ModifyField{}
+	p := LoggingProcessorModifyFields{
+		Fields: modifications,
+	}
 	resource, err := platform.FromContext(ctx).GetResource()
 	if err != nil {
 		log.Printf("can't get resource metadata: %v", err)
-		return nil
+		return p
 	}
 	gceMetadata, ok := resource.(resourcedetector.GCEResource)
 	if !ok {
 		// Not on GCE; no attributes to detect.
 		log.Printf("ignoring the gce_metadata_attributes processor outside of GCE: %T", resource)
-		return nil
+		return p
 	}
-	modifications := map[string]*ModifyField{}
-	var attributeKeys []string
-	for k, _ := range gceMetadata.Metadata {
-		attributeKeys = append(attributeKeys, k)
-	}
-	sort.Strings(attributeKeys)
-	for _, k := range attributeKeys {
-		if !sliceContains(attributes, k) {
-			continue
-		}
-		v := gceMetadata.Metadata[k]
-		modifications[fmt.Sprintf(`labels."%s%s"`, attributeLabelPrefix, k)] = &ModifyField{
-			StaticValue: &v,
+	for _, k := range attributes {
+		if v, ok := gceMetadata.Metadata[k]; ok {
+			modifications[fmt.Sprintf(`labels."%s%s"`, attributeLabelPrefix, k)] = &ModifyField{
+				StaticValue: &v,
+			}
 		}
 	}
-	if len(modifications) == 0 {
-		return nil
-	}
-	return LoggingProcessorModifyFields{
-		Fields: modifications,
-	}.Components(ctx, tag, processorName)
+	return p
 }
 
 type fbSource struct {
@@ -578,7 +582,7 @@ func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAg
 	out = append(out, service.Component())
 	out = append(out, fluentbit.MetricsInputComponent())
 
-	if l != nil && l.Service != nil && !l.Service.OTelLogging {
+	if l != nil && l.Service != nil && (l.Service.OTelLogging == nil || !*l.Service.OTelLogging) {
 		// Type for sorting.
 		var sources []fbSource
 		var tags []string
@@ -606,11 +610,7 @@ func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAg
 		if len(tags) > 0 {
 			out = append(out, stackdriverOutputComponent(ctx, strings.Join(tags, "|"), userAgent, "2G", l.Service.Compress))
 		}
-		out = append(out, addGceMetadataAttributesComponents(ctx, []string{
-			"dataproc-cluster-name",
-			"dataproc-cluster-uuid",
-			"dataproc-region",
-		}, "*", "default-dataproc")...)
+		out = append(out, addGceMetadataAttributesProcessor(ctx).Components(ctx, "*", "*.default-data-proc.gce_metadata")...)
 	}
 	out = append(out, uc.generateSelfLogsComponents(ctx, userAgent)...)
 	out = append(out, fluentbit.MetricsOutputComponent())

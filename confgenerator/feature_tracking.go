@@ -22,6 +22,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
 )
 
 var (
@@ -475,7 +477,7 @@ func getSelfLogCollection(uc *UnifiedConfig) Feature {
 
 func getOtlpExporterExperimentConfig(ctx context.Context) []Feature {
 	featureEnabled := "false"
-	if experimentsFromContext(ctx)["otlp_exporter"] {
+	if experiments.FromContext(ctx)["otlp_exporter"] {
 		featureEnabled = "true"
 	}
 

@@ -23,7 +23,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/GoogleCloudPlatform/ops-agent/apps"
+	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
@@ -158,12 +158,12 @@ func (srv *service) runHealthChecks() {
 
 func (s *service) generateConfigs(ctx context.Context) error {
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
-	uc, err := confgenerator.MergeConfFiles(ctx, s.userConf, apps.BuiltInConfStructs)
+	uc, err := confgenerator.MergeConfFiles(ctx, s.userConf)
 	if err != nil {
 		return err
 	}
 
-	s.log.Info(EngineEventID, fmt.Sprintf("Built-in config:\n%s\n", apps.BuiltInConfStructs["windows"]))
+	s.log.Info(EngineEventID, fmt.Sprintf("Built-in config:\n%s\n", confgenerator.BuiltInConfStructs["windows"]))
 	s.log.Info(EngineEventID, fmt.Sprintf("Merged config:\n%s\n", uc))
 	if err := s.checkForStandaloneAgents(uc); err != nil {
 		return err
