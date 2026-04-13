@@ -224,14 +224,6 @@ func runTelemetryMetricsCheck(logger logs.StructuredLogger, resource resourcedet
 									},
 								},
 							},
-							{
-								Key: "gcp.use_legacy_mapping",
-								Value: &commonpb.AnyValue{
-									Value: &commonpb.AnyValue_StringValue{
-										StringValue: "true",
-									},
-								},
-							},
 						}
 						for k, v := range resource.OTelResourceAttributes() {
 							attrs = append(attrs, &commonpb.KeyValue{
