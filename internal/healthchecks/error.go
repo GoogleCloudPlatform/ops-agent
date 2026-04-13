@@ -167,6 +167,24 @@ var (
 		IsFatal:      true,
 	}
 
+	TelMetricsApiPermissionErr = HealthCheckError{
+		Code:         "TelMetricsApiPermissionErr",
+		Class:        Permission,
+		Message:      "Service account is missing the roles/telemetry.metricsWriter role.",
+		Action:       "Add the roles/telemetry.metricsWriter role to the Google Cloud service account.",
+		ResourceLink: "https://docs.cloud.google.com/iam/docs/roles-permissions/telemetry#telemetry.metricsWriter",
+		IsFatal:      true,
+	}
+
+	TelApiConnErr = HealthCheckError{
+		Code:         "TelApiConnErr",
+		Class:        Connection,
+		Message:      "Request to Telemetry API failed.",
+		Action:       "Check your internet connection and firewall rules.",
+		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/troubleshoot-run-ingest#network-issues",
+		IsFatal:      true,
+	}
+
 	LogApiUnauthenticatedErr = HealthCheckError{
 		Code:         "LogApiUnauthenticatedErr",
 		Class:        Api,

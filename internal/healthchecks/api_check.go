@@ -280,11 +280,15 @@ func runTelemetryMetricsCheck(logger logs.StructuredLogger, resource resourcedet
 				if strings.Contains(stat.Message(), "disabled") {
 					return TelApiDisabledErr
 				}
-				return MonApiPermissionErr
+				return TelMetricsApiPermissionErr
 			case codes.Unauthenticated:
 				return TelApiUnauthenticatedErr
-
+			case codes.DeadlineExceeded, codes.Unavailable:
+				return TelApiConnErr
 			}
+		}
+		if errors.Is(err, context.DeadlineExceeded) {
+			return TelApiConnErr
 		}
 		return err
 	}
