@@ -266,7 +266,7 @@ func runTelemetryMetricsCheck(logger logs.StructuredLogger, resource resourcedet
 			for _, detail := range stat.Details() {
 				if info, ok := detail.(*errdetails.ErrorInfo); ok {
 					if info.Reason == AccessTokenScopeInsufficient {
-						return TelApiScopeErr
+						return MonApiScopeErr
 					}
 				}
 			}
@@ -275,7 +275,7 @@ func runTelemetryMetricsCheck(logger logs.StructuredLogger, resource resourcedet
 				if strings.Contains(stat.Message(), "disabled") {
 					return TelApiDisabledErr
 				}
-				return TelApiPermissionErr
+				return MonApiPermissionErr
 			case codes.Unauthenticated:
 				return TelApiUnauthenticatedErr
 			case codes.InvalidArgument:

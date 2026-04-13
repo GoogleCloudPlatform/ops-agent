@@ -157,14 +157,7 @@ var (
 		ResourceLink: "https://docs.cloud.google.com/stackdriver/docs/reference/api-overview",
 		IsFatal:      true,
 	}
-	TelApiPermissionErr = HealthCheckError{
-		Code:         "TelApiPermissionErr",
-		Class:        Permission,
-		Message:      "Service account is missing required IAM roles for the Telemetry API.",
-		Action:       "Add the required IAM roles (e.g., Monitoring Metric Writer) to the service account.",
-		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/authorization#create-service-account",
-		IsFatal:      true,
-	}
+
 	TelApiUnauthenticatedErr = HealthCheckError{
 		Code:         "TelApiUnauthenticatedErr",
 		Class:        Api,
@@ -173,14 +166,7 @@ var (
 		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/authorization",
 		IsFatal:      true,
 	}
-	TelApiScopeErr = HealthCheckError{
-		Code:         "TelApiScopeErr",
-		Class:        Permission,
-		Message:      "VM is missing one or more required scopes for the Telemetry API.",
-		Action:       "Verify that your VM has the required access scopes (monitoring.write, logging.write, trace.append).",
-		ResourceLink: "https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/authorization",
-		IsFatal:      true,
-	}
+
 	LogApiUnauthenticatedErr = HealthCheckError{
 		Code:         "LogApiUnauthenticatedErr",
 		Class:        Api,
