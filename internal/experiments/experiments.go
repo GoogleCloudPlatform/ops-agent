@@ -51,3 +51,8 @@ func FromContext(ctx context.Context) map[string]bool {
 	}
 	return enabledExperimentalFeatures
 }
+
+// IsEnabled returns true if the given feature is enabled in the context.
+func IsEnabled(ctx context.Context, feature string) bool {
+	return FromContext(ctx)[feature]
+}
