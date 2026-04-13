@@ -30,6 +30,9 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/googleapis/gax-go/v2/apierror"
 	metricspb "go.opentelemetry.io/proto/otlp/collector/metrics/v1"
+	commonpb "go.opentelemetry.io/proto/otlp/common/v1"
+	metricsprpb "go.opentelemetry.io/proto/otlp/metrics/v1"
+	resourcepb "go.opentelemetry.io/proto/otlp/resource/v1"
 	"golang.org/x/oauth2/google"
 	metricpb "google.golang.org/genproto/googleapis/api/metric"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
@@ -181,15 +184,10 @@ func runMonitoringCheck(logger logs.StructuredLogger, resource resourcedetector.
 	return nil
 }
 
-func runTelemetryCheck(logger logs.StructuredLogger, _ resourcedetector.Resource) error {
+func runTelemetryMetricsCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// We need to authenticate the gRPC call using Application Default Credentials (ADC).
-	// The edge server for telemetry.googleapis.com rejects requests from unregistered callers
-	// (missing credentials) with a generic PermissionDenied error before checking if the API
-	// is enabled for the project. By providing credentials, we ensure we pass this initial
-	// check and get a specific error if the API is actually disabled.
 	creds, err := google.FindDefaultCredentials(ctx,
 		"https://www.googleapis.com/auth/monitoring.write",
 		"https://www.googleapis.com/auth/logging.write",
@@ -210,13 +208,59 @@ func runTelemetryCheck(logger logs.StructuredLogger, _ resourcedetector.Resource
 	defer conn.Close()
 	logger.Infof("telemetry client was created successfully")
 
-	// Try to call a valid OTLP metrics method using generated client.
 	client := metricspb.NewMetricsServiceClient(conn)
-	_, err = client.Export(ctx, &metricspb.ExportMetricsServiceRequest{})
+
+	req := &metricspb.ExportMetricsServiceRequest{
+		ResourceMetrics: []*metricsprpb.ResourceMetrics{
+			{
+				Resource: &resourcepb.Resource{
+					Attributes: []*commonpb.KeyValue{
+						{
+							Key: "gcp.project_id",
+							Value: &commonpb.AnyValue{
+								Value: &commonpb.AnyValue_StringValue{
+									StringValue: resource.ProjectName(),
+								},
+							},
+						},
+						{
+							Key: "gcp.use_legacy_mapping",
+							Value: &commonpb.AnyValue{
+								Value: &commonpb.AnyValue_StringValue{
+									StringValue: "true",
+								},
+							},
+						},
+					},
+				},
+				ScopeMetrics: []*metricsprpb.ScopeMetrics{
+					{
+						Scope: &commonpb.InstrumentationScope{},
+						Metrics: []*metricsprpb.Metric{
+							{
+								Name: "agent.googleapis.com/agent/ops_agent/health_check",
+								Data: &metricsprpb.Metric_Gauge{
+									Gauge: &metricsprpb.Gauge{
+										DataPoints: []*metricsprpb.NumberDataPoint{
+											{
+												Value: &metricsprpb.NumberDataPoint_AsInt{
+													AsInt: 1,
+												},
+												TimeUnixNano: uint64(time.Now().UnixNano()),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	_, err = client.Export(ctx, req)
 	if err != nil {
-		// Note: We use status.FromError here instead of apierror.FromError (used in other health checks)
-		// because we are using a raw gRPC client (metricspb.NewMetricsServiceClient) which returns
-		// raw gRPC errors, not high-level cloud client errors that implement apierror.APIError.
 		stat, ok := status.FromError(err)
 		if ok {
 			for _, detail := range stat.Details() {
@@ -234,9 +278,13 @@ func runTelemetryCheck(logger logs.StructuredLogger, _ resourcedetector.Resource
 				return TelApiPermissionErr
 			case codes.Unauthenticated:
 				return TelApiUnauthenticatedErr
-			case codes.Internal:
-				// Handle Internal (unmarshal failure) as "enabled" because it reached backend with empty payload.
-				return nil
+			case codes.InvalidArgument:
+				if strings.Contains(stat.Message(), "unknown metric type") {
+					// This means we successfully reached the backend and it validated the request!
+					// The metric type is fake, so it's expected to be unknown.
+					return nil
+				}
+				return err
 			}
 		}
 		return err
@@ -260,7 +308,7 @@ func (c APICheck) RunCheck(logger logs.StructuredLogger) error {
 
 	var telErr error
 	if experiments.FromContext(context.Background())["otlp_exporter"] {
-		telErr = runTelemetryCheck(logger, resource)
+		telErr = runTelemetryMetricsCheck(logger, resource)
 	} else {
 		logger.Infof("Skipping Telemetry API check because otlp_exporter experiment is not enabled")
 	}
