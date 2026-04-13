@@ -214,37 +214,50 @@ func runTelemetryMetricsCheck(logger logs.StructuredLogger, resource resourcedet
 		ResourceMetrics: []*metricsprpb.ResourceMetrics{
 			{
 				Resource: &resourcepb.Resource{
-					Attributes: []*commonpb.KeyValue{
-						{
-							Key: "gcp.project_id",
-							Value: &commonpb.AnyValue{
-								Value: &commonpb.AnyValue_StringValue{
-									StringValue: resource.ProjectName(),
+					Attributes: func() []*commonpb.KeyValue {
+						attrs := []*commonpb.KeyValue{
+							{
+								Key: "gcp.project_id",
+								Value: &commonpb.AnyValue{
+									Value: &commonpb.AnyValue_StringValue{
+										StringValue: resource.ProjectName(),
+									},
 								},
 							},
-						},
-						{
-							Key: "gcp.use_legacy_mapping",
-							Value: &commonpb.AnyValue{
-								Value: &commonpb.AnyValue_StringValue{
-									StringValue: "true",
+							{
+								Key: "gcp.use_legacy_mapping",
+								Value: &commonpb.AnyValue{
+									Value: &commonpb.AnyValue_StringValue{
+										StringValue: "true",
+									},
 								},
 							},
-						},
-					},
+						}
+						for k, v := range resource.OTelResourceAttributes() {
+							attrs = append(attrs, &commonpb.KeyValue{
+								Key: k,
+								Value: &commonpb.AnyValue{
+									Value: &commonpb.AnyValue_StringValue{
+										StringValue: v,
+									},
+								},
+							})
+						}
+						return attrs
+					}(),
 				},
 				ScopeMetrics: []*metricsprpb.ScopeMetrics{
 					{
 						Scope: &commonpb.InstrumentationScope{},
 						Metrics: []*metricsprpb.Metric{
 							{
-								Name: "agent.googleapis.com/agent/ops_agent/health_check",
+								Name: "agent.googleapis.com/agent/ops_agent/enabled_receivers",
 								Data: &metricsprpb.Metric_Gauge{
 									Gauge: &metricsprpb.Gauge{
 										DataPoints: []*metricsprpb.NumberDataPoint{
 											{
 												Value: &metricsprpb.NumberDataPoint_AsInt{
-													AsInt: 1,
+													AsInt: 0,
 												},
 												TimeUnixNano: uint64(time.Now().UnixNano()),
 											},
@@ -278,13 +291,7 @@ func runTelemetryMetricsCheck(logger logs.StructuredLogger, resource resourcedet
 				return MonApiPermissionErr
 			case codes.Unauthenticated:
 				return TelApiUnauthenticatedErr
-			case codes.InvalidArgument:
-				if strings.Contains(stat.Message(), "unknown metric type") {
-					// This means we successfully reached the backend and it validated the request!
-					// The metric type is fake, so it's expected to be unknown.
-					return nil
-				}
-				return err
+
 			}
 		}
 		return err
@@ -303,15 +310,13 @@ func (c APICheck) RunCheck(logger logs.StructuredLogger) error {
 	if err != nil {
 		return fmt.Errorf("failed to detect the resource: %v", err)
 	}
-	monErr := runMonitoringCheck(logger, resource)
+	var monOrTelErr error
+	if experiments.FromContext(context.Background())["otlp_exporter"] {
+		monOrTelErr = runTelemetryMetricsCheck(logger, resource)
+	} else {
+		monOrTelErr = runMonitoringCheck(logger, resource)
+	}
 	logErr := runLoggingCheck(logger, resource)
 
-	var telErr error
-	if experiments.FromContext(context.Background())["otlp_exporter"] {
-		telErr = runTelemetryMetricsCheck(logger, resource)
-	} else {
-		logger.Infof("Skipping Telemetry API check because otlp_exporter experiment is not enabled")
-	}
-
-	return errors.Join(monErr, logErr, telErr)
+	return errors.Join(monOrTelErr, logErr)
 }
