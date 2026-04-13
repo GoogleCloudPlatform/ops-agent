@@ -15,6 +15,7 @@
 package healthchecks
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -27,7 +28,7 @@ var healthChecksLogFile = "health-checks.log"
 
 type HealthCheck interface {
 	Name() string
-	RunCheck(logger logs.StructuredLogger) error
+	RunCheck(ctx context.Context, logger logs.StructuredLogger) error
 }
 
 type HealthCheckResult struct {
@@ -109,11 +110,11 @@ func HealthCheckRegistryFactory() HealthCheckRegistry {
 	}
 }
 
-func (r HealthCheckRegistry) RunAllHealthChecks(logger logs.StructuredLogger) []HealthCheckResult {
+func (r HealthCheckRegistry) RunAllHealthChecks(ctx context.Context, logger logs.StructuredLogger) []HealthCheckResult {
 	var result []HealthCheckResult
 
 	for _, c := range r {
-		r := HealthCheckResult{Name: c.Name(), Err: c.RunCheck(logger)}
+		r := HealthCheckResult{Name: c.Name(), Err: c.RunCheck(ctx, logger)}
 		r.LogResult(logger)
 		result = append(result, r)
 	}

@@ -15,6 +15,7 @@
 package healthchecks_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -55,7 +56,7 @@ func (c FailureCheck) Name() string {
 	return "Failure Check"
 }
 
-func (c FailureCheck) RunCheck(logger logs.StructuredLogger) error {
+func (c FailureCheck) RunCheck(ctx context.Context, logger logs.StructuredLogger) error {
 	return TestFailure
 }
 
@@ -64,7 +65,7 @@ func TestCheckFailure(t *testing.T) {
 	wantAction := ""
 	testCheck := FailureCheck{}
 	testLogger, _ := logs.DiscardLogger()
-	err := testCheck.RunCheck(testLogger)
+	err := testCheck.RunCheck(context.Background(), testLogger)
 
 	assert.ErrorIs(t, err, TestFailure)
 	healthError, _ := err.(healthchecks.HealthCheckError)
@@ -78,7 +79,7 @@ func (c WarningCheck) Name() string {
 	return "Warning Check"
 }
 
-func (c WarningCheck) RunCheck(logger logs.StructuredLogger) error {
+func (c WarningCheck) RunCheck(ctx context.Context, logger logs.StructuredLogger) error {
 	return TestWarning
 }
 
@@ -87,7 +88,7 @@ func TestCheckWarning(t *testing.T) {
 	wantAction := ""
 	testCheck := WarningCheck{}
 	testLogger, _ := logs.DiscardLogger()
-	err := testCheck.RunCheck(testLogger)
+	err := testCheck.RunCheck(context.Background(), testLogger)
 
 	assert.ErrorIs(t, err, TestWarning)
 	healthError, _ := err.(healthchecks.HealthCheckError)
@@ -101,7 +102,7 @@ func (c SuccessCheck) Name() string {
 	return "Success Check"
 }
 
-func (c SuccessCheck) RunCheck(logger logs.StructuredLogger) error {
+func (c SuccessCheck) RunCheck(ctx context.Context, logger logs.StructuredLogger) error {
 	return nil
 }
 
@@ -109,7 +110,7 @@ func TestCheckSuccess(t *testing.T) {
 	testCheck := SuccessCheck{}
 	testLogger, _ := logs.DiscardLogger()
 
-	err := testCheck.RunCheck(testLogger)
+	err := testCheck.RunCheck(context.Background(), testLogger)
 
 	assert.NilError(t, err)
 }
@@ -120,7 +121,7 @@ func (c ErrorCheck) Name() string {
 	return "Error Check"
 }
 
-func (c ErrorCheck) RunCheck(logger logs.StructuredLogger) error {
+func (c ErrorCheck) RunCheck(ctx context.Context, logger logs.StructuredLogger) error {
 	return errors.New("Test error.")
 }
 
@@ -129,7 +130,7 @@ func TestCheckError(t *testing.T) {
 	testCheck := ErrorCheck{}
 	testLogger, _ := logs.DiscardLogger()
 
-	err := testCheck.RunCheck(testLogger)
+	err := testCheck.RunCheck(context.Background(), testLogger)
 
 	assert.ErrorContains(t, err, wantMessage)
 }
@@ -142,7 +143,7 @@ func TestRunAllHealthChecks(t *testing.T) {
 	allHealthChecks := healthchecks.HealthCheckRegistry{fCheck, wCheck, sCheck, eCheck}
 	testLogger, observedLogs := logs.DiscardLogger()
 
-	allCheckResults := allHealthChecks.RunAllHealthChecks(testLogger)
+	allCheckResults := allHealthChecks.RunAllHealthChecks(context.Background(), testLogger)
 
 	var expected string
 	var result string
@@ -175,7 +176,7 @@ func (c MultipleFailureResultCheck) Name() string {
 	return "MultipleResult Check"
 }
 
-func (c MultipleFailureResultCheck) RunCheck(logger logs.StructuredLogger) error {
+func (c MultipleFailureResultCheck) RunCheck(ctx context.Context, logger logs.StructuredLogger) error {
 	return errors.Join(nil, errors.New("Test error."), TestWarning, TestFailure)
 }
 
@@ -187,7 +188,7 @@ func TestMultipleFailureResultCheck(t *testing.T) {
 	expectedFailure := generateExpectedResultMessage(mCheck.Name(), "FAIL")
 	testLogger, observedLogs := logs.DiscardLogger()
 
-	err := mCheck.RunCheck(testLogger)
+	err := mCheck.RunCheck(context.Background(), testLogger)
 	result := healthchecks.HealthCheckResult{Name: mCheck.Name(), Err: err}
 	result.LogResult(testLogger)
 
@@ -209,7 +210,7 @@ func (c MultipleSuccessResultCheck) Name() string {
 	return "MultipleResult Check"
 }
 
-func (c MultipleSuccessResultCheck) RunCheck(logger logs.StructuredLogger) error {
+func (c MultipleSuccessResultCheck) RunCheck(ctx context.Context, logger logs.StructuredLogger) error {
 	return errors.Join(nil, nil, nil)
 }
 
@@ -218,7 +219,7 @@ func TestMultipleSuccessResultCheck(t *testing.T) {
 	expectedSuccess := generateExpectedResultMessage(sCheck.Name(), "PASS")
 	testLogger, observedLogs := logs.DiscardLogger()
 
-	err := sCheck.RunCheck(testLogger)
+	err := sCheck.RunCheck(context.Background(), testLogger)
 	result := healthchecks.HealthCheckResult{Name: sCheck.Name(), Err: err}
 	result.LogResult(testLogger)
 
