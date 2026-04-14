@@ -192,8 +192,6 @@ func runTelemetryMetricsCheck(logger logs.StructuredLogger, resource resourcedet
 
 	creds, err := google.FindDefaultCredentials(ctx,
 		"https://www.googleapis.com/auth/monitoring.write",
-		"https://www.googleapis.com/auth/logging.write",
-		"https://www.googleapis.com/auth/trace.append",
 	)
 	if err != nil {
 		return fmt.Errorf("failed to find default credentials: %v", err)
@@ -302,9 +300,7 @@ func runTelemetryLogsCheck(logger logs.StructuredLogger, resource resourcedetect
 	defer cancel()
 
 	creds, err := google.FindDefaultCredentials(ctx,
-		"https://www.googleapis.com/auth/monitoring.write",
 		"https://www.googleapis.com/auth/logging.write",
-		"https://www.googleapis.com/auth/trace.append",
 	)
 	if err != nil {
 		return fmt.Errorf("failed to find default credentials: %v", err)
