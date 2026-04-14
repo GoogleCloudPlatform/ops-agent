@@ -365,6 +365,9 @@ func runTelemetryLogsCheck(logger logs.StructuredLogger, resource resourcedetect
 				}
 			}
 			switch stat.Code() {
+			case codes.InvalidArgument:
+				// TODO: Telemetry API returns InvalidArgument instead of PermissionDenied
+				// when permissions are missing. Tracking bug: b/502341191
 			case codes.PermissionDenied:
 				if strings.Contains(stat.Message(), "disabled") {
 					return TelApiDisabledErr
