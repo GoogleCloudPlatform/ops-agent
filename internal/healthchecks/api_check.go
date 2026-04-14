@@ -341,8 +341,8 @@ func runTelemetryLogsCheck(logger logs.StructuredLogger, resource resourcedetect
 							{
 								ObservedTimeUnixNano: currentTimeNano,
 								TimeUnixNano:         currentTimeNano,
-								SeverityText:         "WARNING",
-								SeverityNumber:       0,
+								SeverityText:         "DEBUG",
+								SeverityNumber:       5,
 								Body: &commonpb.AnyValue{
 									Value: &commonpb.AnyValue_StringValue{StringValue: "Health check log entry"},
 								},
