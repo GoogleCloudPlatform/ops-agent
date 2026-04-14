@@ -395,9 +395,9 @@ var (
 	runTelemetryLogsCheckFunc    = runTelemetryLogsCheck
 )
 
-type APICheck struct {
-	Experiments map[string]bool
-}
+var otlpExporterEnabledForTest = false
+
+type APICheck struct{}
 
 func (c APICheck) Name() string {
 	return "API Check"
@@ -409,21 +409,23 @@ func (c APICheck) RunCheck(logger logs.StructuredLogger) error {
 		return fmt.Errorf("failed to detect the resource: %v", err)
 	}
 
-	experimentsMap := c.Experiments
-	if experimentsMap == nil {
-		experimentsMap = experiments.FromContext(context.Background())
+	otlpEnabled := otlpExporterEnabledForTest
+	if !otlpEnabled {
+		otlpEnabled = experiments.FromContext(context.Background())["otlp_exporter"]
 	}
 
-	if experimentsMap["otlp_exporter"] {
+	var monOrTelErr error
+	var logOrTelLogsErr error
+
+	if otlpEnabled {
 		logger.Infof("Running Telemetry API checks")
-		telMetricsErr := runTelemetryMetricsCheckFunc(logger, resource)
-		telLogsErr := runTelemetryLogsCheckFunc(logger, resource)
-		return errors.Join(telMetricsErr, telLogsErr)
+		monOrTelErr = runTelemetryMetricsCheckFunc(logger, resource)
+		logOrTelLogsErr = runTelemetryLogsCheckFunc(logger, resource)
+	} else {
+		logger.Infof("Running legacy API checks")
+		monOrTelErr = runMonitoringCheckFunc(logger, resource)
+		logOrTelLogsErr = runLoggingCheckFunc(logger, resource)
 	}
 
-	logger.Infof("Running legacy API checks")
-	monErr := runMonitoringCheckFunc(logger, resource)
-	logErr := runLoggingCheckFunc(logger, resource)
-
-	return errors.Join(monErr, logErr)
+	return errors.Join(monOrTelErr, logOrTelLogsErr)
 }

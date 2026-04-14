@@ -60,9 +60,9 @@ func TestAPICheck_RunCheck_Telemetry(t *testing.T) {
 		return nil
 	}
 
-	c := APICheck{
-		Experiments: map[string]bool{"otlp_exporter": true},
-	}
+	otlpExporterEnabledForTest = true
+	defer func() { otlpExporterEnabledForTest = false }()
+	c := APICheck{}
 	logger, _ := logs.DiscardLogger()
 	err := c.RunCheck(logger)
 
@@ -88,9 +88,9 @@ func TestAPICheck_RunCheck_TelemetryError(t *testing.T) {
 		return errors.New("logs error")
 	}
 
-	c := APICheck{
-		Experiments: map[string]bool{"otlp_exporter": true},
-	}
+	otlpExporterEnabledForTest = true
+	defer func() { otlpExporterEnabledForTest = false }()
+	c := APICheck{}
 	logger, _ := logs.DiscardLogger()
 	err := c.RunCheck(logger)
 
