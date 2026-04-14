@@ -1,4 +1,18 @@
 exporters:
+  googlecloud/logging:
+    sending_queue:
+      batch:
+        flush_timeout: 200ms
+        max_size: 1000
+        min_size: 1000
+        sizer: items
+      block_on_overflow: true
+      enabled: true
+      num_consumers: 10
+      queue_size: 12000
+      sizer: items
+      storage: file_storage
+    timeout: 3600s
   googlecloud/otel:
     metric:
       instrumentation_library_labels: true
@@ -7,25 +21,10 @@ exporters:
       service_resource_labels: true
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
-  otlp_grpc/otlp_logs:
-    auth:
-      authenticator: googleclientauth
-    balancer_name: pick_first
-    endpoint: telemetry.googleapis.com:443
-    headers:
-      User-Agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
-    sending_queue:
-      batch:
-        flush_timeout: 200ms
-        max_size: 5000000
-        min_size: 1000000
-        sizer: bytes
-      block_on_overflow: true
-      enabled: true
-      num_consumers: 10
-      queue_size: 20000000
-      sizer: bytes
-      storage: file_storage
+  googlemanagedprometheus:
+    metric:
+      add_metric_suffixes: false
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
   otlp_grpc/otlp_metrics:
     auth:
       authenticator: googleclientauth
@@ -767,12 +766,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/otlp_4:
-    transforms:
-    - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: prometheus.googleapis.com/$${1}
   metricstransform/otlpgooglecloudmonitoring_0:
     transforms:
     - action: update
@@ -791,16 +784,6 @@ processors:
       include: ^[AB](.*)$$
       match_type: regexp
       new_name: $${1}
-  resource/otlp_grpc/otlp_logs_logs_0:
-    attributes:
-    - action: insert
-      key: gcp.project_id
-      value: test-project
-  resource/otlp_grpc/otlp_logs_logs_1:
-    attributes:
-    - action: insert
-      key: gcp.use_legacy_mapping
-      value: "true"
   resource/otlp_grpc/otlp_metrics_metrics_0:
     attributes:
     - action: insert
@@ -943,29 +926,6 @@ processors:
       - set(attributes["cluster"], "__gce__") where "__gce__" != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
       - set(attributes["instance_name"], resource.attributes["host.name"]) where resource.attributes["host.name"] != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
       - set(attributes["machine_type"], resource.attributes["host.type"]) where resource.attributes["host.type"] != nil and resource.attributes["cloud.platform"] == "gcp_compute_engine"
-  transform/otlp_3:
-    error_mode: ignore
-    metric_statements:
-    - context: metric
-      statements:
-      - copy_metric(Concat([metric.name, "unknowncounter"], ":")) where metric.metadata["prometheus.type"] == "unknown" and not HasSuffix(metric.name, ":unknowncounter")
-      - convert_gauge_to_sum("cumulative", true) where HasSuffix(metric.name, ":unknowncounter")
-      - set(metric.name, Substring(metric.name, 0, Len(metric.name)-Len(":unknowncounter"))) where HasSuffix(metric.name, ":unknowncounter")
-  transform/otlp_grpc/otlp_logs_logs_2:
-    error_mode: ignore
-    log_statements:
-    - context: log
-      statements:
-      - set(attributes["instrumentation_source"], instrumentation_scope.name) where instrumentation_scope.name != ""
-      - set(attributes["instrumentation_version"], instrumentation_scope.version) where instrumentation_scope.version != ""
-  transform/otlp_grpc/otlp_logs_logs_3:
-    error_mode: ignore
-    log_statements:
-    - context: log
-      statements:
-      - set(attributes["service.name"], resource.attributes["service.name"]) where resource.attributes["service.name"] != nil
-      - set(attributes["service.namespace"], resource.attributes["service.namespace"]) where resource.attributes["service.namespace"] != nil
-      - set(attributes["service.instance.id"], resource.attributes["service.instance.id"]) where resource.attributes["service.instance.id"] != nil
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
@@ -1017,14 +977,10 @@ service:
   pipelines:
     logs/logs_otlp_otlp:
       exporters:
-      - otlp_grpc/otlp_logs
+      - googlecloud/logging
       processors:
       - transform/otlp_0
       - resourcedetection/_global_1
-      - resource/otlp_grpc/otlp_logs_logs_0
-      - resource/otlp_grpc/otlp_logs_logs_1
-      - transform/otlp_grpc/otlp_logs_logs_2
-      - transform/otlp_grpc/otlp_logs_logs_3
       receivers:
       - otlp/otlp
     metrics/default__pipeline_hostmetrics:
@@ -1123,16 +1079,11 @@ service:
       - otlp/otlpgooglecloudmonitoring
     metrics/otlp_otlp:
       exporters:
-      - otlp_grpc/otlp_metrics
+      - googlemanagedprometheus
       processors:
       - resourcedetection/otlp_0
       - transform/otlp_1
       - groupbyattrs/otlp_2
-      - transform/otlp_3
-      - metricstransform/otlp_4
-      - resource/otlp_grpc/otlp_metrics_metrics_0
-      - metric_start_time/otlp_grpc/otlp_metrics_metrics_1
-      - batch/otlp_grpc/otlp_metrics_metrics_2
       receivers:
       - otlp/otlp
     traces/traces_otlp_otlp:

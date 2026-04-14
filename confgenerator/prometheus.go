@@ -90,7 +90,7 @@ func (r PrometheusMetrics) Pipelines(ctx context.Context) ([]otel.ReceiverPipeli
 			}
 		}
 	}
-	return []otel.ReceiverPipeline{ConvertPrometheusExporterToOtlpExporter(otel.ReceiverPipeline{
+	return []otel.ReceiverPipeline{otel.ReceiverPipeline{
 		Receiver: prometheusToOtelComponent(r),
 		Processors: map[string][]otel.Component{
 			// Expect metrics, without any additional processing.
@@ -102,7 +102,7 @@ func (r PrometheusMetrics) Pipelines(ctx context.Context) ([]otel.ReceiverPipeli
 		ResourceDetectionModes: map[string]otel.ResourceDetectionMode{
 			"metrics": otel.None,
 		},
-	}, ctx)}, nil
+	}}, nil
 }
 
 // Generate otel components for the prometheus config used. It is the same config except

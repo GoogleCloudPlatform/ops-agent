@@ -1,4 +1,8 @@
 exporters:
+  googlemanagedprometheus:
+    metric:
+      add_metric_suffixes: false
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
   otlp_grpc/otlp_metrics:
     auth:
       authenticator: googleclientauth
@@ -797,12 +801,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/prometheus_2:
-    transforms:
-    - action: update
-      include: ^(.*)$$
-      match_type: regexp
-      new_name: prometheus.googleapis.com/$${1}
   normalizesums/iis_2: {}
   resource/otlp_grpc/otlp_metrics_metrics_0:
     attributes:
@@ -951,14 +949,6 @@ processors:
       - delete_key(attributes, "location")
       - delete_key(attributes, "cluster")
       - delete_key(attributes, "namespace")
-  transform/prometheus_1:
-    error_mode: ignore
-    metric_statements:
-    - context: metric
-      statements:
-      - copy_metric(Concat([metric.name, "unknowncounter"], ":")) where metric.metadata["prometheus.type"] == "unknown" and not HasSuffix(metric.name, ":unknowncounter")
-      - convert_gauge_to_sum("cumulative", true) where HasSuffix(metric.name, ":unknowncounter")
-      - set(metric.name, Substring(metric.name, 0, Len(metric.name)-Len(":unknowncounter"))) where HasSuffix(metric.name, ":unknowncounter")
 receivers:
   hostmetrics/hostmetrics:
     collection_interval: 60s
@@ -1260,14 +1250,9 @@ service:
       - prometheus/agent_prometheus
     metrics/prometheus__pipeline_prometheus:
       exporters:
-      - otlp_grpc/otlp_metrics
+      - googlemanagedprometheus
       processors:
       - transform/prometheus_0
-      - transform/prometheus_1
-      - metricstransform/prometheus_2
-      - resource/otlp_grpc/otlp_metrics_metrics_0
-      - metric_start_time/otlp_grpc/otlp_metrics_metrics_1
-      - batch/otlp_grpc/otlp_metrics_metrics_2
       receivers:
       - prometheus/prometheus
   telemetry:
