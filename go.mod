@@ -32,8 +32,8 @@ require (
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.1
 	golang.org/x/exp v0.0.0-20250911091902-df9299821621
-	golang.org/x/sys v0.40.0
-	golang.org/x/text v0.32.0 // indirect
+	golang.org/x/sys v0.41.0
+	golang.org/x/text v0.34.0 // indirect
 	google.golang.org/api v0.258.0
 	google.golang.org/genproto v0.0.0-20250922171735-9219d122eba9 // indirect
 	google.golang.org/grpc v1.79.3
@@ -50,8 +50,10 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal v0.0.0-20260309230533-1603c95a7c02
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.30.0
 	go.opentelemetry.io/collector/pdata v1.48.0
+	go.opentelemetry.io/proto/otlp v1.10.0
+	golang.org/x/oauth2 v0.35.0
 	golang.org/x/sync v0.19.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20251222181119-0a764e51fe1b
+	google.golang.org/genproto/googleapis/api v0.0.0-20260209200024-4cfbd4190f57
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -145,6 +147,7 @@ require (
 	github.com/gophercloud/gophercloud/v2 v2.9.0 // indirect
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674 // indirect
 	github.com/grafana/regexp v0.0.0-20250905093917-f7b3be9d1853 // indirect
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.28.0 // indirect
 	github.com/hashicorp/consul/api v1.32.1 // indirect
 	github.com/hashicorp/cronexpr v1.1.3 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
@@ -206,14 +209,13 @@ require (
 	go.opentelemetry.io/otel/trace v1.40.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/crypto v0.46.0 // indirect
-	golang.org/x/mod v0.30.0 // indirect
-	golang.org/x/net v0.48.0 // indirect
-	golang.org/x/oauth2 v0.34.0 // indirect
-	golang.org/x/term v0.38.0 // indirect
+	golang.org/x/crypto v0.48.0 // indirect
+	golang.org/x/mod v0.32.0 // indirect
+	golang.org/x/net v0.50.0 // indirect
+	golang.org/x/term v0.40.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
-	golang.org/x/tools v0.39.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20251213004720-97cd9d5aeac2 // indirect
+	golang.org/x/tools v0.41.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260209200024-4cfbd4190f57 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
