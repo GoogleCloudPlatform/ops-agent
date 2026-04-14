@@ -1,13 +1,11 @@
 package healthchecks
 
 import (
-	"context"
 	"errors"
 	"testing"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
 	"gotest.tools/v3/assert"
 )
 
@@ -34,7 +32,7 @@ func TestAPICheck_RunCheck_Legacy(t *testing.T) {
 
 	c := APICheck{}
 	logger, _ := logs.DiscardLogger()
-	err := c.RunCheck(context.Background(), logger)
+	err := c.RunCheck(logger)
 
 	assert.NilError(t, err)
 	assert.Check(t, monitoringCalled, "monitoring check should be called")
@@ -62,10 +60,11 @@ func TestAPICheck_RunCheck_Telemetry(t *testing.T) {
 		return nil
 	}
 
-	c := APICheck{}
+	c := APICheck{
+		Experiments: map[string]bool{"otlp_exporter": true},
+	}
 	logger, _ := logs.DiscardLogger()
-	ctx := experiments.ContextWithExperiments(context.Background(), map[string]bool{"otlp_exporter": true})
-	err := c.RunCheck(ctx, logger)
+	err := c.RunCheck(logger)
 
 	assert.NilError(t, err)
 	assert.Check(t, metricsCalled, "telemetry metrics check should be called")
@@ -89,10 +88,11 @@ func TestAPICheck_RunCheck_TelemetryError(t *testing.T) {
 		return errors.New("logs error")
 	}
 
-	c := APICheck{}
+	c := APICheck{
+		Experiments: map[string]bool{"otlp_exporter": true},
+	}
 	logger, _ := logs.DiscardLogger()
-	ctx := experiments.ContextWithExperiments(context.Background(), map[string]bool{"otlp_exporter": true})
-	err := c.RunCheck(ctx, logger)
+	err := c.RunCheck(logger)
 
 	assert.ErrorContains(t, err, "metrics error")
 	assert.ErrorContains(t, err, "logs error")

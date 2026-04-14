@@ -15,7 +15,6 @@
 package healthchecks
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -51,7 +50,7 @@ func checkIfPortAvailable(host string, port string, network string) (bool, error
 	return true, nil
 }
 
-func (c PortsCheck) RunCheck(_ context.Context, logger logs.StructuredLogger) error {
+func (c PortsCheck) RunCheck(logger logs.StructuredLogger) error {
 	fbErr := runFluentBitCheck(logger)
 	otelErr := runOtelCollectorCheck(logger)
 	return errors.Join(fbErr, otelErr)

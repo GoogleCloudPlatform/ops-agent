@@ -395,19 +395,26 @@ var (
 	runTelemetryLogsCheckFunc    = runTelemetryLogsCheck
 )
 
-type APICheck struct{}
+type APICheck struct {
+	Experiments map[string]bool
+}
 
 func (c APICheck) Name() string {
 	return "API Check"
 }
 
-func (c APICheck) RunCheck(ctx context.Context, logger logs.StructuredLogger) error {
+func (c APICheck) RunCheck(logger logs.StructuredLogger) error {
 	resource, err := resourcedetector.GetResource()
 	if err != nil {
 		return fmt.Errorf("failed to detect the resource: %v", err)
 	}
 
-	if experiments.FromContext(ctx)["otlp_exporter"] {
+	experimentsMap := c.Experiments
+	if experimentsMap == nil {
+		experimentsMap = experiments.FromContext(context.Background())
+	}
+
+	if experimentsMap["otlp_exporter"] {
 		logger.Infof("Running Telemetry API checks")
 		telMetricsErr := runTelemetryMetricsCheckFunc(logger, resource)
 		telLogsErr := runTelemetryLogsCheckFunc(logger, resource)

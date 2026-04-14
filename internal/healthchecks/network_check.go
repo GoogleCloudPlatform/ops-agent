@@ -110,9 +110,9 @@ func (c NetworkCheck) Name() string {
 	return "Network Check"
 }
 
-func (c NetworkCheck) RunCheck(ctx context.Context, logger logs.StructuredLogger) error {
+func (c NetworkCheck) RunCheck(logger logs.StructuredLogger) error {
 	var networkErrors []error
-	p := platform.FromContext(ctx)
+	p := platform.FromContext(context.TODO())
 	for _, r := range commonRequests {
 		networkErrors = append(networkErrors, r.SendRequest(logger))
 	}
