@@ -22,7 +22,6 @@ import (
 
 	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/self_metrics"
@@ -42,11 +41,7 @@ func runHealthChecks() {
 
 	defaultLogger := logs.NewSimpleLogger()
 
-	ctx := context.Background()
-	expMap := experiments.ParseExperimentalFeatures(os.Getenv("EXPERIMENTAL_FEATURES"))
-	ctx = experiments.ContextWithExperiments(ctx, expMap)
-
-	healthCheckResults := healthchecks.HealthCheckRegistryFactory().RunAllHealthChecks(ctx, logger)
+	healthCheckResults := healthchecks.HealthCheckRegistryFactory().RunAllHealthChecks(logger)
 	healthchecks.LogHealthCheckResults(healthCheckResults, defaultLogger)
 }
 
