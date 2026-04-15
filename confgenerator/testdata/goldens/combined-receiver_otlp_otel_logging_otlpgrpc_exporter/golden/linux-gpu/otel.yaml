@@ -1,18 +1,4 @@
 exporters:
-  googlecloud/logging:
-    sending_queue:
-      batch:
-        flush_timeout: 200ms
-        max_size: 1000
-        min_size: 1000
-        sizer: items
-      block_on_overflow: true
-      enabled: true
-      num_consumers: 10
-      queue_size: 12000
-      sizer: items
-      storage: file_storage
-    timeout: 3600s
   googlecloud/otel:
     metric:
       instrumentation_library_labels: true
@@ -1226,10 +1212,14 @@ service:
       - filelog/file__logs
     logs/logs_otlp_otlp:
       exporters:
-      - googlecloud/logging
+      - otlp_grpc/otlp_logs
       processors:
       - transform/otlp_0
       - resourcedetection/_global_1
+      - resource/otlp_grpc/otlp_logs_logs_0
+      - resource/otlp_grpc/otlp_logs_logs_1
+      - transform/otlp_grpc/otlp_logs_logs_2
+      - transform/otlp_grpc/otlp_logs_logs_3
       receivers:
       - otlp/otlp
     logs/logs_syslog__custom_syslog__custom:
