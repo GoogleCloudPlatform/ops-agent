@@ -117,7 +117,7 @@ targets:
         test_distros:
           representative:
           - ubuntu-os-cloud:ubuntu-2404-lts-amd64
-          - ml-images:common-cu128-ubuntu-2404-nvidia-570
+          - ml-images:common-cu129-ubuntu-2404-nvidia-580
           exhaustive:
           - ubuntu-os-cloud:ubuntu-minimal-2404-lts-amd64
       aarch64:
