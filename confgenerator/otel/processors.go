@@ -689,6 +689,22 @@ func MetricUnknownCounter() Component {
 	})
 }
 
+// PrometheusMetricNormalize normalizes metric names to match Prometheus conventions.
+func PrometheusMetricNormalize() Component {
+	return Transform("metric", "metric", []ottl.Statement{
+		// 1. Replace all non-compliant characters (except :) with underscore
+		`replace_pattern(metric.name, "[^a-zA-Z0-9:]", "_")`,
+		// 2. Collapse multiple consecutive underscores
+		`replace_pattern(metric.name, "_+", "_")`,
+		// 3. Strip leading underscores
+		`replace_pattern(metric.name, "^_+", "")`,
+		// 4. Strip trailing underscores
+		`replace_pattern(metric.name, "_+$", "")`,
+		// 5. Prepend underscore if the name starts with a digit
+		`set(metric.name, Concat(["_", metric.name], "")) where IsMatch(metric.name, "^[0-9]")`,
+	})
+}
+
 // This processor prevents telemetry.googleapis.com from populating the LogEntry.otlp field by setting the gcp.use_legacy_mapping resource attribute to true.
 func DisableOtlpRoundTrip() Component {
 	return ResourceTransform(
