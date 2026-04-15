@@ -64,7 +64,7 @@ platforms_to_skip:
   - ubuntu-os-cloud:ubuntu-2204-lts-arm64
   - ubuntu-os-cloud:ubuntu-2404-lts-amd64
   - ubuntu-os-cloud:ubuntu-2404-lts-arm64
-  - ml-images:common-cu128-ubuntu-2404-nvidia-570
+  - ml-images:common-cu129-ubuntu-2404-nvidia-580
   - ubuntu-os-cloud:ubuntu-2510-amd64
   - ubuntu-os-cloud:ubuntu-2510-arm64
 supported_app_version: ["5.7", "8.0"]
