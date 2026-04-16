@@ -37,7 +37,7 @@ type (
 
 var productionsTable = ProdTab{
 	ProdTabEntry{
-		String: `S' : Filter	<<  >>`,
+		String:     `S' : Filter	<<  >>`,
 		Id:         "S'",
 		NTType:     0,
 		Index:      0,
@@ -47,7 +47,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Filter : Expression	<< ast.Simplify(X[0]) >>`,
+		String:     `Filter : Expression	<< ast.Simplify(X[0]) >>`,
 		Id:         "Filter",
 		NTType:     1,
 		Index:      1,
@@ -57,7 +57,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Filter : ws Expression	<< ast.Simplify(X[1]) >>`,
+		String:     `Filter : ws Expression	<< ast.Simplify(X[1]) >>`,
 		Id:         "Filter",
 		NTType:     1,
 		Index:      2,
@@ -67,7 +67,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Filter : Expression ws	<< ast.Simplify(X[0]) >>`,
+		String:     `Filter : Expression ws	<< ast.Simplify(X[0]) >>`,
 		Id:         "Filter",
 		NTType:     1,
 		Index:      3,
@@ -77,7 +77,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Filter : ws Expression ws	<< ast.Simplify(X[1]) >>`,
+		String:     `Filter : ws Expression ws	<< ast.Simplify(X[1]) >>`,
 		Id:         "Filter",
 		NTType:     1,
 		Index:      4,
@@ -87,7 +87,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Expression : AmbiguousSequence	<< ast.NewConjunction(X[0]) >>`,
+		String:     `Expression : AmbiguousSequence	<< ast.NewConjunction(X[0]) >>`,
 		Id:         "Expression",
 		NTType:     2,
 		Index:      5,
@@ -97,7 +97,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Expression : Expression andOp AmbiguousSequence	<< X[0].(ast.Conjunction).Append(X[2]) >>`,
+		String:     `Expression : Expression andOp AmbiguousSequence	<< X[0].(ast.Conjunction).Append(X[2]) >>`,
 		Id:         "Expression",
 		NTType:     2,
 		Index:      6,
@@ -107,7 +107,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `AmbiguousSequence : AmbiguousFactor	<< ast.NewConjunction(X[0]) >>`,
+		String:     `AmbiguousSequence : AmbiguousFactor	<< ast.NewConjunction(X[0]) >>`,
 		Id:         "AmbiguousSequence",
 		NTType:     3,
 		Index:      7,
@@ -117,7 +117,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `AmbiguousSequence : AmbiguousSequence ws AmbiguousFactor	<< X[0].(ast.Conjunction).Append(X[2]) >>`,
+		String:     `AmbiguousSequence : AmbiguousSequence ws AmbiguousFactor	<< X[0].(ast.Conjunction).Append(X[2]) >>`,
 		Id:         "AmbiguousSequence",
 		NTType:     3,
 		Index:      8,
@@ -127,7 +127,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `AmbiguousFactor : Term	<< ast.NewDisjunction(X[0]) >>`,
+		String:     `AmbiguousFactor : Term	<< ast.NewDisjunction(X[0]) >>`,
 		Id:         "AmbiguousFactor",
 		NTType:     4,
 		Index:      9,
@@ -137,7 +137,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `AmbiguousFactor : AmbiguousFactor orOp Term	<< X[0].(ast.Disjunction).Append(X[2]) >>`,
+		String:     `AmbiguousFactor : AmbiguousFactor orOp Term	<< X[0].(ast.Disjunction).Append(X[2]) >>`,
 		Id:         "AmbiguousFactor",
 		NTType:     4,
 		Index:      10,
@@ -147,7 +147,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Term : Primitive	<<  >>`,
+		String:     `Term : Primitive	<<  >>`,
 		Id:         "Term",
 		NTType:     5,
 		Index:      11,
@@ -157,7 +157,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Term : not Primitive	<< &ast.Negation{X[1].(ast.Expression)}, nil >>`,
+		String:     `Term : not Primitive	<< &ast.Negation{X[1].(ast.Expression)}, nil >>`,
 		Id:         "Term",
 		NTType:     5,
 		Index:      12,
@@ -167,7 +167,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Term : not ws Primitive	<< &ast.Negation{X[2].(ast.Expression)}, nil >>`,
+		String:     `Term : not ws Primitive	<< &ast.Negation{X[2].(ast.Expression)}, nil >>`,
 		Id:         "Term",
 		NTType:     5,
 		Index:      13,
@@ -177,7 +177,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Term : minus Primitive	<< &ast.Negation{X[1].(ast.Expression)}, nil >>`,
+		String:     `Term : minus Primitive	<< &ast.Negation{X[1].(ast.Expression)}, nil >>`,
 		Id:         "Term",
 		NTType:     5,
 		Index:      14,
@@ -187,7 +187,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Primitive : Restriction	<<  >>`,
+		String:     `Primitive : Restriction	<<  >>`,
 		Id:         "Primitive",
 		NTType:     6,
 		Index:      15,
@@ -197,7 +197,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Primitive : Composite	<<  >>`,
+		String:     `Primitive : Composite	<<  >>`,
 		Id:         "Primitive",
 		NTType:     6,
 		Index:      16,
@@ -207,7 +207,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Restriction : Comparable	<< ast.NewRestriction(X[0], "GLOBAL", nil) >>`,
+		String:     `Restriction : Comparable	<< ast.NewRestriction(X[0], "GLOBAL", nil) >>`,
 		Id:         "Restriction",
 		NTType:     7,
 		Index:      17,
@@ -217,7 +217,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Restriction : Comparable Comparator Arg	<< ast.NewRestriction(X[0], X[1], X[2]) >>`,
+		String:     `Restriction : Comparable Comparator Arg	<< ast.NewRestriction(X[0], X[1], X[2]) >>`,
 		Id:         "Restriction",
 		NTType:     7,
 		Index:      18,
@@ -227,7 +227,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Comparable : Member	<<  >>`,
+		String:     `Comparable : Member	<<  >>`,
 		Id:         "Comparable",
 		NTType:     8,
 		Index:      19,
@@ -237,7 +237,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Member : Item	<< ast.Target{X[0].(string)}, nil >>`,
+		String:     `Member : Item	<< ast.Target{X[0].(string)}, nil >>`,
 		Id:         "Member",
 		NTType:     9,
 		Index:      20,
@@ -247,7 +247,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Member : Member dot ItemKeyword	<< append(X[0].(ast.Target), X[2].(string)), nil >>`,
+		String:     `Member : Member dot ItemKeyword	<< append(X[0].(ast.Target), X[2].(string)), nil >>`,
 		Id:         "Member",
 		NTType:     9,
 		Index:      21,
@@ -257,7 +257,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Composite : lparen Expression rparen	<< X[1], nil >>`,
+		String:     `Composite : lparen Expression rparen	<< X[1], nil >>`,
 		Id:         "Composite",
 		NTType:     10,
 		Index:      22,
@@ -267,7 +267,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Composite : lparen Expression ws rparen	<< X[1], nil >>`,
+		String:     `Composite : lparen Expression ws rparen	<< X[1], nil >>`,
 		Id:         "Composite",
 		NTType:     10,
 		Index:      23,
@@ -277,7 +277,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Composite : lparen ws Expression rparen	<< X[2], nil >>`,
+		String:     `Composite : lparen ws Expression rparen	<< X[2], nil >>`,
 		Id:         "Composite",
 		NTType:     10,
 		Index:      24,
@@ -287,7 +287,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Composite : lparen ws Expression ws rparen	<< X[2], nil >>`,
+		String:     `Composite : lparen ws Expression ws rparen	<< X[2], nil >>`,
 		Id:         "Composite",
 		NTType:     10,
 		Index:      25,
@@ -297,7 +297,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Arg : Comparable	<<  >>`,
+		String:     `Arg : Comparable	<<  >>`,
 		Id:         "Arg",
 		NTType:     11,
 		Index:      26,
@@ -307,7 +307,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Item : Value	<<  >>`,
+		String:     `Item : Value	<<  >>`,
 		Id:         "Item",
 		NTType:     12,
 		Index:      27,
@@ -317,7 +317,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Value : text	<< ast.ParseTextOrString(X[0]) >>`,
+		String:     `Value : text	<< ast.ParseTextOrString(X[0]) >>`,
 		Id:         "Value",
 		NTType:     13,
 		Index:      28,
@@ -327,7 +327,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Value : orOp	<< "OR", nil >>`,
+		String:     `Value : orOp	<< "OR", nil >>`,
 		Id:         "Value",
 		NTType:     13,
 		Index:      29,
@@ -337,7 +337,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Value : andOp	<< "AND", nil >>`,
+		String:     `Value : andOp	<< "AND", nil >>`,
 		Id:         "Value",
 		NTType:     13,
 		Index:      30,
@@ -347,7 +347,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Value : not	<< "NOT", nil >>`,
+		String:     `Value : not	<< "NOT", nil >>`,
 		Id:         "Value",
 		NTType:     13,
 		Index:      31,
@@ -357,7 +357,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Value : Phrase	<<  >>`,
+		String:     `Value : Phrase	<<  >>`,
 		Id:         "Value",
 		NTType:     13,
 		Index:      32,
@@ -367,7 +367,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Phrase : string	<< ast.ParseTextOrString(X[0]) >>`,
+		String:     `Phrase : string	<< ast.ParseTextOrString(X[0]) >>`,
 		Id:         "Phrase",
 		NTType:     14,
 		Index:      33,
@@ -377,7 +377,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `ItemKeyword : Item	<<  >>`,
+		String:     `ItemKeyword : Item	<<  >>`,
 		Id:         "ItemKeyword",
 		NTType:     15,
 		Index:      34,
@@ -387,7 +387,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `ItemKeyword : Keyword	<< string(X[0].(*token.Token).Lit), nil >>`,
+		String:     `ItemKeyword : Keyword	<< string(X[0].(*token.Token).Lit), nil >>`,
 		Id:         "ItemKeyword",
 		NTType:     15,
 		Index:      35,
@@ -397,7 +397,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Keyword : or	<<  >>`,
+		String:     `Keyword : or	<<  >>`,
 		Id:         "Keyword",
 		NTType:     16,
 		Index:      36,
@@ -407,7 +407,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Keyword : and	<<  >>`,
+		String:     `Keyword : and	<<  >>`,
 		Id:         "Keyword",
 		NTType:     16,
 		Index:      37,
@@ -417,7 +417,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Keyword : not	<<  >>`,
+		String:     `Keyword : not	<<  >>`,
 		Id:         "Keyword",
 		NTType:     16,
 		Index:      38,
@@ -427,7 +427,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Comparator : Comparison	<<  >>`,
+		String:     `Comparator : Comparison	<<  >>`,
 		Id:         "Comparator",
 		NTType:     17,
 		Index:      39,
@@ -437,7 +437,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Comparator : ws Comparison	<< X[1], nil >>`,
+		String:     `Comparator : ws Comparison	<< X[1], nil >>`,
 		Id:         "Comparator",
 		NTType:     17,
 		Index:      40,
@@ -447,7 +447,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Comparator : Comparison ws	<<  >>`,
+		String:     `Comparator : Comparison ws	<<  >>`,
 		Id:         "Comparator",
 		NTType:     17,
 		Index:      41,
@@ -457,7 +457,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Comparator : ws Comparison ws	<< X[1], nil >>`,
+		String:     `Comparator : ws Comparison ws	<< X[1], nil >>`,
 		Id:         "Comparator",
 		NTType:     17,
 		Index:      42,
@@ -467,7 +467,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Comparison : less_equals	<<  >>`,
+		String:     `Comparison : less_equals	<<  >>`,
 		Id:         "Comparison",
 		NTType:     18,
 		Index:      43,
@@ -477,7 +477,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Comparison : less_than	<<  >>`,
+		String:     `Comparison : less_than	<<  >>`,
 		Id:         "Comparison",
 		NTType:     18,
 		Index:      44,
@@ -487,7 +487,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Comparison : greater_equals	<<  >>`,
+		String:     `Comparison : greater_equals	<<  >>`,
 		Id:         "Comparison",
 		NTType:     18,
 		Index:      45,
@@ -497,7 +497,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Comparison : greater_than	<<  >>`,
+		String:     `Comparison : greater_than	<<  >>`,
 		Id:         "Comparison",
 		NTType:     18,
 		Index:      46,
@@ -507,7 +507,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Comparison : not_equals	<<  >>`,
+		String:     `Comparison : not_equals	<<  >>`,
 		Id:         "Comparison",
 		NTType:     18,
 		Index:      47,
@@ -517,7 +517,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Comparison : equals	<<  >>`,
+		String:     `Comparison : equals	<<  >>`,
 		Id:         "Comparison",
 		NTType:     18,
 		Index:      48,
@@ -527,7 +527,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Comparison : has	<<  >>`,
+		String:     `Comparison : has	<<  >>`,
 		Id:         "Comparison",
 		NTType:     18,
 		Index:      49,
@@ -537,7 +537,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Comparison : matches_regexp	<<  >>`,
+		String:     `Comparison : matches_regexp	<<  >>`,
 		Id:         "Comparison",
 		NTType:     18,
 		Index:      50,
@@ -547,7 +547,7 @@ var productionsTable = ProdTab{
 		},
 	},
 	ProdTabEntry{
-		String: `Comparison : not_matches_regexp	<<  >>`,
+		String:     `Comparison : not_matches_regexp	<<  >>`,
 		Id:         "Comparison",
 		NTType:     18,
 		Index:      51,
