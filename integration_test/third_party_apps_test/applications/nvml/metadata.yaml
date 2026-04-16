@@ -36,7 +36,7 @@ gpu_platforms:
   - model: t4
     platforms:
       - ubuntu-os-cloud:ubuntu-2204-lts
-      - ml-images:common-gpu-debian-11-py310
+      - ml-images:common-cu129-ubuntu-2404-nvidia-580
   - model: p100
     platforms:
       - ubuntu-os-cloud:ubuntu-2204-lts
@@ -44,7 +44,7 @@ gpu_platforms:
     platforms:
       - debian-cloud:debian-11
       - debian-cloud:debian-12
-      - ml-images:common-gpu-debian-11-py310
+      - ml-images:common-cu129-ubuntu-2404-nvidia-580
       - rocky-linux-cloud:rocky-linux-8
       - rocky-linux-cloud:rocky-linux-9
       - suse-cloud:sles-15

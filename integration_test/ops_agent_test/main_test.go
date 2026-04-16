@@ -2593,12 +2593,23 @@ func testDefaultMetrics(ctx context.Context, t *testing.T, logger *log.Logger, v
 	if !gce.IsWindows(vm.ImageSpec) {
 		// Enable swap file: https://linuxize.com/post/create-a-linux-swap-file/
 		// We do this so that swap file metrics will show up.
-		_, err := gce.RunRemotely(ctx, logger, vm, strings.Join([]string{
+		swapCmds := []string{
 			"sudo dd if=/dev/zero of=/swapfile bs=1024 count=102400",
 			"sudo chmod 600 /swapfile",
 			"(sudo mkswap /swapfile || sudo /usr/sbin/mkswap /swapfile)",
 			"(sudo swapon /swapfile || sudo /usr/sbin/swapon /swapfile)",
-		}, " && "))
+		}
+
+		isSles16 := strings.Contains(vm.ImageSpec, "sles-16")
+		if isSles16 {
+			// SLES 16 uses btrfs by default, which does not support swapfiles created via dd without special handling.
+			// https://www.suse.com/support/kb/doc/?id=000019943
+			swapCmds = []string{
+				"sudo btrfs filesystem mkswapfile --size 100M --uuid clear /swapfile",
+				"(sudo swapon /swapfile || sudo /usr/sbin/swapon /swapfile)",
+			}
+		}
+		_, err := gce.RunRemotely(ctx, logger, vm, strings.Join(swapCmds, " && "))
 		if err != nil {
 			t.Fatalf("Failed to enable swap file: %v", err)
 		}
@@ -4970,221 +4981,6 @@ traces:
 	)
 }
 
-func TestOTLPMetricsOTLP(t *testing.T) {
-	t.Parallel()
-	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
-		if gce.IsOpsAgentUAPPlugin() {
-			// Ops Agent Plugin does not restart subagents on termination.
-			t.SkipNow()
-		}
-		t.Parallel()
-		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
-		otlpConfig := `
-combined:
-  receivers:
-    otlp:
-      type: otlp
-      grpc_endpoint: 0.0.0.0:4317
-metrics:
-  service:
-    pipelines:
-      otlp:
-        receivers:
-        - otlp
-traces:
-  service:
-    pipelines:
-`
-		// Only run the test for the OTLP http exporter
-		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, otlpConfig, agents.OtlpHttpExporterFeatureFlag); err != nil {
-			t.Fatal(err)
-		}
-
-		// Have to wait for startup feature tracking metrics to be sent
-		// before we tear down the service.
-		time.Sleep(2 * time.Minute)
-
-		// Generate metric traffic with dummy app
-		metricFile, err := testdataDir.Open(path.Join("testdata", "otlp", "metrics.go"))
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer metricFile.Close()
-		if err := installGolang(ctx, logger, vm); err != nil {
-			t.Fatal(err)
-		}
-		serviceName := "otlp-metric-googlemanagedprometheus-test"
-		if err = runGoCode(ctx, logger, vm, metricFile, "-service_name", serviceName); err != nil {
-			t.Fatal(err)
-		}
-		expectedLabels := []*metadata.MetricLabel{
-			{Name: "otel_scope_name", ValueRegex: "foo"},
-			{Name: "instance_name", ValueRegex: vm.Name},
-			{Name: "machine_type", ValueRegex: fmt.Sprintf("projects/[0-9]+/machineTypes/%s", vm.MachineType)},
-		}
-		tests := []metadata.ExpectedMetric{
-			{
-				MetricSpec: metadata.MetricSpec{
-					Type:               "prometheus.googleapis.com/otlp.test.gauge/gauge",
-					Kind:               metric.MetricDescriptor_GAUGE.String(),
-					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
-					Value:              5.0,
-					MonitoredResources: []string{"prometheus_target"},
-					Labels:             expectedLabels,
-				},
-				Optional: false,
-			},
-			{
-				MetricSpec: metadata.MetricSpec{
-					Type:               "prometheus.googleapis.com/otlp.test.cumulative/counter",
-					Kind:               metric.MetricDescriptor_CUMULATIVE.String(),
-					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
-					Value:              15.0,
-					MonitoredResources: []string{"prometheus_target"},
-					Labels:             expectedLabels,
-				},
-				Optional: false,
-			},
-			{
-				MetricSpec: metadata.MetricSpec{
-					Type:      "prometheus.googleapis.com/otlp.test.histogram/histogram",
-					Kind:      metric.MetricDescriptor_CUMULATIVE.String(),
-					ValueType: metric.MetricDescriptor_DISTRIBUTION.String(),
-					Value: &distribution.Distribution{
-						Count:                 3,
-						Mean:                  2,
-						SumOfSquaredDeviation: 0.75,
-						BucketOptions: &distribution.Distribution_BucketOptions{
-							Options: &distribution.Distribution_BucketOptions_ExplicitBuckets{
-								ExplicitBuckets: &distribution.Distribution_BucketOptions_Explicit{
-									Bounds: []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
-								},
-							},
-						},
-						BucketCounts: []int64{0, 3},
-					},
-					MonitoredResources: []string{"prometheus_target"},
-					Labels:             expectedLabels,
-				},
-				Optional: false,
-			},
-			{
-				MetricSpec: metadata.MetricSpec{
-					Type: "prometheus.googleapis.com/otlp.test.updowncounter/gauge",
-					Kind: metric.MetricDescriptor_GAUGE.String(),
-					// b/476112381: New OTLP endpoint for prometheus converts INT metrics types to DOUBLE
-					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
-					Value:              3.0,
-					MonitoredResources: []string{"prometheus_target"},
-					Labels:             expectedLabels,
-				},
-				Optional: false,
-			},
-			{
-				MetricSpec: metadata.MetricSpec{
-					Type:               "prometheus.googleapis.com/workload.googleapis.com/otlp.test.prefix1/gauge",
-					Kind:               metric.MetricDescriptor_GAUGE.String(),
-					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
-					Value:              5.0,
-					MonitoredResources: []string{"prometheus_target"},
-					Labels:             expectedLabels,
-				},
-				Optional: false,
-			},
-			{
-				MetricSpec: metadata.MetricSpec{
-					Type:               "prometheus.googleapis.com/.invalid.googleapis.com/otlp.test.prefix2/gauge",
-					Kind:               metric.MetricDescriptor_GAUGE.String(),
-					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
-					Value:              5.0,
-					MonitoredResources: []string{"prometheus_target"},
-					Labels:             expectedLabels,
-				},
-				Optional: false,
-			},
-			{
-				MetricSpec: metadata.MetricSpec{
-					Type:               "prometheus.googleapis.com/otlp.test.prefix3/workload.googleapis.com/abc/gauge",
-					Kind:               metric.MetricDescriptor_GAUGE.String(),
-					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
-					Value:              5.0,
-					MonitoredResources: []string{"prometheus_target"},
-					Labels:             expectedLabels,
-				},
-				Optional: false,
-			},
-			{
-				MetricSpec: metadata.MetricSpec{
-					Type:               "prometheus.googleapis.com/WORKLOAD.GOOGLEAPIS.COM/otlp.test.prefix4/gauge",
-					Kind:               metric.MetricDescriptor_GAUGE.String(),
-					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
-					Value:              5.0,
-					MonitoredResources: []string{"prometheus_target"},
-					Labels:             expectedLabels,
-				},
-				Optional: false,
-			},
-			{
-				MetricSpec: metadata.MetricSpec{
-					Type:               "prometheus.googleapis.com/WORKLOAD.googleapis.com/otlp.test.prefix5/gauge",
-					Kind:               metric.MetricDescriptor_GAUGE.String(),
-					ValueType:          metric.MetricDescriptor_DOUBLE.String(),
-					Value:              5.0,
-					MonitoredResources: []string{"prometheus_target"},
-					Labels:             expectedLabels,
-				},
-				Optional: false,
-			},
-		}
-		var multiErr error
-		for _, test := range tests {
-			multiErr = multierr.Append(multiErr, waitForAndAssertMetric(ctx, logger, vm, time.Hour, &test, nil, true))
-		}
-		if multiErr != nil {
-			t.Error(multiErr)
-		}
-
-		expectedFeatures := []*feature_tracking_metadata.FeatureTracking{
-			{
-				Module:  "logging",
-				Feature: "service:pipelines",
-				Key:     "default_pipeline_overridden",
-				Value:   "false",
-			},
-			{
-				Module:  "metrics",
-				Feature: "service:pipelines",
-				Key:     "default_pipeline_overridden",
-				Value:   "false",
-			},
-			{
-				Module:  "combined",
-				Feature: "receivers:otlp",
-				Key:     "[0].enabled",
-				Value:   "true",
-			},
-			{
-				Module:  "combined",
-				Feature: "receivers:otlp",
-				Key:     "[0].grpc_endpoint",
-				Value:   "endpoint",
-			},
-		}
-
-		series, err := gce.WaitForMetricSeries(ctx, logger, vm, "agent.googleapis.com/agent/internal/ops/feature_tracking", time.Hour, nil, false, len(expectedFeatures))
-		if err != nil {
-			t.Error(err)
-			return
-		}
-
-		err = feature_tracking_metadata.AssertFeatureTrackingMetrics(series, expectedFeatures)
-		if err != nil {
-			t.Error(err)
-			return
-		}
-	})
-}
-
 func TestOTLPMetricsGMP(t *testing.T) {
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
@@ -5445,7 +5241,7 @@ metrics:
 
 func TestOTLPLogsWithOtlpExporter(t *testing.T) {
 	t.Parallel()
-	RunForEachImageAndFeatureFlag(t, []string{OTLPLoggingOTLPExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+	RunForEachImageAndFeatureFlag(t, []string{OTLPLoggingOTLPExporterFeatureFlag, agents.OTLPLoggingFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
 		t.Parallel()
 		if feature == agents.DefaultFeatureFlag {
 			t.Skip("This test requires otlp_logging+otlp_exporter experimental flags to be enabled")
@@ -6273,6 +6069,64 @@ func TestOpsAgentSigning(t *testing.T) {
 		err := agents.VerifyOpsAgentSigned(ctx, logger, vm)
 		if err != nil {
 			t.Fatal(err)
+		}
+	})
+}
+
+// TestUninstallRemovesService tests to make sure the agent service is removed
+// when the agent is uninstalled
+func TestUninstallRemovesService(t *testing.T) {
+	t.Parallel()
+	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
+		t.Parallel()
+		if gce.IsOpsAgentUAPPlugin() {
+			t.Skip("Uninstall test not supported for UAP plugin.")
+		}
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+
+		// Install the agent
+		if err := agents.SetupOpsAgent(ctx, logger, vm, ""); err != nil {
+			t.Fatal(err)
+		}
+
+		// Uninstall the agent
+		var uninstallCmd string
+		if gce.IsWindows(imageSpec) {
+			uninstallCmd = "googet -noconfirm remove google-cloud-ops-agent"
+		} else if strings.Contains(imageSpec, "sles") || strings.Contains(imageSpec, "suse") {
+			uninstallCmd = "sudo zypper remove -y google-cloud-ops-agent"
+		} else if gce.IsRpm(imageSpec) {
+			uninstallCmd = "sudo yum remove -y google-cloud-ops-agent"
+		} else {
+			uninstallCmd = "sudo DEBIAN_FRONTEND=noninteractive apt-get purge -y google-cloud-ops-agent"
+		}
+
+		if _, err := gce.RunRemotely(ctx, logger, vm, uninstallCmd); err != nil {
+			t.Fatalf("Failed to uninstall Ops Agent: %v", err)
+		}
+
+		// Reload systemd daemon to ensure it reflects the uninstallation
+		if !gce.IsWindows(imageSpec) {
+			// Give systemd some time to stop the service.
+			// Systemd has DefaultTimeoutStopSec of 90s - set this to 100s so that
+			// systemd can clean up failed to stop and timeout subagents
+			time.Sleep(100 * time.Second)
+
+			//TODO(b/498924947): reset-failed is used here to temporarily suppress the FluentBit shutdown time issue
+			if _, err := gce.RunRemotely(ctx, logger, vm, "sudo systemctl daemon-reload && (sudo systemctl reset-failed 'google-cloud-ops-agent*' || true)"); err != nil {
+				t.Fatalf("Failed to reload systemd or reset failed services: %v", err)
+			}
+		}
+
+		var checkServiceCmd string
+		if gce.IsWindows(imageSpec) {
+			checkServiceCmd = "if (Get-Service google-cloud-ops-agent* -ErrorAction SilentlyContinue) { Write-Output 'Service exists'; exit 1 }"
+		} else {
+			checkServiceCmd = `output=$(systemctl status 'google-cloud-ops-agent*' 2>/dev/null); if [ -n "$output" ]; then echo "Service exists: $output"; exit 1; fi`
+		}
+
+		if out, err := gce.RunRemotely(ctx, logger, vm, checkServiceCmd); err != nil {
+			t.Fatalf("Service still exists after uninstall, or error checking status: %v. Output: %s", err, out.Stdout)
 		}
 	})
 }

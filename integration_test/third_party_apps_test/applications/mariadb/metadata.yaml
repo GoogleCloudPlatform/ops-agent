@@ -183,6 +183,7 @@ expected_metrics:
     unavailable_on:
       - ubuntu-os-cloud:ubuntu-2404-lts-amd64
       - ubuntu-os-cloud:ubuntu-2404-lts-arm64
+      - ml-images:common-cu129-ubuntu-2404-nvidia-580
       - debian-cloud:debian-12-arm64
       - debian-cloud:debian-13
       - debian-cloud:debian-13-arm64
