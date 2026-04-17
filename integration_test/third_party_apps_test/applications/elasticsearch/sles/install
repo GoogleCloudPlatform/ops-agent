@@ -38,5 +38,12 @@ sudo zypper install -y elasticsearch
 sudo zypper modifyrepo --disable elasticsearch
 
 sudo systemctl daemon-reload
+
+if [[ "$SUSE_VERSION" == 16 ]] && [ ! -f /usr/lib/systemd/systemd-sysv-install ]; then
+  sudo mkdir -p /usr/lib/systemd
+  echo -e '#!/bin/sh\nexit 0' | sudo tee /usr/lib/systemd/systemd-sysv-install > /dev/null
+  sudo chmod +x /usr/lib/systemd/systemd-sysv-install
+fi
+
 sudo systemctl enable elasticsearch
 sudo systemctl restart elasticsearch
