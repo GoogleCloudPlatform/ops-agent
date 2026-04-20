@@ -65,8 +65,6 @@ PACKAGE_VERSION,$env:PKG_VERSION
   Out-File -FilePath "$env:KOKORO_ARTIFACTS_DIR/custom_sponge_config.csv" -Encoding ascii
 
 Invoke-Program git submodule update --init
-# TODO(b/502920890): disable cache until we root cause
-$use_docker_cache = $false
 $artifact_registry='us-docker.pkg.dev'
 Invoke-Program docker-credential-gcr configure-docker --registries="$artifact_registry"
 $arch = Invoke-Program docker info --format '{{.Architecture}}'
@@ -77,14 +75,8 @@ if ($env:KOKORO_JOB_TYPE -eq 'RELEASE') {
   $suffix = '-release'
 }
 $cache_location="${artifact_registry}/stackdriver-test-143416/google-cloud-ops-agent-build-cache/ops-agent-cache:windows-${arch}${suffix}"
-
-if ($use_docker_cache) {
-  Invoke-Program docker pull $cache_location
-  Invoke-Program docker build --cache-from="${cache_location}" --build-arg PACKAGE="$env:PACKAGE" -t $tag -f './Dockerfile.windows' .
-} else {
-  Invoke-Program docker build --build-arg PACKAGE="$env:PACKAGE" -t $tag -f './Dockerfile.windows' .
-}
-
+Invoke-Program docker pull $cache_location
+Invoke-Program docker build --cache-from="${cache_location}" --build-arg PACKAGE="$env:PACKAGE" -t $tag -f './Dockerfile.windows' .
 Invoke-Program docker create --name $name $tag
 Invoke-Program docker cp "${name}:/work/out" $env:KOKORO_ARTIFACTS_DIR
 
@@ -93,7 +85,7 @@ Invoke-Program docker cp "${name}:/work/out" $env:KOKORO_ARTIFACTS_DIR
 # Our presubmits do not write to any kind of cache, for example a per-PR cache,
 # because the push takes a few minutes and adds little value over just using
 # the continuous build's cache.
-if ($use_docker_cache -and (($env:KOKORO_ROOT_JOB_TYPE -eq 'CONTINUOUS_INTEGRATION') -or ($env:KOKORO_JOB_TYPE -eq 'RELEASE'))) {
+if (($env:KOKORO_ROOT_JOB_TYPE -eq 'CONTINUOUS_INTEGRATION') -or ($env:KOKORO_JOB_TYPE -eq 'RELEASE')) {
   Invoke-Program docker image tag $tag $cache_location
   Invoke-Program docker push $cache_location
 }
