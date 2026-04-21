@@ -18,11 +18,13 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
 	"reflect"
 	"runtime"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -64,6 +66,24 @@ func (uc *UnifiedConfig) HasMetrics() bool {
 
 func (uc *UnifiedConfig) HasCombined() bool {
 	return uc.Combined != nil
+}
+
+func (uc *UnifiedConfig) GetFluentBitMetricsPort() uint16 {
+	if portStr := os.Getenv("OPS_AGENT_FLUENT_BIT_METRICS_PORT"); portStr != "" {
+		if port, err := strconv.ParseUint(portStr, 10, 16); err == nil {
+			return uint16(port)
+		}
+	}
+	return fluentbit.MetricsPort
+}
+
+func (uc *UnifiedConfig) GetOtelMetricsPort() uint16 {
+	if portStr := os.Getenv("OPS_AGENT_OTEL_METRICS_PORT"); portStr != "" {
+		if port, err := strconv.ParseUint(portStr, 10, 16); err == nil {
+			return uint16(port)
+		}
+	}
+	return otel.MetricsPort
 }
 
 func (uc *UnifiedConfig) DeepCopy(ctx context.Context) (*UnifiedConfig, error) {
