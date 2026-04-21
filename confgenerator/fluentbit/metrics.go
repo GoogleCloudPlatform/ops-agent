@@ -29,7 +29,7 @@ func MetricsInputComponent() Component {
 	}
 }
 
-func MetricsOutputComponent() Component {
+func MetricsOutputComponent(port uint16) Component {
 	return Component{
 		Kind: "OUTPUT",
 		Config: map[string]string{
@@ -37,7 +37,7 @@ func MetricsOutputComponent() Component {
 			"Name":  "prometheus_exporter",
 			"Match": "*",
 			"host":  "0.0.0.0",
-			"port":  strconv.Itoa(MetricsPort),
+			"port":  strconv.Itoa(int(port)),
 		},
 	}
 }

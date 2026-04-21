@@ -66,6 +66,20 @@ func (uc *UnifiedConfig) HasCombined() bool {
 	return uc.Combined != nil
 }
 
+func (uc *UnifiedConfig) GetFluentBitMetricsPort() uint16 {
+	if uc == nil || uc.Logging == nil {
+		return fluentbit.MetricsPort
+	}
+	return uc.Logging.Service.GetMetricsPort()
+}
+
+func (uc *UnifiedConfig) GetOtelMetricsPort() uint16 {
+	if uc == nil || uc.Metrics == nil {
+		return otel.MetricsPort
+	}
+	return uc.Metrics.Service.GetMetricsPort()
+}
+
 func (uc *UnifiedConfig) DeepCopy(ctx context.Context) (*UnifiedConfig, error) {
 	toYaml, err := yaml.Marshal(uc)
 	if err != nil {
@@ -588,8 +602,16 @@ func (m *loggingProcessorMap) UnmarshalYAML(ctx context.Context, unmarshal func(
 type LoggingService struct {
 	Compress    string               `yaml:"compress,omitempty" validate:"omitempty,oneof=gzip,experimental=log_compression"`
 	LogLevel    string               `yaml:"log_level,omitempty" validate:"omitempty,oneof=error warn info debug trace"`
-	Pipelines   map[string]*Pipeline `validate:"dive,keys,startsnotwith=lib:"`
+	Pipelines   map[string]*Pipeline `yaml:"pipelines" validate:"dive,keys,startsnotwith=lib:"`
 	OTelLogging *bool                `yaml:"experimental_otel_logging,omitempty" validate:"omitempty"`
+	MetricsPort uint16               `yaml:"metrics_port,omitempty" validate:"omitempty,gte=1,lte=65535"`
+}
+
+func (ls *LoggingService) GetMetricsPort() uint16 {
+	if ls == nil || ls.MetricsPort == 0 {
+		return fluentbit.MetricsPort
+	}
+	return ls.MetricsPort
 }
 
 type Pipeline struct {
@@ -833,8 +855,16 @@ func (m *metricsProcessorMap) UnmarshalYAML(ctx context.Context, unmarshal func(
 }
 
 type MetricsService struct {
-	LogLevel  string               `yaml:"log_level,omitempty" validate:"omitempty,oneof=error warn info debug"`
-	Pipelines map[string]*Pipeline `yaml:"pipelines" validate:"dive,keys,startsnotwith=lib:"`
+	LogLevel    string               `yaml:"log_level,omitempty" validate:"omitempty,oneof=error warn info debug"`
+	Pipelines   map[string]*Pipeline `yaml:"pipelines" validate:"dive,keys,startsnotwith=lib:"`
+	MetricsPort uint16               `yaml:"metrics_port,omitempty" validate:"omitempty,gte=1,lte=65535"`
+}
+
+func (ms *MetricsService) GetMetricsPort() uint16 {
+	if ms == nil || ms.MetricsPort == 0 {
+		return otel.MetricsPort
+	}
+	return ms.MetricsPort
 }
 
 type Traces struct {
