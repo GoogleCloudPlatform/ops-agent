@@ -224,8 +224,8 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 	agentSelfMetrics := AgentSelfMetrics{
 		MetricsVersionLabel: metricVersionLabel,
 		LoggingVersionLabel: loggingVersionLabel,
-		FluentBitPort:       fluentbit.MetricsPort,
-		OtelPort:            otel.MetricsPort,
+		FluentBitPort:       uc.Global.GetFluentBitMetricsPort(),
+		OtelPort:            uc.Global.GetOtelMetricsPort(),
 		OtelRuntimeDir:      outDir,
 	}
 	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines, ctx)
@@ -236,6 +236,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 
 	otelConfig, err := otel.ModularConfig{
 		LogLevel:          uc.getOTelLogLevel(),
+		MetricsPort:       uc.Global.GetOtelMetricsPort(),
 		ReceiverPipelines: receiverPipelines,
 		Pipelines:         pipelines,
 		Exporters: map[otel.ExporterType]otel.ExporterComponents{
@@ -608,7 +609,7 @@ func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAg
 		out = append(out, addGceMetadataAttributesProcessor(ctx).Components(ctx, "*", "*.default-data-proc.gce_metadata")...)
 	}
 	out = append(out, uc.generateSelfLogsComponents(ctx, userAgent)...)
-	out = append(out, fluentbit.MetricsOutputComponent())
+	out = append(out, fluentbit.MetricsOutputComponent(uc.Global.GetFluentBitMetricsPort()))
 
 	return out, nil
 }
