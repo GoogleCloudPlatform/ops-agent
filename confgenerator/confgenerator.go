@@ -609,7 +609,7 @@ func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAg
 		out = append(out, addGceMetadataAttributesProcessor(ctx).Components(ctx, "*", "*.default-data-proc.gce_metadata")...)
 	}
 	out = append(out, uc.generateSelfLogsComponents(ctx, userAgent)...)
-	out = append(out, fluentbit.MetricsOutputComponent())
+	out = append(out, fluentbit.MetricsOutputComponent(int(uc.GetFluentBitMetricsPort())))
 
 	return out, nil
 }
