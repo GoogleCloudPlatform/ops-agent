@@ -34,3 +34,19 @@
   feature: processors:parse_json
   key: "[0].enabled"
   value: "true"
+- module: logging
+  feature: service:service
+  key: pipelines.__length
+  value: "1"
+- module: logging
+  feature: service:service
+  key: pipelines.[0].receivers.__length
+  value: "1"
+- module: logging
+  feature: service:service
+  key: pipelines.[0].processors.__length
+  value: "1"
+- module: logging
+  feature: service:service
+  key: experimental_otel_logging
+  value: "true"

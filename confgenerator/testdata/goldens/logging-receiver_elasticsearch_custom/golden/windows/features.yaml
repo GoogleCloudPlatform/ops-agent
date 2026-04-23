@@ -54,3 +54,15 @@
   feature: receivers:elasticsearch_json
   key: "[3].include_paths.__length"
   value: "5"
+- module: logging
+  feature: service:service
+  key: pipelines.__length
+  value: "2"
+- module: logging
+  feature: service:service
+  key: pipelines.[0].receivers.__length
+  value: "2"
+- module: logging
+  feature: service:service
+  key: pipelines.[1].receivers.__length
+  value: "2"

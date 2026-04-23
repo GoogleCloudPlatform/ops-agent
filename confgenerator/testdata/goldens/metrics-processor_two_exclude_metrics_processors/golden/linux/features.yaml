@@ -38,3 +38,15 @@
   feature: processors:exclude_metrics
   key: "[1].metrics_pattern.__length"
   value: "1"
+- module: metrics
+  feature: service:service
+  key: pipelines.__length
+  value: "1"
+- module: metrics
+  feature: service:service
+  key: pipelines.[0].receivers.__length
+  value: "1"
+- module: metrics
+  feature: service:service
+  key: pipelines.[0].processors.__length
+  value: "2"
