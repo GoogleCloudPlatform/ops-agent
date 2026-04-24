@@ -6138,6 +6138,9 @@ func TestMetricsPortOverrideEnv(t *testing.T) {
 		if gce.IsWindows(imageSpec) {
 			t.Skip("Skipping on Windows for now as it requires different environment variable setup")
 		}
+		if gce.IsOpsAgentUAPPlugin() {
+			t.Skip("Skipping on UAP plugin as it is not supported")
+		}
 		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
 
 		// Setup agent with default config first
