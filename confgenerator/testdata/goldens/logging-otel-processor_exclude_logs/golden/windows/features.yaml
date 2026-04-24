@@ -214,3 +214,23 @@
   feature: processors:exclude_logs
   key: "[22].match_any.__length"
   value: "1"
+- module: logging
+  feature: service:service
+  key: pipelines.__length
+  value: "1"
+- module: logging
+  feature: service:service
+  key: pipelines.[0].receivers.__length
+  value: "1"
+- module: logging
+  feature: service:service
+  key: pipelines.[0].processors.__length
+  value: "23"
+- module: logging
+  feature: service:service
+  key: pipelines.[0].exporters.__length
+  value: "1"
+- module: logging
+  feature: service:service
+  key: experimental_otel_logging
+  value: "true"

@@ -34,3 +34,15 @@
   feature: receivers:windows_event_log
   key: "[0].receiver_version"
   value: "2"
+- module: logging
+  feature: service:service
+  key: pipelines.__length
+  value: "1"
+- module: logging
+  feature: service:service
+  key: pipelines.[0].receivers.__length
+  value: "1"
+- module: logging
+  feature: service:service
+  key: experimental_otel_logging
+  value: "true"
