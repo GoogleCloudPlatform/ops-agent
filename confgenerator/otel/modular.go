@@ -133,6 +133,7 @@ type ModularConfig struct {
 	Pipelines         map[string]Pipeline
 	Exporters         map[ExporterType]ExporterComponents
 	Extensions        map[string]Component
+	MetricsPort       uint16
 
 	// Test-only options:
 	// Don't generate any self-metrics
@@ -171,7 +172,7 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 						"exporter": map[string]interface{}{
 							"prometheus": map[string]interface{}{
 								"host": "0.0.0.0",
-								"port": MetricsPort,
+								"port": c.MetricsPort,
 
 								// See https://docs.datadoghq.com/opentelemetry/migrate/collector_0_120_0/#changes-to-prometheus-server-reader-defaults for why these fields are needed.
 								// See https://github.com/open-telemetry/opentelemetry-collector/pull/11611/files#diff-150d72bc611b4b0de17f646768979b15936f820a029cafa91c4037d50ae47e5a for the actual upstream otel code changes.
