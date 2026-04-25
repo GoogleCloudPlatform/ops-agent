@@ -17,6 +17,8 @@ package confgenerator
 type Global struct {
 	DefaultSelfLogFileCollection *bool            `yaml:"default_self_log_file_collection,omitempty"`
 	DefaultLogFileRotation       *LogFileRotation `yaml:"default_self_log_file_rotation,omitempty"`
+	FluentBitMetricsPort         *int             `yaml:"fluent_bit_metrics_port,omitempty" validate:"omitempty,gte=1,lte=65535"`
+	OtelMetricsPort              *int             `yaml:"otel_metrics_port,omitempty" validate:"omitempty,gte=1,lte=65535"`
 }
 
 // Get whether self log collection should be enabled. Defaults to true if unset.
@@ -25,6 +27,22 @@ func (g *Global) GetDefaultSelfLogFileCollection() bool {
 		return *g.DefaultSelfLogFileCollection
 	}
 	return true
+}
+
+// Get the port for Fluent Bit metrics. Defaults to 20202 if unset.
+func (g *Global) GetFluentBitMetricsPort() int {
+	if g != nil && g.FluentBitMetricsPort != nil {
+		return *g.FluentBitMetricsPort
+	}
+	return 20202
+}
+
+// Get the port for OTel metrics. Defaults to 20201 if unset.
+func (g *Global) GetOtelMetricsPort() int {
+	if g != nil && g.OtelMetricsPort != nil {
+		return *g.OtelMetricsPort
+	}
+	return 20201
 }
 
 type LogFileRotation struct {
