@@ -29,8 +29,10 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/googleapis/gax-go/v2/apierror"
+	collogspb "go.opentelemetry.io/proto/otlp/collector/logs/v1"
 	metricspb "go.opentelemetry.io/proto/otlp/collector/metrics/v1"
 	commonpb "go.opentelemetry.io/proto/otlp/common/v1"
+	logspb "go.opentelemetry.io/proto/otlp/logs/v1"
 	metricsprpb "go.opentelemetry.io/proto/otlp/metrics/v1"
 	resourcepb "go.opentelemetry.io/proto/otlp/resource/v1"
 	"golang.org/x/oauth2/google"
@@ -190,8 +192,6 @@ func runTelemetryMetricsCheck(logger logs.StructuredLogger, resource resourcedet
 
 	creds, err := google.FindDefaultCredentials(ctx,
 		"https://www.googleapis.com/auth/monitoring.write",
-		"https://www.googleapis.com/auth/logging.write",
-		"https://www.googleapis.com/auth/trace.append",
 	)
 	if err != nil {
 		return fmt.Errorf("failed to find default credentials: %v", err)
@@ -295,6 +295,107 @@ func runTelemetryMetricsCheck(logger logs.StructuredLogger, resource resourcedet
 	return nil
 }
 
+func runTelemetryLogsCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	creds, err := google.FindDefaultCredentials(ctx,
+		"https://www.googleapis.com/auth/logging.write",
+	)
+	if err != nil {
+		return fmt.Errorf("failed to find default credentials: %v", err)
+	}
+
+	conn, err := grpc.NewClient(
+		"telemetry.googleapis.com:443",
+		grpc.WithTransportCredentials(credentials.NewTLS(nil)),
+		grpc.WithPerRPCCredentials(oauth.TokenSource{TokenSource: creds.TokenSource}),
+	)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	logger.Infof("telemetry client was created successfully")
+
+	client := collogspb.NewLogsServiceClient(conn)
+
+	now := time.Now()
+	currentTimeNano := uint64(now.UnixNano())
+
+	req := &collogspb.ExportLogsServiceRequest{
+		ResourceLogs: []*logspb.ResourceLogs{
+			{
+				Resource: &resourcepb.Resource{
+					Attributes: []*commonpb.KeyValue{
+						{Key: "gcp.project_id", Value: &commonpb.AnyValue{Value: &commonpb.AnyValue_StringValue{StringValue: resource.ProjectName()}}},
+					},
+				},
+				ScopeLogs: []*logspb.ScopeLogs{
+					{
+						Scope: &commonpb.InstrumentationScope{},
+						LogRecords: []*logspb.LogRecord{
+							{
+								ObservedTimeUnixNano: currentTimeNano,
+								TimeUnixNano:         currentTimeNano,
+								SeverityText:         "DEBUG",
+								SeverityNumber:       5,
+								Body: &commonpb.AnyValue{
+									Value: &commonpb.AnyValue_StringValue{StringValue: "Health check log entry"},
+								},
+								Attributes: []*commonpb.KeyValue{
+									{Key: "instrumentation_source", Value: &commonpb.AnyValue{Value: &commonpb.AnyValue_StringValue{StringValue: "agent.googleapis.com/health_check"}}},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	_, err = client.Export(ctx, req)
+	if err != nil {
+		stat, ok := status.FromError(err)
+		if ok {
+			for _, detail := range stat.Details() {
+				if info, ok := detail.(*errdetails.ErrorInfo); ok {
+					if info.Reason == AccessTokenScopeInsufficient {
+						return LogApiScopeErr
+					}
+				}
+			}
+			switch stat.Code() {
+			case codes.InvalidArgument:
+				// TODO: Telemetry API returns InvalidArgument instead of PermissionDenied
+				// when permissions are missing. Tracking bug: b/502341191
+			case codes.PermissionDenied:
+				if strings.Contains(stat.Message(), "disabled") {
+					return TelApiDisabledErr
+				}
+				return TelLogsApiPermissionErr
+			case codes.Unauthenticated:
+				return TelApiUnauthenticatedErr
+			case codes.DeadlineExceeded, codes.Unavailable:
+				return TelApiConnErr
+			}
+		}
+		if errors.Is(err, context.DeadlineExceeded) {
+			return TelApiConnErr
+		}
+		return err
+	}
+	return nil
+}
+
+var (
+	runMonitoringCheckFunc       = runMonitoringCheck
+	runLoggingCheckFunc          = runLoggingCheck
+	runTelemetryMetricsCheckFunc = runTelemetryMetricsCheck
+	runTelemetryLogsCheckFunc    = runTelemetryLogsCheck
+)
+
+var otlpExporterEnabledForTest = false
+
 type APICheck struct{}
 
 func (c APICheck) Name() string {
@@ -306,13 +407,24 @@ func (c APICheck) RunCheck(logger logs.StructuredLogger) error {
 	if err != nil {
 		return fmt.Errorf("failed to detect the resource: %v", err)
 	}
-	var monOrTelErr error
-	if experiments.FromContext(context.Background())["otlp_exporter"] {
-		monOrTelErr = runTelemetryMetricsCheck(logger, resource)
-	} else {
-		monOrTelErr = runMonitoringCheck(logger, resource)
-	}
-	logErr := runLoggingCheck(logger, resource)
 
-	return errors.Join(monOrTelErr, logErr)
+	otlpEnabled := otlpExporterEnabledForTest
+	if !otlpEnabled {
+		otlpEnabled = experiments.FromContext(context.Background())["otlp_exporter"]
+	}
+
+	var monOrTelErr error
+	var logOrTelLogsErr error
+
+	if otlpEnabled {
+		logger.Infof("Running Telemetry API checks")
+		monOrTelErr = runTelemetryMetricsCheckFunc(logger, resource)
+		logOrTelLogsErr = runTelemetryLogsCheckFunc(logger, resource)
+	} else {
+		logger.Infof("Running legacy API checks")
+		monOrTelErr = runMonitoringCheckFunc(logger, resource)
+		logOrTelLogsErr = runLoggingCheckFunc(logger, resource)
+	}
+
+	return errors.Join(monOrTelErr, logOrTelLogsErr)
 }
