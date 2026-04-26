@@ -1,4 +1,4 @@
-[24:21] "Pipelines[lib:pipeline_1]" must not start with "lib:"
+[24:21] "pipelines[lib:pipeline_1]" must not start with "lib:"
   21 |       - /var/log/syslog
   22 |   service:
   23 |     pipelines:
