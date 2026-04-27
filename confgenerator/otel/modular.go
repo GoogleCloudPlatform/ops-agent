@@ -129,6 +129,7 @@ func configToYaml(config interface{}) ([]byte, error) {
 
 type ModularConfig struct {
 	LogLevel          string
+	MetricsPort       int
 	ReceiverPipelines map[string]ReceiverPipeline
 	Pipelines         map[string]Pipeline
 	Exporters         map[ExporterType]ExporterComponents
@@ -139,6 +140,13 @@ type ModularConfig struct {
 	DisableMetrics bool
 	// Emit collector logs as JSON
 	JSONLogs bool
+}
+
+func (c ModularConfig) getMetricsPort() int {
+	if c.MetricsPort != 0 {
+		return c.MetricsPort
+	}
+	return MetricsPort
 }
 
 // Generate an OT YAML config file for c.
@@ -171,7 +179,7 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 						"exporter": map[string]interface{}{
 							"prometheus": map[string]interface{}{
 								"host": "0.0.0.0",
-								"port": MetricsPort,
+								"port": c.getMetricsPort(),
 
 								// See https://docs.datadoghq.com/opentelemetry/migrate/collector_0_120_0/#changes-to-prometheus-server-reader-defaults for why these fields are needed.
 								// See https://github.com/open-telemetry/opentelemetry-collector/pull/11611/files#diff-150d72bc611b4b0de17f646768979b15936f820a029cafa91c4037d50ae47e5a for the actual upstream otel code changes.
