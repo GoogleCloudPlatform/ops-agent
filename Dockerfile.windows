@@ -384,4 +384,3 @@ WORKDIR /work
 COPY . /work
 
 RUN & .\pkg\plugin\build.ps1 -DestDir /work/out/bin;
-
