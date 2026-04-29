@@ -94,6 +94,16 @@ func ExtractFeatures(ctx context.Context, userUc, mergedUc *UnifiedConfig) ([]Fe
 			return nil, err
 		}
 		allFeatures = append(allFeatures, tempTrackedFeatures...)
+
+		tempTrackedFeatures, err = trackingFeatures(reflect.ValueOf(userUc.Metrics.Service), metadata{}, Feature{
+			Module: "metrics",
+			Kind:   "service",
+			Type:   "service",
+		})
+		if err != nil {
+			return nil, err
+		}
+		allFeatures = append(allFeatures, tempTrackedFeatures...)
 	}
 
 	if userUc.HasLogging() {
@@ -104,6 +114,28 @@ func ExtractFeatures(ctx context.Context, userUc, mergedUc *UnifiedConfig) ([]Fe
 		allFeatures = append(allFeatures, tempTrackedFeatures...)
 
 		tempTrackedFeatures, err = trackedMappedComponents("logging", "processors", userUc.Logging.Processors)
+		if err != nil {
+			return nil, err
+		}
+		allFeatures = append(allFeatures, tempTrackedFeatures...)
+
+		tempTrackedFeatures, err = trackingFeatures(reflect.ValueOf(userUc.Logging.Service), metadata{}, Feature{
+			Module: "logging",
+			Kind:   "service",
+			Type:   "service",
+		})
+		if err != nil {
+			return nil, err
+		}
+		allFeatures = append(allFeatures, tempTrackedFeatures...)
+	}
+
+	if userUc.HasTraces() {
+		tempTrackedFeatures, err = trackingFeatures(reflect.ValueOf(userUc.Traces.Service), metadata{}, Feature{
+			Module: "traces",
+			Kind:   "service",
+			Type:   "service",
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -417,17 +449,16 @@ func getMetadata(field reflect.StructField) metadata {
 	}
 	isExcluded := trackingTag == "-"
 
-	yamlTag, ok := field.Tag.Lookup("yaml")
-	if !ok {
-		panic("field must have a yaml tag")
-	}
-
+	yamlName := strings.ToLower(field.Name)
 	hasInline := false
-	yamlTags := strings.Split(yamlTag, ",")
-	for _, tag := range yamlTags {
-		if tag == "inline" {
-			hasInline = true
+	if yamlTag, ok := field.Tag.Lookup("yaml"); ok {
+		yamlTags := strings.Split(yamlTag, ",")
+		for _, tag := range yamlTags {
+			if tag == "inline" {
+				hasInline = true
+			}
 		}
+		yamlName = yamlTags[0]
 	}
 
 	return metadata{
@@ -439,7 +470,7 @@ func getMetadata(field reflect.StructField) metadata {
 		overrideValue: trackingTags[0],
 		// The first tag is the field identifier
 		// See this for more details: https://pkg.go.dev/gopkg.in/yaml.v2#Unmarshal
-		yamlTag: yamlTags[0],
+		yamlTag: yamlName,
 	}
 }
 

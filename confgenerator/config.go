@@ -62,6 +62,10 @@ func (uc *UnifiedConfig) HasMetrics() bool {
 	return uc.Metrics != nil
 }
 
+func (uc *UnifiedConfig) HasTraces() bool {
+	return uc.Traces != nil
+}
+
 func (uc *UnifiedConfig) HasCombined() bool {
 	return uc.Combined != nil
 }

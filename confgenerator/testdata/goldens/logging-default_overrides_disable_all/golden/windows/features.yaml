@@ -22,3 +22,11 @@
   feature: exporters:otlp
   key: otlp_exporter
   value: "false"
+- module: logging
+  feature: service:service
+  key: pipelines.__length
+  value: "1"
+- module: logging
+  feature: service:service
+  key: pipelines.[0].receivers.__length
+  value: "0"
