@@ -3,6 +3,25 @@ exporters:
     metric:
       add_metric_suffixes: false
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
+  otlp_grpc/otlp_logs:
+    auth:
+      authenticator: googleclientauth
+    balancer_name: pick_first
+    endpoint: telemetry.googleapis.com:443
+    headers:
+      User-Agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
+    sending_queue:
+      batch:
+        flush_timeout: 200ms
+        max_size: 5000000
+        min_size: 1000000
+        sizer: bytes
+      block_on_overflow: true
+      enabled: true
+      num_consumers: 10
+      queue_size: 20000000
+      sizer: bytes
+      storage: file_storage
   otlp_grpc/otlp_metrics:
     auth:
       authenticator: googleclientauth
@@ -11,6 +30,9 @@ exporters:
     headers:
       User-Agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
 extensions:
+  file_storage:
+    create_directory: true
+    directory: file_storage
   googleclientauth: {}
 processors:
   agentmetrics/hostmetrics_0:
@@ -736,6 +758,16 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  resource/otlp_grpc/otlp_logs_logs_0:
+    attributes:
+    - action: insert
+      key: gcp.project_id
+      value: test-project
+  resource/otlp_grpc/otlp_logs_logs_1:
+    attributes:
+    - action: insert
+      key: gcp.use_legacy_mapping
+      value: "true"
   resource/otlp_grpc/otlp_metrics_metrics_0:
     attributes:
     - action: insert
@@ -831,6 +863,21 @@ processors:
     - context: metric
       statements:
       - extract_count_metric(true) where name == "rpc_client_call_duration"
+  transform/otlp_grpc/otlp_logs_logs_2:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - set(attributes["instrumentation_source"], instrumentation_scope.name) where instrumentation_scope.name != ""
+      - set(attributes["instrumentation_version"], instrumentation_scope.version) where instrumentation_scope.version != ""
+  transform/otlp_grpc/otlp_logs_logs_3:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - set(attributes["service.name"], resource.attributes["service.name"]) where resource.attributes["service.name"] != nil
+      - set(attributes["service.namespace"], resource.attributes["service.namespace"]) where resource.attributes["service.namespace"] != nil
+      - set(attributes["service.instance.id"], resource.attributes["service.instance.id"]) where resource.attributes["service.instance.id"] != nil
   transform/prometheus_0:
     metric_statements:
     - context: datapoint
@@ -841,7 +888,52 @@ processors:
       - delete_key(attributes, "location")
       - delete_key(attributes, "cluster")
       - delete_key(attributes, "namespace")
+  transform/syslog_0:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], attributes["compute.googleapis.com/instance_group_manager/name"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/name"] != nil)
+      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["__field_1"], attributes["compute.googleapis.com/instance_group_manager/zone"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/zone"] != nil)
+      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["__field_2"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
+      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["__field_3"], attributes["gcp.log_name"]) where (attributes != nil and attributes["gcp.log_name"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"])
+      - set(cache["value"], "test-mig") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_1"])
+      - set(cache["value"], "test-zone") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/zone"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_2"])
+      - set(cache["value"], "") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_3"])
+      - set(cache["value"], "syslog") where cache["value"] == nil
+      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
 receivers:
+  filelog/syslog:
+    exclude: []
+    fingerprint_size: 5kb
+    include:
+    - /var/log/messages
+    - /var/log/syslog
+    include_file_name: false
+    operators:
+    - from: body
+      id: body
+      to: body.message
+      type: move
+    preserve_leading_whitespaces: true
+    preserve_trailing_whitespaces: true
+    start_at: beginning
+    storage: file_storage
   hostmetrics/hostmetrics:
     collection_interval: 60s
     scrapers:
@@ -946,8 +1038,21 @@ receivers:
         label_name_preserve_multiple_underscores: true
 service:
   extensions:
+  - file_storage
   - googleclientauth
   pipelines:
+    logs/logs_default__pipeline_syslog:
+      exporters:
+      - otlp_grpc/otlp_logs
+      processors:
+      - transform/syslog_0
+      - resourcedetection/_global_0
+      - resource/otlp_grpc/otlp_logs_logs_0
+      - resource/otlp_grpc/otlp_logs_logs_1
+      - transform/otlp_grpc/otlp_logs_logs_2
+      - transform/otlp_grpc/otlp_logs_logs_3
+      receivers:
+      - filelog/syslog
     metrics/default__pipeline_hostmetrics:
       exporters:
       - otlp_grpc/otlp_metrics
