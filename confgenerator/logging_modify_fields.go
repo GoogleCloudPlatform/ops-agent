@@ -74,6 +74,10 @@ func (p LoggingProcessorModifyFields) Components(ctx context.Context, tag, uid s
 	return c
 }
 func (p LoggingProcessorModifyFields) components(tag, uid string) ([]fluentbit.Component, error) {
+	if len(p.Fields) == 0 {
+		// Don't bother generating anything if we're a noop.
+		return nil, nil
+	}
 	var lua strings.Builder
 	lua.WriteString(`
 function process(tag, timestamp, record)
@@ -244,6 +248,9 @@ func (p LoggingProcessorModifyFields) Processors(ctx context.Context) ([]otel.Co
 	out, err := p.statements(ctx)
 	if err != nil {
 		return nil, err
+	}
+	if len(out) == 0 {
+		return nil, nil
 	}
 	return []otel.Component{otel.Transform(
 		"log", "log",

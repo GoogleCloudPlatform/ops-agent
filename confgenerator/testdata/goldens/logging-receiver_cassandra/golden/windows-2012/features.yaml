@@ -46,3 +46,11 @@
   feature: receivers:cassandra_system
   key: "[2].include_paths.__length"
   value: "1"
+- module: logging
+  feature: service:service
+  key: pipelines.__length
+  value: "1"
+- module: logging
+  feature: service:service
+  key: pipelines.[0].receivers.__length
+  value: "3"

@@ -26,6 +26,18 @@
   feature: receivers:hostmetrics
   key: "[0].enabled"
   value: "true"
+- module: metrics
+  feature: service:service
+  key: pipelines.__length
+  value: "1"
+- module: metrics
+  feature: service:service
+  key: pipelines.[0].receivers.__length
+  value: "1"
+- module: metrics
+  feature: service:service
+  key: pipelines.[0].exporters.__length
+  value: "1"
 - module: logging
   feature: receivers:files
   key: "[0].enabled"
@@ -34,3 +46,15 @@
   feature: receivers:files
   key: "[0].include_paths.__length"
   value: "2"
+- module: logging
+  feature: service:service
+  key: pipelines.__length
+  value: "1"
+- module: logging
+  feature: service:service
+  key: pipelines.[0].receivers.__length
+  value: "1"
+- module: logging
+  feature: service:service
+  key: pipelines.[0].exporters.__length
+  value: "1"

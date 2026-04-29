@@ -30,7 +30,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/gce"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/logging"
-	"github.com/GoogleCloudPlatform/ops-agent/apps"
+	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
 	"github.com/binxio/gcloudconfig"
@@ -166,7 +166,7 @@ func getReceiversFromConfig(ctx context.Context, vm *gce.VM, logger *logging.Dir
 		return []string{}, nil
 	}
 
-	config, err := confgenerator.MergeConfFiles(ctx, configFilePath, apps.BuiltInConfStructs)
+	config, err := confgenerator.MergeConfFiles(ctx, configFilePath)
 	if err != nil {
 		return nil, err
 	}

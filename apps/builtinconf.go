@@ -16,8 +16,8 @@ package apps
 
 import cg "github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 
-var (
-	BuiltInConfStructs = map[string]*cg.UnifiedConfig{
+func init() {
+	cg.BuiltInConfStructs = map[string]*cg.UnifiedConfig{
 		"linux": {
 			Logging: &cg.Logging{
 				Receivers: map[string]cg.LoggingReceiver{
@@ -105,4 +105,4 @@ var (
 			},
 		},
 	}
-)
+}

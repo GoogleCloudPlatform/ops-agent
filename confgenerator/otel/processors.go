@@ -665,7 +665,7 @@ func ResourceTransform(attributes map[string]string, override bool) Component {
 
 func MetricStartTime() Component {
 	return Component{
-		Type:   "metricstarttime",
+		Type:   "metric_start_time",
 		Config: map[string]string{"strategy": "subtract_initial_point"},
 	}
 }
@@ -689,10 +689,10 @@ func MetricUnknownCounter() Component {
 	})
 }
 
-// This processor prevents telemetry.googleapis.com from populating the LogEntry.otlp field by setting the gcp.internal.omit_otlp resource attribute to true.
+// This processor prevents telemetry.googleapis.com from populating the LogEntry.otlp field by setting the gcp.use_legacy_mapping resource attribute to true.
 func DisableOtlpRoundTrip() Component {
 	return ResourceTransform(
-		map[string]string{"gcp.internal.omit_otlp": "true"}, false,
+		map[string]string{"gcp.use_legacy_mapping": "true"}, false,
 	)
 }
 

@@ -29,7 +29,7 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/GoogleCloudPlatform/ops-agent/apps"
+	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
@@ -207,12 +207,12 @@ func findPreExistentAgents(mgr serviceManager, agentWindowsServiceNames []string
 }
 
 func generateSubAgentConfigs(ctx context.Context, userConfigPath string, pluginStateDir string) error {
-	uc, err := confgenerator.MergeConfFiles(ctx, userConfigPath, apps.BuiltInConfStructs)
+	uc, err := confgenerator.MergeConfFiles(ctx, userConfigPath)
 	if err != nil {
 		return err
 	}
 
-	log.Printf("Built-in config:\n%s\n", apps.BuiltInConfStructs["windows"])
+	log.Printf("Built-in config:\n%s\n", confgenerator.BuiltInConfStructs["windows"])
 	log.Printf("Merged config:\n%s\n", uc)
 
 	// The generated otlp metric json files are used only by the otel service.

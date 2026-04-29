@@ -23,8 +23,8 @@ import (
 )
 
 // MergeConfFiles merges the user provided config with the built-in config struct for the platform.
-func MergeConfFiles(ctx context.Context, userConfPath string, builtInConfStructs map[string]*UnifiedConfig) (*UnifiedConfig, error) {
-	builtInStruct := builtInConfStructs[platform.FromContext(ctx).Name()]
+func MergeConfFiles(ctx context.Context, userConfPath string) (*UnifiedConfig, error) {
+	builtInStruct := BuiltInConfStructs[platform.FromContext(ctx).Name()]
 
 	// Start with the built-in config.
 	result, err := builtInStruct.DeepCopy(ctx)

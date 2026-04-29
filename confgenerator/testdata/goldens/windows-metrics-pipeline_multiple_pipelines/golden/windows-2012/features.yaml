@@ -34,6 +34,22 @@
   feature: receivers:mssql
   key: "[2].enabled"
   value: "true"
+- module: metrics
+  feature: service:service
+  key: pipelines.__length
+  value: "3"
+- module: metrics
+  feature: service:service
+  key: pipelines.[0].receivers.__length
+  value: "1"
+- module: metrics
+  feature: service:service
+  key: pipelines.[1].receivers.__length
+  value: "1"
+- module: metrics
+  feature: service:service
+  key: pipelines.[2].receivers.__length
+  value: "1"
 - module: logging
   feature: receivers:windows_event_log
   key: "[0].enabled"
@@ -42,3 +58,11 @@
   feature: receivers:windows_event_log
   key: "[0].channels.__length"
   value: "3"
+- module: logging
+  feature: service:service
+  key: pipelines.__length
+  value: "1"
+- module: logging
+  feature: service:service
+  key: pipelines.[0].receivers.__length
+  value: "1"

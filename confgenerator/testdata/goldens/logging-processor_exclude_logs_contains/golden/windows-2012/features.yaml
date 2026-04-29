@@ -42,3 +42,15 @@
   feature: processors:exclude_logs
   key: "[1].match_any.__length"
   value: "1"
+- module: logging
+  feature: service:service
+  key: pipelines.__length
+  value: "1"
+- module: logging
+  feature: service:service
+  key: pipelines.[0].receivers.__length
+  value: "1"
+- module: logging
+  feature: service:service
+  key: pipelines.[0].processors.__length
+  value: "2"

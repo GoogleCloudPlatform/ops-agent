@@ -37,7 +37,7 @@ gpu_platforms: # p4, p100 don't emit DCGM profiling metrics
     platforms:
       - debian-cloud:debian-11
       - debian-cloud:debian-12
-      - ml-images:common-gpu-debian-11-py310
+      - ml-images:common-cu129-ubuntu-2404-nvidia-580
       - rocky-linux-cloud:rocky-linux-8
       - rocky-linux-cloud:rocky-linux-9
       - suse-cloud:sles-15

@@ -30,3 +30,11 @@
   feature: receivers:jetty
   key: "[0].collect_jvm_metrics"
   value: "false"
+- module: metrics
+  feature: service:service
+  key: pipelines.__length
+  value: "1"
+- module: metrics
+  feature: service:service
+  key: pipelines.[0].receivers.__length
+  value: "1"

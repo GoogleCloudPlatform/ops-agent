@@ -65,7 +65,6 @@ targets:
         test_distros:
           representative:
           - debian-cloud:debian-11
-          - ml-images:common-gpu-debian-11-py310
   centos8:
     os_versions: [centos-8*,rocky-8*,rhel-8*]
     package_extension:
@@ -118,6 +117,7 @@ targets:
         test_distros:
           representative:
           - ubuntu-os-cloud:ubuntu-2404-lts-amd64
+          - ml-images:common-cu129-ubuntu-2404-nvidia-580
           exhaustive:
           - ubuntu-os-cloud:ubuntu-minimal-2404-lts-amd64
       aarch64:

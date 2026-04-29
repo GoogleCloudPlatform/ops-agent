@@ -1,11 +1,11 @@
-%if 0%{?sle_version} > 0
 # we expect the distro suffix
+%if 0%{?suse_version} >= 1600
+# On OpenSUSE 16, sle_version is defined as literal string sle_version, and the
+# if check will cause an infinite expanding loop - So we check suse_version first
+%global dist .sles%(expr substr %{suse_version} 1 2)
+%else
+%if 0%{?sle_version} > 0
 %global dist .sles%(expr substr %{sle_version} 1 2)
-%if %{sle_version} <= 12
-# systemd macros have different names
-%global systemd_post %{service_add_post %1}
-%global systemd_preun %{service_del_preun %1}
-%global systemd_postun %{service_del_postun %1}
 %endif
 %endif
 
@@ -52,8 +52,14 @@ BUILD_DISTRO=${build_distro#.} DESTDIR="%{buildroot}" ./build.sh
 %{_unitdir}/%{name}*
 %{_unitdir}-preset/*-%{name}*
 
+%pre
+%if 0%{?suse_version} >= 1600
+%systemd_pre google-cloud-ops-agent.service
+%endif
+
 %post
 %systemd_post google-cloud-ops-agent.service
+
 # rhel7 systemctl does not support --value
 if [ "$(systemctl show -p LoadState google-cloud-ops-agent.target 2>/dev/null || :)" = "LoadState=loaded" ]; then
   systemctl stop google-cloud-ops-agent.target > /dev/null 2>&1 || :
@@ -76,6 +82,11 @@ fi
 
 %preun
 %systemd_preun google-cloud-ops-agent.service
+
+# SLES 16 systemd_preun does not automatically stop the service on uninstallation
+if [ $1 -eq 0 ]; then
+    systemctl stop google-cloud-ops-agent.service >/dev/null 2>&1 || :
+fi
 
 %postun
 %systemd_postun_with_restart google-cloud-ops-agent.service

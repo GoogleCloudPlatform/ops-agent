@@ -23,7 +23,7 @@ import (
 
 	"buf.build/go/protoyaml" // Import the protoyaml-go package
 	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
-	"github.com/GoogleCloudPlatform/ops-agent/apps"
+	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	spb "google.golang.org/protobuf/types/known/structpb"
@@ -188,7 +188,7 @@ func TestWriteCustomConfigToFile(t *testing.T) {
 				t.Errorf("%v: writeCustomConfigToFile got error: %v, want nil error", tc.name, err)
 			}
 
-			_, err = confgenerator.MergeConfFiles(context.Background(), configPath, apps.BuiltInConfStructs)
+			_, err = confgenerator.MergeConfFiles(context.Background(), configPath)
 			if err != nil {
 				t.Errorf("%v: conf generator fails to validate the output Ops agent yaml: %v", tc.name, err)
 			}

@@ -20,7 +20,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/GoogleCloudPlatform/ops-agent/apps"
+	_ "github.com/GoogleCloudPlatform/ops-agent/apps"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
@@ -55,7 +55,7 @@ func main() {
 func run() error {
 	ctx := context.Background()
 	// TODO(lingshi) Move this to a shared place across Linux and Windows.
-	uc, err := confgenerator.MergeConfFiles(ctx, *input, apps.BuiltInConfStructs)
+	uc, err := confgenerator.MergeConfFiles(ctx, *input)
 	if err != nil {
 		return err
 	}
@@ -63,7 +63,7 @@ func run() error {
 	// Log the built-in and merged config files to STDOUT. These are then written
 	// by journald to var/log/syslog and so to Cloud Logging once the ops-agent is
 	// running.
-	log.Printf("Built-in config:\n%s", apps.BuiltInConfStructs["linux"])
+	log.Printf("Built-in config:\n%s", confgenerator.BuiltInConfStructs["linux"])
 	log.Printf("Merged config:\n%s", uc)
 
 	switch *service {

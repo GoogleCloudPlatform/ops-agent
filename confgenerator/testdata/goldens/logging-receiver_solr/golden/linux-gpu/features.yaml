@@ -34,3 +34,11 @@
   feature: receivers:solr_system
   key: "[0].enabled"
   value: "true"
+- module: logging
+  feature: service:service
+  key: pipelines.__length
+  value: "1"
+- module: logging
+  feature: service:service
+  key: pipelines.[0].receivers.__length
+  value: "1"
