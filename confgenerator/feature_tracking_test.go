@@ -132,6 +132,20 @@ var expectedMetricsPipelineOverriden = []confgenerator.Feature{
 		Key:    []string{"otlp_exporter"},
 		Value:  "false",
 	},
+	{
+		Module: "metrics",
+		Kind:   "service",
+		Type:   "service",
+		Key:    []string{"pipelines", "__length"},
+		Value:  "1",
+	},
+	{
+		Module: "metrics",
+		Kind:   "service",
+		Type:   "service",
+		Key:    []string{"pipelines", "[0]", "receivers", "__length"},
+		Value:  "3",
+	},
 }
 
 var expectedTestFeatureBase = []confgenerator.Feature{
@@ -229,7 +243,21 @@ var expectedOtelLoggingNotSupported = []confgenerator.Feature{
 		Key:    []string{"otlp_exporter"},
 		Value:  "false",
 	},
-}
+	{
+		Module: "logging",
+		Kind:   "service",
+		Type:   "service",
+		Key:    []string{"pipelines", "__length"},
+		Value:  "1",
+	},
+
+	{
+		Module: "logging",
+		Kind:   "service",
+		Type:   "service",
+		Key:    []string{"pipelines", "[0]", "processors", "__length"},
+		Value:  "1",
+	}}
 
 func testContext() context.Context {
 	pl := platform.Platform{
@@ -257,8 +285,8 @@ func TestEmptyConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !cmp.Equal(features, expectedFeatureBase) {
-		t.Fatalf("expected: %v, actual: %v", expectedFeatureBase, features)
+	if d := cmp.Diff(features, expectedFeatureBase); d != "" {
+		t.Fatalf("got (-)/want (+):\n%s", d)
 	}
 }
 
@@ -756,8 +784,8 @@ func TestBed(t *testing.T) {
 				}
 			} else {
 				expected := test.Expected
-				if !cmp.Equal(actual, expected) {
-					t.Fatalf("expected: %v, actual: %v, \ndiff: %v", expected, actual, cmp.Diff(expected, actual))
+				if d := cmp.Diff(actual, expected); d != "" {
+					t.Fatalf("got (-)/want (+):\n%s", d)
 				}
 			}
 		})
@@ -823,8 +851,8 @@ func TestOtelLoggingSupported(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !cmp.Equal(features, expectedFeatureBase) {
-		t.Fatalf("expected: %v, actual: %v", expectedFeatureBase, features)
+	if d := cmp.Diff(features, expectedFeatureBase); d != "" {
+		t.Fatalf("got (-)/want (+):\n%s", d)
 	}
 }
 
@@ -870,8 +898,8 @@ func TestOtelLoggingNotSupported(t *testing.T) {
 
 	fmt.Println(features)
 
-	if !cmp.Equal(features, expectedOtelLoggingNotSupported) {
-		t.Fatalf("expected: %v, actual: %v", expectedOtelLoggingNotSupported, features)
+	if d := cmp.Diff(features, expectedOtelLoggingNotSupported); d != "" {
+		t.Fatalf("got (-)/want (+):\n%s", d)
 	}
 }
 
@@ -893,8 +921,8 @@ func TestOverrideDefaultPipeline(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !cmp.Equal(features, expectedMetricsPipelineOverriden) {
-		t.Fatalf("expected: %v, actual: %v", expectedMetricsPipelineOverriden, features)
+	if d := cmp.Diff(features, expectedMetricsPipelineOverriden); d != "" {
+		t.Fatalf("got (-)/want (+):\n%s", d)
 	}
 }
 
@@ -1231,8 +1259,8 @@ func TestNestedStructs(t *testing.T) {
 		Key:    []string{"[0]", "b", "int"},
 		Value:  "64",
 	})
-	if !cmp.Equal(features, expected) {
-		t.Fatalf("expected: %v, actual: %v", expected, features)
+	if d := cmp.Diff(features, expected); d != "" {
+		t.Fatalf("got (-)/want (+):\n%s", d)
 	}
 }
 

@@ -30,3 +30,11 @@
   feature: receivers:mssql
   key: "[0].receiver_version"
   value: "2"
+- module: metrics
+  feature: service:service
+  key: pipelines.__length
+  value: "1"
+- module: metrics
+  feature: service:service
+  key: pipelines.[0].receivers.__length
+  value: "1"

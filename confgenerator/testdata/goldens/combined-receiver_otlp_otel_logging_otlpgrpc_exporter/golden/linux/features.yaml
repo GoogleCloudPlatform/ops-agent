@@ -22,6 +22,18 @@
   feature: exporters:otlp
   key: otlp_exporter
   value: "true"
+- module: metrics
+  feature: service:service
+  key: pipelines.__length
+  value: "2"
+- module: metrics
+  feature: service:service
+  key: pipelines.[0].receivers.__length
+  value: "1"
+- module: metrics
+  feature: service:service
+  key: pipelines.[1].receivers.__length
+  value: "1"
 - module: logging
   feature: receivers:files
   key: "[0].enabled"
@@ -34,6 +46,34 @@
   feature: receivers:syslog
   key: "[1].enabled"
   value: "true"
+- module: logging
+  feature: service:service
+  key: pipelines.__length
+  value: "3"
+- module: logging
+  feature: service:service
+  key: pipelines.[0].receivers.__length
+  value: "1"
+- module: logging
+  feature: service:service
+  key: pipelines.[1].receivers.__length
+  value: "1"
+- module: logging
+  feature: service:service
+  key: pipelines.[2].receivers.__length
+  value: "1"
+- module: logging
+  feature: service:service
+  key: experimental_otel_logging
+  value: "true"
+- module: traces
+  feature: service:service
+  key: pipelines.__length
+  value: "1"
+- module: traces
+  feature: service:service
+  key: pipelines.[0].receivers.__length
+  value: "1"
 - module: combined
   feature: receivers:otlp
   key: "[0].enabled"
