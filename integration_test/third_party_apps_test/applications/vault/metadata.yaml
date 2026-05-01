@@ -75,6 +75,8 @@ platforms_to_skip:
   - rocky-linux-cloud:rocky-linux-10-optimized-gcp-arm64
   - ubuntu-os-cloud:ubuntu-2510-amd64 # vault not available for 25.10 yet: https://www.hashicorp.com/en/official-packaging-guide
   - ubuntu-os-cloud:ubuntu-2510-arm64 # vault not available for 25.10 yet: https://www.hashicorp.com/en/official-packaging-guide
+  - ubuntu-os-cloud:ubuntu-2604-lts-amd64 # vault not available for 26.04 yet: https://www.hashicorp.com/en/official-packaging-guide
+  - ubuntu-os-cloud:ubuntu-2604-lts-arm64 # vault not available for 26.04 yet: https://www.hashicorp.com/en/official-packaging-guide
 supported_app_version: ["1.6+"]
 expected_metrics:
   - type: workload.googleapis.com/vault.core.request.count
