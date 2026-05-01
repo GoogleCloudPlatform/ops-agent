@@ -65,6 +65,7 @@ import (
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/gce"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
 	feature_tracking_metadata "github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
@@ -6159,9 +6160,9 @@ func TestMetricsPortOverrideEnv(t *testing.T) {
 		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo mkdir -p %s", fbOverrideDir)); err != nil {
 			t.Fatal(err)
 		}
-		fbOverrideContent := `[Service]
-Environment="OPS_AGENT_FLUENT_BIT_METRICS_PORT=40002"
-`
+		fbOverrideContent := fmt.Sprintf(`[Service]
+Environment="%s=40002"
+`, confgenerator.ExperimentalFluentBitMetricsPortEnv)
 		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("echo '%s' | sudo tee %s", fbOverrideContent, fbOverrideFile)); err != nil {
 			t.Fatal(err)
 		}
@@ -6172,10 +6173,10 @@ Environment="OPS_AGENT_FLUENT_BIT_METRICS_PORT=40002"
 		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo mkdir -p %s", otelOverrideDir)); err != nil {
 			t.Fatal(err)
 		}
-		otelOverrideContent := `[Service]
-Environment="OPS_AGENT_OTEL_METRICS_PORT=40001"
-Environment="OPS_AGENT_FLUENT_BIT_METRICS_PORT=40002"
-`
+		otelOverrideContent := fmt.Sprintf(`[Service]
+Environment="%s=40001"
+Environment="%s=40002"
+`, confgenerator.ExperimentalOtelMetricsPortEnv, confgenerator.ExperimentalFluentBitMetricsPortEnv)
 		if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("echo '%s' | sudo tee %s", otelOverrideContent, otelOverrideFile)); err != nil {
 			t.Fatal(err)
 		}
