@@ -39,7 +39,7 @@
       go.opentelemetry.io/collector/processor/batchprocessor.(*shard[...]).startLoop
         go.opentelemetry.io/collector/processor/batchprocessor@v0.151.0/batch_processor.go:213
       sync.(*WaitGroup).Go.func1
-        golang.org/toolchain@v0.0.1-go1.25.0.linux-amd64/src/sync/waitgroup.go:239
+        /usr/local/go/src/sync/waitgroup.go:239
   - caller: batchprocessor@v0.151.0/batch_processor.go:272
     error: "could not process attribute gcp.source_location: json: cannot unmarshal string into Go struct field LogEntrySourceLocation.line of type int64"
     level: warn
