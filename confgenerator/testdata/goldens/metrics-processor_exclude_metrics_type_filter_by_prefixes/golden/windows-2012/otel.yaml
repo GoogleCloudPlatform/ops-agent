@@ -85,7 +85,7 @@ processors:
   filter/loggingmetrics_1:
     metrics:
       datapoint:
-      - metric.name == "grpc_client_attempt_duration_count" and (not IsMatch(datapoint.attributes["grpc_target"], "logging.googleapis"))
+      - metric.name == "grpc.client.attempt.duration_count" and (not IsMatch(datapoint.attributes["grpc.target"], "logging.googleapis"))
   filter/loggingmetrics_2:
     metrics:
       include:
@@ -96,11 +96,11 @@ processors:
         - fluentbit_stackdriver_retried_records_total
         - otelcol_exporter_sent_log_records
         - otelcol_exporter_send_failed_log_records
-        - grpc_client_attempt_duration_count
+        - grpc.client.attempt.duration_count
   filter/otel_1:
     metrics:
       datapoint:
-      - metric.name == "grpc_client_attempt_duration_count" and (not IsMatch(datapoint.attributes["grpc_target"], "monitoring.googleapis"))
+      - metric.name == "grpc.client.attempt.duration_count" and (not IsMatch(datapoint.attributes["grpc.target"], "monitoring.googleapis"))
   filter/otel_2:
     metrics:
       include:
@@ -108,8 +108,8 @@ processors:
         metric_names:
         - otelcol_process_uptime
         - otelcol_process_memory_rss
-        - grpc_client_attempt_duration_count
-        - googlecloudmonitoring_point_count
+        - grpc.client.attempt.duration_count
+        - googlecloudmonitoring/point_count
   interval/loggingmetrics_7:
     interval: 1m
   metricstransform/fluentbit_1:
@@ -478,11 +478,11 @@ processors:
         label_set:
         - response_code
     - action: update
-      include: grpc_client_attempt_duration_count
+      include: grpc.client.attempt.duration_count
       new_name: otel_request_count
       operations:
       - action: update_label
-        label: grpc_status
+        label: grpc.status
         new_label: response_code
       - action: update_label
         label: response_code
@@ -614,18 +614,18 @@ processors:
         aggregation_type: sum
         label_set: []
     - action: update
-      include: grpc_client_attempt_duration_count
+      include: grpc.client.attempt.duration_count
       new_name: agent/api_request_count
       operations:
       - action: update_label
-        label: grpc_status
+        label: grpc.status
         new_label: state
       - action: aggregate_labels
         aggregation_type: sum
         label_set:
         - state
     - action: update
-      include: googlecloudmonitoring_point_count
+      include: googlecloudmonitoring/point_count
       new_name: agent/monitoring/point_count
       operations:
       - action: toggle_scalar_data_type
@@ -645,11 +645,11 @@ processors:
     metric_statements:
     - context: metric
       statements:
-      - delete_key(resource.attributes, "service_name")
-      - delete_key(resource.attributes, "service_version")
-      - delete_key(resource.attributes, "service_instance_id")
-      - delete_key(resource.attributes, "server_port")
-      - delete_key(resource.attributes, "url_scheme")
+      - delete_key(resource.attributes, "service.name")
+      - delete_key(resource.attributes, "service.version")
+      - delete_key(resource.attributes, "service.instance.id")
+      - delete_key(resource.attributes, "server.port")
+      - delete_key(resource.attributes, "url.scheme")
   transform/iis_3:
     metric_statements:
     - context: scope
@@ -661,7 +661,7 @@ processors:
     metric_statements:
     - context: metric
       statements:
-      - extract_count_metric(true) where name == "grpc_client_attempt_duration"
+      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
   transform/loggingmetrics_5:
     metric_statements:
     - context: metric
@@ -694,7 +694,7 @@ processors:
     metric_statements:
     - context: metric
       statements:
-      - extract_count_metric(true) where name == "grpc_client_attempt_duration"
+      - extract_count_metric(true) where name == "grpc.client.attempt.duration"
   transform/windows__event__log_0:
     error_mode: ignore
     log_statements:
