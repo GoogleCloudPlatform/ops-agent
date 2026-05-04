@@ -39,6 +39,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/gce"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/logging"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 
 	"github.com/blang/semver"
 	"github.com/cenkalti/backoff/v4"
@@ -199,8 +200,11 @@ func RunOpsAgentDiagnostics(ctx context.Context, logger *logging.DirectoryLogger
 	// hang, so give them a shorter timeout to avoid hanging the whole test.
 	metricsCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	gce.RunRemotely(metricsCtx, logger.ToFile("fluent_bit_metrics.txt"), vm, "sudo curl -s localhost:20202/metrics")
-	gce.RunRemotely(metricsCtx, logger.ToFile("otel_metrics.txt"), vm, "sudo curl -s localhost:20201/metrics")
+	fbPortCmd := fmt.Sprintf(`sudo bash -c 'PORT=$(systemctl show google-cloud-ops-agent-fluent-bit -p Environment | grep -oP "%s=\K\d+"); if [ -z "$PORT" ]; then PORT=20202; fi; curl -s localhost:$PORT/metrics'`, confgenerator.ExperimentalFluentBitMetricsPortEnv)
+	gce.RunRemotely(metricsCtx, logger.ToFile("fluent_bit_metrics.txt"), vm, fbPortCmd)
+
+	otelPortCmd := fmt.Sprintf(`sudo bash -c 'PORT=$(systemctl show google-cloud-ops-agent-opentelemetry-collector -p Environment | grep -oP "%s=\K\d+"); if [ -z "$PORT" ]; then PORT=20201; fi; curl -s localhost:$PORT/metrics'`, confgenerator.ExperimentalOtelMetricsPortEnv)
+	gce.RunRemotely(metricsCtx, logger.ToFile("otel_metrics.txt"), vm, otelPortCmd)
 
 	isUAPPlugin := gce.IsOpsAgentUAPPlugin()
 	if isUAPPlugin {
@@ -1277,12 +1281,12 @@ func SetupOpsAgentWithFeatureFlag(ctx context.Context, logger *log.Logger, vm *g
 
 	if strings.Contains(feature, OtelLoggingFeatureFlag) {
 		if config == "" {
-				config = defaultOtelLoggingConfig()
-			} else {
-				config = setExperimentalOtelLoggingInConfig(config)
-			}
+			config = defaultOtelLoggingConfig()
+		} else {
+			config = setExperimentalOtelLoggingInConfig(config)
+		}
 	}
-	
+
 	// Set experimental feature environment variable.
 	if err := setExperimentalFeatures(ctx, logger, vm, feature); err != nil {
 		return err
