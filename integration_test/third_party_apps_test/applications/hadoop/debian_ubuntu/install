@@ -3,7 +3,7 @@ set -e
 sudo apt-get update
 # Debian 12 very specifically wants openjdk-17-jdk for installing Java via apt
 source /etc/os-release
-if [[ $ID == debian && "${VERSION_ID}" == 12 ]]; then
+if [[ $ID == debian && "${VERSION_ID}" == 12 ]] || [[ $ID == ubuntu && "${VERSION_ID}" == "26.04" ]]; then
     sudo apt-get install -y openjdk-17-jdk openjdk-17-jdk-headless wget
 else
     sudo apt-get install -y default-jdk default-jdk-headless wget
