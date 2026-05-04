@@ -60,7 +60,7 @@ Check if Docker is installed and running:
     CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES
     ```
 
-For GCE images not built for containers, install Docker following steps [here](https://docs.microsoft.com/en-us/virtualization/windowscontainers/quick-start/set-up-environment?tabs=dockerce#windows-server-1). 
+For GCE images not built for containers, install Docker following steps [here](https://learn.microsoft.com/en-us/virtualization/windowscontainers/quick-start/set-up-environment?tabs=dockerce#windows-server-2).
 
 
 ## [Optional] Install VSCode

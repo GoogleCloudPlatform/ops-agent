@@ -65,6 +65,7 @@ import (
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/gce"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
 	feature_tracking_metadata "github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
@@ -6127,6 +6128,115 @@ func TestUninstallRemovesService(t *testing.T) {
 
 		if out, err := gce.RunRemotely(ctx, logger, vm, checkServiceCmd); err != nil {
 			t.Fatalf("Service still exists after uninstall, or error checking status: %v. Output: %s", err, out.Stdout)
+		}
+	})
+}
+
+func TestMetricsPortOverrideEnv(t *testing.T) {
+	t.Parallel()
+	RunForEachImageAndFeatureFlag(t, []string{agents.OtlpHttpExporterFeatureFlag}, func(t *testing.T, imageSpec string, feature string) {
+		t.Parallel()
+		// Windows support added below
+		if gce.IsOpsAgentUAPPlugin() {
+			t.Skip("Skipping on UAP plugin as it is not supported")
+		}
+		ctx, logger, vm := setupMainLogAndVM(t, imageSpec)
+
+		// Setup agent with default config first
+		if err := agents.SetupOpsAgentWithFeatureFlag(ctx, logger, vm, "", feature); err != nil {
+			t.Fatal(err)
+		}
+
+		if gce.IsWindows(imageSpec) {
+			// Set environment variables via PowerShell
+			setEnvCmd := fmt.Sprintf(`[Environment]::SetEnvironmentVariable("%s", "40002", "Machine"); [Environment]::SetEnvironmentVariable("%s", "40001", "Machine")`,
+				confgenerator.ExperimentalFluentBitMetricsPortEnv, confgenerator.ExperimentalOtelMetricsPortEnv)
+			if _, err := gce.RunRemotely(ctx, logger, vm, setEnvCmd); err != nil {
+				t.Fatal(err)
+			}
+			// Cleanup env vars at the end of the test
+			t.Cleanup(func() {
+				unsetEnvCmd := fmt.Sprintf(`[Environment]::SetEnvironmentVariable("%s", $null, "Machine"); [Environment]::SetEnvironmentVariable("%s", $null, "Machine")`,
+					confgenerator.ExperimentalFluentBitMetricsPortEnv, confgenerator.ExperimentalOtelMetricsPortEnv)
+				gce.RunRemotely(ctx, logger, vm, unsetEnvCmd)
+			})
+			// Restart agent
+			if err := agents.RestartOpsAgent(ctx, logger, vm); err != nil {
+				t.Fatal(err)
+			}
+		} else {
+			// Stop the agent to avoid race conditions while setting up overrides
+			if _, err := gce.RunRemotely(ctx, logger, vm, "sudo systemctl stop google-cloud-ops-agent"); err != nil {
+				t.Fatal(err)
+			}
+
+			// Set up systemd overrides for Fluent Bit
+			fbOverrideDir := "/etc/systemd/system/google-cloud-ops-agent-fluent-bit.service.d"
+			fbOverrideFile := fbOverrideDir + "/override.conf"
+			if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo mkdir -p %s", fbOverrideDir)); err != nil {
+				t.Fatal(err)
+			}
+			fbOverrideContent := fmt.Sprintf(`[Service]
+Environment="%s=40002"
+`, confgenerator.ExperimentalFluentBitMetricsPortEnv)
+			if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("echo '%s' | sudo tee %s", fbOverrideContent, fbOverrideFile)); err != nil {
+				t.Fatal(err)
+			}
+
+			// Set up systemd overrides for OTel Collector
+			otelOverrideDir := "/etc/systemd/system/google-cloud-ops-agent-opentelemetry-collector.service.d"
+			otelOverrideFile := otelOverrideDir + "/override.conf"
+			if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("sudo mkdir -p %s", otelOverrideDir)); err != nil {
+				t.Fatal(err)
+			}
+			otelOverrideContent := fmt.Sprintf(`[Service]
+Environment="%s=40001"
+Environment="%s=40002"
+`, confgenerator.ExperimentalOtelMetricsPortEnv, confgenerator.ExperimentalFluentBitMetricsPortEnv)
+			if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("echo '%s' | sudo tee %s", otelOverrideContent, otelOverrideFile)); err != nil {
+				t.Fatal(err)
+			}
+
+			// Reload systemd and restart agent
+			if _, err := gce.RunRemotely(ctx, logger, vm, "sudo systemctl daemon-reload"); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := gce.RunRemotely(ctx, logger, vm, "sudo systemctl start google-cloud-ops-agent"); err != nil {
+				t.Fatal(err)
+			}
+		}
+
+		// Wait for agent to start up
+		time.Sleep(20 * time.Second)
+
+		// Verify that we can scrape metrics from the new ports
+		// Fluent Bit metrics on 40002
+		var fbMetricsOut, otelMetricsOut gce.CommandOutput
+		var err error
+
+		if gce.IsWindows(imageSpec) {
+			fbMetricsOut, err = gce.RunRemotely(ctx, logger, vm, "Invoke-RestMethod -Uri http://localhost:40002/metrics")
+		} else {
+			fbMetricsOut, err = gce.RunRemotely(ctx, logger, vm, "curl -s localhost:40002/metrics")
+		}
+		if err != nil {
+			t.Fatalf("Failed to scrape Fluent Bit metrics on port 40002: %v", err)
+		}
+		if !strings.Contains(fbMetricsOut.Stdout, "fluentbit_uptime") {
+			t.Fatalf("Fluent Bit metrics on port 40002 do not contain expected content. Output: %s", fbMetricsOut.Stdout)
+		}
+
+		// OTel Collector metrics on 40001
+		if gce.IsWindows(imageSpec) {
+			otelMetricsOut, err = gce.RunRemotely(ctx, logger, vm, "Invoke-RestMethod -Uri http://localhost:40001/metrics")
+		} else {
+			otelMetricsOut, err = gce.RunRemotely(ctx, logger, vm, "curl -s localhost:40001/metrics")
+		}
+		if err != nil {
+			t.Fatalf("Failed to scrape OTel Collector metrics on port 40001: %v", err)
+		}
+		if !strings.Contains(otelMetricsOut.Stdout, "otelcol_") {
+			t.Fatalf("OTel Collector metrics on port 40001 do not contain expected content. Output: %s", otelMetricsOut.Stdout)
 		}
 	})
 }

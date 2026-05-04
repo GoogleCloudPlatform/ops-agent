@@ -253,7 +253,17 @@
         severityText: ERROR
       scope: {}
 - collector_errors:
-  - caller: ottl@v0.148.0/parser.go:410
+  - caller: builders/builders.go:40
+    level: warn
+    msg: "\"filelog\" alias is deprecated; use \"file_log\" instead"
+    otelcol.component.id: filelog/my-log-name
+    otelcol.component.kind: receiver
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.151.0
+  - caller: ottl@v0.151.0/parser.go:410
     error: "parsing time \"2025-08-18T09:15:12.123Z\": extra text: \"Z\""
     level: warn
     msg: failed to execute statement
@@ -264,9 +274,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.148.0
+      service.version: v0.151.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%dT%H:%M:%S.%L") != nil)
-  - caller: ottl@v0.148.0/parser.go:410
+  - caller: ottl@v0.151.0/parser.go:410
     error: "parsing time \"2025-08-18T09:16:05.452Z\": extra text: \"Z\""
     level: warn
     msg: failed to execute statement
@@ -277,9 +287,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.148.0
+      service.version: v0.151.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%dT%H:%M:%S.%L") != nil)
-  - caller: ottl@v0.148.0/parser.go:410
+  - caller: ottl@v0.151.0/parser.go:410
     error: "parsing time \"2025-08-18T09:16:33.764Z\": extra text: \"Z\""
     level: warn
     msg: failed to execute statement
@@ -290,9 +300,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.148.0
+      service.version: v0.151.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%dT%H:%M:%S.%L") != nil)
-  - caller: ottl@v0.148.0/parser.go:410
+  - caller: ottl@v0.151.0/parser.go:410
     error: "parsing time \"2025-08-18T09:16:55.987Z\": extra text: \"Z\""
     level: warn
     msg: failed to execute statement
@@ -303,9 +313,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.148.0
+      service.version: v0.151.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%dT%H:%M:%S.%L") != nil)
-  - caller: ottl@v0.148.0/parser.go:410
+  - caller: ottl@v0.151.0/parser.go:410
     error: "parsing time \"2025-08-18T09:17:30.333Z\": extra text: \"Z\""
     level: warn
     msg: failed to execute statement
@@ -316,9 +326,9 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.148.0
+      service.version: v0.151.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%dT%H:%M:%S.%L") != nil)
-  - caller: ottl@v0.148.0/parser.go:410
+  - caller: ottl@v0.151.0/parser.go:410
     error: "parsing time \"2025-08-18T09:18:00.741Z\": extra text: \"Z\""
     level: warn
     msg: failed to execute statement
@@ -329,5 +339,5 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.148.0
+      service.version: v0.151.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["timestamp"] != nil) and Time(log.body["timestamp"], "%Y-%m-%dT%H:%M:%S.%L") != nil)

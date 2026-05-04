@@ -64,7 +64,17 @@
         observedTimeUnixNano: now
       scope: {}
 - collector_errors:
-  - caller: ottl@v0.148.0/parser.go:410
+  - caller: builders/builders.go:40
+    level: warn
+    msg: "\"filelog\" alias is deprecated; use \"file_log\" instead"
+    otelcol.component.id: filelog/my-log-name
+    otelcol.component.kind: receiver
+    otelcol.signal: logs
+    resource:
+      service.instance.id: test-service-instance-id
+      service.name: otelopscol
+      service.version: v0.151.0
+  - caller: ottl@v0.151.0/parser.go:410
     error: "parsing time \"unparsable time\" as \"%Y-%m-%dT%H:%M\": cannot parse \"unparsable time\" as \"%Y\""
     level: warn
     msg: failed to execute statement
@@ -75,5 +85,5 @@
     resource:
       service.instance.id: test-service-instance-id
       service.name: otelopscol
-      service.version: v0.148.0
+      service.version: v0.151.0
     statement: set(log.cache["__time_valid"], true) where ((log.body != nil and log.body["time"] != nil) and Time(log.body["time"], "%Y-%m-%dT%H:%M") != nil)
