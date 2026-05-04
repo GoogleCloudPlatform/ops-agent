@@ -683,7 +683,7 @@ receivers:
   apache/apache:
     collection_interval: 10s
     endpoint: http://localhost/server-status?auto
-  filelog/syslog:
+  file_log/syslog:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -745,7 +745,7 @@ service:
       - transform/syslog_0
       - resourcedetection/_global_0
       receivers:
-      - filelog/syslog
+      - file_log/syslog
     metrics/apache_apache:
       exporters:
       - googlecloud/otel

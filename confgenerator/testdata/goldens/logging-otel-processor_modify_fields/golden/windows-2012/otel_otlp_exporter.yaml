@@ -1464,7 +1464,7 @@ processors:
       - set(cache["value"], "windows_event_log") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
 receivers:
-  filelog/sample__logs:
+  file_log/sample__logs:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1632,7 +1632,7 @@ service:
       - transform/otlp_grpc/otlp_logs_logs_2
       - transform/otlp_grpc/otlp_logs_logs_3
       receivers:
-      - filelog/sample__logs
+      - file_log/sample__logs
     metrics/default__pipeline_hostmetrics:
       exporters:
       - otlp_grpc/otlp_metrics

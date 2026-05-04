@@ -786,7 +786,7 @@ processors:
       - set(cache["value"], "syslog") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
 receivers:
-  filelog/sample__logs:
+  file_log/sample__logs:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -801,7 +801,7 @@ receivers:
     preserve_trailing_whitespaces: true
     start_at: beginning
     storage: file_storage
-  filelog/syslog:
+  file_log/syslog:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -863,7 +863,7 @@ service:
       - transform/syslog_0
       - resourcedetection/_global_0
       receivers:
-      - filelog/syslog
+      - file_log/syslog
     logs/logs_p1_sample__logs:
       exporters:
       - googlecloud/logging
@@ -894,7 +894,7 @@ service:
       - filter/logs_p1_sample__logs_22
       - resourcedetection/_global_0
       receivers:
-      - filelog/sample__logs
+      - file_log/sample__logs
     metrics/default__pipeline_hostmetrics:
       exporters:
       - googlecloud
