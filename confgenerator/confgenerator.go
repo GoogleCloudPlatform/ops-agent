@@ -132,9 +132,7 @@ func otlpExporterForMetrics(userAgent string) otel.Component {
 			"auth": map[string]interface{}{
 				"authenticator": "googleclientauth",
 			},
-			"headers": map[string]string{
-				"User-Agent": userAgent,
-			},
+			"user_agent": userAgent,
 		},
 	}
 }
@@ -149,9 +147,7 @@ func otlpExporterForLogs(userAgent string) otel.Component {
 			"auth": map[string]interface{}{
 				"authenticator": "googleclientauth",
 			},
-			"headers": map[string]string{
-				"User-Agent": userAgent,
-			},
+			"user_agent": userAgent,
 			"sending_queue": map[string]interface{}{
 				"enabled":       true,
 				"queue_size":    20000000,
