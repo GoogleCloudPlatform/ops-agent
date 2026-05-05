@@ -1011,7 +1011,7 @@ processors:
       - set(cache["value"], "systemd_logs") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
 receivers:
-  filelog/syslog:
+  file_log/syslog:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1084,7 +1084,7 @@ service:
       - transform/otlp_grpc/otlp_logs_logs_2
       - transform/otlp_grpc/otlp_logs_logs_3
       receivers:
-      - filelog/syslog
+      - file_log/syslog
     logs/logs_systemd__pipeline_systemd__logs:
       exporters:
       - otlp_grpc/otlp_logs

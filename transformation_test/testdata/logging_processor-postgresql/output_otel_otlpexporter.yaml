@@ -678,16 +678,6 @@
         severityText: INFO
       scope: {}
 - collector_errors:
-  - caller: builders/builders.go:40
-    level: warn
-    msg: "\"filelog\" alias is deprecated; use \"file_log\" instead"
-    otelcol.component.id: filelog/my-log-name
-    otelcol.component.kind: receiver
-    otelcol.signal: logs
-    resource:
-      service.instance.id: test-service-instance-id
-      service.name: otelopscol
-      service.version: v0.151.0
   - caller: ottl@v0.151.0/parser.go:410
     error: "parsing time \"2025-07-21 10:14:21.123 UTC\" as \"%Y-%m-%d %H:%M:%S.%L %z\": cannot parse \"UTC\" as \"%z\""
     level: warn

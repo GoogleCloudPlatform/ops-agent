@@ -1224,7 +1224,7 @@ processors:
       - set(cache["value"], "syslog") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
 receivers:
-  filelog/nginx__access:
+  file_log/nginx__access:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1239,7 +1239,7 @@ receivers:
     preserve_trailing_whitespaces: true
     start_at: beginning
     storage: file_storage
-  filelog/nginx__error:
+  file_log/nginx__error:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1254,7 +1254,7 @@ receivers:
     preserve_trailing_whitespaces: true
     start_at: beginning
     storage: file_storage
-  filelog/syslog:
+  file_log/syslog:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1323,7 +1323,7 @@ service:
       - transform/otlp_grpc/otlp_logs_logs_2
       - transform/otlp_grpc/otlp_logs_logs_3
       receivers:
-      - filelog/syslog
+      - file_log/syslog
     logs/logs_nginx_nginx__access:
       exporters:
       - otlp_grpc/otlp_logs
@@ -1337,7 +1337,7 @@ service:
       - transform/otlp_grpc/otlp_logs_logs_2
       - transform/otlp_grpc/otlp_logs_logs_3
       receivers:
-      - filelog/nginx__access
+      - file_log/nginx__access
     logs/logs_nginx_nginx__error:
       exporters:
       - otlp_grpc/otlp_logs
@@ -1351,7 +1351,7 @@ service:
       - transform/otlp_grpc/otlp_logs_logs_2
       - transform/otlp_grpc/otlp_logs_logs_3
       receivers:
-      - filelog/nginx__error
+      - file_log/nginx__error
     metrics/default__pipeline_hostmetrics:
       exporters:
       - otlp_grpc/otlp_metrics
