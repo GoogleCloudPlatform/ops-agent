@@ -75,7 +75,9 @@ type CustomFeatures interface {
 // Automatic collection of bool or int fields. Any value that exists on tracking
 // tag will be used instead of value from UnifiedConfig.
 func ExtractFeatures(ctx context.Context, userUc, mergedUc *UnifiedConfig) ([]Feature, error) {
+	ctx = mergedUc.ContextWithExperiments(ctx)
 	allFeatures := getOverriddenDefaultPipelines(userUc)
+
 	allFeatures = append(allFeatures, getSelfLogCollection(userUc))
 	allFeatures = append(allFeatures, getOTelLoggingSupportedConfig(ctx, mergedUc))
 	allFeatures = append(allFeatures, getOtlpExporterExperimentConfig(ctx)...)

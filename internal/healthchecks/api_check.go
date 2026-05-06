@@ -96,8 +96,7 @@ func monitoringPing(ctx context.Context, client monitoring.MetricClient, resourc
 	return backoff.Retry(pingOperation, pingBackoff)
 }
 
-func runLoggingCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
-	ctx := context.Background()
+func runLoggingCheck(ctx context.Context, logger logs.StructuredLogger, resource resourcedetector.Resource) error {
 
 	// New Logging Client
 	logClient, err := logging.NewClient(ctx, resource.ProjectName())
@@ -140,8 +139,7 @@ func runLoggingCheck(logger logs.StructuredLogger, resource resourcedetector.Res
 	return nil
 }
 
-func runMonitoringCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
-	ctx := context.Background()
+func runMonitoringCheck(ctx context.Context, logger logs.StructuredLogger, resource resourcedetector.Resource) error {
 
 	// New Monitoring Client
 	monClient, err := monitoring.NewMetricClient(ctx)
@@ -184,8 +182,8 @@ func runMonitoringCheck(logger logs.StructuredLogger, resource resourcedetector.
 	return nil
 }
 
-func runTelemetryMetricsCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+func runTelemetryMetricsCheck(ctx context.Context, logger logs.StructuredLogger, resource resourcedetector.Resource) error {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
 	creds, err := google.FindDefaultCredentials(ctx,
@@ -295,24 +293,30 @@ func runTelemetryMetricsCheck(logger logs.StructuredLogger, resource resourcedet
 	return nil
 }
 
-type APICheck struct{}
+type APICheck struct {
+	ctx context.Context
+}
 
 func (c APICheck) Name() string {
 	return "API Check"
 }
 
 func (c APICheck) RunCheck(logger logs.StructuredLogger) error {
+	ctx := c.ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	resource, err := resourcedetector.GetResource()
 	if err != nil {
 		return fmt.Errorf("failed to detect the resource: %v", err)
 	}
 	var monOrTelErr error
-	if experiments.FromContext(context.Background())["otlp_exporter"] {
-		monOrTelErr = runTelemetryMetricsCheck(logger, resource)
+	if experiments.FromContext(ctx)["otlp_exporter"] {
+		monOrTelErr = runTelemetryMetricsCheck(ctx, logger, resource)
 	} else {
-		monOrTelErr = runMonitoringCheck(logger, resource)
+		monOrTelErr = runMonitoringCheck(ctx, logger, resource)
 	}
-	logErr := runLoggingCheck(logger, resource)
+	logErr := runLoggingCheck(ctx, logger, resource)
 
 	return errors.Join(monOrTelErr, logErr)
 }

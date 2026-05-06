@@ -1,4 +1,7 @@
+global:
+  otlp_exporter: true
 metrics:
+
   receivers:
     prometheus:
       type: prometheus
