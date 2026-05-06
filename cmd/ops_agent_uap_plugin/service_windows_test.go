@@ -155,7 +155,8 @@ func Test_runHealthChecks_LogFileNonEmpty(t *testing.T) {
 	defer os.Remove(healthCheckLogFile.Name())
 	mockHealthCheckLogger := &mockHealthCheckLogger{logFile: healthCheckLogFile}
 
-	runHealthChecks(mockHealthCheckLogger)
+	ctx := context.Background()
+	runHealthChecks(ctx, mockHealthCheckLogger)
 
 	// Check if the log file has content
 	fileInfo, err := os.Stat(healthCheckLogFile.Name())
@@ -204,7 +205,7 @@ func Test_generateSubAgentConfigs(t *testing.T) {
 			}
 			userConfigFile.Close()
 
-			err = generateSubAgentConfigs(ctx, userConfigFile.Name(), tc.pluginStateDir)
+			_, err = generateSubAgentConfigs(ctx, userConfigFile.Name(), tc.pluginStateDir)
 			if (err != nil) != tc.wantError {
 				t.Errorf("generateSubAgentConfigs() returned error: %v, want error: %v", err, tc.wantError)
 			}
