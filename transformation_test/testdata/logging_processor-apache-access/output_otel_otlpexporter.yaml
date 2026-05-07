@@ -209,14 +209,3 @@
                 stringValue: "172.16.0.1 - - [26/Aug/2021:16:53:05 +0000] \"PUT /api/data/123 HTTP/1.1\" 500 789 \"https://api.example.com/docs\" \"python-requests/2.25.1\" "
         observedTimeUnixNano: now
       scope: {}
-- collector_errors:
-  - caller: builders/builders.go:40
-    level: warn
-    msg: "\"filelog\" alias is deprecated; use \"file_log\" instead"
-    otelcol.component.id: filelog/my-log-name
-    otelcol.component.kind: receiver
-    otelcol.signal: logs
-    resource:
-      service.instance.id: test-service-instance-id
-      service.name: otelopscol
-      service.version: v0.151.0

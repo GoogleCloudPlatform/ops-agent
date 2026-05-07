@@ -217,7 +217,7 @@ func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.Receiv
 		receiver_config["poll_interval"] = i.String()
 	}
 	if len(r.MultilineRules) > 0 {
-		return nil, fmt.Errorf("setting multiline rules in otel filelog receiver is not supported")
+		return nil, fmt.Errorf("setting multiline rules in otel file_log receiver is not supported")
 	}
 	// TODO: Support BufferInMemory
 	// OTel parses the log to `body` by default; put it in a `message` field to match fluent-bit's behavior.
@@ -239,7 +239,7 @@ func (r LoggingReceiverFilesMixin) Pipelines(ctx context.Context) ([]otel.Receiv
 	receiver_config["operators"] = operators
 	return []otel.ReceiverPipeline{ConvertToOtlpExporter(otel.ReceiverPipeline{
 		Receiver: otel.Component{
-			Type:   "filelog",
+			Type:   "file_log",
 			Config: receiver_config,
 		},
 		Processors: map[string][]otel.Component{

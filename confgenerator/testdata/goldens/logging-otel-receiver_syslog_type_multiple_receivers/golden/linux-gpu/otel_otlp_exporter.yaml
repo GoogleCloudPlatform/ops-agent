@@ -4,8 +4,6 @@ exporters:
       authenticator: googleclientauth
     balancer_name: pick_first
     endpoint: telemetry.googleapis.com:443
-    headers:
-      User-Agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
     sending_queue:
       batch:
         flush_timeout: 200ms
@@ -18,13 +16,13 @@ exporters:
       queue_size: 20000000
       sizer: bytes
       storage: file_storage
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
   otlp_grpc/otlp_metrics:
     auth:
       authenticator: googleclientauth
     balancer_name: pick_first
     endpoint: telemetry.googleapis.com:443
-    headers:
-      User-Agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
 extensions:
   file_storage:
     create_directory: true

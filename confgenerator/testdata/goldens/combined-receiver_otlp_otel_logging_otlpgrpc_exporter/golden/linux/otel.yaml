@@ -16,8 +16,6 @@ exporters:
       authenticator: googleclientauth
     balancer_name: pick_first
     endpoint: telemetry.googleapis.com:443
-    headers:
-      User-Agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
     sending_queue:
       batch:
         flush_timeout: 200ms
@@ -30,13 +28,13 @@ exporters:
       queue_size: 20000000
       sizer: bytes
       storage: file_storage
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
   otlp_grpc/otlp_metrics:
     auth:
       authenticator: googleclientauth
     balancer_name: pick_first
     endpoint: telemetry.googleapis.com:443
-    headers:
-      User-Agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
 extensions:
   file_storage:
     create_directory: true
@@ -1057,7 +1055,7 @@ processors:
       - set(cache["value"], "syslog_custom") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
 receivers:
-  filelog/file__logs:
+  file_log/file__logs:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1072,7 +1070,7 @@ receivers:
     preserve_trailing_whitespaces: true
     start_at: beginning
     storage: file_storage
-  filelog/syslog:
+  file_log/syslog:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1151,7 +1149,7 @@ service:
       - transform/otlp_grpc/otlp_logs_logs_2
       - transform/otlp_grpc/otlp_logs_logs_3
       receivers:
-      - filelog/syslog
+      - file_log/syslog
     logs/logs_file__pipeline_file__logs:
       exporters:
       - otlp_grpc/otlp_logs
@@ -1163,7 +1161,7 @@ service:
       - transform/otlp_grpc/otlp_logs_logs_2
       - transform/otlp_grpc/otlp_logs_logs_3
       receivers:
-      - filelog/file__logs
+      - file_log/file__logs
     logs/logs_otlp_otlp:
       exporters:
       - otlp_grpc/otlp_logs

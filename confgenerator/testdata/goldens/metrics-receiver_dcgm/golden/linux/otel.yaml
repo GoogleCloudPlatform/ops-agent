@@ -768,7 +768,7 @@ receivers:
         enabled: false
       gpu.dcgm.xid_errors:
         enabled: false
-  filelog/syslog:
+  file_log/syslog:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -830,7 +830,7 @@ service:
       - transform/syslog_0
       - resourcedetection/_global_0
       receivers:
-      - filelog/syslog
+      - file_log/syslog
     metrics/dcgm_dcgm:
       exporters:
       - googlecloud/otel

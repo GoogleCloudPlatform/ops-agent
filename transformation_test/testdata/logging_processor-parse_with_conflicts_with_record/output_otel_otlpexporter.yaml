@@ -68,14 +68,3 @@
         observedTimeUnixNano: now
         severityText: WARNING
       scope: {}
-- collector_errors:
-  - caller: builders/builders.go:40
-    level: warn
-    msg: "\"filelog\" alias is deprecated; use \"file_log\" instead"
-    otelcol.component.id: filelog/my-log-name
-    otelcol.component.kind: receiver
-    otelcol.signal: logs
-    resource:
-      service.instance.id: test-service-instance-id
-      service.name: otelopscol
-      service.version: v0.151.0

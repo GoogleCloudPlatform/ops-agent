@@ -705,7 +705,7 @@ receivers:
     endpoint: http://localhost:5984
     password: otelp
     username: otelu
-  filelog/syslog:
+  file_log/syslog:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -769,7 +769,7 @@ service:
       - transform/syslog_0
       - resourcedetection/_global_0
       receivers:
-      - filelog/syslog
+      - file_log/syslog
     metrics/couchdb_couchdb:
       exporters:
       - googlecloud/otel

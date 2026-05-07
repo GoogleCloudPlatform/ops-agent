@@ -1269,7 +1269,7 @@ processors:
       - set(cache["value"], "syslog") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
 receivers:
-  filelog/mysql__error:
+  file_log/mysql__error:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1288,7 +1288,7 @@ receivers:
     preserve_trailing_whitespaces: true
     start_at: beginning
     storage: file_storage
-  filelog/mysql__general:
+  file_log/mysql__general:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1303,7 +1303,7 @@ receivers:
     preserve_trailing_whitespaces: true
     start_at: beginning
     storage: file_storage
-  filelog/mysql__slow:
+  file_log/mysql__slow:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1318,7 +1318,7 @@ receivers:
     preserve_trailing_whitespaces: true
     start_at: beginning
     storage: file_storage
-  filelog/syslog:
+  file_log/syslog:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -1380,7 +1380,7 @@ service:
       - transform/syslog_0
       - resourcedetection/_global_0
       receivers:
-      - filelog/syslog
+      - file_log/syslog
     logs/logs_mysql_mysql__error:
       exporters:
       - googlecloud/logging
@@ -1392,7 +1392,7 @@ service:
       - transform/mysql__error_4
       - resourcedetection/_global_0
       receivers:
-      - filelog/mysql__error
+      - file_log/mysql__error
     logs/logs_mysql_mysql__general:
       exporters:
       - googlecloud/logging
@@ -1404,7 +1404,7 @@ service:
       - transform/mysql__general_4
       - resourcedetection/_global_0
       receivers:
-      - filelog/mysql__general
+      - file_log/mysql__general
     logs/logs_mysql_mysql__slow:
       exporters:
       - googlecloud/logging
@@ -1416,7 +1416,7 @@ service:
       - transform/mysql__slow_4
       - resourcedetection/_global_0
       receivers:
-      - filelog/mysql__slow
+      - file_log/mysql__slow
     metrics/default__pipeline_hostmetrics:
       exporters:
       - googlecloud

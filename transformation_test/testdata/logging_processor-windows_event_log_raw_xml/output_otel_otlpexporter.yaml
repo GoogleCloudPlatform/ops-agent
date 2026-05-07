@@ -251,14 +251,3 @@
                 stringValue: <Event xmlns='http://schemas.microsoft.com/win/2004/08/events/event'><System><Provider Name='Service Control Manager' Guid='{11111111-2222-3333-4444-555555555555}' EventSourceName='Service Control Manager'/><EventID Qualifiers='12345'>7036</EventID><Version>0</Version><Level>4</Level><Task>0</Task><Opcode>0</Opcode><Keywords>0x8080000000000000</Keywords><TimeCreated SystemTime='2025-12-14T05:25:55.5387001Z'/><EventRecordID>22334</EventRecordID><Correlation/><Execution ProcessID='789' ThreadID='9876'/><Channel>System</Channel><Computer>test-computer</Computer><Security/></System><EventData><Data Name='param1'>Software Protection</Data><Data Name='param2'>running</Data><Binary>7300700070007300760063002F0034000000</Binary></EventData><RenderingInfo Culture='en-US'><Message>The Software Protection service entered the running state.</Message><Level>Information</Level><Task></Task><Opcode></Opcode><Channel></Channel><Provider>Microsoft-Windows-Service Control Manager</Provider><Keywords><Keyword>Classic</Keyword></Keywords></RenderingInfo></Event>
         observedTimeUnixNano: now
       scope: {}
-- collector_errors:
-  - caller: builders/builders.go:40
-    level: warn
-    msg: "\"filelog\" alias is deprecated; use \"file_log\" instead"
-    otelcol.component.id: filelog/my-log-name
-    otelcol.component.kind: receiver
-    otelcol.signal: logs
-    resource:
-      service.instance.id: test-service-instance-id
-      service.name: otelopscol
-      service.version: v0.151.0

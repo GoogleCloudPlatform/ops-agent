@@ -759,7 +759,7 @@ processors:
       - set(cache["value"], "syslog") where cache["value"] == nil
       - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
 receivers:
-  filelog/kafka:
+  file_log/kafka:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -776,7 +776,7 @@ receivers:
     preserve_trailing_whitespaces: true
     start_at: beginning
     storage: file_storage
-  filelog/syslog:
+  file_log/syslog:
     exclude: []
     fingerprint_size: 5kb
     include:
@@ -838,7 +838,7 @@ service:
       - transform/syslog_0
       - resourcedetection/_global_0
       receivers:
-      - filelog/syslog
+      - file_log/syslog
     logs/logs_kafka_kafka:
       exporters:
       - googlecloud/logging
@@ -849,7 +849,7 @@ service:
       - transform/kafka_3
       - resourcedetection/_global_0
       receivers:
-      - filelog/kafka
+      - file_log/kafka
     metrics/default__pipeline_hostmetrics:
       exporters:
       - googlecloud
