@@ -132,9 +132,7 @@ func otlpExporterForMetrics(userAgent string) otel.Component {
 			"auth": map[string]interface{}{
 				"authenticator": "googleclientauth",
 			},
-			"headers": map[string]string{
-				"User-Agent": userAgent,
-			},
+			"user_agent": userAgent,
 		},
 	}
 }
@@ -149,9 +147,7 @@ func otlpExporterForLogs(userAgent string) otel.Component {
 			"auth": map[string]interface{}{
 				"authenticator": "googleclientauth",
 			},
-			"headers": map[string]string{
-				"User-Agent": userAgent,
-			},
+			"user_agent": userAgent,
 			"sending_queue": map[string]interface{}{
 				"enabled":       true,
 				"queue_size":    20000000,
@@ -224,8 +220,8 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 	agentSelfMetrics := AgentSelfMetrics{
 		MetricsVersionLabel: metricVersionLabel,
 		LoggingVersionLabel: loggingVersionLabel,
-		FluentBitPort:       fluentbit.MetricsPort,
-		OtelPort:            otel.MetricsPort,
+		FluentBitPort:       int(uc.GetFluentBitMetricsPort()),
+		OtelPort:            int(uc.GetOtelMetricsPort()),
 		OtelRuntimeDir:      outDir,
 	}
 	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines, ctx)
@@ -238,6 +234,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 		LogLevel:          uc.getOTelLogLevel(),
 		ReceiverPipelines: receiverPipelines,
 		Pipelines:         pipelines,
+		MetricsPort:       uc.GetOtelMetricsPort(),
 		Exporters: map[otel.ExporterType]otel.ExporterComponents{
 			otel.System: {
 				Exporter: googleCloudExporter(userAgent, false, false),
@@ -608,7 +605,7 @@ func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAg
 		out = append(out, addGceMetadataAttributesProcessor(ctx).Components(ctx, "*", "*.default-data-proc.gce_metadata")...)
 	}
 	out = append(out, uc.generateSelfLogsComponents(ctx, userAgent)...)
-	out = append(out, fluentbit.MetricsOutputComponent())
+	out = append(out, fluentbit.MetricsOutputComponent(int(uc.GetFluentBitMetricsPort())))
 
 	return out, nil
 }
