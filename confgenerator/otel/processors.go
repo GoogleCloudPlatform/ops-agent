@@ -217,6 +217,7 @@ func TransformationMetrics(queries ...TransformQuery) Component {
 	metricQueryStrings := []string{}
 	datapointQueryStrings := []string{}
 	scopeQueryStrings := []string{}
+	resourceQueryStrings := []string{}
 
 	for _, q := range queries {
 		switch q.Context {
@@ -226,6 +227,8 @@ func TransformationMetrics(queries ...TransformQuery) Component {
 			scopeQueryStrings = append(scopeQueryStrings, string(q.Statement))
 		case Datapoint:
 			datapointQueryStrings = append(datapointQueryStrings, string(q.Statement))
+		case Resource:
+			resourceQueryStrings = append(resourceQueryStrings, string(q.Statement))
 		}
 	}
 
@@ -251,6 +254,13 @@ func TransformationMetrics(queries ...TransformQuery) Component {
 			"statements": scopeQueryStrings,
 		}
 		metricStatements = append(metricStatements, scopeMetricStatement)
+	}
+	if len(resourceQueryStrings) != 0 {
+		resourceMetricStatement := map[string]any{
+			"context":    "resource",
+			"statements": resourceQueryStrings,
+		}
+		metricStatements = append(metricStatements, resourceMetricStatement)
 	}
 
 	return Component{
@@ -305,6 +315,7 @@ const (
 	Metric    TransformQueryContext = "metric"
 	Datapoint TransformQueryContext = "datapoint"
 	Scope     TransformQueryContext = "scope"
+	Resource  TransformQueryContext = "resource"
 )
 
 // TransformQuery is a type wrapper for query expressions supported by the transform
@@ -334,8 +345,8 @@ func GroupByAttribute(attribute string) TransformQuery {
 // DeleteMetricResourceAttribute returns an expression that removes the metric resource attribute specified.
 func DeleteMetricResourceAttribute(metricAttribute string) TransformQuery {
 	return TransformQuery{
-		Context:   Metric,
-		Statement: fmt.Sprintf(`delete_key(resource.attributes, "%s")`, metricAttribute),
+		Context:   Resource,
+		Statement: fmt.Sprintf(`delete_key(attributes, "%s")`, metricAttribute),
 	}
 }
 
