@@ -53,7 +53,7 @@ processors:
       - fluentbit_log_entry_retry_count
       - fluentbit_request_count
     initial_value: drop
-  deltatocumulative/loggingmetrics_6: {}
+  deltatocumulative/loggingmetrics_7: {}
   filter/default__pipeline_hostmetrics_0:
     metrics:
       exclude:
@@ -112,7 +112,7 @@ processors:
         - otelcol_process_memory_rss
         - grpc.client.attempt.duration_count
         - googlecloudmonitoring/point_count
-  interval/loggingmetrics_7:
+  interval/loggingmetrics_8:
     interval: 1m
   metricstransform/fluentbit_1:
     transforms:
@@ -573,7 +573,39 @@ processors:
         label_set:
         - response_code
       submatch_case: lower
-  metricstransform/loggingmetrics_8:
+  metricstransform/loggingmetrics_6:
+    transforms:
+    - action: combine
+      include: ^agent/log_entry_count$
+      match_type: regexp
+      new_name: agent/log_entry_count
+      operations:
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+      submatch_case: lower
+    - action: combine
+      include: ^agent/log_entry_retry_count$
+      match_type: regexp
+      new_name: agent/log_entry_retry_count
+      operations:
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+      submatch_case: lower
+    - action: combine
+      include: ^agent/request_count$
+      match_type: regexp
+      new_name: agent/request_count
+      operations:
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+      submatch_case: lower
+  metricstransform/loggingmetrics_9:
     transforms:
     - action: update
       include: ^(.*)$$
@@ -652,13 +684,13 @@ processors:
     - gcp
   transform/agent_prometheus_0:
     metric_statements:
-    - context: metric
+    - context: resource
       statements:
-      - delete_key(resource.attributes, "service.name")
-      - delete_key(resource.attributes, "service.version")
-      - delete_key(resource.attributes, "service.instance.id")
-      - delete_key(resource.attributes, "server.port")
-      - delete_key(resource.attributes, "url.scheme")
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.version")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "server.port")
+      - delete_key(attributes, "url.scheme")
   transform/iis_3:
     metric_statements:
     - context: scope
@@ -1272,9 +1304,10 @@ service:
       - metricstransform/loggingmetrics_3
       - cumulativetodelta/loggingmetrics_4
       - transform/loggingmetrics_5
-      - deltatocumulative/loggingmetrics_6
-      - interval/loggingmetrics_7
-      - metricstransform/loggingmetrics_8
+      - metricstransform/loggingmetrics_6
+      - deltatocumulative/loggingmetrics_7
+      - interval/loggingmetrics_8
+      - metricstransform/loggingmetrics_9
       - resourcedetection/_global_0
       receivers:
       - prometheus/agent_prometheus
