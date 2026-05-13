@@ -84,6 +84,96 @@ func createMonitoringPingRequest(resource resourcedetector.Resource) *monitoring
 	return req
 }
 
+func createTelemetryMetricsRequest(resource resourcedetector.Resource) *metricspb.ExportMetricsServiceRequest {
+	return &metricspb.ExportMetricsServiceRequest{
+		ResourceMetrics: []*metricsprpb.ResourceMetrics{
+			{
+				Resource: &resourcepb.Resource{
+					Attributes: func() []*commonpb.KeyValue {
+						attrs := []*commonpb.KeyValue{
+							{
+								Key: "gcp.project_id",
+								Value: &commonpb.AnyValue{
+									Value: &commonpb.AnyValue_StringValue{
+										StringValue: resource.ProjectName(),
+									},
+								},
+							},
+						}
+						for k, v := range resource.OTelResourceAttributes() {
+							attrs = append(attrs, &commonpb.KeyValue{
+								Key: k,
+								Value: &commonpb.AnyValue{
+									Value: &commonpb.AnyValue_StringValue{
+										StringValue: v,
+									},
+								},
+							})
+						}
+						return attrs
+					}(),
+				},
+				ScopeMetrics: []*metricsprpb.ScopeMetrics{
+					{
+						Scope: &commonpb.InstrumentationScope{},
+						Metrics: []*metricsprpb.Metric{
+							{
+								Name: "agent.googleapis.com/agent/ops_agent/enabled_receivers",
+								Data: &metricsprpb.Metric_Gauge{
+									Gauge: &metricsprpb.Gauge{
+										DataPoints: []*metricsprpb.NumberDataPoint{
+											{
+												Value: &metricsprpb.NumberDataPoint_AsInt{
+													AsInt: 0,
+												},
+												TimeUnixNano: uint64(time.Now().UnixNano()),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func createTelemetryLogsRequest(resource resourcedetector.Resource) *collogspb.ExportLogsServiceRequest {
+	currentTimeNano := uint64(time.Now().UnixNano())
+	return &collogspb.ExportLogsServiceRequest{
+		ResourceLogs: []*logspb.ResourceLogs{
+			{
+				Resource: &resourcepb.Resource{
+					Attributes: []*commonpb.KeyValue{
+						{Key: "gcp.project_id", Value: &commonpb.AnyValue{Value: &commonpb.AnyValue_StringValue{StringValue: resource.ProjectName()}}},
+					},
+				},
+				ScopeLogs: []*logspb.ScopeLogs{
+					{
+						Scope: &commonpb.InstrumentationScope{},
+						LogRecords: []*logspb.LogRecord{
+							{
+								ObservedTimeUnixNano: currentTimeNano,
+								TimeUnixNano:         currentTimeNano,
+								SeverityText:         "DEBUG",
+								SeverityNumber:       5,
+								Body: &commonpb.AnyValue{
+									Value: &commonpb.AnyValue_StringValue{StringValue: "Health check log entry"},
+								},
+								Attributes: []*commonpb.KeyValue{
+									{Key: "instrumentation_source", Value: &commonpb.AnyValue{Value: &commonpb.AnyValue_StringValue{StringValue: "agent.googleapis.com/health_check"}}},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 // monitoringPing reports whether the client's connection to the monitoring service and the
 // authentication configuration are valid. To accomplish this, monitoringPing writes a
 // time series point with empty values to an Ops Agent specific metric.
@@ -210,59 +300,7 @@ func runTelemetryMetricsCheck(logger logs.StructuredLogger, resource resourcedet
 
 	client := metricspb.NewMetricsServiceClient(conn)
 
-	req := &metricspb.ExportMetricsServiceRequest{
-		ResourceMetrics: []*metricsprpb.ResourceMetrics{
-			{
-				Resource: &resourcepb.Resource{
-					Attributes: func() []*commonpb.KeyValue {
-						attrs := []*commonpb.KeyValue{
-							{
-								Key: "gcp.project_id",
-								Value: &commonpb.AnyValue{
-									Value: &commonpb.AnyValue_StringValue{
-										StringValue: resource.ProjectName(),
-									},
-								},
-							},
-						}
-						for k, v := range resource.OTelResourceAttributes() {
-							attrs = append(attrs, &commonpb.KeyValue{
-								Key: k,
-								Value: &commonpb.AnyValue{
-									Value: &commonpb.AnyValue_StringValue{
-										StringValue: v,
-									},
-								},
-							})
-						}
-						return attrs
-					}(),
-				},
-				ScopeMetrics: []*metricsprpb.ScopeMetrics{
-					{
-						Scope: &commonpb.InstrumentationScope{},
-						Metrics: []*metricsprpb.Metric{
-							{
-								Name: "agent.googleapis.com/agent/ops_agent/enabled_receivers",
-								Data: &metricsprpb.Metric_Gauge{
-									Gauge: &metricsprpb.Gauge{
-										DataPoints: []*metricsprpb.NumberDataPoint{
-											{
-												Value: &metricsprpb.NumberDataPoint_AsInt{
-													AsInt: 0,
-												},
-												TimeUnixNano: uint64(time.Now().UnixNano()),
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
+	req := createTelemetryMetricsRequest(resource)
 
 	_, err = client.Export(ctx, req)
 	if err != nil {
@@ -319,39 +357,7 @@ func runTelemetryLogsCheck(logger logs.StructuredLogger, resource resourcedetect
 
 	client := collogspb.NewLogsServiceClient(conn)
 
-	now := time.Now()
-	currentTimeNano := uint64(now.UnixNano())
-
-	req := &collogspb.ExportLogsServiceRequest{
-		ResourceLogs: []*logspb.ResourceLogs{
-			{
-				Resource: &resourcepb.Resource{
-					Attributes: []*commonpb.KeyValue{
-						{Key: "gcp.project_id", Value: &commonpb.AnyValue{Value: &commonpb.AnyValue_StringValue{StringValue: resource.ProjectName()}}},
-					},
-				},
-				ScopeLogs: []*logspb.ScopeLogs{
-					{
-						Scope: &commonpb.InstrumentationScope{},
-						LogRecords: []*logspb.LogRecord{
-							{
-								ObservedTimeUnixNano: currentTimeNano,
-								TimeUnixNano:         currentTimeNano,
-								SeverityText:         "DEBUG",
-								SeverityNumber:       5,
-								Body: &commonpb.AnyValue{
-									Value: &commonpb.AnyValue_StringValue{StringValue: "Health check log entry"},
-								},
-								Attributes: []*commonpb.KeyValue{
-									{Key: "instrumentation_source", Value: &commonpb.AnyValue{Value: &commonpb.AnyValue_StringValue{StringValue: "agent.googleapis.com/health_check"}}},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
+	req := createTelemetryLogsRequest(resource)
 
 	_, err = client.Export(ctx, req)
 	if err != nil {
@@ -384,15 +390,6 @@ func runTelemetryLogsCheck(logger logs.StructuredLogger, resource resourcedetect
 	return nil
 }
 
-var (
-	runMonitoringCheckFunc       = runMonitoringCheck
-	runLoggingCheckFunc          = runLoggingCheck
-	runTelemetryMetricsCheckFunc = runTelemetryMetricsCheck
-	runTelemetryLogsCheckFunc    = runTelemetryLogsCheck
-)
-
-var otlpExporterEnabledForTest = false
-
 type APICheck struct{}
 
 func (c APICheck) Name() string {
@@ -405,22 +402,17 @@ func (c APICheck) RunCheck(logger logs.StructuredLogger) error {
 		return fmt.Errorf("failed to detect the resource: %v", err)
 	}
 
-	otlpEnabled := otlpExporterEnabledForTest
-	if !otlpEnabled {
-		otlpEnabled = experiments.FromContext(context.Background())["otlp_exporter"]
-	}
-
 	var monOrTelErr error
 	var logOrTelLogsErr error
 
-	if otlpEnabled {
+	if experiments.FromContext(context.Background())["otlp_exporter"] {
 		logger.Infof("Running Telemetry API checks")
-		monOrTelErr = runTelemetryMetricsCheckFunc(logger, resource)
-		logOrTelLogsErr = runTelemetryLogsCheckFunc(logger, resource)
+		monOrTelErr = runTelemetryMetricsCheck(logger, resource)
+		logOrTelLogsErr = runTelemetryLogsCheck(logger, resource)
 	} else {
 		logger.Infof("Running legacy API checks")
-		monOrTelErr = runMonitoringCheckFunc(logger, resource)
-		logOrTelLogsErr = runLoggingCheckFunc(logger, resource)
+		monOrTelErr = runMonitoringCheck(logger, resource)
+		logOrTelLogsErr = runLoggingCheck(logger, resource)
 	}
 
 	return errors.Join(monOrTelErr, logOrTelLogsErr)
