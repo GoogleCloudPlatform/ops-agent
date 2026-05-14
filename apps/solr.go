@@ -41,7 +41,6 @@ func (r MetricsReceiverSolr) Pipelines(_ context.Context) ([]otel.ReceiverPipeli
 		ConfigurePipelines(
 			targetSystem,
 			[]otel.Component{
-				otel.NormalizeSums(),
 				otel.MetricsTransform(
 					otel.AddPrefix("workload.googleapis.com"),
 				),

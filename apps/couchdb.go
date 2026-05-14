@@ -55,7 +55,6 @@ func (r MetricsReceiverCouchdb) Pipelines(ctx context.Context) ([]otel.ReceiverP
 			},
 		},
 		Processors: map[string][]otel.Component{"metrics": {
-			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),

@@ -74,14 +74,6 @@ func MetricsTransform(metrics ...map[string]interface{}) Component {
 	}
 }
 
-// NormalizeSums returns a Component that performs counter normalization.
-func NormalizeSums() Component {
-	return Component{
-		Type:   "normalizesums",
-		Config: map[string]interface{}{},
-	}
-}
-
 // CastToSum returns a Component that performs a cast of each metric to a sum.
 func CastToSum(metrics ...string) Component {
 	return Component{
