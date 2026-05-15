@@ -137,7 +137,10 @@ func runSubagents(ctx context.Context, cancelAndSetError CancelContextAndSetPlug
 	// Starting Otel
 	runOtelCmd := exec.CommandContext(ctx,
 		path.Join(pluginInstallDirectory, OtelBinary),
-		"--config", path.Join(pluginStateDirectory, OtelRuntimeDirectory, "otel.yaml"),
+		"--config", fmt.Sprintf("googlecloudopsagent:%s?platform=linux&state_dir=%s&out_dir=%s",
+			OpsAgentConfigLocationLinux,
+			path.Join(pluginStateDirectory, OtelStateDiectory),
+			path.Join(pluginStateDirectory, OtelRuntimeDirectory)),
 	)
 	wg.Add(1)
 	go runSubAgentCommand(ctx, cancelAndSetError, runOtelCmd, runCommand, &wg)
