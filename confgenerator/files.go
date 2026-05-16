@@ -45,7 +45,9 @@ func ReadUnifiedConfigFromFile(ctx context.Context, path string) (*UnifiedConfig
 }
 
 func (uc *UnifiedConfig) GenerateFilesFromConfig(ctx context.Context, service, logsDir, stateDir, outDir string) error {
+	ctx = uc.ContextWithExperiments(ctx)
 	switch service {
+
 	case "": // Validate-only.
 		return nil
 	case "fluentbit":

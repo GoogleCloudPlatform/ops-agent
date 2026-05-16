@@ -36,12 +36,12 @@ var (
 	healthChecks = flag.Bool("healthchecks", false, "run health checks and exit")
 )
 
-func runHealthChecks() {
+func runHealthChecks(ctx context.Context) {
 	logger := healthchecks.CreateHealthChecksLogger(*logsDir)
 
 	defaultLogger := logs.NewSimpleLogger()
 
-	healthCheckResults := healthchecks.HealthCheckRegistryFactory().RunAllHealthChecks(logger)
+	healthCheckResults := healthchecks.HealthCheckRegistryFactory(ctx).RunAllHealthChecks(logger)
 	healthchecks.LogHealthCheckResults(healthCheckResults, defaultLogger)
 }
 
@@ -60,6 +60,8 @@ func run() error {
 		return err
 	}
 
+	ctx = uc.ContextWithExperiments(ctx)
+
 	// Log the built-in and merged config files to STDOUT. These are then written
 	// by journald to var/log/syslog and so to Cloud Logging once the ops-agent is
 	// running.
@@ -68,7 +70,7 @@ func run() error {
 
 	switch *service {
 	case "":
-		runHealthChecks()
+		runHealthChecks(ctx)
 		log.Println("Startup checks finished")
 		if *healthChecks {
 			// If healthchecks is set, stop here

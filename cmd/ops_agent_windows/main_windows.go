@@ -15,12 +15,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/kardianos/osext"
@@ -63,7 +65,19 @@ func main() {
 			}
 			infoLog.Printf("uninstalled services")
 		} else if *healthChecks {
-			healthCheckResults := getHealthCheckResults()
+			ctx := context.Background()
+			base, err := osext.ExecutableFolder()
+			if err != nil {
+				log.Fatalf("failed to determine executable folder: %v", err)
+			}
+			configPath := filepath.Join(base, "../config/config.yaml")
+			uc, err := confgenerator.MergeConfFiles(ctx, configPath)
+			if err == nil {
+				ctx = uc.ContextWithExperiments(ctx)
+			} else {
+				log.Printf("failed to load config (using default experiments): %v", err)
+			}
+			healthCheckResults := getHealthCheckResults(ctx)
 			healthchecks.LogHealthCheckResults(healthCheckResults, infoLog)
 			infoLog.Println("Health checks finished")
 		} else {

@@ -1,0 +1,2 @@
+global:
+  otlp_exporter: true

@@ -72,6 +72,21 @@ func (uc *UnifiedConfig) HasCombined() bool {
 	return uc.Combined != nil
 }
 
+func (uc *UnifiedConfig) ContextWithExperiments(ctx context.Context) context.Context {
+	if uc == nil {
+		return ctx
+	}
+	enabledExperiments := experiments.FromContext(ctx)
+	newExperiments := map[string]bool{}
+	for k, v := range enabledExperiments {
+		newExperiments[k] = v
+	}
+	if uc.Global.GetOtlpExporter() {
+		newExperiments["otlp_exporter"] = true
+	}
+	return experiments.ContextWithExperiments(ctx, newExperiments)
+}
+
 const (
 	ExperimentalFluentBitMetricsPortEnv = "EXPERIMENTAL_OPS_AGENT_FLUENT_BIT_METRICS_PORT"
 	ExperimentalOtelMetricsPortEnv      = "EXPERIMENTAL_OPS_AGENT_OTEL_METRICS_PORT"
@@ -875,7 +890,9 @@ type TracesService struct {
 }
 
 func (uc *UnifiedConfig) Validate(ctx context.Context) error {
+	ctx = uc.ContextWithExperiments(ctx)
 	if uc.Logging != nil {
+
 		if err := uc.ValidateLogging(); err != nil {
 			return err
 		}

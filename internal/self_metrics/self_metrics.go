@@ -355,8 +355,10 @@ func GenerateOpsAgentSelfMetricsOTLPJSON(ctx context.Context, config, outDir str
 	if err != nil {
 		return err
 	}
+	ctx = mergedUc.ContextWithExperiments(ctx)
 
 	featureTrackingOTLPJSON, err := CollectFeatureTrackingMetricToOTLPJSON(ctx, userUc, mergedUc)
+
 	if err != nil {
 		return fmt.Errorf("failed to generate feature tracking metric otlp json: %w", err)
 	}

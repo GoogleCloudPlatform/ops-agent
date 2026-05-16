@@ -1273,6 +1273,18 @@ func setExperimentalOtelLoggingInConfig(config string) string {
 	)
 }
 
+// SetOtlpExporterInConfig prepends the global.otlp_exporter config to the given config.
+func SetOtlpExporterInConfig(config string) string {
+	if config == "" {
+		return `global:
+  otlp_exporter: true
+`
+	}
+	return `global:
+  otlp_exporter: true
+` + config
+}
+
 // SetupOpsAgentWithFeatureFlag configures the VM and the config depending on the selected feature flag.
 func SetupOpsAgentWithFeatureFlag(ctx context.Context, logger *log.Logger, vm *gce.VM, config string, feature string) error {
 	if feature == "" || feature == DefaultFeatureFlag {
@@ -1285,6 +1297,10 @@ func SetupOpsAgentWithFeatureFlag(ctx context.Context, logger *log.Logger, vm *g
 		} else {
 			config = setExperimentalOtelLoggingInConfig(config)
 		}
+	}
+
+	if strings.Contains(feature, "otlp_exporter") {
+		config = SetOtlpExporterInConfig(config)
 	}
 
 	// Set experimental feature environment variable.
