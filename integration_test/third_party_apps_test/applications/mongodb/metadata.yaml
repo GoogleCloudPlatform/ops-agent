@@ -45,6 +45,8 @@ platforms_to_skip:
   - rocky-linux-cloud:rocky-linux-10-optimized-gcp-arm64
   - ubuntu-os-cloud:ubuntu-2510-amd64
   - ubuntu-os-cloud:ubuntu-2510-arm64
+  - ubuntu-os-cloud:ubuntu-2604-lts-amd64  # MongoDB hasn't support Ubuntu 26.04 yet
+  - ubuntu-os-cloud:ubuntu-2604-lts-arm64  # MongoDB hasn't support Ubuntu 26.04 yet
 supported_app_version: ["2.6", "3.x", "4.x", "5.0", "6.0"]
 expected_metrics:
   - type: workload.googleapis.com/mongodb.cache.operations
