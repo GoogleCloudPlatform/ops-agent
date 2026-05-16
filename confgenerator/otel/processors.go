@@ -74,14 +74,6 @@ func MetricsTransform(metrics ...map[string]interface{}) Component {
 	}
 }
 
-// NormalizeSums returns a Component that performs counter normalization.
-func NormalizeSums() Component {
-	return Component{
-		Type:   "normalizesums",
-		Config: map[string]interface{}{},
-	}
-}
-
 // CumulativeToDelta returns a Component that converts each cumulative metric to delta.
 func CumulativeToDelta(metrics ...string) Component {
 	return CumulativeToDeltaWithInitialValue("", metrics...)

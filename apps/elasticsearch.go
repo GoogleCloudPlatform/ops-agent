@@ -78,7 +78,6 @@ func (r MetricsReceiverElasticsearch) Pipelines(ctx context.Context) ([]otel.Rec
 			Config: cfg,
 		},
 		Processors: map[string][]otel.Component{"metrics": {
-			otel.NormalizeSums(),
 			// Elasticsearch Cluster metrics come with a summary JVM heap memory that is not useful && causes DuplicateTimeSeries errors
 			otel.MetricsOTTLFilter(
 				[]string{
