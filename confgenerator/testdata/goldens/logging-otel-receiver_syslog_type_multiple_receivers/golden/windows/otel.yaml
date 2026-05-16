@@ -29,11 +29,6 @@ processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
     - system.cpu.utilization
-  casttosum/iis_1:
-    metrics:
-    - agent.googleapis.com/iis/network/transferred_bytes_count
-    - agent.googleapis.com/iis/new_connection_count
-    - agent.googleapis.com/iis/request_count
   cumulativetodelta/loggingmetrics_4:
     include:
       match_type: strict
@@ -677,6 +672,13 @@ processors:
       - delete_key(attributes, "service.instance.id")
       - delete_key(attributes, "server.port")
       - delete_key(attributes, "url.scheme")
+  transform/iis_1:
+    metric_statements:
+    - context: metric
+      statements:
+      - convert_gauge_to_sum("cumulative", true) where name == "agent.googleapis.com/iis/network/transferred_bytes_count"
+      - convert_gauge_to_sum("cumulative", true) where name == "agent.googleapis.com/iis/new_connection_count"
+      - convert_gauge_to_sum("cumulative", true) where name == "agent.googleapis.com/iis/request_count"
   transform/iis_2:
     metric_statements:
     - context: scope
@@ -1036,7 +1038,7 @@ service:
       - googlecloud
       processors:
       - metricstransform/iis_0
-      - casttosum/iis_1
+      - transform/iis_1
       - transform/iis_2
       - filter/default__pipeline_iis_0
       - resourcedetection/_global_0

@@ -74,16 +74,6 @@ func MetricsTransform(metrics ...map[string]interface{}) Component {
 	}
 }
 
-// CastToSum returns a Component that performs a cast of each metric to a sum.
-func CastToSum(metrics ...string) Component {
-	return Component{
-		Type: "casttosum",
-		Config: map[string]interface{}{
-			"metrics": metrics,
-		},
-	}
-}
-
 // CumulativeToDelta returns a Component that converts each cumulative metric to delta.
 func CumulativeToDelta(metrics ...string) Component {
 	return CumulativeToDeltaWithInitialValue("", metrics...)
