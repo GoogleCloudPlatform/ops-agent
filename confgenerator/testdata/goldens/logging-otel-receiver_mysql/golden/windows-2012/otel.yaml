@@ -132,6 +132,8 @@ processors:
       type: recombine
     - field: attributes.__source_identifier
       type: remove
+  metric_start_time/googlecloud_metrics_0:
+    strategy: subtract_initial_point
   metricstransform/fluentbit_1:
     transforms:
     - action: update
@@ -689,7 +691,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  normalizesums/iis_2: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
@@ -702,7 +703,7 @@ processors:
       - delete_key(attributes, "service.instance.id")
       - delete_key(attributes, "server.port")
       - delete_key(attributes, "url.scheme")
-  transform/iis_3:
+  transform/iis_2:
     metric_statements:
     - context: scope
       statements:
@@ -1935,6 +1936,7 @@ service:
       - metricstransform/hostmetrics_2
       - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
+      - metric_start_time/googlecloud_metrics_0
       receivers:
       - hostmetrics/hostmetrics
     metrics/default__pipeline_iis:
@@ -1943,10 +1945,10 @@ service:
       processors:
       - metricstransform/iis_0
       - casttosum/iis_1
-      - normalizesums/iis_2
-      - transform/iis_3
+      - transform/iis_2
       - filter/default__pipeline_iis_0
       - resourcedetection/_global_0
+      - metric_start_time/googlecloud_metrics_0
       receivers:
       - windowsperfcounters/iis
     metrics/default__pipeline_mssql:
@@ -1957,6 +1959,7 @@ service:
       - transform/mssql_1
       - filter/default__pipeline_mssql_0
       - resourcedetection/_global_0
+      - metric_start_time/googlecloud_metrics_0
       receivers:
       - windowsperfcounters/mssql
     metrics/fluentbit:
@@ -1967,6 +1970,7 @@ service:
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
       - resourcedetection/_global_0
+      - metric_start_time/googlecloud_metrics_0
       receivers:
       - prometheus/agent_prometheus
     metrics/loggingmetrics:
@@ -1985,6 +1989,7 @@ service:
       - interval/loggingmetrics_8
       - metricstransform/loggingmetrics_9
       - resourcedetection/_global_0
+      - metric_start_time/googlecloud_metrics_0
       receivers:
       - prometheus/agent_prometheus
     metrics/opsagent:
@@ -1993,6 +1998,7 @@ service:
       processors:
       - transform/ops_agent_0
       - resourcedetection/_global_0
+      - metric_start_time/googlecloud_metrics_0
       receivers:
       - otlpjsonfile/ops_agent
     metrics/otel:
@@ -2005,6 +2011,7 @@ service:
       - filter/otel_2
       - metricstransform/otel_3
       - resourcedetection/_global_0
+      - metric_start_time/googlecloud_metrics_0
       receivers:
       - prometheus/agent_prometheus
   telemetry:

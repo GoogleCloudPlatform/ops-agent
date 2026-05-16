@@ -45,7 +45,6 @@ func (r MetricsReceiverHbase) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 		ConfigurePipelines(
 			targetSystem,
 			[]otel.Component{
-				otel.NormalizeSums(),
 				otel.MetricsTransform(
 					otel.AddPrefix("workload.googleapis.com"),
 					otel.UpdateMetric("hbase.region_server.*",
