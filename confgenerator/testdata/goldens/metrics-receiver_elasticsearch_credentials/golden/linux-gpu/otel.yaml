@@ -108,6 +108,8 @@ processors:
         - googlecloudmonitoring/point_count
   interval/loggingmetrics_8:
     interval: 1m
+  metric_start_time/elasticsearch_0:
+    strategy: subtract_initial_point
   metricstransform/elasticsearch_2:
     transforms:
     - action: update
@@ -645,7 +647,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  normalizesums/elasticsearch_0: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
@@ -864,7 +865,7 @@ service:
       exporters:
       - googlecloud/otel
       processors:
-      - normalizesums/elasticsearch_0
+      - metric_start_time/elasticsearch_0
       - filter/elasticsearch_1
       - metricstransform/elasticsearch_2
       - transform/elasticsearch_3

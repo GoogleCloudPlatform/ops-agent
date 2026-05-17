@@ -104,6 +104,8 @@ processors:
         - googlecloudmonitoring/point_count
   interval/loggingmetrics_8:
     interval: 1m
+  metric_start_time/flink_0:
+    strategy: subtract_initial_point
   metricstransform/flink_1:
     transforms:
     - action: update
@@ -665,7 +667,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  normalizesums/flink_0: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
@@ -856,7 +857,7 @@ service:
       exporters:
       - googlecloud/otel
       processors:
-      - normalizesums/flink_0
+      - metric_start_time/flink_0
       - metricstransform/flink_1
       - transform/flink_2
       - transform/flink_3

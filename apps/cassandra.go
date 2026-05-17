@@ -43,7 +43,7 @@ func (r MetricsReceiverCassandra) Pipelines(_ context.Context) ([]otel.ReceiverP
 		ConfigurePipelines(
 			r.TargetSystemString(targetSystem),
 			[]otel.Component{
-				otel.NormalizeSums(),
+				otel.MetricStartTime(),
 				otel.MetricsTransform(
 					otel.AddPrefix("workload.googleapis.com"),
 				),

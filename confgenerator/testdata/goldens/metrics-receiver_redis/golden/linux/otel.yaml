@@ -106,6 +106,8 @@ processors:
         - redis.uptime
   interval/loggingmetrics_8:
     interval: 1m
+  metric_start_time/redis_1:
+    strategy: subtract_initial_point
   metricstransform/fluentbit_1:
     transforms:
     - action: update
@@ -619,7 +621,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: workload.googleapis.com/$${1}
-  normalizesums/redis_1: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
@@ -844,7 +845,7 @@ service:
       - googlecloud/otel
       processors:
       - filter/redis_0
-      - normalizesums/redis_1
+      - metric_start_time/redis_1
       - metricstransform/redis_2
       - transform/redis_3
       - transform/redis_4

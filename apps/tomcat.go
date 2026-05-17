@@ -43,7 +43,7 @@ func (r MetricsReceiverTomcat) Pipelines(_ context.Context) ([]otel.ReceiverPipe
 		ConfigurePipelines(
 			r.TargetSystemString(targetSystem),
 			[]otel.Component{
-				otel.NormalizeSums(),
+				otel.MetricStartTime(),
 				otel.MetricsTransform(
 					otel.AddPrefix("workload.googleapis.com"),
 				),
