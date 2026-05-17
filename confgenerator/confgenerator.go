@@ -251,6 +251,7 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 				ProcessorsByType: map[string][]otel.Component{
 					"metrics": {
 						otel.GCPProjectID(resource.ProjectName()),
+						otel.MetricStartTime(),
 						otel.BatchProcessor(200, 200, "200ms"),
 					},
 				},
