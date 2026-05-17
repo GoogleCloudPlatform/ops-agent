@@ -254,6 +254,7 @@ func (r AgentSelfMetrics) OtelPipelineProcessors(ctx context.Context) []otel.Com
 			)...,
 		),
 		otel.MetricsTransform(transforms...),
+		otel.MetricStartTime(),
 	}
 }
 
@@ -274,6 +275,7 @@ func (r AgentSelfMetrics) FluentBitPipelineProcessors() []otel.Component {
 			),
 			otel.AddPrefix("agent.googleapis.com"),
 		),
+		otel.MetricStartTime(),
 	}
 }
 

@@ -110,6 +110,10 @@ processors:
     interval: 1m
   metric_start_time/elasticsearch_0:
     strategy: subtract_initial_point
+  metric_start_time/fluentbit_2:
+    strategy: subtract_initial_point
+  metric_start_time/otel_4:
+    strategy: subtract_initial_point
   metricstransform/elasticsearch_2:
     transforms:
     - action: update
@@ -902,6 +906,7 @@ service:
       - transform/agent_prometheus_0
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
+      - metric_start_time/fluentbit_2
       - resourcedetection/_global_0
       receivers:
       - prometheus/agent_prometheus
@@ -940,6 +945,7 @@ service:
       - filter/otel_1
       - filter/otel_2
       - metricstransform/otel_3
+      - metric_start_time/otel_4
       - resourcedetection/_global_0
       receivers:
       - prometheus/agent_prometheus
