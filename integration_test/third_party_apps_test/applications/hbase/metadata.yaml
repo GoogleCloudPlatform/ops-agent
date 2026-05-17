@@ -55,6 +55,7 @@ platforms_to_skip:
   - rocky-linux-cloud:rocky-linux-10-optimized-gcp
   - rocky-linux-cloud:rocky-linux-10-arm64
   - rocky-linux-cloud:rocky-linux-10-optimized-gcp-arm64
+  - suse-cloud:sles-16-0-x86-64 # QueryLog() failed: hbase_system not found on SLES 16
 supported_operating_systems: linux
 supported_app_version: ["1.7.x", "2.3.x", "2.4.x"]
 expected_metrics:

@@ -5,6 +5,15 @@ sudo rpm --import https://www.mongodb.org/static/pgp/server-5.0.asc
 source /etc/os-release
 SUSE_VERSION="${VERSION_ID%%.*}"
 case $SUSE_VERSION in
+  16)
+    # Falling back to OpenSUSE Leap 15 repository for libopenssl1_1
+    sudo zypper addrepo --no-gpgcheck http://download.opensuse.org/distribution/leap/15.5/repo/oss/ opensuse-leap-oss || true
+    sudo zypper --no-gpg-checks refresh opensuse-leap-oss || true
+    sudo zypper --no-gpg-checks -n install libopenssl1_1 || true
+    sudo zypper rr opensuse-leap-oss || true # Remove repo to avoid pollution
+    
+    sudo zypper addrepo --gpgcheck "https://repo.mongodb.org/zypper/suse/15/mongodb-org/5.0/x86_64/" mongodb
+    ;;
   15)
     sudo zypper addrepo --gpgcheck "https://repo.mongodb.org/zypper/suse/15/mongodb-org/5.0/x86_64/" mongodb
     ;;
@@ -17,13 +26,32 @@ case $SUSE_VERSION in
     ;;
 esac
 
-sudo zypper install -y \
-    mongodb-org-5.0.14 \
-    mongodb-org-database-5.0.14 \
-    mongodb-org-server-5.0.14 \
-    mongodb-org-shell-5.0.14 \
-    mongodb-org-mongos-5.0.14 \
-    mongodb-org-tools-5.0.14
+if [[ "${SUSE_VERSION}" == 16 ]]; then
+  # Use wget to download RPMs directly from the repo because zypper fails to resolve python dependency on SLES 16
+  WGET_DIR="/tmp/mongodb_rpms"
+  mkdir -p "${WGET_DIR}"
+  
+  BASE_URL="https://repo.mongodb.org/zypper/suse/15/mongodb-org/5.0/x86_64/RPMS"
+  V="5.0.14-1.suse15.x86_64"
+  
+  wget -nv -P "${WGET_DIR}" \
+      "${BASE_URL}/mongodb-org-${V}.rpm" \
+      "${BASE_URL}/mongodb-org-database-${V}.rpm" \
+      "${BASE_URL}/mongodb-org-server-${V}.rpm" \
+      "${BASE_URL}/mongodb-org-shell-${V}.rpm" \
+      "${BASE_URL}/mongodb-org-mongos-${V}.rpm" \
+      "${BASE_URL}/mongodb-org-tools-${V}.rpm"
+  
+  sudo rpm -ivh --nodeps "${WGET_DIR}"/*.rpm
+else
+  sudo zypper install -y \
+      mongodb-org-5.0.14 \
+      mongodb-org-database-5.0.14 \
+      mongodb-org-server-5.0.14 \
+      mongodb-org-shell-5.0.14 \
+      mongodb-org-mongos-5.0.14 \
+      mongodb-org-tools-5.0.14
+fi
 
 sudo systemctl enable mongod
 sudo systemctl restart mongod

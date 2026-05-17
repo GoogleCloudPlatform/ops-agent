@@ -2,11 +2,17 @@ set -e
 
 echo "127.0.0.1 $(hostname -s)" | sudo tee -a /etc/hosts
 
-sudo zypper install -y insserv-compat
-
 source /etc/os-release
 SUSE_VERSION="${VERSION_ID%%.*}"
+
+if [[ "$SUSE_VERSION" != 16 ]]; then
+  sudo zypper install -y insserv-compat
+fi
+
 case $SUSE_VERSION in
+  16)
+    sudo zypper install -y erlang rabbitmq-server
+    ;;
   15)
     sudo zypper install -y erlang rabbitmq-server
     ;;
