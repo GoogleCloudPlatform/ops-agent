@@ -126,11 +126,7 @@ processors:
     - location
   interval/loggingmetrics_8:
     interval: 1m
-  metric_start_time/fluentbit_2:
-    strategy: subtract_initial_point
   metric_start_time/iis_2:
-    strategy: subtract_initial_point
-  metric_start_time/otel_4:
     strategy: subtract_initial_point
   metricstransform/fluentbit_1:
     transforms:
@@ -1678,7 +1674,6 @@ service:
       - transform/agent_prometheus_2
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
-      - metric_start_time/fluentbit_2
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_metrics_metrics_0
       - batch/otlp_grpc/otlp_metrics_metrics_1
@@ -1729,7 +1724,6 @@ service:
       - filter/otel_1
       - filter/otel_2
       - metricstransform/otel_3
-      - metric_start_time/otel_4
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_metrics_metrics_0
       - batch/otlp_grpc/otlp_metrics_metrics_1
