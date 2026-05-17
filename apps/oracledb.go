@@ -105,6 +105,7 @@ func (r MetricsReceiverOracleDB) Pipelines(ctx context.Context) ([]otel.Receiver
 			Config: config,
 		},
 		Processors: map[string][]otel.Component{"metrics": {
+			otel.MetricStartTime(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com",
 					// sql query receiver is not able to create these attributes with lowercase names

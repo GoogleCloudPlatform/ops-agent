@@ -238,19 +238,9 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 		Exporters: map[otel.ExporterType]otel.ExporterComponents{
 			otel.System: {
 				Exporter: googleCloudExporter(userAgent, false, false),
-				ProcessorsByType: map[string][]otel.Component{
-					"metrics": {
-						otel.MetricStartTime(),
-					},
-				},
 			},
 			otel.OTel: {
 				Exporter: googleCloudExporter(userAgent, true, true),
-				ProcessorsByType: map[string][]otel.Component{
-					"metrics": {
-						otel.MetricStartTime(),
-					},
-				},
 			},
 			otel.GMP: {
 				Exporter: googleManagedPrometheusExporter(userAgent),

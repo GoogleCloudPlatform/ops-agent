@@ -43,6 +43,7 @@ func (r MetricsReceiverVarnish) Pipelines(ctx context.Context) ([]otel.ReceiverP
 			},
 		},
 		Processors: map[string][]otel.Component{"metrics": {
+			otel.MetricStartTime(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),

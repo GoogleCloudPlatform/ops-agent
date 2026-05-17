@@ -40,6 +40,7 @@ func (r MetricsReceiverActiveDirectoryDS) Pipelines(ctx context.Context) ([]otel
 			},
 		},
 		Processors: map[string][]otel.Component{"metrics": {
+			otel.MetricStartTime(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),

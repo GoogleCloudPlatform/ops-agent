@@ -43,6 +43,7 @@ func (r MetricsReceiverActivemq) Pipelines(_ context.Context) ([]otel.ReceiverPi
 		ConfigurePipelines(
 			targetSystem,
 			[]otel.Component{
+				otel.MetricStartTime(),
 				otel.MetricsTransform(
 					otel.AddPrefix("workload.googleapis.com"),
 				),

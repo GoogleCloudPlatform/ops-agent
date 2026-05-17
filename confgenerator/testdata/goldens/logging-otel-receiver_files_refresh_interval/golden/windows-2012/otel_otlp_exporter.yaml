@@ -109,6 +109,8 @@ processors:
         - rpc.client.call.duration_count
   interval/loggingmetrics_8:
     interval: 1m
+  metric_start_time/iis_2:
+    strategy: subtract_initial_point
   metric_start_time/otlp_grpc/otlp_metrics_metrics_1:
     strategy: subtract_initial_point
   metricstransform/fluentbit_1:
@@ -908,19 +910,19 @@ processors:
       - convert_gauge_to_sum("cumulative", true) where name == "agent.googleapis.com/iis/network/transferred_bytes_count"
       - convert_gauge_to_sum("cumulative", true) where name == "agent.googleapis.com/iis/new_connection_count"
       - convert_gauge_to_sum("cumulative", true) where name == "agent.googleapis.com/iis/request_count"
-  transform/iis_2:
+  transform/iis_3:
     metric_statements:
     - context: scope
       statements:
       - set(name, "agent.googleapis.com/iis")
       - set(version, "1.0")
-  transform/iis_3:
+  transform/iis_4:
     metric_statements:
     - context: scope
       statements:
       - set(name, "")
       - set(version, "")
-  transform/iis_4:
+  transform/iis_5:
     metric_statements:
     - context: resource
       error_mode: silent
@@ -1597,9 +1599,10 @@ service:
       processors:
       - metricstransform/iis_0
       - transform/iis_1
-      - transform/iis_2
+      - metric_start_time/iis_2
       - transform/iis_3
       - transform/iis_4
+      - transform/iis_5
       - filter/default__pipeline_iis_0
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_metrics_metrics_0

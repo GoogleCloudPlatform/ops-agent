@@ -159,6 +159,7 @@ func (s MetricsReceiverSapHana) Pipelines(ctx context.Context) ([]otel.ReceiverP
 				"strict",
 				"saphana.uptime",
 			),
+			otel.MetricStartTime(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),

@@ -81,6 +81,7 @@ func (r MetricsReceiverCouchbase) Pipelines(ctx context.Context) ([]otel.Receive
 			Config: config,
 		},
 		Processors: map[string][]otel.Component{"metrics": {
+			otel.MetricStartTime(),
 			// remove prometheus scraping meta-metrics
 			otel.MetricsFilter("exclude", "strict",
 				"scrape_samples_post_metric_relabeling",
