@@ -57,6 +57,7 @@ func (m MetricsReceiverMssql) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 					otel.SetScopeVersion("2.0"),
 				),
 				otel.MetricsRemoveServiceAttributes(),
+				otel.NormalizeSums(),
 			}},
 		}, ctx)}, nil
 	}

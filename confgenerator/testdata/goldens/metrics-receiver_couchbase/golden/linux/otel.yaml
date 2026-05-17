@@ -49,7 +49,7 @@ processors:
       - fluentbit_request_count
     initial_value: drop
   deltatocumulative/loggingmetrics_7: {}
-  filter/couchbase_0:
+  filter/couchbase_1:
     metrics:
       exclude:
         match_type: strict
@@ -109,11 +109,7 @@ processors:
         - googlecloudmonitoring/point_count
   interval/loggingmetrics_8:
     interval: 1m
-  metric_start_time/googlecloud/otel_metrics_0:
-    strategy: subtract_initial_point
-  metric_start_time/googlecloud_metrics_0:
-    strategy: subtract_initial_point
-  metricstransform/couchbase_1:
+  metricstransform/couchbase_2:
     transforms:
     - action: update
       include: kv_ops
@@ -706,6 +702,7 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
+  normalizesums/couchbase_0: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
@@ -718,7 +715,7 @@ processors:
       - delete_key(attributes, "service.instance.id")
       - delete_key(attributes, "server.port")
       - delete_key(attributes, "url.scheme")
-  transform/couchbase_2:
+  transform/couchbase_3:
     metric_statements:
     - context: metric
       statements:
@@ -747,7 +744,7 @@ processors:
       statements:
       - set(name, "agent.googleapis.com/couchbase")
       - set(version, "1.0")
-  transform/couchbase_3:
+  transform/couchbase_4:
     metric_statements:
     - context: resource
       error_mode: silent
@@ -902,12 +899,12 @@ service:
       exporters:
       - googlecloud/otel
       processors:
-      - filter/couchbase_0
-      - metricstransform/couchbase_1
-      - transform/couchbase_2
+      - normalizesums/couchbase_0
+      - filter/couchbase_1
+      - metricstransform/couchbase_2
       - transform/couchbase_3
+      - transform/couchbase_4
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud/otel_metrics_0
       receivers:
       - prometheus/couchbase
     metrics/default__pipeline_hostmetrics:
@@ -919,7 +916,6 @@ service:
       - metricstransform/hostmetrics_2
       - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud_metrics_0
       receivers:
       - hostmetrics/hostmetrics
     metrics/fluentbit:
@@ -930,7 +926,6 @@ service:
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud_metrics_0
       receivers:
       - prometheus/agent_prometheus
     metrics/loggingmetrics:
@@ -949,7 +944,6 @@ service:
       - interval/loggingmetrics_8
       - metricstransform/loggingmetrics_9
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud_metrics_0
       receivers:
       - prometheus/agent_prometheus
     metrics/opsagent:
@@ -958,7 +952,6 @@ service:
       processors:
       - transform/ops_agent_0
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud_metrics_0
       receivers:
       - otlpjsonfile/ops_agent
     metrics/otel:
@@ -971,7 +964,6 @@ service:
       - filter/otel_2
       - metricstransform/otel_3
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud_metrics_0
       receivers:
       - prometheus/agent_prometheus
   telemetry:

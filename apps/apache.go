@@ -54,6 +54,7 @@ func (r MetricsReceiverApache) Pipelines(ctx context.Context) ([]otel.ReceiverPi
 				"strict",
 				"apache.uptime",
 			),
+			otel.NormalizeSums(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),

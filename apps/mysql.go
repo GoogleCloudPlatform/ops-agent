@@ -102,6 +102,7 @@ func (r MetricsReceiverMySql) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 				},
 			},
 			Processors: map[string][]otel.Component{"metrics": {
+				otel.NormalizeSums(),
 				otel.MetricsTransform(
 					// The following changes are here to ensure maximum backwards compatibility after the fixes
 					// introduced https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/7924
