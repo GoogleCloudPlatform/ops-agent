@@ -244,6 +244,9 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 					},
 				},
 			},
+			otel.System_NoMetricStartTime: {
+				Exporter: googleCloudExporter(userAgent, false, false),
+			},
 			otel.OTel: {
 				Exporter: googleCloudExporter(userAgent, true, true),
 				ProcessorsByType: map[string][]otel.Component{
@@ -251,6 +254,9 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 						otel.MetricStartTime(),
 					},
 				},
+			},
+			otel.OTel_NoMetricStartTime: {
+				Exporter: googleCloudExporter(userAgent, true, true),
 			},
 			otel.GMP: {
 				Exporter: googleManagedPrometheusExporter(userAgent),
@@ -262,6 +268,16 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 					"metrics": {
 						otel.GCPProjectID(resource.ProjectName()),
 						otel.MetricStartTime(),
+						otel.BatchProcessor(200, 200, "200ms"),
+					},
+				},
+			},
+			otel.OTLP_Metrics_NoMetricStartTime: {
+				Exporter:       otlpExporterForMetrics(userAgent),
+				UsedExtensions: []string{googleClientAuthExtensionType},
+				ProcessorsByType: map[string][]otel.Component{
+					"metrics": {
+						otel.GCPProjectID(resource.ProjectName()),
 						otel.BatchProcessor(200, 200, "200ms"),
 					},
 				},

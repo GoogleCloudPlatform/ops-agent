@@ -58,6 +58,7 @@ func (m MetricsReceiverMssql) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 				),
 				otel.MetricsRemoveServiceAttributes(),
 			}},
+			DisableMetricStartTime: true,
 		}, ctx)}, nil
 	}
 
@@ -107,6 +108,7 @@ func (m MetricsReceiverMssql) Pipelines(ctx context.Context) ([]otel.ReceiverPip
 				otel.SetScopeVersion("1.0"),
 			),
 		}},
+		DisableMetricStartTime: true,
 	}, ctx)}, nil
 }
 

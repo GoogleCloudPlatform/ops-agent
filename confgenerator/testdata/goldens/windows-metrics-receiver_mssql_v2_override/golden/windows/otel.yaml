@@ -21,7 +21,7 @@ exporters:
       sizer: items
       storage: file_storage
     timeout: 3600s
-  googlecloud/otel:
+  googlecloud/otel_nomst:
     metric:
       instrumentation_library_labels: true
       prefix: ""
@@ -109,8 +109,6 @@ processors:
         - googlecloudmonitoring/point_count
   interval/loggingmetrics_8:
     interval: 1m
-  metric_start_time/googlecloud/otel_metrics_0:
-    strategy: subtract_initial_point
   metric_start_time/googlecloud_metrics_0:
     strategy: subtract_initial_point
   metricstransform/fluentbit_1:
@@ -1246,14 +1244,13 @@ service:
       - windowsperfcounters/iis
     metrics/default__pipeline_mssql:
       exporters:
-      - googlecloud/otel
+      - googlecloud/otel_nomst
       processors:
       - metricstransform/mssql_0
       - transform/mssql_1
       - transform/mssql_2
       - filter/default__pipeline_mssql_0
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud/otel_metrics_0
       receivers:
       - sqlserver/mssql
     metrics/fluentbit:
@@ -1288,13 +1285,12 @@ service:
       - prometheus/agent_prometheus
     metrics/mssql_mssql:
       exporters:
-      - googlecloud/otel
+      - googlecloud/otel_nomst
       processors:
       - metricstransform/mssql_0
       - transform/mssql_1
       - transform/mssql_2
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud/otel_metrics_0
       receivers:
       - sqlserver/mssql
     metrics/opsagent:

@@ -29,6 +29,14 @@ exporters:
       service_resource_labels: true
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
+  googlecloud/system_nomst:
+    metric:
+      instrumentation_library_labels: false
+      prefix: ""
+      resource_filters: []
+      service_resource_labels: false
+      skip_create_descriptor: true
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
 extensions:
   file_storage:
     create_directory: true
@@ -1289,13 +1297,12 @@ service:
       - windowsperfcounters/iis
     metrics/default__pipeline_mssql:
       exporters:
-      - googlecloud
+      - googlecloud/system_nomst
       processors:
       - metricstransform/mssql_0
       - transform/mssql_1
       - filter/default__pipeline_mssql_0
       - resourcedetection/_global_0
-      - metric_start_time/googlecloud_metrics_0
       receivers:
       - windowsperfcounters/mssql
     metrics/fluentbit:

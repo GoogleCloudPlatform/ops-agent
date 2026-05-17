@@ -23,6 +23,12 @@ exporters:
     balancer_name: pick_first
     endpoint: telemetry.googleapis.com:443
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
+  otlp_grpc/otlp_metrics_nomst:
+    auth:
+      authenticator: googleclientauth
+    balancer_name: pick_first
+    endpoint: telemetry.googleapis.com:443
+    user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=windows;ShortName=win_platform;ShortVersion=win_platform_version)
 extensions:
   file_storage:
     create_directory: true
@@ -33,6 +39,10 @@ processors:
     blank_label_metrics:
     - system.cpu.utilization
   batch/otlp_grpc/otlp_metrics_metrics_2:
+    send_batch_max_size: 200
+    send_batch_size: 200
+    timeout: 200ms
+  batch/otlp_grpc/otlp_metrics_nomst_metrics_1:
     send_batch_max_size: 200
     send_batch_size: 200
     timeout: 200ms
@@ -859,6 +869,11 @@ processors:
     - action: insert
       key: gcp.project_id
       value: test-project
+  resource/otlp_grpc/otlp_metrics_nomst_metrics_0:
+    attributes:
+    - action: insert
+      key: gcp.project_id
+      value: test-project
   resourcedetection/_global_0:
     detectors:
     - gcp
@@ -1614,7 +1629,7 @@ service:
       - windowsperfcounters/iis
     metrics/default__pipeline_mssql:
       exporters:
-      - otlp_grpc/otlp_metrics
+      - otlp_grpc/otlp_metrics_nomst
       processors:
       - metricstransform/mssql_0
       - transform/mssql_1
@@ -1622,9 +1637,8 @@ service:
       - transform/mssql_3
       - filter/default__pipeline_mssql_0
       - resourcedetection/_global_0
-      - resource/otlp_grpc/otlp_metrics_metrics_0
-      - metric_start_time/otlp_grpc/otlp_metrics_metrics_1
-      - batch/otlp_grpc/otlp_metrics_metrics_2
+      - resource/otlp_grpc/otlp_metrics_nomst_metrics_0
+      - batch/otlp_grpc/otlp_metrics_nomst_metrics_1
       receivers:
       - windowsperfcounters/mssql
     metrics/fluentbit:

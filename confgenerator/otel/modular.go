@@ -42,6 +42,9 @@ const (
 	OTLP_Metrics
 	OTLP_Logs
 	Logging
+	System_NoMetricStartTime
+	OTel_NoMetricStartTime
+	OTLP_Metrics_NoMetricStartTime
 )
 const (
 	Override ResourceDetectionMode = iota
@@ -53,14 +56,20 @@ func (t ExporterType) Name() string {
 	if t == System || t == GMP {
 		// The collector's OTel and GMP exporters have different types so can share the empty string.
 		return ""
+	} else if t == System_NoMetricStartTime {
+		return "system_nomst"
 	} else if t == OTel {
 		return "otel"
+	} else if t == OTel_NoMetricStartTime {
+		return "otel_nomst"
 	} else if t == Logging {
 		return "logging"
 	} else if t == OTLP_Metrics {
 		return "otlp_metrics"
 	} else if t == OTLP_Logs {
 		return "otlp_logs"
+	} else if t == OTLP_Metrics_NoMetricStartTime {
+		return "otlp_metrics_nomst"
 	} else {
 		panic("unknown ExporterType")
 	}
@@ -85,6 +94,8 @@ type ReceiverPipeline struct {
 	// ResourceDetectionModes indicates whether the resource should be forcibly set, set only if not already present, or never set.
 	// If a data type is not present, it will assume the zero value (Override).
 	ResourceDetectionModes map[string]ResourceDetectionMode
+	// DisableMetricStartTime disables the central MetricStartTime processor for this pipeline.
+	DisableMetricStartTime bool
 }
 
 // Pipeline represents one (of potentially many) pipelines consuming data from a ReceiverPipeline.
@@ -265,6 +276,15 @@ func (c ModularConfig) Generate(ctx context.Context) (string, error) {
 		}
 
 		exporterType := receiverPipeline.ExporterTypes[pipeline.Type]
+		if receiverPipeline.DisableMetricStartTime {
+			if exporterType == System {
+				exporterType = System_NoMetricStartTime
+			} else if exporterType == OTel {
+				exporterType = OTel_NoMetricStartTime
+			} else if exporterType == OTLP_Metrics {
+				exporterType = OTLP_Metrics_NoMetricStartTime
+			}
+		}
 		exporter := c.Exporters[exporterType]
 		if _, ok := exporterNames[exporterType]; !ok {
 			name := exporter.Exporter.name(exporterType.Name())
