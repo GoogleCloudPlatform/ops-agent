@@ -81,6 +81,7 @@ func NormalizeSums() Component {
 		Config: map[string]interface{}{},
 	}
 }
+
 // CumulativeToDelta returns a Component that converts each cumulative metric to delta.
 func CumulativeToDelta(metrics ...string) Component {
 	return CumulativeToDeltaWithInitialValue("", metrics...)
