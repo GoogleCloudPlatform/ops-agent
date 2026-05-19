@@ -142,7 +142,7 @@ func (r MetricsReceiverRabbitmq) Pipelines(ctx context.Context) ([]otel.Receiver
 			Config: cfg,
 		},
 		Processors: map[string][]otel.Component{"metrics": {
-			otel.NormalizeSums(),
+			otel.MetricStartTime(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),

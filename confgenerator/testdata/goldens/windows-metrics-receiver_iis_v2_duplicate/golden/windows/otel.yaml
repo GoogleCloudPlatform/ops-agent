@@ -110,6 +110,10 @@ processors:
   groupbyattrs/iis__v2_3: {}
   interval/loggingmetrics_8:
     interval: 1m
+  metric_start_time/iis_2:
+    strategy: subtract_initial_point
+  metric_start_time/iis__v2_5:
+    strategy: subtract_initial_point
   metricstransform/fluentbit_1:
     transforms:
     - action: update
@@ -682,8 +686,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  normalizesums/iis_2: {}
-  normalizesums/iis__v2_5: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
@@ -1283,7 +1285,7 @@ service:
       processors:
       - metricstransform/iis_0
       - transform/iis_1
-      - normalizesums/iis_2
+      - metric_start_time/iis_2
       - transform/iis_3
       - filter/default__pipeline_iis_0
       - resourcedetection/_global_0
@@ -1318,7 +1320,7 @@ service:
       - transform/iis__v2_2
       - groupbyattrs/iis__v2_3
       - metricstransform/iis__v2_4
-      - normalizesums/iis__v2_5
+      - metric_start_time/iis__v2_5
       - resourcedetection/_global_0
       receivers:
       - iis/iis__v2

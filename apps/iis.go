@@ -71,7 +71,7 @@ func (r MetricsReceiverIis) Pipelines(ctx context.Context) ([]otel.ReceiverPipel
 					),
 					otel.AddPrefix("workload.googleapis.com"),
 				),
-				otel.NormalizeSums(),
+				otel.MetricStartTime(),
 			}},
 		}, ctx)}, nil
 	}
@@ -139,7 +139,7 @@ func (r MetricsReceiverIis) Pipelines(ctx context.Context) ([]otel.ReceiverPipel
 				otel.ConvertGaugeToSum("agent.googleapis.com/iis/new_connection_count"),
 				otel.ConvertGaugeToSum("agent.googleapis.com/iis/request_count"),
 			),
-			otel.NormalizeSums(),
+			otel.MetricStartTime(),
 			otel.TransformationMetrics(
 				otel.SetScopeName("agent.googleapis.com/"+r.Type()),
 				otel.SetScopeVersion("1.0"),

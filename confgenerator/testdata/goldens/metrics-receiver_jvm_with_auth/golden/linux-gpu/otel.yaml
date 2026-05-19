@@ -104,6 +104,8 @@ processors:
         - googlecloudmonitoring/point_count
   interval/loggingmetrics_8:
     interval: 1m
+  metric_start_time/jvm_0:
+    strategy: subtract_initial_point
   metricstransform/fluentbit_1:
     transforms:
     - action: update
@@ -641,7 +643,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  normalizesums/jvm_0: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
@@ -838,7 +839,7 @@ service:
       exporters:
       - googlecloud/otel
       processors:
-      - normalizesums/jvm_0
+      - metric_start_time/jvm_0
       - metricstransform/jvm_1
       - transform/jvm_2
       - transform/jvm_3
