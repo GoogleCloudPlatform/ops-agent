@@ -48,11 +48,6 @@ processors:
     send_batch_max_size: 200
     send_batch_size: 200
     timeout: 200ms
-  casttosum/iis_1:
-    metrics:
-    - agent.googleapis.com/iis/network/transferred_bytes_count
-    - agent.googleapis.com/iis/new_connection_count
-    - agent.googleapis.com/iis/request_count
   cumulativetodelta/loggingmetrics_4:
     include:
       match_type: strict
@@ -884,7 +879,6 @@ processors:
       include: ^[AB](.*)$$
       match_type: regexp
       new_name: $${1}
-  normalizesums/iis_2: {}
   resource/otlp_grpc/otlp_logs_logs_0:
     attributes:
     - action: insert
@@ -950,19 +944,26 @@ processors:
       - delete_key(attributes, "service.instance.id")
       - delete_key(attributes, "service.namespace")
       - delete_key(attributes, "service.version")
-  transform/iis_3:
+  transform/iis_1:
+    metric_statements:
+    - context: metric
+      statements:
+      - convert_gauge_to_sum("cumulative", true) where name == "agent.googleapis.com/iis/network/transferred_bytes_count"
+      - convert_gauge_to_sum("cumulative", true) where name == "agent.googleapis.com/iis/new_connection_count"
+      - convert_gauge_to_sum("cumulative", true) where name == "agent.googleapis.com/iis/request_count"
+  transform/iis_2:
     metric_statements:
     - context: scope
       statements:
       - set(name, "agent.googleapis.com/iis")
       - set(version, "1.0")
-  transform/iis_4:
+  transform/iis_3:
     metric_statements:
     - context: scope
       statements:
       - set(name, "")
       - set(version, "")
-  transform/iis_5:
+  transform/iis_4:
     metric_statements:
     - context: resource
       error_mode: silent
@@ -1640,11 +1641,10 @@ service:
       - otlp_grpc/otlp_metrics
       processors:
       - metricstransform/iis_0
-      - casttosum/iis_1
-      - normalizesums/iis_2
+      - transform/iis_1
+      - transform/iis_2
       - transform/iis_3
       - transform/iis_4
-      - transform/iis_5
       - filter/default__pipeline_iis_0
       - resourcedetection/_global_0
       - resource/otlp_grpc/otlp_metrics_metrics_0

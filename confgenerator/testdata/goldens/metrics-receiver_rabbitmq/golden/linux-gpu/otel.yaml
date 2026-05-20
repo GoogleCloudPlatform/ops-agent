@@ -104,6 +104,10 @@ processors:
         - googlecloudmonitoring/point_count
   interval/loggingmetrics_8:
     interval: 1m
+  metric_start_time/googlecloud/otel_metrics_0:
+    strategy: subtract_initial_point
+  metric_start_time/googlecloud_metrics_0:
+    strategy: subtract_initial_point
   metricstransform/fluentbit_1:
     transforms:
     - action: update
@@ -635,13 +639,12 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  metricstransform/rabbitmq_1:
+  metricstransform/rabbitmq_0:
     transforms:
     - action: update
       include: ^(.*)$$
       match_type: regexp
       new_name: workload.googleapis.com/$${1}
-  normalizesums/rabbitmq_0: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
@@ -687,7 +690,7 @@ processors:
     - context: metric
       statements:
       - extract_count_metric(true) where name == "grpc.client.attempt.duration"
-  transform/rabbitmq_2:
+  transform/rabbitmq_1:
     metric_statements:
     - context: datapoint
       statements:
@@ -698,7 +701,7 @@ processors:
       statements:
       - set(name, "agent.googleapis.com/rabbitmq")
       - set(version, "1.0")
-  transform/rabbitmq_3:
+  transform/rabbitmq_2:
     metric_statements:
     - context: resource
       error_mode: silent
@@ -818,6 +821,7 @@ service:
       - metricstransform/hostmetrics_2
       - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
+      - metric_start_time/googlecloud_metrics_0
       receivers:
       - hostmetrics/hostmetrics
     metrics/default__pipeline_hostmetrics_1:
@@ -827,6 +831,7 @@ service:
       - metricstransform/hostmetrics_1_0
       - filter/default__pipeline_hostmetrics_1_0
       - resourcedetection/_global_0
+      - metric_start_time/googlecloud_metrics_0
       receivers:
       - nvml/hostmetrics_1
     metrics/fluentbit:
@@ -837,6 +842,7 @@ service:
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
       - resourcedetection/_global_0
+      - metric_start_time/googlecloud_metrics_0
       receivers:
       - prometheus/agent_prometheus
     metrics/loggingmetrics:
@@ -855,6 +861,7 @@ service:
       - interval/loggingmetrics_8
       - metricstransform/loggingmetrics_9
       - resourcedetection/_global_0
+      - metric_start_time/googlecloud_metrics_0
       receivers:
       - prometheus/agent_prometheus
     metrics/opsagent:
@@ -863,6 +870,7 @@ service:
       processors:
       - transform/ops_agent_0
       - resourcedetection/_global_0
+      - metric_start_time/googlecloud_metrics_0
       receivers:
       - otlpjsonfile/ops_agent
     metrics/otel:
@@ -875,17 +883,18 @@ service:
       - filter/otel_2
       - metricstransform/otel_3
       - resourcedetection/_global_0
+      - metric_start_time/googlecloud_metrics_0
       receivers:
       - prometheus/agent_prometheus
     metrics/rabbitmq_rabbitmq:
       exporters:
       - googlecloud/otel
       processors:
-      - normalizesums/rabbitmq_0
-      - metricstransform/rabbitmq_1
+      - metricstransform/rabbitmq_0
+      - transform/rabbitmq_1
       - transform/rabbitmq_2
-      - transform/rabbitmq_3
       - resourcedetection/_global_0
+      - metric_start_time/googlecloud/otel_metrics_0
       receivers:
       - rabbitmq/rabbitmq
   telemetry:

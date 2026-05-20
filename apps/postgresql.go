@@ -81,7 +81,6 @@ func (r MetricsReceiverPostgresql) Pipelines(ctx context.Context) ([]otel.Receiv
 			Config: cfg,
 		},
 		Processors: map[string][]otel.Component{"metrics": {
-			otel.NormalizeSums(),
 			otel.TransformationMetrics(
 				otel.FlattenResourceAttribute("postgresql.database.name", "database"),
 				otel.FlattenResourceAttribute("postgresql.table.name", "table"),

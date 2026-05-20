@@ -59,7 +59,7 @@ processors:
       exclude:
         match_type: regexp
         metric_names: []
-  filter/elasticsearch_1:
+  filter/elasticsearch_0:
     metrics:
       metric:
       - name == "jvm.memory.heap.used" and resource.attributes["elasticsearch.node.name"] == nil
@@ -108,7 +108,11 @@ processors:
         - googlecloudmonitoring/point_count
   interval/loggingmetrics_8:
     interval: 1m
-  metricstransform/elasticsearch_2:
+  metric_start_time/googlecloud/otel_metrics_0:
+    strategy: subtract_initial_point
+  metric_start_time/googlecloud_metrics_0:
+    strategy: subtract_initial_point
+  metricstransform/elasticsearch_1:
     transforms:
     - action: update
       include: ^(.*)$$
@@ -645,7 +649,6 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: agent.googleapis.com/$${1}
-  normalizesums/elasticsearch_0: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
@@ -658,13 +661,13 @@ processors:
       - delete_key(attributes, "service.instance.id")
       - delete_key(attributes, "server.port")
       - delete_key(attributes, "url.scheme")
-  transform/elasticsearch_3:
+  transform/elasticsearch_2:
     metric_statements:
     - context: scope
       statements:
       - set(name, "agent.googleapis.com/elasticsearch")
       - set(version, "1.0")
-  transform/elasticsearch_4:
+  transform/elasticsearch_3:
     metric_statements:
     - context: resource
       error_mode: silent
@@ -849,6 +852,7 @@ service:
       - metricstransform/hostmetrics_2
       - filter/default__pipeline_hostmetrics_0
       - resourcedetection/_global_0
+      - metric_start_time/googlecloud_metrics_0
       receivers:
       - hostmetrics/hostmetrics
     metrics/default__pipeline_hostmetrics_1:
@@ -858,18 +862,19 @@ service:
       - metricstransform/hostmetrics_1_0
       - filter/default__pipeline_hostmetrics_1_0
       - resourcedetection/_global_0
+      - metric_start_time/googlecloud_metrics_0
       receivers:
       - nvml/hostmetrics_1
     metrics/elasticsearch_elasticsearch:
       exporters:
       - googlecloud/otel
       processors:
-      - normalizesums/elasticsearch_0
-      - filter/elasticsearch_1
-      - metricstransform/elasticsearch_2
+      - filter/elasticsearch_0
+      - metricstransform/elasticsearch_1
+      - transform/elasticsearch_2
       - transform/elasticsearch_3
-      - transform/elasticsearch_4
       - resourcedetection/_global_0
+      - metric_start_time/googlecloud/otel_metrics_0
       receivers:
       - elasticsearch/elasticsearch
     metrics/fluentbit:
@@ -880,6 +885,7 @@ service:
       - filter/fluentbit_0
       - metricstransform/fluentbit_1
       - resourcedetection/_global_0
+      - metric_start_time/googlecloud_metrics_0
       receivers:
       - prometheus/agent_prometheus
     metrics/loggingmetrics:
@@ -898,6 +904,7 @@ service:
       - interval/loggingmetrics_8
       - metricstransform/loggingmetrics_9
       - resourcedetection/_global_0
+      - metric_start_time/googlecloud_metrics_0
       receivers:
       - prometheus/agent_prometheus
     metrics/opsagent:
@@ -906,6 +913,7 @@ service:
       processors:
       - transform/ops_agent_0
       - resourcedetection/_global_0
+      - metric_start_time/googlecloud_metrics_0
       receivers:
       - otlpjsonfile/ops_agent
     metrics/otel:
@@ -918,6 +926,7 @@ service:
       - filter/otel_2
       - metricstransform/otel_3
       - resourcedetection/_global_0
+      - metric_start_time/googlecloud_metrics_0
       receivers:
       - prometheus/agent_prometheus
   telemetry:

@@ -47,7 +47,6 @@ func (r MetricsReceiverWildfly) Pipelines(_ context.Context) ([]otel.ReceiverPip
 		ConfigurePipelines(
 			targetSystem,
 			[]otel.Component{
-				otel.NormalizeSums(),
 				otel.MetricsTransform(
 					otel.AddPrefix("workload.googleapis.com"),
 				),
