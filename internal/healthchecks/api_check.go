@@ -25,7 +25,7 @@ import (
 	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/ctxkeys"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/googleapis/gax-go/v2/apierror"
@@ -409,7 +409,7 @@ func (c APICheck) RunCheck(logger logs.StructuredLogger) error {
 	var monOrTelErr error
 	var logOrTelLogsErr error
 
-	if experiments.FromContext(context.Background())["otlp_exporter"] {
+	if ctxkeys.OtlpExporterFromContext(ctx) {
 		logger.Infof("Running Telemetry API checks")
 		monOrTelErr = runTelemetryMetricsCheck(ctx, logger, resource)
 		logOrTelLogsErr = runTelemetryLogsCheck(ctx, logger, resource)

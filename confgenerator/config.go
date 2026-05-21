@@ -31,6 +31,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/ctxkeys"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
@@ -72,19 +73,12 @@ func (uc *UnifiedConfig) HasCombined() bool {
 	return uc.Combined != nil
 }
 
-type otlpExporterKeyType struct{}
-
-var otlpExporterKey = otlpExporterKeyType{}
-
 func ContextWithOtlpExporter(ctx context.Context, enabled bool) context.Context {
-	return context.WithValue(ctx, otlpExporterKey, enabled)
+	return ctxkeys.ContextWithOtlpExporter(ctx, enabled)
 }
 
 func OtlpExporterFromContext(ctx context.Context) bool {
-	if enabled, ok := ctx.Value(otlpExporterKey).(bool); ok {
-		return enabled
-	}
-	return false
+	return ctxkeys.OtlpExporterFromContext(ctx)
 }
 
 func (uc *UnifiedConfig) ContextWithExperiments(ctx context.Context) context.Context {
