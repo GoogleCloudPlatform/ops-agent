@@ -15,7 +15,6 @@
 global:
   otlp_exporter: true
 metrics:
-
   processors:
     metrics_filter:
       type: exclude_metrics
