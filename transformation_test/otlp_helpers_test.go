@@ -12,7 +12,6 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
 	"github.com/goccy/go-yaml"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
@@ -28,7 +27,7 @@ func (transformationConfig transformationTest) generateOTelOTLPExporterConfig(ct
 	pi.RID = "my-log-name"
 	pi.Backend = confgenerator.BackendOTel
 
-	ctx = experiments.ContextWithExperiments(ctx, map[string]bool{"otlp_exporter": true})
+	ctx = confgenerator.ContextWithOtlpExporter(ctx, true)
 
 	rps, pls, err := pi.OTelComponents(ctx)
 	if err != nil {

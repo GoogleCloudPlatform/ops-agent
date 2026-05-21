@@ -27,9 +27,6 @@ func ParseExperimentalFeatures(features string) map[string]bool {
 	out := map[string]bool{}
 	for _, f := range strings.Split(features, ",") {
 		feature := strings.TrimSpace(f)
-		if feature == "otlp_exporter" {
-			continue
-		}
 		out[feature] = true
 	}
 	return out

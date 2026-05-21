@@ -22,8 +22,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-
-	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
 )
 
 var (
@@ -80,7 +78,7 @@ func ExtractFeatures(ctx context.Context, userUc, mergedUc *UnifiedConfig) ([]Fe
 
 	allFeatures = append(allFeatures, getSelfLogCollection(userUc))
 	allFeatures = append(allFeatures, getOTelLoggingSupportedConfig(ctx, mergedUc))
-	allFeatures = append(allFeatures, getOtlpExporterExperimentConfig(ctx)...)
+	allFeatures = append(allFeatures, getOtlpExporterFeatureConfig(ctx)...)
 
 	var err error
 	var tempTrackedFeatures []Feature
@@ -508,9 +506,9 @@ func getSelfLogCollection(uc *UnifiedConfig) Feature {
 	return feature
 }
 
-func getOtlpExporterExperimentConfig(ctx context.Context) []Feature {
+func getOtlpExporterFeatureConfig(ctx context.Context) []Feature {
 	featureEnabled := "false"
-	if experiments.FromContext(ctx)["otlp_exporter"] {
+	if OtlpExporterFromContext(ctx) {
 		featureEnabled = "true"
 	}
 
