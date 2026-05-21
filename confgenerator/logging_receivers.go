@@ -44,6 +44,10 @@ type LoggingReceiverFiles struct {
 	ExcludePaths            []string       `yaml:"exclude_paths,omitempty"`
 	WildcardRefreshInterval *time.Duration `yaml:"wildcard_refresh_interval,omitempty" validate:"omitempty,min=1s,multipleof_time=1s"`
 	RecordLogFilePath       *bool          `yaml:"record_log_file_path,omitempty"`
+	// FileCacheAdvise controls fluent-bit's file_cache_advise option (Linux only).
+	// When true (fluent-bit's default), uses POSIX_FADV_DONTNEED to reduce kernel file cache usage.
+	// Set to false to keep files in cache, reducing disk I/O in scenarios with multiple pipelines or high re-read patterns.
+	FileCacheAdvise         *bool          `yaml:"file_cache_advise,omitempty"`
 }
 
 func (r LoggingReceiverFiles) Type() string {
@@ -56,6 +60,7 @@ func (r LoggingReceiverFiles) mixin() LoggingReceiverFilesMixin {
 		ExcludePaths:            r.ExcludePaths,
 		WildcardRefreshInterval: r.WildcardRefreshInterval,
 		RecordLogFilePath:       r.RecordLogFilePath,
+		FileCacheAdvise:         r.FileCacheAdvise,
 	}
 }
 
@@ -78,6 +83,7 @@ type LoggingReceiverFilesMixin struct {
 	MultilineRules          []MultilineRule `yaml:"-"`
 	BufferInMemory          bool            `yaml:"-"`
 	RecordLogFilePath       *bool           `yaml:"record_log_file_path,omitempty"`
+	FileCacheAdvise         *bool           `yaml:"file_cache_advise,omitempty"`
 	// In transformation test mode, the file is read exactly once from the beginning, and then the process exits.
 	TransformationTest bool `yaml:"-" tracking:"-"`
 }
@@ -155,6 +161,14 @@ func (r LoggingReceiverFilesMixin) Components(ctx context.Context, tag string) [
 
 	if r.RecordLogFilePath != nil && *r.RecordLogFilePath == true {
 		config["Path_Key"] = "agent.googleapis.com/log_file_path"
+	}
+
+	if r.FileCacheAdvise != nil {
+		if *r.FileCacheAdvise {
+			config["file_cache_advise"] = "true"
+		} else {
+			config["file_cache_advise"] = "false"
+		}
 	}
 
 	if r.BufferInMemory {
