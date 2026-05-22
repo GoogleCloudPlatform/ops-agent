@@ -121,8 +121,6 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 		return &pb.StartResponse{}, nil
 	}
 
-	ctx = uc.ContextWithExperiments(ctx)
-
 	// Trigger Healthchecks.
 	healthCheckFileLogger := healthchecks.CreateHealthChecksLogger(filepath.Join(pluginStateDir, LogsDirectory))
 	runHealthChecks(healthCheckFileLogger, uc.Global.GetOtlpExporter())
