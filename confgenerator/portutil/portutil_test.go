@@ -25,30 +25,50 @@ func TestGetPortFromEnv(t *testing.T) {
 	envVar := "TEST_PORT_ENV"
 	defaultPort := uint16(12345)
 
-	// Test 1: Env empty
-	os.Unsetenv(envVar)
-	if port := portutil.GetPortFromEnv(envVar, defaultPort); port != defaultPort {
-		t.Errorf("Expected port %d when env is empty, got %d", defaultPort, port)
+	tests := []struct {
+		name         string
+		setupEnv     func()
+		expectedPort uint16
+	}{
+		{
+			name: "Env empty",
+			setupEnv: func() {
+				os.Unsetenv(envVar)
+			},
+			expectedPort: defaultPort,
+		},
+		{
+			name: "Valid port",
+			setupEnv: func() {
+				os.Setenv(envVar, "54321")
+			},
+			expectedPort: 54321,
+		},
+		{
+			name: "Invalid port (not a number)",
+			setupEnv: func() {
+				os.Setenv(envVar, "invalid")
+			},
+			expectedPort: defaultPort,
+		},
+		{
+			name: "Out of range port",
+			setupEnv: func() {
+				os.Setenv(envVar, "65536")
+			},
+			expectedPort: defaultPort,
+		},
 	}
 
-	// Test 2: Valid port
-	os.Setenv(envVar, "54321")
-	if port := portutil.GetPortFromEnv(envVar, defaultPort); port != 54321 {
-		t.Errorf("Expected port 54321, got %d", port)
-	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.setupEnv()
+			defer os.Unsetenv(envVar)
 
-	// Test 3: Invalid port (not a number)
-	os.Setenv(envVar, "invalid")
-	if port := portutil.GetPortFromEnv(envVar, defaultPort); port != defaultPort {
-		t.Errorf("Expected port %d for invalid env value, got %d", defaultPort, port)
+			got := portutil.GetPortFromEnv(envVar, defaultPort)
+			if got != tc.expectedPort {
+				t.Errorf("GetPortFromEnv() = %d, want %d", got, tc.expectedPort)
+			}
+		})
 	}
-
-	// Test 4: Out of range port
-	os.Setenv(envVar, "65536")
-	if port := portutil.GetPortFromEnv(envVar, defaultPort); port != defaultPort {
-		t.Errorf("Expected port %d for out-of-range env value, got %d", defaultPort, port)
-	}
-
-	// Clean up
-	os.Unsetenv(envVar)
 }

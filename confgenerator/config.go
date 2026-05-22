@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/portutil"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
@@ -76,11 +77,11 @@ const (
 )
 
 func (uc *UnifiedConfig) GetFluentBitMetricsPort() uint16 {
-	return fluentbit.GetPort()
+	return portutil.GetPortFromEnv(ExperimentalFluentBitMetricsPortEnv, fluentbit.MetricsPort)
 }
 
 func (uc *UnifiedConfig) GetOtelMetricsPort() uint16 {
-	return otel.GetPort()
+	return portutil.GetPortFromEnv(ExperimentalOtelMetricsPortEnv, otel.MetricsPort)
 }
 
 func (uc *UnifiedConfig) DeepCopy(ctx context.Context) (*UnifiedConfig, error) {

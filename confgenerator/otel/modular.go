@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/portutil"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	yaml "github.com/goccy/go-yaml"
 	"github.com/mitchellh/mapstructure"
@@ -30,10 +29,6 @@ import (
 
 const MetricsPort = 20201
 const ExperimentalMetricsPortEnv = "EXPERIMENTAL_OPS_AGENT_OTEL_METRICS_PORT"
-
-func GetPort() uint16 {
-	return portutil.GetPortFromEnv(ExperimentalMetricsPortEnv, MetricsPort)
-}
 
 type ExporterType int
 type ResourceDetectionMode int
