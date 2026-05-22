@@ -15,20 +15,16 @@
 package fluentbit
 
 import (
-	"os"
 	"strconv"
+
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/portutil"
 )
 
 const MetricsPort = 20202
 const ExperimentalMetricsPortEnv = "EXPERIMENTAL_OPS_AGENT_FLUENT_BIT_METRICS_PORT"
 
 func GetPort() uint16 {
-	if portStr := os.Getenv(ExperimentalMetricsPortEnv); portStr != "" {
-		if port, err := strconv.ParseUint(portStr, 10, 16); err == nil {
-			return uint16(port)
-		}
-	}
-	return MetricsPort
+	return portutil.GetPortFromEnv(ExperimentalMetricsPortEnv, MetricsPort)
 }
 
 func MetricsInputComponent() Component {

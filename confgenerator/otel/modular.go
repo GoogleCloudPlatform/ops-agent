@@ -18,10 +18,9 @@ package otel
 import (
 	"context"
 	"fmt"
-	"os"
 	"sort"
-	"strconv"
 
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/portutil"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	yaml "github.com/goccy/go-yaml"
 	"github.com/mitchellh/mapstructure"
@@ -33,12 +32,7 @@ const MetricsPort = 20201
 const ExperimentalMetricsPortEnv = "EXPERIMENTAL_OPS_AGENT_OTEL_METRICS_PORT"
 
 func GetPort() uint16 {
-	if portStr := os.Getenv(ExperimentalMetricsPortEnv); portStr != "" {
-		if port, err := strconv.ParseUint(portStr, 10, 16); err == nil {
-			return uint16(port)
-		}
-	}
-	return MetricsPort
+	return portutil.GetPortFromEnv(ExperimentalMetricsPortEnv, MetricsPort)
 }
 
 type ExporterType int
