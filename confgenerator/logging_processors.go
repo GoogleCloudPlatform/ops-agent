@@ -17,6 +17,7 @@ package confgenerator
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -313,6 +314,23 @@ func (p LoggingProcessorParseRegex) Components(ctx context.Context, tag, uid str
 	parserFilters = append(parserFilters, parser)
 	parserFilters = append(parserFilters, fluentbit.ParserFilterComponents(tag, p.Field, []string{parserName}, p.PreserveKey)...)
 	return parserFilters
+}
+
+func (p LoggingProcessorParseRegex) ListAllFeatures() ([]string, bool) {
+	return []string{
+		"has_ruby_regex",
+	}, false
+}
+
+func (p LoggingProcessorParseRegex) ExtractFeatures() ([]CustomFeature, bool, error) {
+	_, err := regexp.Compile(p.Regex)
+	goCompatible := err == nil
+	return []CustomFeature{
+		{
+			Key:   []string{"has_ruby_regex"},
+			Value: fmt.Sprintf("%v", !goCompatible),
+		},
+	}, false, nil
 }
 
 func (p LoggingProcessorParseRegex) Processors(ctx context.Context) ([]otel.Component, error) {
