@@ -26,8 +26,7 @@ var enabledExperimentalFeatures map[string]bool
 func ParseExperimentalFeatures(features string) map[string]bool {
 	out := map[string]bool{}
 	for _, f := range strings.Split(features, ",") {
-		feature := strings.TrimSpace(f)
-		out[feature] = true
+		out[strings.TrimSpace(f)] = true
 	}
 	return out
 }

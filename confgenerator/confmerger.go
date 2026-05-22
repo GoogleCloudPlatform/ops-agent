@@ -42,8 +42,6 @@ func MergeConfFiles(ctx context.Context, userConfPath string) (*UnifiedConfig, e
 		mergeConfigs(result, overrides)
 	}
 
-	ctx = result.ContextWithExperiments(ctx)
-
 	if err := result.Validate(ctx); err != nil {
 		return nil, err
 	}
@@ -51,7 +49,6 @@ func MergeConfFiles(ctx context.Context, userConfPath string) (*UnifiedConfig, e
 	// Ensure the merged config struct fields are valid.
 	v := newValidator()
 	if err := v.StructCtx(ctx, result); err != nil {
-
 		log.Fatalf("merged config failed to validate: %v", err)
 	}
 	return result, nil
