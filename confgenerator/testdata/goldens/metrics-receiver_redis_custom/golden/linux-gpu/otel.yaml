@@ -48,7 +48,7 @@ processors:
       - fluentbit_log_entry_retry_count
       - fluentbit_request_count
     initial_value: drop
-  deltatocumulative/loggingmetrics_6: {}
+  deltatocumulative/loggingmetrics_7: {}
   filter/default__pipeline_hostmetrics_0:
     metrics:
       exclude:
@@ -109,8 +109,10 @@ processors:
         metric_names:
         - redis.commands
         - redis.uptime
-  interval/loggingmetrics_7:
+  interval/loggingmetrics_8:
     interval: 1m
+  metric_start_time/redis_1:
+    strategy: subtract_initial_point
   metricstransform/fluentbit_1:
     transforms:
     - action: update
@@ -559,7 +561,39 @@ processors:
         label_set:
         - response_code
       submatch_case: lower
-  metricstransform/loggingmetrics_8:
+  metricstransform/loggingmetrics_6:
+    transforms:
+    - action: combine
+      include: ^agent/log_entry_count$
+      match_type: regexp
+      new_name: agent/log_entry_count
+      operations:
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+      submatch_case: lower
+    - action: combine
+      include: ^agent/log_entry_retry_count$
+      match_type: regexp
+      new_name: agent/log_entry_retry_count
+      operations:
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+      submatch_case: lower
+    - action: combine
+      include: ^agent/request_count$
+      match_type: regexp
+      new_name: agent/request_count
+      operations:
+      - action: aggregate_labels
+        aggregation_type: sum
+        label_set:
+        - response_code
+      submatch_case: lower
+  metricstransform/loggingmetrics_9:
     transforms:
     - action: update
       include: ^(.*)$$
@@ -616,19 +650,18 @@ processors:
       include: ^(.*)$$
       match_type: regexp
       new_name: workload.googleapis.com/$${1}
-  normalizesums/redis_1: {}
   resourcedetection/_global_0:
     detectors:
     - gcp
   transform/agent_prometheus_0:
     metric_statements:
-    - context: metric
+    - context: resource
       statements:
-      - delete_key(resource.attributes, "service.name")
-      - delete_key(resource.attributes, "service.version")
-      - delete_key(resource.attributes, "service.instance.id")
-      - delete_key(resource.attributes, "server.port")
-      - delete_key(resource.attributes, "url.scheme")
+      - delete_key(attributes, "service.name")
+      - delete_key(attributes, "service.version")
+      - delete_key(attributes, "service.instance.id")
+      - delete_key(attributes, "server.port")
+      - delete_key(attributes, "url.scheme")
   transform/loggingmetrics_0:
     error_mode: ignore
     metric_statements:
@@ -820,9 +853,10 @@ service:
       - metricstransform/loggingmetrics_3
       - cumulativetodelta/loggingmetrics_4
       - transform/loggingmetrics_5
-      - deltatocumulative/loggingmetrics_6
-      - interval/loggingmetrics_7
-      - metricstransform/loggingmetrics_8
+      - metricstransform/loggingmetrics_6
+      - deltatocumulative/loggingmetrics_7
+      - interval/loggingmetrics_8
+      - metricstransform/loggingmetrics_9
       - resourcedetection/_global_0
       receivers:
       - prometheus/agent_prometheus
@@ -851,7 +885,7 @@ service:
       - googlecloud/otel
       processors:
       - filter/redis_0
-      - normalizesums/redis_1
+      - metric_start_time/redis_1
       - metricstransform/redis_2
       - transform/redis_3
       - transform/redis_4

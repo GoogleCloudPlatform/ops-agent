@@ -185,6 +185,15 @@ var (
 		IsFatal:      true,
 	}
 
+	TelLogsApiPermissionErr = HealthCheckError{
+		Code:         "TelLogsApiPermissionErr",
+		Class:        Permission,
+		Message:      "Service account is missing the roles/telemetry.logsWriter role.",
+		Action:       "Add the roles/telemetry.logsWriter role to the Google Cloud service account.",
+		ResourceLink: "https://docs.cloud.google.com/iam/docs/roles-permissions/telemetry#telemetry.logsWriter",
+		IsFatal:      true,
+	}
+
 	LogApiUnauthenticatedErr = HealthCheckError{
 		Code:         "LogApiUnauthenticatedErr",
 		Class:        Api,

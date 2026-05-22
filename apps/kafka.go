@@ -58,7 +58,7 @@ func (r MetricsReceiverKafka) Pipelines(_ context.Context) ([]otel.ReceiverPipel
 					"kafka.partition.under_replicated",
 					"kafka.isr.operation.count",
 				),
-				otel.NormalizeSums(),
+				otel.MetricStartTime(),
 				otel.MetricsTransform(
 					otel.AddPrefix("workload.googleapis.com"),
 				),
