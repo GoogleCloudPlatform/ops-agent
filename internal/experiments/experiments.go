@@ -57,20 +57,3 @@ func FromContext(ctx context.Context) map[string]bool {
 func IsEnabled(ctx context.Context, feature string) bool {
 	return FromContext(ctx)[feature]
 }
-
-type otlpExporterKeyType struct{}
-
-var otlpExporterKey = otlpExporterKeyType{}
-
-// ContextWithOtlpExporter returns a new context with the OtlpExporter state set.
-func ContextWithOtlpExporter(ctx context.Context, enabled bool) context.Context {
-	return context.WithValue(ctx, otlpExporterKey, enabled)
-}
-
-// OtlpExporterFromContext returns the OtlpExporter state from the context.
-func OtlpExporterFromContext(ctx context.Context) bool {
-	if enabled, ok := ctx.Value(otlpExporterKey).(bool); ok {
-		return enabled
-	}
-	return false
-}

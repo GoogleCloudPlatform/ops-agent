@@ -36,12 +36,12 @@ var (
 	healthChecks = flag.Bool("healthchecks", false, "run health checks and exit")
 )
 
-func runHealthChecks(ctx context.Context) {
+func runHealthChecks(otlpExporterEnabled bool) {
 	logger := healthchecks.CreateHealthChecksLogger(*logsDir)
 
 	defaultLogger := logs.NewSimpleLogger()
 
-	healthCheckResults := healthchecks.HealthCheckRegistryFactory(ctx).RunAllHealthChecks(logger)
+	healthCheckResults := healthchecks.HealthCheckRegistryFactory(otlpExporterEnabled).RunAllHealthChecks(logger)
 	healthchecks.LogHealthCheckResults(healthCheckResults, defaultLogger)
 }
 
@@ -70,7 +70,7 @@ func run() error {
 
 	switch *service {
 	case "":
-		runHealthChecks(ctx)
+		runHealthChecks(uc.Global.GetOtlpExporter())
 		log.Println("Startup checks finished")
 		if *healthChecks {
 			// If healthchecks is set, stop here

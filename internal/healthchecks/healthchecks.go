@@ -15,7 +15,6 @@
 package healthchecks
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"os"
@@ -102,11 +101,11 @@ func CreateHealthChecksLogger(logDir string) logs.StructuredLogger {
 
 type HealthCheckRegistry []HealthCheck
 
-func HealthCheckRegistryFactory(ctx context.Context) HealthCheckRegistry {
+func HealthCheckRegistryFactory(otlpExporterEnabled bool) HealthCheckRegistry {
 	return HealthCheckRegistry{
 		PortsCheck{},
 		NetworkCheck{},
-		APICheck{ctx: ctx},
+		APICheck{otlpExporterEnabled: otlpExporterEnabled},
 	}
 }
 

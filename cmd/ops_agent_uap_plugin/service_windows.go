@@ -125,7 +125,7 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 
 	// Trigger Healthchecks.
 	healthCheckFileLogger := healthchecks.CreateHealthChecksLogger(filepath.Join(pluginStateDir, LogsDirectory))
-	runHealthChecks(ctx, healthCheckFileLogger)
+	runHealthChecks(healthCheckFileLogger, uc.Global.GetOtlpExporter())
 
 	// Create a Windows Job object and stores its handle, to ensure that all child processes are killed when the parent process exits.
 	_, err = createWindowsJobHandle()
@@ -239,8 +239,8 @@ func generateSubAgentConfigs(ctx context.Context, userConfigPath string, pluginS
 	return uc, nil
 }
 
-func runHealthChecks(ctx context.Context, healthCheckFileLogger logs.StructuredLogger) {
-	gceHealthChecks := healthchecks.HealthCheckRegistryFactory(ctx)
+func runHealthChecks(healthCheckFileLogger logs.StructuredLogger, otlpExporterEnabled bool) {
+	gceHealthChecks := healthchecks.HealthCheckRegistryFactory(otlpExporterEnabled)
 
 	// Log health check results to health-checks.log log file.
 	gceHealthChecks.RunAllHealthChecks(healthCheckFileLogger)

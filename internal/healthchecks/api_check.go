@@ -25,7 +25,6 @@ import (
 	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/googleapis/gax-go/v2/apierror"
@@ -188,7 +187,8 @@ func monitoringPing(ctx context.Context, client monitoring.MetricClient, resourc
 	return backoff.Retry(pingOperation, pingBackoff)
 }
 
-func runLoggingCheck(ctx context.Context, logger logs.StructuredLogger, resource resourcedetector.Resource) error {
+func runLoggingCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
+	ctx := context.Background()
 
 	// New Logging Client
 	logClient, err := logging.NewClient(ctx, resource.ProjectName())
@@ -231,7 +231,8 @@ func runLoggingCheck(ctx context.Context, logger logs.StructuredLogger, resource
 	return nil
 }
 
-func runMonitoringCheck(ctx context.Context, logger logs.StructuredLogger, resource resourcedetector.Resource) error {
+func runMonitoringCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
+	ctx := context.Background()
 
 	// New Monitoring Client
 	monClient, err := monitoring.NewMetricClient(ctx)
@@ -274,8 +275,8 @@ func runMonitoringCheck(ctx context.Context, logger logs.StructuredLogger, resou
 	return nil
 }
 
-func runTelemetryMetricsCheck(ctx context.Context, logger logs.StructuredLogger, resource resourcedetector.Resource) error {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+func runTelemetryMetricsCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	creds, err := google.FindDefaultCredentials(ctx,
@@ -332,11 +333,11 @@ func runTelemetryMetricsCheck(ctx context.Context, logger logs.StructuredLogger,
 }
 
 type APICheck struct {
-	ctx context.Context
+	otlpExporterEnabled bool
 }
 
-func runTelemetryLogsCheck(ctx context.Context, logger logs.StructuredLogger, resource resourcedetector.Resource) error {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+func runTelemetryLogsCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	creds, err := google.FindDefaultCredentials(ctx,
@@ -397,10 +398,6 @@ func (c APICheck) Name() string {
 }
 
 func (c APICheck) RunCheck(logger logs.StructuredLogger) error {
-	ctx := c.ctx
-	if ctx == nil {
-		ctx = context.Background()
-	}
 	resource, err := resourcedetector.GetResource()
 	if err != nil {
 		return fmt.Errorf("failed to detect the resource: %v", err)
@@ -409,14 +406,14 @@ func (c APICheck) RunCheck(logger logs.StructuredLogger) error {
 	var monOrTelErr error
 	var logOrTelLogsErr error
 
-	if experiments.OtlpExporterFromContext(ctx) {
+	if c.otlpExporterEnabled {
 		logger.Infof("Running Telemetry API checks")
-		monOrTelErr = runTelemetryMetricsCheck(ctx, logger, resource)
-		logOrTelLogsErr = runTelemetryLogsCheck(ctx, logger, resource)
+		monOrTelErr = runTelemetryMetricsCheck(logger, resource)
+		logOrTelLogsErr = runTelemetryLogsCheck(logger, resource)
 	} else {
 		logger.Infof("Running legacy API checks")
-		monOrTelErr = runMonitoringCheck(ctx, logger, resource)
-		logOrTelLogsErr = runLoggingCheck(ctx, logger, resource)
+		monOrTelErr = runMonitoringCheck(logger, resource)
+		logOrTelLogsErr = runLoggingCheck(logger, resource)
 	}
 
 	return errors.Join(monOrTelErr, logOrTelLogsErr)

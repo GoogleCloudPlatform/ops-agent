@@ -143,16 +143,16 @@ func (s *service) checkForStandaloneAgents(unified *confgenerator.UnifiedConfig)
 	return nil
 }
 
-func getHealthCheckResults(ctx context.Context) []healthchecks.HealthCheckResult {
+func getHealthCheckResults(otlpExporterEnabled bool) []healthchecks.HealthCheckResult {
 	logsDir := filepath.Join(os.Getenv("PROGRAMDATA"), dataDirectory, "log")
-	gceHealthChecks := healthchecks.HealthCheckRegistryFactory(ctx)
+	gceHealthChecks := healthchecks.HealthCheckRegistryFactory(otlpExporterEnabled)
 	logger := healthchecks.CreateHealthChecksLogger(logsDir)
 
 	return gceHealthChecks.RunAllHealthChecks(logger)
 }
 
 func (srv *service) runHealthChecks(ctx context.Context) {
-	healthCheckResults := getHealthCheckResults(ctx)
+	healthCheckResults := getHealthCheckResults(srv.uc.Global.GetOtlpExporter())
 	logger := logs.WindowsServiceLogger{EventID: EngineEventID, Logger: srv.log}
 	healthchecks.LogHealthCheckResults(healthCheckResults, logger)
 	srv.log.Info(EngineEventID, "Startup checks finished")

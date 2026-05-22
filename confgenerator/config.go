@@ -72,12 +72,19 @@ func (uc *UnifiedConfig) HasCombined() bool {
 	return uc.Combined != nil
 }
 
+type otlpExporterKeyType struct{}
+
+var otlpExporterKey = otlpExporterKeyType{}
+
 func ContextWithOtlpExporter(ctx context.Context, enabled bool) context.Context {
-	return experiments.ContextWithOtlpExporter(ctx, enabled)
+	return context.WithValue(ctx, otlpExporterKey, enabled)
 }
 
 func OtlpExporterFromContext(ctx context.Context) bool {
-	return experiments.OtlpExporterFromContext(ctx)
+	if enabled, ok := ctx.Value(otlpExporterKey).(bool); ok {
+		return enabled
+	}
+	return false
 }
 
 func (uc *UnifiedConfig) ContextWithExperiments(ctx context.Context) context.Context {
