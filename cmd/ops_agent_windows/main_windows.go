@@ -71,13 +71,14 @@ func main() {
 				log.Fatalf("failed to determine executable folder: %v", err)
 			}
 			configPath := filepath.Join(base, "../config/config.yaml")
+			otlpExporterEnabled := false
 			uc, err := confgenerator.MergeConfFiles(ctx, configPath)
 			if err == nil {
-				ctx = uc.ContextWithExperiments(ctx)
+				otlpExporterEnabled = uc.Global.GetOtlpExporter()
 			} else {
-				log.Printf("failed to load config (using default experiments): %v", err)
+				log.Printf("failed to load config: %v", err)
 			}
-			healthCheckResults := getHealthCheckResults(ctx)
+			healthCheckResults := getHealthCheckResults(otlpExporterEnabled)
 			healthchecks.LogHealthCheckResults(healthCheckResults, infoLog)
 			infoLog.Println("Health checks finished")
 		} else {

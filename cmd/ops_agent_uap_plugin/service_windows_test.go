@@ -155,8 +155,7 @@ func Test_runHealthChecks_LogFileNonEmpty(t *testing.T) {
 	defer os.Remove(healthCheckLogFile.Name())
 	mockHealthCheckLogger := &mockHealthCheckLogger{logFile: healthCheckLogFile}
 
-	ctx := context.Background()
-	runHealthChecks(ctx, mockHealthCheckLogger)
+	runHealthChecks(mockHealthCheckLogger, false)
 
 	// Check if the log file has content
 	fileInfo, err := os.Stat(healthCheckLogFile.Name())
