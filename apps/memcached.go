@@ -55,6 +55,7 @@ func (r MetricsReceiverMemcached) Pipelines(ctx context.Context) ([]otel.Receive
 				"strict",
 				"memcached.operation_hit_ratio",
 			),
+			otel.MetricStartTime(),
 			otel.MetricsTransform(
 				otel.AddPrefix("workload.googleapis.com"),
 			),
