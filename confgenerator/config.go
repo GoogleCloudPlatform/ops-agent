@@ -26,6 +26,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-playground/validator/v10"
+	yaml "github.com/goccy/go-yaml"
+	"github.com/kardianos/osext"
+	promconfig "github.com/prometheus/prometheus/config"
+	"go.uber.org/multierr"
+
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
@@ -34,11 +40,6 @@ import (
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/set"
-	"github.com/go-playground/validator/v10"
-	yaml "github.com/goccy/go-yaml"
-	"github.com/kardianos/osext"
-	promconfig "github.com/prometheus/prometheus/config"
-	"go.uber.org/multierr"
 )
 
 // BuiltInConfStructs contains the default configuration for each platform.
