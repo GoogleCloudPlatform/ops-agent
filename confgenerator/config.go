@@ -71,17 +71,12 @@ func (uc *UnifiedConfig) HasCombined() bool {
 	return uc.Combined != nil
 }
 
-const (
-	ExperimentalFluentBitMetricsPortEnv = fluentbit.ExperimentalMetricsPortEnv
-	ExperimentalOtelMetricsPortEnv      = otel.ExperimentalMetricsPortEnv
-)
-
 func (uc *UnifiedConfig) GetFluentBitMetricsPort() uint16 {
-	return portutil.GetPortFromEnv(ExperimentalFluentBitMetricsPortEnv, fluentbit.MetricsPort)
+	return portutil.GetPortFromEnv(fluentbit.ExperimentalMetricsPortEnv, fluentbit.MetricsPort)
 }
 
 func (uc *UnifiedConfig) GetOtelMetricsPort() uint16 {
-	return portutil.GetPortFromEnv(ExperimentalOtelMetricsPortEnv, otel.MetricsPort)
+	return portutil.GetPortFromEnv(otel.ExperimentalMetricsPortEnv, otel.MetricsPort)
 }
 
 func (uc *UnifiedConfig) DeepCopy(ctx context.Context) (*UnifiedConfig, error) {

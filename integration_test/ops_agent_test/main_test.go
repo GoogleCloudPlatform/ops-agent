@@ -66,6 +66,8 @@ import (
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-collector/integration_test/gce-testing-internal/gce"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/resourcedetector"
 	"github.com/GoogleCloudPlatform/ops-agent/integration_test/agents"
 	feature_tracking_metadata "github.com/GoogleCloudPlatform/ops-agent/integration_test/feature_tracking"
@@ -6150,14 +6152,14 @@ func TestMetricsPortOverrideEnv(t *testing.T) {
 		if gce.IsWindows(imageSpec) {
 			// Set environment variables via PowerShell
 			setEnvCmd := fmt.Sprintf(`[Environment]::SetEnvironmentVariable("%s", "40002", "Machine"); [Environment]::SetEnvironmentVariable("%s", "40001", "Machine")`,
-				confgenerator.ExperimentalFluentBitMetricsPortEnv, confgenerator.ExperimentalOtelMetricsPortEnv)
+				fluentbit.ExperimentalMetricsPortEnv, otel.ExperimentalMetricsPortEnv)
 			if _, err := gce.RunRemotely(ctx, logger, vm, setEnvCmd); err != nil {
 				t.Fatal(err)
 			}
 			// Cleanup env vars at the end of the test
 			t.Cleanup(func() {
 				unsetEnvCmd := fmt.Sprintf(`[Environment]::SetEnvironmentVariable("%s", $null, "Machine"); [Environment]::SetEnvironmentVariable("%s", $null, "Machine")`,
-					confgenerator.ExperimentalFluentBitMetricsPortEnv, confgenerator.ExperimentalOtelMetricsPortEnv)
+					fluentbit.ExperimentalMetricsPortEnv, otel.ExperimentalMetricsPortEnv)
 				gce.RunRemotely(ctx, logger, vm, unsetEnvCmd)
 			})
 			// Restart agent
@@ -6178,7 +6180,7 @@ func TestMetricsPortOverrideEnv(t *testing.T) {
 			}
 			fbOverrideContent := fmt.Sprintf(`[Service]
 Environment="%s=40002"
-`, confgenerator.ExperimentalFluentBitMetricsPortEnv)
+`, fluentbit.ExperimentalMetricsPortEnv)
 			if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("echo '%s' | sudo tee %s", fbOverrideContent, fbOverrideFile)); err != nil {
 				t.Fatal(err)
 			}
@@ -6192,7 +6194,7 @@ Environment="%s=40002"
 			otelOverrideContent := fmt.Sprintf(`[Service]
 Environment="%s=40001"
 Environment="%s=40002"
-`, confgenerator.ExperimentalOtelMetricsPortEnv, confgenerator.ExperimentalFluentBitMetricsPortEnv)
+`, otel.ExperimentalMetricsPortEnv, fluentbit.ExperimentalMetricsPortEnv)
 			if _, err := gce.RunRemotely(ctx, logger, vm, fmt.Sprintf("echo '%s' | sudo tee %s", otelOverrideContent, otelOverrideFile)); err != nil {
 				t.Fatal(err)
 			}
