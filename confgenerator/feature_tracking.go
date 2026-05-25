@@ -78,7 +78,7 @@ func ExtractFeatures(ctx context.Context, userUc, mergedUc *UnifiedConfig) ([]Fe
 
 	allFeatures = append(allFeatures, getSelfLogCollection(userUc))
 	allFeatures = append(allFeatures, getOTelLoggingSupportedConfig(ctx, mergedUc))
-	allFeatures = append(allFeatures, getOtlpExporterFeatureConfig(ctx)...)
+	allFeatures = append(allFeatures, getOtlpExporterFeatureConfig(mergedUc)...)
 
 	var err error
 	var tempTrackedFeatures []Feature
@@ -506,9 +506,9 @@ func getSelfLogCollection(uc *UnifiedConfig) Feature {
 	return feature
 }
 
-func getOtlpExporterFeatureConfig(ctx context.Context) []Feature {
+func getOtlpExporterFeatureConfig(uc *UnifiedConfig) []Feature {
 	featureEnabled := "false"
-	if OtlpExporterFromContext(ctx) {
+	if uc.Global.GetOtlpExporter() {
 		featureEnabled = "true"
 	}
 

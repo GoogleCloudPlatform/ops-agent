@@ -27,12 +27,11 @@ func (transformationConfig transformationTest) generateOTelOTLPExporterConfig(ct
 	pi.RID = "my-log-name"
 	pi.Backend = confgenerator.BackendOTel
 
-	ctx = confgenerator.ContextWithOtlpExporter(ctx, true)
-
 	rps, pls, err := pi.OTelComponents(ctx)
 	if err != nil {
 		return "", err
 	}
+	confgenerator.ConvertPipelinesToOtlp(rps)
 
 	return otel.ModularConfig{
 		DisableMetrics:    true,

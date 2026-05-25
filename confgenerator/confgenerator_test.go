@@ -345,13 +345,19 @@ func generateOtelConfigWithOtlpExporterEnabled(got map[string]string, pc platfor
 	experimentsOtlp := map[string]bool{
 		"otel_logging": true,
 	}
-	ctxOtlp := confgenerator.ContextWithOtlpExporter(experiments.ContextWithExperiments(pc.platform.TestContext(context.Background()), experimentsOtlp), true)
+	ctxOtlp := experiments.ContextWithExperiments(pc.platform.TestContext(context.Background()), experimentsOtlp)
 
 	mergedUcOtlp, err := confgenerator.MergeConfFiles(
 		ctxOtlp,
 		filepath.Join("testdata", testDir, inputFileName),
 	)
 	if err == nil {
+		if mergedUcOtlp.Global == nil {
+			mergedUcOtlp.Global = &confgenerator.Global{}
+		}
+		enabled := true
+		mergedUcOtlp.Global.OtlpExporter = &enabled
+
 		otelGeneratedConfigOtlp, err := mergedUcOtlp.GenerateOtelConfig(ctxOtlp, "", "")
 		if err == nil {
 			got["otel_otlp_exporter.yaml"] = otelGeneratedConfigOtlp

@@ -33,6 +33,7 @@ type AgentSelfMetrics struct {
 	FluentBitPort       int
 	OtelPort            int
 	OtelRuntimeDir      string
+	OtlpExporterEnabled bool
 }
 
 // Following reference : https://github.com/googleapis/googleapis/blob/master/google/rpc/code.proto
@@ -181,7 +182,7 @@ func (r AgentSelfMetrics) OtelPipelineProcessors(ctx context.Context) []otel.Com
 		`metric.name == "` + durationCountMetric + `" and (not IsMatch(datapoint.attributes["grpc.target"], "monitoring.googleapis"))`,
 	})
 
-	expOtlpExporter := OtlpExporterFromContext(ctx)
+	expOtlpExporter := r.OtlpExporterEnabled
 	var extraTransforms []map[string]interface{}
 	if expOtlpExporter {
 		durationMetric = "rpc.client.call.duration"
@@ -292,7 +293,7 @@ func (r AgentSelfMetrics) LoggingMetricsPipelineProcessors(ctx context.Context) 
 		otel.AggregateLabels("sum", "response_code"),
 	)
 
-	expOtlpExporter := OtlpExporterFromContext(ctx)
+	expOtlpExporter := r.OtlpExporterEnabled
 	if expOtlpExporter {
 		durationMetric = "rpc.client.call.duration"
 		durationCountMetric = "rpc.client.call.duration_count"

@@ -86,39 +86,45 @@ func googleCloudLoggingExporter() otel.Component {
 }
 
 func ConvertPrometheusExporterToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
-	return ConvertToOtlpExporter(pipeline, ctx, true, false)
+	return pipeline
 }
 
 func ConvertGCMOtelExporterToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
-	return ConvertToOtlpExporter(pipeline, ctx, false, false)
+	return pipeline
 }
 
 func ConvertGCMSystemExporterToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context) otel.ReceiverPipeline {
-	return ConvertToOtlpExporter(pipeline, ctx, false, true)
+	return pipeline
 }
 
 func ConvertToOtlpExporter(pipeline otel.ReceiverPipeline, ctx context.Context, isPrometheus bool, isSystem bool) otel.ReceiverPipeline {
-	expOtlpExporter := OtlpExporterFromContext(ctx)
-	if !expOtlpExporter {
-		return pipeline
-	}
+	return pipeline
+}
 
-	if _, ok := pipeline.ExporterTypes["metrics"]; ok {
-		if isPrometheus {
-			pipeline.ExporterTypes["metrics"] = otel.GMP
-		} else {
-			pipeline.ExporterTypes["metrics"] = otel.OTLP_Metrics
-			if isSystem {
-				pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveInstrumentationLibraryLabelsAttributes())
-				pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"], otel.MetricsRemoveServiceAttributes())
+func ConvertPipelinesToOtlp(receiverPipelines map[string]otel.ReceiverPipeline) {
+	for rID, pipeline := range receiverPipelines {
+		if _, ok := pipeline.ExporterTypes["metrics"]; ok {
+			if pipeline.ExporterTypes["metrics"] == otel.System {
+				pipeline.ExporterTypes["metrics"] = otel.OTLP_Metrics
+				if pipeline.Processors == nil {
+					pipeline.Processors = make(map[string][]otel.Component)
+				}
+				pipeline.Processors["metrics"] = append(pipeline.Processors["metrics"],
+					otel.MetricsRemoveInstrumentationLibraryLabelsAttributes(),
+					otel.MetricsRemoveServiceAttributes(),
+				)
+			} else if pipeline.ExporterTypes["metrics"] == otel.OTel {
+				pipeline.ExporterTypes["metrics"] = otel.OTLP_Metrics
 			}
 		}
-	}
 
-	if _, ok := pipeline.ExporterTypes["logs"]; ok {
-		pipeline.ExporterTypes["logs"] = otel.OTLP_Logs
+		if _, ok := pipeline.ExporterTypes["logs"]; ok {
+			if pipeline.ExporterTypes["logs"] == otel.Logging {
+				pipeline.ExporterTypes["logs"] = otel.OTLP_Logs
+			}
+		}
+		receiverPipelines[rID] = pipeline
 	}
-	return pipeline
 }
 
 func otlpExporterForMetrics(userAgent string) otel.Component {
@@ -224,8 +230,13 @@ func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDi
 		FluentBitPort:       int(uc.GetFluentBitMetricsPort()),
 		OtelPort:            int(uc.GetOtelMetricsPort()),
 		OtelRuntimeDir:      outDir,
+		OtlpExporterEnabled: uc.Global.GetOtlpExporter(),
 	}
 	agentSelfMetrics.AddSelfMetricsPipelines(receiverPipelines, pipelines, ctx)
+
+	if uc.Global.GetOtlpExporter() {
+		ConvertPipelinesToOtlp(receiverPipelines)
+	}
 	resource, err := p.GetResource()
 	if err != nil {
 		return "", err
