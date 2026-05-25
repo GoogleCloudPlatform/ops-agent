@@ -59,9 +59,6 @@ func run() error {
 	if err != nil {
 		return err
 	}
-
-	ctx = uc.ContextWithExperiments(ctx)
-
 	// Log the built-in and merged config files to STDOUT. These are then written
 	// by journald to var/log/syslog and so to Cloud Logging once the ops-agent is
 	// running.

@@ -18,19 +18,18 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"path/filepath"
 	"reflect"
 	"runtime"
 	"slices"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/filter"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/portutil"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/experiments"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/platform"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/secret"
@@ -72,39 +71,13 @@ func (uc *UnifiedConfig) HasCombined() bool {
 	return uc.Combined != nil
 }
 
-func (uc *UnifiedConfig) ContextWithExperiments(ctx context.Context) context.Context {
-	if uc == nil {
-		return ctx
-	}
-	enabledExperiments := experiments.FromContext(ctx)
-	newExperiments := map[string]bool{}
-	for k, v := range enabledExperiments {
-		newExperiments[k] = v
-	}
-	return experiments.ContextWithExperiments(ctx, newExperiments)
-}
-
-const (
-	ExperimentalFluentBitMetricsPortEnv = "EXPERIMENTAL_OPS_AGENT_FLUENT_BIT_METRICS_PORT"
-	ExperimentalOtelMetricsPortEnv      = "EXPERIMENTAL_OPS_AGENT_OTEL_METRICS_PORT"
-)
 
 func (uc *UnifiedConfig) GetFluentBitMetricsPort() uint16 {
-	if portStr := os.Getenv(ExperimentalFluentBitMetricsPortEnv); portStr != "" {
-		if port, err := strconv.ParseUint(portStr, 10, 16); err == nil {
-			return uint16(port)
-		}
-	}
-	return fluentbit.MetricsPort
+	return portutil.GetPortFromEnv(fluentbit.ExperimentalMetricsPortEnv, fluentbit.MetricsPort)
 }
 
 func (uc *UnifiedConfig) GetOtelMetricsPort() uint16 {
-	if portStr := os.Getenv(ExperimentalOtelMetricsPortEnv); portStr != "" {
-		if port, err := strconv.ParseUint(portStr, 10, 16); err == nil {
-			return uint16(port)
-		}
-	}
-	return otel.MetricsPort
+	return portutil.GetPortFromEnv(otel.ExperimentalMetricsPortEnv, otel.MetricsPort)
 }
 
 func (uc *UnifiedConfig) DeepCopy(ctx context.Context) (*UnifiedConfig, error) {
@@ -887,7 +860,6 @@ type TracesService struct {
 }
 
 func (uc *UnifiedConfig) Validate(ctx context.Context) error {
-	ctx = uc.ContextWithExperiments(ctx)
 	if uc.Logging != nil {
 
 		if err := uc.ValidateLogging(); err != nil {

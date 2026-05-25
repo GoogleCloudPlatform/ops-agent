@@ -28,6 +28,7 @@ import (
 )
 
 const MetricsPort = 20201
+const ExperimentalMetricsPortEnv = "EXPERIMENTAL_OPS_AGENT_OTEL_METRICS_PORT"
 
 type ExporterType int
 type ResourceDetectionMode int

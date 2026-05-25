@@ -212,7 +212,6 @@ func fileStorageExtension(stateDir string) otel.Component {
 }
 
 func (uc *UnifiedConfig) GenerateOtelConfig(ctx context.Context, outDir, stateDir string) (string, error) {
-	ctx = uc.ContextWithExperiments(ctx)
 	p := platform.FromContext(ctx)
 
 	userAgent, _ := p.UserAgent("Google-Cloud-Ops-Agent-Metrics")
@@ -497,7 +496,6 @@ func (uc *UnifiedConfig) generateOtelPipelines(ctx context.Context) (map[string]
 // GenerateFluentBitConfigs generates configuration file(s) for Fluent Bit.
 // It returns a map of filenames to file contents.
 func (uc *UnifiedConfig) GenerateFluentBitConfigs(ctx context.Context, logsDir string, stateDir string) (map[string]string, error) {
-	ctx = uc.ContextWithExperiments(ctx)
 	userAgent, _ := platform.FromContext(ctx).UserAgent("Google-Cloud-Ops-Agent-Logging")
 
 	components, err := uc.generateFluentbitComponents(ctx, userAgent)

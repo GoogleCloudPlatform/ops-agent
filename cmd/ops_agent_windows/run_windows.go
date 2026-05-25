@@ -76,8 +76,7 @@ func (s *service) Execute(args []string, r <-chan svc.ChangeRequest, changes cha
 		return false, 2
 	}
 	s.log.Info(EngineEventID, "generated configuration files")
-	ctx = s.uc.ContextWithExperiments(ctx)
-	s.runHealthChecks(ctx)
+	s.runHealthChecks()
 
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 	if err := s.startSubagents(); err != nil {
@@ -151,7 +150,7 @@ func getHealthCheckResults(otlpExporterEnabled bool) []healthchecks.HealthCheckR
 	return gceHealthChecks.RunAllHealthChecks(logger)
 }
 
-func (srv *service) runHealthChecks(ctx context.Context) {
+func (srv *service) runHealthChecks() {
 	healthCheckResults := getHealthCheckResults(srv.uc.Global.GetOtlpExporter())
 	logger := logs.WindowsServiceLogger{EventID: EngineEventID, Logger: srv.log}
 	healthchecks.LogHealthCheckResults(healthCheckResults, logger)
