@@ -22,6 +22,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/fluentbit"
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/otel"
+	"github.com/GoogleCloudPlatform/ops-agent/confgenerator/portutil"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 )
 
@@ -66,7 +67,7 @@ func runFluentBitCheck(logger logs.StructuredLogger) error {
 	}
 
 	// Fluent-bit listens on tcp4. Check for fluent-bit self metrics port.
-	err = runPortCheck(logger, fluentbit.MetricsPort, tcpHost, "tcp4", FbMetricsPortErr)
+	err = runPortCheck(logger, int(portutil.GetPortFromEnv(fluentbit.ExperimentalMetricsPortEnv, fluentbit.MetricsPort)), tcpHost, "tcp4", FbMetricsPortErr)
 	if err != nil {
 		return err
 	}
@@ -83,12 +84,12 @@ func runOtelCollectorCheck(logger logs.StructuredLogger) error {
 	}
 
 	// Opentelemetry-collector listens in both tcp4 and tcp6. Check for opentelemetry-collector self metrics port.
-	err = runPortCheck(logger, otel.MetricsPort, tcpHost, "tcp4", OtelMetricsPortErr)
+	err = runPortCheck(logger, int(portutil.GetPortFromEnv(otel.ExperimentalMetricsPortEnv, otel.MetricsPort)), tcpHost, "tcp4", OtelMetricsPortErr)
 	if err != nil {
 		return err
 	}
 
-	err = runPortCheck(logger, otel.MetricsPort, tcp6Host, "tcp6", OtelMetricsPortErr)
+	err = runPortCheck(logger, int(portutil.GetPortFromEnv(otel.ExperimentalMetricsPortEnv, otel.MetricsPort)), tcp6Host, "tcp6", OtelMetricsPortErr)
 	if err != nil {
 		return err
 	}
@@ -101,6 +102,11 @@ func runPortCheck(logger logs.StructuredLogger, port int, host, network string, 
 		return err
 	}
 	if !available {
+		if hcErr, ok := healthCheckError.(HealthCheckError); ok {
+			hcErr.Message = fmt.Sprintf("Port %d needed for Ops Agent self metrics is unavailable.", port)
+			hcErr.Action = fmt.Sprintf("Verify that port %d is open.", port)
+			return hcErr
+		}
 		return healthCheckError
 	}
 	logger.Infof("listening to %s:", net.JoinHostPort(host, strconv.Itoa(port)))
