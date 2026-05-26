@@ -1,9 +1,1 @@
-[19:17] Key: 'MetricsReceiverOracleDB.endpoint' Error:Field validation for 'endpoint' failed on the 'hostname_port|startswith=/' tag
-  16 |   receivers:
-  17 |     oraclemetrics:
-  18 |       type: oracledb
-> 19 |       endpoint: localhost
-                       ^
-  20 |       collection_interval: 30s
-  21 |   service:
-  22 |     pipelines:
+metrics receiver with type "oracledb" is not supported. Supported metrics receiver types: [hostmetrics, iis, mssql, prometheus].

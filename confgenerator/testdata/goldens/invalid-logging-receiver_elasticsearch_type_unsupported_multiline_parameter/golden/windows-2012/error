@@ -1,9 +1,1 @@
-[22:7] unknown field "multilinerules"
-  19 |       include_paths:
-  20 |       - /var/log/messages
-  21 |       - /var/log/syslog
-> 22 |       multilinerules:
-             ^
-  23 |       - statename: "start_state"
-  24 |         regex: ".*"
-  25 |         nextstate: "start_state"
+logging receiver with type "elasticsearch_json" is not supported. Supported logging receiver types: [files, fluent_forward, iis_access, syslog, tcp, windows_event_log].

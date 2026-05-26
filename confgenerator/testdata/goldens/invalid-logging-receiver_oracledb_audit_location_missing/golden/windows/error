@@ -1,1 +1,1 @@
-Key: 'LoggingReceiverMacroOracleDBAudit.include_paths' Error:Field validation for 'include_paths' failed on the 'required_without' tag,Key: 'LoggingReceiverMacroOracleDBAudit.oracle_home' Error:Field validation for 'oracle_home' failed on the 'required_without' tag
+logging receiver with type "oracledb_audit" is not supported. Supported logging receiver types: [files, fluent_forward, iis_access, syslog, tcp, windows_event_log].

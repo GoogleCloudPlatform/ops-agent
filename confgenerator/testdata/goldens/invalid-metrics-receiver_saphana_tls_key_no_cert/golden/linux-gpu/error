@@ -1,1 +1,1 @@
-"cert_file" is required when "KeyFile" is set
+metrics receiver with type "saphana" is not supported. Supported metrics receiver types: [hostmetrics, prometheus].

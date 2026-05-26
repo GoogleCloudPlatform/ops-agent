@@ -1,9 +1,1 @@
-[19:17] Key: 'MetricsReceiverDcgm.endpoint' Error:Field validation for 'endpoint' failed on the 'hostname_port' tag
-  16 |   receivers:
-  17 |     dcgm:
-  18 |       type: dcgm
-> 19 |       endpoint: localhost
-                       ^
-  20 |   service:
-  21 |     pipelines:
-  22 |       dcgm:
+metrics receiver with type "dcgm" is not supported. Supported metrics receiver types: [hostmetrics, prometheus].

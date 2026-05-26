@@ -742,6 +742,5 @@ func init() {
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &confgenerator.LoggingProcessorWindowsEventLogV1{} })
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &confgenerator.LoggingProcessorWindowsEventLogV2{} })
 	confgenerator.LoggingProcessorTypes.RegisterType(func() confgenerator.LoggingProcessor { return &confgenerator.LoggingProcessorWindowsEventLogRawXML{} })
-	confgenerator.RegisterLoggingProcessorMacro[apps.LoggingProcessorMacroActiveDirectoryDS]()
 	confgenerator.ReplaceLoggingProcessorMacro[apps.LoggingProcessorMacroIisAccess]()
 }
