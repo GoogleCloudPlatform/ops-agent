@@ -1244,7 +1244,6 @@ func GetOtelConfigPath(imageSpec string) string {
 }
 
 const (
-	OtelLoggingFeatureFlag      = "otel_logging"
 	OTLPLoggingFeatureFlag      = "otlp_logging"
 	OtlpHttpExporterFeatureFlag = "otlp_exporter"
 	DefaultFeatureFlag          = "default"
@@ -1255,36 +1254,10 @@ func setExperimentalFeatures(ctx context.Context, logger *log.Logger, vm *gce.VM
 	return gce.SetEnvironmentVariables(ctx, logger, vm, map[string]string{"EXPERIMENTAL_FEATURES": feature})
 }
 
-// defaultOtelLoggingConfig returns the default config that is required to use otel_logging.
-func defaultOtelLoggingConfig() string {
-	return `logging:
-  service:
-    experimental_otel_logging: true
-`
-}
-
-// setExperimentalOtelLoggingInConfig in an Ops Agent config
-func setExperimentalOtelLoggingInConfig(config string) string {
-	return strings.Replace(
-		config,
-		"service:\n",
-		"service:\n    experimental_otel_logging: true\n",
-		1,
-	)
-}
-
 // SetupOpsAgentWithFeatureFlag configures the VM and the config depending on the selected feature flag.
 func SetupOpsAgentWithFeatureFlag(ctx context.Context, logger *log.Logger, vm *gce.VM, config string, feature string) error {
 	if feature == "" || feature == DefaultFeatureFlag {
 		return SetupOpsAgent(ctx, logger, vm, config)
-	}
-
-	if strings.Contains(feature, OtelLoggingFeatureFlag) {
-		if config == "" {
-			config = defaultOtelLoggingConfig()
-		} else {
-			config = setExperimentalOtelLoggingInConfig(config)
-		}
 	}
 
 	// Set experimental feature environment variable.
