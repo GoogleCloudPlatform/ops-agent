@@ -1,0 +1,1 @@
+logging receiver with type "hbase_system" is not supported. Supported logging receiver types: [files, fluent_forward, syslog, systemd_journald, tcp].

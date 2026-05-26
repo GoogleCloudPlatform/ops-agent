@@ -1,0 +1,1 @@
+metrics receiver with type "varnish" is not supported. Supported metrics receiver types: [hostmetrics, prometheus].
