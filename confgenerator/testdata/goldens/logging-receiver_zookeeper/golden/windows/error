@@ -1,1 +1,0 @@
-logging receiver with type "zookeeper_general" is not supported. Supported logging receiver types: [files, fluent_forward, iis_access, syslog, tcp, windows_event_log].

@@ -1,1 +1,0 @@
-metrics receiver with type "cassandra" is not supported. Supported metrics receiver types: [hostmetrics, prometheus].

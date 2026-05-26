@@ -1,1 +1,0 @@
-metrics receiver with type "nginx" is not supported. Supported metrics receiver types: [hostmetrics, iis, mssql, prometheus].

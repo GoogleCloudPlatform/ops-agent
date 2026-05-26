@@ -1,1 +1,0 @@
-metrics receiver with type "elasticsearch" is not supported. Supported metrics receiver types: [hostmetrics, iis, mssql, prometheus].

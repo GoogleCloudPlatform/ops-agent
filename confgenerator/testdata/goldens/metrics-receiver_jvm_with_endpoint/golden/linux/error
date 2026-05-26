@@ -1,1 +1,0 @@
-metrics receiver with type "jvm" is not supported. Supported metrics receiver types: [hostmetrics, prometheus].

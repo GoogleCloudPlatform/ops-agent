@@ -1,1 +1,0 @@
-metrics receiver with type "active_directory_ds" is not supported. Supported metrics receiver types: [hostmetrics, prometheus].
