@@ -31,6 +31,8 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
 )
 
@@ -105,6 +107,11 @@ func (ps *OpsAgentPluginServer) Start(ctx context.Context, msg *pb.StartRequest)
 		ps.cancelAndSetPluginError(&OpsAgentPluginError{Message: fmt.Sprintf("Start() failed to validate the custom Ops Agent config: %s", err), ShouldRestart: false})
 		return &pb.StartResponse{}, nil
 	}
+
+	// Trigger Healthchecks asynchronously.
+	healthCheckFileLogger := healthchecks.CreateHealthChecksLogger(filepath.Join(pluginStateDir, LogsDirectory))
+	go runHealthChecks(healthCheckFileLogger)
+
 	// Subagent config generation
 	if err := generateSubagentConfigs(pContext, ps.runCommand, pluginInstallDir, pluginStateDir); err != nil {
 		ps.cancelAndSetPluginError(&OpsAgentPluginError{Message: fmt.Sprintf("Start() failed to generate subagent configs: %s", err), ShouldRestart: false})
@@ -196,6 +203,7 @@ func validateOpsAgentConfig(ctx context.Context, pluginInstallDirectory string, 
 		path.Join(pluginInstallDirectory, ConfGeneratorBinary),
 		"-in", OpsAgentConfigLocationLinux,
 		"-logs", path.Join(pluginStateDirectory, LogsDirectory),
+		"-run-healthchecks=false",
 	)
 	if output, err := runCommand(configValidationCmd); err != nil {
 		return fmt.Errorf("failed to validate the Ops Agent config:\ncommand output: %s\ncommand error: %s", output, err)
@@ -258,4 +266,13 @@ func (nopCloser) Close() error { return nil }
 
 func createLogger() (io.Closer, error) {
 	return nopCloser{}, nil
+}
+
+func runHealthChecks(healthCheckFileLogger logs.StructuredLogger) {
+	gceHealthChecks := healthchecks.HealthCheckRegistryFactory()
+
+	// Log health check results to health-checks.log log file.
+	gceHealthChecks.RunAllHealthChecks(healthCheckFileLogger)
+
+	log.Println("Health checks completed")
 }

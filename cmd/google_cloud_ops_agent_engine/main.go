@@ -28,12 +28,13 @@ import (
 )
 
 var (
-	service      = flag.String("service", "", "service to generate config for")
-	outDir       = flag.String("out", os.Getenv("RUNTIME_DIRECTORY"), "directory to write configuration files to")
-	input        = flag.String("in", "/etc/google-cloud-ops-agent/config.yaml", "path to the user specified agent config")
-	logsDir      = flag.String("logs", "/var/log/google-cloud-ops-agent", "path to store agent logs")
-	stateDir     = flag.String("state", "/var/lib/google-cloud-ops-agent", "path to store agent state like buffers")
-	healthChecks = flag.Bool("healthchecks", false, "run health checks and exit")
+	service             = flag.String("service", "", "service to generate config for")
+	outDir              = flag.String("out", os.Getenv("RUNTIME_DIRECTORY"), "directory to write configuration files to")
+	input               = flag.String("in", "/etc/google-cloud-ops-agent/config.yaml", "path to the user specified agent config")
+	logsDir             = flag.String("logs", "/var/log/google-cloud-ops-agent", "path to store agent logs")
+	stateDir            = flag.String("state", "/var/lib/google-cloud-ops-agent", "path to store agent state like buffers")
+	healthChecks        = flag.Bool("healthchecks", false, "run health checks and exit")
+	runHealthChecksFlag = flag.Bool("run-healthchecks", true, "run health checks")
 )
 
 func runHealthChecks() {
@@ -68,8 +69,10 @@ func run() error {
 
 	switch *service {
 	case "":
-		runHealthChecks()
-		log.Println("Startup checks finished")
+		if *runHealthChecksFlag {
+			runHealthChecks()
+			log.Println("Startup checks finished")
+		}
 		if *healthChecks {
 			// If healthchecks is set, stop here
 			return nil
