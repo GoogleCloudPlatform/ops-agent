@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
@@ -25,7 +26,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 )
 
-const MaxRequestElapsedTime = 30 * time.Second
+const MaxRequestElapsedTime = 15 * time.Second
 
 type networkRequest struct {
 	name             string
@@ -80,9 +81,12 @@ func (r networkRequest) SendRequest(logger logs.StructuredLogger) error {
 	bf := backoff.NewExponentialBackOff()
 	bf.MaxElapsedTime = MaxRequestElapsedTime
 	expTicker := backoff.NewTicker(bf)
+	client := &http.Client{
+		Timeout: 5 * time.Second,
+	}
 
 	for range expTicker.C {
-		response, err = http.Get(r.url)
+		response, err = client.Get(r.url)
 		if err == nil && response.StatusCode == http.StatusOK {
 			expTicker.Stop()
 			break
@@ -111,17 +115,25 @@ func (c NetworkCheck) Name() string {
 }
 
 func (c NetworkCheck) RunCheck(logger logs.StructuredLogger) error {
-	var networkErrors []error
 	ctx := context.TODO()
 	p := platform.FromContext(ctx)
-	for _, r := range commonRequests {
-		networkErrors = append(networkErrors, r.SendRequest(logger))
-	}
+	var requests []networkRequest
+	requests = append(requests, commonRequests...)
 	if p.ResourceOverride == nil || p.ResourceOverride.MonitoredResource().Type == "gce_instance" {
-		for _, r := range gceRequests {
-			networkErrors = append(networkErrors, r.SendRequest(logger))
-		}
+		requests = append(requests, gceRequests...)
 	}
 
+	networkErrors := make([]error, len(requests))
+	var wg sync.WaitGroup
+
+	for i, r := range requests {
+		wg.Add(1)
+		go func(index int, req networkRequest) {
+			defer wg.Done()
+			networkErrors[index] = req.SendRequest(logger)
+		}(i, r)
+	}
+
+	wg.Wait()
 	return errors.Join(networkErrors...)
 }
