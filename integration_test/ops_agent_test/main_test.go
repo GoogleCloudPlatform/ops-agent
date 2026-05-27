@@ -1088,6 +1088,7 @@ logging:
     json:
       type: parse_json
   service:
+    experimental_otel_logging: false
     pipelines:
       p1:
         receivers:
