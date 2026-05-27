@@ -727,9 +727,9 @@ func getRestartOpsAgentCmd(imageSpec string) string {
 		grpcurlExecutable := "grpcurl"
 		if gce.IsWindows(imageSpec) {
 			grpcurlExecutable = `C:\grpcurl.exe`
-			return fmt.Sprintf("%s -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Stop; Start-Sleep -Seconds 5; %s -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable, OpsAgentPluginServerPort, grpcurlExecutable, OpsAgentPluginServerPort)
+			return fmt.Sprintf("%s -plaintext -max-time 30 -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Stop; Start-Sleep -Seconds 5; %s -plaintext -max-time 30 -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable, OpsAgentPluginServerPort, grpcurlExecutable, OpsAgentPluginServerPort)
 		}
-		return fmt.Sprintf("%s -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Stop && sleep 5 && %s -plaintext -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable, OpsAgentPluginServerPort, grpcurlExecutable, OpsAgentPluginServerPort)
+		return fmt.Sprintf("%s -plaintext -max-time 30 -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Stop && sleep 5 && %s -plaintext -max-time 30 -d '{}' localhost:%s plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable, OpsAgentPluginServerPort, grpcurlExecutable, OpsAgentPluginServerPort)
 	}
 
 	if gce.IsWindows(imageSpec) {
@@ -906,7 +906,7 @@ func StartCommandForImage(imageSpec string) string {
 		if gce.IsWindows(imageSpec) {
 			grpcurlExecutable = `C:\grpcurl.exe`
 		}
-		return fmt.Sprintf("%s -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable)
+		return fmt.Sprintf("%s -plaintext -max-time 30 -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable)
 	}
 
 	if gce.IsWindows(imageSpec) {
@@ -923,11 +923,11 @@ func StartOpsAgentViaUAPCommand(imageSpec string, config string) string {
 	}
 	if len(config) > 0 {
 		if gce.IsWindows(imageSpec) {
-			return fmt.Sprintf("echo '{%s}' | %s -plaintext -d \"@\" localhost:1234 plugin_comm.GuestAgentPlugin/Start", config, grpcurlExecutable)
+			return fmt.Sprintf("echo '{%s}' | %s -plaintext -max-time 30 -d \"@\" localhost:1234 plugin_comm.GuestAgentPlugin/Start", config, grpcurlExecutable)
 		}
-		return fmt.Sprintf("%s -plaintext -d '{%s}' localhost:1234 plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable, config)
+		return fmt.Sprintf("%s -plaintext -max-time 30 -d '{%s}' localhost:1234 plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable, config)
 	}
-	return fmt.Sprintf("%s -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable)
+	return fmt.Sprintf("%s -plaintext -max-time 30 -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Start", grpcurlExecutable)
 }
 
 func StopCommandForImage(imageSpec string) string {
@@ -936,7 +936,7 @@ func StopCommandForImage(imageSpec string) string {
 		if gce.IsWindows(imageSpec) {
 			grpcurlExecutable = `C:\grpcurl.exe`
 		}
-		return fmt.Sprintf("%s -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Stop", grpcurlExecutable)
+		return fmt.Sprintf("%s -plaintext -max-time 30 -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/Stop", grpcurlExecutable)
 	}
 
 	if gce.IsWindows(imageSpec) {
@@ -951,7 +951,7 @@ func GetUAPPluginStatusForImage(imageSpec string) string {
 	if gce.IsWindows(imageSpec) {
 		grpcurlExecutable = `C:\grpcurl.exe`
 	}
-	return fmt.Sprintf("%s -plaintext -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/GetStatus", grpcurlExecutable)
+	return fmt.Sprintf("%s -plaintext -max-time 30 -d '{}' localhost:1234 plugin_comm.GuestAgentPlugin/GetStatus", grpcurlExecutable)
 
 }
 
