@@ -1,6 +1,3 @@
-[submodule "submodules/fluent-bit"]
-	path = submodules/fluent-bit
-	url = ../../fluent/fluent-bit.git
 [submodule "submodules/opentelemetry-java-contrib"]
 	path = submodules/opentelemetry-java-contrib
 	url = ../../open-telemetry/opentelemetry-java-contrib.git

@@ -50,7 +50,6 @@ const (
 	WindowsEventLogIdentifier        = "google-cloud-ops-agent-uap-plugin"
 	WindowJobHandleIdentifier        = "google-cloud-ops-agent-uap-plugin-job-handle"
 	AgentWrapperBinary               = "google-cloud-ops-agent-wrapper.exe"
-	FluentbitBinary                  = "fluent-bit.exe"
 	OtelBinary                       = "google-cloud-metrics-agent_windows_amd64.exe"
 )
 
@@ -220,18 +219,13 @@ func generateSubAgentConfigs(ctx context.Context, userConfigPath string, pluginS
 		return err
 	}
 
-	for _, subagent := range []string{
+	if err := uc.GenerateFilesFromConfig(
+		ctx,
 		"otel",
-		"fluentbit",
-	} {
-		if err := uc.GenerateFilesFromConfig(
-			ctx,
-			subagent,
-			filepath.Join(pluginStateDir, LogsDirectory),
-			filepath.Join(pluginStateDir, RuntimeDirectory),
-			filepath.Join(pluginStateDir, GeneratedConfigsOutDir, subagent)); err != nil {
-			return err
-		}
+		filepath.Join(pluginStateDir, LogsDirectory),
+		filepath.Join(pluginStateDir, RuntimeDirectory),
+		filepath.Join(pluginStateDir, GeneratedConfigsOutDir, "otel")); err != nil {
+		return err
 	}
 	return nil
 }
@@ -299,19 +293,6 @@ func runSubagents(ctx context.Context, cancelAndSetError CancelContextAndSetPlug
 	)
 	wg.Add(1)
 	go runSubAgentCommand(ctx, cancelAndSetError, runOtelCmd, runCommand, &wg)
-
-	// Starting Fluentbit
-	runFluentBitCmd := exec.CommandContext(ctx,
-		path.Join(pluginInstallDirectory, AgentWrapperBinary),
-		"-config_path", OpsAgentConfigLocationWindows,
-		"-log_path", path.Join(pluginStateDirectory, LogsDirectory, "logging-module.log"),
-		path.Join(pluginInstallDirectory, FluentbitBinary),
-		"-c", path.Join(pluginStateDirectory, GeneratedConfigsOutDir, "fluentbit/fluent_bit_main.conf"),
-		"-R", path.Join(pluginStateDirectory, GeneratedConfigsOutDir, "fluentbit/fluent_bit_parser.conf"),
-		"--storage_path", path.Join(pluginStateDirectory, "run/buffers"),
-	)
-	wg.Add(1)
-	go runSubAgentCommand(ctx, cancelAndSetError, runFluentBitCmd, runCommand, &wg)
 
 	wg.Wait()
 }

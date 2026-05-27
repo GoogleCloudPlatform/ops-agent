@@ -55,8 +55,7 @@ $FilesToInclude = @(
     "msvcp140.dll",
     "vccorlib140.dll",
     "vcruntime140.dll",
-    "fluent-bit.exe",
-    "fluent-bit.dll",
+
     "opentelemetry-java-contrib-jmx-metrics.jar",
     "google-cloud-metrics-agent_windows_${GoArch}.exe",
     "google-cloud-ops-agent-wrapper.exe"
