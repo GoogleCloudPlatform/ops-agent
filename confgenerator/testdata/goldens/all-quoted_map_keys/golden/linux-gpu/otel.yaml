@@ -7,6 +7,24 @@ exporters:
       service_resource_labels: false
       skip_create_descriptor: true
     user_agent: Google-Cloud-Ops-Agent-Metrics/latest (BuildDistro=build_distro;Platform=linux;ShortName=linux_platform;ShortVersion=linux_platform_version)
+  googlecloud/logging:
+    sending_queue:
+      batch:
+        flush_timeout: 200ms
+        max_size: 1000
+        min_size: 1000
+        sizer: items
+      block_on_overflow: true
+      enabled: true
+      num_consumers: 10
+      queue_size: 12000
+      sizer: items
+      storage: file_storage
+    timeout: 3600s
+extensions:
+  file_storage:
+    create_directory: true
+    directory: file_storage
 processors:
   agentmetrics/hostmetrics_0:
     blank_label_metrics:
@@ -623,6 +641,71 @@ processors:
       - delete_key(attributes, "service.instance.id")
       - delete_key(attributes, "server.port")
       - delete_key(attributes, "url.scheme")
+  transform/journald_0:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["PRIORITY"]) where (body != nil and body["PRIORITY"] != nil)
+      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["__field_1"], body["CODE_FILE"]) where (body != nil and body["CODE_FILE"] != nil)
+      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["__field_2"], body["CODE_FUNC"]) where (body != nil and body["CODE_FUNC"] != nil)
+      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["__field_3"], body["CODE_LINE"]) where (body != nil and body["CODE_LINE"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"])
+      - delete_key(cache, "mapped_value") where (cache != nil and cache["mapped_value"] != nil)
+      - set(cache["mapped_value"], "EMERGENCY") where cache["value"] == "0"
+      - set(cache["mapped_value"], "ALERT") where cache["value"] == "1"
+      - set(cache["mapped_value"], "CRITICAL") where cache["value"] == "2"
+      - set(cache["mapped_value"], "ERROR") where cache["value"] == "3"
+      - set(cache["mapped_value"], "WARNING") where cache["value"] == "4"
+      - set(cache["mapped_value"], "NOTICE") where cache["value"] == "5"
+      - set(cache["mapped_value"], "INFO") where cache["value"] == "6"
+      - set(cache["mapped_value"], "DEBUG") where cache["value"] == "7"
+      - set(severity_text, cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
+      - set(severity_number, 0) where (cache != nil and cache["mapped_value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_1"])
+      - set(attributes["gcp.source_location"]["file"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_2"])
+      - set(attributes["gcp.source_location"]["func"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_3"])
+      - set(cache["value"], Int(cache["value"]))
+      - set(attributes["gcp.source_location"]["line"], cache["value"]) where (cache != nil and cache["value"] != nil)
+  transform/journald_1:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], attributes["compute.googleapis.com/instance_group_manager/name"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/name"] != nil)
+      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["__field_1"], attributes["compute.googleapis.com/instance_group_manager/zone"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/zone"] != nil)
+      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["__field_2"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
+      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["__field_3"], attributes["gcp.log_name"]) where (attributes != nil and attributes["gcp.log_name"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"])
+      - set(cache["value"], "test-mig") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_1"])
+      - set(cache["value"], "test-zone") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/zone"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_2"])
+      - set(cache["value"], "") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_3"])
+      - set(cache["value"], "journald") where cache["value"] == nil
+      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
   transform/loggingmetrics_0:
     error_mode: ignore
     metric_statements:
@@ -644,6 +727,27 @@ processors:
       - set(metric.name, "agent/log_entry_count") where metric.name == "otel_log_entry_count"
       - set(metric.name, "agent/log_entry_retry_count") where metric.name == "otel_log_entry_retry_count"
       - set(metric.name, "agent/request_count") where metric.name == "otel_request_count"
+  transform/logs_default__pipeline_journald_0:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], body["SYSLOG_FACILITY"]) where (body != nil and body["SYSLOG_FACILITY"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"])
+      - delete_key(cache, "mapped_value") where (cache != nil and cache["mapped_value"] != nil)
+      - set(cache["mapped_value"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - set(cache["mapped_value"], "kernel") where cache["value"] == "0"
+      - set(cache["mapped_value"], "user") where cache["value"] == "1"
+      - set(cache["mapped_value"], "auth") where cache["value"] == "10"
+      - set(cache["mapped_value"], "cron") where cache["value"] == "15"
+      - set(cache["mapped_value"], "mail") where cache["value"] == "2"
+      - set(cache["mapped_value"], "daemon") where cache["value"] == "3"
+      - set(cache["mapped_value"], "auth") where cache["value"] == "4"
+      - set(cache["mapped_value"], "syslog") where cache["value"] == "5"
+      - set(cache["mapped_value"], "systemd-timesyncd") where cache["value"] == "9"
+      - set(attributes["facility"], cache["mapped_value"]) where (cache != nil and cache["mapped_value"] != nil)
   transform/ops_agent_0:
     error_mode: ignore
     metric_statements:
@@ -672,6 +776,10 @@ receivers:
         mute_process_exe_error: true
         mute_process_name_error: true
       processes: {}
+  journald/journald:
+    priority: debug
+    start_at: beginning
+    storage: file_storage
   nvml/hostmetrics_1:
     collection_interval: 60s
   otlpjsonfile/ops_agent:
@@ -695,7 +803,19 @@ receivers:
         - targets:
           - 0.0.0.0:20201
 service:
+  extensions:
+  - file_storage
   pipelines:
+    logs/logs_default__pipeline_journald:
+      exporters:
+      - googlecloud/logging
+      processors:
+      - transform/journald_0
+      - transform/journald_1
+      - transform/logs_default__pipeline_journald_0
+      - resourcedetection/_global_0
+      receivers:
+      - journald/journald
     metrics/default__pipeline_hostmetrics:
       exporters:
       - googlecloud

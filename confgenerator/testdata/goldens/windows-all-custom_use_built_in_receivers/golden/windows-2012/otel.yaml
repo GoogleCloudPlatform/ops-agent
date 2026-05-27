@@ -1216,6 +1216,36 @@ service:
       - resourcedetection/_global_0
       receivers:
       - windowseventlog/windows__event__log_2
+    logs/logs_host_windows__event__log:
+      exporters:
+      - googlecloud/logging
+      processors:
+      - transform/windows__event__log_0
+      - transform/windows__event__log_1
+      - transform/windows__event__log_2
+      - resourcedetection/_global_0
+      receivers:
+      - windowseventlog/windows__event__log
+    logs/logs_host_windows__event__log_1:
+      exporters:
+      - googlecloud/logging
+      processors:
+      - transform/windows__event__log_1_0
+      - transform/windows__event__log_1_1
+      - transform/windows__event__log_1_2
+      - resourcedetection/_global_0
+      receivers:
+      - windowseventlog/windows__event__log_1
+    logs/logs_host_windows__event__log_2:
+      exporters:
+      - googlecloud/logging
+      processors:
+      - transform/windows__event__log_2_0
+      - transform/windows__event__log_2_1
+      - transform/windows__event__log_2_2
+      - resourcedetection/_global_0
+      receivers:
+      - windowseventlog/windows__event__log_2
     metrics/default__pipeline_hostmetrics:
       exporters:
       - googlecloud

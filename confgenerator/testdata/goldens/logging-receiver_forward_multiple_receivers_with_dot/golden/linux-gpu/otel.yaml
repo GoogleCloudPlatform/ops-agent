@@ -641,6 +641,98 @@ processors:
       - delete_key(attributes, "service.instance.id")
       - delete_key(attributes, "server.port")
       - delete_key(attributes, "url.scheme")
+  transform/fluent.forward_0:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - set(cache["body_string"], body) where IsString(body)
+      - set(body, {})
+      - set(body["message"], cache["body_string"]) where (cache != nil and cache["body_string"] != nil)
+      - merge_maps(body, attributes, "upsert") where attributes != nil
+      - set(attributes, {})
+  transform/fluent.forward_1:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], attributes["compute.googleapis.com/instance_group_manager/name"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/name"] != nil)
+      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["__field_1"], attributes["compute.googleapis.com/instance_group_manager/zone"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/zone"] != nil)
+      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["__field_2"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
+      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["__field_3"], attributes["gcp.log_name"]) where (attributes != nil and attributes["gcp.log_name"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"])
+      - set(cache["value"], "test-mig") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_1"])
+      - set(cache["value"], "test-zone") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/zone"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_2"])
+      - set(cache["value"], "") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_3"])
+      - set(cache["value"], "fluent.forward") where cache["value"] == nil
+      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+  transform/fluent.forward_2:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - set(attributes["gcp.log_name"], Concat([attributes["gcp.log_name"],body["fluent.tag"]], ".")) where ((attributes != nil and attributes["gcp.log_name"] != nil) and (body != nil and body["fluent.tag"] != nil))
+      - delete_key(body, "fluent.tag") where ((body != nil and body["fluent.tag"] != nil) and (body != nil and body["fluent.tag"] != nil))
+  transform/fluent__forward_0:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - set(cache["body_string"], body) where IsString(body)
+      - set(body, {})
+      - set(body["message"], cache["body_string"]) where (cache != nil and cache["body_string"] != nil)
+      - merge_maps(body, attributes, "upsert") where attributes != nil
+      - set(attributes, {})
+  transform/fluent__forward_1:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - delete_key(cache, "__field_0") where (cache != nil and cache["__field_0"] != nil)
+      - set(cache["__field_0"], attributes["compute.googleapis.com/instance_group_manager/name"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/name"] != nil)
+      - delete_key(cache, "__field_1") where (cache != nil and cache["__field_1"] != nil)
+      - set(cache["__field_1"], attributes["compute.googleapis.com/instance_group_manager/zone"]) where (attributes != nil and attributes["compute.googleapis.com/instance_group_manager/zone"] != nil)
+      - delete_key(cache, "__field_2") where (cache != nil and cache["__field_2"] != nil)
+      - set(cache["__field_2"], attributes["compute.googleapis.com/resource_name"]) where (attributes != nil and attributes["compute.googleapis.com/resource_name"] != nil)
+      - delete_key(cache, "__field_3") where (cache != nil and cache["__field_3"] != nil)
+      - set(cache["__field_3"], attributes["gcp.log_name"]) where (attributes != nil and attributes["gcp.log_name"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_0"])
+      - set(cache["value"], "test-mig") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_1"])
+      - set(cache["value"], "test-zone") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/instance_group_manager/zone"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_2"])
+      - set(cache["value"], "") where cache["value"] == nil
+      - set(attributes["compute.googleapis.com/resource_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+      - delete_key(cache, "value") where (cache != nil and cache["value"] != nil)
+      - set(cache["value"], cache["__field_3"])
+      - set(cache["value"], "fluent_forward") where cache["value"] == nil
+      - set(attributes["gcp.log_name"], cache["value"]) where (cache != nil and cache["value"] != nil)
+  transform/fluent__forward_2:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - set(attributes["gcp.log_name"], Concat([attributes["gcp.log_name"],body["fluent.tag"]], ".")) where ((attributes != nil and attributes["gcp.log_name"] != nil) and (body != nil and body["fluent.tag"] != nil))
+      - delete_key(body, "fluent.tag") where ((body != nil and body["fluent.tag"] != nil) and (body != nil and body["fluent.tag"] != nil))
   transform/loggingmetrics_0:
     error_mode: ignore
     metric_statements:
@@ -720,6 +812,10 @@ receivers:
     preserve_trailing_whitespaces: true
     start_at: beginning
     storage: file_storage
+  fluentforward/fluent.forward:
+    endpoint: 1.2.3.4:5679
+  fluentforward/fluent__forward:
+    endpoint: 1.2.3.4:5678
   hostmetrics/hostmetrics:
     collection_interval: 60s
     scrapers:
@@ -769,6 +865,26 @@ service:
       - resourcedetection/_global_0
       receivers:
       - file_log/syslog
+    logs/logs_fluent__forward_fluent.forward:
+      exporters:
+      - googlecloud/logging
+      processors:
+      - transform/fluent.forward_0
+      - transform/fluent.forward_1
+      - transform/fluent.forward_2
+      - resourcedetection/_global_0
+      receivers:
+      - fluentforward/fluent.forward
+    logs/logs_fluent__forward_fluent__forward:
+      exporters:
+      - googlecloud/logging
+      processors:
+      - transform/fluent__forward_0
+      - transform/fluent__forward_1
+      - transform/fluent__forward_2
+      - resourcedetection/_global_0
+      receivers:
+      - fluentforward/fluent__forward
     metrics/default__pipeline_hostmetrics:
       exporters:
       - googlecloud

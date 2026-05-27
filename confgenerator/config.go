@@ -22,7 +22,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
-	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -1119,22 +1118,15 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]PipelineInstan
 	if err != nil {
 		return nil, err
 	}
-	platformDefaultConfig := BuiltInConfStructs[platform.FromContext(ctx).Name()].Logging
 	exp_otlp := experiments.FromContext(ctx)["otlp_logging"]
 	force_otel := l.Service.OTelLogging
 	var out []PipelineInstance
 	for _, pID := range otel.SortedKeys(l.Service.Pipelines) {
 		p := l.Service.Pipelines[pID]
-		defaultP, ok := platformDefaultConfig.Service.Pipelines[pID]
-		isDefaultPipeline := ok && slices.Equal(p.ReceiverIDs, defaultP.ReceiverIDs) && slices.Equal(p.ProcessorIDs, defaultP.ProcessorIDs)
 		for _, rID := range p.ReceiverIDs {
 			receiver, ok := receivers[rID]
 			if !ok {
 				return nil, fmt.Errorf("logging receiver %q not found", rID)
-			}
-			defaultReceiver, ok := platformDefaultConfig.Receivers[rID]
-			if !ok || !reflect.DeepEqual(receiver, defaultReceiver) {
-				isDefaultPipeline = false
 			}
 			var processors []struct {
 				ID string
@@ -1162,8 +1154,32 @@ func (uc *UnifiedConfig) loggingPipelines(ctx context.Context) ([]PipelineInstan
 				Receiver:     receiver,
 				Processors:   processors,
 			}
-			if (force_otel != nil && *force_otel) || // User asked for OTel logging
-				(force_otel == nil && isDefaultPipeline) || // Unmodified default pipeline
+			pipelineSupportsOTel := false
+			if _, ok := receiver.(OTelReceiver); ok {
+				pipelineSupportsOTel = true
+				if macro, ok := receiver.(LoggingReceiverMacro); ok {
+					expandedReceiver, expandedProcessors := macro.Expand(ctx)
+					if _, ok := expandedReceiver.(InternalOTelReceiver); !ok {
+						pipelineSupportsOTel = false
+					}
+					for _, pr := range expandedProcessors {
+						if _, ok := pr.(InternalOTelProcessor); !ok {
+							pipelineSupportsOTel = false
+							break
+						}
+					}
+				}
+				if pipelineSupportsOTel {
+					for _, pr := range processors {
+						if _, ok := pr.Component.(OTelProcessor); !ok {
+							pipelineSupportsOTel = false
+							break
+						}
+					}
+				}
+			}
+			if (force_otel == nil && pipelineSupportsOTel) || // OTel by default if supported
+				(force_otel != nil && *force_otel) || // Explicitly enabled
 				(receiver.Type() == "otlp" && exp_otlp) { // OTLP receiver
 				instance.Backend = BackendOTel
 			}

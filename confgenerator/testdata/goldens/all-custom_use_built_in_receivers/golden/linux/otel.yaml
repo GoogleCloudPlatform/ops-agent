@@ -738,6 +738,14 @@ service:
       - resourcedetection/_global_0
       receivers:
       - file_log/syslog
+    logs/logs_host_syslog:
+      exporters:
+      - googlecloud/logging
+      processors:
+      - transform/syslog_0
+      - resourcedetection/_global_0
+      receivers:
+      - file_log/syslog
     metrics/default__pipeline_hostmetrics:
       exporters:
       - googlecloud
