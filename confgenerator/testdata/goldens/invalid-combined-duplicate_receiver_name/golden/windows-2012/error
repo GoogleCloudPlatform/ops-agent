@@ -1,1 +1,1 @@
-metrics receiver "apache" has the same name as combined receiver "apache"
+metrics receiver with type "apache" is not supported. Supported metrics receiver types: [hostmetrics, iis, mssql, prometheus].
