@@ -584,7 +584,7 @@ func (uc *UnifiedConfig) generateFluentbitComponents(ctx context.Context, userAg
 	out = append(out, service.Component())
 	out = append(out, fluentbit.MetricsInputComponent())
 
-	if l != nil && l.Service != nil && l.Service.OTelLogging != nil && !*l.Service.OTelLogging {
+	if l != nil && l.Service != nil && (l.Service.OTelLogging == nil || !*l.Service.OTelLogging) {
 		// Type for sorting.
 		var sources []fbSource
 		var tags []string
