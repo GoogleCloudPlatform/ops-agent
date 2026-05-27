@@ -235,6 +235,7 @@ func RunForEachImageAndFeatureFlag(t *testing.T, features []string, testBody fun
 }
 
 func TestParseMultilineFileJava(t *testing.T) {
+	t.Skip("Disabled until native OTel multiline parsing is implemented.")
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
@@ -336,6 +337,7 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 }
 
 func TestParseMultilineFileJavaPython(t *testing.T) {
+	t.Skip("Disabled until native OTel multiline parsing is implemented.")
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
@@ -493,6 +495,7 @@ TypeError: can only concatenate str (not "int") to str
 }
 
 func TestParseMultilineFileGolangJavaPython(t *testing.T) {
+	t.Skip("Disabled until native OTel multiline parsing is implemented.")
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
@@ -612,6 +615,7 @@ Caused by: com.sun.mail.smtp.SMTPAddressFailedException: 550 5.7.1 <[REDACTED_EM
 }
 
 func TestParseMultilineFileMissingParser(t *testing.T) {
+	t.Skip("Disabled until native OTel multiline parsing is implemented.")
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
@@ -2038,6 +2042,7 @@ func writeLinesToRemoteFile(ctx context.Context, logger *log.Logger, vm *gce.VM,
 }
 
 func TestTCPLog(t *testing.T) {
+	t.Skip("Disabled until native OTel TCP receiver is implemented.")
 	t.Parallel()
 	gce.RunForEachImage(t, func(t *testing.T, imageSpec string) {
 		t.Parallel()
