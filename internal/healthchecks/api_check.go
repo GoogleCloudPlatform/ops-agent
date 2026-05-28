@@ -189,7 +189,8 @@ func monitoringPing(ctx context.Context, client monitoring.MetricClient, resourc
 }
 
 func runLoggingCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
 	// New Logging Client
 	logClient, err := logging.NewClient(ctx, resource.ProjectName())
@@ -233,7 +234,8 @@ func runLoggingCheck(logger logs.StructuredLogger, resource resourcedetector.Res
 }
 
 func runMonitoringCheck(logger logs.StructuredLogger, resource resourcedetector.Resource) error {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
 	// New Monitoring Client
 	monClient, err := monitoring.NewMetricClient(ctx)
