@@ -27,6 +27,8 @@ import (
 	"sync"
 
 	"buf.build/go/protoyaml"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
+	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -236,4 +238,13 @@ func writeCustomConfigToFile(req *pb.StartRequest, configPath string) error {
 		}
 	}
 	return nil
+}
+
+func runHealthChecks(healthCheckFileLogger logs.StructuredLogger) {
+	gceHealthChecks := healthchecks.HealthCheckRegistryFactory()
+
+	// Log health check results to health-checks.log log file.
+	gceHealthChecks.RunAllHealthChecks(healthCheckFileLogger)
+
+	log.Println("Health checks completed")
 }

@@ -33,7 +33,6 @@ import (
 
 	"github.com/GoogleCloudPlatform/ops-agent/confgenerator"
 	"github.com/GoogleCloudPlatform/ops-agent/internal/healthchecks"
-	"github.com/GoogleCloudPlatform/ops-agent/internal/logs"
 	pb "github.com/GoogleCloudPlatform/google-guest-agent/pkg/proto/plugin_comm"
 )
 
@@ -263,11 +262,3 @@ func createLogger() (io.Closer, error) {
 	return nopCloser{}, nil
 }
 
-func runHealthChecks(healthCheckFileLogger logs.StructuredLogger) {
-	gceHealthChecks := healthchecks.HealthCheckRegistryFactory()
-
-	// Log health check results to health-checks.log log file.
-	gceHealthChecks.RunAllHealthChecks(healthCheckFileLogger)
-
-	log.Println("Health checks completed")
-}
